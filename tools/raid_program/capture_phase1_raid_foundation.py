@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+from collections import Counter
+from datetime import datetime
 import hashlib
 import json
 import os
@@ -13,6 +15,36 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 
+IDENTITY_FIELDS = (
+    "group_guid",
+    "leader_guid",
+    "expected_size",
+    "expected_difficulty",
+    "group_difficulty",
+    "map_difficulty",
+    "map_id",
+    "instance_id",
+    "lockout_save_id",
+    "server_epoch",
+    "attempt_id",
+    "strategy_id",
+)
+ROSTER_ID_FIELDS = (
+    "roster_slot_id", "lease_role_slot", "slot", "guid", "subgroup", "role",
+    "class_id", "class_spec", "gear_identity", "active", "lease_owned",
+)
+FORBIDDEN_ASSISTANCE_FIELDS = (
+    "forbidden_completion_assists",
+    "forbidden_assistance",
+    "teacher_assisted",
+    "encounter_state_injection",
+    "forced_kill",
+    "direct_resurrection",
+    "combat_teleport",
+    "door_unlock",
+    "npc_spawn_assist",
+)
+
 
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
@@ -23,6 +55,12 @@ def sha256_file(path: Path) -> str:
 
 
 def json_actions(log_bytes: bytes, action: str) -> list[dict[str, Any]]:
+    return [row for row in json_rows(log_bytes) if row.get("action") == action]
+
+
+def json_rows(log_bytes: bytes) -> list[dict[str, Any]]:
+    """Parse only complete JSON objects, retaining their log order."""
+
     rows: list[dict[str, Any]] = []
     for raw in log_bytes.splitlines():
         start = raw.find(b"{")
@@ -33,16 +71,85 @@ def json_actions(log_bytes: bytes, action: str) -> list[dict[str, Any]]:
             row = json.loads(raw[start : end + 1])
         except (UnicodeDecodeError, json.JSONDecodeError):
             continue
-        if isinstance(row, dict) and row.get("action") == action:
+        if isinstance(row, dict):
             rows.append(row)
     return rows
 
 
+def _positive_int(value: Any) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value > 0
+
+
+def _runtime_identity(runtime: dict[str, Any]) -> tuple[Any, ...] | None:
+    if not all(field in runtime for field in IDENTITY_FIELDS):
+        return None
+    return tuple(runtime[field] for field in IDENTITY_FIELDS)
+
+
+def _roster_identity(roster: list[dict[str, Any]]) -> tuple[tuple[Any, ...], ...] | None:
+    if len(roster) != 10 or any(not isinstance(row, dict) for row in roster):
+        return None
+    rows: list[tuple[Any, ...]] = []
+    for row in sorted(roster, key=lambda value: value.get("slot") if isinstance(value.get("slot"), int) else -1):
+        if any(field not in row for field in ROSTER_ID_FIELDS):
+            return None
+        rows.append(tuple(row[field] for field in ROSTER_ID_FIELDS))
+    return tuple(rows)
+
+
+def _roster_rejections(runtime: dict[str, Any]) -> list[str]:
+    roster = runtime.get("roster")
+    if not isinstance(roster, list):
+        return ["roster_not_a_list"]
+    reasons: list[str] = []
+    if len(roster) != 10:
+        reasons.append("exact_roster")
+    rows = [row for row in roster if isinstance(row, dict)]
+    if len(rows) != len(roster):
+        reasons.append("roster_rows_are_not_objects")
+    rows.sort(key=lambda row: row.get("slot") if isinstance(row.get("slot"), int) else -1)
+    slots = [row.get("slot") for row in rows]
+    if slots != list(range(10)):
+        reasons.append("deterministic_slots")
+    roster_ids = [row.get("roster_slot_id") for row in rows]
+    if any(not isinstance(value, (str, int)) or isinstance(value, bool) or not str(value).strip() for value in roster_ids):
+        reasons.append("stable_roster_slot_ids")
+    if len(set(roster_ids)) != 10:
+        reasons.append("unique_roster_slot_ids")
+    if any(row.get("roster_slot_id") == row.get("guid") for row in rows):
+        # A numeric GUID is not a roster slot identity.  Distinct identities
+        # must be present even when a producer happens to serialize numbers.
+        reasons.append("roster_slot_id_not_guid_identity")
+    if any(row.get("lease_role_slot") != row.get("roster_slot_id") for row in rows):
+        reasons.append("lease_role_slot_identity_mismatch")
+    if any(not _positive_int(row.get("class_id")) for row in rows):
+        reasons.append("class_identity_missing")
+    if any(not isinstance(row.get("class_spec"), str) or not row["class_spec"].strip() for row in rows):
+        reasons.append("class_spec_identity_missing")
+    if any(not isinstance(row.get("gear_identity"), str) or not row["gear_identity"].strip() for row in rows):
+        reasons.append("gear_identity_missing")
+    if [row.get("subgroup") for row in rows] != [0] * 5 + [1] * 5:
+        reasons.append("deterministic_subgroups")
+    guids = [row.get("guid") for row in rows]
+    if any(not _positive_int(guid) for guid in guids):
+        reasons.append("positive_roster_guids")
+    if len(set(guids)) != 10:
+        reasons.append("unique_roster_guids")
+    roles = Counter(row.get("role") for row in rows)
+    if roles != Counter({"tank": 2, "healer": 3, "dps": 5}):
+        reasons.append("exact_10n_role_composition")
+    if not all(row.get("active") is True for row in rows):
+        reasons.append("all_roster_active")
+    if not all(row.get("lease_owned") is True for row in rows):
+        reasons.append("all_roster_leases_owned")
+    return reasons
+
+
 def accepted_foundation_status(status: dict[str, Any]) -> tuple[bool, list[str]]:
     runtime = status.get("raid_runtime") or {}
-    roster = runtime.get("roster") or []
-    roster_by_slot = sorted(roster, key=lambda row: row.get("slot", -1))
     reasons: list[str] = []
+    if not isinstance(runtime, dict):
+        return False, ["raid_runtime_missing"]
     checks = {
         "status_ok": status.get("ok") is True,
         "ten_bots": status.get("bots") == 10,
@@ -56,41 +163,158 @@ def accepted_foundation_status(status: dict[str, Any]) -> tuple[bool, list[str]]
         "live_map_difficulty_10n": runtime.get("map_difficulty") == 0,
         "difficulty_matches": runtime.get("difficulty_matches") is True,
         "map_bwd": runtime.get("map_id") == 669,
-        "instance_owned": int(runtime.get("instance_id") or 0) > 0,
-        "lockout_save_owned": int(runtime.get("lockout_save_id") or 0) > 0,
-        "group_owned": int(runtime.get("group_guid") or 0) > 0,
-        "leader_owned": int(runtime.get("leader_guid") or 0) > 0,
-        "server_epoch_owned": int(runtime.get("server_epoch") or 0) > 0,
-        "attempt_owned": int(runtime.get("attempt_id") or 0) > 0,
+        "instance_owned": _positive_int(runtime.get("instance_id")),
+        "lockout_save_owned": _positive_int(runtime.get("lockout_save_id")),
+        "group_owned": _positive_int(runtime.get("group_guid")),
+        "leader_owned": _positive_int(runtime.get("leader_guid")),
+        "server_epoch_owned": _positive_int(runtime.get("server_epoch")),
+        "attempt_owned": _positive_int(runtime.get("attempt_id")),
+        "strategy_owned": isinstance(runtime.get("strategy_id"), str) and bool(runtime.get("strategy_id", "").strip()),
         "boss_state_readback": len(runtime.get("boss_states") or []) == 6,
         "ready_check_satisfied": runtime.get("ready_check_satisfied") is True,
+        "roster_composition_valid": runtime.get("roster_composition_valid") is True,
+        "evidence_sequence_owned": _positive_int(runtime.get("evidence_sequence")),
         "unique_leases": runtime.get("unique_leases") is True,
-        "exact_roster": len(roster) == 10,
-        "deterministic_slots": [row.get("slot") for row in roster_by_slot] == list(range(10)),
-        "deterministic_subgroups": [row.get("subgroup") for row in roster_by_slot] == [0] * 5 + [1] * 5,
-        "all_roster_active": all(row.get("active") is True for row in roster),
-        "all_roster_leases_owned": all(row.get("lease_owned") is True for row in roster),
-        "unique_roster_guids": len({row.get("guid") for row in roster}) == 10,
     }
     reasons.extend(name for name, passed in checks.items() if not passed)
+    reasons.extend(_roster_rejections(runtime))
     return not reasons, reasons
 
 
 def accepted_native_recovery(statuses: list[dict[str, Any]]) -> tuple[bool, list[str]]:
-    runtimes = [status.get("raid_runtime") or {} for status in statuses]
-    checks = {
-        "ready_check_observed": any(runtime.get("ready_check_satisfied") is True for runtime in runtimes),
-        "native_wipe_observed": any(int(runtime.get("wipe_generation") or 0) > 0 for runtime in runtimes),
-        "boss_reset_observed": any(int(runtime.get("boss_reset_generation") or 0) > 0 for runtime in runtimes),
-        "native_recovery_observed": any(
-            int(runtime.get("recovery_generation") or 0) > 0
+    reasons: list[str] = []
+    runtimes = [status.get("raid_runtime") if isinstance(status, dict) else None for status in statuses]
+    if not statuses or any(not isinstance(runtime, dict) for runtime in runtimes):
+        return False, ["native_event_evidence_missing"]
+
+    identity: tuple[Any, ...] | None = None
+    roster_identity: tuple[tuple[Any, ...], ...] | None = None
+    previous_sequence = 0
+    previous_generations = (0, 0, 0)
+    engagement_index: int | None = None
+    wipe_index: int | None = None
+    reset_index: int | None = None
+    recovery_index: int | None = None
+    for index, runtime in enumerate(runtimes):
+        assert isinstance(runtime, dict)
+        if statuses[index].get("ok") is not True:
+            reasons.append("native_status_not_ok")
+        current_identity = _runtime_identity(runtime)
+        if current_identity is None:
+            reasons.append("native_identity_fields_missing")
+        elif identity is None:
+            identity = current_identity
+        elif current_identity != identity:
+            reasons.append("native_recovery_mixed_identity")
+        if any(
+            not _positive_int(runtime.get(field))
+            for field in ("group_guid", "leader_guid", "instance_id", "lockout_save_id", "server_epoch", "attempt_id")
+        ):
+            reasons.append("native_identity_values_invalid")
+        if (
+            runtime.get("expected_size") != 10
+            or runtime.get("expected_difficulty") != 0
+            or runtime.get("group_difficulty") != 0
+            or runtime.get("map_difficulty") != 0
+            or runtime.get("map_id") != 669
+            or not isinstance(runtime.get("strategy_id"), str)
+            or not runtime.get("strategy_id", "").strip()
+        ):
+            reasons.append("native_identity_not_exact_bwd_10n")
+
+        current_roster = _roster_identity(runtime.get("roster") if isinstance(runtime.get("roster"), list) else [])
+        if current_roster is None:
+            reasons.append("native_roster_identity_missing")
+        elif roster_identity is None:
+            roster_identity = current_roster
+        elif current_roster != roster_identity:
+            reasons.append("native_recovery_mixed_roster")
+        reasons.extend(f"native_{reason}" for reason in _roster_rejections(runtime) if reason not in {"all_roster_active", "all_roster_leases_owned"})
+
+        sequence = runtime.get("evidence_sequence")
+        if not _positive_int(sequence):
+            reasons.append("native_evidence_sequence_missing")
+        elif sequence <= previous_sequence:
+            reasons.append("native_evidence_sequence_not_unique_or_monotonic")
+        previous_sequence = max(previous_sequence, sequence if _positive_int(sequence) else 0)
+
+        generation_fields = ("wipe_generation", "boss_reset_generation", "recovery_generation")
+        if any(
+            not isinstance(runtime.get(field), int)
+            or isinstance(runtime.get(field), bool)
+            or runtime.get(field) < 0
+            for field in generation_fields
+        ):
+            reasons.append("native_generation_missing_or_invalid")
+        generations = tuple(
+            int(runtime.get(field))
+            if isinstance(runtime.get(field), int) and not isinstance(runtime.get(field), bool) and runtime.get(field) >= 0
+            else 0
+            for field in generation_fields
+        )
+        if any(current < previous for current, previous in zip(generations, previous_generations, strict=True)):
+            reasons.append("native_generations_not_monotonic")
+        previous_generations = tuple(max(current, previous) for current, previous in zip(generations, previous_generations, strict=True))
+
+        if engagement_index is None and (
+            runtime.get("encounter_in_progress") is True
+            or any(state == 1 for state in (runtime.get("boss_states") or []))
+        ):
+            engagement_index = index
+        if (
+            engagement_index is not None
+            and wipe_index is None
+            and index > engagement_index
+            and generations[0] > 0
+            and runtime.get("wipe_state") == "wiped"
+            and runtime.get("alive_size") == 0
+            and runtime.get("recovery_state") in {"awaiting_native_reset", "release_resurrection_pending"}
+        ):
+            wipe_index = index
+        if (
+            wipe_index is not None
+            and reset_index is None
+            and index > wipe_index
+            and generations[1] > 0
+            and runtime.get("encounter_in_progress") is False
+        ):
+            reset_index = index
+        if (
+            reset_index is not None
+            and recovery_index is None
+            and index > reset_index
+            and generations[2] > 0
             and runtime.get("recovery_state") == "recovered_ready_check"
             and runtime.get("ready_check_satisfied") is True
-            for runtime in runtimes
-        ),
+            and runtime.get("alive_size") == 10
+        ):
+            recovery_index = index
+
+    native_signals = [
+        runtime.get("native_recovery")
+        for runtime in runtimes
+        if isinstance(runtime.get("native_recovery"), dict)
+    ]
+    final_native = native_signals[-1] if native_signals else {}
+    for field in (
+        "death_observed", "corpse_observed", "release_observed",
+        "resurrection_observed", "runback_observed", "ready_check_action_observed",
+        "evidence_complete",
+    ):
+        if final_native.get(field) is not True:
+            reasons.append(f"native_{field}_missing")
+
+    ordered_checks = {
+        "ready_check_observed": any(runtime.get("ready_check_satisfied") is True for runtime in runtimes),
+        "native_engagement_observed": engagement_index is not None,
+        "native_wipe_observed": wipe_index is not None,
+        "boss_reset_observed": reset_index is not None,
+        "native_recovery_observed": recovery_index is not None,
     }
-    reasons = [name for name, passed in checks.items() if not passed]
-    return not reasons, reasons
+    reasons.extend(name for name, passed in ordered_checks.items() if not passed)
+    # Preserve deterministic diagnostics rather than reporting the same
+    # rejection once for every status snapshot.
+    return not reasons, list(dict.fromkeys(reasons))
 
 
 def wait_for_prompt(process: subprocess.Popen[bytes], log_path: Path, timeout_sec: int) -> None:
@@ -110,11 +334,144 @@ def git_identity(cwd: Path) -> dict[str, Any]:
     return {"head": head, "clean": not porcelain, "porcelain_sha256": hashlib.sha256(porcelain).hexdigest()}
 
 
+def _utc_timestamp(value: str) -> float:
+    return datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()
+
+
+def validate_build_receipt(receipt_path: Path, policy_path: Path, worktree: Path, binary: Path) -> dict[str, Any]:
+    """Reconstruct the production build gate without trusting receipt pass fields."""
+
+    try:
+        from tools.raid_program.queued_build import load_json, verify_receipt
+
+        policy = load_json(policy_path)
+        receipt = load_json(receipt_path)
+        verification = verify_receipt(receipt_path, policy, allow_test_mode=False)
+        identity = git_identity(worktree)
+        rejections: list[str] = []
+        if verification.get("classification") != "success" or receipt.get("classification") != "success":
+            rejections.append("build_receipt_not_success")
+        if receipt.get("test_mode") is not False:
+            rejections.append("build_receipt_test_mode")
+        if receipt.get("exit_code") != 0:
+            rejections.append("build_receipt_nonzero_exit")
+        if receipt.get("commit") != identity["head"]:
+            rejections.append("build_receipt_commit_mismatch")
+        if Path(str(receipt.get("worktree", ""))).resolve() != worktree.resolve():
+            rejections.append("build_receipt_worktree_mismatch")
+        if receipt.get("worktree_dirty_at_request") is not False:
+            rejections.append("build_receipt_worktree_dirty")
+        try:
+            binary.relative_to(worktree)
+        except ValueError:
+            rejections.append("binary_outside_worktree")
+        binary_bytes = binary.read_bytes() if binary.is_file() else b""
+        is_elf = binary_bytes[:4] == b"\x7fELF"
+        if not binary_bytes:
+            rejections.append("binary_missing")
+        if not is_elf:
+            rejections.append("binary_not_elf")
+        artifacts = receipt.get("output_artifacts")
+        expected_binary = None
+        if isinstance(artifacts, list):
+            expected_binary = next(
+                (row for row in artifacts if isinstance(row, dict) and row.get("kind") == "worldserver_elf"),
+                None,
+            )
+        if not expected_binary:
+            rejections.append("build_receipt_binary_artifact_missing")
+        else:
+            if expected_binary.get("sha256") != (sha256_file(binary) if binary.is_file() else None):
+                rejections.append("build_receipt_binary_hash_mismatch")
+            if Path(str(expected_binary.get("path", ""))).resolve() != binary.resolve():
+                rejections.append("build_receipt_binary_path_mismatch")
+            if expected_binary.get("size_bytes") != (binary.stat().st_size if binary.is_file() else 0):
+                rejections.append("build_receipt_binary_size_mismatch")
+        try:
+            binary_mtime = binary.stat().st_mtime
+            receipt_end = _utc_timestamp(str(receipt["ended_at_utc"]))
+            if binary_mtime > receipt_end + 2.0:
+                rejections.append("binary_newer_than_receipt")
+        except (KeyError, OSError, TypeError, ValueError):
+            rejections.append("binary_provenance_timestamp_unavailable")
+        return {
+            "valid": not rejections,
+            "rejections": rejections,
+            "receipt_path": str(receipt_path),
+            "policy_path": str(policy_path),
+            "receipt_sha256": receipt.get("receipt_sha256"),
+            "ticket_id": receipt.get("ticket_id"),
+            "commit": receipt.get("commit"),
+            "worktree": receipt.get("worktree"),
+            "classification": receipt.get("classification"),
+            "test_mode": receipt.get("test_mode"),
+            "binary_path": str(binary),
+            "binary_sha256": sha256_file(binary) if binary.is_file() else None,
+            "binary_size_bytes": binary.stat().st_size if binary.is_file() else 0,
+            "binary_is_elf": is_elf,
+            "binary_binding": "coordinator_receipt_path_size_sha256_commit_and_timestamp_verified",
+        }
+    except Exception as error:  # fail closed, while retaining a useful rejection
+        return {
+            "valid": False,
+            "rejections": [f"build_receipt_verification_error:{type(error).__name__}:{error}"],
+            "receipt_path": str(receipt_path),
+            "policy_path": str(policy_path),
+            "binary_path": str(binary),
+        }
+
+
+def normalized_batch_payload(log_bytes: bytes) -> list[dict[str, Any]]:
+    """Return an immutable, replayable JSONL representation of parsed evidence."""
+
+    return [
+        {"capture_sequence": sequence, "action": row.get("action"), "payload": row}
+        for sequence, row in enumerate(json_rows(log_bytes), start=1)
+    ]
+
+
+def write_normalized_batch(path: Path, rows: list[dict[str, Any]]) -> tuple[str, int]:
+    if path.exists():
+        raise RuntimeError("raw normalized batch output already exists; artifacts are immutable")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    encoded = b"".join(
+        (json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+        for row in rows
+    )
+    path.write_bytes(encoded)
+    return hashlib.sha256(encoded).hexdigest(), len(rows)
+
+
+def _forbidden_assistance_entries(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    found: list[dict[str, Any]] = []
+
+    def visit(value: Any, path: str) -> None:
+        if isinstance(value, dict):
+            for key, child in value.items():
+                if key in FORBIDDEN_ASSISTANCE_FIELDS and child not in (None, False, [], {}, "", 0):
+                    found.append({"path": f"{path}.{key}", "value": child})
+                visit(child, f"{path}.{key}")
+        elif isinstance(value, list):
+            for index, child in enumerate(value):
+                visit(child, f"{path}[{index}]")
+
+    for row in rows:
+        visit(row, "evidence")
+    return found
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--binary", type=Path, required=True)
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--raw-output", type=Path, default=None)
+    parser.add_argument("--build-receipt", type=Path, required=True)
+    parser.add_argument(
+        "--build-policy",
+        type=Path,
+        default=ROOT / "experiments/configs/cata_raid_build_resource_policy_v1.json",
+    )
     parser.add_argument("--worktree", type=Path, default=ROOT)
     parser.add_argument("--observe-sec", type=int, default=900)
     parser.add_argument("--startup-timeout-sec", type=int, default=180)
@@ -125,8 +482,11 @@ def main() -> int:
     config = args.config.resolve()
     output = args.output.resolve()
     worktree = args.worktree.resolve()
+    raw_output = (args.raw_output or output.with_name(f"{output.stem}.raw.jsonl")).resolve()
     if output.exists():
         raise SystemExit("output already exists; phase1 artifacts are immutable")
+    if raw_output.exists():
+        raise SystemExit("raw output already exists; phase1 artifacts are immutable")
     if not binary.is_file() or not config.is_file():
         raise SystemExit("binary and config must exist")
     if args.observe_sec < 30 or args.required_stable_statuses < 2:
@@ -137,6 +497,9 @@ def main() -> int:
     identity_before = git_identity(worktree)
     if not identity_before["clean"]:
         raise SystemExit("canonical phase1 capture requires a clean worktree")
+    build_provenance = validate_build_receipt(args.build_receipt.resolve(), args.build_policy.resolve(), worktree, binary)
+    if not build_provenance.get("valid"):
+        raise SystemExit("build receipt rejected: " + ",".join(build_provenance.get("rejections", [])))
 
     started_utc = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     stable: list[dict[str, Any]] = []
@@ -193,6 +556,8 @@ def main() -> int:
         log_bytes = log_path.read_bytes()
         log_path.unlink(missing_ok=True)
 
+    normalized_rows = normalized_batch_payload(log_bytes)
+    raw_payload_sha256, raw_payload_rows = write_normalized_batch(raw_output, normalized_rows)
     statuses = json_actions(log_bytes, "botauto_status")
     diagnoses = json_actions(log_bytes, "botauto_diagnose")
     traces = json_actions(log_bytes, "botauto_trace")
@@ -200,6 +565,10 @@ def main() -> int:
     recovery_accepted, recovery_rejections = accepted_native_recovery(statuses)
     cleanup_status = statuses[-1] if statuses else {}
     cleanup_ok = cleanup_status.get("bots") == 0 and cleanup_status.get("lease_count") == 0
+    process_absent = subprocess.run(
+        ["pgrep", "-x", "worldserver"], stdout=subprocess.DEVNULL, check=False
+    ).returncode != 0
+    forbidden_entries = _forbidden_assistance_entries(normalized_rows)
     identity_after = git_identity(worktree)
     identity_stable = identity_before == identity_after
     success = (
@@ -209,6 +578,8 @@ def main() -> int:
         and recovery_accepted
         and cleanup_ok
         and bool(stop_rows and stop_rows[-1].get("ok") is True)
+        and process_absent
+        and not forbidden_entries
         and identity_stable
     )
     report = {
@@ -218,7 +589,8 @@ def main() -> int:
         "started_at_utc": started_utc,
         "identity": identity_before,
         "identity_stable_during_run": identity_stable,
-        "binary_sha256": sha256_file(binary),
+        "build_provenance": build_provenance,
+        "binary_sha256": build_provenance.get("binary_sha256"),
         "config_sha256": sha256_file(config),
         "worldserver_exit_code": process.returncode,
         "startup_error": startup_error,
@@ -231,10 +603,43 @@ def main() -> int:
         "diagnose_observed": bool(diagnoses),
         "trace_observed": bool(traces),
         "stop_observed": bool(stop_rows),
+        "native_event_evidence": {
+            "source": "botauto_status.raid_runtime",
+            "ordered_transition_reconstruction": recovery_accepted,
+            "rejections": recovery_rejections,
+            "synthetic_wipe_or_encounter_command_sent": False,
+        },
+        "forbidden_assistance": {
+            "observed": bool(forbidden_entries),
+            "entries": forbidden_entries,
+            "gate_passed": not forbidden_entries,
+            "policy": "native encounter events only; no forced state, teleport, spawn, kill, resurrection, or aura assistance",
+        },
+        "watchdog": {
+            "policy": "capture-process-heartbeat-and-wall-clock",
+            "heartbeat_rows": len(statuses) + len(diagnoses) + len(traces),
+            "observe_window_seconds": args.observe_sec,
+            "startup_timeout_seconds": args.startup_timeout_sec,
+            "healthy": startup_error is None and process.returncode == 0 and process_absent,
+        },
+        "cleanup": {
+            "zero_bots": cleanup_status.get("bots") == 0,
+            "zero_leases": cleanup_status.get("lease_count") == 0,
+            "stop_observed": bool(stop_rows),
+            "stop_ok": bool(stop_rows and stop_rows[-1].get("ok") is True),
+            "worldserver_process_absent": process_absent,
+            "gate_passed": cleanup_ok and process_absent and bool(stop_rows and stop_rows[-1].get("ok") is True),
+        },
         "cleanup_zero_bots_and_leases": cleanup_ok,
         "log_sha256": hashlib.sha256(log_bytes).hexdigest(),
         "log_bytes": len(log_bytes),
         "raw_log_retained": False,
+        "raw_normalized_batch": {
+            "path": str(raw_output),
+            "sha256": raw_payload_sha256,
+            "row_count": raw_payload_rows,
+            "immutable": True,
+        },
     }
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")

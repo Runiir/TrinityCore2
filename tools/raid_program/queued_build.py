@@ -53,6 +53,14 @@ def sha256_bytes(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def atomic_json(path: Path, value: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
@@ -670,6 +678,18 @@ def run_ticket(
             classification = "canceled"
     ended = utc_now()
     log_hash = sha256_bytes(log_path.read_bytes()) if log_path.exists() else None
+    output_artifacts: list[dict[str, object]] = []
+    if classification == "success" and resource_class in {"worldserver_build", "integration_build"}:
+        worldserver = (worktree / "build/src/server/worldserver/worldserver").resolve()
+        if worldserver.is_file() and worldserver.read_bytes()[:4] == b"\x7fELF":
+            output_artifacts.append(
+                {
+                    "kind": "worldserver_elf",
+                    "path": str(worldserver),
+                    "size_bytes": worldserver.stat().st_size,
+                    "sha256": sha256_file(worldserver),
+                }
+            )
     receipt_without_hash = {
         "schema_version": 1,
         "policy_id": policy["policy_id"],
@@ -694,6 +714,7 @@ def run_ticket(
         "signal": -returncode if returncode < 0 else None,
         "pressure_reasons": terminal_reasons,
         "log_sha256": log_hash,
+        "output_artifacts": output_artifacts,
         "error": error_message,
         "test_mode": os.environ.get("TRINITY_RAID_BUILD_TESTING") == "1",
         "policy_sha256": sha256_bytes(canonical_json(policy)),

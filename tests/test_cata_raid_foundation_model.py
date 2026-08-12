@@ -60,17 +60,22 @@ def test_declarative_formation_families_are_deterministic(family: str):
     first = formation_points(family, 5, anchor_x=10.0, anchor_y=20.0, minimum_distance=6.0)
     assert first == formation_points(family, 5, anchor_x=10.0, anchor_y=20.0, minimum_distance=6.0)
     assert len(first) == 5
-    if family in {"ring", "spread", "lane"}:
-        assert all(dist(first[left], first[right]) > 0 for left in range(5) for right in range(left + 1, 5))
+    if family != "stack":
+        assert all(dist(first[left], first[right]) >= 6.0 - 1e-9 for left in range(5) for right in range(left + 1, 5))
 
 
 def test_evidence_demultiplex_rejects_cross_attribution():
     runtime = form_raid(roster(10), difficulty="10n", group_guid=501, leader_guid=1001, map_id=669, instance_id=701, lockout_save_id=701, server_epoch=801, attempt_id=901)
     event = {
-        "group_guid": 501, "server_epoch": 801, "attempt_id": 901,
-        "instance_id": 701, "difficulty_id": 0, "raid_size": 10,
+        "group_guid": 501, "leader_guid": 1001, "expected_size": 10,
+        "server_epoch": 801, "attempt_id": 901,
+        "instance_id": 701, "map_id": 669, "lockout_save_id": 701,
+        "difficulty_id": 0, "difficulty_name": "10n", "raid_size": 10,
+        "strategy_id": "foundation", "evidence_sequence": 1,
     }
-    assert validate_evidence_demultiplex([event, event], runtime.identity) == 2
+    assert validate_evidence_demultiplex([event], runtime.identity) == 1
+    with pytest.raises(ValueError, match="duplicate_sequence"):
+        validate_evidence_demultiplex([event, {**event, "member_guid": 1002}], runtime.identity)
     with pytest.raises(ValueError, match="cross_attribution"):
         validate_evidence_demultiplex([{**event, "attempt_id": 902}], runtime.identity)
 

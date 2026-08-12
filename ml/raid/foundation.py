@@ -55,6 +55,7 @@ class RaidMember:
     subgroup: int = -1
     active: bool = True
     lease_owned: bool = True
+    roster_slot_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -69,6 +70,7 @@ class RaidIdentity:
     lockout_save_id: int
     server_epoch: int
     attempt_id: int
+    strategy_id: str = "foundation"
 
 
 @dataclass(frozen=True)
@@ -97,9 +99,13 @@ def form_raid(
     lockout_save_id: int,
     server_epoch: int,
     attempt_id: int,
+    strategy_id: str = "foundation",
 ) -> RaidFoundation:
     if difficulty not in RAID_DIFFICULTIES:
         raise ValueError(f"raid_unknown_difficulty:{difficulty}")
+    normalized_strategy_id = str(strategy_id).strip()
+    if not normalized_strategy_id:
+        raise ValueError("raid_empty_strategy_id")
     raid_size, difficulty_id = RAID_DIFFICULTIES[difficulty]
     normalized = tuple(_member(member) for member in members)
     if len(normalized) != raid_size:
@@ -113,7 +119,20 @@ def form_raid(
     if leader_guid not in set(guids):
         raise ValueError("raid_leader_not_in_roster")
 
-    roster = tuple(replace(member, slot=index, subgroup=index // 5) for index, member in enumerate(normalized))
+    roster_slot_ids = [member.roster_slot_id for member in normalized]
+    if any(slot_id is not None and not str(slot_id).strip() for slot_id in roster_slot_ids):
+        raise ValueError("raid_empty_roster_slot_id")
+    if len({slot_id for slot_id in roster_slot_ids if slot_id is not None}) != sum(slot_id is not None for slot_id in roster_slot_ids):
+        raise ValueError("raid_duplicate_roster_slot_id")
+    roster = tuple(
+        replace(
+            member,
+            slot=index,
+            subgroup=index // 5,
+            roster_slot_id=member.roster_slot_id or f"raid-slot-{index:02d}",
+        )
+        for index, member in enumerate(normalized)
+    )
     tanks = tuple(member.guid for member in roster if member.role == "tank")
     healers = tuple(member.guid for member in roster if member.role == "healer")
     dps = tuple(member.guid for member in roster if member.role in {"dps", "melee_dps", "ranged_dps"})
@@ -123,6 +142,8 @@ def form_raid(
         raise ValueError("raid_missing_healer")
     if not dps:
         raise ValueError("raid_missing_dps")
+    if raid_size == 10 and (len(tanks), len(healers), len(dps)) != (2, 3, 5):
+        raise ValueError("raid_10n_composition_mismatch")
 
     interrupt_rotation = dps + tanks
     dispel_rotation = healers + tuple(guid for guid in dps if _member_by_guid(roster, guid).role == "ranged_dps")
@@ -142,6 +163,7 @@ def form_raid(
             lockout_save_id=lockout_save_id,
             server_epoch=server_epoch,
             attempt_id=attempt_id,
+            strategy_id=normalized_strategy_id,
         ),
         members=roster,
         main_tank_guid=tanks[0],
@@ -175,15 +197,26 @@ def formation_points(
     if family == "lane":
         return tuple((anchor_x + index * minimum_distance, anchor_y) for index in range(count))
     if family == "quadrant":
-        offsets = ((1, 1), (-1, 1), (-1, -1), (1, -1))
-        return tuple((anchor_x + offsets[index % 4][0] * minimum_distance, anchor_y + offsets[index % 4][1] * minimum_distance) for index in range(count))
+        # Keep the assignments in distinct quadrants while expanding the ring
+        # radius enough that a fifth (or later) member never overlaps the
+        # first four.  The old modulo-four layout silently produced a zero
+        # distance for five-player subgroups.
+        radius = minimum_distance / (2.0 * sin(pi / count)) if count > 1 else minimum_distance
+        return tuple(
+            (
+                anchor_x + cos(pi / 4.0 + 2.0 * pi * index / count) * radius,
+                anchor_y + sin(pi / 4.0 + 2.0 * pi * index / count) * radius,
+            )
+            for index in range(count)
+        )
     if family in {"ring", "spread"}:
-        radius = max(minimum_distance, count * minimum_distance / (2.0 * pi))
+        radius = minimum_distance / (2.0 * sin(pi / count)) if count > 1 else minimum_distance
         return tuple((anchor_x + cos(2.0 * pi * index / count) * radius, anchor_y + sin(2.0 * pi * index / count) * radius) for index in range(count))
     if family == "cone":
         start = -pi / 3.0
         step = (2.0 * pi / 3.0) / max(1, count - 1)
-        return tuple((anchor_x + cos(start + step * index) * minimum_distance, anchor_y + sin(start + step * index) * minimum_distance) for index in range(count))
+        radius = minimum_distance / (2.0 * sin(step / 2.0)) if count > 1 else minimum_distance
+        return tuple((anchor_x + cos(start + step * index) * radius, anchor_y + sin(start + step * index) * radius) for index in range(count))
     if family == "behind":
         return tuple((anchor_x - minimum_distance - index, anchor_y + (index - count / 2.0) * minimum_distance) for index in range(count))
     if family == "front_exclusion":
@@ -278,14 +311,21 @@ def generic_assignment_smoke(
         events.append(
             {
                 "group_guid": foundation.identity.group_guid,
+                "leader_guid": foundation.identity.leader_guid,
+                "expected_size": foundation.identity.raid_size,
                 "server_epoch": foundation.identity.server_epoch,
                 "attempt_id": foundation.identity.attempt_id,
                 "instance_id": foundation.identity.instance_id,
+                "map_id": foundation.identity.map_id,
+                "lockout_save_id": foundation.identity.lockout_save_id,
                 "difficulty_id": foundation.identity.difficulty_id,
+                "difficulty_name": foundation.identity.difficulty_name,
                 "raid_size": foundation.identity.raid_size,
                 "strategy_id": contract.strategy_id,
                 "assignment_generation": assignment_generation,
+                "evidence_sequence": assignment_generation * foundation.identity.raid_size + member.slot + 1,
                 "member_guid": member.guid,
+                "roster_slot_id": member.roster_slot_id,
                 "slot": member.slot,
                 "subgroup": member.subgroup,
                 "role": member.role,
@@ -310,25 +350,64 @@ def generic_assignment_smoke(
                 "recovery_policy": contract.recovery_policy,
             }
         )
-    validate_evidence_demultiplex(events, foundation.identity)
+    validate_evidence_demultiplex(
+        events,
+        replace(foundation.identity, strategy_id=contract.strategy_id),
+        foundation.members,
+    )
     if len({event["member_guid"] for event in events}) != foundation.identity.raid_size:
         raise ValueError("raid_assignment_cross_member_attribution")
     return tuple(events)
 
 
-def validate_evidence_demultiplex(events: Iterable[dict[str, Any]], identity: RaidIdentity) -> int:
+def validate_evidence_demultiplex(
+    events: Iterable[dict[str, Any]],
+    identity: RaidIdentity,
+    members: Iterable[RaidMember] | None = None,
+) -> int:
     observed = 0
+    sequences: set[int] = set()
+    previous_sequence = 0
+    expected_members = {member.guid: member for member in members} if members is not None else None
     for event in events:
         expected = {
             "group_guid": identity.group_guid,
+            "leader_guid": identity.leader_guid,
+            "expected_size": identity.raid_size,
             "server_epoch": identity.server_epoch,
             "attempt_id": identity.attempt_id,
             "instance_id": identity.instance_id,
+            "map_id": identity.map_id,
+            "lockout_save_id": identity.lockout_save_id,
             "difficulty_id": identity.difficulty_id,
+            "difficulty_name": identity.difficulty_name,
             "raid_size": identity.raid_size,
+            "strategy_id": identity.strategy_id,
         }
-        if any(event.get(key) != value for key, value in expected.items()):
+        if any(key not in event or event.get(key) != value for key, value in expected.items()):
             raise ValueError("raid_evidence_cross_attribution")
+        if expected_members is not None:
+            member_guid = event.get("member_guid")
+            member = expected_members.get(member_guid)
+            if member is None or any(
+                event.get(key) != value
+                for key, value in {
+                    "roster_slot_id": member.roster_slot_id,
+                    "slot": member.slot,
+                    "subgroup": member.subgroup,
+                    "role": member.role,
+                }.items()
+            ):
+                raise ValueError("raid_evidence_roster_cross_attribution")
+        sequence = event.get("evidence_sequence", event.get("sequence"))
+        if not isinstance(sequence, int) or isinstance(sequence, bool) or sequence <= 0:
+            raise ValueError("raid_evidence_sequence_missing")
+        if sequence in sequences:
+            raise ValueError("raid_evidence_duplicate_sequence")
+        if sequence <= previous_sequence:
+            raise ValueError("raid_evidence_sequence_not_monotonic")
+        sequences.add(sequence)
+        previous_sequence = sequence
         observed += 1
     if not observed:
         raise ValueError("raid_evidence_empty")
@@ -343,6 +422,7 @@ def _member(value: RaidMember | dict[str, Any]) -> RaidMember:
         role=str(value["role"]),
         active=bool(value.get("active", True)),
         lease_owned=bool(value.get("lease_owned", True)),
+        roster_slot_id=(str(value["roster_slot_id"]) if value.get("roster_slot_id") is not None else None),
     )
 
 

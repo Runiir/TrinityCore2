@@ -295,6 +295,12 @@ def test_cmake_integration_applies_compile_and_link_controls() -> None:
     assert "GNU low-memory executable linking enabled" in cmake
 
 
+def test_worldserver_artifact_hash_helper(tmp_path: Path) -> None:
+    binary = tmp_path / "worldserver"
+    binary.write_bytes(b"\x7fELFcoordinated-fixture")
+    assert qb.sha256_file(binary) == "f0ad5a96d17f421decff47373c360f97e12dce40c367ec85646dcdb6d4076c57"
+
+
 def test_live_validation_scan_matches_argv_not_unrelated_prose(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
