@@ -1,0 +1,254 @@
+{
+  "schema_version": 1,
+  "report_id": "cata_raid_bwd_quantitative_resolution_audit_v1",
+  "generated_utc": "2026-08-12",
+  "repository_revision_audited": "f7413c7d06",
+  "scope": {
+    "raid": "blackwing_descent",
+    "ledger_count": 6,
+    "blocker_count": 52,
+    "modes": ["10N", "10H", "25N", "25H"],
+    "policy": "A repository observation or client row is never promoted to 4.4.2 retail truth without an identity-compatible source. Partial rows remain fidelity-blocked."
+  },
+  "target_identity": {
+    "product": "Cataclysm Classic",
+    "patch": "4.4.2",
+    "locale": "enUS",
+    "client_build": 59185,
+    "hotfix_cutoff_utc": "2025-02-20T23:00:00Z",
+    "source_registry": "experiments/configs/cata_raid_quantitative_source_registry_v1.json",
+    "source_registry_pointers": [
+      "target.launch_build",
+      "target.hotfix_cutoff_utc",
+      "sources[blizzard_dragon_soul_live_24173042].identity.global_unlock_at_utc"
+    ],
+    "client_extract_pointer": "artifacts/cata_raid_program/phase0_client_spell_rows_442_59185_20260812.json.dvc",
+    "client_extract_dvc_md5": "eff38325fc3aeac0fa15d0c81b2be901",
+    "client_extract_sha256": "481c903afd07a03b8e705fa2c776106f71f5a136d38ece97dfce35b1ead002d3",
+    "client_extract_scope": "11 Wago DB2 CSV tables at build 4.4.2.59185; referenced spell rows plus complete small lookup tables; no server schedules or combat observations"
+  },
+  "classification_vocabulary": {
+    "resolvable_from_client_rows": "The pinned client extract directly supplies a relevant table/row, but this audit does not infer missing server scheduling or mode behavior.",
+    "resolvable_from_server_db_source": "The repository source/SQL can establish the current implementation/database baseline, but cannot establish retail 4.4.2 fidelity where identity or runtime application is unproven.",
+    "resolvable_from_official_cutoff_docs": "The official launch/unlock boundary establishes the target cutoff; it does not establish BWD-specific tuning or hotfix carryover.",
+    "still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence": "No identity-compatible pinned evidence was found; a guide, historical C++ value, or historical hotfix alone is insufficient."
+  },
+  "evidence_catalog": {
+    "source_registry_target": {
+      "source_id": "cata_raid_quantitative_source_registry_v1",
+      "path": "experiments/configs/cata_raid_quantitative_source_registry_v1.json:target",
+      "row_or_field": "target.launch_build=59185; target.hotfix_cutoff_utc=2025-02-20T23:00:00Z",
+      "interpretation": "Frozen program identity envelope; it does not supply encounter tuning values."
+    },
+    "official_cutoff": {
+      "source_id": "blizzard_dragon_soul_live_24173042",
+      "path": "experiments/configs/cata_raid_quantitative_source_registry_v1.json:sources[blizzard_dragon_soul_live_24173042]",
+      "url": "https://news.blizzard.com/en-gb/article/24173042/cataclysm-classic-dragon-soul-raid-now-live",
+      "row_or_field": "identity.global_unlock_at_utc = 2025-02-20T23:00:00Z",
+      "interpretation": "Official global availability boundary only; not a BWD tuning table."
+    },
+    "client_reroute": {
+      "source_id": "wago_tools_442_59185_client_spell_tables",
+      "path": "artifacts/cata_raid_program/phase0_client_spell_rows_442_59185_20260812.json",
+      "rows": [
+        "SpellName.ID=88861 Name_lang=Reroute Power",
+        "SpellMisc.SpellID=88861 DifficultyID=0 DurationIndex=468",
+        "SpellDuration.ID=468 Duration=26000 MaxDuration=26000",
+        "SpellEffect.SpellID=88861 EffectIndex=0/1 EffectAura=23 EffectAuraPeriod=26000 EffectTriggerSpell=82705/91106"
+      ],
+      "interpretation": "The client row supports a 26,000 ms Reroute duration. It does not prove the live knockout probability or server event cadence."
+    },
+    "client_mortality": {
+      "source_id": "wago_tools_442_59185_client_spell_tables",
+      "path": "artifacts/cata_raid_program/phase0_client_spell_rows_442_59185_20260812.json",
+      "rows": [
+        "SpellName.ID=82890 and 82934 Name_lang=Mortality",
+        "SpellMisc.SpellID=82890 DifficultyID=0 DurationIndex=21",
+        "SpellMisc.SpellID=82934 DifficultyID=0/2/4 DurationIndex=21",
+        "SpellDuration.ID=21 Duration=-1 MaxDuration=-1",
+        "SpellEffect.SpellID=82890 EffectIndex=0/1 EffectAura=118/289 EffectBasePoints=-99",
+        "SpellEffect.SpellID=82934 DifficultyID=0/2/4 EffectAura=147/61/87"
+      ],
+      "interpretation": "The extract records Mortality aura/difficulty rows and an indefinite duration; it does not settle all retail damage or mode coefficients."
+    },
+    "client_shadow_whip": {
+      "source_id": "wago_tools_442_59185_client_spell_tables",
+      "path": "artifacts/cata_raid_program/phase0_client_spell_rows_442_59185_20260812.json",
+      "rows": [
+        "SpellName.ID=91304 Name_lang=Shadow Whip",
+        "SpellMisc.SpellID=91304 CastingTimeIndex=15 RangeIndex=13 SchoolMask=32",
+        "SpellCastTimes.ID=15 Duration=4000",
+        "SpellEffect.ID=94849 SpellID=91304 Effect=3 ImplicitTarget_0=38"
+      ],
+      "interpretation": "The client row supports a 4,000 ms cast-time index and target metadata; it does not prove the event delay or Feud aura removal."
+    },
+    "client_mocking_shadows": {
+      "source_id": "wago_tools_442_59185_client_spell_tables",
+      "path": "artifacts/cata_raid_program/phase0_client_spell_rows_442_59185_20260812.json",
+      "rows": [
+        "SpellName.ID=91307 Name_lang=Mocking Shadows",
+        "SpellMisc.SpellID=91307 DurationIndex=21 SchoolMask=32",
+        "SpellDuration.ID=21 Duration=-1 MaxDuration=-1",
+        "SpellEffect.ID=94853 SpellID=91307 EffectAura=3 EffectAuraPeriod=1000 EffectBasePoints=2000"
+      ],
+      "interpretation": "The client row supports a 2,000-point, 1,000 ms periodic effect with indefinite duration; target/mode/runtime cadence remain unproven."
+    },
+    "repo_bwd_runtime": {
+      "source_id": "repository_bwd_scripts",
+      "paths": [
+        "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_atramedes.cpp:201-205,227-232",
+        "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_chimaeron.cpp:144-160,239-276,402-515,517-686",
+        "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak.cpp:251-260,280-288",
+        "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_nefarians_end.cpp:419-441,811-812",
+        "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_omnotron_defense_system.cpp:236-339,428-430"
+      ],
+      "row_or_field": "C++ Reset/evade/event paths",
+      "interpretation": "Establishes current repository behavior only, not retail behavior."
+    },
+    "repo_bwd_sql": {
+      "source_id": "repository_bwd_sql",
+      "paths": [
+        "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql:459-463",
+        "data/TDB_full_434.22011_2022_01_09/TDB_full_world_434.22011_2022_01_09.sql:47,2629,2682",
+        "sql/old/custom/world/34_2020_02_21/custom_2019_08_20_00_world_updatepack.sql:167112 (Chimaeron ScriptName), plus boss-specific dossier SQL anchors"
+      ],
+      "row_or_field": "instance_encounters rows 1023 Chimaeron/43296, 1024 Magmaw/41570, 1026 Nefarian's End/41376, 1027 Omnotron/42180; map 669 mode rows",
+      "interpretation": "Historical/current-checkout database evidence establishes IDs and registration history, not a current 4.4.2 retail snapshot or which historical custom pack was applied."
+    },
+    "warcraftlogs_gap": {
+      "source_id": "warcraftlogs_442_known_mode_reports",
+      "path": "experiments/configs/cata_raid_quantitative_source_registry_v1.json:sources[warcraftlogs_442_known_mode_reports]",
+      "url": "https://www.warcraftlogs.com/zone/reports?zone=1023",
+      "row_or_field": "status=unresolved_no_pinned_reports",
+      "interpretation": "No report ID, mode identity, or combat-log payload was pinned; cannot resolve timers, target counts, or difficulty deltas."
+    },
+    "historical_hotfix_gap": {
+      "source_id": "boss_specific_blizzard_historical_hotfixes",
+      "paths": [
+        "docs/bot_raids/strategies/t11/blackwing_descent/atramedes.md:73-85",
+        "docs/bot_raids/strategies/t11/blackwing_descent/chimaeron.md:63-68",
+        "docs/bot_raids/strategies/t11/blackwing_descent/magmaw.md:63-69",
+        "docs/bot_raids/strategies/t11/blackwing_descent/maloriak.md:63-65"
+      ],
+      "row_or_field": "source_catalog entries blizzard_cataclysm_hotfix_jan26, blizzard_406_hotfix_mar29, blizzard_442_notes_2025",
+      "interpretation": "Historical original-Cataclysm hotfixes and 4.4.2 version notes do not prove Classic 4.4.2 carryover; an authoritative identity-compatible tuning/hotfix record is still required."
+    }
+  },
+  "bosses": [
+    {
+      "boss_slug": "atramedes",
+      "ledger_path": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_ledger_v1.json",
+      "ledger_unresolved_material_count": 9,
+      "blockers": [
+        {"key":"exact_442_client_build_and_hotfix_cutoff","original_status":"fidelity_blocked","resolution_class":"resolvable_from_official_cutoff_docs","resolution_state":"cutoff_identity_resolved; BWD_hotfix_carryover_unresolved","evidence_refs":["official_cutoff","source_registry_target"],"remaining_gap":"The official boundary does not identify Atramedes tuning or Classic hotfix carryover."},
+        {"key":"live_ground_air_movement_and_event_timestamps_all_modes","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","repo_bwd_runtime"],"remaining_gap":"Need identity-pinned 10N/10H/25N/25H combat-log event timestamps; local timers are implementation observations."},
+        {"key":"exact_sound_gain_dbc_coefficients_and_target_radii","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","historical_hotfix_gap"],"remaining_gap":"No retained Atramedes spell rows or authoritative 4.4.2 coefficients/radii are available."},
+        {"key":"sonic_breath_random_vs_highest_sound_target_selection","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","repo_bwd_runtime"],"remaining_gap":"Target-selection semantics require identity-pinned observed casts or authoritative hotfix evidence."},
+        {"key":"roaring_flame_breath_initial_target_selection","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","repo_bwd_runtime"],"remaining_gap":"No identity-pinned target sequence is available."},
+        {"key":"sonar_bomb_target_count_by_mode","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","historical_hotfix_gap"],"remaining_gap":"Guide counts conflict and the local trigger does not establish the Classic four-mode count."},
+        {"key":"heroic_fiend_spawn_period_count_obnoxious_period_and_damage","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","historical_hotfix_gap","repo_bwd_runtime"],"remaining_gap":"Need authoritative or identity-pinned observations for spawn cadence, count, tick period, and damage."},
+        {"key":"ai_guid_reconstruction_reset_after_evade","original_status":"fidelity_blocked","resolution_class":"resolvable_from_server_db_source","resolution_state":"repository_baseline_resolved; retail_runtime_unresolved","evidence_refs":["repo_bwd_runtime"],"remaining_gap":"boss_atramedes.cpp:201-205 only resets BossAI/events; whether the retail engine reconstructs the AI object after evade remains a runtime/fidelity question."},
+        {"key":"whether_historical_custom_sql_pack_is_applied_to_current_database","original_status":"fidelity_blocked","resolution_class":"resolvable_from_server_db_source","resolution_state":"repository_history_resolved; active_database_application_unresolved","evidence_refs":["repo_bwd_sql","repo_bwd_runtime"],"remaining_gap":"Historical custom SQL contains bindings, but this audit does not assert it was applied to the active MySQL database."}
+      ]
+    },
+    {
+      "boss_slug": "chimaeron",
+      "ledger_path": "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_ledger_v1.json",
+      "ledger_unresolved_material_count": 9,
+      "blockers": [
+        {"key":"exact_442_build_hotfix_cutoff","original_status":"fidelity_blocked","resolution_class":"resolvable_from_official_cutoff_docs","resolution_state":"cutoff_identity_resolved; Chimaeron_hotfix_carryover_unresolved","evidence_refs":["official_cutoff","source_registry_target"],"remaining_gap":"The cutoff does not supply Chimaeron tuning or prove historical hotfix carryover."},
+        {"key":"caustic_target_mapping_and_break_exclusion","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","historical_hotfix_gap","repo_bwd_runtime"],"remaining_gap":"Historical hotfix target exclusion conflicts with the current raid-size/current-victim filter; no Classic 4.4.2 observation is pinned."},
+        {"key":"bileotron_probability_and_reroute_duration","original_status":"fidelity_blocked","resolution_class":"resolvable_from_client_rows","resolution_state":"partial_only","evidence_refs":["client_reroute","repo_bwd_runtime"],"remaining_gap":"Client rows resolve Reroute to 26,000 ms; retail Massacre knockout probability and server rescheduling still require exact logs or authoritative hotfix evidence."},
+        {"key":"event_cadence","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","repo_bwd_runtime"],"remaining_gap":"Guide cadence conflicts with local 5/15/26/30-second event schedules; no identity-pinned event stream is available."},
+        {"key":"spell_data","original_status":"fidelity_blocked","resolution_class":"resolvable_from_client_rows","resolution_state":"partial_only","evidence_refs":["client_reroute","client_mortality","client_mocking_shadows","client_shadow_whip"],"remaining_gap":"Rows resolve Reroute duration, Mortality aura rows, Mocking Shadows periodic value, and Shadow Whip cast index; Feud/mixture thresholds, mode coefficients, and retail target behavior remain unproven."},
+        {"key":"heroic_shadow_whip","original_status":"fidelity_blocked","resolution_class":"resolvable_from_client_rows","resolution_state":"partial_only","evidence_refs":["client_shadow_whip","repo_bwd_runtime"],"remaining_gap":"The client cast-time row is 4,000 ms, but the delay from Systems Failure and explicit Feud aura removal still require an identity-pinned observation or authoritative hotfix."},
+        {"key":"mode_damage_scaling","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","historical_hotfix_gap"],"remaining_gap":"No complete four-mode health/damage/target table is pinned."},
+        {"key":"helper_field_reset","original_status":"fidelity_blocked","resolution_class":"resolvable_from_server_db_source","resolution_state":"repository_baseline_resolved; retail_runtime_unresolved","evidence_refs":["repo_bwd_runtime"],"remaining_gap":"boss_chimaeron.cpp:144-148 Reset() does not explicitly reset helper counters/Feud state; runtime object reconstruction or a controlled reset observation is still needed."},
+        {"key":"retail_reset_credit_loot","original_status":"unresolved","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","repo_bwd_sql"],"remaining_gap":"Repository DONE/FAIL and encounter row 1023 do not establish retail lockout, loot, achievement, or reset persistence."}
+      ]
+    },
+    {
+      "boss_slug": "magmaw",
+      "ledger_path": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_ledger_v1.json",
+      "ledger_unresolved_material_count": 8,
+      "blockers": [
+        {"key":"exact_442_build_hotfix_cutoff","original_status":"fidelity_blocked","resolution_class":"resolvable_from_official_cutoff_docs","resolution_state":"cutoff_identity_resolved; Magmaw_hotfix_carryover_unresolved","evidence_refs":["official_cutoff","source_registry_target"],"remaining_gap":"No official cutoff document supplies Magmaw-specific tuning."},
+        {"key":"mode_scaling","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","historical_hotfix_gap"],"remaining_gap":"Guide prose/table conflicts do not establish 10N/10H/25N/25H values."},
+        {"key":"timers","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","repo_bwd_runtime"],"remaining_gap":"Local 6/19/90/95-second schedules conflict with guide approximations; no identity-pinned event log exists."},
+        {"key":"parasite_count","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","historical_hotfix_gap","repo_bwd_runtime"],"remaining_gap":"The historical max-three debuff comment is not a Classic spawn-count proof; exact mode count remains unobserved."},
+        {"key":"hooks","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","repo_bwd_runtime"],"remaining_gap":"Local two-pincer condition and conflicting guide reports do not settle Classic tolerance/player count."},
+        {"key":"sweltering_armor_duration","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","repo_bwd_runtime"],"remaining_gap":"The pinned extract retains no Sweltering Armor row; C++ only casts SpellID 78199 at boss_magmaw.cpp:47,260."},
+        {"key":"shadow_breath","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","repo_bwd_runtime"],"remaining_gap":"Local target filter and guide splash wording conflict; exact Classic target/radius/cadence needs logs or authoritative data."},
+        {"key":"retail_credit_loot_and_achievement","original_status":"unresolved","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","repo_bwd_sql"],"remaining_gap":"Encounter row 1024 and repository DONE/FAIL paths do not establish retail persistence or loot/achievement semantics."}
+      ]
+    },
+    {
+      "boss_slug": "maloriak",
+      "ledger_path": "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json",
+      "ledger_unresolved_material_count": 7,
+      "blockers": [
+        {"key":"exact_442_client_build_and_BWD_hotfix_cutoff","original_status":"fidelity_blocked","resolution_class":"resolvable_from_official_cutoff_docs","resolution_state":"cutoff_identity_resolved; Maloriak_hotfix_carryover_unresolved","evidence_refs":["official_cutoff","source_registry_target"],"remaining_gap":"No official cutoff document supplies Maloriak-specific tuning."},
+        {"key":"live_timer_and_movement_confirmation_for_10N_10H_25N_25H","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","repo_bwd_runtime"],"remaining_gap":"Local 15.5-second cauldron event and phase schedules are not identity-pinned live observations."},
+        {"key":"exact_spell_coefficients_and_target_counts_by_mode","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","historical_hotfix_gap"],"remaining_gap":"No retained Maloriak spell rows or complete mode-specific combat-log table resolves coefficients/targets."},
+        {"key":"normal_health_and_enrage_values","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","historical_hotfix_gap"],"remaining_gap":"Current and historical guide values conflict and repository SQL is a 4.3.4-era snapshot."},
+        {"key":"heroic_prime_subject_fixate_spell_data_and_target_persistence","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","repo_bwd_runtime"],"remaining_gap":"No identity-pinned Prime Subject target/aura sequence is available."},
+        {"key":"AI_object_reconstruction_and_custom_counter_reset_after_evade","original_status":"fidelity_blocked","resolution_class":"resolvable_from_server_db_source","resolution_state":"repository_baseline_resolved; retail_runtime_unresolved","evidence_refs":["repo_bwd_runtime"],"remaining_gap":"boss_maloriak.cpp:256-260 Reset() calls _Reset() and only restores interruptibility; custom vial/add counters are constructor state and runtime reconstruction is unverified."},
+        {"key":"whether_historical_custom_SQL_pack_is_applied_to_current_database","original_status":"fidelity_blocked","resolution_class":"resolvable_from_server_db_source","resolution_state":"repository_history_resolved; active_database_application_unresolved","evidence_refs":["repo_bwd_sql"],"remaining_gap":"Historical custom bindings are present in repository history, but active MySQL application and update ordering were not asserted."}
+      ]
+    },
+    {
+      "boss_slug": "nefarian",
+      "ledger_path": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_ledger_v1.json",
+      "ledger_unresolved_material_count": 10,
+      "blockers": [
+        {"key":"exact_4_4_2_client_build_and_hotfix_cutoff","original_status":"fidelity_blocked","resolution_class":"resolvable_from_official_cutoff_docs","resolution_state":"cutoff_identity_resolved; Nefarian_hotfix_carryover_unresolved","evidence_refs":["official_cutoff","source_registry_target"],"remaining_gap":"The official boundary does not provide Nefarian tuning."},
+        {"key":"onyxia_energy_tick_period_max_stack_and_overload_coefficients","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","historical_hotfix_gap"],"remaining_gap":"No identity-pinned energy tick/stack/damage evidence is available."},
+        {"key":"electrocute_local_17_vs_external_25_charge_and_damage_scaling","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","repo_bwd_runtime"],"remaining_gap":"The local +17 implementation and guide +25 report are conflicting observations, not a retail 4.4.2 resolution."},
+        {"key":"landing_phase_and_platform_wall_clock_timers","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","repo_bwd_runtime"],"remaining_gap":"Local phase events and guide timings require mode-identified combat-log confirmation."},
+        {"key":"blast_nova_barrage_cinders_target_counts_and_cadence","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","repo_bwd_runtime"],"remaining_gap":"Local 3.5/13-second Blast Nova and Cinders scheduling do not settle target counts or retail cadence."},
+        {"key":"dominion_target_count_and_phase_three_repeat_behavior","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","repo_bwd_runtime"],"remaining_gap":"Local 10/25 caps conflict with legacy counts; repeat behavior needs exact heroic event evidence."},
+        {"key":"shadowblaze_aura_tick_period_target_selection_and_room_coverage","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","repo_bwd_runtime"],"remaining_gap":"No identity-pinned aura tick/target/room-coverage evidence exists."},
+        {"key":"all_mode_specific_health_damage_and_spell_coefficients","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","historical_hotfix_gap"],"remaining_gap":"Current guides and repository source do not provide a complete four-mode 4.4.2 table."},
+        {"key":"reliable_sql_scriptname_binding_for_boss_nefarians_end","original_status":"fidelity_blocked","resolution_class":"resolvable_from_server_db_source","resolution_state":"repository_baseline_resolved; active_database_application_unresolved","evidence_refs":["repo_bwd_sql","repo_bwd_runtime"],"remaining_gap":"Historical encounter row 1026 and current loader/source paths are identified, but no active-DB query result proves the ScriptName binding at the target cutoff."},
+        {"key":"berserk_4_4_2_confirmation","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","historical_hotfix_gap"],"remaining_gap":"The local SPELL_BERSERK constant is not proof of the Classic 4.4.2 trigger/duration."}
+      ]
+    },
+    {
+      "boss_slug": "omnotron_defense_system",
+      "ledger_path": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json",
+      "ledger_unresolved_material_count": 9,
+      "blockers": [
+        {"key":"exact_4_4_2_client_build_and_hotfix_cutoff","original_status":"fidelity_blocked","resolution_class":"resolvable_from_official_cutoff_docs","resolution_state":"cutoff_identity_resolved; Omnotron_hotfix_carryover_unresolved","evidence_refs":["official_cutoff","source_registry_target"],"remaining_gap":"The official boundary does not provide Omnotron tuning."},
+        {"key":"energy_drain_rate_and_exact_shield_threshold","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","repo_bwd_runtime","repo_bwd_sql"],"remaining_gap":"The repository has Council Energy Drain/proc support and controller state, but no identity-pinned retail threshold/rate."},
+        {"key":"activation_duration_and_rotation_cadence","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","repo_bwd_runtime"],"remaining_gap":"Guide 60/30-second rotation and local recharge events conflict; no exact 4.4.2 event stream is pinned."},
+        {"key":"mode_specific_wall_clock_shield_timers","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","repo_bwd_runtime"],"remaining_gap":"Local normal/heroic schedules and guide approximations do not establish all four modes."},
+        {"key":"poison_protocol_bomb_count_and_cadence","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","historical_hotfix_gap"],"remaining_gap":"Guide and legacy wiki cadence/count reports conflict; exact mode event evidence is absent."},
+        {"key":"lightning_conductor_duration_by_mode","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","historical_hotfix_gap"],"remaining_gap":"Normal/heroic duration reports conflict and no retained client row is tied to the relevant spell."},
+        {"key":"exact_4_4_2_health_damage_and_barrier_scaling","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","historical_hotfix_gap"],"remaining_gap":"No complete mode-specific health/damage/barrier table is pinned."},
+        {"key":"heroic_nefarius_selection_order_and_cadence","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","repo_bwd_runtime"],"remaining_gap":"Local longest-active selection and 30-second cooldown are implementation evidence, not retail cadence proof."},
+        {"key":"berserk_presence_and_duration","original_status":"fidelity_blocked","resolution_class":"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence","resolution_state":"unresolved","evidence_refs":["warcraftlogs_gap","historical_hotfix_gap"],"remaining_gap":"No identity-pinned 4.4.2 Berserk cast/aura or authoritative hotfix evidence is available."}
+      ]
+    }
+  ],
+  "resolution_counts": {
+    "total_blockers": 52,
+    "resolvable_from_official_cutoff_docs": 6,
+    "resolvable_from_client_rows": 3,
+    "resolvable_from_server_db_source": 6,
+    "still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence": 37,
+    "fully_resolved_retail_fidelity_claims": 0,
+    "partial_repository_or_client_resolutions": 15,
+    "external_evidence_required": 37
+  },
+  "gate": {
+    "status": "blocked_fidelity",
+    "authoritative_4_4_2_quantitative_acceptance": false,
+    "reason": "The pinned client rows resolve only a bounded subset of Chimaeron SpellInfo metadata. Official cutoff identity is frozen, but BWD-specific hotfix carryover, all mode-specific values/timers/target rules, reset/credit semantics, and observed event behavior still lack identity-compatible evidence.",
+    "no_values_promoted_to_ledgers": true,
+    "next_required_evidence": [
+      "Pinned Warcraft Logs report IDs with exact Cataclysm Classic 4.4.2 mode identity for each missing timer/target/scaling field.",
+      "Authoritative Blizzard 4.4.2 BWD hotfix/tuning evidence where logs cannot establish static coefficients or persistence semantics.",
+      "Active MySQL queries and controlled reset/credit validation for ScriptName/update-pack/loot/lockout questions, without weakening fail-closed gates."
+    ]
+  }
+}
