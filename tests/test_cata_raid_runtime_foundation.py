@@ -1,4 +1,5 @@
 import json
+import math
 from pathlib import Path
 
 
@@ -6,6 +7,53 @@ ROOT = Path(__file__).resolve().parents[1]
 HEADER = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text(encoding="utf-8")
 IMPL = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(encoding="utf-8")
 GENERIC_SMOKE = json.loads((ROOT / "experiments/configs/cata_raid_phase1_generic_mechanic_smoke_v1.json").read_text())
+
+
+def test_bwd_entry_to_magmaw_uses_frozen_junction_below_native_path_limit():
+    config = json.loads(
+        (ROOT / "experiments/configs/validation_scenarios_cata_001.json").read_text()
+    )
+    bwd = next(row for row in config["scenarios"] if row["id"] == "blackwing_descent_10n")
+    trash, junction, magmaw = bwd["route"][:3]
+
+    assert (trash["label"], junction["label"], magmaw["label"]) == (
+        "entry trash",
+        "BWD entrance junction regroup",
+        "Magmaw",
+    )
+    assert junction["kind"] == "regroup"
+    assert junction["step"] == 2
+    assert {axis: junction[axis] for axis in ("x", "y", "z", "o")} == {
+        axis: bwd["start_position"][axis] for axis in ("x", "y", "z", "o")
+    }
+    assert junction["source_guid"] == "blackwing_descent_10n.start_position"
+    assert junction["source_table"] == "validation_scenario.start_position"
+
+    path_limit_yards = 74 * 4.0
+    direct_leg = math.dist(
+        (trash["x"], trash["y"], trash["z"]),
+        (
+            magmaw["navigation_anchor"]["x"],
+            magmaw["navigation_anchor"]["y"],
+            magmaw["navigation_anchor"]["z"],
+        ),
+    )
+    first_leg = math.dist(
+        (trash["x"], trash["y"], trash["z"]),
+        (junction["x"], junction["y"], junction["z"]),
+    )
+    second_leg = math.dist(
+        (junction["x"], junction["y"], junction["z"]),
+        (
+            magmaw["navigation_anchor"]["x"],
+            magmaw["navigation_anchor"]["y"],
+            magmaw["navigation_anchor"]["z"],
+        ),
+    )
+
+    assert direct_leg > path_limit_yards
+    assert first_leg < path_limit_yards
+    assert second_leg < path_limit_yards
 
 
 def test_single_cohort_owns_one_raid_runtime():

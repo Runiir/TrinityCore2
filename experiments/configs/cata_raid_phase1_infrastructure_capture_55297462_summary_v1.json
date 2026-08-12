@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "capture_id": "cata_raid_phase1_bwd_10n_foundation_v1",
+  "classification": "infrastructure_abort",
+  "gameplay_failure": false,
+  "fidelity_claim": false,
+  "source_identity": {
+    "commit": "552974620bc2b1aec1a2e067a61a38e42a499f5c",
+    "clean_at_start": true,
+    "identity_stable_during_run": true
+  },
+  "build": {
+    "policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
+    "configure_receipt_sha256": "758a7bab6909bd809564db4e5f9042b474c6e3902e3aa3021a825ecb8b840dad",
+    "configure_receipt_file_sha256": "76ad7f3f8437dca7e74e1416d2494b56314f6046063670108c523bb8f9059e0f",
+    "worldserver_receipt_sha256": "05261d0ac6ce0a3f42f341f77725933503ec8c1efbb11441233b29070c739807",
+    "worldserver_receipt_file_sha256": "86704571f056bf63e4b90482dd0168650925f95dd49e0109e5e74dd385bf95f0",
+    "worldserver_sha256": "cb0037117b6a4bf36873e144c4b7e6e30fce9ec7e2aa1bc002edaf1d7ead0669",
+    "worldserver_size_bytes": 60967856,
+    "trusted_local_operator": "runiir",
+    "gate_bearing": true
+  },
+  "preflight": {
+    "full_provisioning_verifier_passed": true,
+    "full_provisioning_verifier_sha256": "2d9f71bb38fec0f61f08b80d76741de818a15f3880c71e373bd5d4e004916373",
+    "readback_schema": "cata_raid_phase1_bwd_provisioning_readback_v4",
+    "readback_passed": true,
+    "readback_sha256": "4c383da82b9ff1de4718081a21e829a37b84f76b0675c321d631b2cc513a2748",
+    "character_instance_rows": 0,
+    "group_member_rows": 0,
+    "ghost_aura_rows": 0,
+    "corpse_rows": 0,
+    "corpse_phase_rows": 0
+  },
+  "live_facts": {
+    "exact_roster_size": 10,
+    "composition": {"tanks": 2, "healers": 3, "dps": 5},
+    "map_id": 669,
+    "instance_id": 2,
+    "lockout_save_id": 2,
+    "difficulty": "10N",
+    "entry_trash_kills": 2,
+    "deaths": 0,
+    "boss_engaged": false,
+    "route_node_index": 1,
+    "route_generation": 2,
+    "route_label": "Magmaw",
+    "route_terminal_count": 1
+  },
+  "root_cause": {
+    "failure_fingerprint": "post_entry_trash_direct_magmaw_anchor_native_path_unreachable",
+    "detail": "After both declared entry targets died, the route advanced directly from the south entry-trash room to the Magmaw room anchor. All ten bots remained alive and identity-correct, but native PathGenerator rejected the direct path from approximately (-339,-338,214) to (-307.531,-35.4375,211.815) as NOPATH. The runtime failed closed with route_destination_unreachable and did not engage Magmaw.",
+    "decision_assessment": "The bots correctly cleared the declared entry pack and correctly refused teleport, shortcut, partial, or off-mesh fallback. The failure is missing route topology between two sourced objectives, not a boss-script or bot-tactics result.",
+    "remediation_scope": [
+      "derive the missing native BWD corridor or junction waypoints from repository-backed map and spawn geometry",
+      "split the long cross-room transition into deterministic native-path route nodes",
+      "retain fail-closed path validation and forbid teleport or shortcut repair",
+      "review the exact route change independently before rebuilding and rerunning"
+    ]
+  },
+  "telemetry": {
+    "wall_clock_mode": "uncapped",
+    "watchdog_healthy": true,
+    "status_rows": 88,
+    "diagnosis_rows": 86,
+    "trace_rows": 86,
+    "retained_rows": 262,
+    "bound_rows": 262,
+    "rejected_rows": 0,
+    "unchecked_rows": 0,
+    "required_envelopes_gate_passed": true,
+    "only_missing_required_action": "botauto_readycheck",
+    "missing_readycheck_is_downstream_of_no_full_wipe": true
+  },
+  "semantic_stall": {
+    "detected": true,
+    "seconds": 305.032,
+    "unchanged_samples": 60,
+    "high_water": {"kills": 2, "deaths": 0, "raid_boss_kills": 0, "route_index": 1, "route_generation": 2, "route_terminal_count": 1},
+    "repeated_decision": "route_destination_unreachable"
+  },
+  "cleanup": {
+    "gate_passed": true,
+    "stop_observed": true,
+    "stop_ok": true,
+    "zero_bots": true,
+    "zero_leases": true,
+    "worldserver_process_absent": true
+  },
+  "forbidden_assistance": {"observed": false, "gate_passed": true},
+  "artifact": {
+    "pointer": "artifacts/cata_raid_program/phase1_raid_foundation_55297462_20260812.dvc",
+    "dvc_directory_md5": "7dc7a8b9ad5ea3020e786ba412f416fa.dir",
+    "size_bytes": 131676086,
+    "nfiles": 8,
+    "raw_jsonl_sha256": "97a9e500bc9258d6b40e942d6dc1bfa6db23ed0f1050d3d1ee00402d02d0aecb",
+    "capture_report_canonical_sha256": "368faebbe304c09ccf37c20a5b33821c95d820637222d2f7dc9c8a6fa4505a4d",
+    "capture_report_file_sha256": "63d4a8f56a21f6165828aa92fad58ba91241784f47c1b9d79f729b0e0af4ec56",
+    "worldserver_log_sha256": "bc4c1b7d34ecad894065137f4408e51a9e2b0e8047a713d7f2ade9fa385924be",
+    "targeted_push_completed": true,
+    "targeted_remote_status_before_eviction": "cache_and_remote_in_sync",
+    "workspace_payload_evicted": true,
+    "exact_eight_child_cache_objects_evicted": true,
+    "directory_metadata_retained": true,
+    "broad_gc_used": false
+  },
+  "acceptance": {
+    "phase1_gate_passed": false,
+    "next_gate": "complete Luna-xhigh route diagnosis, implement the sourced native-path route topology fix, mandatory independent Sol-high review, exact coordinated rebuild, exact reprovisioning/v4 readback, and uncapped canonical rerun"
+  }
+}
