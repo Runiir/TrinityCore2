@@ -15,6 +15,14 @@ DEFAULT_ACTION_PROFILE_MANIFEST = REPO_ROOT / "experiments/configs/cata_434_acti
 DEFAULT_COMBAT_LOOT_PROFILE_MANIFEST = REPO_ROOT / "experiments/configs/cata_434_combat_loot_profiles.json"
 
 
+def canonical_manifest_path(path: Path) -> str:
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(REPO_ROOT.resolve()).as_posix()
+    except ValueError:
+        return str(resolved)
+
+
 def load_manifest(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -30,7 +38,7 @@ def load_action_profile_manifest(path: Path | None = None) -> dict[str, Any]:
     manifest_path = path or DEFAULT_ACTION_PROFILE_MANIFEST
     payload = load_manifest(manifest_path)
     return {
-        "path": str(manifest_path),
+        "path": canonical_manifest_path(manifest_path),
         "schema": payload.get("schema", ""),
         "hash": stable_hash(payload),
         "action_profile_spells_by_class": int_keyed_spell_map(payload, "action_profile_spells_by_class"),
@@ -51,7 +59,7 @@ def load_combat_loot_profile_manifest(path: Path | None = None) -> dict[str, Any
         for archetype, values in payload.get("stat_weights_by_archetype", {}).items()
     }
     return {
-        "path": str(manifest_path),
+        "path": canonical_manifest_path(manifest_path),
         "schema": payload.get("schema", ""),
         "hash": stable_hash(payload),
         "stat_weights_by_archetype": weights,

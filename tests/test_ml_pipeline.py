@@ -7966,6 +7966,7 @@ def test_cata_action_profile_manifest_drives_validation_spells(tmp_path, monkeyp
     druid = {"class": 11, "spells": []}
 
     assert manifest["schema"] == "bot_cata_434_action_profiles_v2"
+    assert manifest["path"] == "experiments/configs/cata_434_action_profiles.json"
     assert 2061 in bot_spell_ids(priest, manifest)
     assert 2050 in bot_spell_ids(priest, manifest)
     assert 2006 in bot_spell_ids(priest, manifest)
