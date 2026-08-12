@@ -30,6 +30,38 @@ def test_no_pch_runtime_declares_roster_plan_before_use_and_compares_transport_i
     assert "bot->GetTransport() == gameObject->ToTransport()" not in IMPL
 
 
+def test_live_raid_instance_identity_freezes_atomically_from_the_exact_roster():
+    population = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::EnsurePopulation()"):
+        IMPL.index("void BotWorldPopulationMgr::EnsureCalibrationPopulation()")
+    ]
+    group = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::EnsureValidationCohortGroup()"):
+        IMPL.index("bool BotWorldPopulationMgr::ResolveSpawnPlacement")
+    ]
+    update = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::UpdateBot"):
+        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    ]
+    original_instance = IMPL[
+        IMPL.index("bool BotWorldPopulationMgr::IsValidationCohortMemberInOriginalInstance"):
+        IMPL.index("void BotWorldPopulationMgr::MarkValidationCohortViolation")
+    ]
+
+    assert 'Cohort().Config.ValidationRouteEnable || placement.Source != "saved_position"' in population
+    assert 'sBotMgr->SpawnWorldBot("any", std::to_string(candidateGuid), placement.MapId' in population
+    assert 'Cohort().LastPopulationFailureReason = "validation_cohort_formation_pending";' in group
+    assert group.index("members.size() != exactFormationSize") < group.index("RaidRuntime& raid")
+    assert 'Cohort().LastPopulationFailureReason = "validation_cohort_live_instance_pending";' in group
+    assert 'Cohort().LastPopulationFailureReason = "validation_cohort_live_instance_split";' in group
+    assert 'Cohort().LastPopulationFailureReason = "validation_cohort_zero_instance_identity";' in group
+    assert "!member->GetInstanceId()" in group
+    assert "if (!memberState->ValidationCohortLocked)" in group
+    assert '"validation_cohort_immutable_identity_drift"' in group
+    assert 'state.LastDecisionResult = "validation_cohort_formation_pending";' in update
+    assert "bot->GetCorpse()->GetInstanceId() == state.ValidationCohortInstanceId" in original_instance
+
+
 def test_raid_size_and_difficulty_are_explicit_and_fail_closed():
     assert "uint8 RaidSize = 10;" in HEADER
     assert "uint8 RaidDifficulty = 0;" in HEADER

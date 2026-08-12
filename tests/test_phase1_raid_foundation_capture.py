@@ -720,3 +720,15 @@ def test_canonical_capture_owns_tracked_v8_policy_and_has_no_policy_override():
     assert 'parser.add_argument("--build-policy"' not in source
     assert "cata_raid_build_resource_policy_degraded_v8.json" in source
     assert 'parser.add_argument("--build-attestation"' in source
+
+
+def test_canonical_capture_is_terminal_gate_driven_without_a_raid_duration_cap():
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "tools/raid_program/capture_phase1_raid_foundation.py"
+    ).read_text(encoding="utf-8")
+    assert '"--observe-sec", type=int, default=0' in source
+    assert "deadline = time.monotonic() + args.observe_sec if args.observe_sec else None" in source
+    assert "deadline is None or time.monotonic() < deadline" in source
+    assert '"wall_clock_mode": "uncapped" if args.observe_sec == 0' in source
+    assert '"policy": "capture-process-heartbeat-terminal-gate-driven"' in source

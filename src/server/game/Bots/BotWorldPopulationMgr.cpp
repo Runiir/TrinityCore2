@@ -4173,10 +4173,12 @@ bool BotWorldPopulationMgr::IsValidationCohortMemberInOriginalInstance(WorldBotS
 
     // A released ghost must leave an instance to run from the native
     // graveyard back to its entrance.  The corpse remains the immutable
-    // authority for the original map; alive players never receive this
-    // exception.
+    // authority for the exact original map and instance; alive players never
+    // receive this exception.
     if (!bot->IsAlive() && bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)
-        && bot->HasCorpse() && bot->GetCorpseLocation().GetMapId() == state.ValidationCohortMapId)
+        && bot->HasCorpse()
+        && bot->GetCorpseLocation().GetMapId() == state.ValidationCohortMapId
+        && bot->GetCorpse()->GetInstanceId() == state.ValidationCohortInstanceId)
         return true;
 
     return bot->IsInWorld()
@@ -4465,9 +4467,13 @@ void BotWorldPopulationMgr::EnsurePopulation()
         if (groupAnchor)
             bot = sBotMgr->SpawnWorldBotInGroup(groupAnchor, "any", std::to_string(candidateGuid), placement.MapId, placement.X, placement.Y, placement.Z, placement.O);
         else
-            bot = placement.Source == "saved_position"
-                ? sBotMgr->SpawnWorldBotAtSavedPosition("any", std::to_string(candidateGuid))
-                : sBotMgr->SpawnWorldBot("any", std::to_string(candidateGuid), placement.MapId, placement.X, placement.Y, placement.Z, placement.O);
+            // Validation already resolved and audited the persisted placement.
+            // Pass it through explicitly so native login relocation cannot
+            // replace an instanced raid position with the character home bind
+            // before the validation group owns the live instance.
+            bot = Cohort().Config.ValidationRouteEnable || placement.Source != "saved_position"
+                ? sBotMgr->SpawnWorldBot("any", std::to_string(candidateGuid), placement.MapId, placement.X, placement.Y, placement.Z, placement.O)
+                : sBotMgr->SpawnWorldBotAtSavedPosition("any", std::to_string(candidateGuid));
         if (!bot)
         {
             Cohort().LastPopulationFailureReason = "spawn_world_bot_failed";
@@ -6105,6 +6111,18 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         }
     }
 
+    // Group creation is allowed while the roster is loading so subsequent
+    // members enter the same native instance. Identity and formation evidence
+    // are not: freezing a partial roster can combine a configured raid map
+    // with an unrelated pre-entry instance zero and poison the whole attempt.
+    uint32 const exactFormationSize = raidValidation
+        ? uint32(rosterPlan.size()) : Cohort().Config.TargetPopulation;
+    if (!exactFormationSize || members.size() != exactFormationSize)
+    {
+        Cohort().LastPopulationFailureReason = "validation_cohort_formation_pending";
+        return;
+    }
+
     if (group->GetDungeonDifficulty() != DUNGEON_DIFFICULTY_NORMAL)
         group->SetDungeonDifficulty(DUNGEON_DIFFICULTY_NORMAL);
     Difficulty requestedRaidDifficulty = Difficulty(Cohort().Config.RaidDifficulty);
@@ -6134,17 +6152,55 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         }
     }
 
-    uint32 leaderMapId = leader->GetMapId();
-    uint32 leaderInstanceId = leader->GetInstanceId();
-    if (raidValidation && Cohort().Config.ValidationRouteMapId)
-    {
-        leaderMapId = Cohort().Config.ValidationRouteMapId;
-        for (WorldBotState const& state : Party().Bots)
-            if (state.Guid == leader->GetGUID() && state.ValidationCohortLocked)
+    uint32 leaderMapId = 0;
+    uint32 leaderInstanceId = 0;
+    bool frozenIdentityObserved = false;
+    for (WorldBotState const& state : Party().Bots)
+        if (state.ValidationCohortLocked)
+        {
+            if (!state.ValidationCohortMapId || !state.ValidationCohortInstanceId)
             {
-                leaderInstanceId = state.ValidationCohortInstanceId;
-                break;
+                Cohort().LastPopulationFailureReason = "validation_cohort_zero_instance_identity";
+                return;
             }
+            if (!frozenIdentityObserved)
+            {
+                leaderMapId = state.ValidationCohortMapId;
+                leaderInstanceId = state.ValidationCohortInstanceId;
+                frozenIdentityObserved = true;
+            }
+            else if (state.ValidationCohortMapId != leaderMapId
+                || state.ValidationCohortInstanceId != leaderInstanceId)
+            {
+                Cohort().LastPopulationFailureReason = "validation_cohort_frozen_identity_split";
+                return;
+            }
+        }
+
+    if (!frozenIdentityObserved)
+    {
+        uint32 const requiredMapId = Cohort().Config.ValidationRouteMapId;
+        for (Player* member : members)
+        {
+            if (!member || !member->IsInWorld()
+                || (requiredMapId && member->GetMapId() != requiredMapId)
+                || !member->GetInstanceId())
+            {
+                Cohort().LastPopulationFailureReason = "validation_cohort_live_instance_pending";
+                return;
+            }
+            if (!leaderInstanceId)
+            {
+                leaderMapId = member->GetMapId();
+                leaderInstanceId = member->GetInstanceId();
+            }
+            else if (member->GetMapId() != leaderMapId
+                || member->GetInstanceId() != leaderInstanceId)
+            {
+                Cohort().LastPopulationFailureReason = "validation_cohort_live_instance_split";
+                return;
+            }
+        }
     }
     Party().GroupGuid = group->GetGUID();
     Party().MapId = leaderMapId;
@@ -6649,12 +6705,22 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         if (!memberState)
             continue;
 
-        memberState->ValidationCohortLocked = true;
-        memberState->ValidationCohortLeaderGuid = leader->GetGUID();
-        memberState->ValidationCohortGroupGuid = group->GetGUID();
-        memberState->ValidationCohortMapId = leaderMapId;
-        memberState->ValidationCohortInstanceId = leaderInstanceId;
-        memberState->ValidationCohortPhaseMask = 0;
+        if (memberState->ValidationCohortLocked
+            && (memberState->ValidationCohortMapId != leaderMapId
+                || memberState->ValidationCohortInstanceId != leaderInstanceId))
+        {
+            MarkValidationCohortViolation(*memberState, bot, "validation_cohort_immutable_identity_drift");
+            continue;
+        }
+        if (!memberState->ValidationCohortLocked)
+        {
+            memberState->ValidationCohortLocked = true;
+            memberState->ValidationCohortLeaderGuid = leader->GetGUID();
+            memberState->ValidationCohortGroupGuid = group->GetGUID();
+            memberState->ValidationCohortMapId = leaderMapId;
+            memberState->ValidationCohortInstanceId = leaderInstanceId;
+            memberState->ValidationCohortPhaseMask = 0;
+        }
 
         std::string role = GetDungeonRole(bot);
         Party().RoleByGuid[bot->GetGUID().GetCounter()] = role;
@@ -8170,6 +8236,13 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     {
         if (state.ValidationCohortViolation)
             return;
+        if (!state.ValidationCohortLocked)
+        {
+            state.LastDecisionResult = "validation_cohort_formation_pending";
+            state.LastDecisionReason = Cohort().LastPopulationFailureReason.empty()
+                ? "validation_cohort_identity_not_frozen" : Cohort().LastPopulationFailureReason;
+            return;
+        }
         if (!IsValidationCohortMemberInOriginalInstance(state, bot))
         {
             MarkValidationCohortViolation(state, bot, "validation_cohort_instance_mismatch");

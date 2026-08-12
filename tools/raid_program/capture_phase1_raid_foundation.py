@@ -1488,7 +1488,13 @@ def main() -> int:
     parser.add_argument("--build-receipt", type=Path, required=True)
     parser.add_argument("--build-attestation", type=Path, default=None)
     parser.add_argument("--worktree", type=Path, default=ROOT)
-    parser.add_argument("--observe-sec", type=int, default=900)
+    parser.add_argument(
+        "--observe-sec", type=int, default=0,
+        help=(
+            "optional diagnostic wall-clock limit; 0 (the canonical default) "
+            "runs until the terminal acceptance gates are satisfied"
+        ),
+    )
     parser.add_argument("--startup-timeout-sec", type=int, default=180)
     parser.add_argument("--required-stable-statuses", type=int, default=3)
     args = parser.parse_args()
@@ -1509,8 +1515,10 @@ def main() -> int:
         raise SystemExit("server log output already exists; phase1 artifacts are immutable")
     if not binary.is_file() or not config.is_file():
         raise SystemExit("binary and config must exist")
-    if args.observe_sec < 30 or args.required_stable_statuses < 2:
-        raise SystemExit("observation must be at least 30 seconds and require at least two stable statuses")
+    if args.observe_sec < 0 or 0 < args.observe_sec < 30 or args.required_stable_statuses < 2:
+        raise SystemExit(
+            "observation must be uncapped (0) or at least 30 seconds and require at least two stable statuses"
+        )
     preflight = preflight_runtime_exclusions(worktree)
     if not preflight["passed"]:
         raise SystemExit("capture preflight rejected: " + ",".join(preflight["reasons"]))
@@ -1554,12 +1562,16 @@ def main() -> int:
             process.stdin.write(b"botauto start blackwing_descent_10n\n")
             process.stdin.flush()
             time.sleep(1.0)
-            deadline = time.monotonic() + args.observe_sec
+            # Canonical raid validation is terminal-gate driven. Raid and boss
+            # duration alone must never end an otherwise healthy run. A
+            # positive limit remains available only for explicitly bounded
+            # diagnostics and tests; zero is deliberately uncapped.
+            deadline = time.monotonic() + args.observe_sec if args.observe_sec else None
             next_probe = 0.0
             seen_statuses = 0
             recovery_accepted = False
             readycheck_requested_for: tuple[Any, ...] | None = None
-            while time.monotonic() < deadline and not (
+            while (deadline is None or time.monotonic() < deadline) and not (
                 len(stable) >= args.required_stable_statuses and recovery_accepted
             ):
                 if process.poll() is not None:
@@ -1700,9 +1712,10 @@ def main() -> int:
             "policy": "native encounter events only; no forced state, teleport, spawn, kill, resurrection, or aura assistance",
         },
         "watchdog": {
-            "policy": "capture-process-heartbeat-and-wall-clock",
+            "policy": "capture-process-heartbeat-terminal-gate-driven",
             "heartbeat_rows": len(statuses) + len(diagnoses) + len(traces),
-            "observe_window_seconds": args.observe_sec,
+            "wall_clock_mode": "uncapped" if args.observe_sec == 0 else "bounded_diagnostic",
+            "observe_window_seconds": args.observe_sec if args.observe_sec else None,
             "startup_timeout_seconds": args.startup_timeout_sec,
             "healthy": startup_error is None and process_return_code == 0 and process_absent,
         },
