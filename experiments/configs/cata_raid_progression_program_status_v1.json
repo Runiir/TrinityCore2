@@ -331,8 +331,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "The mandatory Sol-high review approved exact 3aa35b1d6a with zero critical/high findings under the user-authorized local runiir/UID 1000 build-receipt trust model. Policy v8 retains all safety and provenance limits. Its exact clean coordinated configure/build and valid successful production receipts are pending before serialized live capture. External signing remains optional hardening and is not a blocker."
+      "detail": "The exact clean policy-v8 configure/build at 7f4833e6f7 and its trusted-local receipts succeeded, but the canonical 900-second capture isolated three infrastructure findings before Magmaw engagement. Commit d6262156c8 remediates the navigation anchor, temporary-enchant identity drift, and negative no-fallback marker; its exact incremental receipt-bearing rebuild and serialized capture rerun are pending. External signing remains optional hardening and is not a blocker."
     }
   ],
-  "next_action": "Commit this trusted-local build checkpoint, fast-forward the isolated build worktree to the exact descendant, run the exact clean policy-v8 Release configure and serialized worldserver build, independently verify both successful receipts and regressions, then execute serialized canonical BWD 10N formation/difficulty/wipe/reset/recovery capture and its DVC publish/remote-verify/exact-evict gate. Keep all 28 research packets and 464 material blockers fidelity-blocked."
+  "next_action": "Fast-forward the isolated build worktree to this reviewed remediation descendant, run the exact policy-v8 serialized incremental worldserver build, independently verify its successful receipt and regressions, then rerun canonical BWD 10N formation/difficulty/wipe/reset/recovery capture and its DVC publish/remote-verify/exact-evict gate. Keep all 28 research packets and 464 material blockers fidelity-blocked."
 }
