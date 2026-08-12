@@ -3531,6 +3531,11 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         node.Kind = ExtractJsonStringField(routeJson, "kind");
         node.NodeKind = ExtractJsonStringField(routeJson, "node_kind");
         node.MechanicProfile = ExtractJsonStringField(routeJson, "mechanic_profile");
+        std::string const bossRecoveryPolicy = ExtractJsonStringField(routeJson, "boss_recovery_policy");
+        if (bossRecoveryPolicy == "native_full_wipe_only")
+            node.BossRecoveryPolicy = ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly;
+        else
+            node.BossRecoveryPolicy = ValidationRouteBossRecoveryPolicy::NativeEncounter;
         std::string const mechanicContract = ExtractJsonObjectField(routeJson, "mechanic_contract");
         if (!mechanicContract.empty())
         {
@@ -3827,6 +3832,7 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     Cohort().Config.ValidationRouteKind = node.Kind;
     Cohort().Config.ValidationRouteNodeKind = node.NodeKind;
     Cohort().Config.ValidationRouteMechanicProfile = node.MechanicProfile;
+    Cohort().Config.ValidationRouteBossRecovery = node.BossRecoveryPolicy;
     Cohort().Config.ValidationRouteMapId = node.MapId;
     Cohort().Config.ValidationRouteX = node.NavigationAnchorX;
     Cohort().Config.ValidationRouteY = node.NavigationAnchorY;
@@ -8980,7 +8986,112 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
 
         if (state.DeadTimer >= 5000)
         {
-            if (TryNativeSelfResurrection(state, bot))
+            // Phase 1 Magmaw is a native-encounter smoke, not a tactical
+            // recovery exercise.  Keep a dead member in place while any
+            // exact cohort member remains alive or the roster cannot be
+            // reconstructed.  Only the native all-dead path below may then
+            // release corpses and let the encounter script reset/respawn.
+            if (Cohort().Config.ValidationRouteBossRecovery == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly)
+            {
+                RaidRuntime const& raid = Cohort().Raid;
+                bool const exactSignalRoster = raid.RosterComplete
+                    && raid.ExpectedSize == Cohort().Config.TargetPopulation
+                    && raid.RosterByGuid.size() == Cohort().Config.TargetPopulation
+                    && raid.NativeSignalsByGuid.size() == raid.RosterByGuid.size()
+                    && std::all_of(raid.RosterByGuid.begin(), raid.RosterByGuid.end(),
+                        [&raid](auto const& row) { return raid.NativeSignalsByGuid.count(row.first) == 1; });
+                // UpdateRaidRuntime latches this identity before UpdateBot is
+                // allowed to release the first corpse.  Preserve that latch
+                // while ghosts worldport outside BWD: requiring every member
+                // to remain in-world here would let the first release block
+                // the remaining nine forever.
+                bool const nativeFullWipeLatched = raid.Active
+                    && raid.AttemptId == Cohort().AttemptId
+                    && raid.WipeState == "wiped"
+                    && raid.WipeGeneration > 0
+                    && exactSignalRoster
+                    && std::all_of(raid.NativeSignalsByGuid.begin(), raid.NativeSignalsByGuid.end(),
+                        [&raid](auto const& row)
+                        {
+                            return row.second.WipeGeneration == raid.WipeGeneration
+                                && row.second.DeathSequence > 0;
+                        });
+                uint32 loadedMembers = 0;
+                uint32 aliveMembers = 0;
+                bool rosterComplete = Party().Bots.size() == Cohort().Config.TargetPopulation;
+                for (WorldBotState const& cohortState : Party().Bots)
+                {
+                    Player* member = GetLoadedBot(cohortState);
+                    if (!member || !member->IsInWorld()
+                        || member->GetMapId() != Cohort().Config.ValidationRouteMapId
+                        || member->GetInstanceId() != bot->GetInstanceId())
+                    {
+                        rosterComplete = false;
+                        continue;
+                    }
+
+                    ++loadedMembers;
+                    if (member->IsAlive())
+                        ++aliveMembers;
+                }
+
+                if (!nativeFullWipeLatched)
+                {
+                    std::string raw = BuildRawJson(bot, nullptr);
+                    std::ostringstream gateRaw;
+                    gateRaw << "{\"base\":" << raw
+                            << ",\"native_recovery_gate\":{\"policy\":\"native_full_wipe_only\""
+                            << ",\"authority\":\"native_encounter\""
+                            << ",\"assistance\":\"none\""
+                            << ",\"direct_respawn\":false"
+                            << ",\"direct_state_manufacture\":false"
+                            << ",\"loaded_members\":" << loadedMembers
+                            << ",\"alive_members\":" << aliveMembers
+                            << ",\"expected_members\":" << Cohort().Config.TargetPopulation
+                            << ",\"roster_complete\":" << (rosterComplete ? "true" : "false")
+                            << ",\"wipe_latched\":false"
+                            << ",\"wipe_state\":\"" << JsonEscape(raid.WipeState) << "\""
+                            << ",\"wipe_generation\":" << raid.WipeGeneration
+                            << ",\"attempt_id\":" << raid.AttemptId << "}}";
+                    std::string semantic = BuildSemanticJson(bot, nullptr, "native_raid_recovery");
+                    char const* reason = rosterComplete
+                        && loadedMembers == Cohort().Config.TargetPopulation && aliveMembers
+                            ? "native_full_wipe_wait_partial_death"
+                            : "native_full_wipe_wait_unlatched";
+                    RecordEvent(state, bot, "validation_route_recovery", nullptr, reason,
+                        gateRaw.str().c_str(), semantic.c_str(), float(aliveMembers), loadedMembers);
+                    state.LastRecoveryMode = "native_full_wipe_only";
+                    state.LastRecoveryResult = reason;
+                    state.LastRecoveryMs = NowMs();
+                    state.LastNoProgressReason = reason;
+                    state.DeadTimer = 0;
+                    return;
+                }
+
+                std::string raw = BuildRawJson(bot, nullptr);
+                std::ostringstream gateRaw;
+                gateRaw << "{\"base\":" << raw
+                        << ",\"native_recovery_gate\":{\"policy\":\"native_full_wipe_only\""
+                        << ",\"authority\":\"native_encounter\""
+                        << ",\"assistance\":\"none\""
+                        << ",\"direct_respawn\":false"
+                        << ",\"direct_state_manufacture\":false"
+                        << ",\"wipe_latched\":true"
+                        << ",\"wipe_generation\":" << raid.WipeGeneration
+                        << ",\"attempt_id\":" << raid.AttemptId << "}}";
+                std::string semantic = BuildSemanticJson(bot, nullptr, "native_raid_recovery");
+                RecordEvent(state, bot, "validation_route_recovery", nullptr,
+                    "native_full_wipe_latched_release_allowed", gateRaw.str().c_str(), semantic.c_str(),
+                    float(raid.WipeGeneration), raid.ExpectedSize);
+            }
+
+            // The Phase 1 contract must observe release/runback/re-entry for
+            // every permanent roster GUID. A class self-resurrection is
+            // legitimate gameplay, but it would bypass that specific smoke
+            // and make the evidence set incomplete, so this one route policy
+            // holds it until the native corpse path below runs.
+            if (Cohort().Config.ValidationRouteBossRecovery != ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly
+                && TryNativeSelfResurrection(state, bot))
             {
                 state.DeadTimer = 0;
                 return;
@@ -13396,6 +13507,28 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (deathParticipants < 2 || recentDeathCount < 2 || validationPartyHasActiveCombat())
             return false;
 
+        // Validation raid bosses are owned exclusively by their native
+        // InstanceScript/BossAI.  In particular, never force a loaded spawn,
+        // advance a respawn timer, or manufacture a Creature from DB data for
+        // a route target.  Keep this outcome machine-readable so the capture
+        // can distinguish native reset pending from forbidden assistance.
+        if (bot->GetMap()->IsRaid())
+        {
+            recoveryResult = "native_boss_recovery_pending";
+            std::ostringstream raw;
+            raw << "{\"base\":" << BuildRawJson(bot, nullptr)
+                << ",\"native_recovery_gate\":{\"authority\":\"native_encounter\""
+                << ",\"assistance\":\"none\",\"direct_respawn\":false"
+                << ",\"direct_state_manufacture\":false"
+                << ",\"death_participants\":" << deathParticipants
+                << ",\"recent_death_count\":" << recentDeathCount << "}}";
+            std::string semantic = BuildSemanticJson(bot, nullptr, "native_raid_recovery", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_recovery", nullptr, recoveryResult.c_str(),
+                raw.str().c_str(), semantic.c_str(), float(deathParticipants), recentDeathCount);
+            MarkBotBlocked(state, bot, recoveryResult.c_str());
+            return true;
+        }
+
         uint64 nowMs = NowMs();
         if (Party().ValidationRouteCanonicalBossRecoveryAttempts >= 2
             || (Party().ValidationRouteCanonicalBossRecoveryLastMs
@@ -13425,6 +13558,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             recoveryResult = "canonical_boss_spawn_not_found";
         else
         {
+            // This legacy canonical-spawn recovery is intentionally scoped to
+            // non-raid validation routes only.  The raid guard above must
+            // remain before every direct Respawn/LoadFromDB operation.
             Map* routeMap = bot->GetMap();
             if (Creature* loaded = routeMap->GetCreatureBySpawnId(canonicalSpawnId))
             {
@@ -20768,6 +20904,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         std::string semantic = BuildSemanticJson(bot, nullptr, situation.c_str(), &power, stage, activity);
         RecordEvent(state, bot, "validation_route_recovery", nullptr, state.LastNoProgressReason.c_str(), raw.c_str(), semantic.c_str(), routeDistance, Cohort().Config.ValidationRouteTargetEntry);
     };
+    if (Cohort().Config.ValidationRouteBossRecovery != ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly)
     {
         DungeonTrashActionResult resurrectionResult;
         if (TryNativePartyResurrection(state, bot, power, stage, activity, resurrectionResult))
@@ -20828,6 +20965,33 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         bool majorityDead = aliveMembers <= 2 && deadMembers >= 3;
         if ((majorityDead || criticalRoleDead) && groupCombatActive && !livingCombatResurrectionCaster)
         {
+            if (Cohort().Config.ValidationRouteBossRecovery == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly)
+            {
+                std::string raw = BuildRawJson(bot, retreatThreat);
+                std::ostringstream gateRaw;
+                gateRaw << "{\"base\":" << raw
+                        << ",\"native_recovery_gate\":{\"policy\":\"native_full_wipe_only\""
+                        << ",\"authority\":\"native_encounter\""
+                        << ",\"assistance\":\"none\""
+                        << ",\"direct_respawn\":false"
+                        << ",\"direct_state_manufacture\":false"
+                        << ",\"alive_members\":" << aliveMembers
+                        << ",\"dead_members\":" << deadMembers
+                        << ",\"critical_role_dead\":" << (criticalRoleDead ? "true" : "false") << "}}";
+                std::string semantic = BuildSemanticJson(bot, retreatThreat, "validation_route_recovery", &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_recovery", retreatThreat,
+                    "native_full_wipe_hold_partial_death", gateRaw.str().c_str(), semantic.c_str(),
+                    float(aliveMembers), deadMembers);
+                state.LastRecoveryMode = "native_full_wipe_only";
+                state.LastRecoveryResult = "native_full_wipe_hold_partial_death";
+                state.LastRecoveryMs = NowMs();
+                state.LastNoProgressReason = "native_full_wipe_hold_partial_death";
+                situation = "validation_route_recovery";
+                action = "native_full_wipe_hold";
+                target = retreatThreat;
+                return true;
+            }
+
             if (!retreatThreat)
                 retreatThreat = bot->GetVictim();
             float retreatX = Cohort().Config.ValidationRouteX;
@@ -25132,7 +25296,8 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
                 raidAssignment.RoleIndex) != raidAdapter.BattleResurrectionSlots.end())
         : std::find(raidAdapter.BattleResurrectionSlots.begin(), raidAdapter.BattleResurrectionSlots.end(),
             raidAssignment.RoleIndex) != raidAdapter.BattleResurrectionSlots.end();
-    if (result.Features.RaidEncounter && raidAdapter.ContractResolved && battleResOwner)
+    if (result.Features.RaidEncounter && raidAdapter.ContractResolved && battleResOwner
+        && Cohort().Config.ValidationRouteBossRecovery != ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly)
     {
         DungeonTrashActionResult resurrectionResult;
         if (TryNativePartyResurrection(state, bot, power, stage, activity, resurrectionResult,
@@ -32389,6 +32554,9 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
          << ",\"kind\":\"" << JsonEscape(Cohort().Config.ValidationRouteKind) << "\""
          << ",\"node_kind\":\"" << JsonEscape(Cohort().Config.ValidationRouteNodeKind) << "\""
          << ",\"mechanic_profile\":\"" << JsonEscape(Cohort().Config.ValidationRouteMechanicProfile) << "\""
+         << ",\"boss_recovery_policy\":\""
+         << (Cohort().Config.ValidationRouteBossRecovery == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly
+             ? "native_full_wipe_only" : "native_encounter") << "\""
          << ",\"map\":" << Cohort().Config.ValidationRouteMapId
          << ",\"x\":" << Cohort().Config.ValidationRouteX
          << ",\"y\":" << Cohort().Config.ValidationRouteY

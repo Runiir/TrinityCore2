@@ -1203,3 +1203,173 @@ def test_bwd_profile_pins_10n_and_world_defaults_are_documented():
     conf = (ROOT / "src/server/worldserver/worldserver.conf.dist").read_text(encoding="utf-8")
     assert "BotProgression.RaidSize = 10" in conf
     assert "BotProgression.RaidDifficulty = 0" in conf
+
+
+def test_phase1_magmaw_uses_typed_native_full_wipe_recovery_policy():
+    config = json.loads((ROOT / "experiments/configs/validation_scenarios_cata_001.json").read_text())
+    bwd = next(row for row in config["scenarios"] if row["id"] == "blackwing_descent_10n")
+    magmaw = next(row for row in bwd["route"] if row["label"] == "Magmaw")
+    assert magmaw["boss_recovery_policy"] == "native_full_wipe_only"
+
+    generator = (ROOT / "tools/bot_ml/build_validation_scenario_manifests.py").read_text()
+    assert '"boss_recovery_policy": str(step.get("boss_recovery_policy") or "")' in generator
+    assert "ValidationRouteBossRecoveryPolicy" in HEADER
+    assert "NativeFullWipeOnly" in HEADER
+    assert "ValidationRouteBossRecovery = node.BossRecoveryPolicy" in IMPL
+
+
+def test_phase1_partial_critical_death_holds_native_fight_without_tactical_retreat():
+    objective = IMPL[
+        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective"):
+        IMPL.index("bool BotWorldPopulationMgr::IsBossContext")
+    ]
+    retreat = objective.index("bool majorityDead = aliveMembers <= 2 && deadMembers >= 3;")
+    hold = objective.index('"native_full_wipe_hold_partial_death"', retreat)
+    retreat_action = objective.index('if (!retreatThreat)', hold)
+    assert hold < retreat_action
+    assert 'action = "native_full_wipe_hold";' in objective[hold:retreat_action]
+    assert 'state.LastRecoveryMode = "native_full_wipe_only";' in objective[hold:retreat_action]
+    assert 'cohortState.ValidationRouteAnchorOverrideReason = "validation_route_partial_wipe_retreat_rendezvous"' not in objective[hold:retreat_action]
+
+
+def test_phase1_dead_member_gate_requires_latched_exact_native_full_wipe():
+    update = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::UpdateBot"):
+        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    ]
+    gate = update.index("ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly")
+    native_release = update.index("&& TryNativeSelfResurrection(state, bot)", gate)
+    assert gate < native_release
+    gate_block = update[gate:native_release]
+    for token in (
+        'raid.WipeState == "wiped"',
+        "raid.WipeGeneration > 0",
+        "raid.AttemptId == Cohort().AttemptId",
+        "raid.NativeSignalsByGuid.size() == raid.RosterByGuid.size()",
+        "row.second.WipeGeneration == raid.WipeGeneration",
+        "row.second.DeathSequence > 0",
+        "Party().Bots.size() == Cohort().Config.TargetPopulation",
+        "aliveMembers",
+        '"native_full_wipe_wait_partial_death"',
+        '"native_full_wipe_wait_unlatched"',
+        '"native_full_wipe_latched_release_allowed"',
+        '"wipe_latched\\":true',
+        '"direct_respawn\\":false',
+        '"direct_state_manufacture\\":false',
+    ):
+        assert token in gate_block
+    assert "TryNativeSelfResurrection(state, bot)" in update[native_release:]
+
+
+def test_native_full_wipe_policy_disables_native_resurrection_shortcuts_for_smoke_only():
+    update = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::UpdateBot"):
+        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    ]
+    self_res = update.index("&& TryNativeSelfResurrection(state, bot)")
+    assert (
+        "Cohort().Config.ValidationRouteBossRecovery != "
+        "ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly"
+    ) in update[self_res - 220:self_res]
+
+    objective = IMPL[
+        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective"):
+        IMPL.index("bool BotWorldPopulationMgr::IsBossContext")
+    ]
+    party_res = objective.index("TryNativePartyResurrection(state, bot")
+    assert "ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly" in objective[party_res - 300:party_res]
+
+    mechanics = IMPL[
+        IMPL.index("BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMechanics"):
+        IMPL.index("BotWorldPopulationMgr::RaidRoleAssignment BotWorldPopulationMgr::BuildRaidRoleAssignment")
+    ]
+    battle_res = mechanics.index("TryNativePartyResurrection(state, bot")
+    assert "ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly" in mechanics[battle_res - 500:battle_res]
+
+
+def test_native_full_wipe_latch_survives_first_ghost_leaving_instance():
+    def release_allowed(*, wipe_state, wipe_generation, attempt_id, cohort_attempt_id,
+                        roster_guids, signal_rows):
+        exact_signal_roster = (
+            len(roster_guids) == 10
+            and set(signal_rows) == set(roster_guids)
+        )
+        return (
+            attempt_id == cohort_attempt_id
+            and wipe_state == "wiped"
+            and wipe_generation > 0
+            and exact_signal_roster
+            and all(
+                row["wipe_generation"] == wipe_generation and row["death_sequence"] > 0
+                for row in signal_rows.values()
+            )
+        )
+
+    roster = tuple(range(1271, 1281))
+    signals = {
+        guid: {"wipe_generation": 7, "death_sequence": index + 1, "in_world": True}
+        for index, guid in enumerate(roster)
+    }
+    assert release_allowed(
+        wipe_state="wiped", wipe_generation=7, attempt_id=11, cohort_attempt_id=11,
+        roster_guids=roster, signal_rows=signals,
+    )
+
+    # The runtime latch is immutable recovery authority. The first released
+    # ghost may leave BWD before the remaining dead members make a decision;
+    # that observation must not revoke the already-proven all-dead wipe.
+    signals[1271]["in_world"] = False
+    assert release_allowed(
+        wipe_state="wiped", wipe_generation=7, attempt_id=11, cohort_attempt_id=11,
+        roster_guids=roster, signal_rows=signals,
+    )
+
+    assert not release_allowed(
+        wipe_state="partial_deaths", wipe_generation=7, attempt_id=11, cohort_attempt_id=11,
+        roster_guids=roster, signal_rows=signals,
+    )
+    assert not release_allowed(
+        wipe_state="wiped", wipe_generation=7, attempt_id=10, cohort_attempt_id=11,
+        roster_guids=roster, signal_rows=signals,
+    )
+    missing = dict(signals)
+    missing.pop(1280)
+    assert not release_allowed(
+        wipe_state="wiped", wipe_generation=7, attempt_id=11, cohort_attempt_id=11,
+        roster_guids=roster, signal_rows=missing,
+    )
+
+
+def test_validation_raid_boss_recovery_fails_closed_before_direct_spawn_manufacture():
+    objective = IMPL[
+        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective"):
+        IMPL.index("bool BotWorldPopulationMgr::IsBossContext")
+    ]
+    lambda_start = objective.index("auto tryCanonicalValidationRouteBossRecovery")
+    lambda_end = objective.index("auto isNaturalValidationRoutePackMember", lambda_start)
+    recovery = objective[lambda_start:lambda_end]
+    raid_guard = recovery.index("bot->GetMap()->IsRaid()")
+    direct_respawn = recovery.index("loaded->Respawn(true)")
+    direct_scheduled_respawn = recovery.index("routeMap->Respawn")
+    direct_load = recovery.index("recovered->LoadFromDB")
+    assert raid_guard < direct_respawn < direct_scheduled_respawn < direct_load
+    raid_block = recovery[raid_guard:direct_respawn]
+    assert 'recoveryResult = "native_boss_recovery_pending"' in raid_block
+    assert '"assistance\\":\\"none\\"' in raid_block
+    assert '"direct_respawn\\":false' in raid_block
+    assert '"direct_state_manufacture\\":false' in raid_block
+    assert "SetBossState" not in raid_block
+
+
+def test_nonraid_canonical_recovery_remains_explicitly_scoped():
+    objective = IMPL[
+        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective"):
+        IMPL.index("bool BotWorldPopulationMgr::IsBossContext")
+    ]
+    lambda_start = objective.index("auto tryCanonicalValidationRouteBossRecovery")
+    lambda_end = objective.index("auto isNaturalValidationRoutePackMember", lambda_start)
+    recovery = objective[lambda_start:lambda_end]
+    raid_guard = recovery.index("bot->GetMap()->IsRaid()")
+    legacy = recovery.index("This legacy canonical-spawn recovery is intentionally scoped to")
+    assert raid_guard < legacy
+    assert "non-raid validation routes only" in recovery[legacy:]

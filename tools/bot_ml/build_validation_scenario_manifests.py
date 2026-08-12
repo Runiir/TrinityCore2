@@ -308,6 +308,12 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
                 "label": step.get("label") or "",
                 "mechanic_profile": step.get("mechanic_profile") or "",
                 "mechanic_contract": step.get("mechanic_contract") or {},
+                # Boss recovery authority is a route contract, not a bot
+                # tuning knob.  Omit it for ordinary nodes; the runtime
+                # defaults to native encounter recovery.  Phase 1 Magmaw is
+                # the only current node that opts into the exact native wipe
+                # gate.
+                "boss_recovery_policy": str(step.get("boss_recovery_policy") or ""),
                 "x": float(step.get("x") or 0.0),
                 "y": float(step.get("y") or 0.0),
                 "z": float(step.get("z") or 0.0),

@@ -32,6 +32,16 @@ enum class BotWorldRuntimeMode
     AlwaysOnAutonomy
 };
 
+// Boss recovery authority is part of the checked-in validation contract.  A
+// native encounter owns raid reset/respawn; the bot route may not manufacture
+// a boss object or state.  Phase 1 Magmaw additionally requires an exact
+// native full wipe before non-combat recovery is allowed.
+enum class ValidationRouteBossRecoveryPolicy : uint8
+{
+    NativeEncounter = 0,
+    NativeFullWipeOnly = 1
+};
+
 struct BotWorldExperimentConfig
 {
     std::string Name = "autonomous_zone_10";
@@ -81,6 +91,7 @@ struct BotWorldExperimentConfig
     std::string ValidationRouteKind;
     std::string ValidationRouteNodeKind;
     std::string ValidationRouteMechanicProfile;
+    ValidationRouteBossRecoveryPolicy ValidationRouteBossRecovery = ValidationRouteBossRecoveryPolicy::NativeEncounter;
     uint32 ValidationRouteMapId = 0;
     float ValidationRouteX = 0.0f;
     float ValidationRouteY = 0.0f;
@@ -361,6 +372,7 @@ private:
         std::string NodeKind;
         std::string MechanicProfile;
         std::string MechanicContractId;
+        ValidationRouteBossRecoveryPolicy BossRecoveryPolicy = ValidationRouteBossRecoveryPolicy::NativeEncounter;
         std::string FormationFamily;
         std::string FormationAnchor;
         std::string FormationScope = "raid";
