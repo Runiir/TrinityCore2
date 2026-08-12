@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-12T06:51:24Z",
+  "updated_at_utc": "2026-08-12T12:38:10Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -16,8 +16,8 @@
   },
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
-    "foundation_sha": "35c9e61b85407d2ccbe6f3be1b3eaae8ce6eb407",
-    "current_head_sha": "35c9e61b85407d2ccbe6f3be1b3eaae8ce6eb407",
+    "foundation_sha": "42357ba662c2add889bf697c6719a901ad822df2",
+    "current_head_sha": "42357ba662c2add889bf697c6719a901ad822df2",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -27,15 +27,16 @@
     "prior_review_decision": "REJECT",
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
-    "critical_high_remediation_implemented_at": "35c9e61b85407d2ccbe6f3be1b3eaae8ce6eb407",
-    "mandatory_rereview": "pending",
-    "current_acceptance": "not_promoted"
+    "critical_high_remediation_implemented_at": "42357ba662c2add889bf697c6719a901ad822df2",
+    "mandatory_rereview": "zero_locally_closable_critical_high_findings",
+    "external_service_requirement": "separately_privileged_signing_execution_service_required",
+    "current_acceptance": "blocked_on_external_authority"
   },
   "build_history": {
-    "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v7.json",
-    "current_commit": "35c9e61b85407d2ccbe6f3be1b3eaae8ce6eb407",
-    "current_state": "idle_pending_clean_release_reconfigure_and_build",
-    "current_result": "pending",
+    "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
+    "current_commit": "42357ba662c2add889bf697c6719a901ad822df2",
+    "current_state": "blocked_before_gate_bearing_configure_on_missing_privileged_signing_service",
+    "current_result": "external_authority_blocker",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -186,7 +187,7 @@
     "worldserver_active": false,
     "validation_operator_active": false,
     "dvc_publisher_active": false,
-    "heavyweight_build_active": true
+    "heavyweight_build_active": false
   },
   "dvc": {
     "broad_status": "inherited_dependency_drift_and_selectively_evicted_outputs_present",
@@ -265,17 +266,25 @@
         "strict_receipt_v2_source_provenance_and_all_row_evidence_demux_implemented",
         "live_declarative_mechanic_contract_fail_closed_and_required_primitives_implemented",
         "focused_phase1_phase9_and_regression_suite_168_passed",
-        "policy_v7_release_retry_frozen_without_weakening_resource_thresholds"
+        "policy_v7_release_retry_frozen_without_weakening_resource_thresholds",
+        "policy_v8_exact_configure_build_graph_environment_and_toolchain_authority_frozen",
+        "mandatory_sol_high_review_zero_locally_closable_critical_high_findings_at_42357ba662"
       ],
       "remaining_requirements": [
-        "complete_policy_v7_release_coordinated_reconfigure_build_and_regression_gate",
-        "mandatory_sol_high_adversarial_foundation_rereview_with_zero_unresolved_critical_or_high_findings",
+        "provision_separately_privileged_signing_execution_service_and_immutable_ledger_authority",
+        "complete_policy_v8_release_coordinated_reconfigure_build_and_regression_gate_through_privileged_service",
         "serialized_bwd_10n_entry_formation_difficulty_wipe_reset_evidence_publication_and_cleanup_gate",
         "phase1_live_evidence_dvc_publish_remote_verify_and_exact_evict_gate"
       ]
     }
   ],
   "blockers": [
+    {
+      "blocker_id": "phase1_privileged_build_receipt_authority",
+      "classification": "external_new_authority_required",
+      "scope": "phase1_build_gate",
+      "detail": "The mandatory Sol-high reviewer reports zero locally closable critical/high findings at 42357ba662. Canonical receipt authenticity still requires a separately privileged UID/service or remote/hardware-backed signer that exclusively owns the signing key and immutable ledger and executes the admitted configure/build. This user-level session cannot create that trust boundary without new authority; no gate-bearing build or canonical capture may proceed."
+    },
     {
       "blocker_id": "bwd_exact_442_quantitative_identity",
       "classification": "research_unresolved",
