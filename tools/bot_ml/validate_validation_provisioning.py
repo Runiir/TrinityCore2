@@ -17,7 +17,7 @@ try:
         load_spell_item_enchantments,
         SPELL_ITEM_ENCHANTMENT_FMT,
     )
-    from .build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, equipment_cache, load_config, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, scenario_report, talent_point_count
+    from .build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, equipment_cache, load_config, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, talent_point_count
     from .common import stable_hash, write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 except ImportError:
@@ -31,7 +31,7 @@ except ImportError:
         load_spell_item_enchantments,
         SPELL_ITEM_ENCHANTMENT_FMT,
     )
-    from build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, equipment_cache, load_config, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, scenario_report, talent_point_count
+    from build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, equipment_cache, load_config, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, talent_point_count
     from common import stable_hash, write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 
@@ -295,7 +295,7 @@ def fetch_runtime_gear(database_url: str, names: set[str]) -> dict[str, dict[str
         placeholders = ", ".join(["%s"] * len(names))
         with conn.cursor() as cursor:
             cursor.execute(
-                "SELECT c.guid, c.name, c.talentTree, c.equipmentCache, ci.slot, ii.itemEntry, ii.durability "
+                "SELECT c.guid, c.name, c.talentTree, c.equipmentCache, ci.slot, ii.itemEntry, ii.durability, ii.enchantments "
                 "FROM characters c "
                 "LEFT JOIN character_inventory ci ON ci.guid = c.guid AND ci.bag = 0 AND ci.slot < %s "
                 "LEFT JOIN item_instance ii ON ii.guid = ci.item "
@@ -308,7 +308,11 @@ def fetch_runtime_gear(database_url: str, names: set[str]) -> dict[str, dict[str
                 name = str(row["name"])
                 entry = payload.setdefault(name, {"guid": int(row["guid"]), "talentTree": str(row.get("talentTree") or ""), "equipmentCache": str(row.get("equipmentCache") or ""), "items": {}})
                 if row.get("slot") is not None:
-                    entry["items"][int(row["slot"])] = {"item_id": int(row.get("itemEntry") or 0), "durability": int(row.get("durability") or 0)}
+                    entry["items"][int(row["slot"])] = {
+                        "item_id": int(row.get("itemEntry") or 0),
+                        "durability": int(row.get("durability") or 0),
+                        "enchantments": parse_enchantment_payload(str(row.get("enchantments") or "")),
+                    }
 
             cursor.execute(
                 "SELECT c.name, cg.glyph1, cg.glyph2, cg.glyph3, cg.glyph4, cg.glyph5, cg.glyph6, cg.glyph7, cg.glyph8, cg.glyph9 "
@@ -434,6 +438,10 @@ def validate_database(config: dict[str, Any], worldserver_conf: Path, require_ap
             equipment = bot.get("equipment", [])
             expected_slots = set(required_equipment_slots_for(equipment))
             expected_by_slot = {int(item.get("slot", -1)): int(item.get("item_id") or 0) for item in equipment}
+            expected_modifier_payload_by_slot = {
+                int(item.get("slot", -1)): parse_enchantment_payload(runtime_safe_enchantments(item))
+                for item in equipment
+            }
             expected_durability_by_slot = {int(item.get("slot", -1)): int(item.get("durability") or 0) for item in equipment}
             actual = runtime.get(name, {"items": {}, "talentTree": "", "equipmentCache": "", "glyphs": [], "talent_spells": set(), "known_spells": set()})
             actual_items = actual.get("items", {})
@@ -452,6 +460,22 @@ def validate_database(config: dict[str, Any], worldserver_conf: Path, require_ap
                 for slot, item_id in sorted(expected_by_slot.items())
                 if slot in expected_slots and int(actual_items.get(slot, {}).get("item_id") or 0) != item_id
             ]
+            modifier_offsets = (0, *SOCKET_ENCHANTMENT_FIELD_OFFSETS, 24)
+            wrong_modifiers = []
+            for slot, expected_payload in sorted(expected_modifier_payload_by_slot.items()):
+                actual_payload = actual_items.get(slot, {}).get("enchantments", [])
+                mismatches = [
+                    {
+                        "offset": offset,
+                        "expected": expected_payload[offset] if len(expected_payload) > offset else None,
+                        "actual": actual_payload[offset] if len(actual_payload) > offset else None,
+                    }
+                    for offset in modifier_offsets
+                    if (expected_payload[offset] if len(expected_payload) > offset else None)
+                    != (actual_payload[offset] if len(actual_payload) > offset else None)
+                ]
+                if mismatches:
+                    wrong_modifiers.append({"slot": slot, "mismatches": mismatches})
             zero_durability = sorted(
                 slot
                 for slot, item in actual_items.items()
@@ -478,6 +502,7 @@ def validate_database(config: dict[str, Any], worldserver_conf: Path, require_ap
                 "expected_slots": sorted(expected_slots),
                 "missing_slots": missing_slots,
                 "wrong_items": wrong_items,
+                "wrong_modifiers": wrong_modifiers,
                 "zero_durability_slots": zero_durability,
                 "visible_missing_slots": visible_missing,
                 "average_item_level": avg_item_level,
@@ -494,6 +519,8 @@ def validate_database(config: dict[str, Any], worldserver_conf: Path, require_ap
                 failures.append({"check": "runtime_equipment_slots", "bot": name, "missing_slots": missing_slots})
             if wrong_items:
                 failures.append({"check": "runtime_equipment_items", "bot": name, "wrong_items": wrong_items})
+            if wrong_modifiers:
+                failures.append({"check": "runtime_equipment_modifiers", "bot": name, "wrong_modifiers": wrong_modifiers})
             if zero_durability:
                 failures.append({"check": "runtime_equipment_durability", "bot": name, "slots": zero_durability})
             if visible_missing:

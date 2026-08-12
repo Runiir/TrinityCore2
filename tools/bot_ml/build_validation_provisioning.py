@@ -253,8 +253,13 @@ def runtime_safe_enchantments(item: dict[str, Any]) -> str:
             values[index] = int(token)
     if not raw and int(item.get("enchant_id") or 0):
         values[0] = int(item.get("enchant_id") or 0)
-    if item.get("preserve_socket_enchantments"):
-        for socket_offset, enchant_id in zip((6, 9, 12), item.get("gem_enchant_ids", [])):
+    gem_item_ids = [int(value or 0) for value in item.get("gem_item_ids", [])]
+    gem_enchant_ids = [int(value or 0) for value in item.get("gem_enchant_ids", [])]
+    verified_socket_mapping = bool(gem_item_ids) and len(gem_item_ids) == len(gem_enchant_ids) \
+        and all(gem_item_id > 0 and gem_enchant_id > 0
+            for gem_item_id, gem_enchant_id in zip(gem_item_ids, gem_enchant_ids))
+    if item.get("preserve_socket_enchantments") or verified_socket_mapping:
+        for socket_offset, enchant_id in zip((6, 9, 12), gem_enchant_ids):
             values[socket_offset] = int(enchant_id or 0)
     else:
         for socket_offset in (6, 9, 12):

@@ -8364,6 +8364,32 @@ def test_validation_provisioning_preserves_verified_wowsims_gems_and_reforge():
     assert fields[24] == "151"
 
 
+def test_validation_provisioning_preserves_complete_positive_gem_mapping():
+    fields = runtime_safe_enchantments(
+        {
+            "enchant_id": 4172,
+            "gem_item_ids": [68779, 52260],
+            "gem_enchant_ids": [4252, 4037],
+        }
+    ).split()
+
+    assert fields[6] == "4252"
+    assert fields[9] == "4037"
+
+
+def test_validation_provisioning_rejects_incomplete_gem_mapping():
+    fields = runtime_safe_enchantments(
+        {
+            "enchant_id": 4172,
+            "gem_item_ids": [68779, 52260],
+            "gem_enchant_ids": [4252],
+        }
+    ).split()
+
+    assert fields[6] == "0"
+    assert fields[9] == "0"
+
+
 def test_validation_provisioning_loads_exact_wowsims_calibration_overlays():
     profiles = load_gear_profiles(Path("dataset/validation_gear_profiles/profiles.json"))
 
@@ -8497,6 +8523,57 @@ def test_validation_provisioning_runtime_gear_verification_fails_stale_cache_and
     assert "runtime_equipment_cache" in checks
     assert "runtime_glyphs" in checks
     assert evidence["runtime_gear"]["Mage"]["glyphs_missing"] == [316, 320, 330]
+
+
+def test_validation_provisioning_runtime_gear_verification_fails_wrong_modifiers(monkeypatch, tmp_path):
+    conf = tmp_path / "worldserver.conf"
+    conf.write_text(
+        'LoginDatabaseInfo = "db.example;3306;trinity;secret;auth"\n'
+        'CharacterDatabaseInfo = "db.example;3306;trinity;secret;characters"\n',
+        encoding="utf-8",
+    )
+    equipment = [{
+        "slot": 0,
+        "item_id": 7000,
+        "inventory_type": 1,
+        "durability": 100,
+        "enchant_id": 4172,
+        "gem_item_ids": [68779, 52260],
+        "gem_enchant_ids": [4252, 4037],
+        "reforge_id": 151,
+    }]
+    config = {"scenarios": [{"id": "stonecore_5n", "bots": [{"account": "A", "name": "Mage", "class": 8, "equipment": equipment}]}]}
+
+    monkeypatch.setattr("tools.bot_ml.validate_validation_provisioning.fetch_columns", lambda _url, _table: set())
+    monkeypatch.setattr("tools.bot_ml.validate_validation_provisioning.fetch_existing_values", lambda _url, _table, _column, values: set(values))
+    monkeypatch.setattr(
+        "tools.bot_ml.validate_validation_provisioning.fetch_runtime_gear",
+        lambda _url, _names: {
+            "Mage": {
+                "guid": 1,
+                "talentTree": "0 0",
+                "equipmentCache": equipment_cache(equipment),
+                "items": {0: {"item_id": 7000, "durability": 100, "enchantments": [0] * 36}},
+                "glyphs": [],
+                "talent_spells": set(),
+                "known_spells": set(),
+            }
+        },
+    )
+
+    failures, evidence = validate_provisioning_database(config, conf, require_applied=True)
+
+    modifier_failure = next(failure for failure in failures if failure["check"] == "runtime_equipment_modifiers")
+    assert modifier_failure["wrong_modifiers"] == [{
+        "slot": 0,
+        "mismatches": [
+            {"offset": 0, "expected": 4172, "actual": 0},
+            {"offset": 6, "expected": 4252, "actual": 0},
+            {"offset": 9, "expected": 4037, "actual": 0},
+            {"offset": 24, "expected": 151, "actual": 0},
+        ],
+    }]
+    assert evidence["runtime_gear"]["Mage"]["wrong_modifiers"] == modifier_failure["wrong_modifiers"]
 
 
 def test_validation_provisioning_runtime_verifies_talent_tree_talents_and_known_spells(monkeypatch, tmp_path):
