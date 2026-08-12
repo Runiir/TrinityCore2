@@ -28,6 +28,9 @@ IDENTITY_FIELDS = (
     "lockout_save_id",
     "server_epoch",
     "attempt_id",
+    "profile_generation",
+    "profile_content_hash",
+    "assignment_generation",
 )
 STRATEGY_FIELD = "strategy_id"
 ROSTER_ID_FIELDS = (
@@ -417,6 +420,12 @@ def accepted_foundation_status(status: dict[str, Any]) -> tuple[bool, list[str]]
     }
     reasons.extend(name for name, passed in checks.items() if not passed)
     reasons.extend(_roster_rejections(runtime))
+    roster = runtime.get("roster")
+    roster_guids = {
+        row.get("guid") for row in roster if isinstance(row, dict)
+    } if isinstance(roster, list) else set()
+    if runtime.get("leader_guid") not in roster_guids:
+        reasons.append("leader_not_in_exact_roster")
     return not reasons, reasons
 
 
@@ -458,6 +467,8 @@ def accepted_native_recovery(statuses: list[dict[str, Any]]) -> tuple[bool, list
     previous_transition_state: tuple[Any, ...] | None = None
     engagement_index: int | None = None
     wipe_index: int | None = None
+    boss_reset_generation_at_wipe: int | None = None
+    recovery_generation_at_wipe: int | None = None
     reset_index: int | None = None
     recovery_index: int | None = None
     for index, runtime in enumerate(runtimes):
@@ -570,11 +581,22 @@ def accepted_native_recovery(statuses: list[dict[str, Any]]) -> tuple[bool, list
             and runtime.get("recovery_state") in {"awaiting_native_reset", "release_resurrection_pending"}
         ):
             wipe_index = index
+            declared_reset_baseline = runtime.get("boss_reset_generation_at_wipe")
+            boss_reset_generation_at_wipe = (
+                declared_reset_baseline
+                if _nonnegative_int(declared_reset_baseline)
+                and declared_reset_baseline <= generations[1]
+                else generations[1]
+            )
+            recovery_generation_at_wipe = generations[2]
+            if generations[1] > boss_reset_generation_at_wipe:
+                reset_index = index
         if (
             wipe_index is not None
             and reset_index is None
             and index > wipe_index
-            and generations[1] > 0
+            and boss_reset_generation_at_wipe is not None
+            and generations[1] > boss_reset_generation_at_wipe
             and runtime.get("encounter_in_progress") is False
         ):
             reset_index = index
@@ -582,7 +604,8 @@ def accepted_native_recovery(statuses: list[dict[str, Any]]) -> tuple[bool, list
             reset_index is not None
             and recovery_index is None
             and index > reset_index
-            and generations[2] > 0
+            and recovery_generation_at_wipe is not None
+            and generations[2] > recovery_generation_at_wipe
             and runtime.get("recovery_state") == "recovered_ready_check"
             and runtime.get("ready_check_satisfied") is True
             and runtime.get("alive_size") == 10
@@ -614,6 +637,12 @@ def accepted_native_recovery(statuses: list[dict[str, Any]]) -> tuple[bool, list
         reasons.append("native_ready_check_action_attempt_mismatch")
     if final_native.get("ready_check_action_wipe_generation") != runtimes[-1].get("wipe_generation"):
         reasons.append("native_ready_check_action_wipe_generation_mismatch")
+    if final_native.get("ready_check_assignment_generation") != runtimes[-1].get("assignment_generation"):
+        reasons.append("native_ready_check_assignment_generation_mismatch")
+    ready_sequence = final_native.get("ready_check_action_evidence_sequence")
+    if not _positive_int(ready_sequence) or not _positive_int(final_runtime.get("evidence_sequence")) \
+            or ready_sequence > final_runtime["evidence_sequence"]:
+        reasons.append("native_ready_check_sequence_exceeds_runtime")
     recovery_members = final_native.get("members")
     final_roster = final_runtime.get("roster")
     roster_guids = {
@@ -644,6 +673,10 @@ def accepted_native_recovery(statuses: list[dict[str, Any]]) -> tuple[bool, list
                 left < right for left, right in zip(sequences, sequences[1:])
             ):
                 reasons.append("native_per_member_recovery_order_invalid")
+            elif not _positive_int(final_runtime.get("evidence_sequence")) or any(
+                value > final_runtime["evidence_sequence"] for value in sequences
+            ):
+                reasons.append("native_per_member_recovery_sequence_exceeds_runtime")
 
     ordered_checks = {
         "ready_check_observed": any(runtime.get("ready_check_satisfied") is True for runtime in runtimes),
@@ -673,7 +706,13 @@ def git_identity(cwd: Path) -> dict[str, Any]:
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=cwd, text=True).strip()
     tree = subprocess.check_output(["git", "rev-parse", "HEAD^{tree}"], cwd=cwd, text=True).strip()
     porcelain = subprocess.check_output(["git", "status", "--porcelain=v1", "-z"], cwd=cwd)
-    return {"head": head, "tree": tree, "clean": not porcelain, "porcelain_sha256": hashlib.sha256(porcelain).hexdigest()}
+    return {
+        "head": head,
+        "tree": tree,
+        "clean": not porcelain,
+        "dirty": bool(porcelain),
+        "porcelain_sha256": hashlib.sha256(porcelain).hexdigest(),
+    }
 
 
 def _utc_timestamp(value: str) -> float:
@@ -720,7 +759,14 @@ def validate_build_receipt(
                 rejections.append("build_receipt_source_identity_changed")
             else:
                 completion = snapshots[2]
-                if completion.get("commit") != identity["head"] or completion.get("tree") != identity["tree"]:
+                current_source = {
+                    "commit": identity["head"],
+                    "tree": identity["tree"],
+                    "clean": identity["clean"],
+                    "dirty": identity["dirty"],
+                    "porcelain_sha256": identity["porcelain_sha256"],
+                }
+                if completion != current_source:
                     rejections.append("build_receipt_completion_source_mismatch")
                 if completion.get("clean") is not True or completion.get("dirty") is not False:
                     rejections.append("build_receipt_completion_source_dirty")
@@ -803,7 +849,7 @@ def normalized_batch_payload(log_bytes: bytes) -> list[dict[str, Any]]:
         "botauto_readycheck": "native_action",
         "botauto_stop": "cleanup",
     }
-    return [
+    rows = [
         {
             "normalized_schema_version": 2,
             "capture_sequence": sequence,
@@ -813,9 +859,19 @@ def normalized_batch_payload(log_bytes: bytes) -> list[dict[str, Any]]:
         }
         for sequence, row in enumerate(json_rows(log_bytes), start=1)
     ]
+    # Populate diagnostic bindings for the immutable batch, but never trust
+    # them during acceptance: evidence_demux_report reconstructs and replaces
+    # every binding from the retained payload on every call.
+    evidence_demux_report(rows)
+    return rows
 
 
-def evidence_demux_rejections(rows: list[dict[str, Any]]) -> list[str]:
+def _canonical_object_sha256(value: Any) -> str:
+    encoded = json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Independently bind every retained JSON row to one raid lifecycle."""
 
     reasons: list[str] = []
@@ -827,6 +883,21 @@ def evidence_demux_rejections(rows: list[dict[str, Any]]) -> list[str]:
     canonical_roster: tuple[tuple[Any, ...], ...] | None = None
     canonical_cohort: str | None = None
     roster_guids: set[int] = set()
+    canonical_identity_sha256: str | None = None
+    canonical_roster_sha256: str | None = None
+
+    for row in rows:
+        # An outer annotation is evidence output, not evidence input.  Replace
+        # it before reconstructing so a forged binding can never self-certify.
+        row["identity_binding"] = {
+            "state": "rejected",
+            "scope": "unknown",
+            "canonical_identity_sha256": None,
+            "cohort_id": None,
+            "roster_sha256": None,
+            "binding_source": "retained_payload_reconstruction",
+            "reasons": [],
+        }
 
     # First establish canonical identity only from a complete active status.
     for row in rows:
@@ -845,72 +916,145 @@ def evidence_demux_rejections(rows: list[dict[str, Any]]) -> list[str]:
             canonical_roster = roster_identity
             canonical_cohort = cohort
             roster_guids = {int(member[3]) for member in roster_identity if _positive_int(member[3])}
+            canonical_roster_sha256 = _canonical_object_sha256(roster_identity)
+            canonical_identity_sha256 = _canonical_object_sha256(
+                {
+                    "cohort_id": canonical_cohort,
+                    "runtime_identity": canonical_identity,
+                    "roster_sha256": canonical_roster_sha256,
+                }
+            )
             break
     if canonical_identity is None:
-        return ["evidence_demux_no_active_raid_rows"]
+        for row in rows:
+            row["identity_binding"]["reasons"] = ["evidence_demux_no_active_raid_rows"]
+        return {
+            "rejections": ["evidence_demux_no_active_raid_rows"],
+            "retained_rows": len(rows),
+            "bound_rows": 0,
+            "rejected_rows": len(rows),
+            "unchecked_rows": 0,
+            "canonical_identity_sha256": None,
+            "canonical_roster_sha256": None,
+            "gate_passed": False,
+        }
 
     stop_seen = False
+    inactive_cleanup_seen = False
+    observed_actions: set[str] = set()
     for expected_sequence, row in enumerate(rows, start=1):
+        binding = row["identity_binding"]
+        binding.update(
+            canonical_identity_sha256=canonical_identity_sha256,
+            cohort_id=canonical_cohort,
+            roster_sha256=canonical_roster_sha256,
+        )
+        row_reasons: list[str] = binding["reasons"]
+
+        def reject(reason: str) -> None:
+            row_reasons.append(reason)
+            reasons.append(reason)
+
         payload = row.get("payload")
         if not isinstance(payload, dict):
-            reasons.append("evidence_demux_payload_missing")
+            reject("evidence_demux_payload_missing")
             continue
         action = payload.get("action")
         if row.get("capture_sequence") != expected_sequence:
-            reasons.append("evidence_demux_sequence_invalid")
+            reject("evidence_demux_sequence_invalid")
         if row.get("action") != action:
-            reasons.append("evidence_demux_wrapper_action_mismatch")
+            reject("evidence_demux_wrapper_action_mismatch")
         if action not in known_actions:
-            reasons.append("evidence_demux_unclassified_row")
+            reject("evidence_demux_unclassified_row")
             continue
+        observed_actions.add(str(action))
 
         runtime_key = "raid_runtime_before_cleanup" if action == "botauto_stop" else "raid_runtime"
         runtime = payload.get(runtime_key)
         if action == "botauto_status" and isinstance(runtime, dict) and runtime.get("active") is False:
+            binding["scope"] = "post_cleanup"
             if not stop_seen:
-                reasons.append("evidence_demux_inactive_status_before_stop")
+                reject("evidence_demux_inactive_status_before_stop")
             if payload.get("cohort_id") != canonical_cohort:
-                reasons.append("evidence_demux_cross_identity_row")
+                reject("evidence_demux_cross_identity_row")
             if payload.get("bots") != 0 or payload.get("lease_count") != 0:
-                reasons.append("evidence_demux_cleanup_not_empty")
-            if runtime.get("server_epoch") != canonical_identity[9] or runtime.get("attempt_id") != canonical_identity[10]:
-                reasons.append("evidence_demux_cross_identity_row")
+                reject("evidence_demux_cleanup_not_empty")
+            if (
+                payload.get("server_epoch") != canonical_identity[9]
+                or payload.get("attempt_id") != canonical_identity[10]
+                or _runtime_identity(runtime) != canonical_identity
+            ):
+                reject("evidence_demux_cross_identity_row")
+            inactive_cleanup_seen = True
+            if not row_reasons:
+                binding["state"] = "bound"
             continue
 
+        binding["scope"] = "pre_cleanup_runtime" if action == "botauto_stop" else "active_runtime"
+        if stop_seen:
+            reject("evidence_demux_active_row_after_stop")
         if not isinstance(runtime, dict) or runtime.get("active") is not True:
-            reasons.append("evidence_demux_identity_missing")
+            reject("evidence_demux_identity_missing")
             continue
         identity = _runtime_identity(runtime)
         roster = runtime.get("roster")
         roster_identity = _roster_identity(roster) if isinstance(roster, list) else None
         if (identity != canonical_identity or roster_identity != canonical_roster
                 or payload.get("cohort_id") != canonical_cohort):
-            reasons.append("evidence_demux_cross_identity_row")
+            reject("evidence_demux_cross_identity_row")
 
         if action == "botauto_stop":
+            if stop_seen:
+                reject("evidence_demux_duplicate_stop")
             cleanup = payload.get("post_cleanup")
             if (payload.get("server_epoch") != canonical_identity[9]
                     or payload.get("attempt_id") != canonical_identity[10]
                     or not isinstance(cleanup, dict) or cleanup.get("active") is not False
                     or cleanup.get("bots") != 0 or cleanup.get("lease_count") != 0):
-                reasons.append("evidence_demux_cleanup_identity_invalid")
+                reject("evidence_demux_cleanup_identity_invalid")
             stop_seen = True
 
         bot_rows = payload.get("bots")
         if isinstance(bot_rows, list):
             for bot_row in bot_rows:
                 if not isinstance(bot_row, dict):
-                    reasons.append("evidence_demux_bot_row_invalid")
+                    reject("evidence_demux_bot_row_invalid")
                     continue
                 bot_guid = bot_row.get("bot_guid")
                 identity_object = bot_row.get("identity")
                 if isinstance(identity_object, dict):
                     bot_guid = identity_object.get("bot_guid")
                 if not _positive_int(bot_guid) or int(bot_guid) not in roster_guids:
-                    reasons.append("evidence_demux_bot_outside_roster")
+                    reject("evidence_demux_bot_outside_roster")
+        if not row_reasons:
+            binding["state"] = "bound"
     if not stop_seen:
         reasons.append("evidence_demux_cleanup_missing")
-    return list(dict.fromkeys(reasons))
+    if not inactive_cleanup_seen:
+        reasons.append("evidence_demux_inactive_cleanup_missing")
+    for required_action in known_actions:
+        if required_action not in observed_actions:
+            reasons.append(f"evidence_demux_required_action_missing:{required_action}")
+    unique_reasons = list(dict.fromkeys(reasons))
+    states = Counter(
+        str((row.get("identity_binding") or {}).get("state", "unchecked"))
+        for row in rows
+    )
+    unchecked = len(rows) - states.get("bound", 0) - states.get("rejected", 0)
+    return {
+        "rejections": unique_reasons,
+        "retained_rows": len(rows),
+        "bound_rows": states.get("bound", 0),
+        "rejected_rows": states.get("rejected", 0),
+        "unchecked_rows": unchecked,
+        "canonical_identity_sha256": canonical_identity_sha256,
+        "canonical_roster_sha256": canonical_roster_sha256,
+        "gate_passed": not unique_reasons and states.get("bound", 0) == len(rows) and unchecked == 0,
+    }
+
+
+def evidence_demux_rejections(rows: list[dict[str, Any]]) -> list[str]:
+    return evidence_demux_report(rows)["rejections"]
 
 
 def write_normalized_batch(path: Path, rows: list[dict[str, Any]]) -> tuple[str, int]:
@@ -1153,7 +1297,8 @@ def main() -> int:
         log_bytes = server_log_output.read_bytes()
 
     normalized_rows = normalized_batch_payload(log_bytes)
-    demux_rejections = evidence_demux_rejections(normalized_rows)
+    demux_report = evidence_demux_report(normalized_rows)
+    demux_rejections = demux_report["rejections"]
     raw_payload_sha256, raw_payload_rows = write_normalized_batch(raw_output, normalized_rows)
     statuses = json_actions(log_bytes, "botauto_status")
     active_statuses = [
@@ -1253,14 +1398,20 @@ def main() -> int:
             "immutable": True,
         },
         "evidence_demux": {
-            "retained_rows": len(normalized_rows),
-            "bound_rows": len(normalized_rows) if not demux_rejections else 0,
-            "rejected_rows": 0 if not demux_rejections else len(normalized_rows),
-            "unchecked_rows": 0,
+            "normalized_schema_version": 2,
+            "retained_rows": demux_report["retained_rows"],
+            "bound_rows": demux_report["bound_rows"],
+            "rejected_rows": demux_report["rejected_rows"],
+            "unchecked_rows": demux_report["unchecked_rows"],
+            "canonical_identity_sha256": demux_report["canonical_identity_sha256"],
+            "canonical_roster_sha256": demux_report["canonical_roster_sha256"],
             "channels": dict(Counter(str(row.get("evidence_channel")) for row in normalized_rows)),
-            "every_retained_row_demuxed": not demux_rejections,
+            "every_retained_row_demuxed": (
+                demux_report["bound_rows"] == demux_report["retained_rows"]
+                and demux_report["unchecked_rows"] == 0
+            ),
             "identity_rejections": demux_rejections,
-            "gate_passed": not demux_rejections,
+            "gate_passed": demux_report["gate_passed"],
         },
     }
     output.parent.mkdir(parents=True, exist_ok=True)

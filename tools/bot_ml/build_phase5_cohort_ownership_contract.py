@@ -28,7 +28,7 @@ def static_contract(repository: Path = REPO_ROOT) -> dict[str, Any]:
     ]
     cohort_start = source[
         source.index("bool BotWorldPopulationMgr::StartAutonomyForCohort") :
-        source.index("void BotWorldPopulationMgr::StopAutonomyForCohort")
+        source.index("std::string BotWorldPopulationMgr::StopAutonomyForCohort")
     ]
 
     legacy_globals = (
@@ -91,7 +91,7 @@ def static_contract(repository: Path = REPO_ROOT) -> dict[str, Any]:
         ),
         "exact_pool_tag_matching": (
             "cbp.experiment_tags = '" in source
-            and "`experiment_tags` = '%s'" in source
+            and "cbp.`experiment_tags` = '" in source
             and "experiment_tags LIKE '%" not in source
         ),
         "global_pool_reset_removed": (

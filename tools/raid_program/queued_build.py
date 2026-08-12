@@ -297,13 +297,20 @@ def command_hash(command: Sequence[str]) -> str:
 
 
 def worktree_state(worktree: Path) -> dict[str, object]:
-    porcelain = git_output(worktree, "status", "--porcelain=v1", "--untracked-files=all")
+    status = subprocess.run(
+        ["git", "-C", str(worktree), "status", "--porcelain=v1", "-z", "--untracked-files=all"],
+        check=False,
+        capture_output=True,
+    )
+    if status.returncode:
+        raise CoordinatorError(status.stderr.decode(errors="replace").strip() or "git status failed")
+    porcelain = status.stdout
     return {
         "commit": git_output(worktree, "rev-parse", "HEAD"),
         "tree": git_output(worktree, "rev-parse", "HEAD^{tree}"),
-        "clean": not bool(porcelain),
+        "clean": not porcelain,
         "dirty": bool(porcelain),
-        "porcelain_sha256": sha256_bytes((porcelain + "\n").encode()),
+        "porcelain_sha256": sha256_bytes(porcelain),
     }
 
 
@@ -348,7 +355,7 @@ def new_ticket(worktree: Path, resource_class: str, command: Sequence[str] | Non
         "requested_at_utc": utc_now(),
         "requester": process_identity(os.getpid()),
         "worktree": str(resolved),
-        "commit": git_output(resolved, "rev-parse", "HEAD"),
+        "commit": source_state["commit"],
         "worktree_dirty": source_state["dirty"],
         "worktree_porcelain_sha256": source_state["porcelain_sha256"],
         "source_identity": {"request": source_state},
@@ -673,11 +680,16 @@ def run_ticket(
     error_message: str | None = None
     request_source = (ticket.get("source_identity") or {}).get("request")
     admission_source = (ticket.get("source_identity") or {}).get("admission")
-    source_identity_admissible = resource_class == "synthetic" or bool(
+    source_identity_admissible = bool(
         request_source and admission_source
         and request_source == admission_source
-        and request_source.get("clean") is True
-        and admission_source.get("clean") is True
+        and (
+            resource_class == "synthetic"
+            or (
+                request_source.get("clean") is True
+                and admission_source.get("clean") is True
+            )
+        )
     )
     worldserver_path = (worktree / "build/src/server/worldserver/worldserver").resolve()
     worldserver_before: dict[str, object] | None = None
@@ -688,6 +700,7 @@ def run_ticket(
             "mtime_ns": before_stat.st_mtime_ns,
             "sha256": sha256_file(worldserver_path),
         }
+    log_path.parent.mkdir(parents=True, exist_ok=True)
     try:
         if not source_identity_admissible:
             returncode = 76
@@ -716,8 +729,10 @@ def run_ticket(
     source_identity_stable = bool(
         request_source and admission_source
         and request_source == admission_source == completion_source
-        and (resource_class == "synthetic"
-            or all(snapshot.get("clean") is True for snapshot in source_identity.values()))
+        and (
+            resource_class == "synthetic"
+            or all(snapshot.get("clean") is True for snapshot in source_identity.values())
+        )
     )
     provenance_reasons: list[str] = []
     if not source_identity_admissible:
@@ -759,7 +774,7 @@ def run_ticket(
         "ticket_id": ticket_id,
         "resource_class": resource_class,
         "worktree": str(worktree.resolve()),
-        "commit": git_output(worktree, "rev-parse", "HEAD"),
+        "commit": request_source.get("commit") if isinstance(request_source, dict) else None,
         "worktree_dirty_at_request": ticket["worktree_dirty"],
         "worktree_porcelain_sha256_at_request": ticket["worktree_porcelain_sha256"],
         "source_identity": source_identity,
@@ -814,6 +829,9 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
         "worktree",
         "commit",
         "worktree_porcelain_sha256_at_request",
+        "source_identity",
+        "source_identity_stable",
+        "provenance_reasons",
         "command_sha256",
         "classification",
         "compiler_job_ceiling",
@@ -855,6 +873,19 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
             raise CoordinatorError("receipt source porcelain hash is invalid")
     if not (snapshots[0] == snapshots[1] == snapshots[2]):
         raise CoordinatorError("receipt source identity changed during the coordinated command")
+    reconstructed_stable = snapshots[0] == snapshots[1] == snapshots[2] and bool(
+        receipt.get("test_mode") and allow_test_mode
+        or all(snapshot.get("clean") is True for snapshot in snapshots)
+    )
+    if receipt.get("source_identity_stable") is not reconstructed_stable:
+        raise CoordinatorError("receipt source stability claim does not match reconstructed snapshots")
+    provenance_reasons = receipt.get("provenance_reasons")
+    if not isinstance(provenance_reasons, list) or any(not isinstance(value, str) for value in provenance_reasons):
+        raise CoordinatorError("receipt provenance reasons are invalid")
+    if receipt.get("classification") == "success" and (
+        not reconstructed_stable or provenance_reasons
+    ):
+        raise CoordinatorError("successful receipt has invalid source provenance")
     if receipt.get("commit") != snapshots[0]["commit"]:
         raise CoordinatorError("receipt commit does not match source identity")
     if int(receipt["compiler_job_ceiling"]) > int(policy["parallelism"]["maximum_compiler_jobs"]):

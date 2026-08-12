@@ -9,6 +9,7 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     expected_bwd_10n_roster,
     _expected_identity_by_slot,
     preflight_runtime_exclusions,
+    evidence_demux_report,
     evidence_demux_rejections,
 )
 
@@ -38,9 +39,13 @@ def accepted_status() -> dict:
             "leader_guid": 1001,
             "server_epoch": 88,
             "attempt_id": 1,
+            "profile_generation": 1,
+            "profile_content_hash": "fixture-profile-sha256",
+            "assignment_generation": 1,
             "evidence_sequence": 1,
             "wipe_generation": 0,
             "boss_reset_generation": 0,
+            "boss_reset_generation_at_wipe": 0,
             "recovery_generation": 0,
             "encounter_in_progress": False,
             "wipe_state": "ready",
@@ -84,6 +89,7 @@ def accepted_status() -> dict:
                 "ready_check_action_observed": True, "evidence_complete": False,
                 "ready_check_action_generation": 1, "ready_check_action_attempt_id": 1,
                 "ready_check_action_wipe_generation": 0,
+                "ready_check_assignment_generation": 1,
                 "ready_check_action_evidence_sequence": 1,
                 "recovery_wipe_generation": 0,
             },
@@ -105,6 +111,14 @@ def test_wrong_difficulty_duplicate_identity_and_cleanup_shape_fail():
     assert accepted is False
     assert "live_map_difficulty_10n" in reasons
     assert "unique_roster_guids" in reasons
+
+
+def test_leader_must_be_one_of_the_exact_frozen_roster_guids():
+    status = accepted_status()
+    status["raid_runtime"]["leader_guid"] = 999999
+    accepted, reasons = accepted_foundation_status(status)
+    assert accepted is False
+    assert "leader_not_in_exact_roster" in reasons
 
 
 def test_roster_serialization_order_does_not_change_assignment_acceptance():
@@ -153,7 +167,7 @@ def test_native_wipe_reset_recovery_is_reconstructed_across_statuses():
     )
     recovered = accepted_status()
     recovered["raid_runtime"].update(
-        evidence_sequence=5, boss_reset_generation=1, wipe_generation=1, recovery_generation=1,
+        evidence_sequence=70, boss_reset_generation=1, wipe_generation=1, recovery_generation=1,
         recovery_state="recovered_ready_check", wipe_state="ready",
     )
     recovered["raid_runtime"]["native_recovery"] = {
@@ -162,7 +176,8 @@ def test_native_wipe_reset_recovery_is_reconstructed_across_statuses():
         "ready_check_action_observed": True, "evidence_complete": True,
         "ready_check_action_generation": 2, "ready_check_action_attempt_id": 1,
         "ready_check_action_wipe_generation": 1,
-        "ready_check_action_evidence_sequence": 5,
+        "ready_check_assignment_generation": 1,
+        "ready_check_action_evidence_sequence": 70,
         "recovery_wipe_generation": 1,
         "members": [
             {
@@ -180,6 +195,70 @@ def test_native_wipe_reset_recovery_is_reconstructed_across_statuses():
     accepted, reasons = accepted_native_recovery([ready, engaged, wiped, reset, recovered])
     assert accepted is True
     assert reasons == []
+
+
+def test_native_recovery_requires_post_wipe_reset_increment_and_bounded_member_sequences():
+    ready = accepted_status()
+    ready["raid_runtime"].update(evidence_sequence=1, boss_reset_generation=7)
+    engaged = accepted_status()
+    engaged["raid_runtime"].update(
+        evidence_sequence=2, boss_reset_generation=7, encounter_in_progress=True,
+        boss_states=[1] + [0] * 5, ready_check_satisfied=False,
+        wipe_state="engaged", recovery_state="none",
+    )
+    wiped = accepted_status()
+    wiped["raid_runtime"].update(
+        evidence_sequence=3, boss_reset_generation=7, wipe_generation=1,
+        boss_reset_generation_at_wipe=7,
+        alive_size=0, ready_check_satisfied=False, encounter_in_progress=False,
+        wipe_state="wiped", recovery_state="release_resurrection_pending",
+    )
+    unchanged_reset = accepted_status()
+    unchanged_reset["raid_runtime"].update(
+        evidence_sequence=4, boss_reset_generation=7, wipe_generation=1,
+        alive_size=0, wipe_state="wiped",
+        recovery_state="release_resurrection_pending",
+    )
+    recovered = accepted_status()
+    recovered["raid_runtime"].update(
+        evidence_sequence=5, boss_reset_generation=7, wipe_generation=1,
+        recovery_generation=1, recovery_state="recovered_ready_check",
+        wipe_state="ready",
+    )
+    recovered["raid_runtime"]["native_recovery"] = {
+        "death_observed": True, "corpse_observed": True, "release_observed": True,
+        "resurrection_observed": True, "runback_observed": True,
+        "ready_check_action_observed": True, "evidence_complete": True,
+        "ready_check_action_generation": 2, "ready_check_action_attempt_id": 1,
+        "ready_check_action_wipe_generation": 1,
+        "ready_check_assignment_generation": 1,
+        "ready_check_action_evidence_sequence": 5,
+        "recovery_wipe_generation": 1,
+        "members": [
+            {
+                "guid": 1001 + index, "wipe_generation": 1,
+                "death_sequence": 10 + index * 6,
+                "corpse_sequence": 11 + index * 6,
+                "release_sequence": 12 + index * 6,
+                "runback_sequence": 13 + index * 6,
+                "reentry_sequence": 14 + index * 6,
+                "resurrection_sequence": 15 + index * 6,
+            }
+            for index in range(10)
+        ],
+    }
+    accepted, reasons = accepted_native_recovery(
+        [ready, engaged, wiped, unchanged_reset, recovered]
+    )
+    assert accepted is False
+    assert "boss_reset_observed" in reasons
+
+    valid = json.loads(json.dumps(recovered))
+    accepted, reasons = accepted_native_recovery(
+        [ready, engaged, wiped, unchanged_reset, valid]
+    )
+    assert accepted is False
+    assert "native_per_member_recovery_sequence_exceeds_runtime" in reasons
 
 
 def test_native_recovery_rejects_stored_ready_without_observed_transitions():
@@ -263,9 +342,30 @@ def test_live_evidence_demux_rejects_cross_identity_runtime():
     assert "evidence_demux_cross_identity_row" in evidence_demux_rejections(rows)
 
 
+def test_live_evidence_demux_rejects_profile_and_assignment_drift():
+    active = accepted_status()
+    active["cohort_id"] = "raid"
+    drifted = json.loads(json.dumps(active))
+    drifted["raid_runtime"]["profile_generation"] = 2
+    drifted["raid_runtime"]["profile_content_hash"] = "different-profile"
+    drifted["raid_runtime"]["assignment_generation"] = 9
+    rows = normalized_batch_payload(
+        (json.dumps(active) + "\n" + json.dumps(drifted) + "\n").encode()
+    )
+    assert "evidence_demux_cross_identity_row" in evidence_demux_rejections(rows)
+
+
 def test_live_evidence_demux_binds_readycheck_stop_and_inactive_cleanup():
     active = accepted_status()
     active["cohort_id"] = "raid"
+    diagnosis = {
+        "ok": True, "action": "botauto_diagnose", "cohort_id": "raid",
+        "raid_runtime": active["raid_runtime"], "bots": [],
+    }
+    trace = {
+        "ok": True, "action": "botauto_trace", "cohort_id": "raid",
+        "raid_runtime": active["raid_runtime"], "bots": [],
+    }
     readycheck = {
         "ok": True, "action": "botauto_readycheck", "cohort_id": "raid",
         "raid_runtime": active["raid_runtime"],
@@ -280,11 +380,22 @@ def test_live_evidence_demux_binds_readycheck_stop_and_inactive_cleanup():
     inactive["cohort_id"] = "raid"
     inactive["bots"] = 0
     inactive["lease_count"] = 0
+    inactive["server_epoch"] = 88
+    inactive["attempt_id"] = 1
     inactive["raid_runtime"]["active"] = False
     rows = normalized_batch_payload(
-        b"\n".join(json.dumps(row).encode() for row in (active, readycheck, stop, inactive)) + b"\n"
+        b"\n".join(
+            json.dumps(row).encode()
+            for row in (active, diagnosis, trace, readycheck, stop, inactive)
+        ) + b"\n"
     )
-    assert evidence_demux_rejections(rows) == []
+    report = evidence_demux_report(rows)
+    assert report["rejections"] == []
+    assert report["bound_rows"] == report["retained_rows"] == 6
+    assert report["rejected_rows"] == report["unchecked_rows"] == 0
+    assert len(report["canonical_identity_sha256"]) == 64
+    assert len(report["canonical_roster_sha256"]) == 64
+    assert all(row["identity_binding"]["state"] == "bound" for row in rows)
 
 
 def test_live_evidence_demux_rejects_unclassified_and_unbound_readycheck():
@@ -296,3 +407,26 @@ def test_live_evidence_demux_rejects_unclassified_and_unbound_readycheck():
     reasons = evidence_demux_rejections(rows)
     assert "evidence_demux_unclassified_row" in reasons
     assert "evidence_demux_cleanup_missing" in reasons
+
+
+def test_live_evidence_demux_reconstructs_bindings_and_rejects_missing_lifecycle_identity():
+    active = accepted_status()
+    active["cohort_id"] = "raid"
+    missing_runtime = {
+        "ok": False, "action": "botauto_readycheck", "cohort_id": "raid",
+        "failure_reason": "not_ready",
+    }
+    bad_stop = {
+        "ok": True, "action": "botauto_stop", "cohort_id": "raid",
+        "server_epoch": 88, "attempt_id": 1,
+        "post_cleanup": {"active": False, "bots": 0, "lease_count": 0},
+    }
+    rows = normalized_batch_payload(
+        b"\n".join(json.dumps(row).encode() for row in (active, missing_runtime, bad_stop)) + b"\n"
+    )
+    rows[0]["identity_binding"] = {"state": "bound", "canonical_identity_sha256": "0" * 64}
+    report = evidence_demux_report(rows)
+    assert "evidence_demux_identity_missing" in report["rejections"]
+    assert report["rejected_rows"] == 2
+    assert report["unchecked_rows"] == 0
+    assert rows[0]["identity_binding"]["canonical_identity_sha256"] != "0" * 64

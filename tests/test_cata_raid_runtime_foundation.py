@@ -139,6 +139,36 @@ def test_status_diagnose_trace_and_evidence_expose_raid_identity():
     assert '\\\"assignment_generation\\\"' in IMPL
 
 
+def test_cleanup_preserves_terminal_raid_identity_for_final_status_demux():
+    assert "uint64 ProfileGeneration" in HEADER
+    assert "std::string ProfileContentHash" in HEADER
+    release_start = IMPL.index("void BotWorldPopulationMgr::ReleaseCohortLeases")
+    release = IMPL[
+        release_start:
+        IMPL.index("bool BotWorldPopulationMgr::LeaseOwnedByCurrentCohort", release_start)
+    ]
+    assert "Cohort().Raid = RaidRuntime();" not in release
+    stop = IMPL[
+        IMPL.index("std::string BotWorldPopulationMgr::StopAutonomyForCohort"):
+        IMPL.index("std::string BotWorldPopulationMgr::SelectRuntimeProfileForCohort")
+    ]
+    for token in (
+        "uint64 const serverEpoch = Cohort().Raid.ServerEpoch;",
+        "uint64 const attemptId = Cohort().Raid.AttemptId;",
+        "Cohort().Raid.Active = false;",
+        "Cohort().Raid.ActiveSize = 0;",
+        "Cohort().Raid.AliveSize = 0;",
+    ):
+        assert token in stop
+
+
+def test_live_kill_sync_holds_low_targets_until_every_peer_reaches_floor():
+    assert "lowestPct <= raidAdapter.KillSyncExecutionFloorPct && peerAboveExecutionFloor" in IMPL
+    assert 'result.Action = "raid_kill_sync_execution_hold_low_target";' in IMPL
+    assert 'result.Action = "raid_kill_sync_balance_high_target";' in IMPL
+    assert "UnitHealthPct(highest) <= raidAdapter.KillSyncExecutionFloorPct" not in IMPL
+
+
 def test_runtime_reconstructs_native_boss_wipe_reset_and_recovery_state():
     raid_struct = HEADER.index("struct RaidRuntime")
     cohort_struct = HEADER.index("struct CohortRuntime")

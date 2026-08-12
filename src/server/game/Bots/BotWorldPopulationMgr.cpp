@@ -561,6 +561,49 @@ std::vector<std::string> ExtractJsonObjectArrayItems(std::string const& arrayJso
     return items;
 }
 
+std::set<std::string> ExtractJsonTopLevelKeys(std::string const& objectJson)
+{
+    std::set<std::string> keys;
+    uint32 depth = 0;
+    bool inString = false;
+    bool escaped = false;
+    size_t stringStart = std::string::npos;
+    for (size_t i = 0; i < objectJson.size(); ++i)
+    {
+        char const c = objectJson[i];
+        if (inString)
+        {
+            if (escaped)
+                escaped = false;
+            else if (c == '\\')
+                escaped = true;
+            else if (c == '"')
+            {
+                inString = false;
+                if (depth == 1 && stringStart != std::string::npos)
+                {
+                    size_t next = i + 1;
+                    while (next < objectJson.size() && std::isspace(static_cast<unsigned char>(objectJson[next])))
+                        ++next;
+                    if (next < objectJson.size() && objectJson[next] == ':')
+                        keys.insert(objectJson.substr(stringStart, i - stringStart));
+                }
+            }
+            continue;
+        }
+        if (c == '"')
+        {
+            inString = true;
+            stringStart = i + 1;
+        }
+        else if (c == '{' || c == '[')
+            ++depth;
+        else if ((c == '}' || c == ']') && depth)
+            --depth;
+    }
+    return keys;
+}
+
 bool ExtractJsonNumberField(std::string const& json, std::string const& key, float& value)
 {
     std::regex pattern("\"" + key + "\"\\s*:\\s*(-?[0-9]+(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)");
@@ -1252,7 +1295,10 @@ void BotWorldPopulationMgr::ReleaseCohortLeases()
     std::vector<uint32> owned(Cohort().RosterLeases.begin(), Cohort().RosterLeases.end());
     for (uint32 guid : owned)
         ReleaseBotGuid(guid);
-    Cohort().Raid = RaidRuntime();
+    // Preserve the terminal raid identity until the next attempt is
+    // initialized.  Canonical cleanup status is emitted after lease release
+    // and must remain bound to the server epoch and attempt just stopped.
+    // EnsureValidationCohortGroup resets this runtime for a new identity.
 }
 
 bool BotWorldPopulationMgr::LeaseOwnedByCurrentCohort(uint32 guid) const
@@ -3394,20 +3440,61 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         std::string const mechanicContract = ExtractJsonObjectField(routeJson, "mechanic_contract");
         if (!mechanicContract.empty())
         {
+            static std::set<std::string> const AllowedMechanicContractFields =
+            {
+                "id", "formation_family", "formation_anchor", "formation_scope", "formation_orientation",
+                "spacing_yards", "minimum_distance_yards", "radius_yards", "arc_radians", "lane_count",
+                "arrival_tolerance_yards", "target_control", "target_entries", "allow_area_damage",
+                "allow_multidot", "controlled_aoe_minimum_targets", "kill_sync_tolerance_pct",
+                "kill_sync_execution_floor_pct", "tank_swap_trigger", "tank_swap_aura_id",
+                "tank_swap_aura_stacks", "tank_swap_interval_ms", "tank_swap_trigger_spell_id",
+                "tank_swap_add_entry", "tank_swap_phase", "interrupt_owner_slot", "interrupt_backup_slot",
+                "interrupt_trigger_spell_id", "dispel_aura_id", "dispel_owner_slot", "dispel_backup_slot",
+                "healer_ownership", "healer_owner_slots", "cooldown_category", "cooldown_owner_slot",
+                "cooldown_backup_slot", "cooldown_trigger_spell_id", "cooldown_target", "soak_roster_slots",
+                "soak_minimum_count", "soak_radius_yards", "soak_trigger_spell_id", "soak_trigger_aura_id",
+                "soak_immunity_spell_id", "soak_personal_cooldown_spell_id", "battle_resurrection_policy",
+                "battle_resurrection_slots", "interaction_kind", "interactable_entry", "vehicle_entry",
+                "transport_entry", "jump_pad_entry", "extra_action_spell_id", "extra_action_trigger_aura_id",
+                "movement_link", "transfer_area_trigger_id", "platform_policy", "platform_destination_map_id",
+                "platform_destination_area_id", "platform_minimum_z", "platform_maximum_z"
+            };
+            for (std::string const& key : ExtractJsonTopLevelKeys(mechanicContract))
+                if (AllowedMechanicContractFields.find(key) == AllowedMechanicContractFields.end())
+                {
+                    node.MechanicContractError = "unknown_field:" + key;
+                    break;
+                }
             node.MechanicContractId = ExtractJsonStringField(mechanicContract, "id");
             node.FormationFamily = ExtractJsonStringField(mechanicContract, "formation_family");
             node.FormationAnchor = ExtractJsonStringField(mechanicContract, "formation_anchor");
+            node.FormationScope = ExtractJsonStringField(mechanicContract, "formation_scope");
+            if (node.FormationScope.empty())
+                node.FormationScope = "raid";
             node.FormationOrientation = ExtractJsonStringField(mechanicContract, "formation_orientation");
             node.TargetControl = ExtractJsonStringField(mechanicContract, "target_control");
             node.FormationSpacingYards = readFloat(mechanicContract, "spacing_yards");
+            node.FormationMinimumDistanceYards = readFloat(mechanicContract, "minimum_distance_yards");
             node.FormationRadiusYards = readFloat(mechanicContract, "radius_yards");
             node.FormationArcRadians = readFloat(mechanicContract, "arc_radians");
             node.FormationArrivalToleranceYards = readFloat(mechanicContract, "arrival_tolerance_yards");
             node.FormationLaneCount = uint32(std::max(0, readInt(mechanicContract, "lane_count")));
             ExtractJsonBoolField(mechanicContract, "allow_area_damage", node.AllowAreaDamage);
+            ExtractJsonBoolField(mechanicContract, "allow_multidot", node.AllowMultidot);
+            node.TargetEntries = ExtractJsonUIntArrayField(mechanicContract, "target_entries");
             node.ControlledAoeMinimumTargets = uint32(std::max(0, readInt(mechanicContract, "controlled_aoe_minimum_targets")));
             node.KillSyncTolerancePct = readFloat(mechanicContract, "kill_sync_tolerance_pct");
             node.KillSyncExecutionFloorPct = readFloat(mechanicContract, "kill_sync_execution_floor_pct");
+            node.TankSwapTrigger = ExtractJsonStringField(mechanicContract, "tank_swap_trigger");
+            node.TankSwapAuraId = uint32(std::max(0, readInt(mechanicContract, "tank_swap_aura_id")));
+            node.TankSwapAuraStacks = uint32(std::max(0, readInt(mechanicContract, "tank_swap_aura_stacks")));
+            node.TankSwapIntervalMs = uint32(std::max(0, readInt(mechanicContract, "tank_swap_interval_ms")));
+            node.TankSwapTriggerSpellId = uint32(std::max(0, readInt(mechanicContract, "tank_swap_trigger_spell_id")));
+            node.TankSwapAddEntry = uint32(std::max(0, readInt(mechanicContract, "tank_swap_add_entry")));
+            node.TankSwapPhase = ExtractJsonStringField(mechanicContract, "tank_swap_phase");
+            node.InterruptOwnerSlot = uint32(std::max(0, readInt(mechanicContract, "interrupt_owner_slot")));
+            node.InterruptBackupSlot = uint32(std::max(0, readInt(mechanicContract, "interrupt_backup_slot")));
+            node.InterruptTriggerSpellId = uint32(std::max(0, readInt(mechanicContract, "interrupt_trigger_spell_id")));
             node.InteractableEntry = uint32(std::max(0, readInt(mechanicContract, "interactable_entry")));
             node.VehicleEntry = uint32(std::max(0, readInt(mechanicContract, "vehicle_entry")));
             node.TransportEntry = uint32(std::max(0, readInt(mechanicContract, "transport_entry")));
@@ -3419,44 +3506,120 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
             node.DispelBackupSlot = uint32(std::max(0, readInt(mechanicContract, "dispel_backup_slot")));
             node.CooldownCategory = ExtractJsonStringField(mechanicContract, "cooldown_category");
             node.CooldownOwnerSlot = uint32(std::max(0, readInt(mechanicContract, "cooldown_owner_slot")));
+            node.CooldownBackupSlot = uint32(std::max(0, readInt(mechanicContract, "cooldown_backup_slot")));
             node.CooldownTriggerSpellId = uint32(std::max(0, readInt(mechanicContract, "cooldown_trigger_spell_id")));
+            node.CooldownTarget = ExtractJsonStringField(mechanicContract, "cooldown_target");
+            if (node.CooldownTarget.empty())
+                node.CooldownTarget = "self";
+            node.HealerOwnership = ExtractJsonStringField(mechanicContract, "healer_ownership");
+            if (node.HealerOwnership.empty())
+                node.HealerOwnership = "raid_triage";
+            node.HealerOwnerSlots = ExtractJsonUIntArrayField(mechanicContract, "healer_owner_slots");
             node.SoakRosterSlots = ExtractJsonUIntArrayField(mechanicContract, "soak_roster_slots");
             node.SoakMinimumCount = uint32(std::max(0, readInt(mechanicContract, "soak_minimum_count")));
             node.SoakRadiusYards = readFloat(mechanicContract, "soak_radius_yards");
+            node.SoakTriggerSpellId = uint32(std::max(0, readInt(mechanicContract, "soak_trigger_spell_id")));
+            node.SoakTriggerAuraId = uint32(std::max(0, readInt(mechanicContract, "soak_trigger_aura_id")));
+            node.SoakImmunitySpellId = uint32(std::max(0, readInt(mechanicContract, "soak_immunity_spell_id")));
+            node.SoakPersonalCooldownSpellId = uint32(std::max(0, readInt(mechanicContract, "soak_personal_cooldown_spell_id")));
+            node.BattleResurrectionPolicy = ExtractJsonStringField(mechanicContract, "battle_resurrection_policy");
+            if (node.BattleResurrectionPolicy.empty())
+                node.BattleResurrectionPolicy = "native_rotation";
+            node.BattleResurrectionSlots = ExtractJsonUIntArrayField(mechanicContract, "battle_resurrection_slots");
+            node.InteractionKind = ExtractJsonStringField(mechanicContract, "interaction_kind");
+            if (node.InteractionKind.empty())
+                node.InteractionKind = "none";
+            node.JumpPadEntry = uint32(std::max(0, readInt(mechanicContract, "jump_pad_entry")));
+            node.MovementLink = ExtractJsonStringField(mechanicContract, "movement_link");
+            if (node.MovementLink.empty())
+                node.MovementLink = "none";
+            node.PlatformPolicy = ExtractJsonStringField(mechanicContract, "platform_policy");
+            if (node.PlatformPolicy.empty())
+                node.PlatformPolicy = "ground";
+            node.PlatformDestinationMapId = uint32(std::max(0, readInt(mechanicContract, "platform_destination_map_id")));
+            node.PlatformDestinationAreaId = uint32(std::max(0, readInt(mechanicContract, "platform_destination_area_id")));
+            node.PlatformMinimumZ = readFloat(mechanicContract, "platform_minimum_z");
+            node.PlatformMaximumZ = readFloat(mechanicContract, "platform_maximum_z");
             bool const knownFormation = node.FormationFamily.empty()
                 || node.FormationFamily == "stack" || node.FormationFamily == "spread"
                 || node.FormationFamily == "pair" || node.FormationFamily == "lane"
                 || node.FormationFamily == "quadrant" || node.FormationFamily == "ring"
-                || node.FormationFamily == "cone";
+                || node.FormationFamily == "cone" || node.FormationFamily == "behind"
+                || node.FormationFamily == "front_exclusion";
             bool const knownAnchor = node.FormationFamily.empty()
                 || node.FormationAnchor == "route_anchor" || node.FormationAnchor == "boss"
-                || node.FormationAnchor == "main_tank" || node.FormationAnchor == "raid_leader";
+                || node.FormationAnchor == "main_tank" || node.FormationAnchor == "raid_leader"
+                || node.FormationAnchor == "role" || node.FormationAnchor == "subgroup";
+            bool const knownScope = node.FormationScope == "raid" || node.FormationScope == "role"
+                || node.FormationScope == "subgroup";
             bool const knownOrientation = node.FormationFamily.empty()
                 || node.FormationOrientation == "route" || node.FormationOrientation == "boss_facing"
                 || node.FormationOrientation == "anchor_to_boss";
             bool const formationResolved = node.FormationFamily.empty()
                 || (node.FormationArrivalToleranceYards > 0.0f
-                    && (node.FormationSpacingYards > 0.0f || node.FormationRadiusYards > 0.0f)
+                    && (node.FormationFamily == "stack" || node.FormationSpacingYards > 0.0f
+                        || node.FormationRadiusYards > 0.0f || node.FormationMinimumDistanceYards > 0.0f)
                     && (node.FormationFamily != "lane" || node.FormationLaneCount > 0)
-                    && (node.FormationFamily != "cone" || node.FormationArcRadians > 0.0f));
+                    && ((node.FormationFamily != "cone" && node.FormationFamily != "behind"
+                            && node.FormationFamily != "front_exclusion")
+                        || node.FormationArcRadians > 0.0f));
             bool const targetResolved = node.TargetControl.empty()
-                || node.TargetControl == "focus_fire" || node.TargetControl == "do_not_damage"
+                || ((node.TargetControl == "focus_fire" || node.TargetControl == "multidot"
+                        || node.TargetControl == "do_not_damage") && !node.TargetEntries.empty())
                 || (node.TargetControl == "controlled_aoe" && node.AllowAreaDamage
-                    && node.ControlledAoeMinimumTargets > 0)
+                    && node.ControlledAoeMinimumTargets > 0 && !node.TargetEntries.empty())
                 || (node.TargetControl == "kill_sync" && node.KillSyncTolerancePct > 0.0f
-                    && node.KillSyncExecutionFloorPct > 0.0f);
+                    && node.KillSyncExecutionFloorPct > 0.0f && !node.TargetEntries.empty());
+            bool const tankSwapResolved = node.TankSwapTrigger.empty()
+                || (node.TankSwapTrigger == "debuff_stacks" && node.TankSwapAuraId > 0 && node.TankSwapAuraStacks > 0)
+                || (node.TankSwapTrigger == "timer" && node.TankSwapIntervalMs > 0)
+                || (node.TankSwapTrigger == "boss_cast" && node.TankSwapTriggerSpellId > 0)
+                || (node.TankSwapTrigger == "add_spawn" && node.TankSwapAddEntry > 0)
+                || (node.TankSwapTrigger == "phase_transition" && !node.TankSwapPhase.empty());
+            bool const interruptResolved = !node.InterruptOwnerSlot
+                || (node.InterruptBackupSlot > 0 && node.InterruptOwnerSlot != node.InterruptBackupSlot
+                    && node.InterruptTriggerSpellId > 0);
             bool const dispelResolved = !node.DispelAuraId
                 || (node.DispelOwnerSlot > 0 && node.DispelBackupSlot > 0
                     && node.DispelOwnerSlot != node.DispelBackupSlot);
             bool const cooldownResolved = node.CooldownCategory.empty()
-                || (node.CooldownOwnerSlot > 0 && node.CooldownTriggerSpellId > 0);
+                || (node.CooldownOwnerSlot > 0 && node.CooldownTriggerSpellId > 0
+                    && (node.CooldownTarget == "self" || node.CooldownTarget == "tank"
+                        || node.CooldownTarget == "lowest" || node.CooldownTarget == "subgroup"));
             bool const soakResolved = node.SoakRosterSlots.empty()
                 || (node.SoakMinimumCount > 0 && node.SoakRadiusYards > 0.0f
                     && node.SoakMinimumCount <= node.SoakRosterSlots.size());
             bool const extraActionResolved = !node.ExtraActionSpellId || node.ExtraActionTriggerAuraId > 0;
+            bool const knownHealerOwnership = node.HealerOwnership == "raid_triage"
+                || node.HealerOwnership == "subgroup" || node.HealerOwnership == "tank"
+                || node.HealerOwnership == "tank_and_subgroup";
+            bool const knownBattleRes = node.BattleResurrectionPolicy == "native_rotation"
+                || node.BattleResurrectionPolicy == "tank_then_healer_then_dps"
+                || node.BattleResurrectionPolicy == "assigned_only";
+            bool const knownInteraction = node.InteractionKind == "none" || node.InteractionKind == "object"
+                || node.InteractionKind == "extra_action" || node.InteractionKind == "vehicle"
+                || node.InteractionKind == "transport" || node.InteractionKind == "jump_pad";
+            bool const interactionResolved = (node.InteractionKind == "none")
+                || (node.InteractionKind == "object" && node.InteractableEntry > 0)
+                || (node.InteractionKind == "extra_action" && node.ExtraActionSpellId > 0 && extraActionResolved)
+                || (node.InteractionKind == "vehicle" && node.VehicleEntry > 0)
+                || (node.InteractionKind == "transport" && node.TransportEntry > 0)
+                || (node.InteractionKind == "jump_pad" && (node.JumpPadEntry > 0 || node.TransferAreaTriggerId > 0));
+            bool const knownMovement = node.MovementLink == "none" || node.MovementLink == "encounter_link"
+                || node.MovementLink == "cross_platform" || node.MovementLink == "regroup";
+            bool const knownPlatform = node.PlatformPolicy == "ground" || node.PlatformPolicy == "platform"
+                || node.PlatformPolicy == "altitude" || node.PlatformPolicy == "flying";
+            bool const platformResolved = node.PlatformPolicy == "ground"
+                || node.PlatformDestinationMapId > 0 || node.PlatformDestinationAreaId > 0
+                || node.PlatformMaximumZ > node.PlatformMinimumZ;
             node.MechanicContractResolved = !node.MechanicContractId.empty()
-                && knownFormation && knownAnchor && knownOrientation && formationResolved && targetResolved
-                && dispelResolved && cooldownResolved && soakResolved && extraActionResolved;
+                && node.MechanicContractError.empty() && knownFormation && knownAnchor && knownScope
+                && knownOrientation && formationResolved && targetResolved && tankSwapResolved
+                && interruptResolved && dispelResolved && cooldownResolved && soakResolved
+                && knownHealerOwnership && knownBattleRes && knownInteraction && interactionResolved
+                && knownMovement && knownPlatform && platformResolved;
+            if (!node.MechanicContractResolved && node.MechanicContractError.empty())
+                node.MechanicContractError = "unsupported_or_incomplete_contract";
         }
         node.MapId = uint32(std::max(0, readInt(routeJson, "map_id")));
         node.X = readFloat(routeJson, "x");
@@ -5916,6 +6079,8 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
     raid.InstanceId = leaderInstanceId;
     raid.ServerEpoch = _serverEpoch;
     raid.AttemptId = Cohort().AttemptId;
+    raid.ProfileGeneration = Cohort().PinnedProfileGeneration;
+    raid.ProfileContentHash = Cohort().PinnedProfileContentHash;
     std::string currentStrategyId = Cohort().Config.ValidationRouteMechanicProfile.empty()
         ? Cohort().Config.ValidationRouteScenarioId : Cohort().Config.ValidationRouteMechanicProfile;
     if (!raid.StrategyId.empty() && raid.StrategyId != currentStrategyId)
@@ -6160,10 +6325,13 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         if (previousWipeState != "wiped")
         {
             ++raid.WipeGeneration;
-            // Bind the reset baseline after observing this sample. A reset
-            // co-observed with the first all-dead snapshot cannot count as a
-            // post-wipe reset.
-            raid.BossResetGenerationAtWipe = raid.BossResetGeneration;
+            // Sampling may observe the last death and the native instance
+            // IN_PROGRESS -> reset transition together.  Preserve the
+            // generation immediately before that transition so the observed
+            // native reset counts without requiring an impossible second
+            // reset transition.
+            raid.BossResetGenerationAtWipe = bossResetObserved && raid.BossResetGeneration > 0
+                ? raid.BossResetGeneration - 1 : raid.BossResetGeneration;
             for (auto& [guid, signal] : raid.NativeSignalsByGuid)
             {
                 signal.WipeGeneration = raid.WipeGeneration;
@@ -6256,7 +6424,8 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         && raid.BossResetGeneration > raid.BossResetGenerationAtWipe;
     raid.NativeRecoveryEvidenceComplete = nativeRecoverySignals && raid.NativeReadyCheckActionObserved
         && raid.NativeReadyCheckActionAttemptId == raid.AttemptId
-        && raid.NativeReadyCheckActionWipeGeneration == raid.WipeGeneration;
+        && raid.NativeReadyCheckActionWipeGeneration == raid.WipeGeneration
+        && raid.NativeReadyCheckAssignmentGeneration == raid.AssignmentGeneration;
 
     if (allDead)
     {
@@ -23508,7 +23677,10 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
     result.Features = BuildBossMechanicFeatures(bot, result.Target);
     state.TargetGuid = result.Target->GetGUID();
     if (result.Features.RaidEncounter && !state.WasInCombat)
+    {
         ++state.RaidAttempts;
+        state.LastRaidTankSwapMs = NowMs();
+    }
 
     std::string raw = BuildRawJson(bot, result.Target);
     std::string semantic = BuildSemanticJson(bot, result.Target, result.Situation.c_str(), &power, stage, activity);
@@ -23527,7 +23699,28 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
         heroicProgression = BuildHeroicRaidProgression(state, bot, power, stage);
     }
 
-    if (result.Features.RaidEncounter && std::string(role) == "healer")
+    if (result.Features.RaidEncounter && !raidAdapter.ContractResolved)
+    {
+        bot->InterruptNonMeleeSpells(false);
+        bot->AttackStop();
+        if (Pet* pet = bot->GetPet())
+            pet->AttackStop();
+        for (Unit* controlled : bot->m_Controlled)
+            if (controlled)
+                controlled->AttackStop();
+        result.Action = "raid_mechanic_contract_fail_closed";
+        result.Failure = true;
+        RecordRaidTelemetry(state, bot, result.Target, "raid_mechanic_contract", raidAdapter.ContractError.empty()
+                ? "unresolved" : raidAdapter.ContractError.c_str(), result.Features, raidAssignment, raidAnchors,
+            raidAdapter, raidGearPlan, heroicProgression, raw.c_str(), semantic.c_str());
+        return result;
+    }
+
+    bool battleResOwner = raidAdapter.BattleResurrectionSlots.empty()
+        || std::find(raidAdapter.BattleResurrectionSlots.begin(), raidAdapter.BattleResurrectionSlots.end(),
+            raidAssignment.RoleIndex) != raidAdapter.BattleResurrectionSlots.end();
+    if (result.Features.RaidEncounter && raidAdapter.ContractResolved && battleResOwner
+        && std::string(role) == "healer")
     {
         DungeonTrashActionResult resurrectionResult;
         if (TryNativePartyResurrection(state, bot, power, stage, activity, resurrectionResult))
@@ -23575,11 +23768,40 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
 
     if (result.Features.RaidEncounter && raidAdapter.ContractResolved
         && !raidAdapter.CooldownCategory.empty()
-        && raidAssignment.RoleIndex == raidAdapter.CooldownOwnerSlot
         && result.Features.CastSpellId == raidAdapter.CooldownTriggerSpellId)
     {
+        bool primaryCooldownAvailable = false;
+        for (auto const& [guid, slot] : Cohort().Raid.RosterByGuid)
+            if (slot.SlotIndex + 1 == raidAdapter.CooldownOwnerSlot)
+                if (Player* owner = ObjectAccessor::FindPlayer(slot.Guid))
+                    primaryCooldownAvailable = owner->IsAlive() && owner->IsInWorld()
+                        && owner->GetMap() == bot->GetMap();
+        bool const cooldownOwner = raidAssignment.RoleIndex == raidAdapter.CooldownOwnerSlot
+            || (!primaryCooldownAvailable && raidAssignment.RoleIndex == raidAdapter.CooldownBackupSlot);
+        if (!cooldownOwner)
+            goto raid_cooldown_complete;
+        Unit* cooldownTarget = bot;
+        if (Group* group = bot->GetGroup())
+        {
+            float lowest = 2.0f;
+            for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+            {
+                Player* member = itr->GetSource();
+                if (!member || !member->IsAlive() || member->GetMap() != bot->GetMap())
+                    continue;
+                bool matches = raidAdapter.CooldownTarget == "lowest"
+                    || (raidAdapter.CooldownTarget == "tank" && GetDungeonRole(member) == std::string("tank"))
+                    || (raidAdapter.CooldownTarget == "subgroup"
+                        && group->GetMemberGroup(member->GetGUID()) == raidAssignment.SubGroup);
+                if (matches && UnitHealthPct(member) < lowest)
+                {
+                    lowest = UnitHealthPct(member);
+                    cooldownTarget = member;
+                }
+            }
+        }
         BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, role);
-        for (BotActionCandidate const& candidate : BotClassSpecActionProfileStore::BuildCandidates(bot, bot, profile))
+        for (BotActionCandidate const& candidate : BotClassSpecActionProfileStore::BuildCandidates(bot, cooldownTarget, profile))
         {
             bool const categoryMatches = (raidAdapter.CooldownCategory == "defensive"
                     && candidate.Category == BotCombatActionCategory::Defensive)
@@ -23590,25 +23812,41 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
                 || (raidAdapter.CooldownCategory == "offensive"
                     && candidate.Category == BotCombatActionCategory::OffensiveCooldown);
             if (categoryMatches && candidate.RejectReason.empty()
-                && bot->CastSpell(bot, candidate.SpellId, false) == SPELL_CAST_OK)
+                && TryCastFriendlySpell(bot, cooldownTarget, candidate.SpellId))
             {
-                result.Target = bot;
+                result.Target = cooldownTarget;
                 result.SpellId = candidate.SpellId;
-                result.Action = "raid_cooldown_schedule";
+                result.Action = raidAssignment.RoleIndex == raidAdapter.CooldownOwnerSlot
+                    ? "raid_cooldown_schedule" : "raid_cooldown_backup";
+                RecordRaidTelemetry(state, bot, cooldownTarget, "raid_cooldown_schedule", result.Action.c_str(),
+                    result.Features, raidAssignment, raidAnchors, raidAdapter, raidGearPlan, heroicProgression,
+                    raw.c_str(), semantic.c_str(), UnitHealthPct(cooldownTarget), raidAdapter.CooldownTriggerSpellId,
+                    candidate.SpellId);
                 return result;
             }
         }
     }
+raid_cooldown_complete:
 
     if (result.Features.RaidEncounter && raidAdapter.ContractResolved
         && raidAdapter.TargetControl == "do_not_damage" && std::string(role) != "healer"
+        && result.Target && std::find(raidAdapter.TargetEntries.begin(), raidAdapter.TargetEntries.end(),
+            result.Target->GetEntry()) != raidAdapter.TargetEntries.end()
         && (!raidAnchors.Active || bot->GetExactDist2d(raidAnchors.ResolvedX, raidAnchors.ResolvedY)
             <= raidAnchors.ArrivalToleranceYards))
     {
         bot->AttackStop();
-        bot->InterruptNonMeleeSpells(false);
+        if (Spell* current = bot->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+            if (Unit* castTarget = current->m_targets.GetUnitTarget();
+                castTarget && bot->IsValidAttackTarget(castTarget))
+                bot->InterruptSpell(CURRENT_GENERIC_SPELL, false);
+        if (bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
+            bot->InterruptSpell(CURRENT_AUTOREPEAT_SPELL, false);
         if (Pet* pet = bot->GetPet())
             pet->AttackStop();
+        for (Unit* controlled : bot->m_Controlled)
+            if (controlled)
+                controlled->AttackStop();
         result.Action = "raid_do_not_damage_hold";
         result.Rare = true;
         RecordRaidTelemetry(state, bot, result.Target, "raid_target_control", "native_damage_held",
@@ -23705,10 +23943,26 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
             }
     }
 
-    if (result.Features.RaidEncounter && result.Features.TankSpike
-        && std::string(role) == "tank" && raidAssignment.RoleIndex == 2
-        && result.Target->GetVictim() && result.Target->GetVictim() != bot
-        && NowMs() >= state.LastRaidTankSwapMs + 8000)
+    Unit* currentTank = result.Target->GetVictim();
+    bool tankSwapTriggered = false;
+    if (result.Features.RaidEncounter && raidAdapter.ContractResolved && currentTank)
+    {
+        if (raidAdapter.TankSwapTrigger == "debuff_stacks")
+            if (Aura const* aura = currentTank->GetAura(raidAdapter.TankSwapAuraId))
+                tankSwapTriggered = aura->GetStackAmount() >= raidAdapter.TankSwapAuraStacks;
+        if (raidAdapter.TankSwapTrigger == "timer")
+            tankSwapTriggered = state.LastRaidTankSwapMs
+                && NowMs() >= state.LastRaidTankSwapMs + raidAdapter.TankSwapIntervalMs;
+        if (raidAdapter.TankSwapTrigger == "boss_cast")
+            tankSwapTriggered = result.Features.CastSpellId == raidAdapter.TankSwapTriggerSpellId;
+        if (raidAdapter.TankSwapTrigger == "add_spawn" && !result.Features.PriorityAddGuid.IsEmpty())
+            if (Unit* add = ObjectAccessor::GetUnit(*bot, result.Features.PriorityAddGuid))
+                tankSwapTriggered = add->GetEntry() == raidAdapter.TankSwapAddEntry;
+        if (raidAdapter.TankSwapTrigger == "phase_transition")
+            tankSwapTriggered = Cohort().Raid.EncounterPhase == raidAdapter.TankSwapPhase;
+    }
+    if (tankSwapTriggered && std::string(role) == "tank"
+        && bot->GetGUID() == raidAssignment.OffTankGuid && currentTank != bot)
     {
         BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, role);
         std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, result.Target, profile);
@@ -23743,7 +23997,25 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
     }
 
     uint32 interruptSpell = SelectInterruptSpell(bot);
-    if (result.Features.MustInterrupt && interruptSpell)
+    bool primaryInterruptAvailable = false;
+    if (raidAdapter.InterruptOwnerSlot)
+        for (auto const& [guid, slot] : Cohort().Raid.RosterByGuid)
+            if (slot.SlotIndex + 1 == raidAdapter.InterruptOwnerSlot)
+                if (Player* owner = ObjectAccessor::FindPlayer(slot.Guid))
+                {
+                    uint32 const ownerSpell = SelectInterruptSpell(owner);
+                    SpellInfo const* ownerSpellInfo = ownerSpell ? sSpellMgr->GetSpellInfo(ownerSpell) : nullptr;
+                    primaryInterruptAvailable = owner->IsAlive() && owner->IsInWorld()
+                        && owner->GetMap() == result.Target->GetMap() && owner->IsWithinLOSInMap(result.Target)
+                        && ownerSpellInfo && !owner->HasUnitState(UNIT_STATE_CASTING)
+                        && !owner->GetSpellHistory()->HasGlobalCooldown(ownerSpellInfo)
+                        && owner->GetSpellHistory()->IsReady(ownerSpellInfo);
+                }
+    bool const interruptOwner = raidAssignment.RoleIndex == raidAdapter.InterruptOwnerSlot
+        || (!primaryInterruptAvailable && raidAssignment.RoleIndex == raidAdapter.InterruptBackupSlot);
+    bool const interruptTriggerMatches = raidAdapter.InterruptTriggerSpellId
+        && result.Features.CastSpellId == raidAdapter.InterruptTriggerSpellId;
+    if (result.Features.MustInterrupt && interruptTriggerMatches && interruptOwner && interruptSpell)
     {
         bool interrupted = TryCastCombatSpell(bot, result.Target, interruptSpell);
         result.Action = interrupted ? "interrupt_must_interrupt" : "interrupt_failed";
@@ -23756,6 +24028,30 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
         if (!interrupted)
             RecordBossReplay(state, bot, result.Target, result.Features, "boss_mechanic_failure", raw.c_str(), semantic.c_str(), "{\"action\":\"interrupt_must_interrupt\"}", "{\"reason\":\"must_interrupt_failed\"}");
         return result;
+    }
+
+    bool const soakActive = raidAdapter.SoakTriggerSpellId
+        ? result.Features.CastSpellId == raidAdapter.SoakTriggerSpellId
+        : (raidAdapter.SoakTriggerAuraId
+            && (bot->HasAura(raidAdapter.SoakTriggerAuraId)
+                || (result.Target && result.Target->HasAura(raidAdapter.SoakTriggerAuraId))));
+    bool const assignedSoaker = std::find(raidAdapter.SoakRosterSlots.begin(),
+        raidAdapter.SoakRosterSlots.end(), raidAssignment.RoleIndex) != raidAdapter.SoakRosterSlots.end();
+    if (result.Features.RaidEncounter && soakActive && assignedSoaker)
+    {
+        uint32 const defensiveSpell = raidAdapter.SoakImmunitySpellId
+            ? raidAdapter.SoakImmunitySpellId : raidAdapter.SoakPersonalCooldownSpellId;
+        if (defensiveSpell && bot->HasSpell(defensiveSpell)
+            && TryCastFriendlySpell(bot, bot, defensiveSpell))
+        {
+            result.Action = raidAdapter.SoakImmunitySpellId
+                ? "raid_soak_immunity" : "raid_soak_personal_cooldown";
+            result.SpellId = defensiveSpell;
+            RecordRaidTelemetry(state, bot, bot, "raid_soak_defensive", result.Action.c_str(),
+                result.Features, raidAssignment, raidAnchors, raidAdapter, raidGearPlan, heroicProgression,
+                raw.c_str(), semantic.c_str(), 0.0f, result.Features.CastSpellId, defensiveSpell);
+            return result;
+        }
     }
 
     if (result.Features.RaidEncounter && raidAnchors.Active
@@ -23771,9 +24067,7 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
     }
 
     if (result.Features.RaidEncounter && raidAdapter.ContractResolved
-        && !raidAdapter.SoakRosterSlots.empty()
-        && std::find(raidAdapter.SoakRosterSlots.begin(), raidAdapter.SoakRosterSlots.end(), raidAssignment.RoleIndex)
-            != raidAdapter.SoakRosterSlots.end())
+        && soakActive && assignedSoaker)
     {
         uint32 membersInSoak = 0;
         for (auto const& [guid, slot] : Cohort().Raid.RosterByGuid)
@@ -23800,11 +24094,6 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
     if (result.Features.RaidEncounter && raidAdapter.ContractResolved
         && raidAdapter.TargetControl == "kill_sync")
     {
-        ValidationRouteManifestNode const& contract = Party().ValidationRouteManifest[Party().ValidationRouteManifestIndex];
-        std::vector<uint32> synchronizedEntries = contract.AlternateTargetEntries;
-        synchronizedEntries.insert(synchronizedEntries.end(), contract.AddTargetEntries.begin(), contract.AddTargetEntries.end());
-        if (contract.TargetEntry)
-            synchronizedEntries.push_back(contract.TargetEntry);
         std::vector<WorldObject*> nearby;
         Trinity::AllWorldObjectsInRange syncCheck(bot, 60.0f);
         Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> syncSearcher(bot, nearby, syncCheck);
@@ -23815,7 +24104,8 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
         for (WorldObject* object : nearby)
             if (Creature* candidate = object ? object->ToCreature() : nullptr;
                 candidate && candidate->IsAlive() && bot->IsValidAttackTarget(candidate)
-                && std::find(synchronizedEntries.begin(), synchronizedEntries.end(), candidate->GetEntry()) != synchronizedEntries.end())
+                && std::find(raidAdapter.TargetEntries.begin(), raidAdapter.TargetEntries.end(), candidate->GetEntry())
+                    != raidAdapter.TargetEntries.end())
             {
                 float const pct = UnitHealthPct(candidate);
                 lowestPct = std::min(lowestPct, pct);
@@ -23825,17 +24115,24 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
                     highest = candidate;
                 }
             }
-        if (highest && highestPct - lowestPct > raidAdapter.KillSyncTolerancePct)
+        bool const peerAboveExecutionFloor = highestPct > raidAdapter.KillSyncExecutionFloorPct;
+        if (highest && lowestPct <= raidAdapter.KillSyncExecutionFloorPct && peerAboveExecutionFloor)
         {
             result.Target = highest;
             state.TargetGuid = highest->GetGUID();
-            if (lowestPct <= raidAdapter.KillSyncExecutionFloorPct
-                && UnitHealthPct(highest) <= raidAdapter.KillSyncExecutionFloorPct)
-            {
-                bot->AttackStop();
-                result.Action = "raid_kill_sync_execution_hold";
-                return result;
-            }
+            // Keep damage on the highest-health synchronized target while a
+            // peer is at the declared execution floor.  The low target is
+            // therefore held without globally stopping progress.
+            result.Action = "raid_kill_sync_execution_hold_low_target";
+            RecordRaidTelemetry(state, bot, highest, "raid_kill_sync", result.Action.c_str(),
+                result.Features, raidAssignment, raidAnchors, raidAdapter, raidGearPlan, heroicProgression,
+                raw.c_str(), semantic.c_str(), highestPct - lowestPct);
+        }
+        else if (highest && highestPct - lowestPct > raidAdapter.KillSyncTolerancePct)
+        {
+            result.Target = highest;
+            state.TargetGuid = highest->GetGUID();
+            result.Action = "raid_kill_sync_balance_high_target";
         }
     }
 
@@ -23844,6 +24141,13 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
     {
         if (Unit* add = ObjectAccessor::GetUnit(*bot, result.Features.PriorityAddGuid))
         {
+            if (std::find(raidAdapter.TargetEntries.begin(), raidAdapter.TargetEntries.end(), add->GetEntry())
+                == raidAdapter.TargetEntries.end())
+            {
+                bot->AttackStop();
+                result.Action = "raid_target_not_declared_hold";
+                return result;
+            }
             ResolvedCombatAction profileAction;
             bool const controlledAoeReleased = raidAdapter.ContractResolved
                 && raidAdapter.TargetControl == "controlled_aoe"
@@ -23852,7 +24156,7 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
                 && (!raidAdapter.AllowAreaDamage || (raidAdapter.TargetControl == "controlled_aoe" && !controlledAoeReleased));
             BotActionResult actionResult = ExecuteProfileCombatAction(
                 &state, bot, add, &profileAction, result.Features.AddCount, controlledAoeReleased,
-                0, controlledAoeReleased, false, forbidArea, raidAdapter.AllowAreaDamage);
+                0, controlledAoeReleased, false, forbidArea, raidAdapter.AllowMultidot);
             uint32 spellId = profileAction.SpellId;
             result.Target = add;
             result.Action = "switch_to_adds";
@@ -23868,16 +24172,27 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
         }
     }
 
-    if (std::string(role) == "healer")
+    bool const assignedHealer = raidAdapter.HealerOwnerSlots.empty()
+        || std::find(raidAdapter.HealerOwnerSlots.begin(), raidAdapter.HealerOwnerSlots.end(),
+            raidAssignment.RoleIndex) != raidAdapter.HealerOwnerSlots.end();
+    if (std::string(role) == "healer" && assignedHealer)
     {
-        Unit* healTarget = bot;
+        Unit* healTarget = nullptr;
         if (Group* group = bot->GetGroup())
         {
-            float lowestHp = 1.0f;
+            float lowestHp = 2.0f;
             for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
             {
                 Player* member = itr->GetSource();
                 if (!member || !member->IsAlive() || member->GetMap() != bot->GetMap() || !bot->IsWithinLOSInMap(member))
+                    continue;
+                bool const tank = GetDungeonRole(member) == std::string("tank");
+                bool const sameSubgroup = group->GetMemberGroup(member->GetGUID()) == raidAssignment.SubGroup;
+                bool const owned = raidAdapter.HealerOwnership == "raid_triage"
+                    || (raidAdapter.HealerOwnership == "tank" && tank)
+                    || (raidAdapter.HealerOwnership == "subgroup" && sameSubgroup)
+                    || (raidAdapter.HealerOwnership == "tank_and_subgroup" && (tank || sameSubgroup));
+                if (!owned)
                     continue;
 
                 float hp = UnitHealthPct(member);
@@ -23889,7 +24204,7 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
             }
         }
 
-        uint32 healSpell = SelectHealSpell(bot, healTarget);
+        uint32 healSpell = healTarget ? SelectHealSpell(bot, healTarget) : 0;
         if (healSpell && UnitHealthPct(healTarget) < (result.Features.RaidDamage ? 0.9f : 0.75f) && TryCastFriendlySpell(bot, healTarget, healSpell))
         {
             result.Action = result.Features.RaidDamage ? "heal_raid_damage" : "heal_boss_damage";
@@ -23906,7 +24221,7 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
     bool const forbidArea = raidAdapter.ContractResolved && !raidAdapter.AllowAreaDamage;
     BotActionResult actionResult = ExecuteProfileCombatAction(
         &state, bot, result.Target, &profileAction, result.Features.AddCount, false,
-        0, false, false, forbidArea, raidAdapter.AllowAreaDamage);
+        0, false, false, forbidArea, raidAdapter.AllowMultidot);
     uint32 spellId = profileAction.SpellId;
     result.Action = std::string(role) == "tank" ? "tank_boss_position" : "boss_single_target";
     result.SpellId = actionResult == BotActionResult::Ok ? spellId : 0;
@@ -24023,11 +24338,32 @@ BotWorldPopulationMgr::RaidPositioningAnchors BotWorldPopulationMgr::BuildRaidPo
     ValidationRouteManifestNode const& contract = Party().ValidationRouteManifest[Party().ValidationRouteManifestIndex];
     if (!contract.MechanicContractResolved || contract.FormationFamily.empty())
         return anchors;
-    uint32 const oneBasedSlot = assignment.RoleIndex;
-    if (!contract.SoakRosterSlots.empty()
-        && std::find(contract.SoakRosterSlots.begin(), contract.SoakRosterSlots.end(), oneBasedSlot) == contract.SoakRosterSlots.end())
-        return anchors;
-
+    uint32 oneBasedSlot = assignment.RoleIndex;
+    uint32 scopeOrdinal = 0;
+    uint32 scopeCount = 0;
+    uint32 currentSlotIndex = oneBasedSlot ? oneBasedSlot - 1 : 0;
+    auto currentRoster = Cohort().Raid.RosterByGuid.find(bot->GetGUID().GetCounter());
+    if (currentRoster != Cohort().Raid.RosterByGuid.end())
+    {
+        currentSlotIndex = currentRoster->second.SlotIndex;
+        oneBasedSlot = currentSlotIndex + 1;
+    }
+    for (auto const& [guid, slot] : Cohort().Raid.RosterByGuid)
+    {
+        bool inScope = contract.FormationScope == "raid"
+            || (contract.FormationScope == "role" && slot.Role == assignment.Role)
+            || (contract.FormationScope == "subgroup" && slot.SubGroup == assignment.SubGroup);
+        if (!inScope)
+            continue;
+        if (slot.SlotIndex < currentSlotIndex)
+            ++scopeOrdinal;
+        ++scopeCount;
+    }
+    if (!scopeCount)
+    {
+        scopeOrdinal = currentSlotIndex;
+        scopeCount = std::max<uint32>(1, assignment.RaidSize);
+    }
     anchors.Active = bot->GetMap() && bot->GetMap()->IsRaid();
     anchors.FormationFamily = contract.FormationFamily;
     anchors.ArrivalToleranceYards = contract.FormationArrivalToleranceYards;
@@ -24038,6 +24374,23 @@ BotWorldPopulationMgr::RaidPositioningAnchors BotWorldPopulationMgr::BuildRaidPo
         anchor = ObjectAccessor::FindPlayer(assignment.MainTankGuid);
     else if (contract.FormationAnchor == "raid_leader" && !assignment.RaidLeaderGuid.IsEmpty())
         anchor = ObjectAccessor::FindPlayer(assignment.RaidLeaderGuid);
+    else if (contract.FormationAnchor == "role" || contract.FormationAnchor == "subgroup")
+    {
+        uint32 bestSlot = std::numeric_limits<uint32>::max();
+        for (auto const& [guid, slot] : Cohort().Raid.RosterByGuid)
+        {
+            bool matches = contract.FormationAnchor == "role"
+                ? slot.Role == assignment.Role : slot.SubGroup == assignment.SubGroup;
+            if (!matches || slot.SlotIndex >= bestSlot)
+                continue;
+            if (Player* candidate = ObjectAccessor::FindPlayer(slot.Guid);
+                candidate && candidate->IsAlive() && candidate->GetMap() == bot->GetMap())
+            {
+                bestSlot = slot.SlotIndex;
+                anchor = candidate;
+            }
+        }
+    }
     if (contract.FormationAnchor == "route_anchor")
     {
         anchors.AnchorType = "route_anchor";
@@ -24061,22 +24414,31 @@ BotWorldPopulationMgr::RaidPositioningAnchors BotWorldPopulationMgr::BuildRaidPo
         baseAngle = boss->GetOrientation();
     else if (contract.FormationOrientation == "anchor_to_boss" && boss)
         baseAngle = std::atan2(boss->GetPositionY() - anchors.AnchorY, boss->GetPositionX() - anchors.AnchorX);
-    uint32 const ordinal = assignment.RoleIndex ? assignment.RoleIndex - 1 : 0;
-    uint32 const raidSize = std::max<uint32>(1, assignment.RaidSize);
+    uint32 const ordinal = scopeOrdinal;
+    uint32 const raidSize = std::max<uint32>(1, scopeCount);
     float forward = 0.0f;
     float lateral = 0.0f;
-    float radial = contract.FormationRadiusYards > 0.0f ? contract.FormationRadiusYards : contract.FormationSpacingYards;
+    float const spacing = std::max(contract.FormationSpacingYards, contract.FormationMinimumDistanceYards);
+    float radial = std::max(contract.FormationRadiusYards, contract.FormationMinimumDistanceYards);
+    if (raidSize > 1 && (contract.FormationFamily == "ring" || contract.FormationFamily == "spread"
+        || contract.FormationFamily == "cone"))
+    {
+        float const arc = contract.FormationFamily == "cone" ? contract.FormationArcRadians : float(2.0 * M_PI);
+        float const step = arc / float(contract.FormationFamily == "cone" ? raidSize - 1 : raidSize);
+        if (step > 0.0f && contract.FormationMinimumDistanceYards > 0.0f)
+            radial = std::max(radial, contract.FormationMinimumDistanceYards / (2.0f * std::sin(step * 0.5f)));
+    }
     float angle = baseAngle;
     if (contract.FormationFamily == "pair")
     {
-        forward = float(ordinal / 2) * contract.FormationSpacingYards;
-        lateral = (ordinal % 2 ? 0.5f : -0.5f) * contract.FormationSpacingYards;
+        forward = float(ordinal / 2) * spacing;
+        lateral = (ordinal % 2 ? 0.5f : -0.5f) * spacing;
     }
     else if (contract.FormationFamily == "lane")
     {
         uint32 const lanes = contract.FormationLaneCount;
-        forward = float(ordinal / lanes) * contract.FormationSpacingYards;
-        lateral = (float(ordinal % lanes) - float(lanes - 1) * 0.5f) * contract.FormationSpacingYards;
+        forward = float(ordinal / lanes) * spacing;
+        lateral = (float(ordinal % lanes) - float(lanes - 1) * 0.5f) * spacing;
     }
     else if (contract.FormationFamily == "quadrant")
     {
@@ -24089,6 +24451,13 @@ BotWorldPopulationMgr::RaidPositioningAnchors BotWorldPopulationMgr::BuildRaidPo
         angle += raidSize > 1
             ? -contract.FormationArcRadians * 0.5f + contract.FormationArcRadians * float(ordinal) / float(raidSize - 1)
             : 0.0f;
+    else if (contract.FormationFamily == "behind" || contract.FormationFamily == "front_exclusion")
+    {
+        angle += float(M_PI);
+        if (raidSize > 1)
+            angle += -contract.FormationArcRadians * 0.5f
+                + contract.FormationArcRadians * float(ordinal) / float(raidSize - 1);
+    }
 
     if (contract.FormationFamily == "pair" || contract.FormationFamily == "lane")
     {
@@ -24120,13 +24489,27 @@ BotWorldPopulationMgr::RaidMechanicAdapter BotWorldPopulationMgr::BuildRaidMecha
     if (contract)
     {
         adapter.ContractId = contract->MechanicContractId;
+        adapter.ContractError = contract->MechanicContractError;
         adapter.ContractResolved = contract->MechanicContractResolved;
         adapter.FormationFamily = contract->FormationFamily.empty() ? "none" : contract->FormationFamily;
+        adapter.FormationScope = contract->FormationScope;
         adapter.TargetControl = contract->TargetControl.empty() ? "focus_fire" : contract->TargetControl;
         adapter.AllowAreaDamage = contract->AllowAreaDamage;
+        adapter.AllowMultidot = contract->AllowMultidot;
+        adapter.TargetEntries = contract->TargetEntries;
         adapter.ControlledAoeMinimumTargets = contract->ControlledAoeMinimumTargets;
         adapter.KillSyncTolerancePct = contract->KillSyncTolerancePct;
         adapter.KillSyncExecutionFloorPct = contract->KillSyncExecutionFloorPct;
+        adapter.TankSwapTrigger = contract->TankSwapTrigger;
+        adapter.TankSwapAuraId = contract->TankSwapAuraId;
+        adapter.TankSwapAuraStacks = contract->TankSwapAuraStacks;
+        adapter.TankSwapIntervalMs = contract->TankSwapIntervalMs;
+        adapter.TankSwapTriggerSpellId = contract->TankSwapTriggerSpellId;
+        adapter.TankSwapAddEntry = contract->TankSwapAddEntry;
+        adapter.TankSwapPhase = contract->TankSwapPhase;
+        adapter.InterruptOwnerSlot = contract->InterruptOwnerSlot;
+        adapter.InterruptBackupSlot = contract->InterruptBackupSlot;
+        adapter.InterruptTriggerSpellId = contract->InterruptTriggerSpellId;
         adapter.InteractableEntry = contract->InteractableEntry;
         adapter.VehicleEntry = contract->VehicleEntry;
         adapter.TransportEntry = contract->TransportEntry;
@@ -24138,10 +24521,28 @@ BotWorldPopulationMgr::RaidMechanicAdapter BotWorldPopulationMgr::BuildRaidMecha
         adapter.DispelBackupSlot = contract->DispelBackupSlot;
         adapter.CooldownCategory = contract->CooldownCategory;
         adapter.CooldownOwnerSlot = contract->CooldownOwnerSlot;
+        adapter.CooldownBackupSlot = contract->CooldownBackupSlot;
         adapter.CooldownTriggerSpellId = contract->CooldownTriggerSpellId;
+        adapter.CooldownTarget = contract->CooldownTarget;
+        adapter.HealerOwnership = contract->HealerOwnership;
+        adapter.HealerOwnerSlots = contract->HealerOwnerSlots;
         adapter.SoakRosterSlots = contract->SoakRosterSlots;
         adapter.SoakMinimumCount = contract->SoakMinimumCount;
         adapter.SoakRadiusYards = contract->SoakRadiusYards;
+        adapter.SoakTriggerSpellId = contract->SoakTriggerSpellId;
+        adapter.SoakTriggerAuraId = contract->SoakTriggerAuraId;
+        adapter.SoakImmunitySpellId = contract->SoakImmunitySpellId;
+        adapter.SoakPersonalCooldownSpellId = contract->SoakPersonalCooldownSpellId;
+        adapter.BattleResurrectionPolicy = contract->BattleResurrectionPolicy;
+        adapter.BattleResurrectionSlots = contract->BattleResurrectionSlots;
+        adapter.InteractionKind = contract->InteractionKind;
+        adapter.JumpPadEntry = contract->JumpPadEntry;
+        adapter.MovementLink = contract->MovementLink;
+        adapter.PlatformPolicy = contract->PlatformPolicy;
+        adapter.PlatformDestinationMapId = contract->PlatformDestinationMapId;
+        adapter.PlatformDestinationAreaId = contract->PlatformDestinationAreaId;
+        adapter.PlatformMinimumZ = contract->PlatformMinimumZ;
+        adapter.PlatformMaximumZ = contract->PlatformMaximumZ;
     }
 
     adapter.Priority = features.DangerScore;
@@ -25734,6 +26135,8 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
          << ",\"lockout_save_id\":" << raid.LockoutSaveId
          << ",\"server_epoch\":" << raid.ServerEpoch
          << ",\"attempt_id\":" << raid.AttemptId
+         << ",\"profile_generation\":" << raid.ProfileGeneration
+         << ",\"profile_content_hash\":\"" << JsonEscape(raid.ProfileContentHash) << "\""
          << ",\"assignment_generation\":" << raid.AssignmentGeneration
          << ",\"evidence_sequence\":" << raid.EvidenceSequence
          << ",\"wipe_generation\":" << raid.WipeGeneration

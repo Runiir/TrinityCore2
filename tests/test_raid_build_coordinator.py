@@ -54,6 +54,17 @@ def wait_for(predicate, timeout: float = 5.0) -> None:
     raise AssertionError("condition did not become true before timeout")
 
 
+def initialized_git_repo(path: Path) -> Path:
+    path.mkdir()
+    subprocess.run(["git", "init", "-q", str(path)], check=True)
+    subprocess.run(["git", "-C", str(path), "config", "user.email", "tests@example.invalid"], check=True)
+    subprocess.run(["git", "-C", str(path), "config", "user.name", "Raid Tests"], check=True)
+    (path / "tracked.txt").write_text("frozen\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(path), "add", "tracked.txt"], check=True)
+    subprocess.run(["git", "-C", str(path), "commit", "-qm", "fixture"], check=True)
+    return path
+
+
 def test_policy_preserves_host_reserve_and_caps_fanout() -> None:
     frozen = policy()
     assert frozen["coordination"]["maximum_active_heavyweight_leases"] == 1
@@ -202,7 +213,9 @@ def test_synthetic_pressure_breach_aborts_complete_process_group(
         frozen,
         paths,
         ticket["ticket_id"],
-        snapshot_provider=lambda _: synthetic_snapshot(available_gib=1.0),
+        snapshot_provider=lambda _: synthetic_snapshot(
+            available_gib=1.0 if descendant_pid_path.exists() else 24.0
+        ),
     )
     assert code < 0
     assert classification == "build_resource_abort"
@@ -281,6 +294,79 @@ def test_two_cli_runs_share_one_fifo_lease_and_emit_valid_receipts(
     final = qb.status(paths, recover=False)
     assert final["active"] is None
     assert final["queue"] == []
+
+
+def test_source_drift_before_admission_aborts_without_launching_child(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    paths = state_paths(tmp_path, monkeypatch)
+    repo = initialized_git_repo(tmp_path / "repo")
+    marker = tmp_path / "child-launched"
+    command = [sys.executable, "-c", "import pathlib,sys; pathlib.Path(sys.argv[1]).touch()", str(marker)]
+    ticket = qb.new_ticket(repo, "synthetic", command)
+    qb.enqueue(paths, ticket)
+    (repo / "tracked.txt").write_text("changed before admission\n", encoding="utf-8")
+    monkeypatch.setattr(qb, "resource_snapshot", lambda _: synthetic_snapshot())
+    monkeypatch.setattr(qb, "find_live_validation_processes", lambda *_args, **_kwargs: [])
+
+    code, receipt = qb.run_ticket(
+        repo, policy(), "synthetic", command, ticket["ticket_id"],
+        tmp_path / "preadmission.json", 2.0,
+    )
+    assert code == 76
+    assert receipt["classification"] == "build_provenance_abort"
+    assert "source_identity_changed_or_dirty_before_admission" in receipt["provenance_reasons"]
+    assert marker.exists() is False
+
+
+def test_successful_command_that_mutates_source_is_provenance_abort(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    state_paths(tmp_path, monkeypatch)
+    repo = initialized_git_repo(tmp_path / "repo")
+    receipt_path = tmp_path / "completion.json"
+    command = [
+        sys.executable, "-c",
+        "import pathlib; pathlib.Path('tracked.txt').write_text('changed during command\\n')",
+    ]
+    monkeypatch.setattr(qb, "resource_snapshot", lambda _: synthetic_snapshot())
+    monkeypatch.setattr(qb, "find_live_validation_processes", lambda *_args, **_kwargs: [])
+
+    code, receipt = qb.run_ticket(
+        repo, policy(), "synthetic", command, None, receipt_path, 2.0,
+    )
+    assert code == 76
+    assert receipt["schema_version"] == 2
+    assert receipt["classification"] == "build_provenance_abort"
+    assert receipt["source_identity"]["request"] != receipt["source_identity"]["completion"]
+    assert "source_identity_changed_or_dirty_before_completion" in receipt["provenance_reasons"]
+
+
+def test_legacy_receipt_is_historical_only(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    state_paths(tmp_path, monkeypatch)
+    repo = initialized_git_repo(tmp_path / "repo")
+    receipt_path = tmp_path / "receipt.json"
+    monkeypatch.setattr(qb, "resource_snapshot", lambda _: synthetic_snapshot())
+    monkeypatch.setattr(qb, "find_live_validation_processes", lambda *_args, **_kwargs: [])
+    code, receipt = qb.run_ticket(
+        repo, policy(), "synthetic", [sys.executable, "-c", "pass"], None,
+        receipt_path, 2.0,
+    )
+    assert code == 0
+    forged = copy.deepcopy(receipt)
+    forged["source_identity"]["completion"]["tree"] = "f" * 40
+    forged.pop("receipt_sha256")
+    forged["receipt_sha256"] = qb.sha256_bytes(qb.canonical_json(forged))
+    receipt_path.write_text(json.dumps(forged), encoding="utf-8")
+    with pytest.raises(qb.CoordinatorError, match="source identity changed"):
+        qb.verify_receipt(receipt_path, policy(), allow_test_mode=True)
+
+    receipt["schema_version"] = 1
+    receipt.pop("receipt_sha256")
+    receipt["receipt_sha256"] = qb.sha256_bytes(qb.canonical_json(receipt))
+    receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+    with pytest.raises(qb.CoordinatorError, match="legacy receipt"):
+        qb.verify_receipt(receipt_path, policy(), allow_test_mode=True)
 
 
 def test_cmake_integration_applies_compile_and_link_controls() -> None:
@@ -390,6 +476,24 @@ def test_degraded_v6_retains_thresholds_and_disables_precompiled_headers() -> No
     assert v6["mechanical_controls"]["core_precompiled_headers"] is False
     assert v6["mechanical_controls"]["script_precompiled_headers"] is False
     assert v6["mechanical_controls"]["gnu_reduce_memory_overheads_final_link"] is True
+
+
+def test_degraded_v7_retains_all_safety_limits_and_uses_release_build_type() -> None:
+    v6 = json.loads(
+        (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v6.json").read_text()
+    )
+    v7 = json.loads(
+        (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v7.json").read_text()
+    )
+    assert v7["parallelism"] == v6["parallelism"]
+    assert v7["admission_thresholds"] == v6["admission_thresholds"]
+    for key in (
+        "unity_builds", "core_precompiled_headers", "script_precompiled_headers",
+        "gnu_thin_intermediate_archives", "gnu_reduce_memory_overheads_final_link",
+        "process_group_watchdog", "receipt_verification_required",
+    ):
+        assert v7["mechanical_controls"][key] == v6["mechanical_controls"][key]
+    assert v7["mechanical_controls"]["cmake_build_type"] == "Release"
 
 
 def test_live_validation_scan_matches_argv_not_unrelated_prose(
