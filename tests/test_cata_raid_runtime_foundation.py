@@ -83,7 +83,9 @@ def test_native_ready_check_is_explicit_attempt_and_wipe_scoped():
     for token in (
         "RequestNativeRaidReadyCheckForCohort",
         "MSG_RAID_READY_CHECK",
-        "group->OfflineReadyCheck();",
+        "HandleRaidReadyCheckOpcode(request);",
+        "HandleRaidReadyCheckOpcode(response);",
+        "NativeReadyCheckResponseCount",
         "NativeReadyCheckActionGeneration",
         "NativeReadyCheckActionAttemptId",
         "NativeReadyCheckActionWipeGeneration",

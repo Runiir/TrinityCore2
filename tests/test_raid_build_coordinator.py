@@ -301,6 +301,45 @@ def test_worldserver_artifact_hash_helper(tmp_path: Path) -> None:
     assert qb.sha256_file(binary) == "f0ad5a96d17f421decff47373c360f97e12dce40c367ec85646dcdb6d4076c57"
 
 
+def test_receipt_rejects_worldserver_not_produced_by_ticket(tmp_path: Path) -> None:
+    frozen = json.loads(
+        (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v6.json").read_text()
+    )
+    receipt = {
+        "schema_version": 1,
+        "policy_id": frozen["policy_id"],
+        "ticket_id": "stale-fixture",
+        "queue_sequence": 1,
+        "worktree": str(ROOT),
+        "commit": "0" * 40,
+        "worktree_porcelain_sha256_at_request": "0" * 64,
+        "command_sha256": "0" * 64,
+        "resource_class": "worldserver_build",
+        "classification": "success",
+        "exit_code": 0,
+        "compiler_job_ceiling": 1,
+        "linker_job_ceiling": 1,
+        "test_mode": False,
+        "command_arguments_retained": False,
+        "peak_observations": {},
+        "log_sha256": "0" * 64,
+        "output_artifacts": [{
+            "kind": "worldserver_elf",
+            "path": "/tmp/stale-worldserver",
+            "size_bytes": 123,
+            "sha256": "0" * 64,
+            "produced_by_ticket": False,
+        }],
+        "policy_sha256": qb.sha256_bytes(qb.canonical_json(frozen)),
+    }
+    unsigned = dict(receipt)
+    receipt["receipt_sha256"] = qb.sha256_bytes(qb.canonical_json(unsigned))
+    path = tmp_path / "receipt.json"
+    path.write_text(json.dumps(receipt), encoding="utf-8")
+    with pytest.raises(qb.CoordinatorError, match="artifact identity"):
+        qb.verify_receipt(path, frozen)
+
+
 def test_degraded_v4_retains_thresholds_and_freezes_link_mitigations() -> None:
     v3 = json.loads(
         (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v3.json").read_text()
@@ -326,6 +365,21 @@ def test_degraded_v5_retains_thresholds_and_disables_unity() -> None:
     assert v5["admission_thresholds"] == v4["admission_thresholds"]
     assert v5["mechanical_controls"]["unity_builds"] is False
     assert v5["mechanical_controls"]["gnu_reduce_memory_overheads_final_link"] is True
+
+
+def test_degraded_v6_retains_thresholds_and_disables_precompiled_headers() -> None:
+    v5 = json.loads(
+        (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v5.json").read_text()
+    )
+    v6 = json.loads(
+        (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v6.json").read_text()
+    )
+    assert v6["parallelism"] == v5["parallelism"]
+    assert v6["admission_thresholds"] == v5["admission_thresholds"]
+    assert v6["mechanical_controls"]["unity_builds"] is False
+    assert v6["mechanical_controls"]["core_precompiled_headers"] is False
+    assert v6["mechanical_controls"]["script_precompiled_headers"] is False
+    assert v6["mechanical_controls"]["gnu_reduce_memory_overheads_final_link"] is True
 
 
 def test_live_validation_scan_matches_argv_not_unrelated_prose(

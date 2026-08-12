@@ -478,6 +478,10 @@ private:
         uint32 DeadTimer = 0;
         bool DeathEpisodeRecorded = false;
         uint64 NativeResurrectionPendingUntilMs = 0;
+        bool NativeReleaseRequested = false;
+        uint32 NativeRunbackAreaTriggerId = 0;
+        uint32 LastRaidTankSwapTriggerSpellId = 0;
+        uint64 LastRaidTankSwapMs = 0;
         ObjectGuid NativeResurrectionCasterGuid;
         uint32 NativeResurrectionSpellId = 0;
         ObjectGuid NativeResurrectionRejectedTargetGuid;
@@ -1613,12 +1617,16 @@ private:
         std::string LeaseRoleSlot;
         uint32 SlotIndex = 0;
         ObjectGuid Guid;
+        uint32 AccountId = 0;
+        std::string CharacterName;
         uint8 SubGroup = 0;
         std::string Role;
         uint8 ClassId = 0;
         std::string ClassSpec;
         float AverageItemLevel = 0.0f;
         std::string GearIdentity;
+        std::string TalentIdentity;
+        std::string GlyphIdentity;
         bool Active = false;
         bool LeaseOwned = false;
     };
@@ -1659,6 +1667,7 @@ private:
         uint64 EvidenceSequence = 0;
         uint64 WipeGeneration = 0;
         uint64 BossResetGeneration = 0;
+        uint64 BossResetGenerationAtWipe = 0;
         uint64 RecoveryGeneration = 0;
         bool EncounterInProgress = false;
         bool ReadyCheckSatisfied = false;
@@ -1669,6 +1678,7 @@ private:
         bool NativeResurrectionObserved = false;
         bool NativeRunbackObserved = false;
         bool NativeReadyCheckActionObserved = false;
+        uint32 NativeReadyCheckResponseCount = 0;
         uint64 NativeReadyCheckActionGeneration = 0;
         uint64 NativeReadyCheckActionAttemptId = 0;
         uint64 NativeReadyCheckActionWipeGeneration = 0;

@@ -11,6 +11,7 @@
 #include "Corpse.h"
 #include "DatabaseEnv.h"
 #include "DynamicObject.h"
+#include "DataStores/DBCStores.h"
 #include "GameTime.h"
 #include "GameObject.h"
 #include "GridNotifiersImpl.h"
@@ -1464,14 +1465,24 @@ std::string BotWorldPopulationMgr::RequestNativeRaidReadyCheckForCohort(std::str
         }
     }
 
-    // This is the same native request/broadcast sequence used by
-    // WorldSession::HandleRaidReadyCheckOpcode for a leader request.  The
-    // manager intentionally does not synthesize answers or a completion
-    // result: only the core's packet path and OfflineReadyCheck are issued.
-    WorldPacket data(MSG_RAID_READY_CHECK, 8);
-    data << leader->GetGUID();
-    group->BroadcastPacket(&data, false, -1);
-    group->OfflineReadyCheck();
+    // Drive the same native opcode handlers used by connected clients.  Each
+    // autonomous member performs its own affirmative response; the manager
+    // records completion only after every exact-roster session has traversed
+    // the native response path.  No readiness result is manufactured from an
+    // all-alive snapshot.
+    WorldPacket request(MSG_RAID_READY_CHECK, 0);
+    leader->GetSession()->HandleRaidReadyCheckOpcode(request);
+    uint32 responseCount = 0;
+    for (auto const& [guid, slot] : raid.RosterByGuid)
+    {
+        Player* member = ObjectAccessor::FindPlayer(slot.Guid);
+        if (!member || !member->GetSession())
+            continue;
+        WorldPacket response(MSG_RAID_READY_CHECK, 1);
+        response << uint8(1);
+        member->GetSession()->HandleRaidReadyCheckOpcode(response);
+        ++responseCount;
+    }
 
     RaidRuntime& mutableRaid = Cohort().Raid;
     ++mutableRaid.EvidenceSequence;
@@ -1479,7 +1490,8 @@ std::string BotWorldPopulationMgr::RequestNativeRaidReadyCheckForCohort(std::str
     mutableRaid.NativeReadyCheckActionAttemptId = mutableRaid.AttemptId;
     mutableRaid.NativeReadyCheckActionWipeGeneration = mutableRaid.WipeGeneration;
     mutableRaid.NativeReadyCheckActionEvidenceSequence = mutableRaid.EvidenceSequence;
-    mutableRaid.NativeReadyCheckActionObserved = true;
+    mutableRaid.NativeReadyCheckResponseCount = responseCount;
+    mutableRaid.NativeReadyCheckActionObserved = responseCount == mutableRaid.ExpectedSize;
 
     std::ostringstream json;
     json << "{\"ok\":true,\"action\":\"botauto_readycheck\",\"cohort_id\":\""
@@ -1488,6 +1500,8 @@ std::string BotWorldPopulationMgr::RequestNativeRaidReadyCheckForCohort(std::str
          << ",\"attempt_id\":" << mutableRaid.NativeReadyCheckActionAttemptId
          << ",\"wipe_generation\":" << mutableRaid.NativeReadyCheckActionWipeGeneration
          << ",\"ready_check_action_generation\":" << mutableRaid.NativeReadyCheckActionGeneration
+         << ",\"ready_check_response_count\":" << mutableRaid.NativeReadyCheckResponseCount
+         << ",\"ready_check_complete\":" << (mutableRaid.NativeReadyCheckActionObserved ? "true" : "false")
          << "}";
     _selectedCohortId = previous;
     return json.str();
@@ -3818,6 +3832,14 @@ bool BotWorldPopulationMgr::IsValidationCohortMemberInOriginalInstance(WorldBotS
     if (!Cohort().Config.ValidationRouteEnable || !state.ValidationCohortLocked || !bot)
         return true;
 
+    // A released ghost must leave an instance to run from the native
+    // graveyard back to its entrance.  The corpse remains the immutable
+    // authority for the original map; alive players never receive this
+    // exception.
+    if (!bot->IsAlive() && bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)
+        && bot->HasCorpse() && bot->GetCorpseLocation().GetMapId() == state.ValidationCohortMapId)
+        return true;
+
     return bot->IsInWorld()
         && bot->GetMapId() == state.ValidationCohortMapId
         && bot->GetInstanceId() == state.ValidationCohortInstanceId;
@@ -5734,10 +5756,30 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         return;
     }
     if (raidValidation && group->GetRaidDifficulty() != requestedRaidDifficulty)
+    {
+        // Match WorldSession::HandleSetRaidDifficultyOpcode: an instance
+        // occupant may not mutate raid difficulty.  Provisioning must set the
+        // legitimate group difficulty before entry; runtime only reads it.
+        if (leader->GetMap() && leader->GetMap()->IsRaid())
+        {
+            Cohort().LastPopulationFailureReason = "raid_difficulty_mismatch_inside_instance";
+            return;
+        }
         group->SetRaidDifficulty(requestedRaidDifficulty);
+    }
 
-    uint32 const leaderMapId = leader->GetMapId();
-    uint32 const leaderInstanceId = leader->GetInstanceId();
+    uint32 leaderMapId = leader->GetMapId();
+    uint32 leaderInstanceId = leader->GetInstanceId();
+    if (raidValidation && Cohort().Config.ValidationRouteMapId)
+    {
+        leaderMapId = Cohort().Config.ValidationRouteMapId;
+        for (WorldBotState const& state : Party().Bots)
+            if (state.Guid == leader->GetGUID() && state.ValidationCohortLocked)
+            {
+                leaderInstanceId = state.ValidationCohortInstanceId;
+                break;
+            }
+    }
     Party().GroupGuid = group->GetGUID();
     Party().MapId = leaderMapId;
     Party().InstanceId = leaderInstanceId;
@@ -5832,6 +5874,8 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         slot.LeaseRoleSlot = slot.RosterSlotId;
         slot.SlotIndex = plannedSlot ? plannedSlot->SlotIndex : uint32(memberIndex);
         slot.Guid = bot->GetGUID();
+        slot.AccountId = bot->GetSession() ? bot->GetSession()->GetAccountId() : 0;
+        slot.CharacterName = bot->GetName();
         slot.SubGroup = raidValidation ? group->GetMemberGroup(bot->GetGUID()) : 0;
         slot.Role = plannedSlot && !plannedSlot->Role.empty() ? plannedSlot->Role : GetDungeonRole(bot);
         slot.ClassId = bot->getClass();
@@ -5842,9 +5886,28 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         gearIdentity << "equipped";
         for (uint8 equipmentSlot = EQUIPMENT_SLOT_START; equipmentSlot < EQUIPMENT_SLOT_END; ++equipmentSlot)
             if (Item const* item = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, equipmentSlot))
+            {
                 gearIdentity << ';' << uint32(equipmentSlot) << ':' << item->GetGUID().GetCounter()
-                    << ':' << item->GetEntry();
+                    << ':' << item->GetEntry() << ':';
+                for (uint8 enchantSlot = 0; enchantSlot < MAX_ENCHANTMENT_SLOT; ++enchantSlot)
+                {
+                    if (enchantSlot)
+                        gearIdentity << ',';
+                    gearIdentity << item->GetEnchantmentId(EnchantmentSlot(enchantSlot));
+                }
+            }
         slot.GearIdentity = gearIdentity.str();
+        std::ostringstream talentIdentity;
+        talentIdentity << "active_spec:" << uint32(bot->GetActiveSpec());
+        for (auto const& [spellId, talent] : bot->GetTalentMap(bot->GetActiveSpec()))
+            if (talent.State != PLAYERSPELL_REMOVED)
+                talentIdentity << ';' << spellId;
+        slot.TalentIdentity = talentIdentity.str();
+        std::ostringstream glyphIdentity;
+        glyphIdentity << "active_spec:" << uint32(bot->GetActiveSpec());
+        for (uint8 glyphSlot = 0; glyphSlot < MAX_GLYPH_SLOT_INDEX; ++glyphSlot)
+            glyphIdentity << ';' << uint32(glyphSlot) << ':' << bot->GetGlyph(bot->GetActiveSpec(), glyphSlot);
+        slot.GlyphIdentity = glyphIdentity.str();
         slot.Active = bot->IsInWorld();
         slot.LeaseOwned = LeaseOwnedByCurrentCohort(guid, slot.LeaseRoleSlot);
         raid.RosterByGuid.emplace(guid, slot);
@@ -5961,6 +6024,7 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
             raid.BossStates.push_back(uint8(instance->GetBossState(bossId)));
     }
 
+    uint64 const bossResetGenerationBeforeObservation = raid.BossResetGeneration;
     bool bossResetObserved = false;
     for (size_t bossId = 0; bossId < std::min(previousBossStates.size(), raid.BossStates.size()); ++bossId)
         if (previousBossStates[bossId] == uint8(IN_PROGRESS)
@@ -5978,10 +6042,10 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
     bool const nativeRecoverySignals = raid.NativeDeathObserved
         && (raid.NativeCorpseObserved || raid.NativeReleaseObserved)
         && raid.NativeResurrectionObserved
-        && (raid.NativeRunbackObserved || !raid.NativeReleaseObserved);
-    // Group exposes no readback for a completed ready-check action in this
-    // manager's API surface. Keep this false until a native action callback is
-    // wired; all-alive and a local group object are deliberately insufficient.
+        && raid.NativeRunbackObserved
+        && raid.BossResetGeneration > raid.BossResetGenerationAtWipe;
+    // Completion is recorded only after every exact-roster member traverses
+    // the native ready-check response opcode path for this attempt and wipe.
     raid.NativeRecoveryEvidenceComplete = nativeRecoverySignals && raid.NativeReadyCheckActionObserved
         && raid.NativeReadyCheckActionAttemptId == raid.AttemptId
         && raid.NativeReadyCheckActionWipeGeneration == raid.WipeGeneration;
@@ -5990,6 +6054,15 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         if (previousWipeState != "wiped")
         {
             ++raid.WipeGeneration;
+            raid.BossResetGenerationAtWipe = bossResetGenerationBeforeObservation;
+            // Native recovery observations are scoped to this wipe.  Preserve
+            // only signals observable in the current all-dead snapshot.
+            raid.NativeDeathObserved = true;
+            raid.NativeCorpseObserved = std::any_of(raid.NativeSignalsByGuid.begin(), raid.NativeSignalsByGuid.end(),
+                [](auto const& row) { return row.second.HasCorpse; });
+            raid.NativeReleaseObserved = false;
+            raid.NativeResurrectionObserved = false;
+            raid.NativeRunbackObserved = false;
             // A ready check issued before this native wipe cannot authorize
             // post-wipe recovery. Keep the monotonic action generation for
             // auditability, but clear its acceptance identity.
@@ -5997,6 +6070,7 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
             raid.NativeReadyCheckActionAttemptId = 0;
             raid.NativeReadyCheckActionWipeGeneration = 0;
             raid.NativeReadyCheckActionEvidenceSequence = 0;
+            raid.NativeReadyCheckResponseCount = 0;
         }
         raid.WipeState = "wiped";
         raid.RecoveryState = raid.EncounterInProgress ? "awaiting_native_reset" : "release_resurrection_pending";
@@ -7631,6 +7705,78 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             if (certifiedGroupCombatActive)
             {
                 state.DeadTimer = 0;
+                return;
+            }
+
+            if (Cohort().Config.ValidationRouteEnable && Cohort().Config.AllowRaids)
+            {
+                std::string raw = BuildRawJson(bot, nullptr);
+                std::string semantic = BuildSemanticJson(bot, nullptr, "native_raid_recovery");
+                if (!bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST))
+                {
+                    // Equivalent core operations to CMSG_REPOP_REQUEST.  This
+                    // creates the corpse, releases the spirit and selects the
+                    // native graveyard; it never resurrects or teleports a live
+                    // combatant.
+                    if (bot->getDeathState() == JUST_DIED)
+                        bot->KillPlayer();
+                    bot->RemovePet(nullptr, PET_SAVE_DISMISS, true);
+                    bot->BuildPlayerRepop();
+                    bot->RepopAtGraveyard();
+                    state.NativeReleaseRequested = true;
+                    state.NativeRunbackAreaTriggerId = 0;
+                    state.DeadTimer = 0;
+                    RecordEvent(state, bot, "native_release", nullptr, "release_spirit_opcode_semantics",
+                        raw.c_str(), semantic.c_str());
+                    return;
+                }
+
+                uint32 originalMapId = state.ValidationCohortMapId;
+                AreaTriggerEntry const* entranceEntry = nullptr;
+                uint32 entranceTriggerId = state.NativeRunbackAreaTriggerId;
+                if (entranceTriggerId)
+                    entranceEntry = sAreaTriggerStore.LookupEntry(entranceTriggerId);
+                if (!entranceEntry)
+                    for (uint32 triggerId = 0; triggerId < sAreaTriggerStore.GetNumRows(); ++triggerId)
+                    {
+                        AreaTriggerEntry const* candidate = sAreaTriggerStore.LookupEntry(triggerId);
+                        AreaTriggerStruct const* destination = candidate ? sObjectMgr->GetAreaTrigger(triggerId) : nullptr;
+                        if (!candidate || !destination || candidate->ContinentID != bot->GetMapId()
+                            || destination->target_mapId != originalMapId)
+                            continue;
+                        if (!entranceEntry || bot->GetExactDist(candidate->Pos.X, candidate->Pos.Y, candidate->Pos.Z)
+                            < bot->GetExactDist(entranceEntry->Pos.X, entranceEntry->Pos.Y, entranceEntry->Pos.Z))
+                        {
+                            entranceEntry = candidate;
+                            entranceTriggerId = triggerId;
+                        }
+                    }
+
+                if (!entranceEntry)
+                {
+                    state.DeadTimer = 0;
+                    RecordEvent(state, bot, "native_runback_blocked", nullptr, "raid_entrance_area_trigger_missing",
+                        raw.c_str(), semantic.c_str(), 0.0f, originalMapId);
+                    return;
+                }
+
+                state.NativeRunbackAreaTriggerId = entranceTriggerId;
+                if (!bot->IsInAreaTriggerRadius(entranceEntry))
+                {
+                    bot->GetMotionMaster()->MovePoint(0, entranceEntry->Pos.X, entranceEntry->Pos.Y, entranceEntry->Pos.Z, true);
+                    state.DeadTimer = 0;
+                    RecordEvent(state, bot, "native_runback", nullptr, "moving_to_raid_entrance",
+                        raw.c_str(), semantic.c_str(), bot->GetExactDist(entranceEntry->Pos.X, entranceEntry->Pos.Y, entranceEntry->Pos.Z), entranceTriggerId);
+                    return;
+                }
+
+                WorldPacket areaTrigger(CMSG_AREATRIGGER, sizeof(uint32));
+                areaTrigger << entranceTriggerId;
+                bot->GetSession()->HandleAreaTriggerOpcode(areaTrigger);
+                Cohort().Raid.NativeRunbackObserved = true;
+                state.DeadTimer = 0;
+                RecordEvent(state, bot, "native_runback", nullptr, "raid_entrance_area_trigger",
+                    raw.c_str(), semantic.c_str(), 0.0f, entranceTriggerId);
                 return;
             }
 
@@ -23152,6 +23298,31 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
         }
     }
 
+    if (result.Features.RaidEncounter && result.Features.TankSpike
+        && std::string(role) == "tank" && raidAssignment.RoleIndex == 2
+        && result.Target->GetVictim() && result.Target->GetVictim() != bot
+        && NowMs() >= state.LastRaidTankSwapMs + 8000)
+    {
+        BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, role);
+        std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, result.Target, profile);
+        for (BotActionCandidate const& candidate : candidates)
+        {
+            if (candidate.Category != BotCombatActionCategory::Taunt || !candidate.RejectReason.empty())
+                continue;
+            bool swapped = TryCastCombatSpell(bot, result.Target, candidate.SpellId);
+            result.Action = swapped ? "raid_tank_swap_taunt" : "raid_tank_swap_taunt_failed";
+            result.SpellId = swapped ? candidate.SpellId : 0;
+            result.Failure = !swapped;
+            result.Rare = true;
+            state.LastRaidTankSwapTriggerSpellId = result.Features.CastSpellId;
+            state.LastRaidTankSwapMs = NowMs();
+            RecordRaidTelemetry(state, bot, result.Target, "raid_tank_swap", swapped ? "native_taunt" : "native_taunt_failed",
+                result.Features, raidAssignment, raidAnchors, raidAdapter, raidGearPlan, heroicProgression,
+                raw.c_str(), semantic.c_str(), result.Features.DangerScore, result.Features.CastSpellId, candidate.SpellId);
+            return result;
+        }
+    }
+
     if (result.Features.MoveOut && result.Features.DangerScore >= 0.25f)
     {
         Position pos = bot->GetFirstCollisionPosition(8.0f, result.Target->GetAngle(bot) + float(M_PI));
@@ -23451,6 +23622,29 @@ BotWorldPopulationMgr::RaidMechanicAdapter BotWorldPopulationMgr::BuildRaidMecha
     adapter.EvidenceObserved = !adapter.EvidenceGuid.IsEmpty();
     adapter.FormationFamily = assignment.SubGroup < 5 ? "deterministic_subgroup_anchor" : "role_anchor";
     adapter.RotationDirective = assignment.ClassSpec.empty() ? "db_profile_declared_class_unknown" : "db_profile_declared:" + assignment.ClassSpec;
+    std::string const& declaredProfile = Cohort().Config.ValidationRouteMechanicProfile;
+    if (!declaredProfile.empty())
+    {
+        adapter.RotationDirective += ";pinned_strategy:" + declaredProfile;
+        if (declaredProfile.find("tank_swap") != std::string::npos)
+            adapter.SwapTrigger = features.TankSpike ? "pinned_strategy_native_tank_spike" : "pinned_strategy_awaiting_native_trigger";
+        if (declaredProfile.find("controlled_aoe") != std::string::npos)
+            adapter.TargetControl = "controlled_aoe_pinned_strategy";
+        if (declaredProfile.find("do_not_damage") != std::string::npos)
+            adapter.TargetControl = "do_not_damage_pinned_strategy";
+        if (declaredProfile.find("kill_sync") != std::string::npos)
+            adapter.TargetControl = "kill_synchronization_pinned_strategy";
+        if (declaredProfile.find("dispel") != std::string::npos)
+            adapter.HealDirective = "dispel_rotation_pinned_strategy";
+        if (declaredProfile.find("soak") != std::string::npos)
+            adapter.SoakDirective = "soak_assignment_pinned_strategy";
+        if (declaredProfile.find("vehicle") != std::string::npos)
+            adapter.VehicleDirective = "vehicle_assignment_pinned_strategy";
+        if (declaredProfile.find("transport") != std::string::npos)
+            adapter.TransportDirective = "transport_assignment_pinned_strategy";
+        if (declaredProfile.find("platform") != std::string::npos)
+            adapter.PlatformTransferDirective = "platform_transfer_pinned_strategy";
+    }
 
     if (assignment.Role == "healer")
         adapter.HealDirective = features.RaidDamage ? "raid_damage_triage_and_cooldown" : "single_target_triage";
@@ -25027,6 +25221,7 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
          << ",\"evidence_sequence\":" << raid.EvidenceSequence
          << ",\"wipe_generation\":" << raid.WipeGeneration
          << ",\"boss_reset_generation\":" << raid.BossResetGeneration
+         << ",\"boss_reset_generation_at_wipe\":" << raid.BossResetGenerationAtWipe
          << ",\"recovery_generation\":" << raid.RecoveryGeneration
          << ",\"encounter_in_progress\":" << (raid.EncounterInProgress ? "true" : "false")
          << ",\"ready_check_satisfied\":" << (raid.ReadyCheckSatisfied ? "true" : "false")
@@ -25039,6 +25234,7 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
          << ",\"runback_observed\":" << (raid.NativeRunbackObserved ? "true" : "false")
          << ",\"ready_check_action_observed\":" << (raid.NativeReadyCheckActionObserved ? "true" : "false")
          << ",\"ready_check_action_generation\":" << raid.NativeReadyCheckActionGeneration
+         << ",\"ready_check_response_count\":" << raid.NativeReadyCheckResponseCount
          << ",\"ready_check_action_attempt_id\":" << raid.NativeReadyCheckActionAttemptId
          << ",\"ready_check_action_wipe_generation\":" << raid.NativeReadyCheckActionWipeGeneration
          << ",\"ready_check_action_evidence_sequence\":" << raid.NativeReadyCheckActionEvidenceSequence
@@ -25066,12 +25262,16 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
              << ",\"lease_role_slot\":\"" << JsonEscape(slot.LeaseRoleSlot) << "\""
              << ",\"slot\":" << slot.SlotIndex
              << ",\"guid\":" << guid
+             << ",\"account_id\":" << slot.AccountId
+             << ",\"character_name\":\"" << JsonEscape(slot.CharacterName) << "\""
              << ",\"subgroup\":" << uint32(slot.SubGroup)
              << ",\"role\":\"" << JsonEscape(slot.Role) << "\""
              << ",\"class_id\":" << uint32(slot.ClassId)
              << ",\"class_spec\":\"" << JsonEscape(slot.ClassSpec) << "\""
              << ",\"average_item_level\":" << slot.AverageItemLevel
              << ",\"gear_identity\":\"" << JsonEscape(slot.GearIdentity) << "\""
+             << ",\"talent_identity\":\"" << JsonEscape(slot.TalentIdentity) << "\""
+             << ",\"glyph_identity\":\"" << JsonEscape(slot.GlyphIdentity) << "\""
              << ",\"active\":" << (slot.Active ? "true" : "false")
              << ",\"lease_owned\":" << (slot.LeaseOwned ? "true" : "false") << '}';
     }

@@ -664,6 +664,15 @@ def run_ticket(
     samples: list[dict] = [preflight]
     terminal_reasons: list[str] = []
     error_message: str | None = None
+    worldserver_path = (worktree / "build/src/server/worldserver/worldserver").resolve()
+    worldserver_before: dict[str, object] | None = None
+    if resource_class in {"worldserver_build", "integration_build"} and worldserver_path.is_file():
+        before_stat = worldserver_path.stat()
+        worldserver_before = {
+            "size_bytes": before_stat.st_size,
+            "mtime_ns": before_stat.st_mtime_ns,
+            "sha256": sha256_file(worldserver_path),
+        }
     try:
         returncode, classification, process_samples, terminal_reasons = execute_process(
             command, worktree, environment, log_path, policy, paths, ticket_id
@@ -680,16 +689,29 @@ def run_ticket(
     log_hash = sha256_bytes(log_path.read_bytes()) if log_path.exists() else None
     output_artifacts: list[dict[str, object]] = []
     if classification == "success" and resource_class in {"worldserver_build", "integration_build"}:
-        worldserver = (worktree / "build/src/server/worldserver/worldserver").resolve()
+        worldserver = worldserver_path
         if worldserver.is_file() and worldserver.read_bytes()[:4] == b"\x7fELF":
-            output_artifacts.append(
-                {
-                    "kind": "worldserver_elf",
-                    "path": str(worldserver),
-                    "size_bytes": worldserver.stat().st_size,
-                    "sha256": sha256_file(worldserver),
-                }
+            after_stat = worldserver.stat()
+            after_hash = sha256_file(worldserver)
+            produced_by_ticket = worldserver_before is None or (
+                after_stat.st_mtime_ns > int(worldserver_before["mtime_ns"])
+                and (
+                    after_hash != worldserver_before["sha256"]
+                    or after_stat.st_size != int(worldserver_before["size_bytes"])
+                )
             )
+            if produced_by_ticket:
+                output_artifacts.append(
+                    {
+                        "kind": "worldserver_elf",
+                        "path": str(worldserver),
+                        "size_bytes": after_stat.st_size,
+                        "mtime_ns": after_stat.st_mtime_ns,
+                        "sha256": after_hash,
+                        "produced_by_ticket": True,
+                        "preexisting_artifact": worldserver_before,
+                    }
+                )
     receipt_without_hash = {
         "schema_version": 1,
         "policy_id": policy["policy_id"],
@@ -795,6 +817,7 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
             or worldserver["size_bytes"] <= 0
             or not isinstance(worldserver.get("sha256"), str)
             or not re.fullmatch(r"[0-9a-f]{64}", worldserver["sha256"])
+            or worldserver.get("produced_by_ticket") is not True
         ):
             raise CoordinatorError("receipt is missing the required worldserver artifact identity")
     return {
