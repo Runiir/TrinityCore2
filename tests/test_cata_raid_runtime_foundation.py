@@ -296,7 +296,7 @@ def test_generic_raid_mechanic_contracts_are_typed_executable_and_fail_closed():
     route_start = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
     route_end = IMPL.index("bool BotWorldPopulationMgr::IsBossContext", route_start)
     route_runtime = IMPL[route_start:route_end]
-    assert route_runtime.count("TryBossMechanics(state, bot, power, stage, activity)") >= 2
+    assert route_runtime.count("TryBossMechanics(state, bot, power, stage, activity, target)") == 4
 
 
 def test_phase1_magmaw_engagement_contract_has_explicit_safe_target_authority():
@@ -327,7 +327,7 @@ def test_route_directed_boss_assist_cannot_bypass_the_typed_contract_authority()
     contract_authority = assist.index("if (tankFocusIsBossRoute)")
     profile_action = assist.index("ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, target);")
     assert contract_authority < profile_action
-    assert "BossMechanicActionResult mechanic = TryBossMechanics(state, bot, power, stage, activity);" in assist[contract_authority:profile_action]
+    assert "BossMechanicActionResult mechanic = TryBossMechanics(state, bot, power, stage, activity, target);" in assist[contract_authority:profile_action]
     assert "if (mechanic.Handled)" in assist[contract_authority:profile_action]
     assert 'action = "raid_mechanic_contract_fail_closed";' in assist[contract_authority:profile_action]
     assert "return true;" in assist[contract_authority:profile_action]
@@ -390,6 +390,59 @@ def test_shared_boss_focus_cannot_bypass_declared_target_or_typed_contract_autho
     assert "usableBoss(bot->GetVictim())" in unbound_search
     assert "usableBoss(member->GetVictim())" in unbound_search
     assert "Cell::VisitAllObjects(bot, searcher, 60.0f);" in unbound_search
+
+
+def test_every_route_boss_dispatch_binds_declared_target_and_never_uses_generic_boss_search():
+    route_start = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    route_end = IMPL.index("bool BotWorldPopulationMgr::IsBossContext", route_start)
+    route_runtime = IMPL[route_start:route_end]
+    bound_call = "TryBossMechanics(state, bot, power, stage, activity, target)"
+    unbound_call = "TryBossMechanics(state, bot, power, stage, activity)"
+
+    # Tank focus, shared focus, current combat, and newly resolved route target
+    # are the complete route-boss dispatch surface. Every one binds the exact
+    # target that the route-specific declaration check already accepted.
+    assert route_runtime.count(bound_call) == 4
+    assert unbound_call not in route_runtime
+
+    tank_start = route_runtime.index("if (tankFocusIsBossRoute)")
+    tank_focus = route_runtime[
+        tank_start:route_runtime.index("if (tryRouteGroupHeal(bot, target))", tank_start)
+    ]
+    shared_start = route_runtime.index("if (!routeTrashFocus)")
+    shared_focus = route_runtime[
+        shared_start:route_runtime.index(
+            "ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, target);",
+            shared_start,
+        )
+    ]
+    current_start = route_runtime.index(
+        'if (routeBossTarget && Cohort().Config.ValidationRouteKind == "boss")'
+    )
+    current_combat = route_runtime[
+        current_start:route_runtime.index("if (tryRouteGroupHeal(bot, target))", current_start)
+    ]
+    resolved_start = route_runtime.index("target = routeTarget;")
+    resolved_target = route_runtime[
+        resolved_start:route_runtime.index("if (tryRouteGroupHeal(bot, target))", resolved_start)
+    ]
+    for dispatch in (tank_focus, shared_focus, current_combat, resolved_target):
+        assert bound_call in dispatch
+        assert 'action = "raid_mechanic_contract_fail_closed";' in dispatch
+        assert dispatch.index(bound_call) < dispatch.index('action = "raid_mechanic_contract_fail_closed";')
+
+    assert 'if (!routeTarget && Cohort().Config.ValidationRouteKind == "boss")\n        routeTarget = FindBossTarget(bot);' not in route_runtime
+    assert '&& !isValidationRouteObjectiveTarget(routeTarget->ToCreature()))' in route_runtime
+    assert 'action = "raid_target_not_declared_hold";' in route_runtime
+
+    boss_start = IMPL.index("BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMechanics")
+    boss_end = IMPL.index(
+        "BotWorldPopulationMgr::RaidRoleAssignment BotWorldPopulationMgr::BuildRaidRoleAssignment",
+        boss_start,
+    )
+    boss_runtime = IMPL[boss_start:boss_end]
+    assert "result.Target = boundRouteTarget ? boundRouteTarget : FindBossTarget(bot);" in boss_runtime
+    assert "if (boundRouteTarget && !routeDirectedBoss)" in boss_runtime
 
 
 def test_phase1_target_transfer_and_swap_controls_are_executable():

@@ -22956,7 +22956,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             // contract fail-closed handling.
             if (tankFocusIsBossRoute)
             {
-                BossMechanicActionResult mechanic = TryBossMechanics(state, bot, power, stage, activity);
+                BossMechanicActionResult mechanic = TryBossMechanics(state, bot, power, stage, activity, target);
                 if (mechanic.Handled)
                 {
                     situation = mechanic.Situation;
@@ -23370,7 +23370,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             rememberValidationRouteFocus(target);
         if (routeBossTarget && Cohort().Config.ValidationRouteKind == "boss")
         {
-            BossMechanicActionResult mechanic = TryBossMechanics(state, bot, power, stage, activity);
+            BossMechanicActionResult mechanic = TryBossMechanics(state, bot, power, stage, activity, target);
             if (mechanic.Handled)
             {
                 situation = mechanic.Situation;
@@ -23378,6 +23378,17 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 target = mechanic.Target;
                 return true;
             }
+
+            bot->InterruptNonMeleeSpells(false);
+            bot->AttackStop();
+            if (Pet* pet = bot->GetPet())
+                pet->AttackStop();
+            for (Unit* controlled : bot->m_Controlled)
+                if (controlled)
+                    controlled->AttackStop();
+            situation = bot->GetMap() && bot->GetMap()->IsRaid() ? "raid_boss" : "dungeon_boss";
+            action = "raid_mechanic_contract_fail_closed";
+            return true;
         }
         if (tryRouteGroupHeal(bot, target))
             return true;
@@ -23982,9 +23993,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
     }
 
-    if (!routeTarget && Cohort().Config.ValidationRouteKind == "boss")
-        routeTarget = FindBossTarget(bot);
-
     if (!routeTarget)
     {
         bool bossTargetMissing = Cohort().Config.ValidationRouteKind == "boss"
@@ -24058,6 +24066,21 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         return true;
     }
 
+    if (Cohort().Config.ValidationRouteKind == "boss"
+        && !isValidationRouteObjectiveTarget(routeTarget->ToCreature()))
+    {
+        bot->InterruptNonMeleeSpells(false);
+        bot->AttackStop();
+        if (Pet* pet = bot->GetPet())
+            pet->AttackStop();
+        for (Unit* controlled : bot->m_Controlled)
+            if (controlled)
+                controlled->AttackStop();
+        situation = bot->GetMap() && bot->GetMap()->IsRaid() ? "raid_boss" : "dungeon_boss";
+        action = "raid_target_not_declared_hold";
+        return true;
+    }
+
     target = routeTarget;
     state.ValidationRouteUnresolvedFocusHoldCount = 0;
     state.ValidationRouteTargetSearchMissCount = 0;
@@ -24067,7 +24090,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     rememberValidationRouteFocus(target);
     if (Cohort().Config.ValidationRouteKind == "boss")
     {
-        BossMechanicActionResult mechanic = TryBossMechanics(state, bot, power, stage, activity);
+        BossMechanicActionResult mechanic = TryBossMechanics(state, bot, power, stage, activity, target);
         if (mechanic.Handled)
         {
             situation = mechanic.Situation;
@@ -24075,6 +24098,17 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             target = mechanic.Target;
             return true;
         }
+
+        bot->InterruptNonMeleeSpells(false);
+        bot->AttackStop();
+        if (Pet* pet = bot->GetPet())
+            pet->AttackStop();
+        for (Unit* controlled : bot->m_Controlled)
+            if (controlled)
+                controlled->AttackStop();
+        situation = bot->GetMap() && bot->GetMap()->IsRaid() ? "raid_boss" : "dungeon_boss";
+        action = "raid_mechanic_contract_fail_closed";
+        return true;
     }
     if (tryRouteGroupHeal(bot, target))
         return true;
