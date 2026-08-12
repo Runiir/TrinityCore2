@@ -1,0 +1,260 @@
+{
+  "schema_version": 1,
+  "contract_schema": "cata_raid_encounter_contract_v1",
+  "raid": "dragon_soul",
+  "boss_slug": "spine_of_deathwing",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "dossier_path": "docs/bot_raids/strategies/t13/dragon_soul/spine_of_deathwing.md",
+  "ledger_path": "experiments/configs/cata_raid_encounters/dragon_soul/spine_of_deathwing_ledger_v1.json",
+  "unresolved_material_count": 26,
+  "encounter": "spine_of_deathwing",
+  "instance": "dragon_soul",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "research_state": "phase0_researched_not_live_validated",
+  "research_as_of": "2026-08-12",
+  "target": {
+    "client": "Cataclysm Classic",
+    "version": "4.4.2",
+    "build": 59185,
+    "locale": "enUS",
+    "cutoff_utc": "2025-02-20T23:00:00Z"
+  },
+  "evidence_policy": "Use official Blizzard material for the 4.4.2 release, the later Presence modifier, and later hotfix scope; use current Cataclysm Classic guides and spell pages for observations; use repository and historical SQL only for identities or executable-state findings. Preserve conflicts, post-cutoff evidence, and absent implementation as fidelity_blocked. Never schedule an unresolved value.",
+  "source_refs": [
+    "blizzard_442_notes_59185_cutoff",
+    "blizzard_presence_dragon_soul_2025",
+    "blizzard_hotfixes_feb21_2025",
+    "blizzard_hotfixes_apr3_2025",
+    "wowhead_cata_spine_2025",
+    "icy_veins_cata_spine_2025",
+    "icy_veins_legacy_spine",
+    "wowhead_spine_npc_spells",
+    "warcraft_tavern_cata_spine_2025",
+    "repo_dragon_soul_spine_audit",
+    "repo_dragon_soul_spine_sql"
+  ],
+  "mode_matrix": {
+    "10N": {
+      "heroic": false,
+      "health_current_cutoff": null,
+      "historical_secondary_health": {"corruption": 442000, "corrupted_blood": 166000, "hideous_amalgamation": 7000000, "burning_tendon": 2900000},
+      "health_status": "historical_secondary_only_not_build_59185",
+      "reported_role_shape": {"tanks": "1-2", "healers": "2-3", "dps": "5-7"},
+      "stable_difficulty_delta": "Normal has the plate/roll loop without the Heroic Degradation and Blood Corruption package.",
+      "cutoff_modifier_state": "Dragon Soul unlocks at the requested cutoff; Presence of the Dragon Soul was not active at that instant.",
+      "status": "fidelity_blocked"
+    },
+    "10H": {
+      "heroic": true,
+      "health_current_cutoff": null,
+      "historical_secondary_health": {"corruption": 800000, "corrupted_blood": 300000, "hideous_amalgamation": 9800000, "burning_tendon": 12600000},
+      "health_status": "historical_secondary_only_not_build_59185",
+      "reported_role_shape": {"tanks": "2", "healers": "3", "dps": "5"},
+      "stable_difficulty_delta": "Heroic adds Degradation and Blood Corruption; each plate is generally attacked through two tendon exposures.",
+      "cutoff_modifier_state": "Dragon Soul unlocks at the requested cutoff; Presence of the Dragon Soul was not active at that instant.",
+      "status": "fidelity_blocked"
+    },
+    "25N": {
+      "heroic": false,
+      "health_current_cutoff": null,
+      "historical_secondary_health": {"corruption": 1500000, "corrupted_blood": 581000, "hideous_amalgamation": 25000000, "burning_tendon": 9300000},
+      "health_status": "historical_secondary_only_not_build_59185",
+      "reported_role_shape": {"tanks": "2", "healers": "5-6", "dps": "17-18"},
+      "stable_difficulty_delta": "Normal mechanics repeat at 25-player scale; exact health, damage, and spawn coefficients are not frozen.",
+      "cutoff_modifier_state": "Dragon Soul unlocks at the requested cutoff; Presence of the Dragon Soul was not active at that instant.",
+      "status": "fidelity_blocked"
+    },
+    "25H": {
+      "heroic": true,
+      "health_current_cutoff": null,
+      "historical_secondary_health": {"corruption": 2500000, "corrupted_blood": 900000, "hideous_amalgamation": 30000000, "burning_tendon": 39300000},
+      "health_status": "historical_secondary_only_not_build_59185",
+      "reported_role_shape": {"tanks": "2-3", "healers": "6", "dps": "16-17"},
+      "stable_difficulty_delta": "Heroic adds the debuff package and commonly requires additional Blood/Amalgamation control or a third tank; exact 25H scaling is blocked.",
+      "cutoff_modifier_state": "Dragon Soul unlocks at the requested cutoff; Presence of the Dragon Soul was not active at that instant.",
+      "status": "fidelity_blocked"
+    }
+  },
+  "official_modifier_timeline": {
+    "at_requested_cutoff": {
+      "state": "raid_unlock_boundary",
+      "official_unlock_utc": "2025-02-20T23:00:00Z",
+      "presence_active": false,
+      "applied_to_contract_values": false,
+      "reason": "The official notes place Dragon Soul opening at 3:00 p.m. PST on February 20, 2025; no Presence stage had begun at the unlock boundary."
+    },
+    "classic_presence_of_the_dragon_soul": {
+      "official_name": "Presence of the Dragon Soul",
+      "health_multiplier_if_active": 0.95,
+      "damage_multiplier_if_active": 0.95,
+      "first_stage_start": "2025-03-18 weekly reset",
+      "increment": "5 percentage points every two weeks",
+      "announced_cap": "30% by the end of May 2025",
+      "toggle_npc_name": "Lord Devrestrasz",
+      "aura_id": null,
+      "npc_id": null,
+      "default_state_and_persistence": null,
+      "status": "official_schedule_post_cutoff_runtime_identity_blocked"
+    },
+    "later_hotfix_scope": {
+      "february_21_2025": "Yor'sahj-specific fixes; no Spine tuning identified",
+      "april_3_2025": "Spine Essence of Corrupted Deathwing loot addition and Dragon Soul LFG enablement; later loot/access delta, not cutoff encounter tuning",
+      "status": "post_cutoff_not_applied"
+    }
+  },
+  "identity_repository_state": {
+    "map": 967,
+    "data_header": "DS",
+    "data_key": "DATA_SPINE_OF_DEATHWING",
+    "data_index": 6,
+    "map_object_spine_head": 6574436,
+    "historical_encounter_id": 1291,
+    "encounter_journal_key": 104574,
+    "sky_captain_entry": 55870,
+    "corruption_entry": 56162,
+    "corrupted_blood_entry": 53889,
+    "hideous_amalgamation_entry": 53890,
+    "burning_tendon_entries": [56341, 56575, 57884, 57885, 57886, 57887, 57888, 57889],
+    "teleport_target_position_spell": 106054,
+    "boss_entry": null,
+    "local_boss_ai": false,
+    "local_loader_registration": false,
+    "local_instance_object_mapping": false,
+    "local_spawn_lifecycle": false,
+    "status": "identity_partial_implementation_absent"
+  },
+  "roles": {
+    "tanks": [
+      "Control Corruptions, Amalgamations, and the growing Blood population without allowing an unintended residue feed.",
+      "In Heroic 25, use a third-tank or kite arrangement only after build-verified add scaling and threat rules.",
+      "Position the superheated Amalgamation for Nuclear Blast near the intended plate while preserving raid movement for rolls."
+    ],
+    "healers": [
+      "Cover Searing Plasma absorbs, Fiery Grip periodic damage, Grasping Tendrils, Superheated Nucleus, and Burst.",
+      "In Heroic, handle Blood Corruption dispel/mutation decisions only with verified target and failure semantics.",
+      "Keep the tendon exposure team alive through the short Seal Armor Breach window."
+    ],
+    "raid": [
+      "Keep raid weight intentionally on one side for a controlled Deathwing roll and enter Grasping Tendrils before the roll.",
+      "Kill Corrupted Bloods in a controlled pattern, avoid premature residue consumption, and prevent avoidable Burst overlap.",
+      "Use the same-side tendon for both exposures on each plate and repeat for all three plates."
+    ],
+    "dps": [
+      "Lower the casting Corruption to break Fiery Grip, but do not promote the conflicting 16% or 20% threshold as executable.",
+      "Feed exactly nine Residues to the selected Amalgamation, then burst the superheated target and each exposed tendon.",
+      "Keep Blood and respawned Corruption control aligned with the current plate stage."
+    ]
+  },
+  "gates": [
+    {"key": "raid_unlock_boundary", "condition": "Official Dragon Soul opening at 2025-02-20T23:00:00Z", "status": "observed_official"},
+    {"key": "sky_captain_parachute", "condition": "Sky Captain Swayze starts the back-of-Deathwing sequence after Blackhorn", "status": "source_observed_local_trigger_blocked"},
+    {"key": "four_initial_corruptions", "condition": "Four initial Corruptions and at least one remaining/respawning Corruption", "status": "guide_observed_spawn_runtime_blocked"},
+    {"key": "searing_plasma_and_fiery_grip", "condition": "Corruptions apply the absorb and grip package", "status": "spell_identity_observed_mode_values_blocked"},
+    {"key": "deathwing_roll", "condition": "Raid-side distribution triggers the roll", "status": "qualitative_observed_threshold_blocked"},
+    {"key": "grasping_tendrils", "condition": "Players enter tendrils to avoid being flung", "status": "spell_identity_observed_runtime_blocked"},
+    {"key": "corrupted_blood_burst_residue", "condition": "Blood death produces Burst and Residue", "status": "identity_observed_mode_values_blocked"},
+    {"key": "nine_residue_absorb", "condition": "Amalgamation absorbs nine Residues", "status": "guide_observed_radius_and_scaling_blocked"},
+    {"key": "superheated_nuclear_blast", "condition": "Superheated Amalgamation death casts Nuclear Blast", "status": "spell_identity_observed_geometry_blocked"},
+    {"key": "two_tendon_exposures_per_plate", "condition": "Same-side tendon is exposed twice to detach one plate", "status": "guide_observed_window_and_health_blocked"},
+    {"key": "three_plates_end", "condition": "Third detached plate ends Spine", "status": "guide_observed_local_end_state_absent"},
+    {"key": "heroic_degradation", "condition": "Heroic Amalgamation deaths apply Degradation", "status": "coefficient_conflicted"},
+    {"key": "heroic_blood_corruption", "condition": "Heroic Blood Corruption: Death/Earth package", "status": "duration_and_mutation_blocked"},
+    {"key": "post_cutoff_presence_toggle", "condition": "Later Presence aura can be removed by Lord Devrestrasz", "status": "post_cutoff_identity_blocked"},
+    {"key": "later_spine_loot_hotfix", "condition": "April 3 Essence loot addition", "status": "post_cutoff_not_applied"}
+  ],
+  "heroic_gates": [
+    {"key": "degradation", "coefficient": null, "status": "fidelity_blocked"},
+    {"key": "blood_corruption", "death_duration_seconds": null, "earth_reduction": null, "status": "fidelity_blocked"},
+    {"key": "two_exposures", "value": 2, "status": "qualitative_observed_runtime_window_blocked"},
+    {"key": "twentyfive_kite", "value": null, "status": "strategy_observed_scaling_blocked"}
+  ],
+  "mechanics": [
+    {"key": "pull_and_corruptions", "npc_ids": {"sky_captain_swayze": 55870, "corruption": 56162}, "reported_initial_count": 4, "reported_minimum_living": 1, "target": "Corruption casts on players; exact selection and respawn cadence unresolved", "status": "identity_and_qualitative_flow_observed_spawn_geometry_blocked", "evidence": ["wowhead_cata_spine_2025", "icy_veins_cata_spine_2025", "repo_dragon_soul_spine_sql"]},
+    {"key": "searing_plasma", "spell_id": 105479, "target": "random player reported", "reported_absorb": 420000, "reported_physical_tick": 12000, "reported_tick_seconds": 10, "legacy_effect_rows": {"normal": 200000, "heroic": 300000, "ten_player_heroic_legacy": 280000, "twentyfive_player_heroic_legacy": 420000}, "status": "page_values_and_identity_observed_mode_duration_target_filter_blocked", "evidence": ["wowhead_cata_spine_2025", "icy_veins_cata_spine_2025", "wowhead_spine_npc_spells"]},
+    {"key": "fiery_grip", "spell_id": 105490, "target": "players; exact count/filter unresolved", "reported_channel_seconds": 30, "reported_fire_tick": 90000, "reported_tick_seconds": 3, "break_threshold_percent_conflict": {"icy_veins": 16, "wowhead": 20}, "status": "threshold_and_mode_effects_fidelity_blocked", "evidence": ["wowhead_cata_spine_2025", "icy_veins_cata_spine_2025", "wowhead_spine_npc_spells"]},
+    {"key": "roll_and_grasping_tendrils", "spell_id": 105563, "reported_damage_range": [5250, 6750], "radius_yards": 5, "slow_percent": 35, "reported_effect_duration_seconds": 1.5, "target": "players in tendrils; Amalgamations are not protected", "status": "roll_trigger_grace_persistence_and_cleanup_blocked", "evidence": ["wowhead_cata_spine_2025", "icy_veins_cata_spine_2025", "wowhead_spine_npc_spells"]},
+    {"key": "corrupted_blood_and_burst", "npc_id": 53889, "spell_id": 105219, "target": "nearby raid on Blood death; practical room-wide effect reported", "reported_damage_range": [26718, 29531], "radius_yards": 200, "status": "spawn_threat_current_mode_damage_and_filter_blocked", "evidence": ["wowhead_cata_spine_2025", "icy_veins_cata_spine_2025", "wowhead_spine_npc_spells"]},
+    {"key": "residue", "spell_id": 105223, "target": "nearest exposed hole", "properties": ["indestructible", "pacified", "slowly crawls", "reforms Blood"], "status": "crawl_speed_hole_selection_lifetime_and_reformation_blocked", "evidence": ["wowhead_cata_spine_2025", "icy_veins_cata_spine_2025", "wowhead_spine_npc_spells"]},
+    {"key": "hideous_amalgamation_absorb", "npc_id": 53890, "stack_count": 9, "damage_percent_per_stack": 10, "attack_speed_percent_per_stack": 20, "status": "stack_identity_observed_absorb_radius_and_mode_scaling_blocked", "evidence": ["wowhead_cata_spine_2025", "icy_veins_cata_spine_2025", "wowhead_spine_npc_spells"]},
+    {"key": "superheated_nucleus", "spell_id": 106264, "reported_damage_range": [30450, 39550], "reported_tick_seconds": 3, "status": "page_value_and_identity_observed_mode_runtime_blocked", "evidence": ["wowhead_cata_spine_2025", "icy_veins_cata_spine_2025", "wowhead_spine_npc_spells"]},
+    {"key": "nuclear_blast", "spell_id": 105845, "cast_seconds": 5, "reported_damage_range": [350625, 399375], "radius_yards": 8, "target": "nearby units; plate proximity unresolved", "status": "geometry_and_mode_damage_blocked", "evidence": ["wowhead_cata_spine_2025", "icy_veins_cata_spine_2025", "wowhead_spine_npc_spells"]},
+    {"key": "burning_tendon_and_seal", "npc_ids": [56341, 56575, 57884, 57885, 57886, 57887, 57888, 57889], "spell_id": 105847, "reported_seal_cast_seconds": 23, "reported_practical_damage_seconds": [18, 20], "reported_exposures_per_plate": 2, "reported_tendon_health_fraction_per_exposure": 0.5, "status": "health_side_identity_window_and_mode_scaling_blocked", "evidence": ["wowhead_cata_spine_2025", "icy_veins_cata_spine_2025", "wowhead_spine_npc_spells"]},
+    {"key": "heroic_degradation", "reported_max_health_reduction_percent_per_amalgamation": {"current_icy_veins": 5, "historical_guide": 6}, "status": "coefficient_stack_cap_and_reset_blocked", "evidence": ["icy_veins_cata_spine_2025", "icy_veins_legacy_spine", "warcraft_tavern_cata_spine_2025"]},
+    {"key": "blood_corruption_death_earth", "spell_ids": {"death": 106199, "earth": 106200}, "death_duration_seconds_conflict": {"current_guide": 15, "spell_page": 16}, "earth_reduction_conflict": {"current_guide_total_percent": 40, "icy_veins_per_stack_percent": 20, "icy_veins_max_stacks": 2}, "status": "duration_mutation_jump_stack_and_failure_blocked", "evidence": ["wowhead_cata_spine_2025", "icy_veins_cata_spine_2025", "wowhead_spine_npc_spells"]},
+    {"key": "stage_progression", "plates_to_detach": 3, "reported_later_active_blood_spawn_points": 5, "reported_later_exposed_areas": 8, "enrage": "current guides report no known enrage", "status": "spawn_cadence_transition_and_end_runtime_blocked", "evidence": ["wowhead_cata_spine_2025", "icy_veins_cata_spine_2025", "warcraft_tavern_cata_spine_2025"]},
+    {"key": "official_presence_modifier", "health_damage_reduction_percent": {"initial": 5, "maximum": 30}, "first_stage_start": "2025-03-18 weekly reset", "toggle_npc_name": "Lord Devrestrasz", "active_at_cutoff": false, "status": "post_cutoff_aura_npc_ids_and_persistence_blocked", "evidence": ["blizzard_presence_dragon_soul_2025"]}
+  ],
+  "timer_contract": [
+    {"key": "searing_plasma_tick", "reported_seconds": 10, "status": "page_reported_mode_duration_blocked"},
+    {"key": "fiery_grip", "channel_seconds": 30, "tick_seconds": 3, "status": "reported_threshold_and_mode_values_blocked"},
+    {"key": "roll_grace", "reported_seconds": 5, "reported_tendrils_lead_seconds": 2, "status": "current_guide_observation_exact_trigger_blocked"},
+    {"key": "grasping_tendrils", "page_seconds": 1.5, "practical_persistence": null, "status": "source_duration_conflict_blocked"},
+    {"key": "superheated_nucleus_tick", "reported_seconds": 3, "status": "page_reported_mode_values_blocked"},
+    {"key": "nuclear_blast_cast", "reported_seconds": 5, "status": "page_reported_plate_geometry_blocked"},
+    {"key": "seal_armor_breach", "page_cast_seconds": 23, "practical_damage_seconds": [18, 20], "status": "targetability_and_reclose_runtime_blocked"},
+    {"key": "blood_spawn_cadence", "reported": "increases as stages progress", "fixed_seconds": null, "status": "fidelity_blocked"},
+    {"key": "plate_loop", "reported_plate_count": 3, "reported_exposures_per_plate": 2, "status": "qualitative_loop_local_end_state_blocked"},
+    {"key": "enrage", "reported": "none known in current guides", "status": "runtime_blocked"}
+  ],
+  "lifecycle": {
+    "instance_map": 967,
+    "encounter_data_index": 6,
+    "historical_encounter_id": 1291,
+    "encounter_journal_key": 104574,
+    "prerequisite": "Guides place Spine after Warmaster Blackhorn; local prerequisite enforcement is absent/unresolved.",
+    "pull": "Sky Captain Swayze 55870/parachute sequence is source-reported; local trigger and teleport lifecycle are absent.",
+    "phase_sequence": "Four Corruptions -> controlled roll -> Blood/Residue -> nine-stack Amalgamation -> tendon exposure; repeat for three plates.",
+    "reset": null,
+    "wipe_reactivation": null,
+    "death_cleanup": null,
+    "credit": null,
+    "later_loot": "April 3, 2025 Essence of Corrupted Deathwing drop is post-cutoff and not applied.",
+    "live_validation": false,
+    "status": "fidelity_blocked_local_spine_implementation_absent"
+  },
+  "repository_audit": {
+    "revision": "6989485d452b10c40408b259c43e251f8af80cd2",
+    "boss_source": null,
+    "instance_source": "src/server/scripts/Kalimdor/CavernsOfTime/DragonSoul/instance_dragon_soul.cpp",
+    "identity_source": "src/server/scripts/Kalimdor/CavernsOfTime/DragonSoul/dragon_soul.h",
+    "loader_source": "src/server/scripts/Kalimdor/kalimdor_script_loader.cpp",
+    "historical_sql": [
+      "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql",
+      "sql/old/4.3.4/TDB01_to_TDB02_updates/world/047_creature_template.sql",
+      "sql/old/4.3.4/TDB01_to_TDB02_updates/world/128_creature_template.sql",
+      "sql/old/4.3.4/TDB00_to_TDB01_updates/world/004_creature_template.sql",
+      "sql/old/4.3.4/TDB04_to_TDB05_updates/world/037_spell_target_position.sql"
+    ],
+    "finding": "dragon_soul.h declares DATA_SPINE_OF_DEATHWING index 6 and map-object 6574436, but instance_dragon_soul.cpp maps only Madness actors, kalimdor_script_loader.cpp registers no Spine AI, and no boss_spine_of_deathwing.cpp or local Spine add/door lifecycle was found. Historical SQL supplies identities only.",
+    "status": "fidelity_blocked"
+  },
+  "unresolved": [
+    {"key": "build_59185_hotfix_lineage_and_unlock_cutoff", "status": "fidelity_blocked", "detail": "The requested build/cutoff is frozen as metadata, but no build-matched DBC or complete hotfix export establishes Spine tuning at the unlock boundary."},
+    {"key": "four_mode_health_damage_and_variant_mapping", "status": "fidelity_blocked", "detail": "No trustworthy current Classic four-mode health/damage table or historical-variant-to-mode mapping was found; legacy observations remain secondary only."},
+    {"key": "presence_aura_toggle_ids_default_persistence_and_application_order", "status": "fidelity_blocked", "detail": "The official later announcement names the modifier and toggle NPC but does not provide runtime IDs, persistence, or ordering relative to mode scaling."},
+    {"key": "later_hotfix_loot_and_behavior_delta_scope", "status": "fidelity_blocked", "detail": "Later February and April notes separate Yor'sahj fixes and the Spine loot addition, but do not prove the complete post-cutoff behavior lineage."},
+    {"key": "sky_captain_trigger_parachute_and_initial_pull", "status": "fidelity_blocked", "detail": "Guides describe the Swayze/parachute transition; local trigger, teleport, aura cancellation, and pull timing are absent."},
+    {"key": "initial_corruption_count_respawn_and_spawn_geometry", "status": "fidelity_blocked", "detail": "Four initial Corruptions and a minimum-one report are qualitative; respawn rules, positions, and stage geometry are not frozen."},
+    {"key": "searing_plasma_target_absorb_damage_and_tick_mode_values", "status": "fidelity_blocked", "detail": "Page prose, effect rows, and guide observations do not establish target filter, duration, or build-59185 mode coefficients."},
+    {"key": "fiery_grip_target_count_break_threshold_and_channel_mode_values", "status": "fidelity_blocked", "detail": "Current sources conflict on the Corruption-health break threshold (16% versus 20%) and expose legacy effect rows without a current mode mapping."},
+    {"key": "roll_weighting_side_threshold_grace_and_cleanup", "status": "fidelity_blocked", "detail": "The side-weighted roll is stable qualitatively, but threshold, grace, jitter, add cleanup, and death/rejoin behavior are unresolved."},
+    {"key": "grasping_tendrils_radius_duration_and_rejoin", "status": "fidelity_blocked", "detail": "The 5-yard/35% page values are identified, but practical persistence, hole selection, rejoin, and exact roll protection are not frozen."},
+    {"key": "corrupted_blood_spawn_cadence_health_and_threat", "status": "fidelity_blocked", "detail": "Guides describe increasing Blood pressure but no build-matched spawn cadence, health, or threat behavior."},
+    {"key": "burst_radius_target_filter_and_mode_damage", "status": "fidelity_blocked", "detail": "The page reports a 200-yard radius and legacy effect rows; current mode damage and eligible-unit filter remain unresolved."},
+    {"key": "residue_crawl_speed_hole_selection_and_reformation", "status": "fidelity_blocked", "detail": "Residue identity and nearest-hole qualitative behavior are known, but speed, lifetime, selection, and reformation timing are not."},
+    {"key": "amalgamation_absorb_radius_stack_range_and_mode_scaling", "status": "fidelity_blocked", "detail": "Nine stacks and per-stack reports are corroborated, but absorb radius, stack application range, and mode scaling are not."},
+    {"key": "superheated_nucleus_tick_and_damage_mode_values", "status": "fidelity_blocked", "detail": "The 3-second page cadence and range are retained, but current mode values and death/target filter are not established."},
+    {"key": "nuclear_blast_plate_proximity_radius_and_damage_mode_values", "status": "fidelity_blocked", "detail": "The 5-second cast, 8-yard page range, and damage range are identified, but plate proximity and current mode behavior are unresolved."},
+    {"key": "burning_tendon_side_identity_health_and_exposure_window", "status": "fidelity_blocked", "detail": "Tendon identities and two-exposure flow are known, but side mapping, current health, targetability window, and mode scaling are not."},
+    {"key": "seal_armor_breach_cast_targetability_and_reclose_runtime", "status": "fidelity_blocked", "detail": "The page gives a 23-second cast while guides/comments imply roughly 18-20 seconds of practical damage; exact immunity and reclose timing are unresolved."},
+    {"key": "stage_spawn_counts_plate_transition_and_end_state", "status": "fidelity_blocked", "detail": "Three plates and later exposed-area observations are qualitative; spawn cadence, transition cleanup, and local completion state are absent."},
+    {"key": "heroic_degradation_coefficient_stack_cap_and_reset", "status": "fidelity_blocked", "detail": "Current Classic guides report 5% maximum-health loss per Amalgamation death while historical guidance reports 6%; stack cap and reset are unresolved."},
+    {"key": "blood_corruption_death_duration_jump_mutation_and_failure", "status": "fidelity_blocked", "detail": "Death duration is reported as 15 versus 16 seconds; jump, dispel mutation, target filter, and expiry failure are not build-frozen."},
+    {"key": "blood_corruption_earth_stacks_targeting_and_damage_reduction", "status": "fidelity_blocked", "detail": "Current sources describe 20% per stack up to two versus a 40% summary; stack and targeting semantics are unresolved."},
+    {"key": "heroic_twentyfive_kite_and_add_growth_scaling", "status": "fidelity_blocked", "detail": "Third-tank/kite practice is strategic guidance only; 25H add growth, threat, and timing coefficients are not established."},
+    {"key": "wipe_reset_roll_death_despawn_and_reactivation", "status": "fidelity_blocked", "detail": "No local Spine AI or live validation establishes wipe reset, roll death, despawn, respawn, or reactivation behavior."},
+    {"key": "prerequisite_lockout_loot_achievement_and_player_credit", "status": "fidelity_blocked", "detail": "Blackhorn ordering and historical encounter/achievement identities are known, but current lockout, prerequisite, loot, credit, and later-drop semantics are unresolved."},
+    {"key": "local_missing_spine_ai_instance_and_loader_implementation", "status": "fidelity_blocked", "detail": "The local checkout has no dedicated Spine AI, creature/door mapping, loader registration, or add lifecycle to audit as executable behavior."}
+  ]
+}
