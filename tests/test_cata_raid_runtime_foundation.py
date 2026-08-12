@@ -159,7 +159,7 @@ def test_controlled_aoe_counts_only_declared_targets_and_fails_closed_near_undec
         "HandleCancelAuraOpcode(cancel)",
         "bot->RemoveDynObject(action.SpellId);",
         "state.SuppressedRaidAreaAutocasts.push_back",
-        "controlled->GetPetAutoSpellOnPos(index)",
+        "creature->GetPetAutoSpellOnPos(index)",
         "pet->ToggleAutocast(spellInfo, false);",
         "charmInfo->ToggleCreatureAutocast(spellInfo, false);",
         "reconcileRaidAreaAutocasts(!controlledAoeReleased);",

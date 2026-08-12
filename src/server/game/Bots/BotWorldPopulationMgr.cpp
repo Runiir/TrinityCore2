@@ -23777,11 +23777,12 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
 
         for (Unit* controlled : bot->m_Controlled)
         {
-            if (!controlled)
+            Creature* creature = controlled ? controlled->ToCreature() : nullptr;
+            if (!creature)
                 continue;
             std::vector<uint32> enabledAreaSpells;
-            for (uint8 index = 0; index < controlled->GetPetAutoSpellSize(); ++index)
-                if (uint32 const spellId = controlled->GetPetAutoSpellOnPos(index))
+            for (uint8 index = 0; index < creature->GetPetAutoSpellSize(); ++index)
+                if (uint32 const spellId = creature->GetPetAutoSpellOnPos(index))
                     if (SpellHasHostileMultiTargetSemantics(sSpellMgr->GetSpellInfo(spellId)))
                         enabledAreaSpells.push_back(spellId);
             for (uint32 spellId : enabledAreaSpells)
