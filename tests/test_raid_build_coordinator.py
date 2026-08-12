@@ -67,23 +67,26 @@ def initialized_git_repo(path: Path) -> Path:
 
 def configured_git_repo(path: Path, flags: str = "-O1 -DNDEBUG") -> Path:
     repo = initialized_git_repo(path)
-    (repo / ".gitignore").write_text("build/src/\n", encoding="utf-8")
+    (repo / ".gitignore").write_text("build/\n", encoding="utf-8")
     cache = repo / "build/CMakeCache.txt"
     cache.parent.mkdir(parents=True)
     cache.write_text(
         "\n".join(
             (
                 "CMAKE_BUILD_TYPE:STRING=Release",
+                "CMAKE_CXX_FLAGS:STRING=",
                 f"CMAKE_CXX_FLAGS_RELEASE:STRING={flags}",
+                "CMAKE_INTERPROCEDURAL_OPTIMIZATION:BOOL=OFF",
                 "UNITY_BUILDS:BOOL=OFF",
                 "USE_COREPCH:BOOL=OFF",
                 "USE_SCRIPTPCH:BOOL=OFF",
+                "WITH_COREDEBUG:BOOL=OFF",
                 "",
             )
         ),
         encoding="utf-8",
     )
-    subprocess.run(["git", "-C", str(repo), "add", ".gitignore", "build/CMakeCache.txt", "-f"], check=True)
+    subprocess.run(["git", "-C", str(repo), "add", ".gitignore"], check=True)
     subprocess.run(["git", "-C", str(repo), "commit", "-qm", "freeze cmake cache"], check=True)
     return repo
 
@@ -381,14 +384,14 @@ def test_legacy_receipt_is_historical_only(tmp_path: Path, monkeypatch: pytest.M
     forged.pop("receipt_sha256")
     forged["receipt_sha256"] = qb.sha256_bytes(qb.canonical_json(forged))
     receipt_path.write_text(json.dumps(forged), encoding="utf-8")
-    with pytest.raises(qb.CoordinatorError, match="source identity changed"):
+    with pytest.raises(qb.CoordinatorError, match="differs from coordinator canonical record"):
         qb.verify_receipt(receipt_path, policy(), allow_test_mode=True)
 
     receipt["schema_version"] = 1
     receipt.pop("receipt_sha256")
     receipt["receipt_sha256"] = qb.sha256_bytes(qb.canonical_json(receipt))
     receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
-    with pytest.raises(qb.CoordinatorError, match="legacy receipt"):
+    with pytest.raises(qb.CoordinatorError, match="differs from coordinator canonical record"):
         qb.verify_receipt(receipt_path, policy(), allow_test_mode=True)
 
 
@@ -458,6 +461,70 @@ def test_v8_receipt_binds_effective_cmake_settings_and_current_cache(
         qb.verify_receipt(receipt_path, frozen, allow_test_mode=True)
 
 
+def test_v8_full_cache_drift_during_build_is_provenance_abort(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    state_paths(tmp_path, monkeypatch)
+    repo = configured_git_repo(tmp_path / "repo")
+    frozen = json.loads(
+        (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").read_text()
+    )
+    command = [
+        sys.executable, "-c",
+        "import pathlib; p=pathlib.Path('build/CMakeCache.txt'); p.write_text(p.read_text()+'UNSELECTED_SETTING:STRING=changed\\n')",
+    ]
+    monkeypatch.setattr(qb, "resource_snapshot", lambda _: synthetic_snapshot())
+    monkeypatch.setattr(qb, "find_live_validation_processes", lambda *_args, **_kwargs: [])
+
+    code, receipt = qb.run_ticket(
+        repo, frozen, "worldserver_build", command, None,
+        tmp_path / "cache-drift.json", 2.0,
+    )
+    assert code == 76
+    assert receipt["classification"] == "build_provenance_abort"
+    assert receipt["build_configuration"]["request"]["settings"] == receipt[
+        "build_configuration"
+    ]["completion"]["settings"]
+    assert receipt["build_configuration"]["request"]["cache_sha256"] != receipt[
+        "build_configuration"
+    ]["completion"]["cache_sha256"]
+    assert "build_configuration_changed_or_mismatched_at_completion" in receipt[
+        "provenance_reasons"
+    ]
+
+
+def test_fabricated_never_enqueued_receipt_is_rejected(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    state_paths(tmp_path, monkeypatch)
+    repo = configured_git_repo(tmp_path / "repo")
+    frozen = json.loads(
+        (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").read_text()
+    )
+    binary = repo / "build/src/server/worldserver/worldserver"
+    command = [
+        sys.executable, "-c",
+        "import pathlib,sys; p=pathlib.Path(sys.argv[1]); p.parent.mkdir(parents=True,exist_ok=True); p.write_bytes(b'\\x7fELFauthentic')",
+        str(binary),
+    ]
+    receipt_path = tmp_path / "authentic.json"
+    monkeypatch.setattr(qb, "resource_snapshot", lambda _: synthetic_snapshot())
+    monkeypatch.setattr(qb, "find_live_validation_processes", lambda *_args, **_kwargs: [])
+    code, receipt = qb.run_ticket(
+        repo, frozen, "worldserver_build", command, None, receipt_path, 2.0,
+    )
+    assert code == 0
+
+    forged = copy.deepcopy(receipt)
+    forged["ticket_id"] = "raid-build-never-enqueued"
+    forged.pop("receipt_sha256")
+    forged["receipt_sha256"] = qb.sha256_bytes(qb.canonical_json(forged))
+    forged_path = tmp_path / "forged.json"
+    forged_path.write_text(json.dumps(forged), encoding="utf-8")
+    with pytest.raises(qb.CoordinatorError, match="canonical receipt record is missing"):
+        qb.verify_receipt(forged_path, frozen, allow_test_mode=True)
+
+
 def test_v8_configure_command_must_explicitly_bind_every_effective_setting() -> None:
     frozen = json.loads(
         (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").read_text()
@@ -465,10 +532,13 @@ def test_v8_configure_command_must_explicitly_bind_every_effective_setting() -> 
     command = [
         "cmake", "-S", ".", "-B", "build",
         "-DCMAKE_BUILD_TYPE=Release",
+        "-DCMAKE_CXX_FLAGS=",
         "-DCMAKE_CXX_FLAGS_RELEASE=-O1 -DNDEBUG",
+        "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF",
         "-DUNITY_BUILDS=OFF",
         "-DUSE_COREPCH=OFF",
         "-DUSE_SCRIPTPCH=OFF",
+        "-DWITH_COREDEBUG=OFF",
     ]
     qb.validate_command(command, 1, resource_class="configure", policy=frozen)
     with pytest.raises(qb.CoordinatorError, match="CMAKE_CXX_FLAGS_RELEASE"):
@@ -545,7 +615,7 @@ def test_receipt_rejects_worldserver_not_produced_by_ticket(tmp_path: Path) -> N
     receipt["receipt_sha256"] = qb.sha256_bytes(qb.canonical_json(unsigned))
     path = tmp_path / "receipt.json"
     path.write_text(json.dumps(receipt), encoding="utf-8")
-    with pytest.raises(qb.CoordinatorError, match="artifact identity"):
+    with pytest.raises(qb.CoordinatorError, match="coordinator canonical receipt record"):
         qb.verify_receipt(path, frozen)
 
 
@@ -607,6 +677,22 @@ def test_degraded_v7_retains_all_safety_limits_and_uses_release_build_type() -> 
     ):
         assert v7["mechanical_controls"][key] == v6["mechanical_controls"][key]
     assert v7["mechanical_controls"]["cmake_build_type"] == "Release"
+
+
+def test_degraded_v8_freezes_complete_low_memory_release_configuration() -> None:
+    v7 = json.loads(
+        (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v7.json").read_text()
+    )
+    v8 = json.loads(
+        (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").read_text()
+    )
+    assert v8["parallelism"] == v7["parallelism"]
+    assert v8["admission_thresholds"] == v7["admission_thresholds"]
+    assert v8["mechanical_controls"]["cmake_build_type"] == "Release"
+    assert v8["mechanical_controls"]["cmake_cxx_flags"] == ""
+    assert v8["mechanical_controls"]["cmake_release_cxx_flags"] == "-O1 -DNDEBUG"
+    assert v8["mechanical_controls"]["with_coredebug"] is False
+    assert v8["mechanical_controls"]["interprocedural_optimization"] is False
 
 
 def test_live_validation_scan_matches_argv_not_unrelated_prose(

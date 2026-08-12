@@ -55,7 +55,10 @@
   },
   "mechanical_controls": {
     "cmake_build_type": "Release",
+    "cmake_cxx_flags": "",
     "cmake_release_cxx_flags": "-O1 -DNDEBUG",
+    "with_coredebug": false,
+    "interprocedural_optimization": false,
     "cmake_build_parallel_level": 1,
     "makeflags_jobs": 1,
     "ninja_jobs": 1,

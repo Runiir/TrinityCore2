@@ -814,10 +814,15 @@ def validate_build_receipt(
         if isinstance(release_flags, str) and release_flags:
             expected_cmake = {
                 "CMAKE_BUILD_TYPE": controls.get("cmake_build_type"),
+                "CMAKE_CXX_FLAGS": str(controls.get("cmake_cxx_flags", "")),
                 "CMAKE_CXX_FLAGS_RELEASE": release_flags,
+                "CMAKE_INTERPROCEDURAL_OPTIMIZATION": (
+                    "ON" if controls.get("interprocedural_optimization") else "OFF"
+                ),
                 "UNITY_BUILDS": "ON" if controls.get("unity_builds") else "OFF",
                 "USE_COREPCH": "ON" if controls.get("core_precompiled_headers") else "OFF",
                 "USE_SCRIPTPCH": "ON" if controls.get("script_precompiled_headers") else "OFF",
+                "WITH_COREDEBUG": "ON" if controls.get("with_coredebug") else "OFF",
             }
             cache_path = (worktree / "build/CMakeCache.txt").resolve()
             cache_values: dict[str, str] = {}
@@ -849,6 +854,12 @@ def validate_build_receipt(
                     == stages[2].get("settings_sha256")
                 ):
                     rejections.append("build_receipt_cmake_settings_changed")
+                if not (
+                    stages[0].get("cache_sha256")
+                    == stages[1].get("cache_sha256")
+                    == stages[2].get("cache_sha256")
+                ):
+                    rejections.append("build_receipt_cmake_cache_changed")
                 current_cache_sha256 = sha256_file(cache_path) if cache_path.is_file() else None
                 if stages[2].get("cache_sha256") != current_cache_sha256:
                     rejections.append("build_receipt_cmake_cache_hash_mismatch")

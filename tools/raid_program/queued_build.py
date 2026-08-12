@@ -326,10 +326,15 @@ def expected_build_configuration(policy: dict) -> dict[str, str] | None:
         raise CoordinatorError("policy CMake build type is missing")
     return {
         "CMAKE_BUILD_TYPE": build_type,
+        "CMAKE_CXX_FLAGS": str(controls.get("cmake_cxx_flags", "")),
         "CMAKE_CXX_FLAGS_RELEASE": release_flags,
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION": (
+            "ON" if controls.get("interprocedural_optimization") else "OFF"
+        ),
         "UNITY_BUILDS": "ON" if controls.get("unity_builds") else "OFF",
         "USE_COREPCH": "ON" if controls.get("core_precompiled_headers") else "OFF",
         "USE_SCRIPTPCH": "ON" if controls.get("script_precompiled_headers") else "OFF",
+        "WITH_COREDEBUG": "ON" if controls.get("with_coredebug") else "OFF",
     }
 
 
@@ -715,6 +720,23 @@ def finalize_ticket(paths: Paths, ticket_id: str, receipt: dict) -> None:
             "ended_at_utc": receipt["ended_at_utc"],
             "receipt_sha256": receipt["receipt_sha256"],
         }
+        ticket["receipt_binding"] = {
+            "receipt_sha256": receipt["receipt_sha256"],
+            "policy_sha256": receipt["policy_sha256"],
+            "command_sha256": receipt["command_sha256"],
+            "source_identity_sha256": sha256_bytes(
+                canonical_json(receipt["source_identity"])
+            ),
+            "build_configuration_sha256": sha256_bytes(
+                canonical_json(receipt["build_configuration"])
+            ),
+            "output_artifacts_sha256": sha256_bytes(
+                canonical_json(receipt["output_artifacts"])
+            ),
+            "classification": receipt["classification"],
+            "exit_code": receipt["exit_code"],
+            "ended_at_utc": receipt["ended_at_utc"],
+        }
         state["queue"] = [value for value in state["queue"] if value != ticket_id]
         if state.get("active") == ticket_id:
             state["active"] = None
@@ -811,6 +833,8 @@ def run_ticket(
             and admitted_configuration.get("matches_policy") is True
             and requested_configuration.get("settings_sha256")
                 == admitted_configuration.get("settings_sha256")
+            and requested_configuration.get("cache_sha256")
+                == admitted_configuration.get("cache_sha256")
         )
     else:
         configuration_admissible = True
@@ -889,6 +913,9 @@ def run_ticket(
                 and requested_configuration.get("settings_sha256")
                     == admitted_configuration.get("settings_sha256")
                     == completion_configuration.get("settings_sha256")
+                and requested_configuration.get("cache_sha256")
+                    == admitted_configuration.get("cache_sha256")
+                    == completion_configuration.get("cache_sha256")
             )
         else:
             build_configuration_stable = True
@@ -1011,6 +1038,47 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
     del unhashed["receipt_sha256"]
     if sha256_bytes(canonical_json(unhashed)) != claimed:
         raise CoordinatorError("receipt canonical hash mismatch")
+    receipt_worktree = Path(str(receipt.get("worktree", ""))).resolve()
+    paths = Paths.for_worktree(receipt_worktree)
+    canonical_path = paths.receipts / f"{receipt.get('ticket_id')}.json"
+    if not canonical_path.is_file():
+        raise CoordinatorError("coordinator canonical receipt record is missing")
+    canonical_record = load_json(canonical_path)
+    if canonical_record != receipt:
+        raise CoordinatorError("receipt differs from coordinator canonical record")
+    with locked_state(paths) as state:
+        ticket = state.get("tickets", {}).get(receipt.get("ticket_id"))
+        if not isinstance(ticket, dict):
+            raise CoordinatorError("coordinator ticket record is missing")
+        if ticket.get("state") not in {"finished", "canceled"}:
+            raise CoordinatorError("coordinator ticket is not terminal")
+        binding = ticket.get("receipt_binding")
+        expected_binding = {
+            "receipt_sha256": claimed,
+            "policy_sha256": receipt.get("policy_sha256"),
+            "command_sha256": receipt.get("command_sha256"),
+            "source_identity_sha256": sha256_bytes(
+                canonical_json(receipt.get("source_identity"))
+            ),
+            "build_configuration_sha256": sha256_bytes(
+                canonical_json(receipt.get("build_configuration"))
+            ),
+            "output_artifacts_sha256": sha256_bytes(
+                canonical_json(receipt.get("output_artifacts"))
+            ),
+            "classification": receipt.get("classification"),
+            "exit_code": receipt.get("exit_code"),
+            "ended_at_utc": receipt.get("ended_at_utc"),
+        }
+        if binding != expected_binding:
+            raise CoordinatorError("receipt does not match coordinator ticket binding")
+        if (
+            ticket.get("queue_sequence") != receipt.get("queue_sequence")
+            or ticket.get("command_sha256") != receipt.get("command_sha256")
+            or ticket.get("resource_class") != receipt.get("resource_class")
+            or Path(str(ticket.get("worktree", ""))).resolve() != receipt_worktree
+        ):
+            raise CoordinatorError("receipt does not match coordinator ticket metadata")
     if receipt["policy_id"] != policy["policy_id"]:
         raise CoordinatorError("receipt policy ID mismatch")
     if receipt["policy_sha256"] != sha256_bytes(canonical_json(policy)):
@@ -1095,6 +1163,12 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
                 == completion_configuration.get("settings_sha256")
             ):
                 raise CoordinatorError("receipt effective CMake settings changed during build")
+            if not (
+                request_configuration.get("cache_sha256")
+                == admission_configuration.get("cache_sha256")
+                == completion_configuration.get("cache_sha256")
+            ):
+                raise CoordinatorError("receipt CMake cache changed during build")
         if receipt.get("build_configuration_stable") is not True:
             raise CoordinatorError("receipt build configuration stability claim is false")
         current = build_configuration_snapshot(Path(str(receipt["worktree"])), policy)
