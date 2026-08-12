@@ -8,8 +8,8 @@
     "locale": "enUS",
     "launch_build": 59185,
     "launch_build_source_status": "frozen_from_public_secondary_build_table",
-    "hotfix_cutoff_utc": "2025-02-18T19:31:51.916Z",
-    "hotfix_cutoff_status": "frozen_at_official_launch_notes_version_1_timestamp",
+    "hotfix_cutoff_utc": "2025-02-20T23:00:00Z",
+    "hotfix_cutoff_status": "frozen_at_official_global_dragon_soul_unlock",
     "primary_client_data_status": "unavailable",
     "primary_client_data_hashes": []
   },
@@ -30,6 +30,19 @@
       "identity": {"patch": "4.4.2", "build": 59185, "channel": "Live", "live_date": "2025-02-18"},
       "status": "pinned_metadata_secondary",
       "use": "launch-build identity only; cannot replace primary client-data hashes"
+    },
+    {
+      "source_id": "blizzard_dragon_soul_live_24173042",
+      "kind": "official_blizzard",
+      "url": "https://news.blizzard.com/en-gb/article/24173042/cataclysm-classic-dragon-soul-raid-now-live",
+      "published_date": "2025-02-20",
+      "identity": {
+        "global_unlock_at_utc": "2025-02-20T23:00:00Z",
+        "raid": "dragon_soul",
+        "modes": ["10N", "10H", "25N", "25H"]
+      },
+      "status": "pinned_metadata",
+      "use": "content-availability and target cutoff boundary; not encounter quantitative authority"
     },
     {
       "source_id": "bigwigs_cataclysm_v11_0_13",

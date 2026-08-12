@@ -1,6 +1,6 @@
 # Majordomo Staghelm — Phase 0 research contract (Cataclysm Classic 4.4.2)
 
-This dossier targets enUS Cataclysm Classic `4.4.2`, build `59185`, at cutoff `2025-02-18T19:31:51.916Z`. It covers 10-player and 25-player Normal/Heroic. It is sourced planning evidence, not a live-validation result. Blizzard announced that 4.4.2 applies the Firelands-wide `Power of Stormrage` debuff, reducing enemy health and damage by 30%; General Taldris Moonfall can remove it. The aura identity, persistence, and runtime default are not present in this repository snapshot, so those fields remain `fidelity_blocked`.
+This dossier targets enUS Cataclysm Classic `4.4.2`, build `59185`, at cutoff `2025-02-20T23:00:00Z`. It covers 10-player and 25-player Normal/Heroic. It is sourced planning evidence, not a live-validation result. Blizzard announced that 4.4.2 applies the Firelands-wide `Power of Stormrage` debuff, reducing enemy health and damage by 30%; General Taldris Moonfall can remove it. The aura identity, persistence, and runtime default are not present in this repository snapshot, so those fields remain `fidelity_blocked`.
 
 ## Observable encounter contract
 

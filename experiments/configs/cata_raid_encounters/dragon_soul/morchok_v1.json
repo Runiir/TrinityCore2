@@ -17,7 +17,7 @@
     "version": "4.4.2",
     "build": 59185,
     "locale": "enUS",
-    "cutoff_utc": "2025-02-18T19:31:51.916Z"
+    "cutoff_utc": "2025-02-20T23:00:00Z"
   },
   "evidence_policy": "Use official Blizzard material for 4.4.2 release and Dragon Soul modifier scope, current Cataclysm Classic sources for observations, and repository/SQL only for executable or identity claims. Preserve source conflicts and post-cutoff evidence. Never schedule a value marked fidelity_blocked.",
   "source_refs": [
@@ -304,7 +304,7 @@
       "key": "official_dragon_soul_modifier",
       "spell_id": null,
       "modes": ["10N", "10H", "25N", "25H"],
-      "summary": "The requested cutoff predates Dragon Soul opening. A later official Classic announcement schedules Presence of the Dragon Soul from March 18, increasing by 5% every two weeks to 30%; Lord Devrestrasz can remove the aura. The aura/NPC IDs and default persistence are not published.",
+      "summary": "The cutoff is the official global Dragon Soul unlock. A later official Classic announcement schedules Presence of the Dragon Soul from March 18, increasing by 5% every two weeks to 30%; Lord Devrestrasz can remove the aura. The aura/NPC IDs and default persistence are not published.",
       "values": {
         "cutoff_applied": false,
         "classic_modifier_name": "Presence of the Dragon Soul",
@@ -336,7 +336,7 @@
   },
   "unresolved": [
     {"key": "exact_442_build_and_hotfix_cutoff", "status": "fidelity_blocked", "detail": "The requested build/locale/cutoff is metadata only; no matching DBC or hotfix export was audited."},
-    {"key": "cutoff_raid_availability_and_modifier_default", "status": "fidelity_blocked", "detail": "4.4.2 notes put Dragon Soul opening after the cutoff; default runtime modifier state cannot be inferred."},
+    {"key": "cutoff_raid_availability_and_modifier_default", "status": "fidelity_blocked", "detail": "The global unlock is the cutoff; exact launch tuning and later modifier identity/persistence remain unresolved."},
     {"key": "presence_dragon_soul_identity_toggle_persistence", "status": "fidelity_blocked", "detail": "Official later announcement names the aura and Lord Devrestrasz but gives no aura/NPC IDs or persistence semantics."},
     {"key": "power_of_aspects_vs_presence_identity", "status": "fidelity_blocked", "detail": "Retail Power of the Aspects is historical and must not be substituted for Classic Presence of the Dragon Soul."},
     {"key": "four_mode_health_damage_tables", "status": "fidelity_blocked", "detail": "Guide health observations do not freeze all four mode coefficients or modifier state."},

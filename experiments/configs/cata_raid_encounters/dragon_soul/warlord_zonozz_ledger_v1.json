@@ -15,7 +15,7 @@
     "patch": "4.4.2",
     "build": 59185,
     "locale": "enUS",
-    "cutoff_utc": "2025-02-18T19:31:51.916Z"
+    "cutoff_utc": "2025-02-20T23:00:00Z"
   },
   "repository_revision_audited": "c07dbd90c17d9fb10241898b858566e8812545fc",
   "retrieved_utc_date": "2026-08-12",
@@ -52,9 +52,9 @@
       "edition_label": "Patch 4.4.2",
       "url": "https://www.wowhead.com/cata/guide/raids/dragon-soul/warlord-zonozz-strategy-overview",
       "accessed": "2026-08-12",
-      "authority": "current Cataclysm Classic strategy guide, post-cutoff",
+      "authority": "current Cataclysm Classic strategy guide, pre-opening",
       "used_for": ["four health observations", "orb bounce/collision rules", "add composition", "phase and enrage observations", "target counts", "spell links"],
-      "notes": "Updated one day after the requested cutoff; retained as observation only, not as exact 59185 cutoff evidence."
+      "notes": "Updated before the global unlock cutoff; it is not a live exact-cutoff sample; retained as observation only, not as exact 59185 cutoff evidence."
     },
     {
       "id": "icy_veins_cata_zonozz_2024",
@@ -156,7 +156,7 @@
     {"key": "credit", "behavior": "Historical encounter 1294 maps entry55308; loot, lockout, achievement, and player-credit recipient are not established", "source_refs": ["repo_dragon_soul_sql_identity"], "status": "fidelity_blocked"}
   ],
   "conflicts": [
-    {"key": "cutoff_health", "sources": ["Wowhead page updated 2025-02-19", "requested cutoff 2025-02-18 before raid open"], "resolution": "retain health as post-cutoff observation and leave exact 59185 values blocked"},
+    {"key": "cutoff_health", "sources": ["Wowhead page updated 2025-02-19", "global unlock cutoff without a pinned exact-boundary live sample"], "resolution": "retain health as post-cutoff observation and leave exact 59185 values blocked"},
     {"key": "black_blood_periodicity", "sources": ["Wowhead ability summary 1s", "Wowhead guide/Icy Veins 2s"], "resolution": "do not select a cadence without build/hotfix evidence"},
     {"key": "void_damage_and_geometry", "sources": ["guides describe shared hit and 5s cooldown", "no local AI or cutoff spell data"], "resolution": "record relationships but block radius, speed, base damage, and reset"},
     {"key": "heroic_add_scaling", "sources": ["current guides give add counts and qualitative living-add scaling", "local implementation absent"], "resolution": "counts retained; health/damage/spawn coefficients blocked"},

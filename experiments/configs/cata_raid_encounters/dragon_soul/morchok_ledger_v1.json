@@ -15,7 +15,7 @@
     "version": "4.4.2",
     "build": 59185,
     "locale": "enUS",
-    "cutoff_utc": "2025-02-18T19:31:51.916Z"
+    "cutoff_utc": "2025-02-20T23:00:00Z"
   },
   "repository_revision_audited": "6f94d85117cca3155ae4bce179beaee7754d6267",
   "retrieved_utc_date": "2026-08-12",
@@ -31,7 +31,7 @@
       "accessed": "2026-08-12",
       "authority": "current Cataclysm Classic strategy guide",
       "used_for": ["four-mode guide health", "Stomp/crystal", "phase loop", "Earth shards", "Black Blood", "heroic split"],
-      "notes": "Updated one day after the requested cutoff; observations are retained as post-cutoff corroboration and not asserted as cutoff runtime. Its Stomp and Earth-pull figures conflict with other references."
+      "notes": "Updated before the global unlock cutoff; it is not a live exact-cutoff sample; observations are retained as post-cutoff corroboration and not asserted as cutoff runtime. Its Stomp and Earth-pull figures conflict with other references."
     },
     {
       "id": "icy_veins_cata_morchok_guide",
@@ -208,7 +208,7 @@
   ],
   "unresolved": [
     {"key": "exact_442_build_and_hotfix_cutoff", "status": "fidelity_blocked", "detail": "The requested build/locale/cutoff is metadata only; no matching DBC or hotfix export was audited."},
-    {"key": "cutoff_raid_availability_and_modifier_default", "status": "fidelity_blocked", "detail": "4.4.2 notes put Dragon Soul opening after the cutoff; default runtime modifier state cannot be inferred."},
+    {"key": "cutoff_raid_availability_and_modifier_default", "status": "fidelity_blocked", "detail": "The global unlock is the cutoff; exact launch tuning and later modifier identity/persistence remain unresolved."},
     {"key": "presence_dragon_soul_identity_toggle_persistence", "status": "fidelity_blocked", "detail": "Official later announcement names the aura and Lord Devrestrasz but gives no aura/NPC IDs or persistence semantics."},
     {"key": "power_of_aspects_vs_presence_identity", "status": "fidelity_blocked", "detail": "Retail Power of the Aspects is historical and must not be substituted for Classic Presence of the Dragon Soul."},
     {"key": "four_mode_health_damage_tables", "status": "fidelity_blocked", "detail": "Guide health observations do not freeze all four mode coefficients or modifier state."},

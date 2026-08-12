@@ -9,8 +9,8 @@
     "client_build": 59185,
     "client_build_status": "frozen_from_public_secondary_build_table",
     "official_notes_published_at_utc": "2025-02-18T19:31:51.916Z",
-    "hotfix_cutoff_utc": "2025-02-18T19:31:51.916Z",
-    "hotfix_cutoff_semantics": "Include only official Blizzard behavior published at or before the version-1 launch notes timestamp; later hotfixes require a new target identity.",
+    "hotfix_cutoff_utc": "2025-02-20T23:00:00Z",
+    "hotfix_cutoff_semantics": "Include official 4.4.2 behavior effective no later than the global Dragon Soul unlock at 2025-02-20 15:00 PST (23:00 UTC). Exclude later hotfixes and Presence of the Dragon Soul unless a separately identified optional policy explicitly enables them.",
     "client_data_hashes": [],
     "client_data_status": "unavailable_blocks_quantitative_fidelity_acceptance",
     "quantitative_source_registry": "experiments/configs/cata_raid_quantitative_source_registry_v1.json",
@@ -64,6 +64,13 @@
       "post_version": 1,
       "published_at_utc": "2025-02-18T19:31:51.916Z",
       "authority": "official_blizzard"
+    },
+    "official_dragon_soul_unlock": {
+      "url": "https://news.blizzard.com/en-gb/article/24173042/cataclysm-classic-dragon-soul-raid-now-live",
+      "published_date": "2025-02-20",
+      "global_unlock_at_utc": "2025-02-20T23:00:00Z",
+      "authority": "official_blizzard",
+      "acceptance_use": "terminal content-availability and hotfix-cutoff boundary"
     },
     "launch_build_candidate": {
       "build": 59185,

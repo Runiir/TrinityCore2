@@ -41,7 +41,7 @@
     "client_build": 59185,
     "client_product_locale": "enUS",
     "client_data_hashes": [],
-    "blizzard_hotfix_cutoff_utc": "2025-02-18T19:31:51.916Z",
+    "blizzard_hotfix_cutoff_utc": "2025-02-20T23:00:00Z",
     "state": "identity_frozen_quantitative_inputs_unresolved",
     "source_registry": "experiments/configs/cata_raid_quantitative_source_registry_v1.json",
     "blocker": "The launch build and cutoff are frozen, but primary client-data hashes, a pinned Wowhead 4.4.2 extract, known-mode logs, and material encounter values remain unresolved."

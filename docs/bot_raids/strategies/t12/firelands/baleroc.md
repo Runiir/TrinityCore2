@@ -1,6 +1,6 @@
 # Baleroc, the Gatekeeper — Firelands
 
-Phase-0 research dossier for Cataclysm Classic 4.4.2, build 59185, enUS, hotfix cutoff `2025-02-18T19:31:51.916Z`. Scope is 10N/10H/25N/25H. This is an original implementation summary, not copied guide text. The endpoint is `fidelity_blocked` because the local script omits the central Vital Spark/Vital Flame system and several timers/scalings differ from current Classic sources.
+Phase-0 research dossier for Cataclysm Classic 4.4.2, build 59185, enUS, hotfix cutoff `2025-02-20T23:00:00Z`. Scope is 10N/10H/25N/25H. This is an original implementation summary, not copied guide text. The endpoint is `fidelity_blocked` because the local script omits the central Vital Spark/Vital Flame system and several timers/scalings differ from current Classic sources.
 
 ## Sources and snapshot
 

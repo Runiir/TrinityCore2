@@ -1,0 +1,374 @@
+{
+  "schema_version": 1,
+  "contract_schema": "cata_raid_encounter_contract_v1",
+  "raid": "dragon_soul",
+  "boss_slug": "hagara",
+  "encounter": "hagara_the_stormbinder",
+  "instance": "dragon_soul",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "scope": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "research_state": "phase0_researched_not_live_validated",
+  "dossier_path": "docs/bot_raids/strategies/t13/dragon_soul/hagara.md",
+  "ledger_path": "experiments/configs/cata_raid_encounters/dragon_soul/hagara_ledger_v1.json",
+  "unresolved_material_count": 30,
+  "target": {
+    "client": "Cataclysm Classic",
+    "version": "4.4.2",
+    "build": 59185,
+    "locale": "enUS",
+    "cutoff_utc": "2025-02-20T23:00:00Z"
+  },
+  "evidence_policy": "Use official Blizzard material for 4.4.2 release and Dragon Soul modifier scope, current Cataclysm Classic sources for observations, and repository/SQL only for executable or identity claims. Preserve conflicts and post-cutoff evidence. Never schedule a value marked fidelity_blocked.",
+  "source_refs": [
+    "wowhead_cata_hagara_guide",
+    "icy_veins_cata_hagara_guide",
+    "warcraft_tavern_cata_hagara_guide",
+    "wowhead_hagara_npc",
+    "wowhead_hagara_spells",
+    "blizzard_442_notes_mirror",
+    "blizzard_classic_presence_dragon_soul",
+    "blizzard_retail_power_aspects",
+    "repo_dragon_soul_hagara_audit",
+    "repo_dragon_soul_hagara_sql"
+  ],
+  "mode_matrix": {
+    "10N": {
+      "heroic": false,
+      "boss_health_guide_observation": 31000000,
+      "health_status": "current_guide_value_modifier_state_unspecified",
+      "ice_tomb_observations": [2],
+      "conductor_observations": ["current guide: 8 by raid size", "Encounter Journal: 4 default"],
+      "reported_difficulty_delta": "normal Ice Lance attack-speed reduction; no Frostflake or Storm Pillar reported",
+      "cutoff_modifier_state": "Dragon Soul was not open at the requested cutoff; no Classic Presence aura can be asserted"
+    },
+    "10H": {
+      "heroic": true,
+      "boss_health_guide_observation": 52000000,
+      "health_status": "current_guide_value_modifier_state_unspecified",
+      "ice_tomb_observations": [2],
+      "conductor_observations": ["current guide: 8 by raid size", "Encounter Journal: 8 in 10-player heroic", "Icy Veins: 4 unqualified"],
+      "reported_difficulty_delta": "heroic Ice Lance Frost vulnerability; Frostflake and Storm Pillars",
+      "cutoff_modifier_state": "Dragon Soul was not open at the requested cutoff; no Classic Presence aura can be asserted"
+    },
+    "25N": {
+      "heroic": false,
+      "boss_health_guide_observation": 95000000,
+      "health_status": "current_guide_value_modifier_state_unspecified",
+      "ice_tomb_observations": [5],
+      "conductor_observations": ["current guide: 4 by raid size", "Encounter Journal: 4 normal"],
+      "reported_difficulty_delta": "normal Ice Lance attack-speed reduction",
+      "cutoff_modifier_state": "Dragon Soul was not open at the requested cutoff; no Classic Presence aura can be asserted"
+    },
+    "25H": {
+      "heroic": true,
+      "boss_health_guide_observation": 155000000,
+      "health_status": "current_guide_value_modifier_state_unspecified",
+      "ice_tomb_observations": [5, 6],
+      "conductor_observations": ["current guide: 4 by raid size", "Icy Veins: 4 unqualified"],
+      "reported_difficulty_delta": "heroic Ice Lance Frost vulnerability; Frostflake and Storm Pillars; EJ reports six Ice Tombs",
+      "cutoff_modifier_state": "Dragon Soul was not open at the requested cutoff; no Classic Presence aura can be asserted"
+    }
+  },
+  "identity_repository_state": {
+    "map": 967,
+    "data_header": "DS",
+    "data_key": "DATA_HAGARA_THE_STORMBINDER",
+    "data_index": 3,
+    "boss_entry": 55689,
+    "historical_encounter_id": 1296,
+    "historical_difficulty_entry_slots": [57462, 57955, 57956],
+    "difficulty_slot_mode_mapping": null,
+    "helper_entries": {
+      "frozen_binding_crystal": 56136,
+      "crystal_conductor": 56165,
+      "bound_lightning_elemental": 56700,
+      "ice_wave": 56104,
+      "hagara_facing_stalker": 57929
+    },
+    "local_boss_ai": false,
+    "local_loader_registration": false,
+    "local_instance_object_mapping": false,
+    "historical_access_rows": [
+      {"map": 967, "difficulty": 0, "required_quest": 0, "label": "Dragon Soul (Entrance) - 10N"},
+      {"map": 967, "difficulty": 1, "required_quest": 0, "label": "Dragon Soul (Entrance) - 25N"},
+      {"map": 967, "difficulty": 2, "required_quest": 6177, "label": "Dragon Soul (Entrance) - 10H"},
+      {"map": 967, "difficulty": 3, "required_quest": 6177, "label": "Dragon Soul (Entrance) - 25H"}
+    ]
+  },
+  "official_modifier_timeline": {
+    "at_requested_cutoff": {
+      "state": "not_applicable_before_raid_open",
+      "reason": "Official 4.4.2 notes place Dragon Soul opening on 2025-02-20, after the requested 2025-02-18 cutoff",
+      "applied_to_contract_values": false
+    },
+    "classic_presence_of_the_dragon_soul": {
+      "official_name": "Presence of the Dragon Soul",
+      "health_multiplier_if_active": 0.95,
+      "damage_multiplier_if_active": 0.95,
+      "first_stage_start": "2025-03-18 weekly reset",
+      "increment": "5% every two weeks",
+      "announced_cap": "30% by end of May 2025",
+      "toggle_npc": "Lord Devrestrasz",
+      "aura_id": null,
+      "npc_id": null,
+      "default_state_and_persistence": null,
+      "status": "official_schedule_post_cutoff_runtime_identity_blocked"
+    },
+    "retail_power_of_the_aspects": {
+      "official_name": "Power of the Aspects",
+      "historical_effect": "progressive reduction of Dragon Soul enemy health and damage; Lord Afrasastrasz toggle",
+      "classic_applicability": "not_promoted",
+      "status": "historical_non_applicable_identity_conflict"
+    }
+  },
+  "roles": {
+    "tanks": [
+      "hold Hagara and keep Focused Assault target behavior inside the validated five-yard rule",
+      "drag the Bound Lightning Elemental to the verified conductor link point",
+      "do not assume heroic Focused Assault can be outranged until movement behavior is validated"
+    ],
+    "healers": [
+      "cover Focused Assault, random Shattered Ice, Ice Lance/Frost vulnerability, and Lightning Storm",
+      "heal percentage-health Watery Entrenchment only after its current tick/value is verified",
+      "preserve range across Ice Tomb line-of-sight breaks and Lightning chain assignments"
+    ],
+    "raid": [
+      "destroy four Frozen Binding Crystals while moving with the validated Ice Wave geometry",
+      "route the Bound Lightning Elemental conduit through every conductor using only the verified count and range",
+      "place Frostflake Snare away from the group if heroic dispel behavior is confirmed"
+    ],
+    "dps": [
+      "burn crystals/conductors only during their corresponding intermission and use Feedback windows",
+      "soak Ice Lance beams with the validated normal/heroic stack rule",
+      "avoid Storm Pillars until exact heroic target/radius behavior is confirmed"
+    ]
+  },
+  "gates": [
+    "clear_eye_of_eternity_trash_and_prerequisite",
+    "hagara_main_phase_and_focused_assault",
+    "ice_lance_soak_and_ice_tomb_break",
+    "ice_intermission_four_binding_crystals",
+    "ice_wave_watery_entrenchment_and_icicles",
+    "feedback_damage_window",
+    "lightning_elemental_and_conductor_chain",
+    "heroic_frostflake_and_storm_pillars",
+    "repeat_alternating_intermissions_until_death",
+    "validated_reset_credit_and_modifier_choice"
+  ],
+  "mechanics": [
+    {
+      "key": "identity_and_local_implementation",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Historical SQL identifies Hagara as entry 55689 and encounter 1296 on map 967. The current checkout has DATA_HAGARA_THE_STORMBINDER at index 3 but no Hagara AI, loader call, spawn/object mapping, or lifecycle code.",
+      "values": {"map": 967, "entry": 55689, "encounter_id": 1296, "data_index": 3, "boss_ai_present": false},
+      "evidence": ["repo_dragon_soul_hagara_audit", "repo_dragon_soul_hagara_sql"],
+      "status": "identity_confirmed_lifecycle_unimplemented"
+    },
+    {
+      "key": "main_phase_and_rotation",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Main phase uses Focused Assault, Ice Lance, Shattered Ice, and later Ice Tomb; the first intermission is selected by weapon glow and later Ice/Lightning intermissions alternate.",
+      "values": {"first_main_reported_seconds": 30, "later_main_reported_seconds": 50, "generic_main_reported_seconds": 50, "first_phase_ice_tomb": false, "first_intermission_selection": "weapon_glow", "later_intermission_rule": "alternate_elements"},
+      "evidence": ["wowhead_cata_hagara_guide", "icy_veins_cata_hagara_guide", "wowhead_hagara_npc"],
+      "status": "qualitative_rotation_confirmed_timer_blocked"
+    },
+    {
+      "key": "focused_assault",
+      "spell_ids": [107850, 107851],
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Five-second physical channel on the current target, 50% normal weapon damage every 0.5 seconds, five-yard range; reported unblockable, undodgeable, and unparryable.",
+      "values": {"duration_seconds": 5, "tick_seconds": 0.5, "weapon_damage_percent": 50, "range_yards": 5, "cannot_block_dodge_parry": true, "heroic_follows_tank_report": true, "cooldown_seconds": null},
+      "evidence": ["wowhead_cata_hagara_guide", "icy_veins_cata_hagara_guide", "wowhead_hagara_spells", "wowhead_hagara_npc"],
+      "status": "identity_and_qualitative_effect_confirmed_runtime_target_movement_timer_blocked"
+    },
+    {
+      "key": "ice_lance",
+      "spell_ids": [105298, 105313, 105265, 105269, 105285],
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Unattackable edge crystals fixate a player near Hagara and fire a beam/missile; the impact is three-yard Frost damage. Icy Veins reports two casts per main phase, three crystals, one missile per second for 15 seconds. Heroic vulnerability is disputed.",
+      "values": {"impact_damage_reported": 15000, "damage_school": "Frost", "impact_radius_yards": 3, "casts_per_main_reported": 2, "crystals_per_cast_reported": 3, "missile_interval_seconds": 1, "missiles_per_cast_reported": 15, "normal_attack_speed_reduction_percent": 25, "heroic_frost_taken_percent_per_hit": 25, "heroic_frost_taken_percent_per_stack": 10, "beam_soakers_normal": 1, "beam_soakers_heroic": 2, "heroic_rotation_stacks_reported": [3, 5]},
+      "evidence": ["wowhead_cata_hagara_guide", "icy_veins_cata_hagara_guide", "wowhead_hagara_npc", "wowhead_hagara_spells"],
+      "status": "spell_family_confirmed_numeric_and_heroic_stack_conflict_blocked"
+    },
+    {
+      "key": "ice_tomb",
+      "spell_ids": [104448, 104451, 108567, 70157],
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Random players are entombed/stunned until the tombs are destroyed; tombs do not splash, break line of sight, and are absent from the first main phase. Guide and Encounter Journal counts conflict in 25H.",
+      "values": {"target_count_observation": {"10N": [2], "10H": [2], "25N": [5], "25H": [5, 6]}, "splash": false, "stun_until_destroyed": true, "first_main_excluded_reported": true, "reference_radius_yards": 10, "cooldown_seconds": null},
+      "evidence": ["wowhead_cata_hagara_guide", "wowhead_hagara_npc", "icy_veins_cata_hagara_guide", "wowhead_hagara_spells"],
+      "status": "qualitative_rule_confirmed_mode_count_and_cadence_blocked"
+    },
+    {
+      "key": "shattered_ice",
+      "spell_id": 105289,
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Random-player Frost blast with four-second movement reduction; the spell page reports 92,500–107,500 damage and a 1.4-second cast, but the target cone/random rule and mode tuning are not frozen.",
+      "values": {"damage_range_reference": [92500, 107500], "slow_duration_seconds": 4, "cast_seconds": 1.4, "range_yards": 40, "target_rule": null, "cooldown_seconds": null},
+      "evidence": ["wowhead_cata_hagara_guide", "wowhead_hagara_spells", "icy_veins_cata_hagara_guide", "wowhead_hagara_npc"],
+      "status": "spell_identity_reference_confirmed_target_and_runtime_scaling_blocked"
+    },
+    {
+      "key": "frozen_tempest_and_binding_crystals",
+      "spell_ids": [105256, 105312],
+      "npc_entries": [56136],
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Frozen Tempest protects Hagara from all attacks and creates four Frozen Binding Crystals; all four must die to end the Ice intermission.",
+      "values": {"cast_seconds": 5, "crystal_count": 4, "immunity": "all attacks and spells", "crystal_entry": 56136, "completion_condition": "all_four_destroyed", "positions": null, "health": null},
+      "evidence": ["wowhead_cata_hagara_guide", "icy_veins_cata_hagara_guide", "wowhead_hagara_npc", "repo_dragon_soul_hagara_sql"],
+      "status": "qualitative_condition_confirmed_health_position_and_link_blocked"
+    },
+    {
+      "key": "ice_wave",
+      "spell_ids": [105314, 105265],
+      "npc_entries": [56104],
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Four equidistant cardinal waves sweep clockwise across the platform; contact is lethal in strategy prose. Reference rows report 190,000–210,000 Frost in three yards and +50% Frost damage taken for 2.5 seconds.",
+      "values": {"wave_count": 4, "cardinal_spacing_degrees": 90, "direction": "clockwise", "damage_range_reference": [190000, 210000], "damage_radius_yards": 3, "frost_taken_percent": 50, "frost_taken_seconds": 2.5, "cadence_seconds": null, "collision_rule": "reported lethal; exact runtime unresolved"},
+      "evidence": ["wowhead_cata_hagara_guide", "wowhead_hagara_npc", "icy_veins_cata_hagara_guide", "wowhead_hagara_spells", "repo_dragon_soul_hagara_sql"],
+      "status": "geometry_qualitatively_confirmed_timer_and_collision_blocked"
+    },
+    {
+      "key": "watery_entrenchment",
+      "spell_id": 105259,
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Players inside Hagara's bubble lose a percentage of maximum health and are slowed; current table/guide rows report 12%, while one heroic strategy paragraph reports 12.5%.",
+      "values": {"max_health_damage_percent_per_second": [12, 12.5], "movement_slow_percent": 50, "damage_is_percentage_based": true, "tick_seconds": null, "bubble_radius_yards": null},
+      "evidence": ["wowhead_cata_hagara_guide", "icy_veins_cata_hagara_guide", "wowhead_hagara_spells"],
+      "status": "qualitative_and_conflicting_value_confirmed_timer_radius_blocked"
+    },
+    {
+      "key": "icicle",
+      "spell_ids": [109552, 109560],
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Random outer-edge impacts are reported to deal high Frost damage and knock back players within seven yards.",
+      "values": {"reported_knockback_radius_yards": 7, "damage_school": "Frost", "damage_range": null, "cadence_seconds": null, "count": null, "target_rule": "random outer-edge locations", "area_trigger_entry": null},
+      "evidence": ["wowhead_cata_hagara_guide", "icy_veins_cata_hagara_guide", "wowhead_hagara_npc"],
+      "status": "qualitative_identity_and_range_reported_remaining_values_blocked"
+    },
+    {
+      "key": "frostflake",
+      "spell_id": 109325,
+      "modes": ["10H", "25H"],
+      "summary": "Heroic-only random-player stacking snare; reported 10% slow plus 10% each second for 15 seconds, 25% maximum-health expiry damage, and a ten-yard Frostflake Snare field with 50% slow.",
+      "values": {"initial_slow_percent": 10, "increment_percent_per_second": 10, "duration_seconds": 15, "expiry_damage_max_health_percent": 25, "snare_radius_yards": 10, "snare_slow_percent": 50, "dispellable": true, "target_rule": "random player", "snare_spell_id": null},
+      "evidence": ["wowhead_cata_hagara_guide", "icy_veins_cata_hagara_guide", "wowhead_hagara_spells"],
+      "status": "heroic_qualitative_values_reported_snare_and_reset_link_blocked"
+    },
+    {
+      "key": "feedback",
+      "spell_id": 108934,
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "After all four Ice crystals or all Lightning conductors are completed, Feedback stuns Hagara and increases damage taken by 100% for 15 seconds.",
+      "values": {"damage_taken_increase_percent": 100, "duration_seconds": 15, "stun": true, "trigger_ice": "all_four_crystals", "trigger_lightning": "all_conductors", "phase_resume_timer_seconds": null},
+      "evidence": ["wowhead_cata_hagara_guide", "icy_veins_cata_hagara_guide", "wowhead_hagara_spells"],
+      "status": "spell_effect_and_trigger_condition_reported_resume_timing_blocked"
+    },
+    {
+      "key": "lightning_storm",
+      "spell_id": 77918,
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Lightning intermission raid damage is reported as constant/random ticking Nature damage, with each tick adding 5% Nature damage taken; exact current encounter spell linkage differs from the generic spell page.",
+      "values": {"nature_taken_increment_percent": 5, "target_rule": "random raid members/current guide", "tick_seconds": null, "damage": null, "stack_reset": null, "soft_enrage": true, "generic_page_cooldown_seconds": 6},
+      "evidence": ["wowhead_cata_hagara_guide", "icy_veins_cata_hagara_guide", "wowhead_hagara_spells"],
+      "status": "qualitative_soft_enrage_confirmed_current_tick_and_damage_blocked"
+    },
+    {
+      "key": "conductors_and_chain",
+      "spell_ids": [105343, 105481, 105482, 105487],
+      "npc_entries": [56165, 56700],
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "A Bound Lightning Elemental starts the chain; its death charges a nearby Crystal Conductor, then Lightning Conduit connects nearest targets/conductors within ten yards until all conductors overload. Conductor counts conflict by source.",
+      "values": {"conductor_entry": 56165, "elemental_entry": 56700, "guide_conductors_by_raid_size": {"10": 8, "25": 4}, "encounter_journal_default_conductors": 4, "encounter_journal_10h_conductors": 8, "icy_unqualified_conductors": 4, "conduit_damage_per_second": 20000, "conduit_damage_school": "Nature", "link_range_yards": 10, "guide_intermediate_players": {"10": 2, "25": 5}, "npc_spacing_yards": [5, 10], "elemental_count": null, "conductor_layout": null},
+      "evidence": ["wowhead_cata_hagara_guide", "icy_veins_cata_hagara_guide", "wowhead_hagara_npc", "wowhead_hagara_spells", "repo_dragon_soul_hagara_sql"],
+      "status": "identity_and_qualitative_chain_confirmed_mode_count_and_runtime_selection_blocked"
+    },
+    {
+      "key": "storm_pillar_heroic",
+      "modes": ["10H", "25H"],
+      "summary": "Heroic guidance reports Storm Pillars appearing around the room and exploding after three seconds for 35,000 damage.",
+      "values": {"delay_seconds": 3, "damage_reference": 35000, "count": null, "radius_yards": null, "target_rule": null, "spell_id": null},
+      "evidence": ["icy_veins_cata_hagara_guide"],
+      "status": "heroic_qualitative_value_reported_identity_and_scaling_blocked"
+    }
+  ],
+  "timers": [
+    {"key": "first_main_phase", "reported_seconds": 30, "alternate_reported_seconds": 50, "status": "source_conflict"},
+    {"key": "later_main_phase", "reported_seconds": 50, "status": "guide_reported_exact_runtime_blocked"},
+    {"key": "focused_assault", "channel_seconds": 5, "tick_seconds": 0.5, "cooldown_seconds": null, "status": "channel_reported_cooldown_blocked"},
+    {"key": "ice_lance", "casts_per_main_reported": 2, "missile_interval_seconds": 1, "missiles_per_cast_reported": 15, "status": "guide_reported_cadence_runtime_blocked"},
+    {"key": "shattered_ice", "cast_seconds": 1.4, "cooldown_seconds": null, "status": "spell_reference_cast_only"},
+    {"key": "frozen_tempest", "cast_seconds": 5, "status": "spell_reference_reported"},
+    {"key": "ice_wave", "wave_cadence_seconds": null, "movement_duration_seconds": null, "status": "fidelity_blocked"},
+    {"key": "watery_entrenchment", "tick_seconds": null, "status": "percentage_and_slow_reported_tick_blocked"},
+    {"key": "frostflake", "duration_seconds": 15, "increment_interval_seconds": 1, "status": "guide_and_spell_reference_reported"},
+    {"key": "feedback", "duration_seconds": 15, "status": "spell_and_guide_reported"},
+    {"key": "lightning_conduit", "damage_tick_seconds": 1, "link_range_yards": 10, "status": "reference_reported_tie_break_and_chain_timing_blocked"},
+    {"key": "storm_pillar", "explode_after_seconds": 3, "status": "heroic_guide_reported_count_and_cadence_blocked"},
+    {"key": "enrage", "reported_minutes": 8, "status": "NPC_comment_only_spell_identity_runtime_blocked"}
+  ],
+  "targeting_and_scaling": [
+    {"key": "focused_assault", "target": "current tank", "range_yards": 5, "heroic_movement": "guide reports follow tank", "status": "runtime_filter_blocked"},
+    {"key": "ice_lance", "target": "random player near Hagara / beam intercept", "impact_radius_yards": 3, "normal_soakers": 1, "heroic_soakers": 2, "status": "fixate_exclusion_and_stack_rule_blocked"},
+    {"key": "ice_tomb", "target": "random players", "counts": {"10N": [2], "10H": [2], "25N": [5], "25H": [5, 6]}, "status": "25H_count_and_cadence_blocked"},
+    {"key": "shattered_ice", "target": "random player; old comment reports front arc", "status": "conflicting_target_rule_blocked"},
+    {"key": "watery_entrenchment", "target": "players inside central bubble", "max_health_percent_per_second": [12, 12.5], "status": "value_and_radius_blocked"},
+    {"key": "icicle", "target": "random outer-edge locations", "knockback_radius_yards": 7, "status": "damage_and_count_blocked"},
+    {"key": "frostflake", "target": "random heroic player", "status": "heroic_dispel_and_snare_filter_blocked"},
+    {"key": "lightning_storm", "target": "random raid members / all raid tick narrative", "nature_taken_increment_percent": 5, "status": "current target and tick rule_blocked"},
+    {"key": "lightning_conduit", "target": "nearest player or conductor within 10 yards", "damage_per_second": 20000, "status": "tie_break_chain_completion_blocked"},
+    {"key": "conductor_scaling", "observations": ["guide 8 in 10 and 4 in 25", "EJ 4 default and 8 in 10H", "Icy 4 unqualified"], "status": "four_mode_count_blocked"},
+    {"key": "storm_pillar", "target": null, "status": "heroic_target_radius_count_blocked"},
+    {"key": "difficulty_scaling", "health_observations": {"10N": 31000000, "10H": 52000000, "25N": 95000000, "25H": 155000000}, "damage_coefficients": null, "modifier_interaction": null, "status": "fidelity_blocked"}
+  ],
+  "phase_reset_credit": [
+    {"key": "prerequisite", "historical_access": "967 difficulties 0/1 no quest; 2/3 quest 6177; official notes place Hagara fourth and rogue ring quest", "current_semantics": null, "status": "fidelity_blocked"},
+    {"key": "phase_rotation", "reported": "main -> weapon-selected Ice/Lightning -> main -> alternate intermission", "status": "timer_and_transition_blocked"},
+    {"key": "wipe_reset", "value": null, "status": "fidelity_blocked_no_local_ai"},
+    {"key": "evade_cleanup", "value": null, "status": "fidelity_blocked_no_local_ai"},
+    {"key": "intermission_completion", "value": "four crystals or all conductors triggers Feedback", "status": "event_link_and_credit_blocked"},
+    {"key": "loot_and_credit", "historical_loot_identity": 55689, "achievement_holding_hands": "all raid members in final Lightning Conduit on Normal or Heroic (guide report)", "current_player_credit": null, "status": "fidelity_blocked"},
+    {"key": "enrage", "reported": "eight minutes from NPC comments", "status": "fidelity_blocked"}
+  ],
+  "conflicts": [
+    {"key": "ice_lance_heroic_vulnerability", "sources": ["Wowhead guide: 25% Frost damage taken per hit", "Icy Veins: 10% per stack", "historical NPC comment says tooltip 10% was faulty and 25% was used"], "resolution": "preserve reports; no fixed heroic coefficient"},
+    {"key": "conductor_count", "sources": ["Wowhead current guide: 8 10-player / 4 25-player", "Wowhead Encounter Journal: 4 default / 8 10-player heroic", "Icy Veins: 4 unqualified"], "resolution": "preserve all observations; no per-mode count"},
+    {"key": "ice_tomb_25h_count", "sources": ["Wowhead guide: five in 25-player", "Wowhead Encounter Journal: six in 25-player heroic"], "resolution": "fidelity_blocked"},
+    {"key": "watery_entrenchment_value", "sources": ["Wowhead/Icy tables: 12% maximum health per second", "Wowhead heroic strategy prose: 12.5%"], "resolution": "preserve range/conflict; no fixed current value"},
+    {"key": "first_main_duration", "sources": ["Wowhead strategy: roughly 30 seconds first, 50 later", "Icy Veins overview: 50-second main phase"], "resolution": "preserve both reports; no scheduler value"},
+    {"key": "modifier_identity", "sources": ["Classic later announcement: Presence of the Dragon Soul", "historical retail: Power of the Aspects"], "resolution": "Classic announcement is post-cutoff and retail identity is not applied"}
+  ],
+  "unresolved": [
+    {"key": "exact_442_build_and_hotfix_cutoff", "status": "fidelity_blocked", "detail": "The requested build/locale/cutoff is metadata only; no matching DBC or hotfix export was audited."},
+    {"key": "cutoff_raid_availability_and_modifier_default", "status": "fidelity_blocked", "detail": "The global raid unlock is the cutoff; no exact-boundary live sample proves launch tuning, and later modifier identity/persistence remains unresolved."},
+    {"key": "presence_dragon_soul_identity_toggle_persistence", "status": "fidelity_blocked", "detail": "The later official announcement names the aura and Lord Devrestrasz but supplies no aura/NPC IDs or persistence semantics."},
+    {"key": "power_of_aspects_vs_presence_identity", "status": "fidelity_blocked", "detail": "Retail Power of the Aspects is historical and cannot substitute for Classic Presence."},
+    {"key": "four_mode_health_damage_and_modifier_tables", "status": "fidelity_blocked", "detail": "Current health observations have unspecified modifier state and no complete four-mode coefficient table."},
+    {"key": "local_hagara_ai_loader_spawn_object_lifecycle", "status": "fidelity_blocked", "detail": "Current code has the data slot but no Hagara AI, loader call, spawn/object mapping, phases, reset, or credit path."},
+    {"key": "historical_variant_mode_mapping", "status": "fidelity_blocked", "detail": "Entries 57462, 57955, and 57956 cannot be mapped confidently to the four current modes."},
+    {"key": "focused_assault_movement_target_timer", "status": "fidelity_blocked", "detail": "Five-second/0.5-second/five-yard reports exist, but heroic follow/cancel behavior, target filter, and cooldown are not frozen."},
+    {"key": "ice_lance_cadence_crystal_target_linkage", "status": "fidelity_blocked", "detail": "Guide cadence and spell-family IDs exist, but build-matched missile linkage, target exclusions, and crystal count are not proven."},
+    {"key": "ice_lance_heroic_vulnerability_conflict", "status": "fidelity_blocked", "detail": "Sources report 25% per hit versus 10% per stack; no fixed coefficient is promoted."},
+    {"key": "ice_lance_normal_aura_stack_reset", "status": "fidelity_blocked", "detail": "Normal attack-speed reduction target, duration, stacking, and reset are not frozen."},
+    {"key": "ice_tomb_mode_counts_and_cadence", "status": "fidelity_blocked", "detail": "25H is reported as five and six; cadence and first-main exclusion runtime are not validated."},
+    {"key": "shattered_ice_target_damage_timer", "status": "fidelity_blocked", "detail": "Reference damage/cast values conflict with unspecified mode state and old front-arc comments."},
+    {"key": "first_main_duration", "status": "fidelity_blocked", "detail": "Sources report approximately 30 seconds for the first main and 50 seconds generically."},
+    {"key": "weapon_glow_transition_and_phase_timers", "status": "fidelity_blocked", "detail": "Weapon selection is reported, but transition grace and exact later scheduler are absent."},
+    {"key": "frozen_tempest_water_shield_immunity_link", "status": "fidelity_blocked", "detail": "Immunity is qualitatively confirmed; exact current spell linkage and removal state are not."},
+    {"key": "binding_crystal_identity_health_position_completion", "status": "fidelity_blocked", "detail": "Historical entry 56136 and four-crystal rule exist, but health, positions, and completion event are not current executable evidence."},
+    {"key": "ice_wave_geometry_cadence_collision", "status": "fidelity_blocked", "detail": "Four cardinal clockwise waves and reference damage are reported; cadence, movement, and lethal collision behavior are not frozen."},
+    {"key": "watery_entrenchment_value_tick_radius", "status": "fidelity_blocked", "detail": "12% and 12.5% reports conflict; tick interval and bubble radius are absent."},
+    {"key": "icicle_identity_damage_cadence_count", "status": "fidelity_blocked", "detail": "Seven-yard knockback and random outer-edge impacts are reported without a current damage/area-trigger table."},
+    {"key": "heroic_frostflake_snare_reset", "status": "fidelity_blocked", "detail": "Guide and spell values exist, but expiry/dispelling, snare identity, radius, and reset behavior are not build-matched."},
+    {"key": "feedback_event_and_resume", "status": "fidelity_blocked", "detail": "Spell effect is 100%/15 seconds and triggers are reported, but phase resume timing and event linkage are not implemented."},
+    {"key": "lightning_storm_tick_damage_stack_reset", "status": "fidelity_blocked", "detail": "5% Nature stack is reported, while the generic spell page is a different six-second scripted spell and supplies no encounter tick damage."},
+    {"key": "conductor_count_layout_scaling", "status": "fidelity_blocked", "detail": "Guide, Encounter Journal, and Icy Veins disagree on mode count and layout."},
+    {"key": "bound_elemental_entry_count_target_reset", "status": "fidelity_blocked", "detail": "Entry 56700 is historical; count, health, death trigger, target, and reset are not implemented locally."},
+    {"key": "lightning_conduit_chain_rule", "status": "fidelity_blocked", "detail": "20,000 Nature per second and ten-yard nearest link are reported, but tie-break, bounce, overload order, and completion timing are unknown."},
+    {"key": "heroic_storm_pillar_scaling", "status": "fidelity_blocked", "detail": "Three-second/35,000 damage is a guide observation; count, target, radius, spell identity, and raid-size scaling are absent."},
+    {"key": "phase_loop_and_enrage", "status": "fidelity_blocked", "detail": "Alternation is qualitative; eight-minute enrage is a community comment without spell identity or runtime interaction proof."},
+    {"key": "wipe_reset_cleanup", "status": "fidelity_blocked", "detail": "No current Hagara AI supplies cleanup for crystals, waves, conductors, elemental, auras, or area triggers."},
+    {"key": "prerequisite_lockout_loot_achievement_credit", "status": "fidelity_blocked", "detail": "Historical access/loot and guide achievement text exist, but current Classic prerequisite, lockout, completion, loot, achievement, and player-credit behavior are not validated."}
+  ]
+}

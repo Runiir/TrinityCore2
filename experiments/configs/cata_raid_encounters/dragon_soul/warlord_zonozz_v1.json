@@ -18,7 +18,7 @@
     "patch": "4.4.2",
     "build": 59185,
     "locale": "enUS",
-    "cutoff_utc": "2025-02-18T19:31:51.916Z"
+    "cutoff_utc": "2025-02-20T23:00:00Z"
   },
   "evidence_policy": "Use official Blizzard material for release and Dragon Soul modifier state, current Cataclysm Classic sources for observations, and repository/SQL for executable or identity claims. Post-cutoff observations, build-sensitive values, and source conflicts remain fidelity_blocked.",
   "source_refs": [
@@ -36,7 +36,7 @@
       "boss_health_current_guide_post_cutoff": 68000000,
       "heroic_only_tentacle_types": false,
       "heroic_intermission_adds": null,
-      "modifier_at_cutoff": "No Presence announcement; Dragon Soul opened after the cutoff",
+      "modifier_at_cutoff": "No Presence announcement; Dragon Soul opens at the cutoff",
       "status": "fidelity_blocked"
     },
     "10H": {
@@ -44,7 +44,7 @@
       "boss_health_current_guide_post_cutoff": 86000000,
       "heroic_only_tentacle_types": true,
       "heroic_intermission_adds": {"total": 8, "flail": 2, "eye": 5, "claw": 1},
-      "modifier_at_cutoff": "No Presence announcement; Dragon Soul opened after the cutoff",
+      "modifier_at_cutoff": "No Presence announcement; Dragon Soul opens at the cutoff",
       "status": "fidelity_blocked"
     },
     "25N": {
@@ -52,7 +52,7 @@
       "boss_health_current_guide_post_cutoff": 204000000,
       "heroic_only_tentacle_types": false,
       "heroic_intermission_adds": null,
-      "modifier_at_cutoff": "No Presence announcement; Dragon Soul opened after the cutoff",
+      "modifier_at_cutoff": "No Presence announcement; Dragon Soul opens at the cutoff",
       "status": "fidelity_blocked"
     },
     "25H": {
@@ -60,7 +60,7 @@
       "boss_health_current_guide_post_cutoff": 260000000,
       "heroic_only_tentacle_types": true,
       "heroic_intermission_adds": {"total": 14, "flail": 4, "eye": 8, "claw": 2},
-      "modifier_at_cutoff": "No Presence announcement; Dragon Soul opened after the cutoff",
+      "modifier_at_cutoff": "No Presence announcement; Dragon Soul opens at the cutoff",
       "status": "fidelity_blocked"
     }
   },

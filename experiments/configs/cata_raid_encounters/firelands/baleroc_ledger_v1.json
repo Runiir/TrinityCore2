@@ -13,7 +13,7 @@
   "repository_revision_audited": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
   "retrieved_utc_date": "2026-08-12",
   "research_as_of": "2026-08-12",
-  "target_snapshot": {"product": "Cataclysm Classic", "patch": "4.4.2", "build": 59185, "locale": "enUS", "hotfix_cutoff_utc": "2025-02-18T19:31:51.916Z"},
+  "target_snapshot": {"product": "Cataclysm Classic", "patch": "4.4.2", "build": 59185, "locale": "enUS", "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"},
   "source_catalog": [
     {"id": "wowhead_cata_baleroc_442", "title": "Baleroc Strategy Guide for Firelands - Cataclysm Classic", "publisher": "Wowhead", "published_or_updated": "2024-10-25; Patch 4.4.2 label", "url": "https://www.wowhead.com/cata/guide/raids/firelands/baleroc-strategy-overview", "accessed": "2026-08-12", "authority": "current Cataclysm Classic strategy guide", "notes": "Reports health, blade values, shard lifecycle, Torment, Vital Spark, Countdown, and six-minute enrage."},
     {"id": "icy_veins_cata_baleroc_2024", "title": "Baleroc Encounter Guide: Strategy, Abilities, Loot", "publisher": "Icy Veins", "published_or_updated": "2024-10-08", "url": "https://www.icy-veins.com/cataclysm-classic/baleroc-encounter-guide-strategy-abilities-loot", "accessed": "2026-08-12", "authority": "current Cataclysm Classic strategy guide", "notes": "Confirms healer/tank loop, Blaze cadence, blade survival, Vital Spark, heroic Countdown, and a conflicting Countdown damage report."},

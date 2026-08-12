@@ -118,8 +118,10 @@ def test_raid_acceptance_policy_fails_closed_until_identity_is_frozen() -> None:
 def test_quantitative_source_registry_pins_available_inputs_and_blocks_missing_inputs() -> None:
     registry = load(SOURCE_REGISTRY)
     assert registry["target"]["launch_build"] == 59185
-    assert registry["target"]["hotfix_cutoff_utc"] == "2025-02-18T19:31:51.916Z"
+    assert registry["target"]["hotfix_cutoff_utc"] == "2025-02-20T23:00:00Z"
     sources = {row["source_id"]: row for row in registry["sources"]}
+    unlock = sources["blizzard_dragon_soul_live_24173042"]
+    assert unlock["identity"]["global_unlock_at_utc"] == "2025-02-20T23:00:00Z"
     assert sources["bigwigs_cataclysm_v11_0_13"]["commit"] == "650bab03981eb06b5fa6ded88e47c523caa3c7c3"
     assert len(sources["bigwigs_cataclysm_v11_0_13"]["archive_sha256"]) == 64
     assert sources["dbm_cataclysm_prelaunch_4b02efe"]["commit"] == "4b02efec4552aef3df43c75fb19c6d8c7fdb3e6e"

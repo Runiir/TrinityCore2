@@ -13,7 +13,7 @@
   "scope": ["10N", "10H", "25N", "25H"],
   "research_state": "phase0_researched_not_live_validated",
   "research_as_of": "2026-08-12",
-  "target_snapshot": {"product": "Cataclysm Classic", "patch": "4.4.2", "build": 59185, "locale": "enUS", "hotfix_cutoff_utc": "2025-02-18T19:31:51.916Z"},
+  "target_snapshot": {"product": "Cataclysm Classic", "patch": "4.4.2", "build": 59185, "locale": "enUS", "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"},
   "evidence_policy": "A material behavior claim requires two independent current strategy sources or one credible source plus repository/official confirmation; disagreements, missing SpellInfo, and build-sensitive values remain fidelity_blocked.",
   "source_refs": ["wowhead_cata_baleroc_442", "icy_veins_cata_baleroc_2024", "warcraft_tavern_cata_baleroc_2024", "blizzard_firelands_hotfixes", "blizzard_firelands_announcement", "blizzard_442_modifier", "repo_boss_baleroc", "repo_firelands_identity", "repo_baleroc_sql", "repo_public_build_reference"],
   "mode_matrix": {

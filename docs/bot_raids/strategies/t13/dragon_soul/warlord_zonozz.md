@@ -1,6 +1,6 @@
 # Warlord Zon'ozz — Phase 0 research contract (Cataclysm Classic 4.4.2)
 
-This dossier covers `10N`, `10H`, `25N`, and `25H` Warlord Zon'ozz in Dragon Soul. It is research evidence, not a live-validation result. Blizzard's 4.4.2 notes were published on 2025-02-18, but the raid was not scheduled to open until 2025-02-20; therefore there is no in-snapshot live encounter observation at the requested cutoff. The current Wowhead Cataclysm Classic page is labelled 4.4.2 but was updated 2025-02-19, after the cutoff. Its health figures are retained as post-cutoff observations and not promoted to an exact cutoff tuning table.
+This dossier covers `10N`, `10H`, `25N`, and `25H` Warlord Zon'ozz in Dragon Soul. It is research evidence, not a live-validation result. The snapshot is build `59185` at the official global raid unlock `2025-02-20T23:00:00Z`. The current Wowhead page was updated before opening but is not a live exact-cutoff sample, so its health figures are not promoted to an executable tuning table.
 
 ## Observable encounter contract
 
@@ -18,7 +18,7 @@ This dossier covers `10N`, `10H`, `25N`, and `25H` Warlord Zon'ozz in Dragon Sou
 | 25N | 204M | No tentacle types beyond Eyes reported; Eye count unresolved | Same |
 | 25H | 260M | 14 intermission adds: 4 Flails, 8 Eyes, 2 Claws | Same |
 
-\* Wowhead's current page labels the guide Patch 4.4.2 but says updated 2025-02-19, one day after the requested cutoff. Values are therefore observations, not a claim about build 59185 hotfix state. Do not silently apply a modifier to these values.
+\* Wowhead's current page labels the guide Patch 4.4.2 but says updated 2025-02-19, one day before the global unlock cutoff. Values are therefore observations, not a claim about build 59185 hotfix state. Do not silently apply a modifier to these values.
 
 Blizzard later announced `Presence of the Dragon Soul`: beginning 2025-03-18, it reduces Dragon Soul enemy health and damage by 5%, increasing by 5% every two weeks to 30% by the end of May; Lord Devrestrasz inside the entrance can remove it. That announcement is post-cutoff and is not an active modifier in the target snapshot. Its aura/NPC IDs, default persistence across resets, and exact interaction with creature scaling are unresolved.
 
@@ -46,7 +46,7 @@ No local evidence establishes the retail pull prerequisite (Dragon Soul's first-
 
 ## Material blockers
 
-- Build-59185/enUS client and hotfix lineage at `2025-02-18T19:31:51.916Z`; Dragon Soul was not yet open at the cutoff.
+- Build-59185/enUS client and hotfix lineage at the global unlock cutoff `2025-02-20T23:00:00Z`.
 - Exact four-mode post-hotfix health, damage, add health, spell coefficients, and mode-to-historical-variant mapping.
 - Whether current-guide health values include any later modifier; no second reduction is applied.
 - Presence of the Dragon Soul aura/NPC IDs, default state, persistence, and removal semantics in the target build.

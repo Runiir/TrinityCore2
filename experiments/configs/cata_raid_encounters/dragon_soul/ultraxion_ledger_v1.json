@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "ledger_schema": "cata_raid_value_timer_ledger_v1",
+  "raid": "dragon_soul",
+  "boss_slug": "ultraxion",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "contract_path": "experiments/configs/cata_raid_encounters/dragon_soul/ultraxion_v1.json",
+  "unresolved_material_count": 16,
+  "encounter": "ultraxion",
+  "purpose": "Source, identity, value, timer, targeting, scaling, phase, reset, prerequisite, modifier, and credit ledger for Phase 0 research; no live-validation assertion.",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "target_snapshot": {
+    "product": "Cataclysm Classic",
+    "patch": "4.4.2",
+    "build": 59185,
+    "locale": "enUS",
+    "cutoff_utc": "2025-02-20T23:00:00Z"
+  },
+  "repository_revision_audited": "f8a7fe6cb58563459c08a775fd56418f37529cda",
+  "retrieved_utc_date": "2026-08-12",
+  "research_as_of": "2026-08-12",
+  "source_catalog": [
+    {
+      "id": "blizzard_442_notes_59185_cutoff",
+      "title": "World of Warcraft: Cataclysm Classic Patch 4.4.2 Notes",
+      "author": "Kaivax",
+      "publisher": "Blizzard Entertainment forums",
+      "published_or_updated": "2025-02-18 19:31",
+      "url": "https://us.forums.blizzard.com/en/wow/t/world-of-warcraft-cataclysm-classic-patch-442-notes/2062030",
+      "accessed": "2026-08-12",
+      "authority": "official cutoff context",
+      "notes": "Dragon Soul opens February 20 at 3:00 p.m. PST; eight bosses, 10/25 players, Normal/Heroic. No Ultraxion tuning table."
+    },
+    {
+      "id": "blizzard_presence_dragon_soul_2025",
+      "title": "Presence of the Dragon Soul begins March 18",
+      "author": "Kaivax",
+      "publisher": "Blizzard Entertainment forums",
+      "published_or_updated": "2025-03-12",
+      "url": "https://us.forums.blizzard.com/en/wow/t/presence-of-the-dragon-soul-begins-march-18/2074792",
+      "accessed": "2026-08-12",
+      "authority": "official post-cutoff modifier announcement",
+      "notes": "Presence reduces Dragon Soul enemy health/damage by 5%, grows by 5 percentage points every two weeks to 30%, and can be removed by Lord Devrestrasz. This is outside the requested cutoff."
+    },
+    {
+      "id": "wowhead_cata_ultraxion_2025",
+      "title": "Ultraxion Strategy Guide for Dragon Soul - Cataclysm Classic",
+      "author": "Wowhead guide team",
+      "publisher": "Wowhead",
+      "published_or_updated": "2025-03-25",
+      "edition_label": "Cataclysm Classic guide, page labelled 4.4.2",
+      "url": "https://www.wowhead.com/cata/guide/raids/dragon-soul/ultraxion-strategy-overview",
+      "accessed": "2026-08-12",
+      "authority": "current secondary strategy source, post-cutoff",
+      "used_for": ["four health observations", "Hour/Fading Light counts", "Unstable Monstrosity", "Twilight Burst/Eruption", "Heroic rotation observations", "spell links"],
+      "notes": "Updated after the requested cutoff and after raid opening; retained as observable corroboration, not exact build-59185 evidence."
+    },
+    {
+      "id": "icy_veins_cata_ultraxion",
+      "title": "Ultraxion Encounter Guide: Strategy, Abilities, Loot",
+      "publisher": "Icy Veins",
+      "author": "Abide",
+      "published_or_updated": "2025-02-15",
+      "url": "https://www.icy-veins.com/cataclysm-classic/ultraxion-encounter-guide-strategy-abilities-loot",
+      "accessed": "2026-08-12",
+      "authority": "independent current Cataclysm Classic strategy source",
+      "used_for": ["single-phase realm model", "six-minute acceleration", "Hour/Fading Light values", "Aspect schedule", "Heroic rotations", "historical health table"],
+      "notes": "Page-level and guide prose conflicts are retained rather than reconciled; it does not establish a four-mode 59185 hotfix table."
+    },
+    {
+      "id": "wowhead_ultraxion_spell_identity",
+      "title": "Wowhead Ultraxion NPC and linked Cataclysm Classic spell pages",
+      "publisher": "Wowhead",
+      "url": "https://www.wowhead.com/cata/npc=55294/ultraxion",
+      "related_urls": [
+        "https://www.wowhead.com/cata/spell=106372/unstable-monstrosity",
+        "https://www.wowhead.com/cata/spell=103327/hour-of-twilight",
+        "https://www.wowhead.com/cata/spell=106108/heroic-will",
+        "https://www.wowhead.com/cata/spell=105925/fading-light",
+        "https://www.wowhead.com/cata/spell=106415/twilight-burst",
+        "https://www.wowhead.com/cata/spell=106388/twilight-eruption",
+        "https://www.wowhead.com/cata/spell=105984/timeloop"
+      ],
+      "accessed": "2026-08-12",
+      "authority": "community identity/range reference",
+      "used_for": ["spell IDs", "spell-page ranges/effects", "legacy timing conflicts"],
+      "notes": "Page fields mix legacy and mode-specific data; identity is retained while exact coefficients and timers remain blocked."
+    },
+    {
+      "id": "repo_dragon_soul_header_instance_loader",
+      "title": "Local TrinityCore Dragon Soul header, instance, and loader audit",
+      "publisher": "shared TrinityCore repository",
+      "revision": "f8a7fe6cb58563459c08a775fd56418f37529cda",
+      "paths": [
+        "src/server/scripts/Kalimdor/CavernsOfTime/DragonSoul/dragon_soul.h",
+        "src/server/scripts/Kalimdor/CavernsOfTime/DragonSoul/instance_dragon_soul.cpp",
+        "src/server/scripts/Kalimdor/kalimdor_script_loader.cpp"
+      ],
+      "accessed": "2026-08-12",
+      "authority": "repository executable/boundary evidence",
+      "used_for": ["map 967", "eight encounters", "DATA_ULTRAXION=4", "absence of Ultraxion AI and instance wiring"],
+      "notes": "Only Madness of Deathwing is in local creatureData; no Ultraxion boss or crystal implementation is present."
+    },
+    {
+      "id": "repo_dragon_soul_sql_identity",
+      "title": "Historical TrinityCore Dragon Soul creature, object, broadcast, and encounter identity rows",
+      "publisher": "shared TrinityCore repository",
+      "revision": "f8a7fe6cb58563459c08a775fd56418f37529cda",
+      "paths": [
+        "sql/old/4.3.4/TDB00_to_TDB01_updates/world/004_creature_template.sql",
+        "sql/old/4.3.4/TDB00_to_TDB01_updates/world/009_gameobject_template.sql",
+        "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql"
+      ],
+      "accessed": "2026-08-12",
+      "authority": "historical DB/model identity evidence",
+      "used_for": ["55294 boss and variants", "56305 gauntlet", "209873-209875 crystals", "210221 cache", "105896/105900/105903 support spells", "1297 encounter row", "broadcast spell identities"],
+      "notes": "Rows do not prove 59185 difficulty mapping, spell behavior, spawn placement, or runtime scaling."
+    }
+  ],
+  "mode_matrix": {
+    "10N": {"heroic": false, "boss_health_current_guide_post_cutoff": 57000000, "hour_minimum_soakers": 1, "fading_light_random_dps": 1, "crystal_charges": 1, "looming_darkness": false, "modifier_at_cutoff": "not announced/active; raid opens after cutoff", "status": "fidelity_blocked"},
+    "10H": {"heroic": true, "boss_health_current_guide_post_cutoff": 85000000, "hour_minimum_soakers": 2, "fading_light_random_dps": 2, "crystal_charges": 1, "looming_darkness": {"spell": 106498, "duration": "2m observation"}, "modifier_at_cutoff": "not announced/active; raid opens after cutoff", "status": "fidelity_blocked"},
+    "25N": {"heroic": false, "boss_health_current_guide_post_cutoff": 184000000, "hour_minimum_soakers": 3, "fading_light_random_dps": 3, "crystal_charges": 2, "looming_darkness": false, "modifier_at_cutoff": "not announced/active; raid opens after cutoff", "status": "fidelity_blocked"},
+    "25H": {"heroic": true, "boss_health_current_guide_post_cutoff": 276000000, "hour_minimum_soakers": 5, "fading_light_random_dps": 6, "crystal_charges": 2, "looming_darkness": {"spell": 106498, "duration": "2m observation"}, "modifier_at_cutoff": "not announced/active; raid opens after cutoff", "status": "fidelity_blocked"}
+  },
+  "values": [
+    {"key": "boss_health", "guide_post_cutoff_values": {"10N": 57000000, "10H": 85000000, "25N": 184000000, "25H": 276000000}, "source_refs": ["wowhead_cata_ultraxion_2025", "icy_veins_cata_ultraxion"], "status": "post_cutoff_observation_not_59185_assertion"},
+    {"key": "unstable_monstrosity", "spell": 106372, "damage": "1100000 Shadow", "split_range": "30yd", "intervals": ["6s", "5s after 1m", "4s after 2m", "3s after 3m", "2s after 4m", "1s after 5m"], "source_refs": ["wowhead_cata_ultraxion_2025", "wowhead_ultraxion_spell_identity", "icy_veins_cata_ultraxion"], "status": "fidelity_blocked_coefficients_and_boundary"},
+    {"key": "hour_of_twilight", "spell": 103327, "damage": "300000 unresistible Shadow", "interval": "45s", "minimum_soakers": {"10N": 1, "10H": 2, "25N": 3, "25H": 5}, "cast_conflict": {"normal": ["5s historical guide", "instant spell-page field"], "heroic": ["3s historical guide", "instant spell-page field"]}, "source_refs": ["wowhead_cata_ultraxion_2025", "wowhead_ultraxion_spell_identity", "icy_veins_cata_ultraxion"], "status": "fidelity_blocked_cast_and_shield_order"},
+    {"key": "fading_light", "spell": 105925, "random_dps_count": {"10N": 1, "10H": 2, "25N": 3, "25H": 6}, "duration_conflict": ["4-10s", "5-10s"], "target": "current tank and random non-tank DPS", "source_refs": ["wowhead_cata_ultraxion_2025", "wowhead_ultraxion_spell_identity", "icy_veins_cata_ultraxion"], "status": "fidelity_blocked_duration_schedule_and_threat_window"},
+    {"key": "twilight_burst", "spell": 106415, "damage": "73125-76875 Shadow", "magic_taken_debuff": "+50% for 6s, stacking", "source_refs": ["wowhead_cata_ultraxion_2025", "wowhead_ultraxion_spell_identity"], "status": "fidelity_blocked_no_melee_trigger_geometry"},
+    {"key": "twilight_eruption", "spell": 106388, "cast": "5s", "trigger_observation": "after 6m or shield failure", "source_refs": ["wowhead_cata_ultraxion_2025", "wowhead_ultraxion_spell_identity"], "status": "fidelity_blocked_effective_timestamp"},
+    {"key": "heroic_looming_darkness", "spell": 106498, "duration": "2m observation", "rule": "Heroic soakers rotate and cannot immediately soak again", "source_refs": ["wowhead_cata_ultraxion_2025", "icy_veins_cata_ultraxion"], "status": "fidelity_blocked_runtime_and_physical_delta"},
+    {"key": "aspect_support", "crystals": {"gift_of_life": {"entry": 209873, "spell": 105896, "timing": "about 1:30", "reported_effect": "+100% healing"}, "essence_of_dreams": {"entry": 209874, "spell": 105900, "timing": "about 2:30"}, "source_of_magic": {"entry": 209875, "spell": 105903, "timing": "about 3:30"}}, "charges": {"10": 1, "25": 2}, "timeloop": {"spell": 105984, "timing": "about 5m, one use"}, "last_defender_local_broadcast": 106218, "source_refs": ["icy_veins_cata_ultraxion", "wowhead_ultraxion_spell_identity", "repo_dragon_soul_sql_identity"], "status": "fidelity_blocked_values_placement_and_runtime_trigger"},
+    {"key": "historical_template_health_mod", "entries": {"55293": 1, "55294": 660, "56259": 1, "56576": 2145, "56577": 990, "56578": 3217}, "source_refs": ["repo_dragon_soul_sql_identity"], "status": "identity_only_not_59185_mode_mapping"},
+    {"key": "presence_of_the_dragon_soul", "official": {"initial_reduction": "5% health/damage", "increment": "5 percentage points every two weeks", "maximum_reduction": "30%", "start": "2025-03-18", "toggle": "Lord Devrestrasz", "active_at_cutoff": false}, "source_refs": ["blizzard_presence_dragon_soul_2025"], "status": "official_post_cutoff_scope_confirmed_ids_blocked"}
+  ],
+  "timers": [
+    {"key": "unstable_monstrosity", "guide": {"initial": "6s", "minute_1": "5s", "minute_2": "4s", "minute_3": "3s", "minute_4": "2s", "minute_5": "1s"}, "status": "guide_observation_exact_boundary_and_build_blocked"},
+    {"key": "hour_of_twilight", "guide_interval": "45s", "cast_conflict": ["5s Normal / 3s Heroic historical guide", "instant spell-page field"], "status": "interval_observed_cast_field_blocked"},
+    {"key": "fading_light", "duration_conflict": ["4-10s", "5-10s"], "between_hours": "reported twice", "status": "range_and_schedule_blocked"},
+    {"key": "heroic_will", "duration": "5s", "cooldown": "5s", "status": "spell-page identity observed runtime blocked"},
+    {"key": "aspect_crystals", "guide": {"gift_of_life": "about 1:30", "essence_of_dreams": "about 2:30", "source_of_magic": "about 3:30"}, "status": "guide observation spawn runtime blocked"},
+    {"key": "timeloop", "guide": "about 5m and one use", "status": "trigger blocked"},
+    {"key": "twilight_eruption", "guide": "6m trigger plus 5s cast", "status": "effective failure timestamp blocked"}
+  ],
+  "targeting_and_scaling": [
+    {"key": "unstable_monstrosity", "target": "enemies within 30yd in Twilight Realm", "scaling": "damage splits among hit enemies", "source_refs": ["wowhead_cata_ultraxion_2025", "icy_veins_cata_ultraxion"], "status": "relationship_confirmed_coefficients_and_filter_blocked"},
+    {"key": "hour_soakers", "mode_counts": {"10N": 1, "10H": 2, "25N": 3, "25H": 5}, "heroic_rule": "Looming Darkness forces rotation", "source_refs": ["wowhead_cata_ultraxion_2025", "icy_veins_cata_ultraxion"], "status": "count_observed_validation_blocked"},
+    {"key": "fading_light", "target": "current tank plus random non-tank DPS; sources say not healers", "mode_counts": {"10N": 1, "10H": 2, "25N": 3, "25H": 6}, "source_refs": ["wowhead_cata_ultraxion_2025", "icy_veins_cata_ultraxion"], "status": "count_observed_exact_filter_blocked"},
+    {"key": "aspect_crystals", "target": "healer-selected player", "charges": {"10": 1, "25": 2}, "source_refs": ["icy_veins_cata_ultraxion", "repo_dragon_soul_sql_identity"], "status": "selection_and_buff_scaling_blocked"},
+    {"key": "mode_health", "mode_values": {"10N": 57000000, "10H": 85000000, "25N": 184000000, "25H": 276000000}, "source_refs": ["wowhead_cata_ultraxion_2025"], "status": "post_cutoff_observation_not_59185_assertion"},
+    {"key": "presence_modifier", "target": "all Dragon Soul enemies", "health_damage": "-5% initially, +5 points every two weeks to -30%", "active_at_cutoff": false, "source_refs": ["blizzard_presence_dragon_soul_2025"], "status": "post_cutoff_official_scope_runtime_identity_blocked"}
+  ],
+  "phase_reset_credit": [
+    {"key": "phase_model", "behavior": "single Twilight Realm phase; no ordinary intermission", "source_refs": ["wowhead_cata_ultraxion_2025", "icy_veins_cata_ultraxion"], "status": "guide_relationship_confirmed_runtime_blocked"},
+    {"key": "reset", "repository": "No Ultraxion AI or boss-specific reset/evade path exists locally", "source_refs": ["repo_dragon_soul_header_instance_loader"], "status": "repository_absence_confirmed"},
+    {"key": "unlock", "behavior": "Official release establishes raid availability but not an Ultraxion prerequisite/order gate", "source_refs": ["blizzard_442_notes_59185_cutoff", "repo_dragon_soul_header_instance_loader"], "status": "fidelity_blocked"},
+    {"key": "credit", "behavior": "Historical encounter 1297 maps entry 55294; retail loot, lockout, achievement, and player-credit recipient are unresolved", "source_refs": ["repo_dragon_soul_sql_identity"], "status": "fidelity_blocked"}
+  ],
+  "conflicts": [
+    {"key": "cutoff_health", "sources": ["Wowhead page updated 2025-03-25", "Icy Veins historical table", "global unlock cutoff without a pinned exact-boundary live sample"], "resolution": "retain 57/85/184/276M as post-cutoff observations and block exact 59185 values"},
+    {"key": "hour_cast_time", "sources": ["historical guides: 5s Normal and 3s Heroic", "Wowhead spell page: instant cast field"], "resolution": "do not select a cast value without build/hotfix evidence"},
+    {"key": "fading_duration_and_threat", "sources": ["Wowhead guide: 4-10s and 5s no-threat", "Icy Veins: 5-10s and 10s no-threat"], "resolution": "retain ranges/windows as conflicts"},
+    {"key": "aspect_green_label", "sources": ["current guide narrative labels green effect Source of Magic", "historical SQL object/spell identity is Essence of Dreams 105900"], "resolution": "preserve identity conflict; do not infer buff value"},
+    {"key": "presence_cutoff", "sources": ["official modifier announcement 2025-03-12", "requested cutoff 2025-02-18"], "resolution": "active_at_cutoff=false; IDs, persistence, and application order remain blocked"},
+    {"key": "support_spell_ids", "sources": ["local broadcast identity Last Defender 106218", "current Wowhead pages expose other expansion/context IDs"], "resolution": "retain local historical identity and block runtime mapping"}
+  ],
+  "unresolved": [
+    {"key": "build_59185_hotfix_lineage_and_preopen_cutoff", "status": "fidelity_blocked"},
+    {"key": "four_mode_health_damage_and_historical_variant_mapping", "status": "fidelity_blocked"},
+    {"key": "presence_aura_toggle_ids_default_persistence_and_application_order", "status": "fidelity_blocked"},
+    {"key": "unstable_monstrosity_exact_coefficients_target_filter_and_minute_boundary", "status": "fidelity_blocked"},
+    {"key": "hour_cast_field_soak_validation_and_aspect_shield_order", "status": "fidelity_blocked"},
+    {"key": "fading_light_duration_schedule_threat_window_and_exact_filter", "status": "fidelity_blocked"},
+    {"key": "heroic_looming_darkness_runtime_and_post_fading_delta", "status": "fidelity_blocked"},
+    {"key": "twilight_burst_geometry_and_twilight_eruption_effective_timestamp", "status": "fidelity_blocked"},
+    {"key": "aspect_buff_values_click_eligibility_placement_and_runtime_ids", "status": "fidelity_blocked"},
+    {"key": "timeloop_and_last_defender_runtime_trigger_semantics", "status": "fidelity_blocked"},
+    {"key": "wipe_evade_cleanup_reactivation_and_respawn_semantics", "status": "fidelity_blocked"},
+    {"key": "retail_prerequisite_order_and_initial_attackability", "status": "fidelity_blocked"},
+    {"key": "loot_lockout_achievement_and_player_credit", "status": "fidelity_blocked"},
+    {"key": "missing_local_ultraxion_boss_and_crystal_implementation", "status": "fidelity_blocked"},
+    {"key": "unresolved_no_melee_and_aspect_failure_ordering", "status": "fidelity_blocked"},
+    {"key": "cutoff_runtime_observation_unavailable_before_raid_open", "status": "fidelity_blocked"}
+  ]
+}

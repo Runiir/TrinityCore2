@@ -18,7 +18,7 @@
     "patch": "4.4.2",
     "build": 59185,
     "locale": "enUS",
-    "cutoff_utc": "2025-02-18T19:31:51.916Z"
+    "cutoff_utc": "2025-02-20T23:00:00Z"
   },
   "evidence_policy": "Use official Blizzard material for release and modifier behavior, current Cataclysm Classic strategy sources for observations, and repository/SQL for executable or identity claims. Conflicts, build-sensitive values, and unverified retail semantics remain fidelity_blocked.",
   "source_refs": [

@@ -1,6 +1,6 @@
 # Ragnaros — Firelands
 
-Phase-0 research dossier for Cataclysm Classic 4.4.2, build 59185, enUS, hotfix cutoff `2025-02-18T19:31:51.916Z`. Scope is 10N/10H/25N/25H. This is an original implementation summary, not mirrored guide text. The endpoint remains `fidelity_blocked`: the local encounter is detailed, but current Classic sources and the local SpellInfo/SQL layer do not prove every quantitative field at the requested snapshot.
+Phase-0 research dossier for Cataclysm Classic 4.4.2, build 59185, enUS, hotfix cutoff `2025-02-20T23:00:00Z`. Scope is 10N/10H/25N/25H. This is an original implementation summary, not mirrored guide text. The endpoint remains `fidelity_blocked`: the local encounter is detailed, but current Classic sources and the local SpellInfo/SQL layer do not prove every quantitative field at the requested snapshot.
 
 ## Sources and snapshot
 

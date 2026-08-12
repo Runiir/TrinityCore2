@@ -1,0 +1,222 @@
+{
+  "schema_version": 1,
+  "ledger_schema": "cata_raid_value_timer_ledger_v1",
+  "raid": "dragon_soul",
+  "boss_slug": "yorsahj_the_unsleeping",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "contract_path": "experiments/configs/cata_raid_encounters/dragon_soul/yorsahj_the_unsleeping_v1.json",
+  "unresolved_material_count": 26,
+  "encounter": "yorsahj_the_unsleeping",
+  "purpose": "Source, identity, value, timer, targeting, scaling, color-combination, phase, reset, modifier, prerequisite, and credit ledger for Phase 0 research; no live-validation assertion.",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "target_snapshot": {
+    "product": "Cataclysm Classic",
+    "patch": "4.4.2",
+    "build": 59185,
+    "locale": "enUS",
+    "cutoff_utc": "2025-02-20T23:00:00Z"
+  },
+  "repository_revision_audited": "b550972efb04d8b4cadf72455e57e1a2e6213e4f",
+  "retrieved_utc_date": "2026-08-12",
+  "research_as_of": "2026-08-12",
+  "source_catalog": [
+    {
+      "id": "blizzard_442_notes_59185_cutoff",
+      "title": "World of Warcraft: Cataclysm Classic Patch 4.4.2 Notes",
+      "author": "Kaivax",
+      "publisher": "Blizzard Entertainment forums",
+      "published_or_updated": "2025-02-18 19:31",
+      "url": "https://us.forums.blizzard.com/en/wow/t/world-of-warcraft-cataclysm-classic-patch-442-notes/2062030",
+      "accessed": "2026-08-12",
+      "authority": "official cutoff context",
+      "notes": "Dragon Soul opens February 20 at 3:00 p.m. PST; eight bosses, 10/25-player Normal/Heroic. No encounter tuning table."
+    },
+    {
+      "id": "blizzard_presence_dragon_soul_2025",
+      "title": "Presence of the Dragon Soul begins March 18",
+      "author": "Kaivax",
+      "publisher": "Blizzard Entertainment forums",
+      "published_or_updated": "2025-03-12",
+      "url": "https://us.forums.blizzard.com/en/wow/t/presence-of-the-dragon-soul-begins-march-18/2074792",
+      "accessed": "2026-08-12",
+      "authority": "official post-cutoff modifier announcement",
+      "notes": "Presence reduces Dragon Soul enemy health/damage by 5%, grows by 5% every two weeks to 30%, and can be removed by Lord Devrestrasz. Outside the requested cutoff."
+    },
+    {
+      "id": "wowhead_cata_yorsahj_2025",
+      "title": "Yor'sahj the Unsleeping Strategy Guide for Dragon Soul - Cataclysm Classic",
+      "publisher": "Wowhead",
+      "updated": "2025-02-19",
+      "edition_label": "Patch 4.4.2",
+      "url": "https://www.wowhead.com/cata/guide/raids/dragon-soul/yorsahj-strategy-overview",
+      "accessed": "2026-08-12",
+      "authority": "current Cataclysm Classic guide, pre-opening",
+      "used_for": ["four health observations", "six allowed combination tables", "qualitative color effects", "Fusing Vapors", "phase/enrage observations", "spell links"],
+      "notes": "Updated before the global unlock cutoff; it is not a live exact-cutoff sample; observations are not asserted as exact build-59185 values."
+    },
+    {
+      "id": "icy_veins_cata_yorsahj_2025",
+      "title": "Yor'sahj the Unsleeping Encounter Guide: Strategy, Abilities, Loot - Cataclysm Classic",
+      "publisher": "Icy Veins",
+      "updated": "2025-02-15",
+      "url": "https://www.icy-veins.com/cataclysm-classic/yor-sahj-the-unsleeping-encounter-guide-strategy-abilities-loot",
+      "accessed": "2026-08-12",
+      "authority": "independent current Cataclysm Classic guide, before cutoff",
+      "used_for": ["first/repeat call observations", "three/four globules", "fixed mounds", "color ability cadence", "targeting and spread/stack guidance", "source conflict comparison"],
+      "notes": "Pre-cutoff guide prose corroborates relationships but does not provide a verified four-mode 59185 tuning table."
+    },
+    {
+      "id": "icy_veins_legacy_yorsahj",
+      "title": "Yor'sahj the Unsleeping Strategy Guide: Normal and Heroic",
+      "publisher": "Icy Veins",
+      "updated": "older retail expansion",
+      "url": "https://www.icy-veins.com/wow/yor-sahj-the-unsleeping-strategy-guide-normal-heroic",
+      "accessed": "2026-08-12",
+      "authority": "historical secondary corroboration",
+      "used_for": ["historical add health observations", "historical enrage and return-area comparison"],
+      "notes": "Not Cataclysm Classic 4.4.2 evidence; values remain historical and non-executable."
+    },
+    {
+      "id": "wowhead_yorsahj_npc_and_spells",
+      "title": "Wowhead Yor'sahj NPC and linked Cataclysm Classic spell pages",
+      "publisher": "Wowhead",
+      "url": "https://www.wowhead.com/cata/npc=55312/yorsahj-the-unsleeping",
+      "related_urls": [
+        "https://www.wowhead.com/cata/spell=104849/void-bolt",
+        "https://www.wowhead.com/cata/spell=103635/fusing-vapors",
+        "https://www.wowhead.com/cata/spell=104901/glowing-blood-of-shuma",
+        "https://www.wowhead.com/cata/spell=105033/searing-blood",
+        "https://www.wowhead.com/cata/spell=105171/deep-corruption",
+        "https://www.wowhead.com/cata/spell=105530/mana-void",
+        "https://www.wowhead.com/cata/spell=108922/psychic-slice",
+        "https://www.wowhead.com/cata/spell=1224941/digestive-acid",
+        "https://www.wowhead.com/cata/spell=1224942/digestive-acid"
+      ],
+      "accessed": "2026-08-12",
+      "authority": "community identity/range reference",
+      "used_for": ["NPC/spell IDs", "page ranges", "Encounter Journal values", "red target-count conflict"],
+      "notes": "Legacy/effect rows conflict with a clean current four-mode table; page identities and relationships are retained while mode coefficients remain blocked."
+    },
+    {
+      "id": "repo_dragon_soul_yorsahj_audit",
+      "title": "Local TrinityCore Dragon Soul Yor'sahj header, instance, and loader audit",
+      "publisher": "shared TrinityCore repository",
+      "revision": "b550972efb04d8b4cadf72455e57e1a2e6213e4f",
+      "paths": [
+        "src/server/scripts/Kalimdor/CavernsOfTime/DragonSoul/dragon_soul.h",
+        "src/server/scripts/Kalimdor/CavernsOfTime/DragonSoul/instance_dragon_soul.cpp",
+        "src/server/scripts/Kalimdor/kalimdor_script_loader.cpp"
+      ],
+      "accessed": "2026-08-12",
+      "authority": "repository executable/boundary evidence",
+      "used_for": ["map 967", "eight encounter count", "DATA_YORSAHJ_THE_UNSLEEPING=2", "absence of boss/globule AI and loader binding"],
+      "notes": "Only Madness of Deathwing is bound in local creatureData/loader; no Yor'sahj lifecycle is present."
+    },
+    {
+      "id": "repo_dragon_soul_yorsahj_sql",
+      "title": "Historical TrinityCore Dragon Soul Yor'sahj creature and encounter identity rows",
+      "publisher": "shared TrinityCore repository",
+      "revision": "f8a7fe6cb58563459c08a775fd56418f37529cda",
+      "paths": [
+        "sql/old/4.3.4/TDB00_to_TDB01_updates/world/004_creature_template.sql",
+        "sql/old/4.3.4/TDB01_to_TDB02_updates/world/047_creature_template.sql",
+        "sql/old/4.3.4/TDB01_to_TDB02_updates/world/128_creature_template.sql",
+        "sql/old/4.3.4/TDB01_to_TDB02_updates/world/189_creature_template.sql",
+        "sql/old/4.3.4/TDB01_to_TDB02_updates/world/192_access_requirement.sql",
+        "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql"
+      ],
+      "accessed": "2026-08-12",
+      "authority": "historical DB/model identity evidence",
+      "used_for": ["55312 boss and historical rows", "55862-55867 base globules", "57382/57384/57386/57387/57388 variants", "1295 encounter row", "map967 access rows"],
+      "notes": "Historical rows do not prove 59185 mode mapping, spawn location, spell behavior, or runtime scaling."
+    }
+  ],
+  "mode_matrix": {
+    "10N": {"heroic": false, "boss_health_current_guide_post_cutoff": 47000000, "globule_count": 3, "historical_secondary_add_health": {"globule": 1800000, "mana_void": 1500000, "forgotten_one": 490000}, "modifier_at_cutoff": "not announced/active; raid opens after cutoff", "status": "fidelity_blocked"},
+    "10H": {"heroic": true, "boss_health_current_guide_post_cutoff": 90000000, "globule_count": 4, "historical_secondary_add_health": {"globule": 2500000, "mana_void": 2000000, "forgotten_one": 830000}, "modifier_at_cutoff": "not announced/active; raid opens after cutoff", "status": "fidelity_blocked"},
+    "25N": {"heroic": false, "boss_health_current_guide_post_cutoff": 142000000, "globule_count": 3, "historical_secondary_add_health": {"globule": 5400000, "mana_void": 5000000, "forgotten_one": 1500000}, "modifier_at_cutoff": "not announced/active; raid opens after cutoff", "status": "fidelity_blocked"},
+    "25H": {"heroic": true, "boss_health_current_guide_post_cutoff": 232000000, "globule_count": 4, "historical_secondary_add_health": {"globule": 8200000, "mana_void": 6500000, "forgotten_one": 2700000}, "modifier_at_cutoff": "not announced/active; raid opens after cutoff", "status": "fidelity_blocked"}
+  },
+  "values": [
+    {"key": "boss_health", "values": {"10N": 47000000, "10H": 90000000, "25N": 142000000, "25H": 232000000}, "source_refs": ["wowhead_cata_yorsahj_2025"], "status": "post_cutoff_observation_not_59185_assertion"},
+    {"key": "globule_count", "values": {"10N": 3, "10H": 4, "25N": 3, "25H": 4}, "source_refs": ["wowhead_cata_yorsahj_2025", "icy_veins_cata_yorsahj_2025"], "status": "relationship_observed_four_mode_runtime_and_hotfix_blocked"},
+    {"key": "void_bolt", "spell": 104849, "initial": "92500-107500 Shadow", "periodic": "46250-53750 Shadow", "periodic_interval": "2s", "duration": "12s page presentation", "source_refs": ["wowhead_cata_yorsahj_2025", "wowhead_yorsahj_npc_and_spells"], "status": "mode_coefficients_target_filter_and_stack_reset_blocked"},
+    {"key": "fusing_vapors", "spell": 103635, "threshold": "below 50%", "other_globule_heal": "5% max health", "page_radius": "200yd", "source_refs": ["wowhead_yorsahj_npc_and_spells"], "status": "threshold_trigger_effective_radius_and_mode_scaling_blocked"},
+    {"key": "green_digestive_acid", "spells": [1224941, 1224942], "guide_interval": "10s", "splash": "4yd", "spread": "at least 5yd", "yellow_interval": "5s", "source_refs": ["icy_veins_cata_yorsahj_2025", "wowhead_yorsahj_npc_and_spells"], "status": "damage_target_filter_and_mode_values_blocked"},
+    {"key": "red_searing_blood", "spell": 105033, "page_cooldown": "3s", "guide_targets": 3, "journal_25_player_targets": 8, "journal_base": "55200 Fire", "page_legacy_values": ["35000", "38500", "55200"], "source_refs": ["wowhead_cata_yorsahj_2025", "wowhead_yorsahj_npc_and_spells", "icy_veins_cata_yorsahj_2025"], "status": "source_conflict_and_mode_values_blocked"},
+    {"key": "blue_mana_void", "spell": 105530, "mana_absorbed": "100% over 1s", "duration": "4s", "periodic_drain": "1s", "page_radius": "200yd", "return_area_conflict": ["25yd current guide", "30yd historical guide"], "source_refs": ["wowhead_cata_yorsahj_2025", "wowhead_yorsahj_npc_and_spells", "icy_veins_legacy_yorsahj"], "status": "return_amount_lifecycle_target_filter_and_mode_values_blocked"},
+    {"key": "purple_deep_corruption", "spell": 105171, "aura": "25s", "trigger": "fifth qualifying heal/absorb", "detonation": "89725-104275 Shadow all players", "source_refs": ["wowhead_cata_yorsahj_2025", "wowhead_yorsahj_npc_and_spells"], "status": "qualifying_filter_mode_value_and_reset_blocked"},
+    {"key": "black_forgotten_one", "npc": 56265, "spell": 108922, "cast": "0.6s", "cooldown": "5s", "range": "20yd", "current_guide_wave": "one", "yellow_wave": "two", "source_refs": ["wowhead_cata_yorsahj_2025", "wowhead_yorsahj_npc_and_spells", "icy_veins_cata_yorsahj_2025"], "status": "count_health_damage_and_lifecycle_blocked"},
+    {"key": "yellow_glowing_blood", "spell": 104901, "attack_speed": "+50%", "ability_frequency": "twice as often / half cooldown", "nearby_void_bolt": "53625-56375 Shadow", "duration": "1m page presentation", "source_refs": ["wowhead_cata_yorsahj_2025", "wowhead_yorsahj_npc_and_spells"], "status": "cleanup_and_mode_application_blocked"},
+    {"key": "historical_secondary_add_health", "values": {"10N": {"globule": 1800000, "mana_void": 1500000, "forgotten_one": 490000}, "10H": {"globule": 2500000, "mana_void": 2000000, "forgotten_one": 830000}, "25N": {"globule": 5400000, "mana_void": 5000000, "forgotten_one": 1500000}, "25H": {"globule": 8200000, "mana_void": 6500000, "forgotten_one": 2700000}}, "source_refs": ["icy_veins_legacy_yorsahj"], "status": "historical_only_not_current_classic_tuning"}
+  ],
+  "timers": [
+    {"key": "first_globule_call", "observations": ["about 25s after pull"], "source_refs": ["icy_veins_cata_yorsahj_2025", "wowhead_cata_yorsahj_2025"], "status": "guide_observation_exact_build_and_cast_start_blocked"},
+    {"key": "repeat_globule_call", "observation": "about 75s after prior call", "source_refs": ["icy_veins_cata_yorsahj_2025"], "status": "guide_observation_exact_cadence_and_reset_blocked"},
+    {"key": "void_bolt_periodic", "interval": "2s", "duration": "12s page presentation", "source_refs": ["wowhead_yorsahj_npc_and_spells"], "status": "mode_cadence_and_stack_reset_blocked"},
+    {"key": "digestive_acid", "interval": "10s", "yellow_interval": "5s", "source_refs": ["icy_veins_cata_yorsahj_2025"], "status": "direct_damage_and_mode_cadence_blocked"},
+    {"key": "searing_blood", "page_cooldown": "3s", "yellow_interval": "5s", "source_refs": ["wowhead_yorsahj_npc_and_spells", "icy_veins_cata_yorsahj_2025"], "status": "target cadence and mode damage blocked"},
+    {"key": "mana_void", "periodic_drain": "1s", "duration": "4s", "source_refs": ["wowhead_yorsahj_npc_and_spells"], "status": "summon/kill/return lifecycle blocked"},
+    {"key": "deep_corruption", "aura": "25s", "source_refs": ["wowhead_yorsahj_npc_and_spells"], "status": "stack reset and qualifying-heal timing blocked"},
+    {"key": "yellow_empowerment", "page_duration": "1m", "source_refs": ["wowhead_yorsahj_npc_and_spells"], "status": "effective duration and cleanup blocked"},
+    {"key": "enrage", "duration": "10m", "source_refs": ["wowhead_cata_yorsahj_2025", "icy_veins_legacy_yorsahj"], "status": "guide observation runtime enforcement and reset blocked"}
+  ],
+  "targeting_and_scaling": [
+    {"key": "void_bolt", "target": "reported primary/tank target", "stack_swap": "about 2-3 stacks", "source_refs": ["wowhead_cata_yorsahj_2025", "icy_veins_cata_yorsahj_2025"], "status": "relationship observed exact target filter and mode values blocked"},
+    {"key": "green_digestive_acid", "target": "raid observation", "splash": "4yd", "recommended_separation": "at least 5yd", "source_refs": ["icy_veins_cata_yorsahj_2025"], "status": "direct target filter and damage blocked"},
+    {"key": "red_searing_blood", "target": "random players", "target_count_conflict": ["current guide: 3", "Encounter Journal: 8 in 25-player"], "distance": "farther from boss increases damage", "source_refs": ["wowhead_cata_yorsahj_2025", "icy_veins_cata_yorsahj_2025"], "status": "mode target selection and curve blocked"},
+    {"key": "blue_mana_void", "target": "mana-bearing players / stored return area", "return_area_conflict": ["25yd current guide", "30yd historical guide"], "yellow_delta": "second Mana Void", "source_refs": ["wowhead_cata_yorsahj_2025", "icy_veins_legacy_yorsahj"], "status": "return target and mode scaling blocked"},
+    {"key": "purple_deep_corruption", "target": "all players; qualifying heal/absorb events", "trigger": "fifth stack detonates", "source_refs": ["wowhead_cata_yorsahj_2025"], "status": "heal/absorb filter and mode damage blocked"},
+    {"key": "black_forgotten_ones", "target": "random fixated players", "yellow_delta": "second wave reported", "source_refs": ["wowhead_cata_yorsahj_2025", "icy_veins_cata_yorsahj_2025"], "status": "count and mode health/damage blocked"},
+    {"key": "globule_scaling", "target": "active globules", "normal_count": 3, "heroic_count": 4, "survivor_immunity": true, "source_refs": ["wowhead_cata_yorsahj_2025"], "status": "health, threshold, path, and immunity event blocked"},
+    {"key": "mode_health", "target": "Yor'sahj", "values": {"10N": 47000000, "10H": 90000000, "25N": 142000000, "25H": 232000000}, "source_refs": ["wowhead_cata_yorsahj_2025"], "status": "post_cutoff_observation_not_59185_assertion"},
+    {"key": "presence_modifier", "target": "all Dragon Soul enemies", "health_damage": "-5% initially, +5 percentage points every 2 weeks to -30%", "toggle": "Lord Devrestrasz", "active_at_cutoff": false, "source_refs": ["blizzard_presence_dragon_soul_2025"], "status": "post_cutoff_official_scope_runtime_identity_blocked"}
+  ],
+  "phase_reset_credit": [
+    {"key": "pull_to_first_call", "behavior": "current guides report a first globule call about 25s after pull", "source_refs": ["icy_veins_cata_yorsahj_2025"], "status": "guide observation exact trigger blocked"},
+    {"key": "globule_resolution", "behavior": "raid kills one globule; the surviving globules are reported immune and the selected color reaches the boss", "source_refs": ["wowhead_cata_yorsahj_2025", "icy_veins_cata_yorsahj_2025"], "status": "relationship confirmed runtime event and path blocked"},
+    {"key": "color_phase_to_next_call", "behavior": "selected color package persists until the next call; current guides report about 75s between calls", "source_refs": ["icy_veins_cata_yorsahj_2025"], "status": "phase duration and buff cleanup blocked"},
+    {"key": "boss_pause_during_globule_window", "behavior": "current guides report Yor'sahj does not attack while the globule is being killed", "source_refs": ["icy_veins_cata_yorsahj_2025"], "status": "guide observation absent local AI"},
+    {"key": "wipe_reset", "behavior": "No Yor'sahj AI, globule despawn, aura cleanup, or reactivation path exists locally", "source_refs": ["repo_dragon_soul_yorsahj_audit"], "status": "repository_absence_confirmed_runtime_reset_blocked"},
+    {"key": "unlock", "behavior": "Official notes establish Dragon Soul availability but not Morchok/order prerequisite", "source_refs": ["blizzard_442_notes_59185_cutoff", "repo_dragon_soul_yorsahj_audit"], "status": "fidelity_blocked"},
+    {"key": "credit", "behavior": "Historical encounter 1295 maps entry55312; loot, lockout, Taste the Rainbow achievement credit, and player-credit recipient are not established", "source_refs": ["repo_dragon_soul_yorsahj_sql"], "status": "fidelity_blocked"}
+  ],
+  "conflicts": [
+    {"key": "cutoff_health", "sources": ["Wowhead guide updated 2025-02-19", "global unlock cutoff without a pinned exact-boundary live sample"], "resolution": "retain 47/90/142/232M as post-cutoff observations and block exact 59185 values"},
+    {"key": "red_target_count", "sources": ["current Icy Veins/Wowhead guide prose: 3 random players", "Wowhead Encounter Journal: 8 random players in 25-player"], "resolution": "retain both observations; do not select a 25-player count"},
+    {"key": "spell_mode_values", "sources": ["Wowhead Encounter Journal/current guide narrative", "linked spell pages with legacy/effect rows"], "resolution": "use IDs and explicitly presented ranges only; no four-mode coefficients"},
+    {"key": "mana_void_return_area", "sources": ["current guide: 25yd", "historical Icy Veins: 30yd"], "resolution": "record conflict and block return targeting"},
+    {"key": "globule_timer", "sources": ["current Icy Veins: first about25s/repeat about75s", "no local AI or cutoff runtime observation"], "resolution": "retain guide observations as ranges/approximations, not hard timers"},
+    {"key": "presence_modifier_state", "sources": ["official Presence announcement 2025-03-12", "requested cutoff 2025-02-18"], "resolution": "active_at_cutoff=false; no health/damage reduction applied; IDs/persistence blocked"},
+    {"key": "historical_add_health", "sources": ["historical Icy Veins table", "target is Cataclysm Classic 4.4.2"], "resolution": "retain only under historical_secondary_add_health; no executable scaling claim"}
+  ],
+  "unresolved": [
+    {"key": "build_59185_hotfix_lineage_and_preopen_cutoff", "status": "fidelity_blocked"},
+    {"key": "four_mode_health_damage_and_variant_mapping", "status": "fidelity_blocked"},
+    {"key": "presence_aura_toggle_ids_default_persistence", "status": "fidelity_blocked"},
+    {"key": "cutoff_modifier_application_state", "status": "fidelity_blocked"},
+    {"key": "void_bolt_mode_coefficients_and_cast_cadence", "status": "fidelity_blocked"},
+    {"key": "void_bolt_stack_reset_and_tank_target_filter", "status": "fidelity_blocked"},
+    {"key": "call_blood_first_and_repeat_timer", "status": "fidelity_blocked"},
+    {"key": "globule_spawn_fixed_mound_and_path_runtime", "status": "fidelity_blocked"},
+    {"key": "globule_selection_and_one_death_immunity", "status": "fidelity_blocked"},
+    {"key": "normal_heroic_combo_table_runtime", "status": "fidelity_blocked"},
+    {"key": "fusing_vapors_threshold_heal_and_radius", "status": "fidelity_blocked"},
+    {"key": "green_digestive_acid_spell_damage_target_splash", "status": "fidelity_blocked"},
+    {"key": "red_searing_blood_mode_target_count_and_distance_curve", "status": "fidelity_blocked"},
+    {"key": "blue_mana_void_drain_restore_and_kill_range", "status": "fidelity_blocked"},
+    {"key": "purple_deep_corruption_stack_heal_filter_and_reset", "status": "fidelity_blocked"},
+    {"key": "black_forgotten_one_count_fixate_and_psychic_slice", "status": "fidelity_blocked"},
+    {"key": "yellow_glowing_blood_aura_and_doubled_ability_cadence", "status": "fidelity_blocked"},
+    {"key": "globule_health_damage_and_add_scaling_all_modes", "status": "fidelity_blocked"},
+    {"key": "heroic_second_void_and_black_wave_scaling", "status": "fidelity_blocked"},
+    {"key": "enrage_runtime_and_boss_end_state", "status": "fidelity_blocked"},
+    {"key": "boss_ability_pause_during_ooze_phase", "status": "fidelity_blocked"},
+    {"key": "unlock_after_morchok_and_wing_order", "status": "fidelity_blocked"},
+    {"key": "wipe_reset_ooze_despawn_and_aura_cleanup", "status": "fidelity_blocked"},
+    {"key": "loot_achievement_and_player_credit", "status": "fidelity_blocked"},
+    {"key": "local_missing_boss_and_ooze_implementation", "status": "fidelity_blocked"},
+    {"key": "historical_access_lockout_and_current_prerequisite", "status": "fidelity_blocked"}
+  ]
+}

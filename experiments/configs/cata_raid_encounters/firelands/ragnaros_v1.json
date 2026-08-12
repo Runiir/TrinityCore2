@@ -19,7 +19,7 @@
     "patch": "4.4.2",
     "build": 59185,
     "locale": "enUS",
-    "hotfix_cutoff_utc": "2025-02-18T19:31:51.916Z"
+    "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
   "evidence_policy": "A material behavior claim requires current Classic corroboration plus repository or primary confirmation where available; build-sensitive values, source conflicts, missing SpellInfo, and unverified modifier state remain fidelity_blocked.",
   "source_refs": [

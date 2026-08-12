@@ -1,6 +1,6 @@
 # Morchok — Phase 0 research contract (Cataclysm Classic 4.4.2)
 
-This dossier covers Dragon Soul's first endpoint in `10N`, `10H`, `25N`, and `25H` for build `59185`, locale `enUS`, and cutoff `2025-02-18T19:31:51.916Z`. It is a sourced planning contract, not live-validation evidence. The requested cutoff predates the announced Dragon Soul opening on February 20, so no post-cutoff modifier is applied to the observations.
+This dossier covers Dragon Soul's first endpoint in `10N`, `10H`, `25N`, and `25H` for build `59185`, locale `enUS`, and the official global raid-unlock cutoff `2025-02-20T23:00:00Z`. It is sourced planning evidence, not a live observation. Later hotfixes and the March `Presence of the Dragon Soul` modifier are excluded.
 
 ## Observable encounter contract
 
@@ -27,7 +27,7 @@ These health figures are current-guide observations with unspecified modifier st
 
 ## Official modifier state
 
-Blizzard's 4.4.2 notes announce Dragon Soul as an eight-boss, 10/25-player raid with normal and heroic modes opening on February 20, after the requested cutoff. A later official Classic announcement names `Presence of the Dragon Soul`: 5% health and damage reduction from the March 18 weekly reset, increasing by 5% every two weeks to 30% by the end of May; Lord Devrestrasz can remove the aura. Its aura/NPC IDs and default persistence are not published, and it is post-cutoff evidence. The original retail `Power of the Aspects`/Lord Afrasastrasz mechanic is historical and must not be used as a Classic identity. No modifier is applied to this contract.
+Blizzard's 4.4.2 notes announce Dragon Soul as an eight-boss, 10/25-player raid with normal and heroic modes; the official live announcement freezes the global opening at this dossier's cutoff. A later official Classic announcement names `Presence of the Dragon Soul`: 5% health and damage reduction from the March 18 weekly reset, increasing by 5% every two weeks to 30% by the end of May; Lord Devrestrasz can remove the aura. Its aura/NPC IDs and default persistence are not published, and it is post-cutoff evidence. The original retail `Power of the Aspects`/Lord Afrasastrasz mechanic is historical and must not be used as a Classic identity. No modifier is applied to this contract.
 
 ## Repository, DB, reset, prerequisite, and credit audit
 
