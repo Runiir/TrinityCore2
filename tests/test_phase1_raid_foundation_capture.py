@@ -121,6 +121,22 @@ def test_leader_must_be_one_of_the_exact_frozen_roster_guids():
     assert "leader_not_in_exact_roster" in reasons
 
 
+def test_foundation_rejects_empty_profile_assignment_and_stale_lockout_identity():
+    status = accepted_status()
+    status["raid_runtime"].update(
+        profile_generation=0,
+        profile_content_hash="",
+        assignment_generation=0,
+        lockout_save_id=43,
+    )
+    accepted, reasons = accepted_foundation_status(status)
+    assert accepted is False
+    assert "profile_generation_owned" in reasons
+    assert "profile_content_hash_owned" in reasons
+    assert "assignment_generation_owned" in reasons
+    assert "lockout_save_matches_live_instance" in reasons
+
+
 def test_roster_serialization_order_does_not_change_assignment_acceptance():
     status = accepted_status()
     status["raid_runtime"]["roster"].reverse()
@@ -261,6 +277,72 @@ def test_native_recovery_requires_post_wipe_reset_increment_and_bounded_member_s
     assert "native_per_member_recovery_sequence_exceeds_runtime" in reasons
 
 
+def test_native_recovery_does_not_cross_pair_reset_from_an_earlier_wipe():
+    ready = accepted_status()
+    engaged1 = accepted_status()
+    engaged1["raid_runtime"].update(
+        evidence_sequence=2, encounter_in_progress=True,
+        boss_states=[1] + [0] * 5, ready_check_satisfied=False,
+        wipe_state="engaged", recovery_state="none",
+    )
+    wiped1 = accepted_status()
+    wiped1["raid_runtime"].update(
+        evidence_sequence=3, alive_size=0, wipe_generation=1,
+        boss_reset_generation_at_wipe=0, ready_check_satisfied=False,
+        wipe_state="wiped", recovery_state="release_resurrection_pending",
+    )
+    reset1 = json.loads(json.dumps(wiped1))
+    reset1["raid_runtime"].update(evidence_sequence=4, boss_reset_generation=1)
+    recovered1 = accepted_status()
+    recovered1["raid_runtime"].update(
+        evidence_sequence=70, wipe_generation=1, boss_reset_generation=1,
+        recovery_generation=1, recovery_state="recovered_ready_check",
+    )
+    engaged2 = json.loads(json.dumps(engaged1))
+    engaged2["raid_runtime"].update(
+        evidence_sequence=71, wipe_generation=1, boss_reset_generation=1,
+        recovery_generation=1,
+    )
+    wiped2 = json.loads(json.dumps(wiped1))
+    wiped2["raid_runtime"].update(
+        evidence_sequence=72, wipe_generation=2, boss_reset_generation=1,
+        boss_reset_generation_at_wipe=1, recovery_generation=1,
+    )
+    recovered2 = accepted_status()
+    recovered2["raid_runtime"].update(
+        evidence_sequence=140, wipe_generation=2, boss_reset_generation=1,
+        boss_reset_generation_at_wipe=1, recovery_generation=2,
+        recovery_state="recovered_ready_check",
+    )
+    recovered2["raid_runtime"]["native_recovery"] = {
+        "death_observed": True, "corpse_observed": True, "release_observed": True,
+        "resurrection_observed": True, "runback_observed": True,
+        "ready_check_action_observed": True, "evidence_complete": True,
+        "ready_check_action_generation": 3, "ready_check_action_attempt_id": 1,
+        "ready_check_action_wipe_generation": 2,
+        "ready_check_assignment_generation": 1,
+        "ready_check_action_evidence_sequence": 140,
+        "recovery_wipe_generation": 2,
+        "members": [
+            {
+                "guid": 1001 + index, "wipe_generation": 2,
+                "death_sequence": 75 + index * 6,
+                "corpse_sequence": 76 + index * 6,
+                "release_sequence": 77 + index * 6,
+                "runback_sequence": 78 + index * 6,
+                "reentry_sequence": 79 + index * 6,
+                "resurrection_sequence": 80 + index * 6,
+            }
+            for index in range(10)
+        ],
+    }
+    accepted, reasons = accepted_native_recovery(
+        [ready, engaged1, wiped1, reset1, recovered1, engaged2, wiped2, recovered2]
+    )
+    assert accepted is False
+    assert "boss_reset_observed" in reasons
+
+
 def test_native_recovery_rejects_stored_ready_without_observed_transitions():
     accepted, reasons = accepted_native_recovery([accepted_status()])
     assert accepted is False
@@ -349,6 +431,18 @@ def test_live_evidence_demux_rejects_profile_and_assignment_drift():
     drifted["raid_runtime"]["profile_generation"] = 2
     drifted["raid_runtime"]["profile_content_hash"] = "different-profile"
     drifted["raid_runtime"]["assignment_generation"] = 9
+    rows = normalized_batch_payload(
+        (json.dumps(active) + "\n" + json.dumps(drifted) + "\n").encode()
+    )
+    assert "evidence_demux_cross_identity_row" in evidence_demux_rejections(rows)
+
+
+def test_live_evidence_demux_rejects_strategy_drift():
+    active = accepted_status()
+    active["cohort_id"] = "raid"
+    drifted = json.loads(json.dumps(active))
+    drifted["action"] = "botauto_diagnose"
+    drifted["raid_runtime"]["strategy_id"] = "different_strategy"
     rows = normalized_batch_payload(
         (json.dumps(active) + "\n" + json.dumps(drifted) + "\n").encode()
     )

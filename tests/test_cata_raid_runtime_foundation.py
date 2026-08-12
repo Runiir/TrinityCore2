@@ -53,6 +53,7 @@ def test_generic_raid_mechanic_contracts_are_typed_executable_and_fail_closed():
     contracts = [row["mechanic_contract"] for row in GENERIC_SMOKE["routes"]]
     assert {row["formation_family"] for row in contracts} == {"pair", "lane", "quadrant", "ring", "cone"}
     assert all(row["id"] and row["arrival_tolerance_yards"] > 0 for row in contracts)
+    assert all(row["target_entries"] for row in contracts)
     assert "node.MechanicContractResolved" in IMPL
     assert 'adapter.AssignmentType = "contract_unresolved"' in IMPL
     assert 'result.Action = "raid_" + raidAnchors.FormationFamily + "_anchor"' in IMPL
@@ -64,6 +65,42 @@ def test_generic_raid_mechanic_contracts_are_typed_executable_and_fail_closed():
     assert "bot->GetTransport() == gameObject->ToTransport()" in IMPL
     assert "HandleAreaTriggerOpcode(areaTrigger)" in IMPL
     assert "declarative_area_damage_forbidden" in IMPL
+
+
+def test_phase1_target_transfer_and_swap_controls_are_executable():
+    for token in (
+        'raidAdapter.TargetControl == "focus_fire"',
+        '"declared_target_selected"',
+        'raidAdapter.BattleResurrectionPolicy != "assigned_only"',
+        'currentTank->GetGUID() == raidAssignment.MainTankGuid',
+        'currentTank->GetGUID() == raidAssignment.OffTankGuid',
+        '"raid_kill_sync_execution_hold_low_target"',
+        'isHeldLowTarget(bot->GetVictim())',
+        'isHeldLowTarget(current->m_targets.GetUnitTarget())',
+        'isHeldLowTarget(repeat->m_targets.GetUnitTarget())',
+        'isHeldLowTarget(pet->GetVictim())',
+        'isHeldLowTarget(controlled->GetVictim())',
+        'bot->InterruptSpell(CURRENT_GENERIC_SPELL, false);',
+        'bot->InterruptSpell(CURRENT_AUTOREPEAT_SPELL, false);',
+        'for (Unit* controlled : bot->m_Controlled)',
+    ):
+        assert token in IMPL
+
+
+def test_phase1_jump_platform_altitude_and_flying_require_native_postconditions():
+    for token in (
+        'bot->GetMapId() == raidAdapter.PlatformDestinationMapId',
+        'bot->GetAreaId() == raidAdapter.PlatformDestinationAreaId',
+        'bot->GetPositionZ() >= raidAdapter.PlatformMinimumZ',
+        'bot->GetPositionZ() <= raidAdapter.PlatformMaximumZ',
+        'raidAdapter.PlatformPolicy != "flying" || bot->IsFlying()',
+        '"raid_jump_pad_native_submitted"',
+        '"raid_platform_native_transfer_complete"',
+        '"raid_platform_native_regroup_complete"',
+        'raidAdapter.PlatformPolicy != "ground"',
+        'bot->GetExactDist2d(raidAnchors.ResolvedX, raidAnchors.ResolvedY)',
+    ):
+        assert token in IMPL
 
 
 def test_generic_contract_has_explicit_soak_dispel_and_cooldown_assignments():
@@ -160,11 +197,22 @@ def test_cleanup_preserves_terminal_raid_identity_for_final_status_demux():
         "Cohort().Raid.AliveSize = 0;",
     ):
         assert token in stop
+    assert "std::vector<uint32> Talents" in HEADER
+    assert "std::vector<uint32> Glyphs" in HEADER
+    assert "std::vector<RaidRosterItemIdentity> GearManifest" in HEADER
+    roster_json = IMPL[
+        IMPL.index("std::string BotWorldPopulationMgr::BuildRaidRuntimeJson"):
+        IMPL.index("std::string BotWorldPopulationMgr::BuildRaidPositioningAnchorsJson")
+    ]
+    assert "ObjectAccessor::FindPlayer(slot.Guid)" not in roster_json
+    assert "slot.Talents" in roster_json
+    assert "slot.Glyphs" in roster_json
+    assert "slot.GearManifest" in roster_json
 
 
 def test_live_kill_sync_holds_low_targets_until_every_peer_reaches_floor():
     assert "lowestPct <= raidAdapter.KillSyncExecutionFloorPct && peerAboveExecutionFloor" in IMPL
-    assert 'result.Action = "raid_kill_sync_execution_hold_low_target";' in IMPL
+    assert '"raid_kill_sync_execution_hold_low_target"' in IMPL
     assert 'result.Action = "raid_kill_sync_balance_high_target";' in IMPL
     assert "UnitHealthPct(highest) <= raidAdapter.KillSyncExecutionFloorPct" not in IMPL
 

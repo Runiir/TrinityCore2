@@ -23,6 +23,7 @@
         "spacing_yards": 6.0,
         "arrival_tolerance_yards": 1.0,
         "target_control": "do_not_damage",
+        "target_entries": [1],
         "allow_area_damage": false
       }
     },
@@ -46,6 +47,7 @@
         "lane_count": 3,
         "arrival_tolerance_yards": 1.0,
         "target_control": "controlled_aoe",
+        "target_entries": [1, 2, 3],
         "allow_area_damage": true,
         "controlled_aoe_minimum_targets": 3
       }
@@ -71,6 +73,7 @@
         "radius_yards": 8.0,
         "arrival_tolerance_yards": 1.0,
         "target_control": "kill_sync",
+        "target_entries": [1, 2],
         "allow_area_damage": false,
         "kill_sync_tolerance_pct": 0.1,
         "kill_sync_execution_floor_pct": 0.05
@@ -95,6 +98,7 @@
         "radius_yards": 10.0,
         "arrival_tolerance_yards": 1.0,
         "target_control": "focus_fire",
+        "target_entries": [1],
         "allow_area_damage": false
       }
     },
@@ -118,6 +122,7 @@
         "arc_radians": 1.5707963268,
         "arrival_tolerance_yards": 1.0,
         "target_control": "focus_fire",
+        "target_entries": [1],
         "allow_area_damage": false,
         "soak_roster_slots": [1, 2, 3],
         "soak_minimum_count": 3,

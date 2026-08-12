@@ -312,10 +312,11 @@ def _nonnegative_int(value: Any) -> bool:
     return isinstance(value, int) and not isinstance(value, bool) and value >= 0
 
 
-def _runtime_identity(runtime: dict[str, Any]) -> tuple[Any, ...] | None:
-    if not all(field in runtime for field in IDENTITY_FIELDS):
+def _runtime_identity(runtime: dict[str, Any], *, include_strategy: bool = False) -> tuple[Any, ...] | None:
+    fields = IDENTITY_FIELDS + ((STRATEGY_FIELD,) if include_strategy else ())
+    if not all(field in runtime for field in fields):
         return None
-    return tuple(runtime[field] for field in IDENTITY_FIELDS)
+    return tuple(runtime[field] for field in fields)
 
 
 def _roster_identity(roster: list[dict[str, Any]]) -> tuple[tuple[Any, ...], ...] | None:
@@ -407,10 +408,15 @@ def accepted_foundation_status(status: dict[str, Any]) -> tuple[bool, list[str]]
         "map_bwd": runtime.get("map_id") == 669,
         "instance_owned": _positive_int(runtime.get("instance_id")),
         "lockout_save_owned": _positive_int(runtime.get("lockout_save_id")),
+        "lockout_save_matches_live_instance": runtime.get("lockout_save_id") == runtime.get("instance_id"),
         "group_owned": _positive_int(runtime.get("group_guid")),
         "leader_owned": _positive_int(runtime.get("leader_guid")),
         "server_epoch_owned": _positive_int(runtime.get("server_epoch")),
         "attempt_owned": _positive_int(runtime.get("attempt_id")),
+        "profile_generation_owned": _positive_int(runtime.get("profile_generation")),
+        "profile_content_hash_owned": isinstance(runtime.get("profile_content_hash"), str)
+            and bool(runtime.get("profile_content_hash", "").strip()),
+        "assignment_generation_owned": _positive_int(runtime.get("assignment_generation")),
         "strategy_owned": isinstance(runtime.get("strategy_id"), str) and bool(runtime.get("strategy_id", "").strip()),
         "boss_state_readback": len(runtime.get("boss_states") or []) == 6,
         "ready_check_satisfied": runtime.get("ready_check_satisfied") is True,
@@ -467,6 +473,7 @@ def accepted_native_recovery(statuses: list[dict[str, Any]]) -> tuple[bool, list
     previous_transition_state: tuple[Any, ...] | None = None
     engagement_index: int | None = None
     wipe_index: int | None = None
+    selected_wipe_generation = 0
     boss_reset_generation_at_wipe: int | None = None
     recovery_generation_at_wipe: int | None = None
     reset_index: int | None = None
@@ -515,9 +522,14 @@ def accepted_native_recovery(statuses: list[dict[str, Any]]) -> tuple[bool, list
         )
         if any(
             not _positive_int(runtime.get(field))
-            for field in ("group_guid", "leader_guid", "instance_id", "lockout_save_id", "server_epoch", "attempt_id")
+            for field in ("group_guid", "leader_guid", "instance_id", "lockout_save_id", "server_epoch",
+                          "attempt_id", "profile_generation", "assignment_generation")
         ):
             reasons.append("native_identity_values_invalid")
+        if not isinstance(runtime.get("profile_content_hash"), str) or not runtime.get("profile_content_hash", "").strip():
+            reasons.append("native_profile_content_hash_invalid")
+        if runtime.get("lockout_save_id") != runtime.get("instance_id"):
+            reasons.append("native_lockout_instance_mismatch")
         if (
             runtime.get("expected_size") != 10
             or runtime.get("expected_difficulty") != 0
@@ -573,14 +585,16 @@ def accepted_native_recovery(statuses: list[dict[str, Any]]) -> tuple[bool, list
             engagement_index = index
         if (
             engagement_index is not None
-            and wipe_index is None
             and index > engagement_index
-            and generations[0] > 0
+            and generations[0] > selected_wipe_generation
             and runtime.get("wipe_state") == "wiped"
             and runtime.get("alive_size") == 0
             and runtime.get("recovery_state") in {"awaiting_native_reset", "release_resurrection_pending"}
         ):
             wipe_index = index
+            selected_wipe_generation = generations[0]
+            reset_index = None
+            recovery_index = None
             declared_reset_baseline = runtime.get("boss_reset_generation_at_wipe")
             boss_reset_generation_at_wipe = (
                 declared_reset_baseline
@@ -907,7 +921,7 @@ def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
         runtime = payload.get("raid_runtime")
         if not isinstance(runtime, dict) or runtime.get("active") is not True:
             continue
-        identity = _runtime_identity(runtime)
+        identity = _runtime_identity(runtime, include_strategy=True)
         roster = runtime.get("roster")
         roster_identity = _roster_identity(roster) if isinstance(roster, list) else None
         cohort = payload.get("cohort_id")
@@ -982,7 +996,7 @@ def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
             if (
                 payload.get("server_epoch") != canonical_identity[9]
                 or payload.get("attempt_id") != canonical_identity[10]
-                or _runtime_identity(runtime) != canonical_identity
+                or _runtime_identity(runtime, include_strategy=True) != canonical_identity
             ):
                 reject("evidence_demux_cross_identity_row")
             inactive_cleanup_seen = True
@@ -996,7 +1010,7 @@ def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
         if not isinstance(runtime, dict) or runtime.get("active") is not True:
             reject("evidence_demux_identity_missing")
             continue
-        identity = _runtime_identity(runtime)
+        identity = _runtime_identity(runtime, include_strategy=True)
         roster = runtime.get("roster")
         roster_identity = _roster_identity(roster) if isinstance(roster, list) else None
         if (identity != canonical_identity or roster_identity != canonical_roster

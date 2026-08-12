@@ -1736,6 +1736,16 @@ private:
         uint64 CombatLogRecentEventsDropped = 0;
     };
 
+    struct RaidRosterItemIdentity
+    {
+        uint8 Slot = 0;
+        uint32 Guid = 0;
+        uint32 Entry = 0;
+        uint32 EnchantId = 0;
+        std::vector<uint32> GemItemIds;
+        uint32 ReforgeId = 0;
+    };
+
     struct RaidRosterSlot
     {
         std::string RosterSlotId;
@@ -1753,6 +1763,9 @@ private:
         std::string GearIdentity;
         std::string TalentIdentity;
         std::string GlyphIdentity;
+        std::vector<uint32> Talents;
+        std::vector<uint32> Glyphs;
+        std::vector<RaidRosterItemIdentity> GearManifest;
         bool Active = false;
         bool LeaseOwned = false;
     };
