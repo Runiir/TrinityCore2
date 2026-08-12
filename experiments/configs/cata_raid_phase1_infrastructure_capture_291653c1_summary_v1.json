@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "capture_id": "cata_raid_phase1_bwd_10n_foundation_v1",
+  "classification": "infrastructure_abort",
+  "gameplay_failure": false,
+  "fidelity_claim": false,
+  "source_identity": {
+    "commit": "291653c1549d972c0f363e9505e30e3462db5e31",
+    "clean_at_start": true,
+    "identity_stable_during_run": true
+  },
+  "build": {
+    "policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
+    "configure_receipt_sha256": "69f9f81651a038bfd75ef7a51eeccd652270e1fa1c5217eef2f6cc74a3f3827c",
+    "configure_receipt_file_sha256": "ad32b2b575fea459d98d8a6cb42af6f829a14697c2ecb96dd9f52b82d22d971f",
+    "worldserver_receipt_sha256": "2326ae5a016c2556ef59c0d8d4dbdc0f18cb1b59bab07f45d9cd5f29b84a5e4a",
+    "worldserver_receipt_file_sha256": "bdf4f38b0fc604289297e5e59c469d9560ca18fbac6e14f3f2f957c6048e15e2",
+    "worldserver_sha256": "98973ab1a85022a67d39378e08dad59ccd00778d9eb02ed07cd5d27a55796417",
+    "worldserver_size_bytes": 60980880,
+    "trusted_local_operator": "runiir",
+    "gate_bearing": true
+  },
+  "preflight": {
+    "provisioning_apply_sha256": "43a6ecbea23204bc9c9346b3aafae8b408076f2867dd32357365b6b60ef1dc84",
+    "full_provisioning_verifier_passed": true,
+    "full_provisioning_verifier_sha256": "2d9f71bb38fec0f61f08b80d76741de818a15f3880c71e373bd5d4e004916373",
+    "readback_schema": "cata_raid_phase1_bwd_provisioning_readback_v4",
+    "readback_passed": true,
+    "readback_sha256": "c464852b90fbfe388dc6e24cf7adac4bebbfe1487c425b03a838881a549ce981",
+    "character_instance_rows": 0,
+    "group_member_rows": 0,
+    "ghost_aura_rows": 0,
+    "corpse_rows": 0,
+    "corpse_phase_rows": 0
+  },
+  "live_facts": {
+    "exact_roster_size": 10,
+    "composition": {"tanks": 2, "healers": 3, "dps": 5},
+    "map_id": 669,
+    "instance_id": 8,
+    "lockout_save_id": 8,
+    "difficulty": "10N",
+    "entry_and_corridor_trash_kills": 5,
+    "cumulative_deaths": 34,
+    "alive_at_final_sample": 10,
+    "boss_engaged": false,
+    "route_node_index_high_water": 3,
+    "route_generation_high_water": 4,
+    "route_label": "Magmaw",
+    "corridor_pack_live_clear_succeeded": true,
+    "native_recovery_evidence_complete": false
+  },
+  "root_cause": {
+    "failure_fingerprint": "magmaw_prepull_body_reset_cycle_and_nonmonotonic_death_watchdog_progress",
+    "detail": "The exact raid killed both entry mobs and all three declared Drakonid corridor mobs, live-proving the bounded pack, threat-release, 79580 hazard exit, and multi-Drudge 79604 minimum-distance decisions. At the Magmaw node, each native entry 41570 instance appeared under a new runtime GUID, accepted typed focus-fire decisions briefly, then disappeared without a sampled IN_PROGRESS boss state. One or more bots died during each short attempt, survivors retreated, released ghosts used the native BWD entrance path, and the same cycle restarted. The boss script's JustEngagedWith path evades when any summoned pincer/head is absent but then continues into BossAI engagement and event scheduling instead of returning. This source-order defect is consistent with the observed disappear/death cycle; the next run must retain the exact missing body-part diagnostic before treating it as fully live-proven. The capture watchdog also counted every cumulative death increase and every replacement runtime target GUID as monotonic progress, so it could not terminate the repeating failure itself.",
+    "decision_assessment": "Corridor target, hazard, distance and threat decisions were correct enough to clear the exact pack. At Magmaw, target authority remained correctly bound to entry 41570 and the incomplete raid correctly blocked later pulls. The repeated pre-pull action cycle was not a valid Magmaw tactic: the script never exposed a durable encounter state, generic melee attempts reported out_of_range, and no full-wipe recovery evidence was established. Map-0 native runback was slow but did eventually re-enter members; it was not the primary terminal defect.",
+    "remediation_scope": [
+      "make Magmaw body initialization explicit, deterministic and manually owned across the long corridor approach",
+      "fail closed and return immediately if a complete pincer/head set still cannot be reconstructed at native engagement",
+      "retain the exact missing body-part mask and bot position/alive/ghost/corpse facts in the next diagnostic stream",
+      "remove cumulative deaths from semantic progress and key boss-health high-water marks by stable entry rather than replacement runtime GUID",
+      "independently review, rebuild, reprovision, and rerun uncapped before accepting Phase 1"
+    ]
+  },
+  "telemetry": {
+    "wall_clock_mode": "uncapped",
+    "retained_rows": 635,
+    "bound_rows": 635,
+    "rejected_rows": 0,
+    "unchecked_rows": 0,
+    "required_envelopes_passed": true,
+    "required_readycheck_missing_downstream_of_no_native_full_wipe_recovery": true
+  },
+  "semantic_stall": {
+    "detected": false,
+    "watchdog_false_progress_sources": ["cumulative_deaths", "replacement_runtime_target_guid"],
+    "operator_terminated_after_confirmed_repeat_cycle": true
+  },
+  "cleanup": {
+    "gate_passed": false,
+    "stop_observed": false,
+    "worldserver_process_absent": true,
+    "reason": "operator terminated the confirmed invalid cycle; capture retained BrokenPipe infrastructure evidence and next reprovision must independently clear leases, groups, corpses and instance residue"
+  },
+  "forbidden_assistance": {"observed": false, "gate_passed": true},
+  "artifact": {
+    "pointer": "artifacts/cata_raid_program/phase1_raid_foundation_291653c1_20260813.dvc",
+    "dvc_directory_md5": "66eb70cf3b8ad97ed29561d9df7c0119.dir",
+    "size_bytes": 355398346,
+    "nfiles": 8,
+    "raw_jsonl_sha256": "9dd4ff3bf4d1eefc5ee4b1aa59490844cc0fa87786455b84d67756d5c2e9b004",
+    "capture_report_canonical_sha256": "97f561c0e8264b2e7f94739adc28374cf85c22feed06cc21a8546ca30fb5d610",
+    "capture_report_file_sha256": "c41550ec3c3d1567e2e7374428063f4bae197c4fddb90d156673876e57b61498",
+    "worldserver_log_sha256": "b1aaccbcc9bd80dfa05f1979d6a0bb0f83cf17e07c6a8b17fb5f1331ad123da2",
+    "targeted_push_completed": true,
+    "targeted_remote_status_before_eviction": "cache_and_remote_in_sync",
+    "workspace_payload_evicted": true,
+    "exact_eight_child_cache_objects_evicted": true,
+    "directory_metadata_retained": true,
+    "broad_gc_used": false
+  },
+  "acceptance": {
+    "phase1_gate_passed": false,
+    "next_gate": "Magmaw body lifecycle and watchdog remediation, independent Sol-high review, exact coordinated rebuild, exact reprovisioning/full verifier/v4 readback, and uncapped canonical rerun"
+  }
+}

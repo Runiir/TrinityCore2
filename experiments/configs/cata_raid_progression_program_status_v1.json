@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-12T21:56:48Z",
+  "updated_at_utc": "2026-08-13T01:48:00Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -16,8 +16,8 @@
   },
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
-    "foundation_sha": "a662679d1a41624ce19ef83ef74846f76a779424",
-    "current_head_sha": "a662679d1a41624ce19ef83ef74846f76a779424",
+    "foundation_sha": "291653c1549d972c0f363e9505e30e3462db5e31",
+    "current_head_sha": "291653c1549d972c0f363e9505e30e3462db5e31",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -27,18 +27,18 @@
     "prior_review_decision": "REJECT",
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
-    "critical_high_remediation_implemented_at": "a662679d1a41624ce19ef83ef74846f76a779424",
-    "mandatory_rereview": "pending_exact_status_descendant_of_a662679d1a_explicit_drakonid_corridor_decision_remediation",
+    "critical_high_remediation_implemented_at": "291653c1549d972c0f363e9505e30e3462db5e31",
+    "mandatory_rereview": "approved_exact_291653c1549d972c0f363e9505e30e3462db5e31_zero_critical_high_medium; next_magmaw_lifecycle_remediation_review_pending",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "exact_e75_review_build_provisioning_and_ninth_uncapped_capture_proved_recovery_admission_stability_then_exposed_undeclared_drakonid_corridor_tactics_stall_a662_remediation_review_rebuild_and_live_rerun_pending"
+    "current_acceptance": "exact_291_review_build_and_provisioning_passed; tenth_uncapped_capture_live_cleared_declared_drakonid_corridor_then_exposed_magmaw_body_lifecycle_and_watchdog_false_progress; phase1_false"
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_commit": "a662679d1a41624ce19ef83ef74846f76a779424",
-    "current_state": "idle_exact_e75_build_and_ninth_capture_complete_explicit_drakonid_corridor_decision_remediation_review_pending",
-    "current_result": "successful_e75f5ba2_receipts_retained_in_dvc_but_exact_binary_stale_after_a662679d1a_cpp_and_route_remediation",
+    "current_commit": "291653c1549d972c0f363e9505e30e3462db5e31",
+    "current_state": "idle_exact_291_build_and_tenth_capture_complete_magmaw_lifecycle_remediation_pending",
+    "current_result": "successful_exact_291_receipts_retained_in_dvc; binary becomes stale when the pending Magmaw lifecycle and capture watchdog remediation is committed",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -478,10 +478,17 @@
       ,"boss_nodes_fail_closed_on_undeclared_prerequisites_and_raid_trash_uses_native_1_3_threat_headroom"
       ,"regenerated_ten_node_validation_scenario_dvc_pushed_and_remote_verified"
       ,"current_focused_foundation_research_capture_and_phase9_suite_219_passed"
+      ,"mandatory_sol_high_review_approved_exact_291653c154_with_zero_critical_high_medium"
+      ,"exact_policy_v8_configure_and_worldserver_build_succeeded_at_291653c154"
+      ,"tenth_uncapped_capture_live_cleared_entry_and_exact_three_member_drakonid_corridor"
+      ,"tenth_capture_observed_173_hazard_exits_and_union_safe_multi_drudge_minimum_distance_decisions"
+      ,"tenth_capture_isolated_repeating_entry41570_short_pull_disappear_partial_death_cycle_without_durable_encounter"
+      ,"tenth_capture_eight_file_dvc_artifact_published_remote_verified_and_compactly_summarized"
       ],
       "remaining_requirements": [
-      "mandatory_independent_sol_high_review_of_exact_a662679d1a_drakonid_corridor_decision_remediation",
-      "complete_exact_policy_v8_release_coordinated_incremental_build_and_regression_gate_at_reviewed_a662679d1a_descendant",
+      "implement_magmaw_body_lifecycle_fail_closed_reconstruction_stable_entry_watchdog_and_position_diagnostics",
+      "mandatory_independent_sol_high_review_of_exact_magmaw_lifecycle_remediation",
+      "complete_exact_policy_v8_release_coordinated_incremental_build_and_regression_gate_at_reviewed_descendant",
         "rerun_uncapped_serialized_bwd_10n_entry_formation_difficulty_wipe_reset_evidence_publication_and_cleanup_gate_with_live_stall_diagnosis",
         "phase1_live_evidence_dvc_publish_remote_verify_and_exact_evict_gate"
       ]
@@ -504,8 +511,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "Exact clean e75f5ba2 review, policy-v8 build, provisioning verifier, and v4 readback succeeded. The ninth uncapped run formed the exact BWD 10N raid, killed both entry-trash targets, preserved the completed-admission identity through repeated deaths, and isolated a tactics stall before Magmaw: the boss node generically attacked an undeclared Chainwielder plus two Drudges, withheld most DPS behind dungeon 2000-threat/2.5x headroom despite tank victim ownership, stacked ranged/healers inside native 79604, and lacked an Overhead Smash decision. The remotely verified eight-file batch is compactly summarized and exactly evicted. Checkpoint a662679d1a inserts an explicit bounded corridor pack with sourced native hazard/range rules, uses core 1.3 ranged threat headroom for raid trash, and makes boss nodes reject undeclared hostiles. Mandatory review, rebuild, reprovision, and rerun remain pending."
+      "detail": "Exact clean 291653c154 review, policy-v8 build, provisioning verifier, and v4 readback succeeded. The tenth uncapped run formed the exact BWD 10N raid and live-cleared both entry mobs plus the exact Chainwielder/two-Drudge corridor with native hazard and union-safe minimum-distance decisions. At Magmaw, repeated entry-41570 runtime replacements disappeared without durable IN_PROGRESS evidence while partial deaths and native runbacks recycled. The script evades on missing body parts but continues engagement scheduling, and the watchdog incorrectly treated cumulative deaths/replacement GUIDs as progress. The remotely verified eight-file batch is compactly summarized. Magmaw lifecycle/watchdog/diagnostic remediation, review, rebuild, reprovision, and rerun remain pending."
     }
   ],
-  "next_action": "Complete the mandatory independent Sol-high review of the exact status descendant of a662679d1a explicit Drakonid corridor decision remediation. After zero unresolved critical/high findings, fast-forward the isolated build worktree, run exact policy-v8 configure/build receipts, reapply and independently verify the full provisioning and v4 BWD readback, then restart uncapped canonical BWD 10N Phase 1. Review the declared pack pull, native 79580/79604 decisions, threat release, recovery sequence, Magmaw script events, and every bot decision; do not infer boss fidelity before engagement. For later parallel boss diagnostics, root must fully start and verify the worldserver and every shard before spawning one Luna-xhigh live babysitter per boss; immediately exactly evict remotely verified diagnostic payloads after fixes/checkpoints are secured. Keep all 464 material fidelity blockers fail-closed."
+  "next_action": "Implement deterministic Magmaw body lifecycle reconstruction with immediate fail-closed return if incomplete, retain exact body mask and per-bot position/recovery diagnostics, and make uncapped semantic stall progress ignore cumulative deaths and replacement runtime GUIDs. Run focused Pixi tests, commit with the required co-author, obtain mandatory independent Sol-high exact review, then exact policy-v8 rebuild, fresh reprovision/full verifier/v4 readback, and uncapped Phase 1 rerun with Luna-xhigh babysitting. Do not infer Magmaw fidelity before durable native engagement. Later parallel boss diagnostics still require root to prestart and verify the worldserver and every shard before one Luna-xhigh babysitter per boss. Keep all 464 material fidelity blockers fail-closed."
 }
