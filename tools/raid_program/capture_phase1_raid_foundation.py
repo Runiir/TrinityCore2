@@ -741,6 +741,52 @@ def wait_for_prompt(process: subprocess.Popen[bytes], log_path: Path, timeout_se
     raise RuntimeError("worldserver readiness prompt timed out")
 
 
+def semantic_progress_signature(status: dict[str, Any], diagnosis: dict[str, Any] | None) -> str:
+    """Hash only raid facts whose change proves meaningful live progress.
+
+    Timers, heartbeat counters and trace length are deliberately excluded. Boss
+    health/phase, route state, combat targets, decisions and native recovery
+    generations are included so a living but semantically wedged run can be
+    stopped for diagnosis without imposing a raid-duration deadline.
+    """
+    runtime = status.get("raid_runtime") if isinstance(status.get("raid_runtime"), dict) else {}
+    route = status.get("validation_route") if isinstance(status.get("validation_route"), dict) else {}
+    bot_progress: list[dict[str, Any]] = []
+    if isinstance(diagnosis, dict):
+        for row in diagnosis.get("bots") or []:
+            if not isinstance(row, dict):
+                continue
+            identity = row.get("identity") if isinstance(row.get("identity"), dict) else {}
+            snapshot = row.get("snapshot") if isinstance(row.get("snapshot"), dict) else {}
+            decision = snapshot.get("decision") if isinstance(snapshot.get("decision"), dict) else {}
+            progress = snapshot.get("route_progress") if isinstance(snapshot.get("route_progress"), dict) else {}
+            bot_progress.append({
+                "bot_guid": identity.get("bot_guid"),
+                "decision": {key: decision.get(key) for key in ("action", "result", "reason")},
+                "route_progress": progress,
+            })
+    payload = {
+        "route": {key: route.get(key) for key in (
+            "manifest_index", "generation", "node_id", "kind", "manifest_complete",
+            "terminal_evidence", "boss_death_evidence",
+        )},
+        "raid": {key: runtime.get(key) for key in (
+            "map_id", "instance_id", "lockout_save_id", "strategy_id",
+            "assignment_generation", "boss_states", "encounter_phase",
+            "encounter_in_progress", "alive_size", "wipe_state", "recovery_state",
+            "wipe_generation", "boss_reset_generation", "recovery_generation",
+            "evidence_sequence",
+        )},
+        "metrics": {key: status.get(key) for key in (
+            "kills", "deaths", "stuck", "raid_boss_kills", "raid_telemetry_events",
+            "target_priority_decisions", "interrupt_success", "recovery_events",
+        )},
+        "bots": sorted(bot_progress, key=lambda row: int(row.get("bot_guid") or 0)),
+    }
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+    return hashlib.sha256(canonical).hexdigest()
+
+
 def git_identity(cwd: Path) -> dict[str, Any]:
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=cwd, text=True).strip()
     tree = subprocess.check_output(["git", "rev-parse", "HEAD^{tree}"], cwd=cwd, text=True).strip()
@@ -1497,6 +1543,8 @@ def main() -> int:
     )
     parser.add_argument("--startup-timeout-sec", type=int, default=180)
     parser.add_argument("--required-stable-statuses", type=int, default=3)
+    parser.add_argument("--semantic-stall-sec", type=int, default=300)
+    parser.add_argument("--semantic-stall-min-samples", type=int, default=12)
     args = parser.parse_args()
 
     binary = args.binary.resolve()
@@ -1519,6 +1567,8 @@ def main() -> int:
         raise SystemExit(
             "observation must be uncapped (0) or at least 30 seconds and require at least two stable statuses"
         )
+    if args.semantic_stall_sec < 60 or args.semantic_stall_min_samples < 3:
+        raise SystemExit("semantic stall detection requires at least 60 seconds and three samples")
     preflight = preflight_runtime_exclusions(worktree)
     if not preflight["passed"]:
         raise SystemExit("capture preflight rejected: " + ",".join(preflight["reasons"]))
@@ -1571,6 +1621,10 @@ def main() -> int:
             seen_statuses = 0
             recovery_accepted = False
             readycheck_requested_for: tuple[Any, ...] | None = None
+            last_semantic_signature: str | None = None
+            last_semantic_progress_at = time.monotonic()
+            unchanged_semantic_samples = 0
+            semantic_stall: dict[str, Any] = {"detected": False}
             while (deadline is None or time.monotonic() < deadline) and not (
                 len(stable) >= args.required_stable_statuses and recovery_accepted
             ):
@@ -1590,6 +1644,30 @@ def main() -> int:
                         else:
                             stable.clear()
                     seen_statuses = len(statuses)
+                    diagnoses_now = json_actions(log_path.read_bytes(), "botauto_diagnose")
+                    if statuses:
+                        signature = semantic_progress_signature(
+                            statuses[-1], diagnoses_now[-1] if diagnoses_now else None,
+                        )
+                        if signature != last_semantic_signature:
+                            last_semantic_signature = signature
+                            last_semantic_progress_at = time.monotonic()
+                            unchanged_semantic_samples = 1
+                        else:
+                            unchanged_semantic_samples += 1
+                        stalled_for = time.monotonic() - last_semantic_progress_at
+                        if (unchanged_semantic_samples >= args.semantic_stall_min_samples
+                                and stalled_for >= args.semantic_stall_sec):
+                            semantic_stall = {
+                                "detected": True,
+                                "stalled_for_seconds": round(stalled_for, 3),
+                                "unchanged_samples": unchanged_semantic_samples,
+                                "semantic_signature": signature,
+                                "route": statuses[-1].get("validation_route"),
+                                "raid_runtime": statuses[-1].get("raid_runtime"),
+                                "diagnosis_rows": len(diagnoses_now),
+                            }
+                            break
                     recovery_accepted, _ = accepted_native_recovery(statuses)
                     if statuses:
                         runtime = statuses[-1].get("raid_runtime") or {}
@@ -1659,6 +1737,7 @@ def main() -> int:
     identity_after = git_identity(worktree)
     identity_stable = identity_before == identity_after
     process_return_code = process.returncode if process is not None else None
+    semantic_stall = locals().get("semantic_stall", {"detected": False})
     success = (
         startup_error is None
         and process_return_code == 0
@@ -1675,11 +1754,16 @@ def main() -> int:
         and profiles[0].get("cohort_id") == "default"
         and profiles[0].get("active_profile") == "blackwing_descent_10n"
         and identity_stable
+        and semantic_stall.get("detected") is not True
     )
     report = {
         "schema_version": 1,
         "capture_id": "cata_raid_phase1_bwd_10n_foundation_v1",
-        "classification": "success" if success else ("infrastructure_abort" if startup_error else "foundation_gate_failed"),
+        "classification": "success" if success else (
+            "infrastructure_abort" if startup_error else (
+                "incomplete_evidence" if semantic_stall.get("detected") else "foundation_gate_failed"
+            )
+        ),
         "started_at_utc": started_utc,
         "identity": identity_before,
         "identity_stable_during_run": identity_stable,
@@ -1694,6 +1778,7 @@ def main() -> int:
         "last_foundation_rejections": last_rejections,
         "native_recovery_accepted": recovery_accepted,
         "native_recovery_rejections": recovery_rejections,
+        "semantic_stall": semantic_stall,
         "accepted_raid_runtime": stable[-1].get("raid_runtime") if stable else None,
         "diagnose_observed": bool(diagnoses),
         "trace_observed": bool(traces),
@@ -1717,6 +1802,8 @@ def main() -> int:
             "wall_clock_mode": "uncapped" if args.observe_sec == 0 else "bounded_diagnostic",
             "observe_window_seconds": args.observe_sec if args.observe_sec else None,
             "startup_timeout_seconds": args.startup_timeout_sec,
+            "semantic_stall_seconds": args.semantic_stall_sec,
+            "semantic_stall_min_samples": args.semantic_stall_min_samples,
             "healthy": startup_error is None and process_return_code == 0 and process_absent,
         },
         "preflight": preflight,

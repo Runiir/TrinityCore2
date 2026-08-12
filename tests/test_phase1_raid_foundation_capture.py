@@ -14,6 +14,7 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     validate_runtime_profile_assets,
     evidence_demux_report,
     evidence_demux_rejections,
+    semantic_progress_signature,
 )
 
 
@@ -732,3 +733,24 @@ def test_canonical_capture_is_terminal_gate_driven_without_a_raid_duration_cap()
     assert "deadline is None or time.monotonic() < deadline" in source
     assert '"wall_clock_mode": "uncapped" if args.observe_sec == 0' in source
     assert '"policy": "capture-process-heartbeat-terminal-gate-driven"' in source
+    assert 'parser.add_argument("--semantic-stall-sec", type=int, default=300)' in source
+    assert '"classification": "success" if success else (' in source
+
+
+def test_semantic_progress_signature_tracks_boss_and_bot_decisions_not_heartbeats():
+    status = accepted_status()
+    status["duration_seconds"] = 1
+    diagnosis = {
+        "bots": [{
+            "identity": {"bot_guid": 1001},
+            "snapshot": {
+                "decision": {"action": "attack", "result": "ok", "reason": "boss"},
+                "route_progress": {"target": {"guid": 9001, "hp_pct": 75.0}},
+            },
+        }],
+    }
+    baseline = semantic_progress_signature(status, diagnosis)
+    status["duration_seconds"] = 999
+    assert semantic_progress_signature(status, diagnosis) == baseline
+    diagnosis["bots"][0]["snapshot"]["route_progress"]["target"]["hp_pct"] = 74.0
+    assert semantic_progress_signature(status, diagnosis) != baseline
