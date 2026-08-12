@@ -46,13 +46,13 @@ def test_capture_preflight_requires_matching_hydrated_route_manifest(tmp_path: P
         "step": step,
         "route_node_id": f"node-{step}",
         "kind": "boss",
-    }) + "\n" for step in range(1, 9))
+    }) + "\n" for step in range(1, 10))
     _write_runtime_profile_assets(worktree, route)
     _write_runtime_profile_assets(reference, route)
 
     accepted = validate_runtime_profile_assets(worktree, reference, require_dvc_lineage=False)
     assert accepted["passed"] is True
-    assert accepted["matching_route_rows"] == 8
+    assert accepted["matching_route_rows"] == 9
     assert accepted["route_sha256"] == accepted["reference_route_sha256"]
 
     (worktree / "dataset/validation_scenarios/validation_routes.jsonl").unlink()
@@ -65,7 +65,7 @@ def test_capture_preflight_requires_matching_hydrated_route_manifest(tmp_path: P
     }) + "\n")
     wrong = validate_runtime_profile_assets(worktree, reference, require_dvc_lineage=False)
     assert wrong["passed"] is False
-    assert "worktree_route_expected_eight_rows" in wrong["reasons"]
+    assert "worktree_route_expected_nine_rows" in wrong["reasons"]
     assert "runtime_route_differs_from_reference" in wrong["reasons"]
 
 
@@ -76,7 +76,7 @@ def test_capture_preflight_rejects_dirty_dvc_lineage(tmp_path: Path, monkeypatch
         "scenario_id": "blackwing_descent_10n",
         "route_node_id": f"node-{step}",
         "kind": "boss",
-    }) + "\n" for step in range(8))
+    }) + "\n" for step in range(9))
     _write_runtime_profile_assets(worktree, route)
     _write_runtime_profile_assets(reference, route)
     monkeypatch.setattr(

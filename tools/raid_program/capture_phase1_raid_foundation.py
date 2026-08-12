@@ -1687,8 +1687,8 @@ def validate_runtime_profile_assets(
             rows = [json.loads(line) for line in route_bytes.decode("utf-8").splitlines() if line.strip()]
             matching_rows = [row for row in rows if isinstance(row, dict) and row.get("scenario_id") == profile_name]
             route_rows = len(matching_rows)
-            if route_rows != 8:
-                reasons.append("worktree_route_expected_eight_rows")
+            if route_rows != 9:
+                reasons.append("worktree_route_expected_nine_rows")
             node_ids = [str(row.get("route_node_id") or "") for row in matching_rows]
             kinds = [str(row.get("kind") or "") for row in matching_rows]
             if any(not node_id for node_id in node_ids):
