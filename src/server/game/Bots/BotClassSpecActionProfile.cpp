@@ -4,6 +4,7 @@
 #include "DatabaseEnv.h"
 #include "Bag.h"
 #include "Item.h"
+#include "Pet.h"
 #include "Player.h"
 #include "SpellAuras.h"
 #include "SpellHistory.h"

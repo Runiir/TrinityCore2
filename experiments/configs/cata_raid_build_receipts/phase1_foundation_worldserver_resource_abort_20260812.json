@@ -1,0 +1,50 @@
+{
+  "admitted_at_utc": "2026-08-12T04:00:22.579425Z",
+  "classification": "build_resource_abort",
+  "command_arguments_retained": false,
+  "command_sha256": "d042cd57384053c5fbf68d8ce2a8fb557e44bf4a092a938cc14f1506fb97315c",
+  "commit": "e5f21443d99531290822c13d8ee4513dd43f3bf3",
+  "compiler_job_ceiling": 3,
+  "ended_at_utc": "2026-08-12T04:05:45.510347Z",
+  "error": null,
+  "exit_code": -15,
+  "linker_job_ceiling": 1,
+  "log_sha256": "e9c8d7b1dbff6f501f9b958920466943940e222abff701c3ccaecd8d7e21c205",
+  "peak_observations": {
+    "maximum_load_average_1m": 4.59814453125,
+    "maximum_memory_psi_full_avg10": 0.0,
+    "maximum_memory_psi_some_avg10": 0.0,
+    "maximum_swap_used_bytes": 941961216,
+    "minimum_filesystem_available_bytes": 43906842624,
+    "minimum_memory_available_bytes": 20450480128,
+    "sample_count": 584
+  },
+  "policy_id": "cata_raid_build_resource_policy_v1",
+  "policy_sha256": "98833367413a3d2c364e6f4f827c20eac4893b483f2501e29c68f18c042c1028",
+  "preflight": {
+    "captured_at_utc": "2026-08-12T04:00:22.579425Z",
+    "filesystem_available_bytes": 46850899968,
+    "load_average_15m": 0.4736328125,
+    "load_average_1m": 0.67236328125,
+    "load_average_5m": 0.5966796875,
+    "memory_available_bytes": 23021101056,
+    "memory_psi_full_avg10": 0.0,
+    "memory_psi_some_avg10": 0.0,
+    "memory_total_bytes": 32513720320,
+    "swap_used_bytes": 404844544
+  },
+  "pressure_reasons": [
+    "swap_growth"
+  ],
+  "queue_sequence": 5,
+  "queue_wait_seconds": 0.008508,
+  "receipt_sha256": "3335c1a2d9d6411ebd0117f2f28128fbcc94e7ba2a55a0acbec39ed747e9d496",
+  "resource_class": "integration_build",
+  "schema_version": 1,
+  "signal": 15,
+  "test_mode": false,
+  "ticket_id": "raid-build-7c4e80e624e0407a8a4fb6b2bf5861b5",
+  "worktree": "/home/runiir/Games/trinity-cata-worktrees/phase1-foundation-build",
+  "worktree_dirty_at_request": false,
+  "worktree_porcelain_sha256_at_request": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+}
