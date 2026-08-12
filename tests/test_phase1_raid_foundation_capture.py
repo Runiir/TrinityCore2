@@ -1,3 +1,5 @@
+import json
+
 from tools.raid_program.capture_phase1_raid_foundation import (
     accepted_foundation_status,
     accepted_native_recovery,
@@ -5,11 +7,15 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     normalized_batch_payload,
     _forbidden_assistance_entries,
     expected_bwd_10n_roster,
+    _expected_identity_by_slot,
+    preflight_runtime_exclusions,
+    evidence_demux_rejections,
 )
 
 
 def accepted_status() -> dict:
     frozen_roster = expected_bwd_10n_roster()
+    frozen_identity = _expected_identity_by_slot()
     return {
         "ok": True,
         "action": "botauto_status",
@@ -53,6 +59,21 @@ def accepted_status() -> dict:
                     "class_spec": frozen_roster[index][3],
                     "gear_identity": f"fixture_gear_{index}",
                     "active": True, "lease_owned": True,
+                    "account_id": 1000 + index,
+                    "account": frozen_identity[frozen_roster[index][0]]["account"],
+                    "name": frozen_identity[frozen_roster[index][0]]["name"],
+                    "talents": list(frozen_identity[frozen_roster[index][0]]["talents"]),
+                    "glyphs": list(frozen_identity[frozen_roster[index][0]]["glyphs"]),
+                    "gear_identity_manifest": {
+                        "items": [
+                            {
+                                "slot": item["slot"], "guid": 500000 + index * 100 + item["slot"],
+                                "entry": item["entry"], "enchant_id": item["enchant_id"],
+                                "gem_item_ids": list(item["gem_item_ids"]), "reforge_id": item["reforge_id"],
+                            }
+                            for item in frozen_identity[frozen_roster[index][0]]["gear"]
+                        ]
+                    },
                 }
                 for index in range(10)
             ],
@@ -64,6 +85,7 @@ def accepted_status() -> dict:
                 "ready_check_action_generation": 1, "ready_check_action_attempt_id": 1,
                 "ready_check_action_wipe_generation": 0,
                 "ready_check_action_evidence_sequence": 1,
+                "recovery_wipe_generation": 0,
             },
         },
     }
@@ -141,6 +163,7 @@ def test_native_wipe_reset_recovery_is_reconstructed_across_statuses():
         "ready_check_action_generation": 2, "ready_check_action_attempt_id": 1,
         "ready_check_action_wipe_generation": 1,
         "ready_check_action_evidence_sequence": 5,
+        "recovery_wipe_generation": 1,
     }
     accepted, reasons = accepted_native_recovery([ready, engaged, wiped, reset, recovered])
     assert accepted is True
@@ -164,14 +187,65 @@ def test_native_recovery_rejects_mixed_identity_duplicate_sequence_and_wrong_com
     assert accepted is False
     assert "native_recovery_mixed_identity" in reasons
 
-    duplicate = accepted_status()
-    duplicate["raid_runtime"]["wipe_generation"] = 1
-    accepted, reasons = accepted_native_recovery([accepted_status(), duplicate])
+    decreasing = accepted_status()
+    first_sequence = accepted_status()
+    first_sequence["raid_runtime"]["evidence_sequence"] = 2
+    accepted, reasons = accepted_native_recovery([first_sequence, decreasing])
     assert accepted is False
-    assert "native_evidence_sequence_not_unique_or_monotonic" in reasons
+    assert "native_evidence_sequence_not_monotonic" in reasons
 
     bad_roles = accepted_status()
     bad_roles["raid_runtime"]["roster"][9]["role"] = "healer"
     accepted, reasons = accepted_foundation_status(bad_roles)
     assert accepted is False
     assert "exact_10n_role_composition" in reasons
+
+
+def test_repeated_snapshots_are_allowed_but_strategy_transition_requires_route_advance():
+    first = accepted_status()
+    repeated = accepted_status()
+    accepted, reasons = accepted_native_recovery([first, repeated])
+    assert not accepted
+    assert "native_wipe_observed" in reasons
+
+    transitioned = accepted_status()
+    transitioned["raid_runtime"].update(
+        evidence_sequence=2,
+        strategy_id="blackwing_descent_10n_boss_route",
+        route_progress={"generation": 1, "node_index": 1},
+        strategy_transition={
+            "from_strategy": "blackwing_descent_10n",
+            "to_strategy": "blackwing_descent_10n_boss_route",
+            "advanced": True,
+        },
+    )
+    accepted, reasons = accepted_native_recovery([first, transitioned])
+    assert "native_strategy_transition_without_route_advancement" not in reasons
+
+
+def test_forbidden_event_markers_are_rejected_while_native_fields_are_not():
+    rows = normalized_batch_payload(
+        b'{"action":"native_recovery","result":"direct_resurrection"}\n'
+        b'{"action":"botauto_status","recovery_state":"release_resurrection_pending"}\n'
+    )
+    found = _forbidden_assistance_entries(rows)
+    assert any(entry["kind"] == "forbidden_event_marker" for entry in found)
+    assert all("release_resurrection_pending" not in str(entry) for entry in found)
+
+
+def test_preflight_reports_coordinator_and_protected_process_overlap():
+    report = preflight_runtime_exclusions(__import__("pathlib").Path.cwd())
+    assert "coordinator_idle" in report
+    assert "process_overlap" in report
+
+
+def test_live_evidence_demux_rejects_cross_identity_runtime():
+    first = accepted_status()
+    first["cohort_id"] = "raid"
+    second = accepted_status()
+    second["cohort_id"] = "raid"
+    second["raid_runtime"]["attempt_id"] = 2
+    rows = normalized_batch_payload(
+        (json.dumps(first) + "\n" + json.dumps(second) + "\n").encode()
+    )
+    assert "evidence_demux_cross_identity_row" in evidence_demux_rejections(rows)

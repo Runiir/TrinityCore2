@@ -1618,6 +1618,7 @@ private:
         uint32 SlotIndex = 0;
         ObjectGuid Guid;
         uint32 AccountId = 0;
+        std::string AccountName;
         std::string CharacterName;
         uint8 SubGroup = 0;
         std::string Role;
@@ -1685,6 +1686,8 @@ private:
         uint64 NativeReadyCheckActionEvidenceSequence = 0;
         bool NativeRecoveryEvidenceComplete = false;
         std::string StrategyId;
+        std::string PreviousStrategyId;
+        uint64 StrategyTransitionRouteGeneration = 0;
         std::string EncounterPhase = "formation";
         std::string WipeState = "ready";
         std::string RecoveryState = "none";

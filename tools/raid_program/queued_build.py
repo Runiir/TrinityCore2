@@ -737,6 +737,7 @@ def run_ticket(
         "pressure_reasons": terminal_reasons,
         "log_sha256": log_hash,
         "output_artifacts": output_artifacts,
+        "artifact_provenance_required": resource_class in {"worldserver_build", "integration_build"},
         "error": error_message,
         "test_mode": os.environ.get("TRINITY_RAID_BUILD_TESTING") == "1",
         "policy_sha256": sha256_bytes(canonical_json(policy)),

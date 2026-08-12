@@ -1,0 +1,51 @@
+{
+  "admitted_at_utc": "2026-08-12T05:28:58.176331Z",
+  "classification": "build_resource_abort",
+  "command_arguments_retained": false,
+  "command_sha256": "eaa86ca691b794bd34c0438a051588c726d34f164e037c02c46af2c2ef9ea5fa",
+  "commit": "3f43ef5cd48939df720a2b7bb9ee46878bd21ec8",
+  "compiler_job_ceiling": 1,
+  "ended_at_utc": "2026-08-12T05:29:00.595843Z",
+  "error": null,
+  "exit_code": -15,
+  "linker_job_ceiling": 1,
+  "log_sha256": "a3c21a10c28458c1b47dd56438c8f5ed4be997ecc429d978f04ffbe09d6aa4e6",
+  "output_artifacts": [],
+  "peak_observations": {
+    "maximum_load_average_1m": 0.5869140625,
+    "maximum_memory_psi_full_avg10": 0.18,
+    "maximum_memory_psi_some_avg10": 0.18,
+    "maximum_swap_used_bytes": 1607901184,
+    "minimum_filesystem_available_bytes": 114984148992,
+    "minimum_memory_available_bytes": 23381270528,
+    "sample_count": 5
+  },
+  "policy_id": "cata_raid_build_resource_policy_degraded_v6",
+  "policy_sha256": "34607cbf4928271384ab0f71d3735f8e2fbb3380dab6538fb20fa4b57e4d2a46",
+  "preflight": {
+    "captured_at_utc": "2026-08-12T05:28:58.167644Z",
+    "filesystem_available_bytes": 114984366080,
+    "load_average_15m": 0.88525390625,
+    "load_average_1m": 0.55078125,
+    "load_average_5m": 0.56982421875,
+    "memory_available_bytes": 23657025536,
+    "memory_psi_full_avg10": 0.0,
+    "memory_psi_some_avg10": 0.0,
+    "memory_total_bytes": 32513720320,
+    "swap_used_bytes": 1607901184
+  },
+  "pressure_reasons": [
+    "memory_psi_full"
+  ],
+  "queue_sequence": 21,
+  "queue_wait_seconds": 0.009903,
+  "receipt_sha256": "7ca4f56bfc902a4700b48ff10a3229154bd7b6732fba86e18d1c8ad64908343a",
+  "resource_class": "worldserver_build",
+  "schema_version": 1,
+  "signal": 15,
+  "test_mode": false,
+  "ticket_id": "raid-build-7694fc729b674efea760aad7ea4b65fb",
+  "worktree": "/home/runiir/Games/trinity-cata-worktrees/phase1-foundation-build",
+  "worktree_dirty_at_request": false,
+  "worktree_porcelain_sha256_at_request": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+}

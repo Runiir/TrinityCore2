@@ -5798,8 +5798,14 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
     raid.InstanceId = leaderInstanceId;
     raid.ServerEpoch = _serverEpoch;
     raid.AttemptId = Cohort().AttemptId;
-    raid.StrategyId = Cohort().Config.ValidationRouteMechanicProfile.empty()
+    std::string currentStrategyId = Cohort().Config.ValidationRouteMechanicProfile.empty()
         ? Cohort().Config.ValidationRouteScenarioId : Cohort().Config.ValidationRouteMechanicProfile;
+    if (!raid.StrategyId.empty() && raid.StrategyId != currentStrategyId)
+    {
+        raid.PreviousStrategyId = raid.StrategyId;
+        raid.StrategyTransitionRouteGeneration = Party().ValidationRouteGeneration;
+    }
+    raid.StrategyId = currentStrategyId;
     raid.DifficultyMatches = raid.GroupDifficulty == raid.ExpectedDifficulty
         && (raid.MapDifficulty < 0 || raid.MapDifficulty == int16(raid.ExpectedDifficulty));
     raid.LockoutSaveId = 0;
@@ -5875,6 +5881,9 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         slot.SlotIndex = plannedSlot ? plannedSlot->SlotIndex : uint32(memberIndex);
         slot.Guid = bot->GetGUID();
         slot.AccountId = bot->GetSession() ? bot->GetSession()->GetAccountId() : 0;
+        if (slot.AccountId)
+            if (QueryResult account = LoginDatabase.PQuery("SELECT username FROM account WHERE id = %u", slot.AccountId))
+                slot.AccountName = account->Fetch()[0].GetString();
         slot.CharacterName = bot->GetName();
         slot.SubGroup = raidValidation ? group->GetMemberGroup(bot->GetGUID()) : 0;
         slot.Role = plannedSlot && !plannedSlot->Role.empty() ? plannedSlot->Role : GetDungeonRole(bot);
@@ -25238,8 +25247,14 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
          << ",\"ready_check_action_attempt_id\":" << raid.NativeReadyCheckActionAttemptId
          << ",\"ready_check_action_wipe_generation\":" << raid.NativeReadyCheckActionWipeGeneration
          << ",\"ready_check_action_evidence_sequence\":" << raid.NativeReadyCheckActionEvidenceSequence
+         << ",\"recovery_wipe_generation\":" << raid.WipeGeneration
          << ",\"evidence_complete\":" << (raid.NativeRecoveryEvidenceComplete ? "true" : "false") << "}"
          << ",\"strategy_id\":\"" << JsonEscape(raid.StrategyId) << "\""
+         << ",\"route_progress\":{\"generation\":" << Party().ValidationRouteGeneration
+         << ",\"node_index\":" << Party().ValidationRouteManifestIndex << "}"
+         << ",\"strategy_transition\":{\"from_strategy\":\"" << JsonEscape(raid.PreviousStrategyId)
+         << "\",\"to_strategy\":\"" << JsonEscape(raid.StrategyId)
+         << "\",\"advanced\":" << (raid.StrategyTransitionRouteGeneration == Party().ValidationRouteGeneration && !raid.PreviousStrategyId.empty() ? "true" : "false") << "}"
          << ",\"encounter_phase\":\"" << JsonEscape(raid.EncounterPhase) << "\""
          << ",\"wipe_state\":\"" << JsonEscape(raid.WipeState) << "\""
          << ",\"recovery_state\":\"" << JsonEscape(raid.RecoveryState) << "\""
@@ -25263,6 +25278,8 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
              << ",\"slot\":" << slot.SlotIndex
              << ",\"guid\":" << guid
              << ",\"account_id\":" << slot.AccountId
+             << ",\"account\":\"" << JsonEscape(slot.AccountName) << "\""
+             << ",\"name\":\"" << JsonEscape(slot.CharacterName) << "\""
              << ",\"character_name\":\"" << JsonEscape(slot.CharacterName) << "\""
              << ",\"subgroup\":" << uint32(slot.SubGroup)
              << ",\"role\":\"" << JsonEscape(slot.Role) << "\""
@@ -25272,6 +25289,63 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
              << ",\"gear_identity\":\"" << JsonEscape(slot.GearIdentity) << "\""
              << ",\"talent_identity\":\"" << JsonEscape(slot.TalentIdentity) << "\""
              << ",\"glyph_identity\":\"" << JsonEscape(slot.GlyphIdentity) << "\""
+             << ",\"talents\":[";
+        Player* rosterPlayer = ObjectAccessor::FindPlayer(slot.Guid);
+        bool firstTalent = true;
+        if (rosterPlayer)
+            for (auto const& [spellId, talent] : rosterPlayer->GetTalentMap(rosterPlayer->GetActiveSpec()))
+                if (talent.State != PLAYERSPELL_REMOVED)
+                {
+                    if (!firstTalent)
+                        json << ',';
+                    firstTalent = false;
+                    json << spellId;
+                }
+        json << "]"
+             << ",\"glyphs\":[";
+        bool firstGlyph = true;
+        if (rosterPlayer)
+            for (uint8 glyphSlot = 0; glyphSlot < MAX_GLYPH_SLOT_INDEX; ++glyphSlot)
+                if (uint32 glyph = rosterPlayer->GetGlyph(rosterPlayer->GetActiveSpec(), glyphSlot))
+                {
+                    if (!firstGlyph)
+                        json << ',';
+                    firstGlyph = false;
+                    json << glyph;
+                }
+        json << "]"
+             << ",\"gear_identity_manifest\":{\"items\":[";
+        bool firstItem = true;
+        if (rosterPlayer)
+            for (uint8 equipmentSlot = EQUIPMENT_SLOT_START; equipmentSlot < EQUIPMENT_SLOT_END; ++equipmentSlot)
+                if (Item const* item = rosterPlayer->GetItemByPos(INVENTORY_SLOT_BAG_0, equipmentSlot))
+                {
+                    if (!firstItem)
+                        json << ',';
+                    firstItem = false;
+                    json << "{\"slot\":" << uint32(equipmentSlot)
+                         << ",\"guid\":" << item->GetGUID().GetCounter()
+                         << ",\"entry\":" << item->GetEntry()
+                         << ",\"enchant_id\":" << item->GetEnchantmentId(PERM_ENCHANTMENT_SLOT)
+                         << ",\"gem_item_ids\":[";
+                    bool firstGem = true;
+                    for (uint8 gemSlot = 0; gemSlot < MAX_GEM_SOCKETS; ++gemSlot)
+                    {
+                        uint32 gemItemId = 0;
+                        uint32 gemEnchantId = item->GetEnchantmentId(EnchantmentSlot(SOCK_ENCHANTMENT_SLOT + gemSlot));
+                        if (SpellItemEnchantmentEntry const* enchant = sSpellItemEnchantmentStore.LookupEntry(gemEnchantId))
+                            gemItemId = enchant->Src_itemID;
+                        if (!gemItemId)
+                            continue;
+                        if (!firstGem)
+                            json << ',';
+                        firstGem = false;
+                        json << gemItemId;
+                    }
+                    json << "]"
+                         << ",\"reforge_id\":" << item->GetEnchantmentId(REFORGE_ENCHANTMENT_SLOT) << '}';
+                }
+        json << "]}"
              << ",\"active\":" << (slot.Active ? "true" : "false")
              << ",\"lease_owned\":" << (slot.LeaseOwned ? "true" : "false") << '}';
     }
