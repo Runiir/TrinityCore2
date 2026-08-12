@@ -1,5 +1,13 @@
 # Cataclysm raid progression handoff
 
+## 2026-08-12T15:21:18Z — Phase 1 pre-build review findings remediated without adding a raid time cap
+
+The mandatory independent review of the initial live-instance patch found two additional High blockers before any rebuild. First, an outside released ghost cannot safely use `Player::GetCorpse()` because that lookup queries its current graveyard map; the exact corpse is now resolved and null-checked from the frozen raid map/instance and verified against owner/map/instance. Second, all checked-in BWD boss rows lacked typed mechanic contracts, so the fail-closed runtime would suppress combat forever while an uncapped capture had no semantic-stall terminal.
+
+Exact implementation checkpoint `1109e663d9f6e78077e85dd4bfa9a8b317e32d4f` closes both. Magmaw now carries only the typed identity `phase1_magmaw_native_engagement_recovery_v1`; empty mechanic fields deliberately assert no timers, values, radii, add counts or fidelity, but permit native combat needed for the Phase 1 wipe/reset/recovery smoke. Canonical capture remains raid-duration uncapped and polls status/diagnose/trace every five seconds. It now hashes only semantic progress—route/boss/native generations, boss states, health/target/decision facts and relevant metrics—and stops as `incomplete_evidence` after 300 seconds and 12 samples with no semantic change, preserving the diagnostic bundle for fix/review/rebuild/restart.
+
+The validation scenario stage was regenerated through Pixi/DVC and pushed. Object `081bb1901c16611664791d71235f2327.dir` is remotely in sync; the Magmaw source remains 41570 and its DB-grounded navigation anchor remains Room Stalker 47196/GUID 250087. The focused capture/runtime/generator suite passes 55 tests. Mandatory exact-commit Sol-high re-review is pending; do not build or rerun before zero unresolved critical/high findings.
+
 ## 2026-08-12T15:10:47Z — Phase 1 second live failure published; raid validation is now uncapped and instance identity is remediated
 
 Exact policy-v8 configure/build at clean `4012450bb9316c4b7dd739aefe58856c9cdc1b3b` succeeded through the queued coordinator. The trusted-local configure and worldserver receipts are tracked under `experiments/configs/cata_raid_build_receipts/`; the receipt-bound worldserver SHA-256 is `45dca82d24b4e800dfa241be2c4fcb21dfb70b43ae5317c3205c621c92dcf55b`. MySQL and process isolation remained healthy, the build saw no resource-pressure reason, and the exact clean worktree identity stayed stable.

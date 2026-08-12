@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-12T15:10:47Z",
+  "updated_at_utc": "2026-08-12T15:21:18Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -16,8 +16,8 @@
   },
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
-    "foundation_sha": "544f774d5a0c3897f2144310f9469f46fb787266",
-    "current_head_sha": "544f774d5a0c3897f2144310f9469f46fb787266",
+    "foundation_sha": "1109e663d9f6e78077e85dd4bfa9a8b317e32d4f",
+    "current_head_sha": "1109e663d9f6e78077e85dd4bfa9a8b317e32d4f",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -27,18 +27,18 @@
     "prior_review_decision": "REJECT",
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
-    "critical_high_remediation_implemented_at": "544f774d5a0c3897f2144310f9469f46fb787266",
-    "mandatory_rereview": "pending_exact_544f774d5a_after_live_instance_identity_remediation",
+    "critical_high_remediation_implemented_at": "1109e663d9f6e78077e85dd4bfa9a8b317e32d4f",
+    "mandatory_rereview": "pending_exact_1109e663d9_after_live_instance_identity_and_semantic_stall_remediation",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "second_live_capture_failed_on_preentry_zero_instance_identity_remediated_review_and_rebuild_pending"
+    "current_acceptance": "second_live_capture_failings_remediated_including_typed_magmaw_engagement_and_semantic_stall_review_rebuild_pending"
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_commit": "544f774d5a0c3897f2144310f9469f46fb787266",
-    "current_state": "idle_exact_instance_identity_remediation_review_pending",
-    "current_result": "successful_4012450bb9_receipts_retained_but_stale_after_544f774d5a_remediation",
+    "current_commit": "1109e663d9f6e78077e85dd4bfa9a8b317e32d4f",
+    "current_state": "idle_exact_instance_identity_and_semantic_stall_remediation_review_pending",
+    "current_result": "successful_4012450bb9_receipts_retained_but_stale_after_1109e663d9_remediation",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -225,7 +225,7 @@
     "broad_status": "inherited_dependency_drift_and_selectively_evicted_outputs_present",
     "new_raid_artifact_failure": true,
     "validation_scenario_stage_remote_status": "cache_and_remote_in_sync",
-    "validation_scenario_dvc_md5": "5860365b5c53a066409b96ceaeded02f.dir",
+    "validation_scenario_dvc_md5": "081bb1901c16611664791d71235f2327.dir",
     "validation_provisioning_dvc_md5": "2c6a0dc150fe9c9f86e6d65d9fd7bb88.dir",
     "phase0_no_bots_baseline_pointer": "artifacts/cata_raid_program/phase0_no_bots_worldserver_20260812.dvc",
     "phase0_no_bots_baseline_dvc_md5": "fa6ca050a2ddd41eece7f05d89424a2f.dir",
@@ -357,8 +357,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "The exact clean policy-v8 configure/build at 4012450bb9 succeeded, but the second live capture proved that pre-entry instance zero was frozen before the exact roster entered native BWD instance 2. The failure artifact is remotely verified and exactly evicted. Commit 544f774d5a makes canonical capture terminal-gate driven and uncapped, passes the resolved saved placement through native login, freezes identity only from the exact roster in one positive live instance, blocks decisions while pending, and binds released-ghost corpse provenance to the exact instance. Independent review and an exact rebuild/rerun remain pending."
+      "detail": "The exact clean policy-v8 build at 4012450bb9 succeeded, but its second live capture proved pre-entry zero-instance poisoning. Commit 1109e663d9 remediates atomic live identity and safe frozen-map corpse lookup, makes canonical runtime uncapped with five-minute unchanged-semantic stall capture, and supplies a typed Magmaw engagement-only contract so Phase 1 can observe native boss wipe/recovery without asserting unresolved mechanic values or fidelity. The validation_scenarios DVC object 081bb1901c16611664791d71235f2327.dir is remotely in sync. Independent review and exact rebuild/rerun remain pending."
     }
   ],
-  "next_action": "Run the mandatory independent Sol-high review of exact 544f774d5a, explicitly comparing encounter-script behavior with bot status/diagnose/trace decisions. After zero unresolved critical/high findings, fast-forward the isolated build worktree, run the exact policy-v8 serialized incremental worldserver build, independently verify its receipt and regressions, then rerun uncapped canonical BWD 10N validation. Monitor live progress; on a sustained semantic stall, preserve diagnostics, stop cleanly, fix, review, rebuild, and restart. Keep all 28 research packets and 464 material blockers fidelity-blocked."
+  "next_action": "Run the mandatory independent Sol-high review of exact 1109e663d9, explicitly comparing Magmaw script behavior with bot status/diagnose/trace decisions and the semantic-stall terminal. After zero unresolved critical/high findings, fast-forward the isolated build worktree, run the exact policy-v8 build, verify receipt/regressions, then rerun uncapped canonical BWD 10N Phase 1. Keep the amended per-boss parallel diagnostic plan ready for Phase 2/3 and all 464 material fidelity blockers fail-closed."
 }
