@@ -2012,6 +2012,7 @@ std::string BotWorldPopulationMgr::StopCombatCalibration()
     // stale group pointer for subsequent clone cleanup.
     for (ObjectGuid const& guid : calibrationBotGuids)
     {
+        BotRaidAreaAuthority::Set(guid.GetRawValue(), false);
         sBotMgr->RemoveWorldBot(guid);
         if (ReleaseBotGuid(guid.GetCounter()))
             CharacterDatabase.DirectPExecute("UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", guid.GetCounter());
@@ -3050,6 +3051,7 @@ void BotWorldPopulationMgr::Update(uint32 diff)
             Cohort().LastPopulationFailureReason = "spawned_bot_not_loaded";
             TC_LOG_ERROR("server", "BotWorld active bot pruned bot=%s reason=spawned_bot_not_loaded spawn_source=%s age_ms=%llu",
                 prunedGuid.ToString().c_str(), itr->SpawnSource.c_str(), static_cast<unsigned long long>(itr->SpawnedMs ? nowMs - itr->SpawnedMs : 0));
+            BotRaidAreaAuthority::Set(prunedGuid.GetRawValue(), false);
             sBotMgr->RemoveWorldBot(prunedGuid);
             if (ReleaseBotGuid(prunedGuid.GetCounter()))
                 CharacterDatabase.DirectPExecute("UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", prunedGuid.GetCounter());
@@ -3088,6 +3090,7 @@ void BotWorldPopulationMgr::Update(uint32 diff)
                 itr->LastDecisionReason = "validation_same_instance_reattach_failed";
                 TC_LOG_ERROR("server", "BotWorld active bot removed bot=%s reason=loaded_bot_not_in_world diagnostic=validation_same_instance_reattach_failed spawn_source=%s age_ms=%llu",
                     prunedGuid.ToString().c_str(), itr->SpawnSource.c_str(), static_cast<unsigned long long>(itr->SpawnedMs ? nowMs - itr->SpawnedMs : 0));
+                BotRaidAreaAuthority::Set(prunedGuid.GetRawValue(), false);
                 sBotMgr->RemoveWorldBot(prunedGuid);
                 Cohort().FailedSpawnGuids.erase(prunedGuid.GetCounter());
                 Party().ValidationRouteFocusGuid.Clear();
@@ -3152,6 +3155,7 @@ void BotWorldPopulationMgr::Update(uint32 diff)
                     continue;
                 }
                 ObjectGuid guid = itr->Guid;
+                BotRaidAreaAuthority::Set(guid.GetRawValue(), false);
                 sBotMgr->RemoveWorldBot(guid);
                 if (ReleaseBotGuid(guid.GetCounter()))
                     CharacterDatabase.DirectPExecute("UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", guid.GetCounter());
@@ -23863,7 +23867,16 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
     }
 
     if (result.Features.RaidEncounter && raidAdapter.ContractResolved)
-        reconcileRaidAreaAutocasts(!raidAdapter.AllowAreaDamage);
+    {
+        // A controlled-AoE contract grants area authority only after the live
+        // declared-target/contamination scan below.  Keep that authority closed
+        // across every earlier mechanic return (BRez, dispel, cooldown, swap,
+        // movement, and soak) instead of treating the contract's eventual
+        // allow_area_damage policy as an immediate release.
+        bool const suppressAreaDamage = !raidAdapter.AllowAreaDamage
+            || raidAdapter.TargetControl == "controlled_aoe";
+        reconcileRaidAreaAutocasts(suppressAreaDamage);
+    }
 
     bool battleResOwner = raidAdapter.BattleResurrectionPolicy != "assigned_only"
         ? (raidAdapter.BattleResurrectionSlots.empty()
@@ -28492,6 +28505,7 @@ BotWorldPopulationMgr::ReplayExecutionResult BotWorldPopulationMgr::ExecuteRepla
     RecordReplayEvent(Party().Bots.back(), bot, "replay_finished", record, result.Success ? "success" : "failure", finishContext.str().c_str());
 
     RecordActivityStop(Party().Bots.back(), bot);
+    BotRaidAreaAuthority::Set(bot->GetGUID().GetRawValue(), false);
     sBotMgr->RemoveWorldBot(bot->GetGUID());
     Party().Bots.clear();
     RecordRunStop();

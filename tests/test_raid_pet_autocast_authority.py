@@ -17,6 +17,26 @@ def test_raid_area_authority_is_transient_and_pet_ai_enforced():
     assert "ToggleAutocast" not in PET_AI
 
 
+def test_controlled_aoe_authority_stays_closed_until_live_release_gate():
+    initial_gate = RUNTIME.index("bool const suppressAreaDamage = !raidAdapter.AllowAreaDamage")
+    target_scan = RUNTIME.index("bool const controlledAoeReleased = raidAdapter.ContractResolved")
+    release = RUNTIME.index("reconcileRaidAreaAutocasts(!controlledAoeReleased);")
+    assert initial_gate < target_scan < release
+    assert 'raidAdapter.TargetControl == "controlled_aoe";' in RUNTIME[
+        initial_gate:target_scan
+    ]
+
+
+def test_every_world_bot_removal_clears_transient_owner_authority_first():
+    lines = RUNTIME.splitlines()
+    removal_lines = [index for index, line in enumerate(lines) if "sBotMgr->RemoveWorldBot(" in line]
+    assert removal_lines
+    for index in removal_lines:
+        nearby = "\n".join(lines[max(0, index - 4):index])
+        assert "BotRaidAreaAuthority::Set(" in nearby
+        assert ", false);" in nearby
+
+
 def test_pet_ai_authority_does_not_mutate_persistent_pet_spell_state():
     marker = "BotRaidAreaAuthority::IsSuppressed(owner->GetGUID().GetRawValue())"
     authority_block = PET_AI[
