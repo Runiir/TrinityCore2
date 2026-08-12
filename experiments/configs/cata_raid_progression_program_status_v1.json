@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-12T15:21:18Z",
+  "updated_at_utc": "2026-08-12T15:42:16Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -16,8 +16,8 @@
   },
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
-    "foundation_sha": "1109e663d9f6e78077e85dd4bfa9a8b317e32d4f",
-    "current_head_sha": "1109e663d9f6e78077e85dd4bfa9a8b317e32d4f",
+    "foundation_sha": "dfe6018f8f836434feb55b2496efa446df1038c4",
+    "current_head_sha": "dfe6018f8f836434feb55b2496efa446df1038c4",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -27,18 +27,18 @@
     "prior_review_decision": "REJECT",
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
-    "critical_high_remediation_implemented_at": "1109e663d9f6e78077e85dd4bfa9a8b317e32d4f",
-    "mandatory_rereview": "pending_exact_1109e663d9_after_live_instance_identity_and_semantic_stall_remediation",
+    "critical_high_remediation_implemented_at": "dfe6018f8f836434feb55b2496efa446df1038c4",
+    "mandatory_rereview": "pending_exact_dfe6018f_after_identity_contract_objective_stall_and_telemetry_freshness_remediation",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "second_live_capture_failings_remediated_including_typed_magmaw_engagement_and_semantic_stall_review_rebuild_pending"
+    "current_acceptance": "second_live_capture_failures_remediated_including_typed_magmaw_engagement_monotonic_stall_and_bounded_telemetry_freshness_review_rebuild_pending"
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_commit": "1109e663d9f6e78077e85dd4bfa9a8b317e32d4f",
-    "current_state": "idle_exact_instance_identity_and_semantic_stall_remediation_review_pending",
-    "current_result": "successful_4012450bb9_receipts_retained_but_stale_after_1109e663d9_remediation",
+    "current_commit": "dfe6018f8f836434feb55b2496efa446df1038c4",
+    "current_state": "idle_exact_identity_objective_stall_and_telemetry_freshness_remediation_review_pending",
+    "current_result": "successful_4012450bb9_receipts_retained_but_stale_after_dfe6018f_remediation",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -148,9 +148,10 @@
   },
   "authority": {
     "approved_plan_path": ".codex/plans/cata_raid_progression_plan.md",
-    "approved_plan_sha256": "10ed060d96b51dc3bacc17d582530de1e9c832e8545e415c583e2e0ed16afab2",
+    "approved_plan_sha256": "c9ccf4c742d6048556d44d5eec2536cb5be2fd2c4bf7885471989356c117f843",
+    "prior_amended_plan_sha256": "522a1bbc69d3018fd8822bf7679033ca5e4e888db7ce809c13a35e7a24c69ed5",
     "prior_approved_plan_sha256": "ea4cd23208fd3c3c1f2ccc533211fcd35030fb0841c35e0984bba6f03aa0e0fa",
-    "plan_amendment_authority": "user_approved_parallel_per_boss_diagnostic_shards_plus_three_or_four_sequential_full_qualification_runs",
+    "plan_amendment_authority": "user_approved_parallel_per_boss_diagnostic_shards_plus_root_completed_worldserver_and_shard_setup_before_spawning_one_luna_xhigh_live_babysitter_per_boss_immediate_exact_post_diagnosis_dvc_eviction_and_three_or_four_sequential_full_qualification_runs",
     "approved_plan_tracked": false,
     "stonecore_status_path": "experiments/configs/all_spec_stonecore_program_status_v1.json",
     "stonecore_status_sha256": "ae4fa5dc545a03154cdd7b087939fe6c3b05ebca2f7dad74e0799f5778e1690e",
@@ -225,7 +226,7 @@
     "broad_status": "inherited_dependency_drift_and_selectively_evicted_outputs_present",
     "new_raid_artifact_failure": true,
     "validation_scenario_stage_remote_status": "cache_and_remote_in_sync",
-    "validation_scenario_dvc_md5": "081bb1901c16611664791d71235f2327.dir",
+    "validation_scenario_dvc_md5": "b16a253cfa567b9cfcc04f8307452d6e.dir",
     "validation_provisioning_dvc_md5": "2c6a0dc150fe9c9f86e6d65d9fd7bb88.dir",
     "phase0_no_bots_baseline_pointer": "artifacts/cata_raid_program/phase0_no_bots_worldserver_20260812.dvc",
     "phase0_no_bots_baseline_dvc_md5": "fa6ca050a2ddd41eece7f05d89424a2f.dir",
@@ -330,11 +331,15 @@
         "validation_saved_placement_passed_explicitly_through_native_login",
         "exact_roster_live_instance_identity_now_freezes_atomically_from_positive_map_instance",
         "released_ghost_corpse_provenance_bound_to_exact_frozen_instance",
-        "focused_identity_and_capture_tests_54_passed_at_544f774d5a"
+        "focused_identity_and_capture_tests_54_passed_at_544f774d5a",
+        "safe_frozen_map_corpse_lookup_group_leader_immutability_and_explicit_magmaw_focus_contract_implemented_at_1a8a36c33c",
+        "uncapped_capture_monotonic_objective_progress_and_per_channel_telemetry_freshness_fail_closed_at_dfe6018f8f",
+        "expanded_phase1_coordinator_compile_shape_and_phase9_focused_suite_208_passed",
+        "user_approved_root_completed_worldserver_and_shard_setup_before_one_luna_xhigh_live_babysitter_per_boss_plus_immediate_exact_post_diagnosis_dvc_eviction_bound_to_plan_c9ccf4c742d6"
       ],
       "remaining_requirements": [
-        "mandatory_independent_sol_high_review_of_exact_544f774d5a_with_boss_script_and_bot_decision_audit",
-        "complete_exact_policy_v8_release_coordinated_incremental_build_and_regression_gate_at_reviewed_544f774d5a_descendant",
+        "mandatory_independent_sol_high_review_of_exact_dfe6018f_with_boss_script_and_bot_decision_audit",
+        "complete_exact_policy_v8_release_coordinated_incremental_build_and_regression_gate_at_reviewed_dfe6018f_descendant",
         "rerun_uncapped_serialized_bwd_10n_entry_formation_difficulty_wipe_reset_evidence_publication_and_cleanup_gate_with_live_stall_diagnosis",
         "phase1_live_evidence_dvc_publish_remote_verify_and_exact_evict_gate"
       ]
@@ -357,8 +362,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "The exact clean policy-v8 build at 4012450bb9 succeeded, but its second live capture proved pre-entry zero-instance poisoning. Commit 1109e663d9 remediates atomic live identity and safe frozen-map corpse lookup, makes canonical runtime uncapped with five-minute unchanged-semantic stall capture, and supplies a typed Magmaw engagement-only contract so Phase 1 can observe native boss wipe/recovery without asserting unresolved mechanic values or fidelity. The validation_scenarios DVC object 081bb1901c16611664791d71235f2327.dir is remotely in sync. Independent review and exact rebuild/rerun remain pending."
+      "detail": "The exact clean policy-v8 build at 4012450bb9 succeeded, but its second live capture proved pre-entry zero-instance poisoning. Exact source checkpoint dfe6018f remediates atomic live map/instance/group/leader identity, safe frozen-map corpse lookup, typed Magmaw focus on encounter entry 41570, monotonic objective stall detection, and bounded status/diagnose/trace freshness while leaving canonical raid duration uncapped. It asserts no unresolved mechanic values or fidelity. The validation_scenarios DVC object b16a253cfa567b9cfcc04f8307452d6e.dir is remotely in sync. Independent review and exact rebuild/rerun remain pending."
     }
   ],
-  "next_action": "Run the mandatory independent Sol-high review of exact 1109e663d9, explicitly comparing Magmaw script behavior with bot status/diagnose/trace decisions and the semantic-stall terminal. After zero unresolved critical/high findings, fast-forward the isolated build worktree, run the exact policy-v8 build, verify receipt/regressions, then rerun uncapped canonical BWD 10N Phase 1. Keep the amended per-boss parallel diagnostic plan ready for Phase 2/3 and all 464 material fidelity blockers fail-closed."
+  "next_action": "Complete the mandatory independent Sol-high review of exact dfe6018f, explicitly comparing Magmaw script behavior with bot status/diagnose/trace decisions, monotonic stall and telemetry freshness. After zero unresolved critical/high findings, fast-forward the isolated build worktree, run the exact policy-v8 configure/build, verify receipt/regressions, then rerun uncapped canonical BWD 10N Phase 1. For later parallel boss diagnostics, root must fully start and verify the worldserver and every shard before spawning one Luna-xhigh live babysitter per boss; immediately exactly evict remotely verified diagnostic payloads after their fixes/checkpoints are secured. Keep all 464 material fidelity blockers fail-closed."
 }
