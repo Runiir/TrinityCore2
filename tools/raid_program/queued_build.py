@@ -328,8 +328,15 @@ def expected_build_configuration(policy: dict) -> dict[str, str] | None:
         "CMAKE_BUILD_TYPE": build_type,
         "CMAKE_CXX_FLAGS": str(controls.get("cmake_cxx_flags", "")),
         "CMAKE_CXX_FLAGS_RELEASE": release_flags,
+        "CMAKE_CXX_COMPILER": str(controls.get("cmake_cxx_compiler", "/usr/bin/c++")),
+        "CMAKE_CXX_COMPILER_LAUNCHER": str(
+            controls.get("cmake_cxx_compiler_launcher", "")
+        ),
         "CMAKE_INTERPROCEDURAL_OPTIMIZATION": (
             "ON" if controls.get("interprocedural_optimization") else "OFF"
+        ),
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE": (
+            "ON" if controls.get("release_interprocedural_optimization") else "OFF"
         ),
         "UNITY_BUILDS": "ON" if controls.get("unity_builds") else "OFF",
         "USE_COREPCH": "ON" if controls.get("core_precompiled_headers") else "OFF",
@@ -370,11 +377,14 @@ def build_configuration_snapshot(worktree: Path, policy: dict) -> dict | None:
         actual = {key: None for key in expected}
         cache_sha256 = None
     settings_sha256 = sha256_bytes(canonical_json(actual))
+    compiler_path = Path(str(actual.get("CMAKE_CXX_COMPILER") or ""))
+    compiler_sha256 = sha256_file(compiler_path) if compiler_path.is_file() else None
     return {
         "cache_path": str(cache_path),
         "cache_sha256": cache_sha256,
         "settings": actual,
         "settings_sha256": settings_sha256,
+        "compiler_sha256": compiler_sha256,
         "expected": expected,
         "matches_policy": actual == expected,
     }
@@ -406,6 +416,77 @@ def validate_configure_command(command: Sequence[str], policy: dict) -> None:
             "configure command does not explicitly bind policy CMake settings: "
             + ",".join(missing)
         )
+
+
+def find_configure_lineage(
+    state: dict,
+    paths: Paths,
+    worktree: Path,
+    policy: dict,
+    commit: str | None,
+    requested_configuration: dict | None,
+) -> dict | None:
+    """Resolve the newest canonical successful configure that seeded this cache."""
+
+    if not isinstance(requested_configuration, dict):
+        return None
+    expected_policy_sha256 = sha256_bytes(canonical_json(policy))
+    candidates = sorted(
+        (
+            ticket for ticket in state.get("tickets", {}).values()
+            if isinstance(ticket, dict)
+            and ticket.get("resource_class") == "configure"
+            and ticket.get("state") == "finished"
+            and ticket.get("commit") == commit
+            and Path(str(ticket.get("worktree", ""))).resolve() == worktree.resolve()
+        ),
+        key=lambda ticket: int(ticket.get("queue_sequence") or 0),
+        reverse=True,
+    )
+    for ticket in candidates:
+        ticket_id = ticket.get("ticket_id")
+        receipt_path = paths.receipts / f"{ticket_id}.json"
+        if not receipt_path.is_file():
+            continue
+        receipt = load_json(receipt_path)
+        claimed = receipt.get("receipt_sha256")
+        unhashed = dict(receipt)
+        unhashed.pop("receipt_sha256", None)
+        completion = (receipt.get("build_configuration") or {}).get("completion")
+        binding = ticket.get("receipt_binding")
+        if not (
+            isinstance(claimed, str)
+            and sha256_bytes(canonical_json(unhashed)) == claimed
+            and isinstance(binding, dict)
+            and binding.get("receipt_sha256") == claimed
+            and receipt.get("classification") == "success"
+            and receipt.get("exit_code") == 0
+            and receipt.get("resource_class") == "configure"
+            and receipt.get("commit") == commit
+            and receipt.get("policy_sha256") == expected_policy_sha256
+            and receipt.get("source_identity_stable") is True
+            and receipt.get("build_configuration_stable") is True
+            and isinstance(completion, dict)
+            and completion.get("matches_policy") is True
+            and completion.get("cache_sha256")
+                == requested_configuration.get("cache_sha256")
+            and completion.get("settings_sha256")
+                == requested_configuration.get("settings_sha256")
+            and completion.get("compiler_sha256")
+                == requested_configuration.get("compiler_sha256")
+        ):
+            continue
+        return {
+            "ticket_id": ticket_id,
+            "receipt_sha256": claimed,
+            "commit": commit,
+            "policy_sha256": expected_policy_sha256,
+            "completion_cache_sha256": completion["cache_sha256"],
+            "completion_settings_sha256": completion["settings_sha256"],
+            "compiler_sha256": completion["compiler_sha256"],
+            "queue_sequence": ticket.get("queue_sequence"),
+        }
+    return None
 
 
 def validate_command(
@@ -730,6 +811,9 @@ def finalize_ticket(paths: Paths, ticket_id: str, receipt: dict) -> None:
             "build_configuration_sha256": sha256_bytes(
                 canonical_json(receipt["build_configuration"])
             ),
+            "configure_lineage_sha256": sha256_bytes(
+                canonical_json(receipt["configure_lineage"])
+            ),
             "output_artifacts_sha256": sha256_bytes(
                 canonical_json(receipt["output_artifacts"])
             ),
@@ -800,6 +884,23 @@ def run_ticket(
         state["tickets"][ticket_id].setdefault("build_configuration", {})[
             "admission"
         ] = admission_configuration
+        request_configuration_for_lineage = (
+            state["tickets"][ticket_id].get("build_configuration") or {}
+        ).get("request")
+        configure_lineage = (
+            find_configure_lineage(
+                state,
+                paths,
+                worktree,
+                policy,
+                state["tickets"][ticket_id].get("commit"),
+                request_configuration_for_lineage,
+            )
+            if resource_class in {"worldserver_build", "integration_build"}
+            and expected_build_configuration(policy) is not None
+            else None
+        )
+        state["tickets"][ticket_id]["configure_lineage"] = configure_lineage
         admitted_at_utc = state["tickets"][ticket_id]["admission"]["admitted_at_utc"]
         ticket = dict(state["tickets"][ticket_id])
     log_path = paths.logs / f"{ticket_id}.log"
@@ -825,6 +926,7 @@ def run_ticket(
     requested_configuration = (ticket.get("build_configuration") or {}).get("request")
     admitted_configuration = (ticket.get("build_configuration") or {}).get("admission")
     configuration_required = expected_build_configuration(policy) is not None
+    configure_lineage = ticket.get("configure_lineage")
     if resource_class in {"worldserver_build", "integration_build"} and configuration_required:
         configuration_admissible = bool(
             isinstance(requested_configuration, dict)
@@ -835,6 +937,9 @@ def run_ticket(
                 == admitted_configuration.get("settings_sha256")
             and requested_configuration.get("cache_sha256")
                 == admitted_configuration.get("cache_sha256")
+            and isinstance(configure_lineage, dict)
+            and configure_lineage.get("completion_cache_sha256")
+                == requested_configuration.get("cache_sha256")
         )
     else:
         configuration_admissible = True
@@ -857,7 +962,7 @@ def run_ticket(
         elif not configuration_admissible:
             returncode = 76
             classification = "build_provenance_abort"
-            error_message = "build_configuration_missing_or_mismatched_before_admission"
+            error_message = "build_configuration_or_configure_lineage_missing_before_admission"
             log_path.write_text(error_message + "\n", encoding="utf-8")
         else:
             returncode, classification, process_samples, terminal_reasons = execute_process(
@@ -893,7 +998,9 @@ def run_ticket(
     if not source_identity_stable:
         provenance_reasons.append("source_identity_changed_or_dirty_before_completion")
     if not configuration_admissible:
-        provenance_reasons.append("build_configuration_missing_or_mismatched_before_admission")
+        provenance_reasons.append(
+            "build_configuration_or_configure_lineage_missing_before_admission"
+        )
     configuration_snapshots = {
         "request": requested_configuration,
         "admission": admitted_configuration,
@@ -969,6 +1076,7 @@ def run_ticket(
         "provenance_reasons": provenance_reasons,
         "build_configuration": configuration_snapshots,
         "build_configuration_stable": build_configuration_stable,
+        "configure_lineage": configure_lineage,
         "command_sha256": command_hash(command),
         "command_arguments_retained": False,
         "queue_sequence": ticket["queue_sequence"],
@@ -1023,6 +1131,7 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
         "provenance_reasons",
         "build_configuration",
         "build_configuration_stable",
+        "configure_lineage",
         "command_sha256",
         "classification",
         "compiler_job_ceiling",
@@ -1062,6 +1171,9 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
             ),
             "build_configuration_sha256": sha256_bytes(
                 canonical_json(receipt.get("build_configuration"))
+            ),
+            "configure_lineage_sha256": sha256_bytes(
+                canonical_json(receipt.get("configure_lineage"))
             ),
             "output_artifacts_sha256": sha256_bytes(
                 canonical_json(receipt.get("output_artifacts"))
@@ -1135,6 +1247,10 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
         request_configuration = configuration.get("request")
         admission_configuration = configuration.get("admission")
         completion_configuration = configuration.get("completion")
+        compiler_path = Path(expected_configuration["CMAKE_CXX_COMPILER"])
+        expected_compiler_sha256 = (
+            sha256_file(compiler_path) if compiler_path.is_file() else None
+        )
         for snapshot in (
             [completion_configuration]
             if resource_class == "configure"
@@ -1156,6 +1272,8 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
                 r"[0-9a-f]{64}", snapshot["cache_sha256"]
             ):
                 raise CoordinatorError("receipt CMake cache hash is invalid")
+            if snapshot.get("compiler_sha256") != expected_compiler_sha256:
+                raise CoordinatorError("receipt C++ compiler identity mismatch")
         if resource_class in {"worldserver_build", "integration_build"}:
             if not (
                 request_configuration.get("settings_sha256")
@@ -1169,6 +1287,37 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
                 == completion_configuration.get("cache_sha256")
             ):
                 raise CoordinatorError("receipt CMake cache changed during build")
+            lineage = receipt.get("configure_lineage")
+            if not isinstance(lineage, dict):
+                raise CoordinatorError("receipt is missing coordinated configure lineage")
+            configure_path = paths.receipts / f"{lineage.get('ticket_id')}.json"
+            configure_verification = verify_receipt(
+                configure_path, policy, allow_test_mode=allow_test_mode
+            )
+            configure_receipt = load_json(configure_path)
+            configure_completion = (
+                configure_receipt.get("build_configuration") or {}
+            ).get("completion")
+            if not (
+                configure_verification.get("classification") == "success"
+                and configure_receipt.get("resource_class") == "configure"
+                and configure_receipt.get("commit") == receipt.get("commit")
+                and lineage.get("receipt_sha256")
+                    == configure_receipt.get("receipt_sha256")
+                and lineage.get("policy_sha256") == receipt.get("policy_sha256")
+                and lineage.get("completion_cache_sha256")
+                    == request_configuration.get("cache_sha256")
+                and lineage.get("completion_settings_sha256")
+                    == request_configuration.get("settings_sha256")
+                and lineage.get("compiler_sha256")
+                    == request_configuration.get("compiler_sha256")
+                and isinstance(configure_completion, dict)
+                and configure_completion.get("cache_sha256")
+                    == lineage.get("completion_cache_sha256")
+            ):
+                raise CoordinatorError("receipt coordinated configure lineage is invalid")
+        elif receipt.get("configure_lineage") is not None:
+            raise CoordinatorError("non-build receipt unexpectedly claims configure lineage")
         if receipt.get("build_configuration_stable") is not True:
             raise CoordinatorError("receipt build configuration stability claim is false")
         current = build_configuration_snapshot(Path(str(receipt["worktree"])), policy)

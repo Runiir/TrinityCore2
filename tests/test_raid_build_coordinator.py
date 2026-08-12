@@ -76,7 +76,10 @@ def configured_git_repo(path: Path, flags: str = "-O1 -DNDEBUG") -> Path:
                 "CMAKE_BUILD_TYPE:STRING=Release",
                 "CMAKE_CXX_FLAGS:STRING=",
                 f"CMAKE_CXX_FLAGS_RELEASE:STRING={flags}",
+                "CMAKE_CXX_COMPILER:FILEPATH=/usr/bin/c++",
+                "CMAKE_CXX_COMPILER_LAUNCHER:STRING=",
                 "CMAKE_INTERPROCEDURAL_OPTIMIZATION:BOOL=OFF",
+                "CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE:BOOL=OFF",
                 "UNITY_BUILDS:BOOL=OFF",
                 "USE_COREPCH:BOOL=OFF",
                 "USE_SCRIPTPCH:BOOL=OFF",
@@ -89,6 +92,30 @@ def configured_git_repo(path: Path, flags: str = "-O1 -DNDEBUG") -> Path:
     subprocess.run(["git", "-C", str(repo), "add", ".gitignore"], check=True)
     subprocess.run(["git", "-C", str(repo), "commit", "-qm", "freeze cmake cache"], check=True)
     return repo
+
+
+def seed_configure_lineage(
+    repo: Path,
+    frozen: dict,
+    tmp_path: Path,
+) -> dict:
+    fake_cmake = tmp_path / "cmake"
+    fake_cmake.write_text("#!/usr/bin/env python3\n", encoding="utf-8")
+    fake_cmake.chmod(0o700)
+    command = [str(fake_cmake), "-S", ".", "-B", "build"]
+    command.extend(f"-D{key}={value}" for key, value in qb.expected_build_configuration(frozen).items())
+    code, receipt = qb.run_ticket(
+        repo,
+        frozen,
+        "configure",
+        command,
+        None,
+        tmp_path / "configure-receipt.json",
+        2.0,
+    )
+    assert code == 0
+    assert receipt["classification"] == "success"
+    return receipt
 
 
 def test_policy_preserves_host_reserve_and_caps_fanout() -> None:
@@ -419,7 +446,36 @@ def test_v8_rejects_wrong_effective_cmake_settings_before_child_launch(
     assert receipt["classification"] == "build_provenance_abort"
     assert marker.exists() is False
     assert receipt["build_configuration"]["request"]["matches_policy"] is False
-    assert "build_configuration_missing_or_mismatched_before_admission" in receipt[
+    assert "build_configuration_or_configure_lineage_missing_before_admission" in receipt[
+        "provenance_reasons"
+    ]
+
+
+def test_v8_matching_cache_without_coordinated_configure_lineage_is_rejected(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    state_paths(tmp_path, monkeypatch)
+    repo = configured_git_repo(tmp_path / "repo")
+    frozen = json.loads(
+        (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").read_text()
+    )
+    marker = tmp_path / "child-launched"
+    command = [
+        sys.executable, "-c",
+        "import pathlib,sys; pathlib.Path(sys.argv[1]).touch()", str(marker),
+    ]
+    monkeypatch.setattr(qb, "resource_snapshot", lambda _: synthetic_snapshot())
+    monkeypatch.setattr(qb, "find_live_validation_processes", lambda *_args, **_kwargs: [])
+
+    code, receipt = qb.run_ticket(
+        repo, frozen, "worldserver_build", command, None,
+        tmp_path / "missing-lineage.json", 2.0,
+    )
+    assert code == 76
+    assert receipt["classification"] == "build_provenance_abort"
+    assert receipt["configure_lineage"] is None
+    assert marker.exists() is False
+    assert "build_configuration_or_configure_lineage_missing_before_admission" in receipt[
         "provenance_reasons"
     ]
 
@@ -441,12 +497,14 @@ def test_v8_receipt_binds_effective_cmake_settings_and_current_cache(
     receipt_path = tmp_path / "bound-cache.json"
     monkeypatch.setattr(qb, "resource_snapshot", lambda _: synthetic_snapshot())
     monkeypatch.setattr(qb, "find_live_validation_processes", lambda *_args, **_kwargs: [])
+    configure_receipt = seed_configure_lineage(repo, frozen, tmp_path)
 
     code, receipt = qb.run_ticket(
         repo, frozen, "worldserver_build", command, None, receipt_path, 2.0,
     )
     assert code == 0
     assert receipt["classification"] == "success"
+    assert receipt["configure_lineage"]["receipt_sha256"] == configure_receipt["receipt_sha256"]
     assert receipt["build_configuration_stable"] is True
     snapshots = receipt["build_configuration"]
     assert all(
@@ -475,6 +533,7 @@ def test_v8_full_cache_drift_during_build_is_provenance_abort(
     ]
     monkeypatch.setattr(qb, "resource_snapshot", lambda _: synthetic_snapshot())
     monkeypatch.setattr(qb, "find_live_validation_processes", lambda *_args, **_kwargs: [])
+    seed_configure_lineage(repo, frozen, tmp_path)
 
     code, receipt = qb.run_ticket(
         repo, frozen, "worldserver_build", command, None,
@@ -510,6 +569,7 @@ def test_fabricated_never_enqueued_receipt_is_rejected(
     receipt_path = tmp_path / "authentic.json"
     monkeypatch.setattr(qb, "resource_snapshot", lambda _: synthetic_snapshot())
     monkeypatch.setattr(qb, "find_live_validation_processes", lambda *_args, **_kwargs: [])
+    seed_configure_lineage(repo, frozen, tmp_path)
     code, receipt = qb.run_ticket(
         repo, frozen, "worldserver_build", command, None, receipt_path, 2.0,
     )
@@ -534,7 +594,10 @@ def test_v8_configure_command_must_explicitly_bind_every_effective_setting() -> 
         "-DCMAKE_BUILD_TYPE=Release",
         "-DCMAKE_CXX_FLAGS=",
         "-DCMAKE_CXX_FLAGS_RELEASE=-O1 -DNDEBUG",
+        "-DCMAKE_CXX_COMPILER=/usr/bin/c++",
+        "-DCMAKE_CXX_COMPILER_LAUNCHER=",
         "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF",
+        "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=OFF",
         "-DUNITY_BUILDS=OFF",
         "-DUSE_COREPCH=OFF",
         "-DUSE_SCRIPTPCH=OFF",
@@ -548,6 +611,21 @@ def test_v8_configure_command_must_explicitly_bind_every_effective_setting() -> 
             resource_class="configure",
             policy=frozen,
         )
+    for forbidden_override in (
+        "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=ON",
+        "-DCMAKE_CXX_COMPILER_LAUNCHER=/tmp/inject-o3",
+    ):
+        with pytest.raises(qb.CoordinatorError):
+            qb.validate_command(
+                [
+                    value
+                    for value in command
+                    if not value.startswith(forbidden_override.split("=", 1)[0] + "=")
+                ] + [forbidden_override],
+                1,
+                resource_class="configure",
+                policy=frozen,
+            )
 
 
 def test_cmake_integration_applies_compile_and_link_controls() -> None:
@@ -592,6 +670,7 @@ def test_receipt_rejects_worldserver_not_produced_by_ticket(tmp_path: Path) -> N
             "provenance_reasons": [],
         "build_configuration": {"request": None, "admission": None, "completion": None},
         "build_configuration_stable": True,
+        "configure_lineage": None,
         "command_sha256": "0" * 64,
         "resource_class": "worldserver_build",
         "classification": "success",
@@ -691,8 +770,11 @@ def test_degraded_v8_freezes_complete_low_memory_release_configuration() -> None
     assert v8["mechanical_controls"]["cmake_build_type"] == "Release"
     assert v8["mechanical_controls"]["cmake_cxx_flags"] == ""
     assert v8["mechanical_controls"]["cmake_release_cxx_flags"] == "-O1 -DNDEBUG"
+    assert v8["mechanical_controls"]["cmake_cxx_compiler"] == "/usr/bin/c++"
+    assert v8["mechanical_controls"]["cmake_cxx_compiler_launcher"] == ""
     assert v8["mechanical_controls"]["with_coredebug"] is False
     assert v8["mechanical_controls"]["interprocedural_optimization"] is False
+    assert v8["mechanical_controls"]["release_interprocedural_optimization"] is False
 
 
 def test_live_validation_scan_matches_argv_not_unrelated_prose(

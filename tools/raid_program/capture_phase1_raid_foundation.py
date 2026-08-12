@@ -816,8 +816,17 @@ def validate_build_receipt(
                 "CMAKE_BUILD_TYPE": controls.get("cmake_build_type"),
                 "CMAKE_CXX_FLAGS": str(controls.get("cmake_cxx_flags", "")),
                 "CMAKE_CXX_FLAGS_RELEASE": release_flags,
+                "CMAKE_CXX_COMPILER": str(
+                    controls.get("cmake_cxx_compiler", "/usr/bin/c++")
+                ),
+                "CMAKE_CXX_COMPILER_LAUNCHER": str(
+                    controls.get("cmake_cxx_compiler_launcher", "")
+                ),
                 "CMAKE_INTERPROCEDURAL_OPTIMIZATION": (
                     "ON" if controls.get("interprocedural_optimization") else "OFF"
+                ),
+                "CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE": (
+                    "ON" if controls.get("release_interprocedural_optimization") else "OFF"
                 ),
                 "UNITY_BUILDS": "ON" if controls.get("unity_builds") else "OFF",
                 "USE_COREPCH": "ON" if controls.get("core_precompiled_headers") else "OFF",
@@ -863,6 +872,20 @@ def validate_build_receipt(
                 current_cache_sha256 = sha256_file(cache_path) if cache_path.is_file() else None
                 if stages[2].get("cache_sha256") != current_cache_sha256:
                     rejections.append("build_receipt_cmake_cache_hash_mismatch")
+                lineage = receipt.get("configure_lineage")
+                if not isinstance(lineage, dict):
+                    rejections.append("build_receipt_configure_lineage_missing")
+                elif not (
+                    lineage.get("completion_cache_sha256")
+                        == stages[0].get("cache_sha256")
+                    and lineage.get("completion_settings_sha256")
+                        == stages[0].get("settings_sha256")
+                    and lineage.get("compiler_sha256")
+                        == stages[0].get("compiler_sha256")
+                    and isinstance(lineage.get("receipt_sha256"), str)
+                    and isinstance(lineage.get("ticket_id"), str)
+                ):
+                    rejections.append("build_receipt_configure_lineage_mismatch")
             if receipt.get("build_configuration_stable") is not True:
                 rejections.append("build_receipt_cmake_stability_missing")
         expected_config_sha256 = sha256_file(config) if config is not None and config.is_file() else None
