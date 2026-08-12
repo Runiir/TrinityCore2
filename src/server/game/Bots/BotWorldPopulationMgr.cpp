@@ -22568,6 +22568,37 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
             target = tankFocusTarget;
             state.TargetGuid = target->GetGUID();
+            // Route-directed boss assistance must pass through the same typed
+            // mechanic authority as the ordinary boss path. In particular,
+            // this keeps a non-tank's initial profile action from bypassing
+            // focus target selection, the area/multidot policy, or unresolved
+            // contract fail-closed handling.
+            if (tankFocusIsBossRoute)
+            {
+                BossMechanicActionResult mechanic = TryBossMechanics(state, bot, power, stage, activity);
+                if (mechanic.Handled)
+                {
+                    situation = mechanic.Situation;
+                    action = mechanic.Action;
+                    target = mechanic.Target;
+                    return true;
+                }
+
+                // The route classified this as its boss objective, so do not
+                // fall through to the generic assist action if the authority
+                // cannot establish a boss context. That would reintroduce the
+                // exact pre-engagement bypass this dispatch closes.
+                bot->InterruptNonMeleeSpells(false);
+                bot->AttackStop();
+                if (Pet* pet = bot->GetPet())
+                    pet->AttackStop();
+                for (Unit* controlled : bot->m_Controlled)
+                    if (controlled)
+                        controlled->AttackStop();
+                situation = tankFocusSituation;
+                action = "raid_mechanic_contract_fail_closed";
+                return true;
+            }
             if (tryRouteGroupHeal(bot, target))
                 return true;
             if (tankFocusIsBossRoute && tryValidationRouteInterrupt(target, "assist_tank_focus_interrupt"))
@@ -23946,17 +23977,32 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
             }
         }
     };
-    if (!IsBossContext(bot, nullptr))
+    result.Target = FindBossTarget(bot);
+    if (!result.Target && !state.TargetGuid.IsEmpty())
+        result.Target = ObjectAccessor::GetUnit(*bot, state.TargetGuid);
+    if (!result.Target)
     {
         reconcileRaidAreaAutocasts(false);
         return result;
     }
 
-    result.Target = FindBossTarget(bot);
-    if (!result.Target && !state.TargetGuid.IsEmpty())
-        result.Target = ObjectAccessor::GetUnit(*bot, state.TargetGuid);
-    if (!result.Target)
+    // A validation-route boss can be approached before the native boss
+    // context reports in-combat. Treat only the declared route objective as
+    // boss context here, so its typed mechanic contract remains the sole
+    // combat authority during initial engagement.
+    Creature const* routeCreature = result.Target->ToCreature();
+    bool const routeDirectedBoss = Cohort().Config.ValidationRouteKind == "boss"
+        && routeCreature
+        && (routeCreature->GetEntry() == Cohort().Config.ValidationRouteTargetEntry
+            || routeCreature->GetEntry() == Cohort().Config.ValidationRouteOpenerTargetEntry
+            || std::find(Cohort().Config.ValidationRouteAlternateTargetEntries.begin(),
+                Cohort().Config.ValidationRouteAlternateTargetEntries.end(), routeCreature->GetEntry())
+                != Cohort().Config.ValidationRouteAlternateTargetEntries.end());
+    if (!IsBossContext(bot, result.Target) && !routeDirectedBoss)
+    {
+        reconcileRaidAreaAutocasts(false);
         return result;
+    }
 
     result.Handled = true;
     result.Situation = bot->GetMap() && bot->GetMap()->IsRaid() ? "raid_boss" : "dungeon_boss";

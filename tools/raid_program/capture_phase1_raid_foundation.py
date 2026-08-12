@@ -1167,6 +1167,124 @@ def _canonical_object_sha256(value: Any) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def _required_telemetry_envelope_report(
+    rows: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Validate the complete canonical bot roster in every diagnose/trace row.
+
+    Status rows establish the canonical live runtime.  Diagnose and trace are
+    independent retained evidence channels, so a non-empty channel alone is
+    insufficient: every one of their envelopes must bind to that runtime and
+    enumerate each canonical bot exactly once.
+    """
+
+    canonical_identity: tuple[Any, ...] | None = None
+    canonical_roster: tuple[tuple[Any, ...], ...] | None = None
+    canonical_cohort: str | None = None
+    canonical_guids: set[int] | None = None
+    for row in rows:
+        payload = row.get("payload")
+        if not isinstance(payload, dict) or payload.get("action") != "botauto_status":
+            continue
+        runtime = payload.get("raid_runtime")
+        roster = runtime.get("roster") if isinstance(runtime, dict) else None
+        identity = _runtime_identity(runtime, include_strategy=False) if isinstance(runtime, dict) else None
+        roster_identity = _roster_identity(roster) if isinstance(roster, list) else None
+        cohort = payload.get("cohort_id")
+        if not isinstance(runtime, dict) or runtime.get("active") is not True:
+            continue
+        if identity is None or roster_identity is None or not isinstance(cohort, str) or not cohort:
+            continue
+        guids = [member[3] for member in roster_identity]
+        if not all(_positive_int(guid) for guid in guids) or len(set(guids)) != 10:
+            continue
+        canonical_identity = identity
+        canonical_roster = roster_identity
+        canonical_cohort = cohort
+        canonical_guids = {int(guid) for guid in guids}
+        break
+
+    row_rejections: dict[int, list[str]] = {}
+    channel_counts = {"diagnosis": 0, "trace": 0}
+    if canonical_identity is None or canonical_roster is None or canonical_cohort is None or canonical_guids is None:
+        return {
+            "rejections": ["evidence_demux_telemetry_canonical_runtime_missing"],
+            "row_rejections": row_rejections,
+            "diagnosis_envelopes": 0,
+            "trace_envelopes": 0,
+            "gate_passed": False,
+        }
+
+    for row in rows:
+        payload = row.get("payload")
+        if not isinstance(payload, dict):
+            continue
+        action = payload.get("action")
+        channel = {"botauto_diagnose": "diagnosis", "botauto_trace": "trace"}.get(action)
+        if channel is None:
+            continue
+        channel_counts[channel] += 1
+        row_reasons: list[str] = []
+        runtime = payload.get("raid_runtime")
+        roster = runtime.get("roster") if isinstance(runtime, dict) else None
+        if (
+            not isinstance(runtime, dict)
+            or runtime.get("active") is not True
+            or _runtime_identity(runtime, include_strategy=False) != canonical_identity
+            or (_roster_identity(roster) if isinstance(roster, list) else None) != canonical_roster
+            or payload.get("cohort_id") != canonical_cohort
+        ):
+            row_reasons.append(f"evidence_demux_{channel}_runtime_identity_unbound")
+
+        bot_rows = payload.get("bots")
+        if not isinstance(bot_rows, list):
+            row_reasons.append(f"evidence_demux_{channel}_bot_rows_missing")
+        elif not bot_rows:
+            row_reasons.append(f"evidence_demux_{channel}_roster_empty")
+        else:
+            bot_guids: list[int] = []
+            for bot_row in bot_rows:
+                if not isinstance(bot_row, dict):
+                    row_reasons.append(f"evidence_demux_{channel}_bot_row_invalid")
+                    continue
+                bot_guid = bot_row.get("bot_guid")
+                identity_object = bot_row.get("identity")
+                if isinstance(identity_object, dict):
+                    bot_guid = identity_object.get("bot_guid")
+                if not _positive_int(bot_guid):
+                    row_reasons.append(f"evidence_demux_{channel}_bot_guid_invalid")
+                    continue
+                bot_guids.append(int(bot_guid))
+            counts = Counter(bot_guids)
+            if any(count > 1 for count in counts.values()):
+                row_reasons.append(f"evidence_demux_{channel}_duplicate_bot_guid")
+            if any(guid not in canonical_guids for guid in counts):
+                row_reasons.append(f"evidence_demux_{channel}_bot_outside_roster")
+            if set(bot_guids) != canonical_guids:
+                row_reasons.append(f"evidence_demux_{channel}_canonical_roster_incomplete")
+            if len(bot_guids) != 10:
+                row_reasons.append(f"evidence_demux_{channel}_bot_row_count_invalid")
+        if row_reasons:
+            row_rejections[int(row.get("capture_sequence") or 0)] = list(dict.fromkeys(row_reasons))
+
+    rejections = [
+        reason
+        for reasons in row_rejections.values()
+        for reason in reasons
+    ]
+    for channel, count in channel_counts.items():
+        if count == 0:
+            rejections.append(f"evidence_demux_{channel}_roster_envelope_missing")
+    unique_rejections = list(dict.fromkeys(rejections))
+    return {
+        "rejections": unique_rejections,
+        "row_rejections": row_rejections,
+        "diagnosis_envelopes": channel_counts["diagnosis"],
+        "trace_envelopes": channel_counts["trace"],
+        "gate_passed": not unique_rejections,
+    }
+
+
 def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Independently bind every retained JSON row to one raid lifecycle."""
 
@@ -1208,7 +1326,18 @@ def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
         roster = runtime.get("roster")
         roster_identity = _roster_identity(roster) if isinstance(roster, list) else None
         cohort = payload.get("cohort_id")
-        if identity is not None and roster_identity is not None and isinstance(cohort, str) and cohort:
+        roster_guid_values = (
+            [member[3] for member in roster_identity]
+            if roster_identity is not None else []
+        )
+        if (
+            identity is not None
+            and roster_identity is not None
+            and all(_positive_int(guid) for guid in roster_guid_values)
+            and len(set(roster_guid_values)) == 10
+            and isinstance(cohort, str)
+            and cohort
+        ):
             canonical_identity = identity
             canonical_roster = roster_identity
             canonical_cohort = cohort
@@ -1224,6 +1353,7 @@ def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
             )
             break
     if canonical_identity is None:
+        telemetry_envelopes = _required_telemetry_envelope_report(rows)
         for row in rows:
             row["identity_binding"]["reasons"] = ["evidence_demux_no_active_raid_rows"]
         return {
@@ -1234,9 +1364,11 @@ def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "unchecked_rows": 0,
             "canonical_identity_sha256": None,
             "canonical_roster_sha256": None,
+            "required_telemetry_envelopes": telemetry_envelopes,
             "gate_passed": False,
         }
 
+    telemetry_envelopes = _required_telemetry_envelope_report(rows)
     stop_seen = False
     inactive_cleanup_seen = False
     observed_actions: set[str] = set()
@@ -1350,6 +1482,9 @@ def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
                 reject("evidence_demux_cleanup_identity_invalid")
             stop_seen = True
 
+        for reason in telemetry_envelopes["row_rejections"].get(expected_sequence, []):
+            reject(reason)
+
         bot_rows = payload.get("bots")
         if isinstance(bot_rows, list):
             for bot_row in bot_rows:
@@ -1368,6 +1503,7 @@ def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
         reasons.append("evidence_demux_cleanup_missing")
     if not inactive_cleanup_seen:
         reasons.append("evidence_demux_inactive_cleanup_missing")
+    reasons.extend(telemetry_envelopes["rejections"])
     for required_action in known_actions - {"botauto_profile"}:
         if required_action not in observed_actions:
             reasons.append(f"evidence_demux_required_action_missing:{required_action}")
@@ -1385,6 +1521,7 @@ def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "unchecked_rows": unchecked,
         "canonical_identity_sha256": canonical_identity_sha256,
         "canonical_roster_sha256": canonical_roster_sha256,
+        "required_telemetry_envelopes": telemetry_envelopes,
         "gate_passed": not unique_reasons and states.get("bound", 0) == len(rows) and unchecked == 0,
     }
 
@@ -1837,6 +1974,7 @@ def main() -> int:
     normalized_rows = normalized_batch_payload(log_bytes)
     demux_report = evidence_demux_report(normalized_rows)
     demux_rejections = demux_report["rejections"]
+    telemetry_envelopes = _required_telemetry_envelope_report(normalized_rows)
     raw_payload_sha256, raw_payload_rows = write_normalized_batch(raw_output, normalized_rows)
     statuses = json_actions(log_bytes, "botauto_status")
     active_statuses = [
@@ -1870,6 +2008,7 @@ def main() -> int:
         and postflight["passed"]
         and not forbidden_entries
         and not demux_rejections
+        and telemetry_envelopes["gate_passed"]
         and len(profiles) == 1
         and profiles[0].get("ok") is True
         and profiles[0].get("cohort_id") == "default"
@@ -1907,6 +2046,7 @@ def main() -> int:
         "accepted_raid_runtime": stable[-1].get("raid_runtime") if stable else None,
         "diagnose_observed": bool(diagnoses),
         "trace_observed": bool(traces),
+        "required_telemetry_envelopes": telemetry_envelopes,
         "profile_selection_observed": len(profiles) == 1,
         "stop_observed": bool(stop_rows),
         "native_event_evidence": {
@@ -1972,6 +2112,7 @@ def main() -> int:
             "unchecked_rows": demux_report["unchecked_rows"],
             "canonical_identity_sha256": demux_report["canonical_identity_sha256"],
             "canonical_roster_sha256": demux_report["canonical_roster_sha256"],
+            "required_telemetry_envelopes": demux_report["required_telemetry_envelopes"],
             "channels": dict(Counter(str(row.get("evidence_channel")) for row in normalized_rows)),
             "every_retained_row_demuxed": (
                 demux_report["bound_rows"] == demux_report["retained_rows"]

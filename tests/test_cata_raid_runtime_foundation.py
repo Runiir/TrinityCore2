@@ -139,6 +139,33 @@ def test_phase1_magmaw_engagement_contract_has_explicit_safe_target_authority():
     assert '"raid_focus_fire_target_missing"' in IMPL
 
 
+def test_route_directed_boss_assist_cannot_bypass_the_typed_contract_authority():
+    route_start = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    route_end = IMPL.index("bool BotWorldPopulationMgr::IsBossContext", route_start)
+    route_runtime = IMPL[route_start:route_end]
+    assist_start = route_runtime.index('if (Cohort().Config.ValidationRouteKind == "boss" && std::string(GetDungeonRole(bot)) != "tank")')
+    assist_end = route_runtime.index("if (routeFocusMemoryActive())", assist_start)
+    assist = route_runtime[assist_start:assist_end]
+
+    contract_authority = assist.index("if (tankFocusIsBossRoute)")
+    profile_action = assist.index("ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, target);")
+    assert contract_authority < profile_action
+    assert "BossMechanicActionResult mechanic = TryBossMechanics(state, bot, power, stage, activity);" in assist[contract_authority:profile_action]
+    assert "if (mechanic.Handled)" in assist[contract_authority:profile_action]
+    assert 'action = "raid_mechanic_contract_fail_closed";' in assist[contract_authority:profile_action]
+    assert "return true;" in assist[contract_authority:profile_action]
+
+    boss_start = IMPL.index("BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMechanics")
+    boss_end = IMPL.index("BotWorldPopulationMgr::RaidRoleAssignment BotWorldPopulationMgr::BuildRaidRoleAssignment", boss_start)
+    boss_runtime = IMPL[boss_start:boss_end]
+    assert 'bool const routeDirectedBoss = Cohort().Config.ValidationRouteKind == "boss"' in boss_runtime
+    assert "routeCreature->GetEntry() == Cohort().Config.ValidationRouteTargetEntry" in boss_runtime
+    assert "Cohort().Config.ValidationRouteAlternateTargetEntries.end()" in boss_runtime
+    assert "if (!IsBossContext(bot, result.Target) && !routeDirectedBoss)" in boss_runtime
+    assert 'result.Action = "raid_mechanic_contract_fail_closed";' in boss_runtime
+    assert "0, false, false, forbidArea, raidAdapter.AllowMultidot" in boss_runtime
+
+
 def test_phase1_target_transfer_and_swap_controls_are_executable():
     for token in (
         'raidAdapter.TargetControl == "focus_fire"',

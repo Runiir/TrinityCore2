@@ -641,13 +641,14 @@ def test_live_evidence_demux_rejects_strategy_drift():
 def test_live_evidence_demux_binds_readycheck_stop_and_inactive_cleanup():
     active = accepted_status()
     active["cohort_id"] = "raid"
+    bot_rows = [{"bot_guid": 1001 + index} for index in range(10)]
     diagnosis = {
         "ok": True, "action": "botauto_diagnose", "cohort_id": "raid",
-        "raid_runtime": active["raid_runtime"], "bots": [],
+        "raid_runtime": active["raid_runtime"], "bots": bot_rows,
     }
     trace = {
         "ok": True, "action": "botauto_trace", "cohort_id": "raid",
-        "raid_runtime": active["raid_runtime"], "bots": [],
+        "raid_runtime": active["raid_runtime"], "bots": bot_rows,
     }
     readycheck = {
         "ok": True, "action": "botauto_readycheck", "cohort_id": "raid",
@@ -679,6 +680,46 @@ def test_live_evidence_demux_binds_readycheck_stop_and_inactive_cleanup():
     assert len(report["canonical_identity_sha256"]) == 64
     assert len(report["canonical_roster_sha256"]) == 64
     assert all(row["identity_binding"]["state"] == "bound" for row in rows)
+
+
+def test_live_evidence_demux_rejects_empty_diagnose_and_trace_roster_envelopes():
+    active = accepted_status()
+    active["cohort_id"] = "raid"
+    envelopes = []
+    for action in ("botauto_diagnose", "botauto_trace"):
+        envelopes.append({
+            "ok": True, "action": action, "cohort_id": "raid",
+            "raid_runtime": active["raid_runtime"], "bots": [],
+        })
+    rows = normalized_batch_payload(
+        b"\n".join(json.dumps(row).encode() for row in (active, *envelopes)) + b"\n"
+    )
+    reasons = evidence_demux_rejections(rows)
+    assert "evidence_demux_diagnosis_roster_empty" in reasons
+    assert "evidence_demux_trace_roster_empty" in reasons
+
+
+def test_live_evidence_demux_rejects_missing_and_duplicate_telemetry_bot_rows():
+    active = accepted_status()
+    active["cohort_id"] = "raid"
+    missing = {
+        "ok": True, "action": "botauto_diagnose", "cohort_id": "raid",
+        "raid_runtime": active["raid_runtime"],
+        "bots": [{"bot_guid": 1001 + index} for index in range(9)],
+    }
+    duplicate = {
+        "ok": True, "action": "botauto_trace", "cohort_id": "raid",
+        "raid_runtime": active["raid_runtime"],
+        "bots": [{"bot_guid": 1001 + index} for index in range(9)] + [{"bot_guid": 1001}],
+    }
+    rows = normalized_batch_payload(
+        b"\n".join(json.dumps(row).encode() for row in (active, missing, duplicate)) + b"\n"
+    )
+    reasons = evidence_demux_rejections(rows)
+    assert "evidence_demux_diagnosis_canonical_roster_incomplete" in reasons
+    assert "evidence_demux_diagnosis_bot_row_count_invalid" in reasons
+    assert "evidence_demux_trace_duplicate_bot_guid" in reasons
+    assert "evidence_demux_trace_canonical_roster_incomplete" in reasons
 
 
 def test_live_evidence_demux_rejects_unclassified_and_unbound_readycheck():
