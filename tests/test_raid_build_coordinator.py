@@ -701,12 +701,19 @@ def test_v8_worldserver_command_and_environment_are_policy_owned(
     paths = qb.Paths.for_worktree(ROOT)
     monkeypatch.setenv("COMPILER_PATH", str(tmp_path / "attacker"))
     monkeypatch.setenv("LD_PRELOAD", str(tmp_path / "inject.so"))
+    monkeypatch.setenv("MAKEFILES", str(tmp_path / "inject.mk"))
+    monkeypatch.setenv("GNUMAKEFLAGS", "--eval=fixture")
+    monkeypatch.setenv("LD_LIBRARY_PATH", str(tmp_path / "lib"))
     environment = qb.coordinated_environment(
         frozen, paths, "fixture-ticket"
     )
     assert "COMPILER_PATH" not in environment
     assert "LD_PRELOAD" not in environment
+    assert "MAKEFILES" not in environment
+    assert "GNUMAKEFLAGS" not in environment
+    assert "LD_LIBRARY_PATH" not in environment
     assert environment["PATH"] == qb.SAFE_BUILD_PATH
+    assert environment["LANG"] == environment["LC_ALL"] == "C.UTF-8"
     assert qb.toolchain_snapshot(frozen)["matches_policy"] is True
 
 
@@ -759,8 +766,17 @@ def test_receipt_rejects_worldserver_not_produced_by_ticket(tmp_path: Path) -> N
             "stable": True,
         },
         "environment_contract": {
-            "path": qb.SAFE_BUILD_PATH,
-            "sanitized_variables": list(qb.SANITIZED_BUILD_VARIABLES),
+            "base_environment": {
+                "PATH": qb.SAFE_BUILD_PATH, "LANG": "C.UTF-8",
+                "LC_ALL": "C.UTF-8", "TZ": "UTC",
+            },
+            "inherit_parent_environment": False,
+            "coordinator_variables": sorted({
+                "CMAKE_BUILD_PARALLEL_LEVEL", "CTEST_PARALLEL_LEVEL", "MAKEFLAGS",
+                "NINJAFLAGS", "TRINITY_RAID_BUILD_COORDINATED",
+                "TRINITY_RAID_BUILD_TICKET", "TRINITY_RAID_BUILD_COMPILER_JOBS",
+                "TRINITY_RAID_BUILD_LINKER_JOBS", "TRINITY_RAID_BUILD_LINK_LOCK",
+            }),
         },
         "command_sha256": "0" * 64,
         "resource_class": "worldserver_build",

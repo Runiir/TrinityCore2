@@ -904,12 +904,18 @@ def execute_process(
 def coordinated_environment(policy: dict, paths: Paths, ticket_id: str) -> dict[str, str]:
     compiler_jobs = int(policy["parallelism"]["maximum_compiler_jobs"])
     linker_jobs = int(policy["parallelism"]["maximum_linker_jobs"])
-    environment = dict(os.environ)
-    for name in SANITIZED_BUILD_VARIABLES:
-        environment.pop(name, None)
+    # Heavyweight children receive a positive environment allowlist.  This is
+    # intentionally constructed from scratch so Make includes/options, dynamic
+    # loader paths, compiler search paths, and generator overrides cannot leak
+    # from the submitting shell.
+    environment: dict[str, str] = {
+        "PATH": SAFE_BUILD_PATH,
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "TZ": "UTC",
+    }
     environment.update(
         {
-            "PATH": SAFE_BUILD_PATH,
             "CMAKE_BUILD_PARALLEL_LEVEL": str(compiler_jobs),
             "CTEST_PARALLEL_LEVEL": str(compiler_jobs),
             "MAKEFLAGS": f"-j{compiler_jobs}",
@@ -1258,8 +1264,14 @@ def run_ticket(
             "stable": toolchain_stable,
         },
         "environment_contract": {
-            "path": environment["PATH"],
-            "sanitized_variables": list(SANITIZED_BUILD_VARIABLES),
+            "base_environment": {
+                key: environment[key] for key in ("PATH", "LANG", "LC_ALL", "TZ")
+            },
+            "inherit_parent_environment": False,
+            "coordinator_variables": sorted(
+                key for key in environment
+                if key not in {"PATH", "LANG", "LC_ALL", "TZ"}
+            ),
         },
         "command_sha256": command_hash(command),
         "command_arguments_retained": False,
@@ -1546,10 +1558,24 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
         and toolchain.get("stable") is True
     ):
         raise CoordinatorError("receipt effective toolchain identity mismatch")
-    if receipt.get("environment_contract") != {
-        "path": SAFE_BUILD_PATH,
-        "sanitized_variables": list(SANITIZED_BUILD_VARIABLES),
-    }:
+    expected_environment_contract = {
+        "base_environment": {
+            "PATH": SAFE_BUILD_PATH,
+            "LANG": "C.UTF-8",
+            "LC_ALL": "C.UTF-8",
+            "TZ": "UTC",
+        },
+        "inherit_parent_environment": False,
+        "coordinator_variables": sorted(
+            {
+                "CMAKE_BUILD_PARALLEL_LEVEL", "CTEST_PARALLEL_LEVEL", "MAKEFLAGS",
+                "NINJAFLAGS", "TRINITY_RAID_BUILD_COORDINATED",
+                "TRINITY_RAID_BUILD_TICKET", "TRINITY_RAID_BUILD_COMPILER_JOBS",
+                "TRINITY_RAID_BUILD_LINKER_JOBS", "TRINITY_RAID_BUILD_LINK_LOCK",
+            }
+        ),
+    }
+    if receipt.get("environment_contract") != expected_environment_contract:
         raise CoordinatorError("receipt sanitized build environment contract mismatch")
     require_worldserver_hash = bool(
         policy.get("mechanical_controls", {}).get("receipt_worldserver_sha256_required")
