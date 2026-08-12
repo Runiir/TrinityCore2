@@ -80,7 +80,7 @@ from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, bot_
 from tools.bot_ml.validate_validation_provisioning import REQUIRED_COLUMNS as PROVISIONING_REQUIRED_COLUMNS
 from tools.bot_ml.validate_validation_provisioning import build_report as provisioning_verify_report
 from tools.bot_ml.validate_validation_provisioning import main as provisioning_verify_main
-from tools.bot_ml.validate_validation_provisioning import validate_database as validate_provisioning_database
+from tools.bot_ml.validate_validation_provisioning import validate_database as validate_provisioning_database, validate_payloads as validate_provisioning_payloads
 from tools.bot_ml.validation_profile_manifests import load_action_profile_manifest, load_combat_loot_profile_manifest
 from tools.bot_ml.validate_data_quality import validate_rows as validate_data_quality_rows
 from tools.bot_ml.build_baseline_inventory import build_inventory, canonical_hash, git_identity, parse_dvc_pointer, reconcile_live_db, reconcile_targets, rotation_tuples, validate_policy, write_bundle
@@ -8352,6 +8352,7 @@ def test_validation_provisioning_preserves_verified_wowsims_gems_and_reforge():
     fields = runtime_safe_enchantments(
         {
             "enchant_id": 4207,
+            "gem_item_ids": [68780, 71881],
             "gem_enchant_ids": [4253, 4331],
             "reforge_id": 151,
             "preserve_socket_enchantments": True,
@@ -8377,6 +8378,18 @@ def test_validation_provisioning_preserves_complete_positive_gem_mapping():
     assert fields[9] == "4037"
 
 
+def test_validation_provisioning_preserves_verified_gems_with_empty_socket():
+    fields = runtime_safe_enchantments(
+        {
+            "gem_item_ids": [71881, 0],
+            "gem_enchant_ids": [4331, 0],
+        }
+    ).split()
+
+    assert fields[6] == "4331"
+    assert fields[9] == "0"
+
+
 def test_validation_provisioning_rejects_incomplete_gem_mapping():
     fields = runtime_safe_enchantments(
         {
@@ -8388,6 +8401,58 @@ def test_validation_provisioning_rejects_incomplete_gem_mapping():
 
     assert fields[6] == "0"
     assert fields[9] == "0"
+
+
+def test_validation_provisioning_rejects_positive_but_wrong_gem_mapping():
+    fields = runtime_safe_enchantments(
+        {
+            "enchant_id": 4172,
+            "gem_item_ids": [68779, 52260],
+            "gem_enchant_ids": [4037, 4252],
+            "preserve_socket_enchantments": True,
+        }
+    ).split()
+
+    assert fields[6] == "0"
+    assert fields[9] == "0"
+
+
+def test_validation_provisioning_rejects_more_gems_than_runtime_capacity():
+    fields = runtime_safe_enchantments(
+        {
+            "gem_item_ids": [68779, 52260, 68780, 71881],
+            "gem_enchant_ids": [4252, 4037, 4253, 4331],
+        }
+    ).split()
+
+    assert fields[6] == "0"
+    assert fields[9] == "0"
+    assert fields[12] == "0"
+
+
+def test_validation_provisioning_payload_verifier_rejects_wrong_gem_identity():
+    config = {
+        "scenarios": [{
+            "id": "stonecore_5n",
+            "bots": [{
+                "name": "Mage",
+                "equipment": [{
+                    "slot": 0,
+                    "item_id": 7000,
+                    "gem_item_ids": [68779, 52260],
+                    "gem_enchant_ids": [4037, 4252],
+                }],
+            }],
+        }],
+    }
+
+    failures, _evidence = validate_provisioning_payloads(config, Path("data/dbc/enUS"))
+
+    mappings = [failure for failure in failures if failure["check"] == "gem_item_enchant_mapping"]
+    assert mappings == [
+        {"check": "gem_item_enchant_mapping", "bot": "Mage", "item_id": 7000, "gem_item_id": 68779, "expected_enchant_id": 4252, "actual_enchant_id": 4037},
+        {"check": "gem_item_enchant_mapping", "bot": "Mage", "item_id": 7000, "gem_item_id": 52260, "expected_enchant_id": 4037, "actual_enchant_id": 4252},
+    ]
 
 
 def test_validation_provisioning_loads_exact_wowsims_calibration_overlays():

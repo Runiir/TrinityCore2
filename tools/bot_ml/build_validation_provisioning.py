@@ -32,6 +32,7 @@ ITEM_SPARSE_FMT = "niiiffiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
 _GLYPH_ITEM_TO_PROPERTY_CACHE: dict[Path, dict[int, int]] = {}
 _GLYPH_PROPERTY_TYPE_CACHE: dict[Path, dict[int, int]] = {}
 _TALENT_DATA_CACHE: dict[Path, tuple[dict[int, list[Any]], dict[int, list[int]]]] = {}
+_GEM_ITEM_ENCHANT_CACHE: dict[Path, dict[int, int]] = {}
 
 
 def required_equipment_slots_for(equipment: list[dict[str, Any]]) -> list[int]:
@@ -245,7 +246,31 @@ def equipment_cache(equipment: list[dict[str, Any]], bag_slots: int = INVENTORY_
     return " ".join(str(value) for value in values) + " "
 
 
-def runtime_safe_enchantments(item: dict[str, Any]) -> str:
+def gem_item_enchant_map(dbc_dir: Path = DEFAULT_DBC_DIR) -> dict[int, int]:
+    dbc_dir = dbc_dir.resolve()
+    cached = _GEM_ITEM_ENCHANT_CACHE.get(dbc_dir)
+    if cached is not None:
+        return cached
+    sparse_path = dbc_dir / "Item-sparse.db2"
+    properties_path = dbc_dir / "GemProperties.dbc"
+    if not sparse_path.is_file() or not properties_path.is_file():
+        _GEM_ITEM_ENCHANT_CACHE[dbc_dir] = {}
+        return {}
+    gem_properties = {
+        int(row[0]): int(row[1])
+        for row in load_wdbc_values(properties_path, "nixxii")
+        if int(row[0]) > 0 and int(row[1]) > 0
+    }
+    mapping = {
+        int(row[0]): gem_properties[int(row[125])]
+        for row in load_wdb2_values(sparse_path, ITEM_SPARSE_FMT)
+        if int(row[0]) > 0 and int(row[125]) in gem_properties
+    }
+    _GEM_ITEM_ENCHANT_CACHE[dbc_dir] = mapping
+    return mapping
+
+
+def runtime_safe_enchantments(item: dict[str, Any], gem_mapping: dict[int, int] | None = None) -> str:
     values = [0] * 45
     raw = str(item.get("enchantments") or "").split()
     for index, token in enumerate(raw[:45]):
@@ -255,10 +280,17 @@ def runtime_safe_enchantments(item: dict[str, Any]) -> str:
         values[0] = int(item.get("enchant_id") or 0)
     gem_item_ids = [int(value or 0) for value in item.get("gem_item_ids", [])]
     gem_enchant_ids = [int(value or 0) for value in item.get("gem_enchant_ids", [])]
-    verified_socket_mapping = bool(gem_item_ids) and len(gem_item_ids) == len(gem_enchant_ids) \
-        and all(gem_item_id > 0 and gem_enchant_id > 0
-            for gem_item_id, gem_enchant_id in zip(gem_item_ids, gem_enchant_ids))
-    if item.get("preserve_socket_enchantments") or verified_socket_mapping:
+    gem_mapping = gem_mapping if gem_mapping is not None else gem_item_enchant_map()
+    gem_pairs = list(zip(gem_item_ids, gem_enchant_ids))
+    verified_socket_mapping = any(gem_item_id > 0 for gem_item_id, _ in gem_pairs) \
+        and len(gem_item_ids) <= 3 \
+        and len(gem_item_ids) == len(gem_enchant_ids) \
+        and all(
+            (gem_item_id == 0 and gem_enchant_id == 0)
+            or (gem_item_id > 0 and gem_mapping.get(gem_item_id) == gem_enchant_id)
+            for gem_item_id, gem_enchant_id in gem_pairs
+        )
+    if verified_socket_mapping:
         for socket_offset, enchant_id in zip((6, 9, 12), gem_enchant_ids):
             values[socket_offset] = int(enchant_id or 0)
     else:

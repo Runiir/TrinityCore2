@@ -17,7 +17,7 @@ try:
         load_spell_item_enchantments,
         SPELL_ITEM_ENCHANTMENT_FMT,
     )
-    from .build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, equipment_cache, load_config, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, talent_point_count
+    from .build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, equipment_cache, gem_item_enchant_map, load_config, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, talent_point_count
     from .common import stable_hash, write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 except ImportError:
@@ -31,7 +31,7 @@ except ImportError:
         load_spell_item_enchantments,
         SPELL_ITEM_ENCHANTMENT_FMT,
     )
-    from build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, equipment_cache, load_config, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, talent_point_count
+    from build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, equipment_cache, gem_item_enchant_map, load_config, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, talent_point_count
     from common import stable_hash, write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 
@@ -185,6 +185,7 @@ def validate_payloads(config: dict[str, Any], dbc_dir: Path, hotfix_url: str | N
     }
     gem_properties = load_gem_properties(dbc_dir)
     gem_enchantment_ids = {int(row["enchant_id"]) for row in gem_properties.values()}
+    gem_item_enchantments = gem_item_enchant_map(dbc_dir)
     gem_catalog_count = 0
     if hotfix_url:
         try:
@@ -243,11 +244,26 @@ def validate_payloads(config: dict[str, Any], dbc_dir: Path, hotfix_url: str | N
                     failures.append({"check": "socket_gem_items", "bot": bot.get("name"), "item_id": item.get("item_id"), "sockets": len(socket_colors), "gems": len(gem_item_ids)})
                 if socket_colors and len(gem_enchant_ids) != len(socket_colors):
                     failures.append({"check": "socket_gem_enchants", "bot": bot.get("name"), "item_id": item.get("item_id"), "sockets": len(socket_colors), "gem_enchants": len(gem_enchant_ids)})
+                if len(gem_item_ids) > len(SOCKET_ENCHANTMENT_FIELD_OFFSETS) or len(gem_enchant_ids) > len(SOCKET_ENCHANTMENT_FIELD_OFFSETS):
+                    failures.append({"check": "socket_gem_capacity", "bot": bot.get("name"), "item_id": item.get("item_id"), "gem_items": len(gem_item_ids), "gem_enchants": len(gem_enchant_ids), "capacity": len(SOCKET_ENCHANTMENT_FIELD_OFFSETS)})
                 for offset, gem_enchant_id in zip(SOCKET_ENCHANTMENT_FIELD_OFFSETS, gem_enchant_ids):
                     if gem_enchant_id and gem_enchant_id not in gem_enchantment_ids:
                         failures.append({"check": "gem_enchant_id", "bot": bot.get("name"), "item_id": item.get("item_id"), "gem_enchant_id": gem_enchant_id})
                     if payload and payload[offset] != int(gem_enchant_id):
                         failures.append({"check": "gem_enchant_payload", "bot": bot.get("name"), "item_id": item.get("item_id"), "offset": offset, "payload_value": payload[offset], "gem_enchant_id": gem_enchant_id})
+                for gem_item_id, gem_enchant_id in zip(gem_item_ids, gem_enchant_ids):
+                    if int(gem_item_id) == 0 and int(gem_enchant_id) == 0:
+                        continue
+                    catalog_enchant_id = gem_item_enchantments.get(int(gem_item_id))
+                    if catalog_enchant_id != int(gem_enchant_id):
+                        failures.append({
+                            "check": "gem_item_enchant_mapping",
+                            "bot": bot.get("name"),
+                            "item_id": item.get("item_id"),
+                            "gem_item_id": int(gem_item_id),
+                            "expected_enchant_id": catalog_enchant_id,
+                            "actual_enchant_id": int(gem_enchant_id),
+                        })
                 if reforge_id and reforge_id not in reforge_ids:
                     failures.append({"check": "reforge_id", "bot": bot.get("name"), "item_id": item.get("item_id"), "reforge_id": reforge_id})
                 if reforge_id and payload and payload[24] != reforge_id:
