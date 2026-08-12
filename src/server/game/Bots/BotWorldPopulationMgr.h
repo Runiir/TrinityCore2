@@ -1877,6 +1877,7 @@ private:
         std::string ProfileManifestLoadError;
         bool RuntimeProfilesLoaded = false;
         bool RuntimeProfileDirty = false;
+        bool RuntimeProfileSelectionPending = false;
         BotExperienceLearningConfig LearningConfig;
         BotPolicyModelConfig PolicyModelConfig;
         bool CalibrationActive = false;

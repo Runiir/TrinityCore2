@@ -1708,7 +1708,10 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
         Stop();
 
     if (!sConfigMgr->GetBoolDefault("BotWorld.Enable", false) || !sConfigMgr->GetBoolDefault("PlayerBot.Enable", false))
+    {
+        Cohort().RuntimeProfileSelectionPending = false;
         return false;
+    }
 
     if (!Cohort().AttemptId)
         Cohort().AttemptId = 1;
@@ -1797,7 +1800,10 @@ bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overri
     }
 
     if (!sConfigMgr->GetBoolDefault("BotWorld.Enable", false) || !sConfigMgr->GetBoolDefault("PlayerBot.Enable", false))
+    {
+        Cohort().RuntimeProfileSelectionPending = false;
         return false;
+    }
 
     ClearPendingHealCasts("autonomy_reset");
     if (!Cohort().AttemptId)
@@ -2958,6 +2964,7 @@ bool BotWorldPopulationMgr::LoadRuntimeProfiles(std::string* failureReason)
     {
         Cohort().SelectedProfileName.clear();
         Cohort().RuntimeProfileDirty = true;
+        Cohort().RuntimeProfileSelectionPending = false;
     }
     return true;
 }
@@ -2979,6 +2986,7 @@ std::string BotWorldPopulationMgr::SelectRuntimeProfile(std::string const& name)
 
     Cohort().SelectedProfileName = name;
     Cohort().RuntimeProfileDirty = true;
+    Cohort().RuntimeProfileSelectionPending = true;
     std::ostringstream json;
     json << "{\"ok\":true,\"action\":\"botauto_profile\",\"active_profile\":\"" << JsonEscape(Cohort().SelectedProfileName)
          << "\",\"cohort_id\":\"" << JsonEscape(Cohort().Id)
@@ -2991,6 +2999,7 @@ std::string BotWorldPopulationMgr::ClearRuntimeProfile()
 {
     Cohort().SelectedProfileName.clear();
     Cohort().RuntimeProfileDirty = true;
+    Cohort().RuntimeProfileSelectionPending = false;
     ResetValidationRouteRuntimeState("runtime_profile_clear");
     return "{\"ok\":true,\"action\":\"botauto_profile_clear\",\"active_profile\":null,\"failure_reason\":null}";
 }
@@ -3358,19 +3367,22 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
         Cohort().PolicyModelConfig.Mode = "shadow";
     ValidatePolicyModelDeployment();
 
-    // A native `.botauto profile` selection is an explicit operator choice.
-    // Do not overwrite that pending dirty selection with BotWorld.RuntimeProfile
-    // while rebuilding the runtime config for the ensuing start.  Initial and
-    // ordinary starts still resolve the configured profile when no explicit
-    // selection is pending.
-    if (!overrideConfig && !Cohort().RuntimeProfileDirty && !SelectConfiguredRuntimeProfile())
+    // A native `.botauto profile` selection is a one-start operator choice.
+    // RuntimeProfileDirty also covers reloads and manifest invalidation, so it
+    // cannot identify that intent.  Only the dedicated pending bit may bypass
+    // BotWorld.RuntimeProfile resolution, and it is consumed below.
+    bool const explicitProfilePending = !overrideConfig && Cohort().RuntimeProfileSelectionPending;
+    if (!overrideConfig && !explicitProfilePending && !SelectConfiguredRuntimeProfile())
     {
         Cohort().Config.TargetPopulation = 0;
         return;
     }
 
     if (overrideConfig)
+    {
+        Cohort().RuntimeProfileSelectionPending = false;
         ApplyRuntimeConfigOverride(*overrideConfig);
+    }
     else if (!Cohort().SelectedProfileName.empty())
     {
         EnsureRuntimeProfilesLoaded();
@@ -3379,7 +3391,10 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
             ApplyRuntimeProfile(profileItr->second);
         else
             Cohort().SelectedProfileName.clear();
+        Cohort().RuntimeProfileSelectionPending = false;
     }
+    else
+        Cohort().RuntimeProfileSelectionPending = false;
 
     if (Cohort().Config.AllowRaids)
     {

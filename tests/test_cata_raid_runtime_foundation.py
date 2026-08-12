@@ -174,10 +174,18 @@ def test_controlled_aoe_counts_only_declared_targets_and_fails_closed_near_undec
 def test_explicit_runtime_profile_survives_start_config_reload():
     load_config = IMPL[IMPL.index("void BotWorldPopulationMgr::LoadConfig("):]
     configured_profile = load_config.index("SelectConfiguredRuntimeProfile()")
-    dirty_guard = load_config.rfind("!Cohort().RuntimeProfileDirty", 0, configured_profile)
+    pending_snapshot = load_config.rfind("explicitProfilePending", 0, configured_profile)
     apply_selected = load_config.index("ApplyRuntimeProfile(profileItr->second)", configured_profile)
-    assert dirty_guard >= 0
-    assert dirty_guard < configured_profile < apply_selected
+    pending_consumed = load_config.index("Cohort().RuntimeProfileSelectionPending = false;", apply_selected)
+    assert pending_snapshot >= 0
+    assert pending_snapshot < configured_profile < apply_selected < pending_consumed
+    select_profile = IMPL[IMPL.index("std::string BotWorldPopulationMgr::SelectRuntimeProfile("):]
+    assert "Cohort().RuntimeProfileSelectionPending = true;" in select_profile[
+        :select_profile.index("std::string BotWorldPopulationMgr::ClearRuntimeProfile()")
+    ]
+    reload_profile = select_profile[select_profile.index("std::string BotWorldPopulationMgr::ReloadRuntimeProfiles()"):]
+    reload_profile = reload_profile[:reload_profile.index("bool BotWorldPopulationMgr::SelectConfiguredRuntimeProfile()")]
+    assert "RuntimeProfileSelectionPending = true" not in reload_profile
 
 
 def test_focus_fire_owns_target_and_cancels_every_wrong_attacker():
