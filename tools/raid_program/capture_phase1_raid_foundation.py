@@ -46,6 +46,33 @@ FORBIDDEN_ASSISTANCE_FIELDS = (
 )
 
 
+def expected_bwd_10n_roster() -> tuple[tuple[str, str, int, str], ...]:
+    manifest = json.loads(
+        (ROOT / "experiments/configs/validation_provisioning_cata_001.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    scenario = next(
+        row for row in manifest["scenarios"] if row.get("id") == "blackwing_descent_10n"
+    )
+    role_counts: Counter[str] = Counter()
+    expected: list[tuple[str, str, int, str]] = []
+    for bot in scenario["bots"]:
+        role = str(bot["role"])
+        role_counts[role] += 1
+        expected.append(
+            (
+                f"raid_{role}_{role_counts[role]}",
+                role,
+                int(bot["class"]),
+                str(bot["class_spec"]),
+            )
+        )
+    if len(expected) != 10 or role_counts != Counter({"tank": 2, "healer": 3, "dps": 5}):
+        raise ValueError("frozen BWD 10N provisioning roster is invalid")
+    return tuple(expected)
+
+
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -138,6 +165,15 @@ def _roster_rejections(runtime: dict[str, Any]) -> list[str]:
     roles = Counter(row.get("role") for row in rows)
     if roles != Counter({"tank": 2, "healer": 3, "dps": 5}):
         reasons.append("exact_10n_role_composition")
+    observed_roster = tuple(
+        (
+            str(row.get("roster_slot_id")), str(row.get("role")),
+            row.get("class_id"), str(row.get("class_spec")),
+        )
+        for row in rows
+    )
+    if observed_roster != expected_bwd_10n_roster():
+        reasons.append("exact_frozen_bwd_10n_roster_identity")
     if not all(row.get("active") is True for row in rows):
         reasons.append("all_roster_active")
     if not all(row.get("lease_owned") is True for row in rows):

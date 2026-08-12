@@ -4,10 +4,12 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     json_actions,
     normalized_batch_payload,
     _forbidden_assistance_entries,
+    expected_bwd_10n_roster,
 )
 
 
 def accepted_status() -> dict:
+    frozen_roster = expected_bwd_10n_roster()
     return {
         "ok": True,
         "action": "botauto_status",
@@ -43,12 +45,12 @@ def accepted_status() -> dict:
             "unique_leases": True,
             "roster": [
                 {
-                    "roster_slot_id": f"bwd10n-slot-{index:02d}",
-                    "lease_role_slot": f"bwd10n-slot-{index:02d}",
+                    "roster_slot_id": frozen_roster[index][0],
+                    "lease_role_slot": frozen_roster[index][0],
                     "slot": index, "guid": 1001 + index,
                     "subgroup": index // 5, "role": "tank" if index < 2 else ("healer" if index < 5 else "dps"),
-                    "class_id": (index % 11) + 1,
-                    "class_spec": f"fixture_spec_{index}",
+                    "class_id": frozen_roster[index][2],
+                    "class_spec": frozen_roster[index][3],
                     "gear_identity": f"fixture_gear_{index}",
                     "active": True, "lease_owned": True,
                 }

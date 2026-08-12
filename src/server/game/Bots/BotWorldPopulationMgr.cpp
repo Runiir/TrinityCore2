@@ -5838,7 +5838,13 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         slot.ClassSpec = botState && !botState->RosterClassSpec.empty() ? botState->RosterClassSpec : GetBotClassSpec(bot);
         slot.AverageItemLevel = botState && botState->RosterAverageItemLevel > 0.0f
             ? botState->RosterAverageItemLevel : bot->GetAverageItemLevel();
-        slot.GearIdentity = "avg_item_level:" + std::to_string(slot.AverageItemLevel);
+        std::ostringstream gearIdentity;
+        gearIdentity << "equipped";
+        for (uint8 equipmentSlot = EQUIPMENT_SLOT_START; equipmentSlot < EQUIPMENT_SLOT_END; ++equipmentSlot)
+            if (Item const* item = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, equipmentSlot))
+                gearIdentity << ';' << uint32(equipmentSlot) << ':' << item->GetGUID().GetCounter()
+                    << ':' << item->GetEntry();
+        slot.GearIdentity = gearIdentity.str();
         slot.Active = bot->IsInWorld();
         slot.LeaseOwned = LeaseOwnedByCurrentCohort(guid, slot.LeaseRoleSlot);
         raid.RosterByGuid.emplace(guid, slot);
