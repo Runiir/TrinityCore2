@@ -299,6 +299,9 @@ def command_hash(command: Sequence[str]) -> str:
 def worktree_state(worktree: Path) -> dict[str, object]:
     porcelain = git_output(worktree, "status", "--porcelain=v1", "--untracked-files=all")
     return {
+        "commit": git_output(worktree, "rev-parse", "HEAD"),
+        "tree": git_output(worktree, "rev-parse", "HEAD^{tree}"),
+        "clean": not bool(porcelain),
         "dirty": bool(porcelain),
         "porcelain_sha256": sha256_bytes((porcelain + "\n").encode()),
     }
@@ -348,6 +351,7 @@ def new_ticket(worktree: Path, resource_class: str, command: Sequence[str] | Non
         "commit": git_output(resolved, "rev-parse", "HEAD"),
         "worktree_dirty": source_state["dirty"],
         "worktree_porcelain_sha256": source_state["porcelain_sha256"],
+        "source_identity": {"request": source_state},
         "command_sha256": command_hash(command) if command else None,
         "admission": None,
         "completion": None,
@@ -427,6 +431,7 @@ def recover_stale_locked(state: dict, paths: Paths) -> list[dict]:
 
 def try_admit(paths: Paths, policy: dict, ticket_id: str, worktree: Path) -> tuple[bool, dict, list[str]]:
     snapshot = resource_snapshot(worktree)
+    source_snapshot = worktree_state(worktree)
     reasons = pressure_reasons(policy, snapshot)
     live = find_live_validation_processes(policy, ignore_pids={os.getpid(), os.getppid()})
     if live:
@@ -448,6 +453,7 @@ def try_admit(paths: Paths, policy: dict, ticket_id: str, worktree: Path) -> tup
         owner = process_identity(os.getpid())
         ticket["state"] = "active"
         ticket["lease_owner"] = owner
+        ticket.setdefault("source_identity", {})["admission"] = source_snapshot
         ticket["admission"] = {"admitted_at_utc": utc_now(), "preflight": snapshot}
         ticket["heartbeat_at_utc"] = utc_now()
         state["active"] = ticket_id
@@ -657,6 +663,7 @@ def run_ticket(
     admitted_monotonic = time.monotonic()
     with locked_state(paths) as state:
         admitted_at_utc = state["tickets"][ticket_id]["admission"]["admitted_at_utc"]
+        ticket = dict(state["tickets"][ticket_id])
     log_path = paths.logs / f"{ticket_id}.log"
     environment = coordinated_environment(policy, paths, ticket_id)
     returncode = 1
@@ -664,6 +671,14 @@ def run_ticket(
     samples: list[dict] = [preflight]
     terminal_reasons: list[str] = []
     error_message: str | None = None
+    request_source = (ticket.get("source_identity") or {}).get("request")
+    admission_source = (ticket.get("source_identity") or {}).get("admission")
+    source_identity_admissible = resource_class == "synthetic" or bool(
+        request_source and admission_source
+        and request_source == admission_source
+        and request_source.get("clean") is True
+        and admission_source.get("clean") is True
+    )
     worldserver_path = (worktree / "build/src/server/worldserver/worldserver").resolve()
     worldserver_before: dict[str, object] | None = None
     if resource_class in {"worldserver_build", "integration_build"} and worldserver_path.is_file():
@@ -674,10 +689,16 @@ def run_ticket(
             "sha256": sha256_file(worldserver_path),
         }
     try:
-        returncode, classification, process_samples, terminal_reasons = execute_process(
-            command, worktree, environment, log_path, policy, paths, ticket_id
-        )
-        samples.extend(process_samples)
+        if not source_identity_admissible:
+            returncode = 76
+            classification = "build_provenance_abort"
+            error_message = "source_identity_changed_or_dirty_before_admission"
+            log_path.write_text(error_message + "\n", encoding="utf-8")
+        else:
+            returncode, classification, process_samples, terminal_reasons = execute_process(
+                command, worktree, environment, log_path, policy, paths, ticket_id
+            )
+            samples.extend(process_samples)
     except BaseException as error:
         classification = "coordinator_error"
         error_message = f"{type(error).__name__}: {error}"
@@ -686,6 +707,26 @@ def run_ticket(
         if isinstance(error, KeyboardInterrupt):
             classification = "canceled"
     ended = utc_now()
+    completion_source = worktree_state(worktree)
+    source_identity = {
+        "request": request_source,
+        "admission": admission_source,
+        "completion": completion_source,
+    }
+    source_identity_stable = bool(
+        request_source and admission_source
+        and request_source == admission_source == completion_source
+        and (resource_class == "synthetic"
+            or all(snapshot.get("clean") is True for snapshot in source_identity.values()))
+    )
+    provenance_reasons: list[str] = []
+    if not source_identity_admissible:
+        provenance_reasons.append("source_identity_changed_or_dirty_before_admission")
+    if not source_identity_stable:
+        provenance_reasons.append("source_identity_changed_or_dirty_before_completion")
+    if classification == "success" and not source_identity_stable:
+        classification = "build_provenance_abort"
+        returncode = 76
     log_hash = sha256_bytes(log_path.read_bytes()) if log_path.exists() else None
     output_artifacts: list[dict[str, object]] = []
     if classification == "success" and resource_class in {"worldserver_build", "integration_build"}:
@@ -713,7 +754,7 @@ def run_ticket(
                     }
                 )
     receipt_without_hash = {
-        "schema_version": 1,
+        "schema_version": 2,
         "policy_id": policy["policy_id"],
         "ticket_id": ticket_id,
         "resource_class": resource_class,
@@ -721,6 +762,9 @@ def run_ticket(
         "commit": git_output(worktree, "rev-parse", "HEAD"),
         "worktree_dirty_at_request": ticket["worktree_dirty"],
         "worktree_porcelain_sha256_at_request": ticket["worktree_porcelain_sha256"],
+        "source_identity": source_identity,
+        "source_identity_stable": source_identity_stable,
+        "provenance_reasons": provenance_reasons,
         "command_sha256": command_hash(command),
         "command_arguments_retained": False,
         "queue_sequence": ticket["queue_sequence"],
@@ -754,6 +798,8 @@ def run_ticket(
         mapped_returncode = 130
     if classification == "coordinator_error":
         mapped_returncode = 70
+    if classification == "build_provenance_abort":
+        mapped_returncode = 76
     return mapped_returncode, receipt
 
 
@@ -789,6 +835,28 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
         raise CoordinatorError("receipt policy content hash mismatch")
     if receipt.get("command_arguments_retained") is not False:
         raise CoordinatorError("receipt retained command arguments")
+    if receipt.get("schema_version") != 2:
+        raise CoordinatorError("legacy receipt cannot satisfy the production source-provenance gate")
+    source_identity = receipt.get("source_identity")
+    if not isinstance(source_identity, dict):
+        raise CoordinatorError("receipt is missing source identity snapshots")
+    snapshots = [source_identity.get(stage) for stage in ("request", "admission", "completion")]
+    for snapshot in snapshots:
+        if not isinstance(snapshot, dict):
+            raise CoordinatorError("receipt source identity snapshot is missing")
+        if (not (receipt.get("test_mode") and allow_test_mode)
+            and (snapshot.get("clean") is not True or snapshot.get("dirty") is not False)):
+            raise CoordinatorError("receipt source identity snapshot is dirty")
+        if not isinstance(snapshot.get("commit"), str) or not re.fullmatch(r"[0-9a-f]{40,64}", snapshot["commit"]):
+            raise CoordinatorError("receipt source commit is invalid")
+        if not isinstance(snapshot.get("tree"), str) or not re.fullmatch(r"[0-9a-f]{40,64}", snapshot["tree"]):
+            raise CoordinatorError("receipt source tree is invalid")
+        if not isinstance(snapshot.get("porcelain_sha256"), str) or not re.fullmatch(r"[0-9a-f]{64}", snapshot["porcelain_sha256"]):
+            raise CoordinatorError("receipt source porcelain hash is invalid")
+    if not (snapshots[0] == snapshots[1] == snapshots[2]):
+        raise CoordinatorError("receipt source identity changed during the coordinated command")
+    if receipt.get("commit") != snapshots[0]["commit"]:
+        raise CoordinatorError("receipt commit does not match source identity")
     if int(receipt["compiler_job_ceiling"]) > int(policy["parallelism"]["maximum_compiler_jobs"]):
         raise CoordinatorError("receipt compiler ceiling exceeds policy")
     if int(receipt["linker_job_ceiling"]) > int(policy["parallelism"]["maximum_linker_jobs"]):

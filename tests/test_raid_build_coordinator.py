@@ -306,13 +306,23 @@ def test_receipt_rejects_worldserver_not_produced_by_ticket(tmp_path: Path) -> N
         (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v6.json").read_text()
     )
     receipt = {
-        "schema_version": 1,
+            "schema_version": 2,
         "policy_id": frozen["policy_id"],
         "ticket_id": "stale-fixture",
         "queue_sequence": 1,
         "worktree": str(ROOT),
         "commit": "0" * 40,
-        "worktree_porcelain_sha256_at_request": "0" * 64,
+            "worktree_porcelain_sha256_at_request": "0" * 64,
+            "source_identity": {
+                stage: {
+                    "commit": "0" * 40, "tree": "1" * 40,
+                    "clean": True, "dirty": False,
+                    "porcelain_sha256": "0" * 64,
+                }
+                for stage in ("request", "admission", "completion")
+            },
+            "source_identity_stable": True,
+            "provenance_reasons": [],
         "command_sha256": "0" * 64,
         "resource_class": "worldserver_build",
         "classification": "success",

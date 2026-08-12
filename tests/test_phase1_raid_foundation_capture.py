@@ -164,6 +164,18 @@ def test_native_wipe_reset_recovery_is_reconstructed_across_statuses():
         "ready_check_action_wipe_generation": 1,
         "ready_check_action_evidence_sequence": 5,
         "recovery_wipe_generation": 1,
+        "members": [
+            {
+                "guid": 1001 + index, "wipe_generation": 1,
+                "death_sequence": 10 + index * 6,
+                "corpse_sequence": 11 + index * 6,
+                "release_sequence": 12 + index * 6,
+                "runback_sequence": 13 + index * 6,
+                "reentry_sequence": 14 + index * 6,
+                "resurrection_sequence": 15 + index * 6,
+            }
+            for index in range(10)
+        ],
     }
     accepted, reasons = accepted_native_recovery([ready, engaged, wiped, reset, recovered])
     assert accepted is True
@@ -249,3 +261,38 @@ def test_live_evidence_demux_rejects_cross_identity_runtime():
         (json.dumps(first) + "\n" + json.dumps(second) + "\n").encode()
     )
     assert "evidence_demux_cross_identity_row" in evidence_demux_rejections(rows)
+
+
+def test_live_evidence_demux_binds_readycheck_stop_and_inactive_cleanup():
+    active = accepted_status()
+    active["cohort_id"] = "raid"
+    readycheck = {
+        "ok": True, "action": "botauto_readycheck", "cohort_id": "raid",
+        "raid_runtime": active["raid_runtime"],
+    }
+    stop = {
+        "ok": True, "action": "botauto_stop", "cohort_id": "raid",
+        "server_epoch": 88, "attempt_id": 1,
+        "raid_runtime_before_cleanup": active["raid_runtime"],
+        "post_cleanup": {"active": False, "bots": 0, "lease_count": 0},
+    }
+    inactive = accepted_status()
+    inactive["cohort_id"] = "raid"
+    inactive["bots"] = 0
+    inactive["lease_count"] = 0
+    inactive["raid_runtime"]["active"] = False
+    rows = normalized_batch_payload(
+        b"\n".join(json.dumps(row).encode() for row in (active, readycheck, stop, inactive)) + b"\n"
+    )
+    assert evidence_demux_rejections(rows) == []
+
+
+def test_live_evidence_demux_rejects_unclassified_and_unbound_readycheck():
+    active = accepted_status()
+    active["cohort_id"] = "raid"
+    rows = normalized_batch_payload(
+        (json.dumps(active) + "\n" + json.dumps({"action": "unknown"}) + "\n").encode()
+    )
+    reasons = evidence_demux_rejections(rows)
+    assert "evidence_demux_unclassified_row" in reasons
+    assert "evidence_demux_cleanup_missing" in reasons

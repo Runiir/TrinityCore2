@@ -156,7 +156,8 @@ def _expected_identity_by_slot() -> dict[str, dict[str, Any]]:
         # Roster slot IDs are generated deterministically by the native plan.
         index = sum(1 for existing in result.values() if existing["role"] == role) + 1
         slot_id = f"raid_{role}_{index}"
-        talents = _canonical_int_list([row.get("spell_id") for row in bot.get("talents", [])])
+        raw_talents = _canonical_int_list([row.get("spell_id") for row in bot.get("talents", [])])
+        talents = tuple(sorted(raw_talents)) if raw_talents is not None else None
         glyphs = _canonical_int_list(
             [value for value in normalized_glyph_slots(bot) if int(value) > 0]
         )
@@ -246,7 +247,8 @@ def _identity_manifest_rejections(runtime: dict[str, Any]) -> list[str]:
             reasons.append("frozen_identity_account_mismatch")
         if row.get("name") != expected["name"]:
             reasons.append("frozen_identity_name_mismatch")
-        if _canonical_int_list(row.get("talents")) != expected["talents"]:
+        actual_talents = _canonical_int_list(row.get("talents"))
+        if actual_talents is None or tuple(sorted(actual_talents)) != expected["talents"]:
             reasons.append("frozen_identity_talents_mismatch")
         if _canonical_int_list(row.get("glyphs")) != expected["glyphs"]:
             reasons.append("frozen_identity_glyphs_mismatch")
@@ -612,6 +614,36 @@ def accepted_native_recovery(statuses: list[dict[str, Any]]) -> tuple[bool, list
         reasons.append("native_ready_check_action_attempt_mismatch")
     if final_native.get("ready_check_action_wipe_generation") != runtimes[-1].get("wipe_generation"):
         reasons.append("native_ready_check_action_wipe_generation_mismatch")
+    recovery_members = final_native.get("members")
+    final_roster = final_runtime.get("roster")
+    roster_guids = {
+        row.get("guid") for row in final_roster
+        if isinstance(row, dict) and _positive_int(row.get("guid"))
+    } if isinstance(final_roster, list) else set()
+    if not isinstance(recovery_members, list) or len(recovery_members) != 10:
+        reasons.append("native_per_member_recovery_missing")
+    else:
+        recovery_guids = {
+            row.get("guid") for row in recovery_members
+            if isinstance(row, dict) and _positive_int(row.get("guid"))
+        }
+        if recovery_guids != roster_guids or len(recovery_guids) != 10:
+            reasons.append("native_per_member_recovery_roster_mismatch")
+        sequence_fields = (
+            "death_sequence", "corpse_sequence", "release_sequence",
+            "runback_sequence", "reentry_sequence", "resurrection_sequence",
+        )
+        for row in recovery_members:
+            if not isinstance(row, dict):
+                reasons.append("native_per_member_recovery_invalid")
+                continue
+            sequences = tuple(row.get(field) for field in sequence_fields)
+            if row.get("wipe_generation") != wipe_generation:
+                reasons.append("native_per_member_recovery_wipe_mismatch")
+            if not all(_positive_int(value) for value in sequences) or not all(
+                left < right for left, right in zip(sequences, sequences[1:])
+            ):
+                reasons.append("native_per_member_recovery_order_invalid")
 
     ordered_checks = {
         "ready_check_observed": any(runtime.get("ready_check_satisfied") is True for runtime in runtimes),
@@ -639,8 +671,9 @@ def wait_for_prompt(process: subprocess.Popen[bytes], log_path: Path, timeout_se
 
 def git_identity(cwd: Path) -> dict[str, Any]:
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=cwd, text=True).strip()
+    tree = subprocess.check_output(["git", "rev-parse", "HEAD^{tree}"], cwd=cwd, text=True).strip()
     porcelain = subprocess.check_output(["git", "status", "--porcelain=v1", "-z"], cwd=cwd)
-    return {"head": head, "clean": not porcelain, "porcelain_sha256": hashlib.sha256(porcelain).hexdigest()}
+    return {"head": head, "tree": tree, "clean": not porcelain, "porcelain_sha256": hashlib.sha256(porcelain).hexdigest()}
 
 
 def _utc_timestamp(value: str) -> float:
@@ -676,6 +709,21 @@ def validate_build_receipt(
             rejections.append("build_receipt_worktree_mismatch")
         if receipt.get("worktree_dirty_at_request") is not False:
             rejections.append("build_receipt_worktree_dirty")
+        source_identity = receipt.get("source_identity")
+        if not isinstance(source_identity, dict):
+            rejections.append("build_receipt_source_identity_missing")
+        else:
+            snapshots = [source_identity.get(stage) for stage in ("request", "admission", "completion")]
+            if not all(isinstance(snapshot, dict) for snapshot in snapshots):
+                rejections.append("build_receipt_source_identity_incomplete")
+            elif not (snapshots[0] == snapshots[1] == snapshots[2]):
+                rejections.append("build_receipt_source_identity_changed")
+            else:
+                completion = snapshots[2]
+                if completion.get("commit") != identity["head"] or completion.get("tree") != identity["tree"]:
+                    rejections.append("build_receipt_completion_source_mismatch")
+                if completion.get("clean") is not True or completion.get("dirty") is not False:
+                    rejections.append("build_receipt_completion_source_dirty")
         expected_config_sha256 = sha256_file(config) if config is not None and config.is_file() else None
         try:
             binary.relative_to(worktree)
@@ -757,6 +805,7 @@ def normalized_batch_payload(log_bytes: bytes) -> list[dict[str, Any]]:
     }
     return [
         {
+            "normalized_schema_version": 2,
             "capture_sequence": sequence,
             "action": row.get("action"),
             "evidence_channel": channel_by_action.get(str(row.get("action")), "other"),
@@ -767,43 +816,86 @@ def normalized_batch_payload(log_bytes: bytes) -> list[dict[str, Any]]:
 
 
 def evidence_demux_rejections(rows: list[dict[str, Any]]) -> list[str]:
-    """Bind every retained raid-bearing channel to one runtime and roster identity."""
+    """Independently bind every retained JSON row to one raid lifecycle."""
 
     reasons: list[str] = []
+    known_actions = {
+        "botauto_status", "botauto_diagnose", "botauto_trace",
+        "botauto_readycheck", "botauto_stop",
+    }
     canonical_identity: tuple[Any, ...] | None = None
     canonical_roster: tuple[tuple[Any, ...], ...] | None = None
     canonical_cohort: str | None = None
     roster_guids: set[int] = set()
-    checked = 0
+
+    # First establish canonical identity only from a complete active status.
     for row in rows:
+        payload = row.get("payload")
+        if not isinstance(payload, dict) or payload.get("action") != "botauto_status":
+            continue
+        runtime = payload.get("raid_runtime")
+        if not isinstance(runtime, dict) or runtime.get("active") is not True:
+            continue
+        identity = _runtime_identity(runtime)
+        roster = runtime.get("roster")
+        roster_identity = _roster_identity(roster) if isinstance(roster, list) else None
+        cohort = payload.get("cohort_id")
+        if identity is not None and roster_identity is not None and isinstance(cohort, str) and cohort:
+            canonical_identity = identity
+            canonical_roster = roster_identity
+            canonical_cohort = cohort
+            roster_guids = {int(member[3]) for member in roster_identity if _positive_int(member[3])}
+            break
+    if canonical_identity is None:
+        return ["evidence_demux_no_active_raid_rows"]
+
+    stop_seen = False
+    for expected_sequence, row in enumerate(rows, start=1):
         payload = row.get("payload")
         if not isinstance(payload, dict):
             reasons.append("evidence_demux_payload_missing")
             continue
         action = payload.get("action")
-        if action not in {"botauto_status", "botauto_diagnose", "botauto_trace"}:
+        if row.get("capture_sequence") != expected_sequence:
+            reasons.append("evidence_demux_sequence_invalid")
+        if row.get("action") != action:
+            reasons.append("evidence_demux_wrapper_action_mismatch")
+        if action not in known_actions:
+            reasons.append("evidence_demux_unclassified_row")
             continue
-        runtime = payload.get("raid_runtime")
+
+        runtime_key = "raid_runtime_before_cleanup" if action == "botauto_stop" else "raid_runtime"
+        runtime = payload.get(runtime_key)
+        if action == "botauto_status" and isinstance(runtime, dict) and runtime.get("active") is False:
+            if not stop_seen:
+                reasons.append("evidence_demux_inactive_status_before_stop")
+            if payload.get("cohort_id") != canonical_cohort:
+                reasons.append("evidence_demux_cross_identity_row")
+            if payload.get("bots") != 0 or payload.get("lease_count") != 0:
+                reasons.append("evidence_demux_cleanup_not_empty")
+            if runtime.get("server_epoch") != canonical_identity[9] or runtime.get("attempt_id") != canonical_identity[10]:
+                reasons.append("evidence_demux_cross_identity_row")
+            continue
+
         if not isinstance(runtime, dict) or runtime.get("active") is not True:
+            reasons.append("evidence_demux_identity_missing")
             continue
-        checked += 1
         identity = _runtime_identity(runtime)
         roster = runtime.get("roster")
         roster_identity = _roster_identity(roster) if isinstance(roster, list) else None
-        cohort = payload.get("cohort_id")
-        if identity is None or roster_identity is None or not isinstance(cohort, str) or not cohort:
-            reasons.append("evidence_demux_identity_missing")
-            continue
-        if canonical_identity is None:
-            canonical_identity = identity
-            canonical_roster = roster_identity
-            canonical_cohort = cohort
-            roster_guids = {
-                int(member[3]) for member in roster_identity
-                if _positive_int(member[3])
-            }
-        elif identity != canonical_identity or roster_identity != canonical_roster or cohort != canonical_cohort:
+        if (identity != canonical_identity or roster_identity != canonical_roster
+                or payload.get("cohort_id") != canonical_cohort):
             reasons.append("evidence_demux_cross_identity_row")
+
+        if action == "botauto_stop":
+            cleanup = payload.get("post_cleanup")
+            if (payload.get("server_epoch") != canonical_identity[9]
+                    or payload.get("attempt_id") != canonical_identity[10]
+                    or not isinstance(cleanup, dict) or cleanup.get("active") is not False
+                    or cleanup.get("bots") != 0 or cleanup.get("lease_count") != 0):
+                reasons.append("evidence_demux_cleanup_identity_invalid")
+            stop_seen = True
+
         bot_rows = payload.get("bots")
         if isinstance(bot_rows, list):
             for bot_row in bot_rows:
@@ -816,8 +908,8 @@ def evidence_demux_rejections(rows: list[dict[str, Any]]) -> list[str]:
                     bot_guid = identity_object.get("bot_guid")
                 if not _positive_int(bot_guid) or int(bot_guid) not in roster_guids:
                     reasons.append("evidence_demux_bot_outside_roster")
-    if checked == 0:
-        reasons.append("evidence_demux_no_active_raid_rows")
+    if not stop_seen:
+        reasons.append("evidence_demux_cleanup_missing")
     return list(dict.fromkeys(reasons))
 
 
@@ -1162,8 +1254,11 @@ def main() -> int:
         },
         "evidence_demux": {
             "retained_rows": len(normalized_rows),
+            "bound_rows": len(normalized_rows) if not demux_rejections else 0,
+            "rejected_rows": 0 if not demux_rejections else len(normalized_rows),
+            "unchecked_rows": 0,
             "channels": dict(Counter(str(row.get("evidence_channel")) for row in normalized_rows)),
-            "every_retained_row_demuxed": all("evidence_channel" in row for row in normalized_rows),
+            "every_retained_row_demuxed": not demux_rejections,
             "identity_rejections": demux_rejections,
             "gate_passed": not demux_rejections,
         },

@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 HEADER = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text(encoding="utf-8")
 IMPL = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(encoding="utf-8")
+GENERIC_SMOKE = json.loads((ROOT / "experiments/configs/cata_raid_phase1_generic_mechanic_smoke_v1.json").read_text())
 
 
 def test_single_cohort_owns_one_raid_runtime():
@@ -25,7 +26,8 @@ def test_raid_size_and_difficulty_are_explicit_and_fail_closed():
     assert '"raid_size"' in IMPL
     assert '"raid_difficulty"' in IMPL
     assert '"raid_size_difficulty_mismatch"' in IMPL
-    assert "group->SetRaidDifficulty(requestedRaidDifficulty);" in IMPL
+    assert "leader->GetSession()->HandleSetRaidDifficultyOpcode(difficultyRequest);" in IMPL
+    assert "group->SetRaidDifficulty(requestedRaidDifficulty);" not in IMPL
     assert "group->SetRaidDifficulty(RAID_DIFFICULTY_10MAN_NORMAL);" not in IMPL
 
     valid = {(10, 0), (10, 2), (25, 1), (25, 3)}
@@ -44,6 +46,39 @@ def test_deterministic_five_player_subgroups_cover_10_and_25():
 
     assert [index // 5 for index in range(10)] == [0] * 5 + [1] * 5
     assert [index // 5 for index in range(25)] == sum(([group] * 5 for group in range(5)), [])
+
+
+def test_generic_raid_mechanic_contracts_are_typed_executable_and_fail_closed():
+    assert GENERIC_SMOKE["authority"] == "synthetic_test_only_not_boss_fidelity"
+    contracts = [row["mechanic_contract"] for row in GENERIC_SMOKE["routes"]]
+    assert {row["formation_family"] for row in contracts} == {"pair", "lane", "quadrant", "ring", "cone"}
+    assert all(row["id"] and row["arrival_tolerance_yards"] > 0 for row in contracts)
+    assert "node.MechanicContractResolved" in IMPL
+    assert 'adapter.AssignmentType = "contract_unresolved"' in IMPL
+    assert 'result.Action = "raid_" + raidAnchors.FormationFamily + "_anchor"' in IMPL
+    assert 'raidAdapter.TargetControl == "do_not_damage"' in IMPL
+    assert 'raidAdapter.TargetControl == "controlled_aoe"' in IMPL
+    assert 'raidAdapter.TargetControl == "kill_sync"' in IMPL
+    assert "HandleGameObjectUseOpcode(use)" in IMPL
+    assert "HandleSpellClick(click)" in IMPL
+    assert "bot->GetTransport() == gameObject->ToTransport()" in IMPL
+    assert "HandleAreaTriggerOpcode(areaTrigger)" in IMPL
+    assert "declarative_area_damage_forbidden" in IMPL
+
+
+def test_generic_contract_has_explicit_soak_dispel_and_cooldown_assignments():
+    cone = next(
+        row["mechanic_contract"] for row in GENERIC_SMOKE["routes"]
+        if row["mechanic_contract"]["formation_family"] == "cone"
+    )
+    assert cone["soak_minimum_count"] == len(cone["soak_roster_slots"])
+    assert cone["dispel_owner_slot"] != cone["dispel_backup_slot"]
+    assert cone["cooldown_trigger_spell_id"] > 0
+    for token in (
+        "raid_soak_wait_for_assigned_count", "raid_dispel_owner",
+        "raid_dispel_backup", "raid_cooldown_schedule",
+    ):
+        assert token in IMPL
 
 
 def test_runtime_records_live_identity_lockout_and_unique_leases():

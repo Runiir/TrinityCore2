@@ -225,7 +225,7 @@ public:
     std::string GetCohortRegistryJson() const;
     std::string GetCohortIsolationContractJson();
     bool StartAutonomyForCohort(std::string const& cohortId, BotWorldExperimentConfig const* overrideConfig = nullptr);
-    void StopAutonomyForCohort(std::string const& cohortId);
+    std::string StopAutonomyForCohort(std::string const& cohortId);
     std::string SelectRuntimeProfileForCohort(std::string const& cohortId, std::string const& name);
     std::string PrepareValidationProfileForCohort(std::string const& cohortId, std::string const& name,
         std::string const& poolTag = {}, std::vector<std::string> const& classSpecs = {});
@@ -348,6 +348,36 @@ private:
         std::string Kind;
         std::string NodeKind;
         std::string MechanicProfile;
+        std::string MechanicContractId;
+        std::string FormationFamily;
+        std::string FormationAnchor;
+        std::string FormationOrientation;
+        std::string TargetControl;
+        float FormationSpacingYards = 0.0f;
+        float FormationRadiusYards = 0.0f;
+        float FormationArcRadians = 0.0f;
+        float FormationArrivalToleranceYards = 0.0f;
+        uint32 FormationLaneCount = 0;
+        bool AllowAreaDamage = false;
+        uint32 ControlledAoeMinimumTargets = 0;
+        float KillSyncTolerancePct = 0.0f;
+        float KillSyncExecutionFloorPct = 0.0f;
+        uint32 InteractableEntry = 0;
+        uint32 VehicleEntry = 0;
+        uint32 TransportEntry = 0;
+        uint32 TransferAreaTriggerId = 0;
+        uint32 ExtraActionSpellId = 0;
+        uint32 ExtraActionTriggerAuraId = 0;
+        uint32 DispelAuraId = 0;
+        uint32 DispelOwnerSlot = 0;
+        uint32 DispelBackupSlot = 0;
+        std::string CooldownCategory;
+        uint32 CooldownOwnerSlot = 0;
+        uint32 CooldownTriggerSpellId = 0;
+        std::vector<uint32> SoakRosterSlots;
+        uint32 SoakMinimumCount = 0;
+        float SoakRadiusYards = 0.0f;
+        bool MechanicContractResolved = false;
         uint32 MapId = 0;
         float X = 0.0f;
         float Y = 0.0f;
@@ -477,6 +507,9 @@ private:
         uint32 StuckTimer = 0;
         uint32 DeadTimer = 0;
         bool DeathEpisodeRecorded = false;
+        uint64 NativeReadyCheckRequestGenerationResponded = 0;
+        uint64 NativeReadyCheckStableGeneration = 0;
+        uint64 NativeReadyCheckStableSinceMs = 0;
         uint64 NativeResurrectionPendingUntilMs = 0;
         bool NativeReleaseRequested = false;
         uint32 NativeRunbackAreaTriggerId = 0;
@@ -977,6 +1010,11 @@ private:
         float SpreadX = 0.0f;
         float SpreadY = 0.0f;
         float SpreadZ = 0.0f;
+        std::string FormationFamily = "none";
+        float ResolvedX = 0.0f;
+        float ResolvedY = 0.0f;
+        float ResolvedZ = 0.0f;
+        float ArrivalToleranceYards = 0.0f;
         float DistanceToAnchor = 0.0f;
     };
 
@@ -1007,6 +1045,27 @@ private:
         bool HeroicOnly = false;
         bool AssignmentObserved = false;
         bool EvidenceObserved = false;
+        std::string ContractId;
+        bool ContractResolved = false;
+        bool AllowAreaDamage = false;
+        uint32 ControlledAoeMinimumTargets = 0;
+        float KillSyncTolerancePct = 0.0f;
+        float KillSyncExecutionFloorPct = 0.0f;
+        uint32 InteractableEntry = 0;
+        uint32 VehicleEntry = 0;
+        uint32 TransportEntry = 0;
+        uint32 TransferAreaTriggerId = 0;
+        uint32 ExtraActionSpellId = 0;
+        uint32 ExtraActionTriggerAuraId = 0;
+        uint32 DispelAuraId = 0;
+        uint32 DispelOwnerSlot = 0;
+        uint32 DispelBackupSlot = 0;
+        std::string CooldownCategory;
+        uint32 CooldownOwnerSlot = 0;
+        uint32 CooldownTriggerSpellId = 0;
+        std::vector<uint32> SoakRosterSlots;
+        uint32 SoakMinimumCount = 0;
+        float SoakRadiusYards = 0.0f;
     };
 
     struct RaidGearTargetPlan
@@ -1263,6 +1322,7 @@ private:
     void PersistBotPosition(Player* bot) const;
     void RecordSpawnResolved(WorldBotState& state, Player* bot, SpawnPlacement const& placement, char const* result);
     void UpdateBot(WorldBotState& state, uint32 diff);
+    void TryRespondNativeRaidReadyCheck(WorldBotState& state, Player* bot);
     bool TryReattachValidationBot(WorldBotState& state, Player* bot, char const* context);
     void RememberSafePosition(WorldBotState& state, Player* bot, uint32 diff);
     void PruneSafePositions(WorldBotState& state, uint64 nowMs) const;
@@ -1356,9 +1416,9 @@ private:
     std::string BuildDungeonTrashPackJson(DungeonTrashPackFeatures const& pack) const;
     std::string BuildBossMechanicsJson(BossMechanicFeatures const& features) const;
     uint32 SelectCombatSpell(Player* bot, Unit* target) const;
-    ResolvedCombatAction ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false) const;
-    BotActionResult ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false);
-    BotActionResult ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false);
+    ResolvedCombatAction ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true) const;
+    BotActionResult ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true);
+    BotActionResult ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true);
     bool MoveBotToProfileRange(WorldBotState& state, Player* bot, Unit* reference,
         ResolvedCombatAction const* action = nullptr, bool forceRangedReposition = false);
     bool TryCastCombatSpell(Player* bot, Unit* target, uint32 spellId) const;
@@ -1638,11 +1698,19 @@ private:
         bool Alive = false;
         bool HasCorpse = false;
         bool Released = false;
+        bool OutsideOriginalInstance = false;
         uint32 MapId = 0;
         uint32 InstanceId = 0;
         float X = 0.0f;
         float Y = 0.0f;
         float Z = 0.0f;
+        uint64 WipeGeneration = 0;
+        uint64 DeathSequence = 0;
+        uint64 CorpseSequence = 0;
+        uint64 ReleaseSequence = 0;
+        uint64 RunbackSequence = 0;
+        uint64 ReentrySequence = 0;
+        uint64 ResurrectionSequence = 0;
     };
 
     struct RaidRuntime
@@ -1679,11 +1747,14 @@ private:
         bool NativeResurrectionObserved = false;
         bool NativeRunbackObserved = false;
         bool NativeReadyCheckActionObserved = false;
+        bool NativeReadyCheckPending = false;
         uint32 NativeReadyCheckResponseCount = 0;
         uint64 NativeReadyCheckActionGeneration = 0;
         uint64 NativeReadyCheckActionAttemptId = 0;
         uint64 NativeReadyCheckActionWipeGeneration = 0;
+        uint64 NativeReadyCheckAssignmentGeneration = 0;
         uint64 NativeReadyCheckActionEvidenceSequence = 0;
+        std::set<uint32> NativeReadyCheckResponders;
         bool NativeRecoveryEvidenceComplete = false;
         std::string StrategyId;
         std::string PreviousStrategyId;
@@ -1694,6 +1765,8 @@ private:
         std::vector<uint8> BossStates;
         std::map<uint32, RaidRosterSlot> RosterByGuid;
         std::map<uint32, RaidNativeSignalState> NativeSignalsByGuid;
+        std::map<uint32, std::string> AccountNameById;
+        std::set<uint32> AccountNameLookupAttempted;
     };
 
     struct CohortRuntime

@@ -1065,8 +1065,7 @@ private:
         }
         if (!sBotWorldPopulationMgr->HasCohort(cohortId))
             return SendAutoResult(handler, "{\"ok\":false,\"action\":\"botauto_stop\",\"cohort_id\":\"" + cohortId + "\",\"failure_reason\":\"unknown_cohort\"}");
-        sBotWorldPopulationMgr->StopAutonomyForCohort(cohortId);
-        return SendAutoResult(handler, "{\"ok\":true,\"action\":\"botauto_stop\",\"cohort_id\":\"" + cohortId + "\",\"failure_reason\":null}");
+        return SendAutoResult(handler, sBotWorldPopulationMgr->StopAutonomyForCohort(cohortId));
     }
 
     static bool HandleAutoSpawnCommand(ChatHandler* handler, char const* args)
