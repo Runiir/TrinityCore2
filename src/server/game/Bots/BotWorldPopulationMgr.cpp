@@ -23740,6 +23740,11 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
     result.Situation = bot->GetMap() && bot->GetMap()->IsRaid() ? "raid_boss" : "dungeon_boss";
     result.Features = BuildBossMechanicFeatures(bot, result.Target);
     state.TargetGuid = result.Target->GetGUID();
+    if (state.LastRaidTankSwapWipeGeneration != Cohort().Raid.WipeGeneration)
+    {
+        state.LastRaidTankSwapTriggerKey.clear();
+        state.LastRaidTankSwapWipeGeneration = Cohort().Raid.WipeGeneration;
+    }
     if (result.Features.RaidEncounter && !state.WasInCombat)
     {
         ++state.RaidAttempts;

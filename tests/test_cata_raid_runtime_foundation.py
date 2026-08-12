@@ -103,12 +103,15 @@ def test_phase1_target_transfer_and_swap_controls_are_executable():
 
 def test_tank_swap_level_triggers_are_edge_latched_until_the_condition_clears():
     assert "std::string LastRaidTankSwapTriggerKey" in HEADER
+    assert "uint64 LastRaidTankSwapWipeGeneration" in HEADER
     for token in (
         'tankSwapTriggerKey = "cast:"',
         'tankSwapTriggerKey = "add:"',
         'tankSwapTriggerKey = "phase:"',
         "state.LastRaidTankSwapTriggerKey != tankSwapTriggerKey",
         "state.LastRaidTankSwapTriggerKey.clear();",
+        "state.LastRaidTankSwapWipeGeneration != Cohort().Raid.WipeGeneration",
+        "state.LastRaidTankSwapWipeGeneration = Cohort().Raid.WipeGeneration;",
         "memberState.LastRaidTankSwapTriggerKey = tankSwapTriggerKey;",
         "state.LastRaidTankSwapTriggerKey.clear();",
     ):
