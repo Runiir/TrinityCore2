@@ -36,7 +36,7 @@
   },
   "root_cause": {
     "failure_fingerprint": "raid_entrance_area_trigger_missing_after_native_release",
-    "detail": "The validation reattach path cancelled the legitimate far worldport created by native RepopAtGraveyard because its destination was the outdoor BWD graveyard map, then reattached the ghost to frozen map 669 instance 2. The ghost therefore could not reach canonical BWD entrance trigger 6581 on map 0.",
+    "detail": "The core bot-session dungeon guard rejected native RepopAtGraveyard's cross-map transfer before any far worldport was created. The released ghost therefore remained on frozen map 669 instance 2 and could not reach canonical BWD entrance trigger 6581 on map 0.",
     "classification_basis": "headless native worldport completion defect before boss engagement",
     "remediation_scope": "corpse-authorized native release worldport acknowledgement and exact BWD trigger-6581 return only"
   },

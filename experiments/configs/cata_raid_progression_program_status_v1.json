@@ -388,7 +388,7 @@
       "fourth_uncapped_capture_formed_exact_bwd_10n_instance2_and_killed_two_entry_trash_objectives",
       "fourth_capture_native_release_spirit_observed_then_classified_infrastructure_abort_on_cancelled_graveyard_worldport",
       "fourth_capture_dvc_published_remote_verified_and_exactly_evicted",
-      "native_bwd_released_ghost_worldport_exact_trigger_6581_return_and_core_auto_resurrection_remediated_at_6b5990534a",
+      "native_bwd_released_ghost_worldport_exact_graveyard_destination_trigger_6581_return_and_core_auto_resurrection_remediated",
       "expanded_focused_suite_242_passed"
       ],
       "remaining_requirements": [
@@ -416,7 +416,7 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "Exact clean 9c9dec8b source review and policy-v8 build succeeded. The fourth uncapped run formed the exact BWD 10N raid, killed both entry-trash objectives, and observed native release spirit, then classified a clean infrastructure abort because generic validation reattach cancelled the native graveyard worldport. Exact 6b5990534a now preserves only corpse/group/instance-authorized native release and exact trigger-6581 return worldports, then accepts the core's native dungeon-corpse auto-resurrection only in the frozen map/instance/group identity. The failed batch is DVC-published, remote-verified, compactly summarized, and exactly evicted. Mandatory review, rebuild, and rerun remain pending."
+      "detail": "Exact clean 9c9dec8b source review and policy-v8 build succeeded. The fourth uncapped run formed the exact BWD 10N raid, killed both entry-trash objectives, and observed native release spirit, then classified a clean infrastructure abort because the core bot-session dungeon guard blocked native RepopAtGraveyard cross-map transfer. The current remediation narrowly permits only an exact owned-corpse native graveyard destination, independently matches that pending worldport, preserves exact trigger-6581 return authority, and accepts core auto-resurrection only in the frozen map/instance/group identity. The failed batch is DVC-published, remote-verified, compactly summarized, and exactly evicted. Mandatory review, rebuild, and rerun remain pending."
     }
   ],
   "next_action": "Complete the mandatory independent Sol-high review of the exact status descendant of 6b5990534a. After zero unresolved critical/high findings, fast-forward the isolated build worktree, run exact policy-v8 configure/build receipts outside the worktree, verify the 242-test regression gate and exact provisioning readback, then restart uncapped canonical BWD 10N Phase 1. For later parallel boss diagnostics, root must fully start and verify the worldserver and every shard before spawning one Luna-xhigh live babysitter per boss; immediately exactly evict remotely verified diagnostic payloads after fixes/checkpoints are secured. Keep all 464 material fidelity blockers fail-closed."

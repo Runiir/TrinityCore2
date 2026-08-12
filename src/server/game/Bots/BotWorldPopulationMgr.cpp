@@ -4302,7 +4302,7 @@ bool BotWorldPopulationMgr::ResolveNativeBlackwingDescentEntrance(AreaTriggerEnt
         && sMapStore.LookupEntry(BlackwingDescentMapId);
 }
 
-bool BotWorldPopulationMgr::IsNativeReleasedGhostWorldport(WorldBotState const& state, Player const* bot) const
+bool BotWorldPopulationMgr::IsNativeReleasedGhostWorldport(WorldBotState const& state, Player* bot) const
 {
     if (!state.NativeReleaseRequested || state.NativeRunbackAreaTriggerId
         || state.ValidationCohortMapId != BlackwingDescentMapId || !bot
@@ -4317,10 +4317,24 @@ bool BotWorldPopulationMgr::IsNativeReleasedGhostWorldport(WorldBotState const& 
     if (!ResolveNativeBlackwingDescentEntrance(entranceEntry, entranceDestination))
         return false;
 
-    return bot->GetTeleportDest().GetMapId() == entranceEntry->ContinentID;
+    // Bind the pending worldport to the exact graveyard that native
+    // RepopAtGraveyard resolves from this dead player.  Map identity alone is
+    // insufficient because unrelated far teleports can also target map 0.
+    WorldSafeLocsEntry const* graveyard = sObjectMgr->GetClosestGraveyard(*bot, bot->GetTeam(), bot);
+    if (!graveyard || graveyard->Continent != entranceEntry->ContinentID)
+        return false;
+
+    WorldLocation const& destination = bot->GetTeleportDest();
+    float const* graveyardOrientation = sObjectMgr->GetGraveyardOrientation(graveyard->ID);
+    float expectedOrientation = graveyardOrientation ? *graveyardOrientation : bot->GetOrientation();
+    return destination.GetMapId() == graveyard->Continent
+        && std::fabs(destination.GetPositionX() - graveyard->Loc.X) <= 0.01f
+        && std::fabs(destination.GetPositionY() - graveyard->Loc.Y) <= 0.01f
+        && std::fabs(destination.GetPositionZ() - graveyard->Loc.Z) <= 0.01f
+        && std::fabs(destination.GetOrientation() - expectedOrientation) <= 0.01f;
 }
 
-bool BotWorldPopulationMgr::IsNativeBlackwingDescentRunbackWorldport(WorldBotState const& state, Player const* bot) const
+bool BotWorldPopulationMgr::IsNativeBlackwingDescentRunbackWorldport(WorldBotState const& state, Player* bot) const
 {
     if (!state.NativeReleaseRequested || state.NativeRunbackAreaTriggerId != BlackwingDescentEntranceTriggerId
         || state.ValidationCohortMapId != BlackwingDescentMapId || !bot

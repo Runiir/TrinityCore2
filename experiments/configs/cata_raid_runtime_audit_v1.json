@@ -132,7 +132,7 @@
     "test_file": "tests/test_cata_raid_runtime_foundation.py",
     "last_result": "242_expanded_focused_passed",
     "combined_focus_result": "242_passed",
-    "combined_focus_command": "pixi run pytest -q tests/test_cata_raid_runtime_foundation.py tests/test_phase1_raid_foundation_capture.py tests/test_raid_build_coordinator.py tests/test_cata_raid_foundation_model.py tests/test_phase1_provisioning_readback.py tests/test_phase9_live_qualification.py",
+    "combined_focus_command": "pixi run pytest -q tests/test_cata_raid_runtime_foundation.py tests/test_cata_raid_foundation_model.py tests/test_cata_raid_research_contracts.py tests/test_phase1_raid_foundation_capture.py tests/test_raid_build_coordinator.py tests/test_phase1_provisioning_readback.py tests/test_phase9_live_qualification.py",
     "broad_comparison": "patched_worktree_329_passed_34_inherited_stale_failures; exact_4012450_control_326_passed_35_failures; no_new_failure"
   },
   "required_open_work": [

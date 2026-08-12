@@ -1368,7 +1368,33 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
     }
 
     if (GetSession() && GetSession()->IsBotSession() && GetMap() && GetMap()->IsDungeon() && mapid != GetMapId())
-        return false;
+    {
+        // Headless players normally may not cross-map teleport out of a
+        // dungeon. Preserve the one native client transition required after
+        // CMSG_REPOP_REQUEST: an exact owned corpse in this dungeon instance
+        // may travel only to ObjectMgr's exact RepopAtGraveyard destination.
+        bool nativeGhostRelease = false;
+        if (!IsAlive() && HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST) && HasCorpse()
+            && GetCorpseLocation().GetMapId() == GetMapId())
+        {
+            Corpse* corpse = GetCorpse();
+            WorldSafeLocsEntry const* graveyard = sObjectMgr->GetClosestGraveyard(*this, GetTeam(), this);
+            float const* graveyardOrientation = graveyard ? sObjectMgr->GetGraveyardOrientation(graveyard->ID) : nullptr;
+            float expectedOrientation = graveyardOrientation ? *graveyardOrientation : GetOrientation();
+            nativeGhostRelease = corpse && graveyard
+                && corpse->GetOwnerGUID() == GetGUID()
+                && corpse->GetMapId() == GetMapId()
+                && corpse->GetInstanceId() == GetInstanceId()
+                && mapid == graveyard->Continent
+                && std::fabs(x - graveyard->Loc.X) <= 0.01f
+                && std::fabs(y - graveyard->Loc.Y) <= 0.01f
+                && std::fabs(z - graveyard->Loc.Z) <= 0.01f
+                && std::fabs(orientation - expectedOrientation) <= 0.01f;
+        }
+
+        if (!nativeGhostRelease)
+            return false;
+    }
 
     if (!GetSession()->HasPermission(rbac::RBAC_PERM_SKIP_CHECK_DISABLE_MAP) && DisableMgr::IsDisabledFor(DISABLE_TYPE_MAP, mapid, this))
     {

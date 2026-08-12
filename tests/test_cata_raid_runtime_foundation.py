@@ -340,6 +340,12 @@ def test_bwd_native_ghost_runback_acks_only_corpse_bound_worldports_and_canonica
     assert "originalCorpse->GetOwnerGUID() == bot->GetGUID()" in corpse_authority
     assert "originalCorpse->GetInstanceId() == state.ValidationCohortInstanceId" in corpse_authority
     assert "ResolveNativeBlackwingDescentEntrance" in native_release
+    assert "sObjectMgr->GetClosestGraveyard(*bot, bot->GetTeam()" in native_release
+    assert "graveyard->Continent != entranceEntry->ContinentID" in native_release
+    assert "destination.GetPositionX() - graveyard->Loc.X" in native_release
+    assert "destination.GetPositionY() - graveyard->Loc.Y" in native_release
+    assert "destination.GetPositionZ() - graveyard->Loc.Z" in native_release
+    assert "GetGraveyardOrientation(graveyard->ID)" in native_release
     assert "destination.GetMapId() == entranceDestination->target_mapId" in native_release
 
     assert "ResolveNativeBlackwingDescentEntrance(entranceEntry, entranceDestination)" in native_runback
@@ -349,6 +355,29 @@ def test_bwd_native_ghost_runback_acks_only_corpse_bound_worldports_and_canonica
     assert "TeleportTo(" not in native_runback
     assert "NearTeleportTo(" not in native_runback
     assert "ResurrectPlayer" not in native_runback
+
+
+def test_bot_dungeon_cross_map_guard_allows_only_exact_native_ghost_graveyard_release():
+    player_impl = (ROOT / "src/server/game/Entities/Player/Player.cpp").read_text()
+    teleport = player_impl[
+        player_impl.index("bool Player::TeleportTo(uint32 mapid"):
+        player_impl.index("bool Player::TeleportTo(WorldLocation const& loc", player_impl.index("bool Player::TeleportTo(uint32 mapid"))
+    ]
+
+    assert "IsBotSession() && GetMap() && GetMap()->IsDungeon() && mapid != GetMapId()" in teleport
+    assert "an exact owned corpse in this dungeon instance" in teleport
+    assert "!IsAlive() && HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST) && HasCorpse()" in teleport
+    assert "GetCorpseLocation().GetMapId() == GetMapId()" in teleport
+    assert "corpse->GetOwnerGUID() == GetGUID()" in teleport
+    assert "corpse->GetInstanceId() == GetInstanceId()" in teleport
+    assert "sObjectMgr->GetClosestGraveyard(*this, GetTeam(), this)" in teleport
+    assert "mapid == graveyard->Continent" in teleport
+    assert "std::fabs(x - graveyard->Loc.X) <= 0.01f" in teleport
+    assert "std::fabs(y - graveyard->Loc.Y) <= 0.01f" in teleport
+    assert "std::fabs(z - graveyard->Loc.Z) <= 0.01f" in teleport
+    assert "std::fabs(orientation - expectedOrientation) <= 0.01f" in teleport
+    assert "if (!nativeGhostRelease)" in teleport
+    assert "return false;" in teleport.split("if (!nativeGhostRelease)", 1)[1]
 
 
 def test_phase1_magmaw_engagement_contract_has_explicit_safe_target_authority():
