@@ -303,6 +303,12 @@ def accepted_native_recovery(statuses: list[dict[str, Any]]) -> tuple[bool, list
     ):
         if final_native.get(field) is not True:
             reasons.append(f"native_{field}_missing")
+    if not _positive_int(final_native.get("ready_check_action_generation")):
+        reasons.append("native_ready_check_action_generation_missing")
+    if final_native.get("ready_check_action_attempt_id") != runtimes[-1].get("attempt_id"):
+        reasons.append("native_ready_check_action_attempt_mismatch")
+    if final_native.get("ready_check_action_wipe_generation") != runtimes[-1].get("wipe_generation"):
+        reasons.append("native_ready_check_action_wipe_generation_mismatch")
 
     ordered_checks = {
         "ready_check_observed": any(runtime.get("ready_check_satisfied") is True for runtime in runtimes),
@@ -466,6 +472,7 @@ def main() -> int:
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--raw-output", type=Path, default=None)
+    parser.add_argument("--server-log-output", type=Path, default=None)
     parser.add_argument("--build-receipt", type=Path, required=True)
     parser.add_argument(
         "--build-policy",
@@ -483,10 +490,15 @@ def main() -> int:
     output = args.output.resolve()
     worktree = args.worktree.resolve()
     raw_output = (args.raw_output or output.with_name(f"{output.stem}.raw.jsonl")).resolve()
+    server_log_output = (
+        args.server_log_output or output.with_name(f"{output.stem}.worldserver.log")
+    ).resolve()
     if output.exists():
         raise SystemExit("output already exists; phase1 artifacts are immutable")
     if raw_output.exists():
         raise SystemExit("raw output already exists; phase1 artifacts are immutable")
+    if server_log_output.exists():
+        raise SystemExit("server log output already exists; phase1 artifacts are immutable")
     if not binary.is_file() or not config.is_file():
         raise SystemExit("binary and config must exist")
     if args.observe_sec < 30 or args.required_stable_statuses < 2:
@@ -518,6 +530,7 @@ def main() -> int:
             next_probe = 0.0
             seen_statuses = 0
             recovery_accepted = False
+            readycheck_requested_for: tuple[Any, ...] | None = None
             while time.monotonic() < deadline and not (
                 len(stable) >= args.required_stable_statuses and recovery_accepted
             ):
@@ -538,6 +551,31 @@ def main() -> int:
                             stable.clear()
                     seen_statuses = len(statuses)
                     recovery_accepted, _ = accepted_native_recovery(statuses)
+                    if statuses:
+                        runtime = statuses[-1].get("raid_runtime") or {}
+                        native = runtime.get("native_recovery") or {}
+                        request_identity = (
+                            runtime.get("attempt_id"), runtime.get("wipe_generation"),
+                            runtime.get("boss_reset_generation"),
+                        )
+                        ready_for_native_check = (
+                            runtime.get("alive_size") == 10
+                            and runtime.get("encounter_in_progress") is False
+                            and int(runtime.get("wipe_generation") or 0) > 0
+                            and int(runtime.get("boss_reset_generation") or 0) > 0
+                            and native.get("death_observed") is True
+                            and native.get("corpse_observed") is True
+                            and native.get("release_observed") is True
+                            and native.get("resurrection_observed") is True
+                            and native.get("runback_observed") is True
+                            and native.get("ready_check_action_observed") is not True
+                        )
+                        if ready_for_native_check and readycheck_requested_for != request_identity:
+                            # This invokes only the native Group ready-check packet path.
+                            # It cannot alter encounter, death, movement, or resurrection state.
+                            process.stdin.write(b"botauto readycheck\n")
+                            process.stdin.flush()
+                            readycheck_requested_for = request_identity
                 time.sleep(0.25)
 
             process.stdin.write(b"botauto stop\nbotauto status\nserver exit\n")
@@ -558,11 +596,18 @@ def main() -> int:
 
     normalized_rows = normalized_batch_payload(log_bytes)
     raw_payload_sha256, raw_payload_rows = write_normalized_batch(raw_output, normalized_rows)
+    server_log_output.parent.mkdir(parents=True, exist_ok=True)
+    server_log_output.write_bytes(log_bytes)
     statuses = json_actions(log_bytes, "botauto_status")
+    active_statuses = [
+        status for status in statuses
+        if isinstance(status.get("raid_runtime"), dict)
+        and status["raid_runtime"].get("active") is True
+    ]
     diagnoses = json_actions(log_bytes, "botauto_diagnose")
     traces = json_actions(log_bytes, "botauto_trace")
     stop_rows = json_actions(log_bytes, "botauto_stop")
-    recovery_accepted, recovery_rejections = accepted_native_recovery(statuses)
+    recovery_accepted, recovery_rejections = accepted_native_recovery(active_statuses)
     cleanup_status = statuses[-1] if statuses else {}
     cleanup_ok = cleanup_status.get("bots") == 0 and cleanup_status.get("lease_count") == 0
     process_absent = subprocess.run(
@@ -633,7 +678,13 @@ def main() -> int:
         "cleanup_zero_bots_and_leases": cleanup_ok,
         "log_sha256": hashlib.sha256(log_bytes).hexdigest(),
         "log_bytes": len(log_bytes),
-        "raw_log_retained": False,
+        "raw_log_retained": True,
+        "raw_server_log": {
+            "path": str(server_log_output),
+            "sha256": hashlib.sha256(log_bytes).hexdigest(),
+            "bytes": len(log_bytes),
+            "immutable": True,
+        },
         "raw_normalized_batch": {
             "path": str(raw_output),
             "sha256": raw_payload_sha256,

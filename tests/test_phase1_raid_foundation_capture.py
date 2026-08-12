@@ -59,6 +59,9 @@ def accepted_status() -> dict:
                 "death_observed": False, "corpse_observed": False, "release_observed": False,
                 "resurrection_observed": False, "runback_observed": False,
                 "ready_check_action_observed": True, "evidence_complete": False,
+                "ready_check_action_generation": 1, "ready_check_action_attempt_id": 1,
+                "ready_check_action_wipe_generation": 0,
+                "ready_check_action_evidence_sequence": 1,
             },
         },
     }
@@ -133,6 +136,9 @@ def test_native_wipe_reset_recovery_is_reconstructed_across_statuses():
         "death_observed": True, "corpse_observed": True, "release_observed": True,
         "resurrection_observed": True, "runback_observed": True,
         "ready_check_action_observed": True, "evidence_complete": True,
+        "ready_check_action_generation": 2, "ready_check_action_attempt_id": 1,
+        "ready_check_action_wipe_generation": 1,
+        "ready_check_action_evidence_sequence": 5,
     }
     accepted, reasons = accepted_native_recovery([ready, engaged, wiped, reset, recovered])
     assert accepted is True

@@ -52,10 +52,46 @@ def test_runtime_records_live_identity_lockout_and_unique_leases():
         "raid.LeaderGuid = leader->GetGUID();",
         "raid.MapDifficulty",
         "raid.LockoutSaveId = bind->save->GetInstanceId();",
-        "slot.LeaseOwned = LeaseOwnedByCurrentCohort(guid);",
+        "slot.LeaseOwned = LeaseOwnedByCurrentCohort(guid, slot.LeaseRoleSlot);",
         "raid.RosterComplete = raid.ActiveSize == raid.ExpectedSize;",
     ):
         assert token in IMPL
+
+
+def test_permanent_roster_slots_and_exact_role_shapes_fail_closed():
+    for token in (
+        "std::string RosterSlotId",
+        "std::string LeaseRoleSlot",
+        "std::string ClassSpec",
+        "std::string GearIdentity",
+        "bool RosterCompositionValid",
+    ):
+        assert token in HEADER
+    for token in (
+        "lease.RoleSlot == roleSlot",
+        "SelectNextRosterSlot()",
+        'slot.RosterSlotId = "raid_tank_"',
+        "raid.ExpectedSize == 10 ? 3 : 6",
+        "raid.ExpectedSize == 10 ? 5 : 17",
+        '"exact_raid_role_composition_mismatch"',
+    ):
+        assert token in IMPL
+
+
+def test_native_ready_check_is_explicit_attempt_and_wipe_scoped():
+    command = (ROOT / "src/server/scripts/Commands/cs_healerbot.cpp").read_text(encoding="utf-8")
+    for token in (
+        "RequestNativeRaidReadyCheckForCohort",
+        "MSG_RAID_READY_CHECK",
+        "group->OfflineReadyCheck();",
+        "NativeReadyCheckActionGeneration",
+        "NativeReadyCheckActionAttemptId",
+        "NativeReadyCheckActionWipeGeneration",
+        "raid.NativeReadyCheckActionObserved = false;",
+    ):
+        assert token in HEADER or token in IMPL
+    assert '{ "readycheck"' in command
+    assert "HandleAutoReadyCheckCommand" in command
 
 
 def test_status_diagnose_trace_and_evidence_expose_raid_identity():
@@ -77,6 +113,11 @@ def test_runtime_reconstructs_native_boss_wipe_reset_and_recovery_state():
         "uint64 RecoveryGeneration",
         "bool EncounterInProgress",
         "bool ReadyCheckSatisfied",
+        "bool NativeDeathObserved",
+        "bool NativeReleaseObserved",
+        "bool NativeResurrectionObserved",
+        "bool NativeRunbackObserved",
+        "bool NativeRecoveryEvidenceComplete",
         "std::vector<uint8> BossStates",
     ):
         assert token in runtime

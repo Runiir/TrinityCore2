@@ -48,6 +48,7 @@
 #include "Creature.h"
 #include "CreatureGroups.h"
 #include "WorldSession.h"
+#include "WorldPacket.h"
 
 #include <array>
 #include <algorithm>
@@ -1214,6 +1215,17 @@ bool BotWorldPopulationMgr::ClaimBotGuid(uint32 guid, std::string const& roleSlo
             && itr->second.AttemptId == Cohort().AttemptId
             && itr->second.RoleSlot == roleSlot;
 
+    // A lease is unique in both dimensions: a GUID cannot occupy two
+    // permanent roster slots, and a slot cannot silently change GUID during
+    // an attempt.  This scan is intentionally owner-scoped so independent
+    // cohorts may use the same slot names without sharing runtime state.
+    for (auto const& [leasedGuid, lease] : _guidLeases)
+        if (leasedGuid != guid && lease.ServerEpoch == _serverEpoch
+            && lease.CohortId == Cohort().Id
+            && lease.AttemptId == Cohort().AttemptId
+            && lease.RoleSlot == roleSlot)
+            return false;
+
     _guidLeases.emplace(guid, BotGuidLease{ _serverEpoch, Cohort().Id, Cohort().AttemptId, roleSlot });
     Cohort().RosterLeases.insert(guid);
     return true;
@@ -1250,6 +1262,17 @@ bool BotWorldPopulationMgr::LeaseOwnedByCurrentCohort(uint32 guid) const
         && itr->second.ServerEpoch == _serverEpoch
         && itr->second.CohortId == Cohort().Id
         && itr->second.AttemptId == Cohort().AttemptId;
+}
+
+bool BotWorldPopulationMgr::LeaseOwnedByCurrentCohort(uint32 guid, std::string const& roleSlot) const
+{
+    std::lock_guard<std::mutex> guard(_leaseMutex);
+    auto itr = _guidLeases.find(guid);
+    return itr != _guidLeases.end()
+        && itr->second.ServerEpoch == _serverEpoch
+        && itr->second.CohortId == Cohort().Id
+        && itr->second.AttemptId == Cohort().AttemptId
+        && itr->second.RoleSlot == roleSlot;
 }
 
 BotWorldPopulationMgr* BotWorldPopulationMgr::instance()
@@ -1344,6 +1367,130 @@ std::string BotWorldPopulationMgr::GetStatusJsonForCohort(std::string const& coh
     std::string result = GetStatusJson();
     _selectedCohortId = previous;
     return result;
+}
+
+std::string BotWorldPopulationMgr::RequestNativeRaidReadyCheckForCohort(std::string const& cohortId)
+{
+    if (!FindCohort(cohortId))
+        return UnknownCohortJson("botauto_readycheck", cohortId);
+
+    std::string previous = _selectedCohortId;
+    _selectedCohortId = cohortId;
+    RaidRuntime const& raid = Cohort().Raid;
+    auto fail = [this, &cohortId](char const* reason)
+    {
+        std::ostringstream json;
+        json << "{\"ok\":false,\"action\":\"botauto_readycheck\",\"cohort_id\":\""
+             << JsonEscape(cohortId) << "\",\"failure_reason\":\"" << JsonEscape(reason)
+             << "\",\"ready_check_action_generation\":" << Cohort().Raid.NativeReadyCheckActionGeneration
+             << "}";
+        return json.str();
+    };
+
+    if (!Cohort().Active || !raid.Active)
+    {
+        std::string result = fail("raid_runtime_inactive");
+        _selectedCohortId = previous;
+        return result;
+    }
+    if (raid.ServerEpoch != _serverEpoch || raid.AttemptId == 0 || raid.AttemptId != Cohort().AttemptId)
+    {
+        std::string result = fail("raid_attempt_identity_mismatch");
+        _selectedCohortId = previous;
+        return result;
+    }
+    if (!raid.RosterComplete || raid.ExpectedSize == 0 || raid.ActiveSize != raid.ExpectedSize)
+    {
+        std::string result = fail("exact_active_raid_roster_required");
+        _selectedCohortId = previous;
+        return result;
+    }
+    if (raid.AliveSize != raid.ActiveSize)
+    {
+        std::string result = fail("all_raid_members_must_be_alive");
+        _selectedCohortId = previous;
+        return result;
+    }
+    if (!raid.UniqueLeases)
+    {
+        std::string result = fail("all_raid_leases_must_be_owned");
+        _selectedCohortId = previous;
+        return result;
+    }
+    if (!raid.RosterCompositionValid)
+    {
+        std::string result = fail("exact_raid_composition_required");
+        _selectedCohortId = previous;
+        return result;
+    }
+    if (!raid.DifficultyMatches)
+    {
+        std::string result = fail("live_raid_difficulty_mismatch");
+        _selectedCohortId = previous;
+        return result;
+    }
+    if (raid.EncounterInProgress)
+    {
+        std::string result = fail("encounter_in_progress");
+        _selectedCohortId = previous;
+        return result;
+    }
+
+    Group* group = sGroupMgr->GetGroupByGUID(raid.GroupGuid.GetCounter());
+    Player* leader = ObjectAccessor::FindPlayer(raid.LeaderGuid);
+    if (!group || !leader || leader->GetGroup() != group || !group->IsLeader(leader->GetGUID()))
+    {
+        std::string result = fail("actual_raid_leader_group_unavailable");
+        _selectedCohortId = previous;
+        return result;
+    }
+    if (!group->isRaidGroup() || group->GetMembersCount() != raid.ExpectedSize)
+    {
+        std::string result = fail("native_raid_group_shape_mismatch");
+        _selectedCohortId = previous;
+        return result;
+    }
+
+    for (auto const& [guid, slot] : raid.RosterByGuid)
+    {
+        Player* member = ObjectAccessor::FindPlayer(slot.Guid);
+        if (!member || !member->IsInWorld() || !member->IsAlive() || member->GetGroup() != group
+            || member->GetMapId() != raid.MapId || member->GetInstanceId() != raid.InstanceId
+            || !slot.Active || !slot.LeaseOwned || !LeaseOwnedByCurrentCohort(guid, slot.LeaseRoleSlot))
+        {
+            std::string result = fail("live_exact_raid_roster_revalidation_failed");
+            _selectedCohortId = previous;
+            return result;
+        }
+    }
+
+    // This is the same native request/broadcast sequence used by
+    // WorldSession::HandleRaidReadyCheckOpcode for a leader request.  The
+    // manager intentionally does not synthesize answers or a completion
+    // result: only the core's packet path and OfflineReadyCheck are issued.
+    WorldPacket data(MSG_RAID_READY_CHECK, 8);
+    data << leader->GetGUID();
+    group->BroadcastPacket(&data, false, -1);
+    group->OfflineReadyCheck();
+
+    RaidRuntime& mutableRaid = Cohort().Raid;
+    ++mutableRaid.EvidenceSequence;
+    ++mutableRaid.NativeReadyCheckActionGeneration;
+    mutableRaid.NativeReadyCheckActionAttemptId = mutableRaid.AttemptId;
+    mutableRaid.NativeReadyCheckActionWipeGeneration = mutableRaid.WipeGeneration;
+    mutableRaid.NativeReadyCheckActionEvidenceSequence = mutableRaid.EvidenceSequence;
+    mutableRaid.NativeReadyCheckActionObserved = true;
+
+    std::ostringstream json;
+    json << "{\"ok\":true,\"action\":\"botauto_readycheck\",\"cohort_id\":\""
+         << JsonEscape(cohortId) << "\",\"group_guid\":" << mutableRaid.GroupGuid.GetRawValue()
+         << ",\"leader_guid\":" << mutableRaid.LeaderGuid.GetRawValue()
+         << ",\"attempt_id\":" << mutableRaid.NativeReadyCheckActionAttemptId
+         << ",\"wipe_generation\":" << mutableRaid.NativeReadyCheckActionWipeGeneration
+         << ",\"ready_check_action_generation\":" << mutableRaid.NativeReadyCheckActionGeneration
+         << "}";
+    _selectedCohortId = previous;
+    return json.str();
 }
 
 std::string BotWorldPopulationMgr::GetBotDiagnosisJsonForCohort(std::string const& cohortId, std::string const& selector)
@@ -3882,20 +4029,46 @@ bool BotWorldPopulationMgr::LoadPolicyModelArtifact(std::string const& artifactP
 
 void BotWorldPopulationMgr::EnsurePopulation()
 {
+    std::vector<RaidRosterPlanSlot> const rosterPlan = BuildRosterPlan();
+    bool const raidMode = Cohort().Config.AllowRaids;
+    if (raidMode && rosterPlan.empty())
+    {
+        Cohort().LastPopulationFailureReason = "unsupported_exact_raid_size";
+        return;
+    }
+    if (raidMode && Cohort().Config.TargetPopulation != rosterPlan.size())
+    {
+        Cohort().LastPopulationFailureReason = "raid_target_population_mismatch";
+        return;
+    }
+    if (!Cohort().Config.PoolClassSpecFilter.empty()
+        && Cohort().Config.PoolClassSpecFilter.size() != rosterPlan.size())
+    {
+        Cohort().LastPopulationFailureReason = "roster_class_spec_plan_mismatch";
+        return;
+    }
+
+    uint32 const expectedPopulation = raidMode ? uint32(rosterPlan.size()) : Cohort().Config.TargetPopulation;
     uint32 attempts = 0;
-    uint32 maxAttempts = std::max<uint32>(1, Cohort().Config.TargetPopulation * 2);
-    while (Cohort().Active && Party().Bots.size() < Cohort().Config.TargetPopulation && attempts < maxAttempts)
+    uint32 maxAttempts = std::max<uint32>(1, expectedPopulation * 2);
+    while (Cohort().Active && Party().Bots.size() < expectedPopulation && attempts < maxAttempts)
     {
         ++attempts;
-        uint32 candidateGuid = SelectPoolCandidateGuid();
+        std::string rosterSlotId = SelectNextRosterSlot();
+        if (rosterSlotId.empty())
+        {
+            Cohort().LastPopulationFailureReason = "no_unoccupied_roster_slot";
+            break;
+        }
+
+        uint32 candidateGuid = SelectPoolCandidateGuid(rosterSlotId);
         if (!candidateGuid)
         {
             Cohort().LastPopulationFailureReason = Cohort().Config.PoolTagFilter.empty() ? "no_available_pool_candidate" : "no_available_pool_candidate_for_tag";
             break;
         }
 
-        std::string roleSlot = "party_" + std::to_string(Party().Bots.size());
-        if (!ClaimBotGuid(candidateGuid, roleSlot))
+        if (!ClaimBotGuid(candidateGuid, rosterSlotId))
         {
             Cohort().LastPopulationFailureReason = "bot_guid_lease_conflict";
             Cohort().FailedSpawnGuids.insert(candidateGuid);
@@ -3946,6 +4119,15 @@ void BotWorldPopulationMgr::EnsurePopulation()
 
         WorldBotState state;
         state.Guid = bot->GetGUID();
+        state.RosterSlotId = rosterSlotId;
+        for (RaidRosterPlanSlot const& slot : rosterPlan)
+            if (slot.RosterSlotId == rosterSlotId)
+            {
+                state.RosterRole = slot.Role;
+                break;
+            }
+        state.RosterClassSpec = GetBotClassSpec(bot);
+        state.RosterAverageItemLevel = bot->GetAverageItemLevel();
         state.ValidationRouteGeneration = Party().ValidationRouteGeneration;
         state.DecisionTimer = urand(0, sConfigMgr->GetIntDefault("BotWorld.DecisionTickMs", 3000));
         state.LastX = bot->GetPositionX();
@@ -4108,6 +4290,32 @@ void BotWorldPopulationMgr::EnsureCalibrationCohortGroup()
     }
     if (members.empty())
         return;
+
+    std::vector<RaidRosterPlanSlot> const rosterPlan = BuildRosterPlan();
+    bool const configuredRaid = Cohort().Config.AllowRaids;
+    if (configuredRaid && (rosterPlan.empty() || Cohort().Config.TargetPopulation != rosterPlan.size()))
+    {
+        Cohort().LastPopulationFailureReason = "exact_raid_roster_plan_unavailable";
+        return;
+    }
+
+    std::map<std::string, uint32> rosterOrder;
+    for (RaidRosterPlanSlot const& slot : rosterPlan)
+        rosterOrder.emplace(slot.RosterSlotId, slot.SlotIndex);
+    std::stable_sort(members.begin(), members.end(), [this, &rosterOrder](Player const* left, Player const* right)
+    {
+        auto slotIndex = [this, &rosterOrder](Player const* member) -> uint32
+        {
+            for (WorldBotState const& state : Party().Bots)
+                if (state.Guid == member->GetGUID())
+                {
+                    auto itr = rosterOrder.find(state.RosterSlotId);
+                    return itr == rosterOrder.end() ? std::numeric_limits<uint32>::max() : itr->second;
+                }
+            return std::numeric_limits<uint32>::max();
+        };
+        return slotIndex(left) < slotIndex(right);
+    });
 
     Player* leader = members.front();
     Group* group = leader->GetGroup();
@@ -5516,7 +5724,8 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
     if (raidValidation && !group->isRaidGroup())
         group->ConvertToRaid();
 
-    group->SetDungeonDifficulty(DUNGEON_DIFFICULTY_NORMAL);
+    if (group->GetDungeonDifficulty() != DUNGEON_DIFFICULTY_NORMAL)
+        group->SetDungeonDifficulty(DUNGEON_DIFFICULTY_NORMAL);
     Difficulty requestedRaidDifficulty = Difficulty(Cohort().Config.RaidDifficulty);
     bool const requested25Player = (Cohort().Config.RaidDifficulty & RAID_DIFFICULTY_MASK_25MAN) != 0;
     if (raidValidation && ((Cohort().Config.RaidSize == 25) != requested25Player))
@@ -5524,7 +5733,8 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         Cohort().LastPopulationFailureReason = "raid_size_difficulty_mismatch";
         return;
     }
-    group->SetRaidDifficulty(requestedRaidDifficulty);
+    if (raidValidation && group->GetRaidDifficulty() != requestedRaidDifficulty)
+        group->SetRaidDifficulty(requestedRaidDifficulty);
 
     uint32 const leaderMapId = leader->GetMapId();
     uint32 const leaderInstanceId = leader->GetInstanceId();
@@ -5538,7 +5748,7 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
     raid.Active = raidValidation;
     raid.GroupGuid = group->GetGUID();
     raid.LeaderGuid = leader->GetGUID();
-    raid.ExpectedSize = raidValidation ? Cohort().Config.RaidSize : uint32(members.size());
+    raid.ExpectedSize = raidValidation ? uint32(rosterPlan.size()) : uint32(members.size());
     raid.ExpectedDifficulty = Cohort().Config.RaidDifficulty;
     raid.GroupDifficulty = uint8(group->GetRaidDifficulty());
     raid.MapDifficulty = leader->GetMap() && leader->GetMap()->IsRaid() ? int16(leader->GetMap()->GetDifficulty()) : -1;
@@ -5562,7 +5772,17 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
     std::map<uint32, RaidRosterSlot> previousRoster = raid.RosterByGuid;
     raid.RosterByGuid.clear();
     raid.UniqueLeases = true;
+    raid.RosterCompositionValid = true;
     std::set<uint32> observedGuids;
+    std::set<std::string> observedSlots;
+
+    auto findRosterPlanSlot = [&rosterPlan](std::string const& rosterSlotId) -> RaidRosterPlanSlot const*
+    {
+        for (RaidRosterPlanSlot const& slot : rosterPlan)
+            if (slot.RosterSlotId == rosterSlotId)
+                return &slot;
+        return nullptr;
+    };
 
     for (size_t memberIndex = 0; memberIndex < members.size(); ++memberIndex)
     {
@@ -5591,23 +5811,76 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
             continue;
         }
 
-        uint8 const subgroup = uint8(std::min<size_t>(memberIndex / MAXGROUPSIZE, 4));
+        uint32 const guid = bot->GetGUID().GetCounter();
+        WorldBotState const* botState = nullptr;
+        for (WorldBotState const& state : Party().Bots)
+            if (state.Guid == bot->GetGUID())
+            {
+                botState = &state;
+                break;
+            }
+        RaidRosterPlanSlot const* plannedSlot = botState ? findRosterPlanSlot(botState->RosterSlotId) : nullptr;
+        if (raidValidation && !plannedSlot)
+            raid.RosterCompositionValid = false;
+
+        uint8 const subgroup = plannedSlot ? plannedSlot->SubGroup : uint8(std::min<size_t>(memberIndex / MAXGROUPSIZE, 4));
         if (raidValidation)
             group->ChangeMembersGroup(bot->GetGUID(), subgroup);
 
-        uint32 const guid = bot->GetGUID().GetCounter();
         RaidRosterSlot slot;
-        slot.SlotIndex = uint32(memberIndex);
+        slot.RosterSlotId = botState ? botState->RosterSlotId : "";
+        slot.LeaseRoleSlot = slot.RosterSlotId;
+        slot.SlotIndex = plannedSlot ? plannedSlot->SlotIndex : uint32(memberIndex);
         slot.Guid = bot->GetGUID();
         slot.SubGroup = raidValidation ? group->GetMemberGroup(bot->GetGUID()) : 0;
-        slot.Role = GetDungeonRole(bot);
+        slot.Role = plannedSlot && !plannedSlot->Role.empty() ? plannedSlot->Role : GetDungeonRole(bot);
+        slot.ClassId = bot->getClass();
+        slot.ClassSpec = botState && !botState->RosterClassSpec.empty() ? botState->RosterClassSpec : GetBotClassSpec(bot);
+        slot.AverageItemLevel = botState && botState->RosterAverageItemLevel > 0.0f
+            ? botState->RosterAverageItemLevel : bot->GetAverageItemLevel();
+        slot.GearIdentity = "avg_item_level:" + std::to_string(slot.AverageItemLevel);
         slot.Active = bot->IsInWorld();
-        slot.LeaseOwned = LeaseOwnedByCurrentCohort(guid);
+        slot.LeaseOwned = LeaseOwnedByCurrentCohort(guid, slot.LeaseRoleSlot);
         raid.RosterByGuid.emplace(guid, slot);
-        if (!observedGuids.insert(guid).second || !slot.LeaseOwned)
+        if (!observedGuids.insert(guid).second || !observedSlots.insert(slot.RosterSlotId).second
+            || slot.RosterSlotId.empty() || !slot.LeaseOwned)
             raid.UniqueLeases = false;
 
-        std::string role = sBotMgr->GetBotRoleName(bot->GetGUID());
+        if (raidValidation && (!plannedSlot || slot.Role != plannedSlot->Role))
+            raid.RosterCompositionValid = false;
+
+        RaidNativeSignalState currentSignal;
+        currentSignal.Initialized = true;
+        currentSignal.Alive = bot->IsAlive();
+        currentSignal.HasCorpse = bot->GetCorpse() != nullptr;
+        currentSignal.Released = bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST);
+        currentSignal.MapId = bot->GetMapId();
+        currentSignal.InstanceId = bot->GetInstanceId();
+        currentSignal.X = bot->GetPositionX();
+        currentSignal.Y = bot->GetPositionY();
+        currentSignal.Z = bot->GetPositionZ();
+        auto previousSignal = raid.NativeSignalsByGuid.find(guid);
+        if (!currentSignal.Alive)
+            raid.NativeDeathObserved = true;
+        if (currentSignal.HasCorpse)
+            raid.NativeCorpseObserved = true;
+        if (currentSignal.Released)
+            raid.NativeReleaseObserved = true;
+        if (previousSignal != raid.NativeSignalsByGuid.end() && previousSignal->second.Initialized)
+        {
+            RaidNativeSignalState const& prior = previousSignal->second;
+            if (!prior.Alive && currentSignal.Alive)
+                raid.NativeResurrectionObserved = true;
+            bool movedAsReleased = prior.Released && currentSignal.Released
+                && (prior.MapId != currentSignal.MapId || prior.InstanceId != currentSignal.InstanceId
+                    || Distance2d(prior.X, prior.Y, currentSignal.X, currentSignal.Y) > 2.0f
+                    || std::fabs(prior.Z - currentSignal.Z) > 2.0f);
+            if (movedAsReleased)
+                raid.NativeRunbackObserved = true;
+        }
+        raid.NativeSignalsByGuid[guid] = currentSignal;
+
+        std::string role = slot.Role;
         if (role == "tank")
             group->SetLfgRoles(bot->GetGUID(), lfg::PLAYER_ROLE_TANK);
         else if (role == "healer")
@@ -5630,6 +5903,31 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         return member && member->IsAlive();
     }));
     raid.RosterComplete = raid.ActiveSize == raid.ExpectedSize;
+    if (raidValidation)
+    {
+        uint32 tankCount = 0;
+        uint32 healerCount = 0;
+        uint32 dpsCount = 0;
+        for (auto const& [guid, slot] : raid.RosterByGuid)
+        {
+            if (slot.Role == "tank")
+                ++tankCount;
+            else if (slot.Role == "healer")
+                ++healerCount;
+            else if (slot.Role == "dps")
+                ++dpsCount;
+            else
+                raid.RosterCompositionValid = false;
+        }
+        uint32 const expectedTanks = 2;
+        uint32 const expectedHealers = raid.ExpectedSize == 10 ? 3 : 6;
+        uint32 const expectedDps = raid.ExpectedSize == 10 ? 5 : 17;
+        raid.RosterCompositionValid = raid.RosterCompositionValid
+            && tankCount == expectedTanks && healerCount == expectedHealers && dpsCount == expectedDps;
+    }
+    else
+        raid.RosterCompositionValid = true;
+
     if (previousRoster.size() != raid.RosterByGuid.size())
         ++raid.AssignmentGeneration;
     else
@@ -5637,7 +5935,10 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         {
             auto previous = previousRoster.find(guid);
             if (previous == previousRoster.end() || previous->second.SlotIndex != slot.SlotIndex
-                || previous->second.SubGroup != slot.SubGroup || previous->second.Role != slot.Role)
+                || previous->second.SubGroup != slot.SubGroup || previous->second.Role != slot.Role
+                || previous->second.RosterSlotId != slot.RosterSlotId
+                || previous->second.ClassSpec != slot.ClassSpec
+                || previous->second.AverageItemLevel != slot.AverageItemLevel)
             {
                 ++raid.AssignmentGeneration;
                 break;
@@ -5668,10 +5969,29 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
 
     bool const allDead = raid.ActiveSize > 0 && raid.AliveSize == 0;
     bool const allAlive = raid.ActiveSize > 0 && raid.AliveSize == raid.ActiveSize;
+    bool const nativeRecoverySignals = raid.NativeDeathObserved
+        && (raid.NativeCorpseObserved || raid.NativeReleaseObserved)
+        && raid.NativeResurrectionObserved
+        && (raid.NativeRunbackObserved || !raid.NativeReleaseObserved);
+    // Group exposes no readback for a completed ready-check action in this
+    // manager's API surface. Keep this false until a native action callback is
+    // wired; all-alive and a local group object are deliberately insufficient.
+    raid.NativeRecoveryEvidenceComplete = nativeRecoverySignals && raid.NativeReadyCheckActionObserved
+        && raid.NativeReadyCheckActionAttemptId == raid.AttemptId
+        && raid.NativeReadyCheckActionWipeGeneration == raid.WipeGeneration;
     if (allDead)
     {
         if (previousWipeState != "wiped")
+        {
             ++raid.WipeGeneration;
+            // A ready check issued before this native wipe cannot authorize
+            // post-wipe recovery. Keep the monotonic action generation for
+            // auditability, but clear its acceptance identity.
+            raid.NativeReadyCheckActionObserved = false;
+            raid.NativeReadyCheckActionAttemptId = 0;
+            raid.NativeReadyCheckActionWipeGeneration = 0;
+            raid.NativeReadyCheckActionEvidenceSequence = 0;
+        }
         raid.WipeState = "wiped";
         raid.RecoveryState = raid.EncounterInProgress ? "awaiting_native_reset" : "release_resurrection_pending";
     }
@@ -5690,25 +6010,65 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         || previousRecoveryState == "release_resurrection_pending"
         || previousRecoveryState == "native_resurrection_runback")
     {
-        raid.WipeState = "ready";
-        raid.RecoveryState = "recovered_ready_check";
-        ++raid.RecoveryGeneration;
+        if (raid.NativeRecoveryEvidenceComplete)
+        {
+            raid.WipeState = "ready";
+            raid.RecoveryState = "recovered_ready_check";
+            ++raid.RecoveryGeneration;
+        }
+        else
+        {
+            raid.WipeState = "wiped";
+            raid.RecoveryState = "recovery_evidence_pending";
+        }
     }
     else if (previousRecoveryState == "recovered_ready_check")
     {
-        raid.WipeState = "ready";
-        raid.RecoveryState = "recovered_ready_check";
+        if (raid.NativeRecoveryEvidenceComplete)
+        {
+            raid.WipeState = "ready";
+            raid.RecoveryState = "recovered_ready_check";
+        }
+        else
+        {
+            raid.WipeState = "wiped";
+            raid.RecoveryState = "recovery_evidence_pending";
+        }
     }
     else
     {
         raid.WipeState = "ready";
         raid.RecoveryState = "none";
     }
+
+    bool bossInProgress = false;
+    bool bossDone = false;
+    for (uint8 bossState : raid.BossStates)
+    {
+        bossInProgress = bossInProgress || bossState == uint8(IN_PROGRESS);
+        bossDone = bossDone || bossState == uint8(DONE);
+    }
+    if (bossInProgress || raid.EncounterInProgress)
+        raid.EncounterPhase = "combat";
+    else if (raid.RecoveryState == "awaiting_native_reset"
+        || raid.RecoveryState == "release_resurrection_pending"
+        || raid.RecoveryState == "native_resurrection_runback"
+        || raid.RecoveryState == "recovery_evidence_pending"
+        || bossResetObserved)
+        raid.EncounterPhase = "recovery";
+    else if (bossDone)
+        raid.EncounterPhase = "completed";
+    else
+        raid.EncounterPhase = "formation";
+
     raid.ReadyCheckSatisfied = raid.RosterComplete && raid.UniqueLeases && raid.DifficultyMatches
-        && allAlive && !raid.EncounterInProgress;
+        && raid.RosterCompositionValid && allAlive && !raid.EncounterInProgress
+        && (previousWipeState != "wiped" || raid.NativeRecoveryEvidenceComplete);
 
     if (raidValidation && members.size() > raid.ExpectedSize)
         Cohort().LastPopulationFailureReason = "raid_roster_exceeds_expected_size";
+    else if (raidValidation && !raid.RosterCompositionValid)
+        Cohort().LastPopulationFailureReason = "exact_raid_role_composition_mismatch";
     else if (raidValidation && leader->GetMap() && leader->GetMap()->IsRaid() && !raid.DifficultyMatches)
         Cohort().LastPopulationFailureReason = "raid_live_difficulty_mismatch";
 
@@ -7773,7 +8133,86 @@ Player* BotWorldPopulationMgr::GetBot(WorldBotState const& state) const
     return bot && bot->IsInWorld() ? bot : nullptr;
 }
 
-uint32 BotWorldPopulationMgr::SelectPoolCandidateGuid() const
+std::vector<BotWorldPopulationMgr::RaidRosterPlanSlot> BotWorldPopulationMgr::BuildRosterPlan() const
+{
+    std::vector<RaidRosterPlanSlot> plan;
+    bool const raidMode = Cohort().Config.AllowRaids;
+    if (raidMode)
+    {
+        uint32 const raidSize = Cohort().Config.RaidSize;
+        if (raidSize != 10 && raidSize != 25)
+            return plan;
+
+        uint32 const healerCount = raidSize == 10 ? 3 : 6;
+        uint32 const dpsCount = raidSize == 10 ? 5 : 17;
+        plan.reserve(raidSize);
+        for (uint32 index = 0; index < raidSize; ++index)
+        {
+            RaidRosterPlanSlot slot;
+            slot.SlotIndex = index;
+            slot.SubGroup = uint8(index / MAXGROUPSIZE);
+            if (index < 2)
+            {
+                slot.Role = "tank";
+                slot.RosterSlotId = "raid_tank_" + std::to_string(index + 1);
+            }
+            else if (index < 2 + healerCount)
+            {
+                slot.Role = "healer";
+                slot.RosterSlotId = "raid_healer_" + std::to_string(index - 1);
+            }
+            else
+            {
+                slot.Role = "dps";
+                slot.RosterSlotId = "raid_dps_" + std::to_string(index - 1 - healerCount);
+            }
+            plan.push_back(std::move(slot));
+        }
+        return plan;
+    }
+
+    uint32 const partySize = Cohort().Config.TargetPopulation;
+    plan.reserve(partySize);
+    for (uint32 index = 0; index < partySize; ++index)
+    {
+        RaidRosterPlanSlot slot;
+        slot.RosterSlotId = "party_" + std::to_string(index);
+        slot.SlotIndex = index;
+        plan.push_back(std::move(slot));
+    }
+    return plan;
+}
+
+std::string BotWorldPopulationMgr::SelectNextRosterSlot() const
+{
+    std::vector<RaidRosterPlanSlot> plan = BuildRosterPlan();
+    for (RaidRosterPlanSlot const& candidate : plan)
+    {
+        bool occupied = false;
+        for (WorldBotState const& state : Party().Bots)
+            if (state.RosterSlotId == candidate.RosterSlotId)
+            {
+                occupied = true;
+                break;
+            }
+        if (!occupied)
+            return candidate.RosterSlotId;
+    }
+    return {};
+}
+
+std::string BotWorldPopulationMgr::GetBotClassSpec(Player const* bot) const
+{
+    if (!bot)
+        return {};
+
+    if (QueryResult result = CharacterDatabase.PQuery("SELECT class_spec FROM character_bot_pool WHERE guid = %u LIMIT 1", bot->GetGUID().GetCounter()))
+        return result->Fetch()[0].GetString();
+
+    return {};
+}
+
+uint32 BotWorldPopulationMgr::SelectPoolCandidateGuid(std::string const& rosterSlotId) const
 {
     std::ostringstream query;
     query << "SELECT cbp.guid FROM character_bot_pool cbp INNER JOIN characters c ON c.guid = cbp.guid "
@@ -7785,12 +8224,23 @@ uint32 BotWorldPopulationMgr::SelectPoolCandidateGuid() const
         CharacterDatabase.EscapeString(escapedTag);
         query << " AND cbp.experiment_tags = '" << escapedTag << "'";
     }
+    std::vector<RaidRosterPlanSlot> const rosterPlan = BuildRosterPlan();
+    RaidRosterPlanSlot const* selectedSlot = nullptr;
+    for (RaidRosterPlanSlot const& slot : rosterPlan)
+        if (slot.RosterSlotId == rosterSlotId)
+        {
+            selectedSlot = &slot;
+            break;
+        }
+
+    if (selectedSlot && !selectedSlot->Role.empty())
+        query << " AND cbp.role = '" << selectedSlot->Role << "'";
+
     if (!Cohort().Config.PoolClassSpecFilter.empty())
     {
-        size_t slot = Party().Bots.size();
-        if (slot >= Cohort().Config.PoolClassSpecFilter.size())
+        if (!selectedSlot || selectedSlot->SlotIndex >= Cohort().Config.PoolClassSpecFilter.size())
             return 0;
-        std::string escapedSpec = Cohort().Config.PoolClassSpecFilter[slot];
+        std::string escapedSpec = Cohort().Config.PoolClassSpecFilter[selectedSlot->SlotIndex];
         CharacterDatabase.EscapeString(escapedSpec);
         query << " AND cbp.class_spec = '" << escapedSpec << "'";
     }
@@ -22533,6 +22983,33 @@ BotWorldPopulationMgr::BossMechanicFeatures BotWorldPopulationMgr::BuildBossMech
     float bestAddScore = -1.0f;
     for (WorldObject* object : objects)
     {
+        if (GameObject* gameObject = object ? object->ToGameObject() : nullptr)
+        {
+            if (gameObject->IsTransport())
+            {
+                features.TransportObserved = true;
+                if (features.TransportGuid.IsEmpty())
+                    features.TransportGuid = gameObject->GetGUID();
+            }
+            else if (gameObject->IsAtInteractDistance(bot))
+            {
+                ++features.InteractableCount;
+                features.InteractableObserved = true;
+                if (features.InteractableGuid.IsEmpty())
+                    features.InteractableGuid = gameObject->GetGUID();
+            }
+            continue;
+        }
+
+        if (Unit* unit = object ? object->ToUnit() : nullptr)
+            if (unit != bot && unit->IsVehicle())
+            {
+                ++features.VehicleCount;
+                features.VehicleObserved = true;
+                if (features.VehicleGuid.IsEmpty())
+                    features.VehicleGuid = unit->GetGUID();
+            }
+
         Creature* creature = object ? object->ToCreature() : nullptr;
         if (!creature || !creature->IsAlive() || creature == boss || !bot->IsValidAttackTarget(creature) || !bot->IsWithinLOSInMap(creature))
             continue;
@@ -22552,6 +23029,8 @@ BotWorldPopulationMgr::BossMechanicFeatures BotWorldPopulationMgr::BuildBossMech
             features.PriorityAddGuid = creature->GetGUID();
         }
     }
+
+    features.PlatformTransferObserved = features.VehicleObserved || features.TransportObserved;
 
     if (Group* group = bot->GetGroup())
     {
@@ -22650,6 +23129,21 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
         raidAdapter = BuildRaidMechanicAdapter(bot, result.Target, raidAssignment, result.Features);
         raidGearPlan = BuildRaidGearTargetPlan(bot, power, stage);
         heroicProgression = BuildHeroicRaidProgression(state, bot, power, stage);
+    }
+
+    if (result.Features.RaidEncounter && std::string(role) == "healer")
+    {
+        DungeonTrashActionResult resurrectionResult;
+        if (TryNativePartyResurrection(state, bot, power, stage, activity, resurrectionResult))
+        {
+            result.Action = resurrectionResult.Action;
+            result.Target = resurrectionResult.Target;
+            result.Rare = true;
+            RecordRaidTelemetry(state, bot, result.Target, "raid_battle_resurrection", "native_observed",
+                result.Features, raidAssignment, raidAnchors, raidAdapter, raidGearPlan, heroicProgression,
+                raw.c_str(), semantic.c_str(), 0.0f, result.Target ? result.Target->GetGUID().GetCounter() : 0);
+            return result;
+        }
     }
 
     if (result.Features.MoveOut && result.Features.DangerScore >= 0.25f)
@@ -22780,6 +23274,19 @@ BotWorldPopulationMgr::RaidRoleAssignment BotWorldPopulationMgr::BuildRaidRoleAs
         return assignment;
 
     assignment.Role = GetDungeonRole(bot);
+    assignment.ClassSpec = GetBotClassSpec(bot);
+    assignment.AverageItemLevel = bot->GetAverageItemLevel();
+    for (WorldBotState const& state : Party().Bots)
+        if (state.Guid == bot->GetGUID())
+        {
+            assignment.RosterSlotId = state.RosterSlotId;
+            assignment.LeaseRoleSlot = state.RosterSlotId;
+            if (!state.RosterClassSpec.empty())
+                assignment.ClassSpec = state.RosterClassSpec;
+            if (state.RosterAverageItemLevel > 0.0f)
+                assignment.AverageItemLevel = state.RosterAverageItemLevel;
+            break;
+        }
     if (Group* group = bot->GetGroup())
     {
         assignment.RaidLeaderGuid = group->GetLeaderGUID();
@@ -22837,6 +23344,15 @@ BotWorldPopulationMgr::RaidRoleAssignment BotWorldPopulationMgr::BuildRaidRoleAs
 
     if (assignment.MainTankGuid.IsEmpty() && assignment.Role == "tank")
         assignment.MainTankGuid = bot->GetGUID();
+
+    if (!assignment.RosterSlotId.empty())
+        for (RaidRosterPlanSlot const& slot : BuildRosterPlan())
+            if (slot.RosterSlotId == assignment.RosterSlotId)
+            {
+                assignment.SubGroup = slot.SubGroup;
+                assignment.RoleIndex = slot.SlotIndex + 1;
+                break;
+            }
 
     return assignment;
 }
@@ -22919,55 +23435,77 @@ BotWorldPopulationMgr::RaidMechanicAdapter BotWorldPopulationMgr::BuildRaidMecha
 
     adapter.Priority = features.DangerScore;
     adapter.AssignedTargetGuid = features.BossGuid;
+    adapter.EvidenceGuid = features.CastSpellId ? features.BossGuid
+        : (!features.PriorityAddGuid.IsEmpty() ? features.PriorityAddGuid
+            : (!features.InteractableGuid.IsEmpty() ? features.InteractableGuid
+                : (!features.VehicleGuid.IsEmpty() ? features.VehicleGuid : features.TransportGuid)));
+    adapter.TriggerSpellId = features.CastSpellId;
     adapter.HeroicOnly = BotLongTermProgressionBrain::ClassifyStage(bot, BotLongTermProgressionBrain::CalculateRolePower(bot)) == BotProgressionStage::HeroicRaid;
+    adapter.AssignmentObserved = !adapter.AssignedTargetGuid.IsEmpty() || !assignment.RosterSlotId.empty();
+    adapter.EvidenceObserved = !adapter.EvidenceGuid.IsEmpty();
+    adapter.FormationFamily = assignment.SubGroup < 5 ? "deterministic_subgroup_anchor" : "role_anchor";
+    adapter.RotationDirective = assignment.ClassSpec.empty() ? "db_profile_declared_class_unknown" : "db_profile_declared:" + assignment.ClassSpec;
+
+    if (assignment.Role == "healer")
+        adapter.HealDirective = features.RaidDamage ? "raid_damage_triage_and_cooldown" : "single_target_triage";
+    if (features.RaidDamage)
+        adapter.SoakDirective = features.StackPlaceholder ? "stack_anchor_observed" : "raid_damage_observed";
+    if (features.DangerousCast)
+        adapter.CooldownDirective = "native_cooldown_candidate_from_spell_observation";
+    if (features.InteractableObserved)
+        adapter.InteractableDirective = "native_interactable_observed";
+    if (features.VehicleObserved)
+        adapter.VehicleDirective = "native_vehicle_observed";
+    if (features.TransportObserved)
+        adapter.TransportDirective = "native_transport_observed";
+    if (features.PlatformTransferObserved)
+        adapter.PlatformTransferDirective = "native_transfer_candidate_observed";
 
     if (features.TankSpike)
     {
         adapter.MechanicFamily = "tank_swap";
         adapter.AssignmentType = assignment.Role == "tank" ? "tank_swap" : "maintain_role";
         adapter.RecommendedAction = assignment.Role == "tank" ? "tank_boss_position" : "avoid_front";
+        adapter.SwapTrigger = features.CastSpellId ? "native_tank_spike_spell" : "native_tank_spike_observation";
         adapter.Priority += 0.25f;
-        return adapter;
     }
-
-    if (features.MustInterrupt)
+    else if (features.MustInterrupt)
     {
         adapter.MechanicFamily = "interrupt_rotation";
         adapter.AssignmentType = "interrupt";
         adapter.RecommendedAction = "interrupt_must_interrupt";
         adapter.Priority += 0.35f;
-        return adapter;
+        adapter.TargetControl = "interrupt_current_boss_cast";
     }
-
-    if (features.RaidDamage)
+    else if (features.RaidDamage)
     {
         adapter.MechanicFamily = "raid_wide_aoe";
         adapter.AssignmentType = assignment.Role == "healer" ? "healer_cooldown" : "stack";
         adapter.RecommendedAction = assignment.Role == "healer" ? "heal_raid_damage" : "raid_stack_anchor";
         adapter.Priority += 0.20f;
-        return adapter;
+        adapter.TargetControl = "raid_damage_source_observed";
     }
-
-    if (features.MoveOut || features.SpreadPlaceholder)
+    else if (features.MoveOut || features.SpreadPlaceholder)
     {
         adapter.MechanicFamily = "spread";
         adapter.AssignmentType = "spread";
         adapter.RecommendedAction = "raid_spread_anchor";
         adapter.Priority += 0.20f;
-        return adapter;
+        adapter.SoakDirective = "spread_or_move_out_observed";
     }
-
-    if (features.AddsActive)
+    else if (features.AddsActive)
     {
         adapter.MechanicFamily = "add_wave";
         adapter.AssignmentType = assignment.Role == "healer" ? "maintain_role" : "target_switch";
         adapter.AssignedTargetGuid = features.PriorityAddGuid;
         adapter.RecommendedAction = assignment.Role == "healer" ? "heal_boss_damage" : "switch_to_adds";
         adapter.Priority += 0.15f;
-        return adapter;
+        adapter.TargetControl = assignment.Role == "healer" ? "maintain_boss_context" : "native_add_target_observed";
+        adapter.AssignmentObserved = !adapter.AssignedTargetGuid.IsEmpty();
     }
 
-    adapter.RecommendedAction = assignment.Role == "tank" ? "tank_boss_position" : "boss_single_target";
+    if (adapter.MechanicFamily == "boss_pressure")
+        adapter.RecommendedAction = assignment.Role == "tank" ? "tank_boss_position" : "boss_single_target";
     return adapter;
 }
 
@@ -24419,6 +24957,15 @@ std::string BotWorldPopulationMgr::BuildBossMechanicsJson(BossMechanicFeatures c
          << ",\"adds_active\":" << (features.AddsActive ? "true" : "false")
          << ",\"add_count\":" << features.AddCount
          << ",\"priority_add_guid\":" << features.PriorityAddGuid.GetCounter()
+         << ",\"interactable_observed\":" << (features.InteractableObserved ? "true" : "false")
+         << ",\"interactable_count\":" << features.InteractableCount
+         << ",\"interactable_guid\":" << features.InteractableGuid.GetCounter()
+         << ",\"vehicle_observed\":" << (features.VehicleObserved ? "true" : "false")
+         << ",\"vehicle_count\":" << features.VehicleCount
+         << ",\"vehicle_guid\":" << features.VehicleGuid.GetCounter()
+         << ",\"transport_observed\":" << (features.TransportObserved ? "true" : "false")
+         << ",\"transport_guid\":" << features.TransportGuid.GetCounter()
+         << ",\"platform_transfer_observed\":" << (features.PlatformTransferObserved ? "true" : "false")
          << ",\"requires_stack\":" << (features.StackPlaceholder ? "true" : "false")
          << ",\"requires_spread\":" << (features.SpreadPlaceholder ? "true" : "false")
          << ",\"tank_swap_pressure\":" << (features.TankSpike ? std::max(0.0f, 1.0f - features.TankHpPct) : 0.0f)
@@ -24434,6 +24981,10 @@ std::string BotWorldPopulationMgr::BuildRaidRoleAssignmentJson(RaidRoleAssignmen
 {
     std::ostringstream json;
     json << "{\"role\":\"" << JsonEscape(assignment.Role) << "\""
+         << ",\"roster_slot_id\":\"" << JsonEscape(assignment.RosterSlotId) << "\""
+         << ",\"lease_role_slot\":\"" << JsonEscape(assignment.LeaseRoleSlot) << "\""
+         << ",\"class_spec\":\"" << JsonEscape(assignment.ClassSpec) << "\""
+         << ",\"average_item_level\":" << assignment.AverageItemLevel
          << ",\"subgroup\":" << uint32(assignment.SubGroup)
          << ",\"raid_size\":" << assignment.RaidSize
          << ",\"tank_count\":" << assignment.TankCount
@@ -24473,7 +25024,19 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
          << ",\"recovery_generation\":" << raid.RecoveryGeneration
          << ",\"encounter_in_progress\":" << (raid.EncounterInProgress ? "true" : "false")
          << ",\"ready_check_satisfied\":" << (raid.ReadyCheckSatisfied ? "true" : "false")
+         << ",\"roster_composition_valid\":" << (raid.RosterCompositionValid ? "true" : "false")
          << ",\"unique_leases\":" << (raid.UniqueLeases ? "true" : "false")
+         << ",\"native_recovery\":{\"death_observed\":" << (raid.NativeDeathObserved ? "true" : "false")
+         << ",\"corpse_observed\":" << (raid.NativeCorpseObserved ? "true" : "false")
+         << ",\"release_observed\":" << (raid.NativeReleaseObserved ? "true" : "false")
+         << ",\"resurrection_observed\":" << (raid.NativeResurrectionObserved ? "true" : "false")
+         << ",\"runback_observed\":" << (raid.NativeRunbackObserved ? "true" : "false")
+         << ",\"ready_check_action_observed\":" << (raid.NativeReadyCheckActionObserved ? "true" : "false")
+         << ",\"ready_check_action_generation\":" << raid.NativeReadyCheckActionGeneration
+         << ",\"ready_check_action_attempt_id\":" << raid.NativeReadyCheckActionAttemptId
+         << ",\"ready_check_action_wipe_generation\":" << raid.NativeReadyCheckActionWipeGeneration
+         << ",\"ready_check_action_evidence_sequence\":" << raid.NativeReadyCheckActionEvidenceSequence
+         << ",\"evidence_complete\":" << (raid.NativeRecoveryEvidenceComplete ? "true" : "false") << "}"
          << ",\"strategy_id\":\"" << JsonEscape(raid.StrategyId) << "\""
          << ",\"encounter_phase\":\"" << JsonEscape(raid.EncounterPhase) << "\""
          << ",\"wipe_state\":\"" << JsonEscape(raid.WipeState) << "\""
@@ -24493,10 +25056,16 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
         if (!first)
             json << ',';
         first = false;
-        json << "{\"slot\":" << slot.SlotIndex
+        json << "{\"roster_slot_id\":\"" << JsonEscape(slot.RosterSlotId) << "\""
+             << ",\"lease_role_slot\":\"" << JsonEscape(slot.LeaseRoleSlot) << "\""
+             << ",\"slot\":" << slot.SlotIndex
              << ",\"guid\":" << guid
              << ",\"subgroup\":" << uint32(slot.SubGroup)
              << ",\"role\":\"" << JsonEscape(slot.Role) << "\""
+             << ",\"class_id\":" << uint32(slot.ClassId)
+             << ",\"class_spec\":\"" << JsonEscape(slot.ClassSpec) << "\""
+             << ",\"average_item_level\":" << slot.AverageItemLevel
+             << ",\"gear_identity\":\"" << JsonEscape(slot.GearIdentity) << "\""
              << ",\"active\":" << (slot.Active ? "true" : "false")
              << ",\"lease_owned\":" << (slot.LeaseOwned ? "true" : "false") << '}';
     }
@@ -24523,9 +25092,25 @@ std::string BotWorldPopulationMgr::BuildRaidMechanicAdapterJson(RaidMechanicAdap
     json << "{\"mechanic_family\":\"" << JsonEscape(adapter.MechanicFamily) << "\""
          << ",\"assignment_type\":\"" << JsonEscape(adapter.AssignmentType) << "\""
          << ",\"recommended_action\":\"" << JsonEscape(adapter.RecommendedAction) << "\""
+         << ",\"formation_family\":\"" << JsonEscape(adapter.FormationFamily) << "\""
+         << ",\"swap_trigger\":\"" << JsonEscape(adapter.SwapTrigger) << "\""
+         << ",\"target_control\":\"" << JsonEscape(adapter.TargetControl) << "\""
+         << ",\"rotation_directive\":\"" << JsonEscape(adapter.RotationDirective) << "\""
+         << ",\"heal_directive\":\"" << JsonEscape(adapter.HealDirective) << "\""
+         << ",\"soak_directive\":\"" << JsonEscape(adapter.SoakDirective) << "\""
+         << ",\"cooldown_directive\":\"" << JsonEscape(adapter.CooldownDirective) << "\""
+         << ",\"battle_res_directive\":\"" << JsonEscape(adapter.BattleResDirective) << "\""
+         << ",\"interactable_directive\":\"" << JsonEscape(adapter.InteractableDirective) << "\""
+         << ",\"vehicle_directive\":\"" << JsonEscape(adapter.VehicleDirective) << "\""
+         << ",\"transport_directive\":\"" << JsonEscape(adapter.TransportDirective) << "\""
+         << ",\"platform_transfer_directive\":\"" << JsonEscape(adapter.PlatformTransferDirective) << "\""
          << ",\"assigned_target_guid\":" << adapter.AssignedTargetGuid.GetCounter()
+         << ",\"evidence_guid\":" << adapter.EvidenceGuid.GetCounter()
+         << ",\"trigger_spell_id\":" << adapter.TriggerSpellId
          << ",\"priority\":" << adapter.Priority
-         << ",\"heroic_only\":" << (adapter.HeroicOnly ? "true" : "false") << "}";
+         << ",\"heroic_only\":" << (adapter.HeroicOnly ? "true" : "false")
+         << ",\"assignment_observed\":" << (adapter.AssignmentObserved ? "true" : "false")
+         << ",\"evidence_observed\":" << (adapter.EvidenceObserved ? "true" : "false") << "}";
     return json.str();
 }
 

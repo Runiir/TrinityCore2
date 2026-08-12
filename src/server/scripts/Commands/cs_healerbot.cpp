@@ -812,6 +812,7 @@ public:
             { "prepare", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoPrepareCommand, "" },
             { "stop",    rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoStopCommand,    "" },
             { "status",  rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoStatusCommand,  "" },
+            { "readycheck", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoReadyCheckCommand, "" },
             { "profiles", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoProfilesCommand, "" },
             { "profile", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoProfileCommand,  "" },
             { "rotations", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoRotationsCommand, "" },
@@ -1260,6 +1261,19 @@ private:
                 return false;
         }
         return SendAutoResult(handler, sBotWorldPopulationMgr->GetStatusJsonForCohort(cohortId));
+    }
+
+    static bool HandleAutoReadyCheckCommand(ChatHandler* handler, char const* args)
+    {
+        std::string cohortId = FirstArg(args);
+        if (cohortId.empty())
+        {
+            cohortId = ResolveGlobalAutoCohort(handler, "botauto_readycheck");
+            if (cohortId.empty())
+                return false;
+        }
+        return SendAutoResult(
+            handler, sBotWorldPopulationMgr->RequestNativeRaidReadyCheckForCohort(cohortId));
     }
 
     static bool HandleStatusCommand(ChatHandler* handler, char const* /*args*/)

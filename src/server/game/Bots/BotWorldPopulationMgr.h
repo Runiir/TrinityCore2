@@ -230,6 +230,7 @@ public:
     std::string PrepareValidationProfileForCohort(std::string const& cohortId, std::string const& name,
         std::string const& poolTag = {}, std::vector<std::string> const& classSpecs = {});
     std::string GetStatusJsonForCohort(std::string const& cohortId) const;
+    std::string RequestNativeRaidReadyCheckForCohort(std::string const& cohortId);
     std::string GetBotDiagnosisJsonForCohort(std::string const& cohortId, std::string const& selector);
     std::string GetBotTraceJsonForCohort(std::string const& cohortId, std::string const& selector, uint32 limit) const;
     std::string GetCombatLogJsonForCohort(std::string const& cohortId) const;
@@ -290,6 +291,14 @@ public:
     };
 
 private:
+    struct RaidRosterPlanSlot
+    {
+        std::string RosterSlotId;
+        std::string Role;
+        uint32 SlotIndex = 0;
+        uint8 SubGroup = 0;
+    };
+
     struct BotWorldExperimentProfile
     {
         std::string Name;
@@ -456,6 +465,14 @@ private:
         };
 
         ObjectGuid Guid;
+        // Raid identity is assigned once at admission and survives any
+        // replacement of the loaded Player object.  It is deliberately not
+        // derived from Party().Bots.size(), which changes when a failed spawn
+        // is pruned.
+        std::string RosterSlotId;
+        std::string RosterRole;
+        std::string RosterClassSpec;
+        float RosterAverageItemLevel = 0.0f;
         uint32 DecisionTimer = 0;
         uint32 StuckTimer = 0;
         uint32 DeadTimer = 0;
@@ -892,7 +909,13 @@ private:
         bool AddsActive = false;
         bool StackPlaceholder = false;
         bool SpreadPlaceholder = false;
+        bool InteractableObserved = false;
+        bool VehicleObserved = false;
+        bool TransportObserved = false;
+        bool PlatformTransferObserved = false;
         uint32 AddCount = 0;
+        uint32 InteractableCount = 0;
+        uint32 VehicleCount = 0;
         float TankHpPct = 1.0f;
         float PartyAverageHpPct = 1.0f;
         float LowestAllyHpPct = 1.0f;
@@ -901,6 +924,9 @@ private:
         float InterruptPriority = 0.0f;
         ObjectGuid BossGuid;
         ObjectGuid PriorityAddGuid;
+        ObjectGuid InteractableGuid;
+        ObjectGuid VehicleGuid;
+        ObjectGuid TransportGuid;
     };
 
     struct BossMechanicActionResult
@@ -918,6 +944,10 @@ private:
     struct RaidRoleAssignment
     {
         std::string Role = "dps";
+        std::string RosterSlotId;
+        std::string LeaseRoleSlot;
+        std::string ClassSpec;
+        float AverageItemLevel = 0.0f;
         uint8 SubGroup = 0;
         uint32 RaidSize = 0;
         uint32 TankCount = 0;
@@ -951,9 +981,28 @@ private:
         std::string MechanicFamily = "boss_pressure";
         std::string AssignmentType = "maintain_role";
         std::string RecommendedAction = "boss_single_target";
+        // These are declarative, native-observation-backed primitives.  They
+        // intentionally carry an explicit unknown/unobserved state instead
+        // of manufacturing boss-specific behavior.
+        std::string FormationFamily = "role_anchor";
+        std::string SwapTrigger = "unobserved";
+        std::string TargetControl = "boss_victim";
+        std::string RotationDirective = "db_profile_declared";
+        std::string HealDirective = "native_heal_profile";
+        std::string SoakDirective = "unobserved";
+        std::string CooldownDirective = "native_profile_declared";
+        std::string BattleResDirective = "native_resurrection_only";
+        std::string InteractableDirective = "unobserved";
+        std::string VehicleDirective = "unobserved";
+        std::string TransportDirective = "unobserved";
+        std::string PlatformTransferDirective = "unobserved";
         ObjectGuid AssignedTargetGuid;
+        ObjectGuid EvidenceGuid;
+        uint32 TriggerSpellId = 0;
         float Priority = 0.0f;
         bool HeroicOnly = false;
+        bool AssignmentObserved = false;
+        bool EvidenceObserved = false;
     };
 
     struct RaidGearTargetPlan
@@ -1231,7 +1280,10 @@ private:
     bool TryConfiguredCenterDeathFallback(Player* bot, std::string& result) const;
     Player* GetLoadedBot(WorldBotState const& state) const;
     Player* GetBot(WorldBotState const& state) const;
-    uint32 SelectPoolCandidateGuid() const;
+    std::vector<RaidRosterPlanSlot> BuildRosterPlan() const;
+    std::string SelectNextRosterSlot() const;
+    std::string GetBotClassSpec(Player const* bot) const;
+    uint32 SelectPoolCandidateGuid(std::string const& rosterSlotId = {}) const;
     uint32 SelectCalibrationPoolCandidateGuid(size_t slot) const;
     Unit* SelectSafeTarget(WorldBotState& state, Player* bot);
     Unit* SelectQuestObjectiveTarget(Player* bot, QuestObjectivePlan const& plan) const;
@@ -1557,12 +1609,31 @@ private:
 
     struct RaidRosterSlot
     {
+        std::string RosterSlotId;
+        std::string LeaseRoleSlot;
         uint32 SlotIndex = 0;
         ObjectGuid Guid;
         uint8 SubGroup = 0;
         std::string Role;
+        uint8 ClassId = 0;
+        std::string ClassSpec;
+        float AverageItemLevel = 0.0f;
+        std::string GearIdentity;
         bool Active = false;
         bool LeaseOwned = false;
+    };
+
+    struct RaidNativeSignalState
+    {
+        bool Initialized = false;
+        bool Alive = false;
+        bool HasCorpse = false;
+        bool Released = false;
+        uint32 MapId = 0;
+        uint32 InstanceId = 0;
+        float X = 0.0f;
+        float Y = 0.0f;
+        float Z = 0.0f;
     };
 
     struct RaidRuntime
@@ -1591,12 +1662,25 @@ private:
         uint64 RecoveryGeneration = 0;
         bool EncounterInProgress = false;
         bool ReadyCheckSatisfied = false;
+        bool RosterCompositionValid = false;
+        bool NativeDeathObserved = false;
+        bool NativeCorpseObserved = false;
+        bool NativeReleaseObserved = false;
+        bool NativeResurrectionObserved = false;
+        bool NativeRunbackObserved = false;
+        bool NativeReadyCheckActionObserved = false;
+        uint64 NativeReadyCheckActionGeneration = 0;
+        uint64 NativeReadyCheckActionAttemptId = 0;
+        uint64 NativeReadyCheckActionWipeGeneration = 0;
+        uint64 NativeReadyCheckActionEvidenceSequence = 0;
+        bool NativeRecoveryEvidenceComplete = false;
         std::string StrategyId;
         std::string EncounterPhase = "formation";
         std::string WipeState = "ready";
         std::string RecoveryState = "none";
         std::vector<uint8> BossStates;
         std::map<uint32, RaidRosterSlot> RosterByGuid;
+        std::map<uint32, RaidNativeSignalState> NativeSignalsByGuid;
     };
 
     struct CohortRuntime
@@ -1680,6 +1764,7 @@ private:
     bool ReleaseBotGuid(uint32 guid);
     void ReleaseCohortLeases();
     bool LeaseOwnedByCurrentCohort(uint32 guid) const;
+    bool LeaseOwnedByCurrentCohort(uint32 guid, std::string const& roleSlot) const;
     std::string UnknownCohortJson(char const* action, std::string const& cohortId) const;
 
     uint64 _serverEpoch = 0;
