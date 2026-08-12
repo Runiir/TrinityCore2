@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "capture_id": "cata_raid_phase1_bwd_10n_foundation_v1",
+  "classification": "infrastructure_abort",
+  "gameplay_failure": false,
+  "fidelity_claim": false,
+  "source_identity": {
+    "commit": "82fce3fc13ba4ebc73fa4fe919a68c31094d718d",
+    "tree": "3e7ac43855fffd5f0716cb75aca428d6ee2c2591",
+    "clean_at_start": true,
+    "identity_stable_during_run": true
+  },
+  "build": {
+    "policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
+    "worldserver_sha256": "c86fe2f44be0e75131cb76f428dbb4cef44920e66d0fc1b601f89b61adfa9b7b",
+    "worldserver_receipt_sha256": "7ad317dde4555b19c578c2d20d295efc7b6efc4b9e5e94a59838bb297087d45e",
+    "trusted_local_operator": "runiir",
+    "gate_bearing": true
+  },
+  "live_facts": {
+    "exact_roster_size": 10,
+    "composition": {"tanks": 2, "healers": 3, "dps": 5},
+    "map_id": 669,
+    "instance_id": 2,
+    "lockout_save_id": 2,
+    "difficulty": "10N",
+    "entry_trash_kills": 2,
+    "deaths": 1,
+    "dead_member": {"guid": 1276, "name": "Bwddpsa", "class_spec": "fire_mage"},
+    "boss_engaged": false,
+    "route_node_index": 0
+  },
+  "root_cause": {
+    "failure_fingerprint": "partial_death_without_corpse_authority_after_under_healed_spawn",
+    "detail": "Generated validation provisioning persisted health=100 and power1=100. Bwddpsa died 264 ms after native spawn while the entry pack was acquired. TryNativePartyResurrection then selected the dead in-world member before BuildPlayerRepop had created an exact corpse; the native spell returned SPELL_FAILED_BAD_TARGETS (13). The dead member later remained blocked by native_corpse_authority_missing while nine survivors killed both trash targets and held the cleared anchor.",
+    "decision_assessment": "Survivors correctly killed the two declared entry targets and then held rather than abandoning immutable route identity. The resurrection selector was wrong because it attempted a corpse-requiring native spell before proving exact corpse authority.",
+    "remediation_scope": [
+      "provision validation characters at native-load-clamped full health and power before any combat",
+      "require exact frozen corpse authority before raid-validation party resurrection selection",
+      "allow native release and exact BWD runback when no authoritative corpse yet exists"
+    ]
+  },
+  "telemetry": {
+    "wall_clock_mode": "uncapped",
+    "watchdog_healthy": true,
+    "status_rows": 82,
+    "diagnosis_rows": 80,
+    "trace_rows": 80,
+    "retained_rows": 244,
+    "bound_rows": 244,
+    "rejected_rows": 0,
+    "unchecked_rows": 0,
+    "required_envelopes_gate_passed": true,
+    "only_missing_required_action": "botauto_readycheck",
+    "missing_readycheck_is_downstream_of_no_boss_wipe": true
+  },
+  "semantic_stall": {
+    "detected": true,
+    "seconds": 303.211,
+    "unchanged_samples": 60,
+    "signature": "14652ba62256326e635f190a46c311c6c6fd131829a3a1a254663966a2dd0530"
+  },
+  "cleanup": {
+    "gate_passed": true,
+    "stop_observed": true,
+    "stop_ok": true,
+    "zero_bots": true,
+    "zero_leases": true,
+    "worldserver_process_absent": true
+  },
+  "forbidden_assistance": {"observed": false, "gate_passed": true},
+  "artifact": {
+    "pointer": "artifacts/cata_raid_program/phase1_raid_foundation_82fce3fc_20260812.dvc",
+    "dvc_directory_md5": "1c5a69b7f6ecec6ea9b834f499a79256.dir",
+    "size_bytes": 120590593,
+    "nfiles": 3,
+    "raw_jsonl_sha256": "1ff6ec73826d457aec9590a37acfa111e8588edcaac9ffee4d75b0f66ddcdb09",
+    "report_sha256": "d733bd77c8f1b12041bde6c16af1dc53b4522f4c3be2c68ef90452b35b22898b",
+    "worldserver_log_sha256": "e9f4a901b03d0770aeb38ea02e55e579bf277bce9d01a8140757f1373a0668be",
+    "targeted_push_completed": true,
+    "targeted_remote_status_before_eviction": "cache_and_remote_in_sync",
+    "workspace_payload_evicted": true,
+    "exact_three_child_cache_objects_evicted": true,
+    "directory_metadata_retained": true,
+    "broad_gc_used": false
+  },
+  "acceptance": {
+    "phase1_gate_passed": false,
+    "next_gate": "bounded remediation, mandatory independent Sol-high review, exact coordinated rebuild, reprovision, and uncapped canonical rerun"
+  }
+}
