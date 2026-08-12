@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 from tools.raid_program.capture_phase1_raid_foundation import (
     accepted_foundation_status,
@@ -12,6 +13,14 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     evidence_demux_report,
     evidence_demux_rejections,
 )
+
+
+def test_canonical_capture_explicitly_starts_the_frozen_bwd_10n_profile():
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "tools/raid_program/capture_phase1_raid_foundation.py"
+    ).read_text(encoding="utf-8")
+    assert 'process.stdin.write(b"botauto start blackwing_descent_10n\\n")' in source
 
 
 def accepted_status() -> dict:

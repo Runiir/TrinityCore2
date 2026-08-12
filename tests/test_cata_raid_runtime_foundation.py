@@ -151,6 +151,7 @@ def test_controlled_aoe_counts_only_declared_targets_and_fails_closed_near_undec
         "allowMultidot && !forbidArea",
         "magma->UnSummon();",
         "candidate->RemoveAura(44457, bot->GetGUID());",
+        "spellInfo && spellInfo->IsAffectingArea()",
         "bot->InterruptSpell(CURRENT_CHANNELED_SPELL, false);",
     ):
         assert token in IMPL

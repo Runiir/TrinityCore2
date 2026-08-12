@@ -24480,6 +24480,10 @@ raid_cooldown_complete:
                 && declaredControlledAoeTargets >= raidAdapter.ControlledAoeMinimumTargets;
             if (!controlledAoeReleased)
             {
+                if (Spell* current = bot->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+                    if (SpellInfo const* spellInfo = current->GetSpellInfo();
+                        spellInfo && spellInfo->IsAffectingArea())
+                        bot->InterruptSpell(CURRENT_GENERIC_SPELL, false);
                 bot->InterruptSpell(CURRENT_CHANNELED_SPELL, false);
                 if (Creature* fireTotem = bot->m_SummonSlot[SUMMON_SLOT_TOTEM_FIRE] && bot->GetMap()
                         ? bot->GetMap()->GetCreature(bot->m_SummonSlot[SUMMON_SLOT_TOTEM_FIRE]) : nullptr)

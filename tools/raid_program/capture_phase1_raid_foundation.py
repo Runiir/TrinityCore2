@@ -1286,6 +1286,13 @@ def main() -> int:
         try:
             wait_for_prompt(process, log_path, args.startup_timeout_sec)
             assert process.stdin is not None
+            # Bind the canonical run to the frozen BWD 10N runtime profile.
+            # The test worldserver configuration deliberately has AutoStart
+            # disabled, so an explicit native operator command is required;
+            # omitting it would only poll an inactive default cohort forever.
+            process.stdin.write(b"botauto start blackwing_descent_10n\n")
+            process.stdin.flush()
+            time.sleep(1.0)
             deadline = time.monotonic() + args.observe_sec
             next_probe = 0.0
             seen_statuses = 0
