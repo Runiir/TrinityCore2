@@ -1,4 +1,5 @@
 #include "Bots/BotDatasetEvent.h"
+#include "Errors.h"
 #include <rapidjson/document.h>
 #include <cctype>
 #include <iomanip>

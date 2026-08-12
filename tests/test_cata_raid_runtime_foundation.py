@@ -87,6 +87,87 @@ def test_phase1_target_transfer_and_swap_controls_are_executable():
         assert token in IMPL
 
 
+def test_tank_swap_level_triggers_are_edge_latched_until_the_condition_clears():
+    assert "std::string LastRaidTankSwapTriggerKey" in HEADER
+    for token in (
+        'tankSwapTriggerKey = "cast:"',
+        'tankSwapTriggerKey = "add:"',
+        'tankSwapTriggerKey = "phase:"',
+        "state.LastRaidTankSwapTriggerKey != tankSwapTriggerKey",
+        "state.LastRaidTankSwapTriggerKey.clear();",
+        "memberState.LastRaidTankSwapTriggerKey = tankSwapTriggerKey;",
+    ):
+        assert token in IMPL
+
+
+def test_battle_res_slots_allow_native_capable_non_healers_and_role_priority_is_real():
+    raid_brez = IMPL[
+        IMPL.index("bool battleResOwner"):
+        IMPL.index("if (result.Features.RaidEncounter && raidAdapter.ContractResolved && raidAdapter.DispelAuraId)")
+    ]
+    assert 'std::string(role) == "healer"' not in raid_brez
+    assert "raidAdapter.BattleResurrectionPolicy" in raid_brez
+    for token in (
+        'targetPolicy == "tank_then_healer_then_dps"',
+        'deadRole == "tank" ? 3 : deadRole == "healer" ? 2 : 1',
+        "requestedByHealer ? 100 : pendingByHealer ? 90 : rolePriority",
+    ):
+        assert token in IMPL
+
+
+def test_controlled_aoe_counts_only_declared_targets_and_fails_closed_near_undeclared_hostiles():
+    for token in (
+        "uint32 declaredControlledAoeTargets = 0;",
+        "bool undeclaredControlledAoeHostile = false;",
+        "declared = std::find(raidAdapter.TargetEntries.begin()",
+        "undeclaredControlledAoeHostile = true;",
+        "++declaredControlledAoeTargets;",
+        "!undeclaredControlledAoeHostile",
+        "declaredControlledAoeTargets >= raidAdapter.ControlledAoeMinimumTargets",
+        '? declaredControlledAoeTargets : result.Features.AddCount',
+        "&profileAction, combatAddCount, controlledAoeReleased",
+    ):
+        assert token in IMPL
+
+
+def test_focus_fire_owns_target_and_cancels_every_wrong_attacker():
+    focus_start = IMPL.index('raidAdapter.TargetControl == "focus_fire"')
+    focus_end = IMPL.index('if (result.Features.RaidEncounter && raidAdapter.ContractResolved)\n    {', focus_start)
+    focus = IMPL[focus_start:focus_end]
+    for token in (
+        "auto stopWrongFocusTarget = [focus](Unit* attacker)",
+        "attacker->InterruptSpell(CURRENT_GENERIC_SPELL, false);",
+        "attacker->InterruptSpell(CURRENT_AUTOREPEAT_SPELL, false);",
+        "stopWrongFocusTarget(bot);",
+        "stopWrongFocusTarget(pet);",
+        "stopWrongFocusTarget(controlled);",
+        "state.TargetGuid = focus->GetGUID();",
+        "if (!focus || current->m_targets.GetUnitTarget() != focus)",
+    ):
+        assert token in focus
+    assert 'raidAdapter.TargetControl != "focus_fire"' in IMPL
+
+
+def test_platform_completion_requires_all_declared_destination_dimensions():
+    for token in (
+        "bool const declaredDestinationMap",
+        "bool const declaredDestinationArea",
+        "bool const declaredDestinationZ",
+        "(!declaredDestinationMap",
+        "(!declaredDestinationArea",
+        "(!declaredDestinationZ || destinationZMatches)",
+        'raidAdapter.PlatformPolicy != "altitude"',
+        "|| destinationZMatches;",
+        'raidAdapter.PlatformPolicy != "flying" || bot->IsFlying()',
+    ):
+        assert token in IMPL
+    platform_start = IMPL.index("bool const platformPostcondition")
+    platform_end = IMPL.index("bool const altitudePostcondition", platform_start)
+    platform = IMPL[platform_start:platform_end]
+    assert "|| (raidAdapter.PlatformDestinationMapId" not in platform
+    assert "|| (raidAdapter.PlatformDestinationAreaId" not in platform
+
+
 def test_phase1_jump_platform_altitude_and_flying_require_native_postconditions():
     for token in (
         'bot->GetMapId() == raidAdapter.PlatformDestinationMapId',
@@ -101,6 +182,9 @@ def test_phase1_jump_platform_altitude_and_flying_require_native_postconditions(
         'bot->GetExactDist2d(raidAnchors.ResolvedX, raidAnchors.ResolvedY)',
     ):
         assert token in IMPL
+    assert 'node.InteractionKind != "jump_pad"' in IMPL
+    assert 'node.MovementLink != "none" && node.PlatformPolicy != "ground"' in IMPL
+    assert "&& jumpTransferResolved" in IMPL
 
 
 def test_generic_contract_has_explicit_soak_dispel_and_cooldown_assignments():

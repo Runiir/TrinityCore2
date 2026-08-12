@@ -3614,13 +3614,17 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
             bool const platformResolved = node.PlatformPolicy == "ground"
                 || node.PlatformDestinationMapId > 0 || node.PlatformDestinationAreaId > 0
                 || node.PlatformMaximumZ > node.PlatformMinimumZ;
+            bool const jumpTransferResolved = node.InteractionKind != "jump_pad"
+                || (node.MovementLink != "none" && node.PlatformPolicy != "ground"
+                    && (node.PlatformDestinationMapId > 0 || node.PlatformDestinationAreaId > 0
+                        || node.PlatformMaximumZ > node.PlatformMinimumZ));
             node.MechanicContractResolved = !node.MechanicContractId.empty()
                 && node.MechanicContractError.empty() && knownFormation && knownAnchor && knownScope
                 && knownOrientation && formationResolved && targetResolved && tankSwapResolved
                 && interruptResolved && dispelResolved && cooldownResolved && soakResolved
                 && knownHealerOwnership && knownBattleRes && battleResResolved
                 && knownInteraction && interactionResolved
-                && knownMovement && knownPlatform && platformResolved;
+                && knownMovement && knownPlatform && platformResolved && jumpTransferResolved;
             if (!node.MechanicContractResolved && node.MechanicContractError.empty())
                 node.MechanicContractError = "unsupported_or_incomplete_contract";
         }
@@ -23749,11 +23753,11 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
                 raidAssignment.RoleIndex) != raidAdapter.BattleResurrectionSlots.end())
         : std::find(raidAdapter.BattleResurrectionSlots.begin(), raidAdapter.BattleResurrectionSlots.end(),
             raidAssignment.RoleIndex) != raidAdapter.BattleResurrectionSlots.end();
-    if (result.Features.RaidEncounter && raidAdapter.ContractResolved && battleResOwner
-        && std::string(role) == "healer")
+    if (result.Features.RaidEncounter && raidAdapter.ContractResolved && battleResOwner)
     {
         DungeonTrashActionResult resurrectionResult;
-        if (TryNativePartyResurrection(state, bot, power, stage, activity, resurrectionResult))
+        if (TryNativePartyResurrection(state, bot, power, stage, activity, resurrectionResult,
+                raidAdapter.BattleResurrectionPolicy))
         {
             result.Action = resurrectionResult.Action;
             result.Target = resurrectionResult.Target;
@@ -23910,20 +23914,35 @@ raid_cooldown_complete:
                     focusPriority = priority;
                 }
             }
+        auto stopWrongFocusTarget = [focus](Unit* attacker)
+        {
+            if (!attacker)
+                return;
+            if (!focus || (attacker->GetVictim() && attacker->GetVictim() != focus))
+                attacker->AttackStop();
+            if (Spell* current = attacker->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+                if (!focus || current->m_targets.GetUnitTarget() != focus)
+                    attacker->InterruptSpell(CURRENT_GENERIC_SPELL, false);
+            if (Spell* repeat = attacker->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
+                if (!focus || repeat->m_targets.GetUnitTarget() != focus)
+                    attacker->InterruptSpell(CURRENT_AUTOREPEAT_SPELL, false);
+        };
         if (!focus)
         {
-            bot->AttackStop();
+            stopWrongFocusTarget(bot);
+            if (Pet* pet = bot->GetPet())
+                stopWrongFocusTarget(pet);
+            for (Unit* controlled : bot->m_Controlled)
+                stopWrongFocusTarget(controlled);
             result.Action = "raid_focus_fire_target_missing";
             result.Failure = true;
             return result;
         }
-        if (bot->GetVictim() && bot->GetVictim() != focus)
-            bot->AttackStop();
-        if (Pet* pet = bot->GetPet(); pet && pet->GetVictim() && pet->GetVictim() != focus)
-            pet->AttackStop();
+        stopWrongFocusTarget(bot);
+        if (Pet* pet = bot->GetPet())
+            stopWrongFocusTarget(pet);
         for (Unit* controlled : bot->m_Controlled)
-            if (controlled && controlled->GetVictim() && controlled->GetVictim() != focus)
-                controlled->AttackStop();
+            stopWrongFocusTarget(controlled);
         result.Target = focus;
         state.TargetGuid = focus->GetGUID();
         RecordRaidTelemetry(state, bot, focus, "raid_focus_fire", "declared_target_selected",
@@ -23933,16 +23952,19 @@ raid_cooldown_complete:
 
     if (result.Features.RaidEncounter && raidAdapter.ContractResolved)
     {
-        bool const platformPostcondition = raidAdapter.PlatformPolicy == "ground"
-            || (raidAdapter.PlatformDestinationMapId && bot->GetMapId() == raidAdapter.PlatformDestinationMapId)
-            || (raidAdapter.PlatformDestinationAreaId && bot->GetAreaId() == raidAdapter.PlatformDestinationAreaId)
-            || (raidAdapter.PlatformMaximumZ > raidAdapter.PlatformMinimumZ
-                && bot->GetPositionZ() >= raidAdapter.PlatformMinimumZ
-                && bot->GetPositionZ() <= raidAdapter.PlatformMaximumZ);
+        bool const declaredDestinationMap = raidAdapter.PlatformDestinationMapId > 0;
+        bool const declaredDestinationArea = raidAdapter.PlatformDestinationAreaId > 0;
+        bool const declaredDestinationZ = raidAdapter.PlatformMaximumZ > raidAdapter.PlatformMinimumZ;
+        bool const destinationZMatches = declaredDestinationZ
+            && bot->GetPositionZ() >= raidAdapter.PlatformMinimumZ
+            && bot->GetPositionZ() <= raidAdapter.PlatformMaximumZ;
+        bool const platformPostcondition = (!declaredDestinationMap
+                || bot->GetMapId() == raidAdapter.PlatformDestinationMapId)
+            && (!declaredDestinationArea
+                || bot->GetAreaId() == raidAdapter.PlatformDestinationAreaId)
+            && (!declaredDestinationZ || destinationZMatches);
         bool const altitudePostcondition = raidAdapter.PlatformPolicy != "altitude"
-            || (raidAdapter.PlatformMaximumZ > raidAdapter.PlatformMinimumZ
-                && bot->GetPositionZ() >= raidAdapter.PlatformMinimumZ
-                && bot->GetPositionZ() <= raidAdapter.PlatformMaximumZ);
+            || destinationZMatches;
         bool const flyingPostcondition = raidAdapter.PlatformPolicy != "flying" || bot->IsFlying();
         bool const regroupPostcondition = raidAdapter.MovementLink == "regroup"
             && raidAnchors.Active
@@ -24056,23 +24078,47 @@ raid_cooldown_complete:
     }
 
     Unit* currentTank = result.Target->GetVictim();
-    bool tankSwapTriggered = false;
+    bool tankSwapConditionActive = false;
+    bool tankSwapTimerTrigger = false;
+    std::string tankSwapTriggerKey;
     if (result.Features.RaidEncounter && raidAdapter.ContractResolved && currentTank)
     {
         if (raidAdapter.TankSwapTrigger == "debuff_stacks")
             if (Aura const* aura = currentTank->GetAura(raidAdapter.TankSwapAuraId))
-                tankSwapTriggered = aura->GetStackAmount() >= raidAdapter.TankSwapAuraStacks;
+                if (aura->GetStackAmount() >= raidAdapter.TankSwapAuraStacks)
+                {
+                    tankSwapConditionActive = true;
+                    tankSwapTriggerKey = "debuff:" + std::to_string(raidAdapter.TankSwapAuraId)
+                        + ":" + std::to_string(currentTank->GetGUID().GetCounter());
+                }
         if (raidAdapter.TankSwapTrigger == "timer")
-            tankSwapTriggered = state.LastRaidTankSwapMs
+            tankSwapTimerTrigger = state.LastRaidTankSwapMs
                 && NowMs() >= state.LastRaidTankSwapMs + raidAdapter.TankSwapIntervalMs;
         if (raidAdapter.TankSwapTrigger == "boss_cast")
-            tankSwapTriggered = result.Features.CastSpellId == raidAdapter.TankSwapTriggerSpellId;
+            if (result.Features.CastSpellId == raidAdapter.TankSwapTriggerSpellId)
+            {
+                tankSwapConditionActive = true;
+                tankSwapTriggerKey = "cast:" + std::to_string(result.Features.CastSpellId);
+            }
         if (raidAdapter.TankSwapTrigger == "add_spawn" && !result.Features.PriorityAddGuid.IsEmpty())
             if (Unit* add = ObjectAccessor::GetUnit(*bot, result.Features.PriorityAddGuid))
-                tankSwapTriggered = add->GetEntry() == raidAdapter.TankSwapAddEntry;
+                if (add->GetEntry() == raidAdapter.TankSwapAddEntry)
+                {
+                    tankSwapConditionActive = true;
+                    tankSwapTriggerKey = "add:" + std::to_string(add->GetGUID().GetCounter());
+                }
         if (raidAdapter.TankSwapTrigger == "phase_transition")
-            tankSwapTriggered = Cohort().Raid.EncounterPhase == raidAdapter.TankSwapPhase;
+            if (Cohort().Raid.EncounterPhase == raidAdapter.TankSwapPhase)
+            {
+                tankSwapConditionActive = true;
+                tankSwapTriggerKey = "phase:" + raidAdapter.TankSwapPhase;
+            }
     }
+    if (!tankSwapConditionActive && raidAdapter.TankSwapTrigger != "timer")
+        state.LastRaidTankSwapTriggerKey.clear();
+    bool const tankSwapTriggered = tankSwapTimerTrigger
+        || (tankSwapConditionActive && !tankSwapTriggerKey.empty()
+            && state.LastRaidTankSwapTriggerKey != tankSwapTriggerKey);
     ObjectGuid nextTankGuid;
     if (currentTank)
     {
@@ -24102,6 +24148,7 @@ raid_cooldown_complete:
                     if (memberState.Guid == raidAssignment.MainTankGuid || memberState.Guid == raidAssignment.OffTankGuid)
                     {
                         memberState.LastRaidTankSwapTriggerSpellId = result.Features.CastSpellId;
+                        memberState.LastRaidTankSwapTriggerKey = tankSwapTriggerKey;
                         memberState.LastRaidTankSwapMs = swapAtMs;
                     }
             }
@@ -24303,10 +24350,48 @@ raid_cooldown_complete:
         }
     }
 
-    if (result.Features.AddsActive && !result.Features.PriorityAddGuid.IsEmpty() && std::string(role) != "healer"
-        && raidAdapter.TargetControl != "kill_sync")
+    Unit* controlledAoeTarget = nullptr;
+    uint32 declaredControlledAoeTargets = 0;
+    bool undeclaredControlledAoeHostile = false;
+    if (raidAdapter.ContractResolved && raidAdapter.TargetControl == "controlled_aoe")
     {
-        if (Unit* add = ObjectAccessor::GetUnit(*bot, result.Features.PriorityAddGuid))
+        size_t controlledAoePriority = raidAdapter.TargetEntries.size();
+        std::vector<WorldObject*> nearbyObjects;
+        Trinity::AllWorldObjectsInRange nearbyCheck(bot, 45.0f);
+        Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> nearbySearcher(bot, nearbyObjects, nearbyCheck);
+        Cell::VisitAllObjects(bot, nearbySearcher, 45.0f);
+        for (WorldObject* object : nearbyObjects)
+        {
+            Creature* candidate = object ? object->ToCreature() : nullptr;
+            if (!candidate || !candidate->IsAlive() || candidate == result.Target
+                || candidate->IsDungeonBoss() || candidate->isWorldBoss()
+                || !bot->IsValidAttackTarget(candidate) || !bot->IsWithinLOSInMap(candidate))
+                continue;
+            auto declared = std::find(raidAdapter.TargetEntries.begin(), raidAdapter.TargetEntries.end(),
+                candidate->GetEntry());
+            if (declared == raidAdapter.TargetEntries.end())
+            {
+                undeclaredControlledAoeHostile = true;
+                continue;
+            }
+            ++declaredControlledAoeTargets;
+            size_t const priority = size_t(std::distance(raidAdapter.TargetEntries.begin(), declared));
+            if (!controlledAoeTarget || priority < controlledAoePriority
+                || (priority == controlledAoePriority
+                    && candidate->GetGUID().GetRawValue() < controlledAoeTarget->GetGUID().GetRawValue()))
+            {
+                controlledAoeTarget = candidate;
+                controlledAoePriority = priority;
+            }
+        }
+    }
+
+    ObjectGuid const addTargetGuid = controlledAoeTarget
+        ? controlledAoeTarget->GetGUID() : result.Features.PriorityAddGuid;
+    if (result.Features.AddsActive && !addTargetGuid.IsEmpty() && std::string(role) != "healer"
+        && raidAdapter.TargetControl != "kill_sync" && raidAdapter.TargetControl != "focus_fire")
+    {
+        if (Unit* add = ObjectAccessor::GetUnit(*bot, addTargetGuid))
         {
             if (std::find(raidAdapter.TargetEntries.begin(), raidAdapter.TargetEntries.end(), add->GetEntry())
                 == raidAdapter.TargetEntries.end())
@@ -24318,11 +24403,14 @@ raid_cooldown_complete:
             ResolvedCombatAction profileAction;
             bool const controlledAoeReleased = raidAdapter.ContractResolved
                 && raidAdapter.TargetControl == "controlled_aoe"
-                && result.Features.AddCount >= raidAdapter.ControlledAoeMinimumTargets;
+                && !undeclaredControlledAoeHostile
+                && declaredControlledAoeTargets >= raidAdapter.ControlledAoeMinimumTargets;
             bool const forbidArea = raidAdapter.ContractResolved
                 && (!raidAdapter.AllowAreaDamage || (raidAdapter.TargetControl == "controlled_aoe" && !controlledAoeReleased));
+            uint32 const combatAddCount = raidAdapter.TargetControl == "controlled_aoe"
+                ? declaredControlledAoeTargets : result.Features.AddCount;
             BotActionResult actionResult = ExecuteProfileCombatAction(
-                &state, bot, add, &profileAction, result.Features.AddCount, controlledAoeReleased,
+                &state, bot, add, &profileAction, combatAddCount, controlledAoeReleased,
                 0, controlledAoeReleased, false, forbidArea, raidAdapter.AllowMultidot);
             uint32 spellId = profileAction.SpellId;
             result.Target = add;
@@ -24330,9 +24418,9 @@ raid_cooldown_complete:
             result.SpellId = actionResult == BotActionResult::Ok ? spellId : 0;
             result.Failure = actionResult != BotActionResult::Ok;
             result.Rare = true;
-            RecordEvent(state, bot, "boss_adds", add, ToString(actionResult), raw.c_str(), semantic.c_str(), float(result.Features.AddCount), result.Features.CastSpellId, result.SpellId);
+            RecordEvent(state, bot, "boss_adds", add, ToString(actionResult), raw.c_str(), semantic.c_str(), float(combatAddCount), result.Features.CastSpellId, result.SpellId);
             if (result.Features.RaidEncounter)
-                RecordRaidTelemetry(state, bot, add, "raid_add_wave", ToString(actionResult), result.Features, raidAssignment, raidAnchors, raidAdapter, raidGearPlan, heroicProgression, raw.c_str(), semantic.c_str(), float(result.Features.AddCount), result.Features.CastSpellId, result.SpellId);
+                RecordRaidTelemetry(state, bot, add, "raid_add_wave", ToString(actionResult), result.Features, raidAssignment, raidAnchors, raidAdapter, raidGearPlan, heroicProgression, raw.c_str(), semantic.c_str(), float(combatAddCount), result.Features.CastSpellId, result.SpellId);
             if (result.Failure)
                 RecordBossReplay(state, bot, add, result.Features, "boss_mechanic_failure", raw.c_str(), semantic.c_str(), "{\"action\":\"switch_to_adds\"}", "{\"reason\":\"add_switch_failed\"}");
             return result;
@@ -25526,7 +25614,7 @@ bool BotWorldPopulationMgr::TryNativeSelfResurrection(WorldBotState& state, Play
     return false;
 }
 
-bool BotWorldPopulationMgr::TryNativePartyResurrection(WorldBotState& state, Player* healer, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, DungeonTrashActionResult& result)
+bool BotWorldPopulationMgr::TryNativePartyResurrection(WorldBotState& state, Player* healer, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, DungeonTrashActionResult& result, std::string const& targetPolicy)
 {
     if (!healer || !healer->IsAlive() || !healer->GetGroup())
         return false;
@@ -25562,7 +25650,16 @@ bool BotWorldPopulationMgr::TryNativePartyResurrection(WorldBotState& state, Pla
         if ((member->IsResurrectRequested() && !requestedByHealer)
             || (memberState->NativeResurrectionPendingUntilMs > nowMs && !pendingByHealer))
             continue;
-        uint8 priority = requestedByHealer ? 2 : pendingByHealer ? 1 : 0;
+        uint8 rolePriority = 0;
+        if (targetPolicy == "tank_then_healer_then_dps")
+        {
+            std::string const deadRole = GetDungeonRole(member);
+            rolePriority = deadRole == "tank" ? 3 : deadRole == "healer" ? 2 : 1;
+        }
+        // A native request already submitted by this caster must be completed
+        // before choosing a fresh target.  Otherwise the declared raid role
+        // order is authoritative, with GUID providing deterministic ties.
+        uint8 priority = requestedByHealer ? 100 : pendingByHealer ? 90 : rolePriority;
         if (!deadMember || priority > deadMemberPriority
             || (priority == deadMemberPriority && member->GetGUID() < deadMember->GetGUID()))
         {

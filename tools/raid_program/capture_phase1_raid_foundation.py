@@ -636,6 +636,15 @@ def accepted_native_recovery(statuses: list[dict[str, Any]]) -> tuple[bool, list
     wipe_generation = final_runtime.get("wipe_generation")
     if not isinstance(wipe_generation, int) or isinstance(wipe_generation, bool) or wipe_generation <= 0:
         reasons.append("native_recovery_wipe_scope_missing")
+    if selected_wipe_generation != wipe_generation:
+        reasons.append("native_latest_wipe_transition_not_observed")
+    for transition_name, transition_index in (
+        ("wipe", wipe_index),
+        ("reset", reset_index),
+        ("recovery", recovery_index),
+    ):
+        if transition_index is not None and runtimes[transition_index].get("wipe_generation") != wipe_generation:
+            reasons.append(f"native_{transition_name}_transition_wipe_scope_mismatch")
     if final_native.get("recovery_wipe_generation") != wipe_generation:
         reasons.append("native_recovery_wipe_scope_mismatch")
     for field in (

@@ -547,6 +547,7 @@ private:
         bool NativeReleaseRequested = false;
         uint32 NativeRunbackAreaTriggerId = 0;
         uint32 LastRaidTankSwapTriggerSpellId = 0;
+        std::string LastRaidTankSwapTriggerKey;
         uint64 LastRaidTankSwapMs = 0;
         ObjectGuid NativeResurrectionCasterGuid;
         uint32 NativeResurrectionSpellId = 0;
@@ -1476,7 +1477,7 @@ private:
     uint32 SelectInterruptSpell(Player* bot) const;
     uint32 SelectHealSpell(Player* bot, Unit* target) const;
     bool TryCastFriendlySpell(Player* bot, Unit* target, uint32 spellId, std::string* failureReason = nullptr);
-    bool TryNativePartyResurrection(WorldBotState& state, Player* healer, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, DungeonTrashActionResult& result);
+    bool TryNativePartyResurrection(WorldBotState& state, Player* healer, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, DungeonTrashActionResult& result, std::string const& targetPolicy = {});
     bool TryNativeSelfResurrection(WorldBotState& state, Player* bot);
     std::string BuildDungeonTrashPackJson(DungeonTrashPackFeatures const& pack) const;
     std::string BuildBossMechanicsJson(BossMechanicFeatures const& features) const;

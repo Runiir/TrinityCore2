@@ -343,6 +343,61 @@ def test_native_recovery_does_not_cross_pair_reset_from_an_earlier_wipe():
     assert "boss_reset_observed" in reasons
 
 
+def test_native_recovery_requires_the_latest_wipe_transition_in_retained_evidence():
+    ready = accepted_status()
+    engaged = accepted_status()
+    engaged["raid_runtime"].update(
+        evidence_sequence=2, encounter_in_progress=True,
+        boss_states=[1] + [0] * 5, ready_check_satisfied=False,
+        wipe_state="engaged", recovery_state="none",
+    )
+    wiped = accepted_status()
+    wiped["raid_runtime"].update(
+        evidence_sequence=3, alive_size=0, wipe_generation=1,
+        boss_reset_generation_at_wipe=0, ready_check_satisfied=False,
+        wipe_state="wiped", recovery_state="release_resurrection_pending",
+    )
+    reset = json.loads(json.dumps(wiped))
+    reset["raid_runtime"].update(evidence_sequence=4, boss_reset_generation=1)
+    recovered = accepted_status()
+    recovered["raid_runtime"].update(
+        evidence_sequence=70, wipe_generation=1, boss_reset_generation=1,
+        recovery_generation=1, recovery_state="recovered_ready_check",
+    )
+    final_without_observed_second_wipe = accepted_status()
+    final_without_observed_second_wipe["raid_runtime"].update(
+        evidence_sequence=140, wipe_generation=2, boss_reset_generation=2,
+        recovery_generation=2, recovery_state="recovered_ready_check",
+    )
+    final_without_observed_second_wipe["raid_runtime"]["native_recovery"] = {
+        "death_observed": True, "corpse_observed": True, "release_observed": True,
+        "resurrection_observed": True, "runback_observed": True,
+        "ready_check_action_observed": True, "evidence_complete": True,
+        "ready_check_action_generation": 3, "ready_check_action_attempt_id": 1,
+        "ready_check_action_wipe_generation": 2,
+        "ready_check_assignment_generation": 1,
+        "ready_check_action_evidence_sequence": 140,
+        "recovery_wipe_generation": 2,
+        "members": [
+            {
+                "guid": 1001 + index, "wipe_generation": 2,
+                "death_sequence": 75 + index * 6,
+                "corpse_sequence": 76 + index * 6,
+                "release_sequence": 77 + index * 6,
+                "runback_sequence": 78 + index * 6,
+                "reentry_sequence": 79 + index * 6,
+                "resurrection_sequence": 80 + index * 6,
+            }
+            for index in range(10)
+        ],
+    }
+    accepted, reasons = accepted_native_recovery(
+        [ready, engaged, wiped, reset, recovered, final_without_observed_second_wipe]
+    )
+    assert accepted is False
+    assert "native_latest_wipe_transition_not_observed" in reasons
+
+
 def test_native_recovery_rejects_stored_ready_without_observed_transitions():
     accepted, reasons = accepted_native_recovery([accepted_status()])
     assert accepted is False
