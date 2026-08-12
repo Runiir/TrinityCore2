@@ -4177,9 +4177,20 @@ bool BotWorldPopulationMgr::IsValidationCohortMemberInOriginalInstance(WorldBotS
     // receive this exception.
     if (!bot->IsAlive() && bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)
         && bot->HasCorpse()
-        && bot->GetCorpseLocation().GetMapId() == state.ValidationCohortMapId
-        && bot->GetCorpse()->GetInstanceId() == state.ValidationCohortInstanceId)
-        return true;
+        && bot->GetCorpseLocation().GetMapId() == state.ValidationCohortMapId)
+    {
+        // Released ghosts are normally on the graveyard map, so Player::GetCorpse
+        // would query that current map and can legitimately return null. Resolve
+        // the corpse from the frozen raid instance instead; missing or foreign
+        // corpse authority is never an exemption.
+        Map* originalMap = sMapMgr->FindMap(state.ValidationCohortMapId, state.ValidationCohortInstanceId);
+        Corpse* originalCorpse = originalMap ? originalMap->GetCorpseByPlayer(bot->GetGUID()) : nullptr;
+        if (originalCorpse
+            && originalCorpse->GetOwnerGUID() == bot->GetGUID()
+            && originalCorpse->GetMapId() == state.ValidationCohortMapId
+            && originalCorpse->GetInstanceId() == state.ValidationCohortInstanceId)
+            return true;
+    }
 
     return bot->IsInWorld()
         && bot->GetMapId() == state.ValidationCohortMapId

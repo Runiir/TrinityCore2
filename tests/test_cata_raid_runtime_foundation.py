@@ -59,7 +59,11 @@ def test_live_raid_instance_identity_freezes_atomically_from_the_exact_roster():
     assert "if (!memberState->ValidationCohortLocked)" in group
     assert '"validation_cohort_immutable_identity_drift"' in group
     assert 'state.LastDecisionResult = "validation_cohort_formation_pending";' in update
-    assert "bot->GetCorpse()->GetInstanceId() == state.ValidationCohortInstanceId" in original_instance
+    assert "sMapMgr->FindMap(state.ValidationCohortMapId, state.ValidationCohortInstanceId)" in original_instance
+    assert "originalMap ? originalMap->GetCorpseByPlayer(bot->GetGUID()) : nullptr" in original_instance
+    assert "originalCorpse->GetOwnerGUID() == bot->GetGUID()" in original_instance
+    assert "originalCorpse->GetInstanceId() == state.ValidationCohortInstanceId" in original_instance
+    assert "bot->GetCorpse()->GetInstanceId()" not in original_instance
 
 
 def test_raid_size_and_difficulty_are_explicit_and_fail_closed():
