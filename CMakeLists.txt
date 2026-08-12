@@ -39,6 +39,16 @@ if(DEFINED ENV{TRINITY_RAID_BUILD_COORDINATED} AND "$ENV{TRINITY_RAID_BUILD_COOR
   find_program(TRINITY_RAID_FLOCK_EXECUTABLE flock REQUIRED)
   set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK
     "${TRINITY_RAID_FLOCK_EXECUTABLE} $ENV{TRINITY_RAID_BUILD_LINK_LOCK}")
+  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang" AND CMAKE_AR)
+    # GNU-compatible thin archives retain object references instead of copying
+    # every large unity object into an intermediate .a. This keeps the
+    # serialized archive step beneath the same coordinator/PSI gate while
+    # avoiding the host pressure observed when libgame.a/libscripts.a were
+    # materialized as ordinary archives.
+    set(CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> qcT <TARGET> <LINK_FLAGS> <OBJECTS>")
+    set(CMAKE_C_ARCHIVE_CREATE "<CMAKE_AR> qcT <TARGET> <LINK_FLAGS> <OBJECTS>")
+    message(STATUS "Raid build coordinator: GNU-compatible thin intermediate archives enabled")
+  endif()
   message(STATUS
     "Raid build coordinator ticket $ENV{TRINITY_RAID_BUILD_TICKET}: "
     "$ENV{TRINITY_RAID_BUILD_COMPILER_JOBS} compiler jobs, "

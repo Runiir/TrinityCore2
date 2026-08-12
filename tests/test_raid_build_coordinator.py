@@ -289,6 +289,8 @@ def test_cmake_integration_applies_compile_and_link_controls() -> None:
     assert "CMAKE_JOB_POOL_COMPILE" in cmake
     assert "CMAKE_JOB_POOL_LINK" in cmake
     assert "RULE_LAUNCH_LINK" in cmake
+    assert 'CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> qcT' in cmake
+    assert "thin intermediate archives enabled" in cmake
 
 
 def test_all_registered_worktrees_share_git_common_queue_state() -> None:
