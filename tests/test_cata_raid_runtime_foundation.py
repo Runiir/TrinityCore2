@@ -636,6 +636,13 @@ def test_raid_trash_uses_native_threat_headroom_and_declared_minimum_distance():
     assert 'profile.MovementDirective == "healer_support"' in minimum
     assert 'creature->GetEntry() != sourceEntry' in minimum
     assert 'safeDistance = minimumDistance + 2.0f' in minimum
+    assert "sources.push_back(creature)" in minimum
+    assert "for (size_t left = 0; left < sources.size(); ++left)" in minimum
+    assert "addDirection(-pairY, pairX);" in minimum
+    assert "PathGenerator path(bot);" in minimum
+    assert "for (G3D::Vector3 const& point : path.GetPath())" in minimum
+    assert "std::min(startDistance, minimumDistance) - 0.25f" in minimum
+    assert "< safeDistance" in minimum
     assert '"minimum_distance_exit_started"' in minimum
     assert route_runtime.index("if (tryValidationRouteMovementCheck(target))") < route_runtime.index(
         "if (tryValidationRouteMinimumDistance())"
@@ -649,6 +656,38 @@ def test_raid_trash_uses_native_threat_headroom_and_declared_minimum_distance():
     generator = (ROOT / "tools/bot_ml/build_validation_scenario_manifests.py").read_text()
     assert '"minimum_distance_source_entry": int(step.get("minimum_distance_source_entry") or 0)' in generator
     assert '"minimum_distance_yards": float(step.get("minimum_distance_yards") or 0.0)' in generator
+
+
+def test_overlapping_drakonid_minimum_distance_uses_union_safe_perpendicular_exit():
+    # The two frozen Drudges are about 9.11 yards apart. A player between them
+    # cannot safely use the nearest-source ray because it points toward the
+    # second source. The pair-derived perpendicular keeps distance from both
+    # nondecreasing and finishes outside both 15-yard native damage radii plus
+    # the declared two-yard endpoint margin.
+    sources = ((0.0, 0.0), (9.11, 0.0))
+    start = (4.0, 0.0)
+    safe_distance = 17.0
+    direction = (0.0, 1.0)
+    required = max(
+        math.sqrt(safe_distance**2 - math.dist(start, source) ** 2)
+        for source in sources
+    ) + 0.5
+    endpoint = (
+        start[0] + direction[0] * required,
+        start[1] + direction[1] * required,
+    )
+
+    for source in sources:
+        assert math.dist(endpoint, source) >= safe_distance
+        prior = math.dist(start, source)
+        for step in range(1, 21):
+            point = (
+                start[0] + (endpoint[0] - start[0]) * step / 20.0,
+                start[1] + (endpoint[1] - start[1]) * step / 20.0,
+            )
+            distance = math.dist(point, source)
+            assert distance >= prior
+            prior = distance
 
 
 def test_shared_boss_focus_cannot_bypass_declared_target_or_typed_contract_authority():

@@ -16590,6 +16590,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 tryFeralInFlightHazardLooseTaunt();
         }
 
+        bot->InterruptNonMeleeSpells(false);
         bool moved = false;
         bool feralHazardHandoffBiased = false;
         bool feralHazardCurrentClusterBiased = false;
@@ -16772,6 +16773,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         Creature* source = nullptr;
         float sourceDistance = std::numeric_limits<float>::max();
+        std::vector<Creature*> sources;
         std::vector<WorldObject*> objects;
         Trinity::AllWorldObjectsInRange check(bot, 60.0f);
         Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(
@@ -16786,6 +16788,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 || !bot->IsValidAttackTarget(creature)
                 || !isValidationCohortCombatLinked(creature))
                 continue;
+            sources.push_back(creature);
             float distance = bot->GetExactDist2d(creature);
             if (!source || distance < sourceDistance)
             {
@@ -16796,24 +16799,123 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (!source || sourceDistance >= minimumDistance)
             return false;
 
-        // The contract distance is the exact native damaging radius.  Move to
-        // a two-yard exterior point so ordinary path endpoint tolerance cannot
-        // leave a ranged/healer assignment inside the effect on the next tick.
+        // The contract distance is the exact native damaging radius.  Search
+        // for a two-yard exterior point against the union of every exact,
+        // combat-linked source.  A nearest-source ray is insufficient when two
+        // overlapping Drudges bracket a player: that ray can cross the second
+        // source and finish inside its native damage radius.
         float safeDistance = minimumDistance + 2.0f;
-        float angle = source->GetAngle(bot);
-        float safeX = source->GetPositionX() + std::cos(angle) * safeDistance;
-        float safeY = source->GetPositionY() + std::sin(angle) * safeDistance;
-        float safeZ = bot->GetPositionZ();
-        if (Map* map = bot->GetMap())
+        std::vector<std::pair<float, float>> directions;
+        auto addDirection = [&directions](float x, float y)
         {
-            float floorZ = map->GetHeight(
-                bot->GetPhaseShift(), safeX, safeY, safeZ + 4.0f, true, 10.0f);
-            if (floorZ > INVALID_HEIGHT && std::fabs(floorZ - safeZ) <= 10.0f)
-                safeZ = floorZ;
+            float length = std::hypot(x, y);
+            if (length <= 0.001f)
+                return;
+            x /= length;
+            y /= length;
+            for (auto const& direction : directions)
+                if (direction.first * x + direction.second * y >= 0.999f)
+                    return;
+            directions.emplace_back(x, y);
+        };
+        float centroidX = 0.0f;
+        float centroidY = 0.0f;
+        for (Creature const* candidateSource : sources)
+        {
+            centroidX += candidateSource->GetPositionX();
+            centroidY += candidateSource->GetPositionY();
+            addDirection(
+                bot->GetPositionX() - candidateSource->GetPositionX(),
+                bot->GetPositionY() - candidateSource->GetPositionY());
         }
+        centroidX /= float(sources.size());
+        centroidY /= float(sources.size());
+        addDirection(bot->GetPositionX() - centroidX, bot->GetPositionY() - centroidY);
+        for (size_t left = 0; left < sources.size(); ++left)
+            for (size_t right = left + 1; right < sources.size(); ++right)
+            {
+                float pairX = sources[right]->GetPositionX() - sources[left]->GetPositionX();
+                float pairY = sources[right]->GetPositionY() - sources[left]->GetPositionY();
+                addDirection(-pairY, pairX);
+                addDirection(pairY, -pairX);
+            }
 
-        bot->InterruptNonMeleeSpells(false);
-        bool moved = MoveBotToPoint(state, bot, safeX, safeY, safeZ);
+        bool moved = false;
+        float safeX = bot->GetPositionX();
+        float safeY = bot->GetPositionY();
+        float safeZ = bot->GetPositionZ();
+        for (auto const& direction : directions)
+        {
+            float requiredTravel = 0.0f;
+            for (Creature const* candidateSource : sources)
+            {
+                float offsetX = bot->GetPositionX() - candidateSource->GetPositionX();
+                float offsetY = bot->GetPositionY() - candidateSource->GetPositionY();
+                float distanceSquared = offsetX * offsetX + offsetY * offsetY;
+                if (distanceSquared >= safeDistance * safeDistance)
+                    continue;
+                float projection = offsetX * direction.first + offsetY * direction.second;
+                float discriminant = projection * projection
+                    + safeDistance * safeDistance - distanceSquared;
+                requiredTravel = std::max(requiredTravel,
+                    -projection + std::sqrt(std::max(0.0f, discriminant)));
+            }
+            requiredTravel += 0.5f;
+            float candidateX = bot->GetPositionX() + direction.first * requiredTravel;
+            float candidateY = bot->GetPositionY() + direction.second * requiredTravel;
+            float candidateZ = bot->GetPositionZ();
+            if (Map* map = bot->GetMap())
+            {
+                float floorZ = map->GetHeight(bot->GetPhaseShift(), candidateX,
+                    candidateY, candidateZ + 4.0f, true, 10.0f);
+                if (floorZ > INVALID_HEIGHT && std::fabs(floorZ - candidateZ) <= 10.0f)
+                    candidateZ = floorZ;
+            }
+
+            PathGenerator path(bot);
+            bool pathOk = path.CalculatePath(candidateX, candidateY, candidateZ, false);
+            PathType pathType = path.GetPathType();
+            if (!pathOk || (pathType & PATHFIND_NOPATH)
+                || (pathType & PATHFIND_NOT_USING_PATH)
+                || (pathType & PATHFIND_INCOMPLETE)
+                || (pathType & PATHFIND_SHORTCUT)
+                || (pathType & PATHFIND_FARFROMPOLY))
+                continue;
+
+            bool unionSafe = true;
+            for (Creature const* candidateSource : sources)
+            {
+                float startDistance = bot->GetExactDist2d(candidateSource);
+                float pathFloor = std::max(0.0f,
+                    std::min(startDistance, minimumDistance) - 0.25f);
+                if (Distance2d(candidateX, candidateY,
+                        candidateSource->GetPositionX(), candidateSource->GetPositionY())
+                    < safeDistance)
+                {
+                    unionSafe = false;
+                    break;
+                }
+                for (G3D::Vector3 const& point : path.GetPath())
+                    if (Distance2d(point.x, point.y,
+                            candidateSource->GetPositionX(), candidateSource->GetPositionY())
+                        < pathFloor)
+                    {
+                        unionSafe = false;
+                        break;
+                    }
+                if (!unionSafe)
+                    break;
+            }
+            if (!unionSafe)
+                continue;
+
+            safeX = candidateX;
+            safeY = candidateY;
+            safeZ = candidateZ;
+            moved = MoveBotToPoint(state, bot, safeX, safeY, safeZ);
+            if (moved)
+                break;
+        }
         std::string raw = BuildRawJson(bot, source);
         std::string semantic = BuildSemanticJson(
             bot, source, "validation_route_mechanic", &power, stage, activity);
