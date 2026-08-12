@@ -5556,6 +5556,9 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
             if (bind->save)
                 raid.LockoutSaveId = bind->save->GetInstanceId();
 
+    std::vector<uint8> const previousBossStates = raid.BossStates;
+    std::string const previousWipeState = raid.WipeState;
+    std::string const previousRecoveryState = raid.RecoveryState;
     std::map<uint32, RaidRosterSlot> previousRoster = raid.RosterByGuid;
     raid.RosterByGuid.clear();
     raid.UniqueLeases = true;
@@ -5622,6 +5625,10 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
     }
 
     raid.ActiveSize = uint32(raid.RosterByGuid.size());
+    raid.AliveSize = uint32(std::count_if(members.begin(), members.end(), [](Player const* member)
+    {
+        return member && member->IsAlive();
+    }));
     raid.RosterComplete = raid.ActiveSize == raid.ExpectedSize;
     if (previousRoster.size() != raid.RosterByGuid.size())
         ++raid.AssignmentGeneration;
@@ -5636,6 +5643,69 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
                 break;
             }
         }
+
+    raid.BossStates.clear();
+    raid.EncounterInProgress = false;
+    if (InstanceScript* instance = leader->GetInstanceScript())
+    {
+        raid.EncounterInProgress = instance->IsEncounterInProgress();
+        raid.BossStates.reserve(instance->GetEncounterCount());
+        for (uint32 bossId = 0; bossId < instance->GetEncounterCount(); ++bossId)
+            raid.BossStates.push_back(uint8(instance->GetBossState(bossId)));
+    }
+
+    bool bossResetObserved = false;
+    for (size_t bossId = 0; bossId < std::min(previousBossStates.size(), raid.BossStates.size()); ++bossId)
+        if (previousBossStates[bossId] == uint8(IN_PROGRESS)
+            && raid.BossStates[bossId] != uint8(IN_PROGRESS)
+            && raid.BossStates[bossId] != uint8(DONE))
+        {
+            bossResetObserved = true;
+            break;
+        }
+    if (bossResetObserved)
+        ++raid.BossResetGeneration;
+
+    bool const allDead = raid.ActiveSize > 0 && raid.AliveSize == 0;
+    bool const allAlive = raid.ActiveSize > 0 && raid.AliveSize == raid.ActiveSize;
+    if (allDead)
+    {
+        if (previousWipeState != "wiped")
+            ++raid.WipeGeneration;
+        raid.WipeState = "wiped";
+        raid.RecoveryState = raid.EncounterInProgress ? "awaiting_native_reset" : "release_resurrection_pending";
+    }
+    else if (!allAlive)
+    {
+        raid.WipeState = previousWipeState == "wiped" ? "wiped" : "partial_deaths";
+        raid.RecoveryState = "native_resurrection_runback";
+    }
+    else if (raid.EncounterInProgress)
+    {
+        raid.WipeState = "engaged";
+        raid.RecoveryState = "none";
+    }
+    else if (previousWipeState == "wiped"
+        || previousRecoveryState == "awaiting_native_reset"
+        || previousRecoveryState == "release_resurrection_pending"
+        || previousRecoveryState == "native_resurrection_runback")
+    {
+        raid.WipeState = "ready";
+        raid.RecoveryState = "recovered_ready_check";
+        ++raid.RecoveryGeneration;
+    }
+    else if (previousRecoveryState == "recovered_ready_check")
+    {
+        raid.WipeState = "ready";
+        raid.RecoveryState = "recovered_ready_check";
+    }
+    else
+    {
+        raid.WipeState = "ready";
+        raid.RecoveryState = "none";
+    }
+    raid.ReadyCheckSatisfied = raid.RosterComplete && raid.UniqueLeases && raid.DifficultyMatches
+        && allAlive && !raid.EncounterInProgress;
 
     if (raidValidation && members.size() > raid.ExpectedSize)
         Cohort().LastPopulationFailureReason = "raid_roster_exceeds_expected_size";
@@ -24385,6 +24455,7 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
          << ",\"leader_guid\":" << raid.LeaderGuid.GetRawValue()
          << ",\"expected_size\":" << raid.ExpectedSize
          << ",\"active_size\":" << raid.ActiveSize
+         << ",\"alive_size\":" << raid.AliveSize
          << ",\"roster_complete\":" << (raid.RosterComplete ? "true" : "false")
          << ",\"expected_difficulty\":" << uint32(raid.ExpectedDifficulty)
          << ",\"group_difficulty\":" << uint32(raid.GroupDifficulty)
@@ -24397,11 +24468,24 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
          << ",\"attempt_id\":" << raid.AttemptId
          << ",\"assignment_generation\":" << raid.AssignmentGeneration
          << ",\"evidence_sequence\":" << raid.EvidenceSequence
+         << ",\"wipe_generation\":" << raid.WipeGeneration
+         << ",\"boss_reset_generation\":" << raid.BossResetGeneration
+         << ",\"recovery_generation\":" << raid.RecoveryGeneration
+         << ",\"encounter_in_progress\":" << (raid.EncounterInProgress ? "true" : "false")
+         << ",\"ready_check_satisfied\":" << (raid.ReadyCheckSatisfied ? "true" : "false")
          << ",\"unique_leases\":" << (raid.UniqueLeases ? "true" : "false")
          << ",\"strategy_id\":\"" << JsonEscape(raid.StrategyId) << "\""
          << ",\"encounter_phase\":\"" << JsonEscape(raid.EncounterPhase) << "\""
          << ",\"wipe_state\":\"" << JsonEscape(raid.WipeState) << "\""
          << ",\"recovery_state\":\"" << JsonEscape(raid.RecoveryState) << "\""
+         << ",\"boss_states\":[";
+    for (size_t bossId = 0; bossId < raid.BossStates.size(); ++bossId)
+    {
+        if (bossId)
+            json << ',';
+        json << uint32(raid.BossStates[bossId]);
+    }
+    json << "]"
          << ",\"roster\":[";
     bool first = true;
     for (auto const& [guid, slot] : raid.RosterByGuid)

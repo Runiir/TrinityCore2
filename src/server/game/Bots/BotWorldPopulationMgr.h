@@ -1575,6 +1575,7 @@ private:
         ObjectGuid LeaderGuid;
         uint32 ExpectedSize = 0;
         uint32 ActiveSize = 0;
+        uint32 AliveSize = 0;
         uint8 ExpectedDifficulty = 0;
         uint8 GroupDifficulty = 0;
         int16 MapDifficulty = -1;
@@ -1585,10 +1586,16 @@ private:
         uint64 AttemptId = 0;
         uint64 AssignmentGeneration = 0;
         uint64 EvidenceSequence = 0;
+        uint64 WipeGeneration = 0;
+        uint64 BossResetGeneration = 0;
+        uint64 RecoveryGeneration = 0;
+        bool EncounterInProgress = false;
+        bool ReadyCheckSatisfied = false;
         std::string StrategyId;
         std::string EncounterPhase = "formation";
         std::string WipeState = "ready";
         std::string RecoveryState = "none";
+        std::vector<uint8> BossStates;
         std::map<uint32, RaidRosterSlot> RosterByGuid;
     };
 

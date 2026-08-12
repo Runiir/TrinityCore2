@@ -50,6 +50,7 @@ def accepted_foundation_status(status: dict[str, Any]) -> tuple[bool, list[str]]
         "runtime_active": runtime.get("active") is True,
         "expected_size_10": runtime.get("expected_size") == 10,
         "active_size_10": runtime.get("active_size") == 10,
+        "alive_size_10": runtime.get("alive_size") == 10,
         "roster_complete": runtime.get("roster_complete") is True,
         "difficulty_10n": runtime.get("expected_difficulty") == 0 and runtime.get("group_difficulty") == 0,
         "live_map_difficulty_10n": runtime.get("map_difficulty") == 0,
@@ -61,6 +62,8 @@ def accepted_foundation_status(status: dict[str, Any]) -> tuple[bool, list[str]]
         "leader_owned": int(runtime.get("leader_guid") or 0) > 0,
         "server_epoch_owned": int(runtime.get("server_epoch") or 0) > 0,
         "attempt_owned": int(runtime.get("attempt_id") or 0) > 0,
+        "boss_state_readback": len(runtime.get("boss_states") or []) == 6,
+        "ready_check_satisfied": runtime.get("ready_check_satisfied") is True,
         "unique_leases": runtime.get("unique_leases") is True,
         "exact_roster": len(roster) == 10,
         "deterministic_slots": [row.get("slot") for row in roster_by_slot] == list(range(10)),
@@ -70,6 +73,23 @@ def accepted_foundation_status(status: dict[str, Any]) -> tuple[bool, list[str]]
         "unique_roster_guids": len({row.get("guid") for row in roster}) == 10,
     }
     reasons.extend(name for name, passed in checks.items() if not passed)
+    return not reasons, reasons
+
+
+def accepted_native_recovery(statuses: list[dict[str, Any]]) -> tuple[bool, list[str]]:
+    runtimes = [status.get("raid_runtime") or {} for status in statuses]
+    checks = {
+        "ready_check_observed": any(runtime.get("ready_check_satisfied") is True for runtime in runtimes),
+        "native_wipe_observed": any(int(runtime.get("wipe_generation") or 0) > 0 for runtime in runtimes),
+        "boss_reset_observed": any(int(runtime.get("boss_reset_generation") or 0) > 0 for runtime in runtimes),
+        "native_recovery_observed": any(
+            int(runtime.get("recovery_generation") or 0) > 0
+            and runtime.get("recovery_state") == "recovered_ready_check"
+            and runtime.get("ready_check_satisfied") is True
+            for runtime in runtimes
+        ),
+    }
+    reasons = [name for name, passed in checks.items() if not passed]
     return not reasons, reasons
 
 
@@ -96,7 +116,7 @@ def main() -> int:
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--worktree", type=Path, default=ROOT)
-    parser.add_argument("--observe-sec", type=int, default=180)
+    parser.add_argument("--observe-sec", type=int, default=900)
     parser.add_argument("--startup-timeout-sec", type=int, default=180)
     parser.add_argument("--required-stable-statuses", type=int, default=3)
     args = parser.parse_args()
@@ -134,7 +154,10 @@ def main() -> int:
             deadline = time.monotonic() + args.observe_sec
             next_probe = 0.0
             seen_statuses = 0
-            while time.monotonic() < deadline and len(stable) < args.required_stable_statuses:
+            recovery_accepted = False
+            while time.monotonic() < deadline and not (
+                len(stable) >= args.required_stable_statuses and recovery_accepted
+            ):
                 if process.poll() is not None:
                     break
                 if time.monotonic() >= next_probe:
@@ -151,6 +174,7 @@ def main() -> int:
                         else:
                             stable.clear()
                     seen_statuses = len(statuses)
+                    recovery_accepted, _ = accepted_native_recovery(statuses)
                 time.sleep(0.25)
 
             process.stdin.write(b"botauto stop\nbotauto status\nserver exit\n")
@@ -173,6 +197,7 @@ def main() -> int:
     diagnoses = json_actions(log_bytes, "botauto_diagnose")
     traces = json_actions(log_bytes, "botauto_trace")
     stop_rows = json_actions(log_bytes, "botauto_stop")
+    recovery_accepted, recovery_rejections = accepted_native_recovery(statuses)
     cleanup_status = statuses[-1] if statuses else {}
     cleanup_ok = cleanup_status.get("bots") == 0 and cleanup_status.get("lease_count") == 0
     identity_after = git_identity(worktree)
@@ -181,6 +206,7 @@ def main() -> int:
         startup_error is None
         and process.returncode == 0
         and len(stable) >= args.required_stable_statuses
+        and recovery_accepted
         and cleanup_ok
         and bool(stop_rows and stop_rows[-1].get("ok") is True)
         and identity_stable
@@ -199,6 +225,8 @@ def main() -> int:
         "required_stable_statuses": args.required_stable_statuses,
         "accepted_stable_statuses": len(stable),
         "last_foundation_rejections": last_rejections,
+        "native_recovery_accepted": recovery_accepted,
+        "native_recovery_rejections": recovery_rejections,
         "accepted_raid_runtime": stable[-1].get("raid_runtime") if stable else None,
         "diagnose_observed": bool(diagnoses),
         "trace_observed": bool(traces),

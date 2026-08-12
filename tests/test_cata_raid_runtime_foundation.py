@@ -66,6 +66,33 @@ def test_status_diagnose_trace_and_evidence_expose_raid_identity():
     assert '\\\"assignment_generation\\\"' in IMPL
 
 
+def test_runtime_reconstructs_native_boss_wipe_reset_and_recovery_state():
+    raid_struct = HEADER.index("struct RaidRuntime")
+    cohort_struct = HEADER.index("struct CohortRuntime")
+    runtime = HEADER[raid_struct:cohort_struct]
+    for token in (
+        "uint32 AliveSize",
+        "uint64 WipeGeneration",
+        "uint64 BossResetGeneration",
+        "uint64 RecoveryGeneration",
+        "bool EncounterInProgress",
+        "bool ReadyCheckSatisfied",
+        "std::vector<uint8> BossStates",
+    ):
+        assert token in runtime
+    for token in (
+        "instance->IsEncounterInProgress()",
+        "instance->GetEncounterCount()",
+        "instance->GetBossState(bossId)",
+        'raid.WipeState = "wiped";',
+        'raid.RecoveryState = "recovered_ready_check";',
+        "++raid.BossResetGeneration;",
+        "raid.ReadyCheckSatisfied = raid.RosterComplete",
+        '\\\"boss_states\\\"',
+    ):
+        assert token in IMPL
+
+
 def test_bwd_profile_pins_10n_and_world_defaults_are_documented():
     profiles = json.loads((ROOT / "dataset/bot_runtime_profiles/profiles.json").read_text(encoding="utf-8"))
     bwd = next(profile for profile in profiles["profiles"] if profile["name"] == "blackwing_descent_10n")
