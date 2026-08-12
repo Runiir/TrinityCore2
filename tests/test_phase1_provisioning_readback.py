@@ -15,6 +15,7 @@ def _rows():
             "class_id": index, "map_id": 669, "x": -345.872, "y": -224.344,
             "z": 193.127, "o": 0.0, "online": 0, "enabled": 1, "in_use": 0,
             "health": VALIDATION_FULL_STAT_SEED, "power1": VALIDATION_FULL_STAT_SEED,
+            "character_flags": 0, "at_login": 0,
             "experiment_tags": "blackwing_descent_10n",
         })
     return expected, observed
@@ -25,7 +26,7 @@ def test_phase1_provisioning_readback_reconstructs_exact_clean_roster():
     assert validate_readback(
         expected, observed,
         start={"map_id": 669, "x": -345.872, "y": -224.344, "z": 193.127, "o": 0.0},
-        character_instance_rows=0, group_member_rows=0,
+        character_instance_rows=0, group_member_rows=0, ghost_aura_rows=0, corpse_rows=0,
     ) == []
 
 
@@ -35,7 +36,7 @@ def test_phase1_provisioning_readback_rejects_identity_position_and_residue_drif
     reasons = validate_readback(
         expected, observed,
         start={"map_id": 669, "x": -345.872, "y": -224.344, "z": 193.127, "o": 0.0},
-        character_instance_rows=1, group_member_rows=1,
+        character_instance_rows=1, group_member_rows=1, ghost_aura_rows=0, corpse_rows=0,
     )
     assert reasons == [
         "Bwd10:guid", "Bwd10:pool_state", "Bwd10:position",
@@ -49,6 +50,20 @@ def test_phase1_provisioning_readback_rejects_unclamped_stat_seed():
     reasons = validate_readback(
         expected, observed,
         start={"map_id": 669, "x": -345.872, "y": -224.344, "z": 193.127, "o": 0.0},
-        character_instance_rows=0, group_member_rows=0,
+        character_instance_rows=0, group_member_rows=0, ghost_aura_rows=0, corpse_rows=0,
     )
     assert reasons == ["Bwd1:health_seed", "Bwd1:power1_seed"]
+
+
+def test_phase1_provisioning_readback_rejects_persisted_ghost_state():
+    expected, observed = _rows()
+    observed[0] = {**observed[0], "character_flags": 0x2000, "at_login": 0x100}
+    reasons = validate_readback(
+        expected, observed,
+        start={"map_id": 669, "x": -345.872, "y": -224.344, "z": 193.127, "o": 0.0},
+        character_instance_rows=0, group_member_rows=0, ghost_aura_rows=1, corpse_rows=1,
+    )
+    assert reasons == [
+        "Bwd1:ghost_character_flag", "Bwd1:resurrect_at_login_flag",
+        "corpse_rows", "ghost_aura_rows",
+    ]

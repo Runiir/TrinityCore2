@@ -32,6 +32,9 @@ DEFAULT_WOWSIMS_GEAR_PROFILES = REPO_ROOT / "experiments/configs/wowsims_cata_p4
 # seed is clamped to each character's computed maxima, unlike the old literal
 # 100 which loaded as a nearly-dead character.
 VALIDATION_FULL_STAT_SEED = 4294967295
+VALIDATION_GHOST_CHARACTER_FLAG = 0x2000
+VALIDATION_RESURRECT_AT_LOGIN_FLAG = 0x0100
+VALIDATION_GHOST_AURA_ID = 8326
 SPELL_EFFECT_LEARN_GLYPH = 74
 ITEM_SPARSE_FMT = "niiiffiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiifiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiisssssiiiiiiiiiiiiiiiiiiiiiifiiifii"
 SPELL_ITEM_ENCHANTMENT_FMT = "nxiiiiiixxxiiisiiiiiiix"
@@ -611,6 +614,10 @@ def build_character_insert_sql(
     item_guid_limit = item_guid_base + 100000
     lines.append(f"DELETE FROM `characters`.`character_inventory` WHERE `item` >= {item_guid_base} AND `item` < {item_guid_limit};")
     lines.append(f"DELETE FROM `characters`.`item_instance` WHERE `guid` >= {item_guid_base} AND `guid` < {item_guid_limit};")
+    lines.append("DELETE FROM `characters`.`character_instance` WHERE `guid` IN (SELECT `guid` FROM `characters`.`characters` WHERE `name` IN (" + ", ".join(sql_quote(name) for name in cleanup_character_names(config)) + "));")
+    lines.append("DELETE FROM `characters`.`corpse_phases` WHERE `OwnerGuid` IN (SELECT `guid` FROM `characters`.`characters` WHERE `name` IN (" + ", ".join(sql_quote(name) for name in cleanup_character_names(config)) + "));")
+    lines.append("DELETE FROM `characters`.`corpse` WHERE `guid` IN (SELECT `guid` FROM `characters`.`characters` WHERE `name` IN (" + ", ".join(sql_quote(name) for name in cleanup_character_names(config)) + "));")
+    lines.append("DELETE FROM `characters`.`character_aura` WHERE `guid` IN (SELECT `guid` FROM `characters`.`characters` WHERE `name` IN (" + ", ".join(sql_quote(name) for name in cleanup_character_names(config)) + "));")
     lines.append("DELETE FROM `characters`.`character_bot_pool` WHERE `guid` IN (SELECT `guid` FROM `characters`.`characters` WHERE `name` IN (" + ", ".join(sql_quote(name) for name in cleanup_character_names(config)) + "));")
     lines.append("DELETE FROM `characters`.`character_glyphs` WHERE `guid` IN (SELECT `guid` FROM `characters`.`characters` WHERE `name` IN (" + ", ".join(sql_quote(name) for name in cleanup_character_names(config)) + "));")
     lines.append("DELETE FROM `characters`.`character_talent` WHERE `guid` IN (SELECT `guid` FROM `characters`.`characters` WHERE `name` IN (" + ", ".join(sql_quote(name) for name in cleanup_character_names(config)) + "));")

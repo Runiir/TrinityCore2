@@ -109,6 +109,11 @@ def test_validation_raid_preflights_exact_saved_roster_before_first_claim_or_spa
         "Party().ValidationRouteManifest.front()",
         "routeStart.ExpectedBotCount != rosterPlan.size()",
         "SelectPoolCandidateGuid(slot.RosterSlotId, &plannedGuids,",
+        "validation_raid_preflight_initial_recovery_state",
+        "ValidationGhostCharacterFlag",
+        "ValidationResurrectAtLoginFlag",
+        "ValidationGhostAuraId",
+        "SELECT c.health, c.power1, c.characterFlags, c.at_login",
         "ResolveSavedSpawnPlacement(candidateGuid, placement)",
         "placement.MapId != routeStart.BotStartMapId",
         "RouteStartHorizontalToleranceYards",
@@ -126,6 +131,10 @@ def test_validation_raid_preflights_exact_saved_roster_before_first_claim_or_spa
     assert "ResolveSpawnPlacement(" not in admission_runtime
     assert "AllowConfiguredCenterFallback" not in admission_runtime
     assert "validationRaidSpawnPlan" in admission_runtime
+    assert "!bot->IsAlive()" in admission_runtime
+    assert "bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)" in admission_runtime
+    assert "bot->HasCorpse()" in admission_runtime
+    assert "state.ValidationCohortInstanceId != bot->GetInstanceId()" in admission_runtime
 
 
 def test_validation_raid_admission_rolls_back_late_failures_and_cannot_retry_unpinned():
@@ -142,7 +151,7 @@ def test_validation_raid_admission_rolls_back_late_failures_and_cannot_retry_unp
         "Cohort().ValidationRaidAdmissionComplete",
         "rollbackAdmission(\"validation_raid_admission_claim_failed\")",
         "rollbackAdmission(\"validation_raid_admission_spawn_failed\")",
-        "rollbackAdmission(\"validation_raid_admission_exact_group_failed\")",
+        "rollbackAdmission(\"validation_raid_admission_exact_group_or_alive_state_failed\")",
         "sBotMgr->RemoveWorldBot(*itr);",
         "ReleaseBotGuid(guid);",
         "Party() = partyBeforeAdmission;",

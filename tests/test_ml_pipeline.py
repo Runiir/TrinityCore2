@@ -7796,6 +7796,11 @@ def test_live_bot_validation_bot_pool_reset_sql_is_scoped_to_tags():
     assert "p.`experiment_tags` LIKE '%test_account%'" in sql
     assert "JOIN `world`.`playercreateinfo`" in sql
     assert "DELETE FROM `characters`.`character_instance`" in sql
+    assert "DELETE FROM `characters`.`corpse_phases`" in sql
+    assert "DELETE FROM `characters`.`corpse`" in sql
+    assert "DELETE FROM `characters`.`character_aura`" in sql
+    assert "c.`characterFlags` = c.`characterFlags` & ~8192" in sql
+    assert "c.`at_login` = c.`at_login` & ~256" in sql
     assert "DELETE gi FROM `characters`.`group_instance`" in sql
     assert "DELETE gm FROM `characters`.`group_member`" in sql
     assert "DELETE g FROM `characters`.`groups`" in sql
@@ -7916,7 +7921,11 @@ def test_validation_provisioning_generates_reproducible_sql_and_readiness(tmp_pa
     assert f", {VALIDATION_FULL_STAT_SEED}, {VALIDATION_FULL_STAT_SEED}, 1, 0," in sql
     assert "INSERT INTO `characters`.`character_bot_pool`" in sql
     assert "INSERT INTO `characters`.`character_skills`" in sql
+    assert "DELETE FROM `characters`.`character_instance`" in sql
     assert "DELETE FROM `characters`.`character_spell`" in sql
+    assert "DELETE FROM `characters`.`corpse_phases`" in sql
+    assert "DELETE FROM `characters`.`corpse`" in sql
+    assert "DELETE FROM `characters`.`character_aura`" in sql
     assert "INSERT INTO `characters`.`character_spell`" in sql
     assert "SELECT c.`guid`, 2061, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" in sql
     assert "SELECT c.`guid`, 2050, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" in sql

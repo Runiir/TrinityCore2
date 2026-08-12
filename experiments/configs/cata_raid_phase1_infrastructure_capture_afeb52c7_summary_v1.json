@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "capture_id": "cata_raid_phase1_bwd_10n_foundation_v1",
+  "classification": "infrastructure_abort",
+  "gameplay_failure": false,
+  "fidelity_claim": false,
+  "source_identity": {
+    "commit": "afeb52c7118361a04fbc99fd16629b39d90a9316",
+    "tree": "c1986b708f2296901ae2ef9a38921eab0e84e13c",
+    "clean_at_start": true,
+    "identity_stable_during_run": true
+  },
+  "build": {
+    "policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
+    "configure_receipt_sha256": "12b1cff8a42ff9736759d103330beb188baa8b44a1697e331903dbadd0e87c19",
+    "worldserver_receipt_sha256": "eb00e7e6df924ef7881e9f20b5fd77c061b708804542d375d67c0fd58833bbc8",
+    "worldserver_sha256": "3e305f7cc2edd09004b815466cd04c830bf6a8ae073c0dbd70babcdef2bb8afd",
+    "worldserver_size_bytes": 60959464,
+    "trusted_local_operator": "runiir",
+    "gate_bearing": true
+  },
+  "live_facts": {
+    "exact_roster_size": 10,
+    "composition": {"tanks": 2, "healers": 3, "dps": 5},
+    "map_id": 669,
+    "instance_id": 2,
+    "lockout_save_id": 2,
+    "difficulty": "10N",
+    "entry_trash_kills": 2,
+    "deaths": 1,
+    "persisted_dead_member": {"guid": 1276, "name": "Bwddpsa", "class_spec": "fire_mage"},
+    "boss_engaged": false,
+    "route_node_index": 0
+  },
+  "root_cause": {
+    "failure_fingerprint": "persisted_prior_release_state_admitted_as_initial_partial_death",
+    "detail": "Bwddpsa entered the capture already carrying PLAYER_FLAGS_GHOST, aura 8326, and a persisted BWD corpse from the prior attempt. The first status therefore reported nine alive before entry combat began. Native recovery correctly refused to claim an unauthoritative corpse/runback sequence, and the all-dead wipe-scoped verifier correctly rejected this partial stale death.",
+    "decision_assessment": "The nine clean members correctly killed both declared entry targets and held the route anchor. The run contains no boss-tactics or fidelity failure because its recovery evidence was contaminated before autonomous combat began.",
+    "remediation_scope": [
+      "delete configured validation corpse, corpse-phase, and ghost-aura rows during deterministic provisioning",
+      "clear persisted ghost and resurrect-at-login flags while restoring full native-load-clamped health and power",
+      "require zero persisted recovery state for every exact roster member before the first claim or spawn",
+      "atomically roll back admission if any loaded member is dead, ghosted, has a corpse, or lacks exact frozen map and instance identity",
+      "independently read back zero character-instance, group, corpse, and ghost-aura residue before every canonical run"
+    ]
+  },
+  "telemetry": {
+    "wall_clock_mode": "uncapped",
+    "watchdog_healthy": true,
+    "status_rows": 82,
+    "diagnosis_rows": 80,
+    "trace_rows": 80,
+    "retained_rows": 244,
+    "bound_rows": 244,
+    "rejected_rows": 0,
+    "unchecked_rows": 0,
+    "required_envelopes_gate_passed": true,
+    "only_missing_required_action": "botauto_readycheck",
+    "missing_readycheck_is_downstream_of_no_full_wipe": true
+  },
+  "semantic_stall": {
+    "detected": true,
+    "seconds": 303.216,
+    "unchanged_samples": 60,
+    "high_water": {"kills": 2, "deaths": 1, "raid_boss_kills": 0, "route_index": 0}
+  },
+  "cleanup": {
+    "gate_passed": true,
+    "stop_observed": true,
+    "stop_ok": true,
+    "zero_bots": true,
+    "zero_leases": true,
+    "worldserver_process_absent": true
+  },
+  "forbidden_assistance": {"observed": false, "gate_passed": true},
+  "artifact": {
+    "pointer": "artifacts/cata_raid_program/phase1_raid_foundation_afeb52c7_20260812.dvc",
+    "dvc_directory_md5": "7a90a2d90b99f211c2763e6840764b65.dir",
+    "size_bytes": 120150033,
+    "nfiles": 7,
+    "raw_jsonl_sha256": "04a56b2193399bd09b8e3b69645259b343de64a72b773129757e20bdea845af4",
+    "capture_report_canonical_sha256": "e2e02a9b8f2ebeb9f813bab372dc40a5487255ea4dff5efb4559d211fc2a7e52",
+    "capture_report_file_sha256": "51ccfc5c3890e425c1b2d8117b569c6ac83f8db310ad49ec0c97b72f38a21131",
+    "worldserver_log_sha256": "e5d33a5ab743e79fd8f88cc3cd59b17a69e5be45c1ca1dfc1bed674ffa42c777",
+    "targeted_push_completed": true,
+    "targeted_remote_status_before_eviction": "cache_and_remote_in_sync",
+    "workspace_payload_evicted": true,
+    "exact_seven_child_cache_objects_evicted": true,
+    "directory_metadata_retained": true,
+    "broad_gc_used": false
+  },
+  "post_capture_remediation_verification": {
+    "generated_provision_characters_sha256": "cfa89cdf4fd7a6c30b3944708f121e32c181328f7b3fe3cccc227e04f3cb3d76",
+    "full_provisioning_verifier_passed": true,
+    "full_provisioning_verifier_sha256": "2d9f71bb38fec0f61f08b80d76741de818a15f3880c71e373bd5d4e004916373",
+    "readback_schema": "cata_raid_phase1_bwd_provisioning_readback_v3",
+    "readback_passed": true,
+    "readback_sha256": "bc6c14dfdda24e125af0c467f299ae401795917a1a4e35d245599acf41b70eff",
+    "character_instance_rows": 0,
+    "group_member_rows": 0,
+    "ghost_aura_rows": 0,
+    "corpse_rows": 0,
+    "focused_non_coordinator_tests": "214 passed",
+    "coordinator_tests": "32 passed",
+    "dvc_remote": "cache_and_remote_in_sync"
+  },
+  "acceptance": {
+    "phase1_gate_passed": false,
+    "next_gate": "mandatory independent Sol-high review, exact coordinated rebuild, exact v3 reprovisioning readback, and uncapped canonical rerun"
+  }
+}

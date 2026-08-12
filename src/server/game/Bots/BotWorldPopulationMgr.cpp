@@ -81,6 +81,9 @@ namespace
 constexpr uint32 BlackwingDescentMapId = 669;
 constexpr uint32 BlackwingDescentEntranceMapId = 0;
 constexpr uint32 BlackwingDescentEntranceTriggerId = 6581;
+constexpr uint32 ValidationGhostCharacterFlag = 0x2000;
+constexpr uint32 ValidationResurrectAtLoginFlag = 0x0100;
+constexpr uint32 ValidationGhostAuraId = 8326;
 
 uint64 CurrentProcessId()
 {
@@ -4786,6 +4789,33 @@ void BotWorldPopulationMgr::EnsurePopulation()
                 return;
             }
 
+            QueryResult persistedState = CharacterDatabase.PQuery(
+                "SELECT c.health, c.power1, c.characterFlags, c.at_login, "
+                "(SELECT COUNT(*) FROM character_aura a WHERE a.guid = c.guid AND a.spell = %u), "
+                "(SELECT COUNT(*) FROM corpse cp WHERE cp.guid = c.guid) "
+                "FROM characters c WHERE c.guid = %u",
+                ValidationGhostAuraId, candidateGuid);
+            if (!persistedState)
+            {
+                terminalFailure("validation_raid_preflight_persisted_state_missing");
+                return;
+            }
+            Field* persistedFields = persistedState->Fetch();
+            if (persistedFields[0].GetUInt32() != std::numeric_limits<uint32>::max()
+                || persistedFields[1].GetUInt32() != std::numeric_limits<uint32>::max())
+            {
+                terminalFailure("validation_raid_preflight_full_stat_seed_missing");
+                return;
+            }
+            if ((persistedFields[2].GetUInt32() & ValidationGhostCharacterFlag) != 0
+                || (persistedFields[3].GetUInt32() & ValidationResurrectAtLoginFlag) != 0
+                || persistedFields[4].GetUInt32() != 0
+                || persistedFields[5].GetUInt32() != 0)
+            {
+                terminalFailure("validation_raid_preflight_initial_recovery_state");
+                return;
+            }
+
             SpawnPlacement placement;
             if (!ResolveSavedSpawnPlacement(candidateGuid, placement)
                 || placement.Source != "saved_position")
@@ -4932,7 +4962,12 @@ void BotWorldPopulationMgr::EnsurePopulation()
         {
             Player* bot = GetLoadedBot(state);
             Group* group = bot ? bot->GetGroup() : nullptr;
-            if (!bot || !bot->IsInWorld() || !group)
+            if (!bot || !bot->IsInWorld() || !bot->IsAlive()
+                || bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST) || bot->HasCorpse() || !group
+                || !state.ValidationCohortLocked
+                || bot->GetMapId() != routeStart.BotStartMapId || !bot->GetInstanceId()
+                || state.ValidationCohortMapId != bot->GetMapId()
+                || state.ValidationCohortInstanceId != bot->GetInstanceId())
             {
                 exactNativeGroup = false;
                 break;
@@ -4947,7 +4982,7 @@ void BotWorldPopulationMgr::EnsurePopulation()
         }
         if (!exactNativeGroup)
         {
-            rollbackAdmission("validation_raid_admission_exact_group_failed");
+            rollbackAdmission("validation_raid_admission_exact_group_or_alive_state_failed");
             return;
         }
 

@@ -6,7 +6,12 @@ import json
 from pathlib import Path
 from typing import Any
 
-from tools.bot_ml.build_validation_provisioning import VALIDATION_FULL_STAT_SEED, load_config
+from tools.bot_ml.build_validation_provisioning import (
+    VALIDATION_FULL_STAT_SEED,
+    VALIDATION_GHOST_CHARACTER_FLAG,
+    VALIDATION_RESURRECT_AT_LOGIN_FLAG,
+    load_config,
+)
 from tools.bot_ml.common import write_json
 from tools.bot_ml.extract_world_knowledge import (
     connect_mysql,
@@ -29,6 +34,8 @@ def validate_readback(
     start: dict[str, Any],
     character_instance_rows: int,
     group_member_rows: int,
+    ghost_aura_rows: int,
+    corpse_rows: int,
 ) -> list[str]:
     reasons: list[str] = []
     expected_by_name = {str(row["name"]): row for row in expected}
@@ -66,6 +73,10 @@ def validate_readback(
             reasons.append(f"{name}:health_seed")
         if int(row.get("power1") or 0) != VALIDATION_FULL_STAT_SEED:
             reasons.append(f"{name}:power1_seed")
+        if int(row.get("character_flags") or 0) & VALIDATION_GHOST_CHARACTER_FLAG:
+            reasons.append(f"{name}:ghost_character_flag")
+        if int(row.get("at_login") or 0) & VALIDATION_RESURRECT_AT_LOGIN_FLAG:
+            reasons.append(f"{name}:resurrect_at_login_flag")
         if int(row.get("enabled") or 0) != 1 or int(row.get("in_use") or 0) != 0:
             reasons.append(f"{name}:pool_state")
         if str(row.get("experiment_tags")) != "blackwing_descent_10n":
@@ -74,6 +85,10 @@ def validate_readback(
         reasons.append("character_instance_rows")
     if group_member_rows != 0:
         reasons.append("group_member_rows")
+    if ghost_aura_rows != 0:
+        reasons.append("ghost_aura_rows")
+    if corpse_rows != 0:
+        reasons.append("corpse_rows")
     return sorted(set(reasons))
 
 
@@ -106,6 +121,7 @@ def main() -> int:
         with connection.cursor() as cursor:
             cursor.execute(
                 "SELECT c.guid, c.name, c.class AS class_id, c.map AS map_id, c.health, c.power1, "
+                "c.characterFlags AS character_flags, c.at_login, "
                 "c.position_x AS x, c.position_y AS y, c.position_z AS z, c.orientation AS o, c.online, "
                 "p.role, p.class_spec, p.enabled, p.in_use, p.experiment_tags "
                 "FROM characters c JOIN character_bot_pool p ON p.guid = c.guid "
@@ -119,6 +135,10 @@ def main() -> int:
             character_instance_rows = int(cursor.fetchone()["count"])
             cursor.execute(f"SELECT COUNT(*) AS count FROM group_member WHERE memberGuid IN ({guid_placeholders})", tuple(guids))
             group_member_rows = int(cursor.fetchone()["count"])
+            cursor.execute(f"SELECT COUNT(*) AS count FROM character_aura WHERE guid IN ({guid_placeholders}) AND spell = 8326", tuple(guids))
+            ghost_aura_rows = int(cursor.fetchone()["count"])
+            cursor.execute(f"SELECT COUNT(*) AS count FROM corpse WHERE guid IN ({guid_placeholders})", tuple(guids))
+            corpse_rows = int(cursor.fetchone()["count"])
     finally:
         connection.close()
 
@@ -128,9 +148,11 @@ def main() -> int:
         start=scenario["start_position"],
         character_instance_rows=character_instance_rows,
         group_member_rows=group_member_rows,
+        ghost_aura_rows=ghost_aura_rows,
+        corpse_rows=corpse_rows,
     )
     payload = {
-        "schema": "cata_raid_phase1_bwd_provisioning_readback_v2",
+        "schema": "cata_raid_phase1_bwd_provisioning_readback_v3",
         "passed": not reasons,
         "reasons": reasons,
         "database": sanitize_database_url(character_url),
@@ -142,7 +164,9 @@ def main() -> int:
         "observed_roster": observed,
         "character_instance_rows": character_instance_rows,
         "group_member_rows": group_member_rows,
-        "query_contract": "exact frozen names joined to character_bot_pool; ordered; exact instance/group residue counts",
+        "ghost_aura_rows": ghost_aura_rows,
+        "corpse_rows": corpse_rows,
+        "query_contract": "exact frozen names joined to character_bot_pool; ordered; exact instance/group/ghost/corpse residue counts",
     }
     write_json(args.output, payload)
     print(json.dumps(payload, sort_keys=True))
