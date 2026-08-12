@@ -758,12 +758,20 @@ def semantic_progress_signature(status: dict[str, Any], diagnosis: dict[str, Any
                 continue
             identity = row.get("identity") if isinstance(row.get("identity"), dict) else {}
             snapshot = row.get("snapshot") if isinstance(row.get("snapshot"), dict) else {}
-            decision = snapshot.get("decision") if isinstance(snapshot.get("decision"), dict) else {}
             progress = snapshot.get("route_progress") if isinstance(snapshot.get("route_progress"), dict) else {}
+            target = progress.get("target") if isinstance(progress.get("target"), dict) else {}
+            state = progress.get("state") if isinstance(progress.get("state"), dict) else {}
             bot_progress.append({
                 "bot_guid": identity.get("bot_guid"),
-                "decision": {key: decision.get(key) for key in ("action", "result", "reason")},
-                "route_progress": progress,
+                # Decision churn is diagnostic evidence, not objective
+                # progress. Keep it in the immutable raw diagnose/trace rows,
+                # but do not let alternating wrong actions reset this clock.
+                "target": {key: target.get(key) for key in (
+                    "guid", "entry", "hp_pct", "best_hp_pct",
+                )},
+                "combat_state": {key: state.get(key) for key in (
+                    "victim_guid", "bot_in_combat", "bot_casting",
+                )},
             })
     payload = {
         "route": {key: route.get(key) for key in (
@@ -775,11 +783,9 @@ def semantic_progress_signature(status: dict[str, Any], diagnosis: dict[str, Any
             "assignment_generation", "boss_states", "encounter_phase",
             "encounter_in_progress", "alive_size", "wipe_state", "recovery_state",
             "wipe_generation", "boss_reset_generation", "recovery_generation",
-            "evidence_sequence",
         )},
         "metrics": {key: status.get(key) for key in (
-            "kills", "deaths", "stuck", "raid_boss_kills", "raid_telemetry_events",
-            "target_priority_decisions", "interrupt_success", "recovery_events",
+            "kills", "deaths", "raid_boss_kills", "instance_resets",
         )},
         "bots": sorted(bot_progress, key=lambda row: int(row.get("bot_guid") or 0)),
     }

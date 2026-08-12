@@ -752,5 +752,7 @@ def test_semantic_progress_signature_tracks_boss_and_bot_decisions_not_heartbeat
     baseline = semantic_progress_signature(status, diagnosis)
     status["duration_seconds"] = 999
     assert semantic_progress_signature(status, diagnosis) == baseline
+    diagnosis["bots"][0]["snapshot"]["decision"]["action"] = "different_wrong_action"
+    assert semantic_progress_signature(status, diagnosis) == baseline
     diagnosis["bots"][0]["snapshot"]["route_progress"]["target"]["hp_pct"] = 74.0
     assert semantic_progress_signature(status, diagnosis) != baseline
