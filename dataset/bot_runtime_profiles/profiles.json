@@ -49,6 +49,8 @@
       "allow_questing": false,
       "allow_dungeons": true,
       "allow_raids": true,
+      "raid_size": 10,
+      "raid_difficulty": 0,
       "track_heroic_raid_progression": false,
       "enable_progression": true,
       "auto_start_recording": false,

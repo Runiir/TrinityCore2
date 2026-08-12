@@ -49,6 +49,8 @@ struct BotWorldExperimentConfig
     bool AllowQuesting = true;
     bool AllowDungeons = false;
     bool AllowRaids = false;
+    uint8 RaidSize = 10;
+    uint8 RaidDifficulty = 0;
     bool TrackHeroicRaidProgression = true;
     bool EnableProgression = true;
     bool RecordDecisions = true;
@@ -303,6 +305,8 @@ private:
         bool HasAllowQuesting = false;
         bool HasAllowDungeons = false;
         bool HasAllowRaids = false;
+        bool HasRaidSize = false;
+        bool HasRaidDifficulty = false;
         bool HasTrackHeroicRaidProgression = false;
         bool HasEnableProgression = false;
         bool HasRecordDecisions = false;
@@ -1272,6 +1276,7 @@ private:
     RaidMechanicAdapter BuildRaidMechanicAdapter(Player* bot, Unit const* boss, RaidRoleAssignment const& assignment, BossMechanicFeatures const& features) const;
     RaidGearTargetPlan BuildRaidGearTargetPlan(Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage) const;
     HeroicRaidProgression BuildHeroicRaidProgression(WorldBotState const& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage) const;
+    std::string BuildRaidRuntimeJson() const;
     std::string BuildRaidRoleAssignmentJson(RaidRoleAssignment const& assignment) const;
     std::string BuildRaidPositioningAnchorsJson(RaidPositioningAnchors const& anchors) const;
     std::string BuildRaidMechanicAdapterJson(RaidMechanicAdapter const& adapter) const;
@@ -1550,6 +1555,43 @@ private:
         uint64 CombatLogRecentEventsDropped = 0;
     };
 
+    struct RaidRosterSlot
+    {
+        uint32 SlotIndex = 0;
+        ObjectGuid Guid;
+        uint8 SubGroup = 0;
+        std::string Role;
+        bool Active = false;
+        bool LeaseOwned = false;
+    };
+
+    struct RaidRuntime
+    {
+        bool Active = false;
+        bool RosterComplete = false;
+        bool DifficultyMatches = false;
+        bool UniqueLeases = false;
+        ObjectGuid GroupGuid;
+        ObjectGuid LeaderGuid;
+        uint32 ExpectedSize = 0;
+        uint32 ActiveSize = 0;
+        uint8 ExpectedDifficulty = 0;
+        uint8 GroupDifficulty = 0;
+        int16 MapDifficulty = -1;
+        uint32 MapId = 0;
+        uint32 InstanceId = 0;
+        uint32 LockoutSaveId = 0;
+        uint64 ServerEpoch = 0;
+        uint64 AttemptId = 0;
+        uint64 AssignmentGeneration = 0;
+        uint64 EvidenceSequence = 0;
+        std::string StrategyId;
+        std::string EncounterPhase = "formation";
+        std::string WipeState = "ready";
+        std::string RecoveryState = "none";
+        std::map<uint32, RaidRosterSlot> RosterByGuid;
+    };
+
     struct CohortRuntime
     {
         std::string Id;
@@ -1607,6 +1649,7 @@ private:
         BotTelemetryBuffer TelemetryBuffer;
         BotExperimentCoordinator ExperimentCoordinator;
         PartyRuntime Party;
+        RaidRuntime Raid;
     };
 
     struct BotGuidLease

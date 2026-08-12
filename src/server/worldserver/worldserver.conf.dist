@@ -3662,6 +3662,10 @@ BotProgression.PowerScoreVersion = "role_power_v1"
 BotProgression.AllowQuesting = 1
 BotProgression.AllowDungeons = 0
 BotProgression.AllowRaids = 0
+# Raid size must be 10 or 25. Difficulty is 0=10N, 1=25N, 2=10H, 3=25H;
+# the size and difficulty must agree or raid progression fails closed.
+BotProgression.RaidSize = 10
+BotProgression.RaidDifficulty = 0
 BotProgression.TrackHeroicRaidProgression = 1
 
 BotSemantic.Enable = 1

@@ -19,6 +19,7 @@
 #include "GroupReference.h"
 #include "GameClient.h"
 #include "Instances/InstanceScript.h"
+#include "Instances/InstanceSaveMgr.h"
 #include "Entities/Item/Item.h"
 #include "Entities/Item/ItemTemplate.h"
 #include "LFG.h"
@@ -1238,6 +1239,7 @@ void BotWorldPopulationMgr::ReleaseCohortLeases()
     std::vector<uint32> owned(Cohort().RosterLeases.begin(), Cohort().RosterLeases.end());
     for (uint32 guid : owned)
         ReleaseBotGuid(guid);
+    Cohort().Raid = RaidRuntime();
 }
 
 bool BotWorldPopulationMgr::LeaseOwnedByCurrentCohort(uint32 guid) const
@@ -2627,6 +2629,20 @@ bool BotWorldPopulationMgr::LoadRuntimeProfiles(std::string* failureReason)
         if (profile.HasAllowDungeons) profile.Config.AllowDungeons = boolValue;
         if (!readBool(profileJson, "allow_raids", boolValue, profile.HasAllowRaids)) return false;
         if (profile.HasAllowRaids) profile.Config.AllowRaids = boolValue;
+        if (!readUInt(profileJson, "raid_size", uintValue, profile.HasRaidSize)) return false;
+        if (profile.HasRaidSize)
+        {
+            if (uintValue != 10 && uintValue != 25)
+                return fail("profile_bad_raid_size");
+            profile.Config.RaidSize = uint8(uintValue);
+        }
+        if (!readUInt(profileJson, "raid_difficulty", uintValue, profile.HasRaidDifficulty)) return false;
+        if (profile.HasRaidDifficulty)
+        {
+            if (uintValue >= MAX_RAID_DIFFICULTY)
+                return fail("profile_bad_raid_difficulty");
+            profile.Config.RaidDifficulty = uint8(uintValue);
+        }
         if (!readBool(profileJson, "track_heroic_raid_progression", boolValue, profile.HasTrackHeroicRaidProgression)) return false;
         if (profile.HasTrackHeroicRaidProgression) profile.Config.TrackHeroicRaidProgression = boolValue;
         if (!readBool(profileJson, "enable_progression", boolValue, profile.HasEnableProgression)) return false;
@@ -2918,6 +2934,8 @@ void BotWorldPopulationMgr::ApplyRuntimeProfile(BotWorldExperimentProfile const&
     if (profile.HasAllowQuesting) Cohort().Config.AllowQuesting = profile.Config.AllowQuesting;
     if (profile.HasAllowDungeons) Cohort().Config.AllowDungeons = profile.Config.AllowDungeons;
     if (profile.HasAllowRaids) Cohort().Config.AllowRaids = profile.Config.AllowRaids;
+    if (profile.HasRaidSize) Cohort().Config.RaidSize = profile.Config.RaidSize;
+    if (profile.HasRaidDifficulty) Cohort().Config.RaidDifficulty = profile.Config.RaidDifficulty;
     if (profile.HasTrackHeroicRaidProgression) Cohort().Config.TrackHeroicRaidProgression = profile.Config.TrackHeroicRaidProgression;
     if (profile.HasEnableProgression) Cohort().Config.EnableProgression = profile.Config.EnableProgression;
     if (profile.HasRecordDecisions) Cohort().Config.RecordDecisions = profile.Config.RecordDecisions;
@@ -2977,6 +2995,22 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     Cohort().Config.AllowQuesting = sConfigMgr->GetBoolDefault("BotProgression.AllowQuesting", sConfigMgr->GetBoolDefault("BotWorld.AllowQuesting", Cohort().Config.AllowQuesting));
     Cohort().Config.AllowDungeons = sConfigMgr->GetBoolDefault("BotProgression.AllowDungeons", Cohort().Config.AllowDungeons);
     Cohort().Config.AllowRaids = sConfigMgr->GetBoolDefault("BotProgression.AllowRaids", Cohort().Config.AllowRaids);
+    int32 const configuredRaidSize = sConfigMgr->GetIntDefault("BotProgression.RaidSize", Cohort().Config.RaidSize);
+    int32 const configuredRaidDifficulty = sConfigMgr->GetIntDefault("BotProgression.RaidDifficulty", Cohort().Config.RaidDifficulty);
+    if (configuredRaidSize != 10 && configuredRaidSize != 25)
+    {
+        Cohort().Config.AllowRaids = false;
+        Cohort().LastPopulationFailureReason = "invalid_raid_size";
+    }
+    else
+        Cohort().Config.RaidSize = uint8(configuredRaidSize);
+    if (configuredRaidDifficulty < RAID_DIFFICULTY_10MAN_NORMAL || configuredRaidDifficulty >= MAX_RAID_DIFFICULTY)
+    {
+        Cohort().Config.AllowRaids = false;
+        Cohort().LastPopulationFailureReason = "invalid_raid_difficulty";
+    }
+    else
+        Cohort().Config.RaidDifficulty = uint8(configuredRaidDifficulty);
     Cohort().Config.TrackHeroicRaidProgression = sConfigMgr->GetBoolDefault("BotProgression.TrackHeroicRaidProgression", Cohort().Config.TrackHeroicRaidProgression);
     Cohort().Config.RecordDecisions = sConfigMgr->GetBoolDefault("BotExperiment.RecordDecisions", Cohort().Config.RecordDecisions);
     Cohort().Config.RecordPerception = sConfigMgr->GetBoolDefault("BotExperiment.RecordPerception", Cohort().Config.RecordPerception);
@@ -3080,6 +3114,19 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
             ApplyRuntimeProfile(profileItr->second);
         else
             Cohort().SelectedProfileName.clear();
+    }
+
+    if (Cohort().Config.AllowRaids)
+    {
+        bool const validSize = Cohort().Config.RaidSize == 10 || Cohort().Config.RaidSize == 25;
+        bool const validDifficulty = Cohort().Config.RaidDifficulty < MAX_RAID_DIFFICULTY;
+        bool const difficultyIs25 = (Cohort().Config.RaidDifficulty & RAID_DIFFICULTY_MASK_25MAN) != 0;
+        if (!validSize || !validDifficulty || ((Cohort().Config.RaidSize == 25) != difficultyIs25))
+        {
+            Cohort().Config.AllowRaids = false;
+            Cohort().LastPopulationFailureReason = !validSize ? "invalid_raid_size"
+                : (!validDifficulty ? "invalid_raid_difficulty" : "raid_size_difficulty_mismatch");
+        }
     }
 
     if (!Cohort().PreparedClassSpecs.empty())
@@ -5470,10 +5517,14 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         group->ConvertToRaid();
 
     group->SetDungeonDifficulty(DUNGEON_DIFFICULTY_NORMAL);
-    group->SetRaidDifficulty(RAID_DIFFICULTY_10MAN_NORMAL);
-
-    if (members.size() < 2)
+    Difficulty requestedRaidDifficulty = Difficulty(Cohort().Config.RaidDifficulty);
+    bool const requested25Player = (Cohort().Config.RaidDifficulty & RAID_DIFFICULTY_MASK_25MAN) != 0;
+    if (raidValidation && ((Cohort().Config.RaidSize == 25) != requested25Player))
+    {
+        Cohort().LastPopulationFailureReason = "raid_size_difficulty_mismatch";
         return;
+    }
+    group->SetRaidDifficulty(requestedRaidDifficulty);
 
     uint32 const leaderMapId = leader->GetMapId();
     uint32 const leaderInstanceId = leader->GetInstanceId();
@@ -5481,12 +5532,45 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
     Party().MapId = leaderMapId;
     Party().InstanceId = leaderInstanceId;
 
-    for (Player* bot : members)
-    {
-        if (!bot || bot == leader)
-            continue;
+    RaidRuntime& raid = Cohort().Raid;
+    if (raid.GroupGuid != group->GetGUID() || raid.AttemptId != Cohort().AttemptId)
+        raid = RaidRuntime();
+    raid.Active = raidValidation;
+    raid.GroupGuid = group->GetGUID();
+    raid.LeaderGuid = leader->GetGUID();
+    raid.ExpectedSize = raidValidation ? Cohort().Config.RaidSize : uint32(members.size());
+    raid.ExpectedDifficulty = Cohort().Config.RaidDifficulty;
+    raid.GroupDifficulty = uint8(group->GetRaidDifficulty());
+    raid.MapDifficulty = leader->GetMap() && leader->GetMap()->IsRaid() ? int16(leader->GetMap()->GetDifficulty()) : -1;
+    raid.MapId = leaderMapId;
+    raid.InstanceId = leaderInstanceId;
+    raid.ServerEpoch = _serverEpoch;
+    raid.AttemptId = Cohort().AttemptId;
+    raid.StrategyId = Cohort().Config.ValidationRouteMechanicProfile.empty()
+        ? Cohort().Config.ValidationRouteScenarioId : Cohort().Config.ValidationRouteMechanicProfile;
+    raid.DifficultyMatches = raid.GroupDifficulty == raid.ExpectedDifficulty
+        && (raid.MapDifficulty < 0 || raid.MapDifficulty == int16(raid.ExpectedDifficulty));
+    raid.LockoutSaveId = 0;
+    if (leader->GetMap() && leader->GetMap()->IsRaid())
+        if (InstanceGroupBind* bind = group->GetBoundInstance(leader->GetMap()))
+            if (bind->save)
+                raid.LockoutSaveId = bind->save->GetInstanceId();
 
-        if (!bot->GetGroup())
+    std::map<uint32, RaidRosterSlot> previousRoster = raid.RosterByGuid;
+    raid.RosterByGuid.clear();
+    raid.UniqueLeases = true;
+    std::set<uint32> observedGuids;
+
+    for (size_t memberIndex = 0; memberIndex < members.size(); ++memberIndex)
+    {
+        Player* bot = members[memberIndex];
+        if (!bot || bot == leader)
+        {
+            if (!bot)
+                continue;
+        }
+
+        if (bot != leader && !bot->GetGroup())
         {
             if (!group->AddMember(bot))
             {
@@ -5504,6 +5588,22 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
             continue;
         }
 
+        uint8 const subgroup = uint8(std::min<size_t>(memberIndex / MAXGROUPSIZE, 4));
+        if (raidValidation)
+            group->ChangeMembersGroup(bot->GetGUID(), subgroup);
+
+        uint32 const guid = bot->GetGUID().GetCounter();
+        RaidRosterSlot slot;
+        slot.SlotIndex = uint32(memberIndex);
+        slot.Guid = bot->GetGUID();
+        slot.SubGroup = raidValidation ? group->GetMemberGroup(bot->GetGUID()) : 0;
+        slot.Role = GetDungeonRole(bot);
+        slot.Active = bot->IsInWorld();
+        slot.LeaseOwned = LeaseOwnedByCurrentCohort(guid);
+        raid.RosterByGuid.emplace(guid, slot);
+        if (!observedGuids.insert(guid).second || !slot.LeaseOwned)
+            raid.UniqueLeases = false;
+
         std::string role = sBotMgr->GetBotRoleName(bot->GetGUID());
         if (role == "tank")
             group->SetLfgRoles(bot->GetGUID(), lfg::PLAYER_ROLE_TANK);
@@ -5520,6 +5620,27 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
             continue;
         }
     }
+
+    raid.ActiveSize = uint32(raid.RosterByGuid.size());
+    raid.RosterComplete = raid.ActiveSize == raid.ExpectedSize;
+    if (previousRoster.size() != raid.RosterByGuid.size())
+        ++raid.AssignmentGeneration;
+    else
+        for (auto const& [guid, slot] : raid.RosterByGuid)
+        {
+            auto previous = previousRoster.find(guid);
+            if (previous == previousRoster.end() || previous->second.SlotIndex != slot.SlotIndex
+                || previous->second.SubGroup != slot.SubGroup || previous->second.Role != slot.Role)
+            {
+                ++raid.AssignmentGeneration;
+                break;
+            }
+        }
+
+    if (raidValidation && members.size() > raid.ExpectedSize)
+        Cohort().LastPopulationFailureReason = "raid_roster_exceeds_expected_size";
+    else if (raidValidation && leader->GetMap() && leader->GetMap()->IsRaid() && !raid.DifficultyMatches)
+        Cohort().LastPopulationFailureReason = "raid_live_difficulty_mismatch";
 
     for (Player* bot : members)
     {
@@ -24255,6 +24376,50 @@ std::string BotWorldPopulationMgr::BuildRaidRoleAssignmentJson(RaidRoleAssignmen
     return json.str();
 }
 
+std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
+{
+    RaidRuntime const& raid = Cohort().Raid;
+    std::ostringstream json;
+    json << "{\"active\":" << (raid.Active ? "true" : "false")
+         << ",\"group_guid\":" << raid.GroupGuid.GetRawValue()
+         << ",\"leader_guid\":" << raid.LeaderGuid.GetRawValue()
+         << ",\"expected_size\":" << raid.ExpectedSize
+         << ",\"active_size\":" << raid.ActiveSize
+         << ",\"roster_complete\":" << (raid.RosterComplete ? "true" : "false")
+         << ",\"expected_difficulty\":" << uint32(raid.ExpectedDifficulty)
+         << ",\"group_difficulty\":" << uint32(raid.GroupDifficulty)
+         << ",\"map_difficulty\":" << raid.MapDifficulty
+         << ",\"difficulty_matches\":" << (raid.DifficultyMatches ? "true" : "false")
+         << ",\"map_id\":" << raid.MapId
+         << ",\"instance_id\":" << raid.InstanceId
+         << ",\"lockout_save_id\":" << raid.LockoutSaveId
+         << ",\"server_epoch\":" << raid.ServerEpoch
+         << ",\"attempt_id\":" << raid.AttemptId
+         << ",\"assignment_generation\":" << raid.AssignmentGeneration
+         << ",\"evidence_sequence\":" << raid.EvidenceSequence
+         << ",\"unique_leases\":" << (raid.UniqueLeases ? "true" : "false")
+         << ",\"strategy_id\":\"" << JsonEscape(raid.StrategyId) << "\""
+         << ",\"encounter_phase\":\"" << JsonEscape(raid.EncounterPhase) << "\""
+         << ",\"wipe_state\":\"" << JsonEscape(raid.WipeState) << "\""
+         << ",\"recovery_state\":\"" << JsonEscape(raid.RecoveryState) << "\""
+         << ",\"roster\":[";
+    bool first = true;
+    for (auto const& [guid, slot] : raid.RosterByGuid)
+    {
+        if (!first)
+            json << ',';
+        first = false;
+        json << "{\"slot\":" << slot.SlotIndex
+             << ",\"guid\":" << guid
+             << ",\"subgroup\":" << uint32(slot.SubGroup)
+             << ",\"role\":\"" << JsonEscape(slot.Role) << "\""
+             << ",\"active\":" << (slot.Active ? "true" : "false")
+             << ",\"lease_owned\":" << (slot.LeaseOwned ? "true" : "false") << '}';
+    }
+    json << "]}";
+    return json.str();
+}
+
 std::string BotWorldPopulationMgr::BuildRaidPositioningAnchorsJson(RaidPositioningAnchors const& anchors) const
 {
     std::ostringstream json;
@@ -26381,6 +26546,7 @@ void BotWorldPopulationMgr::RecordRaidTelemetry(WorldBotState& state, Player* bo
     if (!Cohort().RunId || !bot || !features.RaidEncounter)
         return;
 
+    ++Cohort().Raid.EvidenceSequence;
     ++Cohort().Metrics.RaidTelemetryEvents;
     std::string observedEvent = eventType ? eventType : "raid_telemetry";
     if (observedEvent == "raid_role_assignment")
@@ -26407,7 +26573,8 @@ void BotWorldPopulationMgr::RecordRaidTelemetry(WorldBotState& state, Player* bo
         return;
 
     std::ostringstream context;
-    context << "{\"raid_role_assignment\":" << BuildRaidRoleAssignmentJson(assignment)
+    context << "{\"raid_runtime\":" << BuildRaidRuntimeJson()
+            << ",\"raid_role_assignment\":" << BuildRaidRoleAssignmentJson(assignment)
             << ",\"raid_positioning_anchors\":" << BuildRaidPositioningAnchorsJson(anchors)
             << ",\"raid_mechanic_adapter\":" << BuildRaidMechanicAdapterJson(adapter)
             << ",\"raid_boss_mechanics\":" << BuildBossMechanicsJson(features)
@@ -28524,6 +28691,8 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
          << ",\"allow_questing\":" << (Cohort().Config.AllowQuesting ? "true" : "false")
          << ",\"allow_dungeons\":" << (Cohort().Config.AllowDungeons ? "true" : "false")
          << ",\"allow_raids\":" << (Cohort().Config.AllowRaids ? "true" : "false")
+         << ",\"raid_size\":" << uint32(Cohort().Config.RaidSize)
+         << ",\"raid_difficulty\":" << uint32(Cohort().Config.RaidDifficulty)
          << ",\"track_heroic_raid_progression\":" << (Cohort().Config.TrackHeroicRaidProgression ? "true" : "false")
          << ",\"record_decisions\":" << (Cohort().Config.RecordDecisions ? "true" : "false")
          << ",\"record_perception\":" << (Cohort().Config.RecordPerception ? "true" : "false")
@@ -29749,6 +29918,7 @@ std::string BotWorldPopulationMgr::GetStatusJson() const
          << ",\"regroups\":" << status.Regroups
          << ",\"recovery_events\":" << status.RecoveryEvents
          << ",\"instance_resets\":" << status.InstanceResets
+         << ",\"raid_runtime\":" << BuildRaidRuntimeJson()
          << ",\"segment_counts\":" << Cohort().ExperimentCoordinator.GetCountsJson()
          << ",\"validation_route\":{\"enabled\":" << (Cohort().Config.ValidationRouteEnable ? "true" : "false")
          << ",\"manifest_path\":\"" << JsonEscape(Cohort().Config.ValidationRouteManifestPath) << "\""
@@ -29850,7 +30020,8 @@ std::string BotWorldPopulationMgr::GetBotDiagnosisJson(std::string const& select
             break;
     }
 
-    json << "]";
+    json << "]"
+         << ",\"raid_runtime\":" << BuildRaidRuntimeJson();
     if (!emitted)
         json << ",\"failure_reason\":\"" << JsonEscape(Cohort().LastPopulationFailureReason.empty() ? "no_matching_bot" : Cohort().LastPopulationFailureReason) << "\"";
     else
@@ -29875,6 +30046,7 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
              << ",\"node_id\":\"" << JsonEscape(Cohort().Config.ValidationRouteNodeId) << "\""
              << ",\"label\":\"" << JsonEscape(Cohort().Config.ValidationRouteLabel) << "\""
              << ",\"kind\":\"" << JsonEscape(Cohort().Config.ValidationRouteKind) << "\"}"
+             << ",\"raid_runtime\":" << BuildRaidRuntimeJson()
              << ",\"bots\":[";
 
         bool emitted = false;
@@ -29924,6 +30096,7 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
          << ",\"node_id\":\"" << JsonEscape(Cohort().Config.ValidationRouteNodeId) << "\""
          << ",\"label\":\"" << JsonEscape(Cohort().Config.ValidationRouteLabel) << "\""
          << ",\"kind\":\"" << JsonEscape(Cohort().Config.ValidationRouteKind) << "\"}"
+         << ",\"raid_runtime\":" << BuildRaidRuntimeJson()
          << ",\"entries\":" << BuildBotTraceEntriesJson(*selected, normalizedLimit)
          << ",\"failure_reason\":null}";
     return json.str();
