@@ -6789,6 +6789,12 @@ bool BotWorldPopulationMgr::ResolveSpawnPlacement(uint32 candidateGuid, SpawnPla
         if (ResolveSavedSpawnPlacement(candidateGuid, placement))
             return true;
 
+        // Validation routes are bound to their configured map before any bot
+        // is loaded. Never turn stale or missing persisted raid placement
+        // into a race-start/near-player spawn and a split native group.
+        if (Cohort().Config.ValidationRouteEnable)
+            return false;
+
         if (mode == "resume_only")
             return false;
     }
@@ -6943,6 +6949,10 @@ bool BotWorldPopulationMgr::IsConfiguredCenterPosition(uint32 mapId, float x, fl
 bool BotWorldPopulationMgr::IsValidBotResumePosition(uint32 botGuid, uint32 mapId, float x, float y, float z) const
 {
     if (!botGuid)
+        return false;
+    if (Cohort().Config.ValidationRouteEnable
+        && Cohort().Config.ValidationRouteMapId
+        && mapId != Cohort().Config.ValidationRouteMapId)
         return false;
     if (std::fabs(x) < 0.001f && std::fabs(y) < 0.001f && std::fabs(z) < 0.001f)
         return false;

@@ -71,6 +71,23 @@ def test_live_raid_instance_identity_freezes_atomically_from_the_exact_roster():
     assert "group->GetLeaderGUID() != state.ValidationCohortLeaderGuid" in original_instance
 
 
+def test_validation_saved_position_is_route_map_bound_without_spawn_fallback():
+    placement = IMPL[
+        IMPL.index("bool BotWorldPopulationMgr::ResolveSpawnPlacement"):
+        IMPL.index("bool BotWorldPopulationMgr::ResolveSavedSpawnPlacement")
+    ]
+    resume = IMPL[
+        IMPL.index("bool BotWorldPopulationMgr::IsValidBotResumePosition"):
+        IMPL.index("void BotWorldPopulationMgr::PersistBotPosition")
+    ]
+
+    assert "if (Cohort().Config.ValidationRouteEnable)" in placement
+    assert placement.index("if (Cohort().Config.ValidationRouteEnable)") < placement.index(
+        'if (mode == "resume_only")'
+    )
+    assert "mapId != Cohort().Config.ValidationRouteMapId" in resume
+
+
 def test_raid_size_and_difficulty_are_explicit_and_fail_closed():
     assert "uint8 RaidSize = 10;" in HEADER
     assert "uint8 RaidDifficulty = 0;" in HEADER
