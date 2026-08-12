@@ -1,0 +1,6 @@
+outs:
+- md5: fa6ca050a2ddd41eece7f05d89424a2f.dir
+  size: 1498
+  nfiles: 1
+  hash: md5
+  path: phase0_no_bots_worldserver_20260812
