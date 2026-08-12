@@ -69,7 +69,12 @@ def configured_git_repo(path: Path, flags: str = "-O1 -DNDEBUG") -> Path:
     repo = initialized_git_repo(path)
     (repo / ".gitignore").write_text("build/\n", encoding="utf-8")
     (repo / "CMakeLists.txt").write_text(
-        "cmake_minimum_required(VERSION 3.16)\nproject(raid_fixture CXX)\nadd_executable(raid_fixture main.cpp)\n",
+        "cmake_minimum_required(VERSION 3.16)\n"
+        "project(raid_fixture CXX)\n"
+        "add_executable(raid_fixture main.cpp)\n"
+        "file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/src/server/worldserver)\n"
+        "add_custom_target(worldserver COMMAND ${CMAKE_COMMAND} -E copy /bin/true "
+        "${CMAKE_BINARY_DIR}/src/server/worldserver/worldserver)\n",
         encoding="utf-8",
     )
     (repo / "main.cpp").write_text("int main() { return 0; }\n", encoding="utf-8")
@@ -79,6 +84,8 @@ def configured_git_repo(path: Path, flags: str = "-O1 -DNDEBUG") -> Path:
         "\n".join(
             (
                 "CMAKE_BUILD_TYPE:STRING=Release",
+                "CMAKE_GENERATOR:INTERNAL=Unix Makefiles",
+                "CMAKE_MAKE_PROGRAM:FILEPATH=/usr/bin/gmake",
                 "CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON",
                 "CMAKE_CXX_FLAGS:STRING=",
                 f"CMAKE_CXX_FLAGS_RELEASE:STRING={flags}",
@@ -117,7 +124,9 @@ def seed_configure_lineage(
     frozen: dict,
     tmp_path: Path,
 ) -> dict:
-    command = ["/usr/bin/cmake", "-S", ".", "-B", "build"]
+    command = [
+        "/usr/bin/cmake", "-S", ".", "-B", "build", "-G", "Unix Makefiles"
+    ]
     command.extend(f"-D{key}={value}" for key, value in qb.expected_build_configuration(frozen).items())
     code, receipt = qb.run_ticket(
         repo,
@@ -131,6 +140,14 @@ def seed_configure_lineage(
     assert code == 0
     assert receipt["classification"] == "success"
     return receipt
+
+
+def exact_worldserver_build(frozen: dict) -> list[str]:
+    return [
+        frozen["mechanical_controls"]["cmake_executable"],
+        "--build", "build", "--target", "worldserver", "--parallel",
+        str(frozen["parallelism"]["maximum_compiler_jobs"]),
+    ]
 
 
 def test_policy_preserves_host_reserve_and_caps_fanout() -> None:
@@ -445,11 +462,7 @@ def test_v8_rejects_wrong_effective_cmake_settings_before_child_launch(
     frozen = json.loads(
         (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").read_text()
     )
-    marker = tmp_path / "child-launched"
-    command = [
-        sys.executable, "-c",
-        "import pathlib,sys; pathlib.Path(sys.argv[1]).touch()", str(marker),
-    ]
+    command = exact_worldserver_build(frozen)
     monkeypatch.setattr(qb, "resource_snapshot", lambda _: synthetic_snapshot())
     monkeypatch.setattr(qb, "find_live_validation_processes", lambda *_args, **_kwargs: [])
 
@@ -459,7 +472,6 @@ def test_v8_rejects_wrong_effective_cmake_settings_before_child_launch(
     )
     assert code == 76
     assert receipt["classification"] == "build_provenance_abort"
-    assert marker.exists() is False
     assert receipt["build_configuration"]["request"]["matches_policy"] is False
     assert "build_configuration_or_configure_lineage_missing_before_admission" in receipt[
         "provenance_reasons"
@@ -474,11 +486,7 @@ def test_v8_matching_cache_without_coordinated_configure_lineage_is_rejected(
     frozen = json.loads(
         (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").read_text()
     )
-    marker = tmp_path / "child-launched"
-    command = [
-        sys.executable, "-c",
-        "import pathlib,sys; pathlib.Path(sys.argv[1]).touch()", str(marker),
-    ]
+    command = exact_worldserver_build(frozen)
     monkeypatch.setattr(qb, "resource_snapshot", lambda _: synthetic_snapshot())
     monkeypatch.setattr(qb, "find_live_validation_processes", lambda *_args, **_kwargs: [])
 
@@ -489,7 +497,6 @@ def test_v8_matching_cache_without_coordinated_configure_lineage_is_rejected(
     assert code == 76
     assert receipt["classification"] == "build_provenance_abort"
     assert receipt["configure_lineage"] is None
-    assert marker.exists() is False
     assert "build_configuration_or_configure_lineage_missing_before_admission" in receipt[
         "provenance_reasons"
     ]
@@ -504,11 +511,7 @@ def test_v8_receipt_binds_effective_cmake_settings_and_current_cache(
         (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").read_text()
     )
     binary = repo / "build/src/server/worldserver/worldserver"
-    command = [
-        sys.executable, "-c",
-        "import pathlib,sys; p=pathlib.Path(sys.argv[1]); p.parent.mkdir(parents=True,exist_ok=True); p.write_bytes(b'\\x7fELFpolicy-bound')",
-        str(binary),
-    ]
+    command = exact_worldserver_build(frozen)
     receipt_path = tmp_path / "bound-cache.json"
     monkeypatch.setattr(qb, "resource_snapshot", lambda _: synthetic_snapshot())
     monkeypatch.setattr(qb, "find_live_validation_processes", lambda *_args, **_kwargs: [])
@@ -542,13 +545,17 @@ def test_v8_full_cache_drift_during_build_is_provenance_abort(
     frozen = json.loads(
         (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").read_text()
     )
-    command = [
-        sys.executable, "-c",
-        "import pathlib; p=pathlib.Path('build/CMakeCache.txt'); p.write_text(p.read_text()+'UNSELECTED_SETTING:STRING=changed\\n')",
-    ]
+    command = exact_worldserver_build(frozen)
     monkeypatch.setattr(qb, "resource_snapshot", lambda _: synthetic_snapshot())
     monkeypatch.setattr(qb, "find_live_validation_processes", lambda *_args, **_kwargs: [])
     seed_configure_lineage(repo, frozen, tmp_path)
+
+    def mutate_cache(*_args):
+        cache = repo / "build/CMakeCache.txt"
+        cache.write_text(cache.read_text() + "UNSELECTED_SETTING:STRING=changed\n")
+        return 0, "success", [synthetic_snapshot()], []
+
+    monkeypatch.setattr(qb, "execute_process", mutate_cache)
 
     code, receipt = qb.run_ticket(
         repo, frozen, "worldserver_build", command, None,
@@ -580,10 +587,13 @@ def test_v8_generated_build_graph_drift_is_provenance_abort(
     seed_configure_lineage(repo, frozen, tmp_path)
     flags = repo / "build/CMakeFiles/raid_fixture.dir/flags.make"
     assert flags.is_file()
-    command = [
-        sys.executable, "-c",
-        "import pathlib; p=pathlib.Path('build/CMakeFiles/raid_fixture.dir/flags.make'); p.write_text(p.read_text().replace('-O1','-O3'))",
-    ]
+    command = exact_worldserver_build(frozen)
+
+    def mutate_graph(*_args):
+        flags.write_text(flags.read_text().replace("-O1", "-O3"))
+        return 0, "success", [synthetic_snapshot()], []
+
+    monkeypatch.setattr(qb, "execute_process", mutate_graph)
     code, receipt = qb.run_ticket(
         repo, frozen, "worldserver_build", command, None,
         tmp_path / "graph-drift.json", 2.0,
@@ -607,11 +617,7 @@ def test_fabricated_never_enqueued_receipt_is_rejected(
         (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").read_text()
     )
     binary = repo / "build/src/server/worldserver/worldserver"
-    command = [
-        sys.executable, "-c",
-        "import pathlib,sys; p=pathlib.Path(sys.argv[1]); p.parent.mkdir(parents=True,exist_ok=True); p.write_bytes(b'\\x7fELFauthentic')",
-        str(binary),
-    ]
+    command = exact_worldserver_build(frozen)
     receipt_path = tmp_path / "authentic.json"
     monkeypatch.setattr(qb, "resource_snapshot", lambda _: synthetic_snapshot())
     monkeypatch.setattr(qb, "find_live_validation_processes", lambda *_args, **_kwargs: [])
@@ -635,20 +641,11 @@ def test_v8_configure_command_must_explicitly_bind_every_effective_setting() -> 
     frozen = json.loads(
         (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").read_text()
     )
+    controls = frozen["mechanical_controls"]
     command = [
-        "/usr/bin/cmake", "-S", ".", "-B", "build",
-        "-DCMAKE_BUILD_TYPE=Release",
-        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
-        "-DCMAKE_CXX_FLAGS=",
-        "-DCMAKE_CXX_FLAGS_RELEASE=-O1 -DNDEBUG",
-        "-DCMAKE_CXX_COMPILER=/usr/bin/c++",
-        "-DCMAKE_CXX_COMPILER_LAUNCHER=",
-        "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF",
-        "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=OFF",
-        "-DUNITY_BUILDS=OFF",
-        "-DUSE_COREPCH=OFF",
-        "-DUSE_SCRIPTPCH=OFF",
-        "-DWITH_COREDEBUG=OFF",
+        controls["cmake_executable"], "-S", ".", "-B", "build", "-G",
+        controls["cmake_generator"],
+        *(f"-D{key}={value}" for key, value in qb.expected_build_configuration(frozen).items()),
     ]
     qb.validate_command(command, 1, resource_class="configure", policy=frozen)
     with pytest.raises(qb.CoordinatorError, match="CMAKE_CXX_FLAGS_RELEASE"):
@@ -679,11 +676,38 @@ def test_v8_configure_command_must_explicitly_bind_every_effective_setting() -> 
             [str(fake_cmake), *command[1:]], 1,
             resource_class="configure", policy=frozen,
         )
-    with pytest.raises(qb.CoordinatorError, match="non-allowlisted"):
+    with pytest.raises(qb.CoordinatorError, match="exact policy-owned"):
         qb.validate_command(
             [*command, "-N"], 1,
             resource_class="configure", policy=frozen,
         )
+
+
+def test_v8_worldserver_command_and_environment_are_policy_owned(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    frozen = json.loads(
+        (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").read_text()
+    )
+    qb.validate_command(
+        exact_worldserver_build(frozen), 1,
+        resource_class="worldserver_build", policy=frozen,
+    )
+    with pytest.raises(qb.CoordinatorError, match="exact policy invocation"):
+        qb.validate_command(
+            ["/usr/bin/cp", "/bin/true", "build/src/server/worldserver/worldserver"],
+            1, resource_class="worldserver_build", policy=frozen,
+        )
+    paths = qb.Paths.for_worktree(ROOT)
+    monkeypatch.setenv("COMPILER_PATH", str(tmp_path / "attacker"))
+    monkeypatch.setenv("LD_PRELOAD", str(tmp_path / "inject.so"))
+    environment = qb.coordinated_environment(
+        frozen, paths, "fixture-ticket"
+    )
+    assert "COMPILER_PATH" not in environment
+    assert "LD_PRELOAD" not in environment
+    assert environment["PATH"] == qb.SAFE_BUILD_PATH
+    assert qb.toolchain_snapshot(frozen)["matches_policy"] is True
 
 
 def test_cmake_integration_applies_compile_and_link_controls() -> None:
@@ -729,6 +753,15 @@ def test_receipt_rejects_worldserver_not_produced_by_ticket(tmp_path: Path) -> N
         "build_configuration": {"request": None, "admission": None, "completion": None},
         "build_configuration_stable": True,
         "configure_lineage": None,
+        "toolchain_identity": {
+            "admission": {"expected": {}, "actual": {}, "matches_policy": True},
+            "completion": {"expected": {}, "actual": {}, "matches_policy": True},
+            "stable": True,
+        },
+        "environment_contract": {
+            "path": qb.SAFE_BUILD_PATH,
+            "sanitized_variables": list(qb.SANITIZED_BUILD_VARIABLES),
+        },
         "command_sha256": "0" * 64,
         "resource_class": "worldserver_build",
         "classification": "success",

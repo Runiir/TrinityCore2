@@ -16,6 +16,7 @@ import json
 import os
 import re
 import selectors
+import shlex
 import shutil
 import signal
 import subprocess
@@ -35,6 +36,14 @@ STATE_VERSION = 1
 TERMINAL_STATES = {"canceled", "finished", "recovered_stale"}
 FANOUT_OPTIONS = {"-j", "--jobs", "--parallel"}
 SHELL_WRAPPERS = {"bash", "dash", "env", "fish", "sh", "zsh"}
+SAFE_BUILD_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+SANITIZED_BUILD_VARIABLES = (
+    "AR", "AS", "CC", "CXX", "LD", "NM", "OBJCOPY", "OBJDUMP", "RANLIB",
+    "STRIP", "MAKE", "COMPILER_PATH", "GCC_EXEC_PREFIX", "LD_PRELOAD",
+    "LIBRARY_PATH", "C_INCLUDE_PATH", "CPLUS_INCLUDE_PATH", "CPATH",
+    "CMAKE_GENERATOR", "CMAKE_GENERATOR_INSTANCE", "CMAKE_GENERATOR_PLATFORM",
+    "CMAKE_GENERATOR_TOOLSET", "CMAKE_TOOLCHAIN_FILE", "DESTDIR",
+)
 
 
 class CoordinatorError(RuntimeError):
@@ -326,6 +335,8 @@ def expected_build_configuration(policy: dict) -> dict[str, str] | None:
         raise CoordinatorError("policy CMake build type is missing")
     return {
         "CMAKE_BUILD_TYPE": build_type,
+        "CMAKE_GENERATOR": str(controls.get("cmake_generator", "")),
+        "CMAKE_MAKE_PROGRAM": str(controls.get("cmake_make_program", "")),
         "CMAKE_EXPORT_COMPILE_COMMANDS": (
             "ON" if controls.get("cmake_export_compile_commands") else "OFF"
         ),
@@ -406,7 +417,7 @@ def build_graph_snapshot(worktree: Path, expected: dict[str, str]) -> dict:
         for candidate in cmake_files.rglob("*"):
             if candidate.is_file() and (
                 candidate.name in {"flags.make", "link.txt", "build.make", "Makefile2"}
-                or candidate.suffix == ".cmake"
+                or candidate.suffix in {".cmake", ".make", ".rsp"}
             ):
                 paths.append(candidate)
     entries = [
@@ -431,15 +442,21 @@ def build_graph_snapshot(worktree: Path, expected: dict[str, str]) -> dict:
                 and str(row.get("file", "")).lower().endswith((".cc", ".cpp", ".cxx"))
             ]
             command_count = len(cxx_commands)
-            required = [expected["CMAKE_CXX_FLAGS_RELEASE"]]
-            forbidden = ("-O2", "-O3", "-flto")
-            commands_valid = bool(cxx_commands) and all(
-                isinstance(row, dict)
-                and isinstance(row.get("command"), str)
-                and all(flag in row["command"] for flag in required)
-                and not any(flag in row["command"] for flag in forbidden)
-                for row in cxx_commands
-            )
+            commands_valid = bool(cxx_commands)
+            for row in cxx_commands:
+                command_value = row.get("command") if isinstance(row, dict) else None
+                try:
+                    arguments = shlex.split(command_value) if isinstance(command_value, str) else []
+                except ValueError:
+                    arguments = []
+                optimization = [value for value in arguments if re.fullmatch(r"-O(?:[0-3sgz]|fast)", value)]
+                if (
+                    optimization != ["-O1"]
+                    or "-DNDEBUG" not in arguments
+                    or any(value.startswith(("-g", "-flto")) for value in arguments)
+                ):
+                    commands_valid = False
+                    break
     manifest_sha256 = sha256_bytes(canonical_json(entries))
     return {
         "manifest_sha256": manifest_sha256,
@@ -488,13 +505,13 @@ def validate_configure_command(command: Sequence[str], policy: dict) -> None:
             "configure command does not explicitly bind policy CMake settings: "
             + ",".join(missing)
         )
-    allowed = {
-        command[0], "-S", ".", "-B", "build",
+    expected_command = [
+        str(cmake_executable), "-S", ".", "-B", "build", "-G",
+        str(controls.get("cmake_generator")),
         *(f"-D{key}={value}" for key, value in expected.items()),
-    }
-    unexpected = [token for token in command if token not in allowed]
-    if unexpected:
-        raise CoordinatorError("configure command contains non-allowlisted options")
+    ]
+    if list(command) != expected_command:
+        raise CoordinatorError("configure command differs from the exact policy-owned invocation")
 
 
 def find_configure_lineage(
@@ -609,6 +626,35 @@ def validate_command(
         index += 1
     if resource_class == "configure" and policy is not None:
         validate_configure_command(command, policy)
+    if resource_class in {"worldserver_build", "integration_build"} and policy is not None:
+        controls = policy.get("mechanical_controls", {})
+        expected = [
+            str(controls.get("cmake_executable")), "--build", "build",
+            "--target", "worldserver", "--parallel", str(compiler_jobs),
+        ]
+        if list(command) != expected:
+            raise CoordinatorError("worldserver build command differs from exact policy invocation")
+        executable = Path(expected[0])
+        if not executable.is_file() or sha256_file(executable) != controls.get(
+            "cmake_executable_sha256"
+        ):
+            raise CoordinatorError("worldserver build CMake executable identity mismatch")
+
+
+def toolchain_snapshot(policy: dict) -> dict:
+    expected = policy.get("mechanical_controls", {}).get("toolchain_sha256", {})
+    if not isinstance(expected, dict) or not expected:
+        return {"expected": {}, "actual": {}, "matches_policy": True}
+    actual = {
+        path: sha256_file(Path(path)) if Path(path).is_file() else None
+        for path in expected
+    }
+    return {
+        "expected": expected,
+        "actual": actual,
+        "matches_policy": actual == expected,
+        "identity_sha256": sha256_bytes(canonical_json(actual)),
+    }
 
 
 def new_ticket(worktree: Path, resource_class: str, command: Sequence[str] | None = None) -> dict:
@@ -859,8 +905,11 @@ def coordinated_environment(policy: dict, paths: Paths, ticket_id: str) -> dict[
     compiler_jobs = int(policy["parallelism"]["maximum_compiler_jobs"])
     linker_jobs = int(policy["parallelism"]["maximum_linker_jobs"])
     environment = dict(os.environ)
+    for name in SANITIZED_BUILD_VARIABLES:
+        environment.pop(name, None)
     environment.update(
         {
+            "PATH": SAFE_BUILD_PATH,
             "CMAKE_BUILD_PARALLEL_LEVEL": str(compiler_jobs),
             "CTEST_PARALLEL_LEVEL": str(compiler_jobs),
             "MAKEFLAGS": f"-j{compiler_jobs}",
@@ -896,6 +945,12 @@ def finalize_ticket(paths: Paths, ticket_id: str, receipt: dict) -> None:
             ),
             "configure_lineage_sha256": sha256_bytes(
                 canonical_json(receipt["configure_lineage"])
+            ),
+            "toolchain_identity_sha256": sha256_bytes(
+                canonical_json(receipt["toolchain_identity"])
+            ),
+            "environment_contract_sha256": sha256_bytes(
+                canonical_json(receipt["environment_contract"])
             ),
             "output_artifacts_sha256": sha256_bytes(
                 canonical_json(receipt["output_artifacts"])
@@ -1009,6 +1064,7 @@ def run_ticket(
     requested_configuration = (ticket.get("build_configuration") or {}).get("request")
     admitted_configuration = (ticket.get("build_configuration") or {}).get("admission")
     configuration_required = expected_build_configuration(policy) is not None
+    admitted_toolchain = toolchain_snapshot(policy)
     configure_lineage = ticket.get("configure_lineage")
     if resource_class in {"worldserver_build", "integration_build"} and configuration_required:
         configuration_admissible = bool(
@@ -1029,6 +1085,7 @@ def run_ticket(
                 == requested_configuration.get("cache_sha256")
             and configure_lineage.get("completion_build_graph_sha256")
                 == requested_configuration.get("build_graph", {}).get("manifest_sha256")
+            and admitted_toolchain.get("matches_policy") is True
         )
     else:
         configuration_admissible = True
@@ -1068,6 +1125,7 @@ def run_ticket(
     ended = utc_now()
     completion_source = worktree_state(worktree)
     completion_configuration = build_configuration_snapshot(worktree, policy)
+    completion_toolchain = toolchain_snapshot(policy)
     source_identity = {
         "request": request_source,
         "admission": admission_source,
@@ -1137,10 +1195,20 @@ def run_ticket(
         build_configuration_stable = True
     if configuration_required and not build_configuration_stable:
         provenance_reasons.append("build_configuration_changed_or_mismatched_at_completion")
+    toolchain_stable = bool(
+        admitted_toolchain.get("matches_policy") is True
+        and completion_toolchain.get("matches_policy") is True
+        and admitted_toolchain == completion_toolchain
+    )
+    if not toolchain_stable:
+        provenance_reasons.append("toolchain_identity_changed_or_mismatched")
     if classification == "success" and not source_identity_stable:
         classification = "build_provenance_abort"
         returncode = 76
     if classification == "success" and not build_configuration_stable:
+        classification = "build_provenance_abort"
+        returncode = 76
+    if classification == "success" and not toolchain_stable:
         classification = "build_provenance_abort"
         returncode = 76
     log_hash = sha256_bytes(log_path.read_bytes()) if log_path.exists() else None
@@ -1184,6 +1252,15 @@ def run_ticket(
         "build_configuration": configuration_snapshots,
         "build_configuration_stable": build_configuration_stable,
         "configure_lineage": configure_lineage,
+        "toolchain_identity": {
+            "admission": admitted_toolchain,
+            "completion": completion_toolchain,
+            "stable": toolchain_stable,
+        },
+        "environment_contract": {
+            "path": environment["PATH"],
+            "sanitized_variables": list(SANITIZED_BUILD_VARIABLES),
+        },
         "command_sha256": command_hash(command),
         "command_arguments_retained": False,
         "queue_sequence": ticket["queue_sequence"],
@@ -1239,6 +1316,8 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
         "build_configuration",
         "build_configuration_stable",
         "configure_lineage",
+        "toolchain_identity",
+        "environment_contract",
         "command_sha256",
         "classification",
         "compiler_job_ceiling",
@@ -1281,6 +1360,12 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
             ),
             "configure_lineage_sha256": sha256_bytes(
                 canonical_json(receipt.get("configure_lineage"))
+            ),
+            "toolchain_identity_sha256": sha256_bytes(
+                canonical_json(receipt.get("toolchain_identity"))
+            ),
+            "environment_contract_sha256": sha256_bytes(
+                canonical_json(receipt.get("environment_contract"))
             ),
             "output_artifacts_sha256": sha256_bytes(
                 canonical_json(receipt.get("output_artifacts"))
@@ -1453,6 +1538,19 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
             raise CoordinatorError("current CMake cache hash differs from receipt")
     elif receipt.get("build_configuration_stable") is not True:
         raise CoordinatorError("receipt unexpectedly reports unstable build configuration")
+    expected_toolchain = toolchain_snapshot(policy)
+    toolchain = receipt.get("toolchain_identity")
+    if not isinstance(toolchain, dict) or not (
+        toolchain.get("admission") == expected_toolchain
+        and toolchain.get("completion") == expected_toolchain
+        and toolchain.get("stable") is True
+    ):
+        raise CoordinatorError("receipt effective toolchain identity mismatch")
+    if receipt.get("environment_contract") != {
+        "path": SAFE_BUILD_PATH,
+        "sanitized_variables": list(SANITIZED_BUILD_VARIABLES),
+    }:
+        raise CoordinatorError("receipt sanitized build environment contract mismatch")
     require_worldserver_hash = bool(
         policy.get("mechanical_controls", {}).get("receipt_worldserver_sha256_required")
     )

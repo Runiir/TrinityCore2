@@ -814,6 +814,8 @@ def validate_build_receipt(
         if isinstance(release_flags, str) and release_flags:
             expected_cmake = {
                 "CMAKE_BUILD_TYPE": controls.get("cmake_build_type"),
+                "CMAKE_GENERATOR": str(controls.get("cmake_generator", "")),
+                "CMAKE_MAKE_PROGRAM": str(controls.get("cmake_make_program", "")),
                 "CMAKE_EXPORT_COMPILE_COMMANDS": (
                     "ON" if controls.get("cmake_export_compile_commands") else "OFF"
                 ),
