@@ -65,7 +65,8 @@
       "drudge_spawn_guids": [250140, 250141],
       "drudge_area_spell": 79604,
       "drudge_area_radius_yards": 15.0,
-      "maximum_declared_pack_separation_yards": 47.903
+      "maximum_declared_anchor_to_member_distance_yards": 47.903,
+      "maximum_declared_pair_separation_yards": 58.254
     },
     "decision_assessment": "Target selection and local class actions were individually coherent, but the route had no bounded pack ownership, the raid reused a conservative dungeon 2000-threat/2.5x release gate instead of native raid victim-switch headroom, ranged and healers stacked inside the Drudge area spell, and no declared Overhead Smash movement decision existed. Alive-at-final-sample does not prove native recovery because death/corpse/release/runback/reentry/resurrection evidence remained absent.",
     "remediation_scope": [

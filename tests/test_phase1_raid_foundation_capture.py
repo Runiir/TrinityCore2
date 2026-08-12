@@ -38,15 +38,34 @@ def _write_runtime_profile_assets(root: Path, route_payload: str) -> None:
     (route_dir / "validation_routes.jsonl").write_text(route_payload, encoding="utf-8")
 
 
-def test_capture_preflight_requires_matching_hydrated_route_manifest(tmp_path: Path):
-    worktree = tmp_path / "worktree"
-    reference = tmp_path / "reference"
-    route = "".join(json.dumps({
+def _bwd_route_payload() -> str:
+    route_identity = (
+        (1, "trash", "entry trash", 42800, "250049"),
+        (2, "regroup", "BWD entrance junction regroup", 0, "blackwing_descent_10n.start_position"),
+        (3, "trash", "Drakonid corridor pack", 42649, "250050"),
+        (4, "boss", "Magmaw", 41570, "@CGUID+8"),
+        (5, "boss", "Omnotron Defense System", 42166, "script_summoned"),
+        (6, "trash", "laboratory trash", 42803, "250119"),
+        (7, "boss", "Maloriak", 41378, "@CGUID+69"),
+        (8, "boss", "Atramedes", 41442, "native_instance_unlock"),
+        (9, "boss", "Chimaeron", 43296, "@CGUID+70"),
+        (10, "boss", "Nefarian", 41376, "native_instance_unlock"),
+    )
+    return "".join(json.dumps({
         "scenario_id": "blackwing_descent_10n",
         "step": step,
         "route_node_id": f"node-{step}",
-        "kind": "boss",
-    }) + "\n" for step in range(1, 11))
+        "kind": kind,
+        "label": label,
+        "source_entry": source_entry,
+        "source_guid": source_guid,
+    }) + "\n" for step, kind, label, source_entry, source_guid in route_identity)
+
+
+def test_capture_preflight_requires_matching_hydrated_route_manifest(tmp_path: Path):
+    worktree = tmp_path / "worktree"
+    reference = tmp_path / "reference"
+    route = _bwd_route_payload()
     _write_runtime_profile_assets(worktree, route)
     _write_runtime_profile_assets(reference, route)
 
@@ -54,6 +73,21 @@ def test_capture_preflight_requires_matching_hydrated_route_manifest(tmp_path: P
     assert accepted["passed"] is True
     assert accepted["matching_route_rows"] == 10
     assert accepted["route_sha256"] == accepted["reference_route_sha256"]
+
+    reordered_rows = route.splitlines()
+    reordered_rows[1], reordered_rows[2] = reordered_rows[2], reordered_rows[1]
+    reordered = "\n".join(reordered_rows) + "\n"
+    _write_runtime_profile_assets(worktree, reordered)
+    _write_runtime_profile_assets(reference, reordered)
+    rejected_order = validate_runtime_profile_assets(
+        worktree, reference, require_dvc_lineage=False
+    )
+    assert rejected_order["passed"] is False
+    assert "worktree_route_steps_not_ordered_one_through_ten" in rejected_order["reasons"]
+    assert "worktree_route_identity_mismatch" in rejected_order["reasons"]
+
+    _write_runtime_profile_assets(worktree, route)
+    _write_runtime_profile_assets(reference, route)
 
     (worktree / "dataset/validation_scenarios/validation_routes.jsonl").unlink()
     missing = validate_runtime_profile_assets(worktree, reference, require_dvc_lineage=False)
@@ -72,11 +106,7 @@ def test_capture_preflight_requires_matching_hydrated_route_manifest(tmp_path: P
 def test_capture_preflight_rejects_dirty_dvc_lineage(tmp_path: Path, monkeypatch):
     worktree = tmp_path / "worktree"
     reference = tmp_path / "reference"
-    route = "".join(json.dumps({
-        "scenario_id": "blackwing_descent_10n",
-        "route_node_id": f"node-{step}",
-        "kind": "boss",
-    }) + "\n" for step in range(10))
+    route = _bwd_route_payload()
     _write_runtime_profile_assets(worktree, route)
     _write_runtime_profile_assets(reference, route)
     monkeypatch.setattr(
