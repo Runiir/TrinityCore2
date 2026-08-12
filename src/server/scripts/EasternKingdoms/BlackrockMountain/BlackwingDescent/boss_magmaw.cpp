@@ -17,6 +17,7 @@
 
 #include "ObjectMgr.h"
 #include "ScriptMgr.h"
+#include "Log.h"
 #include "Containers.h"
 #include "ScriptedCreature.h"
 #include "Spell.h"
@@ -220,20 +221,29 @@ struct boss_magmaw : public BossAI
 
     void JustAppeared() override
     {
-        SetupBody();
+        RebuildBody();
         events.SetPhase(PHASE_OUT_OF_COMBAT);
     }
 
     void JustEngagedWith(Unit* who) override
     {
-        // Sanity checks if the body has been successfully set up
-        for (uint8 i = BODY_PART_EXPOSED_HEAD_1; i < MAX_BODY_PARTS; ++i)
+        // The body is created while the grid first appears, which can be many
+        // minutes before a route-directed raid reaches Magmaw. Keep those
+        // encounter-owned parts on an explicit manual lifetime and repair one
+        // incomplete set at the native pull boundary. Never continue into
+        // BossAI engagement/event scheduling after an incomplete-body evade.
+        uint8 missingBodyMask = GetMissingBodyMask();
+        if (missingBodyMask)
         {
-            if (!GetBodyPart(BodyParts(i)))
-            {
-                EnterEvadeMode(EVADE_REASON_OTHER);
-                break;
-            }
+            TC_LOG_WARN("scripts", "Magmaw body incomplete before engagement missing_mask=%u; rebuilding exact body set", missingBodyMask);
+            RebuildBody();
+            missingBodyMask = GetMissingBodyMask();
+        }
+        if (missingBodyMask)
+        {
+            TC_LOG_ERROR("scripts", "Magmaw body reconstruction failed missing_mask=%u; native engagement held closed", missingBodyMask);
+            EnterEvadeMode(EVADE_REASON_OTHER);
+            return;
         }
 
         BossAI::JustEngagedWith(who);
@@ -530,9 +540,36 @@ struct boss_magmaw : public BossAI
     }
 
 private:
+    uint8 GetMissingBodyMask() const
+    {
+        uint8 missingMask = 0;
+        for (uint8 i = BODY_PART_EXPOSED_HEAD_1; i < MAX_BODY_PARTS; ++i)
+            if (!GetBodyPart(BodyParts(i)))
+                missingMask |= uint8(1u << i);
+        return missingMask;
+    }
+
+    void DespawnBody()
+    {
+        // The real exposed head is deliberately not in SummonList because it
+        // owns encounter-frame behavior. Despawn every remembered part first,
+        // then clear any remaining encounter-owned summons and GUID identity.
+        for (uint8 i = BODY_PART_EXPOSED_HEAD_1; i < MAX_BODY_PARTS; ++i)
+            if (Creature* bodyPart = GetBodyPart(BodyParts(i)))
+                bodyPart->DespawnOrUnsummon();
+        summons.DespawnAll();
+        _bodyPartGUIDs.fill(ObjectGuid::Empty);
+    }
+
+    void RebuildBody()
+    {
+        DespawnBody();
+        SetupBody();
+    }
+
     void SetupBody()
     {
-        Creature* pincer1 = DoSummon(NPC_MAGMAWS_PINCER_1, me->GetPosition());
+        Creature* pincer1 = DoSummon(NPC_MAGMAWS_PINCER_1, me->GetPosition(), 0, TEMPSUMMON_MANUAL_DESPAWN);
         if (pincer1)
         {
             pincer1->EnterVehicle(me, SEAT_MAGMAWS_PINCER_1);
@@ -540,7 +577,7 @@ private:
             _bodyPartGUIDs[BODY_PART_PINCER_1] = pincer1->GetGUID();
         }
 
-        Creature* pincer2 = DoSummon(NPC_MAGMAWS_PINCER_2, me->GetPosition());
+        Creature* pincer2 = DoSummon(NPC_MAGMAWS_PINCER_2, me->GetPosition(), 0, TEMPSUMMON_MANUAL_DESPAWN);
         if (pincer2)
         {
             pincer2->EnterVehicle(me, SEAT_MAGMAWS_PINCER_2);
@@ -548,17 +585,19 @@ private:
             _bodyPartGUIDs[BODY_PART_PINCER_2] = pincer2->GetGUID();
         }
 
-        Creature* exposedHead1 = DoSummon(NPC_EXPOSED_HEAD_OF_MAGMAW, ExposedHeadOfMagmawPos);
-        Creature* exposedHead2 = DoSummon(NPC_EXPOSED_HEAD_OF_MAGMAW_2, me->GetPosition());
+        Creature* exposedHead1 = DoSummon(NPC_EXPOSED_HEAD_OF_MAGMAW, ExposedHeadOfMagmawPos, 0, TEMPSUMMON_MANUAL_DESPAWN);
+        Creature* exposedHead2 = DoSummon(NPC_EXPOSED_HEAD_OF_MAGMAW_2, me->GetPosition(), 0, TEMPSUMMON_MANUAL_DESPAWN);
+
+        if (exposedHead1)
+            _bodyPartGUIDs[BODY_PART_EXPOSED_HEAD_1] = exposedHead1->GetGUID();
+        if (exposedHead2)
+            _bodyPartGUIDs[BODY_PART_EXPOSED_HEAD_2] = exposedHead2->GetGUID();
 
         if (!exposedHead1 || !exposedHead2)
         {
-            summons.DespawnAll();
+            DespawnBody();
             return;
         }
-
-        _bodyPartGUIDs[BODY_PART_EXPOSED_HEAD_1] = exposedHead1->GetGUID();
-        _bodyPartGUIDs[BODY_PART_EXPOSED_HEAD_2] = exposedHead2->GetGUID();
 
         exposedHead1->SetReactState(REACT_PASSIVE);
         exposedHead2->SetReactState(REACT_PASSIVE);

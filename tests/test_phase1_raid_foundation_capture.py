@@ -876,8 +876,11 @@ def test_semantic_progress_signature_tracks_boss_and_bot_decisions_not_heartbeat
             },
         }],
     }
+    status["deaths"] = 0
     baseline = semantic_progress_signature(status, diagnosis)
     status["duration_seconds"] = 999
+    assert semantic_progress_signature(status, diagnosis) == baseline
+    status["deaths"] += 99
     assert semantic_progress_signature(status, diagnosis) == baseline
     diagnosis["bots"][0]["snapshot"]["decision"]["action"] = "different_wrong_action"
     assert semantic_progress_signature(status, diagnosis) == baseline
@@ -892,16 +895,21 @@ def test_monotonic_semantic_progress_rejects_cast_victim_and_hp_oscillation():
         "bots": [{
             "identity": {"bot_guid": 1001},
             "snapshot": {"route_progress": {
-                "target": {"guid": 9001, "hp_pct": 75.0, "best_hp_pct": 75.0},
+                "target": {"guid": 9001, "entry": 41570, "hp_pct": 75.0, "best_hp_pct": 75.0},
                 "state": {"victim_guid": 9001, "bot_casting": False},
             }},
         }],
     }
+    status["deaths"] = 0
     state = {}
     assert observe_monotonic_semantic_progress(state, status, diagnosis) is True
     diagnosis["bots"][0]["snapshot"]["route_progress"]["state"] = {
         "victim_guid": 9002, "bot_casting": True,
     }
+    assert observe_monotonic_semantic_progress(state, status, diagnosis) is False
+    status["deaths"] += 1
+    assert observe_monotonic_semantic_progress(state, status, diagnosis) is False
+    diagnosis["bots"][0]["snapshot"]["route_progress"]["target"]["guid"] = 9002
     assert observe_monotonic_semantic_progress(state, status, diagnosis) is False
     diagnosis["bots"][0]["snapshot"]["route_progress"]["target"].update(
         hp_pct=80.0, best_hp_pct=80.0,

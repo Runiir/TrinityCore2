@@ -33354,6 +33354,14 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << ",\"phase_mask\":" << state.ValidationCohortPhaseMask
          << ",\"current_map_id\":" << (bot ? bot->GetMapId() : 0)
          << ",\"current_instance_id\":" << (bot ? bot->GetInstanceId() : 0)
+         << ",\"current_position\":{\"x\":" << (bot ? bot->GetPositionX() : 0.0f)
+         << ",\"y\":" << (bot ? bot->GetPositionY() : 0.0f)
+         << ",\"z\":" << (bot ? bot->GetPositionZ() : 0.0f)
+         << ",\"o\":" << (bot ? bot->GetOrientation() : 0.0f) << "}"
+         << ",\"alive\":" << (bot && bot->IsAlive() ? "true" : "false")
+         << ",\"ghost\":" << (bot && bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST) ? "true" : "false")
+         << ",\"has_corpse\":" << (bot && bot->HasCorpse() ? "true" : "false")
+         << ",\"in_world\":" << (bot && bot->IsInWorld() ? "true" : "false")
          << ",\"matches_cohort\":" << (IsValidationCohortMemberInOriginalInstance(state, bot) ? "true" : "false")
          << ",\"violation\":" << (state.ValidationCohortViolation ? "true" : "false")
          << ",\"violation_reason\":\"" << JsonEscape(state.ValidationCohortViolationReason) << "\"}"

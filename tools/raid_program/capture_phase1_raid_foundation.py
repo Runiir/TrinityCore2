@@ -757,8 +757,8 @@ def wait_for_prompt(process: subprocess.Popen[bytes], log_path: Path, timeout_se
 def semantic_progress_signature(status: dict[str, Any], diagnosis: dict[str, Any] | None) -> str:
     """Hash only raid facts whose change proves meaningful live progress.
 
-    Timers, heartbeat counters and trace length are deliberately excluded. Boss
-    health/phase, route state, combat targets, decisions and native recovery
+    Timers, heartbeat counters, cumulative deaths and trace length are
+    deliberately excluded. Boss health/phase, route state and native recovery
     generations are included so a living but semantically wedged run can be
     stopped for diagnosis without imposing a raid-duration deadline.
     """
@@ -798,7 +798,7 @@ def semantic_progress_signature(status: dict[str, Any], diagnosis: dict[str, Any
             "wipe_generation", "boss_reset_generation", "recovery_generation",
         )},
         "metrics": {key: status.get(key) for key in (
-            "kills", "deaths", "raid_boss_kills", "instance_resets",
+            "kills", "raid_boss_kills", "instance_resets",
         )},
         "bots": sorted(bot_progress, key=lambda row: int(row.get("bot_guid") or 0)),
     }
@@ -823,7 +823,6 @@ def observe_monotonic_semantic_progress(
         "boss_reset_generation": int(runtime.get("boss_reset_generation") or 0),
         "recovery_generation": int(runtime.get("recovery_generation") or 0),
         "kills": int(status.get("kills") or 0),
-        "deaths": int(status.get("deaths") or 0),
         "raid_boss_kills": int(status.get("raid_boss_kills") or 0),
         "instance_resets": int(status.get("instance_resets") or 0),
         "boss_done_count": sum(1 for value in runtime.get("boss_states") or [] if value == 3),
@@ -850,7 +849,10 @@ def observe_monotonic_semantic_progress(
             snapshot = row.get("snapshot") if isinstance(row.get("snapshot"), dict) else {}
             progress = snapshot.get("route_progress") if isinstance(snapshot.get("route_progress"), dict) else {}
             target = progress.get("target") if isinstance(progress.get("target"), dict) else {}
-            target_id = int(target.get("guid") or target.get("entry") or 0)
+            # Runtime GUIDs change when the same native boss respawns after an
+            # evade. Entry identity is the stable semantic target; a replacement
+            # object alone must not keep an invalid pull loop alive forever.
+            target_id = int(target.get("entry") or target.get("guid") or 0)
             hp = target.get("best_hp_pct", target.get("hp_pct"))
             if not target_id or not isinstance(hp, (int, float)) or hp <= 0:
                 continue

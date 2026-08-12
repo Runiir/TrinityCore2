@@ -6,6 +6,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 HEADER = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text(encoding="utf-8")
 IMPL = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(encoding="utf-8")
+MAGMAW_IMPL = (
+    ROOT / "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_magmaw.cpp"
+).read_text(encoding="utf-8")
 GENERIC_SMOKE = json.loads((ROOT / "experiments/configs/cata_raid_phase1_generic_mechanic_smoke_v1.json").read_text())
 
 
@@ -576,6 +579,41 @@ def test_phase1_magmaw_engagement_contract_has_explicit_safe_target_authority():
     assert 'adapter.TargetControl = contract->TargetControl.empty() ? "focus_fire"' in IMPL
     assert 'raidAdapter.TargetControl == "focus_fire"' in IMPL
     assert '"raid_focus_fire_target_missing"' in IMPL
+
+
+def test_magmaw_body_lifecycle_is_manual_reconstructable_and_fail_closed():
+    appeared = MAGMAW_IMPL[
+        MAGMAW_IMPL.index("void JustAppeared() override"):
+        MAGMAW_IMPL.index("void JustEngagedWith(Unit* who) override")
+    ]
+    engaged = MAGMAW_IMPL[
+        MAGMAW_IMPL.index("void JustEngagedWith(Unit* who) override"):
+        MAGMAW_IMPL.index("void PassengerBoarded", MAGMAW_IMPL.index("void JustEngagedWith(Unit* who) override"))
+    ]
+    setup = MAGMAW_IMPL[
+        MAGMAW_IMPL.index("void SetupBody()"):
+        MAGMAW_IMPL.index("Creature* GetBodyPart", MAGMAW_IMPL.index("void SetupBody()"))
+    ]
+
+    assert "RebuildBody();" in appeared
+    assert "missingBodyMask = GetMissingBodyMask();" in engaged
+    assert engaged.index("RebuildBody();") < engaged.index("BossAI::JustEngagedWith(who);")
+    held_closed = engaged[engaged.index("if (missingBodyMask)", engaged.index("RebuildBody();")):]
+    assert "EnterEvadeMode(EVADE_REASON_OTHER);" in held_closed
+    assert held_closed.index("EnterEvadeMode(EVADE_REASON_OTHER);") < held_closed.index("return;")
+    assert held_closed.index("return;") < held_closed.index("BossAI::JustEngagedWith(who);")
+    assert setup.count("TEMPSUMMON_MANUAL_DESPAWN") == 4
+    assert "_bodyPartGUIDs[BODY_PART_EXPOSED_HEAD_1] = exposedHead1->GetGUID();" in setup
+    assert "_bodyPartGUIDs[BODY_PART_EXPOSED_HEAD_2] = exposedHead2->GetGUID();" in setup
+    assert "DespawnBody();" in setup
+
+
+def test_phase1_diagnosis_retains_exact_live_location_and_recovery_state():
+    assert r'\"current_position\":{\"x\"' in IMPL
+    assert r'\"alive\":' in IMPL
+    assert r'\"ghost\":' in IMPL
+    assert r'\"has_corpse\":' in IMPL
+    assert r'\"in_world\":' in IMPL
 
 
 def test_route_directed_boss_assist_cannot_bypass_the_typed_contract_authority():
