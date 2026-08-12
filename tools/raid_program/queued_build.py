@@ -314,7 +314,102 @@ def worktree_state(worktree: Path) -> dict[str, object]:
     }
 
 
-def validate_command(command: Sequence[str], compiler_jobs: int) -> None:
+def expected_build_configuration(policy: dict) -> dict[str, str] | None:
+    """Return the policy-owned effective CMake settings, when one is frozen."""
+
+    controls = policy.get("mechanical_controls", {})
+    release_flags = controls.get("cmake_release_cxx_flags")
+    if not isinstance(release_flags, str) or not release_flags.strip():
+        return None
+    build_type = controls.get("cmake_build_type")
+    if not isinstance(build_type, str) or not build_type:
+        raise CoordinatorError("policy CMake build type is missing")
+    return {
+        "CMAKE_BUILD_TYPE": build_type,
+        "CMAKE_CXX_FLAGS_RELEASE": release_flags,
+        "UNITY_BUILDS": "ON" if controls.get("unity_builds") else "OFF",
+        "USE_COREPCH": "ON" if controls.get("core_precompiled_headers") else "OFF",
+        "USE_SCRIPTPCH": "ON" if controls.get("script_precompiled_headers") else "OFF",
+    }
+
+
+def parse_cmake_cache(path: Path) -> dict[str, str]:
+    if not path.is_file():
+        raise CoordinatorError(f"required CMake cache is missing: {path}")
+    values: dict[str, str] = {}
+    try:
+        lines = path.read_text(encoding="utf-8", errors="strict").splitlines()
+    except OSError as error:
+        raise CoordinatorError(f"cannot read required CMake cache {path}: {error}") from error
+    for line in lines:
+        if not line or line.startswith(("//", "#")) or "=" not in line:
+            continue
+        typed_key, value = line.split("=", 1)
+        key = typed_key.split(":", 1)[0]
+        values[key] = value
+    return values
+
+
+def build_configuration_snapshot(worktree: Path, policy: dict) -> dict | None:
+    expected = expected_build_configuration(policy)
+    if expected is None:
+        return None
+    cache_path = (worktree / "build/CMakeCache.txt").resolve()
+    actual: dict[str, str | None]
+    cache_sha256: str | None
+    if cache_path.is_file():
+        cache = parse_cmake_cache(cache_path)
+        actual = {key: cache.get(key) for key in expected}
+        cache_sha256 = sha256_file(cache_path)
+    else:
+        actual = {key: None for key in expected}
+        cache_sha256 = None
+    settings_sha256 = sha256_bytes(canonical_json(actual))
+    return {
+        "cache_path": str(cache_path),
+        "cache_sha256": cache_sha256,
+        "settings": actual,
+        "settings_sha256": settings_sha256,
+        "expected": expected,
+        "matches_policy": actual == expected,
+    }
+
+
+def validate_configure_command(command: Sequence[str], policy: dict) -> None:
+    expected = expected_build_configuration(policy)
+    if expected is None:
+        return
+    if not command or Path(command[0]).name != "cmake":
+        raise CoordinatorError("policy-bound configure must invoke cmake directly")
+    try:
+        source_index = command.index("-S")
+        build_index = command.index("-B")
+        source_directory = command[source_index + 1]
+        build_directory = command[build_index + 1]
+    except (ValueError, IndexError) as error:
+        raise CoordinatorError("policy-bound configure requires explicit -S . -B build") from error
+    if source_directory != "." or build_directory != "build":
+        raise CoordinatorError("policy-bound configure must use -S . -B build")
+    definitions: dict[str, str] = {}
+    for token in command[1:]:
+        if token.startswith("-D") and "=" in token:
+            key, value = token[2:].split("=", 1)
+            definitions[key] = value
+    missing = [key for key, value in expected.items() if definitions.get(key) != value]
+    if missing:
+        raise CoordinatorError(
+            "configure command does not explicitly bind policy CMake settings: "
+            + ",".join(missing)
+        )
+
+
+def validate_command(
+    command: Sequence[str],
+    compiler_jobs: int,
+    *,
+    resource_class: str | None = None,
+    policy: dict | None = None,
+) -> None:
     if not command:
         raise CoordinatorError("a command is required after '--'")
     executable = Path(command[0]).name
@@ -343,6 +438,8 @@ def validate_command(command: Sequence[str], compiler_jobs: int) -> None:
                 f"requested build fan-out {numeric} exceeds coordinator ceiling {compiler_jobs}"
             )
         index += 1
+    if resource_class == "configure" and policy is not None:
+        validate_configure_command(command, policy)
 
 
 def new_ticket(worktree: Path, resource_class: str, command: Sequence[str] | None = None) -> dict:
@@ -634,13 +731,18 @@ def run_ticket(
 ) -> tuple[int, dict]:
     paths = Paths.for_worktree(worktree)
     compiler_jobs = int(policy["parallelism"]["maximum_compiler_jobs"])
-    validate_command(command, compiler_jobs)
+    validate_command(
+        command, compiler_jobs, resource_class=resource_class, policy=policy
+    )
     if resource_class == "synthetic" and os.environ.get("TRINITY_RAID_BUILD_TESTING") != "1":
         raise CoordinatorError("synthetic resource class is test-only")
     if resource_class not in policy["resource_classes"]:
         raise CoordinatorError(f"unknown resource class {resource_class}")
     if ticket_id is None:
         ticket = new_ticket(worktree, resource_class, command)
+        ticket["build_configuration"] = {
+            "request": build_configuration_snapshot(worktree, policy)
+        }
         ticket_id = ticket["ticket_id"]
         enqueue(paths, ticket)
     else:
@@ -653,6 +755,9 @@ def run_ticket(
             if Path(ticket["worktree"]).resolve() != worktree.resolve():
                 raise CoordinatorError("ticket worktree does not match current worktree")
             ticket["command_sha256"] = command_hash(command)
+            ticket["build_configuration"] = {
+                "request": build_configuration_snapshot(worktree, policy)
+            }
     started_wait = time.monotonic()
     wait_timeout = admission_timeout or float(policy["coordination"]["default_admission_timeout_seconds"])
     poll = float(policy["coordination"]["admission_poll_seconds"])
@@ -669,6 +774,10 @@ def run_ticket(
         time.sleep(poll)
     admitted_monotonic = time.monotonic()
     with locked_state(paths) as state:
+        admission_configuration = build_configuration_snapshot(worktree, policy)
+        state["tickets"][ticket_id].setdefault("build_configuration", {})[
+            "admission"
+        ] = admission_configuration
         admitted_at_utc = state["tickets"][ticket_id]["admission"]["admitted_at_utc"]
         ticket = dict(state["tickets"][ticket_id])
     log_path = paths.logs / f"{ticket_id}.log"
@@ -691,6 +800,20 @@ def run_ticket(
             )
         )
     )
+    requested_configuration = (ticket.get("build_configuration") or {}).get("request")
+    admitted_configuration = (ticket.get("build_configuration") or {}).get("admission")
+    configuration_required = expected_build_configuration(policy) is not None
+    if resource_class in {"worldserver_build", "integration_build"} and configuration_required:
+        configuration_admissible = bool(
+            isinstance(requested_configuration, dict)
+            and isinstance(admitted_configuration, dict)
+            and requested_configuration.get("matches_policy") is True
+            and admitted_configuration.get("matches_policy") is True
+            and requested_configuration.get("settings_sha256")
+                == admitted_configuration.get("settings_sha256")
+        )
+    else:
+        configuration_admissible = True
     worldserver_path = (worktree / "build/src/server/worldserver/worldserver").resolve()
     worldserver_before: dict[str, object] | None = None
     if resource_class in {"worldserver_build", "integration_build"} and worldserver_path.is_file():
@@ -707,6 +830,11 @@ def run_ticket(
             classification = "build_provenance_abort"
             error_message = "source_identity_changed_or_dirty_before_admission"
             log_path.write_text(error_message + "\n", encoding="utf-8")
+        elif not configuration_admissible:
+            returncode = 76
+            classification = "build_provenance_abort"
+            error_message = "build_configuration_missing_or_mismatched_before_admission"
+            log_path.write_text(error_message + "\n", encoding="utf-8")
         else:
             returncode, classification, process_samples, terminal_reasons = execute_process(
                 command, worktree, environment, log_path, policy, paths, ticket_id
@@ -721,6 +849,7 @@ def run_ticket(
             classification = "canceled"
     ended = utc_now()
     completion_source = worktree_state(worktree)
+    completion_configuration = build_configuration_snapshot(worktree, policy)
     source_identity = {
         "request": request_source,
         "admission": admission_source,
@@ -739,7 +868,38 @@ def run_ticket(
         provenance_reasons.append("source_identity_changed_or_dirty_before_admission")
     if not source_identity_stable:
         provenance_reasons.append("source_identity_changed_or_dirty_before_completion")
+    if not configuration_admissible:
+        provenance_reasons.append("build_configuration_missing_or_mismatched_before_admission")
+    configuration_snapshots = {
+        "request": requested_configuration,
+        "admission": admitted_configuration,
+        "completion": completion_configuration,
+    }
+    if configuration_required:
+        if resource_class == "configure":
+            build_configuration_stable = bool(
+                isinstance(completion_configuration, dict)
+                and completion_configuration.get("matches_policy") is True
+            )
+        elif resource_class in {"worldserver_build", "integration_build"}:
+            build_configuration_stable = bool(
+                configuration_admissible
+                and isinstance(completion_configuration, dict)
+                and completion_configuration.get("matches_policy") is True
+                and requested_configuration.get("settings_sha256")
+                    == admitted_configuration.get("settings_sha256")
+                    == completion_configuration.get("settings_sha256")
+            )
+        else:
+            build_configuration_stable = True
+    else:
+        build_configuration_stable = True
+    if configuration_required and not build_configuration_stable:
+        provenance_reasons.append("build_configuration_changed_or_mismatched_at_completion")
     if classification == "success" and not source_identity_stable:
+        classification = "build_provenance_abort"
+        returncode = 76
+    if classification == "success" and not build_configuration_stable:
         classification = "build_provenance_abort"
         returncode = 76
     log_hash = sha256_bytes(log_path.read_bytes()) if log_path.exists() else None
@@ -780,6 +940,8 @@ def run_ticket(
         "source_identity": source_identity,
         "source_identity_stable": source_identity_stable,
         "provenance_reasons": provenance_reasons,
+        "build_configuration": configuration_snapshots,
+        "build_configuration_stable": build_configuration_stable,
         "command_sha256": command_hash(command),
         "command_arguments_retained": False,
         "queue_sequence": ticket["queue_sequence"],
@@ -832,6 +994,8 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
         "source_identity",
         "source_identity_stable",
         "provenance_reasons",
+        "build_configuration",
+        "build_configuration_stable",
         "command_sha256",
         "classification",
         "compiler_job_ceiling",
@@ -894,6 +1058,54 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
         raise CoordinatorError("receipt linker ceiling exceeds policy")
     if receipt.get("test_mode") and not allow_test_mode:
         raise CoordinatorError("synthetic/test receipt cannot satisfy a production build gate")
+    expected_configuration = expected_build_configuration(policy)
+    configuration = receipt.get("build_configuration")
+    if not isinstance(configuration, dict):
+        raise CoordinatorError("receipt build configuration snapshots are invalid")
+    if expected_configuration is not None:
+        resource_class = receipt.get("resource_class")
+        request_configuration = configuration.get("request")
+        admission_configuration = configuration.get("admission")
+        completion_configuration = configuration.get("completion")
+        for snapshot in (
+            [completion_configuration]
+            if resource_class == "configure"
+            else [request_configuration, admission_configuration, completion_configuration]
+        ):
+            if not isinstance(snapshot, dict):
+                raise CoordinatorError("receipt build configuration snapshot is missing")
+            if snapshot.get("expected") != expected_configuration:
+                raise CoordinatorError("receipt build configuration expectation mismatch")
+            if snapshot.get("settings") != expected_configuration:
+                raise CoordinatorError("receipt effective CMake settings mismatch")
+            if snapshot.get("matches_policy") is not True:
+                raise CoordinatorError("receipt CMake policy match is false")
+            if snapshot.get("settings_sha256") != sha256_bytes(
+                canonical_json(expected_configuration)
+            ):
+                raise CoordinatorError("receipt CMake settings hash mismatch")
+            if not isinstance(snapshot.get("cache_sha256"), str) or not re.fullmatch(
+                r"[0-9a-f]{64}", snapshot["cache_sha256"]
+            ):
+                raise CoordinatorError("receipt CMake cache hash is invalid")
+        if resource_class in {"worldserver_build", "integration_build"}:
+            if not (
+                request_configuration.get("settings_sha256")
+                == admission_configuration.get("settings_sha256")
+                == completion_configuration.get("settings_sha256")
+            ):
+                raise CoordinatorError("receipt effective CMake settings changed during build")
+        if receipt.get("build_configuration_stable") is not True:
+            raise CoordinatorError("receipt build configuration stability claim is false")
+        current = build_configuration_snapshot(Path(str(receipt["worktree"])), policy)
+        if not isinstance(current, dict) or current.get("settings") != completion_configuration.get(
+            "settings"
+        ):
+            raise CoordinatorError("current effective CMake settings differ from receipt")
+        if current.get("cache_sha256") != completion_configuration.get("cache_sha256"):
+            raise CoordinatorError("current CMake cache hash differs from receipt")
+    elif receipt.get("build_configuration_stable") is not True:
+        raise CoordinatorError("receipt unexpectedly reports unstable build configuration")
     require_worldserver_hash = bool(
         policy.get("mechanical_controls", {}).get("receipt_worldserver_sha256_required")
     )

@@ -809,6 +809,51 @@ def validate_build_receipt(
                     rejections.append("build_receipt_completion_source_mismatch")
                 if completion.get("clean") is not True or completion.get("dirty") is not False:
                     rejections.append("build_receipt_completion_source_dirty")
+        controls = policy.get("mechanical_controls", {})
+        release_flags = controls.get("cmake_release_cxx_flags")
+        if isinstance(release_flags, str) and release_flags:
+            expected_cmake = {
+                "CMAKE_BUILD_TYPE": controls.get("cmake_build_type"),
+                "CMAKE_CXX_FLAGS_RELEASE": release_flags,
+                "UNITY_BUILDS": "ON" if controls.get("unity_builds") else "OFF",
+                "USE_COREPCH": "ON" if controls.get("core_precompiled_headers") else "OFF",
+                "USE_SCRIPTPCH": "ON" if controls.get("script_precompiled_headers") else "OFF",
+            }
+            cache_path = (worktree / "build/CMakeCache.txt").resolve()
+            cache_values: dict[str, str] = {}
+            if cache_path.is_file():
+                for line in cache_path.read_text(encoding="utf-8").splitlines():
+                    if not line or line.startswith(("//", "#")) or "=" not in line:
+                        continue
+                    typed_key, value = line.split("=", 1)
+                    cache_values[typed_key.split(":", 1)[0]] = value
+            current_cmake = {key: cache_values.get(key) for key in expected_cmake}
+            if current_cmake != expected_cmake:
+                rejections.append("effective_cmake_settings_policy_mismatch")
+            build_configuration = receipt.get("build_configuration")
+            stages = (
+                [build_configuration.get(stage) for stage in ("request", "admission", "completion")]
+                if isinstance(build_configuration, dict)
+                else []
+            )
+            if len(stages) != 3 or not all(isinstance(stage, dict) for stage in stages):
+                rejections.append("build_receipt_cmake_snapshots_missing")
+            else:
+                if not all(stage.get("settings") == expected_cmake for stage in stages):
+                    rejections.append("build_receipt_cmake_settings_mismatch")
+                if not all(stage.get("matches_policy") is True for stage in stages):
+                    rejections.append("build_receipt_cmake_policy_match_missing")
+                if not (
+                    stages[0].get("settings_sha256")
+                    == stages[1].get("settings_sha256")
+                    == stages[2].get("settings_sha256")
+                ):
+                    rejections.append("build_receipt_cmake_settings_changed")
+                current_cache_sha256 = sha256_file(cache_path) if cache_path.is_file() else None
+                if stages[2].get("cache_sha256") != current_cache_sha256:
+                    rejections.append("build_receipt_cmake_cache_hash_mismatch")
+            if receipt.get("build_configuration_stable") is not True:
+                rejections.append("build_receipt_cmake_stability_missing")
         expected_config_sha256 = sha256_file(config) if config is not None and config.is_file() else None
         try:
             binary.relative_to(worktree)

@@ -65,6 +65,29 @@ def initialized_git_repo(path: Path) -> Path:
     return path
 
 
+def configured_git_repo(path: Path, flags: str = "-O1 -DNDEBUG") -> Path:
+    repo = initialized_git_repo(path)
+    (repo / ".gitignore").write_text("build/src/\n", encoding="utf-8")
+    cache = repo / "build/CMakeCache.txt"
+    cache.parent.mkdir(parents=True)
+    cache.write_text(
+        "\n".join(
+            (
+                "CMAKE_BUILD_TYPE:STRING=Release",
+                f"CMAKE_CXX_FLAGS_RELEASE:STRING={flags}",
+                "UNITY_BUILDS:BOOL=OFF",
+                "USE_COREPCH:BOOL=OFF",
+                "USE_SCRIPTPCH:BOOL=OFF",
+                "",
+            )
+        ),
+        encoding="utf-8",
+    )
+    subprocess.run(["git", "-C", str(repo), "add", ".gitignore", "build/CMakeCache.txt", "-f"], check=True)
+    subprocess.run(["git", "-C", str(repo), "commit", "-qm", "freeze cmake cache"], check=True)
+    return repo
+
+
 def test_policy_preserves_host_reserve_and_caps_fanout() -> None:
     frozen = policy()
     assert frozen["coordination"]["maximum_active_heavyweight_leases"] == 1
@@ -369,6 +392,94 @@ def test_legacy_receipt_is_historical_only(tmp_path: Path, monkeypatch: pytest.M
         qb.verify_receipt(receipt_path, policy(), allow_test_mode=True)
 
 
+def test_v8_rejects_wrong_effective_cmake_settings_before_child_launch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    state_paths(tmp_path, monkeypatch)
+    repo = configured_git_repo(tmp_path / "repo", flags="-O3 -DNDEBUG")
+    frozen = json.loads(
+        (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").read_text()
+    )
+    marker = tmp_path / "child-launched"
+    command = [
+        sys.executable, "-c",
+        "import pathlib,sys; pathlib.Path(sys.argv[1]).touch()", str(marker),
+    ]
+    monkeypatch.setattr(qb, "resource_snapshot", lambda _: synthetic_snapshot())
+    monkeypatch.setattr(qb, "find_live_validation_processes", lambda *_args, **_kwargs: [])
+
+    code, receipt = qb.run_ticket(
+        repo, frozen, "worldserver_build", command, None,
+        tmp_path / "wrong-cache.json", 2.0,
+    )
+    assert code == 76
+    assert receipt["classification"] == "build_provenance_abort"
+    assert marker.exists() is False
+    assert receipt["build_configuration"]["request"]["matches_policy"] is False
+    assert "build_configuration_missing_or_mismatched_before_admission" in receipt[
+        "provenance_reasons"
+    ]
+
+
+def test_v8_receipt_binds_effective_cmake_settings_and_current_cache(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    state_paths(tmp_path, monkeypatch)
+    repo = configured_git_repo(tmp_path / "repo")
+    frozen = json.loads(
+        (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").read_text()
+    )
+    binary = repo / "build/src/server/worldserver/worldserver"
+    command = [
+        sys.executable, "-c",
+        "import pathlib,sys; p=pathlib.Path(sys.argv[1]); p.parent.mkdir(parents=True,exist_ok=True); p.write_bytes(b'\\x7fELFpolicy-bound')",
+        str(binary),
+    ]
+    receipt_path = tmp_path / "bound-cache.json"
+    monkeypatch.setattr(qb, "resource_snapshot", lambda _: synthetic_snapshot())
+    monkeypatch.setattr(qb, "find_live_validation_processes", lambda *_args, **_kwargs: [])
+
+    code, receipt = qb.run_ticket(
+        repo, frozen, "worldserver_build", command, None, receipt_path, 2.0,
+    )
+    assert code == 0
+    assert receipt["classification"] == "success"
+    assert receipt["build_configuration_stable"] is True
+    snapshots = receipt["build_configuration"]
+    assert all(
+        snapshots[stage]["settings"] == qb.expected_build_configuration(frozen)
+        for stage in ("request", "admission", "completion")
+    )
+    assert qb.verify_receipt(receipt_path, frozen, allow_test_mode=True)["valid"] is True
+
+    cache = repo / "build/CMakeCache.txt"
+    cache.write_text(cache.read_text().replace("-O1", "-O3"), encoding="utf-8")
+    with pytest.raises(qb.CoordinatorError, match="current effective CMake settings"):
+        qb.verify_receipt(receipt_path, frozen, allow_test_mode=True)
+
+
+def test_v8_configure_command_must_explicitly_bind_every_effective_setting() -> None:
+    frozen = json.loads(
+        (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").read_text()
+    )
+    command = [
+        "cmake", "-S", ".", "-B", "build",
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DCMAKE_CXX_FLAGS_RELEASE=-O1 -DNDEBUG",
+        "-DUNITY_BUILDS=OFF",
+        "-DUSE_COREPCH=OFF",
+        "-DUSE_SCRIPTPCH=OFF",
+    ]
+    qb.validate_command(command, 1, resource_class="configure", policy=frozen)
+    with pytest.raises(qb.CoordinatorError, match="CMAKE_CXX_FLAGS_RELEASE"):
+        qb.validate_command(
+            [value for value in command if not value.startswith("-DCMAKE_CXX_FLAGS_RELEASE=")],
+            1,
+            resource_class="configure",
+            policy=frozen,
+        )
+
+
 def test_cmake_integration_applies_compile_and_link_controls() -> None:
     cmake = (ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
     assert "TRINITY_RAID_BUILD_COORDINATED" in cmake
@@ -409,6 +520,8 @@ def test_receipt_rejects_worldserver_not_produced_by_ticket(tmp_path: Path) -> N
             },
             "source_identity_stable": True,
             "provenance_reasons": [],
+        "build_configuration": {"request": None, "admission": None, "completion": None},
+        "build_configuration_stable": True,
         "command_sha256": "0" * 64,
         "resource_class": "worldserver_build",
         "classification": "success",
