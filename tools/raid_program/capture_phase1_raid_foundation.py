@@ -765,7 +765,6 @@ def validate_build_receipt(
     binary: Path,
     config: Path | None = None,
     attestation_path: Path | None = None,
-    service_config_path: Path | None = None,
 ) -> dict[str, Any]:
     """Reconstruct the production build gate without trusting receipt pass fields."""
 
@@ -779,8 +778,8 @@ def validate_build_receipt(
         if policy.get("mechanical_controls", {}).get(
             "privileged_receipt_signature_required"
         ):
-            if attestation_path is None or service_config_path is None:
-                raise RuntimeError("privileged build attestation and service config are required")
+            if attestation_path is None:
+                raise RuntimeError("privileged build attestation is required")
             from tools.raid_program.privileged_build_attestation import (
                 verify_privileged_attestation,
             )
@@ -789,7 +788,7 @@ def validate_build_receipt(
                 attestation_path,
                 receipt_path,
                 policy_path,
-                service_config_path,
+                None,
                 allow_test_mode=False,
             )
         identity = git_identity(worktree)
@@ -1478,16 +1477,6 @@ def main() -> int:
     parser.add_argument("--server-log-output", type=Path, default=None)
     parser.add_argument("--build-receipt", type=Path, required=True)
     parser.add_argument("--build-attestation", type=Path, required=True)
-    parser.add_argument(
-        "--build-service-config",
-        type=Path,
-        default=ROOT / "experiments/configs/cata_raid_privileged_build_service_v1.json",
-    )
-    parser.add_argument(
-        "--build-policy",
-        type=Path,
-        default=ROOT / "experiments/configs/cata_raid_build_resource_policy_v1.json",
-    )
     parser.add_argument("--worktree", type=Path, default=ROOT)
     parser.add_argument("--observe-sec", type=int, default=900)
     parser.add_argument("--startup-timeout-sec", type=int, default=180)
@@ -1523,8 +1512,10 @@ def main() -> int:
     if not runtime_assets["passed"]:
         raise SystemExit("runtime profile assets rejected: " + ",".join(runtime_assets["reasons"]))
     build_provenance = validate_build_receipt(
-        args.build_receipt.resolve(), args.build_policy.resolve(), worktree, binary, config,
-        args.build_attestation.resolve(), args.build_service_config.resolve(),
+        args.build_receipt.resolve(),
+        (worktree / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").resolve(),
+        worktree, binary, config,
+        args.build_attestation.resolve(),
     )
     if not build_provenance.get("valid"):
         raise SystemExit("build receipt rejected: " + ",".join(build_provenance.get("rejections", [])))

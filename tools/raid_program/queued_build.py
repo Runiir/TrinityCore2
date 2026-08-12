@@ -1605,6 +1605,17 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
             raise CoordinatorError("receipt is missing the required worldserver artifact identity")
     return {
         "valid": True,
+        "local_semantics_valid": True,
+        "gate_bearing": not bool(
+            policy.get("mechanical_controls", {}).get(
+                "privileged_receipt_signature_required"
+            )
+        ),
+        "privileged_attestation_required": bool(
+            policy.get("mechanical_controls", {}).get(
+                "privileged_receipt_signature_required"
+            )
+        ),
         "receipt_sha256": claimed,
         "ticket_id": receipt["ticket_id"],
         "classification": receipt["classification"],

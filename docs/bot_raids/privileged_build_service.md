@@ -25,6 +25,10 @@ remains `unprovisioned_external_authority_required` until an administrator suppl
 4. the append-only ledger verification endpoint and initial accepted sequence;
 5. read-only access to the canonical coordinator receipts and signed attestations.
 
+Provisioning is a reviewed policy change, not a runtime option. The build policy pins
+the exact service-config SHA-256, service/protocol/key identities, public-key hashes,
+and HTTPS endpoints. Canonical capture does not accept a service-config override.
+
 The service signs the canonical JSON payload reconstructed by
 `tools.raid_program.privileged_build_attestation.signed_payload`. The envelope contains
 `schema_version`, `service_id`, `key_id`, positive `ledger_sequence`, stable
@@ -32,16 +36,22 @@ The service signs the canonical JSON payload reconstructed by
 and a base64 Ed25519 signature. It also carries `attestation_sha256`, calculated over
 the full envelope except that field.
 
+The verifier then fetches the record from the policy-pinned HTTPS ledger endpoint.
+The independently signed checkpoint must prove unique, non-revoked inclusion and bind
+the ledger head/sequence, record ID, attestation-record hash, attestation payload hash,
+and receipt hash. Its signing key is distinct and separately pinned by the policy.
+
 Verification is fail-closed:
 
 ```bash
 pixi run raid-build-attestation-verify \
   --attestation /path/from/service/attestation.json \
   --receipt /read-only/service/receipt.json \
-  --policy experiments/configs/cata_raid_build_resource_policy_degraded_v8.json \
-  --service-config experiments/configs/cata_raid_privileged_build_service_v1.json
+  --policy experiments/configs/cata_raid_build_resource_policy_degraded_v8.json
 ```
 
+Standalone `raid-build verify` proves only local receipt semantics when the policy
+requires privileged attestation; its JSON explicitly reports `gate_bearing: false`.
 Canonical Phase 1 capture additionally requires `--build-attestation`; the capture
 cannot begin while the tracked service state is unprovisioned, the public key identity
 differs, local receipt reconstruction fails, or the external signature is invalid.

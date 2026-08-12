@@ -700,3 +700,13 @@ def test_live_evidence_demux_reconstructs_bindings_and_rejects_missing_lifecycle
     assert report["rejected_rows"] == 2
     assert report["unchecked_rows"] == 0
     assert rows[0]["identity_binding"]["canonical_identity_sha256"] != "0" * 64
+
+
+def test_canonical_capture_owns_tracked_v8_policy_and_has_no_policy_override():
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "tools/raid_program/capture_phase1_raid_foundation.py"
+    ).read_text(encoding="utf-8")
+    assert 'parser.add_argument("--build-policy"' not in source
+    assert "cata_raid_build_resource_policy_degraded_v8.json" in source
+    assert 'parser.add_argument("--build-attestation"' in source

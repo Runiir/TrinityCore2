@@ -7,8 +7,12 @@
   "public_key_path": null,
   "public_key_sha256": null,
   "minimum_ledger_sequence": 1,
+  "maximum_ledger_checkpoint_age_seconds": 300,
   "submission_endpoint": null,
   "ledger_verification_endpoint": null,
+  "ledger_key_id": null,
+  "ledger_public_key_path": null,
+  "ledger_public_key_sha256": null,
   "required_authority_boundary": {
     "execution_principal": "separate_os_uid_or_remote_service",
     "private_key_readable_by_capture_principal": false,
