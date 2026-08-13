@@ -186,6 +186,7 @@ def test_provisioning_entrypoint_loads_all_six_tracked_shard_pools():
     assert {row["id"] for row in diagnostic} == {shard["scenario_id"] for shard in _fixture()["shards"]}
     assert all(len(row["bots"]) == 10 for row in diagnostic)
     assert all({bot["pool_tag"] for bot in row["bots"]} == {row["id"]} for row in diagnostic)
+    assert all(bot["primary_talent_tree_id"] > 0 and len(bot["talents"]) > 0 for row in diagnostic for bot in row["bots"])
 
 
 def test_dvc_generation_and_verifier_bind_the_tracked_shard_fixture():

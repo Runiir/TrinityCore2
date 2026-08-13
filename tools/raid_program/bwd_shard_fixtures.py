@@ -172,11 +172,19 @@ def build_diagnostic_provisioning_config(config: dict[str, Any], fixture: dict[s
     merged = copy.deepcopy(config)
     if not any(str(row.get("id")) == CANONICAL_SCENARIO_ID for row in merged.get("scenarios", [])):
         raise ValueError("canonical_bwd_scenario_missing_from_provisioning_config")
+    talent_builds = merged.get("talent_builds_by_spec", {})
     for shard in fixture["shards"]:
+        bots = copy.deepcopy(shard["bots"])
+        for bot in bots:
+            class_spec = str(bot.get("class_spec") or "")
+            build = talent_builds.get(class_spec, {})
+            for key in ("primary_talent_tree_id", "talents", "primary_tree_spells"):
+                if key not in bot and key in build:
+                    bot[key] = copy.deepcopy(build[key])
         merged["scenarios"].append({
             "id": shard["scenario_id"], "instance": "Blackwing Descent", "map_id": 669, "difficulty": "normal_10man",
             "provisioning_scenario_id": CANONICAL_SCENARIO_ID, "start_position": copy.deepcopy(shard["start_position"]),
-            "required_roles": copy.deepcopy(shard["role_counts"]), "bots": copy.deepcopy(shard["bots"]),
+            "required_roles": copy.deepcopy(shard["role_counts"]), "bots": bots,
             "diagnostic_only": True, "diagnostic_parent_scenario_id": CANONICAL_SCENARIO_ID,
             "runtime_profile_id": shard["runtime_profile_id"], "pool_tag": shard["pool_tag"],
             "predecessor_state": copy.deepcopy(shard["predecessor_state"]),
