@@ -1,5 +1,13 @@
 # Cataclysm raid progression handoff
 
+## 2026-08-13T04:56:45Z — Fresh Phase 1 preparation passed, published, and evicted
+
+With no worldserver, capture writer, publisher, or build active, deterministic BWD preparation for the receipt-bound `1ee02778ef85aff82887e1917d2c5ac7c3a33112` binary reapplied 50 account statements, 5,768 character statements, and four exact route-start statements. The full live verifier passed all 50 expected accounts/characters, generated payload, gear, spells, talents, glyphs, profiles, and enabled actions. Independent v4 readback proved the exact permanent BWD ten in the expected 2/3/5 identity at map 669 `(-345.872,-224.344,193.127)`, all offline and unleased, with full health/power seeds and zero character-instance, group-member, ghost-aura, corpse, or corpse-phase residue.
+
+The nine-file preparation proof is pushed and remote-verified at `artifacts/cata_raid_program/phase1_preparation_1ee02778ef_20260813.dvc`, object `7a610416141f5b72d8861c98e769cbda.dir`, 2,001,105 bytes. Compact hashes and gate facts are retained in `cata_raid_phase1_preparation_1ee02778ef_summary_v1.json`. The workspace and exactly nine child cache objects were removed while the pointer and `.dir` metadata remain; no broad DVC garbage collection was used.
+
+Live start is now authorized. Root must start and verify exactly one worldserver from ELF SHA-256 `128edf0720d514945727269618ef68aea09bbc064eba8be8bd15db5bd63b86f4` before attaching one Luna-xhigh Phase 1 babysitter. The uncapped capture remains the gate and must compare native Magmaw script lifecycle with every bot decision; no fidelity inference is allowed from the smoke alone.
+
 ## 2026-08-13T04:51:31Z — Exact gate-bearing build succeeded; fresh preparation next
 
 Source-equivalent checkpoint `1ee02778ef85aff82887e1917d2c5ac7c3a33112` now has a successful policy-v8 configure and serialized one-compiler worldserver build from the clean isolated Phase 1 worktree. Both trusted-local receipts independently verify as gate-bearing: configure receipt SHA-256 `64dbdc99a9555dd81db973ad0f4efda1876fb4378aae8beed83227f97751b3a9`, worldserver receipt SHA-256 `3af19ab9a853fe026f13909d1273630d5643a38ad93c3d68987be19c4810e4bb`, and produced ELF SHA-256 `128edf0720d514945727269618ef68aea09bbc064eba8be8bd15db5bd63b86f4`. Request, admission, and completion source identities are identical and clean; the exact CMake graph, toolchain, policy, and runiir UID 1000 operator identity match. MySQL stayed healthy, memory PSI remained zero, no compiler/worldserver orphan remained, and the focused foundation/runtime/capture/research/pet-totem/Phase 9 partition passed 256 tests.
