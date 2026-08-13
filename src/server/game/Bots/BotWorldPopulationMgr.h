@@ -259,7 +259,7 @@ public:
     std::string GetStatusJsonForCohort(std::string const& cohortId) const;
     std::string RequestNativeRaidReadyCheckForCohort(std::string const& cohortId);
     std::string GetBotDiagnosisJsonForCohort(std::string const& cohortId, std::string const& selector);
-    std::string GetBotTraceJsonForCohort(std::string const& cohortId, std::string const& selector, uint32 limit) const;
+    std::string GetBotTraceJsonForCohort(std::string const& cohortId, std::string const& selector, uint32 limit, bool delta = false) const;
     std::string GetCombatLogJsonForCohort(std::string const& cohortId) const;
     std::string StartCombatCalibrationForCohort(std::string const& cohortId, std::string const& mode = "single_target_300", std::string const& targetSpec = "", uint32 seed = 1);
     std::string StopCombatCalibrationForCohort(std::string const& cohortId);
@@ -286,7 +286,7 @@ public:
     std::string GetSummaryJson() const;
     std::string GetBotDebugJson(std::string const& selector) const;
     std::string GetBotDiagnosisJson(std::string const& selector);
-    std::string GetBotTraceJson(std::string const& selector, uint32 limit) const;
+    std::string GetBotTraceJson(std::string const& selector, uint32 limit, bool delta = false) const;
     std::string GetCombatLogJson() const;
     bool IsActive() const;
     std::string Replay(std::string const& replayType, std::string const& selector, std::string const& brainVersion = "");
@@ -1685,7 +1685,7 @@ private:
     RaidMechanicAdapter BuildRaidMechanicAdapter(Player* bot, Unit const* boss, RaidRoleAssignment const& assignment, BossMechanicFeatures const& features) const;
     RaidGearTargetPlan BuildRaidGearTargetPlan(Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage) const;
     HeroicRaidProgression BuildHeroicRaidProgression(WorldBotState const& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage) const;
-    std::string BuildRaidRuntimeJson() const;
+    std::string BuildRaidRuntimeJson(bool compactTelemetry = false) const;
     std::string BuildRaidRoleAssignmentJson(RaidRoleAssignment const& assignment) const;
     std::string BuildRaidPositioningAnchorsJson(RaidPositioningAnchors const& anchors) const;
     std::string BuildRaidMechanicAdapterJson(RaidMechanicAdapter const& adapter) const;
@@ -1887,6 +1887,10 @@ private:
         uint32 MapId = 0;
         uint32 InstanceId = 0;
         std::map<uint32, std::string> RoleByGuid;
+        // Per-bot cursor for the bounded diagnostic trace export.  This keeps
+        // repeated botauto_trace polls incremental without changing the
+        // authoritative in-memory trace or dropping current decisions.
+        mutable std::map<uint32, uint32> TraceExportCursorByGuid;
 
         ObjectGuid ValidationRouteFocusGuid;
         uint32 ValidationRouteFocusEntry = 0;

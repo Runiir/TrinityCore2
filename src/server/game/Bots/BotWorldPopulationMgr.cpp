@@ -1626,14 +1626,14 @@ std::string BotWorldPopulationMgr::GetBotDiagnosisJsonForCohort(std::string cons
     return result;
 }
 
-std::string BotWorldPopulationMgr::GetBotTraceJsonForCohort(std::string const& cohortId, std::string const& selector, uint32 limit) const
+std::string BotWorldPopulationMgr::GetBotTraceJsonForCohort(std::string const& cohortId, std::string const& selector, uint32 limit, bool delta) const
 {
     if (!FindCohort(cohortId))
         return UnknownCohortJson("botauto_trace", cohortId);
 
     std::string previous = _selectedCohortId;
     _selectedCohortId = cohortId;
-    std::string result = GetBotTraceJson(selector, limit);
+    std::string result = GetBotTraceJson(selector, limit, delta);
     _selectedCohortId = previous;
     return result;
 }
@@ -30380,7 +30380,7 @@ std::string BotWorldPopulationMgr::BuildRaidRoleAssignmentJson(RaidRoleAssignmen
     return json.str();
 }
 
-std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
+std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) const
 {
     RaidRuntime const& raid = Cohort().Raid;
     std::ostringstream json;
@@ -30404,6 +30404,59 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
          << ",\"profile_content_hash\":\"" << JsonEscape(raid.ProfileContentHash) << "\""
          << ",\"assignment_generation\":" << raid.AssignmentGeneration
          << ",\"evidence_sequence\":" << raid.EvidenceSequence
+         ;
+
+    if (compactTelemetry)
+    {
+        json << ",\"wipe_generation\":" << raid.WipeGeneration
+             << ",\"boss_reset_generation\":" << raid.BossResetGeneration
+             << ",\"recovery_generation\":" << raid.RecoveryGeneration
+             << ",\"encounter_in_progress\":" << (raid.EncounterInProgress ? "true" : "false")
+             << ",\"strategy_id\":\"" << JsonEscape(raid.StrategyId) << "\""
+             << ",\"route_progress\":{\"generation\":" << Party().ValidationRouteGeneration
+             << ",\"node_index\":" << Party().ValidationRouteManifestIndex << "}"
+             << ",\"strategy_transition\":{\"from_strategy\":\""
+             << JsonEscape(raid.PreviousStrategyId) << "\",\"to_strategy\":\""
+             << JsonEscape(raid.StrategyId) << "\",\"advanced\":"
+             << (raid.StrategyTransitionRouteGeneration == Party().ValidationRouteGeneration
+                 && !raid.PreviousStrategyId.empty() ? "true" : "false") << "}"
+             << ",\"encounter_phase\":\"" << JsonEscape(raid.EncounterPhase) << "\""
+             << ",\"wipe_state\":\"" << JsonEscape(raid.WipeState) << "\""
+             << ",\"recovery_state\":\"" << JsonEscape(raid.RecoveryState) << "\""
+             << ",\"boss_states\":[";
+        for (size_t bossId = 0; bossId < raid.BossStates.size(); ++bossId)
+        {
+            if (bossId)
+                json << ',';
+            json << uint32(raid.BossStates[bossId]);
+        }
+        json << "],\"roster\":[";
+        bool firstCompactRoster = true;
+        for (auto const& [guid, slot] : raid.RosterByGuid)
+        {
+            if (!firstCompactRoster)
+                json << ',';
+            firstCompactRoster = false;
+            json << "{\"roster_slot_id\":\"" << JsonEscape(slot.RosterSlotId)
+                 << "\",\"lease_role_slot\":\"" << JsonEscape(slot.LeaseRoleSlot)
+                 << "\",\"slot\":" << slot.SlotIndex
+                 << ",\"guid\":" << guid
+                 << ",\"subgroup\":" << uint32(slot.SubGroup)
+                 << ",\"role\":\"" << JsonEscape(slot.Role)
+                 << "\",\"class_id\":" << uint32(slot.ClassId)
+                 << ",\"class_spec\":\"" << JsonEscape(slot.ClassSpec)
+                 << "\",\"gear_identity\":\"" << JsonEscape(slot.GearIdentity)
+                 << "\",\"account_id\":" << slot.AccountId
+                 << ",\"account\":\"" << JsonEscape(slot.AccountName)
+                 << "\",\"name\":\"" << JsonEscape(slot.CharacterName)
+                 << "\",\"active\":" << (slot.Active ? "true" : "false")
+                 << ",\"lease_owned\":" << (slot.LeaseOwned ? "true" : "false") << "}";
+        }
+        json << "]}";
+        return json.str();
+    }
+
+    json
          << ",\"wipe_generation\":" << raid.WipeGeneration
          << ",\"boss_reset_generation\":" << raid.BossResetGeneration
          << ",\"boss_reset_generation_at_wipe\":" << raid.BossResetGenerationAtWipe
@@ -36740,7 +36793,7 @@ std::string BotWorldPopulationMgr::GetBotDiagnosisJson(std::string const& select
     }
 
     json << "]"
-         << ",\"raid_runtime\":" << BuildRaidRuntimeJson();
+         << ",\"raid_runtime\":" << BuildRaidRuntimeJson(true);
     if (!emitted)
         json << ",\"failure_reason\":\"" << JsonEscape(Cohort().LastPopulationFailureReason.empty() ? "no_matching_bot" : Cohort().LastPopulationFailureReason) << "\"";
     else
@@ -36749,9 +36802,9 @@ std::string BotWorldPopulationMgr::GetBotDiagnosisJson(std::string const& select
     return json.str();
 }
 
-std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, uint32 limit) const
+std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, uint32 limit, bool delta) const
 {
-    uint32 normalizedLimit = limit ? std::min<uint32>(limit, 64) : 20;
+    uint32 normalizedLimit = limit ? std::min<uint32>(limit, 128) : 20;
 
     if (selector.empty() || selector == "all")
     {
@@ -36765,7 +36818,7 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
              << ",\"node_id\":\"" << JsonEscape(Cohort().Config.ValidationRouteNodeId) << "\""
              << ",\"label\":\"" << JsonEscape(Cohort().Config.ValidationRouteLabel) << "\""
              << ",\"kind\":\"" << JsonEscape(Cohort().Config.ValidationRouteKind) << "\"}"
-             << ",\"raid_runtime\":" << BuildRaidRuntimeJson()
+             << ",\"raid_runtime\":" << BuildRaidRuntimeJson(true)
              << ",\"bots\":[";
 
         bool emitted = false;
@@ -36777,7 +36830,103 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
             emitted = true;
             json << "{\"bot_guid\":" << state.Guid.GetCounter()
                  << ",\"bot_name\":\"" << JsonEscape(bot ? bot->GetName() : "") << "\""
-                 << ",\"entries\":" << BuildBotTraceEntriesJson(state, normalizedLimit) << "}";
+                 << ",\"entries\":";
+            if (!delta)
+                json << BuildBotTraceEntriesJson(state, normalizedLimit);
+            else
+            {
+                uint32 const cursor = Party().TraceExportCursorByGuid[state.Guid.GetCounter()];
+                uint32 const oldest = state.DecisionTrace.empty() ? state.Sequence : state.DecisionTrace.front().Sequence;
+                bool const gap = !state.DecisionTrace.empty() && cursor && oldest > cursor + 1;
+                json << "[";
+                uint32 emitted = 0;
+                bool firstEntry = true;
+                for (auto itr = state.DecisionTrace.begin(); itr != state.DecisionTrace.end(); ++itr)
+                {
+                    if (itr->Sequence <= cursor)
+                        continue;
+                    if (emitted >= normalizedLimit)
+                        break;
+                    if (!firstEntry)
+                        json << ',';
+                    firstEntry = false;
+                    // Reuse the existing bounded encoder by emitting a
+                    // temporary one-entry view without copying the full
+                    // diagnostic state.  Delta callers only need the same
+                    // immutable entry schema and its sequence cursor.
+                    json << "{\"timestamp_ms\":" << itr->TimestampMs
+                         << ",\"sequence\":" << itr->Sequence
+                         << ",\"situation\":\"" << JsonEscape(itr->Situation)
+                         << "\",\"action\":\"" << JsonEscape(itr->Action)
+                         << "\",\"route_node_id\":\"" << JsonEscape(itr->RouteNodeId)
+                         << "\",\"route_generation\":" << itr->RouteGeneration
+                         << ",\"quest_id\":" << itr->QuestId
+                         << ",\"target_id\":" << itr->TargetGuid
+                         << ",\"destination\":{\"map\":" << itr->DestinationMapId
+                         << ",\"x\":" << itr->DestinationX << ",\"y\":" << itr->DestinationY
+                         << ",\"z\":" << itr->DestinationZ << "}"
+                         << ",\"result\":\"" << JsonEscape(itr->Result)
+                         << "\",\"reason_code\":\"" << JsonEscape(itr->ReasonCode)
+                         << "\",\"fingerprint_hash\":" << itr->FingerprintHash
+                         << ",\"fingerprint_repeat_count\":" << itr->FingerprintRepeatCount
+                         << ",\"fingerprint_failure_count\":" << itr->FingerprintFailureCount
+                         << ",\"consecutive_same_decision_count\":" << itr->ConsecutiveSameDecisionCount
+                         << ",\"idle_decision_repeat_count\":" << itr->IdleDecisionRepeatCount
+                         << ",\"target_churn_count\":" << itr->TargetChurnCount
+                         << ",\"threat_snapshot\":{\"engaged_hostiles\":" << itr->EngagedHostileCount
+                         << ",\"tank_owned_hostiles\":" << itr->TankOwnedHostileCount
+                         << ",\"healer_targeting_hostiles\":" << itr->HealerTargetingHostileCount
+                         << ",\"engaged_hostile_guids\":[";
+                    for (size_t index = 0; index < itr->EngagedHostileGuids.size(); ++index)
+                    {
+                        if (index)
+                            json << ',';
+                        json << itr->EngagedHostileGuids[index];
+                    }
+                    json << "],\"tank_owned_hostile_guids\":[";
+                    for (size_t index = 0; index < itr->TankOwnedHostileGuids.size(); ++index)
+                    {
+                        if (index)
+                            json << ',';
+                        json << itr->TankOwnedHostileGuids[index];
+                    }
+                    json << "],\"healer_targeting_hostile_guids\":[";
+                    for (size_t index = 0; index < itr->HealerTargetingHostileGuids.size(); ++index)
+                    {
+                        if (index)
+                            json << ',';
+                        json << itr->HealerTargetingHostileGuids[index];
+                    }
+                    json << "],\"tank_threat_aura_active\":" << (itr->TankThreatAuraActive ? "true" : "false") << "}"
+                         << ",\"pet_alive\":" << (itr->PetAlive ? "true" : "false")
+                         << ",\"loop_guardrail_action\":\"" << JsonEscape(itr->LoopGuardrailAction)
+                         << "\",\"loop_guardrail_reason\":\"" << JsonEscape(itr->LoopGuardrailReason)
+                         << "\",\"recovery_mode\":\"" << JsonEscape(itr->RecoveryMode)
+                         << "\",\"recovery_result\":\"" << JsonEscape(itr->RecoveryResult)
+                         << "\",\"blocked_episode_id\":" << itr->BlockedEpisodeId
+                         << ",\"blocked_first_reason\":\"" << JsonEscape(itr->BlockedFirstReason)
+                         << "\",\"blocked_current_reason\":\"" << JsonEscape(itr->BlockedCurrentReason)
+                         << "\",\"blocked_resolution\":\"" << JsonEscape(itr->BlockedResolution)
+                         << "\",\"blocked_resolved_by\":\"" << JsonEscape(itr->BlockedResolvedBy)
+                         << "\",\"action_category\":\"" << JsonEscape(state.LastActionCategory)
+                         << "\",\"role_goal\":\"" << JsonEscape(state.LastRoleGoal)
+                         << "\",\"recommended_balance_mode\":\"" << JsonEscape(state.LastRecommendedBalanceMode)
+                         << "\",\"saturation_reason\":\"" << JsonEscape(state.LastSaturationReason)
+                         << "\",\"mechanic_family\":\"" << JsonEscape(state.LastMechanicFamily)
+                         << "\",\"encounter_role_responsibility\":\"" << JsonEscape(state.LastEncounterRoleResponsibility)
+                         << "\",\"next_expected_action\":\"" << JsonEscape(state.LastNextExpectedAction)
+                         << "\",\"combat_attempt\":" << BuildCombatAttemptJson(itr->CombatAttempt)
+                         << ",\"route_progress\":" << BuildRouteProgressJson(itr->RouteProgress) << "}";
+                    ++emitted;
+                }
+                json << "]"
+                     << ",\"delta\":true"
+                     << ",\"cursor_before\":" << cursor
+                     << ",\"cursor_after\":" << state.Sequence
+                     << ",\"gap\":" << (gap ? "true" : "false");
+                Party().TraceExportCursorByGuid[state.Guid.GetCounter()] = state.Sequence;
+            }
+            json << "}";
         }
 
         json << "]";
@@ -36815,7 +36964,7 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
          << ",\"node_id\":\"" << JsonEscape(Cohort().Config.ValidationRouteNodeId) << "\""
          << ",\"label\":\"" << JsonEscape(Cohort().Config.ValidationRouteLabel) << "\""
          << ",\"kind\":\"" << JsonEscape(Cohort().Config.ValidationRouteKind) << "\"}"
-         << ",\"raid_runtime\":" << BuildRaidRuntimeJson()
+         << ",\"raid_runtime\":" << BuildRaidRuntimeJson(true)
          << ",\"entries\":" << BuildBotTraceEntriesJson(*selected, normalizedLimit)
          << ",\"failure_reason\":null}";
     return json.str();

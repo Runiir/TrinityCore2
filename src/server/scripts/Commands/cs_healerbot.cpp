@@ -1171,7 +1171,8 @@ private:
             limit = std::max<uint32>(1, uint32(strtoul(tokens[0].c_str(), nullptr, 10)));
             selector.clear();
         }
-        return SendAutoResult(handler, sBotWorldPopulationMgr->GetBotTraceJsonForCohort(cohortId, selector, limit));
+        bool delta = tokens.size() > 2 && tokens[2] == "delta";
+        return SendAutoResult(handler, sBotWorldPopulationMgr->GetBotTraceJsonForCohort(cohortId, selector, limit, delta));
     }
 
     static bool HandleAutoCombatLogCommand(ChatHandler* handler, char const* args)

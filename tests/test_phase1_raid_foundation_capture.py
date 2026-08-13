@@ -965,6 +965,91 @@ def test_live_evidence_demux_rejects_profile_and_assignment_drift():
     assert "evidence_demux_cross_identity_row" in evidence_demux_rejections(rows)
 
 
+def test_live_evidence_demux_binds_declared_route_transition_and_partial_death():
+    active = accepted_status()
+    active["cohort_id"] = "raid"
+    transitioned = json.loads(json.dumps(active))
+    transitioned["raid_runtime"]["strategy_id"] = "trash_two_tank_charge_lanes"
+    transitioned["raid_runtime"]["route_progress"] = {"generation": 5, "node_index": 4}
+    transitioned["raid_runtime"]["strategy_transition"] = {
+        "from_strategy": active["raid_runtime"]["strategy_id"],
+        "to_strategy": "trash_two_tank_charge_lanes",
+        "advanced": True,
+    }
+    transitioned["raid_runtime"]["roster"][1]["active"] = False
+    transitioned["raid_runtime"]["alive_size"] = 9
+    bots = [{"bot_guid": 1001 + index} for index in range(10)]
+    diagnosis = {
+        "ok": True, "action": "botauto_diagnose", "cohort_id": "raid",
+        "raid_runtime": transitioned["raid_runtime"], "bots": bots,
+    }
+    trace = {
+        "ok": True, "action": "botauto_trace", "cohort_id": "raid",
+        "raid_runtime": transitioned["raid_runtime"],
+        "bots": [{"bot_guid": 1001 + index, "entries": [], "delta": True, "gap": False}
+                 for index in range(10)],
+    }
+    readycheck = {
+        "ok": True, "action": "botauto_readycheck", "cohort_id": "raid",
+        "raid_runtime": transitioned["raid_runtime"],
+    }
+    stop = {
+        "ok": True, "action": "botauto_stop", "cohort_id": "raid",
+        "server_epoch": 88, "attempt_id": 1,
+        "raid_runtime_before_cleanup": transitioned["raid_runtime"],
+        "post_cleanup": {"active": False, "bots": 0, "lease_count": 0},
+    }
+    inactive = json.loads(json.dumps(transitioned))
+    inactive["active"] = False
+    inactive["bots"] = 0
+    inactive["lease_count"] = 0
+    inactive["server_epoch"] = 88
+    inactive["attempt_id"] = 1
+    inactive["raid_runtime"]["active"] = False
+    rows = normalized_batch_payload(
+        b"\n".join(json.dumps(row).encode()
+                   for row in (active, transitioned, diagnosis, trace, readycheck, stop, inactive)) + b"\n"
+    )
+    report = evidence_demux_report(rows)
+    assert report["rejections"] == []
+    assert report["bound_rows"] == report["retained_rows"] == 7
+
+
+def test_live_evidence_demux_rejects_lease_drift_and_trace_cursor_gap():
+    active = accepted_status()
+    active["cohort_id"] = "raid"
+    drifted = json.loads(json.dumps(active))
+    drifted["raid_runtime"]["roster"][1]["lease_owned"] = False
+    gap = {
+        "ok": True, "action": "botauto_trace", "cohort_id": "raid",
+        "raid_runtime": active["raid_runtime"],
+        "bots": [{"bot_guid": 1001 + index, "entries": [], "delta": True, "gap": index == 0}
+                 for index in range(10)],
+    }
+    rows = normalized_batch_payload(
+        b"\n".join(json.dumps(row).encode() for row in (active, drifted, gap)) + b"\n"
+    )
+    reasons = evidence_demux_rejections(rows)
+    assert "evidence_demux_roster_binding_lease_invalid" in reasons
+    assert "evidence_demux_trace_delta_gap" in reasons
+
+
+def test_capture_telemetry_poll_is_incremental_and_bounded():
+    root = Path(__file__).resolve().parents[1]
+    capture_source = (root / "tools/raid_program/capture_phase1_raid_foundation.py").read_text(encoding="utf-8")
+    manager_source = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(encoding="utf-8")
+    header_source = (root / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text(encoding="utf-8")
+
+    # A long capture must not re-export the complete ring on every poll.  Keep
+    # this source-level regression independent of a heavyweight worldserver
+    # build while checking the command, cursor, and hard server-side bound.
+    assert "botauto trace all 128 delta" in capture_source
+    assert "TraceExportCursorByGuid" in manager_source
+    assert "TraceExportCursorByGuid" in header_source
+    assert "std::min<uint32>(limit, 128)" in manager_source
+    assert "BuildRaidRuntimeJson(true)" in manager_source
+
+
 def test_live_evidence_demux_rejects_strategy_drift():
     active = accepted_status()
     active["cohort_id"] = "raid"

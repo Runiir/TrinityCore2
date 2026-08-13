@@ -39,6 +39,17 @@ ROSTER_ID_FIELDS = (
     "class_id", "class_spec", "gear_identity", "active", "lease_owned",
     "account_id", "account", "name", "talents", "glyphs", "gear_identity_manifest",
 )
+# The roster's membership/assignment identity is immutable for a run, while
+# ``active`` and ``lease_owned`` are live lifecycle state.  Deaths and native
+# recovery legitimately change the latter in status/diagnose/trace envelopes;
+# treating those flags as membership identity made telemetry from a partial
+# wipe look like a cross-shard row.  Keep the full roster contract above for
+# provisioning/acceptance, but demultiplex telemetry against this frozen
+# membership projection and validate the lifecycle flags separately.
+ROSTER_BINDING_ID_FIELDS = (
+    "roster_slot_id", "lease_role_slot", "slot", "guid", "subgroup", "role",
+    "class_id", "class_spec", "gear_identity", "account_id", "account", "name",
+)
 FORBIDDEN_ASSISTANCE_FIELDS = (
     "forbidden_completion_assists",
     "forbidden_assistance",
@@ -399,6 +410,42 @@ def _roster_identity(roster: list[dict[str, Any]]) -> tuple[tuple[Any, ...], ...
             return None
         rows.append(tuple(row[field] for field in ROSTER_ID_FIELDS))
     return tuple(rows)
+
+
+def _roster_binding_identity(roster: list[dict[str, Any]]) -> tuple[tuple[Any, ...], ...] | None:
+    """Return immutable roster membership used to demultiplex live channels."""
+
+    if len(roster) != 10 or any(not isinstance(row, dict) for row in roster):
+        return None
+    rows: list[tuple[Any, ...]] = []
+    for row in sorted(roster, key=lambda value: value.get("slot") if isinstance(value.get("slot"), int) else -1):
+        if any(field not in row for field in ROSTER_BINDING_ID_FIELDS):
+            return None
+        rows.append(tuple(row[field] for field in ROSTER_BINDING_ID_FIELDS))
+    return tuple(rows)
+
+
+def _roster_binding_lifecycle_rejections(roster: Any) -> list[str]:
+    """Reject malformed lease/lifecycle claims without treating death as drift."""
+
+    if not isinstance(roster, list) or len(roster) != 10:
+        return ["roster_binding_shape_invalid"]
+    rows = [row for row in roster if isinstance(row, dict)]
+    reasons: list[str] = []
+    if len(rows) != len(roster):
+        return ["roster_binding_row_invalid"]
+    # Producers may serialize the map-backed roster in GUID order rather than
+    # slot order.  Membership identity is canonicalized by slot above, so the
+    # lifecycle check must be order-independent as well.
+    slots = sorted(row.get("slot") for row in rows)
+    if slots != list(range(10)):
+        reasons.append("roster_binding_slots_invalid")
+    for row in rows:
+        if not isinstance(row.get("active"), bool):
+            reasons.append("roster_binding_active_invalid")
+        if row.get("lease_owned") is not True:
+            reasons.append("roster_binding_lease_invalid")
+    return sorted(set(reasons))
 
 
 def _roster_rejections(runtime: dict[str, Any]) -> list[str]:
@@ -2028,7 +2075,7 @@ def _required_telemetry_envelope_report(
         runtime = payload.get("raid_runtime")
         roster = runtime.get("roster") if isinstance(runtime, dict) else None
         identity = _runtime_identity(runtime, include_strategy=False) if isinstance(runtime, dict) else None
-        roster_identity = _roster_identity(roster) if isinstance(roster, list) else None
+        roster_identity = _roster_binding_identity(roster) if isinstance(roster, list) else None
         cohort = payload.get("cohort_id")
         if not isinstance(runtime, dict) or runtime.get("active") is not True:
             continue
@@ -2072,10 +2119,14 @@ def _required_telemetry_envelope_report(
             not isinstance(runtime, dict)
             or runtime.get("active") is not True
             or _runtime_identity(runtime, include_strategy=False) != canonical_identity
-            or (_roster_identity(roster) if isinstance(roster, list) else None) != canonical_roster
+            or (_roster_binding_identity(roster) if isinstance(roster, list) else None) != canonical_roster
             or payload.get("cohort_id") != canonical_cohort
         ):
             row_reasons.append(f"evidence_demux_{channel}_runtime_identity_unbound")
+        row_reasons.extend(
+            f"evidence_demux_{channel}_{reason}"
+            for reason in _roster_binding_lifecycle_rejections(roster)
+        )
 
         bot_rows = payload.get("bots")
         if not isinstance(bot_rows, list):
@@ -2083,6 +2134,15 @@ def _required_telemetry_envelope_report(
         elif not bot_rows:
             row_reasons.append(f"evidence_demux_{channel}_roster_empty")
         else:
+            if channel == "trace" and any(
+                isinstance(bot_row, dict) and bot_row.get("gap") is True
+                for bot_row in bot_rows
+            ):
+                # A cursor gap means the bounded server trace ring overwrote
+                # an edge before export.  Bind nothing from that envelope;
+                # current diagnose/status facts remain useful for diagnosis,
+                # but the capture must fail closed on missing edge evidence.
+                row_reasons.append("evidence_demux_trace_delta_gap")
             bot_guids: list[int] = []
             for bot_row in bot_rows:
                 if not isinstance(bot_row, dict):
@@ -2165,7 +2225,7 @@ def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
             continue
         identity = _runtime_identity(runtime, include_strategy=False)
         roster = runtime.get("roster")
-        roster_identity = _roster_identity(roster) if isinstance(roster, list) else None
+        roster_identity = _roster_binding_identity(roster) if isinstance(roster, list) else None
         cohort = payload.get("cohort_id")
         roster_guid_values = (
             [member[3] for member in roster_identity]
@@ -2288,10 +2348,12 @@ def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
             continue
         identity = _runtime_identity(runtime, include_strategy=False)
         roster = runtime.get("roster")
-        roster_identity = _roster_identity(roster) if isinstance(roster, list) else None
+        roster_identity = _roster_binding_identity(roster) if isinstance(roster, list) else None
         if (identity != canonical_identity or roster_identity != canonical_roster
                 or payload.get("cohort_id") != canonical_cohort):
             reject("evidence_demux_cross_identity_row")
+        for lifecycle_reason in _roster_binding_lifecycle_rejections(roster):
+            reject(f"evidence_demux_{lifecycle_reason}")
         strategy = runtime.get(STRATEGY_FIELD)
         route_marker = _route_advancement_marker(runtime)
         if not isinstance(strategy, str) or not strategy.strip():
@@ -2725,7 +2787,12 @@ def main() -> int:
                 if process.poll() is not None:
                     break
                 if time.monotonic() >= next_probe:
-                    process.stdin.write(b"botauto status\nbotauto diagnose all\nbotauto trace all 20\n")
+                    # Diagnosis carries the exact current decision per bot;
+                    # trace is an incremental export so a long raid does not
+                    # replay each bot's cumulative 128-entry history every
+                    # five seconds.  The server cursor retains every edge
+                    # unless its bounded in-memory history was overrun.
+                    process.stdin.write(b"botauto status\nbotauto diagnose all\nbotauto trace all 128 delta\n")
                     process.stdin.flush()
                     next_probe = time.monotonic() + 5.0
                     time.sleep(1.0)
