@@ -260,7 +260,10 @@ def accepted_drudge_status() -> dict:
         ],
         "reseparated_roster_guids": roster_guids,
         "taunt_roster_guids": tank_guids,
-        "health_sync_roster_guids": [tank_guids[0]],
+        "health_sync_roster_guids": tank_guids,
+        "health_sync_evidence_attempt_id": runtime["attempt_id"],
+        "health_sync_evidence_wipe_generation": 0,
+        "health_sync_evidence_route_generation": 3,
         "profile_action_roster_guids": offensive_guids,
         "observations": observations,
     }
@@ -296,7 +299,22 @@ def test_drudge_contract_rejects_prepared_only_stale_and_incomplete_tactics():
     incomplete["raid_runtime"]["drudge_charge"]["health_sync_roster_guids"] = []
     accepted, reasons = accepted_drudge_contract([incomplete])
     assert accepted is False
-    assert "drudge_tank_health_sync_hold_missing" in reasons
+    assert "drudge_exact_tank_health_sync_hold_missing" in reasons
+
+    partial_sync = accepted_drudge_status()
+    partial_sync["raid_runtime"]["drudge_charge"]["health_sync_roster_guids"] = [
+        partial_sync["raid_runtime"]["roster"][0]["guid"]
+    ]
+    accepted, reasons = accepted_drudge_contract([partial_sync])
+    assert accepted is False
+    assert "drudge_exact_tank_health_sync_hold_missing" in reasons
+
+    out_of_scope_sync = accepted_drudge_status()
+    evidence = out_of_scope_sync["raid_runtime"]["drudge_charge"]
+    evidence["health_sync_evidence_attempt_id"] += 1
+    accepted, reasons = accepted_drudge_contract([out_of_scope_sync])
+    assert accepted is False
+    assert "drudge_health_sync_scope_attempt_mismatch" in reasons
 
     tank_target = accepted_drudge_status()
     tank_target["raid_runtime"]["drudge_charge"]["observations"][0]["target_guid"] = 1001

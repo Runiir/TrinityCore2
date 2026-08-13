@@ -85,7 +85,7 @@ def evaluate_drudge_lane_contract(
 
     if set(taunt_guids) != tanks:
         reasons.add("exact_tank_taunts_missing")
-    if not set(health_sync_guids).intersection(tanks):
+    if set(health_sync_guids) != tanks:
         reasons.add("tank_health_sync_hold_missing")
     if set(profile_action_guids) != offensive:
         reasons.add("trained_single_target_profile_missing")

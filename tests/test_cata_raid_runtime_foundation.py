@@ -504,6 +504,11 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "laneSource = sources[laneIndex]" in lane
     assert "bool const sourceInLaneA = nativeChargeSource == sources[0]" in lane
     assert "markAllRosterReseparated" in lane
+    assert "ReseparationRecorded" in lane
+    assert "uniqueGroupAnchor" in lane
+    assert "sameLaneMemberMinimum" in lane
+    assert "sources[0]->GetExactDist2d(sources[1])" in lane
+    assert "drudge_tank_health_sync_hold" in lane
     assert '"drudge_lane_wait_lane_ownership"' in lane
     assert '"drudge_lane_profile_hold_contract_unsafe"' in lane
     assert '"drudge_native_charge_target_tank_reseparated"' in lane

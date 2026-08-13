@@ -538,6 +538,7 @@ private:
         bool RangeValid = false;
         bool IntervalValid = false;
         bool Landed = false;
+        bool ReseparationRecorded = false;
         std::set<uint32> ReseparatedRosterGuids;
     };
 
@@ -1826,6 +1827,9 @@ private:
         std::set<uint32> ValidationRouteDrudgeReseparatedRosterGuids;
         std::set<uint32> ValidationRouteDrudgeTauntRosterGuids;
         std::set<uint32> ValidationRouteDrudgeHealthSyncRosterGuids;
+        uint64 ValidationRouteDrudgeHealthSyncEvidenceAttemptId = 0;
+        uint32 ValidationRouteDrudgeHealthSyncEvidenceWipeGeneration = 0;
+        uint64 ValidationRouteDrudgeHealthSyncEvidenceRouteGeneration = 0;
         std::set<uint32> ValidationRouteDrudgeProfileActionRosterGuids;
         uint64 ValidationRoutePackClearCandidateSinceMs = 0;
         uint64 ValidationRouteNodeClearCandidateSinceMs = 0;

@@ -301,7 +301,7 @@ def test_drudge_model_requires_exact_reseparation_and_trained_offense():
         offensive_guids=(1, 2, 6, 7, 8, 9, 10),
         events=events,
         taunt_guids=(1, 2),
-        health_sync_guids=(1,),
+        health_sync_guids=(1, 2),
         profile_action_guids=(1, 2, 6, 7, 8, 9, 10),
         role_by_guid={1: "tank", 2: "tank", 5: "healer", 3: "healer"},
     )
@@ -328,3 +328,16 @@ def test_drudge_model_requires_exact_reseparation_and_trained_offense():
         "tank_health_sync_hold_missing",
         "trained_single_target_profile_missing",
     }.issubset(reasons)
+
+    partial_health_sync, reasons = evaluate_drudge_lane_contract(
+        roster_guids=roster_guids,
+        tank_guids=(1, 2),
+        offensive_guids=(1, 2, 6, 7, 8, 9, 10),
+        events=events,
+        taunt_guids=(1, 2),
+        health_sync_guids=(1,),
+        profile_action_guids=(1, 2, 6, 7, 8, 9, 10),
+        role_by_guid={1: "tank", 2: "tank", 5: "healer", 3: "healer"},
+    )
+    assert partial_health_sync is False
+    assert reasons == ("tank_health_sync_hold_missing",)

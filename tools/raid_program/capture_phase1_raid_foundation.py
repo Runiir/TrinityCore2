@@ -731,8 +731,14 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
         reasons.append("drudge_exact_roster_reseparation_missing")
     if taunts != tank_guids:
         reasons.append("drudge_exact_tank_taunts_missing")
-    if not health_sync or not health_sync.intersection(tank_guids):
-        reasons.append("drudge_tank_health_sync_hold_missing")
+    if health_sync != tank_guids:
+        reasons.append("drudge_exact_tank_health_sync_hold_missing")
+    if evidence.get("health_sync_evidence_attempt_id") != attempt_id:
+        reasons.append("drudge_health_sync_scope_attempt_mismatch")
+    if evidence.get("health_sync_evidence_wipe_generation") != 0:
+        reasons.append("drudge_health_sync_scope_wipe_mismatch")
+    if evidence.get("health_sync_evidence_route_generation") != 3:
+        reasons.append("drudge_health_sync_scope_route_mismatch")
     if profile_actions != offensive_guids:
         reasons.append("drudge_trained_single_target_profile_missing")
 
