@@ -30,6 +30,8 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     validate_forced_evidence_bundle,
     bounded_native_shutdown,
     _frozen_drudge_member_anchors,
+    process_resource_sample,
+    summarize_process_resource_samples,
 )
 
 
@@ -118,6 +120,93 @@ def test_bounded_native_shutdown_sends_cleanup_and_handles_operator_interrupt():
     assert result["exited"] is True
     assert result["error"] is None
     assert process.wait_calls == 2
+
+
+def test_process_resource_sample_reuses_baseline_proc_units_and_binds_run_identity(monkeypatch):
+    monkeypatch.setattr(
+        "tools.raid_program.capture_phase1_raid_foundation._baseline_process_sample",
+        lambda pid: {
+            "monotonic_sec": 12.5,
+            "process_cpu_ticks": 321,
+            "process_rss_bytes": 987654,
+            "host_load_1m": 999,
+        },
+    )
+    sample = process_resource_sample(
+        4242,
+        sample_sequence=3,
+        scenario_id="magmaw-shard",
+        runtime_profile="magmaw-shard",
+        status={
+            "cohort_id": "cohort-a",
+            "raid_runtime": {
+                "server_epoch": 8,
+                "attempt_id": 9,
+                "profile_generation": 2,
+                "assignment_generation": 4,
+                "instance_id": 55,
+            },
+        },
+    )
+
+    assert sample == {
+        "sample_sequence": 3,
+        "process_pid": 4242,
+        "monotonic_sec": 12.5,
+        "process_cpu_ticks": 321,
+        "process_rss_bytes": 987654,
+        "run_identity": {
+            "scenario_id": "magmaw-shard",
+            "runtime_profile": "magmaw-shard",
+            "cohort_id": "cohort-a",
+            "server_epoch": 8,
+            "attempt_id": 9,
+            "profile_generation": 2,
+            "assignment_generation": 4,
+            "instance_id": 55,
+        },
+    }
+
+
+def test_process_resource_summary_matches_baseline_cpu_and_rss_semantics():
+    samples = [
+        {
+            "process_pid": 4242,
+            "monotonic_sec": 10.0,
+            "process_cpu_ticks": 100,
+            "process_rss_bytes": 20,
+        },
+        {
+            "process_pid": 4242,
+            "monotonic_sec": 13.0,
+            "process_cpu_ticks": 160,
+            "process_rss_bytes": 30,
+        },
+    ]
+    summary = summarize_process_resource_samples(samples, tick_rate=100, sampling_errors=["one"])
+
+    assert summary["sample_count"] == 2
+    assert summary["process_pid"] == 4242
+    assert summary["pid_consistent"] is True
+    assert summary["cpu_ticks_delta"] == 60
+    assert summary["mean_cpu_percent_one_core"] == 20.0
+    assert summary["maximum_rss_bytes"] == 30
+    assert summary["minimum_rss_bytes"] == 20
+    assert summary["sampling_error_count"] == 1
+
+
+def test_process_resource_summary_refuses_cpu_attribution_for_mixed_pids():
+    samples = [
+        {"process_pid": 1, "monotonic_sec": 1.0, "process_cpu_ticks": 10, "process_rss_bytes": 20},
+        {"process_pid": 2, "monotonic_sec": 2.0, "process_cpu_ticks": 30, "process_rss_bytes": 40},
+    ]
+    summary = summarize_process_resource_samples(samples, tick_rate=100)
+
+    assert summary["pid_consistent"] is False
+    assert summary["process_pid"] is None
+    assert summary["cpu_ticks_delta"] is None
+    assert summary["mean_cpu_percent_one_core"] is None
+    assert summary["maximum_rss_bytes"] == 40
 
 
 def test_material_status_transition_forces_immediate_full_diagnosis():

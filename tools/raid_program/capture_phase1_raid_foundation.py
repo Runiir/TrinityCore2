@@ -16,8 +16,114 @@ import tempfile
 import time
 from typing import Any
 
+try:
+    from tools.raid_program.capture_no_bots_baseline import process_sample as _baseline_process_sample
+except ModuleNotFoundError:
+    # Direct execution places tools/raid_program, not the repository root, on
+    # sys.path. Keep the CLI and imported test/module paths on the same sampler.
+    from capture_no_bots_baseline import process_sample as _baseline_process_sample
+
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def process_resource_sample(
+    pid: int,
+    *,
+    sample_sequence: int,
+    scenario_id: str,
+    runtime_profile: str,
+    status: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Retain a compact, identity-bound worldserver resource sample.
+
+    The baseline sampler is the source of truth for `/proc` parsing and CPU
+    tick/RSS units.  Only those process fields are retained here; host load,
+    memory pressure, and other baseline diagnostics are intentionally not
+    copied into the raid telemetry stream.  Runtime identity is attached to
+    every row so a later report cannot accidentally join samples from another
+    cohort or attempt.
+    """
+    baseline = _baseline_process_sample(pid)
+    runtime = status.get("raid_runtime") if isinstance(status, dict) else None
+    runtime = runtime if isinstance(runtime, dict) else {}
+    identity: dict[str, Any] = {
+        "scenario_id": scenario_id,
+        "runtime_profile": runtime_profile,
+    }
+    if isinstance(status, dict) and status.get("cohort_id") is not None:
+        identity["cohort_id"] = status["cohort_id"]
+    for field in (
+        "server_epoch", "attempt_id", "profile_generation", "profile_content_hash",
+        "assignment_generation", "group_guid", "leader_guid", "instance_id",
+        "lockout_save_id",
+    ):
+        value = runtime.get(field)
+        if value is not None:
+            identity[field] = value
+    return {
+        "sample_sequence": sample_sequence,
+        "process_pid": pid,
+        "monotonic_sec": baseline["monotonic_sec"],
+        "process_cpu_ticks": baseline["process_cpu_ticks"],
+        "process_rss_bytes": baseline["process_rss_bytes"],
+        "run_identity": identity,
+    }
+
+
+def summarize_process_resource_samples(
+    samples: list[dict[str, Any]], *, tick_rate: int | None = None,
+    sampling_errors: list[str] | None = None,
+    sampling_error_count: int | None = None,
+) -> dict[str, Any]:
+    """Summarize retained process samples without copying them into telemetry.
+
+    CPU percentage intentionally matches ``capture_no_bots_baseline``:
+    process CPU time divided by wall time, expressed as a percentage of one
+    logical core.  A mixed-PID sample set fails closed for CPU delta rather
+    than attributing a reused PID to the raid.
+    """
+    errors = sampling_errors or []
+    error_count = len(errors) if sampling_error_count is None else sampling_error_count
+    if not samples:
+        return {
+            "sample_count": 0,
+            "process_pid": None,
+            "pid_consistent": False,
+            "elapsed_seconds": 0.0,
+            "cpu_ticks_delta": None,
+            "tick_rate": tick_rate,
+            "mean_cpu_percent_one_core": None,
+            "maximum_rss_bytes": None,
+            "minimum_rss_bytes": None,
+            "sampling_error_count": error_count,
+        }
+    pids = [int(row["process_pid"]) for row in samples]
+    pid_consistent = len(set(pids)) == 1
+    first_time = float(samples[0]["monotonic_sec"])
+    last_time = float(samples[-1]["monotonic_sec"])
+    elapsed = max(0.0, last_time - first_time)
+    ticks_delta = None
+    mean_cpu = None
+    if pid_consistent and len(samples) > 1:
+        ticks_delta = int(samples[-1]["process_cpu_ticks"]) - int(samples[0]["process_cpu_ticks"])
+        if tick_rate and tick_rate > 0 and elapsed > 0:
+            mean_cpu = round((ticks_delta / tick_rate) / elapsed * 100, 3)
+    rss_values = [int(row["process_rss_bytes"]) for row in samples]
+    return {
+        "sample_count": len(samples),
+        "process_pid": pids[0] if pid_consistent else None,
+        "pid_consistent": pid_consistent,
+        "first_monotonic_sec": round(first_time, 6),
+        "last_monotonic_sec": round(last_time, 6),
+        "elapsed_seconds": round(elapsed, 3),
+        "cpu_ticks_delta": ticks_delta,
+        "tick_rate": tick_rate,
+        "mean_cpu_percent_one_core": mean_cpu,
+        "maximum_rss_bytes": max(rss_values),
+        "minimum_rss_bytes": min(rss_values),
+        "sampling_error_count": error_count,
+    }
 
 
 def _frozen_drudge_member_anchors(
@@ -3709,6 +3815,10 @@ def main() -> int:
         "--trace-interval-sec", type=float, default=20.0,
         help="append-only trace-delta export cadence",
     )
+    parser.add_argument(
+        "--resource-sample-interval-sec", type=float, default=5.0,
+        help="low-cost worldserver /proc CPU-tick and RSS sampling cadence",
+    )
     args = parser.parse_args()
 
     binary = args.binary.resolve()
@@ -3741,6 +3851,7 @@ def main() -> int:
         raise SystemExit("telemetry freshness timeout must be at least 15 seconds")
     if any(interval <= 0 for interval in (
         args.status_interval_sec, args.diagnose_interval_sec, args.trace_interval_sec,
+        args.resource_sample_interval_sec,
     )):
         raise SystemExit("telemetry intervals must be positive")
     if any(interval >= args.telemetry_timeout_sec for interval in (
@@ -3790,6 +3901,14 @@ def main() -> int:
     operator_interrupt = False
     shutdown_error: str | None = None
     stop_commands_sent = False
+    resource_samples: list[dict[str, Any]] = []
+    resource_sampling_errors: list[str] = []
+    resource_sampling_error_count = 0
+    resource_sample_sequence = 0
+    try:
+        resource_tick_rate = int(os.sysconf(os.sysconf_names["SC_CLK_TCK"]))
+    except (AttributeError, KeyError, OSError, ValueError):
+        resource_tick_rate = None
     forced_evidence_report: dict[str, Any] = {
         "requested": False,
         "gate_passed": False,
@@ -3880,6 +3999,40 @@ def main() -> int:
             monitor_started_at = time.monotonic()
             telemetry_freshness: dict[str, dict[str, float | int]] = {}
             telemetry_abort: dict[str, Any] = {"detected": False}
+
+            next_resource_sample_at = monitor_started_at
+
+            def record_process_resource_sample(*, force: bool = False) -> None:
+                nonlocal next_resource_sample_at, resource_sample_sequence
+                nonlocal resource_sampling_error_count
+                now = time.monotonic()
+                if not force and now < next_resource_sample_at:
+                    return
+                if process.poll() is not None:
+                    return
+                try:
+                    resource_samples.append(process_resource_sample(
+                        process.pid,
+                        sample_sequence=resource_sample_sequence,
+                        scenario_id=scenario_id,
+                        runtime_profile=profile_name,
+                        status=monitor_statuses[-1] if monitor_statuses else None,
+                    ))
+                    resource_sample_sequence += 1
+                except (OSError, IndexError, KeyError, TypeError, ValueError) as error:
+                    resource_sampling_error_count += 1
+                    # Preserve a bounded diagnostic prefix; a persistent
+                    # /proc race must not make a long-run report grow without
+                    # limit. The summary retains the exact total count.
+                    if len(resource_sampling_errors) < 8:
+                        resource_sampling_errors.append(f"{type(error).__name__}:{error}")
+                finally:
+                    next_resource_sample_at = now + args.resource_sample_interval_sec
+
+            # Start the resource series as soon as the worldserver is ready;
+            # later rows gain cohort/attempt identity once status is observed.
+            record_process_resource_sample(force=True)
+
             def flush_forced_evidence() -> dict[str, Any]:
                 """Retain and independently validate a final evidence bundle.
 
@@ -3930,6 +4083,7 @@ def main() -> int:
                 }
                 while time.monotonic() < deadline:
                     time.sleep(min(0.25, max(0.0, deadline - time.monotonic())))
+                    record_process_resource_sample()
                     observed_at = time.monotonic()
                     for row in log_cursor.read_new_rows():
                         action = row.get("action")
@@ -3961,6 +4115,7 @@ def main() -> int:
             ):
                 if process.poll() is not None:
                     break
+                record_process_resource_sample()
                 due_commands = telemetry_scheduler.commands_due(time.monotonic())
                 if due_commands:
                     # Diagnosis carries the exact current decision per bot;
@@ -4101,6 +4256,9 @@ def main() -> int:
                             readycheck_requested_for = request_identity
                 time.sleep(0.25)
 
+            # Capture one last live process sample before native shutdown so
+            # the final CPU/RSS interval includes the terminal polling work.
+            record_process_resource_sample(force=True)
             if forced_evidence_report.get("requested") is not True:
                 forced_evidence_report = request_final_evidence(
                     "terminal_gate_or_process_exit"
@@ -4195,6 +4353,12 @@ def main() -> int:
     process_return_code = process.returncode if process is not None else None
     semantic_stall = locals().get("semantic_stall", {"detected": False})
     telemetry_abort = locals().get("telemetry_abort", {"detected": False})
+    resource_summary = summarize_process_resource_samples(
+        resource_samples,
+        tick_rate=resource_tick_rate,
+        sampling_errors=resource_sampling_errors,
+        sampling_error_count=resource_sampling_error_count,
+    )
     # From this point through the two immutable output writes, ignore another
     # interrupt. Any prior deferred interrupt is already reflected in the
     # variables used to construct the report and success classification.
@@ -4261,6 +4425,14 @@ def main() -> int:
             "commands_sent": stop_commands_sent,
             "bounded_wait_seconds": 20 if operator_interrupt else 60,
             "operator_reason": "operator_interrupt" if operator_interrupt else None,
+        },
+        "resource_sampling": {
+            "source": "proc_pid_stat_and_proc_pid_status_via_capture_no_bots_baseline",
+            "interval_seconds": args.resource_sample_interval_sec,
+            "samples_retained": True,
+            "summary": resource_summary,
+            "samples": resource_samples,
+            "sampling_errors": resource_sampling_errors,
         },
         "required_stable_statuses": args.required_stable_statuses,
         "accepted_stable_statuses": len(stable),
