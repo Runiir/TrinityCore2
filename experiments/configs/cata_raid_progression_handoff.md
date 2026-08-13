@@ -1,5 +1,9 @@
 # Cataclysm raid progression handoff
 
+# 2026-08-13T16:03:00Z — Exact b863 profile/transport gate approved C0/H0/M0
+
+Mandatory Sol-high adversarial review accepts exact clean `b863a061fa7873ed7071c1038f89af59f0c93f20` and source `b270ecf74b2635b267db167a7d0e62fdcce403da` with zero Critical, High or Medium findings. The exact Magmaw process/session configuration has four nodes only—regroup, Chainwielder, Drudge pair, Magmaw—selects exactly one Magmaw profile/pool, binds the profile-owned runtime manifest to the reported route file, and retains `AutoStart=0` for preparation. All SOAP scenario routes, cross-profile sessions, empty/cross-profile manifests and route sequences fail closed. The focused review gate passes 21 checks. Exact policy-v8 rebuild and fresh post-build Magmaw preparation/readback are authorized; live start remains false until both complete.
+
 # 2026-08-13T15:51:00Z — Exact b270 binds reported routes to the profile-owned runtime manifest
 
 The f9e2 review found that a substituted validation route file with correct Magmaw labels could pass Python preflight while C++ runtime profile application loaded the profile's canonical manifest, splitting reported evidence from executed nodes. Exact `b270ecf74b2635b267db167a7d0e62fdcce403da` requires the selected profile's `validation_route.manifest_path` to resolve exactly to the chosen `validation_scenario_dir/validation_routes.jsonl` for both manifest and sequence execution. A substituted path now rejects. The stale calibration assertion was corrected to the intentional empty-controller `AutoStart=0` behavior. Targeted tests pass 21 and the broader 321-test gate remains green. No build, service, DB or DVC action ran; mandatory rereview remains pending.

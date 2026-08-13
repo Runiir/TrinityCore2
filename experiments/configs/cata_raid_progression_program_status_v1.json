@@ -29,7 +29,7 @@
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
     "critical_high_remediation_implemented_at": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "mandatory_rereview": "PENDING for exact b270ecf74b2635b267db167a7d0e62fdcce403da. Review of f9e2 also found profile-owned runtime manifest and report-selected manifest divergence; b270 requires the configured runtime profile manifest path to equal the selected validation_routes.jsonl. No rebuild or live start is authorized before rereview.",
+    "mandatory_rereview": "COMPLETED exact b863a061fa7873ed7071c1038f89af59f0c93f20 (source b270ecf74b2635b267db167a7d0e62fdcce403da): Critical 0, High 0, Medium 0; exact build and post-build Magmaw preparation authorized, live start held pending both.",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
@@ -39,8 +39,8 @@
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
     "reviewed_source_commit": "b270ecf74b2635b267db167a7d0e62fdcce403da",
     "exact_build_target": "clean Git HEAD status-only descendant of exact b270 source after mandatory rereview",
-    "current_state": "exact_b270_profile_owned_route_manifest_contract_pending_mandatory_rereview",
-    "current_result": "historical dbe preparation caught Stonecore contamination; exact b270 closes manifest, sequence, direct-session and direct-SOAP identity bypasses but requires mandatory review and a new exact receipt",
+    "current_state": "exact_b863_review_approved_policy_v8_rebuild_pending",
+    "current_result": "mandatory review approved exact b863/source b270 with C0/H0/M0; one exact policy-v8 rebuild and fresh preparation/readback are now authorized, live start remains held",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -621,7 +621,6 @@
       ,"uncapped_1c7a_three_file_failure_batch_pushed_remote_verified_and_compactly_summarized"
       ],
       "remaining_requirements": [
-        "mandatory_sol_high_review_exact_b270_profile_owned_manifest_remediation",
         "rebuild_exact_remediation_descendant_and_repeat_fresh_preparation_readback",
         "uncapped_four_node_magmaw_rerun_with_trained_profile_and_resource_observation",
         "phase1_live_evidence_exact_evict_after_diagnosis_and_review"

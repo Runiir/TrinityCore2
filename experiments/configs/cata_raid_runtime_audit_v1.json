@@ -10,14 +10,14 @@
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
   "audited_commit": "b270ecf74b2635b267db167a7d0e62fdcce403da",
-  "gate_state": "exact_b270_profile_owned_route_manifest_contract_pending_mandatory_rereview",
+  "gate_state": "exact_b863_review_approved_policy_v8_rebuild_pending",
   "foundation": {
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
     "reviewed_source_sha": "b270ecf74b2635b267db167a7d0e62fdcce403da",
     "status_checkpoint_identity": "resolve from Git HEAD; status descendant of exact b270 source pending mandatory rereview",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
-    "mandatory_sol_high_rereview": "PENDING exact b270 after f9e2 review found profile-owned runtime manifest/report-selected manifest divergence; no build or live start authorized before zero-Critical/High decision",
+    "mandatory_sol_high_rereview": "COMPLETED exact b863/source b270 with Critical 0, High 0, Medium 0; exact build authorized, live start held pending fresh preparation/readback",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
@@ -47,8 +47,8 @@
   },
   "build": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_state": "exact_b270_profile_owned_route_manifest_contract_pending_mandatory_rereview",
-    "current_result": "historical dbe build/preparation was held before live on inherited Stonecore profile; exact b270 closes process/session/SOAP/sequence identity paths but has no review or exact receipt yet",
+    "current_state": "exact_b863_review_approved_policy_v8_rebuild_pending",
+    "current_result": "mandatory review approved exact b863/source b270 C0/H0/M0; exact policy-v8 rebuild is authorized, no current receipt or live start yet",
     "receipt_trust_model": "explicit_trusted_local_operator",
     "trusted_operator": "runiir",
     "trusted_uid": 1000,
@@ -177,7 +177,7 @@
   "required_open_work": [
     {
       "area": "current_build",
-      "missing": ["mandatory_sol_high_review_exact_b270_profile_owned_manifest_remediation", "one_exact_policy_v8_rebuild_of_reviewed_descendant"]
+      "missing": ["one_exact_policy_v8_rebuild_of_reviewed_descendant"]
     },
     {
       "area": "live_script_and_decision_review",
