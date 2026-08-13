@@ -521,6 +521,34 @@ def load_validation_routes_for_scenario(scenario_dir: Path, scenario_id: str) ->
     return rows
 
 
+def validate_route_runtime_profile_contract(config_path: Path, scenario_id: str, routes: list[dict[str, Any]]) -> dict[str, Any]:
+    if not routes:
+        raise SystemExit("validation route selected no route rows")
+    if any(
+        str(route.get("scenario_id") or "") != scenario_id
+        or str(route.get("runtime_profile_id") or "") != scenario_id
+        for route in routes
+    ):
+        raise SystemExit("validation route/profile identity mismatch")
+    profile_manifest = Path(
+        trinity_config_string(config_path, "BotWorld.ProfileManifest", "dataset/bot_runtime_profiles/profiles.json")
+    )
+    if not profile_manifest.is_absolute():
+        profile_manifest = REPO_ROOT / profile_manifest
+    profile_rows = json.loads(profile_manifest.read_text(encoding="utf-8")).get("profiles") or []
+    selected_profiles = [row for row in profile_rows if str(row.get("name") or "") == scenario_id]
+    if len(selected_profiles) != 1:
+        raise SystemExit("validation route runtime profile is missing or ambiguous")
+    selected_profile = selected_profiles[0]
+    profile_route = selected_profile.get("validation_route") if isinstance(selected_profile.get("validation_route"), dict) else {}
+    if (
+        str(selected_profile.get("pool_tag_filter") or "") != scenario_id
+        or str(profile_route.get("scenario_id") or "") != scenario_id
+    ):
+        raise SystemExit("validation route runtime profile contract mismatch")
+    return selected_profile
+
+
 def validation_route_manifest_payload(scenario_id: str, routes: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "schema": "bot_live_validation_route_manifest_v1",
@@ -4459,6 +4487,8 @@ def main() -> int:
         args.combat_calibration = True
         if args.validation_route_manifest or args.validation_route_sequence:
             raise SystemExit("--calibration-only cannot be combined with a validation route manifest or sequence")
+        if args.transport == "soap":
+            raise SystemExit("--calibration-only cannot use SOAP because an empty controller config cannot be established")
     if args.calibration_reference_conditions and not args.calibration_only:
         raise SystemExit("--calibration-reference-conditions requires --calibration-only")
     if args.session_runtime_dir and args.transport != "session":
@@ -4472,6 +4502,10 @@ def main() -> int:
         args.transport != "session" or not args.evidence_identity_manifest
     ):
         raise SystemExit("--skip-route-bot-start-mutation requires session transport and an evidence identity manifest")
+    if args.transport == "soap" and (args.validation_route_manifest or args.validation_route_sequence):
+        raise SystemExit("route manifest/sequence validation cannot use SOAP because the server config identity is not owned")
+    if (args.validation_route_manifest or args.validation_route_sequence) and args.transport == "session" and args.session_profile and args.session_profile != args.validation_scenario_id:
+        raise SystemExit("--session-profile must equal --validation-scenario-id for route manifest/sequence validation")
 
     exact_party_specs = [str(value) for value in args.party_spec_target]
     if exact_party_specs:
@@ -4522,6 +4556,7 @@ def main() -> int:
         if args.input_log:
             raise SystemExit("--validation-route-sequence cannot be combined with --input-log")
         sequence_routes = load_validation_routes_for_scenario(args.validation_scenario_dir, args.validation_scenario_id)
+        validate_route_runtime_profile_contract(args.config, args.validation_scenario_id, sequence_routes)
         commands = [
             route_sequence_child_command(args, route, args.output_dir / route_segment_output_name(route), first_route=index == 0)
             for index, route in enumerate(sequence_routes)
@@ -4562,28 +4597,7 @@ def main() -> int:
         if not args.validation_scenario_id:
             raise SystemExit("--validation-route-manifest requires --validation-scenario-id")
         manifest_routes = load_validation_routes_for_scenario(args.validation_scenario_dir, args.validation_scenario_id)
-        if not manifest_routes:
-            raise SystemExit("--validation-route-manifest selected no route rows")
-        if any(
-            str(route.get("scenario_id") or "") != args.validation_scenario_id
-            or str(route.get("runtime_profile_id") or "") != args.validation_scenario_id
-            for route in manifest_routes
-        ):
-            raise SystemExit("--validation-route-manifest route/profile identity mismatch")
-        profile_manifest = Path(trinity_config_string(args.config, "BotWorld.ProfileManifest", "dataset/bot_runtime_profiles/profiles.json"))
-        if not profile_manifest.is_absolute():
-            profile_manifest = REPO_ROOT / profile_manifest
-        profile_rows = json.loads(profile_manifest.read_text(encoding="utf-8")).get("profiles") or []
-        selected_profiles = [row for row in profile_rows if str(row.get("name") or "") == args.validation_scenario_id]
-        if len(selected_profiles) != 1:
-            raise SystemExit("--validation-route-manifest runtime profile is missing or ambiguous")
-        selected_profile = selected_profiles[0]
-        profile_route = selected_profile.get("validation_route") if isinstance(selected_profile.get("validation_route"), dict) else {}
-        if (
-            str(selected_profile.get("pool_tag_filter") or "") != args.validation_scenario_id
-            or str(profile_route.get("scenario_id") or "") != args.validation_scenario_id
-        ):
-            raise SystemExit("--validation-route-manifest runtime profile contract mismatch")
+        validate_route_runtime_profile_contract(args.config, args.validation_scenario_id, manifest_routes)
         validation_route_manifest_path, validation_route_manifest = write_validation_route_manifest(
             session_runtime_dir,
             args.validation_scenario_id,

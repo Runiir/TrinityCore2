@@ -6673,6 +6673,7 @@ def test_live_bot_validation_main_preserves_watchdog_report(tmp_path, monkeypatc
         json.dumps(
             {
                 "scenario_id": "stonecore_5n",
+                "runtime_profile_id": "stonecore_5n",
                 "route_node_id": "stonecore_entry",
                 "label": "entrance packs",
                 "kind": "trash",
@@ -7149,6 +7150,7 @@ def test_live_bot_validation_route_sequence_dry_run_writes_ordered_child_command
         [
             {
                 "scenario_id": "stonecore_5n",
+                "runtime_profile_id": "stonecore_5n",
                 "route_node_id": "stonecore_entry",
                 "step": 1,
                 "kind": "trash",
@@ -7157,6 +7159,7 @@ def test_live_bot_validation_route_sequence_dry_run_writes_ordered_child_command
             },
             {
                 "scenario_id": "stonecore_5n",
+                "runtime_profile_id": "stonecore_5n",
                 "route_node_id": "stonecore_corborus",
                 "step": 2,
                 "kind": "boss",
@@ -7559,6 +7562,94 @@ def test_live_bot_validation_rejects_mismatched_profile_manifest_contract(tmp_pa
     )
 
     with pytest.raises(SystemExit, match="runtime profile contract mismatch"):
+        live_validation_main()
+
+
+def test_live_bot_validation_rejects_cross_shard_session_profile(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "bot-live-validate",
+            "--dry-run",
+            "--transport",
+            "session",
+            "--validation-route-manifest",
+            "--validation-scenario-id",
+            "blackwing_descent_10n_magmaw_diagnostic",
+            "--session-profile",
+            "blackwing_descent_10n_omnotron_diagnostic",
+            "--output-dir",
+            str(tmp_path / "live"),
+        ],
+    )
+
+    with pytest.raises(SystemExit, match="session-profile must equal"):
+        live_validation_main()
+
+
+@pytest.mark.parametrize("route_flag", ["--validation-route-manifest", "--validation-route-sequence"])
+def test_live_bot_validation_rejects_soap_route_config_bypass(tmp_path, monkeypatch, route_flag):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "bot-live-validate",
+            "--dry-run",
+            "--transport",
+            "soap",
+            route_flag,
+            "--validation-scenario-id",
+            "blackwing_descent_10n_magmaw_diagnostic",
+            "--output-dir",
+            str(tmp_path / "live"),
+        ],
+    )
+
+    with pytest.raises(SystemExit, match="server config identity is not owned"):
+        live_validation_main()
+
+
+def test_live_bot_validation_rejects_soap_calibration_config_bypass(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "bot-live-validate",
+            "--dry-run",
+            "--transport",
+            "soap",
+            "--calibration-only",
+            "--output-dir",
+            str(tmp_path / "live"),
+        ],
+    )
+
+    with pytest.raises(SystemExit, match="empty controller config cannot be established"):
+        live_validation_main()
+
+
+def test_live_bot_validation_rejects_empty_route_sequence(tmp_path, monkeypatch):
+    scenario_dir = tmp_path / "validation_scenarios"
+    scenario_dir.mkdir()
+    (scenario_dir / "validation_routes.jsonl").write_text("", encoding="utf-8")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "bot-live-validate",
+            "--dry-run",
+            "--validation-route-sequence",
+            "--validation-scenario-id",
+            "blackwing_descent_10n_magmaw_diagnostic",
+            "--validation-scenario-dir",
+            str(scenario_dir),
+            "--output-dir",
+            str(tmp_path / "live"),
+        ],
+    )
+
+    with pytest.raises(SystemExit, match="selected no route rows"):
         live_validation_main()
 
 
