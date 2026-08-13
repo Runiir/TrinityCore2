@@ -68,12 +68,15 @@ stages:
   validation_provisioning:
     cmd: python -m tools.bot_ml.build_validation_provisioning --config
       experiments/configs/validation_provisioning_cata_001.json --gear-profiles
-      dataset/validation_gear_profiles/profiles.json --dbc-dir data/dbc/enUS --output-dir
+      dataset/validation_gear_profiles/profiles.json --bwd-diagnostic-shard-fixture
+      experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json --dbc-dir data/dbc/enUS --output-dir
       dataset/validation_provisioning
     deps:
     - tools/bot_ml/build_validation_provisioning.py
     - tools/bot_ml/validation_profile_manifests.py
+    - tools/raid_program/bwd_shard_fixtures.py
     - experiments/configs/validation_provisioning_cata_001.json
+    - experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json
     - experiments/configs/all_spec_targets_cata_p4_v1.json
     - experiments/configs/wowsims_cata_p4_gear_profiles.json
     - experiments/configs/cata_434_action_profiles.json
@@ -427,15 +430,18 @@ stages:
     cmd: python -m tools.bot_ml.validate_validation_provisioning --config
       experiments/configs/validation_provisioning_cata_001.json --gear-profiles
       dataset/validation_gear_profiles/profiles.json --provisioning-report
-      dataset/validation_provisioning/report.json --output
+      dataset/validation_provisioning/report.json --bwd-diagnostic-shard-fixture
+      experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json --output
       dataset/validation_provisioning_verification/report.json
     deps:
     - tools/bot_ml/validate_validation_provisioning.py
     - tools/bot_ml/build_validation_gear_profiles.py
     - tools/bot_ml/build_validation_provisioning.py
     - tools/bot_ml/validation_profile_manifests.py
+    - tools/raid_program/bwd_shard_fixtures.py
     - tools/bot_ml/extract_world_knowledge.py
     - experiments/configs/validation_provisioning_cata_001.json
+    - experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json
     - experiments/configs/all_spec_targets_cata_p4_v1.json
     - experiments/configs/wowsims_cata_p4_gear_profiles.json
     - experiments/configs/cata_434_action_profiles.json

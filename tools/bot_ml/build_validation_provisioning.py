@@ -10,9 +10,11 @@ from typing import Any
 try:
     from .common import stable_hash, write_json
     from .validation_profile_manifests import DEFAULT_ACTION_PROFILE_MANIFEST, load_action_profile_manifest
+    from tools.raid_program.bwd_shard_fixtures import build_diagnostic_provisioning_config, validate_shard_fixture
 except ImportError:
     from common import stable_hash, write_json
     from validation_profile_manifests import DEFAULT_ACTION_PROFILE_MANIFEST, load_action_profile_manifest
+    from tools.raid_program.bwd_shard_fixtures import build_diagnostic_provisioning_config, validate_shard_fixture
 
 
 ROLE_REQUIREMENTS = {
@@ -27,6 +29,7 @@ INVENTORY_BAG_SLOTS = 4
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_DBC_DIR = Path("data/dbc/enUS")
 DEFAULT_WOWSIMS_GEAR_PROFILES = REPO_ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json"
+DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE = REPO_ROOT / "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json"
 # Player::LoadFromDB restores these unsigned database values through the
 # native SetHealth/SetPower path after UpdateAllStats.  The deliberately high
 # seed is clamped to each character's computed maxima, unlike the old literal
@@ -424,6 +427,14 @@ def load_config(path: Path) -> dict[str, Any]:
                 raise ValueError(f"validation bot name {name!r} must use normalized player-name casing {normalized!r}")
             validate_talent_manifest(bot)
     return config
+
+
+def load_config_with_bwd_diagnostic_shards(path: Path, fixture_path: Path) -> dict[str, Any]:
+    """Load canonical provisioning and append the six tracked, disjoint BWD shard cohorts."""
+    config = load_config(path)
+    fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+    validate_shard_fixture(fixture, config)
+    return build_diagnostic_provisioning_config(config, fixture)
 
 
 def load_gear_profiles(path: Path | None) -> dict[str, Any]:
@@ -871,13 +882,17 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Build reproducible prepared-character provisioning artifacts for bot validation scenarios.")
     parser.add_argument("--config", type=Path, default=Path("experiments/configs/validation_provisioning_cata_001.json"))
     parser.add_argument("--gear-profiles", type=Path, default=Path("dataset/validation_gear_profiles/profiles.json"))
+    parser.add_argument("--bwd-diagnostic-shard-fixture", type=Path, default=DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE)
     parser.add_argument("--action-profile-manifest", type=Path, default=DEFAULT_ACTION_PROFILE_MANIFEST)
     parser.add_argument("--dbc-dir", type=Path, default=DEFAULT_DBC_DIR)
     parser.add_argument("--output-dir", type=Path, default=Path("dataset/validation_provisioning"))
     args = parser.parse_args()
 
     action_profiles = load_action_profile_manifest(args.action_profile_manifest)
-    config = apply_gear_profiles(load_config(args.config), load_gear_profiles(args.gear_profiles))
+    config = apply_gear_profiles(
+        load_config_with_bwd_diagnostic_shards(args.config, args.bwd_diagnostic_shard_fixture),
+        load_gear_profiles(args.gear_profiles),
+    )
     gem_mapping = gem_item_enchant_map(args.dbc_dir)
     invalid_gem_layouts = [
         (str(bot.get("name") or ""), int(item.get("item_id") or 0), len(gem_item_ids), len(gem_enchant_ids))

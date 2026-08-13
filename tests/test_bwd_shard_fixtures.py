@@ -15,7 +15,7 @@ from tools.raid_program.bwd_shard_fixtures import (
     validate_readback,
     validate_shard_fixture,
 )
-from tools.bot_ml.build_validation_provisioning import build_account_insert_sql
+from tools.bot_ml.build_validation_provisioning import build_account_insert_sql, load_config_with_bwd_diagnostic_shards
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -176,3 +176,21 @@ def test_each_shard_has_all_canonical_roster_slots():
     fixture = _fixture()
     for shard in fixture["shards"]:
         assert {bot["canonical_roster_slot_id"] for bot in shard["bots"]} == set(CANONICAL_ROSTER_SLOT_IDS)
+
+
+def test_provisioning_entrypoint_loads_all_six_tracked_shard_pools():
+    merged = load_config_with_bwd_diagnostic_shards(CONFIG, FIXTURE)
+    diagnostic = [row for row in merged["scenarios"] if row.get("diagnostic_only")]
+    assert len(diagnostic) == 6
+    assert sum(len(row["bots"]) for row in diagnostic) == 60
+    assert {row["id"] for row in diagnostic} == {shard["scenario_id"] for shard in _fixture()["shards"]}
+    assert all(len(row["bots"]) == 10 for row in diagnostic)
+    assert all({bot["pool_tag"] for bot in row["bots"]} == {row["id"]} for row in diagnostic)
+
+
+def test_dvc_generation_and_verifier_bind_the_tracked_shard_fixture():
+    dvc = (ROOT / "dvc.yaml").read_text(encoding="utf-8")
+    fixture_path = "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json"
+    assert dvc.count(f"--bwd-diagnostic-shard-fixture\n      {fixture_path}") == 2
+    assert dvc.count(f"- {fixture_path}") >= 2
+    assert dvc.count("- tools/raid_program/bwd_shard_fixtures.py") >= 2

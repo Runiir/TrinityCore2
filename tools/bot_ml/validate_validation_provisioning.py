@@ -20,7 +20,7 @@ try:
         load_spell_item_enchantments,
         SPELL_ITEM_ENCHANTMENT_FMT,
     )
-    from .build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, account_commands, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, enchantment_source_item_map, equipment_cache, gem_item_enchant_map, item_limit_category_by_item_map, load_config, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, talent_point_count
+    from .build_validation_provisioning import DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE, EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, account_commands, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, enchantment_source_item_map, equipment_cache, gem_item_enchant_map, item_limit_category_by_item_map, load_config_with_bwd_diagnostic_shards, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, talent_point_count
     from .common import stable_hash, write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 except ImportError:
@@ -36,7 +36,7 @@ except ImportError:
         load_spell_item_enchantments,
         SPELL_ITEM_ENCHANTMENT_FMT,
     )
-    from build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, account_commands, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, enchantment_source_item_map, equipment_cache, gem_item_enchant_map, item_limit_category_by_item_map, load_config, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, talent_point_count
+    from build_validation_provisioning import DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE, EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, account_commands, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, enchantment_source_item_map, equipment_cache, gem_item_enchant_map, item_limit_category_by_item_map, load_config_with_bwd_diagnostic_shards, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, talent_point_count
     from common import stable_hash, write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 
@@ -827,6 +827,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Validate generated Stonecore/BWD prepared-character provisioning artifacts without applying them.")
     parser.add_argument("--config", type=Path, default=Path("experiments/configs/validation_provisioning_cata_001.json"))
     parser.add_argument("--gear-profiles", type=Path, default=Path("dataset/validation_gear_profiles/profiles.json"))
+    parser.add_argument("--bwd-diagnostic-shard-fixture", type=Path, default=DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE)
     parser.add_argument("--provisioning-report", type=Path, default=Path("dataset/validation_provisioning/report.json"))
     parser.add_argument("--worldserver-conf", type=Path, default=Path("trinity-worldserver-test.conf"))
     parser.add_argument("--dbc-dir", type=Path, default=Path("data/dbc/enUS"))
@@ -835,7 +836,7 @@ def main() -> int:
     parser.add_argument("--require-applied", action="store_true", help="Fail if validation characters are not already present in the characters DB.")
     args = parser.parse_args()
 
-    base_config = load_config(args.config)
+    base_config = load_config_with_bwd_diagnostic_shards(args.config, args.bwd_diagnostic_shard_fixture)
     hotfix_url = database_url_from_worldserver_conf(args.worldserver_conf, "HotfixDatabaseInfo") if args.worldserver_conf.exists() else None
     config = apply_gear_profiles(base_config, load_or_build_gear_profiles(args.gear_profiles, base_config, args.dbc_dir, hotfix_url))
     provisioning_report = load_json(args.provisioning_report) or scenario_report(config)
