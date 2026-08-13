@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "capture_id": "cata_raid_phase1_blackwing_descent_10n_magmaw_diagnostic_v1",
+  "classification": "infrastructure_abort",
+  "reason": "bounded_diagnostic_window_ended_after_drudge_native_rush_contract_failure",
+  "gameplay_failure": false,
+  "fidelity_claim": false,
+  "source_identity": {
+    "commit": "d6e0fa9a049bb02fc079867c683d7a0940a2f806",
+    "tree": "00ba8142d34232567b0e37586653ff761af469a9",
+    "clean_exact_build": true,
+    "worldserver_sha256": "91a4c55a81d79e42d7efa73a35c42442fb46bcf8f1406f0a248784e3d6e823e8",
+    "config_sha256": "e4059209ab34173259000f58b57c405361b3e97df21d20162687e08d73f727d7"
+  },
+  "live_facts": {
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "route_reached": "Magmaw Drudge pair",
+    "chainwielder_killed": true,
+    "drudge_kills": 0,
+    "magmaw_engaged": false,
+    "final_alive": 7,
+    "cumulative_deaths": 3,
+    "semantic_stall_detected": false,
+    "stuck_or_unstuck_observed": false,
+    "observed_cpu_percent_approx": 40,
+    "observed_rss_gib_approx": 1.36
+  },
+  "diagnosis": {
+    "profiles_loaded": true,
+    "exact_roster_staged_before_taunt": true,
+    "both_tank_ownerships_observed": true,
+    "threat_seed_complete": false,
+    "exact_roster_reseparated": false,
+    "trained_profile_roster_complete": false,
+    "failure_fingerprint": "post_pull_geometry_gate_returned_before_pre_first_rush_cross_lane_threat_seed",
+    "native_observation": "The first native 20-second Rush saw only existing tank/healer threat and selected tanks. Native selection was not rewritten; the prerequisite ordinary cross-lane profile casts were never reached.",
+    "dps_assessment": "The class/spec profiles loaded, but route and Drudge authority returned before ordinary action execution. This run does not prove that dummy-trained damage tuning regressed.",
+    "remediation": "After exact staging and both frozen tank victims, allow exactly one ordinary ranged single-target cross-lane profile submission per source inside an explicit current-scope pre-first-Rush window. Keep normal offense, health synchronization, and kill synchronization behind exact post-Rush geometry."
+  },
+  "telemetry": {
+    "normalized_rows": 71,
+    "status_rows": 44,
+    "diagnosis_rows": 13,
+    "trace_rows": 12,
+    "all_rows_demultiplexed": true,
+    "bound_rows": 71,
+    "rejected_rows": 0,
+    "unchecked_rows": 0,
+    "worldserver_log_size_bytes": 14035153,
+    "worldserver_log_sha256": "4006567f8257572fe289b52b7ba2aac5157bb353d6e8c0ef8068aff4dcd020c6",
+    "normalized_size_bytes": 14009488,
+    "normalized_sha256": "c1902f43fd7cc662effad9ed1ed773b5f12a29b44a3de96b7470409182778e6d",
+    "report_size_bytes": 13717,
+    "report_file_sha256": "cfa449fecf6b1677b9b62728e98105427763704c3244bc32f2a5a63967983521",
+    "report_canonical_sha256": "b1dc94b9a65626eff43bacfa89df11e25b9ad9d6730886efaac8aa779fd576f1"
+  },
+  "cleanup": {
+    "stop_observed": true,
+    "stop_ok": true,
+    "zero_bots": true,
+    "zero_leases": true,
+    "worldserver_process_absent": true
+  },
+  "artifact": {
+    "pointer": "artifacts/cata_raid_program/phase1_d6e0fa9a_drudge_smoke_20260813.dvc",
+    "dvc_directory_md5": "9ffd402826c22bb2899133605aad211c.dir",
+    "size_bytes": 28058358,
+    "nfiles": 3,
+    "targeted_push_completed": true,
+    "targeted_remote_verified": true,
+    "workspace_payload_evicted": true,
+    "selectively_evicted_unique_child_cache_objects": 3,
+    "directory_metadata_retained": true,
+    "broad_gc_used": false
+  },
+  "acceptance": {
+    "phase1_gate_passed": false,
+    "drudge_tactic_approved": false,
+    "magmaw_tactics_or_fidelity_approved": false,
+    "next_gate": "Independent review, exact rebuild, fresh preparation, and a bounded Drudge rerun proving both threat seeds before first Rush, native opposite-lane non-tank targets, exact reseparation, and trained profile execution."
+  }
+}
