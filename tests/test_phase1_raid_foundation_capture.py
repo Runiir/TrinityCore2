@@ -1,4 +1,5 @@
 import json
+import io
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -26,6 +27,7 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     TelemetryScheduler,
     material_status_signature,
     validate_forced_evidence_bundle,
+    bounded_native_shutdown,
 )
 
 
@@ -69,6 +71,51 @@ def test_telemetry_scheduler_reduces_steady_state_heavy_commands():
     assert commands.count("botauto diagnose all") == 5
     assert commands.count("botauto trace all 128 delta") == 7
     assert commands.count("botauto diagnose all") < commands.count("botauto status")
+
+
+def test_default_scheduler_reduces_heavy_payload_volume_without_dropping_channels():
+    scheduler = TelemetryScheduler()
+    assert scheduler.status_interval_sec == 5.0
+    assert scheduler.diagnose_interval_sec == 30.0
+    assert scheduler.trace_interval_sec == 20.0
+    commands = [command for now in range(0, 121) for command in scheduler.commands_due(float(now))]
+    assert commands.count("botauto status") == 25
+    assert commands.count("botauto diagnose all") == 5
+    assert commands.count("botauto trace all 128 delta") == 7
+    assert set(commands) == {
+        "botauto status", "botauto diagnose all", "botauto trace all 128 delta",
+    }
+
+
+class _FakeShutdownProcess:
+    def __init__(self, *, interrupt_once: bool = False) -> None:
+        self.stdin = io.BytesIO()
+        self.returncode = None
+        self.wait_calls = 0
+        self.interrupt_once = interrupt_once
+
+    def poll(self):
+        return self.returncode
+
+    def wait(self, *, timeout: float):
+        self.wait_calls += 1
+        if self.interrupt_once:
+            self.interrupt_once = False
+            raise KeyboardInterrupt
+        self.returncode = 0
+        return self.returncode
+
+
+def test_bounded_native_shutdown_sends_cleanup_and_handles_operator_interrupt():
+    process = _FakeShutdownProcess(interrupt_once=True)
+    result = bounded_native_shutdown(process, 20.0)
+
+    assert process.stdin.getvalue() == b"botauto stop\nbotauto status\nserver exit\n"
+    assert result["commands_sent"] is True
+    assert result["operator_interrupted"] is True
+    assert result["exited"] is True
+    assert result["error"] is None
+    assert process.wait_calls == 2
 
 
 def test_material_status_transition_forces_immediate_full_diagnosis():
@@ -1768,7 +1815,9 @@ def test_canonical_capture_is_terminal_gate_driven_without_a_raid_duration_cap()
     assert '"wall_clock_mode": "uncapped" if args.observe_sec == 0' in source
     assert '"policy": "capture-process-heartbeat-terminal-gate-driven"' in source
     assert 'parser.add_argument("--semantic-stall-sec", type=int, default=300)' in source
-    assert 'parser.add_argument("--telemetry-timeout-sec", type=int, default=30)' in source
+    assert 'parser.add_argument("--telemetry-timeout-sec", type=int, default=60)' in source
+    assert '"--diagnose-interval-sec", type=float, default=30.0,' in source
+    assert '"--trace-interval-sec", type=float, default=20.0,' in source
     assert '"classification": "success" if success else (' in source
 
 
@@ -1788,6 +1837,23 @@ def test_phase1_capture_uses_approved_fail_closed_taxonomy():
     ):
         assert condition in source
     assert '"foundation_gate_failed"' not in source
+
+
+def test_capture_interrupt_is_native_cleanup_backed_and_classified_without_traceback():
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "tools/raid_program/capture_phase1_raid_foundation.py"
+    ).read_text(encoding="utf-8")
+    assert "except KeyboardInterrupt:" in source
+    assert 'startup_error = "KeyboardInterrupt:operator_interrupt"' in source
+    assert 'process.stdin.write(b"botauto stop\\nbotauto status\\nserver exit\\n")' in source
+    assert '"operator_interrupt": operator_interrupt' in source
+    assert '"operator_reason": "operator_interrupt" if operator_interrupt else None' in source
+    # The explicit handler must appear before the generic Exception handler;
+    # otherwise Ctrl-C remains an uncaught BaseException.
+    assert source.index("except KeyboardInterrupt:") < source.index(
+        "except Exception as error:  # captured as infrastructure evidence below"
+    )
 
 
 def test_uncapped_capture_fails_closed_when_any_telemetry_channel_is_stale():

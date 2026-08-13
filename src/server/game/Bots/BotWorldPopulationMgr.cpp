@@ -7731,6 +7731,11 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
                 Party().ValidationRouteDrudgeChargeObservations.clear();
                 Party().ValidationRouteDrudgeLastChargeMsBySpawn.clear();
             }
+            // Latch recovery authority at the native all-dead edge.  The
+            // first post-resurrection all-alive sample must not reopen route
+            // decisions while the ready-check action and the final evidence
+            // refresh are still pending.
+            raid.NativeRecoveryHoldActive = true;
             // Sampling may observe the last death and the native instance
             // IN_PROGRESS -> reset transition together.  Preserve the
             // generation immediately before that transition so the observed
@@ -7860,6 +7865,8 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         && raid.NativeReadyCheckActionAttemptId == raid.AttemptId
         && raid.NativeReadyCheckActionWipeGeneration == raid.WipeGeneration
         && raid.NativeReadyCheckAssignmentGeneration == raid.AssignmentGeneration;
+    if (raid.NativeRecoveryEvidenceComplete)
+        raid.NativeRecoveryHoldActive = false;
 
     // A partial death is not a native wipe.  Keep the full recovery state
     // machine scoped to an observed all-dead latch with a real wipe
@@ -13213,8 +13220,18 @@ bool BotWorldPopulationMgr::IsNativeRaidRecoveryEvidencePending() const
     if (Cohort().Config.ValidationRouteBossRecovery != ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly
         || !raid.Active
         || raid.AttemptId != Cohort().AttemptId
-        || raid.ExpectedSize != Cohort().Config.TargetPopulation
-        || !raid.WipeGeneration
+        || !raid.WipeGeneration)
+        return false;
+
+    // NativeRecoveryHoldActive is latched by the exact native all-dead edge
+    // and remains authoritative through the first post-resurrection tick.
+    // Do not let a transiently incomplete roster or a stale WipeState clear
+    // the owner/pet/controlled-unit and route gate before the current wipe's
+    // ready-check-backed evidence has been refreshed.
+    if (raid.NativeRecoveryHoldActive)
+        return !raid.NativeRecoveryEvidenceComplete;
+
+    if (raid.ExpectedSize != Cohort().Config.TargetPopulation
         || !raid.RosterComplete
         || raid.RosterByGuid.size() != Cohort().Config.TargetPopulation
         || raid.NativeSignalsByGuid.size() != raid.RosterByGuid.size())
@@ -31117,6 +31134,7 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
     {
         json << ",\"wipe_generation\":" << raid.WipeGeneration
              << ",\"boss_reset_generation\":" << raid.BossResetGeneration
+             << ",\"native_recovery_hold_active\":" << (raid.NativeRecoveryHoldActive ? "true" : "false")
              << ",\"native_hostile_activity_active\":" << (raid.NativeHostileActivityActive ? "true" : "false")
              << ",\"native_hostile_inactivity_observed\":" << (raid.NativeHostileInactivityObserved ? "true" : "false")
              << ",\"native_hostile_reset_generation\":" << raid.NativeHostileResetGeneration
@@ -31211,6 +31229,7 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
          << ",\"wipe_generation\":" << raid.WipeGeneration
          << ",\"boss_reset_generation\":" << raid.BossResetGeneration
          << ",\"boss_reset_generation_at_wipe\":" << raid.BossResetGenerationAtWipe
+         << ",\"native_recovery_hold_active\":" << (raid.NativeRecoveryHoldActive ? "true" : "false")
          << ",\"native_hostile_activity_active\":" << (raid.NativeHostileActivityActive ? "true" : "false")
          << ",\"native_hostile_activity_seen_at_wipe\":" << (raid.NativeHostileActivitySeenAtWipe ? "true" : "false")
          << ",\"native_hostile_inactivity_observed\":" << (raid.NativeHostileInactivityObserved ? "true" : "false")

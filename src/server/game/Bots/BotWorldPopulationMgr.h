@@ -2195,6 +2195,14 @@ private:
         uint64 NativeReadyCheckActionEvidenceSequence = 0;
         std::set<uint32> NativeReadyCheckResponders;
         bool NativeRecoveryEvidenceComplete = false;
+        // Once an exact native all-dead transition is observed, keep the
+        // entire cohort in recovery authority until the current wipe's native
+        // ready-check-backed evidence is complete.  This is deliberately a
+        // raid-scoped latch rather than a transient WipeState predicate: the
+        // latter can briefly look route-ready on the first all-alive sample
+        // after resurrection, before the next runtime refresh records the
+        // ready-check/evidence edge.
+        bool NativeRecoveryHoldActive = false;
         // A raid instance can contain an active trash pack without an
         // IN_PROGRESS boss state. Native recovery must observe the pack
         // itself evading/resetting before released ghosts may re-enter.

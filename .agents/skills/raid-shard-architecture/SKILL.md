@@ -53,3 +53,22 @@ Require one exact tuple across config, generated route, runtime status, capture,
 ## Review decisions, not only outcomes
 
 Compare bot decisions with native boss/trash scripts and observed casts, auras, targets, summons, geometry, and phase state. Check damage-profile activation, hazard exits, tank ownership, formation, recovery/readycheck ordering, stuck/unstuck frequency, CPU, and telemetry volume. Do not infer tactics or 4.4.2 fidelity from engagement, wipe, or synthetic evidence alone.
+
+## Separate profile selection from execution
+
+Do not diagnose low damage from profile presence alone. Record these distinct
+edges for every bot and target scope:
+
+`profile_loaded -> action_selected -> movement_or_authority_block -> action_submitted -> action_landed`
+
+- A correct DB profile can select a valid spell while route movement, hazard,
+  formation, future-encounter, recovery, or target authority returns before
+  execution. Treat that as an architecture/path failure, not lost tuning.
+- Keep counters for selected, blocked-before-execute, submitted, landed, and
+  rejection reason. Emit full candidate masks only on profile-generation or
+  material target-state changes.
+- Cache expensive native path checks by bot, route generation, attempt/wipe,
+  and candidate anchor. Invalidate on route, charge/geometry, target, or
+  instance identity changes; never let a stale cache authorize movement.
+- Require one single-shard rehearsal to reach stable profile execution and a
+  bounded CPU/log rate before six-way fan-out.

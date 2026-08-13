@@ -376,6 +376,7 @@ def test_native_recovery_evidence_gate_holds_offense_navigation_and_reengagement
         "signal->second.WipeGeneration == raid.WipeGeneration",
         "signal->second.DeathSequence > 0",
         "raid.NativeRecoveryEvidenceComplete",
+        "raid.NativeRecoveryHoldActive",
     ):
         assert token in pending
 
@@ -659,6 +660,44 @@ def test_botworld_hot_path_defers_progression_scoring_and_rate_limits_repeated_l
     assert "periodicVerify" in suppress
     assert "if (!newHold && !periodicVerify && !ownerActive && !controlledUnitActive)" in suppress
     assert "SetReactState(REACT_PASSIVE)" not in suppress
+
+
+def test_native_recovery_hold_is_latched_at_wipe_and_cleared_only_after_complete_evidence():
+    runtime = HEADER[HEADER.index("struct RaidRuntime"):HEADER.index("struct CohortRuntime")]
+    assert "bool NativeRecoveryHoldActive" in runtime
+
+    ensure = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::EnsureValidationCohortGroup"):
+        IMPL.index("bool BotWorldPopulationMgr::ResolveSpawnPlacement")
+    ]
+    wipe = ensure.index("if (allDead)")
+    latch = ensure.index("raid.NativeRecoveryHoldActive = true;", wipe)
+    evidence = ensure.index("raid.NativeRecoveryEvidenceComplete =", latch)
+    clear = ensure.index("if (raid.NativeRecoveryEvidenceComplete)", evidence)
+    assert latch < evidence < clear
+
+    pending = IMPL[
+        IMPL.index("bool BotWorldPopulationMgr::IsNativeRaidRecoveryEvidencePending"):
+        IMPL.index("void BotWorldPopulationMgr::SuppressNativeRaidRecovery")
+    ]
+    hold = pending.index("if (raid.NativeRecoveryHoldActive)")
+    exact_roster = pending.index("if (raid.ExpectedSize !=", hold)
+    assert hold < exact_roster
+    assert "return !raid.NativeRecoveryEvidenceComplete;" in pending[hold:exact_roster]
+
+    update = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::UpdateBot"):
+        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    ]
+    assert update.index("if (bot->IsAlive() && IsNativeRaidRecoveryEvidencePending())") < update.index(
+        "TryRespondNativeRaidReadyCheck(state, bot);"
+    )
+
+    runtime_json = IMPL[
+        IMPL.index("std::string BotWorldPopulationMgr::BuildRaidRuntimeJson"):
+        IMPL.index("std::string BotWorldPopulationMgr::BuildRaidPositioningAnchorsJson")
+    ]
+    assert runtime_json.count("native_recovery_hold_active") >= 2
 
 
 def _laser_exit_path_is_safe(path, hazards, radius=12.0):

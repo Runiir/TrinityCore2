@@ -2437,8 +2437,13 @@ class TelemetryScheduler:
     """
 
     status_interval_sec: float = 5.0
-    diagnose_interval_sec: float = 15.0
-    trace_interval_sec: float = 10.0
+    # Full diagnosis and trace are materially larger than the status
+    # heartbeat.  Keep their steady-state cadence deliberately sparse for an
+    # uncapped raid; material status edges and the final forced bundle still
+    # request them immediately, so this is a volume reduction rather than an
+    # evidence reduction.
+    diagnose_interval_sec: float = 30.0
+    trace_interval_sec: float = 20.0
     _next_status_at: float = 0.0
     _next_diagnose_at: float = 0.0
     _next_trace_at: float = 0.0
@@ -3598,6 +3603,50 @@ def _artifact_record(path: Path, kind: str) -> dict[str, Any]:
     }
 
 
+def bounded_native_shutdown(
+    process: subprocess.Popen[bytes], wait_seconds: float,
+) -> dict[str, Any]:
+    """Request native cleanup and wait for the child within a hard budget.
+
+    The caller still owns process-group escalation after this function
+    returns.  Keeping the native request separate makes the operator-abort
+    path testable without starting a worldserver and ensures repeated Ctrl-C
+    cannot turn cleanup into an uncaught traceback.
+    """
+    result: dict[str, Any] = {
+        "commands_sent": False,
+        "operator_interrupted": False,
+        "error": None,
+        "exited": process.poll() is not None,
+        "wait_seconds": wait_seconds,
+    }
+    if result["exited"]:
+        return result
+    if process.stdin is None:
+        result["error"] = "native_shutdown_stdin_unavailable"
+        return result
+    try:
+        process.stdin.write(b"botauto stop\nbotauto status\nserver exit\n")
+        process.stdin.flush()
+        result["commands_sent"] = True
+    except (BrokenPipeError, OSError) as error:
+        result["error"] = f"native_shutdown_write:{type(error).__name__}:{error}"
+        return result
+    deadline = time.monotonic() + wait_seconds
+    while process.poll() is None and time.monotonic() < deadline:
+        try:
+            process.wait(timeout=min(0.25, max(0.01, deadline - time.monotonic())))
+        except subprocess.TimeoutExpired:
+            continue
+        except KeyboardInterrupt:
+            result["operator_interrupted"] = True
+            continue
+    result["exited"] = process.poll() is not None
+    if not result["exited"]:
+        result["error"] = f"native_shutdown_timeout:{wait_seconds:g}s"
+    return result
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--binary", type=Path, required=True)
@@ -3631,17 +3680,17 @@ def main() -> int:
     parser.add_argument("--required-stable-statuses", type=int, default=3)
     parser.add_argument("--semantic-stall-sec", type=int, default=300)
     parser.add_argument("--semantic-stall-min-samples", type=int, default=12)
-    parser.add_argument("--telemetry-timeout-sec", type=int, default=30)
+    parser.add_argument("--telemetry-timeout-sec", type=int, default=60)
     parser.add_argument(
         "--status-interval-sec", type=float, default=5.0,
         help="status heartbeat cadence; must remain below telemetry timeout",
     )
     parser.add_argument(
-        "--diagnose-interval-sec", type=float, default=15.0,
+        "--diagnose-interval-sec", type=float, default=30.0,
         help="steady-state full semantic diagnosis cadence",
     )
     parser.add_argument(
-        "--trace-interval-sec", type=float, default=10.0,
+        "--trace-interval-sec", type=float, default=20.0,
         help="append-only trace-delta export cadence",
     )
     args = parser.parse_args()
@@ -3715,6 +3764,9 @@ def main() -> int:
     process: subprocess.Popen[bytes] | None = None
     telemetry_scheduler: TelemetryScheduler | None = None
     telemetry_command_counts = {"status": 0, "diagnose": 0, "trace": 0}
+    operator_interrupt = False
+    shutdown_error: str | None = None
+    stop_commands_sent = False
     server_log_output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(
         prefix=".raid-phase1-worldserver-", suffix=".log.tmp", dir=server_log_output.parent, delete=False
@@ -3724,6 +3776,7 @@ def main() -> int:
             [str(binary), "--config", str(config)], cwd=worktree, stdin=subprocess.PIPE,
             stdout=log, stderr=subprocess.STDOUT, start_new_session=True,
         )
+
         try:
             wait_for_prompt(process, log_path, args.startup_timeout_sec)
             assert process.stdin is not None
@@ -3983,11 +4036,27 @@ def main() -> int:
                             readycheck_requested_for = request_identity
                 time.sleep(0.25)
 
-            process.stdin.write(b"botauto stop\nbotauto status\nserver exit\n")
-            process.stdin.flush()
-            process.wait(timeout=60)
+            shutdown = bounded_native_shutdown(process, 60.0)
+            stop_commands_sent = bool(shutdown["commands_sent"])
+            shutdown_error = shutdown["error"]
+            if shutdown["operator_interrupted"]:
+                operator_interrupt = True
+                startup_error = "KeyboardInterrupt:operator_interrupt"
+        except KeyboardInterrupt:
+            # Do not let an operator abort become a Python traceback.  Keep
+            # the already captured bytes, issue the native cleanup sequence,
+            # and let the immutable report classify this as an infrastructure
+            # abort with an explicit operator reason.
+            operator_interrupt = True
+            startup_error = "KeyboardInterrupt:operator_interrupt"
+            shutdown = bounded_native_shutdown(process, 20.0)
+            stop_commands_sent = bool(shutdown["commands_sent"])
+            shutdown_error = shutdown["error"]
         except Exception as error:  # captured as infrastructure evidence below
             startup_error = f"{type(error).__name__}:{error}"
+            shutdown = bounded_native_shutdown(process, 20.0)
+            stop_commands_sent = bool(shutdown["commands_sent"])
+            shutdown_error = shutdown["error"]
         finally:
             if process is not None and process.poll() is None:
                 os.killpg(process.pid, 15)
@@ -4089,6 +4158,13 @@ def main() -> int:
         "config_sha256": sha256_file(config),
         "worldserver_exit_code": process_return_code,
         "startup_error": startup_error,
+        "operator_interrupt": operator_interrupt,
+        "shutdown_error": shutdown_error,
+        "native_shutdown": {
+            "commands_sent": stop_commands_sent,
+            "bounded_wait_seconds": 20 if operator_interrupt else 60,
+            "operator_reason": "operator_interrupt" if operator_interrupt else None,
+        },
         "required_stable_statuses": args.required_stable_statuses,
         "accepted_stable_statuses": len(stable),
         "last_foundation_rejections": last_rejections,

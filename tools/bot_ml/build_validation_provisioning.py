@@ -646,7 +646,22 @@ def build_character_insert_sql(
     item_guid_limit = item_guid_base + 100000
     lines.append(f"DELETE FROM `characters`.`character_inventory` WHERE `item` >= {item_guid_base} AND `item` < {item_guid_limit};")
     lines.append(f"DELETE FROM `characters`.`item_instance` WHERE `guid` >= {item_guid_base} AND `guid` < {item_guid_limit};")
-    lines.append("DELETE FROM `characters`.`character_instance` WHERE `guid` IN (SELECT `guid` FROM `characters`.`characters` WHERE `name` IN (" + ", ".join(sql_quote(name) for name in cleanup_character_names(config)) + "));")
+    cleanup_names = ", ".join(sql_quote(name) for name in cleanup_character_names(config))
+    # A killed worldserver may not reach Group::Disband. Freeze every native
+    # group containing an exact validation character before any member or
+    # character row is removed, including groups with a foreign leader.
+    lines.append("DROP TEMPORARY TABLE IF EXISTS `_validation_cleanup_group_guids`;")
+    lines.append("CREATE TEMPORARY TABLE `_validation_cleanup_group_guids` (`guid` INT UNSIGNED NOT NULL PRIMARY KEY) ENGINE=MEMORY "
+                 "SELECT DISTINCT gm.`guid` FROM `characters`.`group_member` gm JOIN `characters`.`characters` c ON c.`guid` = gm.`memberGuid` "
+                 f"WHERE c.`name` IN ({cleanup_names});")
+    lines.append("INSERT IGNORE INTO `_validation_cleanup_group_guids` (`guid`) "
+                 "SELECT g.`guid` FROM `characters`.`groups` g JOIN `characters`.`characters` c ON c.`guid` = g.`leaderGuid` "
+                 f"WHERE c.`name` IN ({cleanup_names});")
+    lines.append("DELETE gi FROM `characters`.`group_instance` gi JOIN `_validation_cleanup_group_guids` cleanup ON cleanup.`guid` = gi.`guid`;")
+    lines.append("DELETE gm FROM `characters`.`group_member` gm JOIN `_validation_cleanup_group_guids` cleanup ON cleanup.`guid` = gm.`guid`;")
+    lines.append("DELETE g FROM `characters`.`groups` g JOIN `_validation_cleanup_group_guids` cleanup ON cleanup.`guid` = g.`guid`;")
+    lines.append("DROP TEMPORARY TABLE `_validation_cleanup_group_guids`;")
+    lines.append("DELETE FROM `characters`.`character_instance` WHERE `guid` IN (SELECT `guid` FROM `characters`.`characters` WHERE `name` IN (" + cleanup_names + "));")
     lines.append("DELETE FROM `characters`.`corpse_phases` WHERE `OwnerGuid` IN (SELECT `guid` FROM `characters`.`characters` WHERE `name` IN (" + ", ".join(sql_quote(name) for name in cleanup_character_names(config)) + "));")
     lines.append("DELETE FROM `characters`.`corpse` WHERE `guid` IN (SELECT `guid` FROM `characters`.`characters` WHERE `name` IN (" + ", ".join(sql_quote(name) for name in cleanup_character_names(config)) + "));")
     lines.append("DELETE FROM `characters`.`character_aura` WHERE `guid` IN (SELECT `guid` FROM `characters`.`characters` WHERE `name` IN (" + ", ".join(sql_quote(name) for name in cleanup_character_names(config)) + "));")

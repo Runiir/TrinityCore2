@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "capture_id": "cata_raid_phase1_magmaw_diagnostic_rehearsal_v1",
+  "classification": "infrastructure_abort",
+  "reason": "operator_interrupt_after_recovery_authority_violation",
+  "gameplay_failure": false,
+  "fidelity_claim": false,
+  "source_identity": {
+    "commit": "3891ef814b0d280613051bce4428d9dcaf347c66",
+    "tree": "daa8759e22838a6637a3b38981fa520537bc4193",
+    "clean_exact_build": true
+  },
+  "build": {
+    "configure_receipt_sha256": "78f70d3c3da41f91d3e8dd4b7be9fdeca24f917a7a13d7dc944aae2887baf526",
+    "configure_receipt_file_sha256": "14bde1e120c3c7de5ae265c41ddf5fa934339755a647ca0b26bb85f9d4305598",
+    "worldserver_receipt_sha256": "10caea5ea0a38a412661c0d722a694053aac06384e47783a4ef68ceb21aaccb5",
+    "worldserver_receipt_file_sha256": "9a9048c137ee32eb784181fa0fc604957fa70c1cd3e36d340e34a3f419e88118",
+    "worldserver_sha256": "d13eb2f5b0c9f0ff3d10b590dc37d17cb34c2174df97b55934a4d6e6bbffad5c",
+    "gate_bearing_for_exact_source": true
+  },
+  "preflight": {
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "route_node_count": 4,
+    "route_order": [
+      "BWD entrance junction regroup",
+      "Magmaw Chainwielder trash",
+      "Magmaw Drudge pair",
+      "Magmaw"
+    ],
+    "full_provisioning_verifier_passed": true,
+    "full_provisioning_verifier_sha256": "cd77133a70b2e010c8f04ca658d8d23ec34f2fbe54816a4f6b1d3364ab727157",
+    "initial_readback_passed": true,
+    "initial_readback_sha256": "629bd7ddc8d3ebdbb4a6c9944837733da5a19a10ea287dfe3e10b0518ff67ee5"
+  },
+  "live_facts": {
+    "exact_roster_size": 10,
+    "composition": {"tanks": 2, "healers": 3, "dps": 5},
+    "map_id": 669,
+    "instance_id": 14,
+    "entry_and_chainwielder_kills": 1,
+    "raid_boss_kills": 0,
+    "cumulative_deaths": 12,
+    "alive_at_interrupt": 8,
+    "route_node": "Magmaw Drudge pair",
+    "magmaw_engaged": false,
+    "drudge_charge_sources_observed": [250140, 250141],
+    "drudge_charges_delivered_per_source": 2,
+    "native_recovery_evidence_complete": false,
+    "ready_check_satisfied": false
+  },
+  "root_cause": {
+    "failure_fingerprint": "route_and_drudge_offense_resumed_before_readycheck_backed_native_recovery_completion",
+    "detail": "All ten immutable members completed native re-entry and resurrection, but recovery evidence and the current-wipe ready check were still pending. Drudge route decisions resumed; both tanks then died again. Continuing would have produced repeated contaminated partial-death evidence, so the operator interrupted the diagnostic rehearsal.",
+    "dps_assessment": "All ten class/spec DB profiles were loaded with the expected common content hash. Effective damage was low because route movement, hazard, formation, future-encounter and recovery authority frequently returned after profile selection but before action execution. The fire mage selected valid actions yet recorded zero combat attempts. This is not evidence that dummy-trained tuning failed.",
+    "cpu_and_volume_assessment": "The worldserver used about 36 percent CPU and 1.56 GB RSS. The 32.6 MB log was dominated by full diagnose and trace payloads, while repeated native path checks and fail-closed Drudge formation were the likely runtime hot path.",
+    "remediation_scope": [
+      "latch native recovery authority at the exact all-dead edge until current-wipe readycheck-backed evidence completes",
+      "keep owner, pet and controlled offense suppressed before any decision-timer or route return",
+      "reduce full diagnosis and trace cadence while preserving material-edge and final forced bundles",
+      "clean every native group containing an exact validation character before reprovisioning",
+      "separate profile selection, blocked-before-execute, submitted and landed counters",
+      "cache native pathability only with route, attempt, wipe, bot and anchor invalidation identity"
+    ]
+  },
+  "telemetry": {
+    "worldserver_log_sha256": "004edb90ecea3fc39595d31e7812d3c584717b00de07023b0c29eaac33dc274e",
+    "worldserver_log_size_bytes": 32609193,
+    "diagnose_responses": 69,
+    "trace_responses": 68,
+    "status_responses": 69,
+    "same_instance_reattach_failures": 42,
+    "partial_death_hold_events": 1912,
+    "native_path_rejections": 590,
+    "charge_lane_reseparations": 85,
+    "stuck_detected_events": 0,
+    "unstuck_events": 0,
+    "hazard_exit_failures": 0
+  },
+  "cleanup": {
+    "post_interrupt_readback_passed": false,
+    "post_interrupt_readback_sha256": "c0858556a43f98680ed9c01b9f9cdd8123ac7d8b61c4e56c98cdd456baf0c08d",
+    "old_provisioner_left_native_group_rows": true,
+    "group_cleanup_remediation_applied": true,
+    "final_readback_passed": true,
+    "final_readback_sha256": "629bd7ddc8d3ebdbb4a6c9944837733da5a19a10ea287dfe3e10b0518ff67ee5",
+    "character_instance_rows": 0,
+    "group_rows": 0,
+    "group_member_rows": 0,
+    "group_instance_rows": 0,
+    "corpse_rows": 0,
+    "corpse_phase_rows": 0,
+    "ghost_aura_rows": 0,
+    "worldserver_process_absent": true
+  },
+  "artifact": {
+    "pointer": "artifacts/cata_raid_program/phase1_3891ef81_build_prep_20260813.dvc",
+    "dvc_directory_md5": "3dad8c6a68026bb0691116afc63c2f26.dir",
+    "size_bytes": 44053638,
+    "nfiles": 29,
+    "unique_child_cache_objects": 20,
+    "targeted_push_completed": true,
+    "targeted_remote_status_before_eviction": "cache_and_remote_in_sync",
+    "workspace_payload_evicted": true,
+    "selectively_evicted_unique_child_cache_objects": 18,
+    "shared_stage_child_cache_objects_retained": 2,
+    "exact_child_cache_objects_evicted": false,
+    "directory_metadata_retained": true,
+    "broad_gc_used": false
+  },
+  "acceptance": {
+    "phase1_gate_passed": false,
+    "magmaw_tactics_or_fidelity_approved": false,
+    "next_gate": "Independent review, exact coordinated rebuild, clean reprovision/readback, and an uncapped Magmaw rerun with a Luna-xhigh babysitter."
+  }
+}

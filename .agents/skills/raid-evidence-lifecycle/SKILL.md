@@ -17,12 +17,22 @@ Before live execution, require:
 - deterministic provisioning verification against the source manifests/DBC inputs;
 - fresh DB readback of the exact roster, account linkage, positions, and zero group/instance/corpse/ghost residue.
 - native-loadable character identity: normalized 2–12-letter player names and `at_login == 0`; a digit or rename flag makes `Player::LoadFromDB` fail even when ordinary row equality passes.
+- provisioning/reset SQL that freezes every native group containing an exact
+  cohort member, including a foreign-leader group, and deletes in dependency
+  order: `group_instance`, `group_member`, then `groups`. Interrupted servers
+  can otherwise poison the next admission with persistent group identity.
 
 Do not reuse a binary or receipt for changed native source. Do not accept stored `passed` booleans when the underlying rows cannot be reconstructed.
 
 ## Capture an immutable lifecycle
 
 - Retain raw command/output bytes first; normalize afterward.
+- Treat an operator interrupt as a controlled infrastructure abort: issue the
+  native `botauto stop`, a final native `botauto status`, and `server exit`
+  through a bounded shutdown window before terminating the child process
+  group. Preserve the partial raw log, normalized rows, cleanup observations,
+  and final report; record `operator_interrupt` as the reason rather than
+  emitting an uncaught traceback or calling the partial run successful.
 - Bind every retained JSON row to scenario, cohort, server epoch, attempt, runtime profile/hash, strategy, assignment generation, exact roster hash, action, and capture sequence.
 - Classify every row. Unknown, missing, cross-attempt, cross-roster, stale-profile, or forged wrapper identity fails closed.
 - Require successful, fresh status, diagnose, and trace envelopes with exactly the frozen roster when the gate needs per-bot decisions.
@@ -48,13 +58,24 @@ Preserve enough raw data to answer:
 
 Make fixes and complete independent review before discarding diagnostic payloads.
 
+For long uncapped runs, keep status as the inexpensive heartbeat and use
+delta trace export plus a slower steady-state full diagnosis/trace cadence.
+Material status edges must force an immediate diagnosis, and every stall,
+error, or operator shutdown must force a fresh full diagnosis and trace delta.
+This reduces output/CPU pressure without dropping decision evidence or
+weakening freshness/demultiplexing gates.
+
 ## Publish and minimize disk
 
 1. Write a compact tracked summary containing classification, exact identities, hashes, decisive findings, cleanup facts, and the next action.
 2. Add the immutable raw/report/log/receipt/readback bundle through DVC.
 3. Run the relevant `pixi run dvc status`, `pixi run dvc push`, and targeted cloud/status verification.
 4. Verify the tracked `.dvc` pointer, directory metadata, remote availability, file counts, sizes, and hashes.
-5. Evict only the exact published workspace outputs and child cache objects. Keep directory metadata needed for reconstruction.
+5. Evict the exact published workspace outputs and only cache children unique
+   to that evidence object. Check whether a tracked DVC stage reuses each
+   child; retain or immediately recommit shared stage objects so stage status
+   remains clean. Record unique evicted and shared retained counts.
+   Keep directory metadata needed for reconstruction.
 6. Never use broad `dvc gc`, recursive cache deletion, or unresolved globs to save space.
 7. Recheck process state, Git cleanliness, DVC status, and disk usage.
 
