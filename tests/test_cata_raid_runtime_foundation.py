@@ -597,6 +597,19 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "GetUnsortedThreatList" in cast_hook
     assert "nativeThreatList.size()" not in cast_hook
     assert "nativeThreatCandidateCount" in cast_hook
+    header = (Path(__file__).parents[1] / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text(
+        encoding="utf-8",
+    )
+    drudge_observation = header[
+        header.index("struct ValidationRouteDrudgeChargeObservation") :
+        header.index("struct ValidationRouteDrudgeThreatSeedEvidence")
+    ]
+    generic_evidence = header[
+        header.index("struct ValidationRouteEvidence") :
+        header.index("struct ValidationRouteDrudgeMemberGeometry")
+    ]
+    assert "uint64 TargetRawGuid = 0;" in drudge_observation
+    assert "TargetRawGuid" not in generic_evidence
     assert "MaxNativeThreatCandidates" in cast_hook
     assert "NativeThreatCandidatesCount" in cast_hook
     assert "NativeThreatCandidatesComplete" in cast_hook

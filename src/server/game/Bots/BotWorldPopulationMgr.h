@@ -519,7 +519,6 @@ private:
         uint64 Generation = 0;
         std::string Kind;
         ObjectGuid TargetGuid;
-        uint64 TargetRawGuid = 0;
         uint32 TargetEntry = 0;
         std::string Reason;
     };
@@ -578,6 +577,7 @@ private:
         uint64 ObservedIntervalMs = 0;
         ObjectGuid SourceGuid;
         ObjectGuid TargetGuid;
+        uint64 TargetRawGuid = 0;
         uint32 SourceSpawnId = 0;
         float SelectedDistance = 0.0f;
         float SourceCombatReach = 0.0f;
