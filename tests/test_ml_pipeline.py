@@ -7640,6 +7640,34 @@ def test_live_bot_validation_rejects_soap_route_config_bypass(tmp_path, monkeypa
         live_validation_main()
 
 
+def test_live_bot_validation_rejects_direct_route_soap_config_bypass(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "bot-live-validate",
+            "--dry-run",
+            "--transport",
+            "soap",
+            "--validation-scenario-id",
+            "blackwing_descent_10n_magmaw_diagnostic",
+            "--validation-route-node-id",
+            "bwd_magmaw",
+            "--validation-route-kind",
+            "boss",
+            "--validation-route-label",
+            "Magmaw",
+            "--validation-route-step",
+            "4",
+            "--output-dir",
+            str(tmp_path / "live"),
+        ],
+    )
+
+    with pytest.raises(SystemExit, match="server config identity is not owned"):
+        live_validation_main()
+
+
 def test_live_bot_validation_rejects_soap_calibration_config_bypass(tmp_path, monkeypatch):
     monkeypatch.setattr(
         sys,

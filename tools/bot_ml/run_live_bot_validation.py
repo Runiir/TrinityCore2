@@ -4487,7 +4487,7 @@ def main() -> int:
         args.combat_calibration = True
         if args.validation_route_manifest or args.validation_route_sequence:
             raise SystemExit("--calibration-only cannot be combined with a validation route manifest or sequence")
-        if args.transport == "soap":
+        if args.transport == "soap" and not args.input_log:
             raise SystemExit("--calibration-only cannot use SOAP because an empty controller config cannot be established")
     if args.calibration_reference_conditions and not args.calibration_only:
         raise SystemExit("--calibration-reference-conditions requires --calibration-only")
@@ -4502,8 +4502,10 @@ def main() -> int:
         args.transport != "session" or not args.evidence_identity_manifest
     ):
         raise SystemExit("--skip-route-bot-start-mutation requires session transport and an evidence identity manifest")
-    if args.transport == "soap" and (args.validation_route_manifest or args.validation_route_sequence):
-        raise SystemExit("route manifest/sequence validation cannot use SOAP because the server config identity is not owned")
+    if args.transport == "soap" and not args.input_log and (
+        args.validation_scenario_id or args.validation_route_manifest or args.validation_route_sequence
+    ):
+        raise SystemExit("scenario-scoped validation cannot use SOAP because the server config identity is not owned")
     if args.transport == "session" and args.validation_scenario_id and args.session_profile and args.session_profile != args.validation_scenario_id:
         raise SystemExit("--session-profile must equal --validation-scenario-id for validation sessions")
 
