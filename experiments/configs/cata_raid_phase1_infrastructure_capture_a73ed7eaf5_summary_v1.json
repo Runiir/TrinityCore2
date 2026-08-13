@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "capture_id": "cata_raid_phase1_bwd_10n_foundation_v1",
+  "classification": "infrastructure_abort",
+  "gameplay_failure": false,
+  "fidelity_claim": false,
+  "source_identity": {
+    "commit": "a73ed7eaf56d53bab12e9ef44293c1ba54b66508",
+    "tree": "4ea0be1763715602a49bf13a05357156d2b44bc6",
+    "clean_at_start": true,
+    "identity_stable_during_run": true
+  },
+  "build": {
+    "policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
+    "configure_receipt_sha256": "f4a6bad047271cb0dc412579967929ec16367c5e9da4a8fe48a476cd410fe49e",
+    "configure_receipt_file_sha256": "45f2f94a1aa567ae949ea41e748bc7da1da0d60d62ca4cf68df3b913cb348c87",
+    "worldserver_receipt_sha256": "74190cce4aecd8b54710fa6f9731450efb513a310fd8189485b13a83b85f33c6",
+    "worldserver_receipt_file_sha256": "4c66f9dff171239d85f09f35920c8b2c3276dfa098af9a50f29a5692d52a7dd3",
+    "worldserver_sha256": "bc9396005e40a5cbf0173f9b0818cbb79439308981b32740937f2a51ce28073f",
+    "worldserver_size_bytes": 61008304,
+    "trusted_local_operator": "runiir",
+    "gate_bearing": true
+  },
+  "preflight": {
+    "provisioning_prepare_report_sha256": "b910d9bda07047eefb0c0208bd1074790e19b5ec3408236a911acb640a703549",
+    "full_provisioning_verifier_passed": true,
+    "full_provisioning_verifier_sha256": "2d9f71bb38fec0f61f08b80d76741de818a15f3880c71e373bd5d4e004916373",
+    "readback_schema": "cata_raid_phase1_bwd_provisioning_readback_v4",
+    "readback_passed": true,
+    "readback_sha256": "53c7d63faabfd7c1899c3189a8c2f2d95404dcda8397e17cf163c3a14dcac2e1",
+    "character_instance_rows": 0,
+    "group_member_rows": 0,
+    "ghost_aura_rows": 0,
+    "corpse_rows": 0,
+    "corpse_phase_rows": 0
+  },
+  "live_facts": {
+    "exact_roster_size": 10,
+    "composition": {"tanks": 2, "healers": 3, "dps": 5},
+    "map_id": 669,
+    "instance_id": 2,
+    "lockout_save_id": 2,
+    "difficulty": "10N",
+    "entry_and_corridor_trash_kills": 5,
+    "cumulative_deaths": 11,
+    "route_node_index_high_water": 3,
+    "route_generation_high_water": 4,
+    "route_label": "Magmaw",
+    "corridor_pack_live_clear_succeeded": true,
+    "magmaw_target_guid": 39,
+    "magmaw_target_entry": 41570,
+    "real_hostile_actor_guids_observed": [39, 205, 206, 207, 208],
+    "boss_engagement_accepted": false,
+    "native_recovery_evidence_complete": false
+  },
+  "root_cause": {
+    "failure_fingerprint": "completed_validation_raid_admission_returned_without_live_raid_runtime_refresh",
+    "detail": "The exact raid cleared the full five-target prerequisite corridor and reached the Magmaw node. Native threat snapshots then contained Magmaw GUID 39 plus encounter-linked actors 205-208, and all ten per-bot snapshots transitioned to alive=false at the Magmaw anchor. BotWorldPopulationMgr::EnsurePopulation validated the completed immutable admission on every tick and returned without invoking EnsureValidationCohortGroup, so RaidRuntime remained frozen at its admission snapshot: alive_size 10, encounter_in_progress false, evidence_sequence 0, and zero wipe/reset/recovery generations. The native-full-wipe-only policy therefore correctly held on native_full_wipe_wait_unlatched until the semantic watchdog stopped the run.",
+    "decision_assessment": "The cohort-consistent corridor remediation behaved correctly and eliminated the prior tactical-retreat split. At Magmaw, real target/threat and deaths were visible to bot diagnostics, but the frozen raid-runtime bridge prevented authoritative encounter and recovery decisions. Reconcile exact live raid state every completed-admission tick before evaluating recovery; do not manufacture engagement, deaths, boss state, resurrection, teleport, or ready-check evidence.",
+    "remediation_scope": [
+      "refresh the exact immutable raid runtime after successful completed-admission identity validation",
+      "preserve native release/runback far-worldport deferral and refresh again after exact reattachment",
+      "preserve terminal identity-drift cleanup without refreshing an invalid cohort",
+      "independently review, rebuild, reprovision, and rerun uncapped before accepting Phase 1",
+      "review the native Magmaw script events and every bot decision after the evidence bridge is live"
+    ]
+  },
+  "telemetry": {
+    "wall_clock_mode": "uncapped",
+    "retained_rows": 412,
+    "bound_rows": 412,
+    "rejected_rows": 0,
+    "unchecked_rows": 0,
+    "required_envelopes_passed": true,
+    "readycheck_missing_downstream_of_unlatched_wipe": true
+  },
+  "semantic_stall": {
+    "detected": true,
+    "stalled_for_seconds": 304.121,
+    "unchanged_samples": 49,
+    "high_water_kills": 5,
+    "high_water_route_generation": 4,
+    "high_water_route_index": 3
+  },
+  "cleanup": {
+    "gate_passed": true,
+    "stop_observed": true,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true,
+    "worldserver_exit_code": 0
+  },
+  "forbidden_assistance": {
+    "capture_scanner_observed": false,
+    "capture_scanner_gate_passed": true,
+    "acceptance": true
+  },
+  "artifact": {
+    "pointer": "artifacts/cata_raid_program/phase1_raid_foundation_a73ed7eaf5_20260813.dvc",
+    "dvc_directory_md5": "7ecdd4cc58ed4d625ac4252e584f76d2.dir",
+    "size_bytes": 220738552,
+    "nfiles": 8,
+    "raw_jsonl_sha256": "d8e1e2d27066ab6d9602f02ec563ae2dcf90f7962f4cfecb25f9114124381e08",
+    "capture_report_canonical_sha256": "7beda78b97a4ea5395882e055c2d083a1148948f974f02df30803cceb3b202da",
+    "capture_report_file_sha256": "26d3a6e3230b7b7f8ea6b8b8ffb98882370f9c15053cf3af064cc830d1c687a0",
+    "worldserver_log_sha256": "2321ce91421dbda0359e4021bf5e600f161e2ec64289477c8b38fd50b982228c",
+    "targeted_push_completed": true,
+    "targeted_remote_status_before_eviction": "cache_and_remote_in_sync",
+    "workspace_payload_evicted": false,
+    "exact_child_cache_objects_evicted": false,
+    "directory_metadata_retained": true,
+    "broad_gc_used": false
+  },
+  "acceptance": {
+    "phase1_gate_passed": false,
+    "reason": "The live raid-runtime bridge froze at admission, so native Magmaw engagement, full wipe, reset, per-GUID recovery, and ready-check ordering were not reconstructable.",
+    "next_gate": "Bounded live-runtime refresh remediation, mandatory independent Sol-high review, exact coordinated rebuild, fresh provisioning/full verifier/v4 readback, and uncapped canonical rerun."
+  }
+}
