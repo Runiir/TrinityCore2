@@ -70,8 +70,8 @@
     "file_count": 9,
     "push_completed": true,
     "remote_verified_before_eviction": true,
-    "workspace_payload_evicted": false,
-    "exact_child_cache_objects_evicted": false,
+    "workspace_payload_evicted": true,
+    "exact_child_cache_objects_evicted": true,
     "directory_metadata_retained": true,
     "broad_dvc_gc_used": false
   },
