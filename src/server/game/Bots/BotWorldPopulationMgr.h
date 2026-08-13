@@ -1032,6 +1032,10 @@ private:
         uint64 ValidationRouteDrudgeAnchorAttemptId = 0;
         uint32 ValidationRouteDrudgeAnchorWipeGeneration = 0;
         uint64 ValidationRouteDrudgeAnchorRouteGeneration = 0;
+        uint32 ValidationRouteDrudgeAnchorMapId = 0;
+        uint32 ValidationRouteDrudgeAnchorInstanceId = 0;
+        uint64 ValidationRouteDrudgeAnchorSource0Identity = 0;
+        uint64 ValidationRouteDrudgeAnchorSource1Identity = 0;
         uint32 ValidationRouteDrudgeAnchorCandidateIndex = 0;
         float ValidationRouteDrudgeAnchorX = 0.0f;
         float ValidationRouteDrudgeAnchorY = 0.0f;

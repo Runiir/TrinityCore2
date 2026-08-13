@@ -10,18 +10,33 @@ struct Scope
     std::uint64_t AttemptId = 0;
     std::uint64_t WipeGeneration = 0;
     std::uint64_t RouteGeneration = 0;
+    std::uint32_t MapId = 0;
+    std::uint32_t InstanceId = 0;
+    std::uint64_t Source0Identity = 0;
+    std::uint64_t Source1Identity = 0;
 };
 
 inline bool operator==(Scope const& left, Scope const& right)
 {
     return left.AttemptId == right.AttemptId
         && left.WipeGeneration == right.WipeGeneration
-        && left.RouteGeneration == right.RouteGeneration;
+        && left.RouteGeneration == right.RouteGeneration
+        && left.MapId == right.MapId
+        && left.InstanceId == right.InstanceId
+        && left.Source0Identity == right.Source0Identity
+        && left.Source1Identity == right.Source1Identity;
 }
 
 inline bool operator!=(Scope const& left, Scope const& right)
 {
     return !(left == right);
+}
+
+inline bool Valid(Scope const& scope)
+{
+    return scope.MapId != 0 && scope.InstanceId != 0
+        && scope.Source0Identity != 0 && scope.Source1Identity != 0
+        && scope.Source0Identity != scope.Source1Identity;
 }
 
 struct State
@@ -47,6 +62,10 @@ struct Input
     bool ExactPrepullStaged = false;
     bool BothCombatTankAnchorsSafe = false;
     bool SourceCombatStarted = false;
+    bool ChargeQueueIdle = false;
+    bool SourcesSeparated = false;
+    bool SourcesOnFrozenLanes = false;
+    bool BoundTankSourceGeometrySafe = false;
     bool EvaluatePriorPathProof = false;
     bool PriorProofScopeMatches = false;
     bool PriorProofCandidateMatches = false;
@@ -91,7 +110,8 @@ inline Result Advance(State current, Input const& input)
     if (input.EvaluatePriorPathProof)
     {
         bool const exactStaticIdentity = input.PriorProofScopeMatches
-            && input.PriorProofCandidateMatches && input.MemberAtProvenAnchor;
+            && Valid(input.Identity) && input.PriorProofCandidateMatches
+            && input.MemberAtProvenAnchor;
         if (!exactStaticIdentity)
             result.Next.PriorPathProofAvailable = false;
         result.ReactivatePriorPathProof = result.Next.PriorPathProofAvailable
@@ -105,7 +125,10 @@ inline Result Advance(State current, Input const& input)
         return result;
     }
 
-    if (!input.BothCombatTankAnchorsSafe)
+    bool const dynamicEngagementSafe = input.ChargeQueueIdle && !input.ChargePending
+        && input.SourcesSeparated && input.SourcesOnFrozenLanes
+        && input.BoundTankSourceGeometrySafe;
+    if (!input.BothCombatTankAnchorsSafe || !dynamicEngagementSafe)
     {
         result.NextDecision = input.SourceCombatStarted
             ? Decision::RecoverCombatAtTankAnchors : Decision::StageCombatTanks;
@@ -113,7 +136,7 @@ inline Result Advance(State current, Input const& input)
     }
 
     result.NextDecision = Decision::AllowNativeEngagement;
-    result.NativeEngagementAllowed = true;
+    result.NativeEngagementAllowed = Valid(input.Identity);
     return result;
 }
 }

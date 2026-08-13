@@ -17,7 +17,7 @@ using namespace BotRaidDrudgeGeometry;
 
 int main()
 {
-    Scope scope{7, 0, 3};
+    Scope scope{7, 0, 3, 669, 14, 250140, 250141};
     State state;
 
     // Exact prep is not permission to pull from the prep tank points. Both
@@ -25,6 +25,10 @@ int main()
     Input input;
     input.Identity = scope;
     input.ExactPrepullStaged = true;
+    input.ChargeQueueIdle = true;
+    input.SourcesSeparated = true;
+    input.SourcesOnFrozenLanes = true;
+    input.BoundTankSourceGeometrySafe = true;
     Result result = Advance(state, input);
     assert(result.ScopeReset);
     assert(result.NextDecision == Decision::StageCombatTanks);
@@ -41,6 +45,26 @@ int main()
     result = Advance(result.Next, input);
     assert(result.NextDecision == Decision::AllowNativeEngagement);
     assert(result.NativeEngagementAllowed);
+
+    // Each live dynamic contract predicate fails closed independently. Tank
+    // movement/recovery remains selected, but taunt/offense authority does not.
+    Input unsafe = input;
+    unsafe.ChargeQueueIdle = false;
+    unsafe.ChargePending = true;
+    Result pending = Advance(result.Next, unsafe);
+    assert(!pending.NativeEngagementAllowed);
+    unsafe = input;
+    unsafe.SourcesSeparated = false;
+    Result tooClose = Advance(result.Next, unsafe);
+    assert(!tooClose.NativeEngagementAllowed);
+    unsafe = input;
+    unsafe.SourcesOnFrozenLanes = false;
+    Result crossed = Advance(result.Next, unsafe);
+    assert(!crossed.NativeEngagementAllowed);
+    unsafe = input;
+    unsafe.BoundTankSourceGeometrySafe = false;
+    Result wrongTankGeometry = Advance(result.Next, unsafe);
+    assert(!wrongTankGeometry.NativeEngagementAllowed);
 
     // A native Rush invalidates the pre-Rush anchor proof once. Repeated bot
     // ticks for the same pending observation preserve a successful reproof.
@@ -100,11 +124,34 @@ int main()
     assert(!duplicate.InvalidateAnchor);
 
     // Wipe/route scope changes cannot inherit the prior sequence cursor.
-    input.Identity = Scope{7, 1, 3};
+    input.Identity = Scope{7, 1, 3, 669, 14, 250140, 250141};
     result = Advance(duplicate.Next, input);
     assert(result.ScopeReset);
     assert(result.InvalidateAnchor);
     assert(result.Next.LastChargeSequenceObserved == 42);
+
+    // Equal attempt/wipe/route and equal coordinates are insufficient across
+    // instance boundaries: the durable native-path proof is scoped to the
+    // exact live map instance and frozen source identities.
+    State instanceProof = reproved;
+    Input otherInstance = proof;
+    otherInstance.Identity = Scope{7, 0, 3, 669, 15, 250140, 250141};
+    Result instanceChanged = Advance(instanceProof, otherInstance);
+    assert(instanceChanged.ScopeReset);
+    assert(!instanceChanged.ReactivatePriorPathProof);
+    assert(!instanceChanged.Next.PriorPathProofAvailable);
+
+    Input noInstance = proof;
+    noInstance.Identity = Scope{7, 0, 3, 669, 0, 250140, 250141};
+    Result invalidInstance = Advance(instanceProof, noInstance);
+    assert(!invalidInstance.ReactivatePriorPathProof);
+    assert(!invalidInstance.NativeEngagementAllowed);
+
+    Input replacedSource = proof;
+    replacedSource.Identity = Scope{7, 0, 3, 669, 14, 250140, 350141};
+    Result sourceChanged = Advance(instanceProof, replacedSource);
+    assert(sourceChanged.ScopeReset);
+    assert(!sourceChanged.ReactivatePriorPathProof);
 }
 ''',
         encoding="utf-8",
@@ -151,10 +198,14 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "combatTankStagingActive()" in lane
     assert "exactCombatTankAnchorsSafe" in lane
     assert "!tankStage.NativeEngagementAllowed" in lane
+    assert "tankStageInput.ChargeQueueIdle" in lane
+    assert "tankStageInput.SourcesSeparated" in lane
+    assert "tankStageInput.SourcesOnFrozenLanes" in lane
+    assert "tankStageInput.BoundTankSourceGeometrySafe" in lane
+    assert "bot->GetInstanceId() != 0" in lane
+    assert "ValidationRouteDrudgeAnchorSource0Identity" in lane
 
-    barrier = lane.index("if (prepullStaged && !tankStage.NativeEngagementAllowed)")
+    barrier = lane.index("!tankStage.NativeEngagementAllowed || formationRequiredMutable")
     first_taunt = lane.index("drudge_lane_native_taunt")
-    assert barrier < first_taunt
-    assert "selectPathableDrudgeAnchor(true)" in lane[barrier:first_taunt]
-    assert "drudge_wait_combat_tank_anchors" in lane[barrier:first_taunt]
+    assert first_taunt < barrier
     assert "assignedTank && tankStage.NativeEngagementAllowed" in lane[first_taunt - 1200:first_taunt]
