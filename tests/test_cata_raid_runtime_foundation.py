@@ -582,10 +582,16 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     seed_window = lane.index("bool const preFirstRushWindow")
     assert ownership_gate < seed_window < seed_call
     assert "&& laneOwnershipSafe" in lane[seed_window:seed_call]
-    assert "ValidationRouteDrudgeChargePreparedCount == 0" in lane[seed_window:seed_call]
-    assert "ValidationRouteDrudgeChargeObservations.empty()" in lane[seed_window:seed_call]
+    assert "sourceSeparation" in lane[seed_window:seed_call]
+    assert "sourceOnFrozenLane(sources[0], 0)" in lane[seed_window:seed_call]
+    assert "sourceOnFrozenLane(sources[1], 1)" in lane[seed_window:seed_call]
+    assert "bool const currentScopeHasChargeObservation = std::any_of" in lane[ownership_gate:seed_call]
+    assert "&& !currentScopeHasChargeObservation" in lane[seed_window:seed_call]
     assert "!Party().ValidationRouteDrudgeThreatSeedClosed" in lane[seed_window:seed_call]
     assert '"drudge_pre_first_rush_seed_window_closed"' in lane[seed_window:seed_call]
+    unavailable = lane.index('"drudge_pre_first_rush_seed_profile_unavailable"')
+    unavailable_branch = lane[lane.rfind("if (!selectedMember || !selectedState)", 0, unavailable):unavailable]
+    assert "ValidationRouteDrudgeThreatSeedFailure = true" not in unavailable_branch
     health_sync_call = lane.rindex("recordHealthSyncHold();")
     assert ownership_gate < health_sync_call
     assert geometry_gate < health_sync_call
@@ -614,7 +620,17 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
         "if (Party().ValidationRouteDrudgeThreatSeedAttemptId != Cohort().AttemptId"
     )
     hook_close = cast_hook.index("Party().ValidationRouteDrudgeThreatSeedClosed = true")
+    hook_exact_source = cast_hook.index("if (!exactSource)")
+    hook_target_shape = cast_hook.index("Player* targetPlayer = target->ToPlayer()")
+    assert hook_exact_source < hook_scope < hook_close < hook_target_shape
     assert hook_scope < hook_close
+    assert "bool const currentScopeHasChargeObservation = std::any_of" in cast_hook[
+        hook_scope:hook_close
+    ]
+    assert "if (!currentScopeHasChargeObservation)" in cast_hook[hook_scope:hook_close]
+    assert "ValidationRouteDrudgeLastChargeMsBySpawn[sourceSpawnId] = observedAtMs" in cast_hook[
+        hook_target_shape:
+    ]
     assert "ValidationRouteDrudgeThreatSeedRouteGeneration = Party().ValidationRouteGeneration" in cast_hook[
         hook_scope:hook_close
     ]
@@ -725,6 +741,37 @@ def test_native_recovery_hold_is_latched_at_wipe_and_cleared_only_after_complete
     assert runtime_json.count("native_recovery_hold_active") >= 2
     assert runtime_json.count("native_recovery_route_generation") >= 2
     assert runtime_json.count("native_recovery_node_id") >= 2
+
+
+def test_drudge_full_wipe_resets_every_attempt_scoped_seed_and_charge_gate():
+    ensure = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::EnsureValidationCohortGroup"):
+        IMPL.index("bool BotWorldPopulationMgr::ResolveSpawnPlacement")
+    ]
+    wipe = ensure.index("if (allDead)")
+    drudge = ensure.index(
+        'if (Cohort().Config.ValidationRouteMechanicProfile == "trash_two_tank_charge_lanes")',
+        wipe,
+    )
+    latch = ensure.index("raid.NativeRecoveryHoldActive =", drudge)
+    reset = ensure[drudge:latch]
+    assert ensure.index("++raid.WipeGeneration;", wipe) < drudge
+    for token in (
+        "ValidationRouteDrudgeChargeObservations.clear()",
+        "ValidationRouteDrudgeChargePreparedCount = 0",
+        "ValidationRouteDrudgeChargeDeliveredCount = 0",
+        "ValidationRouteDrudgeOwnershipRosterGuids.clear()",
+        "ValidationRouteDrudgeReseparatedRosterGuids.clear()",
+        "ValidationRouteDrudgePrepullStaged = false",
+        "ValidationRouteDrudgeProfileActionRosterGuids.clear()",
+        "ValidationRouteDrudgeThreatSeedWipeGeneration = raid.WipeGeneration",
+        "ValidationRouteDrudgeThreatSeedClosed = false",
+        "ValidationRouteDrudgeThreatSeedComplete = false",
+        "ValidationRouteDrudgeThreatSeedFailure = false",
+        "ValidationRouteDrudgeThreatSeedEvidenceRows.clear()",
+        "botState.ValidationRouteDrudgeAnchorValid = false",
+    ):
+        assert token in reset
 
 
 def test_native_recovery_hold_cannot_leak_from_drudge_trash_into_magmaw():

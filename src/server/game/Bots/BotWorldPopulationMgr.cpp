@@ -7791,6 +7791,54 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
             {
                 Party().ValidationRouteDrudgeChargeObservations.clear();
                 Party().ValidationRouteDrudgeLastChargeMsBySpawn.clear();
+                Party().ValidationRouteDrudgeChargePreparedCount = 0;
+                Party().ValidationRouteDrudgeChargeDeliveredCount = 0;
+                Party().ValidationRouteDrudgeChargeQueueOverflow = false;
+                Party().ValidationRouteDrudgeDeliveredBySpawn.clear();
+                Party().ValidationRouteDrudgeValidIntervalsBySpawn.clear();
+                Party().ValidationRouteDrudgeReseparatedRosterGuids.clear();
+                Party().ValidationRouteDrudgeOwnershipRosterGuids.clear();
+                Party().ValidationRouteDrudgeTauntRosterGuids.clear();
+                Party().ValidationRouteDrudgeHealthSyncRosterGuids.clear();
+                Party().ValidationRouteDrudgeHealthSyncEvaluatedRosterGuids.clear();
+                Party().ValidationRouteDrudgeProfileActionRosterGuids.clear();
+                Party().ValidationRouteDrudgePrepullStaged = false;
+                Party().ValidationRouteDrudgePrepullAttemptId = 0;
+                Party().ValidationRouteDrudgePrepullWipeGeneration = 0;
+                Party().ValidationRouteDrudgePrepullRouteGeneration = 0;
+                Party().ValidationRouteDrudgeHealthSyncEvidenceAttemptId = 0;
+                Party().ValidationRouteDrudgeHealthSyncEvidenceWipeGeneration = 0;
+                Party().ValidationRouteDrudgeHealthSyncEvidenceRouteGeneration = 0;
+                Party().ValidationRouteDrudgeHealthSyncHoldSourceSpawnId = 0;
+                Party().ValidationRouteDrudgeHealthSyncHoldTankGuid = 0;
+                Party().ValidationRouteDrudgeHealthSyncHoldLowerPct = 0.0f;
+                Party().ValidationRouteDrudgeHealthSyncHoldPeerPct = 0.0f;
+                Party().ValidationRouteDrudgeHealthSyncHoldLowerAlive = false;
+                Party().ValidationRouteDrudgeHealthSyncHoldPeerAlive = false;
+                Party().ValidationRouteDrudgeDeathAttemptId = 0;
+                Party().ValidationRouteDrudgeDeathWipeGeneration = 0;
+                Party().ValidationRouteDrudgeDeathRouteGeneration = 0;
+                Party().ValidationRouteDrudgeDeathSourceSpawnId = 0;
+                Party().ValidationRouteDrudgeDeathSourceGuid = 0;
+                Party().ValidationRouteDrudgeSurvivorSourceSpawnId = 0;
+                Party().ValidationRouteDrudgeSurvivorSourceGuid = 0;
+                Party().ValidationRouteDrudgeDeathEvidenceSequence = 0;
+                Party().ValidationRouteDrudgeRageWaitEvidenceSequence = 0;
+                Party().ValidationRouteDrudgeRageAuraEvidenceSequence = 0;
+                Party().ValidationRouteDrudgeThreatSeedAttemptId = Cohort().AttemptId;
+                Party().ValidationRouteDrudgeThreatSeedWipeGeneration = raid.WipeGeneration;
+                Party().ValidationRouteDrudgeThreatSeedRouteGeneration =
+                    Party().ValidationRouteGeneration;
+                Party().ValidationRouteDrudgeThreatSeedClosed = false;
+                Party().ValidationRouteDrudgeThreatSeedComplete = false;
+                Party().ValidationRouteDrudgeThreatSeedFailure = false;
+                Party().ValidationRouteDrudgeThreatSeedRosterGuids.clear();
+                Party().ValidationRouteDrudgeThreatSeedEvidenceRows.clear();
+                for (WorldBotState& botState : Party().Bots)
+                {
+                    botState.LastValidationRouteDrudgeChargeGenerationHandled = 0;
+                    botState.ValidationRouteDrudgeAnchorValid = false;
+                }
             }
             // Latch recovery authority at the native all-dead edge.  The
             // first post-resurrection all-alive sample must not reopen route
@@ -19702,11 +19750,23 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 Party().ValidationRouteDrudgeThreatSeedEvidenceRows.clear();
             }
 
+            bool const currentScopeHasChargeObservation = std::any_of(
+                Party().ValidationRouteDrudgeChargeObservations.begin(),
+                Party().ValidationRouteDrudgeChargeObservations.end(),
+                [this](ValidationRouteDrudgeChargeObservation const& observation)
+                {
+                    return observation.AttemptId == Cohort().AttemptId
+                        && observation.WipeGeneration == Cohort().Raid.WipeGeneration
+                        && observation.RouteGeneration == Party().ValidationRouteGeneration;
+                });
             bool const preFirstRushWindow = prepullStaged
                 && sources[0]->IsAlive() && sources[1]->IsAlive()
                 && laneOwnershipSafe
-                && Party().ValidationRouteDrudgeChargePreparedCount == 0
-                && Party().ValidationRouteDrudgeChargeObservations.empty()
+                && sourceSeparation
+                    >= Cohort().Config.ValidationRouteSplitMinimumSeparationYards
+                && sourceOnFrozenLane(sources[0], 0)
+                && sourceOnFrozenLane(sources[1], 1)
+                && !currentScopeHasChargeObservation
                 && !Party().ValidationRouteDrudgeThreatSeedClosed;
             if (!preFirstRushWindow)
             {
@@ -19841,7 +19901,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
             if (!selectedMember || !selectedState)
             {
-                Party().ValidationRouteDrudgeThreatSeedFailure = true;
+                // Profile availability is transient (GCD, cooldown, range,
+                // LOS, setup). Keep the native pre-Rush window open and retry
+                // on later decisions. Only the Rush clock edge or a genuine
+                // authority/scope violation may make the seed permanently
+                // fail.
                 holdOffense();
                 record(laneSource, "drudge_pre_first_rush_seed_profile_unavailable",
                     sourceSeparation, laneIndex);
@@ -35528,18 +35592,12 @@ uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster,
         || caster->GetEntry() != Cohort().Config.ValidationRouteMinimumDistanceSourceEntry)
         return 0;
 
-    Player* targetPlayer = target->ToPlayer();
-    if (!targetPlayer)
-        return 0;
     uint32 const sourceSpawnId = uint32(caster->GetSpawnId());
     bool const exactSource = std::find(
         Cohort().Config.ValidationRouteSplitSourceGuids.begin(),
         Cohort().Config.ValidationRouteSplitSourceGuids.end(), sourceSpawnId)
         != Cohort().Config.ValidationRouteSplitSourceGuids.end();
-    auto const roster = Cohort().Raid.RosterByGuid.find(targetPlayer->GetGUID().GetCounter());
-    if (!exactSource || roster == Cohort().Raid.RosterByGuid.end()
-        || !roster->second.Active || !roster->second.LeaseOwned
-        || caster->GetMap() != targetPlayer->GetMap())
+    if (!exactSource)
         return 0;
 
     uint64 const observedAtMs = NowMs();
@@ -35560,14 +35618,37 @@ uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster,
         Party().ValidationRouteDrudgeThreatSeedRosterGuids.clear();
         Party().ValidationRouteDrudgeThreatSeedEvidenceRows.clear();
     }
-    if (Party().ValidationRouteDrudgeChargePreparedCount == 0
-        && Party().ValidationRouteDrudgeChargeObservations.empty())
+    bool const currentScopeHasChargeObservation = std::any_of(
+        Party().ValidationRouteDrudgeChargeObservations.begin(),
+        Party().ValidationRouteDrudgeChargeObservations.end(),
+        [this](ValidationRouteDrudgeChargeObservation const& observation)
+        {
+            return observation.AttemptId == Cohort().AttemptId
+                && observation.WipeGeneration == Cohort().Raid.WipeGeneration
+                && observation.RouteGeneration == Party().ValidationRouteGeneration;
+        });
+    if (!currentScopeHasChargeObservation)
     {
         Party().ValidationRouteDrudgeThreatSeedClosed = true;
         if (!Party().ValidationRouteDrudgeThreatSeedComplete)
             Party().ValidationRouteDrudgeThreatSeedFailure = true;
     }
+
+    // Closing the native clock edge cannot depend on evidence eligibility.
+    // A Rush aimed at a foreign player or an unexpected non-player is still
+    // the first Rush and permanently ends the seed window.  Retain foreign
+    // player targets below so acceptance can reject their roster/lane; a
+    // non-player target remains fail-closed even though no player-shaped
+    // observation can be serialized.
     uint64 const priorMs = Party().ValidationRouteDrudgeLastChargeMsBySpawn[sourceSpawnId];
+    Player* targetPlayer = target->ToPlayer();
+    if (!targetPlayer || caster->GetMap() != targetPlayer->GetMap())
+    {
+        Party().ValidationRouteDrudgeLastChargeMsBySpawn[sourceSpawnId] = observedAtMs;
+        ++Party().ValidationRouteDrudgeChargePreparedCount;
+        return 0;
+    }
+
     // The first cast has no native interval evidence. A later cast is valid
     // only when it is not earlier than the exact declared 20-second cadence;
     // preserve the observed delta rather than inventing a tolerance.
