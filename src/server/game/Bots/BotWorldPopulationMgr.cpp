@@ -1875,6 +1875,9 @@ void BotWorldPopulationMgr::StopAutonomy()
     if (!Cohort().Active || Cohort().RuntimeMode != BotWorldRuntimeMode::AlwaysOnAutonomy)
         return;
 
+    // RemoveWorldBot invalidates GetBot(state); flush while every state still
+    // has its loaded Player so the final fingerprint tail is retained.
+    FlushPendingDecisionFingerprintMemory();
     for (WorldBotState const& state : Party().Bots)
     {
         BotRaidAreaAuthority::Clear(state.Guid.GetRawValue());
@@ -1902,6 +1905,7 @@ void BotWorldPopulationMgr::Shutdown()
     if (!Cohort().Active)
         return;
 
+    FlushPendingDecisionFingerprintMemory();
     for (WorldBotState const& state : Party().Bots)
     {
         BotRaidAreaAuthority::Clear(state.Guid.GetRawValue());
@@ -4058,6 +4062,14 @@ void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
         state.LastDecisionFingerprintRepeatCount = 0;
         state.LastDecisionFingerprintFailureCount = 0;
         state.LastDecisionFingerprintFailure = false;
+        state.DecisionFingerprintSituation.clear();
+        state.DecisionFingerprintAction.clear();
+        state.DecisionFingerprintActivity.clear();
+        state.DecisionFingerprintQuestId = 0;
+        state.DecisionFingerprintClusterId = 0;
+        state.DecisionFingerprintMapId = 0;
+        state.DecisionFingerprintZoneId = 0;
+        state.DecisionFingerprintAreaId = 0;
         state.LastDecisionFingerprintPersistMs = 0;
         state.LastDecisionFingerprintPersistedRepeatCount = 0;
         state.LastDecisionFingerprintPersistedFailureCount = 0;
@@ -4899,6 +4911,7 @@ void BotWorldPopulationMgr::EnsurePopulation()
                     identityDriftDetail = "raid_runtime_shape_mismatch";
                 TC_LOG_ERROR("server", "BotWorld validation raid admission identity drift detail=%s",
                     identityDriftDetail.c_str());
+                FlushPendingDecisionFingerprintMemory();
                 std::set<uint32> cleanupGuids = Cohort().RosterLeases;
                 for (WorldBotState const& state : Party().Bots)
                 {
@@ -4960,6 +4973,7 @@ void BotWorldPopulationMgr::EnsurePopulation()
         // instead of treating it as a resumable roster.
         if (!Party().Bots.empty() || !Cohort().RosterLeases.empty())
         {
+            FlushPendingDecisionFingerprintMemory();
             std::set<uint32> cleanupGuids = Cohort().RosterLeases;
             for (WorldBotState const& state : Party().Bots)
             {
@@ -5090,6 +5104,7 @@ void BotWorldPopulationMgr::EnsurePopulation()
             &metricsBeforeAdmission, &failedSpawnGuidsBeforeAdmission,
             &claimedGuids, &spawnedGuids, &terminalFailure](char const* reason)
         {
+            FlushPendingDecisionFingerprintMemory();
             for (auto itr = spawnedGuids.rbegin(); itr != spawnedGuids.rend(); ++itr)
             {
                 BotRaidAreaAuthority::Clear(itr->GetRawValue());
@@ -31843,6 +31858,7 @@ BotWorldPopulationMgr::ReplayExecutionResult BotWorldPopulationMgr::ExecuteRepla
 
     RecordActivityStop(Party().Bots.back(), bot);
     BotRaidAreaAuthority::Clear(bot->GetGUID().GetRawValue());
+    FlushDecisionFingerprintMemory(Party().Bots.back(), bot);
     sBotMgr->RemoveWorldBot(bot->GetGUID());
     Party().Bots.clear();
     RecordRunStop();
@@ -35035,9 +35051,9 @@ void BotWorldPopulationMgr::PersistDecisionFingerprintDelta(WorldBotState& state
              << "\",\"last_recovery_result\":\"" << JsonEscape(state.LastRecoveryResult) << "\""
              << ",\"fingerprint_source\":\"decision_context_v1\"}";
 
-    std::string escapedSituation = state.LastDecisionSituation.empty() ? "idle" : state.LastDecisionSituation;
-    std::string escapedAction = state.LastDecisionAction.empty() ? "wait" : state.LastDecisionAction;
-    std::string escapedActivity = state.LastDecisionActivity.empty() ? "experiment_exploration" : state.LastDecisionActivity;
+    std::string escapedSituation = state.DecisionFingerprintSituation.empty() ? "idle" : state.DecisionFingerprintSituation;
+    std::string escapedAction = state.DecisionFingerprintAction.empty() ? "wait" : state.DecisionFingerprintAction;
+    std::string escapedActivity = state.DecisionFingerprintActivity.empty() ? "experiment_exploration" : state.DecisionFingerprintActivity;
     std::string result = state.LastDecisionResult.empty() ? "ok" : state.LastDecisionResult;
     std::string metadataJson = metadata.str();
     CharacterDatabase.EscapeString(escapedSituation);
@@ -35046,15 +35062,16 @@ void BotWorldPopulationMgr::PersistDecisionFingerprintDelta(WorldBotState& state
     CharacterDatabase.EscapeString(result);
     CharacterDatabase.EscapeString(metadataJson);
 
-    uint32 const questId = state.LastDecisionQuestId ? state.LastDecisionQuestId : state.QuestWork.ActiveQuestId;
-    uint32 const clusterId = state.ActiveQuestClusterId;
+    uint32 const questId = state.DecisionFingerprintQuestId;
+    uint32 const clusterId = state.DecisionFingerprintClusterId;
     CharacterDatabase.DirectPExecute(
         "INSERT INTO bot_memory_decision_fingerprints "
         "(bot_guid, fingerprint_hash, situation_type, action, activity, quest_id, cluster_id, map_id, zone_id, area_id, repeat_count, failure_count, last_result, first_seen_at, last_seen_at, metadata_json) "
         "VALUES (%u, %u, '%s', '%s', '%s', %u, %u, %u, %u, %u, %u, %u, '%s', NOW(), NOW(), '%s') "
         "ON DUPLICATE KEY UPDATE repeat_count = repeat_count + VALUES(repeat_count), failure_count = failure_count + VALUES(failure_count), last_result = VALUES(last_result), last_seen_at = NOW(), metadata_json = VALUES(metadata_json)",
         bot->GetGUID().GetCounter(), state.LastDecisionFingerprintHash, escapedSituation.c_str(), escapedAction.c_str(), escapedActivity.c_str(),
-        questId, clusterId, bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(), repeatDelta, failureDelta, result.c_str(), metadataJson.c_str());
+        questId, clusterId, state.DecisionFingerprintMapId, state.DecisionFingerprintZoneId, state.DecisionFingerprintAreaId,
+        repeatDelta, failureDelta, result.c_str(), metadataJson.c_str());
     state.LastDecisionFingerprintPersistedRepeatCount = state.LastDecisionFingerprintRepeatCount;
     state.LastDecisionFingerprintPersistedFailureCount = state.LastDecisionFingerprintFailureCount;
     state.LastDecisionFingerprintPersistMs = NowMs();
@@ -35104,6 +35121,11 @@ void BotWorldPopulationMgr::RecordDecisionFingerprintMemory(WorldBotState& state
     bool const failureEdge = failure && (fingerprintChanged || !state.LastDecisionFingerprintFailure);
     if (fingerprintChanged)
     {
+        // Preserve the previous stream's unsent tail before replacing its
+        // hash, counters, and persisted baseline with the new identity.
+        // This is deliberately one bounded upsert only on a fingerprint edge;
+        // steady-state decisions retain the existing heartbeat behavior.
+        FlushDecisionFingerprintMemory(state, bot);
         state.LastDecisionFingerprintHash = fingerprintHash;
         state.LastDecisionFingerprintRepeatCount = 0;
         state.LastDecisionFingerprintFailureCount = 0;
@@ -35117,6 +35139,14 @@ void BotWorldPopulationMgr::RecordDecisionFingerprintMemory(WorldBotState& state
             state.LastDecisionFingerprintPersistedRepeatCount = state.LastDecisionFingerprintRepeatCount;
             state.LastDecisionFingerprintPersistedFailureCount = state.LastDecisionFingerprintFailureCount;
         }
+        state.DecisionFingerprintSituation = situationText;
+        state.DecisionFingerprintAction = actionText;
+        state.DecisionFingerprintActivity = activityText;
+        state.DecisionFingerprintQuestId = questId;
+        state.DecisionFingerprintClusterId = clusterId;
+        state.DecisionFingerprintMapId = bot->GetMapId();
+        state.DecisionFingerprintZoneId = bot->GetZoneId();
+        state.DecisionFingerprintAreaId = bot->GetAreaId();
     }
 
     ++state.LastDecisionFingerprintRepeatCount;

@@ -89,6 +89,14 @@ def test_hotpath_route_reset_clears_same_hash_persistence_baseline_without_under
         "state.LastDecisionFingerprintRepeatCount = 0;",
         "state.LastDecisionFingerprintFailureCount = 0;",
         "state.LastDecisionFingerprintFailure = false;",
+        "state.DecisionFingerprintSituation.clear();",
+        "state.DecisionFingerprintAction.clear();",
+        "state.DecisionFingerprintActivity.clear();",
+        "state.DecisionFingerprintQuestId = 0;",
+        "state.DecisionFingerprintClusterId = 0;",
+        "state.DecisionFingerprintMapId = 0;",
+        "state.DecisionFingerprintZoneId = 0;",
+        "state.DecisionFingerprintAreaId = 0;",
         "state.LastDecisionFingerprintPersistMs = 0;",
         "state.LastDecisionFingerprintPersistedRepeatCount = 0;",
         "state.LastDecisionFingerprintPersistedFailureCount = 0;",
@@ -147,3 +155,66 @@ def test_hotpath_stop_flushes_pending_tail_with_saturating_deltas():
     state["persisted_repeat"] = state["repeat"]
     state["persisted_failures"] = state["failures"]
     assert (max(0, state["repeat"] - state["persisted_repeat"]), max(0, state["failures"] - state["persisted_failures"])) == (0, 0)
+
+
+def test_hotpath_fingerprint_change_flushes_old_stream_before_replacing_identity():
+    fingerprint = IMPLEMENTATION[
+        IMPLEMENTATION.index("void BotWorldPopulationMgr::RecordDecisionFingerprintMemory") :
+        IMPLEMENTATION.index("void BotWorldPopulationMgr::RecordDecisionTrace")
+    ]
+    flush_at = fingerprint.index("FlushDecisionFingerprintMemory(state, bot);")
+    replace_at = fingerprint.index("state.LastDecisionFingerprintHash = fingerprintHash;")
+    assert flush_at < replace_at
+
+    state = {
+        "initialized": False,
+        "hash": None,
+        "repeat": 0,
+        "persisted_repeat": 0,
+    }
+    rows = {}
+
+    def record(fingerprint_hash):
+        changed = not state["initialized"] or state["hash"] != fingerprint_hash
+        if changed:
+            if state["initialized"]:
+                pending = max(0, state["repeat"] - state["persisted_repeat"])
+                rows[state["hash"]] = rows.get(state["hash"], 0) + pending
+                state["persisted_repeat"] = state["repeat"]
+            state.update(hash=fingerprint_hash, repeat=0, persisted_repeat=rows.get(fingerprint_hash, 0))
+        state["repeat"] += 1
+        # Fingerprint changes persist their first decision immediately.
+        if changed:
+            rows[fingerprint_hash] = rows.get(fingerprint_hash, 0) + state["repeat"] - state["persisted_repeat"]
+            state["persisted_repeat"] = state["repeat"]
+        state["initialized"] = True
+
+    record("A")
+    record("A")
+    record("A")
+    record("B")
+    assert rows == {"A": 3, "B": 1}
+
+
+def test_hotpath_destructive_lifecycles_flush_before_player_invalidation():
+    stop_autonomy = IMPLEMENTATION[
+        IMPLEMENTATION.index("void BotWorldPopulationMgr::StopAutonomy") :
+        IMPLEMENTATION.index("void BotWorldPopulationMgr::Shutdown")
+    ]
+    shutdown = IMPLEMENTATION[
+        IMPLEMENTATION.index("void BotWorldPopulationMgr::Shutdown") :
+        IMPLEMENTATION.index("bool BotWorldPopulationMgr::SpawnAutonomyBots")
+    ]
+    assert stop_autonomy.index("FlushPendingDecisionFingerprintMemory();") < stop_autonomy.index("sBotMgr->RemoveWorldBot")
+    assert shutdown.index("FlushPendingDecisionFingerprintMemory();") < shutdown.index("Party() = PartyRuntime();")
+
+    replay = IMPLEMENTATION[
+        IMPLEMENTATION.index("ReplayExecutionResult BotWorldPopulationMgr::ExecuteReplayRecord") :
+        IMPLEMENTATION.index("std::string BotWorldPopulationMgr::BuildReplayResultJson")
+    ]
+    assert replay.index("FlushDecisionFingerprintMemory(Party().Bots.back(), bot);") < replay.index("sBotMgr->RemoveWorldBot(bot->GetGUID())")
+
+    # Admission identity-drift, non-empty-start, and rollback cleanup all
+    # retain state until the flush has occurred.
+    admission = IMPLEMENTATION[IMPLEMENTATION.index("void BotWorldPopulationMgr::EnsurePopulation") :]
+    assert admission.count("FlushPendingDecisionFingerprintMemory();") >= 3

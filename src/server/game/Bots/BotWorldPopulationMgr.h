@@ -794,6 +794,17 @@ private:
         uint32 LastDecisionFingerprintRepeatCount = 0;
         uint32 LastDecisionFingerprintFailureCount = 0;
         bool LastDecisionFingerprintFailure = false;
+        // Identity fields belong to the active fingerprint stream, not to
+        // the most recent decision. They let a pending tail flush against
+        // the old row before a changed decision replaces the stream.
+        std::string DecisionFingerprintSituation;
+        std::string DecisionFingerprintAction;
+        std::string DecisionFingerprintActivity;
+        uint32 DecisionFingerprintQuestId = 0;
+        uint32 DecisionFingerprintClusterId = 0;
+        uint32 DecisionFingerprintMapId = 0;
+        uint32 DecisionFingerprintZoneId = 0;
+        uint32 DecisionFingerprintAreaId = 0;
         // Fingerprint counters remain exact in memory for every decision, but
         // persistence is edge/heartbeat driven so a stuck cohort does not
         // perform a SELECT plus upsert for every decision tick.
