@@ -142,7 +142,9 @@
             43340,
             43366
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Mgwtank1"
+          ],
           "level": 85,
           "name": "Mgwtanka",
           "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
@@ -180,7 +182,9 @@
             43547,
             43549
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Mgwtank2"
+          ],
           "level": 85,
           "name": "Mgwtankb",
           "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
@@ -218,7 +222,9 @@
             40906,
             40913
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Mgwheal1"
+          ],
           "level": 85,
           "name": "Mgwheala",
           "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
@@ -256,7 +262,9 @@
             41099,
             41105
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Mgwheal2"
+          ],
           "level": 85,
           "name": "Mgwhealb",
           "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
@@ -294,7 +302,9 @@
             42400,
             42403
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Mgwheal3"
+          ],
           "level": 85,
           "name": "Mgwhealc",
           "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
@@ -332,7 +342,9 @@
             42743,
             42753
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Mgwdps1"
+          ],
           "level": 85,
           "name": "Mgwdpsa",
           "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
@@ -370,7 +382,9 @@
             42957,
             42969
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Mgwdps2"
+          ],
           "level": 85,
           "name": "Mgwdpsb",
           "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
@@ -408,7 +422,9 @@
             42454,
             42464
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Mgwdps3"
+          ],
           "level": 85,
           "name": "Mgwdpsc",
           "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
@@ -447,7 +463,9 @@
             42902,
             42915
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Mgwdps4"
+          ],
           "level": 85,
           "name": "Mgwdpsd",
           "pet": {
@@ -499,7 +517,9 @@
             41547,
             41552
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Mgwdps5"
+          ],
           "level": 85,
           "name": "Mgwdpse",
           "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
@@ -603,7 +623,9 @@
             43340,
             43366
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Omntank1"
+          ],
           "level": 85,
           "name": "Omntanka",
           "pool_tag": "blackwing_descent_10n_omnotron_diagnostic",
@@ -641,7 +663,9 @@
             43547,
             43549
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Omntank2"
+          ],
           "level": 85,
           "name": "Omntankb",
           "pool_tag": "blackwing_descent_10n_omnotron_diagnostic",
@@ -679,7 +703,9 @@
             40906,
             40913
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Omnheal1"
+          ],
           "level": 85,
           "name": "Omnheala",
           "pool_tag": "blackwing_descent_10n_omnotron_diagnostic",
@@ -717,7 +743,9 @@
             41099,
             41105
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Omnheal2"
+          ],
           "level": 85,
           "name": "Omnhealb",
           "pool_tag": "blackwing_descent_10n_omnotron_diagnostic",
@@ -755,7 +783,9 @@
             42400,
             42403
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Omnheal3"
+          ],
           "level": 85,
           "name": "Omnhealc",
           "pool_tag": "blackwing_descent_10n_omnotron_diagnostic",
@@ -793,7 +823,9 @@
             42743,
             42753
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Omndps1"
+          ],
           "level": 85,
           "name": "Omndpsa",
           "pool_tag": "blackwing_descent_10n_omnotron_diagnostic",
@@ -831,7 +863,9 @@
             42957,
             42969
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Omndps2"
+          ],
           "level": 85,
           "name": "Omndpsb",
           "pool_tag": "blackwing_descent_10n_omnotron_diagnostic",
@@ -869,7 +903,9 @@
             42454,
             42464
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Omndps3"
+          ],
           "level": 85,
           "name": "Omndpsc",
           "pool_tag": "blackwing_descent_10n_omnotron_diagnostic",
@@ -908,7 +944,9 @@
             42902,
             42915
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Omndps4"
+          ],
           "level": 85,
           "name": "Omndpsd",
           "pet": {
@@ -960,7 +998,9 @@
             41547,
             41552
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Omndps5"
+          ],
           "level": 85,
           "name": "Omndpse",
           "pool_tag": "blackwing_descent_10n_omnotron_diagnostic",
@@ -1066,7 +1106,9 @@
             43340,
             43366
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Maltank1"
+          ],
           "level": 85,
           "name": "Maltanka",
           "pool_tag": "blackwing_descent_10n_maloriak_diagnostic",
@@ -1104,7 +1146,9 @@
             43547,
             43549
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Maltank2"
+          ],
           "level": 85,
           "name": "Maltankb",
           "pool_tag": "blackwing_descent_10n_maloriak_diagnostic",
@@ -1142,7 +1186,9 @@
             40906,
             40913
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Malheal1"
+          ],
           "level": 85,
           "name": "Malheala",
           "pool_tag": "blackwing_descent_10n_maloriak_diagnostic",
@@ -1180,7 +1226,9 @@
             41099,
             41105
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Malheal2"
+          ],
           "level": 85,
           "name": "Malhealb",
           "pool_tag": "blackwing_descent_10n_maloriak_diagnostic",
@@ -1218,7 +1266,9 @@
             42400,
             42403
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Malheal3"
+          ],
           "level": 85,
           "name": "Malhealc",
           "pool_tag": "blackwing_descent_10n_maloriak_diagnostic",
@@ -1256,7 +1306,9 @@
             42743,
             42753
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Maldps1"
+          ],
           "level": 85,
           "name": "Maldpsa",
           "pool_tag": "blackwing_descent_10n_maloriak_diagnostic",
@@ -1294,7 +1346,9 @@
             42957,
             42969
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Maldps2"
+          ],
           "level": 85,
           "name": "Maldpsb",
           "pool_tag": "blackwing_descent_10n_maloriak_diagnostic",
@@ -1332,7 +1386,9 @@
             42454,
             42464
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Maldps3"
+          ],
           "level": 85,
           "name": "Maldpsc",
           "pool_tag": "blackwing_descent_10n_maloriak_diagnostic",
@@ -1371,7 +1427,9 @@
             42902,
             42915
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Maldps4"
+          ],
           "level": 85,
           "name": "Maldpsd",
           "pet": {
@@ -1423,7 +1481,9 @@
             41547,
             41552
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Maldps5"
+          ],
           "level": 85,
           "name": "Maldpse",
           "pool_tag": "blackwing_descent_10n_maloriak_diagnostic",
@@ -1530,7 +1590,9 @@
             43340,
             43366
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Atrtank1"
+          ],
           "level": 85,
           "name": "Atrtanka",
           "pool_tag": "blackwing_descent_10n_atramedes_diagnostic",
@@ -1568,7 +1630,9 @@
             43547,
             43549
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Atrtank2"
+          ],
           "level": 85,
           "name": "Atrtankb",
           "pool_tag": "blackwing_descent_10n_atramedes_diagnostic",
@@ -1606,7 +1670,9 @@
             40906,
             40913
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Atrheal1"
+          ],
           "level": 85,
           "name": "Atrheala",
           "pool_tag": "blackwing_descent_10n_atramedes_diagnostic",
@@ -1644,7 +1710,9 @@
             41099,
             41105
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Atrheal2"
+          ],
           "level": 85,
           "name": "Atrhealb",
           "pool_tag": "blackwing_descent_10n_atramedes_diagnostic",
@@ -1682,7 +1750,9 @@
             42400,
             42403
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Atrheal3"
+          ],
           "level": 85,
           "name": "Atrhealc",
           "pool_tag": "blackwing_descent_10n_atramedes_diagnostic",
@@ -1720,7 +1790,9 @@
             42743,
             42753
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Atrdps1"
+          ],
           "level": 85,
           "name": "Atrdpsa",
           "pool_tag": "blackwing_descent_10n_atramedes_diagnostic",
@@ -1758,7 +1830,9 @@
             42957,
             42969
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Atrdps2"
+          ],
           "level": 85,
           "name": "Atrdpsb",
           "pool_tag": "blackwing_descent_10n_atramedes_diagnostic",
@@ -1796,7 +1870,9 @@
             42454,
             42464
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Atrdps3"
+          ],
           "level": 85,
           "name": "Atrdpsc",
           "pool_tag": "blackwing_descent_10n_atramedes_diagnostic",
@@ -1835,7 +1911,9 @@
             42902,
             42915
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Atrdps4"
+          ],
           "level": 85,
           "name": "Atrdpsd",
           "pet": {
@@ -1887,7 +1965,9 @@
             41547,
             41552
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Atrdps5"
+          ],
           "level": 85,
           "name": "Atrdpse",
           "pool_tag": "blackwing_descent_10n_atramedes_diagnostic",
@@ -1995,7 +2075,9 @@
             43340,
             43366
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Chitank1"
+          ],
           "level": 85,
           "name": "Chitanka",
           "pool_tag": "blackwing_descent_10n_chimaeron_diagnostic",
@@ -2033,7 +2115,9 @@
             43547,
             43549
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Chitank2"
+          ],
           "level": 85,
           "name": "Chitankb",
           "pool_tag": "blackwing_descent_10n_chimaeron_diagnostic",
@@ -2071,7 +2155,9 @@
             40906,
             40913
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Chiheal1"
+          ],
           "level": 85,
           "name": "Chiheala",
           "pool_tag": "blackwing_descent_10n_chimaeron_diagnostic",
@@ -2109,7 +2195,9 @@
             41099,
             41105
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Chiheal2"
+          ],
           "level": 85,
           "name": "Chihealb",
           "pool_tag": "blackwing_descent_10n_chimaeron_diagnostic",
@@ -2147,7 +2235,9 @@
             42400,
             42403
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Chiheal3"
+          ],
           "level": 85,
           "name": "Chihealc",
           "pool_tag": "blackwing_descent_10n_chimaeron_diagnostic",
@@ -2185,7 +2275,9 @@
             42743,
             42753
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Chidps1"
+          ],
           "level": 85,
           "name": "Chidpsa",
           "pool_tag": "blackwing_descent_10n_chimaeron_diagnostic",
@@ -2223,7 +2315,9 @@
             42957,
             42969
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Chidps2"
+          ],
           "level": 85,
           "name": "Chidpsb",
           "pool_tag": "blackwing_descent_10n_chimaeron_diagnostic",
@@ -2261,7 +2355,9 @@
             42454,
             42464
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Chidps3"
+          ],
           "level": 85,
           "name": "Chidpsc",
           "pool_tag": "blackwing_descent_10n_chimaeron_diagnostic",
@@ -2300,7 +2396,9 @@
             42902,
             42915
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Chidps4"
+          ],
           "level": 85,
           "name": "Chidpsd",
           "pet": {
@@ -2352,7 +2450,9 @@
             41547,
             41552
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Chidps5"
+          ],
           "level": 85,
           "name": "Chidpse",
           "pool_tag": "blackwing_descent_10n_chimaeron_diagnostic",
@@ -2461,7 +2561,9 @@
             43340,
             43366
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Neftank1"
+          ],
           "level": 85,
           "name": "Neftanka",
           "pool_tag": "blackwing_descent_10n_nefarian_diagnostic",
@@ -2499,7 +2601,9 @@
             43547,
             43549
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Neftank2"
+          ],
           "level": 85,
           "name": "Neftankb",
           "pool_tag": "blackwing_descent_10n_nefarian_diagnostic",
@@ -2537,7 +2641,9 @@
             40906,
             40913
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Nefheal1"
+          ],
           "level": 85,
           "name": "Nefheala",
           "pool_tag": "blackwing_descent_10n_nefarian_diagnostic",
@@ -2575,7 +2681,9 @@
             41099,
             41105
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Nefheal2"
+          ],
           "level": 85,
           "name": "Nefhealb",
           "pool_tag": "blackwing_descent_10n_nefarian_diagnostic",
@@ -2613,7 +2721,9 @@
             42400,
             42403
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Nefheal3"
+          ],
           "level": 85,
           "name": "Nefhealc",
           "pool_tag": "blackwing_descent_10n_nefarian_diagnostic",
@@ -2651,7 +2761,9 @@
             42743,
             42753
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Nefdps1"
+          ],
           "level": 85,
           "name": "Nefdpsa",
           "pool_tag": "blackwing_descent_10n_nefarian_diagnostic",
@@ -2689,7 +2801,9 @@
             42957,
             42969
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Nefdps2"
+          ],
           "level": 85,
           "name": "Nefdpsb",
           "pool_tag": "blackwing_descent_10n_nefarian_diagnostic",
@@ -2727,7 +2841,9 @@
             42454,
             42464
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Nefdps3"
+          ],
           "level": 85,
           "name": "Nefdpsc",
           "pool_tag": "blackwing_descent_10n_nefarian_diagnostic",
@@ -2766,7 +2882,9 @@
             42902,
             42915
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Nefdps4"
+          ],
           "level": 85,
           "name": "Nefdpsd",
           "pet": {
@@ -2818,7 +2936,9 @@
             41547,
             41552
           ],
-          "legacy_names": [],
+          "legacy_names": [
+            "Nefdps5"
+          ],
           "level": 85,
           "name": "Nefdpse",
           "pool_tag": "blackwing_descent_10n_nefarian_diagnostic",

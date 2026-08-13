@@ -65,6 +65,13 @@ def _name(code: str, slot: str) -> str:
     return f"{code[0].upper()}{code[1:].lower()}{kind}{suffix}"
 
 
+def _legacy_digit_name(code: str, slot: str) -> str:
+    """Return the pre-native-validation shard name for cleanup only."""
+    role, number = slot.rsplit("_", 1)
+    kind = {"raid_tank": "tank", "raid_healer": "heal", "raid_dps": "dps"}[role]
+    return f"{code[0].upper()}{code[1:].lower()}{kind}{number}"
+
+
 def _account(code: str, index: int) -> str:
     return f"BWD{code.upper()}A{index:02d}"
 
@@ -110,7 +117,11 @@ def build_shard_fixture(config: dict[str, Any]) -> dict[str, Any]:
                 "character_guid": guid,
                 "expected_character_guid": guid,
                 "name": _name(str(definition["name_code"]), slot_id),
-                "legacy_names": [],
+                # The first diagnostic provisioning draft used a numeric
+                # suffix. TrinityCore marks those rows AT_LOGIN_RENAME and
+                # refuses to load them. Keep the old selector strictly as a
+                # cleanup alias so fixed-GUID reprovisioning is idempotent.
+                "legacy_names": [_legacy_digit_name(str(definition["name_code"]), slot_id)],
                 "pool_tag": profile_id,
                 "runtime_profile_id": profile_id,
                 "action_profile_id": str(source.get("class_spec") or ""),

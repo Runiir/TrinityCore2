@@ -195,6 +195,7 @@ def test_provisioning_entrypoint_loads_all_six_tracked_shard_pools():
     assert all(len(row["bots"]) == 10 for row in diagnostic)
     assert all({bot["pool_tag"] for bot in row["bots"]} == {row["id"]} for row in diagnostic)
     assert all(bot["primary_talent_tree_id"] > 0 and len(bot["talents"]) > 0 for row in diagnostic for bot in row["bots"])
+    assert next(row for row in diagnostic if row["id"].endswith("magmaw_diagnostic"))["bots"][0]["legacy_names"] == ["Mgwtank1"]
 
 
 def test_live_preparation_materializes_all_110_accounts_and_characters(tmp_path, monkeypatch):
@@ -236,6 +237,8 @@ def test_live_preparation_materializes_all_110_accounts_and_characters(tmp_path,
         for statement in account_inserts
     ) == len(diagnostic_accounts) == 60
     assert sum("Mgwtanka" in statement for statement in character_inserts) == 1
+    assert "Mgwtank1" in character_sql
+    assert not any("Mgwtank1" in statement for statement in character_inserts)
 
 
 def test_dvc_generation_and_verifier_bind_the_tracked_shard_fixture():
