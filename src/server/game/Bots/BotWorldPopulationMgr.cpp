@@ -30449,7 +30449,45 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
                  << "\",\"account_id\":" << slot.AccountId
                  << ",\"account\":\"" << JsonEscape(slot.AccountName)
                  << "\",\"name\":\"" << JsonEscape(slot.CharacterName)
-                 << "\",\"active\":" << (slot.Active ? "true" : "false")
+                 << "\",\"talents\":[";
+            bool firstCompactTalent = true;
+            for (uint32 spellId : slot.Talents)
+            {
+                if (!firstCompactTalent)
+                    json << ',';
+                firstCompactTalent = false;
+                json << spellId;
+            }
+            json << "],\"glyphs\":[";
+            bool firstCompactGlyph = true;
+            for (uint32 glyph : slot.Glyphs)
+            {
+                if (!firstCompactGlyph)
+                    json << ',';
+                firstCompactGlyph = false;
+                json << glyph;
+            }
+            json << "],\"gear_identity_manifest\":{\"items\":[";
+            bool firstCompactItem = true;
+            for (RaidRosterItemIdentity const& item : slot.GearManifest)
+            {
+                if (!firstCompactItem)
+                    json << ',';
+                firstCompactItem = false;
+                json << "{\"slot\":" << uint32(item.Slot)
+                     << ",\"guid\":" << item.Guid
+                     << ",\"entry\":" << item.Entry
+                     << ",\"enchant_id\":" << item.EnchantId
+                     << ",\"gem_item_ids\":[";
+                for (size_t gemIndex = 0; gemIndex < item.GemItemIds.size(); ++gemIndex)
+                {
+                    if (gemIndex)
+                        json << ',';
+                    json << item.GemItemIds[gemIndex];
+                }
+                json << "],\"reforge_id\":" << item.ReforgeId << '}';
+            }
+            json << "]},\"active\":" << (slot.Active ? "true" : "false")
                  << ",\"lease_owned\":" << (slot.LeaseOwned ? "true" : "false") << "}";
         }
         json << "]}";
