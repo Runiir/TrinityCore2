@@ -1,0 +1,94 @@
+{
+  "schema": "cata_raid_compact_run_summary_v1",
+  "capture_id": "phase1_6e922a58_drudge_smoke_20260814",
+  "started_at_utc": "2026-08-13T22:18:42Z",
+  "source_commit": "6e922a588f2b9ef8e90a2ea6efdf90d0a29bedaf",
+  "source_tree": "8b26bd98d50199dd0894c98d365b777458447f32",
+  "binary_sha256": "8eb47b200636ee48fb2cec33d8b4798b2cd3c17aa1cbc081b962db96cf40ffcc",
+  "configure_receipt_canonical_sha256": "2f92a2e1f5de07686385fe28e892562d37796e6f02c82305660f82fb925deb41",
+  "worldserver_receipt_canonical_sha256": "a214013f78735caef4b23d9126d64a25e1fcbe0b45a16ad15bf6a6423563ea56",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
+  "observe_window_seconds": 300,
+  "classification": "infrastructure_abort",
+  "phase1_gate_passed": false,
+  "gameplay_failure": false,
+  "fidelity_claim": false,
+  "forbidden_assistance_observed": false,
+  "cleanup": {
+    "gate_passed": true,
+    "worldserver_exit_code": 0,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true
+  },
+  "positive_live_result": {
+    "production_parity_seed_transition_executed": true,
+    "seed_failure": false,
+    "seed_complete_before_first_rush": true,
+    "source_250140": {
+      "member_guid": 30008,
+      "spell_id": 172,
+      "spell": "Corruption",
+      "distance_yards": 30.0858
+    },
+    "source_250141": {
+      "member_guid": 30006,
+      "spell_id": 44457,
+      "spell": "Living Bomb",
+      "distance_yards": 33.092
+    },
+    "native_threat_effect_observed": true
+  },
+  "diagnosis": {
+    "primary": "post-Rush exact-roster geometry and reseparation self-deadlocked",
+    "anchor_cache_defect": "each pending Rush observation invalidated each bot anchor cache on every tick, while the handled cursor advanced only after exact-roster reseparation",
+    "pull_order_defect": "tanks could initiate native ownership from preparation anchors before both tanks reached their declared combat anchors, letting native source pursuit traverse the prepared groups",
+    "profile_loading": "trained DB profiles remained loaded and the ordinary cross-lane threat-seed actions were submitted successfully",
+    "regular_dps_result": "regular post-reseparation profile actions remained correctly fail-closed because exact geometry was never certified",
+    "recovery_result": "typed full-wipe-only hold prevented the prior partial release/rejoin loop; the roster ultimately reached a real all-dead state"
+  },
+  "performance": {
+    "resource_samples_retained": false,
+    "cpu_and_rss_gate": "unproven",
+    "total_uncompressed_bytes": 36402662,
+    "bytes_per_hour_per_shard": 435381349,
+    "six_shard_bytes_per_hour": 2612288094,
+    "dominant_channel": "trace",
+    "scheduler_gate": "current runtime serializes MaxActiveCohorts=1 and updates only _runningCohortId; six-way same-worldserver fanout is not yet runnable"
+  },
+  "immutable_artifacts": {
+    "raw": {
+      "bytes": 18183232,
+      "sha256": "66612a88e6e8eda13ab38d79fde6b7837e1dc42627a1f2fc46945e74ac2229f9"
+    },
+    "worldserver_log": {
+      "bytes": 18206360,
+      "sha256": "e06372c1eb5b42afa42a30c2ebe54a2aa3489259be24e6d4696e6ed10a24adbc"
+    },
+    "report": {
+      "bytes": 13070,
+      "file_sha256": "a3dd85bc1094234a5fbd39f8e074f0aa4401d8664a574682f86a782e387f13da",
+      "canonical_sha256": "29102093036671d15ffeb6b2bf6cb57288251195e9f5365e91263249e836a86a"
+    }
+  },
+  "retention": {
+    "capture_dvc_pointer": {
+      "path": "artifacts/cata_raid_program/phase1_6e922a58_drudge_smoke_20260814.dvc",
+      "md5": "0d74137efb91997cf27fd08ffee5c56c.dir",
+      "size": 36402662,
+      "nfiles": 3
+    },
+    "build_prep_dvc_pointer": {
+      "path": "artifacts/cata_raid_program/phase1_6e922a58_build_prep_20260814.dvc",
+      "md5": "3d2309bc4cf0e41b6b8102a83eee807e.dir",
+      "size": 3912923,
+      "nfiles": 11
+    },
+    "remote_verified": true,
+    "local_payload_evicted": true,
+    "unique_cache_children_evicted": 10,
+    "shared_cache_children_retained": 4,
+    "directory_metadata_retained": true
+  }
+}
