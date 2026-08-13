@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "audit_id": "cata_raid_runtime_phase1_v1",
-  "updated_at_utc": "2026-08-13T08:42:27Z",
+  "updated_at_utc": "2026-08-13T08:58:56Z",
   "target": {
     "client": "Cataclysm Classic",
     "patch": "4.4.2",
@@ -10,7 +10,7 @@
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
   "audited_commit": "aa85a9d0b9cc34f9a73ce9b5ad9380af5879d3c4",
-  "gate_state": "in_progress_exact_aa85_reviewed_built_and_freshly_prepared_pending_uncapped_live_rerun",
+  "gate_state": "in_progress_exact_aa85_uncapped_drudge_semantic_stall_published_pending_remediation_review_rebuild_and_rerun",
   "foundation": {
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
     "current_head_sha": "aa85a9d0b9cc34f9a73ce9b5ad9380af5879d3c4",
@@ -20,7 +20,7 @@
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "acceptance": "Exact 1ee uncapped capture remains an infrastructure abort. Mandatory Sol-high review of exact clean aa85a9d0b9 reports zero unresolved Critical/High findings. Exact gate-bearing configure and worldserver receipts verify, the receipt-produced ELF hash is bound, focused regressions pass 116/116, and fresh deterministic preparation/full verifier/v4 readback pass. The uncapped live capture remains required; no gameplay or fidelity inference is authorized."
+    "acceptance": "Exact aa85 build and preparation passed, but its uncapped live capture is an infrastructure abort at the Magmaw Drudge pair. Four native Rush deliveries all targeted tank 1271; only six of ten roster members re-separated; no tank health-sync or trained-profile acknowledgement was accepted; Magmaw was not engaged. Cleanup and forbidden-assistance gates passed. The eight-file diagnostic is remote-verified. No gameplay or fidelity inference is authorized."
   },
   "research": {
     "required_boss_packets": 28,
@@ -180,7 +180,7 @@
     },
     {
       "area": "live_script_and_decision_review",
-      "missing": ["complete_native_magmaw_script_vs_bot_decision_review_after_recovery_evidence_fix", "explicit_non_fidelity_phase1_engagement_scope_approval"]
+      "missing": ["correct_drudge_rush_target_distribution_full_roster_reseparation_tank_health_sync_and_trained_profile_execution", "complete_native_magmaw_script_vs_bot_decision_review_after_recovery_evidence_fix", "explicit_non_fidelity_phase1_engagement_scope_approval"]
     },
     {
       "area": "native_recovery_live_evidence",
@@ -188,12 +188,13 @@
     },
     {
       "area": "immutable_evidence",
-      "missing": ["passing_terminal_gate_driven_phase1_live_capture_after_remediation", "independent_acceptance_reconstruction_of_complete_native_recovery"]
+      "missing": ["exact_eviction_of_aa85_failure_payload_after_remediation_and_review", "passing_terminal_gate_driven_phase1_live_capture_after_remediation", "independent_acceptance_reconstruction_of_complete_native_recovery"]
     }
   ],
   "phase1_gate_blockers": [
-    "exact_aa85_reviewed_build_and_fresh_preparation_complete_uncapped_live_rerun_pending",
-    "single_cohort_cpu_log_db_measurement_and_uncapped_capture_pending",
+    "exact_aa85_uncapped_capture_failed_closed_at_magmaw_drudge_pair_before_magmaw_engagement",
+    "drudge_lane_target_reseparation_health_sync_and_trained_profile_remediation_pending",
+    "single_cohort_cpu_log_and_telemetry_amplification_remediation_pending",
     "bwd_exact_442_quantitative_and_exact_log_hotfix_evidence_blocks_phase2_fidelity"
   ],
   "acceptance_policy": "Fail closed. Existing Stonecore and older BWD artifacts do not certify this raid-runtime gate."

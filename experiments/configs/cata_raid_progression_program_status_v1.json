@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-13T08:42:27Z",
+  "updated_at_utc": "2026-08-13T08:58:56Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -32,7 +32,7 @@
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "The 1ee capture remains a Phase 1 infrastructure abort. Mandatory Sol-high review of exact clean aa85a9d0b9 reports zero unresolved Critical/High findings. Exact gate-bearing configure and worldserver receipts verify, the receipt-produced ELF hash is bound, focused tests pass 116, and fresh deterministic provisioning/full verifier/v4 readback pass. The uncapped live capture remains required; no gameplay or fidelity inference is authorized."
+    "current_acceptance": "The exact aa85 uncapped capture is a Phase 1 infrastructure abort at the isolated Magmaw Drudge pair, not a gameplay or fidelity result. Exact build/identity/cleanup/forbidden-assistance gates held, but all four native Rushes selected tank 1271, only six of ten members re-separated, no tank health-sync or trained-profile evidence was accepted, and Magmaw was never engaged. The eight-file failure batch is pushed and remote-verified; remediation, mandatory review, rebuild, fresh preparation, and rerun are required."
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
@@ -592,11 +592,15 @@
       ,"exact_policy_v8_configure_and_worldserver_build_succeeded_at_aa85a9d0b9_after_one_non_gameplay_resource_abort"
       ,"fresh_exact_bwd_10n_provisioning_full_live_verifier_and_v4_readback_passed_at_aa85a9d0b9"
       ,"phase1_aa85_preparation_nine_file_dvc_artifact_pushed_and_remote_verified"
+      ,"uncapped_aa85_capture_reached_exact_magmaw_drudge_pair_and_observed_four_native_rush_deliveries"
+      ,"uncapped_aa85_capture_semantic_stall_cleanup_and_forbidden_assistance_gates_passed"
+      ,"uncapped_aa85_eight_file_failure_batch_pushed_remote_verified_and_compactly_summarized"
       ],
       "remaining_requirements": [
-      "single_cohort_live_cpu_log_and_database_measurement",
-        "rerun_uncapped_serialized_bwd_10n_entry_formation_difficulty_wipe_reset_evidence_publication_and_cleanup_gate_with_live_stall_diagnosis",
-        "phase1_live_evidence_dvc_publish_remote_verify_and_exact_evict_gate"
+        "remediate_drudge_exact_lane_targets_full_roster_reseparation_tank_health_sync_and_trained_profile_execution",
+        "reduce_single_cohort_server_capture_cpu_and_repeated_telemetry_amplification_before_parallel_shards",
+        "mandatory_sol_high_review_exact_rebuild_fresh_preparation_and_uncapped_rerun",
+        "phase1_live_evidence_exact_evict_after_diagnosis_and_review"
       ]
     }
   ],
@@ -617,8 +621,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "Exact clean aa85a9d0b9 has mandatory Sol-high zero-Critical/High approval, exact gate-bearing configure/worldserver receipts, ELF hash binding, 116 focused passing tests, and fresh remotely verified preparation/full verifier/v4 readback. Live Phase 1 remains incomplete: start one receipt-bound worldserver, attach one Luna-xhigh babysitter, measure CPU/log/DB behavior, and complete the uncapped canonical capture plus DVC publication/eviction."
+      "detail": "Exact aa85 was reviewed, built, freshly prepared, and run uncapped. The remotely verified failure batch proves a 300.099-second semantic stall at the Magmaw Drudge pair: four Rushes all targeted tank 1271, only six of ten re-separated, zero tank health-sync and trained-profile acknowledgements were accepted, four deaths did not produce a native full-wipe scope, and Magmaw was not engaged. Cleanup and forbidden-assistance gates passed. Remediation, mandatory review, exact rebuild, fresh preparation, rerun, and exact post-diagnosis eviction remain required."
     }
   ],
-  "next_action": "Commit the exact aa85 build receipts, preparation pointer, compact summary, and current checkpoint without changing the receipt-bound build worktree. Then start and verify exactly one aa85 worldserver, attach one Luna-xhigh babysitter, measure optimized single-cohort CPU/log/DB behavior, and run the uncapped canonical Phase 1 Magmaw-only corridor. Require correct Laser Strike exits, independently reconstructed exact Spell-paired Drudge delivered-Rush/lane/reseparation/taunt/health-sync/trained-profile decisions, full per-GUID native recovery order, controlled-unit readiness, post-recovery ready check, and clean DVC publication/eviction. Six parallel boss shards remain downstream of Phase 1."
+  "next_action": "Consume the remotely verified aa85 failure diagnosis; remediate exact Drudge Rush target/lane/reseparation/health-sync/trained-profile behavior and the partial-death recovery loop; reduce repeated telemetry and CPU amplification without weakening evidence; obtain mandatory Sol-high approval; rebuild exact clean source; freshly reprovision/full-verify/v4-read back; rerun the uncapped canonical Phase 1 capture; then exactly evict the consumed payload. Six parallel boss shards remain downstream of a passing Phase 1 gate."
 }
