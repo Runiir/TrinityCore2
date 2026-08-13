@@ -1,5 +1,13 @@
 # Cataclysm raid progression handoff
 
+# 2026-08-13T12:38:00Z — Exact 9b84 closes the fresh native-range and trace-tail review
+
+Mandatory review of exact 7350 rejected three High and two Medium findings: native range was center-distance rather than `IsWithinCombatRange`; ordinary pre-first-Rush polls poisoned later complete evidence; route changes dropped suppressed repeatable-event tails; non-player identity used only the low counter; and status fields were stale. No build ran.
+
+Exact source `9b84d5b1e5f2aba90a8604b529ec98004a7f6b32` serializes and independently reconstructs source/target combat reaches, exact map/phase predicates, and the strict native combat-range bound while keeping tactic center-range evidence separate. Candidate completeness begins only with a snapshot containing the first observation from both sources, while later complete snapshots remain drift-checked. Every bot flushes any pending suppressed-repeatable tail into a monotonic old-node trace entry before route-local dedupe state resets. Threat candidates retain full raw ObjectGuid identity, so pet/unit/player low-counter collisions cannot alias. The exact clean focused gate passes 314/314.
+
+Phase 1 and fidelity remain false. Mandatory Sol-high rereview of the clean status descendant is required before configure/build, fresh preparation, and the uncapped run.
+
 # 2026-08-13T12:25:00Z — Exact clean 6d80 focused gate passes 313/313
 
 After committing the complete exact-62fe review remediation, the tracked combined command ran from a clean worktree and passed all 313 tests in 10.60 seconds. This includes Phase 1 capture/runtime/model/generic smoke, hot-path, lossless trace cursor, inherited Phase 9 qualification, and coordinator coverage. No build, service, DB, or DVC mutation ran. Mandatory Sol-high rereview is now the sole source gate before exact configure/build receipts.
