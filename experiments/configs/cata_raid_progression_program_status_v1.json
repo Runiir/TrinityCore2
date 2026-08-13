@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-13T13:30:00Z",
+  "updated_at_utc": "2026-08-13T14:18:19Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -17,7 +17,7 @@
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "current_head_sha": "a145e2999218533b2415668061ad587c2a28c776",
+    "current_head_sha": "e50e038fc8486681f34f2f1c60104fbb3a3663b2",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -28,17 +28,17 @@
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
     "critical_high_remediation_implemented_at": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "mandatory_rereview": "PENDING mandatory Sol-high adversarial review of exact integrated source checkpoint a145e2999218533b2415668061ad587c2a28c776",
+    "mandatory_rereview": "COMPLETED exact e50e038fc8486681f34f2f1c60104fbb3a3663b2: build and Magmaw preparation authorized; one downstream High remains because later-boss predecessor saves are metadata-only",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "Exact a145 integrates seven Stonecore-style BWD scenario identities, strict current-node authority across player/profile/pet/totem paths, native hostile-reset-gated recovery, transition-aware lower-volume capture scheduling, and a provisional semantic aggregate read cache. The generated route and run-plan DVC stages are pushed and remote-synchronized. Focused integration tests pass, but mandatory Sol-high review, exact rebuild, fresh preparation, and live Magmaw-only proof are pending. Phase 1 and fidelity remain false."
+    "current_acceptance": "Exact e50 integrates seven Stonecore-style BWD route identities, six disjoint provisioned 2/3/5 diagnostic pools, exact route rosters, strict current-node authority across player/profile/pet/totem paths, node-scoped native hostile recovery, and transition-aware lower-volume capture scheduling. The unsafe semantic cache was removed. Sol-high review authorizes the build and Magmaw preparation, while later-boss shards remain blocked on executable native predecessor-save setup and Nefarian also remains blocked on legitimate native descent. Phase 1 and fidelity remain false."
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_commit": "a145e2999218533b2415668061ad587c2a28c776",
-    "current_state": "integrated_remediation_pending_mandatory_review_and_exact_build",
-    "current_result": "exact ef04 receipts remain valid historical evidence only; a145 changes C++ and must receive mandatory Sol-high approval plus a new policy-v8 build receipt before live use",
+    "current_commit": "e50e038fc8486681f34f2f1c60104fbb3a3663b2",
+    "current_state": "reviewed_build_authorized_exact_build_pending",
+    "current_result": "exact ef04 receipts remain historical only; Sol-high review authorizes an exact policy-v8 build of the e50 source checkpoint for Magmaw preparation",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -317,9 +317,11 @@
   "dvc": {
     "broad_status": "inherited_selectively_evicted_outputs_present_no_new_raid_failure",
     "new_raid_artifact_failure": false,
-    "validation_scenario_stage_remote_status": "remote_verified_workspace_and_exact_five_child_cache_objects_evicted_directory_metadata_retained",
-    "validation_scenario_dvc_md5": "0829bfe3c4c81f59b24fd4cbc0542974.dir",
-    "validation_provisioning_dvc_md5": "3f1ca669625982e0cef7699a4e6323f6.dir",
+    "validation_scenario_stage_remote_status": "cache_and_remote_in_sync_exact_seven_route_partitions_and_six_diagnostic_rosters",
+    "validation_scenario_dvc_md5": "7c1b09536078b5b4d10add195b7fbf6a.dir",
+    "validation_provisioning_dvc_md5": "2e2afb99183731ddb75e350f2a82c8c1.dir",
+    "validation_provisioning_verify_md5": "dc5671e227e1f6ee37a49d8635bc40e9",
+    "validation_run_plan_dvc_md5": "d4877b79e4cd50ad2bc33ec575684192.dir",
   "validation_gear_dvc_md5": "14bceda375f6e9ae504ed8e80a001d0f.dir",
     "validation_provisioning_remote_status": "cache_and_remote_in_sync_full_stat_ghost_corpse_instance_cleanup_and_live_v3_readback_passed",
     "phase0_no_bots_baseline_pointer": "artifacts/cata_raid_program/phase0_no_bots_worldserver_20260812.dvc",
@@ -627,8 +629,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "Exact ef04 failed closed on Chainwielder and its evidence is remote verified and exactly evicted. Exact a145 now integrates strict immediate-next trash/boss protection, trained-profile preservation for legal current targets, native hostile-reset-gated recovery, transition-aware capture scheduling, seven Stonecore-style BWD route scenarios, and provisional semantic aggregate caching. Generated validation_scenarios and validation_run_plan objects are pushed and remote-synchronized. Mandatory Sol-high zero-Critical/High review, one exact policy-v8 rebuild, fresh preparation/readback, and an uncapped four-node Magmaw diagnostic rerun remain required."
+      "detail": "Exact ef04 failed closed on Chainwielder and its evidence is remote verified and exactly evicted. Exact e50 closes current/future target authority, trained-profile handoff, hostile recovery scoping, controlled offense and final capture freshness; it binds six disjoint provisioned cohorts to seven Stonecore-style route partitions. Sol-high review authorizes an exact policy-v8 build and Magmaw preparation. Fresh preparation/readback and an uncapped four-node Magmaw run remain required. Later-boss shards are separately blocked on executable native predecessor-save preparation; Nefarian also lacks legitimate native descent."
     }
   ],
-  "next_action": "Obtain mandatory Sol-high zero-Critical/High review of exact integrated a145 source and seven-scenario route architecture, including trained DPS decisions and semantic-cache correctness. Fix any findings, rebuild once through policy v8, freshly reprovision/full-verify/v4-read back, prestart and verify one worldserver, then attach the Magmaw Luna-xhigh babysitter and rerun the uncapped four-node Magmaw diagnostic manifest. Keep the canonical 11-node route only for later sequential full clears."
+  "next_action": "Run the exact reviewed policy-v8 configure and one-compiler worldserver build, freshly reprovision all tracked cohorts, independently full-verify and retain v4 readback, then prestart and verify one worldserver before attaching the Magmaw Luna-xhigh babysitter. Run only the uncapped four-node Magmaw diagnostic and require trained DPS actions, bounded CPU/log growth, native engagement/full-wipe/reset/recovery/ready-check, clean demux, DVC publication and exact eviction. Keep later boss shards blocked until distinct native predecessor-save setup is executable and read back; keep Nefarian blocked until legitimate ledge descent exists."
 }
