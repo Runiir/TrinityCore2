@@ -3219,6 +3219,37 @@ def _process_arguments(pid: int) -> list[str]:
         return []
 
 
+def _protected_process_matches(arguments: list[str]) -> list[str]:
+    """Classify process entrypoints without treating data arguments as processes.
+
+    The capture command itself passes the prospective worldserver path through
+    ``--binary``.  Scanning every argv basename therefore classified the
+    capture's parent ``pixi`` process as a live worldserver.  Only argv[0] is an
+    executable; for Python, the script or ``-m`` module is also an entrypoint.
+    """
+
+    if not arguments:
+        return []
+    protected_names = {
+        "worldserver", "run_live_bot_validation.py", "live_validation_session.py",
+        "run_phase9_serial_canaries.py", "publish_live_validation.py",
+        "publish_live_validation", "promote_live_validation_artifact.py",
+        "bot-live-validate", "operator", "raid_operator.py",
+    }
+    entrypoints = {Path(arguments[0]).name}
+    executable = Path(arguments[0]).name.lower()
+    if executable.startswith("python"):
+        for index, value in enumerate(arguments[1:], start=1):
+            if value == "-m" and index + 1 < len(arguments):
+                module = arguments[index + 1].rsplit(".", 1)[-1]
+                entrypoints.update((module, f"{module}.py"))
+                break
+            if not value.startswith("-"):
+                entrypoints.add(Path(value).name)
+                break
+    return sorted(entrypoints & protected_names)
+
+
 def preflight_runtime_exclusions(worktree: Path) -> dict[str, Any]:
     """Require an idle coordinator and exclusive canonical-capture host."""
 
@@ -3231,12 +3262,6 @@ def preflight_runtime_exclusions(worktree: Path) -> dict[str, Any]:
     if coordinator.get("queue"):
         reasons.append("coordinator_queue_not_idle")
 
-    protected_names = {
-        "worldserver", "run_live_bot_validation.py", "live_validation_session.py",
-        "run_phase9_serial_canaries.py", "publish_live_validation.py",
-        "publish_live_validation", "promote_live_validation_artifact.py",
-        "bot-live-validate", "operator", "raid_operator.py",
-    }
     overlap: list[dict[str, Any]] = []
     for entry in Path("/proc").iterdir():
         if not entry.name.isdigit() or int(entry.name) == os.getpid():
@@ -3244,8 +3269,7 @@ def preflight_runtime_exclusions(worktree: Path) -> dict[str, Any]:
         arguments = _process_arguments(int(entry.name))
         if not arguments:
             continue
-        basenames = {Path(value).name for value in arguments}
-        matched = sorted(basenames & protected_names)
+        matched = _protected_process_matches(arguments)
         lower_args = [value.lower() for value in arguments]
         dvc_index = next((index for index, value in enumerate(lower_args) if Path(value).name == "dvc"), None)
         if dvc_index is not None and "push" in lower_args[dvc_index + 1:]:

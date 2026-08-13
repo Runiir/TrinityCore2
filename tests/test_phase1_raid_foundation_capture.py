@@ -12,6 +12,7 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     json_rows,
     normalized_batch_payload,
     _forbidden_assistance_entries,
+    _protected_process_matches,
     expected_bwd_10n_roster,
     _expected_identity_by_slot,
     preflight_runtime_exclusions,
@@ -1428,6 +1429,27 @@ def test_preflight_reports_coordinator_and_protected_process_overlap():
     report = preflight_runtime_exclusions(__import__("pathlib").Path.cwd())
     assert "coordinator_idle" in report
     assert "process_overlap" in report
+
+
+def test_process_overlap_classifies_entrypoint_not_binary_data_argument():
+    assert _protected_process_matches([
+        "/usr/bin/pixi",
+        "run",
+        "python",
+        "-m",
+        "tools.raid_program.capture_phase1_raid_foundation",
+        "--binary",
+        "/tmp/build/worldserver",
+    ]) == []
+    assert _protected_process_matches(["/tmp/build/worldserver", "--config", "test.conf"]) == [
+        "worldserver"
+    ]
+    assert _protected_process_matches([
+        "/usr/bin/python3",
+        "/repo/tools/bot_ml/run_live_bot_validation.py",
+        "--worldserver",
+        "/tmp/build/worldserver",
+    ]) == ["run_live_bot_validation.py"]
 
 
 def test_live_evidence_demux_rejects_cross_identity_runtime():
