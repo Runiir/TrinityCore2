@@ -238,7 +238,8 @@ def accepted_drudge_status() -> dict:
                 "group_anchor_base_x": 0.0, "group_anchor_base_y": 0.0,
                 "anchor_distance": 0.0, "nearest_same_lane_distance": 0.0,
                 "anchor_candidate_index": 0, "lane_side_valid": True,
-                "anchor_selected": False, "same_lane_spacing_valid": False,
+                "anchor_selected": False, "anchor_path_valid": False,
+                "same_lane_spacing_valid": False,
             })
             continue
         lane_slots = sorted(lane_a_slots if lane_a else lane_b_slots)
@@ -252,7 +253,8 @@ def accepted_drudge_status() -> dict:
             "group_anchor_base_x": x, "group_anchor_base_y": 0.0,
             "anchor_distance": 0.0, "nearest_same_lane_distance": same_lane_distance,
             "anchor_candidate_index": 0, "lane_side_valid": True,
-            "anchor_selected": True, "same_lane_spacing_valid": True,
+            "anchor_selected": True, "anchor_path_valid": True,
+            "same_lane_spacing_valid": True,
         })
     geometry = {
         "home0_x": 0.0, "home0_y": 0.0, "home1_x": 10.0, "home1_y": 0.0,
@@ -470,6 +472,28 @@ def test_drudge_geometry_rejects_forged_native_source_victim():
     accepted, reasons = accepted_drudge_contract([status])
     assert accepted is False
     assert "drudge_geometry_source0_victim_invalid" in reasons
+
+
+def test_drudge_geometry_rejects_unverified_path_fallback():
+    status = accepted_drudge_status()
+    geometry = status["raid_runtime"]["drudge_charge"]["observations"][0]["geometry"]
+    member = next(row for row in geometry["members"] if row["roster_slot"] == 3)
+    member["anchor_path_valid"] = False
+    accepted, reasons = accepted_drudge_contract([status])
+    assert accepted is False
+    assert "drudge_geometry_member_anchor_path_unverified" in reasons
+
+
+def test_drudge_anchor_fallback_is_generation_scoped_and_native_path_validated():
+    source = (Path(__file__).parents[1] / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
+        encoding="utf-8",
+    )
+    assert "ValidationRouteDrudgeAnchorAttemptId" in source
+    assert "ValidationRouteDrudgeAnchorWipeGeneration" in source
+    assert "ValidationRouteDrudgeAnchorRouteGeneration" in source
+    assert "selectPathableDrudgeAnchor" in source
+    assert "strictNativePath(candidates[candidateIndex].first" in source
+    assert "anchor_path_valid" in source
 
 
 def test_acceptance_reconstructs_all_identity_facts():

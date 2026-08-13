@@ -786,8 +786,13 @@ def _validate_drudge_observation_geometry(
             reasons.append("drudge_geometry_member_source_distance_unsafe")
         if member.get("anchor_selected") is not True:
             reasons.append("drudge_geometry_member_anchor_missing")
+        if member.get("anchor_path_valid") is not True:
+            reasons.append("drudge_geometry_member_anchor_path_unverified")
         candidate_index = member.get("anchor_candidate_index")
-        if not isinstance(candidate_index, int) or isinstance(candidate_index, bool) or not 0 <= candidate_index < 3:
+        # Runtime preserves the original three evidence candidates, then uses
+        # a bounded deterministic mmap fallback grid when the derived point
+        # lies beside a disconnected BWD corridor edge.
+        if not isinstance(candidate_index, int) or isinstance(candidate_index, bool) or not 0 <= candidate_index < 29:
             reasons.append("drudge_geometry_member_anchor_index_invalid")
             continue
         lane_sign = -1.0 if lane_a else 1.0
@@ -808,11 +813,41 @@ def _validate_drudge_observation_geometry(
         perp_x, perp_y = -values["axis_y"], values["axis_x"]
         primary_x = base_x + perp_x * centered * minimum_spacing
         primary_y = base_y + perp_y * centered * minimum_spacing
-        candidates = tuple(
-            (primary_x + values["axis_x"] * lane_sign * offset,
-             primary_y + values["axis_y"] * lane_sign * offset)
-            for offset in (0.0, 4.0, 8.0)
-        )
+        perpendicular_x, perpendicular_y = -values["axis_y"], values["axis_x"]
+        anchor_search_step = values["navigation_margin"] + values["arrival_tolerance"]
+        candidates = [
+            (primary_x, primary_y),
+            (primary_x + values["axis_x"] * lane_sign * anchor_search_step,
+             primary_y + values["axis_y"] * lane_sign * anchor_search_step),
+            (primary_x + values["axis_x"] * lane_sign * anchor_search_step * 2.0,
+             primary_y + values["axis_y"] * lane_sign * anchor_search_step * 2.0),
+            (primary_x - values["axis_x"] * lane_sign * anchor_search_step,
+             primary_y - values["axis_y"] * lane_sign * anchor_search_step),
+            (primary_x + values["axis_x"] * lane_sign * anchor_search_step * 3.0,
+             primary_y + values["axis_y"] * lane_sign * anchor_search_step * 3.0),
+            (primary_x - values["axis_x"] * lane_sign * anchor_search_step * 2.0,
+             primary_y - values["axis_y"] * lane_sign * anchor_search_step * 2.0),
+            (primary_x + values["axis_x"] * lane_sign * anchor_search_step * 4.0,
+             primary_y + values["axis_y"] * lane_sign * anchor_search_step * 4.0),
+            (primary_x - values["axis_x"] * lane_sign * anchor_search_step * 3.0,
+             primary_y - values["axis_y"] * lane_sign * anchor_search_step * 3.0),
+            (primary_x - values["axis_x"] * lane_sign * anchor_search_step * 4.0,
+             primary_y - values["axis_y"] * lane_sign * anchor_search_step * 4.0),
+        ]
+        for perpendicular_offset in (
+            anchor_search_step, -anchor_search_step,
+            anchor_search_step * 2.0, -anchor_search_step * 2.0,
+        ):
+            for axis_offset in (
+                0.0, anchor_search_step, -anchor_search_step,
+                anchor_search_step * 2.0, -anchor_search_step * 2.0,
+            ):
+                candidates.append((
+                    primary_x + perpendicular_x * perpendicular_offset
+                    + values["axis_x"] * lane_sign * axis_offset,
+                    primary_y + perpendicular_y * perpendicular_offset
+                    + values["axis_y"] * lane_sign * axis_offset,
+                ))
         expected_anchor = candidates[candidate_index]
         stored_anchor = (member_number("anchor_x"), member_number("anchor_y"))
         if stored_anchor[0] is None or stored_anchor[1] is None:

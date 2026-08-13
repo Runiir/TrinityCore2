@@ -539,6 +539,7 @@ private:
         uint32 AnchorCandidateIndex = 0;
         bool LaneSideValid = false;
         bool AnchorSelected = false;
+        bool AnchorPathValid = false;
         bool SameLaneSpacingValid = false;
     };
 
@@ -894,6 +895,7 @@ private:
         std::string LastPersistedDiagnosticDecisionKey;
         uint64 LastPersistedDiagnosticDecisionMs = 0;
         uint32 SuppressedDiagnosticDecisionCount = 0;
+        uint32 PendingTraceSuppressedRepeatableEventCount = 0;
         uint32 ConsecutiveSameDecisionCount = 0;
         uint32 IdleDecisionRepeatCount = 0;
         uint32 TargetChurnCount = 0;
@@ -930,6 +932,20 @@ private:
         uint32 NativeRecoveryHoldWipeGeneration = 0;
         uint64 NativeRecoveryHoldLastEnforcedMs = 0;
         uint64 LastValidationRouteDrudgeChargeGenerationHandled = 0;
+        // Drudge lane movement must not retry an unreachable derived point on
+        // every decision tick.  Once the native path validator finds a
+        // collision-safe member anchor, keep that exact fallback for the
+        // current attempt/wipe/route generation and reuse it until the
+        // geometry is invalidated by a native charge or reset.
+        bool ValidationRouteDrudgeAnchorValid = false;
+        uint64 ValidationRouteDrudgeAnchorAttemptId = 0;
+        uint32 ValidationRouteDrudgeAnchorWipeGeneration = 0;
+        uint64 ValidationRouteDrudgeAnchorRouteGeneration = 0;
+        uint32 ValidationRouteDrudgeAnchorCandidateIndex = 0;
+        float ValidationRouteDrudgeAnchorX = 0.0f;
+        float ValidationRouteDrudgeAnchorY = 0.0f;
+        float ValidationRouteDrudgeAnchorZ = 0.0f;
+        uint64 ValidationRouteDrudgeAnchorSearchCooldownUntilMs = 0;
         CombatAttemptDiagnostic LastCombatAttempt;
         RouteProgressDiagnostic LastRouteProgress;
         uint32 ProfileCastSuppressedSpellId = 0;
@@ -966,6 +982,7 @@ private:
             uint32 ConsecutiveSameDecisionCount = 0;
             uint32 IdleDecisionRepeatCount = 0;
             uint32 TargetChurnCount = 0;
+            uint32 SuppressedRepeatableEventCount = 0;
             uint32 EngagedHostileCount = 0;
             uint32 TankOwnedHostileCount = 0;
             uint32 HealerTargetingHostileCount = 0;
