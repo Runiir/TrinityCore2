@@ -118,15 +118,10 @@ EXPECTED_BWD_ROUTE_PARTITION_COUNTS = {
 }
 
 
-def expected_bwd_10n_roster() -> tuple[tuple[str, str, int, str], ...]:
-    manifest = json.loads(
-        (ROOT / "experiments/configs/validation_provisioning_cata_001.json").read_text(
-            encoding="utf-8"
-        )
-    )
-    scenario = next(
-        row for row in manifest["scenarios"] if row.get("id") == "blackwing_descent_10n"
-    )
+def expected_bwd_10n_roster(
+    profile_name: str = "blackwing_descent_10n",
+) -> tuple[tuple[str, str, int, str], ...]:
+    scenario = {"id": profile_name, "bots": _provisioned_bwd_bots(profile_name)}
     role_counts: Counter[str] = Counter()
     expected: list[tuple[str, str, int, str]] = []
     for bot in scenario["bots"]:
@@ -145,7 +140,7 @@ def expected_bwd_10n_roster() -> tuple[tuple[str, str, int, str], ...]:
     return tuple(expected)
 
 
-def _provisioned_bwd_10n_bots() -> list[dict[str, Any]]:
+def _provisioned_bwd_bots(profile_name: str = "blackwing_descent_10n") -> list[dict[str, Any]]:
     """Load the checked-in, post-normalization BWD provisioning roster.
 
     The capture verifier must not silently fall back to a partial roster when
@@ -156,25 +151,35 @@ def _provisioned_bwd_10n_bots() -> list[dict[str, Any]]:
 
     try:
         from tools.bot_ml.build_validation_provisioning import (
+            DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE,
             apply_gear_profiles,
-            load_config,
+            load_config_with_bwd_diagnostic_shards,
             load_gear_profiles,
         )
 
-        config = load_config(ROOT / "experiments/configs/validation_provisioning_cata_001.json")
+        config = load_config_with_bwd_diagnostic_shards(
+            ROOT / "experiments/configs/validation_provisioning_cata_001.json",
+            DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE,
+        )
         config = apply_gear_profiles(
             config,
             load_gear_profiles(ROOT / "dataset/validation_gear_profiles/profiles.json"),
         )
         scenario = next(
-            row for row in config["scenarios"] if row.get("id") == "blackwing_descent_10n"
+            row for row in config["scenarios"] if row.get("id") == profile_name
         )
         bots = scenario.get("bots")
         if not isinstance(bots, list) or len(bots) != 10:
-            raise ValueError("frozen BWD 10N provisioning roster is missing")
+            raise ValueError(f"frozen BWD provisioning roster is missing for {profile_name}")
         return [row for row in bots if isinstance(row, dict)]
     except (ImportError, KeyError, OSError, StopIteration, TypeError, ValueError) as error:
-        raise ValueError(f"frozen BWD 10N identity manifest unavailable: {error}") from error
+        raise ValueError(f"frozen BWD identity manifest unavailable for {profile_name}: {error}") from error
+
+
+def _provisioned_bwd_10n_bots() -> list[dict[str, Any]]:
+    """Backward-compatible canonical-roster accessor for existing callers."""
+
+    return _provisioned_bwd_bots("blackwing_descent_10n")
 
 
 def _canonical_int_list(values: Any) -> tuple[int, ...] | None:
@@ -190,15 +195,17 @@ def _canonical_int_list(values: Any) -> tuple[int, ...] | None:
     return tuple(result)
 
 
-def _expected_identity_by_slot() -> dict[str, dict[str, Any]]:
+def _expected_identity_by_slot(
+    profile_name: str = "blackwing_descent_10n",
+) -> dict[str, dict[str, Any]]:
     from tools.bot_ml.build_validation_provisioning import normalized_glyph_slots
 
     result: dict[str, dict[str, Any]] = {}
-    for bot in _provisioned_bwd_10n_bots():
+    for bot in _provisioned_bwd_bots(profile_name):
         role = str(bot.get("role") or "")
         # Roster slot IDs are generated deterministically by the native plan.
         index = sum(1 for existing in result.values() if existing["role"] == role) + 1
-        slot_id = f"raid_{role}_{index}"
+        slot_id = str(bot.get("canonical_roster_slot_id") or f"raid_{role}_{index}")
         raw_talents = _canonical_int_list([row.get("spell_id") for row in bot.get("talents", [])])
         talents = tuple(sorted(raw_talents)) if raw_talents is not None else None
         glyphs = _canonical_int_list(
@@ -224,6 +231,8 @@ def _expected_identity_by_slot() -> dict[str, dict[str, Any]]:
             raise ValueError(f"frozen talent/glyph manifest missing for {slot_id}")
         result[slot_id] = {
             "account": str(bot.get("account") or "").upper(),
+            "account_id": bot.get("expected_account_id", bot.get("account_id")),
+            "character_guid": bot.get("expected_character_guid", bot.get("character_guid")),
             "name": str(bot.get("name") or ""),
             "role": role,
             "class_id": int(bot.get("class") or 0),
@@ -262,11 +271,14 @@ def _runtime_gear_manifest(row: dict[str, Any]) -> tuple[tuple[Any, ...], ...] |
     return tuple(sorted(items))
 
 
-def _identity_manifest_rejections(runtime: dict[str, Any]) -> list[str]:
+def _identity_manifest_rejections(
+    runtime: dict[str, Any],
+    profile_name: str = "blackwing_descent_10n",
+) -> list[str]:
     """Check all identity-bearing provisioning fields, fail-closed on omission."""
 
     try:
-        expected_by_slot = _expected_identity_by_slot()
+        expected_by_slot = _expected_identity_by_slot(profile_name)
     except ValueError:
         return ["frozen_identity_manifest_unavailable"]
     roster = runtime.get("roster")
@@ -286,6 +298,10 @@ def _identity_manifest_rejections(runtime: dict[str, Any]) -> list[str]:
                 reasons.append(f"frozen_identity_{field}_missing")
         if not _positive_int(row.get("guid")):
             reasons.append("frozen_identity_guid_missing")
+        if expected.get("character_guid") is not None and row.get("guid") != expected["character_guid"]:
+            reasons.append("frozen_identity_character_guid_mismatch")
+        if expected.get("account_id") is not None and row.get("account_id") != expected["account_id"]:
+            reasons.append("frozen_identity_account_id_mismatch")
         if str(row.get("account") or "").upper() != expected["account"]:
             reasons.append("frozen_identity_account_mismatch")
         if row.get("name") != expected["name"]:
@@ -462,7 +478,10 @@ def _roster_binding_lifecycle_rejections(roster: Any) -> list[str]:
     return sorted(set(reasons))
 
 
-def _roster_rejections(runtime: dict[str, Any]) -> list[str]:
+def _roster_rejections(
+    runtime: dict[str, Any],
+    profile_name: str = "blackwing_descent_10n",
+) -> list[str]:
     roster = runtime.get("roster")
     if not isinstance(roster, list):
         return ["roster_not_a_list"]
@@ -510,13 +529,13 @@ def _roster_rejections(runtime: dict[str, Any]) -> list[str]:
         )
         for row in rows
     )
-    if observed_roster != expected_bwd_10n_roster():
+    if observed_roster != expected_bwd_10n_roster(profile_name):
         reasons.append("exact_frozen_bwd_10n_roster_identity")
     if not all(row.get("active") is True for row in rows):
         reasons.append("all_roster_active")
     if not all(row.get("lease_owned") is True for row in rows):
         reasons.append("all_roster_leases_owned")
-    reasons.extend(_identity_manifest_rejections(runtime))
+    reasons.extend(_identity_manifest_rejections(runtime, profile_name))
     return reasons
 
 
@@ -576,7 +595,7 @@ def accepted_foundation_status(
             and route_progress.get("node_index") == expected_route_index,
     }
     reasons.extend(name for name, passed in checks.items() if not passed)
-    reasons.extend(_roster_rejections(runtime))
+    reasons.extend(_roster_rejections(runtime, profile_name))
     roster = runtime.get("roster")
     roster_guids = {
         row.get("guid") for row in roster if isinstance(row, dict)
@@ -1657,7 +1676,11 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
     return not reasons, sorted(set(reasons))
 
 
-def accepted_native_recovery(statuses: list[dict[str, Any]]) -> tuple[bool, list[str]]:
+def accepted_native_recovery(
+    statuses: list[dict[str, Any]],
+    *,
+    profile_name: str = "blackwing_descent_10n",
+) -> tuple[bool, list[str]]:
     reasons: list[str] = []
     runtimes = [status.get("raid_runtime") if isinstance(status, dict) else None for status in statuses]
     if not statuses or any(not isinstance(runtime, dict) for runtime in runtimes):
@@ -1749,7 +1772,11 @@ def accepted_native_recovery(statuses: list[dict[str, Any]]) -> tuple[bool, list
             roster_identity = current_roster
         elif current_roster != roster_identity:
             reasons.append("native_recovery_mixed_roster")
-        reasons.extend(f"native_{reason}" for reason in _roster_rejections(runtime) if reason not in {"all_roster_active", "all_roster_leases_owned"})
+        reasons.extend(
+            f"native_{reason}"
+            for reason in _roster_rejections(runtime, profile_name)
+            if reason not in {"all_roster_active", "all_roster_leases_owned"}
+        )
 
         sequence = runtime.get("evidence_sequence")
         if not _positive_int(sequence):
@@ -3884,7 +3911,10 @@ def main() -> int:
                                 }
                             break
                     if recovery_required:
-                        recovery_accepted, _ = accepted_native_recovery(monitor_statuses)
+                        recovery_accepted, _ = accepted_native_recovery(
+                            monitor_statuses,
+                            profile_name=profile_name,
+                        )
                     if drudge_required:
                         drudge_accepted, _ = accepted_drudge_contract(monitor_statuses)
                     if monitor_statuses:
@@ -3951,7 +3981,7 @@ def main() -> int:
     profiles = action_payloads(normalized_rows, "botauto_profile")
     stop_rows = action_payloads(normalized_rows, "botauto_stop")
     recovery_accepted, recovery_rejections = (
-        accepted_native_recovery(active_statuses) if recovery_required
+        accepted_native_recovery(active_statuses, profile_name=profile_name) if recovery_required
         else (True, ["native_recovery_not_required_for_diagnostic_partition"])
     )
     drudge_accepted, drudge_rejections = (

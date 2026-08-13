@@ -25,7 +25,7 @@ try:
     from .analyze_combat_log import analyze_combat_log
     from .audit_role_efficiency import build_audit
     from .batch_evidence_lifecycle import append_heartbeat, capture_batch, finalize_heartbeat, publish_batch, validate_capture
-    from .build_validation_provisioning import VALIDATION_FULL_STAT_SEED, VALIDATION_GHOST_AURA_ID, VALIDATION_GHOST_CHARACTER_FLAG, VALIDATION_RESURRECT_AT_LOGIN_FLAG, apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config, load_gear_profiles
+    from .build_validation_provisioning import DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE, VALIDATION_FULL_STAT_SEED, VALIDATION_GHOST_AURA_ID, VALIDATION_GHOST_CHARACTER_FLAG, VALIDATION_RESURRECT_AT_LOGIN_FLAG, apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config_with_bwd_diagnostic_shards, load_gear_profiles
     from .common import write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
     from .live_validation_session import apply_acceptance_evaluation, build_evidence_envelope, build_session, canonical_sha256, ensure_healthy_matching_session, git_dirty_state_sha256, git_head, live_validation_lock, sha256_file, sha256_text, stop_session
@@ -36,7 +36,7 @@ except ImportError:
     from analyze_combat_log import analyze_combat_log
     from audit_role_efficiency import build_audit
     from batch_evidence_lifecycle import append_heartbeat, capture_batch, finalize_heartbeat, publish_batch, validate_capture
-    from build_validation_provisioning import VALIDATION_FULL_STAT_SEED, VALIDATION_GHOST_AURA_ID, VALIDATION_GHOST_CHARACTER_FLAG, VALIDATION_RESURRECT_AT_LOGIN_FLAG, apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config, load_gear_profiles
+    from build_validation_provisioning import DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE, VALIDATION_FULL_STAT_SEED, VALIDATION_GHOST_AURA_ID, VALIDATION_GHOST_CHARACTER_FLAG, VALIDATION_RESURRECT_AT_LOGIN_FLAG, apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config_with_bwd_diagnostic_shards, load_gear_profiles
     from common import write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
     from live_validation_session import apply_acceptance_evaluation, build_evidence_envelope, build_session, canonical_sha256, ensure_healthy_matching_session, git_dirty_state_sha256, git_head, live_validation_lock, sha256_file, sha256_text, stop_session
@@ -883,9 +883,17 @@ def prepare_validation_provisioning(
     config_path: Path,
     gear_profiles_path: Path,
     worldserver_conf: Path,
+    bwd_diagnostic_shard_fixture: Path = DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE,
     apply: bool = False,
 ) -> dict[str, Any]:
-    config = apply_gear_profiles(load_config(config_path), load_gear_profiles(gear_profiles_path))
+    # Keep live preparation on the exact merged config used by the checked-in
+    # DVC provisioning pipeline.  Loading only the three canonical scenarios
+    # here silently omitted all six disjoint BWD diagnostic pools (60 accounts
+    # and 60 characters), making the route identity gate impossible to satisfy.
+    config = apply_gear_profiles(
+        load_config_with_bwd_diagnostic_shards(config_path, bwd_diagnostic_shard_fixture),
+        load_gear_profiles(gear_profiles_path),
+    )
     auth_url = database_url_from_worldserver_conf(worldserver_conf, "LoginDatabaseInfo")
     character_url = database_url_from_worldserver_conf(worldserver_conf, "CharacterDatabaseInfo")
     account_sql = qualify_sql_schema(build_account_insert_sql(config), "auth", database_name(auth_url))
@@ -901,6 +909,7 @@ def prepare_validation_provisioning(
         "schema": "bot_live_validation_provisioning_apply_v1",
         "applied": apply,
         "config": str(config_path),
+        "bwd_diagnostic_shard_fixture": str(bwd_diagnostic_shard_fixture),
         "gear_profiles": str(gear_profiles_path),
         "account_sql": str(account_path),
         "character_sql": str(character_path),
@@ -4201,6 +4210,7 @@ def run_reusable_validation_session(
                 lifecycle["preparation"]["validation_provisioning"] = owner.provision_once(
                     {
                         "validation_provisioning_sha256": sha256_file(args.validation_provisioning_config.resolve()),
+                        "bwd_diagnostic_shard_fixture_sha256": sha256_file(args.bwd_diagnostic_shard_fixture.resolve()),
                         "gear_profiles_sha256": sha256_file(args.gear_profiles.resolve()),
                     },
                     lambda: prepare_validation_provisioning(
@@ -4208,6 +4218,7 @@ def run_reusable_validation_session(
                         args.validation_provisioning_config,
                         args.gear_profiles,
                         args.config,
+                        args.bwd_diagnostic_shard_fixture,
                         apply=True,
                     ),
                 )
@@ -4417,6 +4428,7 @@ def main() -> int:
     parser.add_argument("--apply-validation-provisioning", action="store_true", help="Apply deterministic Stonecore/BWD validation account and character SQL before running diagnostics.")
     parser.add_argument("--prepare-only", action="store_true", help="Apply requested deterministic provisioning and route-start state, write a report, and exit without launching a worldserver.")
     parser.add_argument("--validation-provisioning-config", type=Path, default=Path("experiments/configs/validation_provisioning_cata_001.json"))
+    parser.add_argument("--bwd-diagnostic-shard-fixture", type=Path, default=DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE)
     parser.add_argument("--gear-profiles", type=Path, default=Path("dataset/validation_gear_profiles/profiles.json"))
     parser.add_argument("--scenario-report-dir", type=Path, help="Optional directory or JSON file containing scenario live reports such as stonecore_5n.json and blackwing_descent_10n.json.")
     parser.add_argument("--validation-scenario-id", default="", help="Scenario ID this live validation run is measuring.")
@@ -4597,6 +4609,7 @@ def main() -> int:
             args.validation_provisioning_config,
             args.gear_profiles,
             args.config,
+            args.bwd_diagnostic_shard_fixture,
             apply=not args.dry_run and args.transport != "session",
         )
         if args.transport == "process" and not args.input_log:

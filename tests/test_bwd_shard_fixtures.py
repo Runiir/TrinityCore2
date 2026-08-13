@@ -16,6 +16,7 @@ from tools.raid_program.bwd_shard_fixtures import (
     validate_shard_fixture,
 )
 from tools.bot_ml.build_validation_provisioning import build_account_insert_sql, load_config_with_bwd_diagnostic_shards
+from tools.bot_ml.run_live_bot_validation import prepare_validation_provisioning, split_sql_statements
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -187,6 +188,47 @@ def test_provisioning_entrypoint_loads_all_six_tracked_shard_pools():
     assert all(len(row["bots"]) == 10 for row in diagnostic)
     assert all({bot["pool_tag"] for bot in row["bots"]} == {row["id"]} for row in diagnostic)
     assert all(bot["primary_talent_tree_id"] > 0 and len(bot["talents"]) > 0 for row in diagnostic for bot in row["bots"])
+
+
+def test_live_preparation_materializes_all_110_accounts_and_characters(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        "tools.bot_ml.run_live_bot_validation.database_url_from_worldserver_conf",
+        lambda _path, key="WorldDatabaseInfo": (
+            "mysql://trinity:secret@db.example:3306/"
+            + ("auth_lane" if key == "LoginDatabaseInfo" else "characters_lane")
+        ),
+    )
+    report = prepare_validation_provisioning(
+        tmp_path,
+        CONFIG,
+        tmp_path / "missing-gear-profiles.json",
+        tmp_path / "worldserver.conf",
+    )
+    account_sql = Path(report["account_sql"]).read_text(encoding="utf-8")
+    character_sql = Path(report["character_sql"]).read_text(encoding="utf-8")
+    account_inserts = [
+        statement for statement in split_sql_statements(account_sql)
+        if statement.startswith("INSERT INTO `auth_lane`.`account`")
+    ]
+    character_inserts = [
+        statement for statement in split_sql_statements(character_sql)
+        if statement.startswith("INSERT INTO `characters_lane`.`characters`")
+    ]
+    assert report["bwd_diagnostic_shard_fixture"].endswith(
+        "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json"
+    )
+    assert len(account_inserts) == 110
+    assert len(character_inserts) == 110
+    diagnostic_accounts = {
+        bot["account"].upper()
+        for shard in _fixture()["shards"]
+        for bot in shard["bots"]
+    }
+    assert sum(
+        any(f"'{account}'" in statement for account in diagnostic_accounts)
+        for statement in account_inserts
+    ) == len(diagnostic_accounts) == 60
+    assert sum("Mgwtank1" in statement for statement in character_inserts) == 1
 
 
 def test_dvc_generation_and_verifier_bind_the_tracked_shard_fixture():

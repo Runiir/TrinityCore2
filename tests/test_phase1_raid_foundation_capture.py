@@ -930,6 +930,68 @@ def test_acceptance_reconstructs_all_identity_facts():
     assert reasons == []
 
 
+def test_magmaw_diagnostic_accepts_only_its_materialized_roster_identity():
+    status = accepted_status()
+    runtime = status["raid_runtime"]
+    profile = "blackwing_descent_10n_magmaw_diagnostic"
+    expected = _expected_identity_by_slot(profile)
+    runtime["strategy_id"] = profile
+    runtime["route_progress"] = {"generation": 4, "node_index": 3}
+    for row in runtime["roster"]:
+        identity = expected[row["roster_slot_id"]]
+        row.update(
+            guid=identity["character_guid"],
+            account_id=identity["account_id"],
+            account=identity["account"],
+            name=identity["name"],
+            talents=list(identity["talents"]),
+            glyphs=list(identity["glyphs"]),
+        )
+        for item, expected_item in zip(
+            row["gear_identity_manifest"]["items"], identity["gear"], strict=True
+        ):
+            item.update(
+                entry=expected_item["entry"],
+                enchant_id=expected_item["enchant_id"],
+                gem_item_ids=list(expected_item["gem_item_ids"]),
+                reforge_id=expected_item["reforge_id"],
+            )
+    runtime["leader_guid"] = runtime["roster"][0]["guid"]
+    accepted, reasons = accepted_foundation_status(
+        status,
+        profile_name=profile,
+        route_partition={"node_count": 4, "terminal_index": 3},
+    )
+    assert accepted is True
+    assert reasons == []
+
+
+def test_diagnostic_capture_rejects_cross_shard_account_and_guid_identity():
+    status = accepted_status()
+    runtime = status["raid_runtime"]
+    profile = "blackwing_descent_10n_magmaw_diagnostic"
+    runtime["strategy_id"] = profile
+    runtime["route_progress"] = {"generation": 4, "node_index": 3}
+    magmaw = _expected_identity_by_slot(profile)["raid_tank_1"]
+    omnotron = _expected_identity_by_slot("blackwing_descent_10n_omnotron_diagnostic")["raid_tank_1"]
+    row = runtime["roster"][0]
+    row.update(
+        guid=omnotron["character_guid"],
+        account_id=omnotron["account_id"],
+        account=omnotron["account"],
+        name=omnotron["name"],
+    )
+    accepted, reasons = accepted_foundation_status(
+        status,
+        profile_name=profile,
+        route_partition={"node_count": 4, "terminal_index": 3},
+    )
+    assert accepted is False
+    assert "frozen_identity_account_mismatch" in reasons
+    assert "frozen_identity_character_guid_mismatch" in reasons
+    assert magmaw["account"] != omnotron["account"]
+
+
 def test_wrong_difficulty_duplicate_identity_and_cleanup_shape_fail():
     status = accepted_status()
     status["raid_runtime"]["map_difficulty"] = 2
