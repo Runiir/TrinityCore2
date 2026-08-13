@@ -57,6 +57,14 @@ bool SpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth
     }
     return false;
 }
+
+bool ProtectedEncounterTarget(Unit const* owner, Unit const* target)
+{
+    Creature const* creature = target ? target->ToCreature() : nullptr;
+    return owner && creature
+        && BotRaidAreaAuthority::IsProtectedEncounterEntry(
+            owner->GetGUID().GetRawValue(), creature->GetEntry());
+}
 }
 
 int32 PetAI::Permissible(Creature const* creature)
@@ -190,7 +198,8 @@ void PetAI::UpdateAI(uint32 diff)
             if (!spellInfo)
                 continue;
 
-            if (owner && BotRaidAreaAuthority::IsSuppressed(owner->GetGUID().GetRawValue())
+            if (owner && (BotRaidAreaAuthority::IsSuppressed(owner->GetGUID().GetRawValue())
+                    || BotRaidAreaAuthority::HasProtectedEncounterEntries(owner->GetGUID().GetRawValue()))
                 && SpellHasHostileMultiTargetSemantics(spellInfo))
                 continue;
 
@@ -221,7 +230,8 @@ void PetAI::UpdateAI(uint32 diff)
 
                 if (target)
                 {
-                    if (CanAttack(target) && spell->CanAutoCast(target))
+                    if (!ProtectedEncounterTarget(owner, target)
+                        && CanAttack(target) && spell->CanAutoCast(target))
                     {
                         targetSpellStore.push_back(std::make_pair(target, spell));
                         spellUsed = true;
@@ -259,7 +269,8 @@ void PetAI::UpdateAI(uint32 diff)
                 if (!spellUsed)
                     delete spell;
             }
-            else if (me->GetVictim() && CanAttack(me->GetVictim()) && spellInfo->CanBeUsedInCombat())
+            else if (me->GetVictim() && !ProtectedEncounterTarget(owner, me->GetVictim())
+                && CanAttack(me->GetVictim()) && spellInfo->CanBeUsedInCombat())
             {
                 Spell* spell = new Spell(me, spellInfo, TRIGGERED_NONE);
                 if (spell->CanAutoCast(me->GetVictim()))

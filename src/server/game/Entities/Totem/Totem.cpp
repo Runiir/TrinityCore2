@@ -16,6 +16,7 @@
  */
 
 #include "Totem.h"
+#include "Bots/BotRaidAreaAuthority.h"
 #include "Group.h"
 #include "Opcodes.h"
 #include "Player.h"
@@ -23,6 +24,47 @@
 #include "SpellMgr.h"
 #include "SpellInfo.h"
 #include "WorldPacket.h"
+
+namespace
+{
+bool SpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth = 0)
+{
+    if (!spellInfo || depth > 4)
+        return false;
+    if (spellInfo->Id == 48505 || spellInfo->Id == 89751)
+        return true;
+    for (uint8 effectIndex = 0; effectIndex < MAX_SPELL_EFFECTS; ++effectIndex)
+    {
+        SpellEffectInfo const& effect = spellInfo->Effects[effectIndex];
+        if (!effect.IsEffect())
+            continue;
+        if (!spellInfo->IsPositiveEffect(effectIndex)
+            && (effect.ChainTarget > 1 || effect.IsTargetingArea()
+                || effect.IsEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA)
+                || effect.IsAreaAuraEffect()))
+            return true;
+        if (effect.TriggerSpell
+            && SpellHasHostileMultiTargetSemantics(
+                sSpellMgr->GetSpellInfo(effect.TriggerSpell), depth + 1))
+            return true;
+    }
+    return false;
+}
+
+bool RaidTotemSpellSuppressed(Totem const* totem, uint32 spellId)
+{
+    Unit const* owner = totem ? totem->GetOwner() : nullptr;
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+    if (!owner || !spellInfo)
+        return false;
+    uint64 const ownerGuid = owner->GetGUID().GetRawValue();
+    if (BotRaidAreaAuthority::IsAllOffenseSuppressed(ownerGuid)
+        && !spellInfo->IsPositive())
+        return true;
+    return BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid)
+        && SpellHasHostileMultiTargetSemantics(spellInfo);
+}
+}
 
 Totem::Totem(SummonPropertiesEntry const* properties, Unit* owner) : Minion(properties, owner, false)
 {
@@ -36,6 +78,18 @@ void Totem::Update(uint32 time)
     if (!GetOwner()->IsAlive() || !IsAlive())
     {
         UnSummon();                                         // remove self
+        return;
+    }
+
+    // Offensive totems own independent AI/passive aura cast paths.  Remove
+    // the native summon when its owner enters a full offensive hold, or when
+    // a hostile multi-target totem could reach an immediate-next protected
+    // encounter.  Positive support totems remain untouched; a later ordinary
+    // bot decision may natively summon an offensive totem again after release.
+    if (RaidTotemSpellSuppressed(this, GetSpell())
+        || RaidTotemSpellSuppressed(this, GetSpell(1)))
+    {
+        UnSummon();
         return;
     }
 
@@ -82,11 +136,12 @@ void Totem::InitStats(uint32 duration)
 
 void Totem::InitSummon()
 {
-    if (m_type == TOTEM_PASSIVE && GetSpell())
+    if (m_type == TOTEM_PASSIVE && GetSpell()
+        && !RaidTotemSpellSuppressed(this, GetSpell()))
         CastSpell(this, GetSpell(), true);
 
     // Some totems can have both instant effect and passive spell
-    if (GetSpell(1))
+    if (GetSpell(1) && !RaidTotemSpellSuppressed(this, GetSpell(1)))
         CastSpell(this, GetSpell(1), true);
 
     if (m_Properties->ID == SUMMON_TYPE_TOTEM_FIRE && GetOwner()->HasAura(SPELL_TOTEMIC_WRATH_TALENT))

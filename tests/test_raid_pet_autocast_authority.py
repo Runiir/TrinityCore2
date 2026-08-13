@@ -12,6 +12,7 @@ BOT_MGR = (ROOT / "src/server/game/Bots/BotMgr.cpp").read_text(encoding="utf-8")
 def test_raid_area_authority_is_transient_and_pet_ai_enforced():
     assert "inline std::unordered_set<uint64> SuppressedOwners" in AUTHORITY
     assert "BotRaidAreaAuthority::IsSuppressed(owner->GetGUID().GetRawValue())" in PET_AI
+    assert "BotRaidAreaAuthority::HasProtectedEncounterEntries(owner->GetGUID().GetRawValue())" in PET_AI
     assert "SpellHasHostileMultiTargetSemantics(spellInfo)" in PET_AI
     assert "BotRaidAreaAuthority::Set(ownerGuid, action.SuppressAreaDamage);" in EXECUTOR
     assert "BotRaidAreaAuthority::Clear(state.Guid.GetRawValue());" in RUNTIME

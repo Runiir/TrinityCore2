@@ -16,6 +16,7 @@
  */
 
 #include "TotemAI.h"
+#include "Bots/BotRaidAreaAuthority.h"
 #include "Totem.h"
 #include "Creature.h"
 #include "ObjectAccessor.h"
@@ -24,6 +25,41 @@
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
+
+namespace
+{
+bool SpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth = 0)
+{
+    if (!spellInfo || depth > 4)
+        return false;
+    if (spellInfo->Id == 48505 || spellInfo->Id == 89751)
+        return true;
+    for (uint8 effectIndex = 0; effectIndex < MAX_SPELL_EFFECTS; ++effectIndex)
+    {
+        SpellEffectInfo const& effect = spellInfo->Effects[effectIndex];
+        if (!effect.IsEffect())
+            continue;
+        if (!spellInfo->IsPositiveEffect(effectIndex)
+            && (effect.ChainTarget > 1 || effect.IsTargetingArea()
+                || effect.IsEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA)
+                || effect.IsAreaAuraEffect()))
+            return true;
+        if (effect.TriggerSpell
+            && SpellHasHostileMultiTargetSemantics(
+                sSpellMgr->GetSpellInfo(effect.TriggerSpell), depth + 1))
+            return true;
+    }
+    return false;
+}
+
+bool ProtectedTotemTarget(Unit const* owner, Unit const* target)
+{
+    Creature const* creature = target ? target->ToCreature() : nullptr;
+    return owner && creature
+        && BotRaidAreaAuthority::IsProtectedEncounterEntry(
+            owner->GetGUID().GetRawValue(), creature->GetEntry());
+}
+}
 
 int32 TotemAI::Permissible(Creature const* creature)
 {
@@ -76,6 +112,24 @@ void TotemAI::UpdateAI(uint32 /*diff*/)
     Unit* owner = me->ToTotem()->GetOwner();
     if (owner && owner->GetTypeId() == TYPEID_PLAYER)
         me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
+    uint64 const ownerGuid = owner ? owner->GetGUID().GetRawValue() : 0;
+    if (ownerGuid && BotRaidAreaAuthority::IsAllOffenseSuppressed(ownerGuid))
+    {
+        me->InterruptNonMeleeSpells(false);
+        _victimGUID.Clear();
+        ++_noTargetSkips;
+        return;
+    }
+    if (ownerGuid && BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid)
+        && SpellHasHostileMultiTargetSemantics(spellInfo))
+    {
+        me->InterruptNonMeleeSpells(false);
+        _victimGUID.Clear();
+        ++_noTargetSkips;
+        return;
+    }
+    if (ProtectedTotemTarget(owner, victim))
+        victim = nullptr;
     bool totemCanAttack = victim && me->IsValidAttackTarget(victim, spellInfo);
     bool ownerCanAttack = victim && owner && owner->IsValidAttackTarget(victim, spellInfo);
 
@@ -87,6 +141,8 @@ void TotemAI::UpdateAI(uint32 /*diff*/)
         Trinity::NearestAttackableUnitInObjectRangeCheck u_check(me, owner ? owner : me, max_range);
         Trinity::UnitLastSearcher<Trinity::NearestAttackableUnitInObjectRangeCheck> checker(me, victim, u_check);
         Cell::VisitAllObjects(me, checker, max_range);
+        if (ProtectedTotemTarget(owner, victim))
+            victim = nullptr;
         totemCanAttack = victim && me->IsValidAttackTarget(victim, spellInfo);
         ownerCanAttack = victim && owner && owner->IsValidAttackTarget(victim, spellInfo);
     }
@@ -116,5 +172,12 @@ void TotemAI::UpdateAI(uint32 /*diff*/)
 
 void TotemAI::AttackStart(Unit* victim)
 {
+    Unit* owner = me->ToTotem()->GetOwner();
+    if (owner && (BotRaidAreaAuthority::IsAllOffenseSuppressed(owner->GetGUID().GetRawValue())
+        || ProtectedTotemTarget(owner, victim)))
+    {
+        _victimGUID.Clear();
+        return;
+    }
     _victimGUID = victim ? victim->GetGUID() : ObjectGuid::Empty;
 }

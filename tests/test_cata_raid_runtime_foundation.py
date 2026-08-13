@@ -10,6 +10,8 @@ ACTION_EXECUTOR = (ROOT / "src/server/game/Bots/BotActionExecutor.cpp").read_tex
 RAID_AUTHORITY = (ROOT / "src/server/game/Bots/BotRaidAreaAuthority.h").read_text(encoding="utf-8")
 PET_AI = (ROOT / "src/server/game/AI/CoreAI/PetAI.cpp").read_text(encoding="utf-8")
 UNIT_AI = (ROOT / "src/server/game/AI/CoreAI/UnitAI.cpp").read_text(encoding="utf-8")
+TOTEM_AI = (ROOT / "src/server/game/AI/CoreAI/TotemAI.cpp").read_text(encoding="utf-8")
+TOTEM = (ROOT / "src/server/game/Entities/Totem/Totem.cpp").read_text(encoding="utf-8")
 MAGMAW_IMPL = (
     ROOT / "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_magmaw.cpp"
 ).read_text(encoding="utf-8")
@@ -1228,6 +1230,11 @@ def test_trash_profile_damage_cannot_pull_or_compound_the_next_boss_encounter():
     assert "RaidControlledOffenseRejected(me, victim)" in UNIT_AI
     assert "RaidControlledOffenseRejected(me, target, spellInfo)" in UNIT_AI
     assert "BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid)" in UNIT_AI
+    assert "BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid)" in TOTEM_AI
+    assert "BotRaidAreaAuthority::IsAllOffenseSuppressed(ownerGuid)" in TOTEM_AI
+    assert "ProtectedTotemTarget(owner, victim)" in TOTEM_AI
+    assert "RaidTotemSpellSuppressed(this, GetSpell())" in TOTEM
+    assert "UnSummon();" in TOTEM
 
 
 def test_boss_nodes_fail_closed_on_undeclared_prerequisite_hostiles():
