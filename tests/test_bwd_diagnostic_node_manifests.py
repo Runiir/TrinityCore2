@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from tools.bot_ml.run_live_bot_validation import write_validation_config
+
 from tools.bot_ml.build_validation_scenario_manifests import build_manifests
 from tools.bot_ml.build_live_scenario_reports import build_reports
 
@@ -145,6 +147,24 @@ def test_runtime_profiles_select_only_the_matching_diagnostic_scenario():
         assert profile["diagnostic_parent_scenario_id"] == CANONICAL_ID
         assert profile["prerequisite_contract"]["certifies_predecessors"] is False
     assert len({profiles[scenario_id]["pool_tag_filter"] for scenario_id in DIAGNOSTIC_IDS.values()}) == 6
+
+
+def test_manifest_config_selects_exact_magmaw_profile_instead_of_base_stonecore(tmp_path: Path):
+    route = _routes(_manifests(), DIAGNOSTIC_IDS["magmaw"])[0]
+    base = tmp_path / "worldserver.conf"
+    base.write_text('BotWorld.AutoStart = 1\nBotWorld.RuntimeProfile = "stonecore_5n"\n', encoding="utf-8")
+    manifest = tmp_path / "validation_route_manifest.json"
+    manifest.write_text("{}\n", encoding="utf-8")
+    generated = write_validation_config(
+        base,
+        tmp_path / "run",
+        pool_tag=DIAGNOSTIC_IDS["magmaw"],
+        validation_route=route,
+        validation_route_manifest_path=manifest,
+    )
+    text = generated.read_text(encoding="utf-8")
+    assert f'BotWorld.RuntimeProfile = "{DIAGNOSTIC_IDS["magmaw"]}"' in text
+    assert 'BotWorld.RuntimeProfile = "stonecore_5n"' not in text
 
 def test_live_report_builder_keeps_all_seven_bwd_route_partitions_distinct(tmp_path: Path):
     manifests = _manifests()

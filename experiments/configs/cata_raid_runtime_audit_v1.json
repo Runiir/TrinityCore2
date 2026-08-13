@@ -10,7 +10,7 @@
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
   "audited_commit": "18707ae931c56619b553ff19f883580178724d33",
-  "gate_state": "zero_critical_high_build_and_magmaw_prep_authorized_exact_build_pending",
+  "gate_state": "magmaw_manifest_runtime_profile_remediation_review_pending",
   "foundation": {
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
     "reviewed_source_sha": "18707ae931c56619b553ff19f883580178724d33",
@@ -47,8 +47,8 @@
   },
   "build": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_state": "exact_reviewed_status_descendant_rebuild_pending",
-    "current_result": "244ca configure/worldserver succeeded and produced bbe8fe4f, but receipt identity is historical after 45131/cc57 tool changes; final reviewed status descendant requires a new receipt-produced binary",
+    "current_state": "exact_dbe_built_and_prepared_then_held_before_live_on_profile_mismatch",
+    "current_result": "dbe configure/worldserver succeeded and produced ceb5a1d9; 110/110 verifier and Magmaw v5 readback passed; generated manifest config retained stonecore_5n RuntimeProfile, so no server was started and remediation review/rebuild is required",
     "receipt_trust_model": "explicit_trusted_local_operator",
     "trusted_operator": "runiir",
     "trusted_uid": 1000,
@@ -177,7 +177,7 @@
   "required_open_work": [
     {
       "area": "current_build",
-      "missing": ["one_exact_policy_v8_rebuild_of_final_reviewed_status_descendant"]
+      "missing": ["manifest_config_runtime_profile_remediation_review", "one_exact_policy_v8_rebuild_of_remediation_descendant"]
     },
     {
       "area": "live_script_and_decision_review",
@@ -198,7 +198,7 @@
   ],
   "phase1_gate_blockers": [
     "exact_ef04_uncapped_capture_failed_closed_at_chainwielder_before_drudge_or_magmaw",
-    "exact_18707_readback_is_reviewed_and_requires_final_coordinator_receipt_and_live_proof",
+    "magmaw_manifest_config_inherited_stonecore_profile_was_caught_before_server_start_and_requires_reviewed_exact_rebuild",
     "general_db_backed_trained_dps_profiles_are_static_verified_but_live_activation_and_damage_remain_unproven",
     "single_cohort_worldserver_cpu_and_log_volume_require_live_measurement_of_bounded_capture_scheduler_before_parallel_shards",
     "later_boss_shards_lack_executable_native_predecessor_save_apply_and_readback",

@@ -688,6 +688,16 @@ def write_validation_config(
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ManifestPath", f'"{str(validation_route_manifest_path).replace(chr(34), "")}"')
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.AdvanceMode", '"terminal"')
     if route:
+        route_profile = str(route.get("runtime_profile_id") or route.get("scenario_id") or "").strip()
+        if validation_route_manifest_path and route_profile:
+            # A manifest-scoped diagnostic must never inherit the base file's
+            # Stonecore/canonical profile during AutoStart. The profile owns
+            # the exact roster, pool, and route identity selected above.
+            text = upsert_trinity_config(
+                text,
+                "BotWorld.RuntimeProfile",
+                f'"{route_profile.replace(chr(34), "")}"',
+            )
         # A configured runtime profile is applied after the file-backed route
         # settings.  Validation profiles commonly carry a full manifest, which
         # would silently replace a requested direct segment with node zero.

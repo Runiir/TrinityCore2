@@ -7405,6 +7405,7 @@ def test_live_bot_validation_route_manifest_dry_run_writes_scenario_scoped_confi
     assert Path(report["validation_route_manifest_path"]).name == "validation_route_manifest.json"
     assert "BotWorld.ValidationRoute.ManifestPath" in generated_config
     assert 'BotWorld.RuntimeProfile = ""' not in generated_config
+    assert 'BotWorld.RuntimeProfile = "stonecore_5n"' in generated_config
     assert 'BotWorld.ValidationRoute.AdvanceMode = "terminal"' in generated_config
     assert 'BotWorld.ValidationRoute.NodeId = "stonecore_entry"' in generated_config
     assert "BotWorld.TargetPopulation = 5" in generated_config

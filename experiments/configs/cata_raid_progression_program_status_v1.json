@@ -39,8 +39,8 @@
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
     "reviewed_source_commit": "18707ae931c56619b553ff19f883580178724d33",
     "exact_build_target": "clean Git HEAD status-only descendant of reviewed_source_commit",
-    "current_state": "reviewed_status_descendant_exact_build_pending",
-    "current_result": "exact 244ca policy-v8 configure/worldserver build succeeded with a receipt-produced bbe8fe4f binary, but its receipts are now historical after tool/readback commits; freeze and build the final reviewed status descendant before live capture",
+    "current_state": "magmaw_runtime_profile_config_remediation_review_pending",
+    "current_result": "exact dbe coordinator build succeeded with receipt-produced ceb5a1d9 binary and fresh 110-character verifier/readback passed, but preparation exposed an inherited stonecore_5n RuntimeProfile in the Magmaw manifest config before server start; the generator remediation requires review and a new exact receipt",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -621,8 +621,8 @@
       ,"uncapped_1c7a_three_file_failure_batch_pushed_remote_verified_and_compactly_summarized"
       ],
       "remaining_requirements": [
-        "complete_exact_policy_v8_rebuild_of_reviewed_status_descendant",
-        "fresh_110_character_reprovision_full_verifier_and_magmaw_v5_readback",
+        "review_manifest_config_exact_magmaw_profile_remediation",
+        "rebuild_exact_remediation_descendant_and_repeat_fresh_preparation_readback",
         "uncapped_four_node_magmaw_rerun_with_trained_profile_and_resource_observation",
         "phase1_live_evidence_exact_evict_after_diagnosis_and_review"
       ]
@@ -645,8 +645,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "Exact e50/45131 close the reviewed Magmaw source and 110-character preparation contract. Exact 18707 closes the scenario-selected v5 DB/auth readback with zero unresolved Critical/High findings. The successful 244ca build is historical after tool identity changes. A final exact build, fresh preparation/readback and uncapped four-node Magmaw run remain required. Later-boss native predecessor-save revision is blocked on two review Highs; Nefarian also lacks proven legitimate native descent."
+      "detail": "Exact dbe build and fresh 110-character provisioning/full verifier/Magmaw v5 readback succeeded. Before worldserver start, the generated manifest config was found to retain base RuntimeProfile=stonecore_5n despite the exact Magmaw pool/route. No live contamination occurred. The generator now pins the manifest route runtime_profile_id/scenario_id and awaits review/rebuild. Later-boss native predecessor-save revision is blocked on two review Highs; Nefarian also lacks proven legitimate native descent."
     }
   ],
-  "next_action": "Commit this reviewed status descendant, run one exact policy-v8 coordinator rebuild, freshly reprovision all 110 tracked characters, independently full-verify and retain Magmaw v5 readback, then prestart and verify one worldserver before attaching the Magmaw Luna-xhigh babysitter. Run only the uncapped four-node Magmaw diagnostic and require trained DPS actions, bounded CPU/log growth, native engagement/full-wipe/reset/recovery/ready-check, clean demux, DVC publication and exact eviction. Keep later shards blocked until the two predecessor-save review Highs are remediated and native setup is executable/read back; keep Nefarian blocked until legitimate descent is proven."
+  "next_action": "Commit and review the exact Magmaw RuntimeProfile config remediation, run one exact policy-v8 coordinator rebuild, repeat fresh 110-character preparation/full verification/Magmaw v5 readback, then prestart and verify one worldserver before attaching the Magmaw Luna-xhigh babysitter. Run only the uncapped four-node Magmaw diagnostic and require trained DPS actions, bounded CPU/log growth, native engagement/full-wipe/reset/recovery/ready-check, clean demux, DVC publication and exact eviction. Keep later shards blocked until predecessor-save review Highs are remediated; keep Nefarian blocked until legitimate descent is proven."
 }
