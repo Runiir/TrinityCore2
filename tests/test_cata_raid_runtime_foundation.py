@@ -81,11 +81,11 @@ def _native_recovery_signal_edges(samples):
             previous
             and previous["released"]
             and current["released"]
+            and previous["outside"]
             and current["outside"]
-            and (
-                (not previous["outside"] and current["native_release_requested"])
-                or previous["outside"] != current["outside"]
-            )
+            and current["native_runback_armed"]
+            and current["landing_identity_bound"]
+            and current["path_progressed"]
         )
         if signal["release"] and released_outside and not signal["runback"]:
             evidence_sequence += 1
@@ -116,15 +116,20 @@ def _native_recovery_signal_edges(samples):
 def test_native_recovery_refresh_keeps_worldport_intermediate_edges_observable():
     samples = [
         {"alive": False, "corpse": True, "released": False, "outside": False,
-         "native_release_requested": False},
+         "native_release_requested": False, "native_runback_armed": False,
+         "landing_identity_bound": False, "path_progressed": False},
         {"alive": False, "corpse": True, "released": True, "outside": False,
-         "native_release_requested": True},
+         "native_release_requested": True, "native_runback_armed": False,
+         "landing_identity_bound": False, "path_progressed": False},
         {"alive": False, "corpse": True, "released": True, "outside": True,
-         "native_release_requested": True},
+         "native_release_requested": True, "native_runback_armed": False,
+         "landing_identity_bound": True, "path_progressed": False},
         {"alive": False, "corpse": True, "released": True, "outside": True,
-         "native_release_requested": True},
+         "native_release_requested": True, "native_runback_armed": True,
+         "landing_identity_bound": True, "path_progressed": True},
         {"alive": True, "corpse": False, "released": False, "outside": False,
-         "native_release_requested": True},
+         "native_release_requested": True, "native_runback_armed": True,
+         "landing_identity_bound": True, "path_progressed": False},
     ]
 
     signal = _native_recovery_signal_edges(samples)
@@ -146,9 +151,118 @@ def test_native_recovery_refresh_keeps_worldport_intermediate_edges_observable()
         admitted_group.index("auto signalComplete")
     ]
     assert "HasNativeRaidCorpseAuthority(*botState, bot)" in runtime_refresh
-    assert "nativeReleaseMovedOutside" in runtime_refresh
+    assert "releaseLandingIdentityBound" in runtime_refresh
+    assert "NativeReleaseLandingWipeGeneration == raid.WipeGeneration" in runtime_refresh
+    assert "NativeRunbackAreaTriggerId == BlackwingDescentEntranceTriggerId" in runtime_refresh
+    assert "nativeReleaseMovedOutside" not in runtime_refresh
     assert "botState->NativeReleaseRequested" in runtime_refresh
     assert "bot->GetCorpse() != nullptr" not in runtime_refresh
+
+
+def test_native_recovery_rejects_release_worldport_or_stale_outside_state_as_runback():
+    release_landing_only = [
+        {"alive": False, "corpse": True, "released": False, "outside": False,
+         "native_release_requested": False, "native_runback_armed": False,
+         "landing_identity_bound": False, "path_progressed": False},
+        {"alive": False, "corpse": True, "released": True, "outside": False,
+         "native_release_requested": True, "native_runback_armed": False,
+         "landing_identity_bound": False, "path_progressed": False},
+        {"alive": False, "corpse": True, "released": True, "outside": True,
+         "native_release_requested": True, "native_runback_armed": False,
+         "landing_identity_bound": True, "path_progressed": False},
+    ]
+    stale_outside = [
+        {"alive": False, "corpse": True, "released": False, "outside": False,
+         "native_release_requested": False, "native_runback_armed": False,
+         "landing_identity_bound": False, "path_progressed": False},
+        {"alive": False, "corpse": True, "released": True, "outside": True,
+         "native_release_requested": True, "native_runback_armed": True,
+         "landing_identity_bound": False, "path_progressed": True},
+    ]
+
+    assert _native_recovery_signal_edges(release_landing_only)["runback"] == 0
+    assert _native_recovery_signal_edges(stale_outside)["runback"] == 0
+
+    runtime_refresh = IMPL[
+        IMPL.index("if (!signal.ReleaseSequence"):
+        IMPL.index("bool const exactSignalRoster")
+    ]
+    assert "prior->OutsideOriginalInstance && releaseLandingIdentityBound" in runtime_refresh
+    assert "NativeReleaseLandingObserved" in runtime_refresh
+    assert "NativeReleaseLandingMapId" in runtime_refresh
+    assert "NativeReleaseLandingInstanceId" in runtime_refresh
+    assert "NativeReleaseLandingWipeGeneration" in runtime_refresh
+
+
+def _native_recovery_objective_gate(*, policy, active, attempt_matches,
+                                    exact_roster, wipe_generation,
+                                    state, evidence_complete):
+    pending_state = state in {
+        "wiped",
+        "recovery_evidence_pending",
+        "native_resurrection_runback",
+        "awaiting_native_reset",
+        "release_resurrection_pending",
+    }
+    return (
+        policy == "native_full_wipe_only"
+        and active
+        and attempt_matches
+        and exact_roster
+        and wipe_generation > 0
+        and pending_state
+        and not evidence_complete
+    )
+
+
+def test_native_recovery_evidence_gate_holds_offense_navigation_and_reengagement():
+    assert _native_recovery_objective_gate(
+        policy="native_full_wipe_only", active=True, attempt_matches=True,
+        exact_roster=True, wipe_generation=2, state="wiped",
+        evidence_complete=False,
+    )
+    assert _native_recovery_objective_gate(
+        policy="native_full_wipe_only", active=True, attempt_matches=True,
+        exact_roster=True, wipe_generation=2, state="recovery_evidence_pending",
+        evidence_complete=False,
+    )
+    assert not _native_recovery_objective_gate(
+        policy="native_full_wipe_only", active=True, attempt_matches=True,
+        exact_roster=True, wipe_generation=2, state="ready",
+        evidence_complete=False,
+    )
+    assert not _native_recovery_objective_gate(
+        policy="native_full_wipe_only", active=True, attempt_matches=True,
+        exact_roster=True, wipe_generation=2, state="wiped",
+        evidence_complete=True,
+    )
+    assert not _native_recovery_objective_gate(
+        policy="native_full_wipe_only", active=True, attempt_matches=True,
+        exact_roster=False, wipe_generation=2, state="wiped",
+        evidence_complete=False,
+    )
+
+    objective = IMPL[
+        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective"):
+        IMPL.index("bool BotWorldPopulationMgr::IsBossContext")
+    ]
+    gate = objective.index("RaidRuntime const& raid")
+    clear = objective.index(
+        "BotRaidAreaAuthority::SetAllOffenseSuppressed(raidAuthorityOwner, false)"
+    )
+    assert gate < clear
+    for token in (
+        "raid.NativeSignalsByGuid.size() == raid.RosterByGuid.size()",
+        "signal->second.WipeGeneration == raid.WipeGeneration",
+        "signal->second.DeathSequence > 0",
+        "raid.NativeRecoveryEvidenceComplete",
+        "BotRaidAreaAuthority::SetAllOffenseSuppressed(raidAuthorityOwner, true)",
+        "bot->AttackStop();",
+        "bot->GetMotionMaster()->MoveIdle();",
+        'action = "hold_native_recovery_evidence";',
+        "return true;",
+    ):
+        assert token in objective[gate:clear]
 
 
 def test_bwd_entry_to_magmaw_uses_frozen_junction_below_native_path_limit():

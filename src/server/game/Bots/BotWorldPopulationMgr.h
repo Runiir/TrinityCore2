@@ -578,6 +578,13 @@ private:
         uint64 NativeResurrectionPendingUntilMs = 0;
         bool NativeReleaseRequested = false;
         uint32 NativeRunbackAreaTriggerId = 0;
+        bool NativeReleaseLandingObserved = false;
+        uint32 NativeReleaseLandingMapId = 0;
+        uint32 NativeReleaseLandingInstanceId = 0;
+        uint64 NativeReleaseLandingWipeGeneration = 0;
+        float NativeReleaseLandingX = 0.0f;
+        float NativeReleaseLandingY = 0.0f;
+        float NativeReleaseLandingZ = 0.0f;
         uint32 LastRaidTankSwapTriggerSpellId = 0;
         std::string LastRaidTankSwapTriggerKey;
         uint64 LastRaidTankSwapMs = 0;

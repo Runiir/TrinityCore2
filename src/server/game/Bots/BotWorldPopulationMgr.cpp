@@ -4228,7 +4228,22 @@ bool BotWorldPopulationMgr::TryReattachValidationBot(WorldBotState& state, Playe
 
                 if (nativeWorldportComplete)
                 {
-                    if (nativeBlackwingDescentRunbackWorldport)
+                    if (nativeReleasedGhostWorldport)
+                    {
+                        // Preserve the exact native graveyard landing after
+                        // the release worldport completes.  The following
+                        // runback edge must be proven by movement from this
+                        // identity-bound landing, never by the release
+                        // worldport itself.
+                        state.NativeReleaseLandingObserved = true;
+                        state.NativeReleaseLandingMapId = bot->GetMapId();
+                        state.NativeReleaseLandingInstanceId = bot->GetInstanceId();
+                        state.NativeReleaseLandingWipeGeneration = Cohort().Raid.WipeGeneration;
+                        state.NativeReleaseLandingX = bot->GetPositionX();
+                        state.NativeReleaseLandingY = bot->GetPositionY();
+                        state.NativeReleaseLandingZ = bot->GetPositionZ();
+                    }
+                    else if (nativeBlackwingDescentRunbackWorldport)
                     {
                         state.NativeReleaseRequested = false;
                         state.NativeRunbackAreaTriggerId = 0;
@@ -7303,16 +7318,19 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
                 signal.CorpseSequence = ++raid.EvidenceSequence;
             if (!signal.ReleaseSequence && signal.CorpseSequence && signal.Released)
                 signal.ReleaseSequence = ++raid.EvidenceSequence;
-            bool const nativeReleaseMovedOutside = prior && prior->Released && signal.Released
-                && !prior->OutsideOriginalInstance && signal.OutsideOriginalInstance
-                && botState && botState->NativeReleaseRequested;
+            bool const releaseLandingIdentityBound = botState
+                && botState->NativeReleaseRequested
+                && botState->NativeReleaseLandingObserved
+                && botState->NativeReleaseLandingWipeGeneration == raid.WipeGeneration
+                && botState->NativeRunbackAreaTriggerId == BlackwingDescentEntranceTriggerId
+                && !signal.Alive && signal.Released && signal.OutsideOriginalInstance
+                && signal.MapId == botState->NativeReleaseLandingMapId
+                && signal.InstanceId == botState->NativeReleaseLandingInstanceId;
             bool const movedOutsideAsGhost = prior && prior->Released && signal.Released
-                && signal.OutsideOriginalInstance
-                && (nativeReleaseMovedOutside
-                    || (prior->OutsideOriginalInstance
-                        && (prior->MapId != signal.MapId || prior->InstanceId != signal.InstanceId
-                            || Distance2d(prior->X, prior->Y, signal.X, signal.Y) > 2.0f
-                            || std::fabs(prior->Z - signal.Z) > 2.0f)));
+                && prior->OutsideOriginalInstance && releaseLandingIdentityBound
+                && (prior->MapId != signal.MapId || prior->InstanceId != signal.InstanceId
+                    || Distance2d(prior->X, prior->Y, signal.X, signal.Y) > 2.0f
+                    || std::fabs(prior->Z - signal.Z) > 2.0f);
             if (!signal.RunbackSequence && signal.ReleaseSequence && movedOutsideAsGhost)
                 signal.RunbackSequence = ++raid.EvidenceSequence;
             bool const enteredOriginalInstance = prior && prior->Released && prior->OutsideOriginalInstance
@@ -9018,6 +9036,13 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     {
         state.NativeReleaseRequested = false;
         state.NativeRunbackAreaTriggerId = 0;
+        state.NativeReleaseLandingObserved = false;
+        state.NativeReleaseLandingMapId = 0;
+        state.NativeReleaseLandingInstanceId = 0;
+        state.NativeReleaseLandingWipeGeneration = 0;
+        state.NativeReleaseLandingX = 0.0f;
+        state.NativeReleaseLandingY = 0.0f;
+        state.NativeReleaseLandingZ = 0.0f;
     }
 
     Cohort().TelemetryBuffer.Observe(bot, bot->IsInCombat() ? "combat" : "ambient", nullptr, nullptr, nullptr);
@@ -9210,6 +9235,13 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
                     bot->GetSession()->HandleRepopRequestOpcode(repop);
                     state.NativeReleaseRequested = true;
                     state.NativeRunbackAreaTriggerId = 0;
+                    state.NativeReleaseLandingObserved = false;
+                    state.NativeReleaseLandingMapId = 0;
+                    state.NativeReleaseLandingInstanceId = 0;
+                    state.NativeReleaseLandingWipeGeneration = 0;
+                    state.NativeReleaseLandingX = 0.0f;
+                    state.NativeReleaseLandingY = 0.0f;
+                    state.NativeReleaseLandingZ = 0.0f;
                     state.DeadTimer = 0;
                     RecordEvent(state, bot, "native_release", nullptr, "release_spirit_opcode_semantics",
                         raw.c_str(), semantic.c_str());
@@ -12415,6 +12447,58 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     {
         BotRaidAreaAuthority::Clear(raidAuthorityOwner);
         return false;
+    }
+
+    // A native full-wipe recovery is an evidence gate, not a route decision.
+    // Keep every exact-roster member stationary and all hostile authority
+    // suppressed until corpse, release, runback, re-entry, resurrection, the
+    // native reset, and the post-recovery ready check have all been observed.
+    // In particular, do not clear suppression before this check: an alive
+    // survivor may otherwise re-engage the boss while the recovery proof is
+    // still incomplete.
+    RaidRuntime const& raid = Cohort().Raid;
+    bool const exactWipeRoster = raid.Active
+        && raid.AttemptId == Cohort().AttemptId
+        && raid.ExpectedSize == Cohort().Config.TargetPopulation
+        && raid.WipeGeneration > 0
+        && raid.RosterComplete
+        && raid.RosterByGuid.size() == Cohort().Config.TargetPopulation
+        && raid.NativeSignalsByGuid.size() == raid.RosterByGuid.size()
+        && std::all_of(raid.RosterByGuid.begin(), raid.RosterByGuid.end(),
+            [&raid](auto const& row)
+            {
+                auto const signal = raid.NativeSignalsByGuid.find(row.first);
+                return signal != raid.NativeSignalsByGuid.end()
+                    && signal->second.WipeGeneration == raid.WipeGeneration
+                    && signal->second.DeathSequence > 0;
+            });
+    bool const nativeRecoveryEvidencePending =
+        Cohort().Config.ValidationRouteBossRecovery == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly
+        && exactWipeRoster
+        && (raid.WipeState == "wiped" || raid.RecoveryState == "recovery_evidence_pending"
+            || raid.RecoveryState == "native_resurrection_runback"
+            || raid.RecoveryState == "awaiting_native_reset"
+            || raid.RecoveryState == "release_resurrection_pending")
+        && !raid.NativeRecoveryEvidenceComplete;
+    if (nativeRecoveryEvidencePending)
+    {
+        BotRaidAreaAuthority::SetAllOffenseSuppressed(raidAuthorityOwner, true);
+        BotRaidAreaAuthority::Set(raidAuthorityOwner, true);
+        bot->AttackStop();
+        bot->CombatStop(true);
+        bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+        bot->GetMotionMaster()->MoveIdle();
+        state.ActivePathValid = false;
+        state.IsMoving = false;
+        state.TargetGuid.Clear();
+        state.WasInCombat = false;
+        target = nullptr;
+        state.LastRecoveryMode = "native_full_wipe_only";
+        state.LastRecoveryResult = "native_recovery_evidence_pending";
+        state.LastNoProgressReason = "native_recovery_evidence_pending";
+        situation = "native_recovery_evidence";
+        action = "hold_native_recovery_evidence";
+        return true;
     }
 
     // Freeze the next encounter's complete declared creature-entry surface in
@@ -16034,6 +16118,85 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     return &definition;
             return nullptr;
         };
+        struct ActiveHazard
+        {
+            Creature* Source = nullptr;
+            HazardDefinition const* Definition = nullptr;
+            float SafeRadius = 0.0f;
+        };
+        std::vector<ActiveHazard> activeHazards;
+        auto hazardIsActive = [this, bot](Creature* hazard, HazardDefinition const* definition) -> bool
+        {
+            if (!hazard || !definition || !hazard->IsAlive())
+                return false;
+
+            // Non-attackable radial hazards are persistent ground objects (the
+            // BWD Laser Strike creature is one); attackable sources only count
+            // while their declared detection/damage spell is being cast.
+            bool active = definition->Shape == "radial"
+                && !bot->IsValidAttackTarget(hazard);
+            if (definition->DetectionSpellId)
+                for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
+                    if (Spell* spell = hazard->GetCurrentSpell(spellType))
+                        if (SpellInfo const* spellInfo = spell->GetSpellInfo(); spellInfo
+                            && (spellInfo->Id == definition->DetectionSpellId
+                                || spellInfo->Id == definition->DamageSpellId))
+                            active = true;
+            return active;
+        };
+        auto refreshActiveHazards = [&]()
+        {
+            activeHazards.clear();
+            if (!mechanicProfileRequiresMovement || hazardDefinitions.empty())
+                return;
+
+            std::vector<WorldObject*> hazardObjects;
+            Trinity::AllWorldObjectsInRange hazardCheck(bot, 35.0f);
+            Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> hazardSearcher(
+                bot, hazardObjects, hazardCheck);
+            Cell::VisitAllObjects(bot, hazardSearcher, 35.0f);
+            for (WorldObject* object : hazardObjects)
+            {
+                Creature* hazard = object ? object->ToCreature() : nullptr;
+                HazardDefinition const* definition = hazardDefinitionFor(
+                    hazard ? hazard->GetEntry() : 0, 0);
+                if (!hazardIsActive(hazard, definition))
+                    continue;
+
+                activeHazards.push_back({
+                    hazard, definition,
+                    std::max(1.0f, definition->RadiusYards + definition->SafetyMarginYards)
+                });
+            }
+        };
+        auto positionOutsideActiveHazards = [&](Position const& position) -> bool
+        {
+            for (ActiveHazard const& hazard : activeHazards)
+            {
+                if (!hazard.Source || !hazard.Definition)
+                    continue;
+
+                bool inside = Distance2d(
+                    position.GetPositionX(), position.GetPositionY(),
+                    hazard.Source->GetPositionX(), hazard.Source->GetPositionY())
+                    <= hazard.SafeRadius;
+                if (hazard.Definition->Shape == "frontal_cone")
+                {
+                    float bearing = std::atan2(
+                        position.GetPositionY() - hazard.Source->GetPositionY(),
+                        position.GetPositionX() - hazard.Source->GetPositionX());
+                    float relative = bearing - hazard.Source->GetOrientation();
+                    while (relative > float(M_PI))
+                        relative -= float(2.0 * M_PI);
+                    while (relative < -float(M_PI))
+                        relative += float(2.0 * M_PI);
+                    inside = std::fabs(relative) <= float(M_PI_2);
+                }
+                if (inside)
+                    return false;
+            }
+            return true;
+        };
         auto isScopedGenericCastCandidate = [this, &hazardDefinitionFor, &isValidationCohortCombatLinked,
             currentNodeHasConfiguredHazard](Unit* candidate) -> bool
         {
@@ -16647,6 +16810,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         };
 
+        // Refresh immediately before the state guard so a newly spawned or
+        // overlapping Laser Strike cannot be missed between two AI ticks.
+        refreshActiveHazards();
         if (!state.ValidationRouteDodgeCasterGuid.IsEmpty()
             && state.ValidationRouteDodgeSpellId)
         {
@@ -16659,6 +16825,21 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 bool outsideHazard = bot->GetExactDist2d(previousHazard) > safeRadius;
                 if (previousDefinition->Shape == "frontal_cone" && !previousHazard->HasInArc(float(M_PI), bot))
                     outsideHazard = true;
+                // The previous single-caster guard is retained for telemetry,
+                // but an exit is complete only when the bot is outside every
+                // currently active source.  This matters when two Golem
+                // Sentries place overlapping Laser Strike creatures.
+                for (ActiveHazard const& activeHazard : activeHazards)
+                {
+                    if (!activeHazard.Source || !activeHazard.Definition)
+                        continue;
+                    bool outsideActiveHazard = bot->GetExactDist2d(activeHazard.Source)
+                        > activeHazard.SafeRadius;
+                    if (activeHazard.Definition->Shape == "frontal_cone"
+                        && activeHazard.Source->HasInArc(float(M_PI), bot))
+                        outsideActiveHazard = false;
+                    outsideHazard = outsideHazard && outsideActiveHazard;
+                }
                 // Persistent ground objects (lava fissures, gravity wells)
                 // remain active while alive, but attackable radial sources
                 // such as Stonecore Flayers are dangerous only during their
@@ -16806,31 +16987,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         if (mechanicProfileRequiresMovement && !hazardDefinitions.empty())
         {
-            std::vector<WorldObject*> hazardObjects;
-            Trinity::AllWorldObjectsInRange hazardCheck(bot, 35.0f);
-            Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> hazardSearcher(bot, hazardObjects, hazardCheck);
-            Cell::VisitAllObjects(bot, hazardSearcher, 35.0f);
             float bestHazardDistance = std::numeric_limits<float>::max();
-            for (WorldObject* object : hazardObjects)
+            for (ActiveHazard const& activeHazard : activeHazards)
             {
-                Creature* hazard = object ? object->ToCreature() : nullptr;
-                if (!hazard || !hazard->IsAlive())
-                    continue;
-                HazardDefinition const* definition = hazardDefinitionFor(hazard->GetEntry(), 0);
-                if (!definition)
+                Creature* hazard = activeHazard.Source;
+                HazardDefinition const* definition = activeHazard.Definition;
+                if (!hazard || !definition)
                     continue;
 
-                bool active = definition->Shape == "radial"
-                    && !bot->IsValidAttackTarget(hazard);
-                if (definition->DetectionSpellId)
-                    for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
-                        if (Spell* spell = hazard->GetCurrentSpell(spellType))
-                            if (SpellInfo const* spellInfo = spell->GetSpellInfo(); spellInfo && spellInfo->Id == definition->DetectionSpellId)
-                                active = true;
-                if (!active)
-                    continue;
-
-                float safeRadius = std::max(1.0f, definition->RadiusYards + definition->SafetyMarginYards);
+                float safeRadius = activeHazard.SafeRadius;
                 float distance = bot->GetExactDist2d(hazard);
                 if (distance > safeRadius)
                     continue;
@@ -16968,6 +17133,18 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         for (float angleOffset : { 0.0f, float(M_PI_4), -float(M_PI_4), float(M_PI_2), -float(M_PI_2) })
             dodgeCandidates.push_back(
                 bot->GetFirstCollisionPosition(dodgeDistance, angle + angleOffset));
+
+        // MoveBotToPoint validates navmesh reachability, while this geometry
+        // gate validates the complete active-hazard set.  Do not submit a
+        // candidate that exits one Laser Strike only to enter another
+        // overlapping strike on the same path endpoint.
+        dodgeCandidates.erase(
+            std::remove_if(dodgeCandidates.begin(), dodgeCandidates.end(),
+                [&](Position const& candidate)
+                {
+                    return !positionOutsideActiveHazards(candidate);
+                }),
+            dodgeCandidates.end());
 
         // Rerun106's longest healer dwell began while ordinary-trash recovery
         // already owned a validated remote hostile anchor. A new strict radial
