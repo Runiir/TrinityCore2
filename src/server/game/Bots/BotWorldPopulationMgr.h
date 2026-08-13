@@ -557,7 +557,8 @@ private:
         bool LineOfSight = false;
         bool InRange = false;
         bool CrossLane = false;
-        bool Eligible = false;
+        bool NativeSelectorEligible = false;
+        bool TacticCrossLaneEligible = false;
         std::string Role;
     };
 

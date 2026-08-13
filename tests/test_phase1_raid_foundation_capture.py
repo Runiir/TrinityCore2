@@ -321,7 +321,8 @@ def accepted_drudge_status() -> dict:
             lane = 0 if slot in lane_a_slots else 1
             role = row["role"]
             cross_lane = lane != source_lane
-            eligible = cross_lane and role != "tank"
+            native_selector_eligible = True
+            tactic_cross_lane_eligible = cross_lane and role != "tank"
             candidate_rows.append({
                 "guid": row["guid"],
                 "slot": slot,
@@ -335,7 +336,8 @@ def accepted_drudge_status() -> dict:
                 "line_of_sight": True,
                 "in_range": True,
                 "cross_lane": cross_lane,
-                "eligible": eligible,
+                "native_selector_eligible": native_selector_eligible,
+                "tactic_cross_lane_eligible": tactic_cross_lane_eligible,
                 "role": role,
             })
         observation["native_threat_candidates"] = candidate_rows
@@ -631,10 +633,43 @@ def test_drudge_native_threat_evidence_fails_closed_when_candidate_list_is_missi
 def test_drudge_native_threat_evidence_rejects_forged_eligibility_farthest_and_seed_linkage():
     forged_eligibility = accepted_drudge_status()
     first = forged_eligibility["raid_runtime"]["drudge_charge"]["observations"][0]
-    first["native_threat_candidates"][0]["eligible"] = True
+    first["native_threat_candidates"][0]["tactic_cross_lane_eligible"] = True
     accepted, reasons = accepted_drudge_contract([forged_eligibility])
     assert accepted is False
     assert "drudge_native_threat_candidate_eligibility_mismatch" in reasons
+
+    same_lane_farthest = accepted_drudge_status()
+    first = same_lane_farthest["raid_runtime"]["drudge_charge"]["observations"][0]
+    first["native_threat_candidates"][2]["distance"] = 75.0
+    accepted, reasons = accepted_drudge_contract([same_lane_farthest])
+    assert accepted is False
+    assert "drudge_native_threat_selected_target_not_farthest" in reasons
+
+    non_player_reference = accepted_drudge_status()
+    for observation in non_player_reference["raid_runtime"]["drudge_charge"]["observations"]:
+        if observation["observed_interval_ms"] != 0:
+            continue
+        observation["native_threat_candidates"].append({
+            "guid": 900000 + observation["source_spawn_id"],
+            "slot": 0,
+            "lane": 0,
+            "threat": 1.0,
+            "distance": 79.0,
+            "is_player": False,
+            "alive": True,
+            "same_map": True,
+            "available": True,
+            "line_of_sight": True,
+            "in_range": True,
+            "cross_lane": False,
+            "native_selector_eligible": False,
+            "tactic_cross_lane_eligible": False,
+            "role": "unregistered",
+        })
+        observation["native_threat_candidates_count"] += 1
+    accepted, reasons = accepted_drudge_contract([non_player_reference])
+    assert accepted is True
+    assert reasons == []
 
     forged_farthest = accepted_drudge_status()
     first = forged_farthest["raid_runtime"]["drudge_charge"]["observations"][0]

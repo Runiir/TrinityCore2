@@ -1219,7 +1219,8 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
 
             source_lane = 0 if source == 250140 else 1
             expected_candidates: list[dict[str, Any]] = []
-            reconstructed_eligible_guids: set[int] = set()
+            reconstructed_native_selector_guids: set[int] = set()
+            reconstructed_tactic_guids: set[int] = set()
             seen_guids: set[int] = set()
             for candidate in candidate_rows:
                 if not isinstance(candidate, dict):
@@ -1240,7 +1241,8 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
                     continue
                 boolean_fields = (
                     "is_player", "alive", "same_map", "available", "line_of_sight",
-                    "in_range", "cross_lane", "eligible",
+                    "in_range", "cross_lane", "native_selector_eligible",
+                    "tactic_cross_lane_eligible",
                 )
                 if any(not isinstance(candidate.get(field), bool) for field in boolean_fields):
                     reasons.append("drudge_native_threat_candidate_flags_invalid")
@@ -1259,29 +1261,35 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
                 )
                 expected_in_range = float(distance) <= 80.0
                 expected_cross_lane = registered and lane != source_lane
-                expected_eligible = (
+                expected_native_selector_eligible = (
                     candidate.get("is_player") is True
+                    and candidate.get("available") is True
+                    and candidate.get("line_of_sight") is True
+                    and expected_in_range
+                )
+                expected_tactic_eligible = (
+                    expected_native_selector_eligible
                     and registered
                     and active_lease
                     and candidate.get("alive") is True
                     and candidate.get("same_map") is True
-                    and candidate.get("available") is True
-                    and candidate.get("line_of_sight") is True
-                    and expected_in_range
                     and expected_cross_lane
                     and role != "tank"
                 )
                 if (candidate.get("is_player") is not registered
-                        or candidate_runtime_row is None
+                        or (candidate.get("is_player") is True and candidate_runtime_row is None)
                         or candidate.get("role") != role
                         or candidate.get("slot") != slot
                         or candidate.get("lane") != lane
                         or candidate.get("in_range") is not expected_in_range
                         or candidate.get("cross_lane") is not expected_cross_lane
-                        or candidate.get("eligible") is not expected_eligible):
+                        or candidate.get("native_selector_eligible") is not expected_native_selector_eligible
+                        or candidate.get("tactic_cross_lane_eligible") is not expected_tactic_eligible):
                     reasons.append("drudge_native_threat_candidate_eligibility_mismatch")
-                if expected_eligible:
-                    reconstructed_eligible_guids.add(guid)
+                if expected_native_selector_eligible:
+                    reconstructed_native_selector_guids.add(guid)
+                if expected_tactic_eligible:
+                    reconstructed_tactic_guids.add(guid)
                 expected_candidates.append(candidate)
 
             if len(seen_guids) != len(candidate_rows):
@@ -1291,13 +1299,15 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
                 continue
             eligible_candidates = [
                 row for row in expected_candidates
-                if row.get("guid") in reconstructed_eligible_guids
+                if row.get("guid") in reconstructed_native_selector_guids
             ]
             target_guid = first_observation.get("target_guid")
             target = next((row for row in expected_candidates if row.get("guid") == target_guid), None)
-            if target is None or target_guid not in reconstructed_eligible_guids:
+            if target is None or target_guid not in reconstructed_native_selector_guids:
                 reasons.append("drudge_native_threat_selected_target_ineligible")
             else:
+                if target_guid not in reconstructed_tactic_guids:
+                    reasons.append("drudge_native_threat_selected_target_not_cross_lane_tactic")
                 selected_distance = first_observation.get("selected_distance")
                 if (not isinstance(selected_distance, (int, float))
                         or isinstance(selected_distance, bool)
@@ -1323,7 +1333,7 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
                 native_candidate_rows_by_guid[source] = {
                     row.get("guid"): row for row in expected_candidates
                 }
-                native_candidate_eligible_guids_by_source[source] = reconstructed_eligible_guids
+                native_candidate_eligible_guids_by_source[source] = reconstructed_tactic_guids
 
     # The pre-first-Rush seed is a bounded, real profile action rather than a
     # threat-manager shortcut.  Reconstruct both cross-lane rows and all

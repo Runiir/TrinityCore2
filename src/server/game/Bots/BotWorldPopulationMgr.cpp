@@ -31037,7 +31037,8 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
                  << ",\"line_of_sight\":" << (candidate.LineOfSight ? "true" : "false")
                  << ",\"in_range\":" << (candidate.InRange ? "true" : "false")
                  << ",\"cross_lane\":" << (candidate.CrossLane ? "true" : "false")
-                 << ",\"eligible\":" << (candidate.Eligible ? "true" : "false")
+                 << ",\"native_selector_eligible\":" << (candidate.NativeSelectorEligible ? "true" : "false")
+                 << ",\"tactic_cross_lane_eligible\":" << (candidate.TacticCrossLaneEligible ? "true" : "false")
                  << ",\"role\":\"" << JsonEscape(candidate.Role) << "\"}";
         }
         json << "]"
@@ -35025,8 +35026,9 @@ uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster,
             == Cohort().Config.ValidationRouteSplitSourceGuids[0] ? 0 : 1;
         auto const& nativeThreatList = caster->GetThreatManager().GetUnsortedThreatList();
         size_t nativeThreatCandidateCount = 0;
-        for ([[maybe_unused]] ThreatReference const* reference : nativeThreatList)
-            ++nativeThreatCandidateCount;
+        for (ThreatReference const* reference : nativeThreatList)
+            if (reference && reference->GetVictim())
+                ++nativeThreatCandidateCount;
         observation.NativeThreatCandidatesCount = uint32(std::min<size_t>(
             nativeThreatCandidateCount, std::numeric_limits<uint32>::max()));
         observation.NativeThreatCandidatesComplete = nativeThreatCandidateCount
@@ -35075,11 +35077,17 @@ uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster,
                 }
             }
             candidateEvidence.CrossLane = crossLane;
-            candidateEvidence.Eligible = registered && activeLease
-                && candidate->IsAlive() && candidate->GetMap() == caster->GetMap()
+            // SMART_TARGET_FARTHEST with playerOnly=1, range=80 and LOS=1
+            // chooses from available player threat references regardless of
+            // raid role or lane. Keep that native predicate distinct from the
+            // tactic's desired cross-lane non-tank seed/selection predicate.
+            candidateEvidence.NativeSelectorEligible = candidateEvidence.IsPlayer
                 && candidateEvidence.Available && candidateEvidence.LineOfSight
-                && candidateEvidence.InRange && candidateEvidence.CrossLane
-                && candidateEvidence.Role != "tank";
+                && candidateEvidence.InRange;
+            candidateEvidence.TacticCrossLaneEligible =
+                candidateEvidence.NativeSelectorEligible && registered && activeLease
+                && candidate->IsAlive() && candidate->GetMap() == caster->GetMap()
+                && candidateEvidence.CrossLane && candidateEvidence.Role != "tank";
             observation.NativeThreatCandidates.push_back(std::move(candidateEvidence));
             if (observation.NativeThreatCandidates.size() >= MaxNativeThreatCandidates)
                 break;
