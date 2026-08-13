@@ -800,6 +800,7 @@ private:
         std::string DecisionFingerprintSituation;
         std::string DecisionFingerprintAction;
         std::string DecisionFingerprintActivity;
+        std::string DecisionFingerprintResult = "ok";
         uint32 DecisionFingerprintQuestId = 0;
         uint32 DecisionFingerprintClusterId = 0;
         uint32 DecisionFingerprintMapId = 0;
@@ -1664,8 +1665,8 @@ private:
     void RecordEvent(WorldBotState& state, Player* bot, char const* eventType, Unit const* target, char const* result, char const* rawJson, char const* semanticJson, float valueFloat = 0.0f, uint32 valueInt = 0, uint32 spellId = 0);
     void RecordDecision(WorldBotState& state, Player* bot, char const* situation, char const* action, Unit const* target, char const* rawJson, char const* semanticJson, std::vector<BotActivityScore> const& activityScores, BotActivityScore const& chosenActivity, BotRolePowerBreakdown const& power, bool failure, bool rare);
     void RecordDecisionFingerprintMemory(WorldBotState& state, Player* bot, char const* situation, char const* action, BotActivityScore const& chosenActivity, bool failure) const;
-    void PersistDecisionFingerprintDelta(WorldBotState& state, Player* bot, uint32 repeatDelta, uint32 failureDelta) const;
-    void FlushDecisionFingerprintMemory(WorldBotState& state, Player* bot) const;
+    void PersistDecisionFingerprintDelta(WorldBotState& state, uint32 repeatDelta, uint32 failureDelta) const;
+    void FlushDecisionFingerprintMemory(WorldBotState& state) const;
     void FlushPendingDecisionFingerprintMemory();
     void RecordDecisionTrace(WorldBotState& state, char const* situation, char const* action, Unit const* target, uint32 questId, char const* result, char const* reasonCode);
     BotDiagnosis BuildBotDiagnosis(WorldBotState const& state, Player const* bot) const;

@@ -92,6 +92,7 @@ def test_hotpath_route_reset_clears_same_hash_persistence_baseline_without_under
         "state.DecisionFingerprintSituation.clear();",
         "state.DecisionFingerprintAction.clear();",
         "state.DecisionFingerprintActivity.clear();",
+        'state.DecisionFingerprintResult = "ok";',
         "state.DecisionFingerprintQuestId = 0;",
         "state.DecisionFingerprintClusterId = 0;",
         "state.DecisionFingerprintMapId = 0;",
@@ -136,7 +137,7 @@ def test_hotpath_failure_edge_is_success_to_failure_not_cumulative_count():
 
 def test_hotpath_stop_flushes_pending_tail_with_saturating_deltas():
     assert "void BotWorldPopulationMgr::FlushDecisionFingerprintMemory" in IMPLEMENTATION
-    assert "PersistDecisionFingerprintDelta(state, bot, repeatDelta, failureDelta);" in IMPLEMENTATION
+    assert "PersistDecisionFingerprintDelta(state, repeatDelta, failureDelta);" in IMPLEMENTATION
     assert "FlushPendingDecisionFingerprintMemory();" in IMPLEMENTATION
     state = {
         "initialized": True,
@@ -162,7 +163,7 @@ def test_hotpath_fingerprint_change_flushes_old_stream_before_replacing_identity
         IMPLEMENTATION.index("void BotWorldPopulationMgr::RecordDecisionFingerprintMemory") :
         IMPLEMENTATION.index("void BotWorldPopulationMgr::RecordDecisionTrace")
     ]
-    flush_at = fingerprint.index("FlushDecisionFingerprintMemory(state, bot);")
+    flush_at = fingerprint.index("FlushDecisionFingerprintMemory(state);")
     replace_at = fingerprint.index("state.LastDecisionFingerprintHash = fingerprintHash;")
     assert flush_at < replace_at
 
@@ -212,9 +213,70 @@ def test_hotpath_destructive_lifecycles_flush_before_player_invalidation():
         IMPLEMENTATION.index("ReplayExecutionResult BotWorldPopulationMgr::ExecuteReplayRecord") :
         IMPLEMENTATION.index("std::string BotWorldPopulationMgr::BuildReplayResultJson")
     ]
-    assert replay.index("FlushDecisionFingerprintMemory(Party().Bots.back(), bot);") < replay.index("sBotMgr->RemoveWorldBot(bot->GetGUID())")
+    assert replay.index("FlushDecisionFingerprintMemory(Party().Bots.back());") < replay.index("sBotMgr->RemoveWorldBot(bot->GetGUID())")
 
     # Admission identity-drift, non-empty-start, and rollback cleanup all
     # retain state until the flush has occurred.
     admission = IMPLEMENTATION[IMPLEMENTATION.index("void BotWorldPopulationMgr::EnsurePopulation") :]
     assert admission.count("FlushPendingDecisionFingerprintMemory();") >= 3
+
+
+def test_hotpath_no_player_flush_uses_stored_identity_and_stream_result():
+    persist = IMPLEMENTATION[
+        IMPLEMENTATION.index("void BotWorldPopulationMgr::PersistDecisionFingerprintDelta") :
+        IMPLEMENTATION.index("void BotWorldPopulationMgr::FlushDecisionFingerprintMemory")
+    ]
+    flush = IMPLEMENTATION[
+        IMPLEMENTATION.index("void BotWorldPopulationMgr::FlushDecisionFingerprintMemory") :
+        IMPLEMENTATION.index("void BotWorldPopulationMgr::FlushPendingDecisionFingerprintMemory")
+    ]
+    assert "state.Guid.IsEmpty()" in persist
+    assert "state.Guid.GetCounter()" in persist
+    assert "state.DecisionFingerprintMapId" in persist
+    assert "state.DecisionFingerprintZoneId" in persist
+    assert "state.DecisionFingerprintAreaId" in persist
+    assert 'state.DecisionFingerprintResult.empty() ? "ok" : state.DecisionFingerprintResult' in persist
+    assert "PersistDecisionFingerprintDelta(state, repeatDelta, failureDelta);" in flush
+    assert "GetBot(state)" not in IMPLEMENTATION[IMPLEMENTATION.index("void BotWorldPopulationMgr::FlushPendingDecisionFingerprintMemory") : IMPLEMENTATION.index("void BotWorldPopulationMgr::RecordDecisionFingerprintMemory")]
+
+    route_reset = IMPLEMENTATION[
+        IMPLEMENTATION.index("void BotWorldPopulationMgr::ResetValidationRouteRuntimeState") :
+        IMPLEMENTATION.index("bool BotWorldPopulationMgr::ValidationRouteHasProgressSinceApply")
+    ]
+    assert route_reset.index("FlushDecisionFingerprintMemory(state);") < route_reset.index("state.DecisionFingerprintInitialized = false;")
+
+    update = IMPLEMENTATION[
+        IMPLEMENTATION.index("void BotWorldPopulationMgr::Update") :
+        IMPLEMENTATION.index("void BotWorldPopulationMgr::EnsureValidationCohortGroup")
+    ]
+    assert update.index("FlushDecisionFingerprintMemory(*itr);") < update.index("sBotMgr->RemoveWorldBot(prunedGuid);")
+    assert update.count("FlushDecisionFingerprintMemory(*itr);") >= 2
+
+
+def test_hotpath_stream_result_survives_a_to_b_flush():
+    fingerprint = IMPLEMENTATION[
+        IMPLEMENTATION.index("void BotWorldPopulationMgr::RecordDecisionFingerprintMemory") :
+        IMPLEMENTATION.index("void BotWorldPopulationMgr::RecordDecisionTrace")
+    ]
+    flush_at = fingerprint.index("FlushDecisionFingerprintMemory(state);")
+    result_at = fingerprint.index("state.DecisionFingerprintResult = failure ? \"failed\" : \"ok\";")
+    persist_at = fingerprint.index("PersistDecisionFingerprintDelta(state, repeatDelta, failureDelta);")
+    assert flush_at < result_at < persist_at
+    assert "state.DecisionFingerprintResult" in fingerprint
+
+    stream = {"hash": "A", "result": "ok", "repeat": 0, "persisted": 0}
+    persisted = []
+
+    def decision(fingerprint_hash, result):
+        if fingerprint_hash != stream["hash"]:
+            persisted.append((stream["hash"], stream["result"], stream["repeat"] - stream["persisted"]))
+            stream.update(hash=fingerprint_hash, result="ok", repeat=0, persisted=0)
+        stream["repeat"] += 1
+        stream["result"] = result
+        if stream["repeat"] == 1 or fingerprint_hash != "A":
+            stream["persisted"] = stream["repeat"]
+
+    decision("A", "failed")
+    decision("A", "failed")
+    decision("B", "ok")
+    assert persisted[0] == ("A", "failed", 1)
