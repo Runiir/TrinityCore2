@@ -1,0 +1,73 @@
+{
+  "schema": "cata_raid_compact_run_summary_v1",
+  "capture_id": "phase1_9fad3268_drudge_smoke_r2_20260814",
+  "started_at_utc": "2026-08-13T21:33:19Z",
+  "source_commit": "9fad3268ab2ed23dc63b9d1b57ea9fd68a196ebf",
+  "source_tree": "6426cc54596524f7783b69b0cdb6ea274505ca01",
+  "binary_sha256": "e1ff6e047886f78b58305ebf87a69f940eba18fc5f11d11c5189d8d6bf8fd354",
+  "build_receipt_sha256": "d08b65d4c3aa7b6b3e49363c878c9232fe5e9c1ef6cf46e8d060f3f3a1ca849c",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
+  "route_node_count": 4,
+  "observe_window_seconds": 300,
+  "classification": "infrastructure_abort",
+  "phase1_gate_passed": false,
+  "gameplay_failure": false,
+  "fidelity_claim": false,
+  "forbidden_assistance_observed": false,
+  "cleanup": {
+    "gate_passed": true,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true
+  },
+  "diagnosis": {
+    "primary": "pre_first_rush_seed_generation_and_authority_failed_before executor submission",
+    "profile_loading": "all five DPS DB profiles were loaded and hash-bound",
+    "profile_filter_defect": "AutoAttackMode ranged excluded valid ranged enemy actions from mage, warlock, and shaman profiles whose auto-attack mode is none",
+    "resolver_defect": "generic resolution could prefer a self-target setup action over an available hostile single-target action",
+    "authority_defect": "the current route caller was unsuppressed before the opposite-lane seed candidate was selected, so the all-other-offense-suppressed condition was structurally false",
+    "observed_native_effect": "both first Rush threat lists lacked a cross-lane DPS threat seed and selected tanks",
+    "separate_downstream_issue": "post-Rush exact-roster reseparation also failed; this capture did not identify one exact geometry predicate"
+  },
+  "remediation": {
+    "production_parity_transition_commit": "2d3c5bb808",
+    "authority_and_hostile_execution_commit": "b841487a3a4e2c93b3f830978759cbdd33991299",
+    "final_reviewed_commit": "6e922a588f2b9ef8e90a2ea6efdf90d0a29bedaf",
+    "shared_live_and_replay_transition": "BotRaidDrudgeThreatSeedState::Advance",
+    "review": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "tests_passed": 198,
+      "build_authorized": true
+    }
+  },
+  "immutable_artifacts": {
+    "raw": {
+      "bytes": 17435414,
+      "sha256": "b2cb4cf011d2f8c45111879f73ec64f7151846a9492fa70874d2e821cadb7cfd"
+    },
+    "worldserver_log": {
+      "bytes": 17460266,
+      "sha256": "a89b6184c4fe944180fe1e654c73d2ce1d4f21d9aff2f5d277fd6586879b0306"
+    },
+    "report": {
+      "bytes": 13858,
+      "canonical_sha256": "776d18a3355761421b8b1169864f26e6e58f9d418626bd05692111c1f0ddbb79"
+    }
+  },
+  "retention": {
+    "dvc_pointer": {
+      "path": "artifacts/cata_raid_program/phase1_9fad3268_drudge_smoke_r2_20260814.dvc",
+      "md5": "d55d3d6d68046aea29caa42d0f24f1a3.dir",
+      "size": 34909538,
+      "nfiles": 3
+    },
+    "remote_verified": true,
+    "local_payload_evicted": true,
+    "unique_cache_children_evicted": 3,
+    "shared_cache_children_retained": 0,
+    "directory_metadata_retained": true
+  }
+}
