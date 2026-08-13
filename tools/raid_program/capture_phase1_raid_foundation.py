@@ -554,13 +554,12 @@ def _validate_drudge_observation_geometry(
         "home0_x", "home0_y", "home1_x", "home1_y", "midpoint_x", "midpoint_y",
         "axis_x", "axis_y", "lane_separation", "minimum_distance", "navigation_margin",
         "source0_x", "source0_y", "source0_projection", "source0_lane_side_valid",
+        "source0_health_pct",
         "source1_x", "source1_y", "source1_projection", "source1_lane_side_valid",
+        "source1_health_pct",
         "source0_victim_guid", "source1_victim_guid",
         "source0_alive", "source1_alive",
-        "source_separation", "minimum_source_separation", "lane_tank_x", "lane_tank_y",
-        "lane_tank_guid", "lane_tank_slot", "lane_tank_projection", "lane_tank_source_distance",
-        "other_tank_x", "other_tank_y", "other_tank_guid", "other_tank_slot",
-        "other_tank_projection", "other_tank_source_distance", "minimum_member_spacing",
+        "source_separation", "minimum_source_separation", "minimum_member_spacing",
         "arrival_tolerance", "members",
         "tank0_x", "tank0_y", "tank0_guid", "tank0_slot", "tank0_projection",
         "tank0_source_distance", "tank1_x", "tank1_y", "tank1_guid", "tank1_slot",
@@ -649,6 +648,11 @@ def _validate_drudge_observation_geometry(
             reasons.append(f"drudge_geometry_{prefix}_lane_side_unsafe")
         if not isinstance(geometry.get(f"{prefix}_alive"), bool):
             reasons.append(f"drudge_geometry_{prefix}_alive_invalid")
+        health_pct = values[f"{prefix}_health_pct"]
+        if health_pct < 0.0 or health_pct > 100.0:
+            reasons.append(f"drudge_geometry_{prefix}_health_invalid")
+        if geometry.get(f"{prefix}_alive") is not (health_pct > 0.0):
+            reasons.append(f"drudge_geometry_{prefix}_alive_health_mismatch")
         if geometry.get(f"{prefix}_alive") is True and not _positive_int(geometry.get(f"{prefix}_victim_guid")):
             reasons.append(f"drudge_geometry_{prefix}_victim_missing")
         if geometry.get(f"{prefix}_alive") is False and geometry.get(f"{prefix}_victim_guid") not in (0, None):
@@ -684,40 +688,16 @@ def _validate_drudge_observation_geometry(
             reasons.append(f"drudge_geometry_source{source_index}_victim_invalid")
         if alive is False and victim not in (0, None):
             reasons.append(f"drudge_geometry_source{source_index}_dead_victim_present")
-    tank_records = (
-        ("lane_tank", values["lane_tank_guid"], values["lane_tank_slot"], 0,
-         values["lane_tank_x"], values["lane_tank_y"], values["lane_tank_projection"],
-         values["lane_tank_source_distance"]),
-        ("other_tank", values["other_tank_guid"], values["other_tank_slot"], 1,
-         values["other_tank_x"], values["other_tank_y"], values["other_tank_projection"],
-         values["other_tank_source_distance"]),
-    )
-    observed_tanks: set[int] = set()
-    for prefix, guid_value, slot_value, source_index, x, y, stored_projection, stored_distance in tank_records:
-        guid = int(guid_value)
-        slot = int(slot_value)
-        observed_tanks.add(guid)
-        if guid not in tank_guids or guid not in roster_by_guid:
-            reasons.append(f"drudge_geometry_{prefix}_identity_invalid")
-            continue
-        expected_slot = int(roster_by_guid[guid].get("slot", -1)) + 1
-        if slot != expected_slot or slot != source_index + 1:
-            reasons.append(f"drudge_geometry_{prefix}_slot_invalid")
-        tank_projection = projection(x, y)
-        if abs(stored_projection - tank_projection) > tolerance:
-            reasons.append(f"drudge_geometry_{prefix}_projection_mismatch")
-        source_x, source_y, _ = source_positions[source_index]
-        tank_distance = hypot(x - source_x, y - source_y)
-        if abs(stored_distance - tank_distance) > tolerance:
-            reasons.append(f"drudge_geometry_{prefix}_source_distance_mismatch")
-        if tank_distance > minimum_source_sep:
-            reasons.append(f"drudge_geometry_{prefix}_source_distance_unsafe")
-        if ((-1.0 if source_index == 0 else 1.0) * tank_projection
-                < lane_sep * 0.25):
-            reasons.append(f"drudge_geometry_{prefix}_lane_side_invalid")
-    if observed_tanks != tank_guids:
-        reasons.append("drudge_geometry_exact_tanks_missing")
-
+    members = geometry.get("members")
+    if not isinstance(members, list):
+        reasons.append("drudge_geometry_members_missing")
+        return sorted(set(reasons))
+    member_by_guid = {
+        row.get("guid"): row for row in members
+        if isinstance(row, dict) and _positive_int(row.get("guid"))
+    }
+    if set(member_by_guid) != set(roster_by_guid) or len(members) != len(roster_by_guid):
+        reasons.append("drudge_geometry_exact_members_missing")
     canonical_tanks = (
         ("tank0", values["tank0_guid"], values["tank0_slot"], 0,
          values["tank0_x"], values["tank0_y"], values["tank0_projection"], values["tank0_source_distance"]),
@@ -726,7 +706,13 @@ def _validate_drudge_observation_geometry(
     )
     canonical_guids: set[int] = set()
     for prefix, guid_value, slot_value, source_index, x, y, stored_projection, stored_distance in canonical_tanks:
-        guid, slot = int(guid_value), int(slot_value)
+        raw_guid = geometry.get(f"{prefix}_guid")
+        raw_slot = geometry.get(f"{prefix}_slot")
+        if (not isinstance(raw_guid, int) or isinstance(raw_guid, bool) or raw_guid <= 0
+                or not isinstance(raw_slot, int) or isinstance(raw_slot, bool) or raw_slot <= 0):
+            reasons.append(f"drudge_geometry_{prefix}_identity_invalid")
+            continue
+        guid, slot = raw_guid, raw_slot
         canonical_guids.add(guid)
         expected_guid = expected_tank_by_slot.get(source_index + 1)
         if guid != expected_guid or slot != source_index + 1:
@@ -740,6 +726,15 @@ def _validate_drudge_observation_geometry(
             reasons.append(f"drudge_geometry_{prefix}_source_distance_mismatch")
         if distance > minimum_source_sep:
             reasons.append(f"drudge_geometry_{prefix}_source_distance_unsafe")
+        member = member_by_guid.get(guid)
+        if not isinstance(member, dict):
+            reasons.append(f"drudge_geometry_{prefix}_member_missing")
+        else:
+            for field, expected in (("x", x), ("y", y), ("projection", stored_projection)):
+                observed = member.get(field)
+                if (not isinstance(observed, (int, float)) or isinstance(observed, bool)
+                        or not isfinite(observed) or abs(float(observed) - expected) > tolerance):
+                    reasons.append(f"drudge_geometry_{prefix}_member_{field}_mismatch")
         if ((-1.0 if source_index == 0 else 1.0) * computed_projection
                 < lane_sep * 0.25):
             reasons.append(f"drudge_geometry_{prefix}_lane_side_invalid")
@@ -748,16 +743,6 @@ def _validate_drudge_observation_geometry(
     if canonical_guids != tank_guids:
         reasons.append("drudge_geometry_canonical_tanks_missing")
 
-    members = geometry.get("members")
-    if not isinstance(members, list):
-        reasons.append("drudge_geometry_members_missing")
-        return sorted(set(reasons))
-    member_by_guid = {
-        row.get("guid"): row for row in members
-        if isinstance(row, dict) and _positive_int(row.get("guid"))
-    }
-    if set(member_by_guid) != set(roster_by_guid) or len(members) != len(roster_by_guid):
-        reasons.append("drudge_geometry_exact_members_missing")
     non_tank_positions: dict[int, tuple[float, float, bool]] = {}
     for guid, roster_row in roster_by_guid.items():
         member = member_by_guid.get(guid)
@@ -887,11 +872,39 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
         observations = observations if isinstance(observations, list) else []
         delivered_rows = [row for row in observations if isinstance(row, dict) and row.get("landed") is True]
         source_counts = Counter(row.get("source_spawn_id") for row in delivered_rows)
+        roster_rows = candidate_runtime.get("roster")
+        roster_set = {
+            row.get("guid") for row in roster_rows
+            if isinstance(row, dict) and _positive_int(row.get("guid"))
+        } if isinstance(roster_rows, list) else set()
+        tank_set = {
+            row.get("guid") for row in roster_rows
+            if isinstance(row, dict) and row.get("role") == "tank"
+            and _positive_int(row.get("guid"))
+        } if isinstance(roster_rows, list) else set()
+        offensive_set = {
+            row.get("guid") for row in roster_rows
+            if isinstance(row, dict) and row.get("role") in {"tank", "dps"}
+            and _positive_int(row.get("guid"))
+        } if isinstance(roster_rows, list) else set()
+        def exact_set(field: str) -> set[int]:
+            values = candidate_evidence.get(field)
+            return set(values) if isinstance(values, list) and all(_positive_int(value) for value in values) else set()
         complete = int(
             len(delivered_rows) >= 4
             and source_counts.get(250140, 0) >= 2
             and source_counts.get(250141, 0) >= 2
             and all(isinstance(row.get("geometry"), dict) for row in delivered_rows)
+            and exact_set("ownership_roster_guids") == tank_set
+            and exact_set("health_sync_evaluated_roster_guids") == tank_set
+            and exact_set("profile_action_roster_guids") == offensive_set
+            and exact_set("health_sync_roster_guids")
+            and exact_set("health_sync_roster_guids").issubset(tank_set)
+            and candidate_evidence.get("health_sync_hold_source_spawn_id") in {250140, 250141}
+            and _positive_int(candidate_evidence.get("health_sync_hold_tank_guid"))
+            and _positive_int(candidate_evidence.get("death_evidence_sequence"))
+            and _positive_int(candidate_evidence.get("rage_wait_evidence_sequence"))
+            and _positive_int(candidate_evidence.get("rage_aura_evidence_sequence"))
         )
         latest_observation = max(
             (int(row.get("sequence") or 0) for row in delivered_rows), default=0
@@ -905,7 +918,9 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
             int(candidate_evidence.get("prepared_count") or 0),
         )
 
-    runtime, evidence = max(candidates, key=candidate_key)
+    _, (runtime, evidence) = max(
+        enumerate(candidates), key=lambda indexed: (candidate_key(indexed[1]), indexed[0])
+    )
     roster = runtime.get("roster")
     if not isinstance(roster, list) or len(roster) != 10:
         return False, ["drudge_exact_roster_missing"]
@@ -1052,6 +1067,37 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
     if 0 in source_guids or len(source_guids) != len(exact_sources):
         reasons.append("drudge_exact_source_runtime_guids_invalid")
 
+    death_fields = (
+        "death_attempt_id", "death_wipe_generation", "death_route_generation",
+        "death_source_spawn_id", "death_source_guid", "survivor_source_spawn_id",
+        "survivor_source_guid", "death_evidence_sequence",
+        "rage_wait_evidence_sequence", "rage_aura_evidence_sequence",
+    )
+    death_values = {field: evidence.get(field) for field in death_fields}
+    if (death_values["death_attempt_id"] != attempt_id
+            or death_values["death_wipe_generation"] != 0
+            or death_values["death_route_generation"] != 3):
+        reasons.append("drudge_death_scope_mismatch")
+    if (not isinstance(death_values["death_source_spawn_id"], int)
+            or isinstance(death_values["death_source_spawn_id"], bool)
+            or not isinstance(death_values["survivor_source_spawn_id"], int)
+            or isinstance(death_values["survivor_source_spawn_id"], bool)
+            or death_values["death_source_spawn_id"] not in exact_sources
+            or death_values["survivor_source_spawn_id"] not in exact_sources
+            or death_values["death_source_spawn_id"] == death_values["survivor_source_spawn_id"]
+            or not _positive_int(death_values["death_source_guid"])
+            or not _positive_int(death_values["survivor_source_guid"])
+            or death_values["death_source_guid"] != reconstructed[death_values["death_source_spawn_id"]]["source_guid"]
+            or death_values["survivor_source_guid"] != reconstructed[death_values["survivor_source_spawn_id"]]["source_guid"]):
+        reasons.append("drudge_death_source_identity_mismatch")
+    if (not all(_positive_int(death_values[field]) for field in (
+            "death_evidence_sequence", "rage_wait_evidence_sequence",
+            "rage_aura_evidence_sequence"))
+            or not (death_values["death_evidence_sequence"]
+                    < death_values["rage_wait_evidence_sequence"]
+                    < death_values["rage_aura_evidence_sequence"])):
+        reasons.append("drudge_native_rage_transition_order_invalid")
+
     source_rows = evidence.get("sources")
     source_summary = {
         row.get("spawn_id"): row for row in source_rows
@@ -1096,14 +1142,20 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
     hold_tank = evidence.get("health_sync_hold_tank_guid")
     hold_lower = evidence.get("health_sync_hold_lower_pct")
     hold_peer = evidence.get("health_sync_hold_peer_pct")
+    hold_lower_alive = evidence.get("health_sync_hold_lower_alive")
+    hold_peer_alive = evidence.get("health_sync_hold_peer_alive")
     expected_hold_tank = {250140: next((row.get("guid") for row in roster if row.get("slot") == 0), None),
                           250141: next((row.get("guid") for row in roster if row.get("slot") == 1), None)}
-    if hold_source not in expected_hold_tank or hold_tank != expected_hold_tank.get(hold_source):
+    if (not health_sync or hold_tank not in health_sync
+            or hold_source not in expected_hold_tank
+            or hold_tank != expected_hold_tank.get(hold_source)):
         reasons.append("drudge_health_sync_hold_source_identity_mismatch")
     if (not isinstance(hold_lower, (int, float)) or isinstance(hold_lower, bool)
             or not isinstance(hold_peer, (int, float)) or isinstance(hold_peer, bool)
             or not isfinite(float(hold_lower)) or not isfinite(float(hold_peer))
-            or hold_lower >= hold_peer):
+            or hold_lower <= 0.0 or hold_peer <= 0.0
+            or hold_lower >= hold_peer
+            or hold_lower_alive is not True or hold_peer_alive is not True):
         reasons.append("drudge_health_sync_hold_order_invalid")
     if health_sync_evaluated != tank_guids:
         reasons.append("drudge_exact_tank_health_sync_evaluation_missing")

@@ -3945,6 +3945,18 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
         Party().ValidationRouteDrudgeHealthSyncHoldTankGuid = 0;
         Party().ValidationRouteDrudgeHealthSyncHoldLowerPct = 0.0f;
         Party().ValidationRouteDrudgeHealthSyncHoldPeerPct = 0.0f;
+        Party().ValidationRouteDrudgeHealthSyncHoldLowerAlive = false;
+        Party().ValidationRouteDrudgeHealthSyncHoldPeerAlive = false;
+        Party().ValidationRouteDrudgeDeathAttemptId = 0;
+        Party().ValidationRouteDrudgeDeathWipeGeneration = 0;
+        Party().ValidationRouteDrudgeDeathRouteGeneration = 0;
+        Party().ValidationRouteDrudgeDeathSourceSpawnId = 0;
+        Party().ValidationRouteDrudgeDeathSourceGuid = 0;
+        Party().ValidationRouteDrudgeSurvivorSourceSpawnId = 0;
+        Party().ValidationRouteDrudgeSurvivorSourceGuid = 0;
+        Party().ValidationRouteDrudgeDeathEvidenceSequence = 0;
+        Party().ValidationRouteDrudgeRageWaitEvidenceSequence = 0;
+        Party().ValidationRouteDrudgeRageAuraEvidenceSequence = 0;
         Party().ValidationRouteDrudgeHealthSyncEvidenceAttemptId = 0;
         Party().ValidationRouteDrudgeHealthSyncEvidenceWipeGeneration = 0;
         Party().ValidationRouteDrudgeHealthSyncEvidenceRouteGeneration = 0;
@@ -18115,6 +18127,41 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         Creature* laneSource = sources[laneIndex];
         Creature* otherSource = sources[1 - laneIndex];
 
+        auto observeDrudgeDeath = [&]()
+        {
+            bool const source0Alive = sources[0]->IsAlive();
+            bool const source1Alive = sources[1]->IsAlive();
+            if (source0Alive == source1Alive)
+                return;
+            if (Party().ValidationRouteDrudgeDeathAttemptId != Cohort().AttemptId
+                || Party().ValidationRouteDrudgeDeathWipeGeneration != Cohort().Raid.WipeGeneration
+                || Party().ValidationRouteDrudgeDeathRouteGeneration != Party().ValidationRouteGeneration)
+            {
+                Party().ValidationRouteDrudgeDeathAttemptId = Cohort().AttemptId;
+                Party().ValidationRouteDrudgeDeathWipeGeneration = Cohort().Raid.WipeGeneration;
+                Party().ValidationRouteDrudgeDeathRouteGeneration = Party().ValidationRouteGeneration;
+                Party().ValidationRouteDrudgeDeathSourceSpawnId = 0;
+                Party().ValidationRouteDrudgeDeathSourceGuid = 0;
+                Party().ValidationRouteDrudgeSurvivorSourceSpawnId = 0;
+                Party().ValidationRouteDrudgeSurvivorSourceGuid = 0;
+                Party().ValidationRouteDrudgeDeathEvidenceSequence = 0;
+                Party().ValidationRouteDrudgeRageWaitEvidenceSequence = 0;
+                Party().ValidationRouteDrudgeRageAuraEvidenceSequence = 0;
+            }
+            if (Party().ValidationRouteDrudgeDeathEvidenceSequence != 0)
+                return;
+            Creature* const deadSource = source0Alive ? sources[1] : sources[0];
+            Creature* const survivorSource = source0Alive ? sources[0] : sources[1];
+            Party().ValidationRouteDrudgeDeathSourceSpawnId = source0Alive ? 250141 : 250140;
+            Party().ValidationRouteDrudgeDeathSourceGuid = deadSource->GetGUID().GetCounter();
+            Party().ValidationRouteDrudgeSurvivorSourceSpawnId = source0Alive ? 250140 : 250141;
+            Party().ValidationRouteDrudgeSurvivorSourceGuid = survivorSource->GetGUID().GetCounter();
+            Party().ValidationRouteDrudgeDeathEvidenceSequence = ++Cohort().Raid.EvidenceSequence;
+            record(deadSource, "drudge_first_source_death_observed",
+                sources[0]->GetExactDist2d(sources[1]));
+        };
+        observeDrudgeDeath();
+
         // Bind ownership to the frozen lane tank, not to whichever tank
         // happens to be present in the native threat table.  The Drudge Rush
         // selector is native and chooses the farthest threat-list player;
@@ -18375,10 +18422,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             observation.Source0Y = sources[0]->GetPositionY();
             observation.Source0LaneSideValid = sourceOnFrozenLane(
                 sources[0], 0, &observation.Source0Projection);
+            observation.Source0HealthPct = UnitHealthPct(sources[0]);
             observation.Source1X = sources[1]->GetPositionX();
             observation.Source1Y = sources[1]->GetPositionY();
             observation.Source1LaneSideValid = sourceOnFrozenLane(
                 sources[1], 1, &observation.Source1Projection);
+            observation.Source1HealthPct = UnitHealthPct(sources[1]);
             observation.Source0VictimGuid = sources[0]->GetVictim()
                 ? sources[0]->GetVictim()->GetGUID().GetCounter() : 0;
             observation.Source1VictimGuid = sources[1]->GetVictim()
@@ -18803,10 +18852,22 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 ? laneTank->GetGUID().GetCounter() : 0;
             Party().ValidationRouteDrudgeHealthSyncHoldLowerPct = UnitHealthPct(laneSource);
             Party().ValidationRouteDrudgeHealthSyncHoldPeerPct = UnitHealthPct(otherSource);
+            Party().ValidationRouteDrudgeHealthSyncHoldLowerAlive = laneSource->IsAlive();
+            Party().ValidationRouteDrudgeHealthSyncHoldPeerAlive = otherSource->IsAlive();
         };
 
         if (!otherSource->IsAlive())
         {
+            // The native death spell can apply Vengeful Rage before the next
+            // bot decision.  Record that this guard was evaluated before any
+            // post-death offense; only record a wait edge when the aura is
+            // genuinely absent.
+            if (Party().ValidationRouteDrudgeDeathEvidenceSequence != 0
+                && Party().ValidationRouteDrudgeRageWaitEvidenceSequence == 0
+                && laneSource->GetGUID().GetCounter()
+                    == Party().ValidationRouteDrudgeSurvivorSourceGuid)
+                Party().ValidationRouteDrudgeRageWaitEvidenceSequence =
+                    ++Cohort().Raid.EvidenceSequence;
             if (!laneSource->HasAura(Cohort().Config.ValidationRouteVengefulRageSpellId))
             {
                 holdOffense();
@@ -18814,6 +18875,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 target = laneSource;
                 state.TargetGuid = laneSource->GetGUID();
                 return true;
+            }
+            if (Party().ValidationRouteDrudgeDeathEvidenceSequence != 0
+                && Party().ValidationRouteDrudgeRageWaitEvidenceSequence != 0
+                && Party().ValidationRouteDrudgeRageAuraEvidenceSequence == 0
+                && laneSource->GetGUID().GetCounter()
+                    == Party().ValidationRouteDrudgeSurvivorSourceGuid)
+            {
+                Party().ValidationRouteDrudgeRageAuraEvidenceSequence =
+                    ++Cohort().Raid.EvidenceSequence;
+                record(laneSource, "drudge_native_vengeful_rage_observed", sourceSeparation);
             }
         }
         else if (sources[0]->IsAlive() && sources[1]->IsAlive()
@@ -30231,6 +30302,20 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
          << Party().ValidationRouteDrudgeHealthSyncHoldLowerPct
          << ",\"health_sync_hold_peer_pct\":"
          << Party().ValidationRouteDrudgeHealthSyncHoldPeerPct
+         << ",\"health_sync_hold_lower_alive\":"
+         << (Party().ValidationRouteDrudgeHealthSyncHoldLowerAlive ? "true" : "false")
+         << ",\"health_sync_hold_peer_alive\":"
+         << (Party().ValidationRouteDrudgeHealthSyncHoldPeerAlive ? "true" : "false")
+         << ",\"death_attempt_id\":" << Party().ValidationRouteDrudgeDeathAttemptId
+         << ",\"death_wipe_generation\":" << Party().ValidationRouteDrudgeDeathWipeGeneration
+         << ",\"death_route_generation\":" << Party().ValidationRouteDrudgeDeathRouteGeneration
+         << ",\"death_source_spawn_id\":" << Party().ValidationRouteDrudgeDeathSourceSpawnId
+         << ",\"death_source_guid\":" << Party().ValidationRouteDrudgeDeathSourceGuid
+         << ",\"survivor_source_spawn_id\":" << Party().ValidationRouteDrudgeSurvivorSourceSpawnId
+         << ",\"survivor_source_guid\":" << Party().ValidationRouteDrudgeSurvivorSourceGuid
+         << ",\"death_evidence_sequence\":" << Party().ValidationRouteDrudgeDeathEvidenceSequence
+         << ",\"rage_wait_evidence_sequence\":" << Party().ValidationRouteDrudgeRageWaitEvidenceSequence
+         << ",\"rage_aura_evidence_sequence\":" << Party().ValidationRouteDrudgeRageAuraEvidenceSequence
          << ",\"profile_action_roster_guids\":[";
     bool firstProfileActionGuid = true;
     for (uint32 guid : Party().ValidationRouteDrudgeProfileActionRosterGuids)
@@ -30277,10 +30362,12 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
              << ",\"source0_x\":" << observation.Source0X
              << ",\"source0_y\":" << observation.Source0Y
              << ",\"source0_projection\":" << observation.Source0Projection
+             << ",\"source0_health_pct\":" << observation.Source0HealthPct
              << ",\"source0_lane_side_valid\":" << (observation.Source0LaneSideValid ? "true" : "false")
              << ",\"source1_x\":" << observation.Source1X
              << ",\"source1_y\":" << observation.Source1Y
              << ",\"source1_projection\":" << observation.Source1Projection
+             << ",\"source1_health_pct\":" << observation.Source1HealthPct
              << ",\"source1_lane_side_valid\":" << (observation.Source1LaneSideValid ? "true" : "false")
              << ",\"source0_victim_guid\":" << observation.Source0VictimGuid
              << ",\"source1_victim_guid\":" << observation.Source1VictimGuid
