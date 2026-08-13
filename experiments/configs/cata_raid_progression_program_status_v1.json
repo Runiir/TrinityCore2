@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-13T13:00:11Z",
+  "updated_at_utc": "2026-08-13T13:30:00Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -17,7 +17,7 @@
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "current_head_sha": "ef04a6f22a67b9b5475ee778f2f0828cd3510b38",
+    "current_head_sha": "a145e2999218533b2415668061ad587c2a28c776",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -28,17 +28,17 @@
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
     "critical_high_remediation_implemented_at": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "mandatory_rereview": "APPROVED exact ef04a6f22a67b9b5475ee778f2f0828cd3510b38 with critical 0 high 0 medium 0",
+    "mandatory_rereview": "PENDING mandatory Sol-high adversarial review of exact integrated source checkpoint a145e2999218533b2415668061ad587c2a28c776",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "Mandatory Sol-high review approved exact ef04 with C0/H0/M0 and the exact 314-test gate passed. Policy-v8 configure and worldserver receipts verify and produced ELF 5c64fcdd.... The uncapped live run failed closed on Chainwielder after current-node authority leaked 349 actions to future Drudges and native recovery could not complete ready check while surviving trash killed resurrected members. Phase 1 and fidelity remain false."
+    "current_acceptance": "Exact a145 integrates seven Stonecore-style BWD scenario identities, strict current-node authority across player/profile/pet/totem paths, native hostile-reset-gated recovery, transition-aware lower-volume capture scheduling, and a provisional semantic aggregate read cache. The generated route and run-plan DVC stages are pushed and remote-synchronized. Focused integration tests pass, but mandatory Sol-high review, exact rebuild, fresh preparation, and live Magmaw-only proof are pending. Phase 1 and fidelity remain false."
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_commit": "ef04a6f22a67b9b5475ee778f2f0828cd3510b38",
-    "current_state": "exact_ef04_gate_bearing_build_succeeded_live_infrastructure_abort_diagnosed",
-    "current_result": "configure receipt 6b4db60a... and worldserver receipt 72c780e0... verify; ELF 5c64fcdd... was produced from exact clean ef04; post-build focused suite passed 314/314",
+    "current_commit": "a145e2999218533b2415668061ad587c2a28c776",
+    "current_state": "integrated_remediation_pending_mandatory_review_and_exact_build",
+    "current_result": "exact ef04 receipts remain valid historical evidence only; a145 changes C++ and must receive mandatory Sol-high approval plus a new policy-v8 build receipt before live use",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -240,7 +240,7 @@
   },
   "authority": {
     "approved_plan_path": ".codex/plans/cata_raid_progression_plan.md",
-    "approved_plan_sha256": "c9ccf4c742d6048556d44d5eec2536cb5be2fd2c4bf7885471989356c117f843",
+    "approved_plan_sha256": "9a72d7d6473ac6f0044c45fe6265f8614d06b7e8fed6ffebebcb4444531741e3",
     "prior_amended_plan_sha256": "522a1bbc69d3018fd8822bf7679033ca5e4e888db7ce809c13a35e7a24c69ed5",
     "prior_approved_plan_sha256": "ea4cd23208fd3c3c1f2ccc533211fcd35030fb0841c35e0984bba6f03aa0e0fa",
     "plan_amendment_authority": "user_approved_parallel_per_boss_diagnostic_shards_plus_root_completed_worldserver_and_shard_setup_before_spawning_one_luna_xhigh_live_babysitter_per_boss_immediate_exact_post_diagnosis_dvc_eviction_and_three_or_four_sequential_full_qualification_runs",
@@ -627,8 +627,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "Exact ef04 was approved, built, freshly prepared, and run uncapped. It failed closed on Chainwielder: the current pack ledger was entry 42649/GUID 27 while 349 combat actions targeted future Drudges 42362/GUID 59 or 60; fire mage and affliction warlock repeatedly had no valid profile action. All ten completed native first-wipe resurrection ordering, but surviving trash caused eight further deaths before ready check. Evidence is remote verified and exactly evicted. Per-boss node manifests, strict current-node authority/profile handoff, safe native recovery re-entry, mandatory rereview, one rebuild, and rerun remain required."
+      "detail": "Exact ef04 failed closed on Chainwielder and its evidence is remote verified and exactly evicted. Exact a145 now integrates strict immediate-next trash/boss protection, trained-profile preservation for legal current targets, native hostile-reset-gated recovery, transition-aware capture scheduling, seven Stonecore-style BWD route scenarios, and provisional semantic aggregate caching. Generated validation_scenarios and validation_run_plan objects are pushed and remote-synchronized. Mandatory Sol-high zero-Critical/High review, one exact policy-v8 rebuild, fresh preparation/readback, and an uncapped four-node Magmaw diagnostic rerun remain required."
     }
   ],
-  "next_action": "Integrate Luna-xhigh per-boss node manifests, current-node target/trained-profile authority, and native recovery hostile-reentry fixes; obtain mandatory Sol-high zero-critical/high review; rebuild once through policy v8; freshly reprovision/full-verify/v4-read back; prestart and verify one worldserver; attach the Magmaw Luna-xhigh babysitter; rerun the uncapped Magmaw-only four-node manifest. Keep the canonical 11-node route only for later sequential full clears."
+  "next_action": "Obtain mandatory Sol-high zero-Critical/High review of exact integrated a145 source and seven-scenario route architecture, including trained DPS decisions and semantic-cache correctness. Fix any findings, rebuild once through policy v8, freshly reprovision/full-verify/v4-read back, prestart and verify one worldserver, then attach the Magmaw Luna-xhigh babysitter and rerun the uncapped four-node Magmaw diagnostic manifest. Keep the canonical 11-node route only for later sequential full clears."
 }

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "audit_id": "cata_raid_runtime_phase1_v1",
-  "updated_at_utc": "2026-08-13T13:00:11Z",
+  "updated_at_utc": "2026-08-13T13:30:00Z",
   "target": {
     "client": "Cataclysm Classic",
     "patch": "4.4.2",
@@ -9,18 +9,18 @@
     "locale": "enUS",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
-  "audited_commit": "ef04a6f22a67b9b5475ee778f2f0828cd3510b38",
-  "gate_state": "in_progress_exact_ef04_live_infrastructure_abort_remediation_active",
+  "audited_commit": "a145e2999218533b2415668061ad587c2a28c776",
+  "gate_state": "integrated_remediation_pending_mandatory_sol_high_review",
   "foundation": {
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "current_head_sha": "ef04a6f22a67b9b5475ee778f2f0828cd3510b38",
+    "current_head_sha": "a145e2999218533b2415668061ad587c2a28c776",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
-    "mandatory_sol_high_rereview": "APPROVED exact ef04a6f22a67b9b5475ee778f2f0828cd3510b38 critical 0 high 0 medium 0",
+    "mandatory_sol_high_rereview": "PENDING exact a145e2999218533b2415668061ad587c2a28c776 integrated review",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "acceptance": "Exact ef04 source/build gates passed, but the uncapped live gate failed closed on Chainwielder before Drudges or Magmaw. Current-node authority leaked future-Drudge targets, trained profile action availability was inconsistent, and native ready check could not complete while surviving trash killed resurrected members. Phase 1/fidelity remain false."
+    "acceptance": "Exact a145 integrates the diagnosed remediation and seven-scenario routing architecture, but has not yet passed mandatory Sol-high review, exact build, or live rerun. Phase 1/fidelity remain false."
   },
   "research": {
     "required_boss_packets": 28,
@@ -46,8 +46,8 @@
   },
   "build": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_state": "exact_ef04_gate_bearing_build_succeeded_live_infrastructure_abort_diagnosed",
-    "current_result": "configure canonical receipt 6b4db60a... and worldserver canonical receipt 72c780e0... independently verify; ELF 5c64fcdd... was produced by exact clean ef04; post-build focused suite passed 314",
+    "current_state": "exact_a145_integrated_remediation_pending_review_and_build",
+    "current_result": "ef04 configure/worldserver receipts are historical-only for a145; the integrated checkpoint passes focused tests and requires mandatory review plus a new receipt-produced binary",
     "receipt_trust_model": "explicit_trusted_local_operator",
     "trusted_operator": "runiir",
     "trusted_uid": 1000,
@@ -176,7 +176,7 @@
   "required_open_work": [
     {
       "area": "current_build",
-      "missing": ["mandatory_sol_high_zero_critical_high_review_of_integrated_live_failure_remediation", "one_exact_policy_v8_rebuild_after_remediation"]
+      "missing": ["mandatory_sol_high_zero_critical_high_review_of_exact_a145_integrated_remediation", "one_exact_policy_v8_rebuild_after_remediation"]
     },
     {
       "area": "live_script_and_decision_review",
@@ -196,7 +196,7 @@
     "current_node_authority_leaked_349_actions_to_future_drudges",
     "fire_mage_and_affliction_warlock_had_repeated_no_valid_profile_action",
     "native_ready_check_deadlocked_while_surviving_trash_killed_resurrected_members",
-    "single_cohort_worldserver_cpu_35_percent_and_47mb_log_raw_not_parallel_shard_ready",
+    "single_cohort_worldserver_cpu_35_percent_and_47mb_log_raw_not_parallel_shard_ready_pending_live_measurement_of_capture_scheduler_and_semantic_cache",
     "bwd_exact_442_quantitative_and_exact_log_hotfix_evidence_blocks_phase2_fidelity"
   ],
   "acceptance_policy": "Fail closed. Existing Stonecore and older BWD artifacts do not certify this raid-runtime gate."
