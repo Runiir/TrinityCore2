@@ -33203,10 +33203,11 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
         return BotActionResult::NoAction;
     }
 
-    if (state && TryEnsurePersistentCombatSetup(*state, bot, target))
+    if (!hostileTargetOnly && state && TryEnsurePersistentCombatSetup(*state, bot, target))
         return BotActionResult::Casting;
 
-    if (state && TryEnsureCombatTotems(*state, bot, target, forbidArea ? 1 : hostileCount))
+    if (!hostileTargetOnly && state
+        && TryEnsureCombatTotems(*state, bot, target, forbidArea ? 1 : hostileCount))
         return BotActionResult::Casting;
 
     uint64 const nowMs = NowMs();

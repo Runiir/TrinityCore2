@@ -107,10 +107,11 @@ inline Result Advance(State current, Input const& input)
         return result;
     }
 
-    if (result.Next.Closed || input.ChargeObserved)
+    if (result.Next.Failure || result.Next.Closed || input.ChargeObserved)
     {
         result.Next.Closed = true;
-        result.Next.Failure = true;
+        if (!result.Next.Complete)
+            result.Next.Failure = true;
         result.NextDecision = Decision::HoldClosed;
         return result;
     }
@@ -128,6 +129,7 @@ inline Result Advance(State current, Input const& input)
 
     if (input.SourceLane >= result.Next.SeededLanes.size())
     {
+        result.Next.Closed = true;
         result.Next.Failure = true;
         result.NextDecision = Decision::FailAuthority;
         return result;
@@ -147,6 +149,7 @@ inline Result Advance(State current, Input const& input)
 
     if (!input.AuthoritySafe)
     {
+        result.Next.Closed = true;
         result.Next.Failure = true;
         result.NextDecision = Decision::FailAuthority;
         return result;

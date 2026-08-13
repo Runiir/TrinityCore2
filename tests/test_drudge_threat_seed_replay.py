@@ -122,7 +122,10 @@ int main()
     unsafe.AuthoritySafe = false;
     Result authority = Advance(reset.Next, unsafe);
     assert(authority.NextDecision == Decision::FailAuthority);
-    assert(authority.Next.Failure);
+    assert(authority.Next.Failure && authority.Next.Closed);
+    Result authorityRetry = Advance(authority.Next, ready(retryScope, 0));
+    assert(authorityRetry.NextDecision == Decision::HoldClosed);
+    assert(authorityRetry.Next.Failure && authorityRetry.Next.Closed);
 }
 ''',
         encoding="utf-8",
@@ -212,3 +215,6 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
     )
     executor = implementation[executor_start:executor_end]
     assert "allowMultidot && !forbidArea, hostileTargetOnly" in executor
+    assert "!hostileTargetOnly && state && TryEnsurePersistentCombatSetup" in executor
+    assert "!hostileTargetOnly && state" in executor
+    assert "&& TryEnsureCombatTotems" in executor
