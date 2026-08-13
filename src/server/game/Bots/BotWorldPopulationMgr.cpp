@@ -19671,19 +19671,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 record(laneSource, "drudge_native_vengeful_rage_observed", sourceSeparation);
             }
         }
-        else if (sources[0]->IsAlive() && sources[1]->IsAlive()
-            && UnitHealthPct(laneSource) < UnitHealthPct(otherSource)
-            && !assignedTank)
-        {
-            // Do not record health-sync evidence until the ownership and
-            // exactRosterReSeparated gates below have passed.
-            holdOffense();
-            record(laneSource, "drudge_kill_sync_hold_lower_health_lane", sourceSeparation);
-            target = laneSource;
-            state.TargetGuid = laneSource->GetGUID();
-            return true;
-        }
-
         // Formation and ownership are prerequisites for the trained single
         // target profiles.  A stale native threat assignment must not be
         // hidden by a DPS cast, and a partial roster must never be certified as
@@ -19699,32 +19686,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             state.TargetGuid = laneSource ? laneSource->GetGUID() : ObjectGuid::Empty;
             return true;
         }
-        if (sources[0]->IsAlive() && sources[1]->IsAlive() && !exactRosterReSeparated())
-        {
-            holdOffense();
-            record(laneSource, "drudge_lane_profile_hold_contract_unsafe", sourceSeparation);
-            target = laneSource;
-            state.TargetGuid = laneSource->GetGUID();
-            return true;
-        }
-
-        if (sources[0]->IsAlive() && sources[1]->IsAlive() && assignedTank)
-            recordHealthSyncEvaluation();
-
-        if (sources[0]->IsAlive() && sources[1]->IsAlive()
-            && UnitHealthPct(laneSource) < UnitHealthPct(otherSource))
-        {
-            holdOffense();
-            if (assignedTank)
-                recordHealthSyncHold();
-            record(laneSource, assignedTank
-                ? "drudge_tank_health_sync_hold" : "drudge_kill_sync_hold_lower_health_lane",
-                sourceSeparation);
-            target = laneSource;
-            state.TargetGuid = laneSource->GetGUID();
-            return true;
-        }
-
         auto tryPreFirstRushThreatSeed = [&]() -> bool
         {
             if (Party().ValidationRouteDrudgeThreatSeedAttemptId != Cohort().AttemptId
@@ -19974,6 +19935,39 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && !Party().ValidationRouteDrudgeThreatSeedComplete)
             if (tryPreFirstRushThreatSeed())
                 return true;
+
+        // The two native threat seeds must be submitted after both sources
+        // have exact tank ownership but before the first 20-second Rush.  Do
+        // not make those ordinary, cross-lane profile casts wait for the
+        // post-pull/reseparation geometry: live evidence showed that doing so
+        // lets the first native Rush fire with only tanks/healers in its
+        // threat list.  All regular DPS and kill synchronization still remain
+        // fail-closed behind the complete exact-roster geometry below.
+        if (sources[0]->IsAlive() && sources[1]->IsAlive() && !exactRosterReSeparated())
+        {
+            holdOffense();
+            record(laneSource, "drudge_lane_profile_hold_contract_unsafe", sourceSeparation);
+            target = laneSource;
+            state.TargetGuid = laneSource->GetGUID();
+            return true;
+        }
+
+        if (sources[0]->IsAlive() && sources[1]->IsAlive() && assignedTank)
+            recordHealthSyncEvaluation();
+
+        if (sources[0]->IsAlive() && sources[1]->IsAlive()
+            && UnitHealthPct(laneSource) < UnitHealthPct(otherSource))
+        {
+            holdOffense();
+            if (assignedTank)
+                recordHealthSyncHold();
+            record(laneSource, assignedTank
+                ? "drudge_tank_health_sync_hold" : "drudge_kill_sync_hold_lower_health_lane",
+                sourceSeparation);
+            target = laneSource;
+            state.TargetGuid = laneSource->GetGUID();
+            return true;
+        }
 
         if (bot->GetVictim() && bot->GetVictim() != laneSource)
             bot->AttackStop();

@@ -157,6 +157,14 @@ def test_source_keeps_reengagement_narrow_and_preserves_route_gates():
     route = (ROOT / "experiments/configs/validation_scenarios_cata_001.json").read_text(encoding="utf-8")
     assert '"source_entry": 42649' in route
     assert '"source_guid": "250050"' in route
-    assert '"pack_target_entries": [42649, 42362]' in route
+    # Magmaw rehearsal keeps the Chainwielder and Drudge pair as separate
+    # authoritative nodes.  Reengagement may retain the current node's exact
+    # members, but it must never merge the next Drudge family into the
+    # Chainwielder pack.
+    assert '"pack_target_entries": [42649]' in route
+    assert '"pack_target_entries": [42362]' in route
+    chainwielder = route.index('"label": "Magmaw Chainwielder trash"')
+    drudges = route.index('"label": "Magmaw Drudge pair"')
+    assert chainwielder < drudges
     assert '"minimum_distance_source_entry": 42362' in route
     assert '"minimum_distance_yards": 15.0' in route

@@ -33,6 +33,11 @@ Require one exact tuple across config, generated route, runtime status, capture,
 - For charge/split packs, declare separate exact pre-pull member anchors and
   post-pull tank combat anchors. Prove every pre-pull path and the full frozen
   roster before the first taunt; then let native threat and charge scripts run.
+- Order prerequisite actions against the native encounter clock explicitly.
+  After exact staging and tank ownership, submit required ordinary threat or
+  assignment actions before a post-pull/reseparation gate can return. Keep all
+  regular offense and kill synchronization behind that geometry gate. Never
+  force the native target to compensate for a prerequisite that ran too late.
 
 ## Model prerequisites as a DAG
 
