@@ -407,6 +407,7 @@ def accepted_foundation_status(status: dict[str, Any]) -> tuple[bool, list[str]]
     reasons: list[str] = []
     if not isinstance(runtime, dict):
         return False, ["raid_runtime_missing"]
+    route_progress = runtime.get("route_progress")
     checks = {
         "status_ok": status.get("ok") is True,
         "ten_bots": status.get("bots") == 10,
@@ -437,6 +438,9 @@ def accepted_foundation_status(status: dict[str, Any]) -> tuple[bool, list[str]]
         "roster_composition_valid": runtime.get("roster_composition_valid") is True,
         "evidence_sequence_owned": _positive_int(runtime.get("evidence_sequence")),
         "unique_leases": runtime.get("unique_leases") is True,
+        "magmaw_route_node": isinstance(route_progress, dict)
+            and route_progress.get("generation") == 4
+            and route_progress.get("node_index") == 3,
     }
     reasons.extend(name for name, passed in checks.items() if not passed)
     reasons.extend(_roster_rejections(runtime))
@@ -594,19 +598,27 @@ def accepted_native_recovery(statuses: list[dict[str, Any]]) -> tuple[bool, list
             reasons.append("native_generations_not_monotonic")
         previous_generations = tuple(max(current, previous) for current, previous in zip(generations, previous_generations, strict=True))
 
-        if engagement_index is None and (
+        route_progress = runtime.get("route_progress")
+        boss_states = runtime.get("boss_states") or []
+        exact_magmaw_engagement = (
             runtime.get("encounter_in_progress") is True
-            or any(state == 1 for state in (runtime.get("boss_states") or []))
-        ):
+            and isinstance(route_progress, dict)
+            and route_progress.get("generation") == 4
+            and route_progress.get("node_index") == 3
+            and isinstance(boss_states, list)
+            and len(boss_states) == 6
+            and boss_states[0] == 1
+        )
+        if engagement_index is None and exact_magmaw_engagement:
             engagement_index = index
-        if (
-            runtime.get("encounter_in_progress") is True
-            or any(state == 1 for state in (runtime.get("boss_states") or []))
-        ):
+        if exact_magmaw_engagement:
             latest_engagement_index = index
         if (
-            engagement_index is not None
-            and index > engagement_index
+            latest_engagement_index is not None
+            and index > latest_engagement_index
+            and isinstance(route_progress, dict)
+            and route_progress.get("generation") == 4
+            and route_progress.get("node_index") == 3
             and generations[0] > selected_wipe_generation
             and runtime.get("wipe_state") == "wiped"
             and runtime.get("alive_size") == 0
@@ -658,6 +670,8 @@ def accepted_native_recovery(statuses: list[dict[str, Any]]) -> tuple[bool, list
     ]
     final_native = native_signals[-1] if native_signals else {}
     final_runtime = runtimes[-1]
+    if engagement_index is None:
+        reasons.append("native_magmaw_engagement_not_observed")
     wipe_generation = final_runtime.get("wipe_generation")
     if not isinstance(wipe_generation, int) or isinstance(wipe_generation, bool) or wipe_generation <= 0:
         reasons.append("native_recovery_wipe_scope_missing")

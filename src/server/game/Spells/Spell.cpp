@@ -3456,6 +3456,10 @@ SpellCastResult Spell::prepare(SpellCastTargets const& targets, AuraEffect const
         }
     }
 
+    if (Creature* creatureCaster = m_caster->ToCreature())
+        sBotWorldPopulationMgr->NotifyNativeCreatureSpellStarted(
+            creatureCaster, m_targets.GetUnitTarget(), m_spellInfo->Id);
+
     // Creatures focus their target when possible
     if (m_casttime > 0 && m_caster->IsCreature()
         && !m_spellInfo->IsNextMeleeSwingSpell()

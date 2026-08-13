@@ -3900,6 +3900,19 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     Party().ValidationRoutePackSequence = 1;
     Party().ValidationRouteCompletedPackCount = 0;
     Party().ValidationRoutePackObservedEngagement = false;
+    Party().ValidationRouteDrudgeChargeGeneration = 0;
+    Party().ValidationRouteDrudgeChargeLandedGeneration = 0;
+    Party().ValidationRouteDrudgeChargeObservedAtMs = 0;
+    Party().ValidationRouteDrudgeChargeSourceGuid.Clear();
+    Party().ValidationRouteDrudgeChargeTargetGuid.Clear();
+    Party().ValidationRouteDrudgeChargeSourceSpawnId = 0;
+    Party().ValidationRouteDrudgeChargeObservedDistance = 0.0f;
+    Party().ValidationRouteDrudgeChargeRangeValid = false;
+    Party().ValidationRouteDrudgeChargeIntervalValid = false;
+    Party().ValidationRouteDrudgeLastChargeMsBySpawn.clear();
+    Party().ValidationRouteDrudgeChargeObservations.clear();
+    for (WorldBotState& botState : Party().Bots)
+        botState.LastValidationRouteDrudgeChargeGenerationHandled = 0;
     Party().ValidationRouteObservedDeadScriptTarget = false;
     Party().ValidationRoutePackClearCandidateSinceMs = 0;
     Party().ValidationRouteNodeClearCandidateSinceMs = 0;
@@ -9016,6 +9029,130 @@ bool BotWorldPopulationMgr::TryConfiguredCenterDeathFallback(Player* bot, std::s
     return true;
 }
 
+bool BotWorldPopulationMgr::AreNativeRaidRecoveryControlledUnitsReady(Player* bot) const
+{
+    if (!bot)
+        return false;
+
+    auto unitReady = [](Unit* unit) -> bool
+    {
+        return unit && unit->IsInWorld() && unit->IsAlive() && !unit->IsInCombat()
+            && !unit->GetVictim() && unit->getAttackers().empty()
+            && !unit->HasUnitState(UNIT_STATE_CASTING | UNIT_STATE_MOVING)
+            && !unit->GetCurrentSpell(CURRENT_GENERIC_SPELL)
+            && !unit->GetCurrentSpell(CURRENT_CHANNELED_SPELL)
+            && !unit->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL);
+    };
+
+    Pet* pet = bot->GetPet();
+    if (bot->getClass() == CLASS_HUNTER)
+    {
+        bool hasStoredPet = bot->GetPlayerPetDataCurrent() != nullptr;
+        if (!hasStoredPet)
+            for (uint8 slot = PET_SLOT_FIRST_ACTIVE_SLOT; slot <= PET_SLOT_LAST_ACTIVE_SLOT; ++slot)
+                if (PlayerPetData const* stored = bot->GetPlayerPetDataBySlot(slot);
+                    stored && stored->Type == HUNTER_PET && stored->PetId && stored->CreatureId)
+                {
+                    hasStoredPet = true;
+                    break;
+                }
+        if (!hasStoredPet || !unitReady(pet))
+            return false;
+    }
+    else if (pet && !unitReady(pet))
+        return false;
+
+    for (Unit* controlled : bot->m_Controlled)
+        if (controlled && controlled != pet && !unitReady(controlled))
+            return false;
+    return true;
+}
+
+bool BotWorldPopulationMgr::TryRestoreNativeRaidRecoveryPet(WorldBotState& state, Player* bot)
+{
+    if (!bot || bot->getClass() != CLASS_HUNTER)
+        return false;
+
+    uint64 const nowMs = NowMs();
+    PlayerPetData const* petData = bot->GetPlayerPetDataCurrent();
+    uint8 petSlot = petData ? petData->Slot : PET_SLOT_FIRST_ACTIVE_SLOT;
+    if (!petData)
+        for (uint8 slot = PET_SLOT_FIRST_ACTIVE_SLOT; slot <= PET_SLOT_LAST_ACTIVE_SLOT; ++slot)
+            if (PlayerPetData const* stored = bot->GetPlayerPetDataBySlot(slot);
+                stored && stored->Type == HUNTER_PET && stored->PetId && stored->CreatureId)
+            {
+                petData = stored;
+                petSlot = slot;
+                break;
+            }
+
+    if (!petData || !petData->PetId || !petData->CreatureId)
+    {
+        state.LastPetReadinessAction = "hunter_pet_unprovisioned";
+        return true;
+    }
+    state.LastPetReadinessPetId = petData->PetId;
+    state.LastPetReadinessPetEntry = petData->CreatureId;
+
+    Pet* pet = bot->GetPet();
+    if (!pet)
+    {
+        static uint32 const callPetSpells[] = { 883, 83242, 83243, 83244, 83245 };
+        if (petSlot > PET_SLOT_LAST_ACTIVE_SLOT)
+        {
+            state.LastPetReadinessAction = "hunter_pet_slot_invalid";
+            return true;
+        }
+        std::string const key = "native_recovery_hunter:call_pet:" + std::to_string(petSlot);
+        auto retry = state.ReadinessRetryUntilMs.find(key);
+        if (retry != state.ReadinessRetryUntilMs.end() && retry->second > nowMs)
+            return true;
+        uint32 const spellId = callPetSpells[petSlot - PET_SLOT_FIRST_ACTIVE_SLOT];
+        std::string failure;
+        if (bot->HasSpell(spellId) && TryCastFriendlySpell(bot, bot, spellId, &failure))
+        {
+            state.LastPetReadinessAction = key;
+            state.ReadinessRetryUntilMs[key] = nowMs + 3000;
+            return true;
+        }
+        state.LastPetReadinessAction = "hunter_pet_call_failed:" +
+            (failure.empty() ? std::string("spell_unknown") : failure);
+        state.ReadinessRetryUntilMs[key] = nowMs + 3000;
+        return true;
+    }
+    if (pet->IsAlive())
+        return false;
+
+    std::string const key = "native_recovery_hunter:revive_pet";
+    if (state.HunterPetRevivePendingUntilMs > nowMs)
+        return true;
+    if (state.HunterPetRevivePendingUntilMs)
+    {
+        state.HunterPetRevivePendingUntilMs = 0;
+        state.ReadinessRetryUntilMs[key] = nowMs + 1000;
+    }
+    auto retry = state.ReadinessRetryUntilMs.find(key);
+    if (retry != state.ReadinessRetryUntilMs.end() && retry->second > nowMs)
+        return true;
+    std::string failure;
+    if (bot->HasSpell(982) && TryCastFriendlySpell(bot, bot, 982, &failure))
+    {
+        SpellInfo const* reviveInfo = sSpellMgr->GetSpellInfo(982);
+        uint64 const castTimeMs = reviveInfo
+            ? uint64(std::max<int32>(0, reviveInfo->CalcCastTime(bot->getLevel()))) : 0;
+        state.HunterPetReviveStartedMs = nowMs;
+        state.HunterPetRevivePendingUntilMs = nowMs + std::max<uint64>(5000, castTimeMs + 3000);
+        ++state.HunterPetReviveAttemptCount;
+        state.ReadinessRetryUntilMs[key] = state.HunterPetRevivePendingUntilMs;
+        state.LastPetReadinessAction = "native_recovery_hunter_pet_revive_submitted";
+        return true;
+    }
+    state.LastPetReadinessAction = "native_recovery_hunter_pet_revive_failed:" +
+        (failure.empty() ? std::string("spell_unknown") : failure);
+    state.ReadinessRetryUntilMs[key] = nowMs + 3000;
+    return true;
+}
+
 void BotWorldPopulationMgr::TryRespondNativeRaidReadyCheck(WorldBotState& state, Player* bot)
 {
     RaidRuntime& raid = Cohort().Raid;
@@ -9033,6 +9170,9 @@ void BotWorldPopulationMgr::TryRespondNativeRaidReadyCheck(WorldBotState& state,
     }
     uint32 const guid = bot->GetGUID().GetCounter();
     auto const roster = raid.RosterByGuid.find(guid);
+    bool const postWipeControlledUnitsReady = !raid.WipeGeneration
+        || (BotRaidAreaAuthority::IsAllOffenseSuppressed(bot->GetGUID().GetRawValue())
+            && AreNativeRaidRecoveryControlledUnitsReady(bot));
     bool const independentlyReady = raid.RosterComplete && raid.UniqueLeases
         && raid.RosterCompositionValid && raid.DifficultyMatches
         && !raid.EncounterInProgress && raid.AssignmentGeneration > 0
@@ -9041,6 +9181,7 @@ void BotWorldPopulationMgr::TryRespondNativeRaidReadyCheck(WorldBotState& state,
         && bot->IsInWorld() && bot->IsAlive() && !bot->IsInCombat()
         && !bot->GetVictim() && bot->getAttackers().empty()
         && !bot->IsNonMeleeSpellCast(false)
+        && postWipeControlledUnitsReady
         && bot->GetSession()
         && bot->GetGroup() && bot->GetGroup()->GetGUID() == raid.GroupGuid
         && bot->GetMapId() == raid.MapId && bot->GetInstanceId() == raid.InstanceId;
@@ -9120,17 +9261,20 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     Cohort().TelemetryBuffer.Observe(bot, bot->IsInCombat() ? "combat" : "ambient", nullptr, nullptr, nullptr);
     Cohort().TelemetryBuffer.FlushClosedClips(Cohort().ExperimentId, Cohort().RunId, Cohort().Config.BrainVersion, bot->GetGUID());
 
-    TryRespondNativeRaidReadyCheck(state, bot);
-
     // Install the recovery hold before any decision-timer or route branch can
-    // return.  Ready-check responses above remain allowed because they are
-    // native evidence, not combat/navigation assistance.
+    // return.  Native pet restoration is permitted while hostile authority is
+    // suppressed; the ready response is withheld until the owner and every
+    // extant controlled unit are alive, idle, and naturally out of combat.
     if (bot->IsAlive() && IsNativeRaidRecoveryEvidencePending())
     {
         SuppressNativeRaidRecovery(state, bot);
+        if (!TryRestoreNativeRaidRecoveryPet(state, bot))
+            TryRespondNativeRaidReadyCheck(state, bot);
         state.DecisionTimer = 0;
         return;
     }
+
+    TryRespondNativeRaidReadyCheck(state, bot);
 
     if (!bot->IsAlive())
     {
@@ -12584,52 +12728,37 @@ void BotWorldPopulationMgr::SuppressNativeRaidRecovery(WorldBotState& state, Pla
         || bot->GetCurrentSpell(CURRENT_GENERIC_SPELL)
         || bot->GetCurrentSpell(CURRENT_CHANNELED_SPELL)
         || bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL);
+    auto controlledActive = [](Unit* controlled) -> bool
+    {
+        return controlled && (controlled->IsInCombat() || controlled->GetVictim()
+            || controlled->HasUnitState(UNIT_STATE_CASTING | UNIT_STATE_MOVING)
+            || controlled->GetCurrentSpell(CURRENT_GENERIC_SPELL)
+            || controlled->GetCurrentSpell(CURRENT_CHANNELED_SPELL)
+            || controlled->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL));
+    };
+    bool controlledUnitActive = controlledActive(bot->GetPet());
+    if (!controlledUnitActive)
+        controlledUnitActive = std::any_of(bot->m_Controlled.begin(), bot->m_Controlled.end(), controlledActive);
     uint64 const ownerGuid = bot->GetGUID().GetRawValue();
     if (newHold || periodicVerify)
     {
         BotRaidAreaAuthority::SetAllOffenseSuppressed(ownerGuid, true);
         BotRaidAreaAuthority::Set(ownerGuid, true);
     }
-    if (!newHold && !periodicVerify && !ownerActive)
+    if (!newHold && !periodicVerify && !ownerActive && !controlledUnitActive)
         return;
 
     state.NativeRecoveryHoldWipeGeneration = wipeGeneration;
     state.NativeRecoveryHoldLastEnforcedMs = nowMs;
 
-    auto stopControlled = [](Unit* controlled)
-    {
-        if (!controlled)
-            return;
-
-        for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
-            if (controlled->GetCurrentSpell(spellType))
-                controlled->InterruptSpell(spellType, false);
-        if (controlled->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
-            controlled->InterruptSpell(CURRENT_AUTOREPEAT_SPELL, false);
-        controlled->AttackStop();
-        controlled->CombatStop(true);
-        if (CharmInfo* charmInfo = controlled->GetCharmInfo())
-            charmInfo->SetIsCommandAttack(false);
-    };
-
-    for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
-        if (bot->GetCurrentSpell(spellType))
-            bot->InterruptSpell(spellType, false);
-    if (bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
-        bot->InterruptSpell(CURRENT_AUTOREPEAT_SPELL, false);
-    bot->AttackStop();
-    bot->CombatStop(true);
-    if (Pet* pet = bot->GetPet())
-        stopControlled(pet);
-    for (Unit* controlled : bot->m_Controlled)
-        stopControlled(controlled);
-
-    bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
-    bot->GetMotionMaster()->MoveIdle();
+    // Do not force combat state, interrupt native casts, change motion, or
+    // mutate controlled units during certification recovery. The authority
+    // gates prevent new bot offense; native encounter reset must clear any old
+    // activity, and the ready-check predicate independently observes that it
+    // did.
     state.ActivePathValid = false;
     state.IsMoving = false;
     state.TargetGuid.Clear();
-    state.WasInCombat = false;
     state.LastRecoveryMode = "native_full_wipe_only";
     state.LastRecoveryResult = "native_recovery_evidence_pending";
     state.LastNoProgressReason = "native_recovery_evidence_pending";
@@ -17913,20 +18042,25 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         float const sourceSeparation = sources[0]->IsAlive() && sources[1]->IsAlive()
             ? sources[0]->GetExactDist2d(sources[1]) : laneSeparation;
-        bool nativeChargeActive = false;
-        Creature* nativeChargeSource = nullptr;
-        Unit* nativeChargeTarget = nullptr;
-        for (Creature* source : sources)
-            if (source->IsAlive())
-                for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
-                    if (Spell* spell = source->GetCurrentSpell(spellType))
-                        if (SpellInfo const* spellInfo = spell->GetSpellInfo(); spellInfo
-                            && spellInfo->Id == Cohort().Config.ValidationRouteChargeSpellId)
-                        {
-                            nativeChargeActive = true;
-                            nativeChargeSource = source;
-                            nativeChargeTarget = spell->m_targets.GetUnitTarget();
-                        }
+        auto chargeObservation = std::find_if(
+            Party().ValidationRouteDrudgeChargeObservations.begin(),
+            Party().ValidationRouteDrudgeChargeObservations.end(),
+            [&state](ValidationRouteDrudgeChargeObservation const& observation)
+            {
+                return observation.Sequence
+                    > state.LastValidationRouteDrudgeChargeGenerationHandled;
+            });
+        bool const nativeChargePending = chargeObservation
+            != Party().ValidationRouteDrudgeChargeObservations.end();
+        Creature* nativeChargeSource = nativeChargePending
+            ? ObjectAccessor::GetCreature(*bot, chargeObservation->SourceGuid) : nullptr;
+        Unit* nativeChargeTarget = nativeChargePending
+            ? ObjectAccessor::GetUnit(*bot, chargeObservation->TargetGuid) : nullptr;
+        bool const nativeChargeContractViolation = nativeChargePending
+            && (chargeObservation->RouteGeneration != Party().ValidationRouteGeneration
+                || !chargeObservation->RangeValid
+                || !chargeObservation->IntervalValid
+                || !nativeChargeSource || !nativeChargeTarget);
 
         bool nativeChargeTargetLaneViolation = false;
         if (nativeChargeSource && nativeChargeTarget)
@@ -17955,20 +18089,71 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             > Cohort().Config.ValidationRouteSplitArrivalToleranceYards;
         bool const pairTooClose = sources[0]->IsAlive() && sources[1]->IsAlive()
             && sourceSeparation < Cohort().Config.ValidationRouteSplitMinimumSeparationYards;
-        if (formationRequired || nativeChargeActive || (pairTooClose && !assignedTank))
+        if (nativeChargeContractViolation)
+        {
+            holdOffense();
+            record(nativeChargeSource, "drudge_native_charge_contract_violation",
+                chargeObservation->SelectedDistance,
+                chargeObservation->SourceSpawnId);
+            target = nativeChargeSource;
+            state.TargetGuid = nativeChargeSource ? nativeChargeSource->GetGUID() : ObjectGuid::Empty;
+            return true;
+        }
+        if (nativeChargePending && nativeChargeTargetLaneViolation)
+        {
+            holdOffense();
+            record(nativeChargeSource, "drudge_native_charge_target_lane_violation",
+                sourceSeparation, nativeChargeTarget->GetGUID().GetCounter());
+            target = nativeChargeSource;
+            state.TargetGuid = nativeChargeSource->GetGUID();
+            return true;
+        }
+        if (assignedTank && laneSource->GetVictim() != bot)
+        {
+            BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, "tank");
+            for (BotActionCandidate const& candidate :
+                BotClassSpecActionProfileStore::BuildCandidates(bot, laneSource, profile))
+                if (candidate.Category == BotCombatActionCategory::Taunt
+                    && candidate.RejectReason.empty())
+                {
+                    BotRaidAreaAuthority::SetAllOffenseSuppressed(bot->GetGUID().GetRawValue(), false);
+                    bool const taunted = TryCastCombatSpell(bot, laneSource, candidate.SpellId);
+                    BotRaidAreaAuthority::SetAllOffenseSuppressed(bot->GetGUID().GetRawValue(), true);
+                    if (taunted)
+                    {
+                        BotRaidAreaAuthority::Set(bot->GetGUID().GetRawValue(), true);
+                        record(laneSource, "drudge_lane_native_taunt", sourceSeparation, candidate.SpellId);
+                        target = laneSource;
+                        state.TargetGuid = laneSource->GetGUID();
+                        return true;
+                    }
+                }
+        }
+        if (formationRequired || pairTooClose)
         {
             holdOffense();
             bool moved = !bot->IsFalling()
                 && MoveBotToPoint(state, bot, anchorX, anchorY, anchorZ);
             record(laneSource,
-                nativeChargeTargetLaneViolation ? "drudge_native_charge_target_lane_violation"
-                    : (nativeChargeActive ? "drudge_native_charge_lane_reseparate"
-                        : (assignedTank ? "drudge_tank_lane_position" : "drudge_group_lane_position")),
+                nativeChargePending ? "drudge_native_charge_lane_reseparate"
+                    : (assignedTank ? "drudge_tank_lane_position" : "drudge_group_lane_position"),
                 sourceSeparation,
                 nativeChargeTarget ? nativeChargeTarget->GetGUID().GetCounter() : 0);
             target = laneSource;
             state.TargetGuid = laneSource ? laneSource->GetGUID() : ObjectGuid::Empty;
             action = moved ? action : "drudge_lane_native_path_rejected";
+            return true;
+        }
+
+        if (nativeChargePending)
+        {
+            holdOffense();
+            state.LastValidationRouteDrudgeChargeGenerationHandled =
+                chargeObservation->Sequence;
+            record(nativeChargeSource, "drudge_native_charge_reseparation_complete",
+                sourceSeparation, nativeChargeTarget->GetGUID().GetCounter());
+            target = laneSource;
+            state.TargetGuid = laneSource->GetGUID();
             return true;
         }
 
@@ -17994,31 +18179,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 return true;
             }
         }
-        else if (!assignedTank && UnitHealthPct(laneSource) < UnitHealthPct(otherSource))
+        else if (UnitHealthPct(laneSource) < UnitHealthPct(otherSource))
         {
             holdOffense();
             record(laneSource, "drudge_kill_sync_hold_lower_health_lane", sourceSeparation);
             target = laneSource;
             state.TargetGuid = laneSource->GetGUID();
             return true;
-        }
-
-        if (assignedTank && laneSource->GetVictim() != bot)
-        {
-            BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, "tank");
-            for (BotActionCandidate const& candidate :
-                BotClassSpecActionProfileStore::BuildCandidates(bot, laneSource, profile))
-                if (candidate.Category == BotCombatActionCategory::Taunt
-                    && candidate.RejectReason.empty()
-                    && TryCastCombatSpell(bot, laneSource, candidate.SpellId))
-                {
-                    BotRaidAreaAuthority::SetAllOffenseSuppressed(bot->GetGUID().GetRawValue(), false);
-                    BotRaidAreaAuthority::Set(bot->GetGUID().GetRawValue(), true);
-                    record(laneSource, "drudge_lane_native_taunt", sourceSeparation, candidate.SpellId);
-                    target = laneSource;
-                    state.TargetGuid = laneSource->GetGUID();
-                    return true;
-                }
         }
 
         if (bot->GetVictim() && bot->GetVictim() != laneSource)
@@ -29257,6 +29424,29 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
          << ",\"strategy_id\":\"" << JsonEscape(raid.StrategyId) << "\""
          << ",\"route_progress\":{\"generation\":" << Party().ValidationRouteGeneration
          << ",\"node_index\":" << Party().ValidationRouteManifestIndex << "}"
+         << ",\"drudge_charge\":{\"generation\":" << Party().ValidationRouteDrudgeChargeGeneration
+         << ",\"landed_generation\":" << Party().ValidationRouteDrudgeChargeLandedGeneration
+         << ",\"observations\":[";
+    bool firstChargeObservation = true;
+    for (ValidationRouteDrudgeChargeObservation const& observation :
+        Party().ValidationRouteDrudgeChargeObservations)
+    {
+        if (!firstChargeObservation)
+            json << ',';
+        firstChargeObservation = false;
+        json << "{\"sequence\":" << observation.Sequence
+             << ",\"route_generation\":" << observation.RouteGeneration
+             << ",\"observed_at_ms\":" << observation.ObservedAtMs
+             << ",\"observed_interval_ms\":" << observation.ObservedIntervalMs
+             << ",\"source_guid\":" << observation.SourceGuid.GetCounter()
+             << ",\"source_spawn_id\":" << observation.SourceSpawnId
+             << ",\"target_guid\":" << observation.TargetGuid.GetCounter()
+             << ",\"selected_distance\":" << observation.SelectedDistance
+             << ",\"range_valid\":" << (observation.RangeValid ? "true" : "false")
+             << ",\"interval_valid\":" << (observation.IntervalValid ? "true" : "false")
+             << ",\"landed\":" << (observation.Landed ? "true" : "false") << '}';
+    }
+    json << "]}"
          << ",\"strategy_transition\":{\"from_strategy\":\"" << JsonEscape(raid.PreviousStrategyId)
          << "\",\"to_strategy\":\"" << JsonEscape(raid.StrategyId)
          << "\",\"advanced\":" << (raid.StrategyTransitionRouteGeneration == Party().ValidationRouteGeneration && !raid.PreviousStrategyId.empty() ? "true" : "false") << "}"
@@ -32978,11 +33168,87 @@ void BotWorldPopulationMgr::AddCombatLogEvent(char const* kind, Player* actor, U
     }
 }
 
+void BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster, Unit* target, uint32 spellId)
+{
+    if (!Cohort().Active || !caster || !target
+        || Cohort().Config.ValidationRouteMechanicProfile != "trash_two_tank_charge_lanes"
+        || spellId != Cohort().Config.ValidationRouteChargeSpellId
+        || caster->GetEntry() != Cohort().Config.ValidationRouteMinimumDistanceSourceEntry)
+        return;
+
+    Player* targetPlayer = target->ToPlayer();
+    if (!targetPlayer)
+        return;
+    uint32 const sourceSpawnId = uint32(caster->GetSpawnId());
+    bool const exactSource = std::find(
+        Cohort().Config.ValidationRouteSplitSourceGuids.begin(),
+        Cohort().Config.ValidationRouteSplitSourceGuids.end(), sourceSpawnId)
+        != Cohort().Config.ValidationRouteSplitSourceGuids.end();
+    auto const roster = Cohort().Raid.RosterByGuid.find(targetPlayer->GetGUID().GetCounter());
+    if (!exactSource || roster == Cohort().Raid.RosterByGuid.end()
+        || !roster->second.Active || !roster->second.LeaseOwned
+        || caster->GetMap() != targetPlayer->GetMap())
+        return;
+
+    uint64 const observedAtMs = NowMs();
+    uint64 const priorMs = Party().ValidationRouteDrudgeLastChargeMsBySpawn[sourceSpawnId];
+    Party().ValidationRouteDrudgeChargeIntervalValid = !priorMs
+        || observedAtMs - priorMs >= Cohort().Config.ValidationRouteChargeNativeIntervalMs;
+    Party().ValidationRouteDrudgeLastChargeMsBySpawn[sourceSpawnId] = observedAtMs;
+    Party().ValidationRouteDrudgeChargeObservedDistance = caster->GetExactDist(targetPlayer);
+    Party().ValidationRouteDrudgeChargeRangeValid =
+        Party().ValidationRouteDrudgeChargeObservedDistance
+            <= Cohort().Config.ValidationRouteChargeRangeYards;
+    Party().ValidationRouteDrudgeChargeObservedAtMs = observedAtMs;
+    Party().ValidationRouteDrudgeChargeSourceGuid = caster->GetGUID();
+    Party().ValidationRouteDrudgeChargeTargetGuid = targetPlayer->GetGUID();
+    Party().ValidationRouteDrudgeChargeSourceSpawnId = sourceSpawnId;
+    ++Party().ValidationRouteDrudgeChargeGeneration;
+    ValidationRouteDrudgeChargeObservation observation;
+    observation.Sequence = Party().ValidationRouteDrudgeChargeGeneration;
+    observation.RouteGeneration = Party().ValidationRouteGeneration;
+    observation.ObservedAtMs = observedAtMs;
+    observation.ObservedIntervalMs = priorMs ? observedAtMs - priorMs : 0;
+    observation.SourceGuid = caster->GetGUID();
+    observation.TargetGuid = targetPlayer->GetGUID();
+    observation.SourceSpawnId = sourceSpawnId;
+    observation.SelectedDistance = Party().ValidationRouteDrudgeChargeObservedDistance;
+    observation.RangeValid = Party().ValidationRouteDrudgeChargeRangeValid;
+    observation.IntervalValid = Party().ValidationRouteDrudgeChargeIntervalValid;
+    Party().ValidationRouteDrudgeChargeObservations.push_back(std::move(observation));
+    while (Party().ValidationRouteDrudgeChargeObservations.size() > 32)
+        Party().ValidationRouteDrudgeChargeObservations.pop_front();
+}
+
 void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uint32 spellId, uint32 damage,
     uint32 unmitigatedDamage, uint32 damageType, uint32 schoolMask)
 {
     if (!Cohort().Active || !attacker || !victim || (!damage && !unmitigatedDamage))
         return;
+
+    // Confirm native Rush delivery separately from the pre-cast observation.
+    // Do not synthesize a charge from damage alone: target/range/interval were
+    // frozen before the instant movement began.
+    if (Cohort().Config.ValidationRouteMechanicProfile == "trash_two_tank_charge_lanes"
+        && spellId == Cohort().Config.ValidationRouteChargeSpellId)
+        if (Creature* source = attacker->ToCreature(); source
+            && source->GetEntry() == Cohort().Config.ValidationRouteMinimumDistanceSourceEntry)
+            if (Player* targetPlayer = victim->ToPlayer())
+            {
+                if (source->GetGUID() == Party().ValidationRouteDrudgeChargeSourceGuid
+                    && targetPlayer->GetGUID() == Party().ValidationRouteDrudgeChargeTargetGuid)
+                    Party().ValidationRouteDrudgeChargeLandedGeneration =
+                        Party().ValidationRouteDrudgeChargeGeneration;
+                for (auto observation = Party().ValidationRouteDrudgeChargeObservations.rbegin();
+                    observation != Party().ValidationRouteDrudgeChargeObservations.rend(); ++observation)
+                    if (observation->SourceGuid == source->GetGUID()
+                        && observation->TargetGuid == targetPlayer->GetGUID()
+                        && !observation->Landed)
+                    {
+                        observation->Landed = true;
+                        break;
+                    }
+            }
 
     Player* owner = CombatOwnerPlayer(attacker);
     if (owner)

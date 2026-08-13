@@ -167,6 +167,7 @@ def accepted_status() -> dict:
             "wipe_state": "ready",
             "recovery_state": "none",
             "strategy_id": "blackwing_descent_10n",
+            "route_progress": {"generation": 4, "node_index": 3},
             "boss_states": [0] * 6,
             "ready_check_satisfied": True,
             "unique_leases": True,
@@ -327,6 +328,13 @@ def test_native_wipe_reset_recovery_is_reconstructed_across_statuses():
     accepted, reasons = accepted_native_recovery([ready, engaged, wiped, reset, recovered])
     assert accepted is True
     assert reasons == []
+
+    pre_magmaw = json.loads(json.dumps([ready, engaged, wiped, reset, recovered]))
+    for status in pre_magmaw:
+        status["raid_runtime"]["route_progress"] = {"generation": 3, "node_index": 2}
+    accepted, reasons = accepted_native_recovery(pre_magmaw)
+    assert accepted is False
+    assert "native_magmaw_engagement_not_observed" in reasons
 
     stale = json.loads(json.dumps([ready, engaged, wiped, reset, recovered]))
     stale[1]["raid_runtime"]["evidence_sequence"] = 101
@@ -582,7 +590,7 @@ def test_repeated_snapshots_are_allowed_but_strategy_transition_requires_route_a
     transitioned["raid_runtime"].update(
         evidence_sequence=2,
         strategy_id="blackwing_descent_10n_boss_route",
-        route_progress={"generation": 1, "node_index": 1},
+        route_progress={"generation": 5, "node_index": 4},
         strategy_transition={
             "from_strategy": "blackwing_descent_10n",
             "to_strategy": "blackwing_descent_10n_boss_route",
@@ -656,7 +664,7 @@ def test_live_evidence_demux_rejects_strategy_drift():
     assert "evidence_demux_strategy_transition_without_route_advancement" in evidence_demux_rejections(rows)
 
     drifted["raid_runtime"].update(
-        route_progress={"generation": 1, "node_index": 1},
+            route_progress={"generation": 5, "node_index": 4},
         strategy_transition={
             "from_strategy": active["raid_runtime"]["strategy_id"],
             "to_strategy": "different_strategy",

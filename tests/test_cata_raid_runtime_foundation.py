@@ -322,14 +322,14 @@ def test_native_recovery_evidence_gate_holds_offense_navigation_and_reengagement
         assert token in pending
 
 
-def test_native_recovery_hold_is_installed_before_decision_timer_and_stops_controlled_units():
+def test_native_recovery_hold_precedes_readycheck_and_uses_no_forced_combat_stop():
     update = IMPL[
         IMPL.index("void BotWorldPopulationMgr::UpdateBot"):
     ]
     hold = update.index("if (bot->IsAlive() && IsNativeRaidRecoveryEvidencePending())")
-    ready_check = update.index("TryRespondNativeRaidReadyCheck(state, bot);")
+    ready_check = update.index("TryRespondNativeRaidReadyCheck(state, bot);", hold)
     timer = update.index("if (state.DecisionTimer > diff)")
-    assert ready_check < hold < timer
+    assert hold < ready_check < timer
     assert "state.DecisionTimer = 0;" in update[hold:timer]
 
     suppress = IMPL[
@@ -338,14 +338,16 @@ def test_native_recovery_hold_is_installed_before_decision_timer_and_stops_contr
     ]
     for token in (
         "SetAllOffenseSuppressed(ownerGuid, true)",
-        "bot->CombatStop(true);",
-        "if (Pet* pet = bot->GetPet())",
-        "for (Unit* controlled : bot->m_Controlled)",
-        "controlled->InterruptSpell(spellType, false)",
-        "controlled->CombatStop(true)",
-        "bot->GetMotionMaster()->MoveIdle();",
+        "controlledUnitActive",
+        "native encounter reset must clear any old",
     ):
         assert token in suppress
+    assert "CombatStop(" not in suppress
+    assert "InterruptSpell(" not in suppress
+    assert "AttackStop(" not in suppress
+    assert "MoveIdle(" not in suppress
+    assert "AreNativeRaidRecoveryControlledUnitsReady(bot)" in IMPL
+    assert "TryRestoreNativeRaidRecoveryPet(state, bot)" in update[hold:ready_check]
 
 
 def _frontal_hazard_inside(*, distance, relative_radians, radius=12.0):
@@ -487,14 +489,37 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "ValidationRouteSplitMinimumSeparationYards" in lane
     assert "ValidationRouteSplitNavigationMarginYards" in lane
     assert "ValidationRouteSplitArrivalToleranceYards" in lane
-    assert "nativeChargeActive" in lane
+    assert "ValidationRouteDrudgeChargeGeneration" in lane
+    assert "nativeChargePending" in lane
+    assert "ValidationRouteDrudgeChargeObservations" in lane
     assert '"drudge_native_charge_lane_reseparate"' in lane
     assert "UnitHealthPct(laneSource) < UnitHealthPct(otherSource)" in lane
     assert '"drudge_kill_sync_hold_lower_health_lane"' in lane
     assert "ValidationRouteVengefulRageSpellId" in lane
     assert "BotCombatActionCategory::Taunt" in lane
+    assert "if (formationRequired || pairTooClose)" in lane
+    assert "bool const taunted = TryCastCombatSpell" in lane
+    assert lane.index("SetAllOffenseSuppressed(bot->GetGUID().GetRawValue(), false)") < lane.index(
+        "bool const taunted = TryCastCombatSpell"
+    ) < lane.index("SetAllOffenseSuppressed(bot->GetGUID().GetRawValue(), true)")
     assert "ResolveProfileCombatAction(bot, laneSource" in lane
     assert "true, false);" in lane  # forbid area, disallow multidot
+    cast_hook = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted"):
+        IMPL.index("void BotWorldPopulationMgr::NotifyCombatDamage")
+    ]
+    assert 'ValidationRouteMechanicProfile != "trash_two_tank_charge_lanes"' in cast_hook
+    assert "ValidationRouteChargeRangeYards" in cast_hook
+    assert "ValidationRouteChargeNativeIntervalMs" in cast_hook
+    assert "ValidationRouteDrudgeChargeGeneration" in cast_hook
+    assert "ValidationRouteDrudgeChargeObservations.push_back" in cast_hook
+    spell_impl = (ROOT / "src/server/game/Spells/Spell.cpp").read_text()
+    assert "NotifyNativeCreatureSpellStarted" in spell_impl
+    assert spell_impl.index("NotifyNativeCreatureSpellStarted") < spell_impl.index(
+        "// Creatures focus their target when possible"
+    )
+    assert "else if (UnitHealthPct(laneSource) < UnitHealthPct(otherSource))" in lane
+    assert "else if (!assignedTank && UnitHealthPct" not in lane
     assert route_runtime.index("if (tryValidationRouteMinimumDistance())") < route_runtime.index(
         "if (tryValidationRouteDrudgeChargeLanes())"
     ) < route_runtime.index("struct TrashThreatControl")
@@ -520,7 +545,7 @@ def test_botworld_hot_path_defers_progression_scoring_and_rate_limits_repeated_l
     suppress = IMPL[suppress_start:suppress_end]
     assert "NativeRecoveryHoldWipeGeneration" in suppress
     assert "periodicVerify" in suppress
-    assert "if (!newHold && !periodicVerify && !ownerActive)" in suppress
+    assert "if (!newHold && !periodicVerify && !ownerActive && !controlledUnitActive)" in suppress
     assert "SetReactState(REACT_PASSIVE)" not in suppress
 
 

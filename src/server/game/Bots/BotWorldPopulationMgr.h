@@ -297,6 +297,7 @@ public:
     void NotifyBotHeal(Unit* healer, Unit* target, uint32 spellId, uint32 attemptedHeal, uint32 effectiveHeal, uint32 absorbedHeal);
     void NotifyCombatDamage(Unit* attacker, Unit* victim, uint32 spellId, uint32 damage, uint32 unmitigatedDamage,
         uint32 damageType, uint32 schoolMask);
+    void NotifyNativeCreatureSpellStarted(Creature* caster, Unit* target, uint32 spellId);
     void NotifyCombatHeal(Unit* healer, Unit* target, uint32 spellId, uint32 attemptedHeal, uint32 effectiveHeal, uint32 absorbedHeal);
     void NotifyCreatureDeath(Creature* killed);
 
@@ -519,6 +520,21 @@ private:
         ObjectGuid TargetGuid;
         uint32 TargetEntry = 0;
         std::string Reason;
+    };
+
+    struct ValidationRouteDrudgeChargeObservation
+    {
+        uint64 Sequence = 0;
+        uint64 RouteGeneration = 0;
+        uint64 ObservedAtMs = 0;
+        uint64 ObservedIntervalMs = 0;
+        ObjectGuid SourceGuid;
+        ObjectGuid TargetGuid;
+        uint32 SourceSpawnId = 0;
+        float SelectedDistance = 0.0f;
+        bool RangeValid = false;
+        bool IntervalValid = false;
+        bool Landed = false;
     };
 
     struct WorldBotState
@@ -807,6 +823,7 @@ private:
         uint32 SuppressedNotInWorldInfoLogs = 0;
         uint32 NativeRecoveryHoldWipeGeneration = 0;
         uint64 NativeRecoveryHoldLastEnforcedMs = 0;
+        uint64 LastValidationRouteDrudgeChargeGenerationHandled = 0;
         CombatAttemptDiagnostic LastCombatAttempt;
         RouteProgressDiagnostic LastRouteProgress;
         uint32 ProfileCastSuppressedSpellId = 0;
@@ -1466,6 +1483,8 @@ private:
     void UpdateBot(WorldBotState& state, uint32 diff);
     void TryRespondNativeRaidReadyCheck(WorldBotState& state, Player* bot);
     bool IsNativeRaidRecoveryEvidencePending() const;
+    bool AreNativeRaidRecoveryControlledUnitsReady(Player* bot) const;
+    bool TryRestoreNativeRaidRecoveryPet(WorldBotState& state, Player* bot);
     void SuppressNativeRaidRecovery(WorldBotState& state, Player* bot);
     bool TryReattachValidationBot(WorldBotState& state, Player* bot, char const* context);
     bool HasNativeRaidCorpseAuthority(WorldBotState const& state, Player const* bot) const;
@@ -1763,6 +1782,17 @@ private:
         uint64 ValidationRoutePackSequence = 1;
         uint32 ValidationRouteCompletedPackCount = 0;
         bool ValidationRoutePackObservedEngagement = false;
+        uint64 ValidationRouteDrudgeChargeGeneration = 0;
+        uint64 ValidationRouteDrudgeChargeLandedGeneration = 0;
+        uint64 ValidationRouteDrudgeChargeObservedAtMs = 0;
+        ObjectGuid ValidationRouteDrudgeChargeSourceGuid;
+        ObjectGuid ValidationRouteDrudgeChargeTargetGuid;
+        uint32 ValidationRouteDrudgeChargeSourceSpawnId = 0;
+        float ValidationRouteDrudgeChargeObservedDistance = 0.0f;
+        bool ValidationRouteDrudgeChargeRangeValid = false;
+        bool ValidationRouteDrudgeChargeIntervalValid = false;
+        std::map<uint32, uint64> ValidationRouteDrudgeLastChargeMsBySpawn;
+        std::deque<ValidationRouteDrudgeChargeObservation> ValidationRouteDrudgeChargeObservations;
         uint64 ValidationRoutePackClearCandidateSinceMs = 0;
         uint64 ValidationRouteNodeClearCandidateSinceMs = 0;
         ObjectGuid ValidationRouteBossProgressTargetGuid;
