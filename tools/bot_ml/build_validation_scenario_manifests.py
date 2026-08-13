@@ -273,7 +273,44 @@ def diagnostic_contract_status(
     }
 
 
-def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any], provisioning_verify_report: dict[str, Any]) -> dict[str, list[dict[str, Any]] | dict[str, Any]]:
+def diagnostic_rosters_by_scenario(fixture: dict[str, Any] | None) -> dict[str, list[dict[str, Any]]]:
+    """Translate tracked shard characters into the immutable runtime roster schema."""
+    if not fixture:
+        return {}
+    if fixture.get("schema") != "cata_raid_bwd_diagnostic_shard_fixture_v1":
+        raise ValueError("diagnostic_shard_fixture_schema")
+    rosters: dict[str, list[dict[str, Any]]] = {}
+    for shard in fixture.get("shards", []):
+        scenario_id = str(shard.get("scenario_id") or "")
+        bots = shard.get("bots") if isinstance(shard.get("bots"), list) else []
+        roster = [
+            {
+                "roster_slot_id": str(bot.get("canonical_roster_slot_id") or ""),
+                "guid": int(bot.get("character_guid") or 0),
+                "name": str(bot.get("name") or ""),
+                "role": str(bot.get("role") or ""),
+                "class_spec": str(bot.get("class_spec") or ""),
+            }
+            for bot in bots
+        ]
+        if not scenario_id or len(roster) != 10:
+            raise ValueError(f"diagnostic_shard_roster_shape:{scenario_id}")
+        if len({row["guid"] for row in roster}) != 10 or len({row["roster_slot_id"] for row in roster}) != 10:
+            raise ValueError(f"diagnostic_shard_roster_identity:{scenario_id}")
+        if any(not row["guid"] or not row["name"] or not row["role"] or not row["class_spec"] or not row["roster_slot_id"] for row in roster):
+            raise ValueError(f"diagnostic_shard_roster_incomplete:{scenario_id}")
+        rosters[scenario_id] = roster
+    if len(rosters) != 6:
+        raise ValueError("diagnostic_shard_roster_count")
+    return rosters
+
+
+def build_manifests(
+    config: dict[str, Any],
+    provisioning_report: dict[str, Any],
+    provisioning_verify_report: dict[str, Any],
+    diagnostic_fixture: dict[str, Any] | None = None,
+) -> dict[str, list[dict[str, Any]] | dict[str, Any]]:
     provisioned = scenario_by_id(provisioning_report)
     verification_ready = bool(provisioning_verify_report.get("all_passed"))
     scenarios: list[dict[str, Any]] = []
@@ -285,6 +322,7 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
         for row in configured_scenarios
         if isinstance(row, dict) and row.get("id")
     }
+    diagnostic_rosters = diagnostic_rosters_by_scenario(diagnostic_fixture)
 
     for scenario in configured_scenarios:
         scenario_id = str(scenario.get("id") or "")
@@ -300,6 +338,11 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
         diagnostic_valid, diagnostic_missing, diagnostic_metadata = diagnostic_contract_status(
             scenario, configured_scenario_ids
         )
+        scenario_roster = list(scenario.get("roster_identity") or [])
+        if diagnostic_metadata["diagnostic_only"]:
+            scenario_roster = diagnostic_rosters.get(scenario_id, [])
+            if len(scenario_roster) != expected_bot_count:
+                missing.append("diagnostic_roster_identity")
         scenario_required_evidence = ["role_assignments", "party_formation" if scenario_group_kind == "party" else "raid_formation"]
         if any(step.get("kind") in {"trash", "boss"} for step in route_steps):
             scenario_required_evidence.extend(["pulls", "regrouping", "recovery"])
@@ -338,6 +381,7 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
             "required_roles": required_roles,
             "role_assignment": role_assignment_contract(required_roles, provisioned_roles),
             "expected_bot_count": expected_bot_count,
+            "roster_identity": scenario_roster,
             "provisioning_ready": bool(ready and verification_ready),
             "missing": sorted(set(missing)),
             "route_step_count": len(route_steps),
@@ -470,7 +514,7 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
                 route["expected_alive_count"] = expected_alive_count(step, cluster_entries)
             route["route_node_id"] = stable_hash(route)[:16]
             route["expected_bot_count"] = expected_bot_count
-            route["roster_identity"] = scenario.get("roster_identity") or []
+            route["roster_identity"] = scenario_roster
             alternate_target_entries = []
             for entry in step.get("alternate_target_entries") or []:
                 entry_id = int(entry or 0)
@@ -559,10 +603,16 @@ def main() -> int:
     parser.add_argument("--config", type=Path, default=Path("experiments/configs/validation_scenarios_cata_001.json"))
     parser.add_argument("--provisioning-report", type=Path, default=Path("dataset/validation_provisioning/report.json"))
     parser.add_argument("--provisioning-verification", type=Path, default=Path("dataset/validation_provisioning_verification/report.json"))
+    parser.add_argument("--bwd-diagnostic-shard-fixture", type=Path, default=Path("experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json"))
     parser.add_argument("--output-dir", type=Path, default=Path("dataset/validation_scenarios"))
     args = parser.parse_args()
 
-    manifests = build_manifests(load_json(args.config), load_json(args.provisioning_report), load_json(args.provisioning_verification))
+    manifests = build_manifests(
+        load_json(args.config),
+        load_json(args.provisioning_report),
+        load_json(args.provisioning_verification),
+        load_json(args.bwd_diagnostic_shard_fixture),
+    )
     counts: dict[str, int] = {}
     hashes: dict[str, str] = {}
     for name in ["validation_scenarios", "validation_routes", "validation_mechanics"]:

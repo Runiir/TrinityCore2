@@ -192,6 +192,6 @@ def test_provisioning_entrypoint_loads_all_six_tracked_shard_pools():
 def test_dvc_generation_and_verifier_bind_the_tracked_shard_fixture():
     dvc = (ROOT / "dvc.yaml").read_text(encoding="utf-8")
     fixture_path = "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json"
-    assert dvc.count(f"--bwd-diagnostic-shard-fixture\n      {fixture_path}") == 2
-    assert dvc.count(f"- {fixture_path}") >= 2
+    assert dvc.count(f"--bwd-diagnostic-shard-fixture\n      {fixture_path}") == 3
+    assert dvc.count(f"- {fixture_path}") >= 3
     assert dvc.count("- tools/raid_program/bwd_shard_fixtures.py") >= 2

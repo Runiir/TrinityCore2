@@ -10,6 +10,7 @@ from tools.bot_ml.build_live_scenario_reports import build_reports
 ROOT = Path(__file__).resolve().parents[1]
 SCENARIO_CONFIG = ROOT / "experiments/configs/validation_scenarios_cata_001.json"
 PROFILE_MANIFEST = ROOT / "dataset/bot_runtime_profiles/profiles.json"
+SHARD_FIXTURE = ROOT / "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json"
 
 CANONICAL_ID = "blackwing_descent_10n"
 DIAGNOSTIC_IDS = {
@@ -43,6 +44,7 @@ def _manifests() -> dict:
             ],
         },
         {"all_passed": True},
+        json.loads(SHARD_FIXTURE.read_text(encoding="utf-8")),
     )
 
 
@@ -87,6 +89,12 @@ def test_each_bwd_diagnostic_shard_has_exact_local_membership_and_unique_profile
         assert all(row["runtime_profile_id"] == scenario_id for row in routes)
         assert all(row["diagnostic_parent_scenario_id"] == CANONICAL_ID for row in routes)
         assert all(row["diagnostic_prerequisite_state"]["certifies_predecessors"] is False for row in routes)
+        assert all(len(row["roster_identity"]) == 10 for row in routes)
+        assert all(len({member["guid"] for member in row["roster_identity"]}) == 10 for row in routes)
+        assert all({member["roster_slot_id"] for member in row["roster_identity"]} == {
+            "raid_tank_1", "raid_tank_2", "raid_healer_1", "raid_healer_2", "raid_healer_3",
+            "raid_dps_1", "raid_dps_2", "raid_dps_3", "raid_dps_4", "raid_dps_5",
+        } for row in routes)
         assert routes[-1]["kind"] == "boss"
 
 

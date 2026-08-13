@@ -1606,7 +1606,8 @@ def test_bwd_route_source_and_generator_bind_exact_roster_identity():
     assert len({row["name"] for row in identities}) == 10
     assert all(row["guid"] > 0 and row["name"] and row["role"] and row["class_spec"] for row in identities)
     generator = (ROOT / "tools/bot_ml/build_validation_scenario_manifests.py").read_text()
-    assert 'route["roster_identity"] = scenario.get("roster_identity") or []' in generator
+    assert 'route["roster_identity"] = scenario_roster' in generator
+    assert 'diagnostic_rosters_by_scenario' in generator
 
 
 def test_raid_size_and_difficulty_are_explicit_and_fail_closed():
@@ -1929,7 +1930,9 @@ def test_trash_profile_damage_cannot_pull_or_compound_the_next_boss_encounter():
     assert "nextNode.PackTargetEntries" in route_runtime
     assert "BotRaidAreaAuthority::IsAllOffenseSuppressed" in PET_AI
     assert "BotRaidAreaAuthority::IsProtectedEncounterTarget" in PET_AI
-    assert "me->SetReactState(REACT_PASSIVE);" in PET_AI
+    assert "bool const offenseSuppressed = ControlledOffenseSuppressed(owner);" in PET_AI
+    assert "if (offenseSuppressed && me->GetVictim())" in PET_AI
+    assert "if (owner && offenseSuppressed && !spellInfo->IsPositive())" in PET_AI
     assert "RaidControlledOffenseRejected(me, victim)" in UNIT_AI
     assert "RaidControlledOffenseRejected(me, target, spellInfo)" in UNIT_AI
     assert "BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid)" in UNIT_AI

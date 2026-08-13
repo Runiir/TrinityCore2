@@ -461,12 +461,15 @@ stages:
       experiments/configs/validation_scenarios_cata_001.json
       --provisioning-report dataset/validation_provisioning/report.json
       --provisioning-verification
-      dataset/validation_provisioning_verification/report.json --output-dir
+      dataset/validation_provisioning_verification/report.json
+      --bwd-diagnostic-shard-fixture
+      experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json --output-dir
       dataset/validation_scenarios
     deps:
     - tools/bot_ml/build_validation_scenario_manifests.py
     - tools/bot_ml/common.py
     - experiments/configs/validation_scenarios_cata_001.json
+    - experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json
     - dataset/validation_provisioning/report.json
     - dataset/validation_provisioning_verification/report.json
     outs:
