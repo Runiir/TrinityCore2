@@ -1,5 +1,13 @@
 # Cataclysm raid progression handoff
 
+# 2026-08-13T09:35:20Z — Drudge and hot-path review findings remediated; aa85 payload evicted
+
+The exact aa85 infrastructure-abort diagnosis has been fully consumed. Its DVC pointer and `132210d89b505797bf68f242b2e0b630.dir` metadata remain, remote status was verified in sync immediately before cleanup, and the 141,552,656-byte workspace plus exactly eight child cache objects were removed. This also removed the three objects shared with the already-consumed aa85 preparation. No broad DVC garbage collection was used.
+
+The integration source now contains the incremental capture cursor, indexed/edge-only runtime telemetry, and the complete remediation through exact code commit `4425f10aba2d9af5569aa215867f6d8ae9bcda24`. It separates native tank ownership from real taunt casts, requires both frozen tanks' ownership and scoped health-sync evidence, uses collision-distinct slot anchors, rejects crossed Drudge sources, processes Rush observations in sequence without per-bot deadlock, keeps partial deaths out of the full-wipe state machine, and flushes fingerprint deltas across identity changes and every destructive lifecycle. The focused combined suite passes 253 checks; the broad diagnostic remains at its inherited 128 passed / 33 stale failures with no new failure.
+
+The mandatory Sol-high review rejected the earlier `cdacc647ed` intermediate with seven High findings; all seven are addressed in the current descendant. No build is authorized until the same reviewer approves the exact clean status checkpoint. After approval: one policy-v8 coordinated build, fresh reprovision/full verifier/v4 readback, prestarted verified worldserver, one Luna-xhigh babysitter, and the uncapped Phase 1 rerun. Six BWD boss shards remain downstream of the passing Phase 1 gate.
+
 # 2026-08-13T08:58:56Z — Exact aa85 uncapped capture exposed Drudge lane and telemetry stall
 
 The reviewed receipt-bound `aa85a9d0b9cc34f9a73ce9b5ad9380af5879d3c4` worldserver ran the canonical uncapped BWD 10N capture with one Luna-xhigh read-only babysitter attached only after the worldserver and exact roster were live. It formed the exact 10-person 2/3/5 raid in BWD 10N instance/save 3, cleared the Chainwielder node, and reached the isolated Magmaw Drudge pair. It did not engage Magmaw. The watchdog classified the run as `infrastructure_abort` after 300.099 seconds and 59 samples without monotonic objective progress; this is not a gameplay or fidelity failure.

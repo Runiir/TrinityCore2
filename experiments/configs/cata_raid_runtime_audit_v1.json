@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "audit_id": "cata_raid_runtime_phase1_v1",
-  "updated_at_utc": "2026-08-13T08:58:56Z",
+  "updated_at_utc": "2026-08-13T09:35:20Z",
   "target": {
     "client": "Cataclysm Classic",
     "patch": "4.4.2",
@@ -9,18 +9,18 @@
     "locale": "enUS",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
-  "audited_commit": "aa85a9d0b9cc34f9a73ce9b5ad9380af5879d3c4",
-  "gate_state": "in_progress_exact_aa85_uncapped_drudge_semantic_stall_published_pending_remediation_review_rebuild_and_rerun",
+  "audited_commit": "4425f10aba2d9af5569aa215867f6d8ae9bcda24",
+  "gate_state": "in_progress_exact_4425_drudge_partial_death_and_hotpath_remediation_pending_final_review_build_and_rerun",
   "foundation": {
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "current_head_sha": "aa85a9d0b9cc34f9a73ce9b5ad9380af5879d3c4",
+    "current_head_sha": "4425f10aba2d9af5569aa215867f6d8ae9bcda24",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
-    "mandatory_sol_high_rereview": "exact_aa85a9d0b9_approved_zero_critical_high_build_authorized_live_restart_requires_fresh_prep",
+    "mandatory_sol_high_rereview": "exact_cdacc_rejected_seven_high_all_remediated_through_4425_final_exact_rereview_pending",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "acceptance": "Exact aa85 build and preparation passed, but its uncapped live capture is an infrastructure abort at the Magmaw Drudge pair. Four native Rush deliveries all targeted tank 1271; only six of ten roster members re-separated; no tank health-sync or trained-profile acknowledgement was accepted; Magmaw was not engaged. Cleanup and forbidden-assistance gates passed. The eight-file diagnostic is remote-verified. No gameplay or fidelity inference is authorized."
+    "acceptance": "Exact aa85 remains a remotely retained infrastructure-abort diagnosis with no gameplay or fidelity inference; its consumed workspace and exact child cache objects are evicted. Exact 4425 remediates honest ownership-versus-taunt evidence, frozen source lanes, ordered Rush acknowledgment, scoped safe health synchronization, partial-death state, and fingerprint persistence. Final exact review, build, fresh preparation, and live rerun are pending."
   },
   "research": {
     "required_boss_packets": 28,
@@ -176,7 +176,7 @@
   "required_open_work": [
     {
       "area": "current_build",
-      "missing": []
+      "missing": ["successful_policy_v8_receipt_for_exact_reviewed_4425_descendant"]
     },
     {
       "area": "live_script_and_decision_review",
@@ -188,13 +188,13 @@
     },
     {
       "area": "immutable_evidence",
-      "missing": ["exact_eviction_of_aa85_failure_payload_after_remediation_and_review", "passing_terminal_gate_driven_phase1_live_capture_after_remediation", "independent_acceptance_reconstruction_of_complete_native_recovery"]
+      "missing": ["passing_terminal_gate_driven_phase1_live_capture_after_remediation", "independent_acceptance_reconstruction_of_complete_native_recovery"]
     }
   ],
   "phase1_gate_blockers": [
     "exact_aa85_uncapped_capture_failed_closed_at_magmaw_drudge_pair_before_magmaw_engagement",
-    "drudge_lane_target_reseparation_health_sync_and_trained_profile_remediation_pending",
-    "single_cohort_cpu_log_and_telemetry_amplification_remediation_pending",
+    "exact_4425_mandatory_sol_high_rereview_and_build_pending",
+    "single_cohort_cpu_log_and_telemetry_optimization_pending_live_measurement",
     "bwd_exact_442_quantitative_and_exact_log_hotfix_evidence_blocks_phase2_fidelity"
   ],
   "acceptance_policy": "Fail closed. Existing Stonecore and older BWD artifacts do not certify this raid-runtime gate."

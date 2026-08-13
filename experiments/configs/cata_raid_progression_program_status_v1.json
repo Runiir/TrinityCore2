@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-13T08:58:56Z",
+  "updated_at_utc": "2026-08-13T09:35:20Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -17,7 +17,7 @@
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "current_head_sha": "aa85a9d0b9cc34f9a73ce9b5ad9380af5879d3c4",
+    "current_head_sha": "4425f10aba2d9af5569aa215867f6d8ae9bcda24",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -28,11 +28,11 @@
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
     "critical_high_remediation_implemented_at": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "mandatory_rereview": "exact_aa85a9d0b9_sol_high_approved_zero_critical_high; exact_spell_owned_drudge_delivery_pairing_and_runtime_source_identity_accepted; build_authorized_and_completed; live_restart_requires_fresh_preparation",
+    "mandatory_rereview": "exact_cdacc647ed_sol_high_rejected_with_seven_high_findings; all seven remediated through exact_4425f10aba; final exact descendant rereview pending",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "The exact aa85 uncapped capture is a Phase 1 infrastructure abort at the isolated Magmaw Drudge pair, not a gameplay or fidelity result. Exact build/identity/cleanup/forbidden-assistance gates held, but all four native Rushes selected tank 1271, only six of ten members re-separated, no tank health-sync or trained-profile evidence was accepted, and Magmaw was never engaged. The eight-file failure batch is pushed and remote-verified; remediation, mandatory review, rebuild, fresh preparation, and rerun are required."
+    "current_acceptance": "The exact aa85 uncapped capture remains a Phase 1 infrastructure abort, not gameplay or fidelity evidence. Its diagnosis has been consumed and exactly evicted after remote verification. Exact 4425f10aba remediates the seven Sol-high Drudge, partial-death, and fingerprint-persistence findings and passes 253 focused checks; mandatory final exact rereview, rebuild, fresh preparation, and rerun remain required."
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
@@ -359,7 +359,7 @@
     "phase1_sixteenth_infrastructure_live_remote_status": "remote_verified_exact_workspace_payload_and_eight_child_cache_objects_evicted_receipts_and_compact_summary_retained",
     "phase1_current_preparation_pointer": "artifacts/cata_raid_program/phase1_preparation_aa85a9d0b9_20260813.dvc",
     "phase1_current_preparation_dvc_md5": "7a81cf466d0bba3f2665b7177e071cad.dir",
-    "phase1_current_preparation_remote_status": "pushed_remote_verified_nine_file_payload_retained_only_until_canonical_capture_preflight_consumes_it",
+    "phase1_current_preparation_remote_status": "pushed_remote_verified_workspace_and_six_preparation_only_children_evicted_then_three_shared_children_evicted_with_consumed_capture",
     "phase1_current_infrastructure_live_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_1ee02778_20260813.dvc",
     "phase1_current_infrastructure_live_dvc_md5": "6ac9cd047fdd69c6ee8a86100cc17d2a.dir",
     "phase1_current_infrastructure_live_remote_status": "remote_verified_exact_workspace_payload_and_eight_child_cache_objects_evicted_receipts_preflight_and_compact_summary_retained",
@@ -621,8 +621,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "Exact aa85 was reviewed, built, freshly prepared, and run uncapped. The remotely verified failure batch proves a 300.099-second semantic stall at the Magmaw Drudge pair: four Rushes all targeted tank 1271, only six of ten re-separated, zero tank health-sync and trained-profile acknowledgements were accepted, four deaths did not produce a native full-wipe scope, and Magmaw was not engaged. Cleanup and forbidden-assistance gates passed. Remediation, mandatory review, exact rebuild, fresh preparation, rerun, and exact post-diagnosis eviction remain required."
+      "detail": "Exact aa85 was reviewed, built, freshly prepared, and run uncapped. Its remotely verified failure batch proved a Drudge semantic stall and was consumed, then its workspace and exact eight child cache objects were evicted. Exact 4425f10aba remediates all seven findings from the cdacc Sol-high review and passes 253 focused checks. Mandatory final exact rereview, exact rebuild, fresh preparation, and rerun remain required."
     }
   ],
-  "next_action": "Consume the remotely verified aa85 failure diagnosis; remediate exact Drudge Rush target/lane/reseparation/health-sync/trained-profile behavior and the partial-death recovery loop; reduce repeated telemetry and CPU amplification without weakening evidence; obtain mandatory Sol-high approval; rebuild exact clean source; freshly reprovision/full-verify/v4-read back; rerun the uncapped canonical Phase 1 capture; then exactly evict the consumed payload. Six parallel boss shards remain downstream of a passing Phase 1 gate."
+  "next_action": "Obtain mandatory Sol-high approval of the exact clean 4425f10aba descendant, then run one policy-v8 coordinated build, freshly reprovision/full-verify/v4-read back, prestart and verify one worldserver, attach one Luna-xhigh babysitter, and rerun the uncapped canonical Phase 1 capture. Six parallel boss shards remain downstream of a passing Phase 1 gate."
 }
