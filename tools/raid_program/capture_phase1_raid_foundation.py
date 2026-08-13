@@ -78,16 +78,17 @@ FORBIDDEN_MARKER_RE = re.compile(
 )
 
 EXPECTED_BWD_ROUTE_IDENTITY = (
-    (1, "trash", "entry trash", 42800, "250049"),
-    (2, "regroup", "BWD entrance junction regroup", 0, "blackwing_descent_10n.start_position"),
-    (3, "trash", "Drakonid corridor pack", 42649, "250050"),
+    (1, "regroup", "BWD entrance junction regroup", 0, "blackwing_descent_10n.start_position"),
+    (2, "trash", "Magmaw Chainwielder trash", 42649, "250050"),
+    (3, "trash", "Magmaw Drudge pair", 42362, "250140"),
     (4, "boss", "Magmaw", 41570, "@CGUID+8"),
-    (5, "boss", "Omnotron Defense System", 42166, "script_summoned"),
-    (6, "trash", "laboratory trash", 42803, "250119"),
-    (7, "boss", "Maloriak", 41378, "@CGUID+69"),
-    (8, "boss", "Atramedes", 41442, "native_instance_unlock"),
-    (9, "boss", "Chimaeron", 43296, "@CGUID+70"),
-    (10, "boss", "Nefarian", 41376, "native_instance_unlock"),
+    (5, "trash", "Omnotron Golem Sentries", 42800, "250049"),
+    (6, "boss", "Omnotron Defense System", 42166, "script_summoned"),
+    (7, "trash", "laboratory trash", 42803, "250119"),
+    (8, "boss", "Maloriak", 41378, "@CGUID+69"),
+    (9, "boss", "Atramedes", 41442, "native_instance_unlock"),
+    (10, "boss", "Chimaeron", 43296, "@CGUID+70"),
+    (11, "boss", "Nefarian", 41376, "native_instance_unlock"),
 )
 
 
@@ -1781,8 +1782,8 @@ def validate_runtime_profile_assets(
             rows = [json.loads(line) for line in route_bytes.decode("utf-8").splitlines() if line.strip()]
             matching_rows = [row for row in rows if isinstance(row, dict) and row.get("scenario_id") == profile_name]
             route_rows = len(matching_rows)
-            if route_rows != 10:
-                reasons.append("worktree_route_expected_ten_rows")
+            if route_rows != 11:
+                reasons.append("worktree_route_expected_eleven_rows")
             steps = [int(row.get("step") or 0) for row in matching_rows]
             node_ids = [str(row.get("route_node_id") or "") for row in matching_rows]
             kinds = [str(row.get("kind") or "") for row in matching_rows]
@@ -1796,8 +1797,8 @@ def validate_runtime_profile_assets(
                 )
                 for row in matching_rows
             )
-            if steps != list(range(1, 11)):
-                reasons.append("worktree_route_steps_not_ordered_one_through_ten")
+            if steps != list(range(1, 12)):
+                reasons.append("worktree_route_steps_not_ordered_one_through_eleven")
             if route_identity != EXPECTED_BWD_ROUTE_IDENTITY:
                 reasons.append("worktree_route_identity_mismatch")
             if any(not node_id for node_id in node_ids):

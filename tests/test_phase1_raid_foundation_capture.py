@@ -40,16 +40,17 @@ def _write_runtime_profile_assets(root: Path, route_payload: str) -> None:
 
 def _bwd_route_payload() -> str:
     route_identity = (
-        (1, "trash", "entry trash", 42800, "250049"),
-        (2, "regroup", "BWD entrance junction regroup", 0, "blackwing_descent_10n.start_position"),
-        (3, "trash", "Drakonid corridor pack", 42649, "250050"),
+        (1, "regroup", "BWD entrance junction regroup", 0, "blackwing_descent_10n.start_position"),
+        (2, "trash", "Magmaw Chainwielder trash", 42649, "250050"),
+        (3, "trash", "Magmaw Drudge pair", 42362, "250140"),
         (4, "boss", "Magmaw", 41570, "@CGUID+8"),
-        (5, "boss", "Omnotron Defense System", 42166, "script_summoned"),
-        (6, "trash", "laboratory trash", 42803, "250119"),
-        (7, "boss", "Maloriak", 41378, "@CGUID+69"),
-        (8, "boss", "Atramedes", 41442, "native_instance_unlock"),
-        (9, "boss", "Chimaeron", 43296, "@CGUID+70"),
-        (10, "boss", "Nefarian", 41376, "native_instance_unlock"),
+        (5, "trash", "Omnotron Golem Sentries", 42800, "250049"),
+        (6, "boss", "Omnotron Defense System", 42166, "script_summoned"),
+        (7, "trash", "laboratory trash", 42803, "250119"),
+        (8, "boss", "Maloriak", 41378, "@CGUID+69"),
+        (9, "boss", "Atramedes", 41442, "native_instance_unlock"),
+        (10, "boss", "Chimaeron", 43296, "@CGUID+70"),
+        (11, "boss", "Nefarian", 41376, "native_instance_unlock"),
     )
     return "".join(json.dumps({
         "scenario_id": "blackwing_descent_10n",
@@ -71,7 +72,7 @@ def test_capture_preflight_requires_matching_hydrated_route_manifest(tmp_path: P
 
     accepted = validate_runtime_profile_assets(worktree, reference, require_dvc_lineage=False)
     assert accepted["passed"] is True
-    assert accepted["matching_route_rows"] == 10
+    assert accepted["matching_route_rows"] == 11
     assert accepted["route_sha256"] == accepted["reference_route_sha256"]
 
     reordered_rows = route.splitlines()
@@ -83,7 +84,7 @@ def test_capture_preflight_requires_matching_hydrated_route_manifest(tmp_path: P
         worktree, reference, require_dvc_lineage=False
     )
     assert rejected_order["passed"] is False
-    assert "worktree_route_steps_not_ordered_one_through_ten" in rejected_order["reasons"]
+    assert "worktree_route_steps_not_ordered_one_through_eleven" in rejected_order["reasons"]
     assert "worktree_route_identity_mismatch" in rejected_order["reasons"]
 
     _write_runtime_profile_assets(worktree, route)
@@ -99,7 +100,7 @@ def test_capture_preflight_requires_matching_hydrated_route_manifest(tmp_path: P
     }) + "\n")
     wrong = validate_runtime_profile_assets(worktree, reference, require_dvc_lineage=False)
     assert wrong["passed"] is False
-    assert "worktree_route_expected_ten_rows" in wrong["reasons"]
+    assert "worktree_route_expected_eleven_rows" in wrong["reasons"]
     assert "runtime_route_differs_from_reference" in wrong["reasons"]
 
 

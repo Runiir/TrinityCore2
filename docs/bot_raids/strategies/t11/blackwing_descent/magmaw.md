@@ -4,6 +4,13 @@ This is a sourced planning dossier for Blackwing Descent's Magmaw encounter in 1
 
 ## Bot-safe encounter contract
 
+### Magmaw-side prerequisite trash
+
+- Phase 1 is intentionally Magmaw-only: entrance regroup, Chainwielder 250050, Drudges 250140/250141, then Magmaw. Omnotron Golem Sentries and Laser Strike are ordered after Magmaw.
+- Repository SmartAI casts Thunderclap 79604 with a client-data radius of 15 yards. Native Rush 79630 is linked from Hate to Zero 63984 every 20 seconds and selects the farthest player within 80 yards on that Drudge's threat list. Death casts Vengeful Rage 80035 on the surviving Drudge.
+- Permanent slots 1/3/4/6/7 form lane A and 2/5/8/9/10 form lane B, with tanks 1 and 2. Walkable anchors are derived from the exact native home spawns and must pass native pathfinding. Tanks take the add currently occupying their lane; non-tanks remain beyond both 15-yard Thunderclap circles; a native Rush triggers ownership re-evaluation and reseparation.
+- Area damage and multidot are forbidden. A lower-health lane pauses with zero invented health tolerance; after the first death, damage waits for native Vengeful Rage. No fabricated kill-sync threshold or Rush-impact radius is accepted. The 2-yard navigation margin and arrival tolerance are bot execution tolerances, not 4.4.2 encounter values.
+
 - Magmaw is immobile and is fought from melee range. Keep the tank at the boss and keep the rest of the raid out of the pillar marker; a tank out of melee causes the repository AI to cast Molten Tantrum instead of Magma Spit.
 - Pillar of Flame selects a non-vehicle target and prefers a target more than 15 yards from Magmaw when one exists. Move out of the impact area and control the Lava Parasites; do not infer an exact parasite count from this repository.
 - Mangle is a tank event in the current implementation and in both current strategy guides. During the Mangle/Crash sequence, stop normal damage, avoid Massive Crash, put one player on each available pincer, and apply both hooks to the same target. The two-hook condition is repository-confirmed; exact retail interaction tolerance is guide-reported and unresolved below.
@@ -65,3 +72,5 @@ These implementation intervals are useful for diagnosing this checkout, not proo
 - Blizzard forum, Kaivax, “World of Warcraft: Cataclysm Classic—Patch 4.4.2 Notes,” 2025-02-18: https://us.forums.blizzard.com/en/wow/t/world-of-warcraft-cataclysm-classic-patch-442-notes/2062030
 
 Material blockers: exact 4.4.2 client/build and BWD hotfix cutoff; live timer confirmation in every mode; exact Crash/Pillar/Spit/Spew mode scaling; parasite spawn count; mount count and hook timing tolerance; Sweltering Armor duration; and Shadow Breath splash/cadence. These remain `unresolved`/`fidelity_blocked` in the machine-readable files.
+
+The Drudge pair adds two live blockers before tactical fidelity acceptance: prove the derived lane anchors are native-walkable in BWD, and observe native Rush target/impact behavior from 4.4.2 telemetry. The repository does not justify inventing an impact radius or damage-synchronization window.

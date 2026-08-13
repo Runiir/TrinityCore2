@@ -1,5 +1,15 @@
 # Cataclysm raid progression handoff
 
+## 2026-08-13T07:12:31Z — Combined Phase 1 remediation ready for exact checkpoint and review
+
+All observer services and experiment/build/publisher processes are stopped. The exact BWD fixtures were deterministically reprovisioned after the observer session; v4 readback passed with zero instance/group/ghost/corpse/corpse-phase residue. The historical `1ee02778ef` binary remains stale and no live restart is authorized.
+
+The dirty integration checkpoint combines identity-bound native recovery, a pre-decision idempotent all-offense hold, radial-and-frontal hazard correction, stable blocked/unstuck resolution, exact Laser Strike union-safe movement, and bounded repeated worldport logs. Expensive progression/policy scoring now runs only on decision ticks or an actual stuck edge. The scheduler remains locked to one cohort until Phase 1 passes and per-cohort scheduling/isolation exists.
+
+The BWD route is exactly eleven nodes. Phase 1 reaches only the entrance junction, Magmaw Chainwielder, the exact Drudge pair, and Magmaw. Omnotron Golem Sentries follow Magmaw. The Drudge node binds spawns 250140/250141 to two permanent five-player lanes with tanks 1/2, derives native-path anchors from their home spawns, keeps non-tanks outside both 15-yard Thunderclap circles, observes native Rush, reassigns tank ownership after charges, forbids area/multidot, balances lane health without an invented threshold, and waits for native Vengeful Rage after the first death. The unverified Rush-impact radius was removed.
+
+`validation_scenarios` was regenerated through Pixi/DVC, pushed, and local/cloud status are synchronized at object `0829bfe3c4c81f59b24fd4cbc0542974.dir`. The focused runtime/capture suite passes 111 tests and `git diff --check` is clean. Next gate: commit with the required trailer, obtain exact Sol-high zero-Critical/High review, then run exactly one coordinated build. After a valid receipt, measure CPU/log/DB behavior, reprovision/read back, and execute the uncapped canonical capture. Publish, verify, diagnose, and exactly evict evidence before considering six parallel boss shards.
+
 ## 2026-08-13T05:22:12Z — Exact 1ee Phase 1 reached Magmaw; native recovery evidence remediation next
 
 The receipt-bound `1ee02778ef85aff82887e1917d2c5ac7c3a33112` worldserver completed an uncapped canonical BWD 10N capture after fresh provisioning and v4 readback. The exact 2/3/5 roster formed in map 669 instance/save 2, killed all five declared entry/corridor targets, advanced to native Magmaw, and produced three full wipes. Future-encounter offensive authority remained closed and no forbidden assistance was observed.

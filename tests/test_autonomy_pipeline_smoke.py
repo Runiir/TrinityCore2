@@ -441,6 +441,63 @@ def test_validation_blockers_require_matching_resolution_and_trace_episode_field
     assert "blocked_resolution" in diagnose
 
 
+def test_profile_blocker_debounce_rejects_alternation_and_accepts_stable_progress():
+    mgr = read(BOT_MGR)
+    header = read(BOT_MGR_HEADER)
+    blocked = function_body(mgr, "void BotWorldPopulationMgr::MarkBotBlocked")
+    resolver = function_body(mgr, "bool BotWorldPopulationMgr::TryResolveBotBlocker")
+
+    for symbol in [
+        "BlockedResolutionCandidate",
+        "BlockedResolutionCandidateCount",
+    ]:
+        assert symbol in header
+        assert symbol in blocked
+        assert symbol in resolver
+
+    assert "constexpr uint32 ProfileActionStableSamples = 2;" in resolver
+    assert "state.BlockedResolutionCandidateCount >= ProfileActionStableSamples" in resolver
+    assert "state.BlockedResolutionCandidateCount > 0" in resolver
+    assert "state.BlockedResolutionCandidate.clear();" in blocked
+    assert "state.BlockedResolutionCandidateCount = 0;" in blocked
+
+    def simulate(samples):
+        blocked_state = False
+        episode_count = 0
+        candidate_count = 0
+        resolution_count = 0
+        semantic_progress_count = 0
+        for sample in samples:
+            if sample == "invalid":
+                if not blocked_state:
+                    blocked_state = True
+                    episode_count += 1
+                candidate_count = 0
+                continue
+            if not blocked_state:
+                continue
+            if sample == "valid":
+                candidate_count += 1
+                if candidate_count >= 2:
+                    blocked_state = False
+                    resolution_count += 1
+                    semantic_progress_count += 1
+            elif sample == "cast_succeeded" and candidate_count > 0:
+                blocked_state = False
+                resolution_count += 1
+                semantic_progress_count += 1
+        return episode_count, resolution_count, semantic_progress_count
+
+    alternating = simulate(["invalid", "valid"] * 8)
+    assert alternating == (1, 0, 0)
+
+    stable = simulate(["invalid", "valid", "valid"])
+    assert stable == (1, 1, 1)
+
+    concrete_progress = simulate(["invalid", "valid", "cast_succeeded"])
+    assert concrete_progress == (1, 1, 1)
+
+
 def test_validation_route_readiness_buffs_party_and_hunter_pet_without_fallbacks():
     mgr = read(BOT_MGR)
     readiness = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteReadiness")
@@ -1786,6 +1843,23 @@ def test_validation_route_exact_hazards_scope_secondary_generic_cast_dodges_to_c
     assert "isScopedGenericCastCandidate(preferredTarget)" in movement
     assert "isScopedGenericCastCandidate(candidate) && inspectCaster(candidate)" in movement
     assert "if (!caster && !currentNodeHasConfiguredHazard && profileAllowsGenericCastMovement)" not in movement
+
+
+def test_validation_route_hazard_exit_rejects_overlapping_active_sources():
+    route_objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    movement = route_objective[
+        route_objective.index("auto tryValidationRouteMovementCheck"):
+        route_objective.index("auto tryValidationRouteAdds")
+    ]
+
+    assert "struct ActiveHazard" in movement
+    assert "std::vector<ActiveHazard> activeHazards" in movement
+    assert "refreshActiveHazards" in movement
+    assert "positionOutsideActiveHazards" in movement
+    assert "auto pathOutsideActiveHazards" in movement
+    assert "PathGenerator path(bot);" in movement
+    assert "dodgeCandidates.erase" in movement
+    assert "return !positionOutsideActiveHazards(candidate);" in movement
 
 
 def test_holy_priest_primes_chakra_and_gates_friendly_holy_word_on_serenity():

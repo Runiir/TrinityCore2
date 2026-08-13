@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-13T05:22:12Z",
+  "updated_at_utc": "2026-08-13T07:12:31Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -32,13 +32,13 @@
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "9a3_capture_phase1_false_infrastructure_abort; raid_runtime_refresh_live_proved_but_corridor_multishot_and_living_bomb_prematurely_engaged_magmaw_and_reset_churn_masked_stall; exact_53840bd89e rejects all protected_next_encounter_direct_and_multitarget_bot_pet_controlled_and_totem_offense_and requires exact_ordered_native_recovery_for_watchdog_progress; sol_high_approved; exact_build_reprovision_and_uncapped_rerun_pending"
+    "current_acceptance": "1ee capture remains a Phase 1 infrastructure abort. Dirty descendant remediation now covers cumulative native runback evidence, a pre-decision idempotent recovery hold, Laser Strike, blocked/unstuck stability, Magmaw-only trash, exact Drudge lanes, and principal CPU/log churn. Validation-scenario DVC is synchronized. Exact Sol-high review and a coordinator receipt are pending; live restart is not authorized."
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
     "current_commit": "1ee02778ef85aff82887e1917d2c5ac7c3a33112",
-    "current_state": "exact_1ee02778ef_policy_v8_configure_and_worldserver_build_success",
-    "current_result": "gate-bearing trusted-local configure and worldserver receipts independently verified; binary sha256 128edf0720d514945727269618ef68aea09bbc064eba8be8bd15db5bd63b86f4; 256 focused regressions passed; fresh reprovision/full verifier/v4 readback passed; uncapped capture reached native Magmaw and three full wipes but failed closed on missing identity-bound native recovery evidence",
+    "current_state": "exact_1ee02778ef_build_is_stale_for_dirty_post_capture_remediation",
+    "current_result": "no current build receipt; observer servers and uncoordinated compiler processes are stopped. Exact clean descendant, mandatory Sol-high review, and one coordinator build are required before live restart",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -558,10 +558,18 @@
       ,"uncapped_1ee_capture_observed_three_full_wipes_and_failed_closed_on_missing_native_recovery_evidence"
       ,"uncapped_1ee_capture_semantic_stall_cleanup_forbidden_assistance_and_identity_gates_passed"
       ,"uncapped_1ee_eight_file_dvc_artifact_pushed_remote_verified_compactly_summarized_and_exactly_evicted"
+      ,"observer_services_stopped_and_scoped_bwd_fixtures_reprovisioned_clean"
+      ,"magmaw_only_route_orders_chainwielder_and_exact_drudge_pair_before_magmaw"
+      ,"laser_strike_union_safe_path_exit_and_blocked_unstuck_debounce_implemented"
+      ,"native_recovery_cumulative_runback_and_predecision_all_offense_hold_implemented"
+      ,"exact_two_tank_permanent_roster_drudge_charge_lanes_implemented"
+      ,"progression_scoring_deferred_and_repeated_worldport_logs_rate_limited"
+      ,"eleven_node_validation_scenario_dvc_pushed_and_remote_verified"
+      ,"focused_runtime_capture_suite_111_passed"
       ],
       "remaining_requirements": [
-      "remediate_identity_bound_native_recovery_observer_and_pre_readycheck_combat_hold",
-      "mandatory_independent_sol_high_review_of_native_recovery_remediation",
+      "mandatory_independent_sol_high_review_of_combined_native_recovery_laser_drudge_blocked_cpu_remediation",
+      "exact_reviewed_coordinator_build_and_cpu_measurement",
         "rerun_uncapped_serialized_bwd_10n_entry_formation_difficulty_wipe_reset_evidence_publication_and_cleanup_gate_with_live_stall_diagnosis",
         "phase1_live_evidence_dvc_publish_remote_verify_and_exact_evict_gate"
       ]
@@ -584,8 +592,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "Exact 1ee02778ef built and prepared successfully. Its uncapped capture cleared all five declared prerequisite targets, reached native Magmaw in exact BWD 10N instance/save 2, and recorded three full wipes. Only per-GUID death sequences advanced: trace decisions showed native release/runback and bots later re-entered and re-engaged, but corpse/release/runback/re-entry/resurrection/ready-check evidence remained absent from RaidRuntime. The capture correctly terminated on semantic stall with clean identity, no forbidden assistance, zero-bot/zero-lease cleanup, and classification infrastructure_abort. The eight-file batch is pushed, remote-verified, compactly summarized, and exactly evicted. Native recovery observation and the pre-readycheck combat hold now require remediation and mandatory Sol-high review before rebuild/rerun."
+      "detail": "Exact 1ee02778ef is historical and stale. Combined native-recovery, Laser Strike, blocked/unstuck, Magmaw-only route, Drudge-lane, and CPU/log remediation is implemented in the dirty integration checkpoint; validation_scenarios is pushed and synchronized. A clean commit, mandatory Sol-high review, coordinator build, CPU measurement, reprovision/readback, and uncapped canonical rerun remain required."
     }
   ],
-  "next_action": "Finish the scoped native-recovery observer and combat-hold remediation from the 1ee capture, require mandatory independent Sol-high zero-Critical/High approval, then build the exact reviewed descendant, reprovision, and rerun the uncapped canonical Phase 1 capture. Require exact per-GUID death/corpse/release/runback/re-entry/resurrection ordering and post-recovery native ready-check before combat resumes. The currently running auth/worldserver session is observer-only and non-certifying. Parallel boss diagnostics remain downstream and require one prestarted verified worldserver, six isolated boss-ready shards, and one Luna-xhigh babysitter per boss; final qualification remains three sequential full clears plus a fourth on material disagreement. Keep all 464 material fidelity blockers fail-closed."
+  "next_action": "Commit the coherent combined remediation, obtain mandatory exact Sol-high zero-Critical/High approval, then run exactly one coordinator build. Measure optimized single-cohort CPU/log/DB behavior, reprovision and retain v4 readback, and rerun the uncapped canonical Phase 1 Magmaw-only corridor. Require correct Laser Strike exits, exact Drudge lane decisions, full per-GUID native recovery order, post-recovery ready check, trained single-target profile use, and clean DVC publication/eviction. Six parallel boss shards remain downstream of Phase 1 and require one prestarted verified worldserver plus one Luna-xhigh babysitter per boss."
 }

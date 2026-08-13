@@ -187,11 +187,62 @@ def test_native_recovery_rejects_release_worldport_or_stale_outside_state_as_run
         IMPL.index("if (!signal.ReleaseSequence"):
         IMPL.index("bool const exactSignalRoster")
     ]
-    assert "prior->OutsideOriginalInstance && releaseLandingIdentityBound" in runtime_refresh
+    assert "prior->OutsideOriginalInstance" in runtime_refresh
+    assert "progressedFromReleaseLanding" in runtime_refresh
     assert "NativeReleaseLandingObserved" in runtime_refresh
     assert "NativeReleaseLandingMapId" in runtime_refresh
     assert "NativeReleaseLandingInstanceId" in runtime_refresh
     assert "NativeReleaseLandingWipeGeneration" in runtime_refresh
+
+
+def _runback_from_landing_samples(samples, *, wipe_generation=7,
+                                  landing_map=0, landing_instance=0):
+    """Model cumulative movement from the exact release landing."""
+    for sample in samples:
+        identity = (
+            sample["wipe_generation"] == wipe_generation
+            and sample["map_id"] == landing_map
+            and sample["instance_id"] == landing_instance
+            and sample["alive"] is False
+            and sample["corpse"] is True
+            and sample["ghost"] is True
+            and sample["runback_trigger"] == 6581
+        )
+        if identity and math.hypot(sample["x"] - 10.0, sample["y"] - 20.0) > 2.0:
+            return True
+    return False
+
+
+def test_native_recovery_runback_uses_cumulative_landing_displacement_and_exact_identity():
+    small_steps = [
+        {"wipe_generation": 7, "map_id": 0, "instance_id": 0, "alive": False,
+         "corpse": True, "ghost": True, "runback_trigger": 6581, "x": x, "y": 20.0}
+        for x in (10.5, 11.0, 11.5, 12.1)
+    ]
+    no_movement = [dict(sample, x=10.0, y=20.0) for sample in small_steps]
+    wrong_wipe = [dict(sample, wipe_generation=8) for sample in small_steps]
+    wrong_map = [dict(sample, map_id=1) for sample in small_steps]
+    no_corpse = [dict(sample, corpse=False) for sample in small_steps]
+
+    assert _runback_from_landing_samples(small_steps)
+    assert not _runback_from_landing_samples(no_movement)
+    assert not _runback_from_landing_samples(wrong_wipe)
+    assert not _runback_from_landing_samples(wrong_map)
+    assert not _runback_from_landing_samples(no_corpse)
+
+    runtime_refresh = IMPL[
+        IMPL.index("bool const releaseLandingIdentityBound"):
+        IMPL.index("if (!signal.RunbackSequence")
+    ]
+    assert "signal.HasCorpse" in runtime_refresh
+    assert "NativeReleaseLandingWipeGeneration == raid.WipeGeneration" in runtime_refresh
+    assert "NativeReleaseLandingMapId" in runtime_refresh
+    assert "NativeReleaseLandingInstanceId" in runtime_refresh
+    assert "NativeReleaseLandingX" in runtime_refresh
+    assert "NativeReleaseLandingY" in runtime_refresh
+    assert "NativeReleaseLandingZ" in runtime_refresh
+    assert "progressedFromReleaseLanding" in runtime_refresh
+    assert "prior->OutsideOriginalInstance" in runtime_refresh
 
 
 def _native_recovery_objective_gate(*, policy, active, attempt_matches,
@@ -246,40 +297,97 @@ def test_native_recovery_evidence_gate_holds_offense_navigation_and_reengagement
         IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective"):
         IMPL.index("bool BotWorldPopulationMgr::IsBossContext")
     ]
-    gate = objective.index("RaidRuntime const& raid")
+    gate = objective.index("if (IsNativeRaidRecoveryEvidencePending())")
     clear = objective.index(
         "BotRaidAreaAuthority::SetAllOffenseSuppressed(raidAuthorityOwner, false)"
     )
     assert gate < clear
     for token in (
-        "raid.NativeSignalsByGuid.size() == raid.RosterByGuid.size()",
-        "signal->second.WipeGeneration == raid.WipeGeneration",
-        "signal->second.DeathSequence > 0",
-        "raid.NativeRecoveryEvidenceComplete",
-        "BotRaidAreaAuthority::SetAllOffenseSuppressed(raidAuthorityOwner, true)",
-        "bot->AttackStop();",
-        "bot->GetMotionMaster()->MoveIdle();",
+        "SuppressNativeRaidRecovery(state, bot);",
         'action = "hold_native_recovery_evidence";',
         "return true;",
     ):
         assert token in objective[gate:clear]
 
+    pending = IMPL[
+        IMPL.index("bool BotWorldPopulationMgr::IsNativeRaidRecoveryEvidencePending"):
+        IMPL.index("void BotWorldPopulationMgr::SuppressNativeRaidRecovery")
+    ]
+    for token in (
+        "raid.NativeSignalsByGuid.size() != raid.RosterByGuid.size()",
+        "signal->second.WipeGeneration == raid.WipeGeneration",
+        "signal->second.DeathSequence > 0",
+        "raid.NativeRecoveryEvidenceComplete",
+    ):
+        assert token in pending
 
-def test_bwd_entry_to_magmaw_uses_frozen_junction_below_native_path_limit():
+
+def test_native_recovery_hold_is_installed_before_decision_timer_and_stops_controlled_units():
+    update = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::UpdateBot"):
+    ]
+    hold = update.index("if (bot->IsAlive() && IsNativeRaidRecoveryEvidencePending())")
+    ready_check = update.index("TryRespondNativeRaidReadyCheck(state, bot);")
+    timer = update.index("if (state.DecisionTimer > diff)")
+    assert ready_check < hold < timer
+    assert "state.DecisionTimer = 0;" in update[hold:timer]
+
+    suppress = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::SuppressNativeRaidRecovery"):
+        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    ]
+    for token in (
+        "SetAllOffenseSuppressed(ownerGuid, true)",
+        "bot->CombatStop(true);",
+        "if (Pet* pet = bot->GetPet())",
+        "for (Unit* controlled : bot->m_Controlled)",
+        "controlled->InterruptSpell(spellType, false)",
+        "controlled->CombatStop(true)",
+        "bot->GetMotionMaster()->MoveIdle();",
+    ):
+        assert token in suppress
+
+
+def _frontal_hazard_inside(*, distance, relative_radians, radius=12.0):
+    return distance <= radius and abs(relative_radians) <= math.pi / 2
+
+
+def test_frontal_hazard_requires_configured_radius_and_arc_together():
+    assert _frontal_hazard_inside(distance=6.0, relative_radians=0.0)
+    assert not _frontal_hazard_inside(distance=6.0, relative_radians=math.pi * 0.75)
+    # Forward-facing but beyond the configured radius is safe.
+    assert not _frontal_hazard_inside(distance=13.0, relative_radians=0.0)
+
+    impl = IMPL[
+        IMPL.index("auto positionOutsideHazard"):
+        IMPL.index("auto pathOutsideActiveHazards")
+    ]
+    assert "inside = inside && std::fabs(relative) <= float(M_PI_2);" in impl
+
+    overlap_guard = IMPL[
+        IMPL.index("bool outsideHazard = bot->GetExactDist2d(previousHazard)"):
+        IMPL.index("// Persistent ground objects", IMPL.index("bool outsideHazard = bot->GetExactDist2d(previousHazard)"))
+    ]
+    assert "bool insideActiveHazard" in overlap_guard
+    assert "insideActiveHazard = insideActiveHazard" in overlap_guard
+    assert "bool outsideActiveHazard = !insideActiveHazard;" in overlap_guard
+
+
+def test_bwd_magmaw_only_corridor_precedes_omnotron_and_uses_bounded_native_legs():
     config = json.loads(
         (ROOT / "experiments/configs/validation_scenarios_cata_001.json").read_text()
     )
     bwd = next(row for row in config["scenarios"] if row["id"] == "blackwing_descent_10n")
-    trash, junction, corridor, magmaw = bwd["route"][:4]
+    junction, chainwielder, drudges, magmaw = bwd["route"][:4]
 
-    assert (trash["label"], junction["label"], corridor["label"], magmaw["label"]) == (
-        "entry trash",
+    assert (junction["label"], chainwielder["label"], drudges["label"], magmaw["label"]) == (
         "BWD entrance junction regroup",
-        "Drakonid corridor pack",
+        "Magmaw Chainwielder trash",
+        "Magmaw Drudge pair",
         "Magmaw",
     )
     assert junction["kind"] == "regroup"
-    assert junction["step"] == 2
+    assert junction["step"] == 1
     assert {axis: junction[axis] for axis in ("x", "y", "z", "o")} == {
         axis: bwd["start_position"][axis] for axis in ("x", "y", "z", "o")
     }
@@ -287,24 +395,16 @@ def test_bwd_entry_to_magmaw_uses_frozen_junction_below_native_path_limit():
     assert junction["source_table"] == "validation_scenario.start_position"
 
     path_limit_yards = 74 * 4.0
-    direct_leg = math.dist(
-        (trash["x"], trash["y"], trash["z"]),
-        (
-            magmaw["navigation_anchor"]["x"],
-            magmaw["navigation_anchor"]["y"],
-            magmaw["navigation_anchor"]["z"],
-        ),
-    )
     first_leg = math.dist(
-        (trash["x"], trash["y"], trash["z"]),
         (junction["x"], junction["y"], junction["z"]),
+        (chainwielder["x"], chainwielder["y"], chainwielder["z"]),
     )
     second_leg = math.dist(
-        (junction["x"], junction["y"], junction["z"]),
-        (corridor["x"], corridor["y"], corridor["z"]),
+        (chainwielder["x"], chainwielder["y"], chainwielder["z"]),
+        (drudges["x"], drudges["y"], drudges["z"]),
     )
     third_leg = math.dist(
-        (corridor["x"], corridor["y"], corridor["z"]),
+        (drudges["x"], drudges["y"], drudges["z"]),
         (
             magmaw["navigation_anchor"]["x"],
             magmaw["navigation_anchor"]["y"],
@@ -312,31 +412,160 @@ def test_bwd_entry_to_magmaw_uses_frozen_junction_below_native_path_limit():
         ),
     )
 
-    assert direct_leg > path_limit_yards
     assert first_leg < path_limit_yards
     assert second_leg < path_limit_yards
     assert third_leg < path_limit_yards
+    magmaw_index = next(i for i, row in enumerate(bwd["route"]) if row["label"] == "Magmaw")
+    omnotron_trash_index = next(i for i, row in enumerate(bwd["route"]) if row["label"] == "Omnotron Golem Sentries")
+    assert magmaw_index < omnotron_trash_index
 
 
-def test_bwd_drakonid_corridor_has_explicit_native_pack_hazard_and_range_contract():
+def test_bwd_magmaw_trash_splits_chainwielder_hazard_from_drudge_charge_contract():
     config = json.loads(
         (ROOT / "experiments/configs/validation_scenarios_cata_001.json").read_text()
     )
     bwd = next(row for row in config["scenarios"] if row["id"] == "blackwing_descent_10n")
-    corridor = next(row for row in bwd["route"] if row["label"] == "Drakonid corridor pack")
+    chainwielder = next(row for row in bwd["route"] if row["label"] == "Magmaw Chainwielder trash")
+    drudges = next(row for row in bwd["route"] if row["label"] == "Magmaw Drudge pair")
 
-    assert corridor["step"] == 3
-    assert corridor["kind"] == "trash"
-    assert corridor["source_entry"] == 42649
-    assert corridor["source_guid"] == "250050"
-    assert corridor["pack_target_entries"] == [42649, 42362]
-    assert corridor["cluster_radius_yards"] == 48.0
-    assert (corridor["hazard_source_entry"], corridor["hazard_damage_spell_id"]) == (42690, 79580)
-    assert (corridor["hazard_shape"], corridor["hazard_radius_yards"]) == ("radial", 20.0)
-    assert (corridor["minimum_distance_source_entry"], corridor["minimum_distance_yards"]) == (42362, 15.0)
+    assert (chainwielder["step"], chainwielder["source_entry"], chainwielder["source_guid"]) == (2, 42649, "250050")
+    assert chainwielder["pack_target_entries"] == [42649]
+    assert (chainwielder["hazard_source_entry"], chainwielder["hazard_damage_spell_id"]) == (42690, 79580)
+    assert (chainwielder["hazard_shape"], chainwielder["hazard_radius_yards"]) == ("radial", 20.0)
+
+    assert (drudges["step"], drudges["source_entry"], drudges["source_guid"]) == (3, 42362, "250140")
+    assert drudges["pack_target_entries"] == [42362]
+    assert drudges["split_source_guids"] == [250140, 250141]
+    assert drudges["split_lane_a_roster_slots"] == [1, 3, 4, 6, 7]
+    assert drudges["split_lane_b_roster_slots"] == [2, 5, 8, 9, 10]
+    assert drudges["split_lane_tank_slots"] == [1, 2]
+    assert drudges["split_minimum_separation_yards"] == 15.0
+    assert (drudges["minimum_distance_source_entry"], drudges["minimum_distance_yards"]) == (42362, 15.0)
+    assert (drudges["thunderclap_spell_id"], drudges["charge_spell_id"], drudges["charge_range_yards"]) == (79604, 79630, 80.0)
+    assert drudges["charge_native_interval_ms"] == 20000
+    assert drudges["vengeful_rage_spell_id"] == 80035
     assert bwd["mechanic_profiles"]["trash_ground_danger_movement"] == [
         "ground_danger", "movement_check", "minimum_distance"
     ]
+
+
+def test_bwd_omnotron_golem_sentry_uses_authoritative_laser_strike_geometry_after_magmaw():
+    config = json.loads(
+        (ROOT / "experiments/configs/validation_scenarios_cata_001.json").read_text()
+    )
+    bwd = next(row for row in config["scenarios"] if row["id"] == "blackwing_descent_10n")
+    entry = next(row for row in bwd["route"] if row["label"] == "Omnotron Golem Sentries")
+
+    assert entry["step"] == 5
+    assert entry["source_entry"] == 42800
+    assert entry["pack_target_entries"] == [42800]
+    assert entry["mechanic_profile"] == "trash_ground_danger_movement"
+    assert (
+        entry["hazard_source_entry"],
+        entry["hazard_detection_spell_id"],
+        entry["hazard_damage_spell_id"],
+        entry["hazard_shape"],
+        entry["hazard_radius_yards"],
+        entry["hazard_safety_margin_yards"],
+    ) == (43362, 81066, 81067, "radial", 12.0, 0.0)
+
+
+def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparation():
+    route_start = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    route_end = IMPL.index("bool BotWorldPopulationMgr::IsBossContext", route_start)
+    route_runtime = IMPL[route_start:route_end]
+    lane_start = route_runtime.index("auto tryValidationRouteDrudgeChargeLanes")
+    lane_end = route_runtime.index("auto tryValidationRouteAdds", lane_start)
+    lane = route_runtime[lane_start:lane_end]
+
+    assert '"trash_two_tank_charge_lanes"' in lane
+    assert "laneSlots == exactRosterSlots" in lane
+    assert '"raid_tank_1", "raid_tank_2", "raid_healer_1", "raid_healer_2"' in lane
+    assert "GetCreatureBySpawnId(spawnId)" in lane
+    assert "source->GetEntry() != Cohort().Config.ValidationRouteMinimumDistanceSourceEntry" in lane
+    assert "GetHomePosition()" in lane
+    assert "ValidationRouteSplitMinimumSeparationYards" in lane
+    assert "ValidationRouteSplitNavigationMarginYards" in lane
+    assert "ValidationRouteSplitArrivalToleranceYards" in lane
+    assert "nativeChargeActive" in lane
+    assert '"drudge_native_charge_lane_reseparate"' in lane
+    assert "UnitHealthPct(laneSource) < UnitHealthPct(otherSource)" in lane
+    assert '"drudge_kill_sync_hold_lower_health_lane"' in lane
+    assert "ValidationRouteVengefulRageSpellId" in lane
+    assert "BotCombatActionCategory::Taunt" in lane
+    assert "ResolveProfileCombatAction(bot, laneSource" in lane
+    assert "true, false);" in lane  # forbid area, disallow multidot
+    assert route_runtime.index("if (tryValidationRouteMinimumDistance())") < route_runtime.index(
+        "if (tryValidationRouteDrudgeChargeLanes())"
+    ) < route_runtime.index("struct TrashThreatControl")
+
+
+def test_botworld_hot_path_defers_progression_scoring_and_rate_limits_repeated_logs():
+    update_start = IMPL.index("void BotWorldPopulationMgr::UpdateBot")
+    update_end = IMPL.index("Player* BotWorldPopulationMgr::GetLoadedBot", update_start)
+    update = IMPL[update_start:update_end]
+    assert update.index("if (state.DecisionTimer > diff)") < update.index(
+        "ensureProgressionScored();", update.index("if (state.DecisionTimer > diff)")
+    )
+    assert update.index("SuppressNativeRaidRecovery(state, bot)") < update.index(
+        "if (state.DecisionTimer > diff)"
+    )
+    assert "LastNotInWorldInfoLogMs" in IMPL
+    assert "SuppressedNotInWorldInfoLogs" in IMPL
+    assert "LastNativeWorldportDeferredLogMs" in IMPL
+    assert "SuppressedNativeWorldportDeferredLogs" in IMPL
+    assert "suppressed=%u" in IMPL
+    suppress_start = IMPL.index("void BotWorldPopulationMgr::SuppressNativeRaidRecovery")
+    suppress_end = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective", suppress_start)
+    suppress = IMPL[suppress_start:suppress_end]
+    assert "NativeRecoveryHoldWipeGeneration" in suppress
+    assert "periodicVerify" in suppress
+    assert "if (!newHold && !periodicVerify && !ownerActive)" in suppress
+    assert "SetReactState(REACT_PASSIVE)" not in suppress
+
+
+def _laser_exit_path_is_safe(path, hazards, radius=12.0):
+    """Model the runtime's contaminated-prefix/union exit contract."""
+    start = path[0]
+    previous = [math.dist(start, center) for center in hazards]
+    started_outside = [distance > radius for distance in previous]
+    exited = [False] * len(hazards)
+    for point in path:
+        distances = [math.dist(point, center) for center in hazards]
+        for index, distance in enumerate(distances):
+            if started_outside[index]:
+                if distance <= radius:
+                    return False
+                continue
+            if not exited[index]:
+                if distance + 0.5 < previous[index]:
+                    return False
+                previous[index] = max(previous[index], distance)
+                if distance > radius:
+                    exited[index] = True
+            elif distance <= radius:
+                return False
+    return all(math.dist(path[-1], center) > radius for center in hazards)
+
+
+def test_bwd_laser_exit_requires_monotonic_union_safe_path_for_overlapping_strikes():
+    hazards = ((0.0, 0.0), (10.0, 0.0))
+    # The endpoint is outside the first 12-yard strike but still inside the
+    # second; the second source also gets closer along this path.
+    nearest_only_exit = [(5.0, 0.0), (17.0, 0.0)]
+    assert not _laser_exit_path_is_safe(nearest_only_exit, hazards)
+
+    union_safe_exit = [(5.0, 0.0), (5.0, 8.0), (5.0, 16.0)]
+    assert _laser_exit_path_is_safe(union_safe_exit, hazards)
+
+    movement = IMPL[
+        IMPL.index("auto pathOutsideActiveHazards"):
+        IMPL.index("auto isScopedGenericCastCandidate")
+    ]
+    assert "startedOutside" in movement
+    assert "exitedHazards" in movement
+    assert "distance + 0.5f < previousDistances[index]" in movement
+    assert "return endpointOutside;" in movement
 
 
 def _validation_route_anchor_model(*, canonical_anchor, safe_memory_anchor,

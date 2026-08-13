@@ -113,6 +113,18 @@ struct BotWorldExperimentConfig
     float ValidationRouteHazardSafetyMarginYards = 0.0f;
     uint32 ValidationRouteMinimumDistanceSourceEntry = 0;
     float ValidationRouteMinimumDistanceYards = 0.0f;
+    std::vector<uint32> ValidationRouteSplitSourceGuids;
+    std::vector<uint32> ValidationRouteSplitLaneARosterSlots;
+    std::vector<uint32> ValidationRouteSplitLaneBRosterSlots;
+    std::vector<uint32> ValidationRouteSplitLaneTankSlots;
+    float ValidationRouteSplitMinimumSeparationYards = 0.0f;
+    float ValidationRouteSplitNavigationMarginYards = 0.0f;
+    float ValidationRouteSplitArrivalToleranceYards = 0.0f;
+    uint32 ValidationRouteThunderclapSpellId = 0;
+    uint32 ValidationRouteChargeSpellId = 0;
+    float ValidationRouteChargeRangeYards = 0.0f;
+    uint32 ValidationRouteChargeNativeIntervalMs = 0;
+    uint32 ValidationRouteVengefulRageSpellId = 0;
     float ValidationRouteClusterRadiusYards = 0.0f;
     uint32 ValidationRouteExpectedAliveCount = 0;
     uint32 ValidationRouteActivationDataId = 0;
@@ -466,6 +478,18 @@ private:
         float HazardSafetyMarginYards = 0.0f;
         uint32 MinimumDistanceSourceEntry = 0;
         float MinimumDistanceYards = 0.0f;
+        std::vector<uint32> SplitSourceGuids;
+        std::vector<uint32> SplitLaneARosterSlots;
+        std::vector<uint32> SplitLaneBRosterSlots;
+        std::vector<uint32> SplitLaneTankSlots;
+        float SplitMinimumSeparationYards = 0.0f;
+        float SplitNavigationMarginYards = 0.0f;
+        float SplitArrivalToleranceYards = 0.0f;
+        uint32 ThunderclapSpellId = 0;
+        uint32 ChargeSpellId = 0;
+        float ChargeRangeYards = 0.0f;
+        uint32 ChargeNativeIntervalMs = 0;
+        uint32 VengefulRageSpellId = 0;
         float ClusterRadiusYards = 0.0f;
         uint32 ExpectedAliveCount = 0;
         uint32 ActivationDataId = 0;
@@ -766,6 +790,12 @@ private:
         std::string BlockedFirstReason;
         std::string BlockedReason;
         std::string BlockedResolution;
+        // A valid profile action is only a candidate resolution until it is
+        // observed on consecutive decision samples.  Keeping this separate
+        // from BlockedResolution preserves the raw blocker while a transient
+        // resolver result is being debounced.
+        std::string BlockedResolutionCandidate;
+        uint32 BlockedResolutionCandidateCount = 0;
         std::string BlockedResolvedBy;
         uint64 BlockedStartMs = 0;
         uint64 BlockedProgressBaselineMs = 0;
@@ -773,6 +803,10 @@ private:
         bool BlockedMessageEmitted = false;
         std::string LastBlockedDiagnosticText;
         bool UnstuckMessageEmitted = false;
+        uint64 LastNotInWorldInfoLogMs = 0;
+        uint32 SuppressedNotInWorldInfoLogs = 0;
+        uint32 NativeRecoveryHoldWipeGeneration = 0;
+        uint64 NativeRecoveryHoldLastEnforcedMs = 0;
         CombatAttemptDiagnostic LastCombatAttempt;
         RouteProgressDiagnostic LastRouteProgress;
         uint32 ProfileCastSuppressedSpellId = 0;
@@ -1431,6 +1465,8 @@ private:
     void RecordSpawnResolved(WorldBotState& state, Player* bot, SpawnPlacement const& placement, char const* result);
     void UpdateBot(WorldBotState& state, uint32 diff);
     void TryRespondNativeRaidReadyCheck(WorldBotState& state, Player* bot);
+    bool IsNativeRaidRecoveryEvidencePending() const;
+    void SuppressNativeRaidRecovery(WorldBotState& state, Player* bot);
     bool TryReattachValidationBot(WorldBotState& state, Player* bot, char const* context);
     bool HasNativeRaidCorpseAuthority(WorldBotState const& state, Player const* bot) const;
     bool ResolveNativeBlackwingDescentEntrance(AreaTriggerEntry const*& entry, AreaTriggerStruct const*& destination) const;
@@ -1955,6 +1991,8 @@ private:
         std::string LastPopulationFailureReason;
         bool ValidationRaidAdmissionComplete = false;
         bool ValidationRaidAdmissionFailed = false;
+        uint64 LastNativeWorldportDeferredLogMs = 0;
+        uint32 SuppressedNativeWorldportDeferredLogs = 0;
         BotWorldStatus Metrics;
         BotTelemetryBuffer TelemetryBuffer;
         BotExperimentCoordinator ExperimentCoordinator;

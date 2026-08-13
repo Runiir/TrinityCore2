@@ -30,6 +30,39 @@
           "boss_id": {"type": ["integer", "string"]},
           "strategy": {"type": "string"},
           "mechanics": {"type": "array", "items": {"type": "object"}},
+          "hazard_source_entry": {"type": "integer", "minimum": 0},
+          "hazard_detection_spell_id": {"type": "integer", "minimum": 0},
+          "hazard_damage_spell_id": {"type": "integer", "minimum": 0},
+          "hazard_shape": {"type": "string", "enum": ["radial", "frontal_cone"]},
+          "hazard_radius_yards": {"type": "number", "minimum": 0},
+          "hazard_safety_margin_yards": {"type": "number", "minimum": 0},
+          "split_source_guids": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "uniqueItems": true,
+            "items": {"type": "integer", "minimum": 1}
+          },
+          "split_minimum_separation_yards": {"type": "number", "exclusiveMinimum": 0},
+          "split_navigation_margin_yards": {"type": "number", "minimum": 0},
+          "split_arrival_tolerance_yards": {"type": "number", "exclusiveMinimum": 0},
+          "split_lane_a_roster_slots": {
+            "type": "array", "minItems": 1, "uniqueItems": true,
+            "items": {"type": "integer", "minimum": 1}
+          },
+          "split_lane_b_roster_slots": {
+            "type": "array", "minItems": 1, "uniqueItems": true,
+            "items": {"type": "integer", "minimum": 1}
+          },
+          "split_lane_tank_slots": {
+            "type": "array", "minItems": 2, "maxItems": 2, "uniqueItems": true,
+            "items": {"type": "integer", "minimum": 1}
+          },
+          "thunderclap_spell_id": {"type": "integer", "minimum": 1},
+          "charge_spell_id": {"type": "integer", "minimum": 1},
+          "charge_range_yards": {"type": "number", "exclusiveMinimum": 0},
+          "charge_native_interval_ms": {"type": "integer", "minimum": 1},
+          "vengeful_rage_spell_id": {"type": "integer", "minimum": 1},
           "expected_duration_sec": {"type": "number", "minimum": 0}
         }
       }

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "audit_id": "cata_raid_runtime_phase1_v1",
-  "updated_at_utc": "2026-08-13T05:22:12Z",
+  "updated_at_utc": "2026-08-13T07:12:31Z",
   "target": {
     "client": "Cataclysm Classic",
     "patch": "4.4.2",
@@ -10,7 +10,7 @@
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
   "audited_commit": "1ee02778ef85aff82887e1917d2c5ac7c3a33112",
-  "gate_state": "in_progress_exact_1ee_live_capture_infrastructure_abort_native_recovery_remediation_pending",
+  "gate_state": "in_progress_dirty_combined_phase1_remediation_pending_exact_review_build_and_live_rerun",
   "foundation": {
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
     "current_head_sha": "1ee02778ef85aff82887e1917d2c5ac7c3a33112",
@@ -46,8 +46,8 @@
   },
   "build": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_state": "successful_exact_1ee02778ef_policy_v8_configure_and_worldserver_build",
-    "current_result": "both receipts gate-bearing and independently verified; worldserver sha256 128edf0720d514945727269618ef68aea09bbc064eba8be8bd15db5bd63b86f4; post-build focused suite 256 passed; fresh preparation passed; exact uncapped live capture completed as infrastructure_abort and is now stale for the pending native-recovery remediation",
+    "current_state": "historical_exact_1ee_success_stale_for_dirty_combined_phase1_remediation",
+    "current_result": "no current receipt; no server or build process active; exact commit and mandatory Sol-high review must precede the next coordinator build",
     "receipt_trust_model": "explicit_trusted_local_operator",
     "trusted_operator": "runiir",
     "trusted_uid": 1000,
@@ -183,8 +183,8 @@
     }
   ],
   "phase1_gate_blockers": [
-    "native_recovery_runtime_observer_and_pre_readycheck_combat_hold_remediation_pending",
-    "mandatory_sol_high_review_exact_rebuild_reprovision_and_uncapped_rerun_pending",
+    "combined_native_recovery_laser_drudge_blocked_cpu_remediation_pending_exact_commit_and_sol_high_review",
+    "exact_coordinator_rebuild_cpu_measurement_reprovision_and_uncapped_rerun_pending",
     "bwd_exact_442_quantitative_and_exact_log_hotfix_evidence_blocks_phase2_fidelity"
   ],
   "acceptance_policy": "Fail closed. Existing Stonecore and older BWD artifacts do not certify this raid-runtime gate."
