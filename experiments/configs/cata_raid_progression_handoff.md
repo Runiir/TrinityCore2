@@ -1,5 +1,21 @@
 # Cataclysm raid progression handoff
 
+# 2026-08-13T12:22:00Z — Exact 6d80 closes all exact-62fe review findings
+
+The final exact-62fe review ranked four High and two Medium findings: invalid `IteratorPair.size()` compilation, silent trace erasure on route advance, a native-farthest predicate incorrectly narrowed to cross-lane non-tanks, false rejection of legitimate non-player threat references, a test that codified the lossy reset, and a tracked 313-test command that omitted the trace test file.
+
+Exact source `6d80303f8b38d86d2bf2dd36486ea3736aa17298` closes all six. Native selector eligibility now exactly models the available player/range/LOS SmartAI filter and is separately recorded from the desired cross-lane non-tank tactic predicate. Native farthest reconstruction uses every selector-eligible row, while seed and tactic acceptance use the narrower predicate. Non-player pet threat rows remain complete evidence but are legitimately filtered by player-only selection. Iterator counting and monotonic route-spanning trace changes remain in place, and tests cover same-lane-farthest rejection plus non-player liveness.
+
+The dirty implementation-time combined run yielded 310 passes, two expected provenance failures because generic smoke requires a clean Git identity, and the already-known coordinator child-registration race. An exact clean rerun is the immediate gate; no build or live action is authorized before it and mandatory rereview.
+
+# 2026-08-13T12:13:30Z — Exact d1f compile and cross-route trace closures ready for rereview
+
+The first review pass over the 2121 source checkpoint caught two additional High blockers before any build began. Trinity's `IteratorPair` threat range has no `size()` API, so the new candidate metadata was compile-invalid. Also, applying a new validation route node reset the entire trace ring and cursor immediately after recording `validation_route_segment_advance`, silently erasing that transition and any unexported prior-node entries.
+
+Exact source `d1f301fef7797745fe7f8153bf8835f63c5370ec` closes both. Native threat-list size is counted by iteration without modifying the threat list or selector. Route-node changes preserve a single strictly monotonic trace stream across the run; only true destructive run/profile recording boundaries reset sequence, ring, and cursor. The focused gate remains 313/313. No configure, build, server, DB, or DVC mutation ran.
+
+Phase 1 and fidelity remain false. Mandatory Sol-high rereview of the exact clean status descendant is required before the policy-v8 configure/build, fresh preparation, prestarted verified worldserver, Luna-xhigh babysitter, and uncapped canonical rerun.
+
 # 2026-08-13T12:05:01Z — Exact 2121 three-High remediation integrated for mandatory rereview
 
 Mandatory Sol-high review of exact `5e51fab00fa8e198f5f9e836c259914f35f76c28` rejected the build gate with three High findings. Formation could accept an unverified fallback anchor after strict-path selection chose a different cached anchor; trace delta export reused decision sequence numbers and could silently omit event rows or initial overflow; and canonical acceptance did not independently consume the native Rush threat-candidate list or prove native farthest-target linkage. No build or live restart occurred.
