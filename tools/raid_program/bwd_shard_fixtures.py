@@ -6,6 +6,7 @@ import argparse
 import copy
 import json
 from pathlib import Path
+import re
 from typing import Any, Iterable
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -58,8 +59,10 @@ def _name(code: str, slot: str) -> str:
     role, number = slot.rsplit("_", 1)
     kind = {"raid_tank": "tank", "raid_healer": "heal", "raid_dps": "dps"}[role]
     # TrinityCore normalizes player names as first-letter uppercase and the
-    # remaining ASCII letters lowercase.
-    return f"{code[0].upper()}{code[1:].lower()}{kind}{number}"
+    # remaining ASCII letters lowercase. Digits cause CheckPlayerName to set
+    # AT_LOGIN_RENAME and make Player::LoadFromDB fail.
+    suffix = chr(ord("a") + int(number) - 1)
+    return f"{code[0].upper()}{code[1:].lower()}{kind}{suffix}"
 
 
 def _account(code: str, index: int) -> str:
@@ -125,7 +128,8 @@ def build_shard_fixture(config: dict[str, Any]) -> dict[str, Any]:
             if bot.get("pet"):
                 pet = copy.deepcopy(bot["pet"])
                 pet["id_offset"] = shard_index * 100 + slot_index
-                pet["name"] = f"{str(definition['name_code']).lower()}wolf{slot_index}"
+                suffix = chr(ord("a") + slot_index - 1)
+                pet["name"] = f"{str(definition['name_code']).lower()}wolf{suffix}"
                 bot["pet"] = pet
                 bot["expected_pet_id"] = 8700000 + int(pet["id_offset"])
             bots.append(bot)
@@ -256,7 +260,8 @@ def validate_shard_fixture(fixture: dict[str, Any], canonical_config: dict[str, 
             if bot.get("expected_character_guid") != bot.get("character_guid"):
                 failures.append({"check": "character_guid_expectation_drift", "boss_key": boss, "name": bot.get("name")})
             name = str(bot.get("name") or "")
-            if not name or len(name) > 12 or name != name[:1].upper() + name[1:].lower():
+            if (not re.fullmatch(r"[A-Z][a-z]{1,11}", name)
+                    or name != name[:1].upper() + name[1:].lower()):
                 failures.append({"check": "character_name", "boss_key": boss, "name": name})
             if bot.get("pool_tag") != profile_id or bot.get("runtime_profile_id") != profile_id:
                 failures.append({"check": "bot_profile_binding", "boss_key": boss, "name": name})

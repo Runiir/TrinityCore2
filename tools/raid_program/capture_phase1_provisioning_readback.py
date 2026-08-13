@@ -108,6 +108,8 @@ def validate_readback(
             reasons.append(f"{name}:ghost_character_flag")
         if int(row.get("at_login") or 0) & VALIDATION_RESURRECT_AT_LOGIN_FLAG:
             reasons.append(f"{name}:resurrect_at_login_flag")
+        if int(row.get("at_login") or 0) != 0:
+            reasons.append(f"{name}:at_login_flags")
         if int(row.get("enabled") or 0) != 1 or int(row.get("in_use") or 0) != 0:
             reasons.append(f"{name}:pool_state")
         expected_tag = str(expected_row.get("experiment_tags") or expected_row.get("pool_tag") or CANONICAL_SCENARIO_ID)

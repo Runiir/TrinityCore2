@@ -135,6 +135,13 @@ def test_fixture_rejects_duplicate_pool_tag_and_empty_pool():
         validate_shard_fixture(empty)
 
 
+def test_fixture_rejects_native_player_names_with_digits():
+    invalid = _fixture()
+    invalid["shards"][0]["bots"][0]["name"] = "Mgwtank1"
+    with pytest.raises(ValueError, match="character_name"):
+        validate_shard_fixture(invalid)
+
+
 def test_fixture_rejects_precompleted_kill_certification_or_preallocated_instance_ids():
     fixture = _fixture()
     fixture["shards"][0]["predecessor_state"]["certifies_predecessors"] = True
@@ -228,7 +235,7 @@ def test_live_preparation_materializes_all_110_accounts_and_characters(tmp_path,
         any(f"'{account}'" in statement for account in diagnostic_accounts)
         for statement in account_inserts
     ) == len(diagnostic_accounts) == 60
-    assert sum("Mgwtank1" in statement for statement in character_inserts) == 1
+    assert sum("Mgwtanka" in statement for statement in character_inserts) == 1
 
 
 def test_dvc_generation_and_verifier_bind_the_tracked_shard_fixture():

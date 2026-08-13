@@ -77,9 +77,21 @@ def test_phase1_provisioning_readback_rejects_persisted_ghost_state():
         character_instance_rows=0, group_member_rows=0, ghost_aura_rows=1, corpse_rows=1, corpse_phase_rows=1,
     )
     assert reasons == [
-        "Bwd1:ghost_character_flag", "Bwd1:resurrect_at_login_flag",
+        "Bwd1:at_login_flags", "Bwd1:ghost_character_flag", "Bwd1:resurrect_at_login_flag",
         "corpse_phase_rows", "corpse_rows", "ghost_aura_rows",
     ]
+
+
+def test_phase1_provisioning_readback_rejects_native_rename_flag():
+    expected, observed = _rows()
+    observed[0] = {**observed[0], "at_login": 0x1}
+    reasons = validate_readback(
+        expected, observed,
+        start={"map_id": 669, "x": -345.872, "y": -224.344, "z": 193.127, "o": 0.0},
+        character_instance_rows=0, group_member_rows=0, ghost_aura_rows=0,
+        corpse_rows=0, corpse_phase_rows=0,
+    )
+    assert reasons == ["Bwd1:at_login_flags"]
 
 
 def _materialized_observed(contract):
@@ -164,8 +176,8 @@ def test_materialized_readback_rejects_cross_shard_identity_contamination():
         character_instance_rows=0, group_member_rows=0, ghost_aura_rows=0,
         corpse_rows=0, corpse_phase_rows=0,
     )
-    assert "Mgwtank1:pool_tag" in reasons
-    assert "Mgwtank1:tag" in reasons
+    assert "Mgwtanka:pool_tag" in reasons
+    assert "Mgwtanka:tag" in reasons
     assert magmaw["expected"][0]["name"] != omnotron["expected"][0]["name"]
     assert magmaw["expected"][0]["guid"] != omnotron["expected"][0]["guid"]
 
@@ -184,8 +196,8 @@ def test_materialized_readback_rejects_cross_shard_account_name_guid_and_residue
         character_instance_rows=0, group_member_rows=1, ghost_aura_rows=1,
         corpse_rows=0, corpse_phase_rows=1,
     )
-    assert "Mgwtank1:account_id" in reasons
-    assert "Mgwtank1:account_registry_id" in reasons
-    assert "Mgwtank1:account" in reasons
-    assert "Mgwtank1:guid" in reasons
+    assert "Mgwtanka:account_id" in reasons
+    assert "Mgwtanka:account_registry_id" in reasons
+    assert "Mgwtanka:account" in reasons
+    assert "Mgwtanka:guid" in reasons
     assert {"group_member_rows", "ghost_aura_rows", "corpse_phase_rows"}.issubset(reasons)

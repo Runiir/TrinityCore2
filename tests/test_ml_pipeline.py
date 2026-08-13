@@ -8482,6 +8482,21 @@ def test_validation_provisioning_rejects_mixed_case_player_names(tmp_path, monke
         provisioning_main()
 
 
+def test_validation_provisioning_rejects_player_names_with_digits(tmp_path):
+    config_path = tmp_path / "numeric_names.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "schema": "bot_validation_provisioning_config_v1",
+                "scenarios": [{"id": "raid", "bots": [{"name": "Mgwtank1"}]}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="2-12 ASCII letters"):
+        load_validation_provisioning_config(config_path)
+
+
 def test_validation_gear_profiles_can_complete_slots_from_item_rows():
     config = {
         "scenarios": [

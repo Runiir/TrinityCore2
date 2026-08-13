@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import struct
 from pathlib import Path
 from typing import Any
@@ -423,8 +424,11 @@ def load_config(path: Path) -> dict[str, Any]:
                     bot[key] = json.loads(json.dumps(build[key]))
             name = str(bot.get("name", ""))
             normalized = normalize_ascii_player_name(name)
-            if name != normalized:
-                raise ValueError(f"validation bot name {name!r} must use normalized player-name casing {normalized!r}")
+            if name != normalized or not re.fullmatch(r"[A-Z][a-z]{1,11}", name):
+                raise ValueError(
+                    f"validation bot name {name!r} must contain 2-12 ASCII letters "
+                    f"with normalized player-name casing {normalized!r}"
+                )
             validate_talent_manifest(bot)
     return config
 
