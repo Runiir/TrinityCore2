@@ -17,7 +17,7 @@
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "reviewed_source_sha": "cc57c3f9dde0901500a5110d29bcb76e37aac7bd",
+    "reviewed_source_sha": "18707ae931c56619b553ff19f883580178724d33",
     "status_checkpoint_identity": "resolve from Git HEAD; status descendant of reviewed_source_sha before the exact coordinator rebuild",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
@@ -29,7 +29,7 @@
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
     "critical_high_remediation_implemented_at": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "mandatory_rereview": "COMPLETED exact e50e038fc8486681f34f2f1c60104fbb3a3663b2 and exact 45131a1fc26e61ec06db2b1b420060a738251023: zero Critical/High/Medium; build and exact 110-character Magmaw preparation authorized. Exact cc57 readback review found one High canonical account-binding gap; this status descendant contains the remediation and awaits narrow re-review.",
+    "mandatory_rereview": "COMPLETED exact e50e038fc8486681f34f2f1c60104fbb3a3663b2, exact 45131a1fc26e61ec06db2b1b420060a738251023, and exact 18707ae931c56619b553ff19f883580178724d33: zero unresolved Critical/High; build and exact 110-character Magmaw preparation authorized.",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
@@ -37,9 +37,9 @@
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "reviewed_source_commit": "cc57c3f9dde0901500a5110d29bcb76e37aac7bd",
+    "reviewed_source_commit": "18707ae931c56619b553ff19f883580178724d33",
     "exact_build_target": "clean Git HEAD status-only descendant of reviewed_source_commit",
-    "current_state": "cc57_account_binding_remediation_rereview_pending_then_exact_build",
+    "current_state": "reviewed_status_descendant_exact_build_pending",
     "current_result": "exact 244ca policy-v8 configure/worldserver build succeeded with a receipt-produced bbe8fe4f binary, but its receipts are now historical after tool/readback commits; freeze and build the final reviewed status descendant before live capture",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
@@ -621,7 +621,7 @@
       ,"uncapped_1c7a_three_file_failure_batch_pushed_remote_verified_and_compactly_summarized"
       ],
       "remaining_requirements": [
-        "complete_cc57_account_binding_remediation_rereview_and_exact_rebuild",
+        "complete_exact_policy_v8_rebuild_of_reviewed_status_descendant",
         "fresh_110_character_reprovision_full_verifier_and_magmaw_v5_readback",
         "uncapped_four_node_magmaw_rerun_with_trained_profile_and_resource_observation",
         "phase1_live_evidence_exact_evict_after_diagnosis_and_review"
@@ -645,8 +645,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "Exact e50/45131 close the reviewed Magmaw source and 110-character preparation contract. Exact cc57 added scenario-selected v5 DB/auth readback; mandatory review found one canonical numeric account-binding gap, now remediated in the status descendant and pending narrow re-review. The successful 244ca build is historical after tool identity changes. A final exact build, fresh preparation/readback and uncapped four-node Magmaw run remain required. Later-boss native predecessor-save revision is blocked on two review Highs; Nefarian also lacks proven legitimate native descent."
+      "detail": "Exact e50/45131 close the reviewed Magmaw source and 110-character preparation contract. Exact 18707 closes the scenario-selected v5 DB/auth readback with zero unresolved Critical/High findings. The successful 244ca build is historical after tool identity changes. A final exact build, fresh preparation/readback and uncapped four-node Magmaw run remain required. Later-boss native predecessor-save revision is blocked on two review Highs; Nefarian also lacks proven legitimate native descent."
     }
   ],
-  "next_action": "Commit and obtain zero-Critical/High review of the cc57 canonical-account remediation status descendant, run one exact policy-v8 coordinator rebuild, freshly reprovision all 110 tracked characters, independently full-verify and retain Magmaw v5 readback, then prestart and verify one worldserver before attaching the Magmaw Luna-xhigh babysitter. Run only the uncapped four-node Magmaw diagnostic and require trained DPS actions, bounded CPU/log growth, native engagement/full-wipe/reset/recovery/ready-check, clean demux, DVC publication and exact eviction. Keep later shards blocked until the two predecessor-save review Highs are remediated and native setup is executable/read back; keep Nefarian blocked until legitimate descent is proven."
+  "next_action": "Commit this reviewed status descendant, run one exact policy-v8 coordinator rebuild, freshly reprovision all 110 tracked characters, independently full-verify and retain Magmaw v5 readback, then prestart and verify one worldserver before attaching the Magmaw Luna-xhigh babysitter. Run only the uncapped four-node Magmaw diagnostic and require trained DPS actions, bounded CPU/log growth, native engagement/full-wipe/reset/recovery/ready-check, clean demux, DVC publication and exact eviction. Keep later shards blocked until the two predecessor-save review Highs are remediated and native setup is executable/read back; keep Nefarian blocked until legitimate descent is proven."
 }

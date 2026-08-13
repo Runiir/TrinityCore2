@@ -9,15 +9,15 @@
     "locale": "enUS",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
-  "audited_commit": "cc57c3f9dde0901500a5110d29bcb76e37aac7bd",
-  "gate_state": "cc57_account_binding_remediation_rereview_pending_before_exact_build",
+  "audited_commit": "18707ae931c56619b553ff19f883580178724d33",
+  "gate_state": "zero_critical_high_build_and_magmaw_prep_authorized_exact_build_pending",
   "foundation": {
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "reviewed_source_sha": "cc57c3f9dde0901500a5110d29bcb76e37aac7bd",
+    "reviewed_source_sha": "18707ae931c56619b553ff19f883580178724d33",
     "status_checkpoint_identity": "resolve from Git HEAD; status descendant of reviewed_source_sha before exact build",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
-    "mandatory_sol_high_rereview": "COMPLETED exact e50 and exact 45131 with zero Critical/High/Medium; exact cc57 readback review found one High canonical account-binding gap, remediated in this status descendant pending narrow re-review",
+    "mandatory_sol_high_rereview": "COMPLETED exact e50, exact 45131, and exact 18707 with zero unresolved Critical/High; build and Magmaw preparation authorized",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
@@ -47,7 +47,7 @@
   },
   "build": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_state": "exact_cc57_readback_review_pending_then_rebuild",
+    "current_state": "exact_reviewed_status_descendant_rebuild_pending",
     "current_result": "244ca configure/worldserver succeeded and produced bbe8fe4f, but receipt identity is historical after 45131/cc57 tool changes; final reviewed status descendant requires a new receipt-produced binary",
     "receipt_trust_model": "explicit_trusted_local_operator",
     "trusted_operator": "runiir",
@@ -171,13 +171,13 @@
     "test_file": "tests/test_cata_raid_runtime_foundation.py",
     "last_result": "361_cc57_account_binding_remediation_integrated_gate_passed",
     "combined_focus_result": "361_runtime_model_capture_readback_generic_trace_phase9_coordinator_and_bwd_shard_tests_passed",
-    "combined_focus_command": "pixi run pytest -q tests/test_phase1_raid_foundation_capture.py tests/test_cata_raid_runtime_foundation.py tests/test_cata_raid_foundation_model.py tests/test_phase1_generic_mechanic_smoke.py tests/test_botworld_hotpath_optimization.py tests/test_trace_export_cursor.py tests/test_phase9_live_qualification.py tests/test_raid_build_coordinator.py tests/test_bwd_diagnostic_node_manifests.py tests/test_bwd_shard_fixtures.py",
+    "combined_focus_command": "pixi run pytest -q tests/test_phase1_raid_foundation_capture.py tests/test_phase1_provisioning_readback.py tests/test_cata_raid_runtime_foundation.py tests/test_cata_raid_foundation_model.py tests/test_phase1_generic_mechanic_smoke.py tests/test_botworld_hotpath_optimization.py tests/test_trace_export_cursor.py tests/test_phase9_live_qualification.py tests/test_raid_build_coordinator.py tests/test_bwd_diagnostic_node_manifests.py tests/test_bwd_shard_fixtures.py",
     "broad_comparison": "same selected broad command at prior exact 1c7a and source 2121: 131 passed, 33 identical inherited stale structural/source-shape failures; no subsequent broad-scope source changes outside reviewed evidence/runtime paths; focused_phase9_3_passed"
   },
   "required_open_work": [
     {
       "area": "current_build",
-      "missing": ["cc57_account_binding_remediation_rereview", "one_exact_policy_v8_rebuild_of_final_reviewed_status_descendant"]
+      "missing": ["one_exact_policy_v8_rebuild_of_final_reviewed_status_descendant"]
     },
     {
       "area": "live_script_and_decision_review",
@@ -198,7 +198,7 @@
   ],
   "phase1_gate_blockers": [
     "exact_ef04_uncapped_capture_failed_closed_at_chainwielder_before_drudge_or_magmaw",
-    "exact_cc57_account_binding_remediation_requires_rereview_then_final_coordinator_receipt_and_live_proof",
+    "exact_18707_readback_is_reviewed_and_requires_final_coordinator_receipt_and_live_proof",
     "general_db_backed_trained_dps_profiles_are_static_verified_but_live_activation_and_damage_remain_unproven",
     "single_cohort_worldserver_cpu_and_log_volume_require_live_measurement_of_bounded_capture_scheduler_before_parallel_shards",
     "later_boss_shards_lack_executable_native_predecessor_save_apply_and_readback",
