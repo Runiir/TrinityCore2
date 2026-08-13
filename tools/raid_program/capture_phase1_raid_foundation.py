@@ -4107,6 +4107,16 @@ def main() -> int:
             stop_commands_sent = bool(shutdown["commands_sent"])
             shutdown_error = shutdown["error"]
         finally:
+            # Once capture teardown begins, a further SIGINT must not tear
+            # through raw-log normalization or immutable report publication.
+            # Record the request without raising, finish bounded cleanup, and
+            # classify the run as an operator infrastructure abort below.
+            def defer_post_capture_interrupt(_signum: int, _frame: Any) -> None:
+                nonlocal operator_interrupt, startup_error
+                operator_interrupt = True
+                startup_error = "KeyboardInterrupt:operator_interrupt"
+
+            signal.signal(signal.SIGINT, defer_post_capture_interrupt)
             if process is not None and process.poll() is None:
                 try:
                     os.killpg(process.pid, 15)
@@ -4160,8 +4170,13 @@ def main() -> int:
     process_return_code = process.returncode if process is not None else None
     semantic_stall = locals().get("semantic_stall", {"detected": False})
     telemetry_abort = locals().get("telemetry_abort", {"detected": False})
+    # From this point through the two immutable output writes, ignore another
+    # interrupt. Any prior deferred interrupt is already reflected in the
+    # variables used to construct the report and success classification.
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
     success = (
         startup_error is None
+        and operator_interrupt is False
         and process_return_code == 0
         and len(stable) >= args.required_stable_statuses
         and recovery_accepted
@@ -4180,6 +4195,7 @@ def main() -> int:
         and identity_stable
         and semantic_stall.get("detected") is not True
         and telemetry_abort.get("detected") is not True
+        and forced_evidence_report.get("gate_passed") is True
         and bool(diagnoses)
         and bool(traces)
     )
@@ -4190,6 +4206,7 @@ def main() -> int:
             "diagnostic_only" if forbidden_entries else (
             "infrastructure_abort" if (
                 startup_error
+                or operator_interrupt
                 or process_return_code != 0
                 or telemetry_abort.get("detected")
                 or not process_absent
@@ -4198,6 +4215,7 @@ def main() -> int:
                 or not identity_stable
                 or bool(demux_rejections)
                 or not telemetry_envelopes["gate_passed"]
+                or forced_evidence_report.get("gate_passed") is not True
             ) else "incomplete_evidence")
         ),
         "started_at_utc": started_utc,
@@ -4282,7 +4300,9 @@ def main() -> int:
             "required_channels": ["status", "diagnosis", "trace"],
             "healthy": (
                 startup_error is None
+                and operator_interrupt is False
                 and telemetry_abort.get("detected") is not True
+                and forced_evidence_report.get("gate_passed") is True
                 and bool(statuses) and bool(diagnoses) and bool(traces)
                 and process_return_code == 0 and process_absent
             ),

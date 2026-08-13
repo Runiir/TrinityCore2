@@ -304,22 +304,15 @@ def test_native_recovery_runback_uses_cumulative_landing_displacement_and_exact_
 
 
 def _native_recovery_objective_gate(*, policy, active, attempt_matches,
-                                    exact_roster, wipe_generation,
-                                    state, evidence_complete):
-    pending_state = state in {
-        "wiped",
-        "recovery_evidence_pending",
-        "native_resurrection_runback",
-        "awaiting_native_reset",
-        "release_resurrection_pending",
-    }
+                                    hold_active, scope_matches,
+                                    wipe_generation, evidence_complete):
     return (
         policy == "native_full_wipe_only"
         and active
         and attempt_matches
-        and exact_roster
+        and hold_active
+        and scope_matches
         and wipe_generation > 0
-        and pending_state
         and not evidence_complete
     )
 
@@ -327,27 +320,27 @@ def _native_recovery_objective_gate(*, policy, active, attempt_matches,
 def test_native_recovery_evidence_gate_holds_offense_navigation_and_reengagement():
     assert _native_recovery_objective_gate(
         policy="native_full_wipe_only", active=True, attempt_matches=True,
-        exact_roster=True, wipe_generation=2, state="wiped",
+        hold_active=True, scope_matches=True, wipe_generation=2,
         evidence_complete=False,
     )
     assert _native_recovery_objective_gate(
         policy="native_full_wipe_only", active=True, attempt_matches=True,
-        exact_roster=True, wipe_generation=2, state="recovery_evidence_pending",
+        hold_active=True, scope_matches=True, wipe_generation=2,
         evidence_complete=False,
     )
     assert not _native_recovery_objective_gate(
         policy="native_full_wipe_only", active=True, attempt_matches=True,
-        exact_roster=True, wipe_generation=2, state="ready",
+        hold_active=False, scope_matches=True, wipe_generation=2,
         evidence_complete=False,
     )
     assert not _native_recovery_objective_gate(
         policy="native_full_wipe_only", active=True, attempt_matches=True,
-        exact_roster=True, wipe_generation=2, state="wiped",
+        hold_active=True, scope_matches=True, wipe_generation=2,
         evidence_complete=True,
     )
     assert not _native_recovery_objective_gate(
         policy="native_full_wipe_only", active=True, attempt_matches=True,
-        exact_roster=False, wipe_generation=2, state="wiped",
+        hold_active=True, scope_matches=False, wipe_generation=2,
         evidence_complete=False,
     )
 
@@ -372,11 +365,10 @@ def test_native_recovery_evidence_gate_holds_offense_navigation_and_reengagement
         IMPL.index("void BotWorldPopulationMgr::SuppressNativeRaidRecovery")
     ]
     for token in (
-        "raid.NativeSignalsByGuid.size() != raid.RosterByGuid.size()",
-        "signal->second.WipeGeneration == raid.WipeGeneration",
-        "signal->second.DeathSequence > 0",
         "raid.NativeRecoveryEvidenceComplete",
         "raid.NativeRecoveryHoldActive",
+        "raid.NativeRecoveryRouteGeneration != Party().ValidationRouteGeneration",
+        "raid.NativeRecoveryNodeId != Cohort().Config.ValidationRouteNodeId",
     ):
         assert token in pending
 
@@ -665,6 +657,8 @@ def test_botworld_hot_path_defers_progression_scoring_and_rate_limits_repeated_l
 def test_native_recovery_hold_is_latched_at_wipe_and_cleared_only_after_complete_evidence():
     runtime = HEADER[HEADER.index("struct RaidRuntime"):HEADER.index("struct CohortRuntime")]
     assert "bool NativeRecoveryHoldActive" in runtime
+    assert "uint64 NativeRecoveryRouteGeneration" in runtime
+    assert "std::string NativeRecoveryNodeId" in runtime
 
     ensure = IMPL[
         IMPL.index("void BotWorldPopulationMgr::EnsureValidationCohortGroup"):
@@ -672,7 +666,8 @@ def test_native_recovery_hold_is_latched_at_wipe_and_cleared_only_after_complete
     ]
     wipe = ensure.index("if (allDead)")
     latch = ensure.index("raid.NativeRecoveryHoldActive =", wipe)
-    assert "ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly" in ensure[latch:latch + 220]
+    policy = ensure.rindex("bool const nativeRecoveryPolicy", wipe, latch)
+    assert "ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly" in ensure[policy:latch]
     evidence = ensure.index("raid.NativeRecoveryEvidenceComplete =", latch)
     clear = ensure.index("if (raid.NativeRecoveryEvidenceComplete)", evidence)
     assert latch < evidence < clear
@@ -681,10 +676,11 @@ def test_native_recovery_hold_is_latched_at_wipe_and_cleared_only_after_complete
         IMPL.index("bool BotWorldPopulationMgr::IsNativeRaidRecoveryEvidencePending"):
         IMPL.index("void BotWorldPopulationMgr::SuppressNativeRaidRecovery")
     ]
-    hold = pending.index("if (raid.NativeRecoveryHoldActive)")
-    exact_roster = pending.index("if (raid.ExpectedSize !=", hold)
-    assert hold < exact_roster
-    assert "return !raid.NativeRecoveryEvidenceComplete;" in pending[hold:exact_roster]
+    assert "!raid.NativeRecoveryHoldActive" in pending
+    assert "raid.NativeRecoveryRouteGeneration != Party().ValidationRouteGeneration" in pending
+    assert "raid.NativeRecoveryNodeId != Cohort().Config.ValidationRouteNodeId" in pending
+    assert "exactWipeRoster" not in pending
+    assert "return !raid.NativeRecoveryEvidenceComplete;" in pending
 
     update = IMPL[
         IMPL.index("void BotWorldPopulationMgr::UpdateBot"):
@@ -699,6 +695,8 @@ def test_native_recovery_hold_is_latched_at_wipe_and_cleared_only_after_complete
         IMPL.index("std::string BotWorldPopulationMgr::BuildRaidPositioningAnchorsJson")
     ]
     assert runtime_json.count("native_recovery_hold_active") >= 2
+    assert runtime_json.count("native_recovery_route_generation") >= 2
+    assert runtime_json.count("native_recovery_node_id") >= 2
 
 
 def test_native_recovery_hold_cannot_leak_from_drudge_trash_into_magmaw():
@@ -707,13 +705,46 @@ def test_native_recovery_hold_cannot_leak_from_drudge_trash_into_magmaw():
         IMPL.index("void BotWorldPopulationMgr::ResetTraceStreams")
     ]
     policy = apply_node.index("Cohort().Config.ValidationRouteBossRecovery = node.BossRecoveryPolicy;")
-    clear = apply_node.index("Cohort().Raid.NativeRecoveryHoldActive = false;", policy)
+    clear = apply_node.index("raid.NativeRecoveryHoldActive = false;", policy)
     reset = apply_node.index("ResetValidationRouteRuntimeState", clear)
     assert policy < clear < reset
     assert (
         "node.BossRecoveryPolicy != ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly"
         in apply_node[policy:clear]
     )
+    assert "Cohort().Raid.NativeRecoveryRouteGeneration != Party().ValidationRouteGeneration" in apply_node[policy:clear]
+    assert "Cohort().Raid.NativeRecoveryNodeId != node.NodeId" in apply_node[policy:clear]
+    for token in (
+        "raid.NativeRecoveryRouteGeneration = 0;",
+        "raid.NativeRecoveryNodeId.clear();",
+        "raid.NativeRecoveryEvidenceComplete = false;",
+        "raid.NativeSignalsByGuid.clear();",
+        "raid.NativeReadyCheckActionObserved = false;",
+        "raid.NativeReadyCheckPending = false;",
+        "raid.NativeReadyCheckResponders.clear();",
+        'raid.WipeState = "ready";',
+        'raid.RecoveryState = "none";',
+    ):
+        assert token in apply_node[clear:reset]
+
+    pending = IMPL[
+        IMPL.index("bool BotWorldPopulationMgr::IsNativeRaidRecoveryEvidencePending"):
+        IMPL.index("void BotWorldPopulationMgr::SuppressNativeRaidRecovery")
+    ]
+    # Stale monotonic wipe/signal fields are never a fallback authority on a
+    # newly installed native-recovery node.
+    assert "exactWipeRoster" not in pending
+    assert "raid.WipeState == \"wiped\"" not in pending
+
+    update = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::UpdateBot"):
+        IMPL.index("Player* BotWorldPopulationMgr::GetLoadedBot")
+    ]
+    latched = update.index("bool const nativeFullWipeLatched")
+    release = update.index("native_full_wipe_latched_release_allowed", latched)
+    assert "raid.NativeRecoveryHoldActive" in update[latched:release]
+    assert "raid.NativeRecoveryRouteGeneration == Party().ValidationRouteGeneration" in update[latched:release]
+    assert "raid.NativeRecoveryNodeId == Cohort().Config.ValidationRouteNodeId" in update[latched:release]
 
 
 def _laser_exit_path_is_safe(path, hazards, radius=12.0):

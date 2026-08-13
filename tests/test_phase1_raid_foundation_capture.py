@@ -1871,6 +1871,22 @@ def test_every_terminal_capture_path_requests_a_fresh_full_evidence_bundle():
     ):
         assert reason in source
     assert source.count("request_final_evidence(") >= 5
+    success = source[source.index("success = ("):source.index("report = {", source.index("success = ("))]
+    assert "operator_interrupt is False" in success
+    assert 'forced_evidence_report.get("gate_passed") is True' in success
+    classification = source[source.index('"classification": "success"'):source.index('"started_at_utc"')]
+    assert "or operator_interrupt" in classification
+    assert 'forced_evidence_report.get("gate_passed") is not True' in classification
+    post_capture = source[source.index("def defer_post_capture_interrupt"):source.index("success = (")]
+    assert "nonlocal operator_interrupt, startup_error" in post_capture
+    assert 'startup_error = "KeyboardInterrupt:operator_interrupt"' in post_capture
+    assert "signal.signal(signal.SIGINT, defer_post_capture_interrupt)" in post_capture
+    assert post_capture.rindex("signal.signal(signal.SIGINT, signal.SIG_IGN)") > post_capture.index(
+        "normalized_rows = normalized_batch_payload(log_bytes)"
+    )
+    watchdog = source[source.index('"watchdog": {'):source.index('"preflight": preflight')]
+    assert "operator_interrupt is False" in watchdog
+    assert 'forced_evidence_report.get("gate_passed") is True' in watchdog
 
 
 def test_uncapped_capture_fails_closed_when_any_telemetry_channel_is_stale():

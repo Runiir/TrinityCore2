@@ -2203,6 +2203,11 @@ private:
         // after resurrection, before the next runtime refresh records the
         // ready-check/evidence edge.
         bool NativeRecoveryHoldActive = false;
+        // Bind the hold to the exact route node that observed the native
+        // all-dead edge. Wipe/runtime fields are monotonic across nodes and
+        // therefore cannot authorize recovery on their own.
+        uint64 NativeRecoveryRouteGeneration = 0;
+        std::string NativeRecoveryNodeId;
         // A raid instance can contain an active trash pack without an
         // IN_PROGRESS boss state. Native recovery must observe the pack
         // itself evading/resetting before released ghosts may re-enter.
