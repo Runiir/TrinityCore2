@@ -16,6 +16,7 @@
  */
 
 #include "UnitAI.h"
+#include "Bots/BotRaidAreaAuthority.h"
 #include "Containers.h"
 #include "Creature.h"
 #include "CreatureAIImpl.h"
@@ -27,8 +28,54 @@
 #include "SpellInfo.h"
 #include "SpellMgr.h"
 
+namespace
+{
+bool SpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth = 0)
+{
+    if (!spellInfo || depth > 4)
+        return false;
+    if (spellInfo->Id == 48505 || spellInfo->Id == 89751)
+        return true;
+    for (uint8 effectIndex = 0; effectIndex < MAX_SPELL_EFFECTS; ++effectIndex)
+    {
+        SpellEffectInfo const& effect = spellInfo->Effects[effectIndex];
+        if (!effect.IsEffect())
+            continue;
+        if (!spellInfo->IsPositiveEffect(effectIndex)
+            && (effect.ChainTarget > 1 || effect.IsTargetingArea()
+                || effect.IsEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA)
+                || effect.IsAreaAuraEffect()))
+            return true;
+        if (effect.TriggerSpell
+            && SpellHasHostileMultiTargetSemantics(
+                sSpellMgr->GetSpellInfo(effect.TriggerSpell), depth + 1))
+            return true;
+    }
+    return false;
+}
+
+bool RaidControlledOffenseRejected(Unit* actor, Unit* target, SpellInfo const* spellInfo = nullptr)
+{
+    Player* owner = actor ? actor->GetCharmerOrOwnerPlayerOrPlayerItself() : nullptr;
+    if (!owner || owner == actor)
+        return false;
+    uint64 const ownerGuid = owner->GetGUID().GetRawValue();
+    if (BotRaidAreaAuthority::IsAllOffenseSuppressed(ownerGuid)
+        && (!spellInfo || !spellInfo->IsPositive()))
+        return true;
+    if (Creature const* creature = target ? target->ToCreature() : nullptr;
+        creature && BotRaidAreaAuthority::IsProtectedEncounterEntry(ownerGuid, creature->GetEntry()))
+        return true;
+    return spellInfo
+        && BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid)
+        && SpellHasHostileMultiTargetSemantics(spellInfo);
+}
+}
+
 void UnitAI::AttackStart(Unit* victim)
 {
+    if (RaidControlledOffenseRejected(me, victim))
+        return;
     if (victim && me->Attack(victim, true))
     {
         // Clear distracted state on attacking
@@ -55,6 +102,8 @@ void UnitAI::OnCharmed(bool isNew)
 
 void UnitAI::AttackStartCaster(Unit* victim, float dist)
 {
+    if (RaidControlledOffenseRejected(me, victim))
+        return;
     if (victim && me->Attack(victim, false))
         me->GetMotionMaster()->MoveChase(victim, dist);
 }
@@ -123,6 +172,9 @@ float UnitAI::DoGetSpellMaxRange(uint32 spellId, bool positive)
 
 SpellCastResult UnitAI::DoCast(uint32 spellId)
 {
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+    if (RaidControlledOffenseRejected(me, nullptr, spellInfo))
+        return SPELL_FAILED_BAD_TARGETS;
     Unit* target = nullptr;
 
     switch (AISpellInfo[spellId].target)
@@ -195,7 +247,7 @@ SpellCastResult UnitAI::DoCast(uint32 spellId)
         }
     }
 
-    if (target)
+    if (target && !RaidControlledOffenseRejected(me, target, spellInfo))
         return me->CastSpell(target, spellId, false);
 
     return SPELL_FAILED_BAD_TARGETS;
@@ -203,6 +255,8 @@ SpellCastResult UnitAI::DoCast(uint32 spellId)
 
 SpellCastResult UnitAI::DoCast(Unit* victim, uint32 spellId, CastSpellExtraArgs const& args)
 {
+    if (RaidControlledOffenseRejected(me, victim, sSpellMgr->GetSpellInfo(spellId)))
+        return SPELL_FAILED_BAD_TARGETS;
     if (me->HasUnitState(UNIT_STATE_CASTING) && !(args.TriggerFlags & TRIGGERED_IGNORE_CAST_IN_PROGRESS))
         return SPELL_FAILED_SPELL_IN_PROGRESS;
 

@@ -173,7 +173,18 @@ BotActionResult BotActionExecutor::Execute(Player* owner, Player* bot, ResolvedB
     if (!action.SpellId)
         return BotActionResult::NoAction;
 
+    uint64 const ownerGuid = bot->GetGUID().GetRawValue();
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(action.SpellId);
     Unit* target = action.TargetGuid.IsEmpty() ? bot : ObjectAccessor::GetUnit(*bot, action.TargetGuid);
+    if (BotRaidAreaAuthority::IsAllOffenseSuppressed(ownerGuid)
+        && spellInfo && !spellInfo->IsPositive())
+        return BotActionResult::NoAction;
+    if (Creature const* creature = target ? target->ToCreature() : nullptr;
+        creature && BotRaidAreaAuthority::IsProtectedEncounterEntry(ownerGuid, creature->GetEntry()))
+        return BotActionResult::NoAction;
+    if (BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid)
+        && SpellHasHostileMultiTargetSemantics(spellInfo))
+        return BotActionResult::NoAction;
     BotActionResult check = CheckSpell(owner, bot, target, action.SpellId);
     if (check != BotActionResult::Ok)
     {
@@ -206,9 +217,16 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     if (!action.Valid)
         return BotActionResult::NoAction;
 
-    BotRaidAreaAuthority::Set(bot->GetGUID().GetRawValue(), action.SuppressAreaDamage);
+    uint64 const ownerGuid = bot->GetGUID().GetRawValue();
+    if (BotRaidAreaAuthority::IsAllOffenseSuppressed(ownerGuid))
+        return BotActionResult::NoAction;
+
+    BotRaidAreaAuthority::Set(ownerGuid, action.SuppressAreaDamage);
 
     Unit* target = action.TargetGuid.IsEmpty() ? nullptr : ObjectAccessor::GetUnit(*bot, action.TargetGuid);
+    if (Creature const* creature = target ? target->ToCreature() : nullptr;
+        creature && BotRaidAreaAuthority::IsProtectedEncounterEntry(ownerGuid, creature->GetEntry()))
+        return BotActionResult::NoAction;
     if (action.Type == "pull" || action.Type == "move_to_range")
     {
         if (action.MovementDirective == "melee")
@@ -234,7 +252,8 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     }
     if (!action.SpellId)
         return BotActionResult::NoAction;
-    if (action.SuppressAreaDamage
+    if ((action.SuppressAreaDamage
+            || BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid))
         && SpellHasHostileMultiTargetSemantics(sSpellMgr->GetSpellInfo(action.SpellId)))
         return BotActionResult::NoAction;
 

@@ -935,15 +935,37 @@ def test_monotonic_semantic_progress_rejects_cast_victim_and_hp_oscillation():
         corpse_observed=True,
         release_observed=True,
     )
-    assert observe_monotonic_semantic_progress(state, status, diagnosis) is True
     assert observe_monotonic_semantic_progress(state, status, diagnosis) is False
+    assert observe_monotonic_semantic_progress(state, status, diagnosis) is False
+    status["raid_runtime"]["evidence_sequence"] = 80
     status["raid_runtime"]["native_recovery"].update(
         runback_observed=True,
         resurrection_observed=True,
         ready_check_action_observed=True,
         evidence_complete=True,
         recovery_wipe_generation=status["raid_runtime"]["wipe_generation"],
+        ready_check_action_generation=2,
+        ready_check_response_count=10,
+        ready_check_action_attempt_id=status["raid_runtime"]["attempt_id"],
+        ready_check_action_wipe_generation=status["raid_runtime"]["wipe_generation"],
+        ready_check_assignment_generation=status["raid_runtime"]["assignment_generation"],
+        ready_check_action_evidence_sequence=80,
+        members=[
+            {
+                "guid": 1001 + index,
+                "wipe_generation": status["raid_runtime"]["wipe_generation"],
+                "death_sequence": 10 + index * 6,
+                "corpse_sequence": 11 + index * 6,
+                "release_sequence": 12 + index * 6,
+                "runback_sequence": 13 + index * 6,
+                "reentry_sequence": 14 + index * 6,
+                "resurrection_sequence": 15 + index * 6,
+            }
+            for index in range(10)
+        ],
     )
     assert observe_monotonic_semantic_progress(state, status, diagnosis) is True
+    status["raid_runtime"]["recovery_generation"] += 1
+    assert observe_monotonic_semantic_progress(state, status, diagnosis) is False
     status["raid_runtime"]["boss_reset_generation"] += 1
     assert observe_monotonic_semantic_progress(state, status, diagnosis) is False

@@ -6,6 +6,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 HEADER = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text(encoding="utf-8")
 IMPL = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(encoding="utf-8")
+ACTION_EXECUTOR = (ROOT / "src/server/game/Bots/BotActionExecutor.cpp").read_text(encoding="utf-8")
+RAID_AUTHORITY = (ROOT / "src/server/game/Bots/BotRaidAreaAuthority.h").read_text(encoding="utf-8")
+PET_AI = (ROOT / "src/server/game/AI/CoreAI/PetAI.cpp").read_text(encoding="utf-8")
+UNIT_AI = (ROOT / "src/server/game/AI/CoreAI/UnitAI.cpp").read_text(encoding="utf-8")
 MAGMAW_IMPL = (
     ROOT / "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_magmaw.cpp"
 ).read_text(encoding="utf-8")
@@ -1187,10 +1191,9 @@ def test_trash_profile_damage_cannot_pull_or_compound_the_next_boss_encounter():
 
     assert "IsImmediateNextValidationRouteBossTarget" in IMPL
     assert "IsImmediateNextValidationRouteEncounterMember" in IMPL
-    assert "SpellHostileMultiTargetReach" in IMPL
-    assert "SPELL_DAMAGE_CLASS_RANGED" in IMPL
-    assert "jumpRadius = 7.5f" in IMPL
-    assert "jumpRadius * float(effect.ChainTarget - 1)" in IMPL
+    assert "SpellHostileMultiTargetReach" not in IMPL
+    assert "SetProtectedEncounterEntries" in route_runtime
+    assert "HasProtectedEncounterEntries" in resolver
     assert "future_encounter_splash_forbidden" in resolver
     assert "!IsImmediateNextValidationRouteEncounterMember(unit->ToCreature())" in resolver
     assert "if (IsImmediateNextValidationRouteEncounterMember(creature))" in resolver
@@ -1205,6 +1208,26 @@ def test_trash_profile_damage_cannot_pull_or_compound_the_next_boss_encounter():
     assert "bot->AttackStop();" in hold
     assert "pet->AttackStop();" in hold
     assert "controlled->AttackStop();" in hold
+    assert "SetAllOffenseSuppressed(raidAuthorityOwner, true)" in hold
+    assert "controlledCreature->SetReactState(REACT_PASSIVE);" in hold
+    assert "charmInfo->SetIsCommandAttack(false);" in hold
+
+    # Every offensive submission surface shares the same fail-closed policy.
+    # This includes the exact manual Hunter Multi-Shot executor path and direct
+    # Protection spell helpers, not only profile-resolved actions.
+    assert "IsAllOffenseSuppressed(ownerGuid)" in ACTION_EXECUTOR
+    assert "IsProtectedEncounterEntry(ownerGuid, creature->GetEntry())" in ACTION_EXECUTOR
+    assert "HasProtectedEncounterEntries(ownerGuid)" in ACTION_EXECUTOR
+    assert "BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid)" in IMPL
+    assert "BotRaidAreaAuthority::IsProtectedEncounterEntry(ownerGuid" in IMPL
+    assert "AllOffenseSuppressedOwners" in RAID_AUTHORITY
+    assert "ProtectedEncounterEntriesByOwner" in RAID_AUTHORITY
+    assert "BotRaidAreaAuthority::IsAllOffenseSuppressed" in PET_AI
+    assert "BotRaidAreaAuthority::IsProtectedEncounterEntry" in PET_AI
+    assert "me->SetReactState(REACT_PASSIVE);" in PET_AI
+    assert "RaidControlledOffenseRejected(me, victim)" in UNIT_AI
+    assert "RaidControlledOffenseRejected(me, target, spellInfo)" in UNIT_AI
+    assert "BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid)" in UNIT_AI
 
 
 def test_boss_nodes_fail_closed_on_undeclared_prerequisite_hostiles():

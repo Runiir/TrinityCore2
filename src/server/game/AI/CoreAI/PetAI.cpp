@@ -116,6 +116,13 @@ void PetAI::UpdateAI(uint32 diff)
 
     Unit* owner = me->GetCharmerOrOwner();
 
+    if (owner && BotRaidAreaAuthority::IsAllOffenseSuppressed(owner->GetGUID().GetRawValue()))
+    {
+        me->SetReactState(REACT_PASSIVE);
+        _stopAttack();
+        return;
+    }
+
     if (m_updateAlliesTimer <= diff)
         // UpdateAllies self set update timer
         UpdateAllies();
@@ -351,6 +358,16 @@ void PetAI::AttackStart(Unit* target)
     // Overrides Unit::AttackStart to prevent pet from switching off its assigned target
     if (!target || target == me)
         return;
+
+    if (Unit* owner = me->GetCharmerOrOwner())
+    {
+        uint64 const ownerGuid = owner->GetGUID().GetRawValue();
+        if (BotRaidAreaAuthority::IsAllOffenseSuppressed(ownerGuid))
+            return;
+        if (Creature const* creature = target->ToCreature();
+            creature && BotRaidAreaAuthority::IsProtectedEncounterEntry(ownerGuid, creature->GetEntry()))
+            return;
+    }
 
     if (me->GetVictim() && me->EnsureVictim()->IsAlive())
         return;

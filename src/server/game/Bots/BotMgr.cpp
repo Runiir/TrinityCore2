@@ -1269,7 +1269,7 @@ void BotMgr::CleanupBot(ObjectGuid botGuid, bool logoutPlayer)
     // CleanupBot is the common teardown path, including headless world-bot
     // removal that bypasses BotWorldPopulationMgr.  Never let transient raid
     // damage authority survive reuse of the persistent character GUID.
-    BotRaidAreaAuthority::Set(botGuid.GetRawValue(), false);
+    BotRaidAreaAuthority::Clear(botGuid.GetRawValue());
     TC_LOG_INFO("server", "PlayerBot cleanup begin bot=%s logout=%u", botGuid.ToString().c_str(), logoutPlayer ? 1 : 0);
     _removingBots.insert(botGuid);
     if (logoutPlayer)

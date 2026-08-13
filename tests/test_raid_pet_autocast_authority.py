@@ -13,8 +13,8 @@ def test_raid_area_authority_is_transient_and_pet_ai_enforced():
     assert "inline std::unordered_set<uint64> SuppressedOwners" in AUTHORITY
     assert "BotRaidAreaAuthority::IsSuppressed(owner->GetGUID().GetRawValue())" in PET_AI
     assert "SpellHasHostileMultiTargetSemantics(spellInfo)" in PET_AI
-    assert "BotRaidAreaAuthority::Set(bot->GetGUID().GetRawValue(), action.SuppressAreaDamage);" in EXECUTOR
-    assert "BotRaidAreaAuthority::Set(state.Guid.GetRawValue(), false);" in RUNTIME
+    assert "BotRaidAreaAuthority::Set(ownerGuid, action.SuppressAreaDamage);" in EXECUTOR
+    assert "BotRaidAreaAuthority::Clear(state.Guid.GetRawValue());" in RUNTIME
     assert "ToggleAutocast" not in PET_AI
 
 
@@ -34,14 +34,13 @@ def test_every_world_bot_removal_clears_transient_owner_authority_first():
     assert removal_lines
     for index in removal_lines:
         nearby = "\n".join(lines[max(0, index - 4):index])
-        assert "BotRaidAreaAuthority::Set(" in nearby
-        assert ", false);" in nearby
+        assert "BotRaidAreaAuthority::Clear(" in nearby
 
 
 def test_central_bot_cleanup_clears_transient_owner_authority():
     cleanup = BOT_MGR[BOT_MGR.index("void BotMgr::CleanupBot("):]
     guard = cleanup.index("if (botGuid.IsEmpty()")
-    clear = cleanup.index("BotRaidAreaAuthority::Set(botGuid.GetRawValue(), false);")
+    clear = cleanup.index("BotRaidAreaAuthority::Clear(botGuid.GetRawValue());")
     teardown = cleanup.index("_worldBots.erase(botGuid);")
     assert guard < clear < teardown
 

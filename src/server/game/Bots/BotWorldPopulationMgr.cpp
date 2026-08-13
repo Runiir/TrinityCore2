@@ -1053,49 +1053,6 @@ bool SpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth
     return false;
 }
 
-float SpellHostileMultiTargetReach(SpellInfo const* spellInfo, uint8 depth = 0)
-{
-    if (!spellInfo || depth > 4 || !SpellHasHostileMultiTargetSemantics(spellInfo))
-        return 0.0f;
-
-    float reach = 0.0f;
-    if (spellInfo->Id == 48505 || spellInfo->Id == 89751)
-        reach = std::max(5.0f, spellInfo->GetMaxRange(false));
-
-    for (uint8 effectIndex = 0; effectIndex < MAX_SPELL_EFFECTS; ++effectIndex)
-    {
-        SpellEffectInfo const& effect = spellInfo->Effects[effectIndex];
-        if (!effect.IsEffect())
-            continue;
-
-        if (!spellInfo->IsPositiveEffect(effectIndex))
-        {
-            if (effect.ChainTarget > 1)
-            {
-                float jumpRadius = 10.0f;
-                if (spellInfo->DmgClass == SPELL_DAMAGE_CLASS_RANGED)
-                    jumpRadius = 7.5f;
-                else if (spellInfo->DmgClass == SPELL_DAMAGE_CLASS_MELEE)
-                    jumpRadius = 5.0f;
-                reach = std::max(reach, jumpRadius * float(effect.ChainTarget - 1));
-            }
-            if (effect.IsTargetingArea()
-                || effect.IsEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA)
-                || effect.IsAreaAuraEffect())
-                reach = std::max(reach, effect.CalcRadius());
-        }
-        if (effect.TriggerSpell)
-            reach = std::max(reach,
-                SpellHostileMultiTargetReach(
-                    sSpellMgr->GetSpellInfo(effect.TriggerSpell), depth + 1));
-    }
-
-    // A multi-target spell whose client data does not expose its selection
-    // radius is not safe to submit beside a protected future encounter.  Its
-    // ordinary cast range is a conservative native-data envelope, not a tuned
-    // encounter constant.
-    return reach > 0.0f ? reach : std::max(5.0f, spellInfo->GetMaxRange(false));
-}
 }
 
 BotWorldPopulationMgr::BotWorldPopulationMgr() : _serverEpoch(BuildServerEpoch())
@@ -1814,7 +1771,7 @@ void BotWorldPopulationMgr::Stop()
     {
         for (WorldBotState const& state : Party().Bots)
         {
-            BotRaidAreaAuthority::Set(state.Guid.GetRawValue(), false);
+            BotRaidAreaAuthority::Clear(state.Guid.GetRawValue());
             PersistBotPosition(GetBot(state));
         }
         Cohort().TelemetryBuffer.FlushOpenClips(Cohort().ExperimentId, Cohort().RunId, Cohort().Config.BrainVersion);
@@ -1830,7 +1787,7 @@ void BotWorldPopulationMgr::Stop()
 
     for (WorldBotState const& state : Party().Bots)
     {
-        BotRaidAreaAuthority::Set(state.Guid.GetRawValue(), false);
+        BotRaidAreaAuthority::Clear(state.Guid.GetRawValue());
         Player* bot = GetBot(state);
         PersistBotPosition(bot);
         RecordActivityStop(state, bot);
@@ -1912,7 +1869,7 @@ void BotWorldPopulationMgr::StopAutonomy()
 
     for (WorldBotState const& state : Party().Bots)
     {
-        BotRaidAreaAuthority::Set(state.Guid.GetRawValue(), false);
+        BotRaidAreaAuthority::Clear(state.Guid.GetRawValue());
         Player* bot = GetBot(state);
         PersistBotPosition(bot);
         RecordActivityStop(state, bot);
@@ -1939,7 +1896,7 @@ void BotWorldPopulationMgr::Shutdown()
 
     for (WorldBotState const& state : Party().Bots)
     {
-        BotRaidAreaAuthority::Set(state.Guid.GetRawValue(), false);
+        BotRaidAreaAuthority::Clear(state.Guid.GetRawValue());
         if (!state.Guid.IsEmpty() && LeaseOwnedByCurrentCohort(state.Guid.GetCounter()))
         {
             CharacterDatabase.DirectPExecute("UPDATE characters SET online = 0 WHERE guid = %u", state.Guid.GetCounter());
@@ -2081,7 +2038,7 @@ std::string BotWorldPopulationMgr::StopCombatCalibration()
     // stale group pointer for subsequent clone cleanup.
     for (ObjectGuid const& guid : calibrationBotGuids)
     {
-        BotRaidAreaAuthority::Set(guid.GetRawValue(), false);
+        BotRaidAreaAuthority::Clear(guid.GetRawValue());
         sBotMgr->RemoveWorldBot(guid);
         if (ReleaseBotGuid(guid.GetCounter()))
             CharacterDatabase.DirectPExecute("UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", guid.GetCounter());
@@ -3138,7 +3095,7 @@ void BotWorldPopulationMgr::Update(uint32 diff)
             Cohort().LastPopulationFailureReason = "spawned_bot_not_loaded";
             TC_LOG_ERROR("server", "BotWorld active bot pruned bot=%s reason=spawned_bot_not_loaded spawn_source=%s age_ms=%llu",
                 prunedGuid.ToString().c_str(), itr->SpawnSource.c_str(), static_cast<unsigned long long>(itr->SpawnedMs ? nowMs - itr->SpawnedMs : 0));
-            BotRaidAreaAuthority::Set(prunedGuid.GetRawValue(), false);
+            BotRaidAreaAuthority::Clear(prunedGuid.GetRawValue());
             sBotMgr->RemoveWorldBot(prunedGuid);
             if (ReleaseBotGuid(prunedGuid.GetCounter()))
                 CharacterDatabase.DirectPExecute("UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", prunedGuid.GetCounter());
@@ -3177,7 +3134,7 @@ void BotWorldPopulationMgr::Update(uint32 diff)
                 itr->LastDecisionReason = "validation_same_instance_reattach_failed";
                 TC_LOG_ERROR("server", "BotWorld active bot removed bot=%s reason=loaded_bot_not_in_world diagnostic=validation_same_instance_reattach_failed spawn_source=%s age_ms=%llu",
                     prunedGuid.ToString().c_str(), itr->SpawnSource.c_str(), static_cast<unsigned long long>(itr->SpawnedMs ? nowMs - itr->SpawnedMs : 0));
-                BotRaidAreaAuthority::Set(prunedGuid.GetRawValue(), false);
+                BotRaidAreaAuthority::Clear(prunedGuid.GetRawValue());
                 sBotMgr->RemoveWorldBot(prunedGuid);
                 Cohort().FailedSpawnGuids.erase(prunedGuid.GetCounter());
                 Party().ValidationRouteFocusGuid.Clear();
@@ -3242,7 +3199,7 @@ void BotWorldPopulationMgr::Update(uint32 diff)
                     continue;
                 }
                 ObjectGuid guid = itr->Guid;
-                BotRaidAreaAuthority::Set(guid.GetRawValue(), false);
+                BotRaidAreaAuthority::Clear(guid.GetRawValue());
                 sBotMgr->RemoveWorldBot(guid);
                 if (ReleaseBotGuid(guid.GetCounter()))
                     CharacterDatabase.DirectPExecute("UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", guid.GetCounter());
@@ -4845,7 +4802,7 @@ void BotWorldPopulationMgr::EnsurePopulation()
                 for (WorldBotState const& state : Party().Bots)
                 {
                     cleanupGuids.insert(state.Guid.GetCounter());
-                    BotRaidAreaAuthority::Set(state.Guid.GetRawValue(), false);
+                    BotRaidAreaAuthority::Clear(state.Guid.GetRawValue());
                     sBotMgr->RemoveWorldBot(state.Guid);
                 }
                 for (uint32 guid : cleanupGuids)
@@ -4895,7 +4852,7 @@ void BotWorldPopulationMgr::EnsurePopulation()
             for (WorldBotState const& state : Party().Bots)
             {
                 cleanupGuids.insert(state.Guid.GetCounter());
-                BotRaidAreaAuthority::Set(state.Guid.GetRawValue(), false);
+                BotRaidAreaAuthority::Clear(state.Guid.GetRawValue());
                 sBotMgr->RemoveWorldBot(state.Guid);
             }
             for (uint32 guid : cleanupGuids)
@@ -5023,7 +4980,7 @@ void BotWorldPopulationMgr::EnsurePopulation()
         {
             for (auto itr = spawnedGuids.rbegin(); itr != spawnedGuids.rend(); ++itr)
             {
-                BotRaidAreaAuthority::Set(itr->GetRawValue(), false);
+                BotRaidAreaAuthority::Clear(itr->GetRawValue());
                 sBotMgr->RemoveWorldBot(*itr);
             }
             for (uint32 guid : claimedGuids)
@@ -12416,8 +12373,52 @@ bool BotWorldPopulationMgr::IsImmediateNextValidationRouteEncounterMember(Creatu
 
 bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action, Unit*& target)
 {
-    if (!Cohort().Config.ValidationRouteEnable || !bot)
+    if (!bot)
         return false;
+
+    uint64 const raidAuthorityOwner = bot->GetGUID().GetRawValue();
+    if (!Cohort().Config.ValidationRouteEnable)
+    {
+        BotRaidAreaAuthority::Clear(raidAuthorityOwner);
+        return false;
+    }
+
+    // Freeze the next encounter's complete declared creature-entry surface in
+    // the shared offensive authority before any route decision can submit a
+    // cast.  While these entries are present, every executor/helper/pet path
+    // rejects hostile multi-target actions rather than approximating native
+    // chain, radius, triggered-spell, or implicit-target reach.
+    std::vector<uint32> protectedEncounterEntries;
+    if (Cohort().Config.ValidationRouteKind != "boss")
+    {
+        size_t const nextIndex = Party().ValidationRouteManifestIndex + 1;
+        if (nextIndex < Party().ValidationRouteManifest.size())
+        {
+            ValidationRouteManifestNode const& nextNode = Party().ValidationRouteManifest[nextIndex];
+            if (nextNode.Kind == "boss")
+            {
+                if (nextNode.TargetEntry)
+                    protectedEncounterEntries.push_back(nextNode.TargetEntry);
+                if (nextNode.OpenerTargetEntry)
+                    protectedEncounterEntries.push_back(nextNode.OpenerTargetEntry);
+                protectedEncounterEntries.insert(protectedEncounterEntries.end(),
+                    nextNode.AlternateTargetEntries.begin(), nextNode.AlternateTargetEntries.end());
+                protectedEncounterEntries.insert(protectedEncounterEntries.end(),
+                    nextNode.AddTargetEntries.begin(), nextNode.AddTargetEntries.end());
+                protectedEncounterEntries.erase(std::remove(
+                    protectedEncounterEntries.begin(), protectedEncounterEntries.end(), 0),
+                    protectedEncounterEntries.end());
+                std::sort(protectedEncounterEntries.begin(), protectedEncounterEntries.end());
+                protectedEncounterEntries.erase(std::unique(
+                    protectedEncounterEntries.begin(), protectedEncounterEntries.end()),
+                    protectedEncounterEntries.end());
+            }
+        }
+    }
+    BotRaidAreaAuthority::SetProtectedEncounterEntries(
+        raidAuthorityOwner, protectedEncounterEntries);
+    BotRaidAreaAuthority::SetAllOffenseSuppressed(raidAuthorityOwner, false);
+    BotRaidAreaAuthority::Set(raidAuthorityOwner, false);
 
     bool arrivalRoute = Cohort().Config.ValidationRouteKind == "travel" || Cohort().Config.ValidationRouteKind == "regroup" || Cohort().Config.ValidationRouteKind == "descent";
     situation = Cohort().Config.ValidationRouteKind == "boss"
@@ -13492,11 +13493,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     });
     if (prematureNextEncounter)
     {
+        BotRaidAreaAuthority::SetAllOffenseSuppressed(raidAuthorityOwner, true);
+        BotRaidAreaAuthority::Set(raidAuthorityOwner, true);
         for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
             if (Spell* current = bot->GetCurrentSpell(spellType))
             {
                 Unit* castTarget = current->m_targets.GetUnitTarget();
-                if (castTarget == prematureNextEncounter
+                Creature const* castCreature = castTarget ? castTarget->ToCreature() : nullptr;
+                if ((castCreature && isImmediateNextValidationRouteEncounterMember(castCreature))
                     || SpellHasHostileMultiTargetSemantics(current->GetSpellInfo()))
                     bot->InterruptSpell(spellType, false);
             }
@@ -13510,10 +13514,18 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             {
                 for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
                     if (Spell* current = controlled->GetCurrentSpell(spellType))
-                        if (current->m_targets.GetUnitTarget() == prematureNextEncounter
+                    {
+                        Unit* castTarget = current->m_targets.GetUnitTarget();
+                        Creature const* castCreature = castTarget ? castTarget->ToCreature() : nullptr;
+                        if ((castCreature && isImmediateNextValidationRouteEncounterMember(castCreature))
                             || SpellHasHostileMultiTargetSemantics(current->GetSpellInfo()))
                             controlled->InterruptSpell(spellType, false);
+                    }
                 controlled->AttackStop();
+                if (Creature* controlledCreature = controlled->ToCreature())
+                    controlledCreature->SetReactState(REACT_PASSIVE);
+                if (CharmInfo* charmInfo = controlled->GetCharmInfo())
+                    charmInfo->SetIsCommandAttack(false);
             }
 
         std::string raw = BuildRawJson(bot, prematureNextEncounter);
@@ -27528,6 +27540,16 @@ bool BotWorldPopulationMgr::TryCastFriendlySpell(Player* bot, Unit* target, uint
     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
     if (!spellInfo)
         return fail("missing_spell_info");
+    uint64 const ownerGuid = bot->GetGUID().GetRawValue();
+    if (BotRaidAreaAuthority::IsAllOffenseSuppressed(ownerGuid)
+        && !spellInfo->IsPositive())
+        return fail("raid_offense_suppressed");
+    if (Creature const* creature = target->ToCreature();
+        creature && BotRaidAreaAuthority::IsProtectedEncounterEntry(ownerGuid, creature->GetEntry()))
+        return fail("future_encounter_target_forbidden");
+    if (BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid)
+        && SpellHasHostileMultiTargetSemantics(spellInfo))
+        return fail("future_encounter_splash_forbidden");
     if (!bot->IsWithinLOSInMap(target))
         return fail("line_of_sight");
 
@@ -28845,28 +28867,6 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
                 return true;
         return false;
     };
-    auto futureEncounterWithinReach = [this, bot, target](float reach) -> bool
-    {
-        if (reach <= 0.0f)
-            return false;
-        auto scan = [this, reach](WorldObject* center) -> bool
-        {
-            if (!center)
-                return false;
-            std::vector<WorldObject*> objects;
-            Trinity::AllWorldObjectsInRange check(center, reach);
-            Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(
-                center, objects, check);
-            Cell::VisitAllObjects(center, searcher, reach);
-            for (WorldObject* object : objects)
-                if (Creature const* creature = object ? object->ToCreature() : nullptr)
-                    if (creature->IsAlive() && creature->GetHealth()
-                        && IsImmediateNextValidationRouteEncounterMember(creature))
-                        return true;
-            return false;
-        };
-        return scan(bot) || scan(target);
-    };
     auto effectiveSpellMinRange = [bot, target](BotActionCandidate const& candidate, float configuredMinRange) -> float
     {
         SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
@@ -28899,7 +28899,9 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     // Fire AoE is multi-DoT first. Select up to three engaged enemies that do
     // not already carry this mage's Living Bomb, while preserving the normal
     // priority target for every other action.
-    if (allowMultidot && bot->getClass() == CLASS_MAGE && hostileCount >= 3 && bot->HasSpell(44457))
+    if (allowMultidot
+        && !BotRaidAreaAuthority::HasProtectedEncounterEntries(bot->GetGUID().GetRawValue())
+        && bot->getClass() == CLASS_MAGE && hostileCount >= 3 && bot->HasSpell(44457))
     {
         std::vector<Unit*> spreadTargets = { target };
         std::vector<WorldObject*> nearbyObjects;
@@ -29029,9 +29031,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         }
 
         SpellInfo const* candidateSpellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
-        if (SpellHasHostileMultiTargetSemantics(candidateSpellInfo)
-            && futureEncounterWithinReach(
-                SpellHostileMultiTargetReach(candidateSpellInfo)))
+        if (BotRaidAreaAuthority::HasProtectedEncounterEntries(bot->GetGUID().GetRawValue())
+            && SpellHasHostileMultiTargetSemantics(candidateSpellInfo))
         {
             candidate.RejectReason = "future_encounter_splash_forbidden";
             continue;
@@ -29974,6 +29975,15 @@ bool BotWorldPopulationMgr::TryCastCombatSpell(Player* bot, Unit* target, uint32
     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
     if (!spellInfo || !bot->IsWithinLOSInMap(target))
         return false;
+    uint64 const ownerGuid = bot->GetGUID().GetRawValue();
+    if (BotRaidAreaAuthority::IsAllOffenseSuppressed(ownerGuid))
+        return false;
+    if (Creature const* creature = target->ToCreature();
+        creature && BotRaidAreaAuthority::IsProtectedEncounterEntry(ownerGuid, creature->GetEntry()))
+        return false;
+    if (BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid)
+        && SpellHasHostileMultiTargetSemantics(spellInfo))
+        return false;
     if (bot->HasUnitState(UNIT_STATE_CONTROLLED)
         || (spellInfo->PreventionType == SPELL_PREVENTION_TYPE_SILENCE
             && bot->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SILENCED))
@@ -30310,7 +30320,7 @@ BotWorldPopulationMgr::ReplayExecutionResult BotWorldPopulationMgr::ExecuteRepla
     RecordReplayEvent(Party().Bots.back(), bot, "replay_finished", record, result.Success ? "success" : "failure", finishContext.str().c_str());
 
     RecordActivityStop(Party().Bots.back(), bot);
-    BotRaidAreaAuthority::Set(bot->GetGUID().GetRawValue(), false);
+    BotRaidAreaAuthority::Clear(bot->GetGUID().GetRawValue());
     sBotMgr->RemoveWorldBot(bot->GetGUID());
     Party().Bots.clear();
     RecordRunStop();

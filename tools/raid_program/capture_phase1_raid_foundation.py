@@ -831,32 +831,81 @@ def observe_monotonic_semantic_progress(
             advanced = True
             high_water[key] = value
 
-    # Wipe/reset counters are lifecycle churn, not objective progress.  The
-    # 9a3 BWD run repeatedly pulled and reset Magmaw while still on corridor
-    # trash, so boss_reset_generation alone kept an otherwise stuck uncapped
-    # capture alive indefinitely.  Advance only for independently observable
-    # native-recovery milestones, and only once per accepted completion scope.
+    # Wipe/reset counters and aggregate native booleans are lifecycle churn,
+    # not objective progress.  Advance only when the current runtime contains
+    # an exact-roster, per-member, ordered native recovery proof.  The proof
+    # identity deliberately excludes recovery_generation so incrementing that
+    # counter cannot replay stale evidence as a new completion.
     native = runtime.get("native_recovery") if isinstance(
         runtime.get("native_recovery"), dict
     ) else {}
-    observed_native = state.setdefault("observed_native_recovery_milestones", [])
-    for field in (
-        "death_observed", "corpse_observed", "release_observed",
-        "runback_observed", "resurrection_observed",
-        "ready_check_action_observed",
-    ):
-        if native.get(field) is True and field not in observed_native:
-            observed_native.append(field)
-            advanced = True
-    if native.get("evidence_complete") is True:
-        completion_scope = (
-            int(runtime.get("attempt_id") or 0),
-            int(native.get("recovery_wipe_generation") or 0),
-            int(runtime.get("recovery_generation") or 0),
-        )
+    completion_scope: list[Any] | None = None
+    evidence_sequence = int(runtime.get("evidence_sequence") or 0)
+    attempt_id = int(runtime.get("attempt_id") or 0)
+    wipe_generation = int(runtime.get("wipe_generation") or 0)
+    assignment_generation = int(runtime.get("assignment_generation") or 0)
+    expected_size = int(runtime.get("expected_size") or 0)
+    roster = runtime.get("roster") if isinstance(runtime.get("roster"), list) else []
+    roster_guids = sorted(
+        int(row.get("guid") or 0) for row in roster
+        if isinstance(row, dict) and int(row.get("guid") or 0) > 0
+    )
+    members = native.get("members") if isinstance(native.get("members"), list) else []
+    ordered_members: list[list[int]] = []
+    member_guids: list[int] = []
+    member_sequences_valid = len(members) == expected_size == len(roster_guids) > 0
+    sequence_fields = (
+        "death_sequence", "corpse_sequence", "release_sequence",
+        "runback_sequence", "reentry_sequence", "resurrection_sequence",
+    )
+    for member in members:
+        if not isinstance(member, dict):
+            member_sequences_valid = False
+            continue
+        guid = int(member.get("guid") or 0)
+        sequences = [int(member.get(field) or 0) for field in sequence_fields]
+        if (
+            guid <= 0
+            or int(member.get("wipe_generation") or 0) != wipe_generation
+            or any(value <= 0 for value in sequences)
+            or sequences != sorted(sequences)
+            or len(set(sequences)) != len(sequences)
+            or sequences[-1] > evidence_sequence
+        ):
+            member_sequences_valid = False
+        member_guids.append(guid)
+        ordered_members.append([guid, *sequences])
+    ordered_members.sort()
+    member_guids.sort()
+    ready_sequence = int(native.get("ready_check_action_evidence_sequence") or 0)
+    proof_valid = (
+        native.get("evidence_complete") is True
+        and all(native.get(field) is True for field in (
+            "death_observed", "corpse_observed", "release_observed",
+            "runback_observed", "resurrection_observed",
+            "ready_check_action_observed",
+        ))
+        and evidence_sequence > 0 and attempt_id > 0 and wipe_generation > 0
+        and assignment_generation > 0
+        and int(native.get("recovery_wipe_generation") or 0) == wipe_generation
+        and member_sequences_valid and member_guids == roster_guids
+        and int(native.get("ready_check_action_generation") or 0) > 0
+        and int(native.get("ready_check_response_count") or 0) == expected_size
+        and int(native.get("ready_check_action_attempt_id") or 0) == attempt_id
+        and int(native.get("ready_check_action_wipe_generation") or 0) == wipe_generation
+        and int(native.get("ready_check_assignment_generation") or 0) == assignment_generation
+        and ready_sequence > max((row[-1] for row in ordered_members), default=0)
+        and ready_sequence <= evidence_sequence
+    )
+    if proof_valid:
+        completion_scope = [
+            attempt_id, wipe_generation, assignment_generation,
+            ordered_members, ready_sequence,
+        ]
+    if completion_scope is not None:
         completed_scopes = state.setdefault("accepted_native_recovery_scopes", [])
-        if all(completion_scope) and list(completion_scope) not in completed_scopes:
-            completed_scopes.append(list(completion_scope))
+        if completion_scope not in completed_scopes:
+            completed_scopes.append(completion_scope)
             advanced = True
 
     if runtime.get("encounter_in_progress") is True and not state.get("engagement_observed"):
