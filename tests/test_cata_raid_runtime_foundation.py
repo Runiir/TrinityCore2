@@ -682,6 +682,69 @@ def test_bwd_laser_exit_requires_monotonic_union_safe_path_for_overlapping_strik
     assert "return endpointOutside;" in movement
 
 
+def _drudge_cached_anchor_model(*, member_position, cached_anchor,
+                                strict_path, cache_scope, current_scope,
+                                arrival_tolerance=2.0):
+    """Model the runtime's scoped cached-anchor acceptance boundary."""
+    if not strict_path or cache_scope != current_scope or cached_anchor is None:
+        return False
+    return math.dist(member_position, cached_anchor) <= arrival_tolerance
+
+
+def test_drudge_legacy_candidate_k_cannot_certify_when_selector_cached_j():
+    legacy_candidate_k = (0.0, 0.0)
+    selected_cached_j = (10.0, 0.0)
+    scope = (41, 2, 7)
+
+    # The bot can begin on K, but the selector's strict native path proof is
+    # for J.  Runtime must move it to J before accepting formation evidence.
+    assert not _drudge_cached_anchor_model(
+        member_position=legacy_candidate_k,
+        cached_anchor=selected_cached_j,
+        strict_path=True,
+        cache_scope=scope,
+        current_scope=scope,
+    )
+    assert _drudge_cached_anchor_model(
+        member_position=selected_cached_j,
+        cached_anchor=selected_cached_j,
+        strict_path=True,
+        cache_scope=scope,
+        current_scope=scope,
+    )
+
+    route_start = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    route_end = IMPL.index("bool BotWorldPopulationMgr::IsBossContext", route_start)
+    route_runtime = IMPL[route_start:route_end]
+    group_start = route_runtime.index("auto groupPositionSafe")
+    group_end = route_runtime.index("auto sourceOnFrozenLane", group_start)
+    group = route_runtime[group_start:group_end]
+    assert "cachedAnchorSafe(*memberState, member)" in group
+    assert "for (auto const& candidate : anchorCandidatesFor(memberSlot))" not in group
+    assert "ValidationRouteDrudgeAnchorCandidateIndex >= candidates.size()" in route_runtime
+
+
+def test_drudge_cached_anchor_is_invalidated_by_attempt_wipe_or_route_scope():
+    cached_scope = (41, 2, 7)
+    for current_scope in ((42, 2, 7), (41, 3, 7), (41, 2, 8)):
+        assert not _drudge_cached_anchor_model(
+            member_position=(10.0, 0.0),
+            cached_anchor=(10.0, 0.0),
+            strict_path=True,
+            cache_scope=cached_scope,
+            current_scope=current_scope,
+        )
+
+    # A cache invalidation also cannot be revived by a stale path bit.
+    assert not _drudge_cached_anchor_model(
+        member_position=(10.0, 0.0),
+        cached_anchor=(10.0, 0.0),
+        strict_path=False,
+        cache_scope=cached_scope,
+        current_scope=cached_scope,
+    )
+
+
 def _validation_route_anchor_model(*, canonical_anchor, safe_memory_anchor,
                                    override_reason, pack_generation,
                                    route_generation, live_members, dead_members,

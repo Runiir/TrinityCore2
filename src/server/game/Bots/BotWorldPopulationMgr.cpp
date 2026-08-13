@@ -18332,28 +18332,52 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 && state.ValidationRouteDrudgeAnchorRouteGeneration == Party().ValidationRouteGeneration;
         };
 
-        auto cachedAnchorSafe = [&](Player const* member) -> bool
+        // AnchorValid is a strict-native-path cache, not a proximity bit.  A
+        // member can legitimately begin on the old declarative candidate K
+        // while the selector has already chosen pathable candidate J.  Only
+        // the exact scoped cache may certify that member; proximity to any
+        // manifest candidate would let runtime accept K while capture later
+        // reconstructs J (or no path at all).
+        auto cachedAnchorSafe = [&](WorldBotState const& anchorState,
+                                    Player const* member) -> bool
         {
-            if (!member || !anchorCacheMatchesGeneration())
+            if (!member || anchorState.Guid != member->GetGUID()
+                || !anchorState.ValidationRouteDrudgeAnchorValid
+                || anchorState.ValidationRouteDrudgeAnchorAttemptId != Cohort().AttemptId
+                || anchorState.ValidationRouteDrudgeAnchorWipeGeneration != Cohort().Raid.WipeGeneration
+                || anchorState.ValidationRouteDrudgeAnchorRouteGeneration != Party().ValidationRouteGeneration)
                 return false;
-            float const projection = (state.ValidationRouteDrudgeAnchorX - midpointX) * axisX
-                + (state.ValidationRouteDrudgeAnchorY - midpointY) * axisY;
+            auto memberRoster = Cohort().Raid.RosterByGuid.find(member->GetGUID().GetCounter());
+            if (memberRoster == Cohort().Raid.RosterByGuid.end()
+                || memberRoster->second.Role == "tank")
+                return false;
+            uint32 const memberSlot = memberRoster->second.SlotIndex + 1;
             bool const memberLaneA = std::find(
                 Cohort().Config.ValidationRouteSplitLaneARosterSlots.begin(),
                 Cohort().Config.ValidationRouteSplitLaneARosterSlots.end(),
-                oneBasedSlot) != Cohort().Config.ValidationRouteSplitLaneARosterSlots.end();
+                memberSlot) != Cohort().Config.ValidationRouteSplitLaneARosterSlots.end();
             float const memberLaneSign = memberLaneA ? -1.0f : 1.0f;
+            auto const candidates = anchorCandidatesFor(memberSlot);
+            if (anchorState.ValidationRouteDrudgeAnchorCandidateIndex >= candidates.size()
+                || Distance2d(anchorState.ValidationRouteDrudgeAnchorX,
+                    anchorState.ValidationRouteDrudgeAnchorY,
+                    candidates[anchorState.ValidationRouteDrudgeAnchorCandidateIndex].first,
+                    candidates[anchorState.ValidationRouteDrudgeAnchorCandidateIndex].second)
+                    > 0.01f)
+                return false;
+            float const projection = (anchorState.ValidationRouteDrudgeAnchorX - midpointX) * axisX
+                + (anchorState.ValidationRouteDrudgeAnchorY - midpointY) * axisY;
             if (memberLaneSign * projection < laneSeparation * 0.25f)
                 return false;
-            if (Distance2d(state.ValidationRouteDrudgeAnchorX,
-                    state.ValidationRouteDrudgeAnchorY, sources[0]->GetPositionX(),
+            if (Distance2d(anchorState.ValidationRouteDrudgeAnchorX,
+                    anchorState.ValidationRouteDrudgeAnchorY, sources[0]->GetPositionX(),
                     sources[0]->GetPositionY()) < Cohort().Config.ValidationRouteMinimumDistanceYards
-                || Distance2d(state.ValidationRouteDrudgeAnchorX,
-                    state.ValidationRouteDrudgeAnchorY, sources[1]->GetPositionX(),
+                || Distance2d(anchorState.ValidationRouteDrudgeAnchorX,
+                    anchorState.ValidationRouteDrudgeAnchorY, sources[1]->GetPositionX(),
                     sources[1]->GetPositionY()) < Cohort().Config.ValidationRouteMinimumDistanceYards)
                 return false;
-            return member->GetExactDist(state.ValidationRouteDrudgeAnchorX,
-                state.ValidationRouteDrudgeAnchorY, state.ValidationRouteDrudgeAnchorZ)
+            return member->GetExactDist(anchorState.ValidationRouteDrudgeAnchorX,
+                anchorState.ValidationRouteDrudgeAnchorY, anchorState.ValidationRouteDrudgeAnchorZ)
                 <= Cohort().Config.ValidationRouteSplitArrivalToleranceYards;
         };
 
@@ -18387,43 +18411,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 + (member->GetPositionY() - midpointY) * axisY;
             if (memberLaneSign * memberProjection < laneSeparation * 0.25f)
                 return false;
-            bool nearOwnedAnchor = false;
-            if (member == bot && cachedAnchorSafe(member))
-                nearOwnedAnchor = true;
-            if (!nearOwnedAnchor)
-                for (WorldBotState const& memberState : Party().Bots)
-                    if (memberState.Guid == member->GetGUID()
-                        && memberState.ValidationRouteDrudgeAnchorValid
-                        && memberState.ValidationRouteDrudgeAnchorAttemptId == Cohort().AttemptId
-                        && memberState.ValidationRouteDrudgeAnchorWipeGeneration == Cohort().Raid.WipeGeneration
-                        && memberState.ValidationRouteDrudgeAnchorRouteGeneration == Party().ValidationRouteGeneration
-                        && memberLaneSign * ((memberState.ValidationRouteDrudgeAnchorX - midpointX) * axisX
-                            + (memberState.ValidationRouteDrudgeAnchorY - midpointY) * axisY)
-                            >= laneSeparation * 0.25f
-                        && Distance2d(memberState.ValidationRouteDrudgeAnchorX,
-                            memberState.ValidationRouteDrudgeAnchorY, sources[0]->GetPositionX(),
-                            sources[0]->GetPositionY()) >= minimumSafeDistance
-                        && Distance2d(memberState.ValidationRouteDrudgeAnchorX,
-                            memberState.ValidationRouteDrudgeAnchorY, sources[1]->GetPositionX(),
-                            sources[1]->GetPositionY()) >= minimumSafeDistance
-                        && Distance2d(member->GetPositionX(), member->GetPositionY(),
-                            memberState.ValidationRouteDrudgeAnchorX,
-                            memberState.ValidationRouteDrudgeAnchorY)
-                            <= Cohort().Config.ValidationRouteSplitArrivalToleranceYards)
-                    {
-                        nearOwnedAnchor = true;
-                        break;
-                    }
-            if (!nearOwnedAnchor)
-                for (auto const& candidate : anchorCandidatesFor(memberSlot))
-                    if (Distance2d(member->GetPositionX(), member->GetPositionY(),
-                            candidate.first, candidate.second)
-                        <= Cohort().Config.ValidationRouteSplitArrivalToleranceYards)
-                    {
-                        nearOwnedAnchor = true;
-                        break;
-                    }
-            if (!nearOwnedAnchor)
+            auto memberState = std::find_if(Party().Bots.begin(), Party().Bots.end(),
+                [member](WorldBotState const& candidate)
+                {
+                    return candidate.Guid == member->GetGUID();
+                });
+            // Never certify a member from the declarative candidate list.  A
+            // strict path search must first select and cache the exact
+            // candidate for this member, scoped to attempt/wipe/route.
+            if (memberState == Party().Bots.end()
+                || !cachedAnchorSafe(*memberState, member))
                 return false;
             for (WorldBotState const& cohortState : Party().Bots)
             {
@@ -18466,6 +18463,17 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             {
                 if (!anchorCacheMatchesGeneration())
                     return false;
+                if (!tank)
+                {
+                    auto const candidates = anchorCandidatesFor(oneBasedSlot);
+                    if (state.ValidationRouteDrudgeAnchorCandidateIndex >= candidates.size()
+                        || Distance2d(state.ValidationRouteDrudgeAnchorX,
+                            state.ValidationRouteDrudgeAnchorY,
+                            candidates[state.ValidationRouteDrudgeAnchorCandidateIndex].first,
+                            candidates[state.ValidationRouteDrudgeAnchorCandidateIndex].second)
+                            > 0.01f)
+                        return false;
+                }
                 float const projection =
                     (state.ValidationRouteDrudgeAnchorX - midpointX) * axisX
                     + (state.ValidationRouteDrudgeAnchorY - midpointY) * axisY;
@@ -18789,7 +18797,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                             && memberState.ValidationRouteDrudgeAnchorValid
                             && memberState.ValidationRouteDrudgeAnchorAttemptId == Cohort().AttemptId
                             && memberState.ValidationRouteDrudgeAnchorWipeGeneration == Cohort().Raid.WipeGeneration
-                            && memberState.ValidationRouteDrudgeAnchorRouteGeneration == Party().ValidationRouteGeneration)
+                            && memberState.ValidationRouteDrudgeAnchorRouteGeneration == Party().ValidationRouteGeneration
+                            && memberState.ValidationRouteDrudgeAnchorCandidateIndex < candidates.size()
+                            && Distance2d(memberState.ValidationRouteDrudgeAnchorX,
+                                memberState.ValidationRouteDrudgeAnchorY,
+                                candidates[memberState.ValidationRouteDrudgeAnchorCandidateIndex].first,
+                                candidates[memberState.ValidationRouteDrudgeAnchorCandidateIndex].second)
+                                <= 0.01f)
                         {
                             geometry.AnchorCandidateIndex =
                                 memberState.ValidationRouteDrudgeAnchorCandidateIndex;
@@ -18798,6 +18812,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                             geometry.AnchorDistance = Distance2d(geometry.X, geometry.Y,
                                 geometry.AnchorX, geometry.AnchorY);
                             geometry.AnchorSelected = geometry.AnchorDistance <= observation.ArrivalTolerance;
+                            // The cache is populated only after the strict
+                            // native path validator succeeds.  Do not let a
+                            // member that merely occupies legacy candidate K
+                            // serialize as path-valid when selector/cache chose
+                            // candidate J.
                             geometry.AnchorPathValid = geometry.AnchorSelected;
                             break;
                         }
@@ -18808,15 +18827,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                             break;
                         float const distance = Distance2d(geometry.X, geometry.Y,
                             candidates[candidateIndex].first, candidates[candidateIndex].second);
-                        if (!geometry.AnchorSelected
-                            && distance <= observation.ArrivalTolerance)
-                        {
-                            geometry.AnchorCandidateIndex = uint32(candidateIndex);
-                            geometry.AnchorX = candidates[candidateIndex].first;
-                            geometry.AnchorY = candidates[candidateIndex].second;
-                            geometry.AnchorDistance = distance;
-                            geometry.AnchorSelected = true;
-                        }
                         if (distance < nearest)
                         {
                             nearest = distance;
