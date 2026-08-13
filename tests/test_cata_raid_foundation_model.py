@@ -300,6 +300,7 @@ def test_drudge_model_requires_exact_reseparation_and_trained_offense():
         tank_guids=(1, 2),
         offensive_guids=(1, 2, 6, 7, 8, 9, 10),
         events=events,
+        ownership_guids=(1, 2),
         taunt_guids=(1, 2),
         health_sync_guids=(1, 2),
         profile_action_guids=(1, 2, 6, 7, 8, 9, 10),
@@ -315,6 +316,7 @@ def test_drudge_model_requires_exact_reseparation_and_trained_offense():
         tank_guids=(1, 2),
         offensive_guids=(1, 2, 6, 7, 8, 9, 10),
         events=invalid,
+        ownership_guids=(),
         taunt_guids=(1,),
         health_sync_guids=(),
         profile_action_guids=(1, 2),
@@ -324,7 +326,7 @@ def test_drudge_model_requires_exact_reseparation_and_trained_offense():
     assert {
         "exact_roster_reseparation_missing",
         "native_rush_target_tank",
-        "exact_tank_taunts_missing",
+        "exact_tank_ownership_missing",
         "tank_health_sync_hold_missing",
         "trained_single_target_profile_missing",
     }.issubset(reasons)
@@ -334,6 +336,7 @@ def test_drudge_model_requires_exact_reseparation_and_trained_offense():
         tank_guids=(1, 2),
         offensive_guids=(1, 2, 6, 7, 8, 9, 10),
         events=events,
+        ownership_guids=(1, 2),
         taunt_guids=(1, 2),
         health_sync_guids=(1,),
         profile_action_guids=(1, 2, 6, 7, 8, 9, 10),
@@ -341,3 +344,63 @@ def test_drudge_model_requires_exact_reseparation_and_trained_offense():
     )
     assert partial_health_sync is False
     assert reasons == ("tank_health_sync_hold_missing",)
+
+    no_redundant_taunt, reasons = evaluate_drudge_lane_contract(
+        roster_guids=roster_guids,
+        tank_guids=(1, 2),
+        offensive_guids=(1, 2, 6, 7, 8, 9, 10),
+        events=events,
+        ownership_guids=(1, 2),
+        taunt_guids=(),
+        health_sync_guids=(1, 2),
+        profile_action_guids=(1, 2, 6, 7, 8, 9, 10),
+        role_by_guid={1: "tank", 2: "tank", 5: "healer", 3: "healer"},
+    )
+    assert no_redundant_taunt is True
+    assert reasons == ()
+
+    foreign_taunt, reasons = evaluate_drudge_lane_contract(
+        roster_guids=roster_guids,
+        tank_guids=(1, 2),
+        offensive_guids=(1, 2, 6, 7, 8, 9, 10),
+        events=events,
+        ownership_guids=(1, 2),
+        taunt_guids=(3,),
+        health_sync_guids=(1, 2),
+        profile_action_guids=(1, 2, 6, 7, 8, 9, 10),
+        role_by_guid={1: "tank", 2: "tank", 5: "healer", 3: "healer"},
+    )
+    assert foreign_taunt is False
+    assert reasons == ("taunt_evidence_identity_mismatch",)
+
+    wrong_victim, reasons = evaluate_drudge_lane_contract(
+        roster_guids=roster_guids,
+        tank_guids=(1, 2),
+        offensive_guids=(1, 2, 6, 7, 8, 9, 10),
+        events=events,
+        ownership_guids=(1, 3),
+        taunt_guids=(),
+        health_sync_guids=(1, 2),
+        profile_action_guids=(1, 2, 6, 7, 8, 9, 10),
+        role_by_guid={1: "tank", 2: "tank", 5: "healer", 3: "healer"},
+    )
+    assert wrong_victim is False
+    assert reasons == ("exact_tank_ownership_missing",)
+
+    crossed_source_events = list(events)
+    crossed_source_events[0] = DrudgeChargeContractEvent(
+        250140, 5, True, roster_guids, source_in_frozen_lane=False
+    )
+    crossed_source, reasons = evaluate_drudge_lane_contract(
+        roster_guids=roster_guids,
+        tank_guids=(1, 2),
+        offensive_guids=(1, 2, 6, 7, 8, 9, 10),
+        events=crossed_source_events,
+        ownership_guids=(1, 2),
+        taunt_guids=(),
+        health_sync_guids=(1, 2),
+        profile_action_guids=(1, 2, 6, 7, 8, 9, 10),
+        role_by_guid={1: "tank", 2: "tank", 5: "healer", 3: "healer"},
+    )
+    assert crossed_source is False
+    assert reasons == ("source_crossed_frozen_lane",)

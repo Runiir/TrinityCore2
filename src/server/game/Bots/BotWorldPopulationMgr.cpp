@@ -3935,6 +3935,7 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
         Party().ValidationRouteDrudgeDeliveredBySpawn.clear();
         Party().ValidationRouteDrudgeValidIntervalsBySpawn.clear();
         Party().ValidationRouteDrudgeReseparatedRosterGuids.clear();
+        Party().ValidationRouteDrudgeOwnershipRosterGuids.clear();
         Party().ValidationRouteDrudgeTauntRosterGuids.clear();
         Party().ValidationRouteDrudgeHealthSyncRosterGuids.clear();
         Party().ValidationRouteDrudgeHealthSyncEvidenceAttemptId = 0;
@@ -18266,6 +18267,18 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (sources[0]->GetExactDist2d(sources[1])
                 < Cohort().Config.ValidationRouteSplitMinimumSeparationYards)
                 return false;
+            auto sourceOnFrozenLane = [&](Creature const* source, uint32 sourceIndex) -> bool
+            {
+                if (!source)
+                    return false;
+                float const sourceLaneSign = sourceIndex == 0 ? -1.0f : 1.0f;
+                float const projection = (source->GetPositionX() - midpointX) * axisX
+                    + (source->GetPositionY() - midpointY) * axisY;
+                return sourceLaneSign * projection >= laneSeparation * 0.25f;
+            };
+            if (!sourceOnFrozenLane(sources[0], 0)
+                || !sourceOnFrozenLane(sources[1], 1))
+                return false;
             auto tankOnLaneSide = [&](Player const* tank, uint32 slot) -> bool
             {
                 if (!tank || !tank->IsAlive())
@@ -18281,6 +18294,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             };
             if (!tankOnLaneSide(laneTank, laneTankSlot)
                 || !tankOnLaneSide(otherTank, otherTankSlot))
+                return false;
+            if (laneTank->GetExactDist2d(laneSource)
+                    > Cohort().Config.ValidationRouteSplitMinimumSeparationYards
+                || otherTank->GetExactDist2d(otherSource)
+                    > Cohort().Config.ValidationRouteSplitMinimumSeparationYards)
                 return false;
             if (laneSource->IsAlive() && laneSource->GetVictim() != laneTank)
                 return false;
@@ -18331,12 +18349,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             Party().ValidationRouteDrudgeChargeObservations.end(),
             [&state](ValidationRouteDrudgeChargeObservation const& observation)
             {
-                return observation.Landed && !observation.ReseparationRecorded
-                    && observation.Sequence
+                return !observation.ReseparationRecorded && observation.Sequence
                     > state.LastValidationRouteDrudgeChargeGenerationHandled;
             });
+        bool const chargeAwaitingLanding = chargeObservation
+            != Party().ValidationRouteDrudgeChargeObservations.end()
+            && !chargeObservation->Landed;
         bool const nativeChargePending = chargeObservation
-            != Party().ValidationRouteDrudgeChargeObservations.end();
+            != Party().ValidationRouteDrudgeChargeObservations.end()
+            && chargeObservation->Landed;
         Creature* nativeChargeSource = nativeChargePending
             ? ObjectAccessor::GetCreature(*bot, chargeObservation->SourceGuid) : nullptr;
         Unit* nativeChargeTarget = nativeChargePending
@@ -18396,11 +18417,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (assignedTank && laneSource->GetVictim() == bot)
         {
             // Native threat ownership is already the exact frozen lane
-            // assignment.  This is legitimate taunt evidence without
-            // manufacturing a redundant cast.
-            Party().ValidationRouteDrudgeTauntRosterGuids.insert(
+            // assignment.  Keep it separate from the actual successful
+            // taunt-cast evidence below.
+            Party().ValidationRouteDrudgeOwnershipRosterGuids.insert(
                 bot->GetGUID().GetCounter());
-            record(laneSource, "drudge_lane_native_taunt_ownership", sourceSeparation);
+            record(laneSource, "drudge_lane_native_ownership", sourceSeparation);
         }
         if (assignedTank && laneSource->GetVictim() != bot)
         {
@@ -18443,7 +18464,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
-        if (formationRequired || pairTooClose || nativeChargePending)
+        if (formationRequired || pairTooClose || nativeChargePending || chargeAwaitingLanding)
         {
             holdOffense();
             bool moved = false;
@@ -18565,6 +18586,21 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
+        auto recordHealthSync = [&]()
+        {
+            if (Party().ValidationRouteDrudgeHealthSyncEvidenceAttemptId != Cohort().AttemptId
+                || Party().ValidationRouteDrudgeHealthSyncEvidenceWipeGeneration != Cohort().Raid.WipeGeneration
+                || Party().ValidationRouteDrudgeHealthSyncEvidenceRouteGeneration != Party().ValidationRouteGeneration)
+            {
+                Party().ValidationRouteDrudgeHealthSyncRosterGuids.clear();
+                Party().ValidationRouteDrudgeHealthSyncEvidenceAttemptId = Cohort().AttemptId;
+                Party().ValidationRouteDrudgeHealthSyncEvidenceWipeGeneration = Cohort().Raid.WipeGeneration;
+                Party().ValidationRouteDrudgeHealthSyncEvidenceRouteGeneration = Party().ValidationRouteGeneration;
+            }
+            Party().ValidationRouteDrudgeHealthSyncRosterGuids.insert(
+                bot->GetGUID().GetCounter());
+        };
+
         if (!otherSource->IsAlive())
         {
             if (!laneSource->HasAura(Cohort().Config.ValidationRouteVengefulRageSpellId))
@@ -18577,32 +18613,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
         }
         else if (sources[0]->IsAlive() && sources[1]->IsAlive()
-            && UnitHealthPct(sources[0]) != UnitHealthPct(sources[1])
-            && assignedTank)
+            && (UnitHealthPct(laneSource) < UnitHealthPct(otherSource)
+                || UnitHealthPct(otherSource) < UnitHealthPct(laneSource))
+            && !assignedTank)
         {
-            // Both exact tank slots attest the same clean lower-health hold.
-            // The higher-health tank also holds, so it cannot damage the
-            // lower lane while its counterpart is synchronizing.  Taunt and
-            // lane ownership were established above and remain authoritative.
+            // Do not record health-sync evidence until the ownership and
+            // exactRosterReSeparated gates below have passed.
             holdOffense();
-            Party().ValidationRouteDrudgeHealthSyncRosterGuids.insert(
-                bot->GetGUID().GetCounter());
-            if (!Party().ValidationRouteDrudgeHealthSyncEvidenceAttemptId)
-            {
-                Party().ValidationRouteDrudgeHealthSyncEvidenceAttemptId = Cohort().AttemptId;
-                Party().ValidationRouteDrudgeHealthSyncEvidenceWipeGeneration = Cohort().Raid.WipeGeneration;
-                Party().ValidationRouteDrudgeHealthSyncEvidenceRouteGeneration = Party().ValidationRouteGeneration;
-            }
-            record(laneSource, "drudge_tank_health_sync_hold", sourceSeparation);
-            target = laneSource;
-            state.TargetGuid = laneSource->GetGUID();
-            return true;
-        }
-        else if (UnitHealthPct(laneSource) < UnitHealthPct(otherSource))
-        {
-            holdOffense();
-            Party().ValidationRouteDrudgeHealthSyncRosterGuids.insert(
-                bot->GetGUID().GetCounter());
             record(laneSource, "drudge_kill_sync_hold_lower_health_lane", sourceSeparation);
             target = laneSource;
             state.TargetGuid = laneSource->GetGUID();
@@ -18628,6 +18645,21 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         {
             holdOffense();
             record(laneSource, "drudge_lane_profile_hold_contract_unsafe", sourceSeparation);
+            target = laneSource;
+            state.TargetGuid = laneSource->GetGUID();
+            return true;
+        }
+
+        if (sources[0]->IsAlive() && sources[1]->IsAlive()
+            && (UnitHealthPct(laneSource) < UnitHealthPct(otherSource)
+                || UnitHealthPct(otherSource) < UnitHealthPct(laneSource)))
+        {
+            holdOffense();
+            if (assignedTank)
+                recordHealthSync();
+            record(laneSource, assignedTank
+                ? "drudge_tank_health_sync_hold" : "drudge_kill_sync_hold_lower_health_lane",
+                sourceSeparation);
             target = laneSource;
             state.TargetGuid = laneSource->GetGUID();
             return true;
@@ -29940,6 +29972,16 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
         if (!firstReseparatedGuid)
             json << ',';
         firstReseparatedGuid = false;
+        json << guid;
+    }
+    json << "]"
+         << ",\"ownership_roster_guids\":[";
+    bool firstOwnershipGuid = true;
+    for (uint32 guid : Party().ValidationRouteDrudgeOwnershipRosterGuids)
+    {
+        if (!firstOwnershipGuid)
+            json << ',';
+        firstOwnershipGuid = false;
         json << guid;
     }
     json << "]"

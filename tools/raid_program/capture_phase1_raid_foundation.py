@@ -727,10 +727,13 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
     taunts = exact_guid_set("taunt_roster_guids")
     health_sync = exact_guid_set("health_sync_roster_guids")
     profile_actions = exact_guid_set("profile_action_roster_guids")
+    ownership = exact_guid_set("ownership_roster_guids")
+    if ownership != tank_guids:
+        reasons.append("drudge_exact_tank_ownership_missing")
     if reseparated != roster_guids:
         reasons.append("drudge_exact_roster_reseparation_missing")
-    if taunts != tank_guids:
-        reasons.append("drudge_exact_tank_taunts_missing")
+    if not taunts.issubset(tank_guids):
+        reasons.append("drudge_taunt_evidence_identity_mismatch")
     if health_sync != tank_guids:
         reasons.append("drudge_exact_tank_health_sync_hold_missing")
     if evidence.get("health_sync_evidence_attempt_id") != attempt_id:
@@ -2485,7 +2488,7 @@ def main() -> int:
             "source": "botauto_status.raid_runtime.drudge_charge",
             "independently_reconstructed": drudge_accepted,
             "rejections": drudge_rejections,
-            "requirements": "two delivered native Rushes per exact source; one non-early 20000ms interval per source; exact-roster reseparation; both tank taunts; tank health-sync hold; all seven offensive slots use trained single-target profiles",
+            "requirements": "two delivered native Rushes per exact source; one non-early 20000ms interval per source; exact-roster reseparation; exact native tank ownership; any recorded taunts are successful tank casts; tank health-sync hold; all seven offensive slots use trained single-target profiles",
         },
         "forbidden_assistance": {
             "observed": bool(forbidden_entries),

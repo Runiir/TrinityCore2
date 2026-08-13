@@ -491,7 +491,7 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "ValidationRouteSplitArrivalToleranceYards" in lane
     assert "ValidationRouteDrudgeChargeGeneration" in lane
     assert "nativeChargePending" in lane
-    assert "observation.Landed" in lane
+    assert "chargeObservation->Landed" in lane
     assert "chargeObservation->AttemptId != Cohort().AttemptId" in lane
     assert "chargeObservation->WipeGeneration != Cohort().Raid.WipeGeneration" in lane
     assert "ValidationRouteDrudgeChargeObservations" in lane
@@ -500,7 +500,7 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert '"drudge_kill_sync_hold_lower_health_lane"' in lane
     assert "ValidationRouteVengefulRageSpellId" in lane
     assert "BotCombatActionCategory::Taunt" in lane
-    assert "if (formationRequired || pairTooClose || nativeChargePending)" in lane
+    assert "if (formationRequired || pairTooClose || nativeChargePending || chargeAwaitingLanding)" in lane
     assert "laneSource = sources[laneIndex]" in lane
     assert "bool const sourceInLaneA = nativeChargeSource == sources[0]" in lane
     assert "markAllRosterReseparated" in lane
@@ -509,6 +509,15 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "sameLaneMemberMinimum" in lane
     assert "sources[0]->GetExactDist2d(sources[1])" in lane
     assert "drudge_tank_health_sync_hold" in lane
+    assert "ValidationRouteDrudgeOwnershipRosterGuids" in lane
+    assert "sourceOnFrozenLane" in lane
+    assert "laneTank->GetExactDist2d(laneSource)" in lane
+    assert "drudge_lane_native_ownership" in lane
+    assert "chargeAwaitingLanding" in lane
+    assert "!chargeObservation->Landed" in lane
+    health_sync_call = lane.rindex("recordHealthSync();")
+    assert lane.index("if (!laneOwnershipSafe)") < health_sync_call
+    assert lane.index("if (sources[0]->IsAlive() && sources[1]->IsAlive() && !exactRosterReSeparated())") < health_sync_call
     assert '"drudge_lane_wait_lane_ownership"' in lane
     assert '"drudge_lane_profile_hold_contract_unsafe"' in lane
     assert '"drudge_native_charge_target_tank_reseparated"' in lane
@@ -541,7 +550,6 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "if (!preventDefault)" in spell_impl
     assert "effect == SPELL_EFFECT_CHARGE" in spell_impl
     assert "NotifyNativeCreatureSpellLanded" in spell_impl
-    assert "else if (UnitHealthPct(laneSource) < UnitHealthPct(otherSource))" in lane
     assert "else if (!assignedTank && UnitHealthPct" not in lane
     assert route_runtime.index("if (tryValidationRouteMinimumDistance())") < route_runtime.index(
         "if (tryValidationRouteDrudgeChargeLanes())"

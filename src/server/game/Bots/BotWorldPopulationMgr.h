@@ -1836,6 +1836,7 @@ private:
         std::map<uint32, uint32> ValidationRouteDrudgeDeliveredBySpawn;
         std::map<uint32, uint32> ValidationRouteDrudgeValidIntervalsBySpawn;
         std::set<uint32> ValidationRouteDrudgeReseparatedRosterGuids;
+        std::set<uint32> ValidationRouteDrudgeOwnershipRosterGuids;
         std::set<uint32> ValidationRouteDrudgeTauntRosterGuids;
         std::set<uint32> ValidationRouteDrudgeHealthSyncRosterGuids;
         uint64 ValidationRouteDrudgeHealthSyncEvidenceAttemptId = 0;

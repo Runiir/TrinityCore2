@@ -259,6 +259,7 @@ def accepted_drudge_status() -> dict:
             {"spawn_id": 250141, "delivered_count": 2, "valid_interval_count": 1},
         ],
         "reseparated_roster_guids": roster_guids,
+        "ownership_roster_guids": tank_guids,
         "taunt_roster_guids": tank_guids,
         "health_sync_roster_guids": tank_guids,
         "health_sync_evidence_attempt_id": runtime["attempt_id"],
@@ -272,6 +273,19 @@ def accepted_drudge_status() -> dict:
 
 def test_drudge_contract_reconstructs_delivery_interval_and_exact_roster_tactics():
     accepted, reasons = accepted_drudge_contract([accepted_drudge_status()])
+    assert accepted is True
+    assert reasons == []
+
+
+def test_drudge_contract_does_not_skip_an_earlier_unlanded_observation():
+    status = accepted_drudge_status()
+    observations = status["raid_runtime"]["drudge_charge"]["observations"]
+    observations[0]["landed"] = False
+    accepted, reasons = accepted_drudge_contract([status])
+    assert accepted is False
+    assert "drudge_delivered_count_mismatch" in reasons
+    observations[0]["landed"] = True
+    accepted, reasons = accepted_drudge_contract([status])
     assert accepted is True
     assert reasons == []
 
@@ -300,6 +314,26 @@ def test_drudge_contract_rejects_prepared_only_stale_and_incomplete_tactics():
     accepted, reasons = accepted_drudge_contract([incomplete])
     assert accepted is False
     assert "drudge_exact_tank_health_sync_hold_missing" in reasons
+
+    missing_ownership = accepted_drudge_status()
+    missing_ownership["raid_runtime"]["drudge_charge"]["ownership_roster_guids"] = []
+    accepted, reasons = accepted_drudge_contract([missing_ownership])
+    assert accepted is False
+    assert "drudge_exact_tank_ownership_missing" in reasons
+
+    no_redundant_taunt = accepted_drudge_status()
+    no_redundant_taunt["raid_runtime"]["drudge_charge"]["taunt_roster_guids"] = []
+    accepted, reasons = accepted_drudge_contract([no_redundant_taunt])
+    assert accepted is True
+    assert reasons == []
+
+    foreign_taunt = accepted_drudge_status()
+    foreign_taunt["raid_runtime"]["drudge_charge"]["taunt_roster_guids"] = [
+        foreign_taunt["raid_runtime"]["roster"][2]["guid"]
+    ]
+    accepted, reasons = accepted_drudge_contract([foreign_taunt])
+    assert accepted is False
+    assert "drudge_taunt_evidence_identity_mismatch" in reasons
 
     partial_sync = accepted_drudge_status()
     partial_sync["raid_runtime"]["drudge_charge"]["health_sync_roster_guids"] = [

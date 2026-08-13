@@ -30,6 +30,7 @@ class DrudgeChargeContractEvent:
     target_guid: int
     landed: bool
     reseparated_roster_guids: tuple[int, ...]
+    source_in_frozen_lane: bool = True
 
 
 def evaluate_drudge_lane_contract(
@@ -38,6 +39,7 @@ def evaluate_drudge_lane_contract(
     tank_guids: Iterable[int],
     offensive_guids: Iterable[int],
     events: Iterable[DrudgeChargeContractEvent],
+    ownership_guids: Iterable[int],
     taunt_guids: Iterable[int],
     health_sync_guids: Iterable[int],
     profile_action_guids: Iterable[int],
@@ -47,8 +49,9 @@ def evaluate_drudge_lane_contract(
 
     This is intentionally a small, side-effect-free model of the live gate:
     delivered native Rushes must be followed by exact-roster reseparation,
-    tanks must have taunted, lower-health synchronization must include a
-    tank, and only the seven frozen tank/DPS slots may execute the trained
+    exact lane tanks must own their native sources, any recorded taunts must
+    be actual tank casts, lower-health synchronization must include both
+    tanks, and only the seven frozen tank/DPS slots may execute the trained
     single-target profile.  A role map, when supplied, prevents a tank from
     being accepted as a native Rush target; a tank target means the split
     formation did not make the native farthest-player selector safe.
@@ -77,14 +80,19 @@ def evaluate_drudge_lane_contract(
             reasons.add("target_not_in_roster")
         if set(event.reseparated_roster_guids) != roster:
             reasons.add("exact_roster_reseparation_missing")
+        if not event.source_in_frozen_lane:
+            reasons.add("source_crossed_frozen_lane")
         if role_by_guid and role_by_guid.get(event.target_guid) == "tank":
             reasons.add("native_rush_target_tank")
     for source, count in source_counts.items():
         if count < 2:
             reasons.add(f"source_{source}_two_deliveries_missing")
 
-    if set(taunt_guids) != tanks:
-        reasons.add("exact_tank_taunts_missing")
+    ownership = set(ownership_guids)
+    if ownership != tanks:
+        reasons.add("exact_tank_ownership_missing")
+    if not set(taunt_guids).issubset(tanks):
+        reasons.add("taunt_evidence_identity_mismatch")
     if set(health_sync_guids) != tanks:
         reasons.add("tank_health_sync_hold_missing")
     if set(profile_action_guids) != offensive:
