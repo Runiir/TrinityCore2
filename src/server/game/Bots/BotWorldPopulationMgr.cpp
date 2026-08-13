@@ -1770,6 +1770,11 @@ void BotWorldPopulationMgr::Stop()
     if (!Cohort().Active)
         return;
 
+    // Flush the in-memory fingerprint tail while bots are still loaded.
+    // RecordRunStop() repeats this safely for callers that stop a run through
+    // a different lifecycle path.
+    FlushPendingDecisionFingerprintMemory();
+
     if (Cohort().RuntimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy)
     {
         for (WorldBotState const& state : Party().Bots)
@@ -4042,8 +4047,23 @@ void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
         state.ValidationRouteUnresolvedFocusHoldCount = 0;
         state.ConsecutiveSameDecisionCount = 0;
         state.IdleDecisionRepeatCount = 0;
+        // A route reset starts a new decision stream. Reset the complete
+        // fingerprint persistence tuple so a repeated first hash cannot
+        // compare a fresh counter with an old persisted baseline.
+        state.DecisionFingerprintInitialized = false;
+        state.LastDecisionFingerprintHash = 0;
         state.LastDecisionFingerprintRepeatCount = 0;
         state.LastDecisionFingerprintFailureCount = 0;
+        state.LastDecisionFingerprintFailure = false;
+        state.LastDecisionFingerprintPersistMs = 0;
+        state.LastDecisionFingerprintPersistedRepeatCount = 0;
+        state.LastDecisionFingerprintPersistedFailureCount = 0;
+        state.LastRepeatableEventKey.clear();
+        state.LastRepeatableEventEmitMs = 0;
+        state.SuppressedRepeatableEventCount = 0;
+        state.LastPersistedDiagnosticDecisionKey.clear();
+        state.LastPersistedDiagnosticDecisionMs = 0;
+        state.SuppressedDiagnosticDecisionCount = 0;
         state.LastLoopGuardrailReason.clear();
         state.LastNoProgressReason = reason ? reason : "validation_route_reset";
         state.LoopRecoveryCooldownUntilMs = nowMs + 3000;
@@ -31392,6 +31412,7 @@ void BotWorldPopulationMgr::RecordRunStop()
     if (!Cohort().RunId)
         return;
 
+    FlushPendingDecisionFingerprintMemory();
     std::string summary = GetSummaryJson();
     CharacterDatabase.EscapeString(summary);
     CharacterDatabase.DirectPExecute("UPDATE experiment_bot_runs SET status = 'stopped', ended_at = NOW(), summary_json = '%s' WHERE id = " UI64FMTD, summary.c_str(), Cohort().RunId);
@@ -34818,6 +34839,75 @@ uint32 BotWorldPopulationMgr::FeatureSchemaHash(std::string const& value)
     return hash;
 }
 
+void BotWorldPopulationMgr::PersistDecisionFingerprintDelta(WorldBotState& state, Player* bot, uint32 repeatDelta, uint32 failureDelta) const
+{
+    if (!bot || !state.DecisionFingerprintInitialized || (!repeatDelta && !failureDelta))
+        return;
+
+    std::ostringstream metadata;
+    metadata << "{\"quest_phase\":\"" << JsonEscape(state.QuestWork.Phase)
+             << "\",\"objective_type\":\"" << JsonEscape(state.QuestWork.ObjectiveType)
+             << "\",\"last_no_progress_reason\":\"" << JsonEscape(state.LastNoProgressReason)
+             << "\",\"last_no_quest_reason\":\"" << JsonEscape(state.LastNoQuestReason)
+             << "\",\"recommended_balance_mode\":\"" << JsonEscape(state.LastRecommendedBalanceMode)
+             << "\",\"repeat_count\":" << state.LastDecisionFingerprintRepeatCount
+             << ",\"failure_count\":" << state.LastDecisionFingerprintFailureCount
+             << ",\"consecutive_same_decision_count\":" << state.ConsecutiveSameDecisionCount
+             << ",\"idle_decision_repeat_count\":" << state.IdleDecisionRepeatCount
+             << ",\"target_churn_count\":" << state.TargetChurnCount
+             << ",\"loop_guardrail_count\":" << state.LoopGuardrailCount
+             << ",\"last_loop_guardrail_action\":\"" << JsonEscape(state.LastLoopGuardrailAction)
+             << "\",\"last_loop_guardrail_reason\":\"" << JsonEscape(state.LastLoopGuardrailReason)
+             << "\",\"last_recovery_mode\":\"" << JsonEscape(state.LastRecoveryMode)
+             << "\",\"last_recovery_result\":\"" << JsonEscape(state.LastRecoveryResult) << "\""
+             << ",\"fingerprint_source\":\"decision_context_v1\"}";
+
+    std::string escapedSituation = state.LastDecisionSituation.empty() ? "idle" : state.LastDecisionSituation;
+    std::string escapedAction = state.LastDecisionAction.empty() ? "wait" : state.LastDecisionAction;
+    std::string escapedActivity = state.LastDecisionActivity.empty() ? "experiment_exploration" : state.LastDecisionActivity;
+    std::string result = state.LastDecisionResult.empty() ? "ok" : state.LastDecisionResult;
+    std::string metadataJson = metadata.str();
+    CharacterDatabase.EscapeString(escapedSituation);
+    CharacterDatabase.EscapeString(escapedAction);
+    CharacterDatabase.EscapeString(escapedActivity);
+    CharacterDatabase.EscapeString(result);
+    CharacterDatabase.EscapeString(metadataJson);
+
+    uint32 const questId = state.LastDecisionQuestId ? state.LastDecisionQuestId : state.QuestWork.ActiveQuestId;
+    uint32 const clusterId = state.ActiveQuestClusterId;
+    CharacterDatabase.DirectPExecute(
+        "INSERT INTO bot_memory_decision_fingerprints "
+        "(bot_guid, fingerprint_hash, situation_type, action, activity, quest_id, cluster_id, map_id, zone_id, area_id, repeat_count, failure_count, last_result, first_seen_at, last_seen_at, metadata_json) "
+        "VALUES (%u, %u, '%s', '%s', '%s', %u, %u, %u, %u, %u, %u, %u, '%s', NOW(), NOW(), '%s') "
+        "ON DUPLICATE KEY UPDATE repeat_count = repeat_count + VALUES(repeat_count), failure_count = failure_count + VALUES(failure_count), last_result = VALUES(last_result), last_seen_at = NOW(), metadata_json = VALUES(metadata_json)",
+        bot->GetGUID().GetCounter(), state.LastDecisionFingerprintHash, escapedSituation.c_str(), escapedAction.c_str(), escapedActivity.c_str(),
+        questId, clusterId, bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(), repeatDelta, failureDelta, result.c_str(), metadataJson.c_str());
+    state.LastDecisionFingerprintPersistedRepeatCount = state.LastDecisionFingerprintRepeatCount;
+    state.LastDecisionFingerprintPersistedFailureCount = state.LastDecisionFingerprintFailureCount;
+    state.LastDecisionFingerprintPersistMs = NowMs();
+}
+
+void BotWorldPopulationMgr::FlushDecisionFingerprintMemory(WorldBotState& state, Player* bot) const
+{
+    if (!bot || !state.DecisionFingerprintInitialized)
+        return;
+
+    // A reset can intentionally discard a stream, but a normal stop must
+    // never lose its in-memory tail. Guard subtraction in case an older
+    // caller left a stale baseline behind.
+    uint32 const repeatDelta = state.LastDecisionFingerprintRepeatCount >= state.LastDecisionFingerprintPersistedRepeatCount
+        ? state.LastDecisionFingerprintRepeatCount - state.LastDecisionFingerprintPersistedRepeatCount : 0;
+    uint32 const failureDelta = state.LastDecisionFingerprintFailureCount >= state.LastDecisionFingerprintPersistedFailureCount
+        ? state.LastDecisionFingerprintFailureCount - state.LastDecisionFingerprintPersistedFailureCount : 0;
+    PersistDecisionFingerprintDelta(state, bot, repeatDelta, failureDelta);
+}
+
+void BotWorldPopulationMgr::FlushPendingDecisionFingerprintMemory()
+{
+    for (WorldBotState& state : Party().Bots)
+        FlushDecisionFingerprintMemory(state, GetBot(state));
+}
+
 void BotWorldPopulationMgr::RecordDecisionFingerprintMemory(WorldBotState& state, Player* bot, char const* situation, char const* action, BotActivityScore const& chosenActivity, bool failure) const
 {
     if (!bot)
@@ -34835,7 +34925,10 @@ void BotWorldPopulationMgr::RecordDecisionFingerprintMemory(WorldBotState& state
     uint32 fingerprintHash = FeatureSchemaHash(fingerprint.str());
     bool const fingerprintChanged = !state.DecisionFingerprintInitialized
         || state.LastDecisionFingerprintHash != fingerprintHash;
-    bool const failureEdge = failure && (fingerprintChanged || state.LastDecisionFingerprintFailureCount == 0);
+    // Track the immediately preceding result, rather than the cumulative
+    // failure counter, so every success->failure transition is persisted even
+    // after this fingerprint has already accumulated older failures.
+    bool const failureEdge = failure && (fingerprintChanged || !state.LastDecisionFingerprintFailure);
     if (fingerprintChanged)
     {
         state.LastDecisionFingerprintHash = fingerprintHash;
@@ -34857,6 +34950,7 @@ void BotWorldPopulationMgr::RecordDecisionFingerprintMemory(WorldBotState& state
     if (failure)
         ++state.LastDecisionFingerprintFailureCount;
     state.DecisionFingerprintInitialized = true;
+    state.LastDecisionFingerprintFailure = failure;
 
     uint64 const nowMs = NowMs();
     bool const heartbeatDue = !state.LastDecisionFingerprintPersistMs
@@ -34864,53 +34958,20 @@ void BotWorldPopulationMgr::RecordDecisionFingerprintMemory(WorldBotState& state
     if (!fingerprintChanged && !failureEdge && !heartbeatDue)
         return;
 
-    uint32 const repeatDelta = state.LastDecisionFingerprintRepeatCount - state.LastDecisionFingerprintPersistedRepeatCount;
-    uint32 const failureDelta = state.LastDecisionFingerprintFailureCount - state.LastDecisionFingerprintPersistedFailureCount;
+    uint32 const repeatDelta = state.LastDecisionFingerprintRepeatCount >= state.LastDecisionFingerprintPersistedRepeatCount
+        ? state.LastDecisionFingerprintRepeatCount - state.LastDecisionFingerprintPersistedRepeatCount : 0;
+    uint32 const failureDelta = state.LastDecisionFingerprintFailureCount >= state.LastDecisionFingerprintPersistedFailureCount
+        ? state.LastDecisionFingerprintFailureCount - state.LastDecisionFingerprintPersistedFailureCount : 0;
     if (!repeatDelta && !failureDelta)
     {
         state.LastDecisionFingerprintPersistMs = nowMs;
         return;
     }
 
-    std::ostringstream metadata;
-    metadata << "{\"quest_phase\":\"" << JsonEscape(state.QuestWork.Phase)
-             << "\",\"objective_type\":\"" << JsonEscape(state.QuestWork.ObjectiveType)
-             << "\",\"last_no_progress_reason\":\"" << JsonEscape(state.LastNoProgressReason)
-             << "\",\"last_no_quest_reason\":\"" << JsonEscape(state.LastNoQuestReason)
-             << "\",\"recommended_balance_mode\":\"" << JsonEscape(state.LastRecommendedBalanceMode)
-             << "\",\"repeat_count\":" << state.LastDecisionFingerprintRepeatCount
-             << ",\"failure_count\":" << state.LastDecisionFingerprintFailureCount
-             << ",\"consecutive_same_decision_count\":" << state.ConsecutiveSameDecisionCount
-             << ",\"idle_decision_repeat_count\":" << state.IdleDecisionRepeatCount
-             << ",\"target_churn_count\":" << state.TargetChurnCount
-             << ",\"loop_guardrail_count\":" << state.LoopGuardrailCount
-             << ",\"last_loop_guardrail_action\":\"" << JsonEscape(state.LastLoopGuardrailAction)
-             << "\",\"last_loop_guardrail_reason\":\"" << JsonEscape(state.LastLoopGuardrailReason)
-             << "\",\"last_recovery_mode\":\"" << JsonEscape(state.LastRecoveryMode)
-             << "\",\"last_recovery_result\":\"" << JsonEscape(state.LastRecoveryResult) << "\""
-             << ",\"fingerprint_source\":\"decision_context_v1\"}";
-
-    std::string escapedSituation = situationText;
-    std::string escapedAction = actionText;
-    std::string escapedActivity = activityText;
-    std::string result = failure ? "failed" : "ok";
-    std::string metadataJson = metadata.str();
-    CharacterDatabase.EscapeString(escapedSituation);
-    CharacterDatabase.EscapeString(escapedAction);
-    CharacterDatabase.EscapeString(escapedActivity);
-    CharacterDatabase.EscapeString(result);
-    CharacterDatabase.EscapeString(metadataJson);
-
-    CharacterDatabase.DirectPExecute(
-        "INSERT INTO bot_memory_decision_fingerprints "
-        "(bot_guid, fingerprint_hash, situation_type, action, activity, quest_id, cluster_id, map_id, zone_id, area_id, repeat_count, failure_count, last_result, first_seen_at, last_seen_at, metadata_json) "
-        "VALUES (%u, %u, '%s', '%s', '%s', %u, %u, %u, %u, %u, %u, %u, '%s', NOW(), NOW(), '%s') "
-        "ON DUPLICATE KEY UPDATE repeat_count = repeat_count + VALUES(repeat_count), failure_count = failure_count + VALUES(failure_count), last_result = VALUES(last_result), last_seen_at = NOW(), metadata_json = VALUES(metadata_json)",
-        bot->GetGUID().GetCounter(), fingerprintHash, escapedSituation.c_str(), escapedAction.c_str(), escapedActivity.c_str(),
-        questId, clusterId, bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(), repeatDelta, failureDelta, result.c_str(), metadataJson.c_str());
-    state.LastDecisionFingerprintPersistedRepeatCount = state.LastDecisionFingerprintRepeatCount;
-    state.LastDecisionFingerprintPersistedFailureCount = state.LastDecisionFingerprintFailureCount;
-    state.LastDecisionFingerprintPersistMs = nowMs;
+    // The helper uses the same current in-memory counters and updates the
+    // persisted baseline only after the delta upsert succeeds.
+    state.LastDecisionResult = failure ? "failed" : "ok";
+    PersistDecisionFingerprintDelta(state, bot, repeatDelta, failureDelta);
 }
 
 void BotWorldPopulationMgr::RecordDecisionTrace(WorldBotState& state, char const* situation, char const* action, Unit const* target, uint32 questId, char const* result, char const* reasonCode)

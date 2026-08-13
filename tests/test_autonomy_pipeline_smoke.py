@@ -3024,6 +3024,7 @@ def test_extended_bot_memory_schema_and_decision_fingerprint_surface():
     mgr = read(BOT_MGR)
     record_decision = function_body(mgr, "void BotWorldPopulationMgr::RecordDecision")
     fingerprint = function_body(mgr, "void BotWorldPopulationMgr::RecordDecisionFingerprintMemory")
+    fingerprint_persist = function_body(mgr, "void BotWorldPopulationMgr::PersistDecisionFingerprintDelta")
     record_quest = function_body(mgr, "void BotWorldPopulationMgr::RecordQuestEvent")
     objective_cluster = function_body(mgr, "void BotWorldPopulationMgr::RecordObjectiveClusterMemory")
     remember_poi = function_body(mgr, "void BotWorldPopulationMgr::RememberPoi")
@@ -3053,12 +3054,15 @@ def test_extended_bot_memory_schema_and_decision_fingerprint_surface():
 
     assert "RecordDecisionFingerprintMemory" in mgr_header
     assert "RecordDecisionFingerprintMemory(state, bot, situation, action, chosenActivity, failure);" in record_decision
-    assert "INSERT INTO bot_memory_decision_fingerprints" in fingerprint
-    assert "ON DUPLICATE KEY UPDATE repeat_count = repeat_count + 1" in fingerprint
+    assert "INSERT INTO bot_memory_decision_fingerprints" in fingerprint_persist
+    assert "ON DUPLICATE KEY UPDATE repeat_count = repeat_count + VALUES(repeat_count)" in fingerprint_persist
     assert "FeatureSchemaHash(fingerprint.str())" in fingerprint
     assert "LastDecisionFingerprintRepeatCount" in mgr_header
+    assert "LastDecisionFingerprintFailure = false" in mgr
+    assert "state.LastDecisionFingerprintPersistedRepeatCount = 0" in mgr
+    assert "FlushPendingDecisionFingerprintMemory();" in mgr
     assert "SELECT repeat_count, failure_count FROM bot_memory_decision_fingerprints" in fingerprint
-    assert "fingerprint_source" in fingerprint
+    assert "fingerprint_source" in fingerprint_persist
     assert "RecordObjectiveClusterMemory(state, bot, eventType, questId, result, valueInt, contextJson);" in record_quest
     assert "INSERT INTO bot_memory_objective_clusters" in objective_cluster
     assert "DATE_ADD(NOW(), INTERVAL 2 MINUTE)" in objective_cluster
