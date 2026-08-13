@@ -55,6 +55,102 @@ def _native_group_identity_gate(*, expected_guids, group_members, frozen_subgrou
     return True
 
 
+def _native_recovery_signal_edges(samples):
+    """Model the observable native recovery edges across refresh samples."""
+    signal = {
+        "death": 0,
+        "corpse": 0,
+        "release": 0,
+        "runback": 0,
+        "reentry": 0,
+        "resurrection": 0,
+    }
+    previous = None
+    evidence_sequence = 0
+    for current in samples:
+        if not current["alive"] and not signal["death"]:
+            evidence_sequence += 1
+            signal["death"] = evidence_sequence
+        if signal["death"] and current["corpse"] and not signal["corpse"]:
+            evidence_sequence += 1
+            signal["corpse"] = evidence_sequence
+        if signal["corpse"] and current["released"] and not signal["release"]:
+            evidence_sequence += 1
+            signal["release"] = evidence_sequence
+        released_outside = (
+            previous
+            and previous["released"]
+            and current["released"]
+            and current["outside"]
+            and (
+                (not previous["outside"] and current["native_release_requested"])
+                or previous["outside"] != current["outside"]
+            )
+        )
+        if signal["release"] and released_outside and not signal["runback"]:
+            evidence_sequence += 1
+            signal["runback"] = evidence_sequence
+        if (
+            signal["runback"]
+            and previous
+            and previous["released"]
+            and previous["outside"]
+            and not current["outside"]
+            and not signal["reentry"]
+        ):
+            evidence_sequence += 1
+            signal["reentry"] = evidence_sequence
+        if (
+            signal["reentry"]
+            and previous
+            and not previous["alive"]
+            and current["alive"]
+            and not signal["resurrection"]
+        ):
+            evidence_sequence += 1
+            signal["resurrection"] = evidence_sequence
+        previous = current
+    return signal
+
+
+def test_native_recovery_refresh_keeps_worldport_intermediate_edges_observable():
+    samples = [
+        {"alive": False, "corpse": True, "released": False, "outside": False,
+         "native_release_requested": False},
+        {"alive": False, "corpse": True, "released": True, "outside": False,
+         "native_release_requested": True},
+        {"alive": False, "corpse": True, "released": True, "outside": True,
+         "native_release_requested": True},
+        {"alive": False, "corpse": True, "released": True, "outside": True,
+         "native_release_requested": True},
+        {"alive": True, "corpse": False, "released": False, "outside": False,
+         "native_release_requested": True},
+    ]
+
+    signal = _native_recovery_signal_edges(samples)
+    assert signal["death"] < signal["corpse"] < signal["release"] < signal["runback"]
+    assert signal["runback"] < signal["reentry"] < signal["resurrection"]
+
+    admitted_group = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::EnsureValidationCohortGroup"):
+        IMPL.index("bool BotWorldPopulationMgr::ResolveSpawnPlacement")
+    ]
+    member_sample = admitted_group[:admitted_group.index("if (members.empty())")]
+    assert "Cohort().ValidationRaidAdmissionComplete" in member_sample
+    assert "IsNativeReleasedGhostWorldport(state, bot)" in member_sample
+    assert "IsNativeBlackwingDescentRunbackWorldport(state, bot)" in member_sample
+    assert "Include only the two independently-authorized native worldports" in member_sample
+
+    runtime_refresh = admitted_group[
+        admitted_group.index("currentSignal.Initialized"):
+        admitted_group.index("auto signalComplete")
+    ]
+    assert "HasNativeRaidCorpseAuthority(*botState, bot)" in runtime_refresh
+    assert "nativeReleaseMovedOutside" in runtime_refresh
+    assert "botState->NativeReleaseRequested" in runtime_refresh
+    assert "bot->GetCorpse() != nullptr" not in runtime_refresh
+
+
 def test_bwd_entry_to_magmaw_uses_frozen_junction_below_native_path_limit():
     config = json.loads(
         (ROOT / "experiments/configs/validation_scenarios_cata_001.json").read_text()

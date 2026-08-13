@@ -6761,9 +6761,26 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
     members.reserve(Party().Bots.size());
     for (WorldBotState const& state : Party().Bots)
     {
-        if (Player* bot = GetLoadedBot(state))
-            if (bot->IsInWorld())
-                members.push_back(bot);
+        Player* bot = GetLoadedBot(state);
+        if (!bot)
+            continue;
+
+        if (bot->IsInWorld())
+        {
+            members.push_back(bot);
+            continue;
+        }
+
+        // An admitted validation raid must keep observing the exact native
+        // recovery transition while a corpse-bound worldport is in flight.
+        // Omitting that member here freezes RaidRuntime at the pre-release
+        // snapshot; the subsequent re-entry cannot prove release/runback.
+        // Include only the two independently-authorized native worldports.
+        if (Cohort().ValidationRaidAdmissionComplete
+            && Cohort().Config.ValidationRouteEnable
+            && (IsNativeReleasedGhostWorldport(state, bot)
+                || IsNativeBlackwingDescentRunbackWorldport(state, bot)))
+            members.push_back(bot);
     }
 
     if (members.empty())
@@ -7110,7 +7127,12 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
             currentSignal = previousSignal->second;
         currentSignal.Initialized = true;
         currentSignal.Alive = bot->IsAlive();
-        currentSignal.HasCorpse = bot->GetCorpse() != nullptr;
+        // Player::GetCorpse() follows the player's current map and therefore
+        // becomes null as soon as a native release moves the ghost to the
+        // outdoor graveyard.  Use the same immutable original-instance corpse
+        // authority as the recovery action instead of losing the corpse edge
+        // in the runtime evidence graph.
+        currentSignal.HasCorpse = botState && HasNativeRaidCorpseAuthority(*botState, bot);
         currentSignal.Released = bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST);
         currentSignal.MapId = bot->GetMapId();
         currentSignal.InstanceId = bot->GetInstanceId();
@@ -7266,6 +7288,13 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
             auto const previousSignal = previousNativeSignals.find(guid);
             RaidNativeSignalState const* prior = previousSignal == previousNativeSignals.end()
                 ? nullptr : &previousSignal->second;
+            WorldBotState const* botState = nullptr;
+            for (WorldBotState const& candidate : Party().Bots)
+                if (candidate.Guid.GetCounter() == guid)
+                {
+                    botState = &candidate;
+                    break;
+                }
             if (signal.WipeGeneration != raid.WipeGeneration)
                 continue;
             if (!signal.DeathSequence && !signal.Alive)
@@ -7274,11 +7303,16 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
                 signal.CorpseSequence = ++raid.EvidenceSequence;
             if (!signal.ReleaseSequence && signal.CorpseSequence && signal.Released)
                 signal.ReleaseSequence = ++raid.EvidenceSequence;
+            bool const nativeReleaseMovedOutside = prior && prior->Released && signal.Released
+                && !prior->OutsideOriginalInstance && signal.OutsideOriginalInstance
+                && botState && botState->NativeReleaseRequested;
             bool const movedOutsideAsGhost = prior && prior->Released && signal.Released
-                && prior->OutsideOriginalInstance && signal.OutsideOriginalInstance
-                && (prior->MapId != signal.MapId || prior->InstanceId != signal.InstanceId
-                    || Distance2d(prior->X, prior->Y, signal.X, signal.Y) > 2.0f
-                    || std::fabs(prior->Z - signal.Z) > 2.0f);
+                && signal.OutsideOriginalInstance
+                && (nativeReleaseMovedOutside
+                    || (prior->OutsideOriginalInstance
+                        && (prior->MapId != signal.MapId || prior->InstanceId != signal.InstanceId
+                            || Distance2d(prior->X, prior->Y, signal.X, signal.Y) > 2.0f
+                            || std::fabs(prior->Z - signal.Z) > 2.0f)));
             if (!signal.RunbackSequence && signal.ReleaseSequence && movedOutsideAsGhost)
                 signal.RunbackSequence = ++raid.EvidenceSequence;
             bool const enteredOriginalInstance = prior && prior->Released && prior->OutsideOriginalInstance
