@@ -6,6 +6,7 @@
 #include "Bots/BotMgr.h"
 #include "Bots/BotProgressionGoalPolicy.h"
 #include "Bots/BotRaidAreaAuthority.h"
+#include "Bots/BotRaidDrudgeGeometryState.h"
 #include "Bots/BotRaidDrudgeThreatSeedState.h"
 #include "CellImpl.h"
 #include "CharmInfo.h"
@@ -4207,7 +4208,9 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
         for (WorldBotState& botState : Party().Bots)
         {
             botState.LastValidationRouteDrudgeChargeGenerationHandled = 0;
+            botState.LastValidationRouteDrudgeChargeGenerationObserved = 0;
             botState.ValidationRouteDrudgeAnchorValid = false;
+            botState.ValidationRouteDrudgeAnchorPathProven = false;
             botState.ValidationRouteDrudgeAnchorAttemptId = 0;
             botState.ValidationRouteDrudgeAnchorWipeGeneration = 0;
             botState.ValidationRouteDrudgeAnchorRouteGeneration = 0;
@@ -4376,6 +4379,7 @@ void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
         state.LastDecisionFingerprintPersistedRepeatCount = 0;
         state.LastDecisionFingerprintPersistedFailureCount = 0;
         state.ValidationRouteDrudgeAnchorValid = false;
+        state.ValidationRouteDrudgeAnchorPathProven = false;
         state.ValidationRouteDrudgeAnchorAttemptId = 0;
         state.ValidationRouteDrudgeAnchorWipeGeneration = 0;
         state.ValidationRouteDrudgeAnchorRouteGeneration = 0;
@@ -4390,6 +4394,7 @@ void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
         state.LastPersistedDiagnosticDecisionKey.clear();
         state.LastPersistedDiagnosticDecisionMs = 0;
         state.SuppressedDiagnosticDecisionCount = 0;
+        state.LastValidationRouteDrudgeChargeGenerationObserved = 0;
         state.PendingTraceSuppressedRepeatableEventCount = 0;
         state.LastLoopGuardrailReason.clear();
         state.LastNoProgressReason = reason ? reason : "validation_route_reset";
@@ -7838,7 +7843,9 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
                 for (WorldBotState& botState : Party().Bots)
                 {
                     botState.LastValidationRouteDrudgeChargeGenerationHandled = 0;
+                    botState.LastValidationRouteDrudgeChargeGenerationObserved = 0;
                     botState.ValidationRouteDrudgeAnchorValid = false;
+                    botState.ValidationRouteDrudgeAnchorPathProven = false;
                 }
             }
             // Latch recovery authority at the native all-dead edge.  The
@@ -18739,8 +18746,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         bool const sourceCombatStarted = sources[0]->IsInCombat()
             || sources[1]->IsInCombat() || sources[0]->GetVictim()
             || sources[1]->GetVictim();
-        ValidationRouteMemberAnchor const* const movementAnchor = assignedTank
-            && sourceCombatStarted ? declaredCombatTankAnchorFor(oneBasedSlot) : prepullAnchor;
+        auto combatTankStagingActive = [&]()
+        {
+            return sourceCombatStarted
+                || (Party().ValidationRouteDrudgePrepullStaged
+                    && Party().ValidationRouteDrudgePrepullAttemptId == Cohort().AttemptId
+                    && Party().ValidationRouteDrudgePrepullWipeGeneration
+                        == Cohort().Raid.WipeGeneration
+                    && Party().ValidationRouteDrudgePrepullRouteGeneration
+                        == Party().ValidationRouteGeneration);
+        };
 
         Position const& homeA = sources[0]->GetHomePosition();
         Position const& homeB = sources[1]->GetHomePosition();
@@ -18763,10 +18778,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         float const laneSeparation = Cohort().Config.ValidationRouteSplitMinimumSeparationYards
             + Cohort().Config.ValidationRouteSplitNavigationMarginYards;
         float const laneSign = laneIndex == 0 ? -1.0f : 1.0f;
-        float const anchorX = movementAnchor->X;
-        float const anchorY = movementAnchor->Y;
-        float const anchorZ = movementAnchor->Z;
-
         // The route manifest binds source index to lane.  Never infer this
         // from a moving creature position: a delivered Rush can move a source
         // across the midpoint and poison both ownership and target validation.
@@ -18867,7 +18878,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 Cohort().Config.ValidationRouteSplitLaneTankSlots.begin(),
                 Cohort().Config.ValidationRouteSplitLaneTankSlots.end(), slot)
                 != Cohort().Config.ValidationRouteSplitLaneTankSlots.end();
-            ValidationRouteMemberAnchor const* anchor = tankSlot && sourceCombatStarted
+            ValidationRouteMemberAnchor const* anchor = tankSlot && combatTankStagingActive()
                 ? declaredCombatTankAnchorFor(slot) : declaredAnchorFor(slot);
             if (anchor)
                 return { anchor->X, anchor->Y };
@@ -19044,48 +19055,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         auto selectPathableDrudgeAnchor = [&](bool tank) -> bool
         {
-            auto cacheUsable = [&]()
-            {
-                if (!anchorCacheMatchesGeneration())
-                    return false;
-                auto const candidates = anchorCandidatesFor(oneBasedSlot);
-                if (state.ValidationRouteDrudgeAnchorCandidateIndex >= candidates.size()
-                    || Distance2d(state.ValidationRouteDrudgeAnchorX,
-                        state.ValidationRouteDrudgeAnchorY,
-                        candidates[state.ValidationRouteDrudgeAnchorCandidateIndex].first,
-                        candidates[state.ValidationRouteDrudgeAnchorCandidateIndex].second)
-                        > 0.01f)
-                    return false;
-                float const projection =
-                    (state.ValidationRouteDrudgeAnchorX - midpointX) * axisX
-                    + (state.ValidationRouteDrudgeAnchorY - midpointY) * axisY;
-                if (laneSign * projection < laneSeparation * 0.25f)
-                    return false;
-                if (tank)
-                    return true;
-                return Distance2d(state.ValidationRouteDrudgeAnchorX,
-                        state.ValidationRouteDrudgeAnchorY, sources[0]->GetPositionX(),
-                        sources[0]->GetPositionY())
-                        >= Cohort().Config.ValidationRouteMinimumDistanceYards
-                    && Distance2d(state.ValidationRouteDrudgeAnchorX,
-                        state.ValidationRouteDrudgeAnchorY, sources[1]->GetPositionX(),
-                        sources[1]->GetPositionY())
-                        >= Cohort().Config.ValidationRouteMinimumDistanceYards;
-            };
-            if (cacheUsable())
-                return true;
-
-            state.ValidationRouteDrudgeAnchorValid = false;
-            uint64 const nowMs = NowMs();
-            if (nowMs < state.ValidationRouteDrudgeAnchorSearchCooldownUntilMs)
-                return false;
-            // A failed native path search is an infrastructure/pathfinding
-            // observation, not permission to fan out path generation on each
-            // bot tick.  Retry at a bounded heartbeat while preserving the
-            // exact edge/heartbeat diagnostic count.
-            state.ValidationRouteDrudgeAnchorSearchCooldownUntilMs = nowMs
-                + RepeatableDiagnosticEventHeartbeatMs;
-
             std::vector<std::pair<float, float>> const candidates =
                 anchorCandidatesFor(oneBasedSlot);
 
@@ -19128,9 +19097,109 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 return true;
             };
 
+            auto cacheUsable = [&]()
+            {
+                if (!anchorCacheMatchesGeneration())
+                    return false;
+                if (state.ValidationRouteDrudgeAnchorCandidateIndex >= candidates.size()
+                    || Distance2d(state.ValidationRouteDrudgeAnchorX,
+                        state.ValidationRouteDrudgeAnchorY,
+                        candidates[state.ValidationRouteDrudgeAnchorCandidateIndex].first,
+                        candidates[state.ValidationRouteDrudgeAnchorCandidateIndex].second)
+                        > 0.01f)
+                    return false;
+                float const projection =
+                    (state.ValidationRouteDrudgeAnchorX - midpointX) * axisX
+                    + (state.ValidationRouteDrudgeAnchorY - midpointY) * axisY;
+                if (laneSign * projection < laneSeparation * 0.25f)
+                    return false;
+                if (tank)
+                    return true;
+                return Distance2d(state.ValidationRouteDrudgeAnchorX,
+                        state.ValidationRouteDrudgeAnchorY, sources[0]->GetPositionX(),
+                        sources[0]->GetPositionY())
+                        >= Cohort().Config.ValidationRouteMinimumDistanceYards
+                    && Distance2d(state.ValidationRouteDrudgeAnchorX,
+                        state.ValidationRouteDrudgeAnchorY, sources[1]->GetPositionX(),
+                        sources[1]->GetPositionY())
+                        >= Cohort().Config.ValidationRouteMinimumDistanceYards;
+            };
+            if (cacheUsable())
+                return true;
+
+            bool const priorScopeMatches = state.ValidationRouteDrudgeAnchorPathProven
+                && state.ValidationRouteDrudgeAnchorAttemptId == Cohort().AttemptId
+                && state.ValidationRouteDrudgeAnchorWipeGeneration == Cohort().Raid.WipeGeneration
+                && state.ValidationRouteDrudgeAnchorRouteGeneration
+                    == Party().ValidationRouteGeneration;
+            bool const priorCandidateMatches = priorScopeMatches
+                && state.ValidationRouteDrudgeAnchorCandidateIndex < candidates.size()
+                && Distance2d(state.ValidationRouteDrudgeAnchorX,
+                    state.ValidationRouteDrudgeAnchorY,
+                    candidates[state.ValidationRouteDrudgeAnchorCandidateIndex].first,
+                    candidates[state.ValidationRouteDrudgeAnchorCandidateIndex].second) <= 0.01f;
+            float const priorProjection = (state.ValidationRouteDrudgeAnchorX - midpointX) * axisX
+                + (state.ValidationRouteDrudgeAnchorY - midpointY) * axisY;
+            bool const priorLaneSafe = priorCandidateMatches
+                && laneSign * priorProjection >= laneSeparation * 0.25f;
+            bool const priorSourceSafe = tank || (priorCandidateMatches
+                && Distance2d(state.ValidationRouteDrudgeAnchorX,
+                    state.ValidationRouteDrudgeAnchorY, sources[0]->GetPositionX(),
+                    sources[0]->GetPositionY())
+                    >= Cohort().Config.ValidationRouteMinimumDistanceYards
+                && Distance2d(state.ValidationRouteDrudgeAnchorX,
+                    state.ValidationRouteDrudgeAnchorY, sources[1]->GetPositionX(),
+                    sources[1]->GetPositionY())
+                    >= Cohort().Config.ValidationRouteMinimumDistanceYards);
+            bool const memberAtPriorAnchor = priorCandidateMatches
+                && bot->GetExactDist(state.ValidationRouteDrudgeAnchorX,
+                    state.ValidationRouteDrudgeAnchorY,
+                    state.ValidationRouteDrudgeAnchorZ)
+                    <= Cohort().Config.ValidationRouteSplitArrivalToleranceYards;
+            BotRaidDrudgeGeometry::Scope const proofScope{
+                Cohort().AttemptId,
+                Cohort().Raid.WipeGeneration,
+                Party().ValidationRouteGeneration
+            };
+            BotRaidDrudgeGeometry::State proofState;
+            proofState.Identity = proofScope;
+            proofState.PriorPathProofAvailable =
+                state.ValidationRouteDrudgeAnchorPathProven;
+            BotRaidDrudgeGeometry::Input proofInput;
+            proofInput.Identity = proofScope;
+            proofInput.EvaluatePriorPathProof = true;
+            proofInput.PriorProofScopeMatches = priorScopeMatches;
+            proofInput.PriorProofCandidateMatches = priorCandidateMatches;
+            proofInput.MemberAtProvenAnchor = memberAtPriorAnchor;
+            proofInput.DynamicLaneSafe = priorLaneSafe;
+            proofInput.DynamicSourceSafe = priorSourceSafe;
+            proofInput.DynamicSpacingSafe = priorCandidateMatches
+                && candidateSpacingSafe(state.ValidationRouteDrudgeAnchorX,
+                    state.ValidationRouteDrudgeAnchorY);
+            BotRaidDrudgeGeometry::Result const proofTransition =
+                BotRaidDrudgeGeometry::Advance(proofState, proofInput);
+            state.ValidationRouteDrudgeAnchorPathProven =
+                proofTransition.Next.PriorPathProofAvailable;
+            if (proofTransition.ReactivatePriorPathProof)
+            {
+                state.ValidationRouteDrudgeAnchorValid = true;
+                return true;
+            }
+
+            state.ValidationRouteDrudgeAnchorValid = false;
+            uint64 const nowMs = NowMs();
+            if (nowMs < state.ValidationRouteDrudgeAnchorSearchCooldownUntilMs)
+                return false;
+            // A failed native path search is an infrastructure/pathfinding
+            // observation, not permission to fan out path generation on each
+            // bot tick.  Retry at a bounded heartbeat while preserving the
+            // exact edge/heartbeat diagnostic count.
+            state.ValidationRouteDrudgeAnchorSearchCooldownUntilMs = nowMs
+                + RepeatableDiagnosticEventHeartbeatMs;
+
             for (size_t candidateIndex = 0; candidateIndex < candidates.size(); ++candidateIndex)
             {
-                ValidationRouteMemberAnchor const* candidateAnchor = tank && sourceCombatStarted
+                ValidationRouteMemberAnchor const* candidateAnchor = tank && combatTankStagingActive()
                     ? declaredCombatTankAnchorFor(oneBasedSlot) : declaredAnchorFor(oneBasedSlot);
                 if (!candidateAnchor)
                     continue;
@@ -19152,6 +19221,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                         candidates[candidateIndex].second, candidateZ))
                     continue;
                 state.ValidationRouteDrudgeAnchorValid = true;
+                state.ValidationRouteDrudgeAnchorPathProven = true;
                 state.ValidationRouteDrudgeAnchorAttemptId = Cohort().AttemptId;
                 state.ValidationRouteDrudgeAnchorWipeGeneration = Cohort().Raid.WipeGeneration;
                 state.ValidationRouteDrudgeAnchorRouteGeneration = Party().ValidationRouteGeneration;
@@ -19443,8 +19513,31 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         bool const nativeChargePending = chargeObservation
             != Party().ValidationRouteDrudgeChargeObservations.end()
             && chargeObservation->Landed;
-        if (chargeObservation != Party().ValidationRouteDrudgeChargeObservations.end()
-            && state.LastValidationRouteDrudgeChargeGenerationHandled != chargeObservation->Sequence)
+        BotRaidDrudgeGeometry::Scope const geometryScope{
+            Cohort().AttemptId,
+            Cohort().Raid.WipeGeneration,
+            Party().ValidationRouteGeneration
+        };
+        BotRaidDrudgeGeometry::State geometryState;
+        geometryState.Identity = geometryScope;
+        geometryState.LastChargeSequenceObserved =
+            state.LastValidationRouteDrudgeChargeGenerationObserved;
+        geometryState.PriorPathProofAvailable =
+            state.ValidationRouteDrudgeAnchorPathProven;
+        BotRaidDrudgeGeometry::Input rushGeometryInput;
+        rushGeometryInput.Identity = geometryScope;
+        rushGeometryInput.ChargePending = chargeObservation
+            != Party().ValidationRouteDrudgeChargeObservations.end();
+        rushGeometryInput.ChargeSequence = rushGeometryInput.ChargePending
+            ? chargeObservation->Sequence : 0;
+        rushGeometryInput.SourceCombatStarted = sourceCombatStarted;
+        BotRaidDrudgeGeometry::Result const rushGeometry =
+            BotRaidDrudgeGeometry::Advance(geometryState, rushGeometryInput);
+        state.LastValidationRouteDrudgeChargeGenerationObserved =
+            rushGeometry.Next.LastChargeSequenceObserved;
+        state.ValidationRouteDrudgeAnchorPathProven =
+            rushGeometry.Next.PriorPathProofAvailable;
+        if (rushGeometry.InvalidateAnchor)
             state.ValidationRouteDrudgeAnchorValid = false;
         Creature* nativeChargeSource = nativeChargePending
             ? ObjectAccessor::GetCreature(*bot, chargeObservation->SourceGuid) : nullptr;
@@ -19522,6 +19615,36 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             prepullStaged = true;
             record(nullptr, "drudge_prepull_exact_roster_staged");
         }
+
+        auto exactCombatTankAnchorsSafe = [&]()
+        {
+            if (!laneTank || !otherTank)
+                return false;
+            for (Player const* tank : { laneTank, otherTank })
+            {
+                auto tankState = std::find_if(Party().Bots.begin(), Party().Bots.end(),
+                    [tank](WorldBotState const& candidate)
+                    {
+                        return candidate.Guid == tank->GetGUID();
+                    });
+                if (tankState == Party().Bots.end() || !cachedAnchorSafe(*tankState, tank))
+                    return false;
+            }
+            return true;
+        };
+        geometryState.LastChargeSequenceObserved =
+            state.LastValidationRouteDrudgeChargeGenerationObserved;
+        geometryState.PriorPathProofAvailable =
+            state.ValidationRouteDrudgeAnchorPathProven;
+        BotRaidDrudgeGeometry::Input tankStageInput = rushGeometryInput;
+        tankStageInput.ExactPrepullStaged = prepullStaged;
+        tankStageInput.BothCombatTankAnchorsSafe = exactCombatTankAnchorsSafe();
+        BotRaidDrudgeGeometry::Result const tankStage =
+            BotRaidDrudgeGeometry::Advance(geometryState, tankStageInput);
+        state.LastValidationRouteDrudgeChargeGenerationObserved =
+            tankStage.Next.LastChargeSequenceObserved;
+        state.ValidationRouteDrudgeAnchorPathProven =
+            tankStage.Next.PriorPathProofAvailable;
         if (sourceCombatStarted && !prepullStaged)
         {
             holdOffense();
@@ -19530,8 +19653,33 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             state.TargetGuid = laneSource->GetGUID();
             return true;
         }
+        if (prepullStaged && !tankStage.NativeEngagementAllowed)
+        {
+            holdOffense();
+            bool moved = false;
+            bool alreadySafe = assignedTank && cachedAnchorSafe(state, bot);
+            if (assignedTank && !bot->IsFalling() && !alreadySafe
+                && selectPathableDrudgeAnchor(true))
+            {
+                alreadySafe = cachedAnchorSafe(state, bot);
+                if (!alreadySafe)
+                    moved = MoveBotToPoint(state, bot,
+                        state.ValidationRouteDrudgeAnchorX,
+                        state.ValidationRouteDrudgeAnchorY,
+                        state.ValidationRouteDrudgeAnchorZ);
+            }
+            record(laneSource, assignedTank
+                ? (sourceCombatStarted ? "drudge_combat_tank_anchor_recover"
+                    : "drudge_combat_tank_anchor_stage")
+                : "drudge_wait_combat_tank_anchors", sourceSeparation);
+            target = laneSource;
+            state.TargetGuid = laneSource->GetGUID();
+            action = assignedTank && (moved || alreadySafe)
+                ? action : (assignedTank ? "drudge_lane_native_path_rejected" : action);
+            return true;
+        }
 
-        if (assignedTank && prepullStaged
+        if (assignedTank && tankStage.NativeEngagementAllowed
             && laneSource->GetVictim() == bot)
         {
             // Native threat ownership is already the exact frozen lane
@@ -19543,7 +19691,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (ownershipInsert.second)
                 record(laneSource, "drudge_lane_native_ownership", sourceSeparation);
         }
-        if (assignedTank && prepullStaged
+        if (assignedTank && tankStage.NativeEngagementAllowed
             && laneSource->GetVictim() != bot)
         {
             BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, "tank");
@@ -19600,10 +19748,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 // this exact attempt/wipe/route generation.  The native spell
                 // remains untouched; only member movement is recovered.
                 if (selectPathableDrudgeAnchor(assignedTank))
-                    moved = MoveBotToPoint(state, bot,
-                        state.ValidationRouteDrudgeAnchorX,
-                        state.ValidationRouteDrudgeAnchorY,
-                        state.ValidationRouteDrudgeAnchorZ);
+                {
+                    alreadySafe = assignedTank
+                        ? cachedAnchorSafe(state, bot) : groupPositionSafe(bot);
+                    if (!alreadySafe)
+                        moved = MoveBotToPoint(state, bot,
+                            state.ValidationRouteDrudgeAnchorX,
+                            state.ValidationRouteDrudgeAnchorY,
+                            state.ValidationRouteDrudgeAnchorZ);
+                }
             }
             char const* result = nativeChargePending
                 ? (nativeChargeTargetViolation

@@ -1015,12 +1015,20 @@ private:
         uint32 NativeRecoveryHoldWipeGeneration = 0;
         uint64 NativeRecoveryHoldLastEnforcedMs = 0;
         uint64 LastValidationRouteDrudgeChargeGenerationHandled = 0;
+        // Separate the one-shot observation edge from roster-wide completion.
+        // The handled cursor advances only after exact reseparation; using it
+        // for invalidation discarded every successful anchor reproof while a
+        // charge remained pending.
+        uint64 LastValidationRouteDrudgeChargeGenerationObserved = 0;
         // Drudge lane movement must not retry an unreachable derived point on
         // every decision tick.  Once the native path validator finds a
         // collision-safe member anchor, keep that exact fallback for the
         // current attempt/wipe/route generation and reuse it until the
         // geometry is invalidated by a native charge or reset.
         bool ValidationRouteDrudgeAnchorValid = false;
+        // A Rush can invalidate current dynamic geometry without invalidating
+        // the earlier strict native path proof for the identical scoped point.
+        bool ValidationRouteDrudgeAnchorPathProven = false;
         uint64 ValidationRouteDrudgeAnchorAttemptId = 0;
         uint32 ValidationRouteDrudgeAnchorWipeGeneration = 0;
         uint64 ValidationRouteDrudgeAnchorRouteGeneration = 0;

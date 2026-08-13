@@ -75,6 +75,14 @@ Require one exact tuple across config, generated route, runtime status, capture,
   a process-wide selected cohort. Route each callback from actor GUID plus
   map/instance into an explicit or thread-local cohort scope; test with map
   worker threads enabled so cross-shard attribution cannot race.
+- Give one coordinator exclusive ownership of worldserver stdin. It must poll
+  cohort-qualified status/diagnose/trace commands and demultiplex immutable
+  per-cohort streams; six babysitters consume those streams read-only instead
+  of racing unqualified commands on the same console.
+- Freeze process-global adaptive state during diagnostic fanout: disable bot
+  learning, global-memory fallback, and semantic outcome writes unless they
+  are cohort/run keyed. Block rotation/profile reload or rollback while any
+  cohort is active; a pinned hash is audit evidence, not isolation.
 - Share a worldserver only after confirming instance, group, lease, roster, and telemetry isolation under concurrency.
 - Budget CPU, log rate, and disk before launching all shards. A single pathological shard blocks fan-out.
 - Run six boss shards in parallel only after the single Magmaw rehearsal is clean.
