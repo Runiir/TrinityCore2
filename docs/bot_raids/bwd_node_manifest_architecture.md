@@ -35,3 +35,11 @@ isolated script/strategy diagnosis; it never supplies a predecessor kill,
 unlock, boss, or full-clear acceptance fact. Only the canonical parent route
 and later sequential full-instance runs can feed authoritative progression
 gates.
+
+Adding the six shards changes the aggregate validation-scenarios payload, so
+the old DVC pointer and any audit hash for the pre-shard route file must be
+regenerated from this config before live use. A dry-run with the current
+canonical provisioning shape produces 42 aggregate route rows, 28 BWD rows
+across seven BWD scenario IDs, 11 parent rows, and four Magmaw-shard rows.
+The diagnostic rows are DVC-partitionable telemetry inputs, not additional
+authoritative boss or full-clear evidence.
