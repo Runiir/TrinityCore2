@@ -9,11 +9,11 @@
     "locale": "enUS",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
-  "audited_commit": "c1f7fe4663a6780242e1acbbbf77018b655870d1",
+  "audited_commit": "c1f7fe4663e82e5ffbbeacf73bd5ab74f57bd72d",
   "gate_state": "in_progress_exact_c1f7_drudge_geometry_hold_rage_and_hotpath_remediation_pending_final_review_build_and_rerun",
   "foundation": {
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "current_head_sha": "c1f7fe4663a6780242e1acbbbf77018b655870d1",
+    "current_head_sha": "c1f7fe4663e82e5ffbbeacf73bd5ab74f57bd72d",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
     "mandatory_sol_high_rereview": "exact_eac6_rejected_five_high_all_remediated_through_c1f7_final_exact_rereview_pending",

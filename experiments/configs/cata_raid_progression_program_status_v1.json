@@ -17,7 +17,7 @@
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "current_head_sha": "c1f7fe4663a6780242e1acbbbf77018b655870d1",
+    "current_head_sha": "c1f7fe4663e82e5ffbbeacf73bd5ab74f57bd72d",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
