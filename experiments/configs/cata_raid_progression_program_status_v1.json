@@ -17,7 +17,8 @@
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "current_head_sha": "e50e038fc8486681f34f2f1c60104fbb3a3663b2",
+    "reviewed_source_sha": "e50e038fc8486681f34f2f1c60104fbb3a3663b2",
+    "status_checkpoint_identity": "resolve from Git HEAD; status-only descendant of reviewed_source_sha with no source/tool/test/DVC delta",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -36,7 +37,8 @@
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_commit": "e50e038fc8486681f34f2f1c60104fbb3a3663b2",
+    "reviewed_source_commit": "e50e038fc8486681f34f2f1c60104fbb3a3663b2",
+    "exact_build_target": "clean Git HEAD status-only descendant of reviewed_source_commit",
     "current_state": "reviewed_build_authorized_exact_build_pending",
     "current_result": "exact ef04 receipts remain historical only; Sol-high review authorizes an exact policy-v8 build of the e50 source checkpoint for Magmaw preparation",
     "successful_build_without_current_policy_receipt_is_invalid": true,
