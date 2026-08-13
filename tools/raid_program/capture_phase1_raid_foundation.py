@@ -710,7 +710,7 @@ def _validate_drudge_observation_geometry(
         tank_distance = hypot(x - source_x, y - source_y)
         if abs(stored_distance - tank_distance) > tolerance:
             reasons.append(f"drudge_geometry_{prefix}_source_distance_mismatch")
-        if tank_distance < minimum_source_sep:
+        if tank_distance > minimum_source_sep:
             reasons.append(f"drudge_geometry_{prefix}_source_distance_unsafe")
         if ((-1.0 if source_index == 0 else 1.0) * tank_projection
                 < lane_sep * 0.25):
@@ -738,7 +738,7 @@ def _validate_drudge_observation_geometry(
         distance = hypot(x - source_x, y - source_y)
         if abs(stored_distance - distance) > tolerance:
             reasons.append(f"drudge_geometry_{prefix}_source_distance_mismatch")
-        if distance < minimum_source_sep:
+        if distance > minimum_source_sep:
             reasons.append(f"drudge_geometry_{prefix}_source_distance_unsafe")
         if ((-1.0 if source_index == 0 else 1.0) * computed_projection
                 < lane_sep * 0.25):
