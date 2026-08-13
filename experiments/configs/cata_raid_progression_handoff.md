@@ -1,5 +1,15 @@
 # Cataclysm raid progression handoff
 
+## 2026-08-13T08:04:46Z — Native Drudge delivery and independent tactic evidence remediated
+
+Mandatory Sol-high review of exact clean status checkpoint `70c053e22735e8f6951d8883753d516b0aefdbd4` closed forced recovery assistance, controlled-unit readiness, exact Magmaw engagement/wipe binding, tank health synchronization, and canonical status/DVC lineage. It rejected the build gate on three remaining Drudge evidence issues: a prepared Rush could be consumed before delivery, observations lacked attempt/wipe identity, and the canonical capture could pass without reconstructing Rush/reseparation/tactic decisions. No build or service was started.
+
+Exact clean code checkpoint `6c759502542b634f63668abe115631551ef5368d` closes those gaps. Spell preparation freezes native source/target/range/interval selection, but delivery becomes true only after the real `SPELL_EFFECT_CHARGE` hit handler runs. Every observation carries attempt, wipe, and route generations; current strategy consumes only delivered matching-scope observations, same-node wipes clear stale queue state, and bounded queue eviction is a visible acceptance failure. The first Rush no longer self-certifies a 20-second interval.
+
+RaidRuntime retains the exact evidence after leaving the Drudge node: prepared/delivered counts, per-source delivery and valid-interval counts, each delivered observation's ten-player reseparation acknowledgements, both tank taunts, tank health-sync participants, and trained single-target profile participants. Canonical acceptance independently reconstructs rather than trusts those counters. It requires two delivered Rushes from each exact spawn, at least one non-early 20-second interval per source, exact ten-player reseparation, both exact tank taunts, a tank participating in health-sync hold, and all seven tank/DPS slots executing trained single-target profiles. Prepared-only, stale-scope, overflowed, wrong-source/target/range/interval, incomplete-reseparation, missing-taunt/sync/profile evidence fails closed.
+
+The focused runtime/capture/Phase 9 suite passes 116 tests, Python compilation and diff checking pass, and the worktree is clean. The previously pushed `validation_scenarios` object remains remotely retained with its workspace and exact five child cache objects locally evicted. Exact next gate: mandatory independent Sol-high zero-Critical/High review of the clean status descendant covering `70c053e227..HEAD`; only then may one policy-v8 coordinator build run. Live restart remains held pending that receipt, CPU measurement, fresh provisioning/full verifier/v4 readback, and a prestarted verified worldserver.
+
 ## 2026-08-13T07:45:27Z — Six mandatory-review High findings remediated at exact clean checkpoint
 
 Observer authserver/worldserver processes, capture writers, publishers, and builds remain stopped. Their stale PID files and approximately 30 MiB of observer logs were removed; MySQL remains healthy. No live restart is authorized.

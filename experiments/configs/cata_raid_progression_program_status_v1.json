@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-13T07:45:27Z",
+  "updated_at_utc": "2026-08-13T08:04:46Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -17,7 +17,7 @@
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "current_head_sha": "2b63c544855a1d30abd6ef60c1362667bff8b2f6",
+    "current_head_sha": "6c759502542b634f63668abe115631551ef5368d",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -32,13 +32,13 @@
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "The 1ee capture remains a Phase 1 infrastructure abort. Exact clean checkpoint 2b63c54485 closes the six High findings from the mandatory d5ba review: the recovery hold no longer performs forced combat stops, post-wipe readiness requires native controlled-unit restoration, capture acceptance is bound to exact Magmaw engagement, Drudge Rush is observed at native spell start in an ordered queue with declared range/interval evidence, tanks participate in health synchronization, and canonical status/DVC lineage is reconciled. Focused tests pass 114. Mandatory exact descendant Sol-high review and one coordinator build remain pending; live restart is not authorized."
+    "current_acceptance": "The 1ee capture remains a Phase 1 infrastructure abort. Mandatory Sol-high review of clean status checkpoint 70c053e227 closed five of the six prior d5ba findings but rejected the Rush evidence contract with three High findings: prepared casts were consumable before delivery, observations were not attempt/wipe scoped, and canonical acceptance did not reconstruct the claimed Drudge tactics. Exact clean remediation 6c75950254 marks delivery only after the native charge hit effect, scopes observations to attempt/wipe/route, fails closed on queue overflow, retains per-roster reseparation and tactic evidence, and independently requires two delivered Rushes plus a non-early 20-second interval per source, all ten reseparated, both tank taunts, tank health-sync, and all seven offensive slots using trained single-target profiles. Focused tests pass 116. Mandatory exact descendant Sol-high review and one coordinator build remain pending; live restart is not authorized."
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_commit": "2b63c544855a1d30abd6ef60c1362667bff8b2f6",
-    "current_state": "exact_1ee02778ef_build_is_stale_for_clean_2b63c54485_phase1_remediation",
-    "current_result": "no current receipt; no authserver, worldserver, capture, publisher, or build process is active. Mandatory Sol-high review of the exact clean 2b63 descendant and one coordinator build are required before live restart",
+    "current_commit": "6c759502542b634f63668abe115631551ef5368d",
+    "current_state": "exact_1ee02778ef_build_is_stale_for_clean_6c75950254_phase1_remediation",
+    "current_result": "no current receipt; no authserver, worldserver, capture, publisher, or build process is active. Mandatory Sol-high review of the exact clean 6c7595 descendant and one coordinator build are required before live restart",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -566,8 +566,10 @@
       ,"progression_scoring_deferred_and_repeated_worldport_logs_rate_limited"
       ,"eleven_node_validation_scenario_dvc_pushed_and_remote_verified"
       ,"mandatory_sol_high_review_rejected_exact_d5ba8a07_with_six_high_findings"
-      ,"exact_2b63c54485_closes_forced_recovery_stop_controlled_readiness_magmaw_capture_rush_queue_tank_sync_and_status_lineage_findings"
-      ,"focused_runtime_capture_and_phase9_suite_114_passed"
+      ,"exact_2b63c54485_closed_forced_recovery_stop_controlled_readiness_magmaw_capture_tank_sync_and_status_lineage_findings"
+      ,"mandatory_sol_high_review_rejected_exact_70c053e227_with_three_drudge_evidence_high_findings"
+      ,"exact_6c75950254_binds_native_charge_delivery_attempt_wipe_scope_queue_integrity_and_independent_tactic_acceptance"
+      ,"focused_runtime_capture_and_phase9_suite_116_passed"
       ],
       "remaining_requirements": [
       "mandatory_independent_sol_high_review_of_combined_native_recovery_laser_drudge_blocked_cpu_remediation",
@@ -594,8 +596,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "Exact 1ee02778ef is historical and stale. Exact clean checkpoint 2b63c54485 contains the reviewed-finding remediation for native recovery, Laser Strike, blocked/unstuck stability, Magmaw-only routing, Drudge lanes/Rush/synchronization, and principal CPU/log churn. validation_scenarios object 0829bfe3c4c81f59b24fd4cbc0542974.dir is pushed, remote-synchronized, and exactly evicted locally. Mandatory exact Sol-high descendant review, coordinator build, CPU measurement, reprovision/readback, and uncapped canonical rerun remain required."
+      "detail": "Exact 1ee02778ef is historical and stale. Exact clean checkpoint 6c75950254 contains the reviewed-finding remediation for native recovery, Laser Strike, blocked/unstuck stability, Magmaw-only routing, Drudge native delivery/lane/Rush/synchronization evidence, and principal CPU/log churn. validation_scenarios object 0829bfe3c4c81f59b24fd4cbc0542974.dir is pushed, remote-synchronized, and exactly evicted locally. Mandatory exact Sol-high descendant review, coordinator build, CPU measurement, reprovision/readback, and uncapped canonical rerun remain required."
     }
   ],
-  "next_action": "Obtain mandatory exact Sol-high zero-Critical/High approval for the clean 2b63 descendant and this status checkpoint, then run exactly one coordinator build. Measure optimized single-cohort CPU/log/DB behavior, reprovision and retain v4 readback, and rerun the uncapped canonical Phase 1 Magmaw-only corridor. Require correct Laser Strike exits, exact Drudge lane/Rush/health-sync decisions, full per-GUID native recovery order, controlled-unit readiness, post-recovery ready check, trained single-target profile use, and clean DVC publication/eviction. Six parallel boss shards remain downstream of Phase 1 and require one prestarted verified worldserver plus one Luna-xhigh babysitter per boss."
+  "next_action": "Obtain mandatory exact Sol-high zero-Critical/High approval for the clean 6c7595 descendant and this status checkpoint, then run exactly one coordinator build. Measure optimized single-cohort CPU/log/DB behavior, reprovision and retain v4 readback, and rerun the uncapped canonical Phase 1 Magmaw-only corridor. Require correct Laser Strike exits, independently reconstructed exact Drudge delivered-Rush/lane/reseparation/taunt/health-sync/trained-profile decisions, full per-GUID native recovery order, controlled-unit readiness, post-recovery ready check, and clean DVC publication/eviction. Six parallel boss shards remain downstream of Phase 1 and require one prestarted verified worldserver plus one Luna-xhigh babysitter per boss."
 }
