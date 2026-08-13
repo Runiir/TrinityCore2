@@ -3861,6 +3861,22 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     if (index >= Party().ValidationRouteManifest.size())
         return false;
 
+    // Flush route-local repeatable-event tails before installing the next
+    // node/generation so the trace entry remains attributed to the node that
+    // actually produced those suppressed observations.
+    for (WorldBotState& state : Party().Bots)
+    {
+        uint64 const suppressedTail = uint64(state.SuppressedRepeatableEventCount)
+            + uint64(state.PendingTraceSuppressedRepeatableEventCount);
+        if (!suppressedTail)
+            continue;
+        state.PendingTraceSuppressedRepeatableEventCount = uint32(std::min<uint64>(
+            suppressedTail, std::numeric_limits<uint32>::max()));
+        RecordDecisionTrace(state, "validation_route_transition",
+            "flush_suppressed_repeatable_tail", nullptr, 0, "ok",
+            "route_node_boundary");
+    }
+
     ValidationRouteManifestNode const& node = Party().ValidationRouteManifest[index];
     Party().ValidationRouteManifestIndex = index;
     Party().ValidationRouteGeneration = index + 1;
@@ -4154,19 +4170,6 @@ void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
         state.ValidationRouteDrudgeAnchorY = 0.0f;
         state.ValidationRouteDrudgeAnchorZ = 0.0f;
         state.ValidationRouteDrudgeAnchorSearchCooldownUntilMs = 0;
-        // Preserve every suppressed repeatable observation across a normal
-        // route-node boundary. Emit one bounded tail entry under the old node
-        // identity before resetting the route-local dedupe key.
-        uint64 const suppressedTail = uint64(state.SuppressedRepeatableEventCount)
-            + uint64(state.PendingTraceSuppressedRepeatableEventCount);
-        if (suppressedTail)
-        {
-            state.PendingTraceSuppressedRepeatableEventCount = uint32(std::min<uint64>(
-                suppressedTail, std::numeric_limits<uint32>::max()));
-            RecordDecisionTrace(state, "validation_route_transition",
-                "flush_suppressed_repeatable_tail", nullptr, 0, "ok",
-                "route_node_boundary");
-        }
         state.LastRepeatableEventKey.clear();
         state.LastRepeatableEventEmitMs = 0;
         state.SuppressedRepeatableEventCount = 0;
@@ -31025,6 +31028,7 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
              << ",\"source_guid\":" << observation.SourceGuid.GetCounter()
              << ",\"source_spawn_id\":" << observation.SourceSpawnId
              << ",\"target_guid\":" << observation.TargetGuid.GetCounter()
+             << ",\"target_raw_guid\":" << observation.TargetRawGuid
              << ",\"selected_distance\":" << observation.SelectedDistance
              << ",\"source_combat_reach\":" << observation.SourceCombatReach
              << ",\"target_combat_reach\":" << observation.TargetCombatReach
@@ -35033,6 +35037,7 @@ uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster,
     observation.ObservedIntervalMs = priorMs ? observedAtMs - priorMs : 0;
     observation.SourceGuid = caster->GetGUID();
     observation.TargetGuid = targetPlayer->GetGUID();
+    observation.TargetRawGuid = targetPlayer->GetGUID().GetRawValue();
     observation.SourceSpawnId = sourceSpawnId;
     observation.SelectedDistance = Party().ValidationRouteDrudgeChargeObservedDistance;
     observation.SourceCombatReach = caster->GetCombatReach();

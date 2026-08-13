@@ -298,6 +298,7 @@ def accepted_drudge_status() -> dict:
                 "source_guid": 5000 + source,
                 "source_spawn_id": source,
                 "target_guid": target,
+                "target_raw_guid": target,
                 "selected_distance": 40.0,
                 "source_combat_reach": 1.5,
                 "target_combat_reach": 1.5,
@@ -329,7 +330,7 @@ def accepted_drudge_status() -> dict:
             tactic_cross_lane_eligible = cross_lane and role != "tank"
             candidate_rows.append({
                 "guid": row["guid"],
-                "raw_guid": (1 << 60) + row["guid"],
+                "raw_guid": row["guid"],
                 "slot": slot,
                 "lane": lane,
                 "threat": float(1000 + slot),
@@ -667,7 +668,7 @@ def test_drudge_native_threat_evidence_rejects_forged_eligibility_farthest_and_s
         if observation["observed_interval_ms"] != 0:
             continue
         observation["native_threat_candidates"].append({
-            "guid": 900000 + observation["source_spawn_id"],
+            "guid": non_player_reference["raid_runtime"]["roster"][0]["guid"],
             "raw_guid": (4 << 60) + 900000 + observation["source_spawn_id"],
             "slot": 0,
             "lane": 0,
@@ -706,6 +707,7 @@ def test_drudge_native_threat_ignores_ordinary_pre_rush_snapshot_until_complete(
     forged_farthest = accepted_drudge_status()
     first = forged_farthest["raid_runtime"]["drudge_charge"]["observations"][0]
     first["target_guid"] = forged_farthest["raid_runtime"]["roster"][4]["guid"]
+    first["target_raw_guid"] = first["target_guid"]
     first["selected_distance"] = 34.5
     accepted, reasons = accepted_drudge_contract([forged_farthest])
     assert accepted is False

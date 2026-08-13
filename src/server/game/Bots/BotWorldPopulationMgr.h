@@ -519,6 +519,7 @@ private:
         uint64 Generation = 0;
         std::string Kind;
         ObjectGuid TargetGuid;
+        uint64 TargetRawGuid = 0;
         uint32 TargetEntry = 0;
         std::string Reason;
     };

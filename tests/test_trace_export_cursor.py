@@ -118,6 +118,10 @@ def test_trace_stream_reset_is_reserved_for_destructive_lifecycle_boundaries():
         MANAGER.index("void BotWorldPopulationMgr::ResetValidationRouteRuntimeState") :
         MANAGER.index("bool BotWorldPopulationMgr::ValidationRouteHasProgressSinceApply")
     ]
+    apply_node = MANAGER[
+        MANAGER.index("bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode") :
+        MANAGER.index("void BotWorldPopulationMgr::ResetValidationRouteBossAddEscapeState")
+    ]
     profile_clear = MANAGER[
         MANAGER.index("std::string BotWorldPopulationMgr::ClearRuntimeProfile") :
         MANAGER.index("std::string BotWorldPopulationMgr::ReloadRuntimeProfiles")
@@ -130,9 +134,11 @@ def test_trace_stream_reset_is_reserved_for_destructive_lifecycle_boundaries():
     assert "state.TraceSequence = 0;" in helper
     assert "state.DecisionTrace.clear();" in helper
     assert "ResetTraceStreams();" not in reset
-    assert "flush_suppressed_repeatable_tail" in reset
-    assert "state.SuppressedRepeatableEventCount" in reset
-    assert "RecordDecisionTrace(state, \"validation_route_transition\"" in reset
+    assert "flush_suppressed_repeatable_tail" not in reset
+    assert "flush_suppressed_repeatable_tail" in apply_node
+    assert apply_node.index("flush_suppressed_repeatable_tail") < apply_node.index(
+        "Party().ValidationRouteGeneration = index + 1"
+    )
     assert "ResetTraceStreams();" in profile_clear
     assert advance.index("validation_route_segment_advance") < advance.index(
         "ApplyValidationRouteManifestNode(nextIndex"
