@@ -3048,6 +3048,10 @@ std::string BotWorldPopulationMgr::ClearRuntimeProfile()
     Cohort().SelectedProfileName.clear();
     Cohort().RuntimeProfileDirty = true;
     Cohort().RuntimeProfileSelectionPending = false;
+    // Clearing the selected runtime profile is a destructive recording
+    // lifecycle boundary. Route-node advancement is not: its transition
+    // event and any unexported rows must remain in the same monotonic stream.
+    ResetTraceStreams();
     ResetValidationRouteRuntimeState("runtime_profile_clear");
     return "{\"ok\":true,\"action\":\"botauto_profile_clear\",\"active_profile\":null,\"failure_reason\":null}";
 }
@@ -4046,11 +4050,10 @@ void BotWorldPopulationMgr::ResetTraceStreams()
 
 void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
 {
-    // Route changes and destructive run lifecycles are trace stream
-    // boundaries. Never let a cursor or sequence from the prior route be
-    // interpreted as evidence for the next route, even when a GUID is reused
-    // inside the same cohort.
-    ResetTraceStreams();
+    // Route-node changes deliberately preserve the monotonic trace stream so
+    // the segment-advance event and the prior node's unexported rows survive
+    // until the capture writer consumes them. True run/profile recording
+    // lifecycle boundaries call ResetTraceStreams explicitly.
     Party().ValidationRouteFocusGuid.Clear();
     Party().ValidationRouteFocusEntry = 0;
     Party().ValidationRouteFocusMapId = 0;

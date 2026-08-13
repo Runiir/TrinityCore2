@@ -112,11 +112,26 @@ def test_delta_encoder_keeps_suppressed_repeatable_event_count_and_bound():
     assert "if (!gap && cursorAfter != cursor)" in MANAGER
 
 
-def test_trace_stream_reset_clears_sequence_ring_and_cursor():
+def test_trace_stream_reset_is_reserved_for_destructive_lifecycle_boundaries():
     helper = MANAGER[MANAGER.index("void BotWorldPopulationMgr::ResetTraceStreams") :]
-    reset = MANAGER[MANAGER.index("void BotWorldPopulationMgr::ResetValidationRouteRuntimeState") :]
+    reset = MANAGER[
+        MANAGER.index("void BotWorldPopulationMgr::ResetValidationRouteRuntimeState") :
+        MANAGER.index("bool BotWorldPopulationMgr::ValidationRouteHasProgressSinceApply")
+    ]
+    profile_clear = MANAGER[
+        MANAGER.index("std::string BotWorldPopulationMgr::ClearRuntimeProfile") :
+        MANAGER.index("std::string BotWorldPopulationMgr::ReloadRuntimeProfiles")
+    ]
+    advance = MANAGER[
+        MANAGER.index("bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest") :
+        MANAGER.index("bool BotWorldPopulationMgr::TryReattachValidationBot")
+    ]
     assert "Party().TraceExportCursorByGuid.clear();" in helper
     assert "state.TraceSequence = 0;" in helper
     assert "state.DecisionTrace.clear();" in helper
-    assert "ResetTraceStreams();" in reset
+    assert "ResetTraceStreams();" not in reset
+    assert "ResetTraceStreams();" in profile_clear
+    assert advance.index("validation_route_segment_advance") < advance.index(
+        "ApplyValidationRouteManifestNode(nextIndex"
+    )
     assert "mutable std::map<uint32, uint64> TraceExportCursorByGuid;" in HEADER
