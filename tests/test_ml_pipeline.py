@@ -7313,6 +7313,7 @@ def test_live_bot_validation_route_manifest_dry_run_writes_scenario_scoped_confi
         [
             {
                 "scenario_id": "stonecore_5n",
+                "runtime_profile_id": "stonecore_5n",
                 "route_node_id": "stonecore_entry",
                 "step": 1,
                 "kind": "trash",
@@ -7327,6 +7328,7 @@ def test_live_bot_validation_route_manifest_dry_run_writes_scenario_scoped_confi
             },
             {
                 "scenario_id": "stonecore_5n",
+                "runtime_profile_id": "stonecore_5n",
                 "route_node_id": "stonecore_corborus",
                 "step": 2,
                 "kind": "boss",
@@ -7340,6 +7342,7 @@ def test_live_bot_validation_route_manifest_dry_run_writes_scenario_scoped_confi
             },
             {
                 "scenario_id": "stonecore_5n",
+                "runtime_profile_id": "stonecore_5n",
                 "route_node_id": "stonecore_regroup",
                 "step": 3,
                 "kind": "regroup",
@@ -7354,6 +7357,7 @@ def test_live_bot_validation_route_manifest_dry_run_writes_scenario_scoped_confi
             },
             {
                 "scenario_id": "stonecore_5n",
+                "runtime_profile_id": "stonecore_5n",
                 "route_node_id": "stonecore_descent",
                 "step": 4,
                 "kind": "descent",
@@ -7409,6 +7413,153 @@ def test_live_bot_validation_route_manifest_dry_run_writes_scenario_scoped_confi
     assert 'BotWorld.ValidationRoute.AdvanceMode = "terminal"' in generated_config
     assert 'BotWorld.ValidationRoute.NodeId = "stonecore_entry"' in generated_config
     assert "BotWorld.TargetPopulation = 5" in generated_config
+
+
+def test_live_bot_validation_rejects_calibration_with_manifest_route(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "bot-live-validate",
+            "--dry-run",
+            "--calibration-only",
+            "--validation-route-manifest",
+            "--validation-scenario-id",
+            "blackwing_descent_10n_magmaw_diagnostic",
+            "--output-dir",
+            str(tmp_path / "live"),
+        ],
+    )
+
+    with pytest.raises(SystemExit, match="cannot be combined"):
+        live_validation_main()
+
+
+def test_live_bot_validation_rejects_empty_manifest_route_selection(tmp_path, monkeypatch):
+    scenario_dir = tmp_path / "validation_scenarios"
+    scenario_dir.mkdir()
+    (scenario_dir / "validation_routes.jsonl").write_text("", encoding="utf-8")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "bot-live-validate",
+            "--dry-run",
+            "--validation-route-manifest",
+            "--validation-scenario-id",
+            "blackwing_descent_10n_magmaw_diagnostic",
+            "--validation-scenario-dir",
+            str(scenario_dir),
+            "--output-dir",
+            str(tmp_path / "live"),
+        ],
+    )
+
+    with pytest.raises(SystemExit, match="selected no route rows"):
+        live_validation_main()
+
+
+def test_live_bot_validation_rejects_cross_shard_manifest_profile(tmp_path, monkeypatch):
+    scenario_id = "blackwing_descent_10n_magmaw_diagnostic"
+    scenario_dir = tmp_path / "validation_scenarios"
+    scenario_dir.mkdir()
+    write_jsonl(
+        scenario_dir / "validation_routes.jsonl",
+        [
+            {
+                "scenario_id": scenario_id,
+                "runtime_profile_id": "blackwing_descent_10n_omnotron_diagnostic",
+                "route_node_id": "bwd_magmaw_entry_regroup",
+                "step": 1,
+                "kind": "regroup",
+                "label": "BWD entrance junction regroup",
+                "map_id": 669,
+                "x": -345.872,
+                "y": -224.344,
+                "z": 193.127,
+                "coordinates_valid": True,
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "bot-live-validate",
+            "--dry-run",
+            "--validation-route-manifest",
+            "--validation-scenario-id",
+            scenario_id,
+            "--validation-scenario-dir",
+            str(scenario_dir),
+            "--output-dir",
+            str(tmp_path / "live"),
+        ],
+    )
+
+    with pytest.raises(SystemExit, match="route/profile identity mismatch"):
+        live_validation_main()
+
+
+def test_live_bot_validation_rejects_mismatched_profile_manifest_contract(tmp_path, monkeypatch):
+    scenario_id = "blackwing_descent_10n_magmaw_diagnostic"
+    scenario_dir = tmp_path / "validation_scenarios"
+    scenario_dir.mkdir()
+    write_jsonl(
+        scenario_dir / "validation_routes.jsonl",
+        [
+            {
+                "scenario_id": scenario_id,
+                "runtime_profile_id": scenario_id,
+                "route_node_id": "bwd_magmaw_entry_regroup",
+                "step": 1,
+                "kind": "regroup",
+                "label": "BWD entrance junction regroup",
+                "map_id": 669,
+                "x": -345.872,
+                "y": -224.344,
+                "z": 193.127,
+                "coordinates_valid": True,
+            }
+        ],
+    )
+    profile_manifest = tmp_path / "profiles.json"
+    profile_manifest.write_text(
+        json.dumps(
+            {
+                "profiles": [
+                    {
+                        "name": scenario_id,
+                        "pool_tag_filter": "blackwing_descent_10n_omnotron_diagnostic",
+                        "validation_route": {"scenario_id": scenario_id},
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    base_config = tmp_path / "worldserver.conf"
+    base_config.write_text(f'BotWorld.ProfileManifest = "{profile_manifest}"\n', encoding="utf-8")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "bot-live-validate",
+            "--dry-run",
+            "--config",
+            str(base_config),
+            "--validation-route-manifest",
+            "--validation-scenario-id",
+            scenario_id,
+            "--validation-scenario-dir",
+            str(scenario_dir),
+            "--output-dir",
+            str(tmp_path / "live"),
+        ],
+    )
+
+    with pytest.raises(SystemExit, match="runtime profile contract mismatch"):
+        live_validation_main()
 
 
 def test_lane_config_generates_per_lane_db_clones(tmp_path):

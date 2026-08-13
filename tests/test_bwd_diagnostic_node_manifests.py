@@ -166,6 +166,51 @@ def test_manifest_config_selects_exact_magmaw_profile_instead_of_base_stonecore(
     assert f'BotWorld.RuntimeProfile = "{DIAGNOSTIC_IDS["magmaw"]}"' in text
     assert 'BotWorld.RuntimeProfile = "stonecore_5n"' not in text
 
+
+def test_manifest_config_cannot_override_empty_calibration_controller(tmp_path: Path):
+    route = _routes(_manifests(), DIAGNOSTIC_IDS["magmaw"])[0]
+    base = tmp_path / "worldserver.conf"
+    base.write_text(
+        'BotWorld.AutoStart = 0\nBotWorld.RuntimeProfile = "stonecore_5n"\n'
+        "BotWorld.TargetPopulation = 5\nBotWorld.ValidationRoute.Enable = 1\n",
+        encoding="utf-8",
+    )
+    manifest = tmp_path / "validation_route_manifest.json"
+    manifest.write_text("{}\n", encoding="utf-8")
+    generated = write_validation_config(
+        base,
+        tmp_path / "run",
+        pool_tag=DIAGNOSTIC_IDS["magmaw"],
+        validation_route=route,
+        validation_route_manifest_path=manifest,
+        calibration_only=True,
+    )
+    text = generated.read_text(encoding="utf-8")
+    assert 'BotWorld.RuntimeProfile = ""' in text
+    assert f'BotWorld.RuntimeProfile = "{DIAGNOSTIC_IDS["magmaw"]}"' not in text
+    assert "BotWorld.TargetPopulation = 0" in text
+    assert "BotWorld.ValidationRoute.Enable = 0" in text
+    assert "BotWorld.ValidationRoute.ManifestPath" not in text
+
+
+def test_manifest_config_preserves_disabled_autostart_for_preparation(tmp_path: Path):
+    route = _routes(_manifests(), DIAGNOSTIC_IDS["magmaw"])[0]
+    base = tmp_path / "worldserver.conf"
+    base.write_text('BotWorld.AutoStart = 1\nBotWorld.RuntimeProfile = "stonecore_5n"\n', encoding="utf-8")
+    manifest = tmp_path / "validation_route_manifest.json"
+    manifest.write_text("{}\n", encoding="utf-8")
+    generated = write_validation_config(
+        base,
+        tmp_path / "run",
+        pool_tag=DIAGNOSTIC_IDS["magmaw"],
+        validation_route=route,
+        validation_route_manifest_path=manifest,
+        autostart=False,
+    )
+    text = generated.read_text(encoding="utf-8")
+    assert "BotWorld.AutoStart = 0" in text
+    assert f'BotWorld.RuntimeProfile = "{DIAGNOSTIC_IDS["magmaw"]}"' in text
+
 def test_live_report_builder_keeps_all_seven_bwd_route_partitions_distinct(tmp_path: Path):
     manifests = _manifests()
     bwd_ids = [CANONICAL_ID, *DIAGNOSTIC_IDS.values()]
