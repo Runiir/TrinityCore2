@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "audit_id": "cata_raid_runtime_phase1_v1",
-  "updated_at_utc": "2026-08-13T12:38:00Z",
+  "updated_at_utc": "2026-08-13T12:48:00Z",
   "target": {
     "client": "Cataclysm Classic",
     "patch": "4.4.2",
@@ -9,18 +9,18 @@
     "locale": "enUS",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
-  "audited_commit": "9b84d5b1e5f2aba90a8604b529ec98004a7f6b32",
-  "gate_state": "in_progress_exact_9b84_review_remediation_rereview_pending",
+  "audited_commit": "0e6a796171c79c592941aa2c9d3250be222b29d9",
+  "gate_state": "in_progress_exact_0e6a_review_remediation_rereview_pending",
   "foundation": {
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "current_head_sha": "9b84d5b1e5f2aba90a8604b529ec98004a7f6b32",
+    "current_head_sha": "0e6a796171c79c592941aa2c9d3250be222b29d9",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
-    "mandatory_sol_high_rereview": "pending exact clean status descendant carrying source 9b84d5b1e5f2aba90a8604b529ec98004a7f6b32",
+    "mandatory_sol_high_rereview": "pending exact clean status descendant carrying source 0e6a796171c79c592941aa2c9d3250be222b29d9",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "acceptance": "Exact-7350 review rejected three High and two Medium findings. Source 9b84 reconstructs native combat range from distance/reaches/map/phase, ignores ordinary incomplete pre-Rush polls until a complete snapshot exists, flushes suppressed trace tails at route boundaries, retains full raw ObjectGuid identity, and reconciles status. Exact clean suite passes 314; mandatory rereview/build/live gates and Phase 1/fidelity remain false."
+    "acceptance": "Exact-3d81 review found old-node attribution and incomplete raw-GUID linkage. Source 0e6a flushes suppressed tails before node/generation mutation and raw-keys native candidate/selected-target reconstruction while exact player seed linkage remains low-GUID bound to the frozen roster. Exact clean suite passes 314; mandatory rereview/build/live gates and Phase 1/fidelity remain false."
   },
   "research": {
     "required_boss_packets": 28,
@@ -168,15 +168,15 @@
   ],
   "synthetic_checks": {
     "test_file": "tests/test_cata_raid_runtime_foundation.py",
-    "last_result": "314_exact_9b84_source_focused_passed",
-    "combined_focus_result": "314_hotpath_model_runtime_capture_generic_trace_phase9_and_coordinator_passed_before_exact_9b84_review_build",
+    "last_result": "314_exact_0e6a_source_focused_passed",
+    "combined_focus_result": "314_hotpath_model_runtime_capture_generic_trace_phase9_and_coordinator_passed_before_exact_0e6a_review_build",
     "combined_focus_command": "pixi run pytest -q tests/test_phase1_raid_foundation_capture.py tests/test_cata_raid_runtime_foundation.py tests/test_cata_raid_foundation_model.py tests/test_phase1_generic_mechanic_smoke.py tests/test_botworld_hotpath_optimization.py tests/test_trace_export_cursor.py tests/test_phase9_live_qualification.py tests/test_raid_build_coordinator.py",
     "broad_comparison": "same selected broad command at prior exact 1c7a and source 2121: 131 passed, 33 identical inherited stale structural/source-shape failures; no subsequent broad-scope source changes outside reviewed evidence/runtime paths; focused_phase9_3_passed"
   },
   "required_open_work": [
     {
       "area": "current_build",
-      "missing": ["mandatory_sol_high_zero_critical_high_rereview_of_exact_status_descendant_carrying_source_9b84d5b1e5", "exact_policy_v8_configure_receipt", "exact_policy_v8_worldserver_build_receipt"]
+      "missing": ["mandatory_sol_high_zero_critical_high_rereview_of_exact_status_descendant_carrying_source_0e6a796171", "exact_policy_v8_configure_receipt", "exact_policy_v8_worldserver_build_receipt"]
     },
     {
       "area": "live_script_and_decision_review",
@@ -194,7 +194,7 @@
   "phase1_gate_blockers": [
     "exact_1c7a_uncapped_capture_failed_closed_at_magmaw_drudge_pair_before_magmaw_engagement",
     "exact_5e51_mandatory_review_rejected_three_high_findings",
-    "exact_9b84_all_7350_review_findings_remediated_314_clean_passed_rereview_rebuild_pending",
+    "exact_0e6a_old_node_tail_and_raw_guid_linkage_remediated_314_clean_passed_rereview_rebuild_pending",
     "single_cohort_worldserver_cpu_35_percent_and_67mb_log_raw_not_parallel_shard_ready",
     "bwd_exact_442_quantitative_and_exact_log_hotfix_evidence_blocks_phase2_fidelity"
   ],
