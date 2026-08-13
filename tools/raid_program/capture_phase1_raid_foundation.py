@@ -296,6 +296,58 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _json_row_from_log_line(raw: bytes) -> dict[str, Any] | None:
+    """Decode one complete worldserver log line when it contains JSON evidence."""
+
+    start = raw.find(b"{")
+    end = raw.rfind(b"}")
+    if start < 0 or end < start:
+        return None
+    try:
+        row = json.loads(raw[start : end + 1])
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    return row if isinstance(row, dict) else None
+
+
+class JsonLogCursor:
+    """Incrementally parse complete evidence lines from an append-only log.
+
+    The canonical monitor used to reread and decode the complete growing log on
+    every five-second probe.  That made parsing O(n^2) over a long uncapped
+    run, while adding no evidence.  This cursor reads each byte once during
+    monitoring and retains an incomplete final line until the next probe.  The
+    final immutable artifact is still parsed from the complete log below, so
+    this optimization cannot remove or rewrite a transition row.
+    """
+
+    def __init__(self, path: Path):
+        self.path = path
+        self.offset = 0
+        self._partial = b""
+
+    def read_new_rows(self) -> list[dict[str, Any]]:
+        with self.path.open("rb") as handle:
+            handle.seek(self.offset)
+            chunk = handle.read()
+            self.offset = handle.tell()
+        if not chunk:
+            return []
+
+        data = self._partial + chunk
+        lines = data.splitlines(keepends=True)
+        if lines and not lines[-1].endswith((b"\n", b"\r")):
+            self._partial = lines.pop()
+        else:
+            self._partial = b""
+        rows: list[dict[str, Any]] = []
+        for raw in lines:
+            row = _json_row_from_log_line(raw)
+            if row is not None:
+                rows.append(row)
+        return rows
+
+
 def json_actions(log_bytes: bytes, action: str) -> list[dict[str, Any]]:
     return [row for row in json_rows(log_bytes) if row.get("action") == action]
 
@@ -305,17 +357,21 @@ def json_rows(log_bytes: bytes) -> list[dict[str, Any]]:
 
     rows: list[dict[str, Any]] = []
     for raw in log_bytes.splitlines():
-        start = raw.find(b"{")
-        end = raw.rfind(b"}")
-        if start < 0 or end < start:
-            continue
-        try:
-            row = json.loads(raw[start : end + 1])
-        except (UnicodeDecodeError, json.JSONDecodeError):
-            continue
-        if isinstance(row, dict):
+        row = _json_row_from_log_line(raw)
+        if row is not None:
             rows.append(row)
     return rows
+
+
+def action_payloads(rows: list[dict[str, Any]], action: str) -> list[dict[str, Any]]:
+    """Project already-parsed normalized evidence without reparsing its log."""
+
+    payloads: list[dict[str, Any]] = []
+    for row in rows:
+        payload = row.get("payload")
+        if isinstance(payload, dict) and payload.get("action") == action:
+            payloads.append(payload)
+    return payloads
 
 
 def _positive_int(value: Any) -> bool:
@@ -1807,12 +1863,13 @@ def write_normalized_batch(path: Path, rows: list[dict[str, Any]]) -> tuple[str,
     if path.exists():
         raise RuntimeError("raw normalized batch output already exists; artifacts are immutable")
     path.parent.mkdir(parents=True, exist_ok=True)
-    encoded = b"".join(
-        (json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
-        for row in rows
-    )
-    path.write_bytes(encoded)
-    return hashlib.sha256(encoded).hexdigest(), len(rows)
+    digest = hashlib.sha256()
+    with path.open("xb") as handle:
+        for row in rows:
+            encoded = (json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+            handle.write(encoded)
+            digest.update(encoded)
+    return digest.hexdigest(), len(rows)
 
 
 def _forbidden_assistance_entries(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -2134,7 +2191,11 @@ def main() -> int:
             # diagnostics and tests; zero is deliberately uncapped.
             deadline = time.monotonic() + args.observe_sec if args.observe_sec else None
             next_probe = 0.0
-            seen_statuses = 0
+            log_cursor = JsonLogCursor(log_path)
+            monitor_statuses: list[dict[str, Any]] = []
+            diagnosis_count = 0
+            trace_count = 0
+            latest_diagnosis: dict[str, Any] | None = None
             recovery_accepted = False
             drudge_accepted = False
             readycheck_requested_for: tuple[Any, ...] | None = None
@@ -2156,24 +2217,31 @@ def main() -> int:
                     process.stdin.flush()
                     next_probe = time.monotonic() + 5.0
                     time.sleep(1.0)
-                    statuses = json_actions(log_path.read_bytes(), "botauto_status")
-                    for status in statuses[seen_statuses:]:
+                    new_statuses: list[dict[str, Any]] = []
+                    for row in log_cursor.read_new_rows():
+                        action = row.get("action")
+                        if action == "botauto_status":
+                            new_statuses.append(row)
+                        elif action == "botauto_diagnose":
+                            diagnosis_count += 1
+                            latest_diagnosis = row
+                        elif action == "botauto_trace":
+                            trace_count += 1
+                    monitor_statuses.extend(new_statuses)
+                    for status in new_statuses:
                         accepted, rejections = accepted_foundation_status(status)
                         last_rejections = rejections
                         if accepted:
                             stable.append(status)
                         else:
                             stable.clear()
-                    seen_statuses = len(statuses)
-                    diagnoses_now = json_actions(log_path.read_bytes(), "botauto_diagnose")
-                    traces_now = json_actions(log_path.read_bytes(), "botauto_trace")
                     telemetry_now = time.monotonic()
                     stale_channels = observe_telemetry_freshness(
                         telemetry_freshness,
                         {
-                            "status": len(statuses),
-                            "diagnosis": len(diagnoses_now),
-                            "trace": len(traces_now),
+                            "status": len(monitor_statuses),
+                            "diagnosis": diagnosis_count,
+                            "trace": trace_count,
                         },
                         telemetry_now,
                         args.telemetry_timeout_sec,
@@ -2189,13 +2257,13 @@ def main() -> int:
                             "channel_state": telemetry_freshness,
                         }
                         break
-                    if statuses:
+                    if monitor_statuses:
                         signature = semantic_progress_signature(
-                            statuses[-1], diagnoses_now[-1] if diagnoses_now else None,
+                            monitor_statuses[-1], latest_diagnosis,
                         )
                         if observe_monotonic_semantic_progress(
                             semantic_progress_state,
-                            statuses[-1], diagnoses_now[-1] if diagnoses_now else None,
+                            monitor_statuses[-1], latest_diagnosis,
                         ):
                             last_semantic_progress_at = time.monotonic()
                             unchanged_semantic_samples = 1
@@ -2210,15 +2278,15 @@ def main() -> int:
                                 "unchanged_samples": unchanged_semantic_samples,
                                 "semantic_signature": signature,
                                 "monotonic_progress_state": semantic_progress_state,
-                                "route": statuses[-1].get("validation_route"),
-                                "raid_runtime": statuses[-1].get("raid_runtime"),
-                                "diagnosis_rows": len(diagnoses_now),
+                                "route": monitor_statuses[-1].get("validation_route"),
+                                "raid_runtime": monitor_statuses[-1].get("raid_runtime"),
+                                "diagnosis_rows": diagnosis_count,
                             }
                             break
-                    recovery_accepted, _ = accepted_native_recovery(statuses)
-                    drudge_accepted, _ = accepted_drudge_contract(statuses)
-                    if statuses:
-                        runtime = statuses[-1].get("raid_runtime") or {}
+                    recovery_accepted, _ = accepted_native_recovery(monitor_statuses)
+                    drudge_accepted, _ = accepted_drudge_contract(monitor_statuses)
+                    if monitor_statuses:
+                        runtime = monitor_statuses[-1].get("raid_runtime") or {}
                         native = runtime.get("native_recovery") or {}
                         request_identity = (
                             runtime.get("attempt_id"), runtime.get("wipe_generation"),
@@ -2267,16 +2335,19 @@ def main() -> int:
     demux_rejections = demux_report["rejections"]
     telemetry_envelopes = _required_telemetry_envelope_report(normalized_rows)
     raw_payload_sha256, raw_payload_rows = write_normalized_batch(raw_output, normalized_rows)
-    statuses = json_actions(log_bytes, "botauto_status")
+    # The complete log was decoded once into normalized_rows above.  Project
+    # final action channels from those parsed payloads instead of decoding the
+    # complete log five more times after every uncapped capture.
+    statuses = action_payloads(normalized_rows, "botauto_status")
     active_statuses = [
         status for status in statuses
         if isinstance(status.get("raid_runtime"), dict)
         and status["raid_runtime"].get("active") is True
     ]
-    diagnoses = json_actions(log_bytes, "botauto_diagnose")
-    traces = json_actions(log_bytes, "botauto_trace")
-    profiles = json_actions(log_bytes, "botauto_profile")
-    stop_rows = json_actions(log_bytes, "botauto_stop")
+    diagnoses = action_payloads(normalized_rows, "botauto_diagnose")
+    traces = action_payloads(normalized_rows, "botauto_trace")
+    profiles = action_payloads(normalized_rows, "botauto_profile")
+    stop_rows = action_payloads(normalized_rows, "botauto_stop")
     recovery_accepted, recovery_rejections = accepted_native_recovery(active_statuses)
     drudge_accepted, drudge_rejections = accepted_drudge_contract(active_statuses)
     cleanup_status = statuses[-1] if statuses else {}

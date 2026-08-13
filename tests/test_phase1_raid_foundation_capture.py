@@ -6,7 +6,10 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     accepted_foundation_status,
     accepted_drudge_contract,
     accepted_native_recovery,
+    action_payloads,
+    JsonLogCursor,
     json_actions,
+    json_rows,
     normalized_batch_payload,
     _forbidden_assistance_entries,
     expected_bwd_10n_roster,
@@ -347,6 +350,37 @@ def test_roster_serialization_order_does_not_change_assignment_acceptance():
 def test_json_action_parser_ignores_prefix_and_malformed_rows():
     log = b'TC> {"ok":true,"action":"botauto_status","bots":10}\nnot-json\n{"action":"other"}\n'
     assert json_actions(log, "botauto_status") == [{"ok": True, "action": "botauto_status", "bots": 10}]
+
+
+def test_json_log_cursor_reads_append_only_chunks_once_and_preserves_partial_rows(tmp_path: Path):
+    path = tmp_path / "worldserver.log"
+    first = b'TC> {"action":"botauto_status","evidence_sequence":1}\n'
+    second = b'TC> {"action":"botauto_diagnose","evidence_sequence":2}\n'
+    third = b'TC> {"action":"botauto_trace","evidence_sequence":3}\n'
+    path.write_bytes(first + second[:17])
+    cursor = JsonLogCursor(path)
+
+    assert cursor.read_new_rows() == json_rows(first)
+    assert cursor.read_new_rows() == []
+
+    with path.open("ab") as handle:
+        handle.write(second[17:] + third)
+    incremental = cursor.read_new_rows()
+    assert incremental == json_rows(second + third)
+    assert cursor.read_new_rows() == []
+    assert cursor.offset == path.stat().st_size
+    assert [row["action"] for row in incremental] == [
+        "botauto_diagnose", "botauto_trace",
+    ]
+
+
+def test_action_projection_reuses_normalized_payloads_without_reparsing_log():
+    rows = normalized_batch_payload(
+        b'{"action":"botauto_status"}\n{"action":"botauto_trace"}\n'
+    )
+    projected = action_payloads(rows, "botauto_trace")
+    assert projected == [rows[1]["payload"]]
+    assert projected[0] is rows[1]["payload"]
 
 
 def test_normalized_batch_payload_is_ordered_and_forbidden_assistance_is_recomputed():
