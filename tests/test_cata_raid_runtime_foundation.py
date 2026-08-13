@@ -1169,6 +1169,44 @@ def test_route_directed_boss_assist_cannot_bypass_the_typed_contract_authority()
     assert "0, false, false, forbidArea, raidAdapter.AllowMultidot" in boss_runtime
 
 
+def test_trash_profile_damage_cannot_pull_or_compound_the_next_boss_encounter():
+    route_start = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    route_end = IMPL.index("bool BotWorldPopulationMgr::IsBossContext", route_start)
+    route_runtime = IMPL[route_start:route_end]
+    hold = route_runtime[
+        route_runtime.index("Creature* prematureNextEncounter = nullptr;"):
+        route_runtime.index("auto validationPartyHasActiveCombat", route_runtime.index("Creature* prematureNextEncounter = nullptr;"))
+    ]
+    resolver_start = IMPL.index("ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction")
+    resolver_end = IMPL.index("BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction", resolver_start)
+    resolver = IMPL[resolver_start:resolver_end]
+    executor = IMPL[
+        resolver_end:
+        IMPL.index("BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(Player*", resolver_end)
+    ]
+
+    assert "IsImmediateNextValidationRouteBossTarget" in IMPL
+    assert "IsImmediateNextValidationRouteEncounterMember" in IMPL
+    assert "SpellHostileMultiTargetReach" in IMPL
+    assert "SPELL_DAMAGE_CLASS_RANGED" in IMPL
+    assert "jumpRadius = 7.5f" in IMPL
+    assert "jumpRadius * float(effect.ChainTarget - 1)" in IMPL
+    assert "future_encounter_splash_forbidden" in resolver
+    assert "!IsImmediateNextValidationRouteEncounterMember(unit->ToCreature())" in resolver
+    assert "if (IsImmediateNextValidationRouteEncounterMember(creature))" in resolver
+    assert "future_encounter_target_forbidden" in resolver
+    assert "future_encounter_target_forbidden" in executor
+    assert "TryEnsurePersistentCombatSetup" in executor
+    assert executor.index("future_encounter_target_forbidden") < executor.index("TryEnsurePersistentCombatSetup")
+    assert "validation_route_future_encounter_contamination" in hold
+    assert "future_encounter_premature_engagement" in hold
+    assert "hold_for_native_future_encounter_reset" in hold
+    assert "InterruptSpell(CURRENT_AUTOREPEAT_SPELL" in hold
+    assert "bot->AttackStop();" in hold
+    assert "pet->AttackStop();" in hold
+    assert "controlled->AttackStop();" in hold
+
+
 def test_boss_nodes_fail_closed_on_undeclared_prerequisite_hostiles():
     route_start = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
     route_end = IMPL.index("bool BotWorldPopulationMgr::IsBossContext", route_start)

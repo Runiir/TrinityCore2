@@ -819,9 +819,6 @@ def observe_monotonic_semantic_progress(
         "route_index": int(route.get("manifest_index") or 0),
         "route_terminal_count": len(route.get("terminal_evidence") or []),
         "boss_death_evidence_count": len(route.get("boss_death_evidence") or []),
-        "wipe_generation": int(runtime.get("wipe_generation") or 0),
-        "boss_reset_generation": int(runtime.get("boss_reset_generation") or 0),
-        "recovery_generation": int(runtime.get("recovery_generation") or 0),
         "kills": int(status.get("kills") or 0),
         "raid_boss_kills": int(status.get("raid_boss_kills") or 0),
         "instance_resets": int(status.get("instance_resets") or 0),
@@ -833,6 +830,34 @@ def observe_monotonic_semantic_progress(
         if value > previous:
             advanced = True
             high_water[key] = value
+
+    # Wipe/reset counters are lifecycle churn, not objective progress.  The
+    # 9a3 BWD run repeatedly pulled and reset Magmaw while still on corridor
+    # trash, so boss_reset_generation alone kept an otherwise stuck uncapped
+    # capture alive indefinitely.  Advance only for independently observable
+    # native-recovery milestones, and only once per accepted completion scope.
+    native = runtime.get("native_recovery") if isinstance(
+        runtime.get("native_recovery"), dict
+    ) else {}
+    observed_native = state.setdefault("observed_native_recovery_milestones", [])
+    for field in (
+        "death_observed", "corpse_observed", "release_observed",
+        "runback_observed", "resurrection_observed",
+        "ready_check_action_observed",
+    ):
+        if native.get(field) is True and field not in observed_native:
+            observed_native.append(field)
+            advanced = True
+    if native.get("evidence_complete") is True:
+        completion_scope = (
+            int(runtime.get("attempt_id") or 0),
+            int(native.get("recovery_wipe_generation") or 0),
+            int(runtime.get("recovery_generation") or 0),
+        )
+        completed_scopes = state.setdefault("accepted_native_recovery_scopes", [])
+        if all(completion_scope) and list(completion_scope) not in completed_scopes:
+            completed_scopes.append(list(completion_scope))
+            advanced = True
 
     if runtime.get("encounter_in_progress") is True and not state.get("engagement_observed"):
         state["engagement_observed"] = True

@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "capture_id": "cata_raid_phase1_bwd_10n_foundation_v1",
+  "classification": "infrastructure_abort",
+  "gameplay_failure": false,
+  "fidelity_claim": false,
+  "source_identity": {
+    "commit": "9a3afe4defb748a654c03d8adaebe6d7295a19a1",
+    "tree": "34e6cbe1e65f2e8138cbd429da56a5c4c709e83f",
+    "clean_at_start": true,
+    "identity_stable_during_run": true
+  },
+  "build": {
+    "policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
+    "configure_receipt_sha256": "831d01865649bbc26fe41f882471908646a0cf3642077a7e4bbf023cb1620c56",
+    "configure_receipt_file_sha256": "cdd853767ae1e59dfe08d4c9ae9c143c8760b8a4cfb00a0f074014cc01e2a346",
+    "worldserver_receipt_sha256": "314b0a3629f6d800ef8695dea01ad190f152998c6d024529d0d33f56fb0c57d4",
+    "worldserver_receipt_file_sha256": "fef4a7f282db29ea7e064ba04e7f057d80234273ef539fad48d665127b9c3927",
+    "worldserver_sha256": "8b3c6114f13a71fd4b2c8ad6918c0f740419126e2f79fb0e8d615154680f6f5b",
+    "worldserver_size_bytes": 61008304,
+    "trusted_local_operator": "runiir",
+    "gate_bearing": true
+  },
+  "preflight": {
+    "provisioning_prepare_report_sha256": "c362ad6e91329924c41f73454d82c3340bc287d9aa71befe5b1a16aabb191217",
+    "full_provisioning_verifier_passed": true,
+    "full_provisioning_verifier_sha256": "2d9f71bb38fec0f61f08b80d76741de818a15f3880c71e373bd5d4e004916373",
+    "readback_schema": "cata_raid_phase1_bwd_provisioning_readback_v4",
+    "readback_passed": true,
+    "readback_sha256": "53c7d63faabfd7c1899c3189a8c2f2d95404dcda8397e17cf163c3a14dcac2e1",
+    "character_instance_rows": 0,
+    "group_member_rows": 0,
+    "ghost_aura_rows": 0,
+    "corpse_rows": 0,
+    "corpse_phase_rows": 0
+  },
+  "live_facts": {
+    "exact_roster_size": 10,
+    "composition": {"tanks": 2, "healers": 3, "dps": 5},
+    "map_id": 669,
+    "instance_id": 2,
+    "lockout_save_id": 2,
+    "difficulty": "10N",
+    "entry_and_corridor_trash_kills": 3,
+    "cumulative_deaths": 51,
+    "minimum_alive_size": 0,
+    "wipe_generation_high_water": 2,
+    "boss_reset_generation_high_water": 5,
+    "recovery_generation_high_water": 0,
+    "route_node_index_high_water": 2,
+    "route_generation_high_water": 3,
+    "route_label": "Drakonid corridor pack",
+    "magmaw_runtime_guids_observed": [39, 404],
+    "magmaw_target_entry": 41570,
+    "premature_magmaw_engagement": true,
+    "native_recovery_evidence_complete": false
+  },
+  "root_cause": {
+    "failure_fingerprint": "future_magmaw_encounter_damaged_by_current_corridor_multitarget_actions_and_reset_churn_counted_as_progress",
+    "detail": "The admitted RaidRuntime refresh worked live: alive_size moved from ten through partial deaths to zero and wipe/reset generations advanced. While the route remained generation 3/index 2 on the two entry-42362 Drudges, Hunter GUID 1279 submitted Multi-Shot 2643 at Drudge GUID 60; the next retained cohort tick was the first to include Magmaw GUID 39 in every threat snapshot and boss state IN_PROGRESS. Fire Mage GUID 1276 then submitted Living Bomb 44457 directly to Magmaw while its declared route focus remained Drudge 60. A later native replacement Magmaw GUID 404 repeated the contamination. The route never advanced, but standalone wipe and boss-reset generations kept resetting the uncapped semantic-progress clock.",
+    "decision_assessment": "Current-node target selection remained on the Drudges, but implicit chain/area/multidot selection escaped that authority and pulled/continued the next encounter. This is a bot decision and capture-liveness defect, not a Magmaw script or gameplay failure. The fix must reject direct future-encounter targets, reject native-data chain/area reach that can hit the protected next encounter, hold all offensive sources after premature engagement, and count only durable route/boss progress or independently observed native-recovery milestones.",
+    "remediation_scope": [
+      "centralize immediate-next boss and declared-add identity",
+      "reject direct and Living-Bomb-spread selection of protected future encounter members",
+      "derive chain and area reach from native SpellInfo data and reject unsafe profile candidates",
+      "interrupt and hold bot, pet, controlled, channel and autorepeat offense after premature encounter linkage",
+      "remove wipe/reset/recovery counters as standalone watchdog progress",
+      "retain one-time native death/corpse/release/runback/resurrection/ready-check milestones as legitimate progress",
+      "mandatory independent Sol-high review, exact rebuild, fresh reprovision, and uncapped rerun"
+    ]
+  },
+  "telemetry": {
+    "wall_clock_mode": "uncapped",
+    "retained_rows": 496,
+    "bound_rows": 496,
+    "rejected_rows": 0,
+    "unchecked_rows": 0,
+    "required_envelopes_passed": true,
+    "readycheck_missing_downstream_of_incomplete_native_recovery": true
+  },
+  "semantic_stall": {
+    "detected_by_capture": false,
+    "root_operator_diagnosed_and_stopped": true,
+    "watchdog_false_progress_source": "standalone_boss_reset_generation_increments",
+    "high_water_kills": 3,
+    "high_water_route_generation": 3,
+    "high_water_route_index": 2
+  },
+  "cleanup": {
+    "gate_passed": true,
+    "stop_observed": true,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true,
+    "worldserver_exit_code": 0
+  },
+  "forbidden_assistance": {
+    "capture_scanner_observed": false,
+    "capture_scanner_gate_passed": true,
+    "acceptance": true
+  },
+  "artifact": {
+    "pointer": "artifacts/cata_raid_program/phase1_raid_foundation_9a3afe4def_20260813.dvc",
+    "dvc_directory_md5": "c1359a231989f1fe00266948788a1c95.dir",
+    "size_bytes": 304849869,
+    "nfiles": 8,
+    "raw_jsonl_sha256": "0305ff2ff4ce098de9905d4b9cdea9f50b7e1c6d506198b3ca698805605b82f6",
+    "capture_report_canonical_sha256": "ae2f2b09b34fbba9feb0174df7425c53710673744ad26f1c81c6c9511f290f24",
+    "capture_report_file_sha256": "c0b2a4d56fab1462a299729e65aa03149e65d0e4c0fd152776f94e220ac7c892",
+    "worldserver_log_sha256": "f68a9ea227a300f90b7ad526d1f30e3bb9b8c577629482d3ce4da414c3a37332",
+    "targeted_push_completed": true,
+    "targeted_remote_status_before_eviction": "cache_and_remote_in_sync",
+    "workspace_payload_evicted": false,
+    "exact_child_cache_objects_evicted": false,
+    "directory_metadata_retained": true,
+    "broad_gc_used": false
+  },
+  "acceptance": {
+    "phase1_gate_passed": false,
+    "reason": "The refreshed runtime was live, but current trash decisions prematurely engaged Magmaw and repeated reset churn masked a stuck route; no complete native recovery or ready-check sequence was accepted.",
+    "next_gate": "Mandatory independent Sol-high review of the target-authority and watchdog remediation, exact coordinated rebuild, fresh provisioning/full verifier/v4 readback, and uncapped canonical rerun."
+  }
+}

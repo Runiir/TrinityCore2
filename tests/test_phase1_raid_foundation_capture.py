@@ -925,4 +925,25 @@ def test_monotonic_semantic_progress_rejects_cast_victim_and_hp_oscillation():
     )
     assert observe_monotonic_semantic_progress(state, status, diagnosis) is True
     status["raid_runtime"]["wipe_generation"] += 1
+    status["raid_runtime"]["boss_reset_generation"] += 1
+    status["raid_runtime"]["recovery_generation"] += 1
+    assert observe_monotonic_semantic_progress(state, status, diagnosis) is False
+    status["raid_runtime"]["boss_reset_generation"] += 1
+    assert observe_monotonic_semantic_progress(state, status, diagnosis) is False
+    status["raid_runtime"]["native_recovery"].update(
+        death_observed=True,
+        corpse_observed=True,
+        release_observed=True,
+    )
     assert observe_monotonic_semantic_progress(state, status, diagnosis) is True
+    assert observe_monotonic_semantic_progress(state, status, diagnosis) is False
+    status["raid_runtime"]["native_recovery"].update(
+        runback_observed=True,
+        resurrection_observed=True,
+        ready_check_action_observed=True,
+        evidence_complete=True,
+        recovery_wipe_generation=status["raid_runtime"]["wipe_generation"],
+    )
+    assert observe_monotonic_semantic_progress(state, status, diagnosis) is True
+    status["raid_runtime"]["boss_reset_generation"] += 1
+    assert observe_monotonic_semantic_progress(state, status, diagnosis) is False

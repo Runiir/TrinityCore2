@@ -1052,6 +1052,50 @@ bool SpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth
     }
     return false;
 }
+
+float SpellHostileMultiTargetReach(SpellInfo const* spellInfo, uint8 depth = 0)
+{
+    if (!spellInfo || depth > 4 || !SpellHasHostileMultiTargetSemantics(spellInfo))
+        return 0.0f;
+
+    float reach = 0.0f;
+    if (spellInfo->Id == 48505 || spellInfo->Id == 89751)
+        reach = std::max(5.0f, spellInfo->GetMaxRange(false));
+
+    for (uint8 effectIndex = 0; effectIndex < MAX_SPELL_EFFECTS; ++effectIndex)
+    {
+        SpellEffectInfo const& effect = spellInfo->Effects[effectIndex];
+        if (!effect.IsEffect())
+            continue;
+
+        if (!spellInfo->IsPositiveEffect(effectIndex))
+        {
+            if (effect.ChainTarget > 1)
+            {
+                float jumpRadius = 10.0f;
+                if (spellInfo->DmgClass == SPELL_DAMAGE_CLASS_RANGED)
+                    jumpRadius = 7.5f;
+                else if (spellInfo->DmgClass == SPELL_DAMAGE_CLASS_MELEE)
+                    jumpRadius = 5.0f;
+                reach = std::max(reach, jumpRadius * float(effect.ChainTarget - 1));
+            }
+            if (effect.IsTargetingArea()
+                || effect.IsEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA)
+                || effect.IsAreaAuraEffect())
+                reach = std::max(reach, effect.CalcRadius());
+        }
+        if (effect.TriggerSpell)
+            reach = std::max(reach,
+                SpellHostileMultiTargetReach(
+                    sSpellMgr->GetSpellInfo(effect.TriggerSpell), depth + 1));
+    }
+
+    // A multi-target spell whose client data does not expose its selection
+    // radius is not safe to submit beside a protected future encounter.  Its
+    // ordinary cast range is a conservative native-data envelope, not a tuned
+    // encounter constant.
+    return reach > 0.0f ? reach : std::max(5.0f, spellInfo->GetMaxRange(false));
+}
 }
 
 BotWorldPopulationMgr::BotWorldPopulationMgr() : _serverEpoch(BuildServerEpoch())
@@ -12332,6 +12376,44 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
     return result;
 }
 
+bool BotWorldPopulationMgr::IsImmediateNextValidationRouteBossTarget(Creature const* creature) const
+{
+    if (!creature || Cohort().Config.ValidationRouteKind == "boss")
+        return false;
+
+    size_t nextIndex = Party().ValidationRouteManifestIndex + 1;
+    if (nextIndex >= Party().ValidationRouteManifest.size())
+        return false;
+
+    ValidationRouteManifestNode const& nextNode = Party().ValidationRouteManifest[nextIndex];
+    if (nextNode.Kind != "boss")
+        return false;
+
+    uint32 entry = creature->GetEntry();
+    return entry == nextNode.TargetEntry
+        || entry == nextNode.OpenerTargetEntry
+        || std::find(nextNode.AlternateTargetEntries.begin(),
+            nextNode.AlternateTargetEntries.end(), entry)
+            != nextNode.AlternateTargetEntries.end();
+}
+
+bool BotWorldPopulationMgr::IsImmediateNextValidationRouteEncounterMember(Creature const* creature) const
+{
+    if (IsImmediateNextValidationRouteBossTarget(creature))
+        return true;
+    if (!creature || Cohort().Config.ValidationRouteKind == "boss")
+        return false;
+
+    size_t nextIndex = Party().ValidationRouteManifestIndex + 1;
+    if (nextIndex >= Party().ValidationRouteManifest.size())
+        return false;
+    ValidationRouteManifestNode const& nextNode = Party().ValidationRouteManifest[nextIndex];
+    return nextNode.Kind == "boss"
+        && std::find(nextNode.AddTargetEntries.begin(),
+            nextNode.AddTargetEntries.end(), creature->GetEntry())
+            != nextNode.AddTargetEntries.end();
+}
+
 bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action, Unit*& target)
 {
     if (!Cohort().Config.ValidationRouteEnable || !bot)
@@ -13388,42 +13470,65 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     };
     auto isImmediateNextValidationRouteBossTarget = [this](Creature const* creature) -> bool
     {
-        if (!creature || Cohort().Config.ValidationRouteKind == "boss")
-            return false;
-
-        size_t nextIndex = Party().ValidationRouteManifestIndex + 1;
-        if (nextIndex >= Party().ValidationRouteManifest.size())
-            return false;
-
-        ValidationRouteManifestNode const& nextNode = Party().ValidationRouteManifest[nextIndex];
-        if (nextNode.Kind != "boss")
-            return false;
-
-        uint32 entry = creature->GetEntry();
-        return entry == nextNode.TargetEntry
-            || entry == nextNode.OpenerTargetEntry
-            || std::find(nextNode.AlternateTargetEntries.begin(), nextNode.AlternateTargetEntries.end(), entry) != nextNode.AlternateTargetEntries.end();
+        return IsImmediateNextValidationRouteBossTarget(creature);
     };
-    auto isImmediateNextValidationRouteEncounterMember = [
-        this,
-        &isImmediateNextValidationRouteBossTarget
-    ](Creature const* creature) -> bool
+    auto isImmediateNextValidationRouteEncounterMember = [this](Creature const* creature) -> bool
     {
-        if (isImmediateNextValidationRouteBossTarget(creature))
-            return true;
-        if (!creature || Cohort().Config.ValidationRouteKind == "boss")
-            return false;
-
-        size_t nextIndex = Party().ValidationRouteManifestIndex + 1;
-        if (nextIndex >= Party().ValidationRouteManifest.size())
-            return false;
-        ValidationRouteManifestNode const& nextNode =
-            Party().ValidationRouteManifest[nextIndex];
-        return nextNode.Kind == "boss"
-            && std::find(nextNode.AddTargetEntries.begin(),
-                nextNode.AddTargetEntries.end(), creature->GetEntry())
-                != nextNode.AddTargetEntries.end();
+        return IsImmediateNextValidationRouteEncounterMember(creature);
     };
+
+    // The current route node owns every offensive decision until its terminal
+    // evidence advances the manifest.  If native threat already includes the
+    // next encounter, fail closed immediately: do not compound the accidental
+    // pull with profile cleaves, multidots, auto-attacks, pets, or controlled
+    // units while waiting for the native encounter to evade/reset.
+    Creature* prematureNextEncounter = nullptr;
+    forEachActiveValidationCohortCombatCreature([&](Creature* creature)
+    {
+        if (!prematureNextEncounter && creature && creature->IsAlive()
+            && creature->GetHealth()
+            && isImmediateNextValidationRouteEncounterMember(creature))
+            prematureNextEncounter = creature;
+    });
+    if (prematureNextEncounter)
+    {
+        for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
+            if (Spell* current = bot->GetCurrentSpell(spellType))
+            {
+                Unit* castTarget = current->m_targets.GetUnitTarget();
+                if (castTarget == prematureNextEncounter
+                    || SpellHasHostileMultiTargetSemantics(current->GetSpellInfo()))
+                    bot->InterruptSpell(spellType, false);
+            }
+        if (bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
+            bot->InterruptSpell(CURRENT_AUTOREPEAT_SPELL, false);
+        bot->AttackStop();
+        if (Pet* pet = bot->GetPet())
+            pet->AttackStop();
+        for (Unit* controlled : bot->m_Controlled)
+            if (controlled)
+            {
+                for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
+                    if (Spell* current = controlled->GetCurrentSpell(spellType))
+                        if (current->m_targets.GetUnitTarget() == prematureNextEncounter
+                            || SpellHasHostileMultiTargetSemantics(current->GetSpellInfo()))
+                            controlled->InterruptSpell(spellType, false);
+                controlled->AttackStop();
+            }
+
+        std::string raw = BuildRawJson(bot, prematureNextEncounter);
+        std::string semantic = BuildSemanticJson(bot, prematureNextEncounter,
+            "validation_route_future_encounter_contamination", &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_future_encounter_contamination",
+            prematureNextEncounter, "native_reset_required_hold", raw.c_str(), semantic.c_str(),
+            bot->GetExactDist(prematureNextEncounter), prematureNextEncounter->GetEntry());
+        MarkBotBlocked(state, bot, "future_encounter_premature_engagement");
+        target = prematureNextEncounter;
+        situation = "validation_route_future_encounter_contamination";
+        action = "hold_for_native_future_encounter_reset";
+        return true;
+    }
+
     auto validationPartyHasActiveCombat = [
         this,
         &forEachActiveValidationCohortCombatCreature,
@@ -28706,6 +28811,13 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     action.DebugName = "no_valid_profile_action";
     if (!bot || !target || !target->IsAlive())
         return action;
+    if (Creature const* creature = target->ToCreature();
+        IsImmediateNextValidationRouteEncounterMember(creature))
+    {
+        action.TargetGuid = target->GetGUID();
+        action.DebugName = "future_encounter_target_forbidden";
+        return action;
+    }
 
     std::string role = GetDungeonRole(bot);
     BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
@@ -28733,6 +28845,28 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
                 return true;
         return false;
     };
+    auto futureEncounterWithinReach = [this, bot, target](float reach) -> bool
+    {
+        if (reach <= 0.0f)
+            return false;
+        auto scan = [this, reach](WorldObject* center) -> bool
+        {
+            if (!center)
+                return false;
+            std::vector<WorldObject*> objects;
+            Trinity::AllWorldObjectsInRange check(center, reach);
+            Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(
+                center, objects, check);
+            Cell::VisitAllObjects(center, searcher, reach);
+            for (WorldObject* object : objects)
+                if (Creature const* creature = object ? object->ToCreature() : nullptr)
+                    if (creature->IsAlive() && creature->GetHealth()
+                        && IsImmediateNextValidationRouteEncounterMember(creature))
+                        return true;
+            return false;
+        };
+        return scan(bot) || scan(target);
+    };
     auto effectiveSpellMinRange = [bot, target](BotActionCandidate const& candidate, float configuredMinRange) -> float
     {
         SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
@@ -28756,7 +28890,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         {
             Unit* unit = object ? object->ToUnit() : nullptr;
             if (unit && unit != target && unit->IsAlive() && bot->IsValidAttackTarget(unit)
-                && engagedWithBotParty(unit))
+                && engagedWithBotParty(unit)
+                && !IsImmediateNextValidationRouteEncounterMember(unit->ToCreature()))
                 ++hostileCount;
         }
     }
@@ -28777,6 +28912,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             Unit* unit = object ? object->ToUnit() : nullptr;
             Creature* creature = unit ? unit->ToCreature() : nullptr;
             if (!unit || unit == target || !unit->IsAlive() || !bot->IsValidAttackTarget(unit))
+                continue;
+            if (IsImmediateNextValidationRouteEncounterMember(creature))
                 continue;
             if (!engagedWithBotParty(unit) && (!creature || !IsTrainingDummy(creature)))
                 continue;
@@ -28892,6 +29029,13 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         }
 
         SpellInfo const* candidateSpellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
+        if (SpellHasHostileMultiTargetSemantics(candidateSpellInfo)
+            && futureEncounterWithinReach(
+                SpellHostileMultiTargetReach(candidateSpellInfo)))
+        {
+            candidate.RejectReason = "future_encounter_splash_forbidden";
+            continue;
+        }
         if (forbidArea && SpellHasHostileMultiTargetSemantics(candidateSpellInfo))
         {
             candidate.RejectReason = "declarative_area_damage_semantics_forbidden";
@@ -29675,6 +29819,22 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
 
 BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly, bool forbidArea, bool allowMultidot)
 {
+    if (target && IsImmediateNextValidationRouteEncounterMember(target->ToCreature()))
+    {
+        ResolvedCombatAction rejected;
+        rejected.TargetGuid = target->GetGUID();
+        rejected.DebugName = "future_encounter_target_forbidden";
+        if (actionOut)
+            *actionOut = rejected;
+        if (state)
+        {
+            RecordCombatAttempt(*state, bot, target, "profile_resolve", &rejected,
+                BotActionResult::NoAction, rejected.DebugName.c_str());
+            MarkBotBlocked(*state, bot, rejected.DebugName.c_str());
+        }
+        return BotActionResult::NoAction;
+    }
+
     if (state && TryEnsurePersistentCombatSetup(*state, bot, target))
         return BotActionResult::Casting;
 
