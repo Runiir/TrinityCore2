@@ -138,7 +138,6 @@ def test_runtime_profiles_select_only_the_matching_diagnostic_scenario():
         assert profile["prerequisite_contract"]["certifies_predecessors"] is False
     assert len({profiles[scenario_id]["pool_tag_filter"] for scenario_id in DIAGNOSTIC_IDS.values()}) == 6
 
-
 def test_live_report_builder_keeps_all_seven_bwd_route_partitions_distinct(tmp_path: Path):
     manifests = _manifests()
     bwd_ids = [CANONICAL_ID, *DIAGNOSTIC_IDS.values()]
