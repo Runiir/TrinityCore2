@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-13T10:39:37Z",
+  "updated_at_utc": "2026-08-13T10:55:40Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -32,13 +32,13 @@
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "The exact aa85 uncapped capture remains a Phase 1 infrastructure abort, not gameplay or fidelity evidence. Its diagnosis has been consumed and exactly evicted after remote verification. Exact c1f7fe4663 adds independently reconstructable frozen Drudge geometry, canonical tank/source identity, scope-bound lower-lane hold evidence, and ordered first-death/native-Vengeful-Rage guard evidence without an invented time window; 257 focused checks pass. Mandatory Sol-high review approved exact status checkpoint 89f33065d6 with zero critical/high findings. The exact build, fresh preparation, and rerun remain required."
+    "current_acceptance": "Mandatory Sol-high review approved exact build target 1c7a614d71 with zero critical/high findings. Its policy-v8 configure and worldserver receipts independently verify, 296 focused checks pass, and fresh provisioning/full verification/v4 readback passed. The uncapped run remained fail-closed: Chainwielder cleared, but the Drudge pair stalled after both first native Rushes targeted tank 1272, with zero accepted reseparation geometry, health synchronization, trained-profile action, Magmaw engagement, or native full-wipe recovery. The remotely synchronized diagnosis is infrastructure evidence only; Phase 1 and fidelity remain false."
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_commit": "aa85a9d0b9cc34f9a73ce9b5ad9380af5879d3c4",
-    "current_state": "exact_aa85_gate_bearing_build_succeeded_after_one_resource_abort",
-    "current_result": "configure receipt 867db145... and worldserver receipt e08b0e76... independently verify; exact ticket produced ELF a5865577...; first attempt 8032acf6... is retained build_resource_abort and is not code/gameplay failure",
+    "current_commit": "1c7a614d71626b28f89570f132379970ec8b3cd8",
+    "current_state": "exact_1c7a_gate_bearing_build_succeeded_after_one_resource_abort",
+    "current_result": "configure receipt 107db1bb... and worldserver receipt a6550406... independently verify; exact ticket produced ELF 10569337...; first attempt 9ea159ad... is retained build_resource_abort and is not code/gameplay failure",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -357,12 +357,12 @@
     "phase1_sixteenth_infrastructure_live_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_9a3afe4def_20260813.dvc",
     "phase1_sixteenth_infrastructure_live_dvc_md5": "c1359a231989f1fe00266948788a1c95.dir",
     "phase1_sixteenth_infrastructure_live_remote_status": "remote_verified_exact_workspace_payload_and_eight_child_cache_objects_evicted_receipts_and_compact_summary_retained",
-    "phase1_current_preparation_pointer": "artifacts/cata_raid_program/phase1_preparation_aa85a9d0b9_20260813.dvc",
-    "phase1_current_preparation_dvc_md5": "7a81cf466d0bba3f2665b7177e071cad.dir",
-    "phase1_current_preparation_remote_status": "pushed_remote_verified_workspace_and_six_preparation_only_children_evicted_then_three_shared_children_evicted_with_consumed_capture",
-    "phase1_current_infrastructure_live_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_1ee02778_20260813.dvc",
-    "phase1_current_infrastructure_live_dvc_md5": "6ac9cd047fdd69c6ee8a86100cc17d2a.dir",
-    "phase1_current_infrastructure_live_remote_status": "remote_verified_exact_workspace_payload_and_eight_child_cache_objects_evicted_receipts_preflight_and_compact_summary_retained",
+    "phase1_current_preparation_pointer": "artifacts/cata_raid_program/phase1_preparation_1c7a614d71_20260813.dvc",
+    "phase1_current_preparation_dvc_md5": "b9bc119e6a9ad5cb1a019d6fa6d86ebf.dir",
+    "phase1_current_preparation_remote_status": "pushed_remote_verified_nine_file_payload_retained_until_current_diagnosis_and_fix_are_consumed",
+    "phase1_current_infrastructure_live_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_1c7a614d71_20260813.dvc",
+    "phase1_current_infrastructure_live_dvc_md5": "cb2c98b0ad979373eb5070855b3488a5.dir",
+    "phase1_current_infrastructure_live_remote_status": "pushed_remote_verified_three_file_failure_batch_retained_until_current_diagnosis_and_fix_are_consumed",
     "broad_gc_used": false,
     "config_local_tracked": false,
     "known_historical_unavailable_objects": [
@@ -595,6 +595,12 @@
       ,"uncapped_aa85_capture_reached_exact_magmaw_drudge_pair_and_observed_four_native_rush_deliveries"
       ,"uncapped_aa85_capture_semantic_stall_cleanup_and_forbidden_assistance_gates_passed"
       ,"uncapped_aa85_eight_file_failure_batch_pushed_remote_verified_and_compactly_summarized"
+      ,"mandatory_sol_high_review_approved_exact_1c7a614d71_with_zero_critical_high"
+      ,"exact_policy_v8_configure_and_worldserver_build_succeeded_at_1c7a614d71_after_one_non_gameplay_resource_abort"
+      ,"focused_exact_build_regression_partition_296_passed"
+      ,"fresh_1c7a_bwd_10n_provisioning_full_verifier_and_v4_readback_passed"
+      ,"uncapped_1c7a_capture_cleared_chainwielder_then_failed_closed_at_drudge_pair_before_magmaw"
+      ,"uncapped_1c7a_three_file_failure_batch_pushed_remote_verified_and_compactly_summarized"
       ],
       "remaining_requirements": [
         "remediate_drudge_exact_lane_targets_full_roster_reseparation_tank_health_sync_and_trained_profile_execution",
@@ -621,8 +627,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "Exact aa85 was reviewed, built, freshly prepared, and run uncapped. Its remotely verified failure batch proved a Drudge semantic stall and was consumed, then its workspace and exact eight child cache objects were evicted. Exact c1f7fe4663 remediates the subsequent Sol-high liveness, immutable geometry, canonical identity, health-hold, native-rage, telemetry, recovery-state, and persistence findings and passes 257 focused checks. Mandatory final exact rereview, exact rebuild, fresh preparation, and rerun remain required."
+      "detail": "Exact 1c7a was reviewed with zero critical/high findings, built through gate-bearing policy-v8 receipts, passed 296 focused checks, and passed fresh provisioning/full verifier/v4 readback. Its uncapped remotely synchronized run cleared Chainwielder but failed closed at the isolated Drudge pair: both first native Rushes targeted tank 1272, reseparation geometry never completed, partial deaths cycled, no health-sync/profile evidence appeared, and Magmaw was not engaged. Luna-xhigh remediation is in progress; mandatory Sol-high review, exact rebuild, fresh preparation, and rerun remain required."
     }
   ],
-  "next_action": "After narrow Sol-high carry approval of this status-only descendant, run one policy-v8 coordinated build, freshly reprovision/full-verify/v4-read back, prestart and verify one worldserver, attach one Luna-xhigh babysitter, and rerun the uncapped canonical Phase 1 capture. Six parallel boss shards remain downstream of a passing Phase 1 gate."
+  "next_action": "Complete the isolated Luna-xhigh remediation of the exact 1c7a Drudge lane/path/target/partial-death and telemetry-cost failure, obtain mandatory Sol-high zero-critical/high approval, run one exact policy-v8 coordinated rebuild, freshly reprovision/full-verify/v4-read back, prestart and verify one worldserver, attach one Luna-xhigh babysitter, and rerun the uncapped canonical Phase 1 capture. Six parallel boss shards remain downstream of a passing Phase 1 gate."
 }
