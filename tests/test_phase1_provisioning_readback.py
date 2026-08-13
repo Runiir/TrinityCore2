@@ -1,5 +1,16 @@
-from tools.raid_program.capture_phase1_provisioning_readback import validate_readback
+from pathlib import Path
+
+from tools.raid_program.capture_phase1_provisioning_readback import (
+    load_materialized_readback_contract,
+    validate_readback,
+)
 from tools.bot_ml.build_validation_provisioning import VALIDATION_FULL_STAT_SEED
+
+
+ROOT = Path(__file__).resolve().parents[1]
+PROVISIONING = ROOT / "experiments/configs/validation_provisioning_cata_001.json"
+SCENARIOS = ROOT / "experiments/configs/validation_scenarios_cata_001.json"
+FIXTURE = ROOT / "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json"
 
 
 def _rows():
@@ -67,3 +78,97 @@ def test_phase1_provisioning_readback_rejects_persisted_ghost_state():
         "Bwd1:ghost_character_flag", "Bwd1:resurrect_at_login_flag",
         "corpse_phase_rows", "corpse_rows", "ghost_aura_rows",
     ]
+
+
+def _materialized_observed(contract):
+    rows = []
+    start = contract["start"]
+    for expected in contract["expected"]:
+        rows.append({
+            "guid": expected.get("guid") or expected["expected_character_guid"],
+            "account_id": expected.get("expected_account_id"),
+            "account_registry_id": expected.get("expected_account_id"),
+            "account": expected["account"],
+            "name": expected["name"],
+            "role": expected["role"],
+            "class_spec": expected["class_spec"],
+            "class_id": expected["class"],
+            "canonical_roster_slot_id": expected["canonical_roster_slot_id"],
+            "roster_slot_id": expected["roster_slot_id"],
+            "runtime_profile_id": expected["runtime_profile_id"],
+            "pool_tag": expected["pool_tag"],
+            "map_id": start["map_id"],
+            "x": start["x"], "y": start["y"], "z": start["z"], "o": start["o"],
+            "online": 0,
+            "health": VALIDATION_FULL_STAT_SEED,
+            "power1": VALIDATION_FULL_STAT_SEED,
+            "character_flags": 0,
+            "at_login": 0,
+            "enabled": 1,
+            "in_use": 0,
+            "experiment_tags": expected["experiment_tags"],
+        })
+    return rows
+
+
+def test_materialized_magmaw_readback_contract_is_exact_and_boss_scoped():
+    contract = load_materialized_readback_contract(PROVISIONING, SCENARIOS, FIXTURE, "blackwing_descent_10n_magmaw_diagnostic")
+    assert len(contract["expected"]) == 10
+    assert contract["scenario_id"] == "blackwing_descent_10n_magmaw_diagnostic"
+    assert all(row["pool_tag"] == contract["scenario_id"] for row in contract["expected"])
+    assert all(row["runtime_profile_id"] == contract["scenario_id"] for row in contract["expected"])
+    assert {row["canonical_roster_slot_id"] for row in contract["expected"]} == {
+        "raid_tank_1", "raid_tank_2", "raid_healer_1", "raid_healer_2", "raid_healer_3",
+        "raid_dps_1", "raid_dps_2", "raid_dps_3", "raid_dps_4", "raid_dps_5",
+    }
+    assert contract["shard"]["predecessor_state"]["precompleted_boss_entries"] == []
+
+
+def test_materialized_canonical_readback_contract_is_positive_and_exact():
+    contract = load_materialized_readback_contract(PROVISIONING, SCENARIOS, FIXTURE)
+    assert len(contract["expected"]) == 10
+    assert validate_readback(
+        contract["expected"], _materialized_observed(contract),
+        start=contract["start"],
+        character_instance_rows=0, group_member_rows=0, ghost_aura_rows=0,
+        corpse_rows=0, corpse_phase_rows=0,
+    ) == []
+
+
+def test_materialized_readback_rejects_cross_shard_identity_contamination():
+    magmaw = load_materialized_readback_contract(PROVISIONING, SCENARIOS, FIXTURE, "blackwing_descent_10n_magmaw_diagnostic")
+    omnotron = load_materialized_readback_contract(PROVISIONING, SCENARIOS, FIXTURE, "blackwing_descent_10n_omnotron_diagnostic")
+    observed = _materialized_observed(magmaw)
+    observed[0]["experiment_tags"] = omnotron["scenario_id"]
+    observed[0]["pool_tag"] = omnotron["scenario_id"]
+    reasons = validate_readback(
+        magmaw["expected"], observed,
+        start=magmaw["start"],
+        character_instance_rows=0, group_member_rows=0, ghost_aura_rows=0,
+        corpse_rows=0, corpse_phase_rows=0,
+    )
+    assert "Mgwtank1:pool_tag" in reasons
+    assert "Mgwtank1:tag" in reasons
+    assert magmaw["expected"][0]["name"] != omnotron["expected"][0]["name"]
+    assert magmaw["expected"][0]["guid"] != omnotron["expected"][0]["guid"]
+
+
+def test_materialized_readback_rejects_cross_shard_account_name_guid_and_residue_drift():
+    magmaw = load_materialized_readback_contract(PROVISIONING, SCENARIOS, FIXTURE, "blackwing_descent_10n_magmaw_diagnostic")
+    omnotron = load_materialized_readback_contract(PROVISIONING, SCENARIOS, FIXTURE, "blackwing_descent_10n_omnotron_diagnostic")
+    observed = _materialized_observed(magmaw)
+    observed[0]["account_id"] = omnotron["expected"][0]["expected_account_id"]
+    observed[0]["account_registry_id"] = omnotron["expected"][0]["expected_account_id"]
+    observed[0]["account"] = omnotron["expected"][0]["account"]
+    observed[0]["guid"] = omnotron["expected"][0]["guid"]
+    reasons = validate_readback(
+        magmaw["expected"], observed,
+        start=magmaw["start"],
+        character_instance_rows=0, group_member_rows=1, ghost_aura_rows=1,
+        corpse_rows=0, corpse_phase_rows=1,
+    )
+    assert "Mgwtank1:account_id" in reasons
+    assert "Mgwtank1:account_registry_id" in reasons
+    assert "Mgwtank1:account" in reasons
+    assert "Mgwtank1:guid" in reasons
+    assert {"group_member_rows", "ghost_aura_rows", "corpse_phase_rows"}.issubset(reasons)
