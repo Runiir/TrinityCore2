@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "audit_id": "cata_raid_runtime_phase1_v1",
-  "updated_at_utc": "2026-08-13T09:35:20Z",
+  "updated_at_utc": "2026-08-13T10:10:31Z",
   "target": {
     "client": "Cataclysm Classic",
     "patch": "4.4.2",
@@ -9,18 +9,18 @@
     "locale": "enUS",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
-  "audited_commit": "4425f10aba2d9af5569aa215867f6d8ae9bcda24",
-  "gate_state": "in_progress_exact_4425_drudge_partial_death_and_hotpath_remediation_pending_final_review_build_and_rerun",
+  "audited_commit": "2703ab5157002e18849dc911c89b5d8a683f795f",
+  "gate_state": "in_progress_exact_2703_drudge_geometry_liveness_and_hotpath_remediation_pending_final_review_build_and_rerun",
   "foundation": {
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "current_head_sha": "4425f10aba2d9af5569aa215867f6d8ae9bcda24",
+    "current_head_sha": "2703ab5157002e18849dc911c89b5d8a683f795f",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
-    "mandatory_sol_high_rereview": "exact_cdacc_rejected_seven_high_all_remediated_through_4425_final_exact_rereview_pending",
+    "mandatory_sol_high_rereview": "exact_0f28_rejected_five_high_all_remediated_through_2703_final_exact_rereview_pending",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "acceptance": "Exact aa85 remains a remotely retained infrastructure-abort diagnosis with no gameplay or fidelity inference; its consumed workspace and exact child cache objects are evicted. Exact 4425 remediates honest ownership-versus-taunt evidence, frozen source lanes, ordered Rush acknowledgment, scoped safe health synchronization, partial-death state, and fingerprint persistence. Final exact review, build, fresh preparation, and live rerun are pending."
+    "acceptance": "Exact aa85 remains a remotely retained infrastructure-abort diagnosis with no gameplay or fidelity inference; its consumed workspace and exact child cache objects are evicted. Exact 2703 adds honest ownership-versus-taunt evidence, frozen source lanes, ordered Rush acknowledgment, independently reconstructed immutable geometry, liveness-safe health synchronization/fallbacks, partial-death state, and complete fingerprint persistence. Final exact review, build, fresh preparation, and live rerun are pending."
   },
   "research": {
     "required_boss_packets": 28,
@@ -176,7 +176,7 @@
   "required_open_work": [
     {
       "area": "current_build",
-      "missing": ["successful_policy_v8_receipt_for_exact_reviewed_4425_descendant"]
+      "missing": ["successful_policy_v8_receipt_for_exact_reviewed_2703_descendant"]
     },
     {
       "area": "live_script_and_decision_review",
@@ -193,7 +193,7 @@
   ],
   "phase1_gate_blockers": [
     "exact_aa85_uncapped_capture_failed_closed_at_magmaw_drudge_pair_before_magmaw_engagement",
-    "exact_4425_mandatory_sol_high_rereview_and_build_pending",
+    "exact_2703_mandatory_sol_high_rereview_and_build_pending",
     "single_cohort_cpu_log_and_telemetry_optimization_pending_live_measurement",
     "bwd_exact_442_quantitative_and_exact_log_hotfix_evidence_blocks_phase2_fidelity"
   ],
