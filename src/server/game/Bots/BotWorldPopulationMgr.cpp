@@ -4787,9 +4787,19 @@ void BotWorldPopulationMgr::EnsurePopulation()
                 Cohort().LastPopulationFailureReason =
                     "validation_raid_admission_identity_drift:" + identityDriftDetail;
             }
-            else if (nativeRecoveryWorldportsDeferred)
-                TC_LOG_INFO("server", "BotWorld validation raid admission deferred native recovery worldports count=%u",
-                    nativeRecoveryWorldportsDeferred);
+            else
+            {
+                // Admission identity is immutable, but raid state is live.  Rebuild
+                // the runtime from the exact native roster on every completed tick
+                // so deaths, wipes, and encounter state cannot remain frozen at
+                // admission.  EnsureValidationCohortGroup intentionally defers
+                // while a native recovery worldport leaves the live formation
+                // incomplete; the next reattached tick refreshes the full roster.
+                EnsureValidationCohortGroup();
+                if (nativeRecoveryWorldportsDeferred)
+                    TC_LOG_INFO("server", "BotWorld validation raid admission deferred native recovery worldports count=%u",
+                        nativeRecoveryWorldportsDeferred);
+            }
             return;
         }
 

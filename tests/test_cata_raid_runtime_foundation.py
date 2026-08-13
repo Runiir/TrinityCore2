@@ -12,6 +12,29 @@ MAGMAW_IMPL = (
 GENERIC_SMOKE = json.loads((ROOT / "experiments/configs/cata_raid_phase1_generic_mechanic_smoke_v1.json").read_text())
 
 
+def _completed_admission_runtime_tick(*, prior_runtime, expected_size,
+                                      live_roster, boss_states=(), identity_ok=True):
+    """Small model of the completed-admission refresh boundary.
+
+    The C++ path performs the native observation; this model keeps the tests
+    focused on the admission/refresh contract without requiring a worldserver.
+    """
+    if not identity_ok:
+        return {"identity_drift": True, "runtime": prior_runtime}
+    if len(live_roster) != expected_size:
+        return {"identity_drift": False, "runtime": prior_runtime}
+
+    runtime = dict(prior_runtime)
+    runtime["alive_size"] = sum(1 for member in live_roster if member["alive"])
+    runtime["boss_states"] = tuple(boss_states)
+    runtime["encounter_in_progress"] = "IN_PROGRESS" in runtime["boss_states"]
+    if runtime["alive_size"] == 0 and runtime.get("wipe_state") != "wiped":
+        runtime["wipe_state"] = "wiped"
+        runtime["wipe_generation"] = runtime.get("wipe_generation", 0) + 1
+        runtime["evidence_sequence"] = runtime.get("evidence_sequence", 0) + expected_size
+    return {"identity_drift": False, "runtime": runtime}
+
+
 def test_bwd_entry_to_magmaw_uses_frozen_junction_below_native_path_limit():
     config = json.loads(
         (ROOT / "experiments/configs/validation_scenarios_cata_001.json").read_text()
@@ -594,6 +617,140 @@ def test_completed_validation_raid_drift_verifies_exact_identity_and_cleans_all_
     cleanup = complete.index("if (!exactIdentity)")
     latch = complete.index("Cohort().ValidationRaidAdmissionFailed = true;", cleanup)
     assert cleanup < complete.index("sBotMgr->RemoveWorldBot(state.Guid);", cleanup) < latch
+
+
+def test_completed_validation_raid_exact_identity_refreshes_live_runtime_each_tick():
+    population = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::EnsurePopulation()"):
+        IMPL.index("void BotWorldPopulationMgr::EnsureCalibrationPopulation()")
+    ]
+    complete = population[
+        population.index("if (Cohort().ValidationRaidAdmissionComplete)"):
+        population.index("auto terminalFailure")
+    ]
+    drift_start = complete.index("if (!exactIdentity)")
+    refresh = complete.index("EnsureValidationCohortGroup();")
+    drift_end = complete.index(
+        "\n            else\n            {\n                // Admission identity is immutable",
+        drift_start,
+    )
+
+    assert drift_end < refresh < complete.index("return;")
+    assert "EnsureValidationCohortGroup();" not in complete[drift_start:drift_end]
+    assert "Cohort().Raid.GroupGuid == exactGroupGuid" in complete
+    assert "nativeRecoveryWorldportsDeferred" in complete
+
+
+def test_completed_validation_raid_refresh_advances_all_dead_wipe_and_evidence():
+    group = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::EnsureValidationCohortGroup()"):
+        IMPL.index("bool BotWorldPopulationMgr::ResolveSpawnPlacement")
+    ]
+    prior = {
+        "alive_size": 10,
+        "wipe_state": "ready",
+        "wipe_generation": 0,
+        "evidence_sequence": 0,
+    }
+    observed = _completed_admission_runtime_tick(
+        prior_runtime=prior,
+        expected_size=10,
+        live_roster=[{"alive": False} for _ in range(10)],
+    )
+
+    assert observed["runtime"]["alive_size"] == 0
+    assert observed["runtime"]["wipe_state"] == "wiped"
+    assert observed["runtime"]["wipe_generation"] == 1
+    assert observed["runtime"]["evidence_sequence"] > prior["evidence_sequence"]
+    for token in (
+        "bool const allDead = raid.ActiveSize > 0 && raid.AliveSize == 0;",
+        "++raid.WipeGeneration;",
+        "signal.DeathSequence = ++raid.EvidenceSequence;",
+        "signal.CorpseSequence = signal.HasCorpse ? ++raid.EvidenceSequence : 0;",
+    ):
+        assert token in group
+
+
+def test_completed_validation_raid_refresh_observes_native_boss_in_progress():
+    group = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::EnsureValidationCohortGroup()"):
+        IMPL.index("bool BotWorldPopulationMgr::ResolveSpawnPlacement")
+    ]
+    prior = {"alive_size": 10, "wipe_state": "ready", "evidence_sequence": 0}
+    observed = _completed_admission_runtime_tick(
+        prior_runtime=prior,
+        expected_size=10,
+        live_roster=[{"alive": True} for _ in range(10)],
+        boss_states=("NOT_STARTED", "IN_PROGRESS"),
+    )
+
+    assert observed["runtime"]["encounter_in_progress"] is True
+    assert "raid.EncounterInProgress = instance->IsEncounterInProgress();" in group
+    assert "raid.BossStates.push_back(uint8(instance->GetBossState(bossId)));" in group
+
+
+def test_completed_validation_raid_native_worldport_defers_then_reattach_refreshes():
+    population = IMPL[
+        IMPL.index("if (Cohort().ValidationRaidAdmissionComplete)"):
+        IMPL.index("auto terminalFailure")
+    ]
+    group = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::EnsureValidationCohortGroup()"):
+        IMPL.index("bool BotWorldPopulationMgr::ResolveSpawnPlacement")
+    ]
+    prior = {
+        "alive_size": 10,
+        "wipe_state": "ready",
+        "wipe_generation": 0,
+        "evidence_sequence": 0,
+    }
+    deferred = _completed_admission_runtime_tick(
+        prior_runtime=prior,
+        expected_size=10,
+        live_roster=[{"alive": True} for _ in range(9)],
+    )
+    reattached = _completed_admission_runtime_tick(
+        prior_runtime=deferred["runtime"],
+        expected_size=10,
+        live_roster=[{"alive": True} for _ in range(10)],
+    )
+
+    assert deferred["identity_drift"] is False
+    assert deferred["runtime"] == prior
+    assert reattached["runtime"]["alive_size"] == 10
+    assert "nativeRecoveryWorldport" in population
+    assert "++nativeRecoveryWorldportsDeferred" in population
+    assert group.index("members.size() != exactFormationSize") < group.index("RaidRuntime& raid")
+
+
+def test_completed_validation_raid_identity_drift_cleans_and_returns_without_refresh():
+    population = IMPL[
+        IMPL.index("if (Cohort().ValidationRaidAdmissionComplete)"):
+        IMPL.index("auto terminalFailure")
+    ]
+    drift_start = population.index("if (!exactIdentity)")
+    refresh = population.index("EnsureValidationCohortGroup();")
+    drift = population[drift_start:refresh]
+
+    observed = _completed_admission_runtime_tick(
+        prior_runtime={"alive_size": 10, "wipe_state": "ready"},
+        expected_size=10,
+        live_roster=[{"alive": True} for _ in range(10)],
+        identity_ok=False,
+    )
+
+    assert observed["identity_drift"] is True
+    assert observed["runtime"]["wipe_state"] == "ready"
+    for token in (
+        "sBotMgr->RemoveWorldBot(state.Guid);",
+        "ReleaseBotGuid(guid);",
+        "Party() = PartyRuntime();",
+        "Cohort().Raid = RaidRuntime();",
+        "Cohort().RosterLeases.clear();",
+    ):
+        assert token in drift
+    assert "EnsureValidationCohortGroup();" not in drift
+    assert "return;" in population[refresh:]
 
 
 def test_completed_validation_raid_defers_only_exact_native_recovery_worldports():
