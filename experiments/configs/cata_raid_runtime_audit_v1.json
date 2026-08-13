@@ -9,19 +9,19 @@
     "locale": "enUS",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
-  "audited_commit": "3dc26a3eb6a487e1fa805a0609cc1a23fe7934c6",
-  "gate_state": "exact_3dc_all_live_transport_profile_contract_pending_mandatory_rereview",
+  "audited_commit": "b270ecf74b2635b267db167a7d0e62fdcce403da",
+  "gate_state": "exact_b270_profile_owned_route_manifest_contract_pending_mandatory_rereview",
   "foundation": {
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "reviewed_source_sha": "3dc26a3eb6a487e1fa805a0609cc1a23fe7934c6",
-    "status_checkpoint_identity": "resolve from Git HEAD; status descendant of exact 3dc source pending mandatory rereview",
+    "reviewed_source_sha": "b270ecf74b2635b267db167a7d0e62fdcce403da",
+    "status_checkpoint_identity": "resolve from Git HEAD; status descendant of exact b270 source pending mandatory rereview",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
-    "mandatory_sol_high_rereview": "PENDING exact 3dc after f9e2 review found a remaining direct-node SOAP config-ownership bypass; no build or live start authorized before zero-Critical/High decision",
+    "mandatory_sol_high_rereview": "PENDING exact b270 after f9e2 review found profile-owned runtime manifest/report-selected manifest divergence; no build or live start authorized before zero-Critical/High decision",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "acceptance": "Exact 3dc fail-closes calibration/raid combinations, empty/cross-shard manifest and sequence routes, mismatched session profiles including direct-node flows, and every live scenario-scoped SOAP execution that cannot own the required config identity. The targeted command passes 19 checks and 321 broader raid/shard/readback tests remain green. Mandatory rereview/build/live proof remain pending. Phase 1/fidelity remain false."
+    "acceptance": "Exact b270 fail-closes calibration/raid combinations, empty/cross-shard routes, mismatched session profiles, unowned live SOAP execution, and profile/report route-manifest path divergence. The targeted command passes 21 checks and 321 broader raid/shard/readback tests remain green. Mandatory rereview/build/live proof remain pending. Phase 1/fidelity remain false."
   },
   "research": {
     "required_boss_packets": 28,
@@ -47,8 +47,8 @@
   },
   "build": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_state": "exact_3dc_all_live_transport_profile_contract_pending_mandatory_rereview",
-    "current_result": "historical dbe build/preparation was held before live on inherited Stonecore profile; exact 3dc closes process/session/SOAP/sequence identity paths but has no review or exact receipt yet",
+    "current_state": "exact_b270_profile_owned_route_manifest_contract_pending_mandatory_rereview",
+    "current_result": "historical dbe build/preparation was held before live on inherited Stonecore profile; exact b270 closes process/session/SOAP/sequence identity paths but has no review or exact receipt yet",
     "receipt_trust_model": "explicit_trusted_local_operator",
     "trusted_operator": "runiir",
     "trusted_uid": 1000,
@@ -177,7 +177,7 @@
   "required_open_work": [
     {
       "area": "current_build",
-      "missing": ["mandatory_sol_high_review_exact_3dc_live_transport_profile_remediation", "one_exact_policy_v8_rebuild_of_reviewed_descendant"]
+      "missing": ["mandatory_sol_high_review_exact_b270_profile_owned_manifest_remediation", "one_exact_policy_v8_rebuild_of_reviewed_descendant"]
     },
     {
       "area": "live_script_and_decision_review",

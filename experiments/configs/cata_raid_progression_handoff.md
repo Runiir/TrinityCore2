@@ -1,5 +1,9 @@
 # Cataclysm raid progression handoff
 
+# 2026-08-13T15:51:00Z — Exact b270 binds reported routes to the profile-owned runtime manifest
+
+The f9e2 review found that a substituted validation route file with correct Magmaw labels could pass Python preflight while C++ runtime profile application loaded the profile's canonical manifest, splitting reported evidence from executed nodes. Exact `b270ecf74b2635b267db167a7d0e62fdcce403da` requires the selected profile's `validation_route.manifest_path` to resolve exactly to the chosen `validation_scenario_dir/validation_routes.jsonl` for both manifest and sequence execution. A substituted path now rejects. The stale calibration assertion was corrected to the intentional empty-controller `AutoStart=0` behavior. Targeted tests pass 21 and the broader 321-test gate remains green. No build, service, DB or DVC action ran; mandatory rereview remains pending.
+
 # 2026-08-13T15:44:00Z — Exact 3dc closes direct-node SOAP config ownership
 
 The f9e2 review found the same config-ownership issue on direct-node SOAP runs: Magmaw context could be reported while the attached server remained configured for Stonecore. Exact `3dc26a3eb6a487e1fa805a0609cc1a23fe7934c6` rejects every live scenario-scoped SOAP validation, including direct nodes, manifests, sequences and calibration, because this tool cannot establish the attached server's config identity through SOAP. Offline `--input-log` reconstruction remains permitted. The targeted matrix passes 19 checks; no build, service, database or DVC action ran. Mandatory exact rereview remains required.
