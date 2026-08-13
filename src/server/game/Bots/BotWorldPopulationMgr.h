@@ -381,6 +381,7 @@ private:
             std::string ClassSpec;
         };
         std::string ScenarioId;
+        std::string RuntimeProfileId;
         std::string NodeId;
         std::string Label;
         std::string Kind;

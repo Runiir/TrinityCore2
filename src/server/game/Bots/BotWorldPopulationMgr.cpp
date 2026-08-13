@@ -2641,7 +2641,27 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
 
 bool BotWorldPopulationMgr::IsValidationProfileName(std::string const& name) const
 {
-    return name == "stonecore_5n" || name == "blackwing_descent_10n";
+    if (name == "stonecore_5n" || name == "blackwing_descent_10n")
+        return true;
+
+    // Validation profiles are data-owned. Boss-shard names must not be
+    // added to this predicate one by one: the profile manifest is the
+    // authority for whether a named profile has an executable route. The
+    // manifest is loaded before start/prepare consumes this predicate.
+    auto profile = Cohort().RuntimeProfiles.find(name);
+    if (profile == Cohort().RuntimeProfiles.end())
+        return false;
+
+    BotWorldExperimentProfile const& candidate = profile->second;
+    return candidate.HasValidationRouteEnable && candidate.Config.ValidationRouteEnable
+        && candidate.HasValidationRouteManifestPath && !candidate.Config.ValidationRouteManifestPath.empty()
+        && candidate.HasValidationRouteScenarioId && candidate.Config.ValidationRouteScenarioId == name
+        && candidate.HasTargetPopulation && candidate.Config.TargetPopulation == 10
+        && candidate.HasPoolTagFilter && candidate.Config.PoolTagFilter == name
+        && candidate.HasAllowRaids && candidate.Config.AllowRaids
+        && candidate.HasRaidSize && candidate.Config.RaidSize == 10
+        && candidate.HasRaidDifficulty && candidate.Config.RaidDifficulty == RAID_DIFFICULTY_10MAN_NORMAL
+        && (!candidate.HasMapId || candidate.Config.MapId == BlackwingDescentMapId);
 }
 
 std::string BotWorldPopulationMgr::PrepareValidationProfile(std::string const& name, std::string const& poolTag,
@@ -2653,17 +2673,24 @@ std::string BotWorldPopulationMgr::PrepareValidationProfile(std::string const& n
     std::string profileName = name.empty() ? Cohort().SelectedProfileName : name;
     if (profileName.empty())
         return "{\"ok\":false,\"action\":\"botauto_prepare\",\"failure_reason\":\"profile_required\"}";
+    EnsureRuntimeProfilesLoaded();
+    auto selectedProfile = Cohort().RuntimeProfiles.find(profileName);
+    if (selectedProfile == Cohort().RuntimeProfiles.end())
+        return "{\"ok\":false,\"action\":\"botauto_prepare\",\"failure_reason\":\"unknown_profile\"}";
+    BotWorldExperimentProfile const& profile = selectedProfile->second;
     if (!IsValidationProfileName(profileName))
-        return "{\"ok\":false,\"action\":\"botauto_prepare\",\"failure_reason\":\"not_validation_profile\"}";
+        return "{\"ok\":false,\"action\":\"botauto_prepare\",\"failure_reason\":\"not_executable_validation_profile\"}";
+    if (!poolTag.empty()
+        && (!profile.HasPoolTagFilter || profile.Config.PoolTagFilter != poolTag))
+        return "{\"ok\":false,\"action\":\"botauto_prepare\",\"failure_reason\":\"pool_tag_profile_mismatch\"}";
     if (!classSpecs.empty())
     {
         std::set<std::string> uniqueSpecs(classSpecs.begin(), classSpecs.end());
-        if (profileName != "stonecore_5n" || poolTag.empty() || classSpecs.size() != 5 || uniqueSpecs.size() != classSpecs.size()
+        uint32 expectedSize = profile.HasTargetPopulation ? profile.Config.TargetPopulation : 0;
+        if (poolTag.empty() || !expectedSize || classSpecs.size() != expectedSize || uniqueSpecs.size() != classSpecs.size()
             || std::any_of(classSpecs.begin(), classSpecs.end(), [](std::string const& value) { return value.empty(); }))
             return "{\"ok\":false,\"action\":\"botauto_prepare\",\"failure_reason\":\"invalid_exact_party_contract\"}";
     }
-    else if (!poolTag.empty())
-        return "{\"ok\":false,\"action\":\"botauto_prepare\",\"failure_reason\":\"pool_tag_requires_exact_party\"}";
 
     std::string selectResult = SelectRuntimeProfile(profileName);
     if (selectResult.find("\"ok\":true") == std::string::npos)
@@ -2672,7 +2699,11 @@ std::string BotWorldPopulationMgr::PrepareValidationProfile(std::string const& n
     Cohort().PreparedPoolTagFilter = poolTag;
     Cohort().PreparedClassSpecs = classSpecs;
     LoadConfig(profileName, nullptr);
-    bool ok = Cohort().Config.ValidationRouteEnable && IsValidationProfileName(Cohort().Config.Name) && PrepareCurrentValidationProfile("manual_prepare");
+    bool const exactTagSelected = !poolTag.empty() && Cohort().Config.PoolTagFilter == poolTag;
+    bool const profileTagSelected = poolTag.empty() && !Cohort().Config.PoolTagFilter.empty();
+    bool ok = Cohort().Config.ValidationRouteEnable && IsValidationProfileName(Cohort().Config.Name)
+        && (exactTagSelected || profileTagSelected)
+        && PrepareCurrentValidationProfile("manual_prepare");
     std::ostringstream json;
     json << "{\"ok\":" << (ok ? "true" : "false")
          << ",\"action\":\"botauto_prepare\""
@@ -2793,12 +2824,58 @@ bool BotWorldPopulationMgr::ResetValidationBotPool(char const* reason)
             ++dpsCount;
     } while (result->NextRow());
 
-    if (!Cohort().Config.PoolClassSpecFilter.empty()
-        && (observedSpecs != Cohort().Config.PoolClassSpecFilter || guids.size() != 5
-            || tankCount != 1 || healerCount != 1 || dpsCount != 3))
+    // A named validation profile owns an exact pool partition.  Resetting a
+    // tag must never silently accept a partial shard or a mixed-role pool and
+    // leave admission to discover the mismatch after leases/spawns begin.
+    uint32 expectedPoolSize = Cohort().Config.TargetPopulation;
+    if (!Party().ValidationRouteManifest.empty()
+        && Party().ValidationRouteManifest.front().ExpectedBotCount)
+        expectedPoolSize = Party().ValidationRouteManifest.front().ExpectedBotCount;
+    if (!expectedPoolSize || guids.size() != expectedPoolSize)
     {
-        Cohort().LastPopulationFailureReason = "exact_party_pool_mismatch";
+        Cohort().LastPopulationFailureReason = "validation_pool_exact_size_mismatch";
         return false;
+    }
+    if (Cohort().Config.AllowRaids)
+    {
+        std::vector<RaidRosterPlanSlot> const rosterPlan = BuildRosterPlan();
+        uint32 expectedTanks = uint32(std::count_if(rosterPlan.begin(), rosterPlan.end(),
+            [](RaidRosterPlanSlot const& slot) { return slot.Role == "tank"; }));
+        uint32 expectedHealers = uint32(std::count_if(rosterPlan.begin(), rosterPlan.end(),
+            [](RaidRosterPlanSlot const& slot) { return slot.Role == "healer"; }));
+        uint32 expectedDps = uint32(std::count_if(rosterPlan.begin(), rosterPlan.end(),
+            [](RaidRosterPlanSlot const& slot) { return slot.Role == "dps"; }));
+        if (rosterPlan.size() != expectedPoolSize || tankCount != expectedTanks
+            || healerCount != expectedHealers || dpsCount != expectedDps)
+        {
+            Cohort().LastPopulationFailureReason = "validation_pool_exact_raid_composition_mismatch";
+            return false;
+        }
+    }
+
+    if (!Cohort().Config.PoolClassSpecFilter.empty())
+    {
+        bool exactClassSpecs = observedSpecs == Cohort().Config.PoolClassSpecFilter;
+        if (Cohort().Config.AllowRaids)
+        {
+            std::vector<RaidRosterPlanSlot> const rosterPlan = BuildRosterPlan();
+            uint32 expectedTanks = uint32(std::count_if(rosterPlan.begin(), rosterPlan.end(),
+                [](RaidRosterPlanSlot const& slot) { return slot.Role == "tank"; }));
+            uint32 expectedHealers = uint32(std::count_if(rosterPlan.begin(), rosterPlan.end(),
+                [](RaidRosterPlanSlot const& slot) { return slot.Role == "healer"; }));
+            uint32 expectedDps = uint32(std::count_if(rosterPlan.begin(), rosterPlan.end(),
+                [](RaidRosterPlanSlot const& slot) { return slot.Role == "dps"; }));
+            exactClassSpecs = exactClassSpecs && guids.size() == rosterPlan.size()
+                && tankCount == expectedTanks && healerCount == expectedHealers && dpsCount == expectedDps;
+        }
+        else
+            exactClassSpecs = exactClassSpecs && guids.size() == 5
+                && tankCount == 1 && healerCount == 1 && dpsCount == 3;
+        if (!exactClassSpecs)
+        {
+            Cohort().LastPopulationFailureReason = "exact_party_pool_mismatch";
+            return false;
+        }
     }
 
     std::ostringstream guidList;
@@ -3615,6 +3692,19 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         node.ScenarioId = ExtractJsonStringField(routeJson, "scenario_id");
         if (!Cohort().Config.ValidationRouteScenarioId.empty() && node.ScenarioId != Cohort().Config.ValidationRouteScenarioId)
             continue;
+        node.RuntimeProfileId = ExtractJsonStringField(routeJson, "runtime_profile_id");
+        // Diagnostic partitions are profile-owned. A missing or foreign
+        // profile binding must stop native admission before any lease or bot
+        // spawn; the historical canonical manifest is allowed to omit this
+        // field for compatibility with its frozen identity contract.
+        bool const dynamicValidationProfile = Cohort().Config.Name != "stonecore_5n"
+            && Cohort().Config.Name != "blackwing_descent_10n";
+        if ((dynamicValidationProfile && node.RuntimeProfileId.empty())
+            || (!node.RuntimeProfileId.empty() && node.RuntimeProfileId != Cohort().Config.Name))
+        {
+            Party().ValidationRouteManifestLoadError = "manifest_runtime_profile_identity_mismatch";
+            return;
+        }
         node.NodeId = ExtractJsonStringField(routeJson, "route_node_id");
         node.Label = ExtractJsonStringField(routeJson, "label");
         node.Kind = ExtractJsonStringField(routeJson, "kind");
@@ -13102,8 +13192,8 @@ bool BotWorldPopulationMgr::IsImmediateNextValidationRouteEncounterMember(Creatu
 
     // A live member already enrolled in the current route generation is
     // authoritative even when the current and next nodes reuse an entry or a
-    // spawn family.  A stale ledger entry that itself identifies the future
-    // node is not allowed to punch through the future guard.
+    // spawn family. Death and transition ledgers are excluded above, so stale
+    // members cannot use this exception to punch through the future guard.
     bool const persistedCurrentMember =
         Party().ValidationRoutePackGeneration == Party().ValidationRouteGeneration
         && Party().ValidationRoutePackMemberGuids.find(creature->GetGUID())
@@ -13112,7 +13202,7 @@ bool BotWorldPopulationMgr::IsImmediateNextValidationRouteEncounterMember(Creatu
             == Party().ValidationRoutePackDeathGuids.end()
         && Party().ValidationRoutePackTransitionGuids.find(creature->GetGUID())
             == Party().ValidationRoutePackTransitionGuids.end();
-    if (persistedCurrentMember && !nextEntry && !nextSpawn)
+    if (persistedCurrentMember)
         return false;
     return nextEntry || nextSpawn;
 }
@@ -24218,17 +24308,22 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         if (Cohort().Config.ValidationRouteKind == "descent")
         {
-            state.ActivePathFromX = bot->GetPositionX();
-            state.ActivePathFromY = bot->GetPositionY();
-            state.ActivePathFromZ = bot->GetPositionZ();
-            state.ActivePathToX = routeAnchorX;
-            state.ActivePathToY = routeAnchorY;
-            state.ActivePathToZ = routeAnchorZ;
-            state.ActivePathValid = true;
-            state.LastPathRejectReason.clear();
-            state.LastPathChangeMs = NowMs();
-            bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
-            bot->GetMotionMaster()->MoveJump(routeAnchorX, routeAnchorY, routeAnchorZ, Cohort().Config.ValidationRouteO, 18.0f, 8.0f, 0, true);
+            // The server cannot synthesize the Nefarian ledge descent. A
+            // MoveJump, teleport, or direct position mutation would turn a
+            // diagnostic shard into assisted completion evidence. Keep the
+            // node observable and fail closed until a legitimate native
+            // client/world movement event reaches the declared lower anchor.
+            state.ActivePathValid = false;
+            state.LastPathRejectReason = "native_descent_semantics_unavailable";
+            state.LastNoProgressReason = "native_descent_semantics_unavailable";
+            state.LastDecisionResult = "native_descent_unavailable";
+            RecordEvent(state, bot, "validation_route_descent_blocked", nullptr,
+                "native_descent_semantics_unavailable", raw.c_str(), semantic.c_str(),
+                routeDistance, Cohort().Config.ValidationRouteTargetEntry);
+            situation = "validation_route_descent";
+            action = "validation_route_descent_blocked";
+            target = nullptr;
+            return true;
         }
         else
             moveToRouteAnchor();

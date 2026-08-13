@@ -103,6 +103,20 @@ EXPECTED_BWD_ROUTE_IDENTITY = (
     (11, "boss", "Nefarian", 41376, "native_instance_unlock"),
 )
 
+# These are the generated partitions in validation_scenarios_cata_001.json.
+# Keep the capture gate tied to the generator's shard shape so an accidentally
+# truncated or cross-shard route cannot be accepted merely because its last
+# row happens to be a boss.
+EXPECTED_BWD_ROUTE_PARTITION_COUNTS = {
+    "blackwing_descent_10n": (11, 6),
+    "blackwing_descent_10n_magmaw_diagnostic": (4, 1),
+    "blackwing_descent_10n_omnotron_diagnostic": (3, 1),
+    "blackwing_descent_10n_maloriak_diagnostic": (3, 1),
+    "blackwing_descent_10n_atramedes_diagnostic": (2, 1),
+    "blackwing_descent_10n_chimaeron_diagnostic": (2, 1),
+    "blackwing_descent_10n_nefarian_diagnostic": (3, 1),
+}
+
 
 def expected_bwd_10n_roster() -> tuple[tuple[str, str, int, str], ...]:
     manifest = json.loads(
@@ -506,12 +520,27 @@ def _roster_rejections(runtime: dict[str, Any]) -> list[str]:
     return reasons
 
 
-def accepted_foundation_status(status: dict[str, Any]) -> tuple[bool, list[str]]:
+def accepted_foundation_status(
+    status: dict[str, Any],
+    *,
+    profile_name: str = "blackwing_descent_10n",
+    route_partition: dict[str, Any] | None = None,
+) -> tuple[bool, list[str]]:
     runtime = status.get("raid_runtime") or {}
     reasons: list[str] = []
     if not isinstance(runtime, dict):
         return False, ["raid_runtime_missing"]
     route_progress = runtime.get("route_progress")
+    # Phase 1's canonical foundation gate stops at Magmaw. An explicit boss
+    # shard instead targets the terminal node of its own generated partition.
+    route_partition = route_partition or {}
+    if profile_name == "blackwing_descent_10n":
+        expected_route_generation = 4
+        expected_route_index = 3
+    else:
+        expected_route_generation = int(route_partition.get("node_count") or 0)
+        expected_route_index = int(route_partition.get("terminal_index") or 0)
+    expected_strategy = profile_name
     checks = {
         "status_ok": status.get("ok") is True,
         "ten_bots": status.get("bots") == 10,
@@ -536,15 +565,15 @@ def accepted_foundation_status(status: dict[str, Any]) -> tuple[bool, list[str]]
         "profile_content_hash_owned": isinstance(runtime.get("profile_content_hash"), str)
             and bool(runtime.get("profile_content_hash", "").strip()),
         "assignment_generation_owned": _positive_int(runtime.get("assignment_generation")),
-        "strategy_owned": isinstance(runtime.get("strategy_id"), str) and bool(runtime.get("strategy_id", "").strip()),
+        "strategy_owned": runtime.get("strategy_id") == expected_strategy,
         "boss_state_readback": len(runtime.get("boss_states") or []) == 6,
         "ready_check_satisfied": runtime.get("ready_check_satisfied") is True,
         "roster_composition_valid": runtime.get("roster_composition_valid") is True,
         "evidence_sequence_owned": _positive_int(runtime.get("evidence_sequence")),
         "unique_leases": runtime.get("unique_leases") is True,
-        "magmaw_route_node": isinstance(route_progress, dict)
-            and route_progress.get("generation") == 4
-            and route_progress.get("node_index") == 3,
+        "selected_route_terminal_node": isinstance(route_progress, dict)
+            and route_progress.get("generation") == expected_route_generation
+            and route_progress.get("node_index") == expected_route_index,
     }
     reasons.extend(name for name, passed in checks.items() if not passed)
     reasons.extend(_roster_rejections(runtime))
@@ -2866,7 +2895,9 @@ def _required_telemetry_envelope_report(
     }
 
 
-def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
+def evidence_demux_report(
+    rows: list[dict[str, Any]], *, profile_name: str = "blackwing_descent_10n"
+) -> dict[str, Any]:
     """Independently bind every retained JSON row to one raid lifecycle."""
 
     reasons: list[str] = []
@@ -2987,7 +3018,7 @@ def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
             binding["scope"] = "pre_start_profile"
             if canonical_cohort != "default" or payload.get("cohort_id") != canonical_cohort:
                 reject("evidence_demux_profile_cohort_mismatch")
-            if payload.get("ok") is not True or payload.get("active_profile") != "blackwing_descent_10n":
+            if payload.get("ok") is not True or payload.get("active_profile") != profile_name:
                 reject("evidence_demux_profile_selection_invalid")
             if profile_selection_seen:
                 reject("evidence_demux_duplicate_profile_selection")
@@ -3213,10 +3244,25 @@ def validate_runtime_profile_assets(
     reference_worktree: Path = ROOT,
     profile_name: str = "blackwing_descent_10n",
     require_dvc_lineage: bool = True,
+    scenario_id: str | None = None,
+    pool_tag: str | None = None,
 ) -> dict[str, Any]:
-    """Fail closed when the isolated live worktree lacks frozen route data."""
+    """Fail closed when a capture lacks its exact profile-owned route partition.
+
+    ``profile_name`` and ``scenario_id`` are explicit inputs for diagnostic
+    boss shards.  The route file is shared, so validating only its full-file
+    digest would allow a shard to consume a canonical or neighboring shard
+    partition.  This function independently checks the selected scenario's
+    contiguous node sequence, identity fields, diagnostic flags, and profile
+    binding before a worldserver is started.
+    """
 
     reasons: list[str] = []
+    selected_scenario_id = scenario_id or profile_name
+    if scenario_id is not None and scenario_id != profile_name:
+        reasons.append("profile_scenario_argument_mismatch")
+    if not selected_scenario_id:
+        reasons.append("profile_scenario_required")
     profile_relative = Path("dataset/bot_runtime_profiles/profiles.json")
 
     def load_profile(root: Path) -> tuple[dict[str, Any] | None, Path | None, str | None]:
@@ -3236,7 +3282,7 @@ def validate_runtime_profile_assets(
         route_text = route.get("manifest_path")
         if not isinstance(route_text, str) or not route_text:
             return profile, None, "profile_route_path_missing"
-        if route.get("scenario_id") != profile_name:
+        if route.get("scenario_id") != selected_scenario_id:
             return profile, None, "profile_route_scenario_mismatch"
         route_relative = Path(route_text)
         if route_relative.is_absolute() or ".." in route_relative.parts:
@@ -3254,10 +3300,34 @@ def validate_runtime_profile_assets(
         reasons.append(f"worktree_{worktree_error}")
     if reference_error:
         reasons.append(f"reference_{reference_error}")
+    if worktree_profile is not None:
+        declared_tag = worktree_profile.get("pool_tag_filter")
+        if ((profile_name != "blackwing_descent_10n" or pool_tag is not None)
+                and (not isinstance(declared_tag, str) or not declared_tag)):
+            reasons.append("profile_pool_tag_missing")
+        elif pool_tag is not None and declared_tag != pool_tag:
+            reasons.append("profile_pool_tag_argument_mismatch")
+        if worktree_profile.get("name") != profile_name:
+            reasons.append("profile_name_identity_mismatch")
+        route = worktree_profile.get("validation_route")
+        if isinstance(route, dict) and route.get("scenario_id") != selected_scenario_id:
+            reasons.append("profile_scenario_identity_mismatch")
 
     route_rows = 0
     route_sha256 = None
     reference_route_sha256 = None
+    route_partition: dict[str, Any] = {
+        "scenario_id": selected_scenario_id,
+        "profile_name": profile_name,
+        "node_count": 0,
+        "terminal_index": None,
+        "terminal_kind": None,
+        "node_ids": [],
+        "diagnostic_only": None,
+        "boss_node_count": 0,
+        "passed": False,
+        "reasons": [],
+    }
     if route_path is not None:
         try:
             route_bytes = route_path.read_bytes()
@@ -3267,13 +3337,59 @@ def validate_runtime_profile_assets(
                 reasons.append("worktree_route_manifest_oversized")
             route_sha256 = hashlib.sha256(route_bytes).hexdigest()
             rows = [json.loads(line) for line in route_bytes.decode("utf-8").splitlines() if line.strip()]
-            matching_rows = [row for row in rows if isinstance(row, dict) and row.get("scenario_id") == profile_name]
+            matching_rows = [row for row in rows if isinstance(row, dict) and row.get("scenario_id") == selected_scenario_id]
             route_rows = len(matching_rows)
-            if route_rows != 11:
-                reasons.append("worktree_route_expected_eleven_rows")
+            route_partition["node_count"] = route_rows
+            if route_rows == 0:
+                route_partition["reasons"].append("route_partition_empty")
             steps = [int(row.get("step") or 0) for row in matching_rows]
             node_ids = [str(row.get("route_node_id") or "") for row in matching_rows]
             kinds = [str(row.get("kind") or "") for row in matching_rows]
+            route_partition["node_ids"] = node_ids
+            route_partition["terminal_index"] = route_rows - 1 if route_rows else None
+            route_partition["terminal_kind"] = kinds[-1] if kinds else None
+            diagnostic_values = [row.get("diagnostic_only") for row in matching_rows]
+            diagnostic_only = diagnostic_values[0] if diagnostic_values else None
+            route_partition["diagnostic_only"] = diagnostic_only
+            route_partition["boss_node_count"] = sum(kind == "boss" for kind in kinds)
+            expected_partition = EXPECTED_BWD_ROUTE_PARTITION_COUNTS.get(profile_name)
+            if expected_partition is not None and (
+                route_rows != expected_partition[0]
+                or route_partition["boss_node_count"] != expected_partition[1]
+            ):
+                route_partition["reasons"].append("route_partition_shape_mismatch")
+            if matching_rows and isinstance(worktree_profile, dict):
+                if any(row.get("runtime_profile_id", profile_name) != profile_name for row in matching_rows):
+                    route_partition["reasons"].append("route_partition_runtime_profile_mismatch")
+                declared_population = worktree_profile.get("target_population")
+                route_population = matching_rows[0].get("expected_bot_count")
+                if (isinstance(declared_population, int) and declared_population > 0
+                        and route_population != declared_population):
+                    route_partition["reasons"].append("route_partition_roster_size_mismatch")
+                expected_roster = matching_rows[0].get("roster_identity")
+                if declared_population and (
+                    not isinstance(expected_roster, list)
+                    or len(expected_roster) != declared_population
+                    or len({str(row.get("roster_slot_id")) for row in expected_roster if isinstance(row, dict)}) != declared_population
+                    or len({str(row.get("guid")) for row in expected_roster if isinstance(row, dict)}) != declared_population
+                    or any(
+                        not isinstance(row, dict)
+                        or not str(row.get("roster_slot_id") or "").strip()
+                        or not _positive_int(row.get("guid"))
+                        or not str(row.get("name") or "").strip()
+                        or not str(row.get("class_spec") or "").strip()
+                        or not str(row.get("role") or "").strip()
+                        for row in expected_roster
+                    )
+                ):
+                    route_partition["reasons"].append("route_partition_roster_identity_invalid")
+                roster_signatures = {
+                    _canonical_object_sha256(row.get("roster_identity"))
+                    if isinstance(row.get("roster_identity"), list) else "missing"
+                    for row in matching_rows
+                }
+                if len(roster_signatures) != 1:
+                    route_partition["reasons"].append("route_partition_roster_identity_drift")
             route_identity = tuple(
                 (
                     int(row.get("step") or 0),
@@ -3284,16 +3400,78 @@ def validate_runtime_profile_assets(
                 )
                 for row in matching_rows
             )
-            if steps != list(range(1, 12)):
-                reasons.append("worktree_route_steps_not_ordered_one_through_eleven")
-            if route_identity != EXPECTED_BWD_ROUTE_IDENTITY:
-                reasons.append("worktree_route_identity_mismatch")
+            if steps != list(range(1, route_rows + 1)):
+                route_partition["reasons"].append("route_partition_steps_not_contiguous")
+                if selected_scenario_id == "blackwing_descent_10n":
+                    reasons.append("worktree_route_steps_not_ordered_one_through_eleven")
+            # Preserve the canonical Phase 1 identity contract for the
+            # foundation capture. Diagnostic shards use the generated
+            # partition contract above and are never compared to this list.
+            if selected_scenario_id == "blackwing_descent_10n":
+                if route_rows != len(EXPECTED_BWD_ROUTE_IDENTITY):
+                    reasons.append("worktree_route_expected_eleven_rows")
+                if route_identity != EXPECTED_BWD_ROUTE_IDENTITY:
+                    reasons.append("worktree_route_identity_mismatch")
             if any(not node_id for node_id in node_ids):
-                reasons.append("worktree_route_node_id_missing")
+                route_partition["reasons"].append("route_partition_node_id_missing")
             if len(set(node_ids)) != len(node_ids):
-                reasons.append("worktree_route_node_id_duplicated")
+                route_partition["reasons"].append("route_partition_node_id_duplicated")
             if any(not kind for kind in kinds):
-                reasons.append("worktree_route_kind_missing")
+                route_partition["reasons"].append("route_partition_kind_missing")
+            if kinds and kinds[-1] != "boss":
+                route_partition["reasons"].append("route_partition_terminal_not_boss")
+            for row in matching_rows:
+                kind = str(row.get("kind") or "")
+                if kind in {"trash", "boss"} and not str(row.get("label") or "").strip():
+                    route_partition["reasons"].append("route_partition_target_label_missing")
+                if kind in {"trash", "boss"} and not str(row.get("source_guid") or "").strip():
+                    route_partition["reasons"].append("route_partition_target_identity_missing")
+            if matching_rows and any(value != diagnostic_only for value in diagnostic_values):
+                route_partition["reasons"].append("route_partition_diagnostic_flag_drift")
+            if worktree_profile is not None:
+                declared_diagnostic = worktree_profile.get("diagnostic_only")
+                if declared_diagnostic is not None and diagnostic_only != declared_diagnostic:
+                    route_partition["reasons"].append("route_partition_profile_diagnostic_mismatch")
+                parent = worktree_profile.get("diagnostic_parent_scenario_id")
+                if parent and any(row.get("diagnostic_parent_scenario_id") != parent for row in matching_rows):
+                    route_partition["reasons"].append("route_partition_parent_identity_mismatch")
+                prerequisite = worktree_profile.get("prerequisite_contract")
+                if declared_diagnostic is True:
+                    if not isinstance(prerequisite, dict) or prerequisite.get("certifies_predecessors") is not False:
+                        route_partition["reasons"].append("profile_prerequisite_contract_not_noncertifying")
+                    else:
+                        expected_precompleted = prerequisite.get("precompleted_boss_entries", [])
+                        for row in matching_rows:
+                            state = row.get("diagnostic_prerequisite_state")
+                            if not isinstance(state, dict):
+                                route_partition["reasons"].append("route_partition_prerequisite_state_missing")
+                                continue
+                            if state.get("certifies_predecessors") is not False:
+                                route_partition["reasons"].append("route_partition_prerequisite_certification_enabled")
+                            if ("precompleted_boss_entries" not in state
+                                    or state.get("precompleted_boss_entries") != expected_precompleted):
+                                route_partition["reasons"].append("route_partition_precompleted_boss_identity_mismatch")
+                            for key in ("upper_ledge_start", "requires_native_descent_before_engagement"):
+                                if key in prerequisite and state.get(key) != prerequisite.get(key):
+                                    route_partition["reasons"].append(f"route_partition_prerequisite_{key}_mismatch")
+                        if prerequisite.get("requires_native_descent_before_engagement") is True:
+                            descent_rows = [row for row in matching_rows if str(row.get("node_kind") or "") == "descent"]
+                            preparation_rows = [row for row in matching_rows if row.get("upper_ledge_preparation") is True]
+                            if not descent_rows:
+                                route_partition["reasons"].append("route_partition_native_descent_node_missing")
+                            elif any(row.get("descent_action") != "native_jump_or_fall" for row in descent_rows):
+                                route_partition["reasons"].append("route_partition_native_descent_action_invalid")
+                            if not preparation_rows:
+                                route_partition["reasons"].append("route_partition_upper_ledge_preparation_missing")
+                            elif descent_rows and not any(
+                                isinstance(prep.get("z"), (int, float))
+                                and isinstance(descent.get("z"), (int, float))
+                                and prep["z"] > descent["z"]
+                                for prep in preparation_rows for descent in descent_rows
+                            ):
+                                route_partition["reasons"].append("route_partition_upper_ledge_height_invalid")
+            route_partition["passed"] = not route_partition["reasons"]
+            reasons.extend(route_partition["reasons"])
         except (OSError, UnicodeError, ValueError, TypeError):
             reasons.append("worktree_route_manifest_unreadable")
     if reference_route_path is not None:
@@ -3329,6 +3507,12 @@ def validate_runtime_profile_assets(
         "route_sha256": route_sha256,
         "reference_route_sha256": reference_route_sha256,
         "matching_route_rows": route_rows,
+        "scenario_id": selected_scenario_id,
+        "pool_tag_filter": (
+            worktree_profile.get("pool_tag_filter")
+            if isinstance(worktree_profile, dict) else None
+        ),
+        "route_partition": route_partition,
         "dvc_stage": "validation_scenarios",
         "dvc_status": dvc_status,
         "reasons": reasons,
@@ -3359,6 +3543,18 @@ def main() -> int:
     parser.add_argument("--build-attestation", type=Path, default=None)
     parser.add_argument("--worktree", type=Path, default=ROOT)
     parser.add_argument(
+        "--scenario-id", default=None,
+        help="exact validation scenario partition to execute; defaults to --runtime-profile",
+    )
+    parser.add_argument(
+        "--runtime-profile", default=None,
+        help="exact runtime profile to select; defaults to blackwing_descent_10n",
+    )
+    parser.add_argument(
+        "--pool-tag", default=None,
+        help="optional exact pool tag; must match the selected runtime profile",
+    )
+    parser.add_argument(
         "--observe-sec", type=int, default=0,
         help=(
             "optional diagnostic wall-clock limit; 0 (the canonical default) "
@@ -3388,6 +3584,10 @@ def main() -> int:
     config = args.config.resolve()
     output = args.output.resolve()
     worktree = args.worktree.resolve()
+    profile_name = args.runtime_profile or args.scenario_id or "blackwing_descent_10n"
+    scenario_id = args.scenario_id or profile_name
+    if args.runtime_profile and args.scenario_id and args.runtime_profile != args.scenario_id:
+        raise SystemExit("runtime profile and scenario ID must identify the same partition")
     raw_output = (args.raw_output or output.with_name(f"{output.stem}.raw.jsonl")).resolve()
     server_log_output = (
         args.server_log_output or output.with_name(f"{output.stem}.worldserver.log")
@@ -3423,7 +3623,12 @@ def main() -> int:
     identity_before = git_identity(worktree)
     if not identity_before["clean"]:
         raise SystemExit("canonical phase1 capture requires a clean worktree")
-    runtime_assets = validate_runtime_profile_assets(worktree)
+    runtime_assets = validate_runtime_profile_assets(
+        worktree,
+        profile_name=profile_name,
+        scenario_id=scenario_id,
+        pool_tag=args.pool_tag,
+    )
     if not runtime_assets["passed"]:
         raise SystemExit("runtime profile assets rejected: " + ",".join(runtime_assets["reasons"]))
     build_provenance = validate_build_receipt(
@@ -3436,6 +3641,8 @@ def main() -> int:
         raise SystemExit("build receipt rejected: " + ",".join(build_provenance.get("rejections", [])))
 
     started_utc = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    recovery_required = profile_name == "blackwing_descent_10n"
+    drudge_required = profile_name == "blackwing_descent_10n" or profile_name.endswith("_magmaw_diagnostic")
     stable: list[dict[str, Any]] = []
     last_rejections: list[str] = ["no_status_observed"]
     startup_error: str | None = None
@@ -3454,11 +3661,14 @@ def main() -> int:
         try:
             wait_for_prompt(process, log_path, args.startup_timeout_sec)
             assert process.stdin is not None
-            # Bind the canonical run to the frozen BWD 10N runtime profile.
+            # Bind the run to the explicitly selected frozen runtime profile.
             # The test worldserver configuration deliberately has AutoStart
             # disabled, so an explicit native operator command is required;
             # omitting it would only poll an inactive default cohort forever.
-            process.stdin.write(b"botauto start blackwing_descent_10n\n")
+            if profile_name == "blackwing_descent_10n":
+                process.stdin.write(b"botauto start blackwing_descent_10n\n")
+            else:
+                process.stdin.write((f"botauto start {profile_name}\n").encode())
             process.stdin.flush()
             time.sleep(1.0)
             # Canonical raid validation is terminal-gate driven. Raid and boss
@@ -3476,8 +3686,8 @@ def main() -> int:
             diagnosis_count = 0
             trace_count = 0
             latest_diagnosis: dict[str, Any] | None = None
-            recovery_accepted = False
-            drudge_accepted = False
+            recovery_accepted = not recovery_required
+            drudge_accepted = not drudge_required
             readycheck_requested_for: tuple[Any, ...] | None = None
             semantic_progress_state: dict[str, Any] = {}
             last_semantic_progress_at = time.monotonic()
@@ -3602,7 +3812,11 @@ def main() -> int:
                     monitor_statuses.extend(new_statuses)
                     for status in new_statuses:
                         telemetry_scheduler.observe_status(status)
-                        accepted, rejections = accepted_foundation_status(status)
+                        accepted, rejections = accepted_foundation_status(
+                            status,
+                            profile_name=profile_name,
+                            route_partition=runtime_assets.get("route_partition"),
+                        )
                         last_rejections = rejections
                         if accepted:
                             stable.append(status)
@@ -3669,8 +3883,10 @@ def main() -> int:
                                     "elapsed_seconds": round(time.monotonic() - monitor_started_at, 3),
                                 }
                             break
-                    recovery_accepted, _ = accepted_native_recovery(monitor_statuses)
-                    drudge_accepted, _ = accepted_drudge_contract(monitor_statuses)
+                    if recovery_required:
+                        recovery_accepted, _ = accepted_native_recovery(monitor_statuses)
+                    if drudge_required:
+                        drudge_accepted, _ = accepted_drudge_contract(monitor_statuses)
                     if monitor_statuses:
                         runtime = monitor_statuses[-1].get("raid_runtime") or {}
                         native = runtime.get("native_recovery") or {}
@@ -3717,7 +3933,7 @@ def main() -> int:
         log_bytes = server_log_output.read_bytes()
 
     normalized_rows = normalized_batch_payload(log_bytes)
-    demux_report = evidence_demux_report(normalized_rows)
+    demux_report = evidence_demux_report(normalized_rows, profile_name=profile_name)
     demux_rejections = demux_report["rejections"]
     telemetry_envelopes = _required_telemetry_envelope_report(normalized_rows)
     raw_payload_sha256, raw_payload_rows = write_normalized_batch(raw_output, normalized_rows)
@@ -3734,8 +3950,14 @@ def main() -> int:
     traces = action_payloads(normalized_rows, "botauto_trace")
     profiles = action_payloads(normalized_rows, "botauto_profile")
     stop_rows = action_payloads(normalized_rows, "botauto_stop")
-    recovery_accepted, recovery_rejections = accepted_native_recovery(active_statuses)
-    drudge_accepted, drudge_rejections = accepted_drudge_contract(active_statuses)
+    recovery_accepted, recovery_rejections = (
+        accepted_native_recovery(active_statuses) if recovery_required
+        else (True, ["native_recovery_not_required_for_diagnostic_partition"])
+    )
+    drudge_accepted, drudge_rejections = (
+        accepted_drudge_contract(active_statuses) if drudge_required
+        else (True, ["drudge_contract_not_required_for_diagnostic_partition"])
+    )
     cleanup_status = statuses[-1] if statuses else {}
     cleanup_ok = cleanup_status.get("bots") == 0 and cleanup_status.get("lease_count") == 0
     postflight = preflight_runtime_exclusions(worktree)
@@ -3762,7 +3984,7 @@ def main() -> int:
         and len(profiles) == 1
         and profiles[0].get("ok") is True
         and profiles[0].get("cohort_id") == "default"
-        and profiles[0].get("active_profile") == "blackwing_descent_10n"
+        and profiles[0].get("active_profile") == profile_name
         and identity_stable
         and semantic_stall.get("detected") is not True
         and telemetry_abort.get("detected") is not True
@@ -3771,7 +3993,7 @@ def main() -> int:
     )
     report = {
         "schema_version": 1,
-        "capture_id": "cata_raid_phase1_bwd_10n_foundation_v1",
+        "capture_id": f"cata_raid_phase1_{profile_name}_v1",
         "classification": "success" if success else (
             "diagnostic_only" if forbidden_entries else (
             "infrastructure_abort" if (
@@ -3788,6 +4010,9 @@ def main() -> int:
         ),
         "started_at_utc": started_utc,
         "identity": identity_before,
+        "scenario_id": scenario_id,
+        "runtime_profile": profile_name,
+        "pool_tag_filter": runtime_assets.get("pool_tag_filter"),
         "identity_stable_during_run": identity_stable,
         "build_provenance": build_provenance,
         "runtime_profile_assets": runtime_assets,
@@ -3799,8 +4024,10 @@ def main() -> int:
         "accepted_stable_statuses": len(stable),
         "last_foundation_rejections": last_rejections,
         "native_recovery_accepted": recovery_accepted,
+        "native_recovery_required": recovery_required,
         "native_recovery_rejections": recovery_rejections,
         "drudge_contract_accepted": drudge_accepted,
+        "drudge_contract_required": drudge_required,
         "drudge_contract_rejections": drudge_rejections,
         "semantic_stall": semantic_stall,
         "telemetry_abort": telemetry_abort,

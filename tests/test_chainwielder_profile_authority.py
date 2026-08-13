@@ -73,3 +73,48 @@ def test_profile_handoff_is_native_resolver_after_route_authority_rejects_future
     assert "BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile)" in resolver
     assert 'action.DebugName = "no_valid_profile_action"' in resolver
     assert "IsProtectedEncounterTarget(" in EXECUTOR
+
+
+def test_current_generation_guid_wins_when_next_node_reuses_identity_family():
+    helper = RUNTIME[
+        RUNTIME.index("bool BotWorldPopulationMgr::IsImmediateNextValidationRouteEncounterMember"):
+        RUNTIME.index("bool BotWorldPopulationMgr::IsNativeRaidRecoveryEvidencePending")
+    ]
+    # H5: the current exact GUID remains legal even when entry/spawn identity
+    # overlaps the next node. Transition/death exclusions precede this guard.
+    assert "if (persistedCurrentMember)" in helper
+    assert "if (persistedCurrentMember && !nextEntry && !nextSpawn)" not in helper
+
+
+def test_nefarian_descent_fails_closed_without_synthetic_jump_or_position_assistance():
+    descent = RUNTIME[RUNTIME.index('if (Cohort().Config.ValidationRouteKind == "descent")'):]
+    descent = descent[:descent.index('if (Cohort().Config.ValidationRouteKind != "boss"', 1)]
+    assert 'native_descent_semantics_unavailable' in descent
+    assert 'validation_route_descent_blocked' in descent
+    assert 'MoveJump(' not in descent
+    assert 'TeleportTo(' not in descent
+
+
+def test_diagnostic_profile_and_pool_admission_are_manifest_owned_and_exact():
+    profile_start = RUNTIME.index("bool BotWorldPopulationMgr::IsValidationProfileName")
+    prepare_start = RUNTIME.index("std::string BotWorldPopulationMgr::PrepareValidationProfile", profile_start)
+    prepare_end = RUNTIME.index("bool BotWorldPopulationMgr::PrepareCurrentValidationProfile", prepare_start)
+    reset_start = RUNTIME.index("bool BotWorldPopulationMgr::ResetValidationBotPool")
+    reset_end = RUNTIME.index("std::string BotWorldPopulationMgr::GetRuntimeProfilesJson", reset_start)
+    profile = RUNTIME[
+        profile_start:prepare_start
+    ]
+    prepare = RUNTIME[
+        prepare_start:prepare_end
+    ]
+    reset = RUNTIME[
+        reset_start:reset_end
+    ]
+    assert "RuntimeProfiles.find(name)" in profile
+    assert "candidate.Config.ValidationRouteScenarioId == name" in profile
+    assert "candidate.Config.PoolTagFilter == name" in profile
+    assert 'manifest_runtime_profile_identity_mismatch' in RUNTIME
+    assert 'pool_tag_profile_mismatch' in prepare
+    assert 'validation_pool_exact_size_mismatch' in reset
+    assert 'validation_pool_exact_raid_composition_mismatch' in reset
+    assert 'experiment_tags` = ' in reset
