@@ -3250,6 +3250,14 @@ def _protected_process_matches(arguments: list[str]) -> list[str]:
     return sorted(entrypoints & protected_names)
 
 
+def _dvc_status_is_clean(output: str) -> bool:
+    try:
+        payload = json.loads(output)
+    except (TypeError, ValueError):
+        return False
+    return isinstance(payload, dict) and not payload
+
+
 def preflight_runtime_exclusions(worktree: Path) -> dict[str, Any]:
     """Require an idle coordinator and exclusive canonical-capture host."""
 
@@ -3538,9 +3546,16 @@ def validate_runtime_profile_assets(
 
     dvc_status = None
     if require_dvc_lineage:
+        dvc_environment = os.environ.copy()
+        # A capture launched by ``pixi run`` inherits the caller's manifest
+        # path.  The DVC check intentionally runs in the reviewed worktree;
+        # leaving the caller locator set produces a warning on otherwise clean
+        # output and makes the exact human-text check reject itself.
+        dvc_environment.pop("PIXI_PROJECT_MANIFEST", None)
         result = subprocess.run(
-            ["pixi", "run", "dvc", "status", "validation_scenarios"],
+            ["pixi", "run", "dvc", "status", "validation_scenarios", "--json"],
             cwd=worktree,
+            env=dvc_environment,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
@@ -3548,7 +3563,7 @@ def validate_runtime_profile_assets(
             check=False,
         )
         dvc_status = result.stdout.strip()
-        if result.returncode != 0 or dvc_status != "Data and pipelines are up to date.":
+        if result.returncode != 0 or not _dvc_status_is_clean(dvc_status):
             reasons.append("runtime_route_dvc_lineage_dirty")
 
     return {

@@ -12,6 +12,7 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     json_rows,
     normalized_batch_payload,
     _forbidden_assistance_entries,
+    _dvc_status_is_clean,
     _protected_process_matches,
     expected_bwd_10n_roster,
     _expected_identity_by_slot,
@@ -1450,6 +1451,12 @@ def test_process_overlap_classifies_entrypoint_not_binary_data_argument():
         "--worldserver",
         "/tmp/build/worldserver",
     ]) == ["run_live_bot_validation.py"]
+
+
+def test_dvc_lineage_requires_an_exact_empty_json_status():
+    assert _dvc_status_is_clean("{}") is True
+    assert _dvc_status_is_clean('{"validation_scenarios": [{"changed outs": {}}]}') is False
+    assert _dvc_status_is_clean("WARN inherited manifest\n{}") is False
 
 
 def test_live_evidence_demux_rejects_cross_identity_runtime():
