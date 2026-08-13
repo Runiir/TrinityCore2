@@ -1718,6 +1718,7 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
         Cohort().Metrics.TargetBots = Cohort().Config.TargetPopulation;
         Cohort().ElapsedMs = 0;
         Cohort().RecordingWindowElapsedMs = 0;
+        ResetTraceStreams();
         ResetCombatLog();
         RecordRunStart();
         return true;
@@ -4033,8 +4034,23 @@ void BotWorldPopulationMgr::ResetValidationRouteBossAddDensityState()
     ResetValidationRouteBossAddEscapeState();
 }
 
+void BotWorldPopulationMgr::ResetTraceStreams()
+{
+    Party().TraceExportCursorByGuid.clear();
+    for (WorldBotState& state : Party().Bots)
+    {
+        state.TraceSequence = 0;
+        state.DecisionTrace.clear();
+    }
+}
+
 void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
 {
+    // Route changes and destructive run lifecycles are trace stream
+    // boundaries. Never let a cursor or sequence from the prior route be
+    // interpreted as evidence for the next route, even when a GUID is reused
+    // inside the same cohort.
+    ResetTraceStreams();
     Party().ValidationRouteFocusGuid.Clear();
     Party().ValidationRouteFocusEntry = 0;
     Party().ValidationRouteFocusMapId = 0;
@@ -4650,6 +4666,7 @@ void BotWorldPopulationMgr::RotateAutoRecordingWindowIfNeeded(uint32 diff)
     Cohort().Metrics.ActiveBots = uint32(Party().Bots.size());
     Cohort().ElapsedMs = 0;
     Cohort().RecordingWindowElapsedMs = 0;
+    ResetTraceStreams();
     RecordRunStart();
 }
 
@@ -36352,7 +36369,8 @@ void BotWorldPopulationMgr::RecordDecisionTrace(WorldBotState& state, char const
 {
     WorldBotState::DecisionTraceEntry entry;
     entry.TimestampMs = NowMs();
-    entry.Sequence = state.Sequence;
+    entry.Sequence = ++state.TraceSequence;
+    entry.DecisionSequence = state.Sequence;
     entry.Situation = situation ? situation : "unknown";
     entry.Action = action ? action : "wait";
     entry.RouteNodeId = Cohort().Config.ValidationRouteNodeId;
@@ -37011,6 +37029,7 @@ std::string BotWorldPopulationMgr::BuildBotTraceEntriesJson(WorldBotState const&
             json << ",";
         json << "{\"timestamp_ms\":" << itr->TimestampMs
              << ",\"sequence\":" << itr->Sequence
+             << ",\"decision_sequence\":" << itr->DecisionSequence
              << ",\"situation\":\"" << JsonEscape(itr->Situation) << "\""
              << ",\"action\":\"" << JsonEscape(itr->Action) << "\""
              << ",\"route_node_id\":\"" << JsonEscape(itr->RouteNodeId) << "\""
@@ -37287,13 +37306,40 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
                 json << BuildBotTraceEntriesJson(state, normalizedLimit);
             else
             {
-                uint32 const cursor = Party().TraceExportCursorByGuid[state.Guid.GetCounter()];
-                uint32 const oldest = state.DecisionTrace.empty() ? state.Sequence : state.DecisionTrace.front().Sequence;
-                bool const gap = !state.DecisionTrace.empty() && cursor && oldest > cursor + 1;
+                auto const cursorItr = Party().TraceExportCursorByGuid.find(state.Guid.GetCounter());
+                bool const cursorInitialized = cursorItr != Party().TraceExportCursorByGuid.end();
+                uint64 const cursor = cursorInitialized ? cursorItr->second : 0;
+                uint64 cursorAfter = cursor;
+                bool gap = false;
+                uint64 expected = cursor == std::numeric_limits<uint64>::max() ? cursor : cursor + 1;
+                bool sawNewEntry = false;
+                // A bounded ring may overwrite the first unexported row.
+                // Fail closed even on the first delta poll instead of
+                // silently starting at the oldest retained row.
+                for (auto const& entry : state.DecisionTrace)
+                {
+                    if (entry.Sequence <= cursor)
+                        continue;
+                    if (!sawNewEntry)
+                    {
+                        sawNewEntry = true;
+                        if ((!cursorInitialized && entry.Sequence != 1) || (cursorInitialized && entry.Sequence != expected))
+                        {
+                            gap = true;
+                            break;
+                        }
+                    }
+                    else if (entry.Sequence != expected)
+                    {
+                        gap = true;
+                        break;
+                    }
+                    expected = entry.Sequence == std::numeric_limits<uint64>::max() ? entry.Sequence : entry.Sequence + 1;
+                }
                 json << "[";
                 uint32 emitted = 0;
                 bool firstEntry = true;
-                for (auto itr = state.DecisionTrace.begin(); itr != state.DecisionTrace.end(); ++itr)
+                for (auto itr = state.DecisionTrace.begin(); !gap && itr != state.DecisionTrace.end(); ++itr)
                 {
                     if (itr->Sequence <= cursor)
                         continue;
@@ -37308,6 +37354,7 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
                     // immutable entry schema and its sequence cursor.
                     json << "{\"timestamp_ms\":" << itr->TimestampMs
                          << ",\"sequence\":" << itr->Sequence
+                         << ",\"decision_sequence\":" << itr->DecisionSequence
                          << ",\"situation\":\"" << JsonEscape(itr->Situation)
                          << "\",\"action\":\"" << JsonEscape(itr->Action)
                          << "\",\"route_node_id\":\"" << JsonEscape(itr->RouteNodeId)
@@ -37325,6 +37372,7 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
                          << ",\"consecutive_same_decision_count\":" << itr->ConsecutiveSameDecisionCount
                          << ",\"idle_decision_repeat_count\":" << itr->IdleDecisionRepeatCount
                          << ",\"target_churn_count\":" << itr->TargetChurnCount
+                         << ",\"suppressed_repeatable_event_count\":" << itr->SuppressedRepeatableEventCount
                          << ",\"threat_snapshot\":{\"engaged_hostiles\":" << itr->EngagedHostileCount
                          << ",\"tank_owned_hostiles\":" << itr->TankOwnedHostileCount
                          << ",\"healer_targeting_hostiles\":" << itr->HealerTargetingHostileCount
@@ -37369,14 +37417,19 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
                          << "\",\"next_expected_action\":\"" << JsonEscape(state.LastNextExpectedAction)
                          << "\",\"combat_attempt\":" << BuildCombatAttemptJson(itr->CombatAttempt)
                          << ",\"route_progress\":" << BuildRouteProgressJson(itr->RouteProgress) << "}";
+                    cursorAfter = itr->Sequence;
                     ++emitted;
                 }
                 json << "]"
                      << ",\"delta\":true"
                      << ",\"cursor_before\":" << cursor
-                     << ",\"cursor_after\":" << state.Sequence
+                     << ",\"cursor_after\":" << cursorAfter
                      << ",\"gap\":" << (gap ? "true" : "false");
-                Party().TraceExportCursorByGuid[state.Guid.GetCounter()] = state.Sequence;
+                // A bounded poll may emit only a prefix of available rows.
+                // Advance exactly through the last emitted row, and never
+                // advance while failing closed on a gap.
+                if (!gap && cursorAfter != cursor)
+                    Party().TraceExportCursorByGuid[state.Guid.GetCounter()] = cursorAfter;
             }
             json << "}";
         }

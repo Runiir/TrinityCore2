@@ -774,6 +774,10 @@ private:
         uint32 PoiScanTimer = 0;
         uint32 RestTimer = 0;
         uint32 Sequence = 0;
+        // Decision ticks and trace rows are different streams. A decision
+        // may emit several event rows before the next decision, so trace
+        // identity must not reuse the decision sequence.
+        uint64 TraceSequence = 0;
         uint64 ActivityId = 0;
         float ActivityStartPower = 0.0f;
         uint64 ActivityStartGold = 0;
@@ -1007,7 +1011,8 @@ private:
         struct DecisionTraceEntry
         {
             uint64 TimestampMs = 0;
-            uint32 Sequence = 0;
+            uint64 Sequence = 0;
+            uint32 DecisionSequence = 0;
             std::string Situation = "unknown";
             std::string Action = "wait";
             std::string RouteNodeId;
@@ -1805,6 +1810,7 @@ private:
     void FlushDecisionFingerprintMemory(WorldBotState& state) const;
     void FlushPendingDecisionFingerprintMemory();
     void RecordDecisionTrace(WorldBotState& state, char const* situation, char const* action, Unit const* target, uint32 questId, char const* result, char const* reasonCode);
+    void ResetTraceStreams();
     BotDiagnosis BuildBotDiagnosis(WorldBotState const& state, Player const* bot) const;
     std::string BuildBotDiagnosisObjectJson(WorldBotState const& state, Player const* bot) const;
     std::string BuildBotDecisionSnapshotJson(WorldBotState const& state, Player const* bot) const;
@@ -1934,7 +1940,7 @@ private:
         // Per-bot cursor for the bounded diagnostic trace export.  This keeps
         // repeated botauto_trace polls incremental without changing the
         // authoritative in-memory trace or dropping current decisions.
-        mutable std::map<uint32, uint32> TraceExportCursorByGuid;
+        mutable std::map<uint32, uint64> TraceExportCursorByGuid;
 
         ObjectGuid ValidationRouteFocusGuid;
         uint32 ValidationRouteFocusEntry = 0;
