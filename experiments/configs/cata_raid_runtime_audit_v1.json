@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "audit_id": "cata_raid_runtime_phase1_v1",
-  "updated_at_utc": "2026-08-13T04:56:45Z",
+  "updated_at_utc": "2026-08-13T05:22:12Z",
   "target": {
     "client": "Cataclysm Classic",
     "patch": "4.4.2",
@@ -10,7 +10,7 @@
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
   "audited_commit": "1ee02778ef85aff82887e1917d2c5ac7c3a33112",
-  "gate_state": "in_progress_exact_1ee_build_and_fresh_preparation_complete_live_rerun_pending",
+  "gate_state": "in_progress_exact_1ee_live_capture_infrastructure_abort_native_recovery_remediation_pending",
   "foundation": {
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
     "current_head_sha": "1ee02778ef85aff82887e1917d2c5ac7c3a33112",
@@ -20,7 +20,7 @@
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "acceptance": "9a3 capture rejected as infrastructure abort after corridor multishot and living bomb prematurely engaged magmaw and reset churn masked stall; exact 53840bd89e centralizes protected-next-encounter authority across bot pet controlled and totem offense plus exact native recovery watchdog proof; Sol-high approved; exact 1ee source-equivalent gate-bearing build and fresh full provisioning verifier v4 readback complete; uncapped rerun pending"
+    "acceptance": "Exact 1ee uncapped capture cleared all five prerequisite targets and reached native Magmaw, then rejected three full-wipe cycles as infrastructure abort because only per-GUID deaths advanced while corpse/release/runback/re-entry/resurrection/ready-check runtime evidence remained absent. Trace decisions showed native release/runback and bots later re-entered, so the observer/state machine and combat hold require remediation; no gameplay or fidelity inference is authorized."
   },
   "research": {
     "required_boss_packets": 28,
@@ -47,7 +47,7 @@
   "build": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
     "current_state": "successful_exact_1ee02778ef_policy_v8_configure_and_worldserver_build",
-    "current_result": "both receipts gate-bearing and independently verified; worldserver sha256 128edf0720d514945727269618ef68aea09bbc064eba8be8bd15db5bd63b86f4; post-build focused suite 256 passed; fresh preparation remains before live",
+    "current_result": "both receipts gate-bearing and independently verified; worldserver sha256 128edf0720d514945727269618ef68aea09bbc064eba8be8bd15db5bd63b86f4; post-build focused suite 256 passed; fresh preparation passed; exact uncapped live capture completed as infrastructure_abort and is now stale for the pending native-recovery remediation",
     "receipt_trust_model": "explicit_trusted_local_operator",
     "trusted_operator": "runiir",
     "trusted_uid": 1000,
@@ -171,20 +171,20 @@
     },
     {
       "area": "live_script_and_decision_review",
-      "missing": ["explicit_native_magmaw_script_vs_bot_decision_review", "explicit_non_fidelity_phase1_engagement_scope_approval"]
+      "missing": ["complete_native_magmaw_script_vs_bot_decision_review_after_recovery_evidence_fix", "explicit_non_fidelity_phase1_engagement_scope_approval"]
     },
     {
       "area": "native_recovery_live_evidence",
-      "missing": ["serialized_uncapped_bwd_10n_native_entry_and_unlock", "live_ready_check_and_authoritative_boss_state_readback", "lockout_save_transition", "full_wipe_reset_release_resurrection_runback_smoke"]
+      "missing": ["identity_bound_corpse_release_runback_reentry_resurrection_observation", "post_recovery_native_ready_check", "combat_hold_until_exact_recovery_complete", "full_wipe_reset_release_resurrection_runback_smoke"]
     },
     {
       "area": "immutable_evidence",
-      "missing": ["complete_terminal_gate_driven_phase1_live_capture_with_semantic_stall_monitoring", "independent_acceptance_reconstruction", "dvc_publish_remote_verify_exact_evict"]
+      "missing": ["passing_terminal_gate_driven_phase1_live_capture_after_remediation", "independent_acceptance_reconstruction_of_complete_native_recovery"]
     }
   ],
   "phase1_gate_blockers": [
-    "uncapped_serialized_bwd_10n_live_formation_difficulty_wipe_reset_gate_rerun_pending",
-    "phase1_live_dvc_publication_remote_verification_and_exact_eviction_pending",
+    "native_recovery_runtime_observer_and_pre_readycheck_combat_hold_remediation_pending",
+    "mandatory_sol_high_review_exact_rebuild_reprovision_and_uncapped_rerun_pending",
     "bwd_exact_442_quantitative_and_exact_log_hotfix_evidence_blocks_phase2_fidelity"
   ],
   "acceptance_policy": "Fail closed. Existing Stonecore and older BWD artifacts do not certify this raid-runtime gate."

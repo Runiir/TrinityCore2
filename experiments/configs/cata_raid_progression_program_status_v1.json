@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-13T04:56:45Z",
+  "updated_at_utc": "2026-08-13T05:22:12Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -38,7 +38,7 @@
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
     "current_commit": "1ee02778ef85aff82887e1917d2c5ac7c3a33112",
     "current_state": "exact_1ee02778ef_policy_v8_configure_and_worldserver_build_success",
-    "current_result": "gate-bearing trusted-local configure and worldserver receipts independently verified; binary sha256 128edf0720d514945727269618ef68aea09bbc064eba8be8bd15db5bd63b86f4; 256 focused regressions passed; fresh reprovision full verifier and v4 readback remain before live",
+    "current_result": "gate-bearing trusted-local configure and worldserver receipts independently verified; binary sha256 128edf0720d514945727269618ef68aea09bbc064eba8be8bd15db5bd63b86f4; 256 focused regressions passed; fresh reprovision/full verifier/v4 readback passed; uncapped capture reached native Magmaw and three full wipes but failed closed on missing identity-bound native recovery evidence",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -344,6 +344,9 @@
     "phase1_current_preparation_pointer": "artifacts/cata_raid_program/phase1_preparation_1ee02778ef_20260813.dvc",
     "phase1_current_preparation_dvc_md5": "7a610416141f5b72d8861c98e769cbda.dir",
     "phase1_current_preparation_remote_status": "pushed_remote_verified_exact_workspace_payload_and_nine_child_cache_objects_evicted_compact_summary_retained",
+    "phase1_current_infrastructure_live_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_1ee02778_20260813.dvc",
+    "phase1_current_infrastructure_live_dvc_md5": "6ac9cd047fdd69c6ee8a86100cc17d2a.dir",
+    "phase1_current_infrastructure_live_remote_status": "remote_verified_exact_workspace_payload_and_eight_child_cache_objects_evicted_receipts_preflight_and_compact_summary_retained",
     "broad_gc_used": false,
     "config_local_tracked": false,
     "known_historical_unavailable_objects": [
@@ -551,9 +554,14 @@
       ,"post_build_focused_foundation_runtime_capture_research_pet_totem_and_phase9_partition_256_passed"
       ,"fresh_exact_bwd_10n_provisioning_full_live_verifier_and_v4_readback_passed_at_1ee02778ef"
       ,"phase1_preparation_nine_file_dvc_artifact_pushed_remote_verified_and_exactly_evicted"
+      ,"uncapped_1ee_capture_cleared_all_five_declared_prerequisite_targets_and_reached_native_magmaw"
+      ,"uncapped_1ee_capture_observed_three_full_wipes_and_failed_closed_on_missing_native_recovery_evidence"
+      ,"uncapped_1ee_capture_semantic_stall_cleanup_forbidden_assistance_and_identity_gates_passed"
+      ,"uncapped_1ee_eight_file_dvc_artifact_pushed_remote_verified_compactly_summarized_and_exactly_evicted"
       ],
       "remaining_requirements": [
-      "mandatory_independent_sol_high_review_of_exact_native_full_wipe_no_assistance_remediation",
+      "remediate_identity_bound_native_recovery_observer_and_pre_readycheck_combat_hold",
+      "mandatory_independent_sol_high_review_of_native_recovery_remediation",
         "rerun_uncapped_serialized_bwd_10n_entry_formation_difficulty_wipe_reset_evidence_publication_and_cleanup_gate_with_live_stall_diagnosis",
         "phase1_live_evidence_dvc_publish_remote_verify_and_exact_evict_gate"
       ]
@@ -576,8 +584,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "The sixteenth 9a3 uncapped run live-proved RaidRuntime refresh and exact wipe/reset observation, then retained Hunter Multi-Shot 2643 as the initiating corridor action before Magmaw entered threat; Fire Mage Living Bomb then directly targeted Magmaw while the route still owned Drudge 60. Reset churn prevented semantic-stall termination. Exact 53840bd89e installs owner-scoped immediate-next encounter authority across every bot, pet, controlled, and totem offense surface, and the watchdog requires exact-roster ordered native recovery proof. Mandatory Sol-high review found zero Critical/High/Medium issues. Exact source-equivalent checkpoint 1ee02778ef has independently verified gate-bearing policy-v8 configure/worldserver receipts and binary SHA-256 128edf0720d514945727269618ef68aea09bbc064eba8be8bd15db5bd63b86f4. Fresh scoped provisioning executed 50 account, 5768 character, and four route-start statements; the full live verifier passed all 50 characters and v4 independently proved the exact BWD ten offline/unleased with zero instance/group/ghost/corpse/corpse-phase residue. The nine-file preparation batch is pushed, remote-verified, and exactly evicted locally. The uncapped rerun remains pending."
+      "detail": "Exact 1ee02778ef built and prepared successfully. Its uncapped capture cleared all five declared prerequisite targets, reached native Magmaw in exact BWD 10N instance/save 2, and recorded three full wipes. Only per-GUID death sequences advanced: trace decisions showed native release/runback and bots later re-entered and re-engaged, but corpse/release/runback/re-entry/resurrection/ready-check evidence remained absent from RaidRuntime. The capture correctly terminated on semantic stall with clean identity, no forbidden assistance, zero-bot/zero-lease cleanup, and classification infrastructure_abort. The eight-file batch is pushed, remote-verified, compactly summarized, and exactly evicted. Native recovery observation and the pre-readycheck combat hold now require remediation and mandatory Sol-high review before rebuild/rerun."
     }
   ],
-  "next_action": "Start and verify exactly one worldserver from the receipt-bound 1ee02778ef binary before attaching one Luna-xhigh Phase 1 babysitter. Run another uncapped Phase 1 capture; require the route to clear the corridor without protected Magmaw/add targeting, then reconstruct durable native Magmaw engagement, all ten deaths, native wipe/reset/release/runback/reentry/resurrection/readycheck ordering, and compare actual script events against every bot decision. Publish, diagnose, and exactly evict the batch. Do not infer Magmaw fidelity from this smoke. Parallel boss diagnostics remain downstream and require one prestarted verified worldserver, six isolated boss-ready shards, and one Luna-xhigh babysitter per boss; final qualification remains three sequential full clears plus a fourth on material disagreement. Keep all 464 material fidelity blockers fail-closed."
+  "next_action": "Finish the scoped native-recovery observer and combat-hold remediation from the 1ee capture, require mandatory independent Sol-high zero-Critical/High approval, then build the exact reviewed descendant, reprovision, and rerun the uncapped canonical Phase 1 capture. Require exact per-GUID death/corpse/release/runback/re-entry/resurrection ordering and post-recovery native ready-check before combat resumes. The currently running auth/worldserver session is observer-only and non-certifying. Parallel boss diagnostics remain downstream and require one prestarted verified worldserver, six isolated boss-ready shards, and one Luna-xhigh babysitter per boss; final qualification remains three sequential full clears plus a fourth on material disagreement. Keep all 464 material fidelity blockers fail-closed."
 }
