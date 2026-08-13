@@ -359,10 +359,10 @@
     "phase1_sixteenth_infrastructure_live_remote_status": "remote_verified_exact_workspace_payload_and_eight_child_cache_objects_evicted_receipts_and_compact_summary_retained",
     "phase1_current_preparation_pointer": "artifacts/cata_raid_program/phase1_preparation_1c7a614d71_20260813.dvc",
     "phase1_current_preparation_dvc_md5": "b9bc119e6a9ad5cb1a019d6fa6d86ebf.dir",
-    "phase1_current_preparation_remote_status": "pushed_remote_verified_nine_file_payload_retained_until_current_diagnosis_and_fix_are_consumed",
+    "phase1_current_preparation_remote_status": "pushed_remote_verified_then_exact_workspace_and_nine_child_cache_payloads_evicted_directory_metadata_retained",
     "phase1_current_infrastructure_live_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_1c7a614d71_20260813.dvc",
     "phase1_current_infrastructure_live_dvc_md5": "cb2c98b0ad979373eb5070855b3488a5.dir",
-    "phase1_current_infrastructure_live_remote_status": "pushed_remote_verified_three_file_failure_batch_retained_until_current_diagnosis_and_fix_are_consumed",
+    "phase1_current_infrastructure_live_remote_status": "pushed_remote_verified_then_exact_workspace_and_three_child_cache_payloads_evicted_directory_metadata_retained",
     "broad_gc_used": false,
     "config_local_tracked": false,
     "known_historical_unavailable_objects": [
