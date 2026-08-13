@@ -1,5 +1,9 @@
 # Cataclysm raid progression handoff
 
+# 2026-08-13T15:44:00Z — Exact 3dc closes direct-node SOAP config ownership
+
+The f9e2 review found the same config-ownership issue on direct-node SOAP runs: Magmaw context could be reported while the attached server remained configured for Stonecore. Exact `3dc26a3eb6a487e1fa805a0609cc1a23fe7934c6` rejects every live scenario-scoped SOAP validation, including direct nodes, manifests, sequences and calibration, because this tool cannot establish the attached server's config identity through SOAP. Offline `--input-log` reconstruction remains permitted. The targeted matrix passes 19 checks; no build, service, database or DVC action ran. Mandatory exact rereview remains required.
+
 # 2026-08-13T15:39:00Z — Exact bc156 closes the direct-session cross-shard profile edge
 
 Review of f9e2/a509 found one final session edge: a direct route-node session without the manifest/sequence flag could declare Magmaw while explicitly starting the Omnotron profile. Exact `bc156a2bd5831ec8ab1b1b8a6fe55b4752d54b95` makes `--session-profile == --validation-scenario-id` unconditional whenever a reusable validation session has a scenario identity. The direct Magmaw/Omnotron adversarial case now rejects before output creation; the latest targeted transport/profile matrix passes 18 checks and the broader 321-test raid/shard/readback gate remains green. No build, server, DB or DVC action ran. Mandatory exact rereview remains required.

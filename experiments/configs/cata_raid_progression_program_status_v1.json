@@ -17,8 +17,8 @@
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "reviewed_source_sha": "bc156a2bd5831ec8ab1b1b8a6fe55b4752d54b95",
-    "status_checkpoint_identity": "resolve from Git HEAD; status descendant of exact source bc156a2bd5831ec8ab1b1b8a6fe55b4752d54b95 pending mandatory rereview",
+    "reviewed_source_sha": "3dc26a3eb6a487e1fa805a0609cc1a23fe7934c6",
+    "status_checkpoint_identity": "resolve from Git HEAD; status descendant of exact source 3dc26a3eb6a487e1fa805a0609cc1a23fe7934c6 pending mandatory rereview",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -29,18 +29,18 @@
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
     "critical_high_remediation_implemented_at": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "mandatory_rereview": "PENDING for exact bc156a2bd5831ec8ab1b1b8a6fe55b4752d54b95. Review of f9e2/a509 found a remaining direct-route session-profile bypass; bc156 makes scenario/profile equality unconditional for validation sessions. No rebuild or live start is authorized before rereview.",
+    "mandatory_rereview": "PENDING for exact 3dc26a3eb6a487e1fa805a0609cc1a23fe7934c6. Review of f9e2 then found a direct-node SOAP config-ownership bypass; 3dc rejects every live scenario-scoped SOAP path while preserving offline input-log parsing. No rebuild or live start is authorized before rereview.",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "Exact bc156 applies the exact scenario/profile/pool contract to manifest and sequence execution, rejects cross-shard session profiles for both manifest and direct-node flows, and rejects SOAP raid-manifest/sequence or calibration execution because that transport cannot establish the owned config identity. The latest targeted transport/profile command passes 18 checks and 321 broader raid/shard/readback regressions remain green. Mandatory rereview, exact rebuild, fresh preparation/readback and live evidence remain pending. Phase 1 and fidelity remain false."
+    "current_acceptance": "Exact 3dc applies exact scenario/profile/pool identity across process/session manifest, sequence and direct-node flows, and rejects every live scenario-scoped SOAP run because SOAP cannot establish the owned server config. Offline input-log parsing remains allowed. The latest targeted transport/profile command passes 19 checks and 321 broader raid/shard/readback regressions remain green. Mandatory rereview, exact rebuild, fresh preparation/readback and live evidence remain pending. Phase 1 and fidelity remain false."
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "reviewed_source_commit": "bc156a2bd5831ec8ab1b1b8a6fe55b4752d54b95",
-    "exact_build_target": "clean Git HEAD status-only descendant of exact bc156 source after mandatory rereview",
-    "current_state": "exact_bc156_direct_and_manifest_session_profile_contract_pending_mandatory_rereview",
-    "current_result": "historical dbe preparation caught Stonecore contamination; exact bc156 additionally closes session, SOAP and route-sequence identity bypasses but requires mandatory review and a new exact receipt",
+    "reviewed_source_commit": "3dc26a3eb6a487e1fa805a0609cc1a23fe7934c6",
+    "exact_build_target": "clean Git HEAD status-only descendant of exact 3dc source after mandatory rereview",
+    "current_state": "exact_3dc_all_live_transport_profile_contract_pending_mandatory_rereview",
+    "current_result": "historical dbe preparation caught Stonecore contamination; exact 3dc closes manifest, sequence, direct-session and direct-SOAP identity bypasses but requires mandatory review and a new exact receipt",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -621,7 +621,7 @@
       ,"uncapped_1c7a_three_file_failure_batch_pushed_remote_verified_and_compactly_summarized"
       ],
       "remaining_requirements": [
-        "mandatory_sol_high_review_exact_bc156_session_profile_remediation",
+        "mandatory_sol_high_review_exact_3dc_live_transport_profile_remediation",
         "rebuild_exact_remediation_descendant_and_repeat_fresh_preparation_readback",
         "uncapped_four_node_magmaw_rerun_with_trained_profile_and_resource_observation",
         "phase1_live_evidence_exact_evict_after_diagnosis_and_review"
