@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
+import re
 from pathlib import Path
 from typing import Any
 
@@ -9,6 +11,9 @@ try:
     from .common import stable_hash, write_json, write_jsonl
 except ImportError:
     from common import stable_hash, write_json, write_jsonl
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 MECHANIC_FAMILIES = {
@@ -78,6 +83,83 @@ EVIDENCE_ACTIONS = {
 
 def group_kind(required_roles: dict[str, int], difficulty: str) -> str:
     return "raid" if sum(required_roles.values()) >= 10 or "raid" in difficulty or "10" in difficulty else "party"
+
+
+def _source_home_from_sql(source_sql: str, guid: int, entry: int) -> tuple[float, float, float] | None:
+    path = REPO_ROOT / source_sql
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    bases = list(re.finditer(r"SET\s+@CGUID\s*:=\s*(\d+)\s*;", text))
+    for index, base_match in enumerate(bases):
+        base = int(base_match.group(1))
+        offset = guid - base
+        if offset < 0:
+            continue
+        block_end = bases[index + 1].start() if index + 1 < len(bases) else len(text)
+        block = text[base_match.end():block_end]
+        row = re.search(
+            rf"\(@CGUID\+{offset},\s*{entry},\s*\d+,\s*\d+,\s*\d+,\s*\d+,\s*"
+            r"(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)",
+            block,
+        )
+        if row:
+            return tuple(float(row.group(i)) for i in range(1, 4))
+    return None
+
+
+def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
+    if step.get("mechanic_profile") != "trash_two_tank_charge_lanes":
+        return True, ""
+    source_guids = [int(value) for value in step.get("split_source_guids") or []]
+    homes = list(step.get("split_source_home_anchors") or [])
+    tanks = list(step.get("split_tank_combat_anchors") or [])
+    tank_slots = [int(value) for value in step.get("split_lane_tank_slots") or []]
+    if len(source_guids) != 2 or len(homes) != 2 or len(tanks) != 2 or len(tank_slots) != 2:
+        return False, "split_combat_anchor_shape"
+    home_by_guid = {int(row.get("source_guid") or 0): row for row in homes}
+    tank_by_slot = {int(row.get("roster_slot") or 0): row for row in tanks}
+    if set(home_by_guid) != set(source_guids) or set(tank_by_slot) != set(tank_slots):
+        return False, "split_combat_anchor_identity"
+    source_sql = str(step.get("source_sql") or "")
+    source_entry = int(step.get("source_entry") or 0)
+    ordered_homes: list[tuple[float, float, float]] = []
+    for guid in source_guids:
+        row = home_by_guid[guid]
+        configured = tuple(float(row.get(axis) or 0.0) for axis in ("x", "y", "z"))
+        observed = _source_home_from_sql(source_sql, guid, source_entry)
+        if observed is None or any(abs(left - right) > 0.01 for left, right in zip(configured, observed)):
+            return False, "split_source_home_oracle"
+        ordered_homes.append(configured)
+    dx = ordered_homes[1][0] - ordered_homes[0][0]
+    dy = ordered_homes[1][1] - ordered_homes[0][1]
+    home_separation = math.hypot(dx, dy)
+    if home_separation <= 0.0:
+        return False, "split_source_home_separation"
+    axis_x, axis_y = dx / home_separation, dy / home_separation
+    ordered_tanks = [tank_by_slot[slot] for slot in tank_slots]
+    outward = [
+        -((float(ordered_tanks[0]["x"]) - ordered_homes[0][0]) * axis_x
+          + (float(ordered_tanks[0]["y"]) - ordered_homes[0][1]) * axis_y),
+        ((float(ordered_tanks[1]["x"]) - ordered_homes[1][0]) * axis_x
+         + (float(ordered_tanks[1]["y"]) - ordered_homes[1][1]) * axis_y),
+    ]
+    minimum = float(step.get("split_minimum_separation_yards") or 0.0)
+    margin = float(step.get("split_navigation_margin_yards") or 0.0)
+    arrival = float(step.get("split_arrival_tolerance_yards") or 0.0)
+    melee_stop = float(step.get("split_native_melee_stop_yards") or 0.0)
+    if minimum <= 0.0 or arrival <= 0.0 or melee_stop <= 0.0 or any(value <= 0.0 for value in outward):
+        return False, "split_combat_anchor_contract"
+    for home, tank in zip(ordered_homes, ordered_tanks):
+        if math.dist(home, (float(tank["x"]), float(tank["y"]), float(tank["z"]))) > minimum:
+            return False, "split_combat_anchor_bound"
+    guaranteed_separation = home_separation + sum(
+        max(0.0, displacement - melee_stop - arrival) for displacement in outward
+    )
+    if guaranteed_separation + 1e-6 < minimum + margin:
+        return False, "split_combat_anchor_insufficient_native_chase"
+    return True, ""
 
 
 def role_assignment_contract(required_roles: dict[str, int], provisioned_roles: dict[str, int]) -> dict[str, Any]:
@@ -352,15 +434,23 @@ def build_manifests(
             missing.append("provisioning_verifier_ready")
         if not diagnostic_valid:
             missing.extend(diagnostic_missing)
+        split_geometry_status = {
+            int(step.get("step") or 0): drudge_split_geometry_status(step)
+            for step in route_steps
+        }
         invalid_route_steps = [
             {
                 "step": int(step.get("step") or 0),
                 "kind": step.get("kind") or "unknown",
                 "label": step.get("label") or "",
-                "reason": route_coordinate_status(step)[1] or route_navigation_anchor_status(step)[1],
+                "reason": route_coordinate_status(step)[1]
+                    or route_navigation_anchor_status(step)[1]
+                    or split_geometry_status[int(step.get("step") or 0)][1],
             }
             for step in route_steps
-            if not route_coordinate_status(step)[0] or not route_navigation_anchor_status(step)[0]
+            if not route_coordinate_status(step)[0]
+            or not route_navigation_anchor_status(step)[0]
+            or not split_geometry_status[int(step.get("step") or 0)][0]
         ]
         if invalid_route_steps:
             missing.append("route_coordinates")
@@ -456,6 +546,15 @@ def build_manifests(
                 "minimum_distance_source_entry": int(step.get("minimum_distance_source_entry") or 0),
                 "minimum_distance_yards": float(step.get("minimum_distance_yards") or 0.0),
                 "split_source_guids": [int(value) for value in (step.get("split_source_guids") or [])],
+                "split_source_home_anchors": [
+                    {
+                        "source_guid": int(anchor.get("source_guid") or 0),
+                        "x": float(anchor.get("x") or 0.0),
+                        "y": float(anchor.get("y") or 0.0),
+                        "z": float(anchor.get("z") or 0.0),
+                    }
+                    for anchor in (step.get("split_source_home_anchors") or [])
+                ],
                 "split_lane_a_roster_slots": [int(value) for value in (step.get("split_lane_a_roster_slots") or [])],
                 "split_lane_b_roster_slots": [int(value) for value in (step.get("split_lane_b_roster_slots") or [])],
                 "split_lane_tank_slots": [int(value) for value in (step.get("split_lane_tank_slots") or [])],
@@ -480,6 +579,7 @@ def build_manifests(
                 "split_minimum_separation_yards": float(step.get("split_minimum_separation_yards") or 0.0),
                 "split_navigation_margin_yards": float(step.get("split_navigation_margin_yards") or 0.0),
                 "split_arrival_tolerance_yards": float(step.get("split_arrival_tolerance_yards") or 0.0),
+                "split_native_melee_stop_yards": float(step.get("split_native_melee_stop_yards") or 0.0),
                 "thunderclap_spell_id": int(step.get("thunderclap_spell_id") or 0),
                 "charge_spell_id": int(step.get("charge_spell_id") or 0),
                 "charge_range_yards": float(step.get("charge_range_yards") or 0.0),

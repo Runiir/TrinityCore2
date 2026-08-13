@@ -493,6 +493,13 @@ def test_bwd_magmaw_trash_splits_chainwielder_hazard_from_drudge_charge_contract
     assert drudges["split_lane_b_roster_slots"] == [2, 5, 8, 9, 10]
     assert drudges["split_lane_tank_slots"] == [1, 2]
     assert drudges["split_minimum_separation_yards"] == 15.0
+    assert drudges["split_native_melee_stop_yards"] == 5.0
+    assert [row["source_guid"] for row in drudges["split_source_home_anchors"]] == [250140, 250141]
+    tank_anchors = {row["roster_slot"]: row for row in drudges["split_tank_combat_anchors"]}
+    assert math.dist(
+        (tank_anchors[1]["x"], tank_anchors[1]["y"]),
+        (tank_anchors[2]["x"], tank_anchors[2]["y"]),
+    ) > 35.0
     assert (drudges["minimum_distance_source_entry"], drudges["minimum_distance_yards"]) == (42362, 15.0)
     assert (drudges["thunderclap_spell_id"], drudges["charge_spell_id"], drudges["charge_range_yards"]) == (79604, 79630, 80.0)
     assert drudges["charge_native_interval_ms"] == 20000
@@ -567,6 +574,13 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "sameLaneMemberMinimum" in lane
     assert "sources[0]->GetExactDist2d(sources[1])" in lane
     assert "drudge_tank_health_sync_hold" in lane
+    support = lane.index('"drudge_staging_support"')
+    formation_barrier = lane.index(
+        "if (!prepullStaged || !tankStage.NativeEngagementAllowed || formationRequiredMutable"
+    )
+    assert formation_barrier < support
+    assert "tankStage.SupportAllowed" in lane[support - 450:support]
+    assert "tryRouteGroupHeal(bot, laneSource)" in lane[support - 450:support]
     assert "ValidationRouteDrudgeOwnershipRosterGuids" in lane
     assert "sourceOnFrozenLane" in lane
     assert "laneTank->GetExactDist2d(laneSource)" in lane
@@ -2705,6 +2719,10 @@ def test_native_recovery_blocks_survivor_pack_reentry_until_native_reset():
     ):
         assert token in runtime
 
+    observer_visitor = IMPL[
+        IMPL.index("struct NativeRaidHostileActivityVisitor"):
+        IMPL.index("uint64 ReadLastInsertId")
+    ]
     observer = IMPL[
         IMPL.index("struct NativeRaidHostileActivityVisitor"):
         IMPL.index("bool BotWorldPopulationMgr::ResolveNativeBlackwingDescentEntrance")
@@ -2719,6 +2737,8 @@ def test_native_recovery_blocks_survivor_pack_reentry_until_native_reset():
         "native_hostiles_inactive",
     ):
         assert token in observer
+    assert "GetCurrentSpell(CURRENT_GENERIC_SPELL)" not in observer_visitor
+    assert "GetCurrentSpell(CURRENT_CHANNELED_SPELL)" not in observer_visitor
 
     ensure = IMPL[
         IMPL.index("void BotWorldPopulationMgr::EnsureValidationCohortGroup"):
@@ -2882,6 +2902,11 @@ def test_drudge_partial_death_cannot_enter_tactical_recovery():
     )
     assert drudge_guard < generic_recovery
     guard = objective[drudge_guard:generic_recovery]
+    terminal = guard.index('"drudge_partial_death_before_threat_seed"')
+    hold = guard.index('"drudge_native_full_wipe_hold_partial_death"')
+    assert terminal < hold
+    assert "threatSeedCompleteForCurrentScope" in guard[:hold]
+    assert "markValidationRouteTrashFailed" in guard[:hold]
     assert '"drudge_native_full_wipe_hold_partial_death"' in guard
     assert 'action = "native_full_wipe_hold";' in guard
     assert "SetAllOffenseSuppressed" in guard

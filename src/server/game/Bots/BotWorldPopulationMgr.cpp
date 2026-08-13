@@ -122,17 +122,13 @@ struct NativeRaidHostileActivityVisitor
                 || !creature->IsHostileTo(Observer))
                 continue;
 
-            // IsInCombat/GetVictim/attackers cover a pack that still has an
-            // encounter target. Evade, casts, and movement cover the native
-            // reset window while the creature is returning home. Idle
-            // creatures at their home position are not treated as active.
+            // Combat ownership and evade state are authoritative.  Do not
+            // classify an idle OOC visual/channel as hostile activity: the
+            // Drudge spawn-specific 79025 visual repeats at home and otherwise
+            // fabricates a permanently active native-reset observation.
             bool const active = creature->IsInCombat() || creature->GetVictim()
                 || !creature->getAttackers().empty()
-                || creature->IsInEvadeMode()
-                || creature->HasUnitState(UNIT_STATE_CASTING)
-                || creature->GetCurrentSpell(CURRENT_GENERIC_SPELL)
-                || creature->GetCurrentSpell(CURRENT_CHANNELED_SPELL)
-                || creature->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL);
+                || creature->IsInEvadeMode();
             if (!active)
                 continue;
 
@@ -19802,6 +19798,18 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             || pairTooClose || nativeChargePending || chargeAwaitingLanding)
         {
             holdOffense();
+            // A body pull can begin while the tanks are still proving the
+            // declared combat geometry.  Preserve the hostile-offense gate,
+            // but permit ordinary friendly healer actions so staging does not
+            // kill the tanks before ownership and the native Rush window.
+            if (tankStage.SupportAllowed && roster->second.Role == "healer"
+                && tryRouteGroupHeal(bot, laneSource))
+            {
+                record(laneSource, "drudge_staging_support", sourceSeparation);
+                target = laneSource;
+                state.TargetGuid = laneSource->GetGUID();
+                return true;
+            }
             bool moved = false;
             bool alreadySafe = assignedTank
                 ? cachedAnchorSafe(state, bot) : groupPositionSafe(bot);
@@ -24415,6 +24423,31 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly
             && deadMembers > 0 && groupCombatActive)
         {
+            bool const threatSeedCompleteForCurrentScope =
+                Party().ValidationRouteDrudgeThreatSeedComplete
+                && !Party().ValidationRouteDrudgeThreatSeedFailure
+                && Party().ValidationRouteDrudgeThreatSeedAttemptId == Cohort().AttemptId
+                && Party().ValidationRouteDrudgeThreatSeedWipeGeneration
+                    == Cohort().Raid.WipeGeneration
+                && Party().ValidationRouteDrudgeThreatSeedRouteGeneration
+                    == Party().ValidationRouteGeneration;
+            if (!threatSeedCompleteForCurrentScope)
+            {
+                for (WorldBotState const& cohortState : Party().Bots)
+                    if (Player* cohortBot = GetLoadedBot(cohortState))
+                        BotRaidAreaAuthority::SetAllOffenseSuppressed(
+                            cohortBot->GetGUID().GetRawValue(), true);
+                markValidationRouteTrashFailed(retreatThreat,
+                    "drudge_partial_death_before_threat_seed",
+                    "validation_route_recovery", float(aliveMembers), deadMembers);
+                state.LastRecoveryMode = "terminal_restart_required";
+                state.LastRecoveryResult = "drudge_partial_death_before_threat_seed";
+                state.LastRecoveryMs = NowMs();
+                situation = "validation_route_recovery";
+                action = "validation_route_failed";
+                target = retreatThreat;
+                return true;
+            }
             for (WorldBotState const& cohortState : Party().Bots)
                 if (Player* cohortBot = GetLoadedBot(cohortState))
                     BotRaidAreaAuthority::SetAllOffenseSuppressed(

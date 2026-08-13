@@ -39,11 +39,13 @@ int main()
     input.SourceCombatStarted = true;
     result = Advance(result.Next, input);
     assert(result.NextDecision == Decision::RecoverCombatAtTankAnchors);
+    assert(result.SupportAllowed);
     assert(!result.NativeEngagementAllowed);
 
     input.BothCombatTankAnchorsSafe = true;
     result = Advance(result.Next, input);
     assert(result.NextDecision == Decision::AllowNativeEngagement);
+    assert(result.SupportAllowed);
     assert(result.NativeEngagementAllowed);
 
     // Each live dynamic contract predicate fails closed independently. Tank
@@ -202,10 +204,13 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "tankStageInput.SourcesSeparated" in lane
     assert "tankStageInput.SourcesOnFrozenLanes" in lane
     assert "tankStageInput.BoundTankSourceGeometrySafe" in lane
+    assert "tankStage.SupportAllowed" in lane
     assert "bot->GetInstanceId() != 0" in lane
     assert "ValidationRouteDrudgeAnchorSource0Identity" in lane
 
     barrier = lane.index("!tankStage.NativeEngagementAllowed || formationRequiredMutable")
+    support = lane.index("drudge_staging_support")
     first_taunt = lane.index("drudge_lane_native_taunt")
+    assert barrier < support
     assert first_taunt < barrier
     assert "assignedTank && tankStage.NativeEngagementAllowed" in lane[first_taunt - 1200:first_taunt]

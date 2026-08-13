@@ -1,0 +1,89 @@
+{
+  "schema": "cata_raid_compact_run_summary_v1",
+  "capture_id": "cata_raid_phase1_blackwing_descent_10n_magmaw_diagnostic_v1",
+  "started_at_utc": "2026-08-13T23:12:37Z",
+  "source_commit": "154666b912b7ea1aa46c955dc3bbe6e482b596b6",
+  "source_tree": "0e2fc64f5d942ba32bf8abac1d2d9fd49ae0fdd1",
+  "binary_sha256": "905da16bcfb372b418b1e3c14fbd9089f9698e65408958b1af1cb55ef2573747",
+  "configure_receipt_canonical_sha256": "a053f2c39d018d9902791d72ac646e2f9fac456fa1d3cc1f5dc78e5046aec530",
+  "worldserver_receipt_canonical_sha256": "049dfff41c56c3d5d2f065690f41f7d01f597bdf9b1c2a2aca165db496ee26cc",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
+  "classification": "infrastructure_abort",
+  "phase1_gate_passed": false,
+  "gameplay_failure": false,
+  "fidelity_claim": false,
+  "forbidden_assistance_observed": false,
+  "cleanup": {
+    "gate_passed": true,
+    "worldserver_exit_code": 0,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true
+  },
+  "positive_live_result": {
+    "exact_roster_and_instance_admitted": true,
+    "chainwielder_cleared": true,
+    "drudge_exact_roster_staged": true,
+    "combat_tank_anchor_paths_proven": true,
+    "drudge_path_rejections": 0,
+    "resource_sampling_complete": true
+  },
+  "diagnosis": {
+    "primary": "combat tank anchors did not force native Drudge source separation",
+    "source_home_separation_yards": 9.113406,
+    "configured_tank_anchor_separation_yards": 17.0003,
+    "outward_tank_displacement_from_each_source_yards": 3.94,
+    "required_source_separation_yards": 15.0,
+    "support_gate_defect": "native body combat began during anchor staging, but the geometry return preceded all ordinary healer support",
+    "first_tank_death_after_staging_seconds": 16.432,
+    "second_tank_death_after_first_seconds": 8.831,
+    "recovery_defect": "pre-seed partial death entered an unreachable native-full-wipe hold with eight out-of-combat survivors",
+    "observer_defect": "spawn 250140 OOC visual 79025 was misclassified as hostile activity",
+    "dps_result": "trained DPS remained untested behind the geometry authority gate; no missing-profile inference is authorized"
+  },
+  "performance": {
+    "sample_count": 87,
+    "sampling_errors": 0,
+    "elapsed_seconds": 430.109,
+    "mean_cpu_percent_one_core": 35.64,
+    "minimum_rss_bytes": 1389846528,
+    "maximum_rss_bytes": 1449709568,
+    "total_uncompressed_bytes": 45186937,
+    "scheduler_gate": "MaxActiveCohorts=1 and process-wide selected-cohort callbacks still block six-way same-worldserver fanout"
+  },
+  "immutable_artifacts": {
+    "raw": {
+      "bytes": 22508349,
+      "sha256": "63a7e93b89916704063019a542d431c79c79b22d8b254146d3b6a577df1f4eb3"
+    },
+    "worldserver_log": {
+      "bytes": 22518649,
+      "sha256": "c61f5f428d9082f0e37100c923afbf9215d4a7f59434701f2f8f10303ca27678"
+    },
+    "report": {
+      "bytes": 159939,
+      "file_sha256": "a35c8acd2b1cac64288f9bcdf24c0ecc31c36d76597dc619812d7135256dcea5",
+      "canonical_sha256": "12c024ae5df1ee5c24e706e4cca68fc3b38f42d63afb93af8afe16f9418ed90f"
+    }
+  },
+  "retention": {
+    "capture_dvc_pointer": {
+      "path": "artifacts/cata_raid_program/phase1_154666b9_magmaw_smoke_20260814.dvc",
+      "md5": "841e81daf31075b6d743ea6782cdb698.dir",
+      "size": 45186937,
+      "nfiles": 3
+    },
+    "build_prep_dvc_pointer": {
+      "path": "artifacts/cata_raid_program/phase1_154666b9_build_prep_20260814.dvc",
+      "md5": "992951d1d5d1d25a584545dbdc2b09fe.dir",
+      "size": 3913120,
+      "nfiles": 11
+    },
+    "remote_verified": true,
+    "local_payload_evicted": true,
+    "unique_cache_children_evicted": 7,
+    "shared_cache_children_retained": 7,
+    "directory_metadata_retained": true
+  }
+}

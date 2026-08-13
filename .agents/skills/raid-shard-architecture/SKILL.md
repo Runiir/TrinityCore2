@@ -33,6 +33,15 @@ Require one exact tuple across config, generated route, runtime status, capture,
 - For charge/split packs, declare separate exact pre-pull member anchors and
   post-pull tank combat anchors. Prove every pre-pull path and the full frozen
   roster before the first taunt; then let native threat and charge scripts run.
+- Validate combat anchors against authoritative native spawn coordinates and
+  melee stopping distance. Tank separation is not source separation: require
+  the tanks' outward displacement, minus arrival tolerance and native melee
+  reach, to guarantee the configured source separation plus navigation margin.
+  Revalidate every non-tank anchor against the resulting source positions.
+- If native body combat begins during geometry staging, keep hostile offense,
+  taunts, and threat seeds gated but allow ordinary friendly class support.
+  A pre-seed death must terminalize/restart the dirty attempt; do not label a
+  partial body-pull as a reachable native full wipe.
 - Order prerequisite actions against the native encounter clock explicitly.
   After exact staging and tank ownership, submit required ordinary threat or
   assignment actions before a post-pull/reseparation gate can return. Keep all

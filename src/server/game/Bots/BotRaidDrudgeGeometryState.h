@@ -82,6 +82,7 @@ struct Result
     bool ScopeReset = false;
     bool InvalidateAnchor = false;
     bool ReactivatePriorPathProof = false;
+    bool SupportAllowed = false;
     bool NativeEngagementAllowed = false;
 };
 
@@ -124,6 +125,11 @@ inline Result Advance(State current, Input const& input)
         result.NextDecision = Decision::AwaitExactPrepull;
         return result;
     }
+
+    // Once native body combat has begun, ordinary friendly class support is
+    // allowed while the tanks finish the declared geometry. Hostile offense,
+    // taunts, and threat seeding remain gated by NativeEngagementAllowed.
+    result.SupportAllowed = input.SourceCombatStarted;
 
     bool const dynamicEngagementSafe = input.ChargeQueueIdle && !input.ChargePending
         && input.SourcesSeparated && input.SourcesOnFrozenLanes

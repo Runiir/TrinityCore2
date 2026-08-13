@@ -470,6 +470,7 @@ stages:
     - tools/bot_ml/common.py
     - experiments/configs/validation_scenarios_cata_001.json
     - experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json
+    - sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql
     - dataset/validation_provisioning/report.json
     - dataset/validation_provisioning_verification/report.json
     outs:

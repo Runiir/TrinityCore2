@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from pathlib import Path
 
 from tools.bot_ml.run_live_bot_validation import write_validation_config
 
-from tools.bot_ml.build_validation_scenario_manifests import build_manifests
+from tools.bot_ml.build_validation_scenario_manifests import (
+    build_manifests,
+    drudge_split_geometry_status,
+)
 from tools.bot_ml.build_live_scenario_reports import build_reports
 
 
@@ -52,6 +56,33 @@ def _manifests() -> dict:
 
 def _routes(manifests: dict, scenario_id: str) -> list[dict]:
     return [row for row in manifests["validation_routes"] if row["scenario_id"] == scenario_id]
+
+
+def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_margin():
+    config = _config()
+    canonical = next(row for row in config["scenarios"] if row["id"] == CANONICAL_ID)
+    drudges = next(
+        row for row in canonical["route"]
+        if row.get("mechanic_profile") == "trash_two_tank_charge_lanes"
+    )
+    assert drudge_split_geometry_status(drudges) == (True, "")
+
+    unsafe = deepcopy(drudges)
+    unsafe["split_tank_combat_anchors"] = [
+        {"roster_slot": 1, "x": -294.904, "y": -50.6863, "z": 212.232},
+        {"roster_slot": 2, "x": -311.842, "y": -49.2321, "z": 212.129},
+    ]
+    assert drudge_split_geometry_status(unsafe) == (
+        False,
+        "split_combat_anchor_insufficient_native_chase",
+    )
+
+    wrong_oracle = deepcopy(drudges)
+    wrong_oracle["split_source_home_anchors"][0]["x"] += 1.0
+    assert drudge_split_geometry_status(wrong_oracle) == (
+        False,
+        "split_source_home_oracle",
+    )
 
 
 def test_canonical_bwd_route_is_still_the_ordered_eleven_node_parent_route():
