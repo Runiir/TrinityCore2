@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "audit_id": "cata_raid_runtime_phase1_v1",
-  "updated_at_utc": "2026-08-13T02:20:57Z",
+  "updated_at_utc": "2026-08-13T02:48:00Z",
   "target": {
     "client": "Cataclysm Classic",
     "patch": "4.4.2",
@@ -16,7 +16,7 @@
     "current_head_sha": "f12976832c431b740bae682a3737700e6dba33ee",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
-    "mandatory_sol_high_rereview": "exact_027d_rejected_three_highs; pending_exact_f12976832c_shared_path_frozen_roster_remediation",
+    "mandatory_sol_high_rereview": "exact_ddfe2f4a0c_approved_zero_critical_high_build_authorized_live_restart_held",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",

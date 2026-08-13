@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-13T02:20:57Z",
+  "updated_at_utc": "2026-08-13T02:48:00Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -28,17 +28,17 @@
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
     "critical_high_remediation_implemented_at": "f12976832c431b740bae682a3737700e6dba33ee",
-    "mandatory_rereview": "exact_027d1e3ed2_rejected_with_three_high_findings: bot_relative_path_split, foreign_or_mutable_role_contamination, and_invalid_documented_sha; exact_f12976832c_uses_deterministic_shared_tank_path_and_frozen_exact_roster_roles_and_corrects_identity; fresh_sol_high_rereview_pending",
+    "mandatory_rereview": "exact_ddfe2f4a0c_sol_high_approved_zero_critical_high; exact_f12976832c_uses_deterministic_shared_tank_path_and_frozen_exact_roster_roles; build_authorized_live_restart_held_pending_exact_receipt_and_fresh_preflight",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "thirteenth_capture_phase1_false; exact_bwd10n_identity_and_three_corridor_kills_observed; no_magmaw_engagement_or_native_boss_recovery; exact_c774f691e9 gives current_generation_live_pack precedence over generic_safe_memory_without_weakening_native_79604_15_yard_union_safe_pathing; independent_review_rebuild_and_rerun_pending"
+    "current_acceptance": "fourteenth_capture_phase1_false; exact_bwd10n_identity_and_three_corridor_kills_observed; no_magmaw_engagement_or_native_boss_recovery; exact_f12976832c cohort-consistent frozen-roster live-pack authority approved_zero_critical_high; exact_build_reprovision_and_uncapped_rerun_pending"
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_commit": "c774f691e96c8e5afac86b957230ed7471d027af",
-    "current_state": "idle_after_exact_c774f691_live_pack_over_safe_memory_source_checkpoint",
-    "current_result": "exact-c35 configure and worldserver receipts are retained but stale; exact-c774 mandatory Sol-high review and coordinated rebuild are required",
+    "current_commit": "f12976832c431b740bae682a3737700e6dba33ee",
+    "current_state": "idle_after_exact_f12976832c_sol_high_approved_shared_frozen_roster_live_pack_source_checkpoint",
+    "current_result": "exact-476 configure and worldserver receipts are retained but stale; exact-f129 coordinated policy-v8 rebuild is authorized and required",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -171,16 +171,26 @@
         "worldserver_sha256": "5e098b64289ab691e5888b81a024bade125bcfa86df22c870ad01900b58cb5f7",
         "receipt_retention": "eight_file_remote_verified_phase1_9ae33c0d_dvc_artifact"
       },
-      {
-        "policy": "cata_raid_build_resource_policy_degraded_v8",
-        "compiler_jobs": 1,
-        "linker_jobs": 1,
-        "classification": "configure_and_worldserver_success_at_e75f5ba2fd_then_stale_after_a662679d1a_explicit_drakonid_corridor_decision_remediation",
-        "configure_receipt_sha256": "5c451d3503a9e3d30993d23fb8a5c69d34f8f805d8c576cf64dd33b76872d3ed",
-        "worldserver_receipt_sha256": "f053d8dc440a596fb38c2ae87c51a9009be23786fc7533f424f1bf3fc66e58aa",
-        "worldserver_sha256": "a8a7a586a512d3dd3b09c7758f4bc3149a7741e95707fb0dad273e93e535729a",
-        "receipt_retention": "eight_file_remote_verified_phase1_e75f5ba2_dvc_artifact"
-      }
+    {
+      "policy": "cata_raid_build_resource_policy_degraded_v8",
+      "compiler_jobs": 1,
+      "linker_jobs": 1,
+      "classification": "configure_and_worldserver_success_at_e75f5ba2fd_then_stale_after_a662679d1a_explicit_drakonid_corridor_decision_remediation",
+      "configure_receipt_sha256": "5c451d3503a9e3d30993d23fb8a5c69d34f8f805d8c576cf64dd33b76872d3ed",
+      "worldserver_receipt_sha256": "f053d8dc440a596fb38c2ae87c51a9009be23786fc7533f424f1bf3fc66e58aa",
+      "worldserver_sha256": "a8a7a586a512d3dd3b09c7758f4bc3149a7741e95707fb0dad273e93e535729a",
+      "receipt_retention": "eight_file_remote_verified_phase1_e75f5ba2_dvc_artifact"
+    },
+    {
+      "policy": "cata_raid_build_resource_policy_degraded_v8",
+      "compiler_jobs": 1,
+      "linker_jobs": 1,
+      "classification": "configure_and_worldserver_success_at_476ec4c06b_then_stale_after_f12976832c_shared_frozen_roster_live_pack_remediation",
+      "configure_receipt_sha256": "47b57e07af7e0cb2aff26aab0154a504610d57a8b831c5138391ec23cf67a503",
+      "worldserver_receipt_sha256": "f8f3ebdbb751c0c537d5cecedb463b1ecc245a6b2bf7322b26f9f85550cdc0ee",
+      "worldserver_sha256": "f536bca123d449514672577db09988ae249ffc0cebf510925c8be3124e5d7657",
+      "receipt_retention": "eight_file_remote_verified_phase1_476ec4c0_dvc_artifact"
+    }
     ]
   },
   "research_summary": {
