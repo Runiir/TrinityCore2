@@ -1,0 +1,4 @@
+interface:
+  display_name: "Raid Boss Babysitter"
+  short_description: "Read-only monitoring for a live raid boss shard"
+  default_prompt: "Use $raid-boss-babysitter to monitor this already-running boss shard without mutating it."

@@ -3961,6 +3961,26 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         node.SplitLaneARosterSlots = ExtractJsonUIntArrayField(routeJson, "split_lane_a_roster_slots");
         node.SplitLaneBRosterSlots = ExtractJsonUIntArrayField(routeJson, "split_lane_b_roster_slots");
         node.SplitLaneTankSlots = ExtractJsonUIntArrayField(routeJson, "split_lane_tank_slots");
+        for (std::string const& anchorJson : ExtractJsonObjectArrayItems(
+            ExtractJsonArrayField(routeJson, "split_member_anchors")))
+        {
+            ValidationRouteMemberAnchor anchor;
+            anchor.RosterSlot = uint32(std::max(0, readInt(anchorJson, "roster_slot")));
+            anchor.X = readFloat(anchorJson, "x");
+            anchor.Y = readFloat(anchorJson, "y");
+            anchor.Z = readFloat(anchorJson, "z");
+            node.SplitMemberAnchors.push_back(anchor);
+        }
+        for (std::string const& anchorJson : ExtractJsonObjectArrayItems(
+            ExtractJsonArrayField(routeJson, "split_tank_combat_anchors")))
+        {
+            ValidationRouteMemberAnchor anchor;
+            anchor.RosterSlot = uint32(std::max(0, readInt(anchorJson, "roster_slot")));
+            anchor.X = readFloat(anchorJson, "x");
+            anchor.Y = readFloat(anchorJson, "y");
+            anchor.Z = readFloat(anchorJson, "z");
+            node.SplitTankCombatAnchors.push_back(anchor);
+        }
         node.SplitMinimumSeparationYards = readFloat(routeJson, "split_minimum_separation_yards");
         node.SplitNavigationMarginYards = readFloat(routeJson, "split_navigation_margin_yards");
         node.SplitArrivalToleranceYards = readFloat(routeJson, "split_arrival_tolerance_yards");
@@ -4100,6 +4120,8 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     Cohort().Config.ValidationRouteSplitLaneARosterSlots = node.SplitLaneARosterSlots;
     Cohort().Config.ValidationRouteSplitLaneBRosterSlots = node.SplitLaneBRosterSlots;
     Cohort().Config.ValidationRouteSplitLaneTankSlots = node.SplitLaneTankSlots;
+    Cohort().Config.ValidationRouteSplitMemberAnchors = node.SplitMemberAnchors;
+    Cohort().Config.ValidationRouteSplitTankCombatAnchors = node.SplitTankCombatAnchors;
     Cohort().Config.ValidationRouteSplitMinimumSeparationYards = node.SplitMinimumSeparationYards;
     Cohort().Config.ValidationRouteSplitNavigationMarginYards = node.SplitNavigationMarginYards;
     Cohort().Config.ValidationRouteSplitArrivalToleranceYards = node.SplitArrivalToleranceYards;
@@ -4124,6 +4146,10 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     Party().ValidationRoutePackObservedEngagement = false;
     if (node.MechanicProfile == "trash_two_tank_charge_lanes")
     {
+        Party().ValidationRouteDrudgePrepullStaged = false;
+        Party().ValidationRouteDrudgePrepullAttemptId = 0;
+        Party().ValidationRouteDrudgePrepullWipeGeneration = 0;
+        Party().ValidationRouteDrudgePrepullRouteGeneration = 0;
         Party().ValidationRouteDrudgeChargeGeneration = 0;
         Party().ValidationRouteDrudgeChargeLandedGeneration = 0;
         Party().ValidationRouteDrudgeChargeObservedAtMs = 0;
@@ -8673,6 +8699,18 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     if (!bot->IsInWorld() || !bot->GetMap())
         return rejectPath("route_destination_unreachable");
 
+    constexpr float activeDestinationEpsilon = 0.1f;
+    bool const activePathScopeMatches = !Cohort().Config.ValidationRouteEnable
+        || (state.ActivePathAttemptId == Cohort().AttemptId
+            && state.ActivePathWipeGeneration == Cohort().Raid.WipeGeneration
+            && state.ActivePathRouteGeneration == Party().ValidationRouteGeneration
+            && state.ActivePathRouteNodeId == Cohort().Config.ValidationRouteNodeId);
+    if (state.ActivePathValid && state.IsMoving && activePathScopeMatches
+        && std::fabs(x - state.ActivePathToX) <= activeDestinationEpsilon
+        && std::fabs(y - state.ActivePathToY) <= activeDestinationEpsilon
+        && std::fabs(z - state.ActivePathToZ) <= activeDestinationEpsilon)
+        return true;
+
     float floorZ = bot->GetMap()->GetHeight(bot->GetPhaseShift(), x, y, z + 2.0f, true, 8.0f);
     if (floorZ <= INVALID_HEIGHT)
         return rejectPath("route_destination_invalid_floor");
@@ -8703,13 +8741,6 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     if (recentFailureMemory)
         state.LastNoProgressReason = "route_destination_recently_failed_memory";
 
-    constexpr float activeDestinationEpsilon = 0.1f;
-    if (state.ActivePathValid && state.IsMoving
-        && std::fabs(x - state.ActivePathToX) <= activeDestinationEpsilon
-        && std::fabs(y - state.ActivePathToY) <= activeDestinationEpsilon
-        && std::fabs(z - state.ActivePathToZ) <= activeDestinationEpsilon)
-        return true;
-
     state.ActivePathFromX = bot->GetPositionX();
     state.ActivePathFromY = bot->GetPositionY();
     state.ActivePathFromZ = bot->GetPositionZ();
@@ -8717,6 +8748,13 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     state.ActivePathToY = y;
     state.ActivePathToZ = z;
     state.ActivePathValid = true;
+    state.ActivePathAttemptId = Cohort().Config.ValidationRouteEnable ? Cohort().AttemptId : 0;
+    state.ActivePathWipeGeneration = Cohort().Config.ValidationRouteEnable
+        ? Cohort().Raid.WipeGeneration : 0;
+    state.ActivePathRouteGeneration = Cohort().Config.ValidationRouteEnable
+        ? Party().ValidationRouteGeneration : 0;
+    state.ActivePathRouteNodeId = Cohort().Config.ValidationRouteEnable
+        ? Cohort().Config.ValidationRouteNodeId : std::string();
     state.LastPathRejectReason.clear();
     state.LastPathChangeMs = NowMs();
 
@@ -18453,11 +18491,25 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             Cohort().Config.ValidationRouteSplitLaneBRosterSlots.end());
         std::sort(laneSlots.begin(), laneSlots.end());
         std::vector<uint32> const exactRosterSlots = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+        std::vector<uint32> anchorSlots;
+        for (ValidationRouteMemberAnchor const& anchor :
+            Cohort().Config.ValidationRouteSplitMemberAnchors)
+            anchorSlots.push_back(anchor.RosterSlot);
+        std::sort(anchorSlots.begin(), anchorSlots.end());
+        std::vector<uint32> combatTankAnchorSlots;
+        for (ValidationRouteMemberAnchor const& anchor :
+            Cohort().Config.ValidationRouteSplitTankCombatAnchors)
+            combatTankAnchorSlots.push_back(anchor.RosterSlot);
+        std::sort(combatTankAnchorSlots.begin(), combatTankAnchorSlots.end());
         bool contractResolved = Cohort().Config.ValidationRouteSplitSourceGuids.size() == 2
             && Cohort().Config.ValidationRouteSplitLaneARosterSlots.size() == 5
             && Cohort().Config.ValidationRouteSplitLaneBRosterSlots.size() == 5
             && Cohort().Config.ValidationRouteSplitLaneTankSlots.size() == 2
             && laneSlots == exactRosterSlots
+            && anchorSlots == exactRosterSlots
+            && combatTankAnchorSlots == std::vector<uint32>({ 1, 2 })
+            && Cohort().Config.ValidationRouteBossRecovery
+                == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly
             && Cohort().Config.ValidationRouteSplitLaneTankSlots[0]
                 == Cohort().Config.ValidationRouteSplitLaneARosterSlots[0]
             && Cohort().Config.ValidationRouteSplitLaneTankSlots[1]
@@ -18477,17 +18529,29 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             uint64 const ownerGuid = bot->GetGUID().GetRawValue();
             BotRaidAreaAuthority::SetAllOffenseSuppressed(ownerGuid, true);
             BotRaidAreaAuthority::Set(ownerGuid, true);
-            bot->InterruptNonMeleeSpells(false);
+            for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
+                if (Spell* current = bot->GetCurrentSpell(spellType))
+                    if (Unit* castTarget = current->m_targets.GetUnitTarget();
+                        castTarget && bot->IsValidAttackTarget(castTarget))
+                        bot->InterruptSpell(spellType, false);
             bot->AttackStop();
             if (Pet* pet = bot->GetPet())
             {
-                pet->InterruptNonMeleeSpells(false);
+                for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
+                    if (Spell* current = pet->GetCurrentSpell(spellType))
+                        if (Unit* castTarget = current->m_targets.GetUnitTarget();
+                            castTarget && pet->IsValidAttackTarget(castTarget))
+                            pet->InterruptSpell(spellType, false);
                 pet->AttackStop();
             }
             for (Unit* controlled : bot->m_Controlled)
                 if (controlled)
                 {
-                    controlled->InterruptNonMeleeSpells(false);
+                    for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
+                        if (Spell* current = controlled->GetCurrentSpell(spellType))
+                            if (Unit* castTarget = current->m_targets.GetUnitTarget();
+                                castTarget && controlled->IsValidAttackTarget(castTarget))
+                                controlled->InterruptSpell(spellType, false);
                     controlled->AttackStop();
                 }
         };
@@ -18561,6 +18625,39 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             state.TargetGuid.Clear();
             return true;
         }
+        auto declaredAnchorFor = [&](uint32 slot) -> ValidationRouteMemberAnchor const*
+        {
+            auto anchor = std::find_if(
+                Cohort().Config.ValidationRouteSplitMemberAnchors.begin(),
+                Cohort().Config.ValidationRouteSplitMemberAnchors.end(),
+                [slot](ValidationRouteMemberAnchor const& candidate)
+                {
+                    return candidate.RosterSlot == slot;
+                });
+            return anchor == Cohort().Config.ValidationRouteSplitMemberAnchors.end()
+                ? nullptr : &*anchor;
+        };
+        auto declaredCombatTankAnchorFor = [&](uint32 slot) -> ValidationRouteMemberAnchor const*
+        {
+            auto anchor = std::find_if(
+                Cohort().Config.ValidationRouteSplitTankCombatAnchors.begin(),
+                Cohort().Config.ValidationRouteSplitTankCombatAnchors.end(),
+                [slot](ValidationRouteMemberAnchor const& candidate)
+                {
+                    return candidate.RosterSlot == slot;
+                });
+            return anchor == Cohort().Config.ValidationRouteSplitTankCombatAnchors.end()
+                ? nullptr : &*anchor;
+        };
+        ValidationRouteMemberAnchor const* const prepullAnchor = declaredAnchorFor(oneBasedSlot);
+        if (!prepullAnchor || (assignedTank && !declaredCombatTankAnchorFor(oneBasedSlot)))
+        {
+            holdOffense();
+            record(nullptr, "drudge_lane_declared_anchor_missing");
+            target = nullptr;
+            state.TargetGuid.Clear();
+            return true;
+        }
 
         std::vector<Creature*> sources;
         for (uint32 spawnId : Cohort().Config.ValidationRouteSplitSourceGuids)
@@ -18590,6 +18687,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
         if (!sources[0]->IsAlive() && !sources[1]->IsAlive())
             return false;
+        bool const sourceCombatStarted = sources[0]->IsInCombat()
+            || sources[1]->IsInCombat() || sources[0]->GetVictim()
+            || sources[1]->GetVictim();
+        ValidationRouteMemberAnchor const* const movementAnchor = assignedTank
+            && sourceCombatStarted ? declaredCombatTankAnchorFor(oneBasedSlot) : prepullAnchor;
 
         Position const& homeA = sources[0]->GetHomePosition();
         Position const& homeB = sources[1]->GetHomePosition();
@@ -18612,18 +18714,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         float const laneSeparation = Cohort().Config.ValidationRouteSplitMinimumSeparationYards
             + Cohort().Config.ValidationRouteSplitNavigationMarginYards;
         float const laneSign = laneIndex == 0 ? -1.0f : 1.0f;
-        float const tankAnchorX = midpointX + laneSign * axisX * laneSeparation * 0.5f;
-        float const tankAnchorY = midpointY + laneSign * axisY * laneSeparation * 0.5f;
-        float const groupOffset = Cohort().Config.ValidationRouteMinimumDistanceYards
-            + Cohort().Config.ValidationRouteSplitNavigationMarginYards;
-        float const groupAnchorX = tankAnchorX + laneSign * axisX * groupOffset;
-        float const groupAnchorY = tankAnchorY + laneSign * axisY * groupOffset;
-        float const anchorX = assignedTank ? tankAnchorX : groupAnchorX;
-        float const anchorY = assignedTank ? tankAnchorY : groupAnchorY;
-        float anchorZ = midpointZ;
-        if (float floorZ = bot->GetMap()->GetHeight(bot->GetPhaseShift(), anchorX,
-                anchorY, midpointZ + 4.0f, true, 10.0f); floorZ > INVALID_HEIGHT)
-            anchorZ = floorZ;
+        float const anchorX = movementAnchor->X;
+        float const anchorY = movementAnchor->Y;
+        float const anchorZ = movementAnchor->Z;
 
         // The route manifest binds source index to lane.  Never infer this
         // from a moving creature position: a delivered Rush can move a source
@@ -18719,76 +18812,22 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         float const sameLaneMemberMinimum = std::max(3.0f,
             Cohort().Config.ValidationRouteSplitNavigationMarginYards
                 + Cohort().Config.ValidationRouteSplitArrivalToleranceYards * 0.5f);
-        auto laneSlotsFor = [&](uint32 slot) -> std::vector<uint32> const&
-        {
-            bool const slotLaneA = std::find(
-                Cohort().Config.ValidationRouteSplitLaneARosterSlots.begin(),
-                Cohort().Config.ValidationRouteSplitLaneARosterSlots.end(), slot)
-                != Cohort().Config.ValidationRouteSplitLaneARosterSlots.end();
-            return slotLaneA ? Cohort().Config.ValidationRouteSplitLaneARosterSlots
-                : Cohort().Config.ValidationRouteSplitLaneBRosterSlots;
-        };
         auto uniqueGroupAnchor = [&](uint32 slot) -> std::pair<float, float>
         {
-            std::vector<uint32> const& slots = laneSlotsFor(slot);
-            auto slotIt = std::find(slots.begin(), slots.end(), slot);
-            size_t const ordinal = slotIt == slots.end()
-                ? 0 : size_t(std::distance(slots.begin(), slotIt));
-            float const centeredOrdinal = float(ordinal)
-                - (float(slots.size()) - 1.0f) * 0.5f;
-            float const slotOffset = centeredOrdinal * sameLaneMemberMinimum;
-            float const perpendicularX = -axisY;
-            float const perpendicularY = axisX;
-            return { groupAnchorX + perpendicularX * slotOffset,
-                groupAnchorY + perpendicularY * slotOffset };
+            bool const tankSlot = std::find(
+                Cohort().Config.ValidationRouteSplitLaneTankSlots.begin(),
+                Cohort().Config.ValidationRouteSplitLaneTankSlots.end(), slot)
+                != Cohort().Config.ValidationRouteSplitLaneTankSlots.end();
+            ValidationRouteMemberAnchor const* anchor = tankSlot && sourceCombatStarted
+                ? declaredCombatTankAnchorFor(slot) : declaredAnchorFor(slot);
+            if (anchor)
+                return { anchor->X, anchor->Y };
+            return { 0.0f, 0.0f };
         };
         auto anchorCandidatesFor = [&](uint32 slot) -> std::vector<std::pair<float, float>>
         {
             auto const [primaryX, primaryY] = uniqueGroupAnchor(slot);
-            float const memberLaneSign = (std::find(
-                Cohort().Config.ValidationRouteSplitLaneARosterSlots.begin(),
-                Cohort().Config.ValidationRouteSplitLaneARosterSlots.end(), slot)
-                != Cohort().Config.ValidationRouteSplitLaneARosterSlots.end()) ? -1.0f : 1.0f;
-            float const perpendicularX = -axisY;
-            float const perpendicularY = axisX;
-            float const anchorSearchStep =
-                Cohort().Config.ValidationRouteSplitNavigationMarginYards
-                + Cohort().Config.ValidationRouteSplitArrivalToleranceYards;
-            // Keep the original three candidates at indices 0..2 for
-            // backwards-compatible evidence, then search a bounded,
-            // deterministic collision-safe grid.  BWD's derived lane-A
-            // midpoint can sit beside a disconnected mmap edge; the wider
-            // grid finds a nearby polygon without changing the native Rush
-            // target selector or its 15 yd geometry contract.
-            std::vector<std::pair<float, float>> candidates = {
-                { primaryX, primaryY },
-                { primaryX + axisX * memberLaneSign * anchorSearchStep,
-                    primaryY + axisY * memberLaneSign * anchorSearchStep },
-                { primaryX + axisX * memberLaneSign * anchorSearchStep * 2.0f,
-                    primaryY + axisY * memberLaneSign * anchorSearchStep * 2.0f },
-                { primaryX - axisX * memberLaneSign * anchorSearchStep,
-                    primaryY - axisY * memberLaneSign * anchorSearchStep },
-                { primaryX + axisX * memberLaneSign * anchorSearchStep * 3.0f,
-                    primaryY + axisY * memberLaneSign * anchorSearchStep * 3.0f },
-                { primaryX - axisX * memberLaneSign * anchorSearchStep * 2.0f,
-                    primaryY - axisY * memberLaneSign * anchorSearchStep * 2.0f },
-                { primaryX + axisX * memberLaneSign * anchorSearchStep * 4.0f,
-                    primaryY + axisY * memberLaneSign * anchorSearchStep * 4.0f },
-                { primaryX - axisX * memberLaneSign * anchorSearchStep * 3.0f,
-                    primaryY - axisY * memberLaneSign * anchorSearchStep * 3.0f },
-                { primaryX - axisX * memberLaneSign * anchorSearchStep * 4.0f,
-                    primaryY - axisY * memberLaneSign * anchorSearchStep * 4.0f }
-            };
-            for (float perpendicularOffset : { anchorSearchStep, -anchorSearchStep,
-                anchorSearchStep * 2.0f, -anchorSearchStep * 2.0f })
-                for (float axisOffset : { 0.0f, anchorSearchStep, -anchorSearchStep,
-                    anchorSearchStep * 2.0f, -anchorSearchStep * 2.0f })
-                    candidates.emplace_back(
-                        primaryX + perpendicularX * perpendicularOffset
-                            + axisX * memberLaneSign * axisOffset,
-                        primaryY + perpendicularY * perpendicularOffset
-                            + axisY * memberLaneSign * axisOffset);
-            return candidates;
+            return { { primaryX, primaryY } };
         };
 
         auto anchorCacheMatchesGeneration = [&]()
@@ -18815,8 +18854,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 || anchorState.ValidationRouteDrudgeAnchorRouteGeneration != Party().ValidationRouteGeneration)
                 return false;
             auto memberRoster = Cohort().Raid.RosterByGuid.find(member->GetGUID().GetCounter());
-            if (memberRoster == Cohort().Raid.RosterByGuid.end()
-                || memberRoster->second.Role == "tank")
+            if (memberRoster == Cohort().Raid.RosterByGuid.end())
                 return false;
             uint32 const memberSlot = memberRoster->second.SlotIndex + 1;
             bool const memberLaneA = std::find(
@@ -18836,12 +18874,19 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 + (anchorState.ValidationRouteDrudgeAnchorY - midpointY) * axisY;
             if (memberLaneSign * projection < laneSeparation * 0.25f)
                 return false;
-            if (Distance2d(anchorState.ValidationRouteDrudgeAnchorX,
-                    anchorState.ValidationRouteDrudgeAnchorY, sources[0]->GetPositionX(),
-                    sources[0]->GetPositionY()) < Cohort().Config.ValidationRouteMinimumDistanceYards
+            if (memberRoster->second.Role == "tank")
+            {
+                uint32 const sourceIndex = memberSlot ==
+                    Cohort().Config.ValidationRouteSplitLaneTankSlots[0] ? 0 : 1;
+                if (memberSlot != Cohort().Config.ValidationRouteSplitLaneTankSlots[sourceIndex])
+                    return false;
+            }
+            else if (Distance2d(anchorState.ValidationRouteDrudgeAnchorX,
+                         anchorState.ValidationRouteDrudgeAnchorY, sources[0]->GetPositionX(),
+                         sources[0]->GetPositionY()) < Cohort().Config.ValidationRouteMinimumDistanceYards
                 || Distance2d(anchorState.ValidationRouteDrudgeAnchorX,
-                    anchorState.ValidationRouteDrudgeAnchorY, sources[1]->GetPositionX(),
-                    sources[1]->GetPositionY()) < Cohort().Config.ValidationRouteMinimumDistanceYards)
+                         anchorState.ValidationRouteDrudgeAnchorY, sources[1]->GetPositionX(),
+                         sources[1]->GetPositionY()) < Cohort().Config.ValidationRouteMinimumDistanceYards)
                 return false;
             return member->GetExactDist(anchorState.ValidationRouteDrudgeAnchorX,
                 anchorState.ValidationRouteDrudgeAnchorY, anchorState.ValidationRouteDrudgeAnchorZ)
@@ -18911,6 +18956,30 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         };
 
+        auto exactRosterPrepullStaged = [&]() -> bool
+        {
+            std::set<uint32> stagedGuids;
+            for (WorldBotState const& cohortState : Party().Bots)
+            {
+                Player* member = GetLoadedBot(cohortState);
+                if (!member || !member->IsInWorld() || !member->IsAlive()
+                    || member->GetMap() != bot->GetMap())
+                    return false;
+                auto memberRoster = Cohort().Raid.RosterByGuid.find(
+                    member->GetGUID().GetCounter());
+                if (memberRoster == Cohort().Raid.RosterByGuid.end()
+                    || !memberRoster->second.Active || !memberRoster->second.LeaseOwned)
+                    return false;
+                bool const memberSafe = memberRoster->second.Role == "tank"
+                    ? cachedAnchorSafe(cohortState, member)
+                    : groupPositionSafe(member);
+                if (!memberSafe)
+                    return false;
+                stagedGuids.insert(member->GetGUID().GetCounter());
+            }
+            return stagedGuids.size() == exactRosterSlots.size();
+        };
+
         auto sourceOnFrozenLane = [&](Creature const* source, uint32 sourceIndex,
             float* projectionOut = nullptr) -> bool
         {
@@ -18930,27 +18999,21 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             {
                 if (!anchorCacheMatchesGeneration())
                     return false;
-                if (!tank)
-                {
-                    auto const candidates = anchorCandidatesFor(oneBasedSlot);
-                    if (state.ValidationRouteDrudgeAnchorCandidateIndex >= candidates.size()
-                        || Distance2d(state.ValidationRouteDrudgeAnchorX,
-                            state.ValidationRouteDrudgeAnchorY,
-                            candidates[state.ValidationRouteDrudgeAnchorCandidateIndex].first,
-                            candidates[state.ValidationRouteDrudgeAnchorCandidateIndex].second)
-                            > 0.01f)
-                        return false;
-                }
+                auto const candidates = anchorCandidatesFor(oneBasedSlot);
+                if (state.ValidationRouteDrudgeAnchorCandidateIndex >= candidates.size()
+                    || Distance2d(state.ValidationRouteDrudgeAnchorX,
+                        state.ValidationRouteDrudgeAnchorY,
+                        candidates[state.ValidationRouteDrudgeAnchorCandidateIndex].first,
+                        candidates[state.ValidationRouteDrudgeAnchorCandidateIndex].second)
+                        > 0.01f)
+                    return false;
                 float const projection =
                     (state.ValidationRouteDrudgeAnchorX - midpointX) * axisX
                     + (state.ValidationRouteDrudgeAnchorY - midpointY) * axisY;
                 if (laneSign * projection < laneSeparation * 0.25f)
                     return false;
                 if (tank)
-                    return Distance2d(state.ValidationRouteDrudgeAnchorX,
-                        state.ValidationRouteDrudgeAnchorY, laneSource->GetPositionX(),
-                        laneSource->GetPositionY())
-                        <= Cohort().Config.ValidationRouteSplitMinimumSeparationYards;
+                    return true;
                 return Distance2d(state.ValidationRouteDrudgeAnchorX,
                         state.ValidationRouteDrudgeAnchorY, sources[0]->GetPositionX(),
                         sources[0]->GetPositionY())
@@ -18974,27 +19037,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             state.ValidationRouteDrudgeAnchorSearchCooldownUntilMs = nowMs
                 + RepeatableDiagnosticEventHeartbeatMs;
 
-            std::vector<std::pair<float, float>> candidates;
-            if (tank)
-            {
-                float const perpendicularX = -axisY;
-                float const perpendicularY = axisX;
-                float const tankSearchStep = std::max(
-                    Cohort().Config.ValidationRouteSplitNavigationMarginYards
-                        + Cohort().Config.ValidationRouteSplitArrivalToleranceYards * 0.5f,
-                    Cohort().Config.ValidationRouteSplitArrivalToleranceYards);
-                for (float perpendicularOffset : { 0.0f, tankSearchStep, -tankSearchStep,
-                    tankSearchStep * 2.0f, -tankSearchStep * 2.0f })
-                    for (float axisOffset : { 0.0f, tankSearchStep, -tankSearchStep,
-                        tankSearchStep * 2.0f, -tankSearchStep * 2.0f })
-                        candidates.emplace_back(
-                            tankAnchorX + perpendicularX * perpendicularOffset
-                                + axisX * laneSign * axisOffset,
-                            tankAnchorY + perpendicularY * perpendicularOffset
-                                + axisY * laneSign * axisOffset);
-            }
-            else
-                candidates = anchorCandidatesFor(oneBasedSlot);
+            std::vector<std::pair<float, float>> const candidates =
+                anchorCandidatesFor(oneBasedSlot);
 
             auto candidateSpacingSafe = [&](float x, float y)
             {
@@ -19037,31 +19081,23 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
             for (size_t candidateIndex = 0; candidateIndex < candidates.size(); ++candidateIndex)
             {
-                float candidateZ = midpointZ;
-                if (float floorZ = bot->GetMap()->GetHeight(bot->GetPhaseShift(),
-                        candidates[candidateIndex].first, candidates[candidateIndex].second,
-                        midpointZ + 4.0f, true, 10.0f); floorZ > INVALID_HEIGHT)
-                    candidateZ = floorZ;
+                ValidationRouteMemberAnchor const* candidateAnchor = tank && sourceCombatStarted
+                    ? declaredCombatTankAnchorFor(oneBasedSlot) : declaredAnchorFor(oneBasedSlot);
+                if (!candidateAnchor)
+                    continue;
+                float const candidateZ = candidateAnchor->Z;
                 float const projection = (candidates[candidateIndex].first - midpointX) * axisX
                     + (candidates[candidateIndex].second - midpointY) * axisY;
                 if (laneSign * projection < laneSeparation * 0.25f)
                     continue;
-                if (tank)
-                {
-                    if (Distance2d(candidates[candidateIndex].first,
-                            candidates[candidateIndex].second, laneSource->GetPositionX(),
-                            laneSource->GetPositionY())
-                        > Cohort().Config.ValidationRouteSplitMinimumSeparationYards)
-                        continue;
-                }
-                else if (Distance2d(candidates[candidateIndex].first,
+                if (!tank && (Distance2d(candidates[candidateIndex].first,
                         candidates[candidateIndex].second, sources[0]->GetPositionX(),
                         sources[0]->GetPositionY()) < Cohort().Config.ValidationRouteMinimumDistanceYards
                     || Distance2d(candidates[candidateIndex].first,
                         candidates[candidateIndex].second, sources[1]->GetPositionX(),
                         sources[1]->GetPositionY()) < Cohort().Config.ValidationRouteMinimumDistanceYards
                     || !candidateSpacingSafe(candidates[candidateIndex].first,
-                        candidates[candidateIndex].second))
+                        candidates[candidateIndex].second)))
                     continue;
                 if (!strictNativePath(candidates[candidateIndex].first,
                         candidates[candidateIndex].second, candidateZ))
@@ -19254,11 +19290,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 if (memberRoster->second.Role != "tank")
                 {
                     auto candidates = anchorCandidatesFor(geometry.RosterSlot);
-                    float const tankAnchorX = midpointX + memberLaneSign * axisX * laneSeparation * 0.5f;
-                    float const tankAnchorY = midpointY + memberLaneSign * axisY * laneSeparation * 0.5f;
-                    float const groupOffset = observation.MinimumDistance + observation.NavigationMargin;
-                    geometry.GroupAnchorBaseX = tankAnchorX + memberLaneSign * axisX * groupOffset;
-                    geometry.GroupAnchorBaseY = tankAnchorY + memberLaneSign * axisY * groupOffset;
+                    geometry.GroupAnchorBaseX = candidates.empty() ? 0.0f : candidates[0].first;
+                    geometry.GroupAnchorBaseY = candidates.empty() ? 0.0f : candidates[0].second;
                     for (WorldBotState const& memberState : Party().Bots)
                         if (memberState.Guid.GetCounter() == geometry.Guid
                             && memberState.ValidationRouteDrudgeAnchorValid
@@ -19403,12 +19436,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         nativeChargeContractViolation = nativeChargeContractViolation
             || nativeChargeTargetRoleViolation;
 
-        float const anchorDistance = bot->GetExactDist(anchorX, anchorY, anchorZ);
         // groupPositionSafe includes the selected native-path fallback.  The
         // formation gate must use that same predicate or a bot that reached a
         // valid fallback will repeatedly chase the unreachable primary point.
         bool const formationRequired = assignedTank
-            ? anchorDistance > Cohort().Config.ValidationRouteSplitArrivalToleranceYards
+            ? !cachedAnchorSafe(state, bot)
             : !groupPositionSafe(bot);
         bool formationRequiredMutable = formationRequired;
         if (!assignedTank && !formationRequiredMutable && !anchorCacheMatchesGeneration())
@@ -19427,7 +19459,31 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (nativeChargeTargetViolation)
             holdOffense();
 
-        if (assignedTank && laneSource->GetVictim() == bot)
+        bool prepullStaged = Party().ValidationRouteDrudgePrepullStaged
+            && Party().ValidationRouteDrudgePrepullAttemptId == Cohort().AttemptId
+            && Party().ValidationRouteDrudgePrepullWipeGeneration == Cohort().Raid.WipeGeneration
+            && Party().ValidationRouteDrudgePrepullRouteGeneration == Party().ValidationRouteGeneration;
+        if (!prepullStaged
+            && exactRosterPrepullStaged())
+        {
+            Party().ValidationRouteDrudgePrepullStaged = true;
+            Party().ValidationRouteDrudgePrepullAttemptId = Cohort().AttemptId;
+            Party().ValidationRouteDrudgePrepullWipeGeneration = Cohort().Raid.WipeGeneration;
+            Party().ValidationRouteDrudgePrepullRouteGeneration = Party().ValidationRouteGeneration;
+            prepullStaged = true;
+            record(nullptr, "drudge_prepull_exact_roster_staged");
+        }
+        if (sourceCombatStarted && !prepullStaged)
+        {
+            holdOffense();
+            record(laneSource, "drudge_prepull_combat_before_exact_roster_staged");
+            target = laneSource;
+            state.TargetGuid = laneSource->GetGUID();
+            return true;
+        }
+
+        if (assignedTank && prepullStaged
+            && laneSource->GetVictim() == bot)
         {
             // Native threat ownership is already the exact frozen lane
             // assignment.  Keep it separate from the actual successful
@@ -19438,7 +19494,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (ownershipInsert.second)
                 record(laneSource, "drudge_lane_native_ownership", sourceSeparation);
         }
-        if (assignedTank && laneSource->GetVictim() != bot)
+        if (assignedTank && prepullStaged
+            && laneSource->GetVictim() != bot)
         {
             BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, "tank");
             for (BotActionCandidate const& candidate :
@@ -19479,11 +19536,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
-        if (formationRequiredMutable || pairTooClose || nativeChargePending || chargeAwaitingLanding)
+        if (!prepullStaged || formationRequiredMutable
+            || pairTooClose || nativeChargePending || chargeAwaitingLanding)
         {
             holdOffense();
             bool moved = false;
-            bool alreadySafe = !assignedTank && groupPositionSafe(bot);
+            bool alreadySafe = assignedTank
+                ? cachedAnchorSafe(state, bot) : groupPositionSafe(bot);
             if (!bot->IsFalling() && !alreadySafe)
             {
                 // The primary point is a contract reference, not a promise
@@ -19505,8 +19564,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                             ? "drudge_native_charge_target_lane_violation_reseparate"
                             : "drudge_native_charge_contract_violation_reseparate"))
                     : "drudge_native_charge_lane_reseparate")
-                : (assignedTank ? "drudge_tank_lane_position" :
-                    (alreadySafe ? "drudge_group_lane_position_already_safe" : "drudge_group_lane_position"));
+                : (!prepullStaged
+                    ? "drudge_prepull_member_stage" :
+                    (assignedTank ? "drudge_tank_lane_position" :
+                    (alreadySafe ? "drudge_group_lane_position_already_safe" : "drudge_group_lane_position")));
             record(laneSource, result, sourceSeparation,
                 nativeChargeTarget ? nativeChargeTarget->GetGUID().GetCounter() : 0);
             target = laneSource;
@@ -23986,6 +24047,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // This keeps a four-death tactical retreat from masquerading as a
         // clean lane generation; the native wipe gate will terminate it.
         if (Cohort().Config.ValidationRouteMechanicProfile == "trash_two_tank_charge_lanes"
+            && Cohort().Config.ValidationRouteBossRecovery
+                == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly
             && deadMembers > 0 && groupCombatActive)
         {
             for (WorldBotState const& cohortState : Party().Bots)

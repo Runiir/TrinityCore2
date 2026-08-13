@@ -1,6 +1,6 @@
 ---
 name: raid-shard-architecture
-description: Design, validate, and operate isolated TrinityCore raid-boss experiments and their canonical full-raid composition. Use for per-boss route manifests, runtime profiles, bot pools, frozen rosters, predecessor instance saves, parallel boss babysitters, prestarted worldserver handoff, or promotion from boss shards to sequential full-raid validation.
+description: Design and coordinate isolated TrinityCore raid-boss experiments and their canonical full-raid composition. Use for per-boss route manifests, runtime profiles, bot pools, frozen rosters, predecessor instance saves, server preparation, parallel shard orchestration, or promotion from boss shards to sequential full-raid validation. Do not use for a read-only live babysitter handoff.
 ---
 
 # Raid Shard Architecture
@@ -27,6 +27,12 @@ Require one exact tuple across config, generated route, runtime status, capture,
 - Scope wipe/recovery latches to the exact node, route generation, attempt, and
   recovery policy that observed them. Trash recovery state must not cross into
   a later boss ready-check contract.
+- Require the same typed recovery policy in the route data, runtime handler,
+  telemetry label, and acceptance verifier. Never synthesize a policy name in
+  code when the active node did not declare it.
+- For charge/split packs, declare separate exact pre-pull member anchors and
+  post-pull tank combat anchors. Prove every pre-pull path and the full frozen
+  roster before the first taunt; then let native threat and charge scripts run.
 
 ## Model prerequisites as a DAG
 
@@ -45,6 +51,12 @@ Require one exact tuple across config, generated route, runtime status, capture,
 5. Only then attach the boss babysitter. The babysitter monitors; it does not silently repair or manufacture state.
 6. Keep observation uncapped. Terminate on success, explicit user interruption, stale telemetry/infrastructure loss, or a monotonic semantic stall—not an arbitrary fight deadline.
 
+## Keep roles separate
+
+- The coordinator builds, provisions, starts, stops, restarts, and mutates state.
+- A babysitter receives a verified live handoff and only observes and reports unless explicitly authorized otherwise.
+- Give babysitters only the `raid-boss-babysitter` skill; do not load this coordinator skill into every watcher.
+
 ## Parallelize safely
 
 - Use one isolated cohort, pool, frozen roster, instance/save, capture namespace, and babysitter per boss.
@@ -52,10 +64,6 @@ Require one exact tuple across config, generated route, runtime status, capture,
 - Budget CPU, log rate, and disk before launching all shards. A single pathological shard blocks fan-out.
 - Run six boss shards in parallel only after the single Magmaw rehearsal is clean.
 - Finish with three to four sequential canonical full-raid runs; shard success cannot replace end-to-end validation.
-
-## Review decisions, not only outcomes
-
-Compare bot decisions with native boss/trash scripts and observed casts, auras, targets, summons, geometry, and phase state. Check damage-profile activation, hazard exits, tank ownership, formation, recovery/readycheck ordering, stuck/unstuck frequency, CPU, and telemetry volume. Do not infer tactics or 4.4.2 fidelity from engagement, wipe, or synthetic evidence alone.
 
 ## Separate profile selection from execution
 

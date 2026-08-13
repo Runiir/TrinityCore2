@@ -43,6 +43,14 @@ enum class ValidationRouteBossRecoveryPolicy : uint8
     NativeFullWipeOnly = 1
 };
 
+struct ValidationRouteMemberAnchor
+{
+    uint32 RosterSlot = 0;
+    float X = 0.0f;
+    float Y = 0.0f;
+    float Z = 0.0f;
+};
+
 struct BotWorldExperimentConfig
 {
     std::string Name = "autonomous_zone_10";
@@ -118,6 +126,8 @@ struct BotWorldExperimentConfig
     std::vector<uint32> ValidationRouteSplitLaneARosterSlots;
     std::vector<uint32> ValidationRouteSplitLaneBRosterSlots;
     std::vector<uint32> ValidationRouteSplitLaneTankSlots;
+    std::vector<ValidationRouteMemberAnchor> ValidationRouteSplitMemberAnchors;
+    std::vector<ValidationRouteMemberAnchor> ValidationRouteSplitTankCombatAnchors;
     float ValidationRouteSplitMinimumSeparationYards = 0.0f;
     float ValidationRouteSplitNavigationMarginYards = 0.0f;
     float ValidationRouteSplitArrivalToleranceYards = 0.0f;
@@ -486,6 +496,8 @@ private:
         std::vector<uint32> SplitLaneARosterSlots;
         std::vector<uint32> SplitLaneBRosterSlots;
         std::vector<uint32> SplitLaneTankSlots;
+        std::vector<ValidationRouteMemberAnchor> SplitMemberAnchors;
+        std::vector<ValidationRouteMemberAnchor> SplitTankCombatAnchors;
         float SplitMinimumSeparationYards = 0.0f;
         float SplitNavigationMarginYards = 0.0f;
         float SplitArrivalToleranceYards = 0.0f;
@@ -841,6 +853,10 @@ private:
         float ActivePathToY = 0.0f;
         float ActivePathToZ = 0.0f;
         bool ActivePathValid = false;
+        uint64 ActivePathAttemptId = 0;
+        uint32 ActivePathWipeGeneration = 0;
+        uint64 ActivePathRouteGeneration = 0;
+        std::string ActivePathRouteNodeId;
         std::string LastPathRejectReason;
         uint32 LastDeathMapId = 0;
         uint32 LastDeathAreaId = 0;
@@ -1983,6 +1999,10 @@ private:
         uint64 ValidationRoutePackSequence = 1;
         uint32 ValidationRouteCompletedPackCount = 0;
         bool ValidationRoutePackObservedEngagement = false;
+        bool ValidationRouteDrudgePrepullStaged = false;
+        uint64 ValidationRouteDrudgePrepullAttemptId = 0;
+        uint32 ValidationRouteDrudgePrepullWipeGeneration = 0;
+        uint64 ValidationRouteDrudgePrepullRouteGeneration = 0;
         uint64 ValidationRouteDrudgeChargeGeneration = 0;
         uint64 ValidationRouteDrudgeChargeLandedGeneration = 0;
         uint64 ValidationRouteDrudgeChargeObservedAtMs = 0;

@@ -540,6 +540,12 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "ValidationRouteSplitMinimumSeparationYards" in lane
     assert "ValidationRouteSplitNavigationMarginYards" in lane
     assert "ValidationRouteSplitArrivalToleranceYards" in lane
+    assert "ValidationRouteSplitMemberAnchors" in lane
+    assert "anchorSlots == exactRosterSlots" in lane
+    assert "exactRosterPrepullStaged" in lane
+    assert '"drudge_prepull_exact_roster_staged"' in lane
+    assert '"drudge_prepull_combat_before_exact_roster_staged"' in lane
+    assert lane.index("exactRosterPrepullStaged") < lane.index("TryCastCombatSpell(bot, laneSource")
     assert "ValidationRouteDrudgeChargeGeneration" in lane
     assert "nativeChargePending" in lane
     assert "chargeObservation->Landed" in lane
@@ -551,7 +557,8 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert '"drudge_kill_sync_hold_lower_health_lane"' in lane
     assert "ValidationRouteVengefulRageSpellId" in lane
     assert "BotCombatActionCategory::Taunt" in lane
-    assert "if (formationRequiredMutable || pairTooClose || nativeChargePending || chargeAwaitingLanding)" in lane
+    assert "if (!prepullStaged || formationRequiredMutable" in lane
+    assert "|| pairTooClose || nativeChargePending || chargeAwaitingLanding)" in lane
     assert "laneSource = sources[laneIndex]" in lane
     assert "bool const sourceInLaneA = nativeChargeSource == sources[0]" in lane
     assert "markAllRosterReseparated" in lane
@@ -2743,7 +2750,20 @@ def test_phase1_magmaw_uses_typed_native_full_wipe_recovery_policy():
     config = json.loads((ROOT / "experiments/configs/validation_scenarios_cata_001.json").read_text())
     bwd = next(row for row in config["scenarios"] if row["id"] == "blackwing_descent_10n")
     magmaw = next(row for row in bwd["route"] if row["label"] == "Magmaw")
+    drudges = next(row for row in bwd["route"] if row["label"] == "Magmaw Drudge pair")
     assert magmaw["boss_recovery_policy"] == "native_full_wipe_only"
+    assert drudges["boss_recovery_policy"] == "native_full_wipe_only"
+    assert [row["roster_slot"] for row in drudges["split_member_anchors"]] == list(range(1, 11))
+
+    diagnostic = next(
+        row for row in config["diagnostic_scenarios"]
+        if row["id"] == "blackwing_descent_10n_magmaw_diagnostic"
+    )
+    diagnostic_drudges = next(
+        row for row in diagnostic["route"] if row["label"] == "Magmaw Drudge pair"
+    )
+    assert diagnostic_drudges["boss_recovery_policy"] == "native_full_wipe_only"
+    assert diagnostic_drudges["split_member_anchors"] == drudges["split_member_anchors"]
 
     generator = (ROOT / "tools/bot_ml/build_validation_scenario_manifests.py").read_text()
     assert '"boss_recovery_policy": str(step.get("boss_recovery_policy") or "")' in generator
@@ -2773,6 +2793,8 @@ def test_drudge_partial_death_cannot_enter_tactical_recovery():
     ]
     drudge_guard = objective.index(
         'if (Cohort().Config.ValidationRouteMechanicProfile == "trash_two_tank_charge_lanes"\n'
+        '            && Cohort().Config.ValidationRouteBossRecovery\n'
+        '                == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly\n'
         '            && deadMembers > 0 && groupCombatActive)'
     )
     generic_recovery = objective.index(
@@ -2785,6 +2807,31 @@ def test_drudge_partial_death_cannot_enter_tactical_recovery():
     assert "SetAllOffenseSuppressed" in guard
     assert "CombatStopWithPets" not in guard
     assert "MoveBotToPoint" not in guard
+
+
+def test_repeated_owned_destination_skips_floor_and_native_path_recalculation():
+    move = IMPL[
+        IMPL.index("bool BotWorldPopulationMgr::MoveBotToPoint"):
+        IMPL.index("bool BotWorldPopulationMgr::MoveBotToProfileRange", IMPL.index("bool BotWorldPopulationMgr::MoveBotToPoint"))
+    ]
+    fast_guard = move.index("bool const activePathScopeMatches")
+    floor = move.index("GetHeight(")
+    path = move.index("PathGenerator path(bot)")
+    assert fast_guard < floor < path
+    assert "ActivePathAttemptId == Cohort().AttemptId" in move
+    assert "ActivePathWipeGeneration == Cohort().Raid.WipeGeneration" in move
+    assert "ActivePathRouteGeneration == Party().ValidationRouteGeneration" in move
+    assert "ActivePathRouteNodeId == Cohort().Config.ValidationRouteNodeId" in move
+
+
+def test_telemetry_rate_limit_precedes_frame_construction():
+    telemetry = (ROOT / "src/server/game/Bots/BotTelemetryBuffer.cpp").read_text()
+    observe = telemetry[
+        telemetry.index("bool BotTelemetryBuffer::Observe"):
+        telemetry.index("uint64 BotTelemetryBuffer::CaptureEvent")
+    ]
+    assert observe.index("BotTelemetryNowMs()") < observe.index("BuildFrame(")
+    assert observe.index("FrameIntervalMs") < observe.index("BuildFrame(")
 
 
 def test_phase1_dead_member_gate_requires_latched_exact_native_full_wipe():

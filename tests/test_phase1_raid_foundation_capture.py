@@ -1,5 +1,6 @@
 import json
 import io
+from math import hypot
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -467,15 +468,37 @@ def accepted_drudge_status() -> dict:
     offensive_guids = [row["guid"] for row in runtime["roster"] if row["role"] in {"tank", "dps"}]
     lane_a_slots = {1, 3, 4, 6, 7}
     lane_b_slots = {2, 5, 8, 9, 10}
+    config = json.loads((
+        Path(__file__).resolve().parents[1]
+        / "experiments/configs/validation_scenarios_cata_001.json"
+    ).read_text(encoding="utf-8"))
+    scenario = next(row for row in config["scenarios"] if row["id"] == "blackwing_descent_10n")
+    drudges = next(row for row in scenario["route"] if row.get("mechanic_profile") == "trash_two_tank_charge_lanes")
+    anchors = {
+        row["roster_slot"]: (row["x"], row["y"])
+        for row in drudges["split_member_anchors"]
+    }
+    anchors.update({
+        row["roster_slot"]: (row["x"], row["y"])
+        for row in drudges["split_tank_combat_anchors"]
+    })
+    home0 = (-298.833, -50.349)
+    home1 = (-307.913, -49.5694)
+    midpoint = ((home0[0] + home1[0]) * 0.5, (home0[1] + home1[1]) * 0.5)
+    axis_length = hypot(home1[0] - home0[0], home1[1] - home0[1])
+    axis = ((home1[0] - home0[0]) / axis_length, (home1[1] - home0[1]) / axis_length)
+    projection = lambda x, y: (x - midpoint[0]) * axis[0] + (y - midpoint[1]) * axis[1]
+    source0 = anchors[1]
+    source1 = anchors[2]
     member_geometry = []
     for row in runtime["roster"]:
         slot = row["slot"] + 1
         lane_a = slot in lane_a_slots
+        x, y = anchors[slot]
         if row["role"] == "tank":
-            x, y = (-5.0, 0.0) if lane_a else (15.0, 0.0)
             member_geometry.append({
                 "guid": row["guid"], "roster_slot": slot, "x": x, "y": y,
-                "projection": x - 5.0, "anchor_x": 0.0, "anchor_y": 0.0,
+                "projection": projection(x, y), "anchor_x": 0.0, "anchor_y": 0.0,
                 "group_anchor_base_x": 0.0, "group_anchor_base_y": 0.0,
                 "anchor_distance": 0.0, "nearest_same_lane_distance": 0.0,
                 "anchor_candidate_index": 0, "lane_side_valid": True,
@@ -483,41 +506,41 @@ def accepted_drudge_status() -> dict:
                 "same_lane_spacing_valid": False,
             })
             continue
-        lane_slots = sorted(lane_a_slots if lane_a else lane_b_slots)
-        ordinal = lane_slots.index(slot)
-        x = -20.5 if lane_a else 30.5
-        y = (ordinal - (len(lane_slots) - 1) * 0.5) * 3.0
-        same_lane_distance = 3.0
+        same_lane_distance = min(
+            hypot(x - anchors[other][0], y - anchors[other][1])
+            for other in (lane_a_slots if lane_a else lane_b_slots)
+            if other != slot and other not in {1, 2}
+        )
         member_geometry.append({
             "guid": row["guid"], "roster_slot": slot, "x": x, "y": y,
-            "projection": x - 5.0, "anchor_x": x, "anchor_y": y,
-            "group_anchor_base_x": x, "group_anchor_base_y": 0.0,
+            "projection": projection(x, y), "anchor_x": x, "anchor_y": y,
+            "group_anchor_base_x": x, "group_anchor_base_y": y,
             "anchor_distance": 0.0, "nearest_same_lane_distance": same_lane_distance,
             "anchor_candidate_index": 0, "lane_side_valid": True,
             "anchor_selected": True, "anchor_path_valid": True,
             "same_lane_spacing_valid": True,
         })
     geometry = {
-        "home0_x": 0.0, "home0_y": 0.0, "home1_x": 10.0, "home1_y": 0.0,
-        "midpoint_x": 5.0, "midpoint_y": 0.0, "axis_x": 1.0, "axis_y": 0.0,
+        "home0_x": home0[0], "home0_y": home0[1], "home1_x": home1[0], "home1_y": home1[1],
+        "midpoint_x": midpoint[0], "midpoint_y": midpoint[1], "axis_x": axis[0], "axis_y": axis[1],
         "lane_separation": 17.0, "minimum_distance": 15.0,
         "navigation_margin": 2.0,
-        "source0_x": -5.0, "source0_y": 0.0, "source0_projection": -10.0,
+        "source0_x": source0[0], "source0_y": source0[1], "source0_projection": projection(*source0),
         "source0_health_pct": 100.0,
-        "source0_lane_side_valid": True, "source1_x": 15.0, "source1_y": 0.0,
-        "source1_projection": 10.0, "source1_health_pct": 100.0, "source1_lane_side_valid": True,
+        "source0_lane_side_valid": True, "source1_x": source1[0], "source1_y": source1[1],
+        "source1_projection": projection(*source1), "source1_health_pct": 100.0, "source1_lane_side_valid": True,
         "source0_victim_guid": tank_guids[0], "source1_victim_guid": tank_guids[1],
         "source0_alive": True, "source1_alive": True,
-        "source_separation": 20.0, "minimum_source_separation": 15.0,
-        "lane_tank_x": -5.0, "lane_tank_y": 0.0, "lane_tank_guid": tank_guids[0],
-        "lane_tank_slot": 1, "lane_tank_projection": -10.0, "lane_tank_source_distance": 0.0,
-        "other_tank_x": 15.0, "other_tank_y": 0.0, "other_tank_guid": tank_guids[1],
-        "other_tank_slot": 2, "other_tank_projection": 10.0, "other_tank_source_distance": 0.0,
+        "source_separation": hypot(source1[0] - source0[0], source1[1] - source0[1]), "minimum_source_separation": 15.0,
+        "lane_tank_x": source0[0], "lane_tank_y": source0[1], "lane_tank_guid": tank_guids[0],
+        "lane_tank_slot": 1, "lane_tank_projection": projection(*source0), "lane_tank_source_distance": 0.0,
+        "other_tank_x": source1[0], "other_tank_y": source1[1], "other_tank_guid": tank_guids[1],
+        "other_tank_slot": 2, "other_tank_projection": projection(*source1), "other_tank_source_distance": 0.0,
         "minimum_member_spacing": 3.0, "arrival_tolerance": 2.0,
-        "tank0_x": -5.0, "tank0_y": 0.0, "tank0_guid": tank_guids[0],
-        "tank0_slot": 1, "tank0_projection": -10.0, "tank0_source_distance": 0.0,
-        "tank1_x": 15.0, "tank1_y": 0.0, "tank1_guid": tank_guids[1],
-        "tank1_slot": 2, "tank1_projection": 10.0, "tank1_source_distance": 0.0,
+        "tank0_x": source0[0], "tank0_y": source0[1], "tank0_guid": tank_guids[0],
+        "tank0_slot": 1, "tank0_projection": projection(*source0), "tank0_source_distance": 0.0,
+        "tank1_x": source1[0], "tank1_y": source1[1], "tank1_guid": tank_guids[1],
+        "tank1_slot": 2, "tank1_projection": projection(*source1), "tank1_source_distance": 0.0,
         "members": member_geometry,
     }
     observations = []
@@ -807,7 +830,8 @@ def test_drudge_contract_rejects_prepared_only_stale_and_incomplete_tactics():
 def test_drudge_geometry_rejects_crossed_sources_and_unsafe_member_spacing():
     crossed = accepted_drudge_status()
     geometry = crossed["raid_runtime"]["drudge_charge"]["observations"][0]["geometry"]
-    geometry["source0_x"] = 15.0
+    geometry["source0_x"] = geometry["source1_x"]
+    geometry["source0_y"] = geometry["source1_y"]
     accepted, reasons = accepted_drudge_contract([crossed])
     assert accepted is False
     assert "drudge_geometry_source0_lane_side_unsafe" in reasons
@@ -816,7 +840,8 @@ def test_drudge_geometry_rejects_crossed_sources_and_unsafe_member_spacing():
     too_close = accepted_drudge_status()
     geometry = too_close["raid_runtime"]["drudge_charge"]["observations"][0]["geometry"]
     member = next(row for row in geometry["members"] if row["roster_slot"] == 3)
-    member["x"] = -5.0
+    member["x"] = geometry["source0_x"]
+    member["y"] = geometry["source0_y"]
     accepted, reasons = accepted_drudge_contract([too_close])
     assert accepted is False
     assert "drudge_geometry_member_source_distance_unsafe" in reasons

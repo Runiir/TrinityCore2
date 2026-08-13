@@ -77,11 +77,13 @@ bool BotTelemetryBuffer::Observe(Player* bot, char const* situation, char const*
     if (!_config.Enabled || !bot)
         return false;
 
-    BotTelemetryFrame frame = BuildFrame(bot, situation, action, rawJson, semanticJson, questId);
-    BotBuffer& buffer = _buffers[frame.bot_guid];
-    if (buffer.LastFrameMs && frame.timestamp_ms < buffer.LastFrameMs + _config.FrameIntervalMs)
+    ObjectGuid const botGuid = bot->GetGUID();
+    uint64 const nowMs = BotTelemetryNowMs();
+    BotBuffer& buffer = _buffers[botGuid];
+    if (buffer.LastFrameMs && nowMs < buffer.LastFrameMs + _config.FrameIntervalMs)
         return false;
 
+    BotTelemetryFrame frame = BuildFrame(bot, situation, action, rawJson, semanticJson, questId);
     buffer.LastFrameMs = frame.timestamp_ms;
     buffer.Frames.push_back(frame);
     while (buffer.Frames.size() > _config.MaxFramesPerBot)

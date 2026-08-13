@@ -19,6 +19,49 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 
+
+def _frozen_drudge_member_anchors() -> dict[int, tuple[float, float, float]]:
+    """Load the reviewed per-slot Drudge geometry from both sealed routes."""
+    try:
+        payload = json.loads((
+            ROOT / "experiments/configs/validation_scenarios_cata_001.json"
+        ).read_text(encoding="utf-8"))
+        by_scenario: list[dict[int, tuple[float, float, float]]] = []
+        for scenario_id in (
+            "blackwing_descent_10n",
+            "blackwing_descent_10n_magmaw_diagnostic",
+        ):
+            scenario = next(
+                row for row in (
+                    payload.get("scenarios", []) + payload.get("diagnostic_scenarios", [])
+                ) if row.get("id") == scenario_id
+            )
+            node = next(
+                row for row in scenario["route"]
+                if row.get("mechanic_profile") == "trash_two_tank_charge_lanes"
+            )
+            anchors = {
+                int(row["roster_slot"]): (
+                    float(row["x"]), float(row["y"]), float(row["z"])
+                )
+                for row in node.get("split_member_anchors", [])
+            }
+            combat_tank_anchors = {
+                int(row["roster_slot"]): (
+                    float(row["x"]), float(row["y"]), float(row["z"])
+                )
+                for row in node.get("split_tank_combat_anchors", [])
+            }
+            if (set(anchors) != set(range(1, 11)) or (
+                node.get("boss_recovery_policy") != "native_full_wipe_only"
+            ) or set(combat_tank_anchors) != {1, 2}):
+                return {}
+            anchors.update(combat_tank_anchors)
+            by_scenario.append(anchors)
+        return by_scenario[0] if by_scenario[0] == by_scenario[1] else {}
+    except (OSError, KeyError, StopIteration, TypeError, ValueError, json.JSONDecodeError):
+        return {}
+
 IDENTITY_FIELDS = (
     "group_guid",
     "leader_guid",
@@ -801,6 +844,9 @@ def _validate_drudge_observation_geometry(
          values["tank1_x"], values["tank1_y"], values["tank1_projection"], values["tank1_source_distance"]),
     )
     canonical_guids: set[int] = set()
+    frozen_anchors = _frozen_drudge_member_anchors()
+    if set(frozen_anchors) != set(range(1, 11)):
+        reasons.append("drudge_geometry_frozen_member_anchors_missing")
     for prefix, guid_value, slot_value, source_index, x, y, stored_projection, stored_distance in canonical_tanks:
         raw_guid = geometry.get(f"{prefix}_guid")
         raw_slot = geometry.get(f"{prefix}_slot")
@@ -813,6 +859,9 @@ def _validate_drudge_observation_geometry(
         expected_guid = expected_tank_by_slot.get(source_index + 1)
         if guid != expected_guid or slot != source_index + 1:
             reasons.append(f"drudge_geometry_{prefix}_identity_invalid")
+        expected_anchor = frozen_anchors.get(source_index + 1)
+        if expected_anchor is None or hypot(x - expected_anchor[0], y - expected_anchor[1]) > arrival_tolerance:
+            reasons.append(f"drudge_geometry_{prefix}_declared_anchor_mismatch")
         computed_projection = projection(x, y)
         if abs(stored_projection - computed_projection) > tolerance:
             reasons.append(f"drudge_geometry_{prefix}_projection_mismatch")
@@ -885,66 +934,14 @@ def _validate_drudge_observation_geometry(
         if member.get("anchor_path_valid") is not True:
             reasons.append("drudge_geometry_member_anchor_path_unverified")
         candidate_index = member.get("anchor_candidate_index")
-        # Runtime preserves the original three evidence candidates, then uses
-        # a bounded deterministic mmap fallback grid when the derived point
-        # lies beside a disconnected BWD corridor edge.
-        if not isinstance(candidate_index, int) or isinstance(candidate_index, bool) or not 0 <= candidate_index < 29:
+        if not isinstance(candidate_index, int) or isinstance(candidate_index, bool) or candidate_index != 0:
             reasons.append("drudge_geometry_member_anchor_index_invalid")
             continue
-        lane_sign = -1.0 if lane_a else 1.0
-        tank_anchor_x = values["midpoint_x"] + lane_sign * values["axis_x"] * lane_sep * 0.5
-        tank_anchor_y = values["midpoint_y"] + lane_sign * values["axis_y"] * lane_sep * 0.5
-        group_offset = values["minimum_distance"] + values["navigation_margin"]
-        base_x = tank_anchor_x + lane_sign * values["axis_x"] * group_offset
-        base_y = tank_anchor_y + lane_sign * values["axis_y"] * group_offset
-        slots = sorted(slot_value for slot_value in lane_a_slots if slot_value in {int(row.get("slot", -1)) + 1 for row in roster_by_guid.values()}) if lane_a else sorted(
-            int(row.get("slot", -1)) + 1 for row in roster_by_guid.values()
-            if int(row.get("slot", -1)) + 1 not in lane_a_slots
-        )
-        ordinal = slots.index(slot_one) if slot_one in slots else -1
-        if ordinal < 0:
-            reasons.append("drudge_geometry_member_lane_slot_invalid")
+        expected_anchor_xyz = frozen_anchors.get(slot_one)
+        if expected_anchor_xyz is None:
+            reasons.append("drudge_geometry_member_declared_anchor_missing")
             continue
-        centered = ordinal - (len(slots) - 1) * 0.5
-        perp_x, perp_y = -values["axis_y"], values["axis_x"]
-        primary_x = base_x + perp_x * centered * minimum_spacing
-        primary_y = base_y + perp_y * centered * minimum_spacing
-        perpendicular_x, perpendicular_y = -values["axis_y"], values["axis_x"]
-        anchor_search_step = values["navigation_margin"] + values["arrival_tolerance"]
-        candidates = [
-            (primary_x, primary_y),
-            (primary_x + values["axis_x"] * lane_sign * anchor_search_step,
-             primary_y + values["axis_y"] * lane_sign * anchor_search_step),
-            (primary_x + values["axis_x"] * lane_sign * anchor_search_step * 2.0,
-             primary_y + values["axis_y"] * lane_sign * anchor_search_step * 2.0),
-            (primary_x - values["axis_x"] * lane_sign * anchor_search_step,
-             primary_y - values["axis_y"] * lane_sign * anchor_search_step),
-            (primary_x + values["axis_x"] * lane_sign * anchor_search_step * 3.0,
-             primary_y + values["axis_y"] * lane_sign * anchor_search_step * 3.0),
-            (primary_x - values["axis_x"] * lane_sign * anchor_search_step * 2.0,
-             primary_y - values["axis_y"] * lane_sign * anchor_search_step * 2.0),
-            (primary_x + values["axis_x"] * lane_sign * anchor_search_step * 4.0,
-             primary_y + values["axis_y"] * lane_sign * anchor_search_step * 4.0),
-            (primary_x - values["axis_x"] * lane_sign * anchor_search_step * 3.0,
-             primary_y - values["axis_y"] * lane_sign * anchor_search_step * 3.0),
-            (primary_x - values["axis_x"] * lane_sign * anchor_search_step * 4.0,
-             primary_y - values["axis_y"] * lane_sign * anchor_search_step * 4.0),
-        ]
-        for perpendicular_offset in (
-            anchor_search_step, -anchor_search_step,
-            anchor_search_step * 2.0, -anchor_search_step * 2.0,
-        ):
-            for axis_offset in (
-                0.0, anchor_search_step, -anchor_search_step,
-                anchor_search_step * 2.0, -anchor_search_step * 2.0,
-            ):
-                candidates.append((
-                    primary_x + perpendicular_x * perpendicular_offset
-                    + values["axis_x"] * lane_sign * axis_offset,
-                    primary_y + perpendicular_y * perpendicular_offset
-                    + values["axis_y"] * lane_sign * axis_offset,
-                ))
-        expected_anchor = candidates[candidate_index]
+        expected_anchor = expected_anchor_xyz[:2]
         stored_anchor = (member_number("anchor_x"), member_number("anchor_y"))
         if stored_anchor[0] is None or stored_anchor[1] is None:
             continue
@@ -957,7 +954,9 @@ def _validate_drudge_observation_geometry(
         if anchor_distance > arrival_tolerance:
             reasons.append("drudge_geometry_member_anchor_unsafe")
         stored_base = (member_number("group_anchor_base_x"), member_number("group_anchor_base_y"))
-        if stored_base[0] is None or stored_base[1] is None or hypot(stored_base[0] - base_x, stored_base[1] - base_y) > tolerance:
+        if stored_base[0] is None or stored_base[1] is None or hypot(
+            stored_base[0] - expected_anchor[0], stored_base[1] - expected_anchor[1]
+        ) > tolerance:
             reasons.append("drudge_geometry_member_anchor_base_mismatch")
 
     for guid, (x, y, lane_a) in non_tank_positions.items():

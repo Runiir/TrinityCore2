@@ -459,6 +459,24 @@ def build_manifests(
                 "split_lane_a_roster_slots": [int(value) for value in (step.get("split_lane_a_roster_slots") or [])],
                 "split_lane_b_roster_slots": [int(value) for value in (step.get("split_lane_b_roster_slots") or [])],
                 "split_lane_tank_slots": [int(value) for value in (step.get("split_lane_tank_slots") or [])],
+                "split_member_anchors": [
+                    {
+                        "roster_slot": int(anchor.get("roster_slot") or 0),
+                        "x": float(anchor.get("x") or 0.0),
+                        "y": float(anchor.get("y") or 0.0),
+                        "z": float(anchor.get("z") or 0.0),
+                    }
+                    for anchor in (step.get("split_member_anchors") or [])
+                ],
+                "split_tank_combat_anchors": [
+                    {
+                        "roster_slot": int(anchor.get("roster_slot") or 0),
+                        "x": float(anchor.get("x") or 0.0),
+                        "y": float(anchor.get("y") or 0.0),
+                        "z": float(anchor.get("z") or 0.0),
+                    }
+                    for anchor in (step.get("split_tank_combat_anchors") or [])
+                ],
                 "split_minimum_separation_yards": float(step.get("split_minimum_separation_yards") or 0.0),
                 "split_navigation_margin_yards": float(step.get("split_navigation_margin_yards") or 0.0),
                 "split_arrival_tolerance_yards": float(step.get("split_arrival_tolerance_yards") or 0.0),

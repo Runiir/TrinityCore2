@@ -1,6 +1,6 @@
 ---
 name: raid-evidence-lifecycle
-description: Capture, verify, publish, retain, and safely evict TrinityCore raid-experiment evidence. Use for build receipts, provisioning/readback proof, uncapped live capture, telemetry demultiplexing, DVC artifact publication, compact run summaries, disk minimization, or diagnosing whether a raid result is attributable to the exact source, roster, attempt, and boss shard.
+description: Control, verify, publish, retain, and safely evict TrinityCore raid-experiment evidence. Use for capture-controller implementation, build receipts, provisioning/readback proof, telemetry demultiplexing, DVC publication, compact run summaries, disk minimization, or attribution audits. Do not load for a read-only live babysitter that only reports observations.
 ---
 
 # Raid Evidence Lifecycle
@@ -25,6 +25,8 @@ Before live execution, require:
 Do not reuse a binary or receipt for changed native source. Do not accept stored `passed` booleans when the underlying rows cannot be reconstructed.
 
 ## Capture an immutable lifecycle
+
+These shutdown and persistence duties belong to the capture controller or coordinator, not a read-only babysitter.
 
 - Retain raw command/output bytes first; normalize afterward.
 - Treat an operator interrupt as a controlled infrastructure abort: issue the
@@ -56,7 +58,7 @@ Preserve enough raw data to answer:
 - whether stuck/unstuck, CPU, log, or persistence hot paths distorted the run;
 - whether cleanup returned bots, leases, groups, and processes to zero.
 
-Make fixes and complete independent review before discarding diagnostic payloads.
+The coordinator makes fixes and completes independent review before discarding diagnostic payloads. A babysitter only reports the decisive evidence.
 
 For long uncapped runs, keep status as the inexpensive heartbeat and use
 delta trace export plus a slower steady-state full diagnosis/trace cadence.
@@ -66,6 +68,8 @@ This reduces output/CPU pressure without dropping decision evidence or
 weakening freshness/demultiplexing gates.
 
 ## Publish and minimize disk
+
+Publication and eviction belong to the coordinator/evidence curator, not the babysitter.
 
 1. Write a compact tracked summary containing classification, exact identities, hashes, decisive findings, cleanup facts, and the next action.
 2. Add the immutable raw/report/log/receipt/readback bundle through DVC.
