@@ -465,6 +465,12 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
     row = {
         "schema": "bot_live_scenario_report_v1",
         "scenario_id": scenario_id,
+        "runtime_profile_id": str(scenario.get("runtime_profile_id") or scenario_id),
+        "diagnostic_only": bool(scenario.get("diagnostic_only")),
+        "diagnostic_parent_scenario_id": str(scenario.get("diagnostic_parent_scenario_id") or ""),
+        "diagnostic_target_boss": str(scenario.get("diagnostic_target_boss") or ""),
+        "prerequisite_contract": scenario.get("prerequisite_contract") if isinstance(scenario.get("prerequisite_contract"), dict) else {},
+        "certifies_predecessors": scenario.get("certifies_predecessors") if scenario.get("diagnostic_only") else None,
         "instance": scenario.get("instance") or "",
         "map_id": int(scenario.get("map_id") or 0),
         "difficulty": difficulty,

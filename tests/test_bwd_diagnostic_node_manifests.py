@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from tools.bot_ml.build_validation_scenario_manifests import build_manifests
+from tools.bot_ml.build_live_scenario_reports import build_reports
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -137,3 +138,48 @@ def test_runtime_profiles_select_only_the_matching_diagnostic_scenario():
         assert profile["prerequisite_contract"]["certifies_predecessors"] is False
     assert len({profiles[scenario_id]["pool_tag_filter"] for scenario_id in DIAGNOSTIC_IDS.values()}) == 6
 
+
+def test_live_report_builder_keeps_all_seven_bwd_route_partitions_distinct(tmp_path: Path):
+    manifests = _manifests()
+    bwd_ids = [CANONICAL_ID, *DIAGNOSTIC_IDS.values()]
+    scenario_dir = tmp_path / "validation_scenarios"
+    scenario_dir.mkdir()
+    scenarios = [row for row in manifests["validation_scenarios"] if row["scenario_id"] in bwd_ids]
+    routes = [row for row in manifests["validation_routes"] if row["scenario_id"] in bwd_ids]
+    (scenario_dir / "validation_scenarios.jsonl").write_text(
+        "".join(json.dumps(row, sort_keys=True) + "\n" for row in scenarios),
+        encoding="utf-8",
+    )
+    (scenario_dir / "validation_routes.jsonl").write_text(
+        "".join(json.dumps(row, sort_keys=True) + "\n" for row in routes),
+        encoding="utf-8",
+    )
+    (scenario_dir / "validation_mechanics.jsonl").write_text("", encoding="utf-8")
+
+    # A context-free report is intentionally reused as a smoke input for every
+    # selected scenario; the builder must still derive each route partition
+    # from its own scenario ID and never merge the seven contracts.
+    reports = build_reports(
+        {
+            "schema": "bot_live_validation_report_v1",
+            "validation_context": {},
+            "trace": {},
+            "evidence": {},
+            "stages": [],
+        },
+        scenario_dir,
+    )
+    assert set(reports) == set(bwd_ids)
+    assert reports[CANONICAL_ID]["expected_bosses"] == 6
+    assert reports[CANONICAL_ID]["diagnostic_only"] is False
+    for scenario_id in DIAGNOSTIC_IDS.values():
+        report = reports[scenario_id]
+        assert report["diagnostic_only"] is True
+        assert report["runtime_profile_id"] == scenario_id
+        assert report["diagnostic_parent_scenario_id"] == CANONICAL_ID
+        assert report["certifies_predecessors"] is False
+        assert report["expected_bosses"] == 1
+        assert all(
+            str(row["route_node_id"]) in {str(route["route_node_id"]) for route in routes if route["scenario_id"] == scenario_id}
+            for row in report["expected_route_evidence"]
+        )
