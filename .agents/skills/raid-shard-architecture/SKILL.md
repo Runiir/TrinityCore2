@@ -71,6 +71,10 @@ Require one exact tuple across config, generated route, runtime status, capture,
   unsafe and still does not schedule every cohort. Implement iteration over a
   frozen active-cohort set, restore cohort scope after each update, and bind
   every status/trace row to that cohort before enabling parallel shards.
+- Do not let native spell, heal, damage, death, or creature callbacks consult
+  a process-wide selected cohort. Route each callback from actor GUID plus
+  map/instance into an explicit or thread-local cohort scope; test with map
+  worker threads enabled so cross-shard attribution cannot race.
 - Share a worldserver only after confirming instance, group, lease, roster, and telemetry isolation under concurrency.
 - Budget CPU, log rate, and disk before launching all shards. A single pathological shard blocks fan-out.
 - Run six boss shards in parallel only after the single Magmaw rehearsal is clean.
