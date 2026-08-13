@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "capture_id": "cata_raid_phase1_bwd_10n_foundation_v1",
+  "classification": "infrastructure_abort",
+  "gameplay_failure": false,
+  "fidelity_claim": false,
+  "source_identity": {
+    "commit": "fae9049db0c38c5cc3470bc82f3f0e767895331b",
+    "tree": "642e3819eff95c6908ee5a304b83a0cfd62aea1d",
+    "clean_at_start": true,
+    "identity_stable_during_run": true
+  },
+  "build": {
+    "policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
+    "configure_receipt_sha256": "d20a30daf634835ceb057feedbf021e69ce74aab5d6d745f408a16f7edee1fd6",
+    "configure_receipt_file_sha256": "fad05c53b630123676207b57517cbb7bb00baf48ce5c866823faf16f89bcdad7",
+    "worldserver_receipt_sha256": "7c7c7a4f8b41cbf1287aef3fdcbc9990db8f264c92d8bb986d70849575cb3420",
+    "worldserver_receipt_file_sha256": "54e55f445150fb6f6bbb5efb7052bc2f4a7dd64d31c2a2595f6e49af2860510c",
+    "worldserver_sha256": "3ef7c0c00d2b4e338e62b1e88a7b538f4f62324fe6726acaea1ac4d4f00c1717",
+    "worldserver_size_bytes": 60998088,
+    "trusted_local_operator": "runiir",
+    "gate_bearing": true
+  },
+  "preflight": {
+    "provisioning_prepare_report_sha256": "015d50bc844ce75db9192428d42940c127b3b0efe3d3bffa84074ddd49bac721",
+    "full_provisioning_verifier_passed": true,
+    "full_provisioning_verifier_sha256": "2d9f71bb38fec0f61f08b80d76741de818a15f3880c71e373bd5d4e004916373",
+    "readback_schema": "cata_raid_phase1_bwd_provisioning_readback_v4",
+    "readback_passed": true,
+    "readback_sha256": "53c7d63faabfd7c1899c3189a8c2f2d95404dcda8397e17cf163c3a14dcac2e1",
+    "character_instance_rows": 0,
+    "group_member_rows": 0,
+    "ghost_aura_rows": 0,
+    "corpse_rows": 0,
+    "corpse_phase_rows": 0
+  },
+  "live_facts": {
+    "exact_roster_size": 10,
+    "composition": {
+      "tanks": 2,
+      "healers": 3,
+      "dps": 5
+    },
+    "map_id": 669,
+    "instance_id": 8,
+    "lockout_save_id": 8,
+    "difficulty": "10N",
+    "entry_and_corridor_trash_kills": 3,
+    "cumulative_deaths": 10,
+    "alive_at_final_sample": 10,
+    "boss_engaged_stably": false,
+    "route_node_index_high_water": 2,
+    "route_generation_high_water": 3,
+    "route_label": "Drakonid corridor pack",
+    "corridor_pack_live_clear_succeeded": false,
+    "native_recovery_evidence_complete": false
+  },
+  "root_cause": {
+    "failure_fingerprint": "corridor_alive_drudges_retired_from_target_authority_but_retained_as_terminal_live_blockers",
+    "detail": "The exact raid cleared both entry targets and killed the declared Chainwielder in the three-member corridor pack. A ten-death trash wave then recovered outside the Magmaw-only native-full-wipe evidence scope. Both declared Drudges remained alive, attackable and observed at their native home positions, but the pack-retirement path marked them transitioned after combat references and recent progress expired. Target selection excluded transitioned members while terminal clearance still observed the same alive creatures, leaving every bot without a combat target and producing bounded repath or no-action decisions for 301.647 seconds.",
+    "decision_assessment": "Before the death wave, tanks and damage roles selected declared corridor entries and reduced the Chainwielder to death while respecting the native hazard and minimum-distance contract. After recovery, the bot decisions were fail-closed but liveness-incomplete: no undeclared target or assistance was used, yet alive exact Drudges could not be reacquired. Magmaw entry 41570 and its script lifecycle were never reached, so no boss tactics, gameplay or 4.4.2 fidelity inference is authorized.",
+    "remediation_scope": [
+      "do not retire an alive attackable exact declared pack member solely because cohort combat references and recent progress expired",
+      "reacquire surviving exact pack members through native pathing after a trash death-and-recovery wave",
+      "preserve exact entry and spawn identity, threat, hazard, minimum-distance, terminal and no-assistance gates",
+      "independently review, rebuild, reprovision and rerun uncapped before accepting Phase 1"
+    ]
+  },
+  "telemetry": {
+    "wall_clock_mode": "uncapped",
+    "retained_rows": 337,
+    "bound_rows": 337,
+    "rejected_rows": 0,
+    "unchecked_rows": 0,
+    "required_envelopes_passed": true,
+    "required_readycheck_missing_downstream_of_no_magmaw_engagement": true
+  },
+  "semantic_stall": {
+    "detected": true,
+    "stalled_for_seconds": 301.647,
+    "unchanged_samples": 56,
+    "high_water_kills": 3,
+    "high_water_route_generation": 3,
+    "high_water_route_index": 2,
+    "observed_encounter_phases": [
+      "formation"
+    ]
+  },
+  "cleanup": {
+    "gate_passed": true,
+    "stop_observed": true,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true
+  },
+  "forbidden_assistance": {
+    "capture_scanner_observed": false,
+    "capture_scanner_gate_passed": true,
+    "source_audit_found_assistance": false,
+    "acceptance": true,
+    "note": "No forced kill, teleport, spawn, boss state, resurrection or aura assistance was observed. The generic trash tactical-retreat marker did not satisfy or contaminate the Magmaw native-recovery gate."
+  },
+  "artifact": {
+    "pointer": "artifacts/cata_raid_program/phase1_raid_foundation_fae9049d_20260813.dvc",
+    "dvc_directory_md5": "456990ae83107a6810331315e8d17da3.dir",
+    "size_bytes": 189635954,
+    "nfiles": 8,
+    "raw_jsonl_sha256": "d6cfb1209988ef760fafec879ac2d1f65d3fb6dd6d7be48605adda32ec067a2c",
+    "capture_report_canonical_sha256": "f8012b8d43c7ec2ee9e707c1aac466c89282e4216a40f3b0adafd9a8039ae532",
+    "capture_report_file_sha256": "6925d6c856009915bc0e75272aefc22fd6f06f074c545f6b3cd68b857695894e",
+    "worldserver_log_sha256": "bd479ff75a0afed44c126fb917b9d867e3b27b345f8ef55154dea196636b51eb",
+    "targeted_push_completed": true,
+    "targeted_remote_status_before_eviction": "cache_and_remote_in_sync",
+    "workspace_payload_evicted": false,
+    "exact_child_cache_objects_evicted": false,
+    "directory_metadata_retained": true,
+    "broad_gc_used": false
+  },
+  "acceptance": {
+    "phase1_gate_passed": false,
+    "reason": "Magmaw was never engaged and no native boss wipe, reset, per-GUID recovery or ready-check sequence exists."
+  }
+}
