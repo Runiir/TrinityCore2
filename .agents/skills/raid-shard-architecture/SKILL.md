@@ -65,6 +65,12 @@ Require one exact tuple across config, generated route, runtime status, capture,
 ## Parallelize safely
 
 - Use one isolated cohort, pool, frozen roster, instance/save, capture namespace, and babysitter per boss.
+- Audit the runtime scheduler before promising same-process fan-out. The
+  current BotWorld design is serialized when `MaxActiveCohorts == 1` and
+  `Update()` selects only `_runningCohortId`; raising the constant alone is
+  unsafe and still does not schedule every cohort. Implement iteration over a
+  frozen active-cohort set, restore cohort scope after each update, and bind
+  every status/trace row to that cohort before enabling parallel shards.
 - Share a worldserver only after confirming instance, group, lease, roster, and telemetry isolation under concurrency.
 - Budget CPU, log rate, and disk before launching all shards. A single pathological shard blocks fan-out.
 - Run six boss shards in parallel only after the single Magmaw rehearsal is clean.
