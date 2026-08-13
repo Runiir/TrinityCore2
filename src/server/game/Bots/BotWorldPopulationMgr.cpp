@@ -4665,11 +4665,14 @@ void BotWorldPopulationMgr::EnsurePopulation()
                 && Cohort().Raid.RosterComplete && Cohort().Raid.UniqueLeases
                 && Cohort().Raid.RosterByGuid.size() == expectedPopulation;
             ObjectGuid exactGroupGuid = ObjectGuid::Empty;
+            Group* exactNativeGroup = nullptr;
+            std::set<uint32> expectedGuids;
             if (exactIdentity)
             {
                 ValidationRouteManifestNode const& routeStart = Party().ValidationRouteManifest.front();
                 for (ValidationRouteManifestNode::RosterIdentity const& expected : routeStart.ExpectedRoster)
                 {
+                    expectedGuids.insert(expected.Guid);
                     auto const state = std::find_if(Party().Bots.begin(), Party().Bots.end(),
                         [&expected](WorldBotState const& row)
                         {
@@ -4753,11 +4756,40 @@ void BotWorldPopulationMgr::EnsurePopulation()
                         identityDriftDetail = "split_native_group:" + std::to_string(expected.Guid);
                         break;
                     }
+                    exactNativeGroup = group;
                 }
                 exactIdentity = exactIdentity && !exactGroupGuid.IsEmpty()
-                    && Cohort().Raid.GroupGuid == exactGroupGuid;
+                    && Cohort().Raid.GroupGuid == exactGroupGuid
+                    && expectedGuids.size() == expectedPopulation;
                 if (!exactIdentity && identityDriftDetail.empty())
                     identityDriftDetail = "raid_group_identity_mismatch";
+
+                if (exactIdentity && (!exactNativeGroup
+                    || exactNativeGroup->GetMembersCount() != expectedPopulation))
+                {
+                    exactIdentity = false;
+                    identityDriftDetail = "native_group_membership_count_mismatch";
+                }
+                if (exactIdentity)
+                    for (Group::MemberSlot const& member : exactNativeGroup->GetMemberSlots())
+                    {
+                        uint32 const memberGuid = member.guid.GetCounter();
+                        if (!expectedGuids.count(memberGuid))
+                        {
+                            exactIdentity = false;
+                            identityDriftDetail = "native_group_foreign_member:" + std::to_string(memberGuid);
+                            break;
+                        }
+
+                        auto const frozen = Cohort().Raid.RosterByGuid.find(memberGuid);
+                        if (frozen == Cohort().Raid.RosterByGuid.end()
+                            || member.group != frozen->second.SubGroup)
+                        {
+                            exactIdentity = false;
+                            identityDriftDetail = "native_group_subgroup_drift:" + std::to_string(memberGuid);
+                            break;
+                        }
+                    }
             }
             if (!exactIdentity)
             {

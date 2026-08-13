@@ -35,6 +35,20 @@ def _completed_admission_runtime_tick(*, prior_runtime, expected_size,
     return {"identity_drift": False, "runtime": runtime}
 
 
+def _native_group_identity_gate(*, expected_guids, group_members, frozen_subgroups):
+    """Model the fail-closed native group membership/subgroup gate."""
+    expected = set(expected_guids)
+    if len(group_members) != len(expected):
+        return False
+    for member in group_members:
+        guid = member["guid"]
+        if guid not in expected:
+            return False
+        if member["subgroup"] != frozen_subgroups[guid]:
+            return False
+    return True
+
+
 def test_bwd_entry_to_magmaw_uses_frozen_junction_below_native_path_limit():
     config = json.loads(
         (ROOT / "experiments/configs/validation_scenarios_cata_001.json").read_text()
@@ -751,6 +765,55 @@ def test_completed_validation_raid_identity_drift_cleans_and_returns_without_ref
         assert token in drift
     assert "EnsureValidationCohortGroup();" not in drift
     assert "return;" in population[refresh:]
+
+
+def test_completed_validation_raid_rejects_native_group_foreign_member_or_subgroup_drift():
+    expected_guids = tuple(range(1001, 1011))
+    frozen_subgroups = {guid: (guid - expected_guids[0]) // 5 for guid in expected_guids}
+    exact_group = [
+        {"guid": guid, "subgroup": frozen_subgroups[guid]}
+        for guid in expected_guids
+    ]
+    foreign_member = exact_group + [{"guid": 9001, "subgroup": 0}]
+    subgroup_drift = [dict(member) for member in exact_group]
+    subgroup_drift[3]["subgroup"] = 4
+
+    assert _native_group_identity_gate(
+        expected_guids=expected_guids,
+        group_members=exact_group,
+        frozen_subgroups=frozen_subgroups,
+    )
+    assert not _native_group_identity_gate(
+        expected_guids=expected_guids,
+        group_members=foreign_member,
+        frozen_subgroups=frozen_subgroups,
+    )
+    assert not _native_group_identity_gate(
+        expected_guids=expected_guids,
+        group_members=subgroup_drift,
+        frozen_subgroups=frozen_subgroups,
+    )
+
+    complete = IMPL[
+        IMPL.index("if (Cohort().ValidationRaidAdmissionComplete)"):
+        IMPL.index("auto terminalFailure")
+    ]
+    refresh = complete.index("EnsureValidationCohortGroup();")
+    drift = complete[complete.index("if (!exactIdentity)"):refresh]
+    for token in (
+        "expectedGuids.size() == expectedPopulation",
+        "exactNativeGroup->GetMembersCount() != expectedPopulation",
+        "exactNativeGroup->GetMemberSlots()",
+        '"native_group_foreign_member:"',
+        '"native_group_subgroup_drift:"',
+        "member.group != frozen->second.SubGroup",
+        "Cohort().Raid.RosterByGuid.find(memberGuid)",
+        "Cohort().Raid = RaidRuntime();",
+        "Cohort().ValidationRaidAdmissionFailed = true;",
+    ):
+        assert token in complete
+    assert "ChangeMembersGroup" not in complete
+    assert "EnsureValidationCohortGroup();" not in drift
 
 
 def test_completed_validation_raid_defers_only_exact_native_recovery_worldports():
