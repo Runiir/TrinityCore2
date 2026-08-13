@@ -13758,7 +13758,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         stage,
         activity,
         &isNaturalValidationRoutePackMember,
-        &isValidationCohortCombatLinked
+        &isValidationCohortCombatLinked,
+        &isValidationRouteScriptTarget
     ]() -> void
     {
         if (Cohort().Config.ValidationRouteKind == "boss" || !bot || !bot->GetMap()
@@ -13799,7 +13800,17 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
             bool naturalMember = creature && isNaturalValidationRoutePackMember(creature);
             bool attackable = creature && bot->IsValidAttackTarget(creature);
-            if (naturalMember && attackable && (combatLinked || recentProgress))
+            // Combat linkage and recent progress are transient.  For the
+            // current non-discovery node, an alive natural attackable member
+            // that is still an exact declared/persisted route target remains
+            // authoritative until actual death or an explicit scripted/final
+            // transition removes it.  Do not use a per-bot path test here:
+            // retirement is shared state, and one bot's temporary no-path
+            // result must not retire a GUID that another bot can reacquire.
+            bool const exactCurrentRouteMember = !discoveryLeg
+                && isValidationRouteScriptTarget(creature);
+            if (naturalMember && attackable
+                && (combatLinked || recentProgress || exactCurrentRouteMember))
                 continue;
 
             if (!Party().ValidationRoutePackTransitionGuids.insert(guid).second)
@@ -13887,7 +13898,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 return true;
         return false;
     };
-    auto activeValidationRoutePackTarget = [this, bot]() -> Unit*
+    auto activeValidationRoutePackTarget = [this, bot,
+        &isValidationRoutePackEntry,
+        &hasStrictPathToValidationRouteTarget]() -> Unit*
     {
         if (Party().ValidationRoutePackGeneration != Party().ValidationRouteGeneration || !bot || !bot->GetMap())
             return nullptr;
@@ -13901,6 +13914,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 continue;
             Creature* creature = bot->GetMap()->GetCreature(guid);
             if (!creature || !creature->IsAlive() || !creature->GetHealth() || !bot->IsValidAttackTarget(creature))
+                continue;
+            // Reengagement is restricted to the exact declared pack entries
+            // and a native path.  A live ledger member without a legal path
+            // remains a blocker and therefore cannot be silently terminaled
+            // or replaced by an unrelated nearby creature.
+            if (!isValidationRoutePackEntry(creature->GetEntry())
+                || !hasStrictPathToValidationRouteTarget(creature))
                 continue;
             Unit* victim = creature->GetVictim();
             bool botIsTank = std::string(GetDungeonRole(bot)) == "tank";
