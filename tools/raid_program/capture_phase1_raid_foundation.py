@@ -578,6 +578,45 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
     }
     if len(tank_guids) != 2 or len(offensive_guids) != 7:
         reasons.append("drudge_frozen_role_slots_invalid")
+    role_by_guid = {
+        row.get("guid"): row.get("role")
+        for row in roster
+        if isinstance(row, dict) and _positive_int(row.get("guid"))
+    }
+
+    # A bad native delivery is permanently disqualifying for this capture,
+    # even when a later status snapshot contains a clean-looking generation.
+    # Otherwise a poisoned queue item could be hidden by selecting the latest
+    # status and the resulting dataset would certify a formation that never
+    # satisfied the native farthest-target selector.
+    lane_a_slots = {1, 3, 4, 6, 7}
+    for candidate_runtime, candidate_evidence in candidates:
+        candidate_roster = candidate_runtime.get("roster")
+        candidate_roles = {
+            row.get("guid"): row
+            for row in candidate_roster
+            if isinstance(row, dict) and _positive_int(row.get("guid"))
+        } if isinstance(candidate_roster, list) else {}
+        candidate_observations = candidate_evidence.get("observations")
+        if not isinstance(candidate_observations, list):
+            continue
+        for observation in candidate_observations:
+            if not isinstance(observation, dict) or observation.get("landed") is not True:
+                continue
+            target_row = candidate_roles.get(observation.get("target_guid"))
+            if target_row and target_row.get("role") == "tank":
+                reasons.append("drudge_native_rush_target_tank")
+            source = observation.get("source_spawn_id")
+            if source not in {250140, 250141} or not target_row:
+                continue
+            target_slot = target_row.get("slot")
+            if not isinstance(target_slot, int) or isinstance(target_slot, bool):
+                continue
+            target_slot += 1
+            target_in_lane_a = target_slot in lane_a_slots
+            source_in_lane_a = source == 250140
+            if target_in_lane_a == source_in_lane_a:
+                reasons.append("drudge_native_rush_lane_target_invalid")
 
     attempt_id = runtime.get("attempt_id")
     if evidence.get("evidence_attempt_id") != attempt_id:
@@ -630,6 +669,12 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
             reconstructed[source]["source_guid"] = source_guid
         if row.get("target_guid") not in roster_guids:
             reasons.append("drudge_observation_target_not_in_roster")
+        # The native Drudge Rush is the farthest-player selector.  A tank
+        # target proves that the two non-tank lanes were not separated before
+        # the cast and would make the capture a formation failure rather than
+        # a valid two-group mechanic observation.
+        if role_by_guid.get(row.get("target_guid")) == "tank":
+            reasons.append("drudge_native_rush_target_tank")
         distance = row.get("selected_distance")
         if (not isinstance(distance, (int, float)) or isinstance(distance, bool)
                 or distance < 0 or distance > 80.0 or row.get("range_valid") is not True):

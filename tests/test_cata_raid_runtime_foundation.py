@@ -500,7 +500,13 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert '"drudge_kill_sync_hold_lower_health_lane"' in lane
     assert "ValidationRouteVengefulRageSpellId" in lane
     assert "BotCombatActionCategory::Taunt" in lane
-    assert "if (formationRequired || pairTooClose)" in lane
+    assert "if (formationRequired || pairTooClose || nativeChargePending)" in lane
+    assert "laneSource = sources[laneIndex]" in lane
+    assert "bool const sourceInLaneA = nativeChargeSource == sources[0]" in lane
+    assert "markAllRosterReseparated" in lane
+    assert '"drudge_lane_wait_lane_ownership"' in lane
+    assert '"drudge_lane_profile_hold_contract_unsafe"' in lane
+    assert '"drudge_native_charge_target_tank_reseparated"' in lane
     assert "bool const taunted = TryCastCombatSpell" in lane
     assert lane.index("SetAllOffenseSuppressed(bot->GetGUID().GetRawValue(), false)") < lane.index(
         "bool const taunted = TryCastCombatSpell"
@@ -2276,6 +2282,27 @@ def test_phase1_partial_critical_death_holds_native_fight_without_tactical_retre
     assert 'action = "native_full_wipe_hold";' in objective[hold:retreat_action]
     assert 'state.LastRecoveryMode = "native_full_wipe_only";' in objective[hold:retreat_action]
     assert 'cohortState.ValidationRouteAnchorOverrideReason = "validation_route_partial_wipe_retreat_rendezvous"' not in objective[hold:retreat_action]
+
+
+def test_drudge_partial_death_cannot_enter_tactical_recovery():
+    objective = IMPL[
+        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective"):
+        IMPL.index("bool BotWorldPopulationMgr::IsBossContext")
+    ]
+    drudge_guard = objective.index(
+        'if (Cohort().Config.ValidationRouteMechanicProfile == "trash_two_tank_charge_lanes"\n'
+        '            && deadMembers > 0 && groupCombatActive)'
+    )
+    generic_recovery = objective.index(
+        "if ((majorityDead || criticalRoleDead) && groupCombatActive"
+    )
+    assert drudge_guard < generic_recovery
+    guard = objective[drudge_guard:generic_recovery]
+    assert '"drudge_native_full_wipe_hold_partial_death"' in guard
+    assert 'action = "native_full_wipe_hold";' in guard
+    assert "SetAllOffenseSuppressed" in guard
+    assert "CombatStopWithPets" not in guard
+    assert "MoveBotToPoint" not in guard
 
 
 def test_phase1_dead_member_gate_requires_latched_exact_native_full_wipe():

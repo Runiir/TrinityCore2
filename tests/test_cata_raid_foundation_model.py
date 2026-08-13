@@ -3,6 +3,7 @@ from math import dist
 import pytest
 
 from ml.raid.foundation import (
+    DrudgeChargeContractEvent,
     RaidMember,
     SavedRaidPlacement,
     ValidationRaidAdmissionState,
@@ -14,6 +15,7 @@ from ml.raid.foundation import (
     transact_validation_raid_admission,
     validate_completed_validation_raid_admission,
     validate_evidence_demultiplex,
+    evaluate_drudge_lane_contract,
 )
 
 
@@ -285,3 +287,44 @@ def test_assignment_generation_and_membership_fail_closed():
     contract = compile_mechanic_contract(mechanic_payload())
     with pytest.raises(ValueError, match="generation_invalid"):
         generic_assignment_smoke(runtime, contract, assignment_generation=0)
+
+
+def test_drudge_model_requires_exact_reseparation_and_trained_offense():
+    roster_guids = tuple(range(1, 11))
+    events = tuple(
+        DrudgeChargeContractEvent(source, target, True, roster_guids)
+        for source, target in ((250140, 5), (250140, 5), (250141, 3), (250141, 3))
+    )
+    accepted, reasons = evaluate_drudge_lane_contract(
+        roster_guids=roster_guids,
+        tank_guids=(1, 2),
+        offensive_guids=(1, 2, 6, 7, 8, 9, 10),
+        events=events,
+        taunt_guids=(1, 2),
+        health_sync_guids=(1,),
+        profile_action_guids=(1, 2, 6, 7, 8, 9, 10),
+        role_by_guid={1: "tank", 2: "tank", 5: "healer", 3: "healer"},
+    )
+    assert accepted is True
+    assert reasons == ()
+
+    invalid = list(events)
+    invalid[0] = DrudgeChargeContractEvent(250140, 1, True, (1, 2))
+    accepted, reasons = evaluate_drudge_lane_contract(
+        roster_guids=roster_guids,
+        tank_guids=(1, 2),
+        offensive_guids=(1, 2, 6, 7, 8, 9, 10),
+        events=invalid,
+        taunt_guids=(1,),
+        health_sync_guids=(),
+        profile_action_guids=(1, 2),
+        role_by_guid={1: "tank", 2: "tank", 5: "healer", 3: "healer"},
+    )
+    assert accepted is False
+    assert {
+        "exact_roster_reseparation_missing",
+        "native_rush_target_tank",
+        "exact_tank_taunts_missing",
+        "tank_health_sync_hold_missing",
+        "trained_single_target_profile_missing",
+    }.issubset(reasons)

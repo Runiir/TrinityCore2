@@ -18051,22 +18051,133 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 anchorY, midpointZ + 4.0f, true, 10.0f); floorZ > INVALID_HEIGHT)
             anchorZ = floorZ;
 
-        Creature* laneSource = nullptr;
-        Creature* otherSource = nullptr;
-        if (sources[0]->IsAlive() && sources[1]->IsAlive())
+        // The route manifest binds source index to lane.  Never infer this
+        // from a moving creature position: a delivered Rush can move a source
+        // across the midpoint and poison both ownership and target validation.
+        Creature* laneSource = sources[laneIndex];
+        Creature* otherSource = sources[1 - laneIndex];
+
+        // Bind ownership to the frozen lane tank, not to whichever tank
+        // happens to be present in the native threat table.  The Drudge Rush
+        // selector is native and chooses the farthest threat-list player;
+        // keeping both tanks on their own source and both four-player groups
+        // on the opposite side is what makes that selector safe without
+        // rewriting or filtering the encounter spell.
+        Player* laneTank = nullptr;
+        Player* otherTank = nullptr;
+        uint32 const laneTankSlot = Cohort().Config.ValidationRouteSplitLaneTankSlots[laneIndex];
+        uint32 const otherTankSlot = Cohort().Config.ValidationRouteSplitLaneTankSlots[1 - laneIndex];
+        for (WorldBotState const& cohortState : Party().Bots)
         {
-            float source0Distance = Distance2d(sources[0]->GetPositionX(), sources[0]->GetPositionY(),
-                tankAnchorX, tankAnchorY);
-            float source1Distance = Distance2d(sources[1]->GetPositionX(), sources[1]->GetPositionY(),
-                tankAnchorX, tankAnchorY);
-            laneSource = source0Distance <= source1Distance ? sources[0] : sources[1];
-            otherSource = laneSource == sources[0] ? sources[1] : sources[0];
+            Player* member = GetLoadedBot(cohortState);
+            if (!member || !member->IsInWorld() || member->GetMap() != bot->GetMap())
+                continue;
+            auto memberRoster = Cohort().Raid.RosterByGuid.find(member->GetGUID().GetCounter());
+            if (memberRoster == Cohort().Raid.RosterByGuid.end()
+                || !memberRoster->second.Active || !memberRoster->second.LeaseOwned)
+                continue;
+            uint32 memberSlot = memberRoster->second.SlotIndex + 1;
+            if (memberSlot == laneTankSlot && memberRoster->second.Role == "tank")
+                laneTank = member;
+            else if (memberSlot == otherTankSlot && memberRoster->second.Role == "tank")
+                otherTank = member;
         }
-        else
+
+        auto strictNativePath = [bot](float x, float y, float z) -> bool
         {
-            laneSource = sources[0]->IsAlive() ? sources[0] : sources[1];
-            otherSource = sources[0]->IsAlive() ? sources[1] : sources[0];
-        }
+            if (!bot || !bot->GetMap())
+                return false;
+            float floorZ = bot->GetMap()->GetHeight(bot->GetPhaseShift(), x, y, z + 2.0f, true, 8.0f);
+            if (floorZ <= INVALID_HEIGHT || std::fabs(floorZ - z) > 4.0f)
+                return false;
+            PathGenerator path(bot);
+            bool pathOk = path.CalculatePath(x, y, z, false);
+            PathType pathType = path.GetPathType();
+            return pathOk
+                && !(pathType & PATHFIND_NOPATH)
+                && !(pathType & PATHFIND_NOT_USING_PATH)
+                && !(pathType & PATHFIND_INCOMPLETE)
+                && !(pathType & PATHFIND_SHORTCUT)
+                && !(pathType & PATHFIND_FARFROMPOLY);
+        };
+
+        auto groupPositionSafe = [&](Player const* member) -> bool
+        {
+            if (!member)
+                return false;
+            auto memberRoster = Cohort().Raid.RosterByGuid.find(member->GetGUID().GetCounter());
+            if (memberRoster == Cohort().Raid.RosterByGuid.end())
+                return false;
+            uint32 const memberSlot = memberRoster->second.SlotIndex + 1;
+            bool const memberLaneA = std::find(
+                Cohort().Config.ValidationRouteSplitLaneARosterSlots.begin(),
+                Cohort().Config.ValidationRouteSplitLaneARosterSlots.end(), memberSlot)
+                != Cohort().Config.ValidationRouteSplitLaneARosterSlots.end();
+            bool const memberLaneB = std::find(
+                Cohort().Config.ValidationRouteSplitLaneBRosterSlots.begin(),
+                Cohort().Config.ValidationRouteSplitLaneBRosterSlots.end(), memberSlot)
+                != Cohort().Config.ValidationRouteSplitLaneBRosterSlots.end();
+            if (memberLaneA == memberLaneB || memberRoster->second.Role == "tank")
+                return false;
+            float const memberLaneSign = memberLaneA ? -1.0f : 1.0f;
+            float const minimumSafeDistance = Cohort().Config.ValidationRouteMinimumDistanceYards;
+            if (Distance2d(member->GetPositionX(), member->GetPositionY(),
+                    sources[0]->GetPositionX(), sources[0]->GetPositionY()) < minimumSafeDistance
+                || Distance2d(member->GetPositionX(), member->GetPositionY(),
+                    sources[1]->GetPositionX(), sources[1]->GetPositionY()) < minimumSafeDistance)
+                return false;
+            float const memberProjection =
+                (member->GetPositionX() - midpointX) * axisX
+                + (member->GetPositionY() - midpointY) * axisY;
+            return memberLaneSign * memberProjection >= laneSeparation * 0.25f;
+        };
+
+        auto exactRosterReSeparated = [&]() -> bool
+        {
+            if (!laneTank || !otherTank || !sources[0]->IsAlive() || !sources[1]->IsAlive())
+                return false;
+            if (laneTank->GetMap() != bot->GetMap() || otherTank->GetMap() != bot->GetMap()
+                || laneTank->GetExactDist2d(otherTank) < Cohort().Config.ValidationRouteSplitMinimumSeparationYards)
+                return false;
+            if (laneSource->IsAlive() && laneSource->GetVictim() != laneTank)
+                return false;
+            if (otherSource->IsAlive() && otherSource->GetVictim() != otherTank)
+                return false;
+            for (WorldBotState const& cohortState : Party().Bots)
+            {
+                Player* member = GetLoadedBot(cohortState);
+                if (!member || !member->IsInWorld() || !member->IsAlive()
+                    || member->GetMap() != bot->GetMap())
+                    return false;
+                auto memberRoster = Cohort().Raid.RosterByGuid.find(member->GetGUID().GetCounter());
+                if (memberRoster == Cohort().Raid.RosterByGuid.end()
+                    || !memberRoster->second.Active || !memberRoster->second.LeaseOwned)
+                    return false;
+                if (memberRoster->second.Role == "tank")
+                {
+                    uint32 memberSlot = memberRoster->second.SlotIndex + 1;
+                    Player* expectedTank = memberSlot == laneTankSlot ? laneTank
+                        : (memberSlot == otherTankSlot ? otherTank : nullptr);
+                    if (member != expectedTank)
+                        return false;
+                    continue;
+                }
+                if (!groupPositionSafe(member))
+                    return false;
+            }
+            return true;
+        };
+
+        auto markAllRosterReseparated = [&](ValidationRouteDrudgeChargeObservation& observation)
+        {
+            std::set<uint32> exactGuids;
+            for (WorldBotState const& cohortState : Party().Bots)
+                if (!cohortState.Guid.IsEmpty())
+                    exactGuids.insert(cohortState.Guid.GetCounter());
+            observation.ReseparatedRosterGuids = exactGuids;
+            Party().ValidationRouteDrudgeReseparatedRosterGuids.insert(
+                exactGuids.begin(), exactGuids.end());
+        };
 
         float const sourceSeparation = sources[0]->IsAlive() && sources[1]->IsAlive()
             ? sources[0]->GetExactDist2d(sources[1]) : laneSeparation;
@@ -18084,7 +18195,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             ? ObjectAccessor::GetCreature(*bot, chargeObservation->SourceGuid) : nullptr;
         Unit* nativeChargeTarget = nativeChargePending
             ? ObjectAccessor::GetUnit(*bot, chargeObservation->TargetGuid) : nullptr;
-        bool const nativeChargeContractViolation = nativeChargePending
+        bool nativeChargeTargetRoleViolation = false;
+        bool nativeChargeContractViolation = nativeChargePending
             && (chargeObservation->AttemptId != Cohort().AttemptId
                 || chargeObservation->WipeGeneration != Cohort().Raid.WipeGeneration
                 || chargeObservation->RouteGeneration != Party().ValidationRouteGeneration
@@ -18102,43 +18214,32 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     nativeChargeTargetLaneViolation = true;
                 else
                 {
+                    nativeChargeTargetRoleViolation = targetRoster->second.Role == "tank";
                     uint32 const targetSlot = targetRoster->second.SlotIndex + 1;
                     bool const targetInLaneA = std::find(
                         Cohort().Config.ValidationRouteSplitLaneARosterSlots.begin(),
                         Cohort().Config.ValidationRouteSplitLaneARosterSlots.end(), targetSlot)
                         != Cohort().Config.ValidationRouteSplitLaneARosterSlots.end();
-                    float const sourceProjection =
-                        (nativeChargeSource->GetPositionX() - midpointX) * axisX
-                        + (nativeChargeSource->GetPositionY() - midpointY) * axisY;
-                    bool const sourceInLaneA = sourceProjection <= 0.0f;
+                    // Source order is the frozen lane binding.  A native Rush
+                    // can move its caster after delivery; current position is
+                    // not evidence of which lane selected the target.
+                    bool const sourceInLaneA = nativeChargeSource == sources[0];
                     nativeChargeTargetLaneViolation = sourceInLaneA == targetInLaneA;
                 }
             }
+        nativeChargeContractViolation = nativeChargeContractViolation
+            || nativeChargeTargetRoleViolation;
 
         float const anchorDistance = bot->GetExactDist(anchorX, anchorY, anchorZ);
         bool const formationRequired = anchorDistance
             > Cohort().Config.ValidationRouteSplitArrivalToleranceYards;
         bool const pairTooClose = sources[0]->IsAlive() && sources[1]->IsAlive()
             && sourceSeparation < Cohort().Config.ValidationRouteSplitMinimumSeparationYards;
-        if (nativeChargeContractViolation)
-        {
+        bool const nativeChargeTargetViolation = nativeChargePending
+            && (nativeChargeContractViolation || nativeChargeTargetLaneViolation);
+        if (nativeChargeTargetViolation)
             holdOffense();
-            record(nativeChargeSource, "drudge_native_charge_contract_violation",
-                chargeObservation->SelectedDistance,
-                chargeObservation->SourceSpawnId);
-            target = nativeChargeSource;
-            state.TargetGuid = nativeChargeSource ? nativeChargeSource->GetGUID() : ObjectGuid::Empty;
-            return true;
-        }
-        if (nativeChargePending && nativeChargeTargetLaneViolation)
-        {
-            holdOffense();
-            record(nativeChargeSource, "drudge_native_charge_target_lane_violation",
-                sourceSeparation, nativeChargeTarget->GetGUID().GetCounter());
-            target = nativeChargeSource;
-            state.TargetGuid = nativeChargeSource->GetGUID();
-            return true;
-        }
+
         if (assignedTank && laneSource->GetVictim() != bot)
         {
             BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, "tank");
@@ -18162,19 +18263,97 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     }
                 }
         }
-        if (formationRequired || pairTooClose)
+        if (nativeChargePending && exactRosterReSeparated())
+        {
+            markAllRosterReseparated(*chargeObservation);
+            char const* result = nativeChargeTargetViolation
+                ? (nativeChargeTargetRoleViolation
+                    ? "drudge_native_charge_target_tank_reseparated"
+                    : (nativeChargeTargetLaneViolation
+                        ? "drudge_native_charge_target_lane_violation_reseparated"
+                        : "drudge_native_charge_contract_violation_reseparated"))
+                : "drudge_native_charge_reseparation_complete";
+            record(nativeChargeSource, result, sourceSeparation,
+                nativeChargeTarget ? nativeChargeTarget->GetGUID().GetCounter() : 0);
+            state.LastValidationRouteDrudgeChargeGenerationHandled = chargeObservation->Sequence;
+            target = laneSource;
+            state.TargetGuid = laneSource ? laneSource->GetGUID() : ObjectGuid::Empty;
+            return true;
+        }
+
+        if (formationRequired || pairTooClose || nativeChargePending)
         {
             holdOffense();
-            bool moved = !bot->IsFalling()
-                && MoveBotToPoint(state, bot, anchorX, anchorY, anchorZ);
-            record(laneSource,
-                nativeChargePending ? "drudge_native_charge_lane_reseparate"
-                    : (assignedTank ? "drudge_tank_lane_position" : "drudge_group_lane_position"),
-                sourceSeparation,
+            bool moved = false;
+            bool alreadySafe = !assignedTank && groupPositionSafe(bot);
+            if (!bot->IsFalling() && !alreadySafe)
+            {
+                if (strictNativePath(anchorX, anchorY, anchorZ))
+                    moved = MoveBotToPoint(state, bot, anchorX, anchorY, anchorZ);
+                else if (!assignedTank)
+                {
+                    // BWD's corridor contains a disconnected edge beside the
+                    // lane-A derived midpoint.  Preserve native pathing and
+                    // the exact minimum-distance contract by trying only
+                    // collision-safe, lane-side offsets around that anchor.
+                    float const perpendicularX = -axisY;
+                    float const perpendicularY = axisX;
+                    float const slotOffset = (float((roster->second.SlotIndex % 4)) - 1.5f) * 2.0f;
+                    std::vector<std::pair<float, float>> candidates = {
+                        { groupAnchorX + perpendicularX * slotOffset,
+                            groupAnchorY + perpendicularY * slotOffset },
+                        { groupAnchorX + axisX * laneSign * 4.0f + perpendicularX * slotOffset,
+                            groupAnchorY + axisY * laneSign * 4.0f + perpendicularY * slotOffset },
+                        { groupAnchorX + axisX * laneSign * 8.0f + perpendicularX * slotOffset,
+                            groupAnchorY + axisY * laneSign * 8.0f + perpendicularY * slotOffset },
+                        { groupAnchorX - perpendicularX * 6.0f + perpendicularX * slotOffset,
+                            groupAnchorY - perpendicularY * 6.0f + perpendicularY * slotOffset },
+                        { groupAnchorX + perpendicularX * 6.0f + perpendicularX * slotOffset,
+                            groupAnchorY + perpendicularY * 6.0f + perpendicularY * slotOffset },
+                    };
+                    for (auto const& candidate : candidates)
+                    {
+                        float candidateZ = midpointZ;
+                        if (float floorZ = bot->GetMap()->GetHeight(bot->GetPhaseShift(),
+                                candidate.first, candidate.second, midpointZ + 4.0f, true, 10.0f);
+                            floorZ > INVALID_HEIGHT)
+                            candidateZ = floorZ;
+                        float const candidateProjection =
+                            (candidate.first - midpointX) * axisX
+                            + (candidate.second - midpointY) * axisY;
+                        bool const candidateLaneSide = laneSign * candidateProjection
+                            >= laneSeparation * 0.25f;
+                        bool const candidateSafe = candidateLaneSide
+                            && Distance2d(candidate.first, candidate.second,
+                                sources[0]->GetPositionX(), sources[0]->GetPositionY())
+                                >= Cohort().Config.ValidationRouteMinimumDistanceYards
+                            && Distance2d(candidate.first, candidate.second,
+                                sources[1]->GetPositionX(), sources[1]->GetPositionY())
+                                >= Cohort().Config.ValidationRouteMinimumDistanceYards;
+                        if (candidateSafe && strictNativePath(candidate.first, candidate.second, candidateZ)
+                            && MoveBotToPoint(state, bot, candidate.first, candidate.second, candidateZ))
+                        {
+                            moved = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            char const* result = nativeChargePending
+                ? (nativeChargeTargetViolation
+                    ? (nativeChargeTargetRoleViolation
+                        ? "drudge_native_charge_target_tank_reseparate"
+                        : (nativeChargeTargetLaneViolation
+                            ? "drudge_native_charge_target_lane_violation_reseparate"
+                            : "drudge_native_charge_contract_violation_reseparate"))
+                    : "drudge_native_charge_lane_reseparate")
+                : (assignedTank ? "drudge_tank_lane_position" :
+                    (alreadySafe ? "drudge_group_lane_position_already_safe" : "drudge_group_lane_position"));
+            record(laneSource, result, sourceSeparation,
                 nativeChargeTarget ? nativeChargeTarget->GetGUID().GetCounter() : 0);
             target = laneSource;
             state.TargetGuid = laneSource ? laneSource->GetGUID() : ObjectGuid::Empty;
-            action = moved ? action : "drudge_lane_native_path_rejected";
+            action = moved || alreadySafe ? action : "drudge_lane_native_path_rejected";
             return true;
         }
 
@@ -18221,6 +18400,30 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             Party().ValidationRouteDrudgeHealthSyncRosterGuids.insert(
                 bot->GetGUID().GetCounter());
             record(laneSource, "drudge_kill_sync_hold_lower_health_lane", sourceSeparation);
+            target = laneSource;
+            state.TargetGuid = laneSource->GetGUID();
+            return true;
+        }
+
+        // Formation and ownership are prerequisites for the trained single
+        // target profiles.  A stale native threat assignment must not be
+        // hidden by a DPS cast, and a partial roster must never be certified as
+        // a clean lane generation.
+        bool const laneOwnershipSafe = laneSource->IsAlive()
+            && laneSource->GetVictim() == laneTank
+            && (!otherSource->IsAlive() || otherSource->GetVictim() == otherTank);
+        if (!laneOwnershipSafe)
+        {
+            holdOffense();
+            record(laneSource, "drudge_lane_wait_lane_ownership", sourceSeparation);
+            target = laneSource;
+            state.TargetGuid = laneSource ? laneSource->GetGUID() : ObjectGuid::Empty;
+            return true;
+        }
+        if (sources[0]->IsAlive() && sources[1]->IsAlive() && !exactRosterReSeparated())
+        {
+            holdOffense();
+            record(laneSource, "drudge_lane_profile_hold_contract_unsafe", sourceSeparation);
             target = laneSource;
             state.TargetGuid = laneSource->GetGUID();
             return true;
@@ -22291,6 +22494,42 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
         }
         bool majorityDead = aliveMembers <= 2 && deadMembers >= 3;
+        // The Drudge lane contract is a native-mechanics observation, not a
+        // recoverable trash route.  Once any exact roster member dies while
+        // the pack is active, hold only newly issued bot offense and leave
+        // threat, movement, corpses, and reset authority to the encounter.
+        // This keeps a four-death tactical retreat from masquerading as a
+        // clean lane generation; the native wipe gate will terminate it.
+        if (Cohort().Config.ValidationRouteMechanicProfile == "trash_two_tank_charge_lanes"
+            && deadMembers > 0 && groupCombatActive)
+        {
+            for (WorldBotState const& cohortState : Party().Bots)
+                if (Player* cohortBot = GetLoadedBot(cohortState))
+                    BotRaidAreaAuthority::SetAllOffenseSuppressed(
+                        cohortBot->GetGUID().GetRawValue(), true);
+            std::string raw = BuildRawJson(bot, retreatThreat);
+            std::ostringstream gateRaw;
+            gateRaw << "{\"base\":" << raw
+                    << ",\"drudge_native_recovery_gate\":{\"policy\":\"native_full_wipe_only\""
+                    << ",\"authority\":\"native_encounter\""
+                    << ",\"assistance\":\"none\""
+                    << ",\"direct_respawn\":false"
+                    << ",\"direct_state_manufacture\":false"
+                    << ",\"alive_members\":" << aliveMembers
+                    << ",\"dead_members\":" << deadMembers << "}}";
+            std::string semantic = BuildSemanticJson(bot, retreatThreat, "validation_route_recovery", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_recovery", retreatThreat,
+                "drudge_native_full_wipe_hold_partial_death", gateRaw.str().c_str(), semantic.c_str(),
+                float(aliveMembers), deadMembers);
+            state.LastRecoveryMode = "native_full_wipe_only";
+            state.LastRecoveryResult = "drudge_native_full_wipe_hold_partial_death";
+            state.LastRecoveryMs = NowMs();
+            state.LastNoProgressReason = "drudge_native_full_wipe_hold_partial_death";
+            situation = "validation_route_recovery";
+            action = "native_full_wipe_hold";
+            target = retreatThreat;
+            return true;
+        }
         if ((majorityDead || criticalRoleDead) && groupCombatActive && !livingCombatResurrectionCaster
             && !currentLivePackCanContinue)
         {

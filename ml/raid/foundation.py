@@ -23,6 +23,76 @@ RECOVERY_POLICIES = frozenset({"release_resurrect_runback_ready_check", "raid_en
 
 
 @dataclass(frozen=True)
+class DrudgeChargeContractEvent:
+    """One independently observed, delivered Drudge Rush."""
+
+    source_spawn_id: int
+    target_guid: int
+    landed: bool
+    reseparated_roster_guids: tuple[int, ...]
+
+
+def evaluate_drudge_lane_contract(
+    *,
+    roster_guids: Iterable[int],
+    tank_guids: Iterable[int],
+    offensive_guids: Iterable[int],
+    events: Iterable[DrudgeChargeContractEvent],
+    taunt_guids: Iterable[int],
+    health_sync_guids: Iterable[int],
+    profile_action_guids: Iterable[int],
+    role_by_guid: dict[int, str] | None = None,
+) -> tuple[bool, tuple[str, ...]]:
+    """Evaluate the exact two-tank/two-group Drudge contract.
+
+    This is intentionally a small, side-effect-free model of the live gate:
+    delivered native Rushes must be followed by exact-roster reseparation,
+    tanks must have taunted, lower-health synchronization must include a
+    tank, and only the seven frozen tank/DPS slots may execute the trained
+    single-target profile.  A role map, when supplied, prevents a tank from
+    being accepted as a native Rush target; a tank target means the split
+    formation did not make the native farthest-player selector safe.
+    """
+
+    roster = set(roster_guids)
+    tanks = set(tank_guids)
+    offensive = set(offensive_guids)
+    reasons: set[str] = set()
+    if len(roster) != 10:
+        reasons.add("exact_roster_invalid")
+    if len(tanks) != 2 or not tanks.issubset(roster):
+        reasons.add("exact_tanks_invalid")
+    if len(offensive) != 7 or not offensive.issubset(roster):
+        reasons.add("exact_offensive_slots_invalid")
+
+    source_counts = {250140: 0, 250141: 0}
+    for event in events:
+        if not event.landed:
+            continue
+        if event.source_spawn_id not in source_counts:
+            reasons.add("source_invalid")
+            continue
+        source_counts[event.source_spawn_id] += 1
+        if event.target_guid not in roster:
+            reasons.add("target_not_in_roster")
+        if set(event.reseparated_roster_guids) != roster:
+            reasons.add("exact_roster_reseparation_missing")
+        if role_by_guid and role_by_guid.get(event.target_guid) == "tank":
+            reasons.add("native_rush_target_tank")
+    for source, count in source_counts.items():
+        if count < 2:
+            reasons.add(f"source_{source}_two_deliveries_missing")
+
+    if set(taunt_guids) != tanks:
+        reasons.add("exact_tank_taunts_missing")
+    if not set(health_sync_guids).intersection(tanks):
+        reasons.add("tank_health_sync_hold_missing")
+    if set(profile_action_guids) != offensive:
+        reasons.add("trained_single_target_profile_missing")
+    return not reasons, tuple(sorted(reasons))
+
+
+@dataclass(frozen=True)
 class DeclarativeMechanicContract:
     strategy_id: str
     formation: str

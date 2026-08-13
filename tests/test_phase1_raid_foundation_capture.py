@@ -226,7 +226,7 @@ def accepted_drudge_status() -> dict:
     offensive_guids = [row["guid"] for row in runtime["roster"] if row["role"] in {"tank", "dps"}]
     observations = []
     sequence = 0
-    for source, target in ((250140, roster_guids[5]), (250141, roster_guids[6])):
+    for source, target in ((250140, roster_guids[4]), (250141, roster_guids[2])):
         for interval in (0, 20000):
             sequence += 1
             observations.append({
@@ -297,6 +297,21 @@ def test_drudge_contract_rejects_prepared_only_stale_and_incomplete_tactics():
     accepted, reasons = accepted_drudge_contract([incomplete])
     assert accepted is False
     assert "drudge_tank_health_sync_hold_missing" in reasons
+
+    tank_target = accepted_drudge_status()
+    tank_target["raid_runtime"]["drudge_charge"]["observations"][0]["target_guid"] = 1001
+    accepted, reasons = accepted_drudge_contract([tank_target])
+    assert accepted is False
+    assert "drudge_native_rush_target_tank" in reasons
+
+    same_lane = accepted_drudge_status()
+    # Source 250140 is lane A; roster slot 6 is also lane A.  A later clean
+    # snapshot must not erase this earlier native selector violation.
+    same_lane["raid_runtime"]["drudge_charge"]["observations"][0]["target_guid"] = 1006
+    clean = accepted_drudge_status()
+    accepted, reasons = accepted_drudge_contract([same_lane, clean])
+    assert accepted is False
+    assert "drudge_native_rush_lane_target_invalid" in reasons
 
 
 def test_acceptance_reconstructs_all_identity_facts():
