@@ -4504,8 +4504,8 @@ def main() -> int:
         raise SystemExit("--skip-route-bot-start-mutation requires session transport and an evidence identity manifest")
     if args.transport == "soap" and (args.validation_route_manifest or args.validation_route_sequence):
         raise SystemExit("route manifest/sequence validation cannot use SOAP because the server config identity is not owned")
-    if (args.validation_route_manifest or args.validation_route_sequence) and args.transport == "session" and args.session_profile and args.session_profile != args.validation_scenario_id:
-        raise SystemExit("--session-profile must equal --validation-scenario-id for route manifest/sequence validation")
+    if args.transport == "session" and args.validation_scenario_id and args.session_profile and args.session_profile != args.validation_scenario_id:
+        raise SystemExit("--session-profile must equal --validation-scenario-id for validation sessions")
 
     exact_party_specs = [str(value) for value in args.party_spec_target]
     if exact_party_specs:

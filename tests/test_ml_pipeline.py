@@ -7588,6 +7588,36 @@ def test_live_bot_validation_rejects_cross_shard_session_profile(tmp_path, monke
         live_validation_main()
 
 
+def test_live_bot_validation_rejects_cross_shard_direct_route_session_profile(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "bot-live-validate",
+            "--dry-run",
+            "--transport",
+            "session",
+            "--validation-scenario-id",
+            "blackwing_descent_10n_magmaw_diagnostic",
+            "--validation-route-node-id",
+            "bwd_magmaw",
+            "--validation-route-kind",
+            "boss",
+            "--validation-route-label",
+            "Magmaw",
+            "--validation-route-step",
+            "4",
+            "--session-profile",
+            "blackwing_descent_10n_omnotron_diagnostic",
+            "--output-dir",
+            str(tmp_path / "live"),
+        ],
+    )
+
+    with pytest.raises(SystemExit, match="session-profile must equal"):
+        live_validation_main()
+
+
 @pytest.mark.parametrize("route_flag", ["--validation-route-manifest", "--validation-route-sequence"])
 def test_live_bot_validation_rejects_soap_route_config_bypass(tmp_path, monkeypatch, route_flag):
     monkeypatch.setattr(
