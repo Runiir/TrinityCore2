@@ -13757,6 +13757,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         &power,
         stage,
         activity,
+        discoveryLeg,
         &isNaturalValidationRoutePackMember,
         &isValidationCohortCombatLinked,
         &isValidationRouteScriptTarget
