@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-13T10:55:40Z",
+  "updated_at_utc": "2026-08-13T11:43:02Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -17,7 +17,7 @@
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "current_head_sha": "c1f7fe4663e82e5ffbbeacf73bd5ab74f57bd72d",
+    "current_head_sha": "15e097432183fcc4d0c23ebfc886f661a53f2146",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -28,17 +28,17 @@
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
     "critical_high_remediation_implemented_at": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "mandatory_rereview": "APPROVE exact 89f33065d6a9fbbf76cc3840ce93c6f6abcb2756 with zero critical/high findings; narrow carry review required only for this status-only descendant before build",
+    "mandatory_rereview": "pending exact 15e097432183fcc4d0c23ebfc886f661a53f2146 adversarial review after the 1c7a live Drudge diagnosis, path fallback, bounded telemetry, immutable demux, and pre-Rush native-threat remediation",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "Mandatory Sol-high review approved exact build target 1c7a614d71 with zero critical/high findings. Its policy-v8 configure and worldserver receipts independently verify, 296 focused checks pass, and fresh provisioning/full verification/v4 readback passed. The uncapped run remained fail-closed: Chainwielder cleared, but the Drudge pair stalled after both first native Rushes targeted tank 1272, with zero accepted reseparation geometry, health synchronization, trained-profile action, Magmaw engagement, or native full-wipe recovery. The remotely synchronized diagnosis is infrastructure evidence only; Phase 1 and fidelity remain false."
+    "current_acceptance": "The exact 1c7a uncapped failure was independently diagnosed and exactly evicted after remote verification. Exact source checkpoint 15e0974321 adds native-path fallback anchors, edge/heartbeat Drudge telemetry, incremental trace export, lifecycle-aware immutable demux, and a bounded ordinary-profile cross-lane threat seed before native Rush. The combined focused suite passes 303 checks. Mandatory Sol-high review, exact rebuild, fresh preparation, and uncapped rerun remain required; Phase 1 and fidelity remain false."
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_commit": "1c7a614d71626b28f89570f132379970ec8b3cd8",
-    "current_state": "exact_1c7a_gate_bearing_build_succeeded_after_one_resource_abort",
-    "current_result": "configure receipt 107db1bb... and worldserver receipt a6550406... independently verify; exact ticket produced ELF 10569337...; first attempt 9ea159ad... is retained build_resource_abort and is not code/gameplay failure",
+    "current_commit": "15e097432183fcc4d0c23ebfc886f661a53f2146",
+    "current_state": "exact_15e_drudge_remediation_unreviewed_unbuilt",
+    "current_result": "303 focused checks pass; the prior exact-1c7a receipts and ELF are historical and stale for 15e; mandatory Sol-high approval and a new exact policy-v8 coordinator receipt are required",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -627,8 +627,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "Exact 1c7a was reviewed with zero critical/high findings, built through gate-bearing policy-v8 receipts, passed 296 focused checks, and passed fresh provisioning/full verifier/v4 readback. Its uncapped remotely synchronized run cleared Chainwielder but failed closed at the isolated Drudge pair: both first native Rushes targeted tank 1272, reseparation geometry never completed, partial deaths cycled, no health-sync/profile evidence appeared, and Magmaw was not engaged. Luna-xhigh remediation is in progress; mandatory Sol-high review, exact rebuild, fresh preparation, and rerun remain required."
+      "detail": "Exact 1c7a was reviewed, built, freshly prepared, and then failed closed at the isolated Drudge pair. The remotely synchronized diagnosis has been consumed and exactly evicted. Exact 15e remediation now uses generation-scoped native-path anchors, bounded telemetry, immutable lifecycle-aware demux, and two deterministic opposite-lane ordinary profile submissions before the native first Rush; 303 focused checks pass. Mandatory Sol-high review, exact rebuild, fresh preparation, and uncapped rerun remain required."
     }
   ],
-  "next_action": "Complete the isolated Luna-xhigh remediation of the exact 1c7a Drudge lane/path/target/partial-death and telemetry-cost failure, obtain mandatory Sol-high zero-critical/high approval, run one exact policy-v8 coordinated rebuild, freshly reprovision/full-verify/v4-read back, prestart and verify one worldserver, attach one Luna-xhigh babysitter, and rerun the uncapped canonical Phase 1 capture. Six parallel boss shards remain downstream of a passing Phase 1 gate."
+  "next_action": "Obtain mandatory Sol-high zero-critical/high approval for exact 15e0974321, run one exact policy-v8 coordinated rebuild, freshly reprovision/full-verify/v4-read back, prestart and verify one worldserver, attach one Luna-xhigh babysitter, and rerun the uncapped canonical Phase 1 capture. Require native opposite-lane Rush selection, exact reseparation, health synchronization, trained profile execution, Magmaw engagement, full native recovery, bounded telemetry, and clean demux. Six parallel boss shards remain downstream of a passing Phase 1 gate."
 }

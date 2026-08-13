@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "audit_id": "cata_raid_runtime_phase1_v1",
-  "updated_at_utc": "2026-08-13T10:55:40Z",
+  "updated_at_utc": "2026-08-13T11:43:02Z",
   "target": {
     "client": "Cataclysm Classic",
     "patch": "4.4.2",
@@ -9,18 +9,18 @@
     "locale": "enUS",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
-  "audited_commit": "c1f7fe4663e82e5ffbbeacf73bd5ab74f57bd72d",
-  "gate_state": "in_progress_exact_1c7a_reviewed_built_and_freshly_prepared_uncapped_drudge_failure_remediation_pending",
+  "audited_commit": "15e097432183fcc4d0c23ebfc886f661a53f2146",
+  "gate_state": "in_progress_exact_15e_drudge_remediation_review_pending",
   "foundation": {
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "current_head_sha": "c1f7fe4663e82e5ffbbeacf73bd5ab74f57bd72d",
+    "current_head_sha": "15e097432183fcc4d0c23ebfc886f661a53f2146",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
-    "mandatory_sol_high_rereview": "APPROVE exact 89f33065d6a9fbbf76cc3840ce93c6f6abcb2756 zero critical/high; narrow carry review required only for this status-only descendant before build",
+    "mandatory_sol_high_rereview": "pending exact 15e097432183fcc4d0c23ebfc886f661a53f2146",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "acceptance": "Mandatory Sol-high review approved exact build target 1c7a with zero critical/high findings; gate-bearing policy-v8 configure/build, 296 focused checks, fresh provisioning/full verifier/v4 readback, and remotely synchronized uncapped capture all completed. The capture is an infrastructure abort only: Chainwielder cleared, both first Drudge Rushes targeted tank 1272, and no valid reseparation, health-sync, trained-profile, Magmaw engagement, or native full-wipe recovery evidence completed. Phase 1 and fidelity remain false."
+    "acceptance": "Exact 1c7a infrastructure evidence was diagnosed, remotely verified, and exactly evicted. Exact 15e remediation adds generation-scoped pathable Drudge anchors, bounded edge/delta telemetry, immutable lifecycle-aware evidence binding, and ordinary-profile opposite-lane pre-Rush threat seeds without native selector or threat injection. The focused suite passes 303; review/build/live gates remain pending and Phase 1/fidelity remain false."
   },
   "research": {
     "required_boss_packets": 28,
@@ -168,8 +168,8 @@
   ],
   "synthetic_checks": {
     "test_file": "tests/test_cata_raid_runtime_foundation.py",
-    "last_result": "296_exact_build_focused_passed",
-    "combined_focus_result": "296_hotpath_model_runtime_capture_generic_phase9_and_coordinator_passed_after_exact_1c7a_build",
+    "last_result": "303_exact_15e_source_focused_passed",
+    "combined_focus_result": "303_hotpath_model_runtime_capture_generic_phase9_and_coordinator_passed_before_exact_15e_review_build",
     "combined_focus_command": "pixi run pytest -q tests/test_botworld_hotpath_optimization.py tests/test_cata_raid_foundation_model.py tests/test_cata_raid_runtime_foundation.py tests/test_phase1_raid_foundation_capture.py tests/test_phase1_generic_mechanic_smoke.py tests/test_phase9_live_qualification.py tests/test_raid_build_coordinator.py",
     "broad_comparison": "autonomy_inclusive_d5ba_review_diagnostic_239_passed_33_inherited_or_stale_failures; focused_phase9_3_passed; no new broad-regression claim until exact descendant review"
   },
@@ -193,7 +193,7 @@
   ],
   "phase1_gate_blockers": [
     "exact_1c7a_uncapped_capture_failed_closed_at_magmaw_drudge_pair_before_magmaw_engagement",
-    "exact_1c7a_drudge_lane_path_target_partial_death_and_telemetry_cost_remediation_review_rebuild_pending",
+    "exact_15e_drudge_lane_path_native_threat_seed_and_telemetry_remediation_review_rebuild_pending",
     "single_cohort_worldserver_cpu_35_percent_and_67mb_log_raw_not_parallel_shard_ready",
     "bwd_exact_442_quantitative_and_exact_log_hotfix_evidence_blocks_phase2_fidelity"
   ],
