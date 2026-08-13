@@ -521,7 +521,12 @@ def load_validation_routes_for_scenario(scenario_dir: Path, scenario_id: str) ->
     return rows
 
 
-def validate_route_runtime_profile_contract(config_path: Path, scenario_id: str, routes: list[dict[str, Any]]) -> dict[str, Any]:
+def validate_route_runtime_profile_contract(
+    config_path: Path,
+    scenario_dir: Path,
+    scenario_id: str,
+    routes: list[dict[str, Any]],
+) -> dict[str, Any]:
     if not routes:
         raise SystemExit("validation route selected no route rows")
     if any(
@@ -541,9 +546,14 @@ def validate_route_runtime_profile_contract(config_path: Path, scenario_id: str,
         raise SystemExit("validation route runtime profile is missing or ambiguous")
     selected_profile = selected_profiles[0]
     profile_route = selected_profile.get("validation_route") if isinstance(selected_profile.get("validation_route"), dict) else {}
+    configured_manifest = Path(str(profile_route.get("manifest_path") or ""))
+    if not configured_manifest.is_absolute():
+        configured_manifest = REPO_ROOT / configured_manifest
+    expected_manifest = scenario_dir / "validation_routes.jsonl"
     if (
         str(selected_profile.get("pool_tag_filter") or "") != scenario_id
         or str(profile_route.get("scenario_id") or "") != scenario_id
+        or configured_manifest.resolve() != expected_manifest.resolve()
     ):
         raise SystemExit("validation route runtime profile contract mismatch")
     return selected_profile
@@ -4558,7 +4568,7 @@ def main() -> int:
         if args.input_log:
             raise SystemExit("--validation-route-sequence cannot be combined with --input-log")
         sequence_routes = load_validation_routes_for_scenario(args.validation_scenario_dir, args.validation_scenario_id)
-        validate_route_runtime_profile_contract(args.config, args.validation_scenario_id, sequence_routes)
+        validate_route_runtime_profile_contract(args.config, args.validation_scenario_dir, args.validation_scenario_id, sequence_routes)
         commands = [
             route_sequence_child_command(args, route, args.output_dir / route_segment_output_name(route), first_route=index == 0)
             for index, route in enumerate(sequence_routes)
@@ -4599,7 +4609,7 @@ def main() -> int:
         if not args.validation_scenario_id:
             raise SystemExit("--validation-route-manifest requires --validation-scenario-id")
         manifest_routes = load_validation_routes_for_scenario(args.validation_scenario_dir, args.validation_scenario_id)
-        validate_route_runtime_profile_contract(args.config, args.validation_scenario_id, manifest_routes)
+        validate_route_runtime_profile_contract(args.config, args.validation_scenario_dir, args.validation_scenario_id, manifest_routes)
         validation_route_manifest_path, validation_route_manifest = write_validation_route_manifest(
             session_runtime_dir,
             args.validation_scenario_id,

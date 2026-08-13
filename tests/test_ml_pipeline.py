@@ -7177,12 +7177,34 @@ def test_live_bot_validation_route_sequence_dry_run_writes_ordered_child_command
             },
         ],
     )
+    profile_manifest = tmp_path / "profiles.json"
+    profile_manifest.write_text(
+        json.dumps(
+            {
+                "profiles": [
+                    {
+                        "name": "stonecore_5n",
+                        "pool_tag_filter": "stonecore_5n",
+                        "validation_route": {
+                            "scenario_id": "stonecore_5n",
+                            "manifest_path": str(scenario_dir / "validation_routes.jsonl"),
+                        },
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    base_config = tmp_path / "worldserver.conf"
+    base_config.write_text(f'BotWorld.ProfileManifest = "{profile_manifest}"\n', encoding="utf-8")
     monkeypatch.setattr(
         sys,
         "argv",
         [
             "bot-live-validate",
             "--dry-run",
+            "--config",
+            str(base_config),
             "--validation-route-sequence",
             "--validation-scenario-id",
             "stonecore_5n",
@@ -7284,7 +7306,7 @@ def test_live_bot_validation_config_calibration_only_starts_empty_controller(tmp
     )
 
     config_text = generated.read_text(encoding="utf-8")
-    assert "BotWorld.AutoStart = 1" in config_text
+    assert "BotWorld.AutoStart = 0" in config_text
     assert 'BotWorld.RuntimeProfile = ""' in config_text
     assert "BotWorld.TargetPopulation = 0" in config_text
     assert "BotWorld.ValidationRoute.Enable = 0" in config_text
@@ -7375,8 +7397,30 @@ def test_live_bot_validation_route_manifest_dry_run_writes_scenario_scoped_confi
             },
         ],
     )
+    profile_manifest = tmp_path / "profiles.json"
+    profile_manifest.write_text(
+        json.dumps(
+            {
+                "profiles": [
+                    {
+                        "name": "stonecore_5n",
+                        "pool_tag_filter": "stonecore_5n",
+                        "target_population": 5,
+                        "validation_route": {
+                            "scenario_id": "stonecore_5n",
+                            "manifest_path": str(scenario_dir / "validation_routes.jsonl"),
+                        },
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
     base_config = tmp_path / "worldserver.conf"
-    base_config.write_text("BotWorld.AutoStart = 1\n", encoding="utf-8")
+    base_config.write_text(
+        f'BotWorld.AutoStart = 1\nBotWorld.ProfileManifest = "{profile_manifest}"\n',
+        encoding="utf-8",
+    )
     output_dir = tmp_path / "live"
     monkeypatch.setattr(
         sys,
@@ -7535,6 +7579,70 @@ def test_live_bot_validation_rejects_mismatched_profile_manifest_contract(tmp_pa
                         "name": scenario_id,
                         "pool_tag_filter": "blackwing_descent_10n_omnotron_diagnostic",
                         "validation_route": {"scenario_id": scenario_id},
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    base_config = tmp_path / "worldserver.conf"
+    base_config.write_text(f'BotWorld.ProfileManifest = "{profile_manifest}"\n', encoding="utf-8")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "bot-live-validate",
+            "--dry-run",
+            "--config",
+            str(base_config),
+            "--validation-route-manifest",
+            "--validation-scenario-id",
+            scenario_id,
+            "--validation-scenario-dir",
+            str(scenario_dir),
+            "--output-dir",
+            str(tmp_path / "live"),
+        ],
+    )
+
+    with pytest.raises(SystemExit, match="runtime profile contract mismatch"):
+        live_validation_main()
+
+
+def test_live_bot_validation_rejects_profile_manifest_path_divergence(tmp_path, monkeypatch):
+    scenario_id = "blackwing_descent_10n_magmaw_diagnostic"
+    scenario_dir = tmp_path / "substituted_validation_scenarios"
+    scenario_dir.mkdir()
+    write_jsonl(
+        scenario_dir / "validation_routes.jsonl",
+        [
+            {
+                "scenario_id": scenario_id,
+                "runtime_profile_id": scenario_id,
+                "route_node_id": "substituted_magmaw",
+                "step": 1,
+                "kind": "boss",
+                "label": "Magmaw",
+                "map_id": 669,
+                "x": -307.531,
+                "y": -35.438,
+                "z": 211.815,
+                "coordinates_valid": True,
+            }
+        ],
+    )
+    profile_manifest = tmp_path / "profiles.json"
+    profile_manifest.write_text(
+        json.dumps(
+            {
+                "profiles": [
+                    {
+                        "name": scenario_id,
+                        "pool_tag_filter": scenario_id,
+                        "validation_route": {
+                            "scenario_id": scenario_id,
+                            "manifest_path": "dataset/validation_scenarios/validation_routes.jsonl",
+                        },
                     }
                 ]
             }
