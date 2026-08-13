@@ -64,7 +64,9 @@ bool RaidControlledOffenseRejected(Unit* actor, Unit* target, SpellInfo const* s
         && (!spellInfo || !spellInfo->IsPositive()))
         return true;
     if (Creature const* creature = target ? target->ToCreature() : nullptr;
-        creature && BotRaidAreaAuthority::IsProtectedEncounterEntry(ownerGuid, creature->GetEntry()))
+        creature && BotRaidAreaAuthority::IsProtectedEncounterTarget(
+            ownerGuid, creature->GetEntry(), creature->GetSpawnId(),
+            creature->GetGUID().GetRawValue()))
         return true;
     return spellInfo
         && BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid)

@@ -56,8 +56,9 @@ bool ProtectedTotemTarget(Unit const* owner, Unit const* target)
 {
     Creature const* creature = target ? target->ToCreature() : nullptr;
     return owner && creature
-        && BotRaidAreaAuthority::IsProtectedEncounterEntry(
-            owner->GetGUID().GetRawValue(), creature->GetEntry());
+        && BotRaidAreaAuthority::IsProtectedEncounterTarget(
+            owner->GetGUID().GetRawValue(), creature->GetEntry(),
+            creature->GetSpawnId(), creature->GetGUID().GetRawValue());
 }
 }
 

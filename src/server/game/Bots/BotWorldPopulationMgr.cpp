@@ -12840,8 +12840,6 @@ bool BotWorldPopulationMgr::IsImmediateNextValidationRouteBossTarget(Creature co
 
 bool BotWorldPopulationMgr::IsImmediateNextValidationRouteEncounterMember(Creature const* creature) const
 {
-    if (IsImmediateNextValidationRouteBossTarget(creature))
-        return true;
     if (!creature || Cohort().Config.ValidationRouteKind == "boss")
         return false;
 
@@ -12849,10 +12847,47 @@ bool BotWorldPopulationMgr::IsImmediateNextValidationRouteEncounterMember(Creatu
     if (nextIndex >= Party().ValidationRouteManifest.size())
         return false;
     ValidationRouteManifestNode const& nextNode = Party().ValidationRouteManifest[nextIndex];
-    return nextNode.Kind == "boss"
-        && std::find(nextNode.AddTargetEntries.begin(),
-            nextNode.AddTargetEntries.end(), creature->GetEntry())
-        != nextNode.AddTargetEntries.end();
+    if (nextNode.Kind != "boss" && nextNode.Kind != "trash")
+        return false;
+
+    uint32 const entry = creature->GetEntry();
+    bool const nextEntry = entry == nextNode.TargetEntry
+        || entry == nextNode.OpenerTargetEntry
+        || std::find(nextNode.TargetEntries.begin(), nextNode.TargetEntries.end(), entry)
+            != nextNode.TargetEntries.end()
+        || std::find(nextNode.AlternateTargetEntries.begin(),
+            nextNode.AlternateTargetEntries.end(), entry)
+            != nextNode.AlternateTargetEntries.end()
+        || std::find(nextNode.AddTargetEntries.begin(),
+            nextNode.AddTargetEntries.end(), entry)
+            != nextNode.AddTargetEntries.end()
+        || std::find(nextNode.PackTargetEntries.begin(),
+            nextNode.PackTargetEntries.end(), entry)
+            != nextNode.PackTargetEntries.end()
+        || std::find(nextNode.ScriptedEventEntries.begin(),
+            nextNode.ScriptedEventEntries.end(), entry)
+            != nextNode.ScriptedEventEntries.end();
+    bool const nextSpawn = (nextNode.TargetSpawnId
+            && creature->GetSpawnId() == nextNode.TargetSpawnId)
+        || std::find(nextNode.SplitSourceGuids.begin(),
+            nextNode.SplitSourceGuids.end(), creature->GetSpawnId())
+            != nextNode.SplitSourceGuids.end();
+
+    // A live member already enrolled in the current route generation is
+    // authoritative even when the current and next nodes reuse an entry or a
+    // spawn family.  A stale ledger entry that itself identifies the future
+    // node is not allowed to punch through the future guard.
+    bool const persistedCurrentMember =
+        Party().ValidationRoutePackGeneration == Party().ValidationRouteGeneration
+        && Party().ValidationRoutePackMemberGuids.find(creature->GetGUID())
+            != Party().ValidationRoutePackMemberGuids.end()
+        && Party().ValidationRoutePackDeathGuids.find(creature->GetGUID())
+            == Party().ValidationRoutePackDeathGuids.end()
+        && Party().ValidationRoutePackTransitionGuids.find(creature->GetGUID())
+            == Party().ValidationRoutePackTransitionGuids.end();
+    if (persistedCurrentMember && !nextEntry && !nextSpawn)
+        return false;
+    return nextEntry || nextSpawn;
 }
 
 bool BotWorldPopulationMgr::IsNativeRaidRecoveryEvidencePending() const
@@ -12960,28 +12995,37 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         return true;
     }
 
-    // Freeze the next encounter's complete declared creature-entry surface in
-    // the shared offensive authority before any route decision can submit a
-    // cast.  While these entries are present, every executor/helper/pet path
-    // rejects hostile multi-target actions rather than approximating native
-    // chain, radius, triggered-spell, or implicit-target reach.
+    // Freeze the next encounter's complete declared creature surface in the
+    // shared offensive authority before any route decision can submit a cast.
+    // Trash nodes are encounters too: their pack entries and split source
+    // spawn IDs must be protected while the current pack is still alive.  The
+    // current generation's persisted pack GUIDs are explicitly allowed so an
+    // entry reused by adjacent nodes cannot block the live current target.
     std::vector<uint32> protectedEncounterEntries;
+    std::vector<uint32> protectedEncounterSpawnIds;
+    std::vector<uint64> allowedCurrentPackGuids;
     if (Cohort().Config.ValidationRouteKind != "boss")
     {
         size_t const nextIndex = Party().ValidationRouteManifestIndex + 1;
         if (nextIndex < Party().ValidationRouteManifest.size())
         {
             ValidationRouteManifestNode const& nextNode = Party().ValidationRouteManifest[nextIndex];
-            if (nextNode.Kind == "boss")
+            if (nextNode.Kind == "boss" || nextNode.Kind == "trash")
             {
                 if (nextNode.TargetEntry)
                     protectedEncounterEntries.push_back(nextNode.TargetEntry);
                 if (nextNode.OpenerTargetEntry)
                     protectedEncounterEntries.push_back(nextNode.OpenerTargetEntry);
                 protectedEncounterEntries.insert(protectedEncounterEntries.end(),
+                    nextNode.TargetEntries.begin(), nextNode.TargetEntries.end());
+                protectedEncounterEntries.insert(protectedEncounterEntries.end(),
                     nextNode.AlternateTargetEntries.begin(), nextNode.AlternateTargetEntries.end());
                 protectedEncounterEntries.insert(protectedEncounterEntries.end(),
                     nextNode.AddTargetEntries.begin(), nextNode.AddTargetEntries.end());
+                protectedEncounterEntries.insert(protectedEncounterEntries.end(),
+                    nextNode.PackTargetEntries.begin(), nextNode.PackTargetEntries.end());
+                protectedEncounterEntries.insert(protectedEncounterEntries.end(),
+                    nextNode.ScriptedEventEntries.begin(), nextNode.ScriptedEventEntries.end());
                 protectedEncounterEntries.erase(std::remove(
                     protectedEncounterEntries.begin(), protectedEncounterEntries.end(), 0),
                     protectedEncounterEntries.end());
@@ -12989,11 +13033,38 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 protectedEncounterEntries.erase(std::unique(
                     protectedEncounterEntries.begin(), protectedEncounterEntries.end()),
                     protectedEncounterEntries.end());
+
+                if (nextNode.TargetSpawnId)
+                    protectedEncounterSpawnIds.push_back(nextNode.TargetSpawnId);
+                protectedEncounterSpawnIds.insert(protectedEncounterSpawnIds.end(),
+                    nextNode.SplitSourceGuids.begin(), nextNode.SplitSourceGuids.end());
+                protectedEncounterSpawnIds.erase(std::remove(
+                    protectedEncounterSpawnIds.begin(), protectedEncounterSpawnIds.end(), 0),
+                    protectedEncounterSpawnIds.end());
+                std::sort(protectedEncounterSpawnIds.begin(), protectedEncounterSpawnIds.end());
+                protectedEncounterSpawnIds.erase(std::unique(
+                    protectedEncounterSpawnIds.begin(), protectedEncounterSpawnIds.end()),
+                    protectedEncounterSpawnIds.end());
             }
         }
+
+        if (Party().ValidationRoutePackGeneration == Party().ValidationRouteGeneration)
+            for (ObjectGuid const& guid : Party().ValidationRoutePackMemberGuids)
+                if (Party().ValidationRoutePackDeathGuids.find(guid)
+                        == Party().ValidationRoutePackDeathGuids.end()
+                    && Party().ValidationRoutePackTransitionGuids.find(guid)
+                        == Party().ValidationRoutePackTransitionGuids.end()
+                    && (!bot->GetMap()
+                        || !IsImmediateNextValidationRouteEncounterMember(
+                            bot->GetMap()->GetCreature(guid))))
+                    allowedCurrentPackGuids.push_back(guid.GetRawValue());
     }
     BotRaidAreaAuthority::SetProtectedEncounterEntries(
         raidAuthorityOwner, protectedEncounterEntries);
+    BotRaidAreaAuthority::SetProtectedEncounterSpawnIds(
+        raidAuthorityOwner, protectedEncounterSpawnIds);
+    BotRaidAreaAuthority::SetAllowedEncounterGuids(
+        raidAuthorityOwner, allowedCurrentPackGuids);
     BotRaidAreaAuthority::SetAllOffenseSuppressed(raidAuthorityOwner, false);
     BotRaidAreaAuthority::Set(raidAuthorityOwner, false);
 
@@ -24016,7 +24087,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             Creature* creature = object ? object->ToCreature() : nullptr;
             if (!creature || !creature->IsAlive() || !creature->GetHealth()
                 || !bot->IsValidAttackTarget(creature) || (!creature->IsInCombat() && !creature->GetVictim())
-                || isImmediateNextValidationRouteBossTarget(creature))
+                || isImmediateNextValidationRouteEncounterMember(creature))
                 continue;
             bool declaredBossAdd = Cohort().Config.ValidationRouteKind == "boss"
                 && std::find(Cohort().Config.ValidationRouteAddTargetEntries.begin(),
@@ -29829,7 +29900,9 @@ bool BotWorldPopulationMgr::TryCastFriendlySpell(Player* bot, Unit* target, uint
         && !spellInfo->IsPositive())
         return fail("raid_offense_suppressed");
     if (Creature const* creature = target->ToCreature();
-        creature && BotRaidAreaAuthority::IsProtectedEncounterEntry(ownerGuid, creature->GetEntry()))
+        creature && BotRaidAreaAuthority::IsProtectedEncounterTarget(
+            ownerGuid, creature->GetEntry(), creature->GetSpawnId(),
+            creature->GetGUID().GetRawValue()))
         return fail("future_encounter_target_forbidden");
     if (BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid)
         && SpellHasHostileMultiTargetSemantics(spellInfo))
@@ -32669,7 +32742,9 @@ bool BotWorldPopulationMgr::TryCastCombatSpell(Player* bot, Unit* target, uint32
     if (BotRaidAreaAuthority::IsAllOffenseSuppressed(ownerGuid))
         return false;
     if (Creature const* creature = target->ToCreature();
-        creature && BotRaidAreaAuthority::IsProtectedEncounterEntry(ownerGuid, creature->GetEntry()))
+        creature && BotRaidAreaAuthority::IsProtectedEncounterTarget(
+            ownerGuid, creature->GetEntry(), creature->GetSpawnId(),
+            creature->GetGUID().GetRawValue()))
         return false;
     if (BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid)
         && SpellHasHostileMultiTargetSemantics(spellInfo))

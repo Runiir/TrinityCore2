@@ -1915,14 +1915,20 @@ def test_trash_profile_damage_cannot_pull_or_compound_the_next_boss_encounter():
     # This includes the exact manual Hunter Multi-Shot executor path and direct
     # Protection spell helpers, not only profile-resolved actions.
     assert "IsAllOffenseSuppressed(ownerGuid)" in ACTION_EXECUTOR
-    assert "IsProtectedEncounterEntry(ownerGuid, creature->GetEntry())" in ACTION_EXECUTOR
+    assert "IsProtectedEncounterTarget(" in ACTION_EXECUTOR
     assert "HasProtectedEncounterEntries(ownerGuid)" in ACTION_EXECUTOR
     assert "BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid)" in IMPL
-    assert "BotRaidAreaAuthority::IsProtectedEncounterEntry(ownerGuid" in IMPL
+    assert "BotRaidAreaAuthority::IsProtectedEncounterTarget(" in IMPL
     assert "AllOffenseSuppressedOwners" in RAID_AUTHORITY
     assert "ProtectedEncounterEntriesByOwner" in RAID_AUTHORITY
+    assert "ProtectedEncounterSpawnIdsByOwner" in RAID_AUTHORITY
+    assert "AllowedEncounterGuidsByOwner" in RAID_AUTHORITY
+    assert "SetProtectedEncounterSpawnIds" in route_runtime
+    assert "SetAllowedEncounterGuids" in route_runtime
+    assert "nextNode.SplitSourceGuids" in route_runtime
+    assert "nextNode.PackTargetEntries" in route_runtime
     assert "BotRaidAreaAuthority::IsAllOffenseSuppressed" in PET_AI
-    assert "BotRaidAreaAuthority::IsProtectedEncounterEntry" in PET_AI
+    assert "BotRaidAreaAuthority::IsProtectedEncounterTarget" in PET_AI
     assert "me->SetReactState(REACT_PASSIVE);" in PET_AI
     assert "RaidControlledOffenseRejected(me, victim)" in UNIT_AI
     assert "RaidControlledOffenseRejected(me, target, spellInfo)" in UNIT_AI

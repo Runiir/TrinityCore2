@@ -180,7 +180,9 @@ BotActionResult BotActionExecutor::Execute(Player* owner, Player* bot, ResolvedB
         && spellInfo && !spellInfo->IsPositive())
         return BotActionResult::NoAction;
     if (Creature const* creature = target ? target->ToCreature() : nullptr;
-        creature && BotRaidAreaAuthority::IsProtectedEncounterEntry(ownerGuid, creature->GetEntry()))
+        creature && BotRaidAreaAuthority::IsProtectedEncounterTarget(
+            ownerGuid, creature->GetEntry(), creature->GetSpawnId(),
+            creature->GetGUID().GetRawValue()))
         return BotActionResult::NoAction;
     if (BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid)
         && SpellHasHostileMultiTargetSemantics(spellInfo))
@@ -225,7 +227,9 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
 
     Unit* target = action.TargetGuid.IsEmpty() ? nullptr : ObjectAccessor::GetUnit(*bot, action.TargetGuid);
     if (Creature const* creature = target ? target->ToCreature() : nullptr;
-        creature && BotRaidAreaAuthority::IsProtectedEncounterEntry(ownerGuid, creature->GetEntry()))
+        creature && BotRaidAreaAuthority::IsProtectedEncounterTarget(
+            ownerGuid, creature->GetEntry(), creature->GetSpawnId(),
+            creature->GetGUID().GetRawValue()))
         return BotActionResult::NoAction;
     if (action.Type == "pull" || action.Type == "move_to_range")
     {

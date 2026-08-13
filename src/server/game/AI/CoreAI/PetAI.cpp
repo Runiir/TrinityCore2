@@ -62,8 +62,9 @@ bool ProtectedEncounterTarget(Unit const* owner, Unit const* target)
 {
     Creature const* creature = target ? target->ToCreature() : nullptr;
     return owner && creature
-        && BotRaidAreaAuthority::IsProtectedEncounterEntry(
-            owner->GetGUID().GetRawValue(), creature->GetEntry());
+        && BotRaidAreaAuthority::IsProtectedEncounterTarget(
+            owner->GetGUID().GetRawValue(), creature->GetEntry(),
+            creature->GetSpawnId(), creature->GetGUID().GetRawValue());
 }
 }
 
@@ -376,7 +377,9 @@ void PetAI::AttackStart(Unit* target)
         if (BotRaidAreaAuthority::IsAllOffenseSuppressed(ownerGuid))
             return;
         if (Creature const* creature = target->ToCreature();
-            creature && BotRaidAreaAuthority::IsProtectedEncounterEntry(ownerGuid, creature->GetEntry()))
+            creature && BotRaidAreaAuthority::IsProtectedEncounterTarget(
+                ownerGuid, creature->GetEntry(), creature->GetSpawnId(),
+                creature->GetGUID().GetRawValue()))
             return;
     }
 
