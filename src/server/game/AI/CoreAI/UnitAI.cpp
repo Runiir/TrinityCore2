@@ -121,6 +121,15 @@ void UnitAI::DoMeleeAttackIfReady()
 
     Unit* victim = me->GetVictim();
 
+    // A controlled unit can retain a victim after AttackStart accepted it.
+    // Re-check at the actual melee submission point so route authority cannot
+    // be bypassed by an already-acquired future encounter target.
+    if (RaidControlledOffenseRejected(me, victim))
+    {
+        me->AttackStop();
+        return;
+    }
+
     if (!me->IsWithinMeleeRange(victim))
         return;
 
@@ -142,6 +151,12 @@ bool UnitAI::DoSpellAttackIfReady(uint32 spell)
 {
     if (me->HasUnitState(UNIT_STATE_CASTING) || !me->isAttackReady())
         return true;
+
+    if (RaidControlledOffenseRejected(me, me->GetVictim()))
+    {
+        me->AttackStop();
+        return true;
+    }
 
     if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell))
     {

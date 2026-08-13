@@ -19,6 +19,7 @@
 #include "AbstractPursuer.h"
 #include "Archaeology.h"
 #include "Battlefield.h"
+#include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "BattlefieldMgr.h"
 #include "Battleground.h"
@@ -119,6 +120,25 @@ float playerBaseMoveSpeed[MAX_MOVE_TYPE] =
     4.5f,                  // MOVE_FLIGHT_BACK
     3.14f                  // MOVE_PITCH_RATE
 };
+
+namespace
+{
+bool RaidControlledUnitOffenseRejected(Unit const* attacker, Unit const* target)
+{
+    Player* owner = attacker ? attacker->GetCharmerOrOwnerPlayerOrPlayerItself() : nullptr;
+    if (!owner || owner == attacker)
+        return false;
+
+    uint64 const ownerGuid = owner->GetGUID().GetRawValue();
+    if (BotRaidAreaAuthority::IsAllOffenseSuppressed(ownerGuid))
+        return true;
+
+    Creature const* creature = target ? target->ToCreature() : nullptr;
+    return creature && BotRaidAreaAuthority::IsProtectedEncounterTarget(
+        ownerGuid, creature->GetEntry(), creature->GetSpawnId(),
+        creature->GetGUID().GetRawValue());
+}
+}
 
 DamageInfo::DamageInfo(Unit* attacker, Unit* victim, uint32 damage, SpellInfo const* spellInfo, SpellSchoolMask schoolMask, DamageEffectType damageType, WeaponAttackType attackType)
     : m_attacker(attacker), m_victim(victim), m_damage(damage), m_spellInfo(spellInfo), m_schoolMask(schoolMask), m_damageType(damageType), m_attackType(attackType),
@@ -1967,6 +1987,9 @@ void Unit::AttackerStateUpdate(Unit* victim, WeaponAttackType attType, bool extr
     if (HasUnitState(UNIT_STATE_CANNOT_AUTOATTACK) || HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED))
         return;
 
+    if (RaidControlledUnitOffenseRejected(this, victim))
+        return;
+
     if (HasUnitState(UNIT_STATE_CASTING))
     {
         Spell* channeledSpell = GetCurrentSpell(CURRENT_CHANNELED_SPELL);
@@ -1993,6 +2016,9 @@ void Unit::AttackerStateUpdate(Unit* victim, WeaponAttackType attType, bool extr
     {
         // attack can be redirected to another target
         victim = GetMeleeHitRedirectTarget(victim);
+
+        if (RaidControlledUnitOffenseRejected(this, victim))
+            return;
 
         AuraEffectList const& meleeAttackOverrides = GetAuraEffectsByType(SPELL_AURA_OVERRIDE_AUTOATTACK_WITH_MELEE_SPELL);
         AuraEffect const* meleeAttackAuraEffect = nullptr;
@@ -2707,6 +2733,16 @@ void Unit::_UpdateSpells(uint32 time)
 void Unit::_UpdateAutoRepeatSpell()
 {
     SpellInfo const* autoRepeatSpellInfo = m_currentSpells[CURRENT_AUTOREPEAT_SPELL]->m_spellInfo;
+
+    // Autorepeat retains its original target across updates. Re-check the
+    // live authority immediately before CheckCast/prepare so a controlled
+    // ranged action cannot land after the next encounter becomes protected.
+    if (RaidControlledUnitOffenseRejected(this,
+            m_currentSpells[CURRENT_AUTOREPEAT_SPELL]->m_targets.GetUnitTarget()))
+    {
+        InterruptSpell(CURRENT_AUTOREPEAT_SPELL, true, true);
+        return;
+    }
 
     // check "realtime" interrupts
     // don't cancel spells which are affected by a SPELL_AURA_CAST_WHILE_WALKING effect
@@ -9597,6 +9633,12 @@ void Unit::RemoveFromWorld()
 {
     // cleanup
     ASSERT(GetGUID());
+
+    // Raid offensive authority is transient per player identity. Clearing it
+    // at the common player teardown path prevents a despawn/restart from
+    // inheriting a stale protected-target or full-offense hold.
+    if (IsPlayer())
+        BotRaidAreaAuthority::Clear(GetGUID().GetRawValue());
 
     if (IsInWorld())
     {

@@ -66,6 +66,12 @@ bool ProtectedEncounterTarget(Unit const* owner, Unit const* target)
             owner->GetGUID().GetRawValue(), creature->GetEntry(),
             creature->GetSpawnId(), creature->GetGUID().GetRawValue());
 }
+
+bool ControlledOffenseSuppressed(Unit const* owner)
+{
+    return owner
+        && BotRaidAreaAuthority::IsAllOffenseSuppressed(owner->GetGUID().GetRawValue());
+}
 }
 
 int32 PetAI::Permissible(Creature const* creature)
@@ -98,7 +104,13 @@ bool PetAI::_needToStop()
         if (owner->GetExactDist(me) >= (owner->GetVisibilityRange()-10.0f))
             return true;
 
-    return !me->IsValidAttackTarget(me->GetVictim());
+    if (!me->IsValidAttackTarget(me->GetVictim()))
+        return true;
+
+    // AttackStart is not the only way a pet can deal melee damage. The
+    // victim may already be acquired when the route authority protects the
+    // immediate-next encounter, so re-check it at the sustained attack loop.
+    return ProtectedEncounterTarget(me->GetCharmerOrOwner(), me->GetVictim());
 }
 
 void PetAI::_stopAttack()
@@ -125,11 +137,10 @@ void PetAI::UpdateAI(uint32 diff)
 
     Unit* owner = me->GetCharmerOrOwner();
 
-    if (owner && BotRaidAreaAuthority::IsAllOffenseSuppressed(owner->GetGUID().GetRawValue()))
+    bool const offenseSuppressed = ControlledOffenseSuppressed(owner);
+    if (offenseSuppressed && me->GetVictim())
     {
-        me->SetReactState(REACT_PASSIVE);
         _stopAttack();
-        return;
     }
 
     if (m_updateAlliesTimer <= diff)
@@ -138,33 +149,32 @@ void PetAI::UpdateAI(uint32 diff)
     else
         m_updateAlliesTimer -= diff;
 
-    if (me->GetVictim() && me->EnsureVictim()->IsAlive())
+    if (!offenseSuppressed && me->GetVictim() && me->EnsureVictim()->IsAlive())
     {
-        // is only necessary to stop casting, the pet must not exit combat
-        if (!me->GetCurrentSpell(CURRENT_CHANNELED_SPELL) && // ignore channeled spells (Pin, Seduction)
-            me->EnsureVictim()->HasBreakableByDamageCrowdControlAura(me))
-        {
-            me->InterruptNonMeleeSpells(false);
-            return;
-        }
-
         if (_needToStop())
         {
             TC_LOG_DEBUG("misc", "Pet AI stopped attacking [guid=%u]", me->GetGUID().GetCounter());
             _stopAttack();
-            return;
         }
-
-        // Check before attacking to prevent pets from leaving stay position
-        if (me->GetCharmInfo()->HasCommandState(COMMAND_STAY))
+        // is only necessary to stop casting, the pet must not exit combat
+        else if (!me->GetCurrentSpell(CURRENT_CHANNELED_SPELL) && // ignore channeled spells (Pin, Seduction)
+            me->EnsureVictim()->HasBreakableByDamageCrowdControlAura(me))
         {
-            if (me->GetCharmInfo()->IsCommandAttack() || (me->GetCharmInfo()->IsAtStay() && me->IsWithinMeleeRange(me->GetVictim())))
-                DoMeleeAttackIfReady();
+            me->InterruptNonMeleeSpells(false);
         }
         else
-            DoMeleeAttackIfReady();
+        {
+            // Check before attacking to prevent pets from leaving stay position
+            if (me->GetCharmInfo()->HasCommandState(COMMAND_STAY))
+            {
+                if (me->GetCharmInfo()->IsCommandAttack() || (me->GetCharmInfo()->IsAtStay() && me->IsWithinMeleeRange(me->GetVictim())))
+                    DoMeleeAttackIfReady();
+            }
+            else
+                DoMeleeAttackIfReady();
+        }
     }
-    else
+    else if (!offenseSuppressed)
     {
         if (me->HasReactState(REACT_AGGRESSIVE) || me->GetCharmInfo()->IsAtStay())
         {
@@ -202,6 +212,12 @@ void PetAI::UpdateAI(uint32 diff)
             if (owner && (BotRaidAreaAuthority::IsSuppressed(owner->GetGUID().GetRawValue())
                     || BotRaidAreaAuthority::HasProtectedEncounterEntries(owner->GetGUID().GetRawValue()))
                 && SpellHasHostileMultiTargetSemantics(spellInfo))
+                continue;
+
+            // Full route holds reject every hostile pet spell, but preserve
+            // positive support/autocast so the authority cannot silently
+            // disable healing or other beneficial assistance.
+            if (owner && offenseSuppressed && !spellInfo->IsPositive())
                 continue;
 
             if (me->GetSpellHistory()->HasGlobalCooldown(spellInfo))
