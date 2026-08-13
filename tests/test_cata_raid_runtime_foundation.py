@@ -573,7 +573,7 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "drudge_lane_native_ownership" in lane
     assert "chargeAwaitingLanding" in lane
     assert "!chargeObservation->Landed" in lane
-    health_sync_call = lane.rindex("recordHealthSync();")
+    health_sync_call = lane.rindex("recordHealthSyncHold();")
     assert lane.index("if (!laneOwnershipSafe)") < health_sync_call
     assert lane.index("if (sources[0]->IsAlive() && sources[1]->IsAlive() && !exactRosterReSeparated())") < health_sync_call
     assert '"drudge_lane_wait_lane_ownership"' in lane

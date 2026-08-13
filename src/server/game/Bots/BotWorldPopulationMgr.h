@@ -523,6 +523,25 @@ private:
         std::string Reason;
     };
 
+    struct ValidationRouteDrudgeMemberGeometry
+    {
+        uint32 Guid = 0;
+        uint32 RosterSlot = 0;
+        float X = 0.0f;
+        float Y = 0.0f;
+        float Projection = 0.0f;
+        float AnchorX = 0.0f;
+        float AnchorY = 0.0f;
+        float GroupAnchorBaseX = 0.0f;
+        float GroupAnchorBaseY = 0.0f;
+        float AnchorDistance = 0.0f;
+        float NearestSameLaneDistance = 0.0f;
+        uint32 AnchorCandidateIndex = 0;
+        bool LaneSideValid = false;
+        bool AnchorSelected = false;
+        bool SameLaneSpacingValid = false;
+    };
+
     struct ValidationRouteDrudgeChargeObservation
     {
         uint64 Sequence = 0;
@@ -539,6 +558,46 @@ private:
         bool IntervalValid = false;
         bool Landed = false;
         bool ReseparationRecorded = false;
+        float Home0X = 0.0f;
+        float Home0Y = 0.0f;
+        float Home1X = 0.0f;
+        float Home1Y = 0.0f;
+        float MidpointX = 0.0f;
+        float MidpointY = 0.0f;
+        float AxisX = 0.0f;
+        float AxisY = 0.0f;
+        float LaneSeparation = 0.0f;
+        float MinimumDistance = 0.0f;
+        float NavigationMargin = 0.0f;
+        float GroupAnchorBaseX = 0.0f;
+        float GroupAnchorBaseY = 0.0f;
+        float Source0X = 0.0f;
+        float Source0Y = 0.0f;
+        float Source0Projection = 0.0f;
+        bool Source0LaneSideValid = false;
+        float Source1X = 0.0f;
+        float Source1Y = 0.0f;
+        float Source1Projection = 0.0f;
+        bool Source1LaneSideValid = false;
+        uint32 Source0VictimGuid = 0;
+        uint32 Source1VictimGuid = 0;
+        float SourceSeparation = 0.0f;
+        float MinimumSourceSeparation = 0.0f;
+        float LaneTankX = 0.0f;
+        float LaneTankY = 0.0f;
+        uint32 LaneTankGuid = 0;
+        uint32 LaneTankSlot = 0;
+        float LaneTankProjection = 0.0f;
+        float LaneTankSourceDistance = 0.0f;
+        float OtherTankX = 0.0f;
+        float OtherTankY = 0.0f;
+        uint32 OtherTankGuid = 0;
+        uint32 OtherTankSlot = 0;
+        float OtherTankProjection = 0.0f;
+        float OtherTankSourceDistance = 0.0f;
+        float MinimumMemberSpacing = 0.0f;
+        float ArrivalTolerance = 0.0f;
+        std::vector<ValidationRouteDrudgeMemberGeometry> MemberGeometry;
         std::set<uint32> ReseparatedRosterGuids;
     };
 
@@ -1840,6 +1899,7 @@ private:
         std::set<uint32> ValidationRouteDrudgeOwnershipRosterGuids;
         std::set<uint32> ValidationRouteDrudgeTauntRosterGuids;
         std::set<uint32> ValidationRouteDrudgeHealthSyncRosterGuids;
+        std::set<uint32> ValidationRouteDrudgeHealthSyncEvaluatedRosterGuids;
         uint64 ValidationRouteDrudgeHealthSyncEvidenceAttemptId = 0;
         uint32 ValidationRouteDrudgeHealthSyncEvidenceWipeGeneration = 0;
         uint64 ValidationRouteDrudgeHealthSyncEvidenceRouteGeneration = 0;

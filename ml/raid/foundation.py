@@ -31,6 +31,7 @@ class DrudgeChargeContractEvent:
     landed: bool
     reseparated_roster_guids: tuple[int, ...]
     source_in_frozen_lane: bool = True
+    source_victim_guid: int | None = None
 
 
 def evaluate_drudge_lane_contract(
@@ -42,6 +43,7 @@ def evaluate_drudge_lane_contract(
     ownership_guids: Iterable[int],
     taunt_guids: Iterable[int],
     health_sync_guids: Iterable[int],
+    health_sync_evaluated_guids: Iterable[int],
     profile_action_guids: Iterable[int],
     role_by_guid: dict[int, str] | None = None,
 ) -> tuple[bool, tuple[str, ...]]:
@@ -50,8 +52,9 @@ def evaluate_drudge_lane_contract(
     This is intentionally a small, side-effect-free model of the live gate:
     delivered native Rushes must be followed by exact-roster reseparation,
     exact lane tanks must own their native sources, any recorded taunts must
-    be actual tank casts, lower-health synchronization must include both
-    tanks, and only the seven frozen tank/DPS slots may execute the trained
+    be actual tank casts, both tanks must evaluate the synchronization policy
+    while only a lower-health lane needs to hold, and only the seven frozen
+    tank/DPS slots may execute the trained
     single-target profile.  A role map, when supplied, prevents a tank from
     being accepted as a native Rush target; a tank target means the split
     formation did not make the native farthest-player selector safe.
@@ -82,6 +85,9 @@ def evaluate_drudge_lane_contract(
             reasons.add("exact_roster_reseparation_missing")
         if not event.source_in_frozen_lane:
             reasons.add("source_crossed_frozen_lane")
+        expected_victim = 1 if event.source_spawn_id == 250140 else 2
+        if event.source_victim_guid != expected_victim:
+            reasons.add("source_native_victim_mismatch")
         if role_by_guid and role_by_guid.get(event.target_guid) == "tank":
             reasons.add("native_rush_target_tank")
     for source, count in source_counts.items():
@@ -93,8 +99,11 @@ def evaluate_drudge_lane_contract(
         reasons.add("exact_tank_ownership_missing")
     if not set(taunt_guids).issubset(tanks):
         reasons.add("taunt_evidence_identity_mismatch")
-    if set(health_sync_guids) != tanks:
-        reasons.add("tank_health_sync_hold_missing")
+    health_sync = set(health_sync_guids)
+    if not health_sync.issubset(tanks):
+        reasons.add("tank_health_sync_hold_identity_mismatch")
+    if set(health_sync_evaluated_guids) != tanks:
+        reasons.add("tank_health_sync_evaluation_missing")
     if set(profile_action_guids) != offensive:
         reasons.add("trained_single_target_profile_missing")
     return not reasons, tuple(sorted(reasons))

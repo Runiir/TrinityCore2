@@ -224,6 +224,53 @@ def accepted_drudge_status() -> dict:
     roster_guids = [row["guid"] for row in runtime["roster"]]
     tank_guids = [row["guid"] for row in runtime["roster"] if row["role"] == "tank"]
     offensive_guids = [row["guid"] for row in runtime["roster"] if row["role"] in {"tank", "dps"}]
+    lane_a_slots = {1, 3, 4, 6, 7}
+    lane_b_slots = {2, 5, 8, 9, 10}
+    member_geometry = []
+    for row in runtime["roster"]:
+        slot = row["slot"] + 1
+        lane_a = slot in lane_a_slots
+        if row["role"] == "tank":
+            x, y = (-5.0, 0.0) if lane_a else (15.0, 0.0)
+            member_geometry.append({
+                "guid": row["guid"], "roster_slot": slot, "x": x, "y": y,
+                "projection": x - 5.0, "anchor_x": 0.0, "anchor_y": 0.0,
+                "group_anchor_base_x": 0.0, "group_anchor_base_y": 0.0,
+                "anchor_distance": 0.0, "nearest_same_lane_distance": 0.0,
+                "anchor_candidate_index": 0, "lane_side_valid": True,
+                "anchor_selected": False, "same_lane_spacing_valid": False,
+            })
+            continue
+        lane_slots = sorted(lane_a_slots if lane_a else lane_b_slots)
+        ordinal = lane_slots.index(slot)
+        x = -20.5 if lane_a else 30.5
+        y = (ordinal - 1.5) * 3.0
+        same_lane_distance = 3.0
+        member_geometry.append({
+            "guid": row["guid"], "roster_slot": slot, "x": x, "y": y,
+            "projection": x - 5.0, "anchor_x": x, "anchor_y": y,
+            "group_anchor_base_x": x, "group_anchor_base_y": 0.0,
+            "anchor_distance": 0.0, "nearest_same_lane_distance": same_lane_distance,
+            "anchor_candidate_index": 0, "lane_side_valid": True,
+            "anchor_selected": True, "same_lane_spacing_valid": True,
+        })
+    geometry = {
+        "home0_x": 0.0, "home0_y": 0.0, "home1_x": 10.0, "home1_y": 0.0,
+        "midpoint_x": 5.0, "midpoint_y": 0.0, "axis_x": 1.0, "axis_y": 0.0,
+        "lane_separation": 17.0, "minimum_distance": 15.0,
+        "navigation_margin": 2.0,
+        "source0_x": -5.0, "source0_y": 0.0, "source0_projection": -10.0,
+        "source0_lane_side_valid": True, "source1_x": 15.0, "source1_y": 0.0,
+        "source1_projection": 10.0, "source1_lane_side_valid": True,
+        "source0_victim_guid": tank_guids[0], "source1_victim_guid": tank_guids[1],
+        "source_separation": 20.0, "minimum_source_separation": 15.0,
+        "lane_tank_x": -5.0, "lane_tank_y": 0.0, "lane_tank_guid": tank_guids[0],
+        "lane_tank_slot": 1, "lane_tank_projection": -10.0, "lane_tank_source_distance": 0.0,
+        "other_tank_x": 15.0, "other_tank_y": 0.0, "other_tank_guid": tank_guids[1],
+        "other_tank_slot": 2, "other_tank_projection": 10.0, "other_tank_source_distance": 0.0,
+        "minimum_member_spacing": 3.0, "arrival_tolerance": 2.0,
+        "members": member_geometry,
+    }
     observations = []
     sequence = 0
     for source, target in ((250140, roster_guids[4]), (250141, roster_guids[2])):
@@ -244,6 +291,7 @@ def accepted_drudge_status() -> dict:
                 "interval_valid": interval == 20000,
                 "landed": True,
                 "reseparated_roster_guids": roster_guids,
+                "geometry": geometry,
             })
     runtime["drudge_charge"] = {
         "generation": 4,
@@ -262,6 +310,7 @@ def accepted_drudge_status() -> dict:
         "ownership_roster_guids": tank_guids,
         "taunt_roster_guids": tank_guids,
         "health_sync_roster_guids": tank_guids,
+        "health_sync_evaluated_roster_guids": tank_guids,
         "health_sync_evidence_attempt_id": runtime["attempt_id"],
         "health_sync_evidence_wipe_generation": 0,
         "health_sync_evidence_route_generation": 3,
@@ -310,10 +359,10 @@ def test_drudge_contract_rejects_prepared_only_stale_and_incomplete_tactics():
     assert "drudge_observation_source_guid_invalid" in reasons
 
     incomplete = accepted_drudge_status()
-    incomplete["raid_runtime"]["drudge_charge"]["health_sync_roster_guids"] = []
+    incomplete["raid_runtime"]["drudge_charge"]["health_sync_evaluated_roster_guids"] = []
     accepted, reasons = accepted_drudge_contract([incomplete])
     assert accepted is False
-    assert "drudge_exact_tank_health_sync_hold_missing" in reasons
+    assert "drudge_exact_tank_health_sync_evaluation_missing" in reasons
 
     missing_ownership = accepted_drudge_status()
     missing_ownership["raid_runtime"]["drudge_charge"]["ownership_roster_guids"] = []
@@ -340,8 +389,16 @@ def test_drudge_contract_rejects_prepared_only_stale_and_incomplete_tactics():
         partial_sync["raid_runtime"]["roster"][0]["guid"]
     ]
     accepted, reasons = accepted_drudge_contract([partial_sync])
+    assert accepted is True
+    assert reasons == []
+
+    foreign_sync = accepted_drudge_status()
+    foreign_sync["raid_runtime"]["drudge_charge"]["health_sync_roster_guids"] = [
+        foreign_sync["raid_runtime"]["roster"][2]["guid"]
+    ]
+    accepted, reasons = accepted_drudge_contract([foreign_sync])
     assert accepted is False
-    assert "drudge_exact_tank_health_sync_hold_missing" in reasons
+    assert "drudge_tank_health_sync_hold_identity_mismatch" in reasons
 
     out_of_scope_sync = accepted_drudge_status()
     evidence = out_of_scope_sync["raid_runtime"]["drudge_charge"]
@@ -364,6 +421,33 @@ def test_drudge_contract_rejects_prepared_only_stale_and_incomplete_tactics():
     accepted, reasons = accepted_drudge_contract([same_lane, clean])
     assert accepted is False
     assert "drudge_native_rush_lane_target_invalid" in reasons
+
+
+def test_drudge_geometry_rejects_crossed_sources_and_unsafe_member_spacing():
+    crossed = accepted_drudge_status()
+    geometry = crossed["raid_runtime"]["drudge_charge"]["observations"][0]["geometry"]
+    geometry["source0_x"] = 15.0
+    accepted, reasons = accepted_drudge_contract([crossed])
+    assert accepted is False
+    assert "drudge_geometry_source0_lane_side_unsafe" in reasons
+    assert "drudge_geometry_source_separation_unsafe" in reasons
+
+    too_close = accepted_drudge_status()
+    geometry = too_close["raid_runtime"]["drudge_charge"]["observations"][0]["geometry"]
+    member = next(row for row in geometry["members"] if row["roster_slot"] == 3)
+    member["x"] = -5.0
+    accepted, reasons = accepted_drudge_contract([too_close])
+    assert accepted is False
+    assert "drudge_geometry_member_source_distance_unsafe" in reasons
+
+
+def test_drudge_geometry_rejects_forged_native_source_victim():
+    status = accepted_drudge_status()
+    geometry = status["raid_runtime"]["drudge_charge"]["observations"][0]["geometry"]
+    geometry["source0_victim_guid"] = geometry["source1_victim_guid"]
+    accepted, reasons = accepted_drudge_contract([status])
+    assert accepted is False
+    assert "drudge_geometry_source0_victim_invalid" in reasons
 
 
 def test_acceptance_reconstructs_all_identity_facts():

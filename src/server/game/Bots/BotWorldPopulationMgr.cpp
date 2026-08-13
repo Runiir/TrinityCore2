@@ -3940,6 +3940,7 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
         Party().ValidationRouteDrudgeOwnershipRosterGuids.clear();
         Party().ValidationRouteDrudgeTauntRosterGuids.clear();
         Party().ValidationRouteDrudgeHealthSyncRosterGuids.clear();
+        Party().ValidationRouteDrudgeHealthSyncEvaluatedRosterGuids.clear();
         Party().ValidationRouteDrudgeHealthSyncEvidenceAttemptId = 0;
         Party().ValidationRouteDrudgeHealthSyncEvidenceWipeGeneration = 0;
         Party().ValidationRouteDrudgeHealthSyncEvidenceRouteGeneration = 0;
@@ -18193,18 +18194,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 Cohort().Config.ValidationRouteSplitLaneARosterSlots.begin(),
                 Cohort().Config.ValidationRouteSplitLaneARosterSlots.end(), slot)
                 != Cohort().Config.ValidationRouteSplitLaneARosterSlots.end()) ? -1.0f : 1.0f;
-            float const perpendicularX = -axisY;
-            float const perpendicularY = axisX;
             return {
                 { primaryX, primaryY },
                 { primaryX + axisX * memberLaneSign * 4.0f,
                     primaryY + axisY * memberLaneSign * 4.0f },
                 { primaryX + axisX * memberLaneSign * 8.0f,
-                    primaryY + axisY * memberLaneSign * 8.0f },
-                { primaryX - perpendicularX * 6.0f,
-                    primaryY - perpendicularY * 6.0f },
-                { primaryX + perpendicularX * 6.0f,
-                    primaryY + perpendicularY * 6.0f }
+                    primaryY + axisY * memberLaneSign * 8.0f }
             };
         };
 
@@ -18271,6 +18266,19 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         };
 
+        auto sourceOnFrozenLane = [&](Creature const* source, uint32 sourceIndex,
+            float* projectionOut = nullptr) -> bool
+        {
+            if (!source)
+                return false;
+            float const sourceLaneSign = sourceIndex == 0 ? -1.0f : 1.0f;
+            float const projection = (source->GetPositionX() - midpointX) * axisX
+                + (source->GetPositionY() - midpointY) * axisY;
+            if (projectionOut)
+                *projectionOut = projection;
+            return sourceLaneSign * projection >= laneSeparation * 0.25f;
+        };
+
         auto exactRosterReSeparated = [&]() -> bool
         {
             if (!laneTank || !otherTank)
@@ -18281,15 +18289,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (sources[0]->GetExactDist2d(sources[1])
                 < Cohort().Config.ValidationRouteSplitMinimumSeparationYards)
                 return false;
-            auto sourceOnFrozenLane = [&](Creature const* source, uint32 sourceIndex) -> bool
-            {
-                if (!source)
-                    return false;
-                float const sourceLaneSign = sourceIndex == 0 ? -1.0f : 1.0f;
-                float const projection = (source->GetPositionX() - midpointX) * axisX
-                    + (source->GetPositionY() - midpointY) * axisY;
-                return sourceLaneSign * projection >= laneSeparation * 0.25f;
-            };
             if (!sourceOnFrozenLane(sources[0], 0)
                 || !sourceOnFrozenLane(sources[1], 1))
                 return false;
@@ -18351,6 +18350,143 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     exactGuids.insert(cohortState.Guid.GetCounter());
             observation.ReseparatedRosterGuids = exactGuids;
             observation.ReseparationRecorded = true;
+            observation.Home0X = homeA.GetPositionX();
+            observation.Home0Y = homeA.GetPositionY();
+            observation.Home1X = homeB.GetPositionX();
+            observation.Home1Y = homeB.GetPositionY();
+            observation.MidpointX = midpointX;
+            observation.MidpointY = midpointY;
+            observation.AxisX = axisX;
+            observation.AxisY = axisY;
+            observation.LaneSeparation = laneSeparation;
+            observation.MinimumDistance = Cohort().Config.ValidationRouteMinimumDistanceYards;
+            observation.NavigationMargin = Cohort().Config.ValidationRouteSplitNavigationMarginYards;
+            float const laneSignA = -1.0f;
+            float const tankAnchorAX = midpointX + laneSignA * axisX * laneSeparation * 0.5f;
+            float const tankAnchorAY = midpointY + laneSignA * axisY * laneSeparation * 0.5f;
+            float const groupOffset = observation.MinimumDistance + observation.NavigationMargin;
+            observation.GroupAnchorBaseX = tankAnchorAX + laneSignA * axisX * groupOffset;
+            observation.GroupAnchorBaseY = tankAnchorAY + laneSignA * axisY * groupOffset;
+            observation.Source0X = sources[0]->GetPositionX();
+            observation.Source0Y = sources[0]->GetPositionY();
+            observation.Source0LaneSideValid = sourceOnFrozenLane(
+                sources[0], 0, &observation.Source0Projection);
+            observation.Source1X = sources[1]->GetPositionX();
+            observation.Source1Y = sources[1]->GetPositionY();
+            observation.Source1LaneSideValid = sourceOnFrozenLane(
+                sources[1], 1, &observation.Source1Projection);
+            observation.Source0VictimGuid = sources[0]->GetVictim()
+                ? sources[0]->GetVictim()->GetGUID().GetCounter() : 0;
+            observation.Source1VictimGuid = sources[1]->GetVictim()
+                ? sources[1]->GetVictim()->GetGUID().GetCounter() : 0;
+            observation.SourceSeparation = sources[0]->GetExactDist2d(sources[1]);
+            observation.MinimumSourceSeparation =
+                Cohort().Config.ValidationRouteSplitMinimumSeparationYards;
+            observation.LaneTankX = laneTank->GetPositionX();
+            observation.LaneTankY = laneTank->GetPositionY();
+            observation.LaneTankGuid = laneTank->GetGUID().GetCounter();
+            observation.LaneTankSlot = laneTankSlot;
+            observation.LaneTankProjection =
+                (laneTank->GetPositionX() - midpointX) * axisX
+                + (laneTank->GetPositionY() - midpointY) * axisY;
+            observation.LaneTankSourceDistance = laneTank->GetExactDist2d(laneSource);
+            observation.OtherTankX = otherTank->GetPositionX();
+            observation.OtherTankY = otherTank->GetPositionY();
+            observation.OtherTankGuid = otherTank->GetGUID().GetCounter();
+            observation.OtherTankSlot = otherTankSlot;
+            observation.OtherTankProjection =
+                (otherTank->GetPositionX() - midpointX) * axisX
+                + (otherTank->GetPositionY() - midpointY) * axisY;
+            observation.OtherTankSourceDistance = otherTank->GetExactDist2d(otherSource);
+            observation.MinimumMemberSpacing = sameLaneMemberMinimum;
+            observation.ArrivalTolerance =
+                Cohort().Config.ValidationRouteSplitArrivalToleranceYards;
+            observation.MemberGeometry.clear();
+            for (WorldBotState const& cohortState : Party().Bots)
+            {
+                Player* member = GetLoadedBot(cohortState);
+                if (!member)
+                    continue;
+                auto memberRoster = Cohort().Raid.RosterByGuid.find(
+                    member->GetGUID().GetCounter());
+                if (memberRoster == Cohort().Raid.RosterByGuid.end())
+                    continue;
+                ValidationRouteDrudgeMemberGeometry geometry;
+                geometry.Guid = member->GetGUID().GetCounter();
+                geometry.RosterSlot = memberRoster->second.SlotIndex + 1;
+                geometry.X = member->GetPositionX();
+                geometry.Y = member->GetPositionY();
+                geometry.Projection = (geometry.X - midpointX) * axisX
+                    + (geometry.Y - midpointY) * axisY;
+                bool const memberLaneA = std::find(
+                    Cohort().Config.ValidationRouteSplitLaneARosterSlots.begin(),
+                    Cohort().Config.ValidationRouteSplitLaneARosterSlots.end(), geometry.RosterSlot)
+                    != Cohort().Config.ValidationRouteSplitLaneARosterSlots.end();
+                float const memberLaneSign = memberLaneA ? -1.0f : 1.0f;
+                geometry.LaneSideValid = memberLaneSign * geometry.Projection
+                    >= laneSeparation * 0.25f;
+                if (memberRoster->second.Role != "tank")
+                {
+                    auto candidates = anchorCandidatesFor(geometry.RosterSlot);
+                    float const tankAnchorX = midpointX + memberLaneSign * axisX * laneSeparation * 0.5f;
+                    float const tankAnchorY = midpointY + memberLaneSign * axisY * laneSeparation * 0.5f;
+                    float const groupOffset = observation.MinimumDistance + observation.NavigationMargin;
+                    geometry.GroupAnchorBaseX = tankAnchorX + memberLaneSign * axisX * groupOffset;
+                    geometry.GroupAnchorBaseY = tankAnchorY + memberLaneSign * axisY * groupOffset;
+                    float nearest = std::numeric_limits<float>::max();
+                    for (size_t candidateIndex = 0; candidateIndex < candidates.size(); ++candidateIndex)
+                    {
+                        float const distance = Distance2d(geometry.X, geometry.Y,
+                            candidates[candidateIndex].first, candidates[candidateIndex].second);
+                        if (!geometry.AnchorSelected
+                            && distance <= observation.ArrivalTolerance)
+                        {
+                            geometry.AnchorCandidateIndex = uint32(candidateIndex);
+                            geometry.AnchorX = candidates[candidateIndex].first;
+                            geometry.AnchorY = candidates[candidateIndex].second;
+                            geometry.AnchorDistance = distance;
+                            geometry.AnchorSelected = true;
+                        }
+                        if (distance < nearest)
+                        {
+                            nearest = distance;
+                            if (!geometry.AnchorSelected)
+                            {
+                                geometry.AnchorCandidateIndex = uint32(candidateIndex);
+                                geometry.AnchorX = candidates[candidateIndex].first;
+                                geometry.AnchorY = candidates[candidateIndex].second;
+                            }
+                        }
+                    }
+                    if (!geometry.AnchorSelected)
+                        geometry.AnchorDistance = nearest;
+                    float nearestSameLane = std::numeric_limits<float>::max();
+                    for (WorldBotState const& otherState : Party().Bots)
+                    {
+                        Player* other = GetLoadedBot(otherState);
+                        if (!other || other == member)
+                            continue;
+                        auto otherRoster = Cohort().Raid.RosterByGuid.find(
+                            other->GetGUID().GetCounter());
+                        if (otherRoster == Cohort().Raid.RosterByGuid.end()
+                            || otherRoster->second.Role == "tank")
+                            continue;
+                        uint32 const otherSlot = otherRoster->second.SlotIndex + 1;
+                        bool const otherLaneA = std::find(
+                            Cohort().Config.ValidationRouteSplitLaneARosterSlots.begin(),
+                            Cohort().Config.ValidationRouteSplitLaneARosterSlots.end(), otherSlot)
+                            != Cohort().Config.ValidationRouteSplitLaneARosterSlots.end();
+                        if (otherLaneA == memberLaneA)
+                            nearestSameLane = std::min(nearestSameLane,
+                                member->GetExactDist2d(other));
+                    }
+                    geometry.NearestSameLaneDistance = nearestSameLane == std::numeric_limits<float>::max()
+                        ? 0.0f : nearestSameLane;
+                    geometry.SameLaneSpacingValid = nearestSameLane == std::numeric_limits<float>::max()
+                        || nearestSameLane >= observation.MinimumMemberSpacing;
+                }
+                observation.MemberGeometry.push_back(geometry);
+            }
             Party().ValidationRouteDrudgeReseparatedRosterGuids.insert(
                 exactGuids.begin(), exactGuids.end());
             for (WorldBotState& cohortState : Party().Bots)
@@ -18361,10 +18497,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         auto chargeObservation = std::find_if(
             Party().ValidationRouteDrudgeChargeObservations.begin(),
             Party().ValidationRouteDrudgeChargeObservations.end(),
-            [&state](ValidationRouteDrudgeChargeObservation const& observation)
+            [this](ValidationRouteDrudgeChargeObservation const& observation)
             {
-                return !observation.ReseparationRecorded && observation.Sequence
-                    > state.LastValidationRouteDrudgeChargeGenerationHandled;
+                // The deque is the authoritative start order.  Do not use a
+                // per-bot cursor here: a later landed Rush must not advance
+                // past an earlier unlanded/undelivered observation for the
+                // rest of the frozen roster.
+                return !observation.ReseparationRecorded
+                    && observation.AttemptId == Cohort().AttemptId
+                    && observation.WipeGeneration == Cohort().Raid.WipeGeneration
+                    && observation.RouteGeneration == Party().ValidationRouteGeneration;
             });
         bool const chargeAwaitingLanding = chargeObservation
             != Party().ValidationRouteDrudgeChargeObservations.end()
@@ -18412,15 +18554,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             || nativeChargeTargetRoleViolation;
 
         float const anchorDistance = bot->GetExactDist(anchorX, anchorY, anchorZ);
-        bool formationRequired = anchorDistance
-            > Cohort().Config.ValidationRouteSplitArrivalToleranceYards;
-        if (!assignedTank)
-        {
-            auto const ownedAnchor = uniqueGroupAnchor(oneBasedSlot);
-            formationRequired = Distance2d(bot->GetPositionX(), bot->GetPositionY(),
-                    ownedAnchor.first, ownedAnchor.second)
-                > Cohort().Config.ValidationRouteSplitArrivalToleranceYards;
-        }
+        // groupPositionSafe includes the selected native-path fallback.  The
+        // formation gate must use that same predicate or a bot that reached a
+        // valid fallback will repeatedly chase the unreachable primary point.
+        bool const formationRequired = assignedTank
+            ? anchorDistance > Cohort().Config.ValidationRouteSplitArrivalToleranceYards
+            : !groupPositionSafe(bot);
         bool const pairTooClose = sources[0]->IsAlive() && sources[1]->IsAlive()
             && sourceSeparation < Cohort().Config.ValidationRouteSplitMinimumSeparationYards;
         bool const nativeChargeTargetViolation = nativeChargePending
@@ -18433,9 +18572,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             // Native threat ownership is already the exact frozen lane
             // assignment.  Keep it separate from the actual successful
             // taunt-cast evidence below.
-            Party().ValidationRouteDrudgeOwnershipRosterGuids.insert(
-                bot->GetGUID().GetCounter());
-            record(laneSource, "drudge_lane_native_ownership", sourceSeparation);
+            auto const ownershipInsert =
+                Party().ValidationRouteDrudgeOwnershipRosterGuids.insert(
+                    bot->GetGUID().GetCounter());
+            if (ownershipInsert.second)
+                record(laneSource, "drudge_lane_native_ownership", sourceSeparation);
         }
         if (assignedTank && laneSource->GetVictim() != bot)
         {
@@ -18600,7 +18741,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
-        auto recordHealthSync = [&]()
+        auto resetHealthSyncEvidenceScope = [&]()
         {
             if (Party().ValidationRouteDrudgeHealthSyncEvidenceAttemptId != Cohort().AttemptId
                 || Party().ValidationRouteDrudgeHealthSyncEvidenceWipeGeneration != Cohort().Raid.WipeGeneration
@@ -18611,6 +18752,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 Party().ValidationRouteDrudgeHealthSyncEvidenceWipeGeneration = Cohort().Raid.WipeGeneration;
                 Party().ValidationRouteDrudgeHealthSyncEvidenceRouteGeneration = Party().ValidationRouteGeneration;
             }
+        };
+        auto recordHealthSyncEvaluation = [&]()
+        {
+            resetHealthSyncEvidenceScope();
+            Party().ValidationRouteDrudgeHealthSyncEvaluatedRosterGuids.insert(
+                bot->GetGUID().GetCounter());
+        };
+        auto recordHealthSyncHold = [&]()
+        {
+            recordHealthSyncEvaluation();
             Party().ValidationRouteDrudgeHealthSyncRosterGuids.insert(
                 bot->GetGUID().GetCounter());
         };
@@ -18627,8 +18778,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
         }
         else if (sources[0]->IsAlive() && sources[1]->IsAlive()
-            && (UnitHealthPct(laneSource) < UnitHealthPct(otherSource)
-                || UnitHealthPct(otherSource) < UnitHealthPct(laneSource))
+            && UnitHealthPct(laneSource) < UnitHealthPct(otherSource)
             && !assignedTank)
         {
             // Do not record health-sync evidence until the ownership and
@@ -18664,13 +18814,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
+        if (sources[0]->IsAlive() && sources[1]->IsAlive() && assignedTank)
+            recordHealthSyncEvaluation();
+
         if (sources[0]->IsAlive() && sources[1]->IsAlive()
-            && (UnitHealthPct(laneSource) < UnitHealthPct(otherSource)
-                || UnitHealthPct(otherSource) < UnitHealthPct(laneSource)))
+            && UnitHealthPct(laneSource) < UnitHealthPct(otherSource))
         {
             holdOffense();
             if (assignedTank)
-                recordHealthSync();
+                recordHealthSyncHold();
             record(laneSource, assignedTank
                 ? "drudge_tank_health_sync_hold" : "drudge_kill_sync_hold_lower_health_lane",
                 sourceSeparation);
@@ -30022,6 +30174,16 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
          << ",\"health_sync_evidence_attempt_id\":" << Party().ValidationRouteDrudgeHealthSyncEvidenceAttemptId
          << ",\"health_sync_evidence_wipe_generation\":" << Party().ValidationRouteDrudgeHealthSyncEvidenceWipeGeneration
          << ",\"health_sync_evidence_route_generation\":" << Party().ValidationRouteDrudgeHealthSyncEvidenceRouteGeneration
+         << ",\"health_sync_evaluated_roster_guids\":[";
+    bool firstHealthSyncEvaluatedGuid = true;
+    for (uint32 guid : Party().ValidationRouteDrudgeHealthSyncEvaluatedRosterGuids)
+    {
+        if (!firstHealthSyncEvaluatedGuid)
+            json << ',';
+        firstHealthSyncEvaluatedGuid = false;
+        json << guid;
+    }
+    json << "]"
          << ",\"profile_action_roster_guids\":[";
     bool firstProfileActionGuid = true;
     for (uint32 guid : Party().ValidationRouteDrudgeProfileActionRosterGuids)
@@ -30054,6 +30216,68 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
              << ",\"interval_valid\":" << (observation.IntervalValid ? "true" : "false")
              << ",\"landed\":" << (observation.Landed ? "true" : "false")
              << ",\"reseparation_recorded\":" << (observation.ReseparationRecorded ? "true" : "false")
+             << ",\"geometry\":{\"home0_x\":" << observation.Home0X
+             << ",\"home0_y\":" << observation.Home0Y
+             << ",\"home1_x\":" << observation.Home1X
+             << ",\"home1_y\":" << observation.Home1Y
+             << ",\"midpoint_x\":" << observation.MidpointX
+             << ",\"midpoint_y\":" << observation.MidpointY
+             << ",\"axis_x\":" << observation.AxisX
+             << ",\"axis_y\":" << observation.AxisY
+             << ",\"lane_separation\":" << observation.LaneSeparation
+             << ",\"minimum_distance\":" << observation.MinimumDistance
+             << ",\"navigation_margin\":" << observation.NavigationMargin
+             << ",\"source0_x\":" << observation.Source0X
+             << ",\"source0_y\":" << observation.Source0Y
+             << ",\"source0_projection\":" << observation.Source0Projection
+             << ",\"source0_lane_side_valid\":" << (observation.Source0LaneSideValid ? "true" : "false")
+             << ",\"source1_x\":" << observation.Source1X
+             << ",\"source1_y\":" << observation.Source1Y
+             << ",\"source1_projection\":" << observation.Source1Projection
+             << ",\"source1_lane_side_valid\":" << (observation.Source1LaneSideValid ? "true" : "false")
+             << ",\"source0_victim_guid\":" << observation.Source0VictimGuid
+             << ",\"source1_victim_guid\":" << observation.Source1VictimGuid
+             << ",\"source_separation\":" << observation.SourceSeparation
+             << ",\"minimum_source_separation\":" << observation.MinimumSourceSeparation
+             << ",\"lane_tank_x\":" << observation.LaneTankX
+             << ",\"lane_tank_y\":" << observation.LaneTankY
+             << ",\"lane_tank_guid\":" << observation.LaneTankGuid
+             << ",\"lane_tank_slot\":" << observation.LaneTankSlot
+             << ",\"lane_tank_projection\":" << observation.LaneTankProjection
+             << ",\"lane_tank_source_distance\":" << observation.LaneTankSourceDistance
+             << ",\"other_tank_x\":" << observation.OtherTankX
+             << ",\"other_tank_y\":" << observation.OtherTankY
+             << ",\"other_tank_guid\":" << observation.OtherTankGuid
+             << ",\"other_tank_slot\":" << observation.OtherTankSlot
+             << ",\"other_tank_projection\":" << observation.OtherTankProjection
+             << ",\"other_tank_source_distance\":" << observation.OtherTankSourceDistance
+             << ",\"minimum_member_spacing\":" << observation.MinimumMemberSpacing
+             << ",\"arrival_tolerance\":" << observation.ArrivalTolerance
+             << ",\"members\":[";
+        bool firstMemberGeometry = true;
+        for (ValidationRouteDrudgeMemberGeometry const& geometry : observation.MemberGeometry)
+        {
+            if (!firstMemberGeometry)
+                json << ',';
+            firstMemberGeometry = false;
+            json << "{\"guid\":" << geometry.Guid
+                 << ",\"roster_slot\":" << geometry.RosterSlot
+                 << ",\"x\":" << geometry.X
+                 << ",\"y\":" << geometry.Y
+                 << ",\"projection\":" << geometry.Projection
+                 << ",\"group_anchor_base_x\":" << geometry.GroupAnchorBaseX
+                 << ",\"group_anchor_base_y\":" << geometry.GroupAnchorBaseY
+                 << ",\"anchor_x\":" << geometry.AnchorX
+                 << ",\"anchor_y\":" << geometry.AnchorY
+                 << ",\"anchor_distance\":" << geometry.AnchorDistance
+                 << ",\"nearest_same_lane_distance\":" << geometry.NearestSameLaneDistance
+                 << ",\"anchor_candidate_index\":" << geometry.AnchorCandidateIndex
+                 << ",\"lane_side_valid\":" << (geometry.LaneSideValid ? "true" : "false")
+                 << ",\"anchor_selected\":" << (geometry.AnchorSelected ? "true" : "false")
+                 << ",\"same_lane_spacing_valid\":" << (geometry.SameLaneSpacingValid ? "true" : "false")
+                 << "}";
+        }
+        json << "]}"
              << ",\"reseparated_roster_guids\":[";
         bool firstObservationGuid = true;
         for (uint32 guid : observation.ReseparatedRosterGuids)
