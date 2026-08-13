@@ -1,5 +1,11 @@
 # Cataclysm raid progression handoff
 
+# 2026-08-13T12:54:00Z — Exact 0c43 corrects raw-target struct placement
+
+The first exact-4465 review check caught a compile blocker: `TargetRawGuid` had been inserted on generic `ValidationRouteEvidence`, while the producer and serializer access `ValidationRouteDrudgeChargeObservation::TargetRawGuid`. Exact source `0c432651e7743e3813b67fdcb6d5e0336cf3e9ee` moves the field to the correct Drudge observation type, removes the unused generic field, and pins that placement in runtime source-shape coverage. The exact clean combined suite passes 314/314. No build or live action ran.
+
+Phase 1/fidelity remain false pending mandatory Sol-high rereview.
+
 # 2026-08-13T12:48:00Z — Exact 0e6a closes old-node tail and raw-GUID linkage
 
 Review of exact 3d81 found that the suppressed-event tail was emitted after the next node/generation had already been installed, and that serialized raw GUIDs were not actually used for candidate registration, selected-target identity, or collision handling. Source `0e6a796171c79c592941aa2c9d3250be222b29d9` moves the bounded tail flush to the beginning of node application, before any identity mutation. Candidate uniqueness and native selected-target matching are raw-GUID keyed; player rows additionally require the canonical player raw/low identity, non-player rows remain unregistered even when their low counter collides, and the cross-lane seed remains frozen-roster player bound. The exact clean combined suite passes 314/314.
