@@ -88,3 +88,18 @@ edges for every bot and target scope:
   instance identity changes; never let a stale cache authorize movement.
 - Require one single-shard rehearsal to reach stable profile execution and a
   bounded CPU/log rate before six-way fan-out.
+
+## Validate with production-parity replay
+
+- Extract fragile raid state transitions into small C++ functions called by
+  both the worldserver and a deterministic replay executable. Do not maintain
+  a separate Python model of production decisions.
+- Replay captured native inputs such as event order, scope identity, target
+  ownership, spell availability, geometry predicates, and wipe generations.
+  Cover reordered/asynchronous bot ticks and transient failures exhaustively.
+- Keep the parity boundary explicit: replay certifies the shared decision
+  transition; one live shard must still certify native pathfinding, spell
+  legality, threat selection, SmartAI timing, and observable script behavior.
+- Run the replay gate before every native rebuild/live attempt. A failed replay
+  blocks the live run; a passing replay reduces but never replaces the final
+  native confirmation.

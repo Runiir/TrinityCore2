@@ -1795,9 +1795,9 @@ private:
     std::string BuildDungeonTrashPackJson(DungeonTrashPackFeatures const& pack) const;
     std::string BuildBossMechanicsJson(BossMechanicFeatures const& features) const;
     uint32 SelectCombatSpell(Player* bot, Unit* target) const;
-    ResolvedCombatAction ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true) const;
-    BotActionResult ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true);
-    BotActionResult ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true);
+    ResolvedCombatAction ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true, bool hostileTargetOnly = false) const;
+    BotActionResult ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true, bool hostileTargetOnly = false);
+    BotActionResult ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true, bool hostileTargetOnly = false);
     bool MoveBotToProfileRange(WorldBotState& state, Player* bot, Unit* reference,
         ResolvedCombatAction const* action = nullptr, bool forceRangedReposition = false);
     bool TryCastCombatSpell(Player* bot, Unit* target, uint32 spellId) const;
@@ -2049,7 +2049,7 @@ private:
         uint64 ValidationRouteDrudgeHealthSyncEvidenceRouteGeneration = 0;
         std::set<uint32> ValidationRouteDrudgeProfileActionRosterGuids;
         uint64 ValidationRouteDrudgeThreatSeedAttemptId = 0;
-        uint32 ValidationRouteDrudgeThreatSeedWipeGeneration = 0;
+        uint64 ValidationRouteDrudgeThreatSeedWipeGeneration = 0;
         uint64 ValidationRouteDrudgeThreatSeedRouteGeneration = 0;
         bool ValidationRouteDrudgeThreatSeedClosed = false;
         bool ValidationRouteDrudgeThreatSeedComplete = false;

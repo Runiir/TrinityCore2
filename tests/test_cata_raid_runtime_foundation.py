@@ -579,19 +579,32 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     )
     ownership_gate = lane.index("if (!laneOwnershipSafe)")
     assert ownership_gate < seed_call < geometry_gate
-    seed_window = lane.index("bool const preFirstRushWindow")
-    assert ownership_gate < seed_window < seed_call
-    assert "&& laneOwnershipSafe" in lane[seed_window:seed_call]
-    assert "sourceSeparation" in lane[seed_window:seed_call]
-    assert "sourceOnFrozenLane(sources[0], 0)" in lane[seed_window:seed_call]
-    assert "sourceOnFrozenLane(sources[1], 1)" in lane[seed_window:seed_call]
+    seed_transition = lane.index("Result seedTransition = Advance(loadSeedState(), seedInput);")
+    assert ownership_gate < seed_transition < seed_call
+    assert "seedInput.OwnershipSafe = laneOwnershipSafe" in lane[ownership_gate:seed_transition]
+    assert "seedInput.SeparationSafe = sourceSeparation" in lane[ownership_gate:seed_transition]
+    assert "sourceOnFrozenLane(sources[0], 0)" in lane[ownership_gate:seed_transition]
+    assert "sourceOnFrozenLane(sources[1], 1)" in lane[ownership_gate:seed_transition]
     assert "bool const currentScopeHasChargeObservation = std::any_of" in lane[ownership_gate:seed_call]
-    assert "&& !currentScopeHasChargeObservation" in lane[seed_window:seed_call]
-    assert "!Party().ValidationRouteDrudgeThreatSeedClosed" in lane[seed_window:seed_call]
-    assert '"drudge_pre_first_rush_seed_window_closed"' in lane[seed_window:seed_call]
+    assert "seedInput.ChargeObserved = currentScopeHasChargeObservation" in lane[
+        ownership_gate:seed_transition
+    ]
+    assert '"drudge_pre_first_rush_seed_window_wait"' in lane[seed_transition:seed_call]
+    assert "seedInput.Type = Event::ActionResult;" in lane[seed_transition:seed_call]
+    assert 'candidateAction.MovementDirective == "ranged"' in lane[seed_transition:seed_call]
+    assert "candidateAction.MaxRange > 5.0f" in lane[seed_transition:seed_call]
+    assert 'candidateAction.AutoAttackMode == "ranged"' not in lane[seed_transition:seed_call]
     unavailable = lane.index('"drudge_pre_first_rush_seed_profile_unavailable"')
     unavailable_branch = lane[lane.rfind("if (!selectedMember || !selectedState)", 0, unavailable):unavailable]
     assert "ValidationRouteDrudgeThreatSeedFailure = true" not in unavailable_branch
+    shared_barrier = lane.index(
+        "for (WorldBotState const& memberState : Party().Bots)", unavailable
+    )
+    authority_check = lane.index("bool otherOffenseSuppressed = true;", shared_barrier)
+    selected_release = lane.index(
+        "SetAllOffenseSuppressed(selectedOwnerGuid, false)", authority_check
+    )
+    assert shared_barrier < authority_check < selected_release
     health_sync_call = lane.rindex("recordHealthSyncHold();")
     assert ownership_gate < health_sync_call
     assert geometry_gate < health_sync_call
@@ -603,7 +616,7 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
         "bool const taunted = TryCastCombatSpell"
     ) < lane.index("SetAllOffenseSuppressed(bot->GetGUID().GetRawValue(), true)")
     assert "ResolveProfileCombatAction(bot, laneSource" in lane
-    assert "true, false);" in lane  # forbid area, disallow multidot
+    assert "true, false, true);" in lane  # forbid area, disallow multidot, hostile-only
     cast_hook = IMPL[
         IMPL.index("uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted"):
         IMPL.index("void BotWorldPopulationMgr::NotifyCombatDamage")
@@ -616,23 +629,22 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "GetUnsortedThreatList" in cast_hook
     assert "nativeThreatList.size()" not in cast_hook
     assert "nativeThreatCandidateCount" in cast_hook
-    hook_scope = cast_hook.index(
-        "if (Party().ValidationRouteDrudgeThreatSeedAttemptId != Cohort().AttemptId"
-    )
-    hook_close = cast_hook.index("Party().ValidationRouteDrudgeThreatSeedClosed = true")
+    hook_scope = cast_hook.index("Scope const currentScope")
+    hook_close = cast_hook.index("Result const transition = Advance(seedState, rushInput);")
     hook_exact_source = cast_hook.index("if (!exactSource)")
     hook_target_shape = cast_hook.index("Player* targetPlayer = target->ToPlayer()")
     assert hook_exact_source < hook_scope < hook_close < hook_target_shape
     assert hook_scope < hook_close
     assert "bool const currentScopeHasChargeObservation = std::any_of" in cast_hook[
-        hook_scope:hook_close
+        hook_exact_source:hook_scope
     ]
-    assert "if (!currentScopeHasChargeObservation)" in cast_hook[hook_scope:hook_close]
+    assert "if (!currentScopeHasChargeObservation)" in cast_hook[hook_exact_source:hook_scope]
     assert "ValidationRouteDrudgeLastChargeMsBySpawn[sourceSpawnId] = observedAtMs" in cast_hook[
         hook_target_shape:
     ]
-    assert "ValidationRouteDrudgeThreatSeedRouteGeneration = Party().ValidationRouteGeneration" in cast_hook[
-        hook_scope:hook_close
+    assert "rushInput.Type = Event::FirstNativeRush" in cast_hook[hook_scope:hook_close]
+    assert "Party().ValidationRouteDrudgeThreatSeedRouteGeneration" in cast_hook[
+        hook_close:hook_target_shape
     ]
     header = (Path(__file__).parents[1] / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text(
         encoding="utf-8",
