@@ -9,19 +9,19 @@
     "locale": "enUS",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
-  "audited_commit": "a5098faadb228cadfea62ea8899a4d9c127e12b6",
-  "gate_state": "exact_a509_all_transport_profile_contract_pending_mandatory_rereview",
+  "audited_commit": "bc156a2bd5831ec8ab1b1b8a6fe55b4752d54b95",
+  "gate_state": "exact_bc156_direct_and_manifest_session_profile_contract_pending_mandatory_rereview",
   "foundation": {
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "reviewed_source_sha": "a5098faadb228cadfea62ea8899a4d9c127e12b6",
-    "status_checkpoint_identity": "resolve from Git HEAD; status descendant of exact a509 source pending mandatory rereview",
+    "reviewed_source_sha": "bc156a2bd5831ec8ab1b1b8a6fe55b4752d54b95",
+    "status_checkpoint_identity": "resolve from Git HEAD; status descendant of exact bc156 source pending mandatory rereview",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
-    "mandatory_sol_high_rereview": "PENDING exact a509 after c2eb/11ea review found session, SOAP and sequence bypasses; no build or live start authorized before zero-Critical/High decision",
+    "mandatory_sol_high_rereview": "PENDING exact bc156 after f9e2/a509 review found a remaining direct-route session-profile bypass; no build or live start authorized before zero-Critical/High decision",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "acceptance": "Exact a509 fail-closes calibration/raid combinations, empty/cross-shard manifest and sequence routes, mismatched session profiles and SOAP execution that cannot own the required config identity. Twenty-one focused profile/transport tests and 321 broader raid/shard/readback tests pass. Mandatory rereview/build/live proof remain pending. Phase 1/fidelity remain false."
+    "acceptance": "Exact bc156 fail-closes calibration/raid combinations, empty/cross-shard manifest and sequence routes, mismatched session profiles including direct-node flows, and SOAP execution that cannot own the required config identity. The latest targeted profile/transport command passes 18 checks and 321 broader raid/shard/readback tests remain green. Mandatory rereview/build/live proof remain pending. Phase 1/fidelity remain false."
   },
   "research": {
     "required_boss_packets": 28,
@@ -47,8 +47,8 @@
   },
   "build": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_state": "exact_a509_all_transport_profile_contract_pending_mandatory_rereview",
-    "current_result": "historical dbe build/preparation was held before live on inherited Stonecore profile; exact a509 closes process/session/SOAP/sequence identity paths but has no review or exact receipt yet",
+    "current_state": "exact_bc156_direct_and_manifest_session_profile_contract_pending_mandatory_rereview",
+    "current_result": "historical dbe build/preparation was held before live on inherited Stonecore profile; exact bc156 closes process/session/SOAP/sequence identity paths but has no review or exact receipt yet",
     "receipt_trust_model": "explicit_trusted_local_operator",
     "trusted_operator": "runiir",
     "trusted_uid": 1000,
@@ -177,7 +177,7 @@
   "required_open_work": [
     {
       "area": "current_build",
-      "missing": ["mandatory_sol_high_review_exact_a509_transport_profile_remediation", "one_exact_policy_v8_rebuild_of_reviewed_descendant"]
+      "missing": ["mandatory_sol_high_review_exact_bc156_session_profile_remediation", "one_exact_policy_v8_rebuild_of_reviewed_descendant"]
     },
     {
       "area": "live_script_and_decision_review",

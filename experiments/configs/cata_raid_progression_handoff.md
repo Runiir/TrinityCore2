@@ -1,5 +1,9 @@
 # Cataclysm raid progression handoff
 
+# 2026-08-13T15:39:00Z — Exact bc156 closes the direct-session cross-shard profile edge
+
+Review of f9e2/a509 found one final session edge: a direct route-node session without the manifest/sequence flag could declare Magmaw while explicitly starting the Omnotron profile. Exact `bc156a2bd5831ec8ab1b1b8a6fe55b4752d54b95` makes `--session-profile == --validation-scenario-id` unconditional whenever a reusable validation session has a scenario identity. The direct Magmaw/Omnotron adversarial case now rejects before output creation; the latest targeted transport/profile matrix passes 18 checks and the broader 321-test raid/shard/readback gate remains green. No build, server, DB or DVC action ran. Mandatory exact rereview remains required.
+
 # 2026-08-13T15:30:00Z — Exact a509 closes session, SOAP and sequence profile bypasses
 
 Mandatory review of c2eb/11ea found three remaining transport-level identity gaps before any rebuild began: a reusable session could pair the Magmaw manifest with an Omnotron `--session-profile`; SOAP execution skipped generated-config enforcement; and route-sequence preflight did not validate empty or cross-profile route sets. Exact `a5098faadb228cadfea62ea8899a4d9c127e12b6` applies the same exact scenario/profile/pool contract to manifest and sequence paths, requires a session profile to equal the selected scenario, and rejects SOAP manifest/sequence and calibration-only runs because SOAP does not own the server config needed to establish those identities.
