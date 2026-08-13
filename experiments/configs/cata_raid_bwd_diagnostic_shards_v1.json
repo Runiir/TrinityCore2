@@ -1,0 +1,2894 @@
+{
+  "canonical_roster": [
+    {
+      "account": "BWDVALTKA",
+      "class": 2,
+      "class_spec": "protection_paladin",
+      "name": "Bwdtanka",
+      "role": "tank",
+      "roster_slot_id": "raid_tank_1"
+    },
+    {
+      "account": "BWDVALTKB",
+      "class": 6,
+      "class_spec": "blood_death_knight",
+      "name": "Bwdtankb",
+      "role": "tank",
+      "roster_slot_id": "raid_tank_2"
+    },
+    {
+      "account": "BWDVALHLA",
+      "class": 11,
+      "class_spec": "restoration_druid",
+      "name": "Bwdheala",
+      "role": "healer",
+      "roster_slot_id": "raid_healer_1"
+    },
+    {
+      "account": "BWDVALHLB",
+      "class": 2,
+      "class_spec": "holy_paladin",
+      "name": "Bwdhealb",
+      "role": "healer",
+      "roster_slot_id": "raid_healer_2"
+    },
+    {
+      "account": "BWDVALHLC",
+      "class": 5,
+      "class_spec": "discipline_priest",
+      "name": "Bwdhealc",
+      "role": "healer",
+      "roster_slot_id": "raid_healer_3"
+    },
+    {
+      "account": "BWDVALDPA",
+      "class": 8,
+      "class_spec": "fire_mage",
+      "name": "Bwddpsa",
+      "role": "dps",
+      "roster_slot_id": "raid_dps_1"
+    },
+    {
+      "account": "BWDVALDPB",
+      "class": 4,
+      "class_spec": "assassination_rogue",
+      "name": "Bwddpsb",
+      "role": "dps",
+      "roster_slot_id": "raid_dps_2"
+    },
+    {
+      "account": "BWDVALDPC",
+      "class": 9,
+      "class_spec": "affliction_warlock",
+      "name": "Bwddpsc",
+      "role": "dps",
+      "roster_slot_id": "raid_dps_3"
+    },
+    {
+      "account": "BWDVALDPD",
+      "class": 3,
+      "class_spec": "marksmanship_hunter",
+      "name": "Bwddpsd",
+      "role": "dps",
+      "roster_slot_id": "raid_dps_4"
+    },
+    {
+      "account": "BWDVALDPE",
+      "class": 7,
+      "class_spec": "elemental_shaman",
+      "name": "Bwddpse",
+      "role": "dps",
+      "roster_slot_id": "raid_dps_5"
+    }
+  ],
+  "diagnostic_bot_count": 60,
+  "instance_identity_policy": {
+    "difficulty": "normal_10man",
+    "live_identity_fields": [
+      "group_id",
+      "map_instance_id",
+      "save_id",
+      "attempt_id",
+      "strategy_id",
+      "assignment_generation"
+    ],
+    "map_id": 669,
+    "no_instance_or_save_ids_in_provisioning": true
+  },
+  "schema": "cata_raid_bwd_diagnostic_shard_fixture_v1",
+  "shard_count": 6,
+  "shards": [
+    {
+      "boss_key": "magmaw",
+      "bots": [
+        {
+          "account": "BWDMGWA01",
+          "account_id": 20001,
+          "action_profile_id": "protection_paladin",
+          "canonical_roster_slot_id": "raid_tank_1",
+          "canonical_setup": {
+            "action_profile_id": "protection_paladin",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "protection_paladin",
+            "gear_profile_id": "protection_paladin",
+            "glyph_ids": [
+              45742,
+              41098,
+              43869,
+              41107,
+              43367,
+              43867,
+              43368,
+              43340,
+              43366
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "protection_paladin"
+          },
+          "character_guid": 30001,
+          "class": 2,
+          "class_spec": "protection_paladin",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_tank_1",
+          "expected_account_id": 20001,
+          "expected_character_guid": 30001,
+          "glyphs": [
+            45742,
+            41098,
+            43869,
+            41107,
+            43367,
+            43867,
+            43368,
+            43340,
+            43366
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Mgwtank1",
+          "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+          "race": 1,
+          "role": "tank",
+          "roster_slot_id": "blackwing_descent_10n_magmaw_diagnostic:raid_tank_1",
+          "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic"
+        },
+        {
+          "account": "BWDMGWA02",
+          "account_id": 20002,
+          "action_profile_id": "blood_death_knight",
+          "canonical_roster_slot_id": "raid_tank_2",
+          "canonical_setup": {
+            "action_profile_id": "blood_death_knight",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "blood_death_knight",
+            "gear_profile_id": "blood_death_knight",
+            "glyph_ids": [
+              43533,
+              43547,
+              43549
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "blood_death_knight"
+          },
+          "character_guid": 30002,
+          "class": 6,
+          "class_spec": "blood_death_knight",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_tank_2",
+          "expected_account_id": 20002,
+          "expected_character_guid": 30002,
+          "glyphs": [
+            43533,
+            43547,
+            43549
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Mgwtank2",
+          "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+          "race": 1,
+          "role": "tank",
+          "roster_slot_id": "blackwing_descent_10n_magmaw_diagnostic:raid_tank_2",
+          "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic"
+        },
+        {
+          "account": "BWDMGWA03",
+          "account_id": 20003,
+          "action_profile_id": "restoration_druid",
+          "canonical_roster_slot_id": "raid_healer_1",
+          "canonical_setup": {
+            "action_profile_id": "restoration_druid",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "restoration_druid",
+            "gear_profile_id": "restoration_druid",
+            "glyph_ids": [
+              45623,
+              40906,
+              40913
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "restoration_druid"
+          },
+          "character_guid": 30003,
+          "class": 11,
+          "class_spec": "restoration_druid",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_healer_1",
+          "expected_account_id": 20003,
+          "expected_character_guid": 30003,
+          "glyphs": [
+            45623,
+            40906,
+            40913
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Mgwheal1",
+          "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+          "race": 4,
+          "role": "healer",
+          "roster_slot_id": "blackwing_descent_10n_magmaw_diagnostic:raid_healer_1",
+          "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic"
+        },
+        {
+          "account": "BWDMGWA04",
+          "account_id": 20004,
+          "action_profile_id": "holy_paladin",
+          "canonical_roster_slot_id": "raid_healer_2",
+          "canonical_setup": {
+            "action_profile_id": "holy_paladin",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "holy_paladin",
+            "gear_profile_id": "holy_paladin",
+            "glyph_ids": [
+              45741,
+              41099,
+              41105
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "holy_paladin"
+          },
+          "character_guid": 30004,
+          "class": 2,
+          "class_spec": "holy_paladin",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_healer_2",
+          "expected_account_id": 20004,
+          "expected_character_guid": 30004,
+          "glyphs": [
+            45741,
+            41099,
+            41105
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Mgwheal2",
+          "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+          "race": 1,
+          "role": "healer",
+          "roster_slot_id": "blackwing_descent_10n_magmaw_diagnostic:raid_healer_2",
+          "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic"
+        },
+        {
+          "account": "BWDMGWA05",
+          "account_id": 20005,
+          "action_profile_id": "discipline_priest",
+          "canonical_roster_slot_id": "raid_healer_3",
+          "canonical_setup": {
+            "action_profile_id": "discipline_priest",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "discipline_priest",
+            "gear_profile_id": "discipline_priest",
+            "glyph_ids": [
+              42409,
+              42400,
+              42403
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "discipline_priest"
+          },
+          "character_guid": 30005,
+          "class": 5,
+          "class_spec": "discipline_priest",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_healer_3",
+          "expected_account_id": 20005,
+          "expected_character_guid": 30005,
+          "glyphs": [
+            42409,
+            42400,
+            42403
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Mgwheal3",
+          "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+          "race": 1,
+          "role": "healer",
+          "roster_slot_id": "blackwing_descent_10n_magmaw_diagnostic:raid_healer_3",
+          "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic"
+        },
+        {
+          "account": "BWDMGWA06",
+          "account_id": 20006,
+          "action_profile_id": "fire_mage",
+          "canonical_roster_slot_id": "raid_dps_1",
+          "canonical_setup": {
+            "action_profile_id": "fire_mage",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "fire_mage",
+            "gear_profile_id": "fire_mage",
+            "glyph_ids": [
+              42739,
+              42743,
+              42753
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "fire_mage"
+          },
+          "character_guid": 30006,
+          "class": 8,
+          "class_spec": "fire_mage",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_dps_1",
+          "expected_account_id": 20006,
+          "expected_character_guid": 30006,
+          "glyphs": [
+            42739,
+            42743,
+            42753
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Mgwdps1",
+          "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+          "race": 1,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_magmaw_diagnostic:raid_dps_1",
+          "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic"
+        },
+        {
+          "account": "BWDMGWA07",
+          "account_id": 20007,
+          "action_profile_id": "assassination_rogue",
+          "canonical_roster_slot_id": "raid_dps_2",
+          "canonical_setup": {
+            "action_profile_id": "assassination_rogue",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "assassination_rogue",
+            "gear_profile_id": "assassination_rogue",
+            "glyph_ids": [
+              42954,
+              42957,
+              42969
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "assassination_rogue"
+          },
+          "character_guid": 30007,
+          "class": 4,
+          "class_spec": "assassination_rogue",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_dps_2",
+          "expected_account_id": 20007,
+          "expected_character_guid": 30007,
+          "glyphs": [
+            42954,
+            42957,
+            42969
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Mgwdps2",
+          "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+          "race": 1,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_magmaw_diagnostic:raid_dps_2",
+          "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic"
+        },
+        {
+          "account": "BWDMGWA08",
+          "account_id": 20008,
+          "action_profile_id": "affliction_warlock",
+          "canonical_roster_slot_id": "raid_dps_3",
+          "canonical_setup": {
+            "action_profile_id": "affliction_warlock",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "affliction_warlock",
+            "gear_profile_id": "affliction_warlock",
+            "glyph_ids": [
+              42456,
+              42454,
+              42464
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "affliction_warlock"
+          },
+          "character_guid": 30008,
+          "class": 9,
+          "class_spec": "affliction_warlock",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_dps_3",
+          "expected_account_id": 20008,
+          "expected_character_guid": 30008,
+          "glyphs": [
+            42456,
+            42454,
+            42464
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Mgwdps3",
+          "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+          "race": 1,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_magmaw_diagnostic:raid_dps_3",
+          "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic"
+        },
+        {
+          "account": "BWDMGWA09",
+          "account_id": 20009,
+          "action_profile_id": "marksmanship_hunter",
+          "canonical_roster_slot_id": "raid_dps_4",
+          "canonical_setup": {
+            "action_profile_id": "marksmanship_hunter",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "marksmanship_hunter",
+            "gear_profile_id": "marksmanship_hunter",
+            "glyph_ids": [
+              42909,
+              42902,
+              42915
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "marksmanship_hunter"
+          },
+          "character_guid": 30009,
+          "class": 3,
+          "class_spec": "marksmanship_hunter",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_dps_4",
+          "expected_account_id": 20009,
+          "expected_character_guid": 30009,
+          "expected_pet_id": 8700009,
+          "glyphs": [
+            42909,
+            42902,
+            42915
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Mgwdps4",
+          "pet": {
+            "active": 1,
+            "created_by_spell": 0,
+            "entry": 8959,
+            "id_offset": 9,
+            "level": 85,
+            "modelid": 4124,
+            "name": "mgwwolf9",
+            "slot": 0,
+            "spells": [
+              2649,
+              17253
+            ]
+          },
+          "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+          "race": 1,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_magmaw_diagnostic:raid_dps_4",
+          "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic"
+        },
+        {
+          "account": "BWDMGWA10",
+          "account_id": 20010,
+          "action_profile_id": "elemental_shaman",
+          "canonical_roster_slot_id": "raid_dps_5",
+          "canonical_setup": {
+            "action_profile_id": "elemental_shaman",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "elemental_shaman",
+            "gear_profile_id": "elemental_shaman",
+            "glyph_ids": [
+              41524,
+              41547,
+              41552
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "elemental_shaman"
+          },
+          "character_guid": 30010,
+          "class": 7,
+          "class_spec": "elemental_shaman",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_dps_5",
+          "expected_account_id": 20010,
+          "expected_character_guid": 30010,
+          "glyphs": [
+            41524,
+            41547,
+            41552
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Mgwdps5",
+          "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+          "race": 11,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_magmaw_diagnostic:raid_dps_5",
+          "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic"
+        }
+      ],
+      "diagnostic_only": true,
+      "diagnostic_parent_scenario_id": "blackwing_descent_10n",
+      "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw",
+      "live_identity_requirements": {
+        "assigned_at": "live_setup_only",
+        "fields": [
+          "group_id",
+          "map_instance_id",
+          "save_id",
+          "attempt_id",
+          "strategy_id",
+          "assignment_generation"
+        ],
+        "fixture_values": null,
+        "forbidden_provisioning_fields": [
+          "group_id",
+          "map_instance_id",
+          "save_id",
+          "attempt_id",
+          "strategy_id",
+          "assignment_generation"
+        ],
+        "must_be_distinct_across_shards": true,
+        "must_be_positive": true
+      },
+      "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+      "predecessor_state": {
+        "certifies_predecessors": false,
+        "precompleted_boss_entries": [],
+        "requires_native_descent_before_engagement": false,
+        "state_source": "instance_blackwing_descent_native_boss_state_fixture",
+        "upper_ledge_start": false
+      },
+      "required_bot_count": 10,
+      "role_counts": {
+        "dps": 5,
+        "healer": 3,
+        "tank": 2
+      },
+      "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+      "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+      "shard_id": "bwd_magmaw_diagnostic_10n",
+      "start_position": {
+        "map_id": 669,
+        "o": 0.0,
+        "x": -345.872,
+        "y": -224.344,
+        "z": 193.127
+      }
+    },
+    {
+      "boss_key": "omnotron",
+      "bots": [
+        {
+          "account": "BWDOMNA01",
+          "account_id": 20101,
+          "action_profile_id": "protection_paladin",
+          "canonical_roster_slot_id": "raid_tank_1",
+          "canonical_setup": {
+            "action_profile_id": "protection_paladin",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "protection_paladin",
+            "gear_profile_id": "protection_paladin",
+            "glyph_ids": [
+              45742,
+              41098,
+              43869,
+              41107,
+              43367,
+              43867,
+              43368,
+              43340,
+              43366
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "protection_paladin"
+          },
+          "character_guid": 30101,
+          "class": 2,
+          "class_spec": "protection_paladin",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron/roster/raid_tank_1",
+          "expected_account_id": 20101,
+          "expected_character_guid": 30101,
+          "glyphs": [
+            45742,
+            41098,
+            43869,
+            41107,
+            43367,
+            43867,
+            43368,
+            43340,
+            43366
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Omntank1",
+          "pool_tag": "blackwing_descent_10n_omnotron_diagnostic",
+          "race": 1,
+          "role": "tank",
+          "roster_slot_id": "blackwing_descent_10n_omnotron_diagnostic:raid_tank_1",
+          "runtime_profile_id": "blackwing_descent_10n_omnotron_diagnostic"
+        },
+        {
+          "account": "BWDOMNA02",
+          "account_id": 20102,
+          "action_profile_id": "blood_death_knight",
+          "canonical_roster_slot_id": "raid_tank_2",
+          "canonical_setup": {
+            "action_profile_id": "blood_death_knight",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "blood_death_knight",
+            "gear_profile_id": "blood_death_knight",
+            "glyph_ids": [
+              43533,
+              43547,
+              43549
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "blood_death_knight"
+          },
+          "character_guid": 30102,
+          "class": 6,
+          "class_spec": "blood_death_knight",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron/roster/raid_tank_2",
+          "expected_account_id": 20102,
+          "expected_character_guid": 30102,
+          "glyphs": [
+            43533,
+            43547,
+            43549
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Omntank2",
+          "pool_tag": "blackwing_descent_10n_omnotron_diagnostic",
+          "race": 1,
+          "role": "tank",
+          "roster_slot_id": "blackwing_descent_10n_omnotron_diagnostic:raid_tank_2",
+          "runtime_profile_id": "blackwing_descent_10n_omnotron_diagnostic"
+        },
+        {
+          "account": "BWDOMNA03",
+          "account_id": 20103,
+          "action_profile_id": "restoration_druid",
+          "canonical_roster_slot_id": "raid_healer_1",
+          "canonical_setup": {
+            "action_profile_id": "restoration_druid",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "restoration_druid",
+            "gear_profile_id": "restoration_druid",
+            "glyph_ids": [
+              45623,
+              40906,
+              40913
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "restoration_druid"
+          },
+          "character_guid": 30103,
+          "class": 11,
+          "class_spec": "restoration_druid",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron/roster/raid_healer_1",
+          "expected_account_id": 20103,
+          "expected_character_guid": 30103,
+          "glyphs": [
+            45623,
+            40906,
+            40913
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Omnheal1",
+          "pool_tag": "blackwing_descent_10n_omnotron_diagnostic",
+          "race": 4,
+          "role": "healer",
+          "roster_slot_id": "blackwing_descent_10n_omnotron_diagnostic:raid_healer_1",
+          "runtime_profile_id": "blackwing_descent_10n_omnotron_diagnostic"
+        },
+        {
+          "account": "BWDOMNA04",
+          "account_id": 20104,
+          "action_profile_id": "holy_paladin",
+          "canonical_roster_slot_id": "raid_healer_2",
+          "canonical_setup": {
+            "action_profile_id": "holy_paladin",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "holy_paladin",
+            "gear_profile_id": "holy_paladin",
+            "glyph_ids": [
+              45741,
+              41099,
+              41105
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "holy_paladin"
+          },
+          "character_guid": 30104,
+          "class": 2,
+          "class_spec": "holy_paladin",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron/roster/raid_healer_2",
+          "expected_account_id": 20104,
+          "expected_character_guid": 30104,
+          "glyphs": [
+            45741,
+            41099,
+            41105
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Omnheal2",
+          "pool_tag": "blackwing_descent_10n_omnotron_diagnostic",
+          "race": 1,
+          "role": "healer",
+          "roster_slot_id": "blackwing_descent_10n_omnotron_diagnostic:raid_healer_2",
+          "runtime_profile_id": "blackwing_descent_10n_omnotron_diagnostic"
+        },
+        {
+          "account": "BWDOMNA05",
+          "account_id": 20105,
+          "action_profile_id": "discipline_priest",
+          "canonical_roster_slot_id": "raid_healer_3",
+          "canonical_setup": {
+            "action_profile_id": "discipline_priest",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "discipline_priest",
+            "gear_profile_id": "discipline_priest",
+            "glyph_ids": [
+              42409,
+              42400,
+              42403
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "discipline_priest"
+          },
+          "character_guid": 30105,
+          "class": 5,
+          "class_spec": "discipline_priest",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron/roster/raid_healer_3",
+          "expected_account_id": 20105,
+          "expected_character_guid": 30105,
+          "glyphs": [
+            42409,
+            42400,
+            42403
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Omnheal3",
+          "pool_tag": "blackwing_descent_10n_omnotron_diagnostic",
+          "race": 1,
+          "role": "healer",
+          "roster_slot_id": "blackwing_descent_10n_omnotron_diagnostic:raid_healer_3",
+          "runtime_profile_id": "blackwing_descent_10n_omnotron_diagnostic"
+        },
+        {
+          "account": "BWDOMNA06",
+          "account_id": 20106,
+          "action_profile_id": "fire_mage",
+          "canonical_roster_slot_id": "raid_dps_1",
+          "canonical_setup": {
+            "action_profile_id": "fire_mage",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "fire_mage",
+            "gear_profile_id": "fire_mage",
+            "glyph_ids": [
+              42739,
+              42743,
+              42753
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "fire_mage"
+          },
+          "character_guid": 30106,
+          "class": 8,
+          "class_spec": "fire_mage",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron/roster/raid_dps_1",
+          "expected_account_id": 20106,
+          "expected_character_guid": 30106,
+          "glyphs": [
+            42739,
+            42743,
+            42753
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Omndps1",
+          "pool_tag": "blackwing_descent_10n_omnotron_diagnostic",
+          "race": 1,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_omnotron_diagnostic:raid_dps_1",
+          "runtime_profile_id": "blackwing_descent_10n_omnotron_diagnostic"
+        },
+        {
+          "account": "BWDOMNA07",
+          "account_id": 20107,
+          "action_profile_id": "assassination_rogue",
+          "canonical_roster_slot_id": "raid_dps_2",
+          "canonical_setup": {
+            "action_profile_id": "assassination_rogue",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "assassination_rogue",
+            "gear_profile_id": "assassination_rogue",
+            "glyph_ids": [
+              42954,
+              42957,
+              42969
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "assassination_rogue"
+          },
+          "character_guid": 30107,
+          "class": 4,
+          "class_spec": "assassination_rogue",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron/roster/raid_dps_2",
+          "expected_account_id": 20107,
+          "expected_character_guid": 30107,
+          "glyphs": [
+            42954,
+            42957,
+            42969
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Omndps2",
+          "pool_tag": "blackwing_descent_10n_omnotron_diagnostic",
+          "race": 1,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_omnotron_diagnostic:raid_dps_2",
+          "runtime_profile_id": "blackwing_descent_10n_omnotron_diagnostic"
+        },
+        {
+          "account": "BWDOMNA08",
+          "account_id": 20108,
+          "action_profile_id": "affliction_warlock",
+          "canonical_roster_slot_id": "raid_dps_3",
+          "canonical_setup": {
+            "action_profile_id": "affliction_warlock",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "affliction_warlock",
+            "gear_profile_id": "affliction_warlock",
+            "glyph_ids": [
+              42456,
+              42454,
+              42464
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "affliction_warlock"
+          },
+          "character_guid": 30108,
+          "class": 9,
+          "class_spec": "affliction_warlock",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron/roster/raid_dps_3",
+          "expected_account_id": 20108,
+          "expected_character_guid": 30108,
+          "glyphs": [
+            42456,
+            42454,
+            42464
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Omndps3",
+          "pool_tag": "blackwing_descent_10n_omnotron_diagnostic",
+          "race": 1,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_omnotron_diagnostic:raid_dps_3",
+          "runtime_profile_id": "blackwing_descent_10n_omnotron_diagnostic"
+        },
+        {
+          "account": "BWDOMNA09",
+          "account_id": 20109,
+          "action_profile_id": "marksmanship_hunter",
+          "canonical_roster_slot_id": "raid_dps_4",
+          "canonical_setup": {
+            "action_profile_id": "marksmanship_hunter",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "marksmanship_hunter",
+            "gear_profile_id": "marksmanship_hunter",
+            "glyph_ids": [
+              42909,
+              42902,
+              42915
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "marksmanship_hunter"
+          },
+          "character_guid": 30109,
+          "class": 3,
+          "class_spec": "marksmanship_hunter",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron/roster/raid_dps_4",
+          "expected_account_id": 20109,
+          "expected_character_guid": 30109,
+          "expected_pet_id": 8700109,
+          "glyphs": [
+            42909,
+            42902,
+            42915
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Omndps4",
+          "pet": {
+            "active": 1,
+            "created_by_spell": 0,
+            "entry": 8959,
+            "id_offset": 109,
+            "level": 85,
+            "modelid": 4124,
+            "name": "omnwolf9",
+            "slot": 0,
+            "spells": [
+              2649,
+              17253
+            ]
+          },
+          "pool_tag": "blackwing_descent_10n_omnotron_diagnostic",
+          "race": 1,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_omnotron_diagnostic:raid_dps_4",
+          "runtime_profile_id": "blackwing_descent_10n_omnotron_diagnostic"
+        },
+        {
+          "account": "BWDOMNA10",
+          "account_id": 20110,
+          "action_profile_id": "elemental_shaman",
+          "canonical_roster_slot_id": "raid_dps_5",
+          "canonical_setup": {
+            "action_profile_id": "elemental_shaman",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "elemental_shaman",
+            "gear_profile_id": "elemental_shaman",
+            "glyph_ids": [
+              41524,
+              41547,
+              41552
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "elemental_shaman"
+          },
+          "character_guid": 30110,
+          "class": 7,
+          "class_spec": "elemental_shaman",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron/roster/raid_dps_5",
+          "expected_account_id": 20110,
+          "expected_character_guid": 30110,
+          "glyphs": [
+            41524,
+            41547,
+            41552
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Omndps5",
+          "pool_tag": "blackwing_descent_10n_omnotron_diagnostic",
+          "race": 11,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_omnotron_diagnostic:raid_dps_5",
+          "runtime_profile_id": "blackwing_descent_10n_omnotron_diagnostic"
+        }
+      ],
+      "diagnostic_only": true,
+      "diagnostic_parent_scenario_id": "blackwing_descent_10n",
+      "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron",
+      "live_identity_requirements": {
+        "assigned_at": "live_setup_only",
+        "fields": [
+          "group_id",
+          "map_instance_id",
+          "save_id",
+          "attempt_id",
+          "strategy_id",
+          "assignment_generation"
+        ],
+        "fixture_values": null,
+        "forbidden_provisioning_fields": [
+          "group_id",
+          "map_instance_id",
+          "save_id",
+          "attempt_id",
+          "strategy_id",
+          "assignment_generation"
+        ],
+        "must_be_distinct_across_shards": true,
+        "must_be_positive": true
+      },
+      "pool_tag": "blackwing_descent_10n_omnotron_diagnostic",
+      "predecessor_state": {
+        "certifies_predecessors": false,
+        "precompleted_boss_entries": [
+          41570
+        ],
+        "requires_native_descent_before_engagement": false,
+        "state_source": "instance_blackwing_descent_native_boss_state_fixture",
+        "upper_ledge_start": false
+      },
+      "required_bot_count": 10,
+      "role_counts": {
+        "dps": 5,
+        "healer": 3,
+        "tank": 2
+      },
+      "runtime_profile_id": "blackwing_descent_10n_omnotron_diagnostic",
+      "scenario_id": "blackwing_descent_10n_omnotron_diagnostic",
+      "shard_id": "bwd_omnotron_diagnostic_10n",
+      "start_position": {
+        "map_id": 669,
+        "o": 0.0,
+        "x": -338.622,
+        "y": -347.5,
+        "z": 214.159
+      }
+    },
+    {
+      "boss_key": "maloriak",
+      "bots": [
+        {
+          "account": "BWDMALA01",
+          "account_id": 20201,
+          "action_profile_id": "protection_paladin",
+          "canonical_roster_slot_id": "raid_tank_1",
+          "canonical_setup": {
+            "action_profile_id": "protection_paladin",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "protection_paladin",
+            "gear_profile_id": "protection_paladin",
+            "glyph_ids": [
+              45742,
+              41098,
+              43869,
+              41107,
+              43367,
+              43867,
+              43368,
+              43340,
+              43366
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "protection_paladin"
+          },
+          "character_guid": 30201,
+          "class": 2,
+          "class_spec": "protection_paladin",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak/roster/raid_tank_1",
+          "expected_account_id": 20201,
+          "expected_character_guid": 30201,
+          "glyphs": [
+            45742,
+            41098,
+            43869,
+            41107,
+            43367,
+            43867,
+            43368,
+            43340,
+            43366
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Maltank1",
+          "pool_tag": "blackwing_descent_10n_maloriak_diagnostic",
+          "race": 1,
+          "role": "tank",
+          "roster_slot_id": "blackwing_descent_10n_maloriak_diagnostic:raid_tank_1",
+          "runtime_profile_id": "blackwing_descent_10n_maloriak_diagnostic"
+        },
+        {
+          "account": "BWDMALA02",
+          "account_id": 20202,
+          "action_profile_id": "blood_death_knight",
+          "canonical_roster_slot_id": "raid_tank_2",
+          "canonical_setup": {
+            "action_profile_id": "blood_death_knight",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "blood_death_knight",
+            "gear_profile_id": "blood_death_knight",
+            "glyph_ids": [
+              43533,
+              43547,
+              43549
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "blood_death_knight"
+          },
+          "character_guid": 30202,
+          "class": 6,
+          "class_spec": "blood_death_knight",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak/roster/raid_tank_2",
+          "expected_account_id": 20202,
+          "expected_character_guid": 30202,
+          "glyphs": [
+            43533,
+            43547,
+            43549
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Maltank2",
+          "pool_tag": "blackwing_descent_10n_maloriak_diagnostic",
+          "race": 1,
+          "role": "tank",
+          "roster_slot_id": "blackwing_descent_10n_maloriak_diagnostic:raid_tank_2",
+          "runtime_profile_id": "blackwing_descent_10n_maloriak_diagnostic"
+        },
+        {
+          "account": "BWDMALA03",
+          "account_id": 20203,
+          "action_profile_id": "restoration_druid",
+          "canonical_roster_slot_id": "raid_healer_1",
+          "canonical_setup": {
+            "action_profile_id": "restoration_druid",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "restoration_druid",
+            "gear_profile_id": "restoration_druid",
+            "glyph_ids": [
+              45623,
+              40906,
+              40913
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "restoration_druid"
+          },
+          "character_guid": 30203,
+          "class": 11,
+          "class_spec": "restoration_druid",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak/roster/raid_healer_1",
+          "expected_account_id": 20203,
+          "expected_character_guid": 30203,
+          "glyphs": [
+            45623,
+            40906,
+            40913
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Malheal1",
+          "pool_tag": "blackwing_descent_10n_maloriak_diagnostic",
+          "race": 4,
+          "role": "healer",
+          "roster_slot_id": "blackwing_descent_10n_maloriak_diagnostic:raid_healer_1",
+          "runtime_profile_id": "blackwing_descent_10n_maloriak_diagnostic"
+        },
+        {
+          "account": "BWDMALA04",
+          "account_id": 20204,
+          "action_profile_id": "holy_paladin",
+          "canonical_roster_slot_id": "raid_healer_2",
+          "canonical_setup": {
+            "action_profile_id": "holy_paladin",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "holy_paladin",
+            "gear_profile_id": "holy_paladin",
+            "glyph_ids": [
+              45741,
+              41099,
+              41105
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "holy_paladin"
+          },
+          "character_guid": 30204,
+          "class": 2,
+          "class_spec": "holy_paladin",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak/roster/raid_healer_2",
+          "expected_account_id": 20204,
+          "expected_character_guid": 30204,
+          "glyphs": [
+            45741,
+            41099,
+            41105
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Malheal2",
+          "pool_tag": "blackwing_descent_10n_maloriak_diagnostic",
+          "race": 1,
+          "role": "healer",
+          "roster_slot_id": "blackwing_descent_10n_maloriak_diagnostic:raid_healer_2",
+          "runtime_profile_id": "blackwing_descent_10n_maloriak_diagnostic"
+        },
+        {
+          "account": "BWDMALA05",
+          "account_id": 20205,
+          "action_profile_id": "discipline_priest",
+          "canonical_roster_slot_id": "raid_healer_3",
+          "canonical_setup": {
+            "action_profile_id": "discipline_priest",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "discipline_priest",
+            "gear_profile_id": "discipline_priest",
+            "glyph_ids": [
+              42409,
+              42400,
+              42403
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "discipline_priest"
+          },
+          "character_guid": 30205,
+          "class": 5,
+          "class_spec": "discipline_priest",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak/roster/raid_healer_3",
+          "expected_account_id": 20205,
+          "expected_character_guid": 30205,
+          "glyphs": [
+            42409,
+            42400,
+            42403
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Malheal3",
+          "pool_tag": "blackwing_descent_10n_maloriak_diagnostic",
+          "race": 1,
+          "role": "healer",
+          "roster_slot_id": "blackwing_descent_10n_maloriak_diagnostic:raid_healer_3",
+          "runtime_profile_id": "blackwing_descent_10n_maloriak_diagnostic"
+        },
+        {
+          "account": "BWDMALA06",
+          "account_id": 20206,
+          "action_profile_id": "fire_mage",
+          "canonical_roster_slot_id": "raid_dps_1",
+          "canonical_setup": {
+            "action_profile_id": "fire_mage",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "fire_mage",
+            "gear_profile_id": "fire_mage",
+            "glyph_ids": [
+              42739,
+              42743,
+              42753
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "fire_mage"
+          },
+          "character_guid": 30206,
+          "class": 8,
+          "class_spec": "fire_mage",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak/roster/raid_dps_1",
+          "expected_account_id": 20206,
+          "expected_character_guid": 30206,
+          "glyphs": [
+            42739,
+            42743,
+            42753
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Maldps1",
+          "pool_tag": "blackwing_descent_10n_maloriak_diagnostic",
+          "race": 1,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_maloriak_diagnostic:raid_dps_1",
+          "runtime_profile_id": "blackwing_descent_10n_maloriak_diagnostic"
+        },
+        {
+          "account": "BWDMALA07",
+          "account_id": 20207,
+          "action_profile_id": "assassination_rogue",
+          "canonical_roster_slot_id": "raid_dps_2",
+          "canonical_setup": {
+            "action_profile_id": "assassination_rogue",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "assassination_rogue",
+            "gear_profile_id": "assassination_rogue",
+            "glyph_ids": [
+              42954,
+              42957,
+              42969
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "assassination_rogue"
+          },
+          "character_guid": 30207,
+          "class": 4,
+          "class_spec": "assassination_rogue",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak/roster/raid_dps_2",
+          "expected_account_id": 20207,
+          "expected_character_guid": 30207,
+          "glyphs": [
+            42954,
+            42957,
+            42969
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Maldps2",
+          "pool_tag": "blackwing_descent_10n_maloriak_diagnostic",
+          "race": 1,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_maloriak_diagnostic:raid_dps_2",
+          "runtime_profile_id": "blackwing_descent_10n_maloriak_diagnostic"
+        },
+        {
+          "account": "BWDMALA08",
+          "account_id": 20208,
+          "action_profile_id": "affliction_warlock",
+          "canonical_roster_slot_id": "raid_dps_3",
+          "canonical_setup": {
+            "action_profile_id": "affliction_warlock",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "affliction_warlock",
+            "gear_profile_id": "affliction_warlock",
+            "glyph_ids": [
+              42456,
+              42454,
+              42464
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "affliction_warlock"
+          },
+          "character_guid": 30208,
+          "class": 9,
+          "class_spec": "affliction_warlock",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak/roster/raid_dps_3",
+          "expected_account_id": 20208,
+          "expected_character_guid": 30208,
+          "glyphs": [
+            42456,
+            42454,
+            42464
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Maldps3",
+          "pool_tag": "blackwing_descent_10n_maloriak_diagnostic",
+          "race": 1,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_maloriak_diagnostic:raid_dps_3",
+          "runtime_profile_id": "blackwing_descent_10n_maloriak_diagnostic"
+        },
+        {
+          "account": "BWDMALA09",
+          "account_id": 20209,
+          "action_profile_id": "marksmanship_hunter",
+          "canonical_roster_slot_id": "raid_dps_4",
+          "canonical_setup": {
+            "action_profile_id": "marksmanship_hunter",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "marksmanship_hunter",
+            "gear_profile_id": "marksmanship_hunter",
+            "glyph_ids": [
+              42909,
+              42902,
+              42915
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "marksmanship_hunter"
+          },
+          "character_guid": 30209,
+          "class": 3,
+          "class_spec": "marksmanship_hunter",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak/roster/raid_dps_4",
+          "expected_account_id": 20209,
+          "expected_character_guid": 30209,
+          "expected_pet_id": 8700209,
+          "glyphs": [
+            42909,
+            42902,
+            42915
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Maldps4",
+          "pet": {
+            "active": 1,
+            "created_by_spell": 0,
+            "entry": 8959,
+            "id_offset": 209,
+            "level": 85,
+            "modelid": 4124,
+            "name": "malwolf9",
+            "slot": 0,
+            "spells": [
+              2649,
+              17253
+            ]
+          },
+          "pool_tag": "blackwing_descent_10n_maloriak_diagnostic",
+          "race": 1,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_maloriak_diagnostic:raid_dps_4",
+          "runtime_profile_id": "blackwing_descent_10n_maloriak_diagnostic"
+        },
+        {
+          "account": "BWDMALA10",
+          "account_id": 20210,
+          "action_profile_id": "elemental_shaman",
+          "canonical_roster_slot_id": "raid_dps_5",
+          "canonical_setup": {
+            "action_profile_id": "elemental_shaman",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "elemental_shaman",
+            "gear_profile_id": "elemental_shaman",
+            "glyph_ids": [
+              41524,
+              41547,
+              41552
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "elemental_shaman"
+          },
+          "character_guid": 30210,
+          "class": 7,
+          "class_spec": "elemental_shaman",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak/roster/raid_dps_5",
+          "expected_account_id": 20210,
+          "expected_character_guid": 30210,
+          "glyphs": [
+            41524,
+            41547,
+            41552
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Maldps5",
+          "pool_tag": "blackwing_descent_10n_maloriak_diagnostic",
+          "race": 11,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_maloriak_diagnostic:raid_dps_5",
+          "runtime_profile_id": "blackwing_descent_10n_maloriak_diagnostic"
+        }
+      ],
+      "diagnostic_only": true,
+      "diagnostic_parent_scenario_id": "blackwing_descent_10n",
+      "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak",
+      "live_identity_requirements": {
+        "assigned_at": "live_setup_only",
+        "fields": [
+          "group_id",
+          "map_instance_id",
+          "save_id",
+          "attempt_id",
+          "strategy_id",
+          "assignment_generation"
+        ],
+        "fixture_values": null,
+        "forbidden_provisioning_fields": [
+          "group_id",
+          "map_instance_id",
+          "save_id",
+          "attempt_id",
+          "strategy_id",
+          "assignment_generation"
+        ],
+        "must_be_distinct_across_shards": true,
+        "must_be_positive": true
+      },
+      "pool_tag": "blackwing_descent_10n_maloriak_diagnostic",
+      "predecessor_state": {
+        "certifies_predecessors": false,
+        "precompleted_boss_entries": [
+          41570,
+          42166
+        ],
+        "requires_native_descent_before_engagement": false,
+        "state_source": "instance_blackwing_descent_native_boss_state_fixture",
+        "upper_ledge_start": false
+      },
+      "required_bot_count": 10,
+      "role_counts": {
+        "dps": 5,
+        "healer": 3,
+        "tank": 2
+      },
+      "runtime_profile_id": "blackwing_descent_10n_maloriak_diagnostic",
+      "scenario_id": "blackwing_descent_10n_maloriak_diagnostic",
+      "shard_id": "bwd_maloriak_diagnostic_10n",
+      "start_position": {
+        "map_id": 669,
+        "o": 3.141593,
+        "x": -66.85,
+        "y": -315.91,
+        "z": 66.08
+      }
+    },
+    {
+      "boss_key": "atramedes",
+      "bots": [
+        {
+          "account": "BWDATRA01",
+          "account_id": 20301,
+          "action_profile_id": "protection_paladin",
+          "canonical_roster_slot_id": "raid_tank_1",
+          "canonical_setup": {
+            "action_profile_id": "protection_paladin",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "protection_paladin",
+            "gear_profile_id": "protection_paladin",
+            "glyph_ids": [
+              45742,
+              41098,
+              43869,
+              41107,
+              43367,
+              43867,
+              43368,
+              43340,
+              43366
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "protection_paladin"
+          },
+          "character_guid": 30301,
+          "class": 2,
+          "class_spec": "protection_paladin",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes/roster/raid_tank_1",
+          "expected_account_id": 20301,
+          "expected_character_guid": 30301,
+          "glyphs": [
+            45742,
+            41098,
+            43869,
+            41107,
+            43367,
+            43867,
+            43368,
+            43340,
+            43366
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Atrtank1",
+          "pool_tag": "blackwing_descent_10n_atramedes_diagnostic",
+          "race": 1,
+          "role": "tank",
+          "roster_slot_id": "blackwing_descent_10n_atramedes_diagnostic:raid_tank_1",
+          "runtime_profile_id": "blackwing_descent_10n_atramedes_diagnostic"
+        },
+        {
+          "account": "BWDATRA02",
+          "account_id": 20302,
+          "action_profile_id": "blood_death_knight",
+          "canonical_roster_slot_id": "raid_tank_2",
+          "canonical_setup": {
+            "action_profile_id": "blood_death_knight",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "blood_death_knight",
+            "gear_profile_id": "blood_death_knight",
+            "glyph_ids": [
+              43533,
+              43547,
+              43549
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "blood_death_knight"
+          },
+          "character_guid": 30302,
+          "class": 6,
+          "class_spec": "blood_death_knight",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes/roster/raid_tank_2",
+          "expected_account_id": 20302,
+          "expected_character_guid": 30302,
+          "glyphs": [
+            43533,
+            43547,
+            43549
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Atrtank2",
+          "pool_tag": "blackwing_descent_10n_atramedes_diagnostic",
+          "race": 1,
+          "role": "tank",
+          "roster_slot_id": "blackwing_descent_10n_atramedes_diagnostic:raid_tank_2",
+          "runtime_profile_id": "blackwing_descent_10n_atramedes_diagnostic"
+        },
+        {
+          "account": "BWDATRA03",
+          "account_id": 20303,
+          "action_profile_id": "restoration_druid",
+          "canonical_roster_slot_id": "raid_healer_1",
+          "canonical_setup": {
+            "action_profile_id": "restoration_druid",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "restoration_druid",
+            "gear_profile_id": "restoration_druid",
+            "glyph_ids": [
+              45623,
+              40906,
+              40913
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "restoration_druid"
+          },
+          "character_guid": 30303,
+          "class": 11,
+          "class_spec": "restoration_druid",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes/roster/raid_healer_1",
+          "expected_account_id": 20303,
+          "expected_character_guid": 30303,
+          "glyphs": [
+            45623,
+            40906,
+            40913
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Atrheal1",
+          "pool_tag": "blackwing_descent_10n_atramedes_diagnostic",
+          "race": 4,
+          "role": "healer",
+          "roster_slot_id": "blackwing_descent_10n_atramedes_diagnostic:raid_healer_1",
+          "runtime_profile_id": "blackwing_descent_10n_atramedes_diagnostic"
+        },
+        {
+          "account": "BWDATRA04",
+          "account_id": 20304,
+          "action_profile_id": "holy_paladin",
+          "canonical_roster_slot_id": "raid_healer_2",
+          "canonical_setup": {
+            "action_profile_id": "holy_paladin",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "holy_paladin",
+            "gear_profile_id": "holy_paladin",
+            "glyph_ids": [
+              45741,
+              41099,
+              41105
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "holy_paladin"
+          },
+          "character_guid": 30304,
+          "class": 2,
+          "class_spec": "holy_paladin",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes/roster/raid_healer_2",
+          "expected_account_id": 20304,
+          "expected_character_guid": 30304,
+          "glyphs": [
+            45741,
+            41099,
+            41105
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Atrheal2",
+          "pool_tag": "blackwing_descent_10n_atramedes_diagnostic",
+          "race": 1,
+          "role": "healer",
+          "roster_slot_id": "blackwing_descent_10n_atramedes_diagnostic:raid_healer_2",
+          "runtime_profile_id": "blackwing_descent_10n_atramedes_diagnostic"
+        },
+        {
+          "account": "BWDATRA05",
+          "account_id": 20305,
+          "action_profile_id": "discipline_priest",
+          "canonical_roster_slot_id": "raid_healer_3",
+          "canonical_setup": {
+            "action_profile_id": "discipline_priest",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "discipline_priest",
+            "gear_profile_id": "discipline_priest",
+            "glyph_ids": [
+              42409,
+              42400,
+              42403
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "discipline_priest"
+          },
+          "character_guid": 30305,
+          "class": 5,
+          "class_spec": "discipline_priest",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes/roster/raid_healer_3",
+          "expected_account_id": 20305,
+          "expected_character_guid": 30305,
+          "glyphs": [
+            42409,
+            42400,
+            42403
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Atrheal3",
+          "pool_tag": "blackwing_descent_10n_atramedes_diagnostic",
+          "race": 1,
+          "role": "healer",
+          "roster_slot_id": "blackwing_descent_10n_atramedes_diagnostic:raid_healer_3",
+          "runtime_profile_id": "blackwing_descent_10n_atramedes_diagnostic"
+        },
+        {
+          "account": "BWDATRA06",
+          "account_id": 20306,
+          "action_profile_id": "fire_mage",
+          "canonical_roster_slot_id": "raid_dps_1",
+          "canonical_setup": {
+            "action_profile_id": "fire_mage",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "fire_mage",
+            "gear_profile_id": "fire_mage",
+            "glyph_ids": [
+              42739,
+              42743,
+              42753
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "fire_mage"
+          },
+          "character_guid": 30306,
+          "class": 8,
+          "class_spec": "fire_mage",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes/roster/raid_dps_1",
+          "expected_account_id": 20306,
+          "expected_character_guid": 30306,
+          "glyphs": [
+            42739,
+            42743,
+            42753
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Atrdps1",
+          "pool_tag": "blackwing_descent_10n_atramedes_diagnostic",
+          "race": 1,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_atramedes_diagnostic:raid_dps_1",
+          "runtime_profile_id": "blackwing_descent_10n_atramedes_diagnostic"
+        },
+        {
+          "account": "BWDATRA07",
+          "account_id": 20307,
+          "action_profile_id": "assassination_rogue",
+          "canonical_roster_slot_id": "raid_dps_2",
+          "canonical_setup": {
+            "action_profile_id": "assassination_rogue",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "assassination_rogue",
+            "gear_profile_id": "assassination_rogue",
+            "glyph_ids": [
+              42954,
+              42957,
+              42969
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "assassination_rogue"
+          },
+          "character_guid": 30307,
+          "class": 4,
+          "class_spec": "assassination_rogue",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes/roster/raid_dps_2",
+          "expected_account_id": 20307,
+          "expected_character_guid": 30307,
+          "glyphs": [
+            42954,
+            42957,
+            42969
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Atrdps2",
+          "pool_tag": "blackwing_descent_10n_atramedes_diagnostic",
+          "race": 1,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_atramedes_diagnostic:raid_dps_2",
+          "runtime_profile_id": "blackwing_descent_10n_atramedes_diagnostic"
+        },
+        {
+          "account": "BWDATRA08",
+          "account_id": 20308,
+          "action_profile_id": "affliction_warlock",
+          "canonical_roster_slot_id": "raid_dps_3",
+          "canonical_setup": {
+            "action_profile_id": "affliction_warlock",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "affliction_warlock",
+            "gear_profile_id": "affliction_warlock",
+            "glyph_ids": [
+              42456,
+              42454,
+              42464
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "affliction_warlock"
+          },
+          "character_guid": 30308,
+          "class": 9,
+          "class_spec": "affliction_warlock",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes/roster/raid_dps_3",
+          "expected_account_id": 20308,
+          "expected_character_guid": 30308,
+          "glyphs": [
+            42456,
+            42454,
+            42464
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Atrdps3",
+          "pool_tag": "blackwing_descent_10n_atramedes_diagnostic",
+          "race": 1,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_atramedes_diagnostic:raid_dps_3",
+          "runtime_profile_id": "blackwing_descent_10n_atramedes_diagnostic"
+        },
+        {
+          "account": "BWDATRA09",
+          "account_id": 20309,
+          "action_profile_id": "marksmanship_hunter",
+          "canonical_roster_slot_id": "raid_dps_4",
+          "canonical_setup": {
+            "action_profile_id": "marksmanship_hunter",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "marksmanship_hunter",
+            "gear_profile_id": "marksmanship_hunter",
+            "glyph_ids": [
+              42909,
+              42902,
+              42915
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "marksmanship_hunter"
+          },
+          "character_guid": 30309,
+          "class": 3,
+          "class_spec": "marksmanship_hunter",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes/roster/raid_dps_4",
+          "expected_account_id": 20309,
+          "expected_character_guid": 30309,
+          "expected_pet_id": 8700309,
+          "glyphs": [
+            42909,
+            42902,
+            42915
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Atrdps4",
+          "pet": {
+            "active": 1,
+            "created_by_spell": 0,
+            "entry": 8959,
+            "id_offset": 309,
+            "level": 85,
+            "modelid": 4124,
+            "name": "atrwolf9",
+            "slot": 0,
+            "spells": [
+              2649,
+              17253
+            ]
+          },
+          "pool_tag": "blackwing_descent_10n_atramedes_diagnostic",
+          "race": 1,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_atramedes_diagnostic:raid_dps_4",
+          "runtime_profile_id": "blackwing_descent_10n_atramedes_diagnostic"
+        },
+        {
+          "account": "BWDATRA10",
+          "account_id": 20310,
+          "action_profile_id": "elemental_shaman",
+          "canonical_roster_slot_id": "raid_dps_5",
+          "canonical_setup": {
+            "action_profile_id": "elemental_shaman",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "elemental_shaman",
+            "gear_profile_id": "elemental_shaman",
+            "glyph_ids": [
+              41524,
+              41547,
+              41552
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "elemental_shaman"
+          },
+          "character_guid": 30310,
+          "class": 7,
+          "class_spec": "elemental_shaman",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes/roster/raid_dps_5",
+          "expected_account_id": 20310,
+          "expected_character_guid": 30310,
+          "glyphs": [
+            41524,
+            41547,
+            41552
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Atrdps5",
+          "pool_tag": "blackwing_descent_10n_atramedes_diagnostic",
+          "race": 11,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_atramedes_diagnostic:raid_dps_5",
+          "runtime_profile_id": "blackwing_descent_10n_atramedes_diagnostic"
+        }
+      ],
+      "diagnostic_only": true,
+      "diagnostic_parent_scenario_id": "blackwing_descent_10n",
+      "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes",
+      "live_identity_requirements": {
+        "assigned_at": "live_setup_only",
+        "fields": [
+          "group_id",
+          "map_instance_id",
+          "save_id",
+          "attempt_id",
+          "strategy_id",
+          "assignment_generation"
+        ],
+        "fixture_values": null,
+        "forbidden_provisioning_fields": [
+          "group_id",
+          "map_instance_id",
+          "save_id",
+          "attempt_id",
+          "strategy_id",
+          "assignment_generation"
+        ],
+        "must_be_distinct_across_shards": true,
+        "must_be_positive": true
+      },
+      "pool_tag": "blackwing_descent_10n_atramedes_diagnostic",
+      "predecessor_state": {
+        "certifies_predecessors": false,
+        "precompleted_boss_entries": [
+          41570,
+          42166,
+          41378
+        ],
+        "requires_native_descent_before_engagement": false,
+        "state_source": "instance_blackwing_descent_native_boss_state_fixture",
+        "upper_ledge_start": false
+      },
+      "required_bot_count": 10,
+      "role_counts": {
+        "dps": 5,
+        "healer": 3,
+        "tank": 2
+      },
+      "runtime_profile_id": "blackwing_descent_10n_atramedes_diagnostic",
+      "scenario_id": "blackwing_descent_10n_atramedes_diagnostic",
+      "shard_id": "bwd_atramedes_diagnostic_10n",
+      "start_position": {
+        "map_id": 669,
+        "o": 3.141593,
+        "x": 220.0347,
+        "y": -224.3125,
+        "z": 74.88777
+      }
+    },
+    {
+      "boss_key": "chimaeron",
+      "bots": [
+        {
+          "account": "BWDCHIA01",
+          "account_id": 20401,
+          "action_profile_id": "protection_paladin",
+          "canonical_roster_slot_id": "raid_tank_1",
+          "canonical_setup": {
+            "action_profile_id": "protection_paladin",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "protection_paladin",
+            "gear_profile_id": "protection_paladin",
+            "glyph_ids": [
+              45742,
+              41098,
+              43869,
+              41107,
+              43367,
+              43867,
+              43368,
+              43340,
+              43366
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "protection_paladin"
+          },
+          "character_guid": 30401,
+          "class": 2,
+          "class_spec": "protection_paladin",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron/roster/raid_tank_1",
+          "expected_account_id": 20401,
+          "expected_character_guid": 30401,
+          "glyphs": [
+            45742,
+            41098,
+            43869,
+            41107,
+            43367,
+            43867,
+            43368,
+            43340,
+            43366
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Chitank1",
+          "pool_tag": "blackwing_descent_10n_chimaeron_diagnostic",
+          "race": 1,
+          "role": "tank",
+          "roster_slot_id": "blackwing_descent_10n_chimaeron_diagnostic:raid_tank_1",
+          "runtime_profile_id": "blackwing_descent_10n_chimaeron_diagnostic"
+        },
+        {
+          "account": "BWDCHIA02",
+          "account_id": 20402,
+          "action_profile_id": "blood_death_knight",
+          "canonical_roster_slot_id": "raid_tank_2",
+          "canonical_setup": {
+            "action_profile_id": "blood_death_knight",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "blood_death_knight",
+            "gear_profile_id": "blood_death_knight",
+            "glyph_ids": [
+              43533,
+              43547,
+              43549
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "blood_death_knight"
+          },
+          "character_guid": 30402,
+          "class": 6,
+          "class_spec": "blood_death_knight",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron/roster/raid_tank_2",
+          "expected_account_id": 20402,
+          "expected_character_guid": 30402,
+          "glyphs": [
+            43533,
+            43547,
+            43549
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Chitank2",
+          "pool_tag": "blackwing_descent_10n_chimaeron_diagnostic",
+          "race": 1,
+          "role": "tank",
+          "roster_slot_id": "blackwing_descent_10n_chimaeron_diagnostic:raid_tank_2",
+          "runtime_profile_id": "blackwing_descent_10n_chimaeron_diagnostic"
+        },
+        {
+          "account": "BWDCHIA03",
+          "account_id": 20403,
+          "action_profile_id": "restoration_druid",
+          "canonical_roster_slot_id": "raid_healer_1",
+          "canonical_setup": {
+            "action_profile_id": "restoration_druid",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "restoration_druid",
+            "gear_profile_id": "restoration_druid",
+            "glyph_ids": [
+              45623,
+              40906,
+              40913
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "restoration_druid"
+          },
+          "character_guid": 30403,
+          "class": 11,
+          "class_spec": "restoration_druid",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron/roster/raid_healer_1",
+          "expected_account_id": 20403,
+          "expected_character_guid": 30403,
+          "glyphs": [
+            45623,
+            40906,
+            40913
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Chiheal1",
+          "pool_tag": "blackwing_descent_10n_chimaeron_diagnostic",
+          "race": 4,
+          "role": "healer",
+          "roster_slot_id": "blackwing_descent_10n_chimaeron_diagnostic:raid_healer_1",
+          "runtime_profile_id": "blackwing_descent_10n_chimaeron_diagnostic"
+        },
+        {
+          "account": "BWDCHIA04",
+          "account_id": 20404,
+          "action_profile_id": "holy_paladin",
+          "canonical_roster_slot_id": "raid_healer_2",
+          "canonical_setup": {
+            "action_profile_id": "holy_paladin",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "holy_paladin",
+            "gear_profile_id": "holy_paladin",
+            "glyph_ids": [
+              45741,
+              41099,
+              41105
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "holy_paladin"
+          },
+          "character_guid": 30404,
+          "class": 2,
+          "class_spec": "holy_paladin",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron/roster/raid_healer_2",
+          "expected_account_id": 20404,
+          "expected_character_guid": 30404,
+          "glyphs": [
+            45741,
+            41099,
+            41105
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Chiheal2",
+          "pool_tag": "blackwing_descent_10n_chimaeron_diagnostic",
+          "race": 1,
+          "role": "healer",
+          "roster_slot_id": "blackwing_descent_10n_chimaeron_diagnostic:raid_healer_2",
+          "runtime_profile_id": "blackwing_descent_10n_chimaeron_diagnostic"
+        },
+        {
+          "account": "BWDCHIA05",
+          "account_id": 20405,
+          "action_profile_id": "discipline_priest",
+          "canonical_roster_slot_id": "raid_healer_3",
+          "canonical_setup": {
+            "action_profile_id": "discipline_priest",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "discipline_priest",
+            "gear_profile_id": "discipline_priest",
+            "glyph_ids": [
+              42409,
+              42400,
+              42403
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "discipline_priest"
+          },
+          "character_guid": 30405,
+          "class": 5,
+          "class_spec": "discipline_priest",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron/roster/raid_healer_3",
+          "expected_account_id": 20405,
+          "expected_character_guid": 30405,
+          "glyphs": [
+            42409,
+            42400,
+            42403
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Chiheal3",
+          "pool_tag": "blackwing_descent_10n_chimaeron_diagnostic",
+          "race": 1,
+          "role": "healer",
+          "roster_slot_id": "blackwing_descent_10n_chimaeron_diagnostic:raid_healer_3",
+          "runtime_profile_id": "blackwing_descent_10n_chimaeron_diagnostic"
+        },
+        {
+          "account": "BWDCHIA06",
+          "account_id": 20406,
+          "action_profile_id": "fire_mage",
+          "canonical_roster_slot_id": "raid_dps_1",
+          "canonical_setup": {
+            "action_profile_id": "fire_mage",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "fire_mage",
+            "gear_profile_id": "fire_mage",
+            "glyph_ids": [
+              42739,
+              42743,
+              42753
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "fire_mage"
+          },
+          "character_guid": 30406,
+          "class": 8,
+          "class_spec": "fire_mage",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron/roster/raid_dps_1",
+          "expected_account_id": 20406,
+          "expected_character_guid": 30406,
+          "glyphs": [
+            42739,
+            42743,
+            42753
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Chidps1",
+          "pool_tag": "blackwing_descent_10n_chimaeron_diagnostic",
+          "race": 1,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_chimaeron_diagnostic:raid_dps_1",
+          "runtime_profile_id": "blackwing_descent_10n_chimaeron_diagnostic"
+        },
+        {
+          "account": "BWDCHIA07",
+          "account_id": 20407,
+          "action_profile_id": "assassination_rogue",
+          "canonical_roster_slot_id": "raid_dps_2",
+          "canonical_setup": {
+            "action_profile_id": "assassination_rogue",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "assassination_rogue",
+            "gear_profile_id": "assassination_rogue",
+            "glyph_ids": [
+              42954,
+              42957,
+              42969
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "assassination_rogue"
+          },
+          "character_guid": 30407,
+          "class": 4,
+          "class_spec": "assassination_rogue",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron/roster/raid_dps_2",
+          "expected_account_id": 20407,
+          "expected_character_guid": 30407,
+          "glyphs": [
+            42954,
+            42957,
+            42969
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Chidps2",
+          "pool_tag": "blackwing_descent_10n_chimaeron_diagnostic",
+          "race": 1,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_chimaeron_diagnostic:raid_dps_2",
+          "runtime_profile_id": "blackwing_descent_10n_chimaeron_diagnostic"
+        },
+        {
+          "account": "BWDCHIA08",
+          "account_id": 20408,
+          "action_profile_id": "affliction_warlock",
+          "canonical_roster_slot_id": "raid_dps_3",
+          "canonical_setup": {
+            "action_profile_id": "affliction_warlock",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "affliction_warlock",
+            "gear_profile_id": "affliction_warlock",
+            "glyph_ids": [
+              42456,
+              42454,
+              42464
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "affliction_warlock"
+          },
+          "character_guid": 30408,
+          "class": 9,
+          "class_spec": "affliction_warlock",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron/roster/raid_dps_3",
+          "expected_account_id": 20408,
+          "expected_character_guid": 30408,
+          "glyphs": [
+            42456,
+            42454,
+            42464
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Chidps3",
+          "pool_tag": "blackwing_descent_10n_chimaeron_diagnostic",
+          "race": 1,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_chimaeron_diagnostic:raid_dps_3",
+          "runtime_profile_id": "blackwing_descent_10n_chimaeron_diagnostic"
+        },
+        {
+          "account": "BWDCHIA09",
+          "account_id": 20409,
+          "action_profile_id": "marksmanship_hunter",
+          "canonical_roster_slot_id": "raid_dps_4",
+          "canonical_setup": {
+            "action_profile_id": "marksmanship_hunter",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "marksmanship_hunter",
+            "gear_profile_id": "marksmanship_hunter",
+            "glyph_ids": [
+              42909,
+              42902,
+              42915
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "marksmanship_hunter"
+          },
+          "character_guid": 30409,
+          "class": 3,
+          "class_spec": "marksmanship_hunter",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron/roster/raid_dps_4",
+          "expected_account_id": 20409,
+          "expected_character_guid": 30409,
+          "expected_pet_id": 8700409,
+          "glyphs": [
+            42909,
+            42902,
+            42915
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Chidps4",
+          "pet": {
+            "active": 1,
+            "created_by_spell": 0,
+            "entry": 8959,
+            "id_offset": 409,
+            "level": 85,
+            "modelid": 4124,
+            "name": "chiwolf9",
+            "slot": 0,
+            "spells": [
+              2649,
+              17253
+            ]
+          },
+          "pool_tag": "blackwing_descent_10n_chimaeron_diagnostic",
+          "race": 1,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_chimaeron_diagnostic:raid_dps_4",
+          "runtime_profile_id": "blackwing_descent_10n_chimaeron_diagnostic"
+        },
+        {
+          "account": "BWDCHIA10",
+          "account_id": 20410,
+          "action_profile_id": "elemental_shaman",
+          "canonical_roster_slot_id": "raid_dps_5",
+          "canonical_setup": {
+            "action_profile_id": "elemental_shaman",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "elemental_shaman",
+            "gear_profile_id": "elemental_shaman",
+            "glyph_ids": [
+              41524,
+              41547,
+              41552
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "elemental_shaman"
+          },
+          "character_guid": 30410,
+          "class": 7,
+          "class_spec": "elemental_shaman",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron/roster/raid_dps_5",
+          "expected_account_id": 20410,
+          "expected_character_guid": 30410,
+          "glyphs": [
+            41524,
+            41547,
+            41552
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Chidps5",
+          "pool_tag": "blackwing_descent_10n_chimaeron_diagnostic",
+          "race": 11,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_chimaeron_diagnostic:raid_dps_5",
+          "runtime_profile_id": "blackwing_descent_10n_chimaeron_diagnostic"
+        }
+      ],
+      "diagnostic_only": true,
+      "diagnostic_parent_scenario_id": "blackwing_descent_10n",
+      "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron",
+      "live_identity_requirements": {
+        "assigned_at": "live_setup_only",
+        "fields": [
+          "group_id",
+          "map_instance_id",
+          "save_id",
+          "attempt_id",
+          "strategy_id",
+          "assignment_generation"
+        ],
+        "fixture_values": null,
+        "forbidden_provisioning_fields": [
+          "group_id",
+          "map_instance_id",
+          "save_id",
+          "attempt_id",
+          "strategy_id",
+          "assignment_generation"
+        ],
+        "must_be_distinct_across_shards": true,
+        "must_be_positive": true
+      },
+      "pool_tag": "blackwing_descent_10n_chimaeron_diagnostic",
+      "predecessor_state": {
+        "certifies_predecessors": false,
+        "precompleted_boss_entries": [
+          41570,
+          42166,
+          41378,
+          41442
+        ],
+        "requires_native_descent_before_engagement": false,
+        "state_source": "instance_blackwing_descent_native_boss_state_fixture",
+        "upper_ledge_start": false
+      },
+      "required_bot_count": 10,
+      "role_counts": {
+        "dps": 5,
+        "healer": 3,
+        "tank": 2
+      },
+      "runtime_profile_id": "blackwing_descent_10n_chimaeron_diagnostic",
+      "scenario_id": "blackwing_descent_10n_chimaeron_diagnostic",
+      "shard_id": "bwd_chimaeron_diagnostic_10n",
+      "start_position": {
+        "map_id": 669,
+        "o": 4.694936,
+        "x": -104.738,
+        "y": 20.592,
+        "z": 72.14094
+      }
+    },
+    {
+      "boss_key": "nefarian",
+      "bots": [
+        {
+          "account": "BWDNEFA01",
+          "account_id": 20501,
+          "action_profile_id": "protection_paladin",
+          "canonical_roster_slot_id": "raid_tank_1",
+          "canonical_setup": {
+            "action_profile_id": "protection_paladin",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "protection_paladin",
+            "gear_profile_id": "protection_paladin",
+            "glyph_ids": [
+              45742,
+              41098,
+              43869,
+              41107,
+              43367,
+              43867,
+              43368,
+              43340,
+              43366
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "protection_paladin"
+          },
+          "character_guid": 30501,
+          "class": 2,
+          "class_spec": "protection_paladin",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian/roster/raid_tank_1",
+          "expected_account_id": 20501,
+          "expected_character_guid": 30501,
+          "glyphs": [
+            45742,
+            41098,
+            43869,
+            41107,
+            43367,
+            43867,
+            43368,
+            43340,
+            43366
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Neftank1",
+          "pool_tag": "blackwing_descent_10n_nefarian_diagnostic",
+          "race": 1,
+          "role": "tank",
+          "roster_slot_id": "blackwing_descent_10n_nefarian_diagnostic:raid_tank_1",
+          "runtime_profile_id": "blackwing_descent_10n_nefarian_diagnostic"
+        },
+        {
+          "account": "BWDNEFA02",
+          "account_id": 20502,
+          "action_profile_id": "blood_death_knight",
+          "canonical_roster_slot_id": "raid_tank_2",
+          "canonical_setup": {
+            "action_profile_id": "blood_death_knight",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "blood_death_knight",
+            "gear_profile_id": "blood_death_knight",
+            "glyph_ids": [
+              43533,
+              43547,
+              43549
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "blood_death_knight"
+          },
+          "character_guid": 30502,
+          "class": 6,
+          "class_spec": "blood_death_knight",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian/roster/raid_tank_2",
+          "expected_account_id": 20502,
+          "expected_character_guid": 30502,
+          "glyphs": [
+            43533,
+            43547,
+            43549
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Neftank2",
+          "pool_tag": "blackwing_descent_10n_nefarian_diagnostic",
+          "race": 1,
+          "role": "tank",
+          "roster_slot_id": "blackwing_descent_10n_nefarian_diagnostic:raid_tank_2",
+          "runtime_profile_id": "blackwing_descent_10n_nefarian_diagnostic"
+        },
+        {
+          "account": "BWDNEFA03",
+          "account_id": 20503,
+          "action_profile_id": "restoration_druid",
+          "canonical_roster_slot_id": "raid_healer_1",
+          "canonical_setup": {
+            "action_profile_id": "restoration_druid",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "restoration_druid",
+            "gear_profile_id": "restoration_druid",
+            "glyph_ids": [
+              45623,
+              40906,
+              40913
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "restoration_druid"
+          },
+          "character_guid": 30503,
+          "class": 11,
+          "class_spec": "restoration_druid",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian/roster/raid_healer_1",
+          "expected_account_id": 20503,
+          "expected_character_guid": 30503,
+          "glyphs": [
+            45623,
+            40906,
+            40913
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Nefheal1",
+          "pool_tag": "blackwing_descent_10n_nefarian_diagnostic",
+          "race": 4,
+          "role": "healer",
+          "roster_slot_id": "blackwing_descent_10n_nefarian_diagnostic:raid_healer_1",
+          "runtime_profile_id": "blackwing_descent_10n_nefarian_diagnostic"
+        },
+        {
+          "account": "BWDNEFA04",
+          "account_id": 20504,
+          "action_profile_id": "holy_paladin",
+          "canonical_roster_slot_id": "raid_healer_2",
+          "canonical_setup": {
+            "action_profile_id": "holy_paladin",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "holy_paladin",
+            "gear_profile_id": "holy_paladin",
+            "glyph_ids": [
+              45741,
+              41099,
+              41105
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "holy_paladin"
+          },
+          "character_guid": 30504,
+          "class": 2,
+          "class_spec": "holy_paladin",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian/roster/raid_healer_2",
+          "expected_account_id": 20504,
+          "expected_character_guid": 30504,
+          "glyphs": [
+            45741,
+            41099,
+            41105
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Nefheal2",
+          "pool_tag": "blackwing_descent_10n_nefarian_diagnostic",
+          "race": 1,
+          "role": "healer",
+          "roster_slot_id": "blackwing_descent_10n_nefarian_diagnostic:raid_healer_2",
+          "runtime_profile_id": "blackwing_descent_10n_nefarian_diagnostic"
+        },
+        {
+          "account": "BWDNEFA05",
+          "account_id": 20505,
+          "action_profile_id": "discipline_priest",
+          "canonical_roster_slot_id": "raid_healer_3",
+          "canonical_setup": {
+            "action_profile_id": "discipline_priest",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "discipline_priest",
+            "gear_profile_id": "discipline_priest",
+            "glyph_ids": [
+              42409,
+              42400,
+              42403
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "discipline_priest"
+          },
+          "character_guid": 30505,
+          "class": 5,
+          "class_spec": "discipline_priest",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian/roster/raid_healer_3",
+          "expected_account_id": 20505,
+          "expected_character_guid": 30505,
+          "glyphs": [
+            42409,
+            42400,
+            42403
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Nefheal3",
+          "pool_tag": "blackwing_descent_10n_nefarian_diagnostic",
+          "race": 1,
+          "role": "healer",
+          "roster_slot_id": "blackwing_descent_10n_nefarian_diagnostic:raid_healer_3",
+          "runtime_profile_id": "blackwing_descent_10n_nefarian_diagnostic"
+        },
+        {
+          "account": "BWDNEFA06",
+          "account_id": 20506,
+          "action_profile_id": "fire_mage",
+          "canonical_roster_slot_id": "raid_dps_1",
+          "canonical_setup": {
+            "action_profile_id": "fire_mage",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "fire_mage",
+            "gear_profile_id": "fire_mage",
+            "glyph_ids": [
+              42739,
+              42743,
+              42753
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "fire_mage"
+          },
+          "character_guid": 30506,
+          "class": 8,
+          "class_spec": "fire_mage",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian/roster/raid_dps_1",
+          "expected_account_id": 20506,
+          "expected_character_guid": 30506,
+          "glyphs": [
+            42739,
+            42743,
+            42753
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Nefdps1",
+          "pool_tag": "blackwing_descent_10n_nefarian_diagnostic",
+          "race": 1,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_nefarian_diagnostic:raid_dps_1",
+          "runtime_profile_id": "blackwing_descent_10n_nefarian_diagnostic"
+        },
+        {
+          "account": "BWDNEFA07",
+          "account_id": 20507,
+          "action_profile_id": "assassination_rogue",
+          "canonical_roster_slot_id": "raid_dps_2",
+          "canonical_setup": {
+            "action_profile_id": "assassination_rogue",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "assassination_rogue",
+            "gear_profile_id": "assassination_rogue",
+            "glyph_ids": [
+              42954,
+              42957,
+              42969
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "assassination_rogue"
+          },
+          "character_guid": 30507,
+          "class": 4,
+          "class_spec": "assassination_rogue",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian/roster/raid_dps_2",
+          "expected_account_id": 20507,
+          "expected_character_guid": 30507,
+          "glyphs": [
+            42954,
+            42957,
+            42969
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Nefdps2",
+          "pool_tag": "blackwing_descent_10n_nefarian_diagnostic",
+          "race": 1,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_nefarian_diagnostic:raid_dps_2",
+          "runtime_profile_id": "blackwing_descent_10n_nefarian_diagnostic"
+        },
+        {
+          "account": "BWDNEFA08",
+          "account_id": 20508,
+          "action_profile_id": "affliction_warlock",
+          "canonical_roster_slot_id": "raid_dps_3",
+          "canonical_setup": {
+            "action_profile_id": "affliction_warlock",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "affliction_warlock",
+            "gear_profile_id": "affliction_warlock",
+            "glyph_ids": [
+              42456,
+              42454,
+              42464
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "affliction_warlock"
+          },
+          "character_guid": 30508,
+          "class": 9,
+          "class_spec": "affliction_warlock",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian/roster/raid_dps_3",
+          "expected_account_id": 20508,
+          "expected_character_guid": 30508,
+          "glyphs": [
+            42456,
+            42454,
+            42464
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Nefdps3",
+          "pool_tag": "blackwing_descent_10n_nefarian_diagnostic",
+          "race": 1,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_nefarian_diagnostic:raid_dps_3",
+          "runtime_profile_id": "blackwing_descent_10n_nefarian_diagnostic"
+        },
+        {
+          "account": "BWDNEFA09",
+          "account_id": 20509,
+          "action_profile_id": "marksmanship_hunter",
+          "canonical_roster_slot_id": "raid_dps_4",
+          "canonical_setup": {
+            "action_profile_id": "marksmanship_hunter",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "marksmanship_hunter",
+            "gear_profile_id": "marksmanship_hunter",
+            "glyph_ids": [
+              42909,
+              42902,
+              42915
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "marksmanship_hunter"
+          },
+          "character_guid": 30509,
+          "class": 3,
+          "class_spec": "marksmanship_hunter",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian/roster/raid_dps_4",
+          "expected_account_id": 20509,
+          "expected_character_guid": 30509,
+          "expected_pet_id": 8700509,
+          "glyphs": [
+            42909,
+            42902,
+            42915
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Nefdps4",
+          "pet": {
+            "active": 1,
+            "created_by_spell": 0,
+            "entry": 8959,
+            "id_offset": 509,
+            "level": 85,
+            "modelid": 4124,
+            "name": "nefwolf9",
+            "slot": 0,
+            "spells": [
+              2649,
+              17253
+            ]
+          },
+          "pool_tag": "blackwing_descent_10n_nefarian_diagnostic",
+          "race": 1,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_nefarian_diagnostic:raid_dps_4",
+          "runtime_profile_id": "blackwing_descent_10n_nefarian_diagnostic"
+        },
+        {
+          "account": "BWDNEFA10",
+          "account_id": 20510,
+          "action_profile_id": "elemental_shaman",
+          "canonical_roster_slot_id": "raid_dps_5",
+          "canonical_setup": {
+            "action_profile_id": "elemental_shaman",
+            "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
+            "class_spec": "elemental_shaman",
+            "gear_profile_id": "elemental_shaman",
+            "glyph_ids": [
+              41524,
+              41547,
+              41552
+            ],
+            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+            "talent_build_id": "elemental_shaman"
+          },
+          "character_guid": 30510,
+          "class": 7,
+          "class_spec": "elemental_shaman",
+          "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian/roster/raid_dps_5",
+          "expected_account_id": 20510,
+          "expected_character_guid": 30510,
+          "glyphs": [
+            41524,
+            41547,
+            41552
+          ],
+          "legacy_names": [],
+          "level": 85,
+          "name": "Nefdps5",
+          "pool_tag": "blackwing_descent_10n_nefarian_diagnostic",
+          "race": 11,
+          "role": "dps",
+          "roster_slot_id": "blackwing_descent_10n_nefarian_diagnostic:raid_dps_5",
+          "runtime_profile_id": "blackwing_descent_10n_nefarian_diagnostic"
+        }
+      ],
+      "diagnostic_only": true,
+      "diagnostic_parent_scenario_id": "blackwing_descent_10n",
+      "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian",
+      "live_identity_requirements": {
+        "assigned_at": "live_setup_only",
+        "fields": [
+          "group_id",
+          "map_instance_id",
+          "save_id",
+          "attempt_id",
+          "strategy_id",
+          "assignment_generation"
+        ],
+        "fixture_values": null,
+        "forbidden_provisioning_fields": [
+          "group_id",
+          "map_instance_id",
+          "save_id",
+          "attempt_id",
+          "strategy_id",
+          "assignment_generation"
+        ],
+        "must_be_distinct_across_shards": true,
+        "must_be_positive": true
+      },
+      "pool_tag": "blackwing_descent_10n_nefarian_diagnostic",
+      "predecessor_state": {
+        "certifies_predecessors": false,
+        "precompleted_boss_entries": [
+          41570,
+          42166,
+          41378,
+          41442,
+          43296
+        ],
+        "requires_native_descent_before_engagement": true,
+        "state_source": "instance_blackwing_descent_native_boss_state_fixture",
+        "upper_ledge_start": true
+      },
+      "required_bot_count": 10,
+      "role_counts": {
+        "dps": 5,
+        "healer": 3,
+        "tank": 2
+      },
+      "runtime_profile_id": "blackwing_descent_10n_nefarian_diagnostic",
+      "scenario_id": "blackwing_descent_10n_nefarian_diagnostic",
+      "shard_id": "bwd_nefarian_diagnostic_10n",
+      "start_position": {
+        "map_id": 669,
+        "o": 3.14159,
+        "x": -107.204,
+        "y": -224.593,
+        "z": 6.57143
+      }
+    }
+  ],
+  "source": {
+    "canonical_scenario_id": "blackwing_descent_10n",
+    "provisioning_config": "experiments/configs/validation_provisioning_cata_001.json",
+    "runtime_profile_manifest": "dataset/bot_runtime_profiles/profiles.json",
+    "scenario_manifest": "experiments/configs/validation_scenarios_cata_001.json"
+  }
+}

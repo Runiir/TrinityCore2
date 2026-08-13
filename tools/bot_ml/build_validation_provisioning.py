@@ -537,11 +537,28 @@ def build_account_insert_sql(config: dict[str, Any]) -> str:
         "-- Creates only missing validation accounts with deterministic SRP6 credentials for reproducible local validation.",
         "-- Existing account passwords are not overwritten; expansion is kept at Cataclysm or higher.",
     ]
-    for username in sorted({str(bot["account"]).upper() for scenario in config["scenarios"] for bot in scenario["bots"]}):
+    configured_accounts: dict[str, int | None] = {}
+    for scenario in config["scenarios"]:
+        for bot in scenario["bots"]:
+            username = str(bot["account"]).upper()
+            expected_id = bot.get("expected_account_id")
+            if expected_id is not None:
+                if isinstance(expected_id, bool) or not isinstance(expected_id, int) or expected_id <= 0:
+                    raise ValueError(f"{username} expected_account_id must be a positive integer")
+            previous = configured_accounts.setdefault(username, expected_id)
+            if previous is not None and expected_id is not None and previous != expected_id:
+                raise ValueError(f"{username} has conflicting expected_account_id values")
+    for username in sorted(configured_accounts):
         salt, verifier = srp6_registration_data(username, password)
+        expected_id = configured_accounts[username]
+        account_columns = "`username`, `salt`, `verifier`, `reg_mail`, `email`, `joindate`, `expansion`"
+        account_values = f"{sql_quote(username)}, {sql_binary_literal(salt)}, {sql_binary_literal(verifier)}, '', '', NOW(), 3"
+        if expected_id is not None:
+            account_columns = "`id`, " + account_columns
+            account_values = f"{expected_id}, " + account_values
         lines.append(
-            "INSERT INTO `auth`.`account` (`username`, `salt`, `verifier`, `reg_mail`, `email`, `joindate`, `expansion`) "
-            f"VALUES ({sql_quote(username)}, {sql_binary_literal(salt)}, {sql_binary_literal(verifier)}, '', '', NOW(), 3) "
+            f"INSERT INTO `auth`.`account` ({account_columns}) "
+            f"VALUES ({account_values}) "
             "ON DUPLICATE KEY UPDATE `expansion` = GREATEST(`expansion`, VALUES(`expansion`));"
         )
     return "\n".join(lines) + "\n"
@@ -639,10 +656,17 @@ def build_character_insert_sql(
             class_spec = str(bot.get("class_spec") or bot.get("class") or role)
             cache = equipment_cache(bot.get("equipment", []))
             talent_tree = f"{int(bot.get('primary_talent_tree_id', 0))} 0 "
+            expected_guid = bot.get("expected_character_guid")
+            if expected_guid is not None:
+                if isinstance(expected_guid, bool) or not isinstance(expected_guid, int) or expected_guid <= 0:
+                    raise ValueError(f"{name} expected_character_guid must be a positive integer")
+                guid_expression = str(expected_guid)
+            else:
+                guid_expression = "COALESCE(MAX(c.`guid`), 0) + 1"
             lines.append(
                 "INSERT INTO `characters`.`characters` "
                 "(`guid`, `account`, `name`, `slot`, `race`, `class`, `gender`, `level`, `xp`, `money`, `position_x`, `position_y`, `position_z`, `map`, `orientation`, `taximask`, `online`, `cinematic`, `totaltime`, `leveltime`, `logout_time`, `health`, `power1`, `talentGroupsCount`, `activeTalentGroup`, `talentTree`, `equipmentCache`) "
-                f"SELECT COALESCE(MAX(c.`guid`), 0) + 1, a.`id`, {sql_quote(name)}, {slot}, {int(bot['race'])}, {int(bot['class'])}, {int(bot.get('gender', 0))}, {int(bot.get('level', 85))}, 0, {int(bot.get('money', config.get('default_money', 10000000)))}, "
+                f"SELECT {guid_expression}, a.`id`, {sql_quote(name)}, {slot}, {int(bot['race'])}, {int(bot['class'])}, {int(bot.get('gender', 0))}, {int(bot.get('level', 85))}, 0, {int(bot.get('money', config.get('default_money', 10000000)))}, "
                 f"{float(start['x'])}, {float(start['y'])}, {float(start['z'])}, {int(start['map_id'])}, {float(start.get('o', 0.0))}, '', 0, 1, 0, 0, 0, {VALIDATION_FULL_STAT_SEED}, {VALIDATION_FULL_STAT_SEED}, 1, 0, {sql_quote(talent_tree)}, {sql_quote(cache)} "
                 f"FROM `auth`.`account` a LEFT JOIN `characters`.`characters` c ON 1 = 1 WHERE a.`username` = {sql_quote(account)} GROUP BY a.`id`;"
             )
@@ -737,7 +761,7 @@ def scenario_report(config: dict[str, Any], action_profiles: dict[str, Any] | No
     scenarios = []
     for scenario in config["scenarios"]:
         bots = scenario["bots"]
-        required_roles = ROLE_REQUIREMENTS.get(str(scenario["id"]), {})
+        required_roles = scenario.get("required_roles") or ROLE_REQUIREMENTS.get(str(scenario["id"]), {})
         counts = role_counts(bots)
         role_ok = all(counts.get(role, 0) >= count for role, count in required_roles.items())
         max_level_ok = all(int(bot.get("level", 0)) >= int(config.get("max_level", 85)) for bot in bots)

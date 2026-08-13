@@ -348,7 +348,7 @@ def fetch_runtime_gear(database_url: str, names: set[str]) -> dict[str, dict[str
         placeholders = ", ".join(["%s"] * len(names))
         with conn.cursor() as cursor:
             cursor.execute(
-                "SELECT c.guid, c.name, c.talentTree, c.equipmentCache, ci.slot, ii.itemEntry, ii.durability, ii.enchantments "
+                "SELECT c.guid, c.account, c.name, c.talentTree, c.equipmentCache, ci.slot, ii.itemEntry, ii.durability, ii.enchantments "
                 "FROM characters c "
                 "LEFT JOIN character_inventory ci ON ci.guid = c.guid AND ci.bag = 0 AND ci.slot < %s "
                 "LEFT JOIN item_instance ii ON ii.guid = ci.item "
@@ -359,7 +359,9 @@ def fetch_runtime_gear(database_url: str, names: set[str]) -> dict[str, dict[str
             payload: dict[str, dict[str, Any]] = {}
             for row in rows:
                 name = str(row["name"])
-                entry = payload.setdefault(name, {"guid": int(row["guid"]), "talentTree": str(row.get("talentTree") or ""), "equipmentCache": str(row.get("equipmentCache") or ""), "items": {}})
+                entry = payload.setdefault(name, {"guid": int(row["guid"]), "account_id": int(row.get("account") or 0), "talentTree": str(row.get("talentTree") or ""), "equipmentCache": str(row.get("equipmentCache") or ""), "items": {}})
+                entry["guid"] = int(row["guid"])
+                entry["account_id"] = int(row.get("account") or 0)
                 if row.get("slot") is not None:
                     entry["items"][int(row["slot"])] = {
                         "item_id": int(row.get("itemEntry") or 0),
@@ -494,6 +496,13 @@ def validate_database(
         runtime = fetch_runtime_gear(character_url, expected_characters)
         for bot in configured_bots(config):
             name = str(bot.get("name"))
+            actual_identity = runtime.get(name, {})
+            expected_guid = bot.get("expected_character_guid")
+            if expected_guid is not None and int(actual_identity.get("guid") or 0) != int(expected_guid):
+                failures.append({"check": "runtime_character_guid", "bot": name, "expected": int(expected_guid), "actual": int(actual_identity.get("guid") or 0)})
+            expected_account_id = bot.get("expected_account_id")
+            if expected_account_id is not None and int(actual_identity.get("account_id") or 0) != int(expected_account_id):
+                failures.append({"check": "runtime_account_id", "bot": name, "expected": int(expected_account_id), "actual": int(actual_identity.get("account_id") or 0)})
             equipment = bot.get("equipment", [])
             expected_slots = set(required_equipment_slots_for(equipment))
             expected_by_slot = {int(item.get("slot", -1)): int(item.get("item_id") or 0) for item in equipment}
