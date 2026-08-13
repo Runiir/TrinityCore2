@@ -792,6 +792,19 @@ private:
         uint32 LastDecisionFingerprintHash = 0;
         uint32 LastDecisionFingerprintRepeatCount = 0;
         uint32 LastDecisionFingerprintFailureCount = 0;
+        // Fingerprint counters remain exact in memory for every decision, but
+        // persistence is edge/heartbeat driven so a stuck cohort does not
+        // perform a SELECT plus upsert for every decision tick.
+        bool DecisionFingerprintInitialized = false;
+        uint64 LastDecisionFingerprintPersistMs = 0;
+        uint32 LastDecisionFingerprintPersistedRepeatCount = 0;
+        uint32 LastDecisionFingerprintPersistedFailureCount = 0;
+        std::string LastRepeatableEventKey;
+        uint64 LastRepeatableEventEmitMs = 0;
+        uint32 SuppressedRepeatableEventCount = 0;
+        std::string LastPersistedDiagnosticDecisionKey;
+        uint64 LastPersistedDiagnosticDecisionMs = 0;
+        uint32 SuppressedDiagnosticDecisionCount = 0;
         uint32 ConsecutiveSameDecisionCount = 0;
         uint32 IdleDecisionRepeatCount = 0;
         uint32 TargetChurnCount = 0;

@@ -65,6 +65,7 @@
 #include <regex>
 #include <shared_mutex>
 #include <sstream>
+#include <unordered_map>
 #include <unordered_set>
 
 #if defined(_WIN32)
@@ -84,6 +85,8 @@ constexpr uint32 BlackwingDescentEntranceTriggerId = 6581;
 constexpr uint32 ValidationGhostCharacterFlag = 0x2000;
 constexpr uint32 ValidationResurrectAtLoginFlag = 0x0100;
 constexpr uint32 ValidationGhostAuraId = 8326;
+constexpr uint32 DecisionFingerprintPersistHeartbeatMs = 5000;
+constexpr uint32 RepeatableDiagnosticEventHeartbeatMs = 5000;
 
 uint64 CurrentProcessId()
 {
@@ -7077,6 +7080,10 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
     std::string const previousRecoveryState = raid.RecoveryState;
     std::map<uint32, RaidRosterSlot> previousRoster = raid.RosterByGuid;
     std::map<uint32, RaidNativeSignalState> const previousNativeSignals = raid.NativeSignalsByGuid;
+    std::unordered_map<uint32, WorldBotState*> stateByGuid;
+    stateByGuid.reserve(Party().Bots.size());
+    for (WorldBotState& state : Party().Bots)
+        stateByGuid.emplace(state.Guid.GetCounter(), &state);
     raid.RosterByGuid.clear();
     raid.UniqueLeases = true;
     raid.RosterCompositionValid = true;
@@ -7110,18 +7117,14 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
 
         uint32 const guid = bot->GetGUID().GetCounter();
         WorldBotState const* botState = nullptr;
-        for (WorldBotState const& state : Party().Bots)
-            if (state.Guid == bot->GetGUID())
-            {
-                botState = &state;
-                break;
-            }
+        if (auto stateItr = stateByGuid.find(guid); stateItr != stateByGuid.end())
+            botState = stateItr->second;
         RaidRosterPlanSlot const* plannedSlot = botState ? findRosterPlanSlot(botState->RosterSlotId) : nullptr;
         if (raidValidation && !plannedSlot)
             raid.RosterCompositionValid = false;
 
         uint8 const subgroup = plannedSlot ? plannedSlot->SubGroup : uint8(std::min<size_t>(memberIndex / MAXGROUPSIZE, 4));
-        if (raidValidation)
+        if (raidValidation && group->GetMemberGroup(bot->GetGUID()) != subgroup)
             group->ChangeMembersGroup(bot->GetGUID(), subgroup);
 
         RaidRosterSlot slot;
@@ -7543,14 +7546,8 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
             continue;
 
         WorldBotState* memberState = nullptr;
-        for (WorldBotState& state : Party().Bots)
-        {
-            if (state.Guid == bot->GetGUID())
-            {
-                memberState = &state;
-                break;
-            }
-        }
+        if (auto stateItr = stateByGuid.find(bot->GetGUID().GetCounter()); stateItr != stateByGuid.end())
+            memberState = stateItr->second;
         if (!memberState)
             continue;
 
@@ -7573,31 +7570,38 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
 
         std::string role = GetDungeonRole(bot);
         Party().RoleByGuid[bot->GetGUID().GetCounter()] = role;
-        if (role == "tank")
-            group->SetLfgRoles(bot->GetGUID(), lfg::PLAYER_ROLE_TANK);
-        else if (role == "healer")
-            group->SetLfgRoles(bot->GetGUID(), lfg::PLAYER_ROLE_HEALER);
-        else
-            group->SetLfgRoles(bot->GetGUID(), lfg::PLAYER_ROLE_DAMAGE);
+        uint8 const expectedLfgRole = role == "tank" ? lfg::PLAYER_ROLE_TANK
+            : (role == "healer" ? lfg::PLAYER_ROLE_HEALER : lfg::PLAYER_ROLE_DAMAGE);
+        if (group->GetLfgRoles(bot->GetGUID()) != expectedLfgRole)
+            group->SetLfgRoles(bot->GetGUID(), expectedLfgRole);
 
-        BotRolePowerBreakdown power = BotLongTermProgressionBrain::CalculateRolePower(bot);
-        BotProgressionStage stage = BotLongTermProgressionBrain::ClassifyStage(bot, power);
-        std::string raw = BuildRawJson(bot, nullptr);
-        std::string semantic = BuildSemanticJson(bot, nullptr, raidValidation ? "raid_formation" : "party_formation", &power, stage);
-        if (!memberState->ValidationGroupFormationRecorded)
+        // Formation payloads are immutable admission evidence. Do not rebuild
+        // role power, raw state, and semantic JSON on every world tick after
+        // those edge events have already been recorded.
+        bool const recordGroupFormation = !memberState->ValidationGroupFormationRecorded;
+        bool const recordRaidFormation = raidValidation && !memberState->ValidationRaidFormationRecorded;
+        bool const recordRoleAssignment = !memberState->ValidationRoleAssignmentRecorded;
+        if (recordGroupFormation || recordRaidFormation || recordRoleAssignment)
         {
-            RecordEvent(*memberState, bot, "validation_group_formed", nullptr, raidValidation ? "raid" : "party", raw.c_str(), semantic.c_str(), float(members.size()), group->GetGUID().GetCounter());
-            memberState->ValidationGroupFormationRecorded = true;
-        }
-        if (raidValidation && !memberState->ValidationRaidFormationRecorded)
-        {
-            RecordEvent(*memberState, bot, "raid_formed", nullptr, "ok", raw.c_str(), semantic.c_str(), float(members.size()), group->GetGUID().GetCounter());
-            memberState->ValidationRaidFormationRecorded = true;
-        }
-        if (!memberState->ValidationRoleAssignmentRecorded)
-        {
-            RecordEvent(*memberState, bot, "validation_role_assignment", nullptr, role.c_str(), raw.c_str(), semantic.c_str(), float(members.size()), group->GetLfgRoles(bot->GetGUID()));
-            memberState->ValidationRoleAssignmentRecorded = true;
+            BotRolePowerBreakdown power = BotLongTermProgressionBrain::CalculateRolePower(bot);
+            BotProgressionStage stage = BotLongTermProgressionBrain::ClassifyStage(bot, power);
+            std::string raw = BuildRawJson(bot, nullptr);
+            std::string semantic = BuildSemanticJson(bot, nullptr, raidValidation ? "raid_formation" : "party_formation", &power, stage);
+            if (recordGroupFormation)
+            {
+                RecordEvent(*memberState, bot, "validation_group_formed", nullptr, raidValidation ? "raid" : "party", raw.c_str(), semantic.c_str(), float(members.size()), group->GetGUID().GetCounter());
+                memberState->ValidationGroupFormationRecorded = true;
+            }
+            if (recordRaidFormation)
+            {
+                RecordEvent(*memberState, bot, "raid_formed", nullptr, "ok", raw.c_str(), semantic.c_str(), float(members.size()), group->GetGUID().GetCounter());
+                memberState->ValidationRaidFormationRecorded = true;
+            }
+            if (recordRoleAssignment)
+            {
+                RecordEvent(*memberState, bot, "validation_role_assignment", nullptr, role.c_str(), raw.c_str(), semantic.c_str(), float(members.size()), expectedLfgRole);
+                memberState->ValidationRoleAssignmentRecorded = true;
+            }
         }
     }
 }
@@ -32683,8 +32687,55 @@ void BotWorldPopulationMgr::RecordEvent(WorldBotState& state, Player* bot, char 
     if (observedEvent == "instance_reset")
         ++Cohort().Metrics.InstanceResets;
 
+    // Recovery/search observations can be produced on every decision tick
+    // while a native transition is still pending. Keep the first edge and a
+    // five-second heartbeat, carrying the number of suppressed observations,
+    // while transition events (release, re-entry, reset, kill) remain exact.
+    bool const repeatableDiagnosticEvent = observedEvent == "validation_route_recovery"
+        || observedEvent == "validation_route_target_search"
+        || observedEvent == "validation_route_prerequisite"
+        || observedEvent == "native_runback_blocked"
+        || observedEvent == "target_rejected"
+        || observedEvent == "stuck_detected";
+    uint32 suppressedRepeatableEvents = 0;
+    bool suppressRepeatablePersistence = false;
+    if (repeatableDiagnosticEvent)
+    {
+        std::ostringstream repeatKey;
+        repeatKey << observedEvent << '|' << observedResult << '|'
+                  << (target ? target->GetGUID().GetCounter() : 0) << '|'
+                  << valueInt << '|' << spellId << '|'
+                  << state.ValidationRouteGeneration << '|'
+                  << Cohort().Config.ValidationRouteNodeId;
+        std::string const key = repeatKey.str();
+        uint64 const nowMs = NowMs();
+        if (state.LastRepeatableEventKey == key)
+        {
+            ++state.SuppressedRepeatableEventCount;
+            if (state.LastRepeatableEventEmitMs
+                && nowMs - state.LastRepeatableEventEmitMs < RepeatableDiagnosticEventHeartbeatMs)
+                suppressRepeatablePersistence = true;
+
+            if (!suppressRepeatablePersistence)
+            {
+                suppressedRepeatableEvents = state.SuppressedRepeatableEventCount;
+                state.SuppressedRepeatableEventCount = 0;
+                state.LastRepeatableEventEmitMs = nowMs;
+            }
+        }
+        else
+        {
+            state.LastRepeatableEventKey = key;
+            state.LastRepeatableEventEmitMs = nowMs;
+            state.SuppressedRepeatableEventCount = 0;
+        }
+    }
+
     RecordDecisionTrace(state, eventType ? eventType : "event", eventType ? eventType : "event", target, 0, result ? result : "ok", EventLooksFailure(eventType, result) ? "event_failure" : "");
     RecordExperimentSegmentEvent(bot, eventType, result, 0, target, Cohort().TelemetryBuffer.GetActiveClipId(bot->GetGUID()), rawJson, semanticJson);
+
+    if (suppressRepeatablePersistence)
+        return;
 
     if (!Cohort().RunId)
         return;
@@ -32745,7 +32796,9 @@ void BotWorldPopulationMgr::RecordEvent(WorldBotState& state, Player* bot, char 
     eventOutcome << "{\"result\":\"" << JsonEscape(dataset.action_result)
                  << "\",\"value_float\":" << valueFloat
                  << ",\"value_int\":" << valueInt
-                 << ",\"spell_id\":" << spellId << "}";
+                 << ",\"spell_id\":" << spellId
+                 << ",\"suppressed_count\":" << suppressedRepeatableEvents
+                 << ",\"dedupe_mode\":\"first_edge_heartbeat\"}";
     dataset.outcome_json = eventOutcome.str();
     dataset.quality_flags_json = "{\"source\":\"experiment_bot_events\"}";
     std::string canonical = dataset.Validate() ? dataset.ToJson() : "";
@@ -32849,6 +32902,44 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
 
     Cohort().TelemetryBuffer.Observe(bot, situation, action, rawJson, semanticJson);
 
+    // An invalid profile resolver is a diagnostic state, not a gameplay
+    // transition. Preserve every decision in the in-memory trace and metrics,
+    // but avoid inserting an identical diagnostic row on every tick. The first
+    // edge and a heartbeat remain persisted with their suppressed count; all
+    // failures and rare/transition decisions bypass this gate.
+    uint32 suppressedDiagnosticDecisions = 0;
+    bool const repeatableDiagnosticDecision = !failure && !rare
+        && (state.LastCombatAttempt.Reason == "no_valid_profile_action"
+            || state.LastCombatAttempt.Result == "no_valid_profile_action"
+            || (state.Blocked && state.LastDecisionHandler == "stuck_blocked"));
+    if (repeatableDiagnosticDecision)
+    {
+        std::ostringstream diagnosticKey;
+        diagnosticKey << (situation ? situation : "idle") << '|'
+                      << (action ? action : "wait") << '|'
+                      << currentTargetGuid.GetCounter() << '|'
+                      << state.LastCombatAttempt.Reason << '|'
+                      << state.ValidationRouteGeneration;
+        std::string const key = diagnosticKey.str();
+        if (state.LastPersistedDiagnosticDecisionKey == key)
+        {
+            ++state.SuppressedDiagnosticDecisionCount;
+            if (state.LastPersistedDiagnosticDecisionMs
+                && nowMs - state.LastPersistedDiagnosticDecisionMs < RepeatableDiagnosticEventHeartbeatMs)
+                return;
+
+            suppressedDiagnosticDecisions = state.SuppressedDiagnosticDecisionCount;
+            state.SuppressedDiagnosticDecisionCount = 0;
+            state.LastPersistedDiagnosticDecisionMs = nowMs;
+        }
+        else
+        {
+            state.LastPersistedDiagnosticDecisionKey = key;
+            state.LastPersistedDiagnosticDecisionMs = nowMs;
+            state.SuppressedDiagnosticDecisionCount = 0;
+        }
+    }
+
     BotTelemetryPolicyInput policyInput = BuildTelemetryPolicyInput("decision", failure ? "failed" : "ok", situation ? situation : "idle", target, 0, 0, 0, failure ? -1.0f : chosenActivity.Score, 0, failure, rare, action && std::string(action) == "unstuck");
     BotTelemetryPolicyDecision policy = BotTelemetryPolicy::DecideDecision(policyInput, GetTelemetryPolicyConfig(), state.Sequence);
     if (!policy.writeDecision)
@@ -32915,7 +33006,8 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
            << ",\"required_spell\":" << state.QuestWork.RequiredSpell
            << ",\"progression_reason\":" << state.LastProgressionReason
            << ",\"profession_goal\":" << state.LastProfessionGoal
-           << ",\"next_expected_action\":\"" << JsonEscape(state.LastNextExpectedAction) << "\"";
+            << ",\"next_expected_action\":\"" << JsonEscape(state.LastNextExpectedAction) << "\"";
+    chosen << ",\"suppressed_diagnostic_decisions\":" << suppressedDiagnosticDecisions;
     if (Cohort().PolicyModelConfig.Enabled && !Cohort().PolicyModelConfig.Version.empty())
         chosen << ",\"policy_model\":" << modelTrace.Json;
     chosen << "}";
@@ -32948,10 +33040,11 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
             << ",\"role_saturation_state_json\":" << state.LastRoleSaturationStateJson
             << ",\"recommended_balance_mode\":\"" << JsonEscape(state.LastRecommendedBalanceMode) << "\""
             << ",\"saturation_reason\":\"" << JsonEscape(state.LastSaturationReason) << "\""
-            << ",\"progression_reason\":" << state.LastProgressionReason
-            << ",\"profession_goal\":" << state.LastProfessionGoal
+           << ",\"progression_reason\":" << state.LastProgressionReason
+           << ",\"profession_goal\":" << state.LastProfessionGoal
             << ",\"reject_reason\":\"" << JsonEscape(state.LastCombatRejectReason) << "\""
-            << ",\"next_expected_action\":\"" << JsonEscape(state.LastNextExpectedAction) << "\"";
+            << ",\"next_expected_action\":\"" << JsonEscape(state.LastNextExpectedAction) << "\""
+            << ",\"suppressed_diagnostic_decisions\":" << suppressedDiagnosticDecisions;
     if (Cohort().PolicyModelConfig.Enabled && !Cohort().PolicyModelConfig.Version.empty())
         outcome << ",\"policy_model\":" << modelTrace.Json;
     outcome << "}";
@@ -34501,14 +34594,43 @@ void BotWorldPopulationMgr::RecordDecisionFingerprintMemory(WorldBotState& state
                 << "|" << bot->GetMapId() << "|" << bot->GetZoneId() << "|" << bot->GetAreaId()
                 << "|" << state.QuestWork.Phase << "|" << state.QuestWork.ObjectiveType;
     uint32 fingerprintHash = FeatureSchemaHash(fingerprint.str());
-    state.LastDecisionFingerprintHash = fingerprintHash;
-    state.LastDecisionFingerprintRepeatCount = 1;
-    state.LastDecisionFingerprintFailureCount = failure ? 1 : 0;
-    if (QueryResult existing = CharacterDatabase.PQuery("SELECT repeat_count, failure_count FROM bot_memory_decision_fingerprints WHERE bot_guid = %u AND fingerprint_hash = %u", bot->GetGUID().GetCounter(), fingerprintHash))
+    bool const fingerprintChanged = !state.DecisionFingerprintInitialized
+        || state.LastDecisionFingerprintHash != fingerprintHash;
+    bool const failureEdge = failure && (fingerprintChanged || state.LastDecisionFingerprintFailureCount == 0);
+    if (fingerprintChanged)
     {
-        Field* fields = existing->Fetch();
-        state.LastDecisionFingerprintRepeatCount = fields[0].GetUInt32() + 1;
-        state.LastDecisionFingerprintFailureCount = fields[1].GetUInt32() + (failure ? 1 : 0);
+        state.LastDecisionFingerprintHash = fingerprintHash;
+        state.LastDecisionFingerprintRepeatCount = 0;
+        state.LastDecisionFingerprintFailureCount = 0;
+        state.LastDecisionFingerprintPersistedRepeatCount = 0;
+        state.LastDecisionFingerprintPersistedFailureCount = 0;
+        if (QueryResult existing = CharacterDatabase.PQuery("SELECT repeat_count, failure_count FROM bot_memory_decision_fingerprints WHERE bot_guid = %u AND fingerprint_hash = %u", bot->GetGUID().GetCounter(), fingerprintHash))
+        {
+            Field* fields = existing->Fetch();
+            state.LastDecisionFingerprintRepeatCount = fields[0].GetUInt32();
+            state.LastDecisionFingerprintFailureCount = fields[1].GetUInt32();
+            state.LastDecisionFingerprintPersistedRepeatCount = state.LastDecisionFingerprintRepeatCount;
+            state.LastDecisionFingerprintPersistedFailureCount = state.LastDecisionFingerprintFailureCount;
+        }
+    }
+
+    ++state.LastDecisionFingerprintRepeatCount;
+    if (failure)
+        ++state.LastDecisionFingerprintFailureCount;
+    state.DecisionFingerprintInitialized = true;
+
+    uint64 const nowMs = NowMs();
+    bool const heartbeatDue = !state.LastDecisionFingerprintPersistMs
+        || nowMs - state.LastDecisionFingerprintPersistMs >= DecisionFingerprintPersistHeartbeatMs;
+    if (!fingerprintChanged && !failureEdge && !heartbeatDue)
+        return;
+
+    uint32 const repeatDelta = state.LastDecisionFingerprintRepeatCount - state.LastDecisionFingerprintPersistedRepeatCount;
+    uint32 const failureDelta = state.LastDecisionFingerprintFailureCount - state.LastDecisionFingerprintPersistedFailureCount;
+    if (!repeatDelta && !failureDelta)
+    {
+        state.LastDecisionFingerprintPersistMs = nowMs;
+        return;
     }
 
     std::ostringstream metadata;
@@ -34543,10 +34665,13 @@ void BotWorldPopulationMgr::RecordDecisionFingerprintMemory(WorldBotState& state
     CharacterDatabase.DirectPExecute(
         "INSERT INTO bot_memory_decision_fingerprints "
         "(bot_guid, fingerprint_hash, situation_type, action, activity, quest_id, cluster_id, map_id, zone_id, area_id, repeat_count, failure_count, last_result, first_seen_at, last_seen_at, metadata_json) "
-        "VALUES (%u, %u, '%s', '%s', '%s', %u, %u, %u, %u, %u, 1, %u, '%s', NOW(), NOW(), '%s') "
-        "ON DUPLICATE KEY UPDATE repeat_count = repeat_count + 1, failure_count = failure_count + VALUES(failure_count), last_result = VALUES(last_result), last_seen_at = NOW(), metadata_json = VALUES(metadata_json)",
+        "VALUES (%u, %u, '%s', '%s', '%s', %u, %u, %u, %u, %u, %u, %u, '%s', NOW(), NOW(), '%s') "
+        "ON DUPLICATE KEY UPDATE repeat_count = repeat_count + VALUES(repeat_count), failure_count = failure_count + VALUES(failure_count), last_result = VALUES(last_result), last_seen_at = NOW(), metadata_json = VALUES(metadata_json)",
         bot->GetGUID().GetCounter(), fingerprintHash, escapedSituation.c_str(), escapedAction.c_str(), escapedActivity.c_str(),
-        questId, clusterId, bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(), failure ? 1 : 0, result.c_str(), metadataJson.c_str());
+        questId, clusterId, bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(), repeatDelta, failureDelta, result.c_str(), metadataJson.c_str());
+    state.LastDecisionFingerprintPersistedRepeatCount = state.LastDecisionFingerprintRepeatCount;
+    state.LastDecisionFingerprintPersistedFailureCount = state.LastDecisionFingerprintFailureCount;
+    state.LastDecisionFingerprintPersistMs = nowMs;
 }
 
 void BotWorldPopulationMgr::RecordDecisionTrace(WorldBotState& state, char const* situation, char const* action, Unit const* target, uint32 questId, char const* result, char const* reasonCode)
