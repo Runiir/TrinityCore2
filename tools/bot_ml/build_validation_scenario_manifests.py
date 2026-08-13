@@ -233,14 +233,60 @@ def route_navigation_anchor_status(step: dict[str, Any]) -> tuple[bool, str]:
     return route_coordinate_status(anchor)
 
 
+def diagnostic_contract_status(
+    scenario: dict[str, Any],
+    scenario_ids: set[str],
+) -> tuple[bool, list[str], dict[str, Any]]:
+    """Validate the metadata that makes a boss route diagnostic-only.
+
+    A shard may start from a tracked, pre-seeded instance state, but that
+    state is never progression evidence.  Keep this contract in the emitted
+    manifests so a consumer cannot accidentally treat a pre-completed
+    predecessor as a kill or unlock.
+    """
+    diagnostic_only = bool(scenario.get("diagnostic_only", False))
+    parent_id = str(scenario.get("diagnostic_parent_scenario_id") or "")
+    contract = scenario.get("prerequisite_contract")
+    if not isinstance(contract, dict):
+        contract = {}
+    missing: list[str] = []
+    if diagnostic_only:
+        if not parent_id:
+            missing.append("diagnostic_parent_scenario_id")
+        elif parent_id not in scenario_ids:
+            missing.append("diagnostic_parent_scenario_exists")
+        if not str(scenario.get("diagnostic_target_boss") or ""):
+            missing.append("diagnostic_target_boss")
+        if contract.get("certifies_predecessors") is not False:
+            missing.append("diagnostic_predecessor_certification_forbidden")
+        if not str(contract.get("state_source") or ""):
+            missing.append("diagnostic_prerequisite_state_source")
+        if not isinstance(contract.get("precompleted_boss_entries", []), list):
+            missing.append("diagnostic_precompleted_boss_entries")
+    elif parent_id or contract:
+        missing.append("non_diagnostic_prerequisite_metadata")
+    return diagnostic_only and not missing or not diagnostic_only, sorted(set(missing)), {
+        "diagnostic_only": diagnostic_only,
+        "parent_scenario_id": parent_id,
+        "target_boss": str(scenario.get("diagnostic_target_boss") or ""),
+        "prerequisite_contract": contract,
+    }
+
+
 def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any], provisioning_verify_report: dict[str, Any]) -> dict[str, list[dict[str, Any]] | dict[str, Any]]:
     provisioned = scenario_by_id(provisioning_report)
     verification_ready = bool(provisioning_verify_report.get("all_passed"))
     scenarios: list[dict[str, Any]] = []
     routes: list[dict[str, Any]] = []
     mechanics: list[dict[str, Any]] = []
+    configured_scenarios = list(config.get("scenarios") or []) + list(config.get("diagnostic_scenarios") or [])
+    configured_scenario_ids = {
+        str(row.get("id") or "")
+        for row in configured_scenarios
+        if isinstance(row, dict) and row.get("id")
+    }
 
-    for scenario in config.get("scenarios") or []:
+    for scenario in configured_scenarios:
         scenario_id = str(scenario.get("id") or "")
         provision_id = str(scenario.get("provisioning_scenario_id") or scenario_id)
         required_roles = {str(k): int(v) for k, v in (scenario.get("required_roles") or {}).items()}
@@ -251,6 +297,9 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
         expected_bot_count = sum(provisioned_roles.values()) or sum(required_roles.values())
         difficulty = str(scenario.get("difficulty") or "")
         scenario_group_kind = group_kind(required_roles, difficulty)
+        diagnostic_valid, diagnostic_missing, diagnostic_metadata = diagnostic_contract_status(
+            scenario, configured_scenario_ids
+        )
         scenario_required_evidence = ["role_assignments", "party_formation" if scenario_group_kind == "party" else "raid_formation"]
         if any(step.get("kind") in {"trash", "boss"} for step in route_steps):
             scenario_required_evidence.extend(["pulls", "regrouping", "recovery"])
@@ -258,6 +307,8 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
                 scenario_required_evidence.append("instance_reset")
         if not verification_ready:
             missing.append("provisioning_verifier_ready")
+        if not diagnostic_valid:
+            missing.extend(diagnostic_missing)
         invalid_route_steps = [
             {
                 "step": int(step.get("step") or 0),
@@ -278,6 +329,12 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
             "difficulty": scenario.get("difficulty") or "",
             "group_kind": scenario_group_kind,
             "provisioning_scenario_id": provision_id,
+            "runtime_profile_id": str(scenario.get("runtime_profile_id") or scenario_id),
+            "diagnostic_only": diagnostic_metadata["diagnostic_only"],
+            "diagnostic_parent_scenario_id": diagnostic_metadata["parent_scenario_id"],
+            "diagnostic_target_boss": diagnostic_metadata["target_boss"],
+            "prerequisite_contract": diagnostic_metadata["prerequisite_contract"],
+            "certifies_predecessors": False if diagnostic_metadata["diagnostic_only"] else None,
             "required_roles": required_roles,
             "role_assignment": role_assignment_contract(required_roles, provisioned_roles),
             "expected_bot_count": expected_bot_count,
@@ -307,6 +364,13 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
             navigation_anchor = step.get("navigation_anchor") or step
             route = {
                 "scenario_id": scenario_id,
+                "runtime_profile_id": str(scenario.get("runtime_profile_id") or scenario_id),
+                "diagnostic_only": diagnostic_metadata["diagnostic_only"],
+                "diagnostic_parent_scenario_id": diagnostic_metadata["parent_scenario_id"],
+                "diagnostic_target_boss": diagnostic_metadata["target_boss"],
+                "diagnostic_prerequisite_state": diagnostic_metadata["prerequisite_contract"],
+                "upper_ledge_preparation": bool(step.get("upper_ledge_preparation")),
+                "descent_action": str(step.get("descent_action") or ""),
                 "map_id": int(scenario.get("map_id") or 0),
                 "step": int(step.get("step") or 0),
                 "kind": step.get("kind") or "unknown",
@@ -467,6 +531,8 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
         "routes": len(routes),
         "mechanic_profiles": len(mechanics),
         "ready_scenarios": sum(1 for row in scenarios if row["provisioning_ready"]),
+        "diagnostic_scenarios": sum(1 for row in scenarios if row["diagnostic_only"]),
+        "diagnostic_scenario_ids": [row["scenario_id"] for row in scenarios if row["diagnostic_only"]],
         "invalid_mechanic_profiles": [row for row in mechanics if not row["valid"]],
         "invalid_route_steps": [
             {
