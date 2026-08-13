@@ -579,6 +579,13 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     )
     ownership_gate = lane.index("if (!laneOwnershipSafe)")
     assert ownership_gate < seed_call < geometry_gate
+    seed_window = lane.index("bool const preFirstRushWindow")
+    assert ownership_gate < seed_window < seed_call
+    assert "&& laneOwnershipSafe" in lane[seed_window:seed_call]
+    assert "ValidationRouteDrudgeChargePreparedCount == 0" in lane[seed_window:seed_call]
+    assert "ValidationRouteDrudgeChargeObservations.empty()" in lane[seed_window:seed_call]
+    assert "!Party().ValidationRouteDrudgeThreatSeedClosed" in lane[seed_window:seed_call]
+    assert '"drudge_pre_first_rush_seed_window_closed"' in lane[seed_window:seed_call]
     health_sync_call = lane.rindex("recordHealthSyncHold();")
     assert ownership_gate < health_sync_call
     assert geometry_gate < health_sync_call
@@ -603,6 +610,14 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "GetUnsortedThreatList" in cast_hook
     assert "nativeThreatList.size()" not in cast_hook
     assert "nativeThreatCandidateCount" in cast_hook
+    hook_scope = cast_hook.index(
+        "if (Party().ValidationRouteDrudgeThreatSeedAttemptId != Cohort().AttemptId"
+    )
+    hook_close = cast_hook.index("Party().ValidationRouteDrudgeThreatSeedClosed = true")
+    assert hook_scope < hook_close
+    assert "ValidationRouteDrudgeThreatSeedRouteGeneration = Party().ValidationRouteGeneration" in cast_hook[
+        hook_scope:hook_close
+    ]
     header = (Path(__file__).parents[1] / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text(
         encoding="utf-8",
     )

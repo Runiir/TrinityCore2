@@ -19702,6 +19702,24 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 Party().ValidationRouteDrudgeThreatSeedEvidenceRows.clear();
             }
 
+            bool const preFirstRushWindow = prepullStaged
+                && sources[0]->IsAlive() && sources[1]->IsAlive()
+                && laneOwnershipSafe
+                && Party().ValidationRouteDrudgeChargePreparedCount == 0
+                && Party().ValidationRouteDrudgeChargeObservations.empty()
+                && !Party().ValidationRouteDrudgeThreatSeedClosed;
+            if (!preFirstRushWindow)
+            {
+                if (!Party().ValidationRouteDrudgeThreatSeedComplete)
+                    Party().ValidationRouteDrudgeThreatSeedFailure = true;
+                holdOffense();
+                record(laneSource, "drudge_pre_first_rush_seed_window_closed",
+                    sourceSeparation, laneIndex);
+                target = laneSource;
+                state.TargetGuid = laneSource->GetGUID();
+                return true;
+            }
+
             auto seedSourcesComplete = [&]()
             {
                 std::set<uint32> sourceLanes;
@@ -35525,6 +35543,23 @@ uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster,
         return 0;
 
     uint64 const observedAtMs = NowMs();
+    if (Party().ValidationRouteDrudgeThreatSeedAttemptId != Cohort().AttemptId
+        || Party().ValidationRouteDrudgeThreatSeedWipeGeneration != Cohort().Raid.WipeGeneration
+        || Party().ValidationRouteDrudgeThreatSeedRouteGeneration != Party().ValidationRouteGeneration)
+    {
+        // Bind the seed scope before closing it.  Otherwise a first Rush that
+        // arrives before the decision loop initialized this tuple can set
+        // Closed=true on a zero scope, after which a late seed attempt resets
+        // the tuple and incorrectly reopens the native pre-Rush window.
+        Party().ValidationRouteDrudgeThreatSeedAttemptId = Cohort().AttemptId;
+        Party().ValidationRouteDrudgeThreatSeedWipeGeneration = Cohort().Raid.WipeGeneration;
+        Party().ValidationRouteDrudgeThreatSeedRouteGeneration = Party().ValidationRouteGeneration;
+        Party().ValidationRouteDrudgeThreatSeedClosed = false;
+        Party().ValidationRouteDrudgeThreatSeedComplete = false;
+        Party().ValidationRouteDrudgeThreatSeedFailure = false;
+        Party().ValidationRouteDrudgeThreatSeedRosterGuids.clear();
+        Party().ValidationRouteDrudgeThreatSeedEvidenceRows.clear();
+    }
     if (Party().ValidationRouteDrudgeChargePreparedCount == 0
         && Party().ValidationRouteDrudgeChargeObservations.empty())
     {
