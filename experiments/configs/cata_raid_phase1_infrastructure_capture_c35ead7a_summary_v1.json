@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "capture_id": "cata_raid_phase1_bwd_10n_foundation_v1",
+  "classification": "infrastructure_abort",
+  "gameplay_failure": false,
+  "fidelity_claim": false,
+  "source_identity": {
+    "commit": "c35ead7a33bb1aecd05347ea28d367e4e89596e1",
+    "tree": "0b63c67fc0ec1030608b6bbc322262807a536305",
+    "clean_at_start": true,
+    "identity_stable_during_run": true
+  },
+  "build": {
+    "policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
+    "configure_receipt_sha256": "a2ec306684673adb284f348296de94ed67f6026bb2975cb78aa6d51afa16996f",
+    "configure_receipt_file_sha256": "8e2a53087c090837b6ae194efeda2e8995c7da46b144fcde2d1e5214dc9a58bf",
+    "worldserver_receipt_sha256": "5f30cf2c6475f18807801d63cfb078b9789f5495131869e5f0439f9b33510b9e",
+    "worldserver_receipt_file_sha256": "ac1c708756a5e82b94cc0237b474238f057ce84ed8a7425c016bed2d25cddbd9",
+    "worldserver_sha256": "a2c7e259822423b59b79c4b2615bf4e7f0805105f9a805101dcd8faaba097fea",
+    "worldserver_size_bytes": 60998088,
+    "trusted_local_operator": "runiir",
+    "gate_bearing": true
+  },
+  "preflight": {
+    "provisioning_prepare_report_sha256": "c569c8f994891ae24d39bdac8b2378939a4edc6b4f32c7fe99513dcfd3e1dc90",
+    "full_provisioning_verifier_passed": true,
+    "full_provisioning_verifier_sha256": "2d9f71bb38fec0f61f08b80d76741de818a15f3880c71e373bd5d4e004916373",
+    "readback_schema": "cata_raid_phase1_bwd_provisioning_readback_v4",
+    "readback_passed": true,
+    "readback_sha256": "53c7d63faabfd7c1899c3189a8c2f2d95404dcda8397e17cf163c3a14dcac2e1",
+    "character_instance_rows": 0,
+    "group_member_rows": 0,
+    "ghost_aura_rows": 0,
+    "corpse_rows": 0,
+    "corpse_phase_rows": 0
+  },
+  "live_facts": {
+    "exact_roster_size": 10,
+    "composition": {
+      "tanks": 2,
+      "healers": 3,
+      "dps": 5
+    },
+    "map_id": 669,
+    "instance_id": 8,
+    "lockout_save_id": 8,
+    "difficulty": "10N",
+    "entry_and_corridor_trash_kills": 3,
+    "cumulative_deaths": 16,
+    "alive_at_final_sample": 10,
+    "boss_engaged_stably": false,
+    "route_node_index_high_water": 2,
+    "route_generation_high_water": 3,
+    "route_label": "Drakonid corridor pack",
+    "corridor_pack_live_clear_succeeded": false,
+    "native_recovery_evidence_complete": false
+  },
+  "root_cause": {
+    "failure_fingerprint": "exact_live_corridor_pack_authority_split_by_generic_per_bot_safe_memory_override",
+    "detail": "The exact raid cleared both entry sentries and killed the declared Chainwielder. It then engaged the two exact Drakonid Drudges in two native waves, reduced entry 42362 to a 20.5524 percent low-water mark, and recovered the full cohort after sixteen cumulative trash deaths. The c35 live-pack ledger correctly retained and reacquired GUIDs 59 and 60. After the second recovery, nine bots returned toward the canonical corridor anchor (-328.403,-88.0364,213.921), but the raid leader's generic repeated-death safe-memory policy selected (-339.765,-316.824,212.549), behind the entrance and outside the live pack. The resulting split cohort repeatedly failed the exact readiness/endpoint condition and made no further semantic progress until the 302.730-second semantic-stall gate terminated the uncapped capture.",
+    "decision_assessment": "Exact target authority and native combat were re-established after the first recovery, proving the c35 pack-retention change worked. The final leader decision was incorrect: a per-bot generic safe-memory override displaced the immutable current-generation live-pack and route-anchor authority. The minimum-distance evidence is mixed but not the terminal cause: the trace contains 43 successful union-safe minimum-distance exits and 46 failed exits across seven ranged/healer bots. No source, DBC, or live evidence authorizes weakening the exact 15-yard spell-79604 avoidance contract. Magmaw entry 41570 was never reached, so no boss-tactic, gameplay, or 4.4.2 fidelity inference is authorized.",
+    "native_script_and_value_evidence": {
+      "drudge_entry": 42362,
+      "drudge_runtime_guids": [59, 60],
+      "drudge_spawn_guids": [250140, 250141],
+      "spell_id": 79604,
+      "spell_radius_yards": 15.0,
+      "smartai_first_cast_ms": 8000,
+      "smartai_repeat_ms": {
+        "spawn_250140": [7000, 7000],
+        "spawn_250141": [7000, 8000]
+      },
+      "source": "sql/old/4.3.4/world/20051_2020_09_22/2020_07_10_01_world.sql"
+    },
+    "remediation_scope": [
+      "give an exact current-generation persisted live pack precedence over generic repeated-death safe-memory route anchors",
+      "clear an already-installed validation_route_safe_memory_after_death_loop override when exact live-pack authority exists",
+      "move through the canonical manifest anchor or the exact pathable live member without teleport, respawn, state manufacture, or target substitution",
+      "preserve exact entry/GUID ledger, native pathing, threat, hazard, 15-yard minimum-distance, terminal, identity, and forbidden-assistance gates",
+      "independently review, rebuild, reprovision, and rerun uncapped before accepting Phase 1"
+    ]
+  },
+  "telemetry": {
+    "wall_clock_mode": "uncapped",
+    "retained_rows": 352,
+    "bound_rows": 352,
+    "rejected_rows": 0,
+    "unchecked_rows": 0,
+    "required_envelopes_passed": true,
+    "required_readycheck_missing_downstream_of_no_magmaw_engagement": true,
+    "minimum_distance_exit_started_unique_events": 43,
+    "minimum_distance_exit_failed_unique_events": 46
+  },
+  "semantic_stall": {
+    "detected": true,
+    "stalled_for_seconds": 302.73,
+    "unchanged_samples": 55,
+    "high_water_kills": 3,
+    "high_water_route_generation": 3,
+    "high_water_route_index": 2,
+    "lowest_entry_42362_health_fraction": 0.205524,
+    "observed_encounter_phases": ["formation"]
+  },
+  "cleanup": {
+    "gate_passed": true,
+    "stop_observed": true,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true
+  },
+  "forbidden_assistance": {
+    "capture_scanner_observed": false,
+    "capture_scanner_gate_passed": true,
+    "source_audit_found_assistance": false,
+    "acceptance": true,
+    "note": "No forced kill, teleport, spawn, boss state, resurrection, aura, or target substitution assistance was observed. Trash partial-recovery markers did not satisfy or contaminate the Magmaw native-full-wipe gate."
+  },
+  "artifact": {
+    "pointer": "artifacts/cata_raid_program/phase1_raid_foundation_c35ead7a_20260813.dvc",
+    "dvc_directory_md5": "6f8705a8f3d3bc5f2fc8a36339a0191.dir",
+    "size_bytes": 192468543,
+    "nfiles": 8,
+    "raw_jsonl_sha256": "d164be78eaed7a0bfd0ad9a637694b0c469466c2d2537af1e36288160999c1bf",
+    "capture_report_canonical_sha256": "2ec3b0554345faab251cefccb1d800fed74b37408f197a189e36e4aea8940b05",
+    "capture_report_file_sha256": "9b112269ed25abb529f6dd5aafc226630c535e75b845bca25693f4c8c13c8c6f",
+    "worldserver_log_sha256": "0a3161f31d7adc550091af56fb57988921103dc9733950aa06eb559a6a89cde1",
+    "targeted_push_completed": true,
+    "targeted_remote_status_before_eviction": "cache_and_remote_in_sync",
+    "workspace_payload_evicted": false,
+    "exact_child_cache_objects_evicted": false,
+    "directory_metadata_retained": true,
+    "broad_gc_used": false
+  },
+  "acceptance": {
+    "phase1_gate_passed": false,
+    "reason": "Magmaw was never engaged and no native boss wipe, reset, per-GUID recovery, or ready-check sequence exists.",
+    "next_gate": "Live-pack/safe-memory authority remediation, independent Sol-high review, exact coordinated rebuild, fresh provisioning/full verifier/v4 readback, and uncapped canonical rerun."
+  }
+}
