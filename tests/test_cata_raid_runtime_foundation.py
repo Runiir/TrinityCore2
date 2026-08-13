@@ -86,6 +86,131 @@ def test_bwd_drakonid_corridor_has_explicit_native_pack_hazard_and_range_contrac
     ]
 
 
+def _validation_route_anchor_model(*, canonical_anchor, safe_memory_anchor,
+                                   override_reason, pack_generation,
+                                   route_generation, live_members, dead_members,
+                                   transition_members, active_combat,
+                                   repeated_death_near_route):
+    """Model only the route-anchor precedence relevant to the live-pack bug."""
+    live_pack_authority = (
+        pack_generation == route_generation
+        and any(
+            guid not in dead_members and guid not in transition_members
+            for guid in live_members
+        )
+    )
+    if (
+        override_reason == "validation_route_safe_memory_after_death_loop"
+        and live_pack_authority
+    ):
+        override_reason = None
+
+    if override_reason:
+        return safe_memory_anchor, override_reason
+    if (
+        not active_combat
+        and repeated_death_near_route
+        and not live_pack_authority
+    ):
+        return safe_memory_anchor, "validation_route_safe_memory_after_death_loop"
+    return canonical_anchor, "validation_route"
+
+
+def _legacy_validation_route_anchor_model(*, canonical_anchor,
+                                          safe_memory_anchor, override_reason,
+                                          active_combat,
+                                          repeated_death_near_route):
+    """The pre-fix precedence: any installed override wins over the route."""
+    if override_reason:
+        return safe_memory_anchor, override_reason
+    if not active_combat and repeated_death_near_route:
+        return safe_memory_anchor, "validation_route_safe_memory_after_death_loop"
+    return canonical_anchor, "validation_route"
+
+
+def test_live_pack_is_counterexample_to_generic_safe_memory_route_recovery():
+    canonical = (-328.403, -88.036, 213.921)
+    safe_memory = (-339.765, -316.824, 212.549)
+    live_members = {59, 60}
+
+    # Before the authority fix, an already-installed generic override wins
+    # even though both persisted members belong to the current pack.
+    legacy_anchor, legacy_reason = _legacy_validation_route_anchor_model(
+        canonical_anchor=canonical,
+        safe_memory_anchor=safe_memory,
+        override_reason="validation_route_safe_memory_after_death_loop",
+        active_combat=False,
+        repeated_death_near_route=True,
+    )
+    assert (legacy_anchor, legacy_reason) == (
+        safe_memory,
+        "validation_route_safe_memory_after_death_loop",
+    )
+
+    anchor, reason = _validation_route_anchor_model(
+        canonical_anchor=canonical,
+        safe_memory_anchor=safe_memory,
+        override_reason="validation_route_safe_memory_after_death_loop",
+        pack_generation=7,
+        route_generation=7,
+        live_members=live_members,
+        dead_members=set(),
+        transition_members=set(),
+        active_combat=False,
+        repeated_death_near_route=True,
+    )
+    assert (anchor, reason) == (canonical, "validation_route")
+
+    # Generation, death, and transition mismatches revoke this authority and
+    # leave the safe-memory fallback available exactly as before.
+    for pack_generation, dead_members, transition_members in (
+        (6, set(), set()),
+        (7, {59, 60}, set()),
+        (7, set(), {59, 60}),
+    ):
+        fallback_anchor, fallback_reason = _validation_route_anchor_model(
+            canonical_anchor=canonical,
+            safe_memory_anchor=safe_memory,
+            override_reason=None,
+            pack_generation=pack_generation,
+            route_generation=7,
+            live_members=live_members,
+            dead_members=dead_members,
+            transition_members=transition_members,
+            active_combat=False,
+            repeated_death_near_route=True,
+        )
+        assert (fallback_anchor, fallback_reason) == (
+            safe_memory,
+            "validation_route_safe_memory_after_death_loop",
+        )
+
+
+def test_live_pack_authority_clears_and_blocks_safe_memory_override():
+    route_start = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    route_end = IMPL.index("bool BotWorldPopulationMgr::IsBossContext", route_start)
+    route_runtime = IMPL[route_start:route_end]
+    authority = route_runtime.index("routeHasCurrentGenerationLivePackAuthority")
+    anchor_end = route_runtime.index("Map* routeMap", authority)
+    anchor_logic = route_runtime[authority:anchor_end]
+
+    assert "persistedValidationRoutePackHasLiveMembers()" in anchor_logic
+    assert 'state.ValidationRouteAnchorOverrideReason\n            == "validation_route_safe_memory_after_death_loop"' in anchor_logic
+    clear = anchor_logic.index("state.ValidationRouteAnchorOverrideValid = false;")
+    assert anchor_logic.index("routeHasCurrentGenerationLivePackAuthority") < clear
+    install = anchor_logic.rindex("routeHasCurrentGenerationLivePackAuthority)")
+    assert "&& !routeHasCurrentGenerationLivePackAuthority" in anchor_logic[install - 120:install + 80]
+    assert "validation_route_partial_wipe_retreat_rendezvous" in anchor_logic
+    assert "validation_route_live_pack_reapproach" in route_runtime
+
+    helper_start = route_runtime.index("auto persistedValidationRoutePackHasLiveMembers")
+    helper_end = route_runtime.index("auto activeValidationRoutePackTarget", helper_start)
+    helper = route_runtime[helper_start:helper_end]
+    assert "ValidationRoutePackGeneration != Party().ValidationRouteGeneration" in helper
+    assert "ValidationRoutePackDeathGuids.find(guid)" in helper
+    assert "ValidationRoutePackTransitionGuids.find(guid)" in helper
+
+
 def test_boss_route_rejects_undeclared_engaged_trash_before_shared_actions():
     route_runtime = IMPL[
         IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective"):

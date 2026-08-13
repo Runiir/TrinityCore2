@@ -15581,6 +15581,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     bool routeHasActiveCombatIntent = routeUsableCombatTarget(target)
         || routeUsableCombatTarget(bot->GetVictim())
         || !routeTankFocusGuid().IsEmpty();
+    bool routeHasCurrentGenerationLivePackAuthority =
+        Cohort().Config.ValidationRouteKind != "boss"
+        && persistedValidationRoutePackHasLiveMembers();
     bool repeatedDeathNearRoute = state.LastDeathMapId == routeAnchorMapId
         && Distance2d(state.LastDeathX, state.LastDeathY, Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY) <= 70.0f
         && state.RecentDeathCount >= 2;
@@ -15588,6 +15591,19 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         state.ValidationRouteAnchorOverrideValid
         && state.ValidationRouteAnchorOverrideReason
             == "validation_route_partial_wipe_retreat_rendezvous";
+    // A current-generation live pack is stronger route authority than the
+    // generic safe-memory fallback.  Clear only that fallback here; the
+    // partial-wipe rendezvous and live-pack reapproach overrides retain their
+    // existing recovery semantics.
+    if (state.ValidationRouteAnchorOverrideValid
+        && state.ValidationRouteAnchorOverrideReason
+            == "validation_route_safe_memory_after_death_loop"
+        && routeHasCurrentGenerationLivePackAuthority)
+    {
+        state.ValidationRouteAnchorOverrideValid = false;
+        state.ValidationRouteAnchorOverrideUntilMs = 0;
+        state.ValidationRouteAnchorOverrideReason.clear();
+    }
     if (state.ValidationRouteAnchorOverrideValid && routeHasActiveCombatIntent
         && !repeatedDeathNearRoute && !partialWipeRetreatRendezvous)
     {
@@ -15603,7 +15619,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         routeAnchorZ = state.ValidationRouteAnchorOverrideZ;
         routeAnchorReason = state.ValidationRouteAnchorOverrideReason.empty() ? "validation_route_safe_memory_override" : state.ValidationRouteAnchorOverrideReason;
     }
-    else if (!routeHasActiveCombatIntent && repeatedDeathNearRoute)
+    else if (!routeHasActiveCombatIntent && repeatedDeathNearRoute
+        && !routeHasCurrentGenerationLivePackAuthority)
     {
         PruneSafePositions(state, routeNowMs);
 

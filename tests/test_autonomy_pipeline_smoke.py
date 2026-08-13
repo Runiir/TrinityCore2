@@ -1282,7 +1282,7 @@ def test_quest_first_portfolio_routing_surface():
     assert 'action = moved ? "movement_check_jump" : "hold_tactical_path_rejected";' in validation_route_objective
     assert "routeHasActiveCombatIntent" in mgr
     assert "state.ValidationRouteAnchorOverrideValid && routeHasActiveCombatIntent" in mgr
-    assert "else if (!routeHasActiveCombatIntent && repeatedDeathNearRoute)" in mgr
+    assert "else if (!routeHasActiveCombatIntent && repeatedDeathNearRoute" in mgr
     assert '_config.ValidationRouteKind == "boss" ? 60000 : 20000' in mgr
     assert "stale_focus_expired" in mgr
     assert "validation_route_recover_stale_focus" in mgr
@@ -1432,7 +1432,8 @@ def test_quest_first_portfolio_routing_surface():
     assert "findTrashClusterThreatTarget" in mgr
     assert "validation_route_stuck_no_fallback" in mgr
     assert "fallback_disabled" in mgr
-    assert "state.ValidationRouteAnchorOverrideValid && routeHasActiveCombatIntent && !repeatedDeathNearRoute" in validation_route_objective
+    assert "state.ValidationRouteAnchorOverrideValid && routeHasActiveCombatIntent" in validation_route_objective
+    assert "&& !routeHasCurrentGenerationLivePackAuthority)" in validation_route_objective
     assert 'uint32 routeTargetNoProgressThreshold = _config.ValidationRouteKind == "boss" ? 5 : 20;' in mgr
     assert "_validationRouteFocusGuid.Clear();" in mgr
     assert "state.QuestWork.SelectedTargetGuid.Clear();" in mgr
