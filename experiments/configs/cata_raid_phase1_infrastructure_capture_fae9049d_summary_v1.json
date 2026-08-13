@@ -111,8 +111,8 @@
     "worldserver_log_sha256": "bd479ff75a0afed44c126fb917b9d867e3b27b345f8ef55154dea196636b51eb",
     "targeted_push_completed": true,
     "targeted_remote_status_before_eviction": "cache_and_remote_in_sync",
-    "workspace_payload_evicted": false,
-    "exact_child_cache_objects_evicted": false,
+    "workspace_payload_evicted": true,
+    "exact_child_cache_objects_evicted": true,
     "directory_metadata_retained": true,
     "broad_gc_used": false
   },
