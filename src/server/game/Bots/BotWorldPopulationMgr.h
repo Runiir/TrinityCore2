@@ -16,6 +16,7 @@
 #include <set>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 class Creature;
@@ -1555,6 +1556,8 @@ private:
         uint32 Successes = 0;
         uint32 Failures = 0;
         uint32 Deaths = 0;
+        double TotalReward = 0.0;
+        double TotalPowerDelta = 0.0;
         float AvgReward = 0.0f;
         float AvgPowerDelta = 0.0f;
         float DangerScore = 0.0f;
@@ -2315,6 +2318,11 @@ private:
     std::string _runningCohortId;
     mutable std::mutex _leaseMutex;
     std::map<uint32, BotGuidLease> _guidLeases;
+    // Semantic telemetry is read-only from decision code. Keep the
+    // database-backed aggregate in a write-through cache shared by cohorts so
+    // parallel raid shards observe each other's local upserts without issuing
+    // the same aggregate SELECT on every bot tick.
+    mutable std::map<std::pair<std::string, uint32>, SemanticOutcomeStats> _semanticOutcomeStatsCache;
 
 };
 

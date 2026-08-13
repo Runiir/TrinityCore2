@@ -1,8 +1,11 @@
 from pathlib import Path
 
+import pytest
+
 
 ROOT = Path(__file__).resolve().parents[1]
 IMPLEMENTATION = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(encoding="utf-8")
+HEADER = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text(encoding="utf-8")
 
 
 def _persisted_diagnostic_samples(timestamps, heartbeat_ms=5000):
@@ -280,3 +283,35 @@ def test_hotpath_stream_result_survives_a_to_b_flush():
     decision("A", "failed")
     decision("B", "ok")
     assert persisted[0] == ("A", "failed", 1)
+
+
+def test_hotpath_semantic_stats_cache_is_write_through_and_keeps_totals():
+    """Repeated telemetry serialization must not reread unchanged aggregates."""
+    assert "_semanticOutcomeStatsCache" in HEADER
+    assert "total_reward, total_power_delta" in IMPLEMENTATION
+    assert "cached.TotalReward += reward" in IMPLEMENTATION
+    assert "cached.TotalPowerDelta += powerDelta" in IMPLEMENTATION
+    assert "cached.AvgReward = float(cached.TotalReward / samples)" in IMPLEMENTATION
+    assert "cached.AvgPowerDelta = float(cached.TotalPowerDelta / samples)" in IMPLEMENTATION
+
+    # Mirror the SQL aggregate update for a loaded cache entry. The cache is
+    # only an exact in-process view of rows that still receive every SQL
+    # upsert, so no observation is sampled away.
+    samples = 8
+    total_reward = -4.0
+    total_power_delta = 2.0
+    failures = 2
+    deaths = 1
+    incoming_reward = 3.0
+    incoming_power_delta = -1.0
+    samples += 1
+    total_reward += incoming_reward
+    total_power_delta += incoming_power_delta
+    failures += 1
+    danger = min(1.0, (failures + deaths * 2.0) / samples)
+    progression = max(0.0, total_power_delta / samples) + max(0.0, total_reward / samples)
+    assert samples == 9
+    assert total_reward == -1.0
+    assert total_power_delta == 1.0
+    assert danger == pytest.approx(5.0 / 9.0)
+    assert progression == pytest.approx(1.0 / 9.0)

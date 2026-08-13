@@ -35721,7 +35721,8 @@ void BotWorldPopulationMgr::UpdateSemanticOutcomeStats(Player* bot, char const* 
     bool death = eventType && std::string(eventType) == "death";
     bool success = !failed && EventLooksSuccessful(eventType, result);
 
-    std::string type = entityType;
+    std::string const cacheType = entityType;
+    std::string type = cacheType;
     std::string event = eventType ? eventType : "";
     std::string res = BoundedResultLabel(result);
     std::string features = featuresJson ? featuresJson : "{}";
@@ -35752,6 +35753,30 @@ void BotWorldPopulationMgr::UpdateSemanticOutcomeStats(Player* bot, char const* 
         "features_json = VALUES(features_json), embedding_json = VALUES(embedding_json), updated_at = NOW()",
         type.c_str(), entityKey, success ? 1 : 0, failed ? 1 : 0, death ? 1 : 0, reward, powerDelta, reward, powerDelta,
         failed ? 1.0f : 0.0f, std::max(0.0f, reward) + std::max(0.0f, powerDelta), Cohort().ExperimentId, Cohort().RunId, event.c_str(), res.c_str(), features.c_str(), embeddingJson.c_str());
+
+    // Keep a loaded aggregate exact after the same-thread upsert. This is a
+    // write-through cache, not a lossy telemetry filter: every source event
+    // still reaches the SQL upsert, while later payload construction reuses
+    // the resulting aggregate without another SELECT.
+    auto cacheItr = _semanticOutcomeStatsCache.find(std::make_pair(cacheType, entityKey));
+    if (cacheItr != _semanticOutcomeStatsCache.end())
+    {
+        SemanticOutcomeStats& cached = cacheItr->second;
+        cached.Known = true;
+        ++cached.Samples;
+        cached.Successes += success ? 1 : 0;
+        cached.Failures += failed ? 1 : 0;
+        cached.Deaths += death ? 1 : 0;
+        cached.TotalReward += reward;
+        cached.TotalPowerDelta += powerDelta;
+        double const samples = std::max<uint32>(1, cached.Samples);
+        cached.AvgReward = float(cached.TotalReward / samples);
+        cached.AvgPowerDelta = float(cached.TotalPowerDelta / samples);
+        cached.DangerScore = std::min(1.0f,
+            float(cached.Failures + cached.Deaths * 2.0) / float(samples));
+        cached.ProgressionValue = std::max(0.0f, cached.TotalPowerDelta / samples)
+            + std::max(0.0f, cached.TotalReward / samples);
+    }
 }
 
 void BotWorldPopulationMgr::UpdateSemanticStatsFromEvent(Player* bot, Unit const* target, char const* eventType, char const* result, float valueFloat, uint32 valueInt, uint32 spellId, char const* /*semanticJson*/)
@@ -35795,9 +35820,14 @@ BotWorldPopulationMgr::SemanticOutcomeStats BotWorldPopulationMgr::GetSemanticOu
     if (!sConfigMgr->GetBoolDefault("BotSemantic.Enable", true) || !entityType || !entityKey)
         return stats;
 
-    std::string type = entityType;
+    std::string const cacheType = entityType;
+    auto cacheItr = _semanticOutcomeStatsCache.find(std::make_pair(cacheType, entityKey));
+    if (cacheItr != _semanticOutcomeStatsCache.end())
+        return cacheItr->second;
+
+    std::string type = cacheType;
     CharacterDatabase.EscapeString(type);
-    if (QueryResult result = CharacterDatabase.PQuery("SELECT samples, successes, failures, deaths, avg_reward, avg_power_delta, danger_score, progression_value FROM bot_semantic_outcome_stats WHERE entity_type = '%s' AND entity_key = %u", type.c_str(), entityKey))
+    if (QueryResult result = CharacterDatabase.PQuery("SELECT samples, successes, failures, deaths, total_reward, total_power_delta, avg_reward, avg_power_delta, danger_score, progression_value FROM bot_semantic_outcome_stats WHERE entity_type = '%s' AND entity_key = %u", type.c_str(), entityKey))
     {
         Field* fields = result->Fetch();
         stats.Known = true;
@@ -35805,10 +35835,14 @@ BotWorldPopulationMgr::SemanticOutcomeStats BotWorldPopulationMgr::GetSemanticOu
         stats.Successes = fields[1].GetUInt32();
         stats.Failures = fields[2].GetUInt32();
         stats.Deaths = fields[3].GetUInt32();
-        stats.AvgReward = fields[4].GetFloat();
-        stats.AvgPowerDelta = fields[5].GetFloat();
-        stats.DangerScore = fields[6].GetFloat();
-        stats.ProgressionValue = fields[7].GetFloat();
+        stats.TotalReward = fields[4].GetDouble();
+        stats.TotalPowerDelta = fields[5].GetDouble();
+        stats.AvgReward = fields[6].GetFloat();
+        stats.AvgPowerDelta = fields[7].GetFloat();
+        stats.DangerScore = fields[8].GetFloat();
+        stats.ProgressionValue = fields[9].GetFloat();
+        _semanticOutcomeStatsCache.emplace(
+            std::make_pair(cacheType, entityKey), stats);
     }
     return stats;
 }
