@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-12T23:42:00Z",
+  "updated_at_utc": "2026-08-12T23:56:27Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -16,8 +16,8 @@
   },
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
-    "foundation_sha": "af3d5229bf6f00f9b4c84632ce758e83c2607231",
-    "current_head_sha": "af3d5229bf6f00f9b4c84632ce758e83c2607231",
+    "foundation_sha": "680e5e2da424cfffcb86e2d546e50d93e7077fb5",
+    "current_head_sha": "680e5e2da424cfffcb86e2d546e50d93e7077fb5",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -28,17 +28,17 @@
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
     "critical_high_remediation_implemented_at": "af3d5229bf6f00f9b4c84632ce758e83c2607231",
-    "mandatory_rereview": "exact_af3d5229bf_review_approved_zero_critical_high_medium_and_build_succeeded; eleventh_live_capture_exposed_new_native_full_wipe_and_forced_respawn_assistance_defects; remediation_and_fresh_exact_rereview_pending",
+    "mandatory_rereview": "exact_af3d5229bf_review_approved_zero_critical_high_medium_and_build_succeeded; eleventh_live_capture_exposed_native_full_wipe_and_forced_respawn_assistance_defects; exact_680e5e2da4_remediation_complete_and_fresh_sol_high_rereview_pending",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "eleventh_capture_phase1_false; corridor_live_clear_repeated; typed_magmaw_decisions_and_ground_danger_observed_but_no_stable_native_engagement; partial_death_tactical_retreat_and_direct_boss_respawn_recovery_rejected; native_full_wipe_no_assistance_remediation_review_rebuild_and_rerun_pending"
+    "current_acceptance": "eleventh_capture_phase1_false; corridor_live_clear_repeated; typed_magmaw_decisions_and_ground_danger_observed_but_no_stable_native_engagement; exact_680e5e2da4_native_full_wipe_latch_blocks_partial_retreat_party_res_and_self_res_for_this_smoke_and_forbids_direct_raid_boss_respawn_load_manufacture; independent_review_rebuild_and_rerun_pending"
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_commit": "af3d5229bf6f00f9b4c84632ce758e83c2607231",
-    "current_state": "idle_after_exact_af3_build_and_eleventh_uncapped_semantic_stall_capture",
-    "current_result": "exact-af3 configure and worldserver receipts are successful and retained in the eleventh DVC batch; the binary becomes stale for the pending native-full-wipe/no-forced-respawn remediation",
+    "current_commit": "680e5e2da424cfffcb86e2d546e50d93e7077fb5",
+    "current_state": "idle_after_exact_680e5e2_native_full_wipe_no_assistance_source_checkpoint",
+    "current_result": "exact-af3 configure and worldserver receipts are retained but stale; exact-680e5e2 mandatory Sol-high review and coordinated rebuild are required",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -278,7 +278,7 @@
     "broad_status": "inherited_dependency_drift_and_selectively_evicted_outputs_present",
     "new_raid_artifact_failure": true,
     "validation_scenario_stage_remote_status": "cache_and_remote_in_sync",
-    "validation_scenario_dvc_md5": "e79e1997288e7b21ae82473ccfa9522c.dir",
+    "validation_scenario_dvc_md5": "4026b34e6c368f236d7975acf166873a.dir",
     "validation_provisioning_dvc_md5": "3f1ca669625982e0cef7699a4e6323f6.dir",
   "validation_gear_dvc_md5": "14bceda375f6e9ae504ed8e80a001d0f.dir",
     "validation_provisioning_remote_status": "cache_and_remote_in_sync_full_stat_ghost_corpse_instance_cleanup_and_live_v3_readback_passed",
@@ -306,6 +306,9 @@
     "phase1_ninth_infrastructure_live_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_e75f5ba2_20260813.dvc",
     "phase1_ninth_infrastructure_live_dvc_md5": "679597e1371aecd365c79e8e77dcae94.dir",
     "phase1_ninth_infrastructure_live_remote_status": "remote_verified_exact_workspace_payload_and_eight_child_cache_objects_evicted_receipts_and_compact_summary_retained",
+    "phase1_eleventh_infrastructure_live_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_af3d5229_20260813.dvc",
+    "phase1_eleventh_infrastructure_live_dvc_md5": "1f06df4d0ade61f77084cf1401f2821a.dir",
+    "phase1_eleventh_infrastructure_live_remote_status": "remote_verified_exact_workspace_payload_and_eight_child_cache_objects_evicted_receipts_and_compact_summary_retained",
     "broad_gc_used": false,
     "config_local_tracked": false,
     "known_historical_unavailable_objects": [
@@ -502,9 +505,14 @@
       ,"eleventh_capture_diagnosed_partial_death_tactical_retreat_and_direct_boss_respawn_recovery_assistance_loop"
       ,"eleventh_capture_eight_file_dvc_artifact_pushed_remote_verified_and_compactly_summarized"
       ,"eleventh_capture_cleanup_proved_zero_bots_leases_and_processes"
+      ,"native_full_wipe_only_policy_latches_exact_attempt_roster_wipe_and_per_guid_death_identity_at_680e5e2da4"
+      ,"native_full_wipe_smoke_blocks_partial_tactical_retreat_party_resurrection_and_self_resurrection_shortcuts"
+      ,"validation_raid_boss_recovery_blocks_creature_map_respawn_and_database_spawn_manufacture_before_direct_calls"
+      ,"first_released_ghost_cannot_revoke_latched_full_wipe_authority_for_remaining_roster_members"
+      ,"validation_scenario_dvc_regenerated_pushed_and_remote_verified_at_4026b34e6c368f236d7975acf166873a_dir"
+      ,"post_remediation_focused_phase1_research_coordinator_and_phase9_partition_258_passed"
       ],
       "remaining_requirements": [
-      "implement_native_full_wipe_policy_and_remove_direct_boss_respawn_recovery_for_validation_raids",
       "mandatory_independent_sol_high_review_of_exact_native_full_wipe_no_assistance_remediation",
       "complete_exact_policy_v8_release_coordinated_incremental_build_and_regression_gate_at_reviewed_descendant",
         "rerun_uncapped_serialized_bwd_10n_entry_formation_difficulty_wipe_reset_evidence_publication_and_cleanup_gate_with_live_stall_diagnosis",
@@ -529,8 +537,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "Exact clean af3d5229bf mandatory review, policy-v8 configure/build, fresh provisioning verifier, and v4 readback all succeeded. The eleventh uncapped run formed BWD 10N instance/save 8 and again live-cleared both entry targets plus the exact Chainwielder/two-Drudge corridor. At Magmaw, bots issued typed entry-41570 tank, single-target, healing, and ground-danger decisions, but individual critical-role deaths triggered tactical retreat before a stable native full wipe. The route then directly advanced or forced boss respawn and repeated the loop. The semantic monitor correctly stopped after 304.073 seconds; cleanup proved zero bots, leases and processes. Direct boss respawn recovery is forbidden assistance despite the capture scanner not classifying its result marker. Native-full-wipe/no-assistance remediation, exact review, rebuild, reprovision and rerun remain pending."
+      "detail": "Exact clean af3d5229bf mandatory review, policy-v8 configure/build, fresh provisioning verifier, and v4 readback all succeeded. The eleventh uncapped run formed BWD 10N instance/save 8 and live-cleared entry plus the exact corridor, but exposed partial-retreat and forced-respawn assistance. Exact source checkpoint 680e5e2da4 now requires a latched exact full wipe, blocks party/self-resurrection shortcuts only for this smoke, and returns before every direct raid boss respawn or database-load manufacture path. The regenerated route DVC object is remotely synchronized and 258 focused tests pass. Mandatory independent Sol-high review, exact rebuild, reprovision and uncapped rerun remain pending."
     }
   ],
-  "next_action": "Complete the scoped Phase 1 native-full-wipe policy and remove direct Creature/Map respawn or LoadFromDB recovery for validation raid bosses. Obtain mandatory independent Sol-high review of the exact clean remediation. With zero unresolved Critical/High findings, run an exact policy-v8 rebuild, fresh reprovision/full verifier/v4 readback, and another uncapped Phase 1 rerun with the worldserver started and verified before Luna-xhigh babysitting. Require durable native Magmaw engagement, actual script event and bot-decision review, full wipe/reset/release/runback/reentry/resurrection/readycheck ordering, cleanup, DVC publication and exact eviction. Do not infer Magmaw fidelity from this smoke. Parallel boss diagnostics remain downstream and require one prestarted verified worldserver, six isolated boss-ready shards, and one Luna-xhigh babysitter per boss; final qualification remains three sequential full clears plus a fourth on material disagreement. Keep all 464 material fidelity blockers fail-closed."
+  "next_action": "Obtain mandatory independent Sol-high review of exact clean 680e5e2da424cfffcb86e2d546e50d93e7077fb5. With zero unresolved Critical/High findings, run an exact policy-v8 rebuild, fresh reprovision/full verifier/v4 readback, and another uncapped Phase 1 rerun with the worldserver started and verified before Luna-xhigh babysitting. Require durable native Magmaw engagement, actual script event and bot-decision review, full wipe/reset/release/runback/reentry/resurrection/readycheck ordering, cleanup, DVC publication and exact eviction. Do not infer Magmaw fidelity from this smoke. Parallel boss diagnostics remain downstream and require one prestarted verified worldserver, six isolated boss-ready shards, and one Luna-xhigh babysitter per boss; final qualification remains three sequential full clears plus a fourth on material disagreement. Keep all 464 material fidelity blockers fail-closed."
 }
