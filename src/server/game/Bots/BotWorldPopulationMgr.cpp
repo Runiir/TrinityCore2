@@ -4040,6 +4040,11 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     Cohort().Config.ValidationRouteNodeKind = node.NodeKind;
     Cohort().Config.ValidationRouteMechanicProfile = node.MechanicProfile;
     Cohort().Config.ValidationRouteBossRecovery = node.BossRecoveryPolicy;
+    // Recovery authority is owned by the node that observed the exact native
+    // all-dead edge. Trash nodes use their own native encounter policy and
+    // must never carry a stale latch into a later boss/ready-check contract.
+    if (node.BossRecoveryPolicy != ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly)
+        Cohort().Raid.NativeRecoveryHoldActive = false;
     Cohort().Config.ValidationRouteMapId = node.MapId;
     Cohort().Config.ValidationRouteX = node.NavigationAnchorX;
     Cohort().Config.ValidationRouteY = node.NavigationAnchorY;
@@ -7735,7 +7740,9 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
             // first post-resurrection all-alive sample must not reopen route
             // decisions while the ready-check action and the final evidence
             // refresh are still pending.
-            raid.NativeRecoveryHoldActive = true;
+            raid.NativeRecoveryHoldActive =
+                Cohort().Config.ValidationRouteBossRecovery
+                    == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly;
             // Sampling may observe the last death and the native instance
             // IN_PROGRESS -> reset transition together.  Preserve the
             // generation immediately before that transition so the observed

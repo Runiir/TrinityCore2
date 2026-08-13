@@ -24,6 +24,9 @@ Require one exact tuple across config, generated route, runtime status, capture,
 - Keep unrelated bosses and trash out of a diagnostic shard. Magmaw must not traverse Omnotron.
 - Build the canonical full-raid route from the reviewed boss-node sets, preserving one authoritative ordering and node identities.
 - Keep executable mechanic contracts on boss nodes. Unresolved or undeclared targets must hold offense fail-closed.
+- Scope wipe/recovery latches to the exact node, route generation, attempt, and
+  recovery policy that observed them. Trash recovery state must not cross into
+  a later boss ready-check contract.
 
 ## Model prerequisites as a DAG
 

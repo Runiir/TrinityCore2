@@ -671,7 +671,8 @@ def test_native_recovery_hold_is_latched_at_wipe_and_cleared_only_after_complete
         IMPL.index("bool BotWorldPopulationMgr::ResolveSpawnPlacement")
     ]
     wipe = ensure.index("if (allDead)")
-    latch = ensure.index("raid.NativeRecoveryHoldActive = true;", wipe)
+    latch = ensure.index("raid.NativeRecoveryHoldActive =", wipe)
+    assert "ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly" in ensure[latch:latch + 220]
     evidence = ensure.index("raid.NativeRecoveryEvidenceComplete =", latch)
     clear = ensure.index("if (raid.NativeRecoveryEvidenceComplete)", evidence)
     assert latch < evidence < clear
@@ -698,6 +699,21 @@ def test_native_recovery_hold_is_latched_at_wipe_and_cleared_only_after_complete
         IMPL.index("std::string BotWorldPopulationMgr::BuildRaidPositioningAnchorsJson")
     ]
     assert runtime_json.count("native_recovery_hold_active") >= 2
+
+
+def test_native_recovery_hold_cannot_leak_from_drudge_trash_into_magmaw():
+    apply_node = IMPL[
+        IMPL.index("bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode"):
+        IMPL.index("void BotWorldPopulationMgr::ResetTraceStreams")
+    ]
+    policy = apply_node.index("Cohort().Config.ValidationRouteBossRecovery = node.BossRecoveryPolicy;")
+    clear = apply_node.index("Cohort().Raid.NativeRecoveryHoldActive = false;", policy)
+    reset = apply_node.index("ResetValidationRouteRuntimeState", clear)
+    assert policy < clear < reset
+    assert (
+        "node.BossRecoveryPolicy != ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly"
+        in apply_node[policy:clear]
+    )
 
 
 def _laser_exit_path_is_safe(path, hazards, radius=12.0):

@@ -10,6 +10,7 @@ from math import hypot, isfinite
 import os
 from pathlib import Path
 import re
+import signal
 import subprocess
 import tempfile
 import time
@@ -3767,6 +3768,48 @@ def main() -> int:
     operator_interrupt = False
     shutdown_error: str | None = None
     stop_commands_sent = False
+    forced_evidence_report: dict[str, Any] = {
+        "requested": False,
+        "gate_passed": False,
+        "missing_channels": ["diagnosis", "trace"],
+        "rejections": ["forced_bundle_not_requested"],
+    }
+    flush_forced_evidence_callback: Any = None
+
+    def request_final_evidence(reason: str) -> dict[str, Any]:
+        nonlocal operator_interrupt
+        if forced_evidence_report.get("requested") is True:
+            return forced_evidence_report
+        if flush_forced_evidence_callback is None or process is None or process.poll() is not None:
+            return {
+                "requested": False,
+                "gate_passed": False,
+                "missing_channels": ["diagnosis", "trace"],
+                "rejections": ["forced_bundle_process_unavailable"],
+                "reason": reason,
+            }
+        try:
+            report = flush_forced_evidence_callback()
+            report["reason"] = reason
+            return report
+        except KeyboardInterrupt:
+            operator_interrupt = True
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
+            return {
+                "requested": True,
+                "gate_passed": False,
+                "missing_channels": ["diagnosis", "trace"],
+                "rejections": ["forced_bundle_operator_interrupted"],
+                "reason": reason,
+            }
+        except BaseException as error:
+            return {
+                "requested": True,
+                "gate_passed": False,
+                "missing_channels": ["diagnosis", "trace"],
+                "rejections": [f"forced_bundle_error:{type(error).__name__}:{error}"],
+                "reason": reason,
+            }
     server_log_output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(
         prefix=".raid-phase1-worldserver-", suffix=".log.tmp", dir=server_log_output.parent, delete=False
@@ -3815,13 +3858,6 @@ def main() -> int:
             monitor_started_at = time.monotonic()
             telemetry_freshness: dict[str, dict[str, float | int]] = {}
             telemetry_abort: dict[str, Any] = {"detected": False}
-            forced_evidence_report: dict[str, Any] = {
-                "requested": False,
-                "gate_passed": False,
-                "missing_channels": ["diagnosis", "trace"],
-                "rejections": ["forced_bundle_not_requested"],
-            }
-
             def flush_forced_evidence() -> dict[str, Any]:
                 """Retain and independently validate a final evidence bundle.
 
@@ -3895,6 +3931,8 @@ def main() -> int:
                 report["response_wait_seconds"] = round(time.monotonic() - request_started, 3)
                 return report
 
+            flush_forced_evidence_callback = flush_forced_evidence
+
             while (deadline is None or time.monotonic() < deadline) and not (
                 len(stable) >= args.required_stable_statuses
                 and recovery_accepted and drudge_accepted
@@ -3953,6 +3991,9 @@ def main() -> int:
                         args.telemetry_timeout_sec,
                     )
                     if stale_channels:
+                        forced_evidence_report = request_final_evidence(
+                            "telemetry_channel_stale"
+                        )
                         telemetry_abort = {
                             "detected": True,
                             "classification": "infrastructure_abort",
@@ -4036,12 +4077,17 @@ def main() -> int:
                             readycheck_requested_for = request_identity
                 time.sleep(0.25)
 
+            if forced_evidence_report.get("requested") is not True:
+                forced_evidence_report = request_final_evidence(
+                    "terminal_gate_or_process_exit"
+                )
             shutdown = bounded_native_shutdown(process, 60.0)
             stop_commands_sent = bool(shutdown["commands_sent"])
             shutdown_error = shutdown["error"]
             if shutdown["operator_interrupted"]:
                 operator_interrupt = True
                 startup_error = "KeyboardInterrupt:operator_interrupt"
+                signal.signal(signal.SIGINT, signal.SIG_IGN)
         except KeyboardInterrupt:
             # Do not let an operator abort become a Python traceback.  Keep
             # the already captured bytes, issue the native cleanup sequence,
@@ -4049,22 +4095,30 @@ def main() -> int:
             # abort with an explicit operator reason.
             operator_interrupt = True
             startup_error = "KeyboardInterrupt:operator_interrupt"
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
+            forced_evidence_report = request_final_evidence("operator_interrupt")
             shutdown = bounded_native_shutdown(process, 20.0)
             stop_commands_sent = bool(shutdown["commands_sent"])
             shutdown_error = shutdown["error"]
         except Exception as error:  # captured as infrastructure evidence below
             startup_error = f"{type(error).__name__}:{error}"
+            forced_evidence_report = request_final_evidence("capture_exception")
             shutdown = bounded_native_shutdown(process, 20.0)
             stop_commands_sent = bool(shutdown["commands_sent"])
             shutdown_error = shutdown["error"]
         finally:
             if process is not None and process.poll() is None:
-                os.killpg(process.pid, 15)
                 try:
+                    os.killpg(process.pid, 15)
                     process.wait(timeout=10)
-                except subprocess.TimeoutExpired:
-                    os.killpg(process.pid, 9)
-                    process.wait(timeout=10)
+                except (subprocess.TimeoutExpired, KeyboardInterrupt):
+                    try:
+                        os.killpg(process.pid, 9)
+                        process.wait(timeout=10)
+                    except (OSError, subprocess.TimeoutExpired, KeyboardInterrupt):
+                        pass
+                except OSError:
+                    pass
         # Move the captured file into its caller-selected immutable location;
         # do not delete the raw worldserver log after capture.
         os.replace(log_path, server_log_output)

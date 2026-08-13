@@ -1849,11 +1849,28 @@ def test_capture_interrupt_is_native_cleanup_backed_and_classified_without_trace
     assert 'process.stdin.write(b"botauto stop\\nbotauto status\\nserver exit\\n")' in source
     assert '"operator_interrupt": operator_interrupt' in source
     assert '"operator_reason": "operator_interrupt" if operator_interrupt else None' in source
+    assert 'forced_evidence_report = request_final_evidence("operator_interrupt")' in source
+    assert 'signal.signal(signal.SIGINT, signal.SIG_IGN)' in source
     # The explicit handler must appear before the generic Exception handler;
     # otherwise Ctrl-C remains an uncaught BaseException.
     assert source.index("except KeyboardInterrupt:") < source.index(
         "except Exception as error:  # captured as infrastructure evidence below"
     )
+
+
+def test_every_terminal_capture_path_requests_a_fresh_full_evidence_bundle():
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "tools/raid_program/capture_phase1_raid_foundation.py"
+    ).read_text(encoding="utf-8")
+    for reason in (
+        '"telemetry_channel_stale"',
+        '"terminal_gate_or_process_exit"',
+        '"operator_interrupt"',
+        '"capture_exception"',
+    ):
+        assert reason in source
+    assert source.count("request_final_evidence(") >= 5
 
 
 def test_uncapped_capture_fails_closed_when_any_telemetry_channel_is_stale():
