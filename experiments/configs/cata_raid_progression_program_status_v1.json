@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-13T10:32:26Z",
+  "updated_at_utc": "2026-08-13T10:39:37Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -28,11 +28,11 @@
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
     "critical_high_remediation_implemented_at": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "mandatory_rereview": "exact_eac6b5fb6a_sol_high_rejected_with_five_high_findings; all prior findings remediated through exact_c1f7fe4663; final exact descendant rereview pending",
+    "mandatory_rereview": "APPROVE exact 89f33065d6a9fbbf76cc3840ce93c6f6abcb2756 with zero critical/high findings; narrow carry review required only for this status-only descendant before build",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "The exact aa85 uncapped capture remains a Phase 1 infrastructure abort, not gameplay or fidelity evidence. Its diagnosis has been consumed and exactly evicted after remote verification. Exact c1f7fe4663 adds independently reconstructable frozen Drudge geometry, canonical tank/source identity, scope-bound lower-lane hold evidence, and ordered first-death/native-Vengeful-Rage guard evidence without an invented time window; 257 focused checks pass. Mandatory final exact rereview, rebuild, fresh preparation, and rerun remain required."
+    "current_acceptance": "The exact aa85 uncapped capture remains a Phase 1 infrastructure abort, not gameplay or fidelity evidence. Its diagnosis has been consumed and exactly evicted after remote verification. Exact c1f7fe4663 adds independently reconstructable frozen Drudge geometry, canonical tank/source identity, scope-bound lower-lane hold evidence, and ordered first-death/native-Vengeful-Rage guard evidence without an invented time window; 257 focused checks pass. Mandatory Sol-high review approved exact status checkpoint 89f33065d6 with zero critical/high findings. The exact build, fresh preparation, and rerun remain required."
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
@@ -624,5 +624,5 @@
       "detail": "Exact aa85 was reviewed, built, freshly prepared, and run uncapped. Its remotely verified failure batch proved a Drudge semantic stall and was consumed, then its workspace and exact eight child cache objects were evicted. Exact c1f7fe4663 remediates the subsequent Sol-high liveness, immutable geometry, canonical identity, health-hold, native-rage, telemetry, recovery-state, and persistence findings and passes 257 focused checks. Mandatory final exact rereview, exact rebuild, fresh preparation, and rerun remain required."
     }
   ],
-  "next_action": "Obtain mandatory Sol-high approval of the exact clean c1f7fe4663 code checkpoint and status descendant, then run one policy-v8 coordinated build, freshly reprovision/full-verify/v4-read back, prestart and verify one worldserver, attach one Luna-xhigh babysitter, and rerun the uncapped canonical Phase 1 capture. Six parallel boss shards remain downstream of a passing Phase 1 gate."
+  "next_action": "After narrow Sol-high carry approval of this status-only descendant, run one policy-v8 coordinated build, freshly reprovision/full-verify/v4-read back, prestart and verify one worldserver, attach one Luna-xhigh babysitter, and rerun the uncapped canonical Phase 1 capture. Six parallel boss shards remain downstream of a passing Phase 1 gate."
 }

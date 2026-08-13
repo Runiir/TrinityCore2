@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "audit_id": "cata_raid_runtime_phase1_v1",
-  "updated_at_utc": "2026-08-13T10:32:26Z",
+  "updated_at_utc": "2026-08-13T10:39:37Z",
   "target": {
     "client": "Cataclysm Classic",
     "patch": "4.4.2",
@@ -10,17 +10,17 @@
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
   "audited_commit": "c1f7fe4663e82e5ffbbeacf73bd5ab74f57bd72d",
-  "gate_state": "in_progress_exact_c1f7_drudge_geometry_hold_rage_and_hotpath_remediation_pending_final_review_build_and_rerun",
+  "gate_state": "in_progress_exact_c1f7_drudge_geometry_hold_rage_and_hotpath_remediation_review_approved_build_and_rerun_pending",
   "foundation": {
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
     "current_head_sha": "c1f7fe4663e82e5ffbbeacf73bd5ab74f57bd72d",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
-    "mandatory_sol_high_rereview": "exact_eac6_rejected_five_high_all_remediated_through_c1f7_final_exact_rereview_pending",
+    "mandatory_sol_high_rereview": "APPROVE exact 89f33065d6a9fbbf76cc3840ce93c6f6abcb2756 zero critical/high; narrow carry review required only for this status-only descendant before build",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "acceptance": "Exact aa85 remains a remotely retained infrastructure-abort diagnosis with no gameplay or fidelity inference; its consumed workspace and exact child cache objects are evicted. Exact c1f7 adds canonical immutable source/tank/member geometry, honest ownership-versus-taunt evidence, scope-bound observed lower-lane hold, ordered first-death/native-Rage guard evidence, liveness-safe fallbacks, partial-death state, and complete fingerprint persistence. Final exact review, build, fresh preparation, and live rerun are pending."
+    "acceptance": "Exact aa85 remains a remotely retained infrastructure-abort diagnosis with no gameplay or fidelity inference; its consumed workspace and exact child cache objects are evicted. Exact c1f7 adds canonical immutable source/tank/member geometry, honest ownership-versus-taunt evidence, scope-bound observed lower-lane hold, ordered first-death/native-Rage guard evidence, liveness-safe fallbacks, partial-death state, and complete fingerprint persistence. Mandatory Sol-high review approved exact 89f33065d6 with zero critical/high findings; build, fresh preparation, and live rerun are pending."
   },
   "research": {
     "required_boss_packets": 28,
@@ -193,7 +193,7 @@
   ],
   "phase1_gate_blockers": [
     "exact_aa85_uncapped_capture_failed_closed_at_magmaw_drudge_pair_before_magmaw_engagement",
-    "exact_c1f7_mandatory_sol_high_rereview_and_build_pending",
+    "exact_89f3_sol_high_approved_zero_critical_high_build_pending",
     "single_cohort_cpu_log_and_telemetry_optimization_pending_live_measurement",
     "bwd_exact_442_quantitative_and_exact_log_hotfix_evidence_blocks_phase2_fidelity"
   ],
