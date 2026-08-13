@@ -2473,6 +2473,36 @@ def _native_full_wipe_reentry_gate(*, hostile_active, boss_reset_observed,
     return (boss_reset_observed or hostile_reset_observed) and not hostile_active
 
 
+def _native_hostile_reset_samples(samples):
+    """Model attempt/node-scoped active -> stable-inactive evidence."""
+    state = {
+        "scope": None,
+        "seen": False,
+        "seen_at_wipe": False,
+        "reset": False,
+        "inactive_since": None,
+    }
+    for sample in samples:
+        scope = (sample["attempt"], sample["route_generation"], sample["node"])
+        if state["scope"] != scope:
+            state.update(scope=scope, seen=False, seen_at_wipe=False,
+                         reset=False, inactive_since=None)
+        if sample.get("active"):
+            state["seen"] = True
+            state["inactive_since"] = None
+        elif sample.get("wiped") and (state["seen_at_wipe"] or state["seen"]):
+            if state["inactive_since"] is None:
+                state["inactive_since"] = sample.get("elapsed_ms", 0)
+            if sample.get("elapsed_ms", 0) - state["inactive_since"] >= 5000:
+                state["reset"] = True
+        if sample.get("wipe_transition"):
+            state["seen_at_wipe"] = state["seen"]
+            state["seen"] = False
+            state["reset"] = False
+            state["inactive_since"] = None
+    return state
+
+
 def test_native_recovery_blocks_survivor_pack_reentry_until_native_reset():
     # A trash pack can remain active while the instance script reports no boss
     # encounter. It must not be allowed to kill newly resurrected members.
@@ -2493,6 +2523,9 @@ def test_native_recovery_blocks_survivor_pack_reentry_until_native_reset():
         "bool NativeHostileInactivityObserved",
         "uint64 NativeHostileResetGeneration",
         "uint64 NativeHostileResetGenerationAtWipe",
+        "uint64 NativeHostileObservationAttemptId",
+        "uint64 NativeHostileObservationRouteGeneration",
+        "std::string NativeHostileObservationNodeId",
     ):
         assert token in runtime
 
@@ -2517,12 +2550,29 @@ def test_native_recovery_blocks_survivor_pack_reentry_until_native_reset():
     ]
     for token in (
         "ObserveNativeRaidHostileActivity",
+        "hostileObservationScopeChanged",
+        "NativeHostileObservationAttemptId",
+        "NativeHostileObservationRouteGeneration",
+        "NativeHostileObservationNodeId",
+        "native_hostile_observation_scope_reset",
         "NativeHostileActivitySeenAtWipe",
         "NativeHostileInactiveSinceMs",
         "NativeHostileInactivityObserved",
         "++raid.NativeHostileResetGeneration",
+        "raid.NativeHostileActivitySeenAtWipe || raid.NativeHostileActivitySeen",
+        "raid.NativeHostileActivitySeen = false",
     ):
         assert token in ensure
+    runtime_json = IMPL[
+        IMPL.index("std::string BotWorldPopulationMgr::BuildRaidRuntimeJson"):
+        IMPL.index("std::string BotWorldPopulationMgr::BuildRaidPositioningAnchorsJson")
+    ]
+    for token in (
+        "native_hostile_observation_attempt_id",
+        "native_hostile_observation_route_generation",
+        "native_hostile_observation_node_id",
+    ):
+        assert token in runtime_json
 
     update = IMPL[
         IMPL.index("void BotWorldPopulationMgr::UpdateBot"):
@@ -2556,6 +2606,37 @@ def test_native_recovery_blocks_survivor_pack_reentry_until_native_reset():
     ]
     assert '"native_recovery_hostile_activity"' in request
     assert '"native_recovery_reset_not_observed"' in request
+
+
+def test_historical_prior_node_activity_cannot_arm_later_trash_reset():
+    state = _native_hostile_reset_samples([
+        {"attempt": 1, "route_generation": 4, "node": "chainwielder",
+         "active": True, "wiped": False},
+        {"attempt": 1, "route_generation": 5, "node": "drudge",
+         "active": False, "wiped": True, "wipe_transition": True, "elapsed_ms": 0},
+        {"attempt": 1, "route_generation": 5, "node": "drudge",
+         "active": False, "wiped": True, "elapsed_ms": 6000},
+    ])
+    assert state["seen"] is False
+    assert state["seen_at_wipe"] is False
+    assert state["reset"] is False
+
+
+def test_post_wipe_activity_sample_can_arm_reset_after_first_active_sample_was_missed():
+    state = _native_hostile_reset_samples([
+        # The first post-wipe sample missed the still-active pack.
+        {"attempt": 1, "route_generation": 5, "node": "drudge",
+         "active": False, "wiped": True, "wipe_transition": True, "elapsed_ms": 0},
+        # A later sample sees the pack before it naturally goes inactive.
+        {"attempt": 1, "route_generation": 5, "node": "drudge",
+         "active": True, "wiped": True, "elapsed_ms": 1000},
+        {"attempt": 1, "route_generation": 5, "node": "drudge",
+         "active": False, "wiped": True, "elapsed_ms": 7000},
+        {"attempt": 1, "route_generation": 5, "node": "drudge",
+         "active": False, "wiped": True, "elapsed_ms": 12000},
+    ])
+    assert state["seen_at_wipe"] is False
+    assert state["reset"] is True
 
 
 def test_bwd_profile_pins_10n_and_world_defaults_are_documented():

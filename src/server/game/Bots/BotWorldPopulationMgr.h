@@ -2204,6 +2204,9 @@ private:
         uint64 NativeHostileInactiveSinceMs = 0;
         uint64 NativeHostileResetGeneration = 0;
         uint64 NativeHostileResetGenerationAtWipe = 0;
+        uint64 NativeHostileObservationAttemptId = 0;
+        uint64 NativeHostileObservationRouteGeneration = 0;
+        std::string NativeHostileObservationNodeId;
         uint32 NativeHostileActivityEntry = 0;
         ObjectGuid NativeHostileActivityGuid;
         std::string NativeHostileActivityReason;

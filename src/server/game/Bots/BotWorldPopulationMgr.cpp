@@ -7559,6 +7559,31 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
     if (bossResetObserved)
         ++raid.BossResetGeneration;
 
+    // Hostile reset evidence belongs to one immutable attempt/node scope.
+    // Never let an earlier trash node or route generation arm a later wipe.
+    uint64 const hostileObservationAttemptId = raid.AttemptId;
+    uint64 const hostileObservationRouteGeneration = Party().ValidationRouteGeneration;
+    std::string const hostileObservationNodeId = Cohort().Config.ValidationRouteNodeId;
+    bool const hostileObservationScopeChanged = raid.NativeHostileObservationAttemptId != hostileObservationAttemptId
+        || raid.NativeHostileObservationRouteGeneration != hostileObservationRouteGeneration
+        || raid.NativeHostileObservationNodeId != hostileObservationNodeId;
+    if (hostileObservationScopeChanged)
+    {
+        raid.NativeHostileObservationAttemptId = hostileObservationAttemptId;
+        raid.NativeHostileObservationRouteGeneration = hostileObservationRouteGeneration;
+        raid.NativeHostileObservationNodeId = hostileObservationNodeId;
+        raid.NativeHostileActivityActive = false;
+        raid.NativeHostileActivitySeen = false;
+        raid.NativeHostileActivitySeenAtWipe = false;
+        raid.NativeHostileInactivityObserved = false;
+        raid.NativeHostileInactiveSinceMs = 0;
+        raid.NativeHostileResetGeneration = 0;
+        raid.NativeHostileResetGenerationAtWipe = 0;
+        raid.NativeHostileActivityEntry = 0;
+        raid.NativeHostileActivityGuid.Clear();
+        raid.NativeHostileActivityReason = "native_hostile_observation_scope_reset";
+    }
+
     // Boss state is not a complete reset signal for trash-only route nodes.
     // Observe every loaded hostile creature in the exact native instance and
     // retain the activity edge so recovery can distinguish an evaded/reset
@@ -7587,7 +7612,8 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
             raid.NativeHostileActivitySeen = true;
             raid.NativeHostileInactiveSinceMs = 0;
         }
-        else if (raid.WipeGeneration > 0 && raid.NativeHostileActivitySeenAtWipe)
+        else if (raid.WipeGeneration > 0
+            && (raid.NativeHostileActivitySeenAtWipe || raid.NativeHostileActivitySeen))
         {
             if (!raid.NativeHostileInactiveSinceMs)
                 raid.NativeHostileInactiveSinceMs = nowMs;
@@ -7624,6 +7650,10 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
                 ? raid.BossResetGeneration - 1 : raid.BossResetGeneration;
             raid.NativeHostileResetGenerationAtWipe = raid.NativeHostileResetGeneration;
             raid.NativeHostileActivitySeenAtWipe = raid.NativeHostileActivitySeen;
+            // Activity observed after this wipe can arm the same transition
+            // if the first post-death sample missed the pack while it was
+            // still active. Keep only the pre-wipe edge in SeenAtWipe.
+            raid.NativeHostileActivitySeen = false;
             raid.NativeHostileInactivityObserved = false;
             raid.NativeHostileInactiveSinceMs = 0;
             for (auto& [guid, signal] : raid.NativeSignalsByGuid)
@@ -30995,6 +31025,9 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
              << ",\"native_hostile_activity_active\":" << (raid.NativeHostileActivityActive ? "true" : "false")
              << ",\"native_hostile_inactivity_observed\":" << (raid.NativeHostileInactivityObserved ? "true" : "false")
              << ",\"native_hostile_reset_generation\":" << raid.NativeHostileResetGeneration
+             << ",\"native_hostile_observation_attempt_id\":" << raid.NativeHostileObservationAttemptId
+             << ",\"native_hostile_observation_route_generation\":" << raid.NativeHostileObservationRouteGeneration
+             << ",\"native_hostile_observation_node_id\":\"" << JsonEscape(raid.NativeHostileObservationNodeId) << "\""
              << ",\"recovery_generation\":" << raid.RecoveryGeneration
              << ",\"encounter_in_progress\":" << (raid.EncounterInProgress ? "true" : "false")
              << ",\"strategy_id\":\"" << JsonEscape(raid.StrategyId) << "\""
@@ -31088,6 +31121,9 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
          << ",\"native_hostile_inactivity_observed\":" << (raid.NativeHostileInactivityObserved ? "true" : "false")
          << ",\"native_hostile_reset_generation\":" << raid.NativeHostileResetGeneration
          << ",\"native_hostile_reset_generation_at_wipe\":" << raid.NativeHostileResetGenerationAtWipe
+         << ",\"native_hostile_observation_attempt_id\":" << raid.NativeHostileObservationAttemptId
+         << ",\"native_hostile_observation_route_generation\":" << raid.NativeHostileObservationRouteGeneration
+         << ",\"native_hostile_observation_node_id\":\"" << JsonEscape(raid.NativeHostileObservationNodeId) << "\""
          << ",\"native_hostile_activity_entry\":" << raid.NativeHostileActivityEntry
          << ",\"native_hostile_activity_guid\":" << raid.NativeHostileActivityGuid.GetRawValue()
          << ",\"native_hostile_activity_reason\":\"" << JsonEscape(raid.NativeHostileActivityReason) << "\""
