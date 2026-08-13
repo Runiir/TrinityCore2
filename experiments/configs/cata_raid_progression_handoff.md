@@ -1,5 +1,11 @@
 # Cataclysm raid progression handoff
 
+# 2026-08-13T15:18:46Z — Exact 11ea fail-closes raid manifest profile selection; mandatory review pending
+
+Exact `11ea547d2951973cd411eaf91fef74c41c266e50` closes both High findings from the rejected exact-5a5 generator review. Calibration-only mode now rejects any route manifest or sequence and the config writer cannot re-enable a raid route/profile after constructing the empty calibration controller. Manifest execution rejects an empty route set, requires every route's scenario and runtime-profile identity to match the selected shard, and independently requires exactly one runtime profile whose pool tag and validation-route scenario match that same shard. Cross-boss profile selection and base-Stonecore inheritance therefore fail before any worldserver starts.
+
+Adversarial coverage proves the Magmaw profile replaces Stonecore only for valid manifest execution, calibration stays route/profile empty, preparation can retain `AutoStart=0`, and empty, cross-shard and mismatched profile-manifest contracts all reject. The exact manifest set passes 15 tests; the broader raid/runtime/model/capture/readback/shard/trace/Phase9 set passes 321. No server, database mutation, build or DVC publication ran at this checkpoint. Next: mandatory Sol-high review of the exact clean status descendant, then one exact policy-v8 rebuild, fresh 110-character preparation/full verification/Magmaw v5 readback, prestart and verify one worldserver, and only then attach the Luna-xhigh Magmaw babysitter for the uncapped four-node run. Phase 1, later boss shards, Nefarian descent and fidelity remain false.
+
 # 2026-08-13T15:10:00Z — Exact dbe build/preparation passed; Magmaw config contamination caught before live start
 
 Exact `dbe320fe1576e2314ffc60b140a4468490df027d` passed the policy-v8 one-compiler configure/build. Both receipts independently verify and the ticket-produced worldserver SHA-256 is `ceb5a1d93c14df842a1c0218180f987caae5bfe01642e2b368848a83c1b78133`. Fresh tracked provisioning applied 110 account and 12,506 character statements. The independent verifier passes 110/110 accounts, 110/110 characters, all 31 runtime rotation profiles and zero failures. Magmaw v5 readback passes the exact ten GUID/account/name/role/class-spec/pool/start/full-stat/offline/unleased contract with zero instance/group/aura/corpse residue.

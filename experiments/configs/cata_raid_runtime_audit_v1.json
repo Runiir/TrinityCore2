@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "audit_id": "cata_raid_runtime_phase1_v1",
-  "updated_at_utc": "2026-08-13T14:53:58Z",
+  "updated_at_utc": "2026-08-13T15:18:46Z",
   "target": {
     "client": "Cataclysm Classic",
     "patch": "4.4.2",
@@ -9,19 +9,19 @@
     "locale": "enUS",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
-  "audited_commit": "18707ae931c56619b553ff19f883580178724d33",
-  "gate_state": "magmaw_manifest_runtime_profile_remediation_review_pending",
+  "audited_commit": "11ea547d2951973cd411eaf91fef74c41c266e50",
+  "gate_state": "exact_11ea_manifest_profile_fail_closed_pending_mandatory_rereview",
   "foundation": {
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "reviewed_source_sha": "18707ae931c56619b553ff19f883580178724d33",
-    "status_checkpoint_identity": "resolve from Git HEAD; status descendant of reviewed_source_sha before exact build",
+    "reviewed_source_sha": "11ea547d2951973cd411eaf91fef74c41c266e50",
+    "status_checkpoint_identity": "resolve from Git HEAD; status descendant of exact 11ea source pending mandatory rereview",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
-    "mandatory_sol_high_rereview": "COMPLETED exact e50, exact 45131, and exact 18707 with zero unresolved Critical/High; build and Magmaw preparation authorized",
+    "mandatory_sol_high_rereview": "PENDING exact 11ea after exact 5a5 rejection; no build or live start authorized before zero-Critical/High decision",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "acceptance": "Exact e50/45131 integrate seven Stonecore-style BWD route identities, six disjoint exact 2/3/5 diagnostic rosters, trained-profile authority, node-scoped recovery, controlled-offense closure, bounded capture scheduling and full 110-character materialization. Exact cc57 adds scenario-selected v5 DB/auth readback. Review/build/live proof remain pending. Phase 1/fidelity remain false."
+    "acceptance": "Exact 11ea fail-closes calibration/raid route combinations, empty route manifests, cross-shard runtime profile identities and mismatched profile pool/route contracts. Fifteen focused manifest tests and 321 broader raid/shard/readback tests pass. Mandatory rereview/build/live proof remain pending. Phase 1/fidelity remain false."
   },
   "research": {
     "required_boss_packets": 28,
@@ -47,8 +47,8 @@
   },
   "build": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_state": "exact_dbe_built_and_prepared_then_held_before_live_on_profile_mismatch",
-    "current_result": "dbe configure/worldserver succeeded and produced ceb5a1d9; 110/110 verifier and Magmaw v5 readback passed; generated manifest config retained stonecore_5n RuntimeProfile, so no server was started and remediation review/rebuild is required",
+    "current_state": "exact_11ea_manifest_profile_fail_closed_pending_mandatory_rereview",
+    "current_result": "historical dbe build/preparation was held before live on inherited Stonecore profile; exact 11ea closes the generator identity paths but has no review or exact receipt yet",
     "receipt_trust_model": "explicit_trusted_local_operator",
     "trusted_operator": "runiir",
     "trusted_uid": 1000,
@@ -169,15 +169,15 @@
   ],
   "synthetic_checks": {
     "test_file": "tests/test_cata_raid_runtime_foundation.py",
-    "last_result": "361_cc57_account_binding_remediation_integrated_gate_passed",
-    "combined_focus_result": "361_runtime_model_capture_readback_generic_trace_phase9_coordinator_and_bwd_shard_tests_passed",
+    "last_result": "321_broader_raid_shard_readback_regressions_passed_plus_15_manifest_profile_tests_passed",
+    "combined_focus_result": "321_runtime_model_capture_readback_generic_trace_phase9_and_bwd_shard_tests_passed; 15 exact_manifest_profile_positive_negative_tests_passed",
     "combined_focus_command": "pixi run pytest -q tests/test_phase1_raid_foundation_capture.py tests/test_phase1_provisioning_readback.py tests/test_cata_raid_runtime_foundation.py tests/test_cata_raid_foundation_model.py tests/test_phase1_generic_mechanic_smoke.py tests/test_botworld_hotpath_optimization.py tests/test_trace_export_cursor.py tests/test_phase9_live_qualification.py tests/test_raid_build_coordinator.py tests/test_bwd_diagnostic_node_manifests.py tests/test_bwd_shard_fixtures.py",
     "broad_comparison": "same selected broad command at prior exact 1c7a and source 2121: 131 passed, 33 identical inherited stale structural/source-shape failures; no subsequent broad-scope source changes outside reviewed evidence/runtime paths; focused_phase9_3_passed"
   },
   "required_open_work": [
     {
       "area": "current_build",
-      "missing": ["manifest_config_runtime_profile_remediation_review", "one_exact_policy_v8_rebuild_of_remediation_descendant"]
+      "missing": ["mandatory_sol_high_review_exact_11ea_manifest_profile_remediation", "one_exact_policy_v8_rebuild_of_reviewed_descendant"]
     },
     {
       "area": "live_script_and_decision_review",
