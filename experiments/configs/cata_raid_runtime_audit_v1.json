@@ -9,18 +9,18 @@
     "locale": "enUS",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
-  "audited_commit": "db46ef54c53f94e42d37bf8118b47def8445942e",
-  "gate_state": "in_progress_exact_db46_viable_live_pack_over_partial_retreat_remediation_complete_review_rebuild_and_live_rerun_pending",
+  "audited_commit": "f12976832c431b740bae682a3737700e6dba33ee",
+  "gate_state": "in_progress_exact_f129_shared_frozen_roster_live_pack_over_partial_retreat_remediation_complete_review_rebuild_and_live_rerun_pending",
   "foundation": {
-    "foundation_sha": "db46ef54c53f94e42d37bf8118b47def8445942e",
-    "current_head_sha": "db46ef54c53f94e42d37bf8118b47def8445942e",
+    "foundation_sha": "f12976832c431b740bae682a3737700e6dba33ee",
+    "current_head_sha": "f12976832c431b740bae682a3737700e6dba33ee",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
-    "mandatory_sol_high_rereview": "pending_exact_db46ef54c5_viable_live_pack_over_partial_retreat_remediation",
+    "mandatory_sol_high_rereview": "exact_027d_rejected_three_highs; pending_exact_f12976832c_shared_path_frozen_roster_remediation",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "acceptance": "fourteenth_capture_rejected_for_partial_wipe_retreat_preempting_viable_current_generation_live_pack_before_magmaw; exact_db46ef54c5_remediation_complete; review_rebuild_reprovision_and_uncapped_rerun_pending"
+    "acceptance": "fourteenth_capture_rejected_for_partial_wipe_retreat_preempting_viable_current_generation_live_pack_before_magmaw; bot_relative_intermediate_rejected; exact_f12976832c_shared_frozen_roster_remediation_complete; review_rebuild_reprovision_and_uncapped_rerun_pending"
   },
   "research": {
     "required_boss_packets": 28,
@@ -46,7 +46,7 @@
   },
   "build": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_state": "successful_476ec4c06b_build_stale_after_db46ef54_viable_live_pack_over_partial_retreat_remediation",
+    "current_state": "successful_476ec4c06b_build_stale_after_f12976832c_shared_frozen_roster_live_pack_over_partial_retreat_remediation",
     "current_result": "mandatory_review_then_exact_incremental_rebuild_required_before_next_uncapped_canonical_rerun",
     "receipt_trust_model": "explicit_trusted_local_operator",
     "trusted_operator": "runiir",
@@ -167,11 +167,11 @@
   "required_open_work": [
     {
       "area": "current_build",
-      "missing": ["successful_exact_policy_v8_release_coordinated_incremental_build_at_reviewed_viable_live_pack_over_partial_retreat_remediation", "valid_current_production_receipt_bound_to_trusted_local_operator", "post_build_regression_and_orphan_process_check"]
+      "missing": ["successful_exact_policy_v8_release_coordinated_incremental_build_at_reviewed_f129_shared_frozen_roster_live_pack_remediation", "valid_current_production_receipt_bound_to_trusted_local_operator", "post_build_regression_and_orphan_process_check"]
     },
     {
       "area": "adversarial_review",
-      "missing": ["zero_unresolved_critical_high_findings_for_exact_db46ef54_viable_live_pack_over_partial_retreat_remediation", "explicit_native_magmaw_script_vs_bot_decision_review", "explicit_non_fidelity_phase1_engagement_scope_approval"]
+      "missing": ["zero_unresolved_critical_high_findings_for_exact_f12976832c_shared_frozen_roster_live_pack_remediation", "explicit_native_magmaw_script_vs_bot_decision_review", "explicit_non_fidelity_phase1_engagement_scope_approval"]
     },
     {
       "area": "native_recovery_live_evidence",
@@ -183,7 +183,7 @@
     }
   ],
   "phase1_gate_blockers": [
-    "mandatory_sol_high_review_of_exact_db46ef54_viable_live_pack_over_partial_retreat_remediation_pending",
+    "mandatory_sol_high_review_of_exact_f12976832c_shared_frozen_roster_live_pack_remediation_pending",
     "coordinated_policy_v8_release_worldserver_rebuild_after_review_pending",
     "uncapped_serialized_bwd_10n_live_formation_difficulty_wipe_reset_gate_rerun_pending",
     "phase1_live_dvc_publication_remote_verification_and_exact_eviction_pending",
