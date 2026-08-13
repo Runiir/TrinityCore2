@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-13T11:43:02Z",
+  "updated_at_utc": "2026-08-13T12:05:01Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -17,7 +17,7 @@
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "current_head_sha": "15e097432183fcc4d0c23ebfc886f661a53f2146",
+    "current_head_sha": "2121c955f1b80c52101d6a603ef7cba7e72febe7",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -28,17 +28,17 @@
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
     "critical_high_remediation_implemented_at": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "mandatory_rereview": "pending exact 15e097432183fcc4d0c23ebfc886f661a53f2146 adversarial review after the 1c7a live Drudge diagnosis, path fallback, bounded telemetry, immutable demux, and pre-Rush native-threat remediation",
+    "mandatory_rereview": "pending exact status descendant carrying source commit 2121c955f1b80c52101d6a603ef7cba7e72febe7 after the 5e51 review rejected three High findings and the exact anchor, trace-cursor, and native-threat-evidence remediations were integrated",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "The exact 1c7a uncapped failure was independently diagnosed and exactly evicted after remote verification. Exact source checkpoint 15e0974321 adds native-path fallback anchors, edge/heartbeat Drudge telemetry, incremental trace export, lifecycle-aware immutable demux, and a bounded ordinary-profile cross-lane threat seed before native Rush. The combined focused suite passes 303 checks. Mandatory Sol-high review, exact rebuild, fresh preparation, and uncapped rerun remain required; Phase 1 and fidelity remain false."
+    "current_acceptance": "The exact 1c7a uncapped failure was independently diagnosed and exactly evicted after remote verification. Mandatory Sol-high review rejected exact 5e51 with three High findings: unverified fallback-anchor acceptance, lossy trace sequencing, and acceptance that did not independently reconstruct native Rush threat candidates. Source checkpoint 2121c955f1 integrates all three isolated Luna-xhigh remediations. The combined focused suite passes 313 checks and the broad legacy comparison remains exactly 131 passed / 33 inherited failures at both 1c7a and current source. Mandatory Sol-high rereview, exact rebuild, fresh preparation, and uncapped rerun remain required; Phase 1 and fidelity remain false."
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_commit": "15e097432183fcc4d0c23ebfc886f661a53f2146",
-    "current_state": "exact_15e_drudge_remediation_unreviewed_unbuilt",
-    "current_result": "303 focused checks pass; the prior exact-1c7a receipts and ELF are historical and stale for 15e; mandatory Sol-high approval and a new exact policy-v8 coordinator receipt are required",
+    "current_commit": "2121c955f1b80c52101d6a603ef7cba7e72febe7",
+    "current_state": "exact_2121_three_high_remediation_unreviewed_unbuilt",
+    "current_result": "313 focused checks pass and the broad comparison is unchanged at 131 passed / 33 inherited failures; the prior exact-1c7a receipts and ELF are historical and stale for 2121; mandatory Sol-high approval plus new exact policy-v8 configure and worldserver receipts are required",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -627,8 +627,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "Exact 1c7a was reviewed, built, freshly prepared, and then failed closed at the isolated Drudge pair. The remotely synchronized diagnosis has been consumed and exactly evicted. Exact 15e remediation now uses generation-scoped native-path anchors, bounded telemetry, immutable lifecycle-aware demux, and two deterministic opposite-lane ordinary profile submissions before the native first Rush; 303 focused checks pass. Mandatory Sol-high review, exact rebuild, fresh preparation, and uncapped rerun remain required."
+      "detail": "Exact 1c7a was reviewed, built, freshly prepared, and then failed closed at the isolated Drudge pair. The remotely synchronized diagnosis has been consumed and exactly evicted. The 5e51 mandatory review rejected three High findings. Exact source 2121 closes them by requiring the exact scoped strict-path cached anchor, exporting every trace entry with a separate monotonic cursor and gap detection, and independently reconstructing bounded native Rush threat candidates and farthest-target selection. 313 focused checks pass and the broad baseline is unchanged. Mandatory Sol-high rereview, exact configure/build receipts, fresh preparation, and uncapped rerun remain required."
     }
   ],
-  "next_action": "Obtain mandatory Sol-high zero-critical/high approval for exact 15e0974321, run one exact policy-v8 coordinated rebuild, freshly reprovision/full-verify/v4-read back, prestart and verify one worldserver, attach one Luna-xhigh babysitter, and rerun the uncapped canonical Phase 1 capture. Require native opposite-lane Rush selection, exact reseparation, health synchronization, trained profile execution, Magmaw engagement, full native recovery, bounded telemetry, and clean demux. Six parallel boss shards remain downstream of a passing Phase 1 gate."
+  "next_action": "Obtain mandatory Sol-high zero-critical/high approval for the exact clean status descendant carrying source 2121c955f1, run one exact policy-v8 coordinated configure and worldserver build, freshly reprovision/full-verify/v4-read back, prestart and verify one worldserver, attach one Luna-xhigh babysitter, and rerun the uncapped canonical Phase 1 capture. Require native opposite-lane Rush selection, exact reseparation, health synchronization, trained profile execution, Magmaw engagement, full native recovery, bounded telemetry, and clean demux. Six parallel boss shards remain downstream of a passing Phase 1 gate."
 }

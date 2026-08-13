@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "audit_id": "cata_raid_runtime_phase1_v1",
-  "updated_at_utc": "2026-08-13T11:43:02Z",
+  "updated_at_utc": "2026-08-13T12:05:01Z",
   "target": {
     "client": "Cataclysm Classic",
     "patch": "4.4.2",
@@ -9,18 +9,18 @@
     "locale": "enUS",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
-  "audited_commit": "15e097432183fcc4d0c23ebfc886f661a53f2146",
-  "gate_state": "in_progress_exact_15e_drudge_remediation_review_pending",
+  "audited_commit": "2121c955f1b80c52101d6a603ef7cba7e72febe7",
+  "gate_state": "in_progress_exact_2121_three_high_remediation_review_pending",
   "foundation": {
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "current_head_sha": "15e097432183fcc4d0c23ebfc886f661a53f2146",
+    "current_head_sha": "2121c955f1b80c52101d6a603ef7cba7e72febe7",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
-    "mandatory_sol_high_rereview": "pending exact 15e097432183fcc4d0c23ebfc886f661a53f2146",
+    "mandatory_sol_high_rereview": "pending exact clean status descendant carrying source 2121c955f1b80c52101d6a603ef7cba7e72febe7",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "acceptance": "Exact 1c7a infrastructure evidence was diagnosed, remotely verified, and exactly evicted. Exact 15e remediation adds generation-scoped pathable Drudge anchors, bounded edge/delta telemetry, immutable lifecycle-aware evidence binding, and ordinary-profile opposite-lane pre-Rush threat seeds without native selector or threat injection. The focused suite passes 303; review/build/live gates remain pending and Phase 1/fidelity remain false."
+    "acceptance": "Exact 1c7a infrastructure evidence was diagnosed, remotely verified, and exactly evicted. Mandatory review rejected 5e51 with three High findings. Exact source 2121 requires the scoped strict-path cached formation anchor, uses a separate monotonic lossless trace-entry cursor with overflow detection, and independently reconstructs complete native Rush threat candidates and farthest-target linkage. The focused suite passes 313 and the broad baseline is unchanged at 131 passed / 33 inherited failures; rereview/build/live gates remain pending and Phase 1/fidelity remain false."
   },
   "research": {
     "required_boss_packets": 28,
@@ -168,15 +168,15 @@
   ],
   "synthetic_checks": {
     "test_file": "tests/test_cata_raid_runtime_foundation.py",
-    "last_result": "303_exact_15e_source_focused_passed",
-    "combined_focus_result": "303_hotpath_model_runtime_capture_generic_phase9_and_coordinator_passed_before_exact_15e_review_build",
+    "last_result": "313_exact_2121_source_focused_passed",
+    "combined_focus_result": "313_hotpath_model_runtime_capture_generic_trace_phase9_and_coordinator_passed_before_exact_2121_review_build",
     "combined_focus_command": "pixi run pytest -q tests/test_botworld_hotpath_optimization.py tests/test_cata_raid_foundation_model.py tests/test_cata_raid_runtime_foundation.py tests/test_phase1_raid_foundation_capture.py tests/test_phase1_generic_mechanic_smoke.py tests/test_phase9_live_qualification.py tests/test_raid_build_coordinator.py",
-    "broad_comparison": "autonomy_inclusive_d5ba_review_diagnostic_239_passed_33_inherited_or_stale_failures; focused_phase9_3_passed; no new broad-regression claim until exact descendant review"
+    "broad_comparison": "same selected broad command at prior exact 1c7a and current source 2121: 131 passed, 33 identical inherited stale structural/source-shape failures; focused_phase9_3_passed"
   },
   "required_open_work": [
     {
       "area": "current_build",
-      "missing": []
+      "missing": ["mandatory_sol_high_zero_critical_high_rereview_of_exact_status_descendant_carrying_source_2121c955f1", "exact_policy_v8_configure_receipt", "exact_policy_v8_worldserver_build_receipt"]
     },
     {
       "area": "live_script_and_decision_review",
@@ -193,7 +193,8 @@
   ],
   "phase1_gate_blockers": [
     "exact_1c7a_uncapped_capture_failed_closed_at_magmaw_drudge_pair_before_magmaw_engagement",
-    "exact_15e_drudge_lane_path_native_threat_seed_and_telemetry_remediation_review_rebuild_pending",
+    "exact_5e51_mandatory_review_rejected_three_high_findings",
+    "exact_2121_cached_anchor_lossless_trace_and_native_threat_acceptance_remediation_rereview_rebuild_pending",
     "single_cohort_worldserver_cpu_35_percent_and_67mb_log_raw_not_parallel_shard_ready",
     "bwd_exact_442_quantitative_and_exact_log_hotfix_evidence_blocks_phase2_fidelity"
   ],
