@@ -23,6 +23,7 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     observe_telemetry_freshness,
     TelemetryScheduler,
     material_status_signature,
+    validate_forced_evidence_bundle,
 )
 
 
@@ -108,6 +109,111 @@ def test_forced_stall_bundle_contains_diagnose_and_lossless_trace_delta():
     assert scheduler.commands_due(2.0) == [
         "botauto trace all 128 delta", "botauto diagnose all",
     ]
+
+
+def _forced_response(status: dict, action: str, *, ok: bool = True) -> dict:
+    response = {
+        "ok": ok,
+        "action": action,
+        "cohort_id": status["cohort_id"],
+        "raid_runtime": status["raid_runtime"],
+        "bots": [],
+    }
+    for member in status["raid_runtime"]["roster"]:
+        if action == "botauto_diagnose":
+            response["bots"].append({"identity": {"bot_guid": member["guid"]}})
+        else:
+            response["bots"].append({"bot_guid": member["guid"], "gap": False})
+    return response
+
+
+def test_final_forced_bundle_requires_both_fresh_identity_bound_ok_channels():
+    status = accepted_status()
+    status["cohort_id"] = "raid"
+    diagnosis = _forced_response(status, "botauto_diagnose")
+    trace = _forced_response(status, "botauto_trace")
+
+    accepted = validate_forced_evidence_bundle(
+        [(diagnosis, 10.1), (trace, 10.2)], status,
+        requested_at_monotonic=10.0, freshness_timeout_seconds=5.0,
+    )
+    assert accepted["gate_passed"] is True
+    assert accepted["missing_channels"] == []
+
+    missing = validate_forced_evidence_bundle(
+        [(trace, 10.2)], status,
+        requested_at_monotonic=10.0, freshness_timeout_seconds=5.0,
+    )
+    assert missing["gate_passed"] is False
+    assert missing["missing_channels"] == ["diagnosis"]
+
+    delayed = validate_forced_evidence_bundle(
+        [(diagnosis, 15.1), (trace, 15.2)], status,
+        requested_at_monotonic=10.0, freshness_timeout_seconds=5.0,
+    )
+    assert delayed["gate_passed"] is False
+    assert delayed["missing_channels"] == ["diagnosis", "trace"]
+    assert "diagnosis:forced_response_stale" in delayed["rejections"]
+    assert "trace:forced_response_stale" in delayed["rejections"]
+
+    failed = validate_forced_evidence_bundle(
+        [(_forced_response(status, "botauto_diagnose", ok=False), 10.1), (trace, 10.2)],
+        status,
+        requested_at_monotonic=10.0, freshness_timeout_seconds=5.0,
+    )
+    assert failed["gate_passed"] is False
+    assert failed["missing_channels"] == ["diagnosis"]
+    assert "diagnosis:forced_response_envelope_not_ok" in failed["rejections"]
+
+
+def test_final_forced_bundle_rejects_pre_request_and_cross_identity_rows():
+    status = accepted_status()
+    status["cohort_id"] = "raid"
+    diagnosis = _forced_response(status, "botauto_diagnose")
+    trace = _forced_response(status, "botauto_trace")
+    trace["cohort_id"] = "other-raid"
+    result = validate_forced_evidence_bundle(
+        [(diagnosis, 9.9), (trace, 10.1)], status,
+        requested_at_monotonic=10.0, freshness_timeout_seconds=5.0,
+    )
+    assert result["gate_passed"] is False
+    assert result["missing_channels"] == ["diagnosis", "trace"]
+    assert "diagnosis:forced_response_before_request" in result["rejections"]
+    assert "trace:forced_response_runtime_identity_unbound" in result["rejections"]
+
+
+def test_material_signature_schedules_hostile_and_per_guid_recovery_edges():
+    status = accepted_status()
+    baseline = material_status_signature(status)
+    hostile = json.loads(json.dumps(status))
+    runtime = hostile["raid_runtime"]
+    runtime.update(
+        native_hostile_activity_active=True,
+        native_hostile_reset_generation=2,
+        native_hostile_activity_reason="hostile_pack_still_active",
+    )
+    assert material_status_signature(hostile) != baseline
+
+    scheduler = TelemetryScheduler()
+    scheduler.observe_status(status)
+    assert scheduler.commands_due(0.0) == [
+        "botauto status", "botauto trace all 128 delta", "botauto diagnose all",
+    ]
+    scheduler.observe_status(hostile)
+    assert scheduler.commands_due(1.0) == ["botauto diagnose all"]
+
+    recovery = json.loads(json.dumps(status))
+    recovery["raid_runtime"]["native_recovery"]["members"] = [{
+        "guid": 1001,
+        "wipe_generation": 1,
+        "death_sequence": 10,
+        "corpse_sequence": 11,
+        "release_sequence": 12,
+        "runback_sequence": 13,
+        "reentry_sequence": 14,
+        "resurrection_sequence": 15,
+    }]
+    assert material_status_signature(recovery) != baseline
 
 
 def _write_runtime_profile_assets(root: Path, route_payload: str) -> None:

@@ -2170,10 +2170,202 @@ def material_status_signature(status: dict[str, Any]) -> str:
             "recovery_state", "wipe_generation", "boss_reset_generation",
             "recovery_generation", "ready_check_satisfied", "roster_complete",
         )},
+        # These fields are deliberately not heartbeat counters.  A hostile
+        # that remains alive after a native wipe changes whether re-entry is
+        # safe, while the reset generation and reason explain which native
+        # edge produced that state.  Keep all known reason spellings so a
+        # compact/full producer transition cannot hide a material edge.
+        "native_hostile": {key: runtime.get(key) for key in (
+            "native_hostile_activity_active",
+            "native_hostile_activity_seen_at_wipe",
+            "native_hostile_inactivity_observed",
+            "native_hostile_reset_generation",
+            "native_hostile_reset_generation_at_wipe",
+            "native_hostile_activity_entry",
+            "native_hostile_activity_guid",
+            "native_hostile_activity_reason",
+            "native_hostile_inactivity_reason",
+            "native_hostile_reset_reason",
+            "native_hostile_state_reason",
+        )},
+        # Recovery booleans alone cannot express a newly completed per-GUID
+        # transition.  Include the ordered native sequence tuple for every
+        # member; sorting makes status map iteration order immaterial.
+        "native_recovery_members": sorted(
+            [
+                {
+                    key: member.get(key)
+                    for key in (
+                        "guid", "wipe_generation", "death_sequence",
+                        "corpse_sequence", "release_sequence", "runback_sequence",
+                        "reentry_sequence", "resurrection_sequence",
+                    )
+                }
+                for member in (runtime.get("native_recovery", {}).get("members", [])
+                               if isinstance(runtime.get("native_recovery"), dict)
+                               else [])
+                if isinstance(member, dict)
+            ],
+            key=lambda member: int(member.get("guid") or 0),
+        ),
         "errors": error_fields,
     }
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
     return hashlib.sha256(canonical).hexdigest()
+
+
+def validate_forced_evidence_bundle(
+    observations: list[tuple[dict[str, Any], float]],
+    expected_status: dict[str, Any] | None,
+    *,
+    requested_at_monotonic: float,
+    freshness_timeout_seconds: float,
+) -> dict[str, Any]:
+    """Validate the diagnose/trace responses to one explicit final request.
+
+    The worldserver console is asynchronous.  A one-second sleep after
+    writing commands is not evidence that either command ran, and a forged
+    ``ok`` bit or a response from another cohort must not satisfy the final
+    stall bundle.  Callers pass each newly observed row with the monotonic
+    time at which it was read; this function therefore enforces both request
+    ordering and a bounded freshness window without trusting producer-side
+    timestamps.
+    """
+
+    required_channels = ("diagnosis", "trace")
+    action_by_channel = {
+        "diagnosis": "botauto_diagnose",
+        "trace": "botauto_trace",
+    }
+    channels: dict[str, dict[str, Any]] = {
+        channel: {
+            "action": action,
+            "observed": 0,
+            "valid": False,
+            "rejections": [],
+        }
+        for channel, action in action_by_channel.items()
+    }
+    expected_runtime = (
+        expected_status.get("raid_runtime")
+        if isinstance(expected_status, dict)
+        else None
+    )
+    expected_identity = (
+        _runtime_identity(expected_runtime, include_strategy=False)
+        if isinstance(expected_runtime, dict)
+        else None
+    )
+    expected_roster = (
+        _roster_binding_identity(expected_runtime.get("roster"))
+        if isinstance(expected_runtime, dict)
+        and isinstance(expected_runtime.get("roster"), list)
+        else None
+    )
+    expected_cohort = (
+        expected_status.get("cohort_id")
+        if isinstance(expected_status, dict)
+        else None
+    )
+    expected_guids = {
+        int(member[3])
+        for member in expected_roster or ()
+        if _positive_int(member[3])
+    }
+    expected_binding_missing = []
+    if expected_identity is None:
+        expected_binding_missing.append("forced_expected_runtime_identity_missing")
+    if expected_roster is None or len(expected_guids) != 10:
+        expected_binding_missing.append("forced_expected_roster_identity_missing")
+    if not isinstance(expected_cohort, str) or not expected_cohort:
+        expected_binding_missing.append("forced_expected_cohort_missing")
+
+    def reject(channel: str, reason: str) -> None:
+        reasons = channels[channel]["rejections"]
+        if reason not in reasons:
+            reasons.append(reason)
+
+    for row, observed_at in observations:
+        if not isinstance(row, dict):
+            continue
+        action = row.get("action")
+        channel = next(
+            (name for name, expected_action in action_by_channel.items()
+             if expected_action == action),
+            None,
+        )
+        if channel is None:
+            continue
+        channels[channel]["observed"] += 1
+        if not isinstance(observed_at, (int, float)) or not isfinite(float(observed_at)):
+            reject(channel, "forced_response_observation_time_invalid")
+            continue
+        if observed_at < requested_at_monotonic:
+            reject(channel, "forced_response_before_request")
+        elif observed_at - requested_at_monotonic > freshness_timeout_seconds:
+            reject(channel, "forced_response_stale")
+        if row.get("ok") is not True:
+            reject(channel, "forced_response_envelope_not_ok")
+        if expected_binding_missing:
+            for reason in expected_binding_missing:
+                reject(channel, reason)
+            continue
+        runtime = row.get("raid_runtime")
+        roster = runtime.get("roster") if isinstance(runtime, dict) else None
+        if (
+            not isinstance(runtime, dict)
+            or _runtime_identity(runtime, include_strategy=False) != expected_identity
+            or _roster_binding_identity(roster) != expected_roster
+            or row.get("cohort_id") != expected_cohort
+        ):
+            reject(channel, "forced_response_runtime_identity_unbound")
+        if _roster_binding_lifecycle_rejections(roster):
+            reject(channel, "forced_response_roster_lifecycle_invalid")
+        bot_rows = row.get("bots")
+        if not isinstance(bot_rows, list):
+            reject(channel, "forced_response_bot_rows_missing")
+            continue
+        observed_guids: list[int] = []
+        for bot_row in bot_rows:
+            if not isinstance(bot_row, dict):
+                reject(channel, "forced_response_bot_row_invalid")
+                continue
+            if channel == "trace" and bot_row.get("gap") is True:
+                reject(channel, "forced_response_trace_delta_gap")
+            identity = bot_row.get("identity")
+            guid = identity.get("bot_guid") if isinstance(identity, dict) else bot_row.get("bot_guid")
+            if not _positive_int(guid):
+                reject(channel, "forced_response_bot_guid_invalid")
+                continue
+            observed_guids.append(int(guid))
+        if len(observed_guids) != 10:
+            reject(channel, "forced_response_bot_row_count_invalid")
+        if len(set(observed_guids)) != len(observed_guids):
+            reject(channel, "forced_response_duplicate_bot_guid")
+        if set(observed_guids) != expected_guids:
+            reject(channel, "forced_response_roster_incomplete_or_unbound")
+        if not channels[channel]["rejections"]:
+            channels[channel]["valid"] = True
+            channels[channel]["observed_at_monotonic"] = float(observed_at)
+
+    missing_channels = [
+        channel for channel in required_channels
+        if not channels[channel]["valid"]
+    ]
+    rejections = [
+        f"{channel}:{reason}"
+        for channel in required_channels
+        for reason in channels[channel]["rejections"]
+    ]
+    return {
+        "requested_at_monotonic": requested_at_monotonic,
+        "freshness_timeout_seconds": freshness_timeout_seconds,
+        "required_channels": list(required_channels),
+        "missing_channels": missing_channels,
+        "channels": channels,
+        "rejections": rejections,
+        "gate_passed": not missing_channels and not rejections,
+    }
 
 
 @dataclass
@@ -3294,14 +3486,42 @@ def main() -> int:
             monitor_started_at = time.monotonic()
             telemetry_freshness: dict[str, dict[str, float | int]] = {}
             telemetry_abort: dict[str, Any] = {"detected": False}
+            forced_evidence_report: dict[str, Any] = {
+                "requested": False,
+                "gate_passed": False,
+                "missing_channels": ["diagnosis", "trace"],
+                "rejections": ["forced_bundle_not_requested"],
+            }
 
-            def flush_forced_evidence() -> None:
-                """Retain a final diagnose/trace bundle before a stall exit."""
+            def flush_forced_evidence() -> dict[str, Any]:
+                """Retain and independently validate a final evidence bundle.
+
+                Console commands are asynchronous.  Wait for the exact
+                identity-bound responses to this request, bounded by the
+                telemetry freshness budget, rather than treating a fixed
+                sleep as proof that the commands ran.
+                """
                 nonlocal diagnosis_count, trace_count, latest_diagnosis
                 telemetry_scheduler.force_diagnosis(include_trace=True)
-                commands = telemetry_scheduler.commands_due(time.monotonic())
-                if not commands:
-                    return
+                request_started = time.monotonic()
+                commands = telemetry_scheduler.commands_due(request_started)
+                required_commands = {
+                    "botauto diagnose all", "botauto trace all 128 delta",
+                }
+                if not required_commands.issubset(commands):
+                    return {
+                        "requested": False,
+                        "gate_passed": False,
+                        "missing_channels": [
+                            channel for channel in ("diagnosis", "trace")
+                            if {
+                                "diagnosis": "botauto diagnose all",
+                                "trace": "botauto trace all 128 delta",
+                            }[channel] not in commands
+                        ],
+                        "rejections": ["forced_request_commands_not_scheduled"],
+                        "commands": commands,
+                    }
                 for command in commands:
                     if command == "botauto status":
                         telemetry_command_counts["status"] += 1
@@ -3311,14 +3531,40 @@ def main() -> int:
                         telemetry_command_counts["trace"] += 1
                 process.stdin.write(("\n".join(commands) + "\n").encode())
                 process.stdin.flush()
-                time.sleep(1.0)
-                for row in log_cursor.read_new_rows():
-                    action = row.get("action")
-                    if action == "botauto_diagnose":
-                        diagnosis_count += 1
-                        latest_diagnosis = row
-                    elif action == "botauto_trace":
-                        trace_count += 1
+                observations: list[tuple[dict[str, Any], float]] = []
+                expected_status = monitor_statuses[-1] if monitor_statuses else None
+                deadline = request_started + args.telemetry_timeout_sec
+                report: dict[str, Any] = {
+                    "requested": True,
+                    "gate_passed": False,
+                    "missing_channels": ["diagnosis", "trace"],
+                    "rejections": ["forced_responses_not_observed"],
+                    "commands": commands,
+                }
+                while time.monotonic() < deadline:
+                    time.sleep(min(0.25, max(0.0, deadline - time.monotonic())))
+                    observed_at = time.monotonic()
+                    for row in log_cursor.read_new_rows():
+                        action = row.get("action")
+                        if action == "botauto_diagnose":
+                            diagnosis_count += 1
+                            latest_diagnosis = row
+                            observations.append((row, observed_at))
+                        elif action == "botauto_trace":
+                            trace_count += 1
+                            observations.append((row, observed_at))
+                    report = validate_forced_evidence_bundle(
+                        observations,
+                        expected_status,
+                        requested_at_monotonic=request_started,
+                        freshness_timeout_seconds=args.telemetry_timeout_sec,
+                    )
+                    report["requested"] = True
+                    report["commands"] = commands
+                    if report["gate_passed"]:
+                        break
+                report["response_wait_seconds"] = round(time.monotonic() - request_started, 3)
+                return report
 
             while (deadline is None or time.monotonic() < deadline) and not (
                 len(stable) >= args.required_stable_statuses
@@ -3399,7 +3645,7 @@ def main() -> int:
                         stalled_for = time.monotonic() - last_semantic_progress_at
                         if (unchanged_semantic_samples >= args.semantic_stall_min_samples
                                 and stalled_for >= args.semantic_stall_sec):
-                            flush_forced_evidence()
+                            forced_evidence_report = flush_forced_evidence()
                             semantic_stall = {
                                 "detected": True,
                                 "stalled_for_seconds": round(stalled_for, 3),
@@ -3410,8 +3656,18 @@ def main() -> int:
                                 "raid_runtime": monitor_statuses[-1].get("raid_runtime"),
                                 "diagnosis_rows": diagnosis_count,
                                 "trace_rows": trace_count,
-                                "final_forced_evidence": True,
+                                "final_forced_evidence": forced_evidence_report.get("gate_passed") is True,
+                                "final_forced_evidence_report": forced_evidence_report,
                             }
+                            if forced_evidence_report.get("gate_passed") is not True:
+                                telemetry_abort = {
+                                    "detected": True,
+                                    "classification": "infrastructure_abort",
+                                    "reason": "final_forced_evidence_incomplete",
+                                    "missing_channels": forced_evidence_report.get("missing_channels", []),
+                                    "rejections": forced_evidence_report.get("rejections", []),
+                                    "elapsed_seconds": round(time.monotonic() - monitor_started_at, 3),
+                                }
                             break
                     recovery_accepted, _ = accepted_native_recovery(monitor_statuses)
                     drudge_accepted, _ = accepted_drudge_contract(monitor_statuses)
@@ -3556,6 +3812,7 @@ def main() -> int:
             "scheduler_state": telemetry_scheduler.state() if telemetry_scheduler is not None else None,
             "material_status_diagnosis": "immediate",
             "stall_bundle": "forced_diagnose_and_trace_delta_before_termination",
+            "final_forced_evidence": forced_evidence_report,
         },
         "accepted_raid_runtime": stable[-1].get("raid_runtime") if stable else None,
         "diagnose_observed": bool(diagnoses),
