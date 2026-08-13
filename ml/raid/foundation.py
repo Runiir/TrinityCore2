@@ -102,6 +102,8 @@ def evaluate_drudge_lane_contract(
     health_sync = set(health_sync_guids)
     if not health_sync.issubset(tanks):
         reasons.add("tank_health_sync_hold_identity_mismatch")
+    if not health_sync:
+        reasons.add("tank_health_sync_hold_missing")
     if set(health_sync_evaluated_guids) != tanks:
         reasons.add("tank_health_sync_evaluation_missing")
     if set(profile_action_guids) != offensive:

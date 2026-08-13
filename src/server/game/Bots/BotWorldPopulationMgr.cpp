@@ -3941,6 +3941,10 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
         Party().ValidationRouteDrudgeTauntRosterGuids.clear();
         Party().ValidationRouteDrudgeHealthSyncRosterGuids.clear();
         Party().ValidationRouteDrudgeHealthSyncEvaluatedRosterGuids.clear();
+        Party().ValidationRouteDrudgeHealthSyncHoldSourceSpawnId = 0;
+        Party().ValidationRouteDrudgeHealthSyncHoldTankGuid = 0;
+        Party().ValidationRouteDrudgeHealthSyncHoldLowerPct = 0.0f;
+        Party().ValidationRouteDrudgeHealthSyncHoldPeerPct = 0.0f;
         Party().ValidationRouteDrudgeHealthSyncEvidenceAttemptId = 0;
         Party().ValidationRouteDrudgeHealthSyncEvidenceWipeGeneration = 0;
         Party().ValidationRouteDrudgeHealthSyncEvidenceRouteGeneration = 0;
@@ -18379,6 +18383,30 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 ? sources[0]->GetVictim()->GetGUID().GetCounter() : 0;
             observation.Source1VictimGuid = sources[1]->GetVictim()
                 ? sources[1]->GetVictim()->GetGUID().GetCounter() : 0;
+            observation.Source0Alive = sources[0]->IsAlive();
+            observation.Source1Alive = sources[1]->IsAlive();
+            Player* const tank0 = laneIndex == 0 ? laneTank : otherTank;
+            Player* const tank1 = laneIndex == 0 ? otherTank : laneTank;
+            if (tank0)
+            {
+                observation.Tank0X = tank0->GetPositionX();
+                observation.Tank0Y = tank0->GetPositionY();
+                observation.Tank0Guid = tank0->GetGUID().GetCounter();
+                observation.Tank0Slot = Cohort().Config.ValidationRouteSplitLaneTankSlots[0];
+                observation.Tank0Projection = (observation.Tank0X - midpointX) * axisX
+                    + (observation.Tank0Y - midpointY) * axisY;
+                observation.Tank0SourceDistance = tank0->GetExactDist2d(sources[0]);
+            }
+            if (tank1)
+            {
+                observation.Tank1X = tank1->GetPositionX();
+                observation.Tank1Y = tank1->GetPositionY();
+                observation.Tank1Guid = tank1->GetGUID().GetCounter();
+                observation.Tank1Slot = Cohort().Config.ValidationRouteSplitLaneTankSlots[1];
+                observation.Tank1Projection = (observation.Tank1X - midpointX) * axisX
+                    + (observation.Tank1Y - midpointY) * axisY;
+                observation.Tank1SourceDistance = tank1->GetExactDist2d(sources[1]);
+            }
             observation.SourceSeparation = sources[0]->GetExactDist2d(sources[1]);
             observation.MinimumSourceSeparation =
                 Cohort().Config.ValidationRouteSplitMinimumSeparationYards;
@@ -18748,6 +18776,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 || Party().ValidationRouteDrudgeHealthSyncEvidenceRouteGeneration != Party().ValidationRouteGeneration)
             {
                 Party().ValidationRouteDrudgeHealthSyncRosterGuids.clear();
+                Party().ValidationRouteDrudgeHealthSyncEvaluatedRosterGuids.clear();
+                Party().ValidationRouteDrudgeHealthSyncHoldSourceSpawnId = 0;
+                Party().ValidationRouteDrudgeHealthSyncHoldTankGuid = 0;
+                Party().ValidationRouteDrudgeHealthSyncHoldLowerPct = 0.0f;
+                Party().ValidationRouteDrudgeHealthSyncHoldPeerPct = 0.0f;
                 Party().ValidationRouteDrudgeHealthSyncEvidenceAttemptId = Cohort().AttemptId;
                 Party().ValidationRouteDrudgeHealthSyncEvidenceWipeGeneration = Cohort().Raid.WipeGeneration;
                 Party().ValidationRouteDrudgeHealthSyncEvidenceRouteGeneration = Party().ValidationRouteGeneration;
@@ -18764,6 +18797,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             recordHealthSyncEvaluation();
             Party().ValidationRouteDrudgeHealthSyncRosterGuids.insert(
                 bot->GetGUID().GetCounter());
+            Party().ValidationRouteDrudgeHealthSyncHoldSourceSpawnId =
+                laneSource == sources[0] ? 250140 : 250141;
+            Party().ValidationRouteDrudgeHealthSyncHoldTankGuid = laneTank
+                ? laneTank->GetGUID().GetCounter() : 0;
+            Party().ValidationRouteDrudgeHealthSyncHoldLowerPct = UnitHealthPct(laneSource);
+            Party().ValidationRouteDrudgeHealthSyncHoldPeerPct = UnitHealthPct(otherSource);
         };
 
         if (!otherSource->IsAlive())
@@ -30184,6 +30223,14 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
         json << guid;
     }
     json << "]"
+         << ",\"health_sync_hold_source_spawn_id\":"
+         << Party().ValidationRouteDrudgeHealthSyncHoldSourceSpawnId
+         << ",\"health_sync_hold_tank_guid\":"
+         << Party().ValidationRouteDrudgeHealthSyncHoldTankGuid
+         << ",\"health_sync_hold_lower_pct\":"
+         << Party().ValidationRouteDrudgeHealthSyncHoldLowerPct
+         << ",\"health_sync_hold_peer_pct\":"
+         << Party().ValidationRouteDrudgeHealthSyncHoldPeerPct
          << ",\"profile_action_roster_guids\":[";
     bool firstProfileActionGuid = true;
     for (uint32 guid : Party().ValidationRouteDrudgeProfileActionRosterGuids)
@@ -30237,6 +30284,8 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
              << ",\"source1_lane_side_valid\":" << (observation.Source1LaneSideValid ? "true" : "false")
              << ",\"source0_victim_guid\":" << observation.Source0VictimGuid
              << ",\"source1_victim_guid\":" << observation.Source1VictimGuid
+             << ",\"source0_alive\":" << (observation.Source0Alive ? "true" : "false")
+             << ",\"source1_alive\":" << (observation.Source1Alive ? "true" : "false")
              << ",\"source_separation\":" << observation.SourceSeparation
              << ",\"minimum_source_separation\":" << observation.MinimumSourceSeparation
              << ",\"lane_tank_x\":" << observation.LaneTankX
@@ -30253,6 +30302,18 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
              << ",\"other_tank_source_distance\":" << observation.OtherTankSourceDistance
              << ",\"minimum_member_spacing\":" << observation.MinimumMemberSpacing
              << ",\"arrival_tolerance\":" << observation.ArrivalTolerance
+             << ",\"tank0_x\":" << observation.Tank0X
+             << ",\"tank0_y\":" << observation.Tank0Y
+             << ",\"tank0_guid\":" << observation.Tank0Guid
+             << ",\"tank0_slot\":" << observation.Tank0Slot
+             << ",\"tank0_projection\":" << observation.Tank0Projection
+             << ",\"tank0_source_distance\":" << observation.Tank0SourceDistance
+             << ",\"tank1_x\":" << observation.Tank1X
+             << ",\"tank1_y\":" << observation.Tank1Y
+             << ",\"tank1_guid\":" << observation.Tank1Guid
+             << ",\"tank1_slot\":" << observation.Tank1Slot
+             << ",\"tank1_projection\":" << observation.Tank1Projection
+             << ",\"tank1_source_distance\":" << observation.Tank1SourceDistance
              << ",\"members\":[";
         bool firstMemberGeometry = true;
         for (ValidationRouteDrudgeMemberGeometry const& geometry : observation.MemberGeometry)

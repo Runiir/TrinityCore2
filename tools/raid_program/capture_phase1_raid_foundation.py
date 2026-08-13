@@ -556,11 +556,15 @@ def _validate_drudge_observation_geometry(
         "source0_x", "source0_y", "source0_projection", "source0_lane_side_valid",
         "source1_x", "source1_y", "source1_projection", "source1_lane_side_valid",
         "source0_victim_guid", "source1_victim_guid",
+        "source0_alive", "source1_alive",
         "source_separation", "minimum_source_separation", "lane_tank_x", "lane_tank_y",
         "lane_tank_guid", "lane_tank_slot", "lane_tank_projection", "lane_tank_source_distance",
         "other_tank_x", "other_tank_y", "other_tank_guid", "other_tank_slot",
         "other_tank_projection", "other_tank_source_distance", "minimum_member_spacing",
         "arrival_tolerance", "members",
+        "tank0_x", "tank0_y", "tank0_guid", "tank0_slot", "tank0_projection",
+        "tank0_source_distance", "tank1_x", "tank1_y", "tank1_guid", "tank1_slot",
+        "tank1_projection", "tank1_source_distance",
     )
     reasons: list[str] = []
 
@@ -571,7 +575,10 @@ def _validate_drudge_observation_geometry(
             return None
         return float(value)
 
-    boolean_fields = {"source0_lane_side_valid", "source1_lane_side_valid"}
+    boolean_fields = {
+        "source0_lane_side_valid", "source1_lane_side_valid",
+        "source0_alive", "source1_alive",
+    }
     values = {
         name: number(name)
         for name in required
@@ -601,6 +608,24 @@ def _validate_drudge_observation_geometry(
     arrival_tolerance = values["arrival_tolerance"]
     if lane_sep <= 0 or minimum_source_sep <= 0 or minimum_spacing <= 0 or arrival_tolerance <= 0:
         reasons.append("drudge_geometry_threshold_invalid")
+    # Frozen in validation_scenarios_cata_001.json, BWD step 3
+    # (trash_two_tank_charge_lanes); these are contract values, not claims
+    # copied from the runtime row.
+    frozen_thresholds = {
+        "minimum_source_separation": 15.0,
+        "navigation_margin": 2.0,
+        "lane_separation": 17.0,
+        "minimum_distance": 15.0,
+        "minimum_member_spacing": 3.0,
+        "arrival_tolerance": 2.0,
+    }
+    for name, expected in frozen_thresholds.items():
+        if abs(values[name] - expected) > tolerance:
+            reasons.append(f"drudge_geometry_{name}_contract_mismatch")
+    if abs(values["lane_separation"] - (
+        values["minimum_source_separation"] + values["navigation_margin"]
+    )) > tolerance:
+        reasons.append("drudge_geometry_lane_separation_contract_mismatch")
 
     def projection(x: float, y: float) -> float:
         return ((x - values["midpoint_x"]) * values["axis_x"]
@@ -622,6 +647,12 @@ def _validate_drudge_observation_geometry(
             reasons.append(f"drudge_geometry_{prefix}_lane_side_mismatch")
         if not expected_side:
             reasons.append(f"drudge_geometry_{prefix}_lane_side_unsafe")
+        if not isinstance(geometry.get(f"{prefix}_alive"), bool):
+            reasons.append(f"drudge_geometry_{prefix}_alive_invalid")
+        if geometry.get(f"{prefix}_alive") is True and not _positive_int(geometry.get(f"{prefix}_victim_guid")):
+            reasons.append(f"drudge_geometry_{prefix}_victim_missing")
+        if geometry.get(f"{prefix}_alive") is False and geometry.get(f"{prefix}_victim_guid") not in (0, None):
+            reasons.append(f"drudge_geometry_{prefix}_dead_victim_present")
     source_separation = hypot(
         values["source1_x"] - values["source0_x"],
         values["source1_y"] - values["source0_y"],
@@ -647,8 +678,12 @@ def _validate_drudge_observation_geometry(
         1: geometry.get("source1_victim_guid"),
     }
     for source_index, victim in source_victims.items():
-        if not _positive_int(victim) or victim != expected_tank_by_slot.get(source_index + 1):
+        alive = geometry.get(f"source{source_index}_alive")
+        expected_victim = expected_tank_by_slot.get(source_index + 1)
+        if alive is True and (not _positive_int(victim) or victim != expected_victim):
             reasons.append(f"drudge_geometry_source{source_index}_victim_invalid")
+        if alive is False and victim not in (0, None):
+            reasons.append(f"drudge_geometry_source{source_index}_dead_victim_present")
     tank_records = (
         ("lane_tank", values["lane_tank_guid"], values["lane_tank_slot"], 0,
          values["lane_tank_x"], values["lane_tank_y"], values["lane_tank_projection"],
@@ -675,13 +710,43 @@ def _validate_drudge_observation_geometry(
         tank_distance = hypot(x - source_x, y - source_y)
         if abs(stored_distance - tank_distance) > tolerance:
             reasons.append(f"drudge_geometry_{prefix}_source_distance_mismatch")
-        if tank_distance > minimum_source_sep:
+        if tank_distance < minimum_source_sep:
             reasons.append(f"drudge_geometry_{prefix}_source_distance_unsafe")
         if ((-1.0 if source_index == 0 else 1.0) * tank_projection
                 < lane_sep * 0.25):
             reasons.append(f"drudge_geometry_{prefix}_lane_side_invalid")
     if observed_tanks != tank_guids:
         reasons.append("drudge_geometry_exact_tanks_missing")
+
+    canonical_tanks = (
+        ("tank0", values["tank0_guid"], values["tank0_slot"], 0,
+         values["tank0_x"], values["tank0_y"], values["tank0_projection"], values["tank0_source_distance"]),
+        ("tank1", values["tank1_guid"], values["tank1_slot"], 1,
+         values["tank1_x"], values["tank1_y"], values["tank1_projection"], values["tank1_source_distance"]),
+    )
+    canonical_guids: set[int] = set()
+    for prefix, guid_value, slot_value, source_index, x, y, stored_projection, stored_distance in canonical_tanks:
+        guid, slot = int(guid_value), int(slot_value)
+        canonical_guids.add(guid)
+        expected_guid = expected_tank_by_slot.get(source_index + 1)
+        if guid != expected_guid or slot != source_index + 1:
+            reasons.append(f"drudge_geometry_{prefix}_identity_invalid")
+        computed_projection = projection(x, y)
+        if abs(stored_projection - computed_projection) > tolerance:
+            reasons.append(f"drudge_geometry_{prefix}_projection_mismatch")
+        source_x, source_y, _ = source_positions[source_index]
+        distance = hypot(x - source_x, y - source_y)
+        if abs(stored_distance - distance) > tolerance:
+            reasons.append(f"drudge_geometry_{prefix}_source_distance_mismatch")
+        if distance < minimum_source_sep:
+            reasons.append(f"drudge_geometry_{prefix}_source_distance_unsafe")
+        if ((-1.0 if source_index == 0 else 1.0) * computed_projection
+                < lane_sep * 0.25):
+            reasons.append(f"drudge_geometry_{prefix}_lane_side_invalid")
+    if hypot(values["tank1_x"] - values["tank0_x"], values["tank1_y"] - values["tank0_y"]) < minimum_source_sep:
+        reasons.append("drudge_geometry_tank_pair_separation_unsafe")
+    if canonical_guids != tank_guids:
+        reasons.append("drudge_geometry_canonical_tanks_missing")
 
     members = geometry.get("members")
     if not isinstance(members, list):
@@ -793,6 +858,8 @@ def _validate_drudge_observation_geometry(
         spacing_valid = not same_lane or nearest >= minimum_spacing
         if member.get("same_lane_spacing_valid") is not spacing_valid:
             reasons.append("drudge_geometry_member_spacing_invalid")
+        if not spacing_valid:
+            reasons.append("drudge_geometry_member_spacing_unsafe")
     return sorted(set(reasons))
 
 
@@ -814,13 +881,31 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
     if not candidates:
         return False, ["drudge_evidence_missing"]
 
-    runtime, evidence = max(
-        candidates,
-        key=lambda pair: (
-            int(pair[1].get("delivered_count") or 0),
-            int(pair[1].get("prepared_count") or 0),
-        ),
-    )
+    def candidate_key(pair: tuple[dict[str, Any], dict[str, Any]]) -> tuple[int, int, int, int, int]:
+        candidate_runtime, candidate_evidence = pair
+        observations = candidate_evidence.get("observations")
+        observations = observations if isinstance(observations, list) else []
+        delivered_rows = [row for row in observations if isinstance(row, dict) and row.get("landed") is True]
+        source_counts = Counter(row.get("source_spawn_id") for row in delivered_rows)
+        complete = int(
+            len(delivered_rows) >= 4
+            and source_counts.get(250140, 0) >= 2
+            and source_counts.get(250141, 0) >= 2
+            and all(isinstance(row.get("geometry"), dict) for row in delivered_rows)
+        )
+        latest_observation = max(
+            (int(row.get("sequence") or 0) for row in delivered_rows), default=0
+        )
+        evidence_sequence = int(candidate_runtime.get("evidence_sequence") or 0)
+        return (
+            complete,
+            latest_observation,
+            evidence_sequence,
+            int(candidate_evidence.get("delivered_count") or 0),
+            int(candidate_evidence.get("prepared_count") or 0),
+        )
+
+    runtime, evidence = max(candidates, key=candidate_key)
     roster = runtime.get("roster")
     if not isinstance(roster, list) or len(roster) != 10:
         return False, ["drudge_exact_roster_missing"]
@@ -1005,6 +1090,21 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
         reasons.append("drudge_taunt_evidence_identity_mismatch")
     if not health_sync.issubset(tank_guids):
         reasons.append("drudge_tank_health_sync_hold_identity_mismatch")
+    if not health_sync:
+        reasons.append("drudge_tank_health_sync_hold_missing")
+    hold_source = evidence.get("health_sync_hold_source_spawn_id")
+    hold_tank = evidence.get("health_sync_hold_tank_guid")
+    hold_lower = evidence.get("health_sync_hold_lower_pct")
+    hold_peer = evidence.get("health_sync_hold_peer_pct")
+    expected_hold_tank = {250140: next((row.get("guid") for row in roster if row.get("slot") == 0), None),
+                          250141: next((row.get("guid") for row in roster if row.get("slot") == 1), None)}
+    if hold_source not in expected_hold_tank or hold_tank != expected_hold_tank.get(hold_source):
+        reasons.append("drudge_health_sync_hold_source_identity_mismatch")
+    if (not isinstance(hold_lower, (int, float)) or isinstance(hold_lower, bool)
+            or not isinstance(hold_peer, (int, float)) or isinstance(hold_peer, bool)
+            or not isfinite(float(hold_lower)) or not isfinite(float(hold_peer))
+            or hold_lower >= hold_peer):
+        reasons.append("drudge_health_sync_hold_order_invalid")
     if health_sync_evaluated != tank_guids:
         reasons.append("drudge_exact_tank_health_sync_evaluation_missing")
     if evidence.get("health_sync_evidence_attempt_id") != attempt_id:
