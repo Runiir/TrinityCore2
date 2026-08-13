@@ -21,7 +21,93 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     semantic_progress_signature,
     observe_monotonic_semantic_progress,
     observe_telemetry_freshness,
+    TelemetryScheduler,
+    material_status_signature,
 )
+
+
+def _scheduler_status(*, route_index: int = 0, encounter: bool = False) -> dict:
+    return {
+        "ok": True,
+        "raid_runtime": {
+            "active": True,
+            "strategy_id": "blackwing_descent_10n",
+            "assignment_generation": 1,
+            "route_progress": {"manifest_index": route_index},
+            "encounter_in_progress": encounter,
+            "boss_states": [0] * 6,
+            "alive_size": 10,
+            "expected_size": 10,
+            "wipe_state": "ready",
+            "recovery_state": "none",
+            "wipe_generation": 0,
+            "boss_reset_generation": 0,
+            "recovery_generation": 0,
+            "ready_check_satisfied": True,
+            "roster_complete": True,
+        },
+        "validation_route": {
+            "manifest_index": route_index,
+            "generation": 1,
+            "node_id": f"node-{route_index}",
+            "kind": "trash" if route_index else "regroup",
+            "manifest_complete": False,
+            "terminal_evidence": [],
+            "boss_death_evidence": [],
+        },
+    }
+
+
+def test_telemetry_scheduler_reduces_steady_state_heavy_commands():
+    scheduler = TelemetryScheduler(status_interval_sec=5, diagnose_interval_sec=15, trace_interval_sec=10)
+    commands = [command for now in range(0, 61) for command in scheduler.commands_due(float(now))]
+
+    assert commands.count("botauto status") == 13
+    assert commands.count("botauto diagnose all") == 5
+    assert commands.count("botauto trace all 128 delta") == 7
+    assert commands.count("botauto diagnose all") < commands.count("botauto status")
+
+
+def test_material_status_transition_forces_immediate_full_diagnosis():
+    scheduler = TelemetryScheduler()
+    initial = _scheduler_status(route_index=0)
+    changed = _scheduler_status(route_index=1, encounter=True)
+    assert material_status_signature(initial) != material_status_signature(changed)
+
+    assert scheduler.commands_due(0.0) == [
+        "botauto status", "botauto trace all 128 delta", "botauto diagnose all",
+    ]
+    scheduler.observe_status(initial)
+    assert scheduler.commands_due(1.0) == []
+
+    assert scheduler.observe_status(changed) is True
+    assert scheduler.commands_due(1.1) == ["botauto diagnose all"]
+
+
+def test_scheduler_intervals_are_below_freshness_timeout_and_channels_remain_fresh():
+    scheduler = TelemetryScheduler(status_interval_sec=5, diagnose_interval_sec=15, trace_interval_sec=10)
+    assert max(
+        scheduler.status_interval_sec,
+        scheduler.diagnose_interval_sec,
+        scheduler.trace_interval_sec,
+    ) < 30
+
+    state: dict[str, dict[str, float | int]] = {}
+    counts = {"status": 1, "diagnosis": 1, "trace": 1}
+    assert observe_telemetry_freshness(state, counts, 0.0, 30) == []
+    assert observe_telemetry_freshness(state, counts, 29.9, 30) == []
+    assert observe_telemetry_freshness(state, counts, 30.1, 30) == [
+        "status", "diagnosis", "trace",
+    ]
+
+
+def test_forced_stall_bundle_contains_diagnose_and_lossless_trace_delta():
+    scheduler = TelemetryScheduler(status_interval_sec=5, diagnose_interval_sec=15, trace_interval_sec=10)
+    scheduler.commands_due(0.0)
+    scheduler.force_diagnosis(include_trace=True)
+    assert scheduler.commands_due(2.0) == [
+        "botauto trace all 128 delta", "botauto diagnose all",
+    ]
 
 
 def _write_runtime_profile_assets(root: Path, route_payload: str) -> None:

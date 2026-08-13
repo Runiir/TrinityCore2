@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+from dataclasses import dataclass
 from datetime import datetime
 import hashlib
 import json
@@ -2135,6 +2136,119 @@ def observe_telemetry_freshness(
     return stale
 
 
+def material_status_signature(status: dict[str, Any]) -> str:
+    """Return a stable signature for status changes that need a full diagnose.
+
+    Status includes several heartbeat/evidence counters which change on every
+    poll and must not turn the reduced steady-state cadence back into a full
+    diagnose cadence. The fields below are the state edges that change the
+    interpretation of a decision trace: route/encounter/boss lifecycle,
+    roster/recovery state, and explicit errors. The complete status remains
+    retained in the immutable evidence stream; this projection only controls
+    when an additional command is requested.
+    """
+    runtime = status.get("raid_runtime") if isinstance(status.get("raid_runtime"), dict) else {}
+    route = status.get("validation_route") if isinstance(status.get("validation_route"), dict) else {}
+    error_fields = {
+        "status_error": status.get("error"),
+        "status_failure": status.get("failure"),
+        "runtime_error": runtime.get("error"),
+        "runtime_failure": runtime.get("failure"),
+        "runtime_error_state": runtime.get("error_state"),
+    }
+    payload = {
+        "ok": status.get("ok"),
+        "active": runtime.get("active"),
+        "route": {key: route.get(key) for key in (
+            "manifest_index", "generation", "node_id", "kind", "manifest_complete",
+            "terminal_evidence", "boss_death_evidence",
+        )},
+        "raid": {key: runtime.get(key) for key in (
+            "map_id", "instance_id", "lockout_save_id", "strategy_id",
+            "assignment_generation", "boss_states", "encounter_phase",
+            "encounter_in_progress", "alive_size", "expected_size", "wipe_state",
+            "recovery_state", "wipe_generation", "boss_reset_generation",
+            "recovery_generation", "ready_check_satisfied", "roster_complete",
+        )},
+        "errors": error_fields,
+    }
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+    return hashlib.sha256(canonical).hexdigest()
+
+
+@dataclass
+class TelemetryScheduler:
+    """Schedule independent evidence channels without losing transition edges.
+
+    Status is the control heartbeat and remains frequent. Diagnose is the
+    expensive semantic snapshot and trace is the append-only delta export. A
+    material status edge promotes the next loop to an immediate diagnose;
+    callers can also force both heavy channels before terminating on a stall.
+    ``commands_due`` advances each channel independently, so a delayed
+    diagnosis never delays status or causes a trace cursor gap.
+    """
+
+    status_interval_sec: float = 5.0
+    diagnose_interval_sec: float = 15.0
+    trace_interval_sec: float = 10.0
+    _next_status_at: float = 0.0
+    _next_diagnose_at: float = 0.0
+    _next_trace_at: float = 0.0
+    _diagnose_forced: bool = True
+    _trace_forced: bool = False
+    _last_status_signature: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.status_interval_sec <= 0 or self.diagnose_interval_sec <= 0 or self.trace_interval_sec <= 0:
+            raise ValueError("telemetry intervals must be positive")
+
+    def observe_status(self, status: dict[str, Any]) -> bool:
+        """Record a status and request immediate diagnosis on a material edge."""
+        signature = material_status_signature(status)
+        changed = self._last_status_signature is not None and signature != self._last_status_signature
+        # The initial scheduler tick already includes one full diagnosis. A
+        # later material edge must promote the next tick immediately.
+        if changed:
+            self._diagnose_forced = True
+        self._last_status_signature = signature
+        return changed
+
+    def force_diagnosis(self, *, include_trace: bool = True) -> None:
+        """Force a final semantic bundle before a stall/error termination."""
+        self._diagnose_forced = True
+        if include_trace:
+            self._trace_forced = True
+
+    def commands_due(self, now: float) -> list[str]:
+        """Return due console commands and advance only their own deadlines."""
+        commands: list[str] = []
+        if now >= self._next_status_at:
+            commands.append("botauto status")
+            self._next_status_at = now + self.status_interval_sec
+        if now >= self._next_trace_at or self._trace_forced:
+            commands.append("botauto trace all 128 delta")
+            self._next_trace_at = now + self.trace_interval_sec
+            self._trace_forced = False
+        if now >= self._next_diagnose_at or self._diagnose_forced:
+            commands.append("botauto diagnose all")
+            self._next_diagnose_at = now + self.diagnose_interval_sec
+            self._diagnose_forced = False
+        return commands
+
+    def state(self) -> dict[str, Any]:
+        """Expose scheduler state for watchdog evidence and deterministic tests."""
+        return {
+            "status_interval_seconds": self.status_interval_sec,
+            "diagnose_interval_seconds": self.diagnose_interval_sec,
+            "trace_interval_seconds": self.trace_interval_sec,
+            "next_status_at": self._next_status_at,
+            "next_diagnose_at": self._next_diagnose_at,
+            "next_trace_at": self._next_trace_at,
+            "diagnose_forced": self._diagnose_forced,
+            "trace_forced": self._trace_forced,
+        }
+
+
 def git_identity(cwd: Path) -> dict[str, Any]:
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=cwd, text=True).strip()
     tree = subprocess.check_output(["git", "rev-parse", "HEAD^{tree}"], cwd=cwd, text=True).strip()
@@ -3064,6 +3178,18 @@ def main() -> int:
     parser.add_argument("--semantic-stall-sec", type=int, default=300)
     parser.add_argument("--semantic-stall-min-samples", type=int, default=12)
     parser.add_argument("--telemetry-timeout-sec", type=int, default=30)
+    parser.add_argument(
+        "--status-interval-sec", type=float, default=5.0,
+        help="status heartbeat cadence; must remain below telemetry timeout",
+    )
+    parser.add_argument(
+        "--diagnose-interval-sec", type=float, default=15.0,
+        help="steady-state full semantic diagnosis cadence",
+    )
+    parser.add_argument(
+        "--trace-interval-sec", type=float, default=10.0,
+        help="append-only trace-delta export cadence",
+    )
     args = parser.parse_args()
 
     binary = args.binary.resolve()
@@ -3090,6 +3216,14 @@ def main() -> int:
         raise SystemExit("semantic stall detection requires at least 60 seconds and three samples")
     if args.telemetry_timeout_sec < 15:
         raise SystemExit("telemetry freshness timeout must be at least 15 seconds")
+    if any(interval <= 0 for interval in (
+        args.status_interval_sec, args.diagnose_interval_sec, args.trace_interval_sec,
+    )):
+        raise SystemExit("telemetry intervals must be positive")
+    if any(interval >= args.telemetry_timeout_sec for interval in (
+        args.status_interval_sec, args.diagnose_interval_sec, args.trace_interval_sec,
+    )):
+        raise SystemExit("telemetry intervals must be shorter than the freshness timeout")
     preflight = preflight_runtime_exclusions(worktree)
     if not preflight["passed"]:
         raise SystemExit("capture preflight rejected: " + ",".join(preflight["reasons"]))
@@ -3114,6 +3248,8 @@ def main() -> int:
     last_rejections: list[str] = ["no_status_observed"]
     startup_error: str | None = None
     process: subprocess.Popen[bytes] | None = None
+    telemetry_scheduler: TelemetryScheduler | None = None
+    telemetry_command_counts = {"status": 0, "diagnose": 0, "trace": 0}
     server_log_output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(
         prefix=".raid-phase1-worldserver-", suffix=".log.tmp", dir=server_log_output.parent, delete=False
@@ -3138,7 +3274,11 @@ def main() -> int:
             # positive limit remains available only for explicitly bounded
             # diagnostics and tests; zero is deliberately uncapped.
             deadline = time.monotonic() + args.observe_sec if args.observe_sec else None
-            next_probe = 0.0
+            telemetry_scheduler = TelemetryScheduler(
+                status_interval_sec=args.status_interval_sec,
+                diagnose_interval_sec=args.diagnose_interval_sec,
+                trace_interval_sec=args.trace_interval_sec,
+            )
             log_cursor = JsonLogCursor(log_path)
             monitor_statuses: list[dict[str, Any]] = []
             diagnosis_count = 0
@@ -3154,21 +3294,54 @@ def main() -> int:
             monitor_started_at = time.monotonic()
             telemetry_freshness: dict[str, dict[str, float | int]] = {}
             telemetry_abort: dict[str, Any] = {"detected": False}
+
+            def flush_forced_evidence() -> None:
+                """Retain a final diagnose/trace bundle before a stall exit."""
+                nonlocal diagnosis_count, trace_count, latest_diagnosis
+                telemetry_scheduler.force_diagnosis(include_trace=True)
+                commands = telemetry_scheduler.commands_due(time.monotonic())
+                if not commands:
+                    return
+                for command in commands:
+                    if command == "botauto status":
+                        telemetry_command_counts["status"] += 1
+                    elif command == "botauto diagnose all":
+                        telemetry_command_counts["diagnose"] += 1
+                    elif command == "botauto trace all 128 delta":
+                        telemetry_command_counts["trace"] += 1
+                process.stdin.write(("\n".join(commands) + "\n").encode())
+                process.stdin.flush()
+                time.sleep(1.0)
+                for row in log_cursor.read_new_rows():
+                    action = row.get("action")
+                    if action == "botauto_diagnose":
+                        diagnosis_count += 1
+                        latest_diagnosis = row
+                    elif action == "botauto_trace":
+                        trace_count += 1
+
             while (deadline is None or time.monotonic() < deadline) and not (
                 len(stable) >= args.required_stable_statuses
                 and recovery_accepted and drudge_accepted
             ):
                 if process.poll() is not None:
                     break
-                if time.monotonic() >= next_probe:
+                due_commands = telemetry_scheduler.commands_due(time.monotonic())
+                if due_commands:
                     # Diagnosis carries the exact current decision per bot;
                     # trace is an incremental export so a long raid does not
                     # replay each bot's cumulative 128-entry history every
-                    # five seconds.  The server cursor retains every edge
+                    # five seconds. The server cursor retains every edge
                     # unless its bounded in-memory history was overrun.
-                    process.stdin.write(b"botauto status\nbotauto diagnose all\nbotauto trace all 128 delta\n")
+                    for command in due_commands:
+                        if command == "botauto status":
+                            telemetry_command_counts["status"] += 1
+                        elif command == "botauto diagnose all":
+                            telemetry_command_counts["diagnose"] += 1
+                        elif command == "botauto trace all 128 delta":
+                            telemetry_command_counts["trace"] += 1
+                    process.stdin.write(("\n".join(due_commands) + "\n").encode())
                     process.stdin.flush()
-                    next_probe = time.monotonic() + 5.0
                     time.sleep(1.0)
                     new_statuses: list[dict[str, Any]] = []
                     for row in log_cursor.read_new_rows():
@@ -3182,6 +3355,7 @@ def main() -> int:
                             trace_count += 1
                     monitor_statuses.extend(new_statuses)
                     for status in new_statuses:
+                        telemetry_scheduler.observe_status(status)
                         accepted, rejections = accepted_foundation_status(status)
                         last_rejections = rejections
                         if accepted:
@@ -3225,6 +3399,7 @@ def main() -> int:
                         stalled_for = time.monotonic() - last_semantic_progress_at
                         if (unchanged_semantic_samples >= args.semantic_stall_min_samples
                                 and stalled_for >= args.semantic_stall_sec):
+                            flush_forced_evidence()
                             semantic_stall = {
                                 "detected": True,
                                 "stalled_for_seconds": round(stalled_for, 3),
@@ -3234,6 +3409,8 @@ def main() -> int:
                                 "route": monitor_statuses[-1].get("validation_route"),
                                 "raid_runtime": monitor_statuses[-1].get("raid_runtime"),
                                 "diagnosis_rows": diagnosis_count,
+                                "trace_rows": trace_count,
+                                "final_forced_evidence": True,
                             }
                             break
                     recovery_accepted, _ = accepted_native_recovery(monitor_statuses)
@@ -3371,6 +3548,15 @@ def main() -> int:
         "drudge_contract_rejections": drudge_rejections,
         "semantic_stall": semantic_stall,
         "telemetry_abort": telemetry_abort,
+        "telemetry_schedule": {
+            "status_interval_seconds": args.status_interval_sec,
+            "diagnose_interval_seconds": args.diagnose_interval_sec,
+            "trace_interval_seconds": args.trace_interval_sec,
+            "commands_sent": telemetry_command_counts,
+            "scheduler_state": telemetry_scheduler.state() if telemetry_scheduler is not None else None,
+            "material_status_diagnosis": "immediate",
+            "stall_bundle": "forced_diagnose_and_trace_delta_before_termination",
+        },
         "accepted_raid_runtime": stable[-1].get("raid_runtime") if stable else None,
         "diagnose_observed": bool(diagnoses),
         "trace_observed": bool(traces),
@@ -3404,6 +3590,12 @@ def main() -> int:
             "semantic_stall_seconds": args.semantic_stall_sec,
             "semantic_stall_min_samples": args.semantic_stall_min_samples,
             "telemetry_timeout_seconds": args.telemetry_timeout_sec,
+            "telemetry_intervals_seconds": {
+                "status": args.status_interval_sec,
+                "diagnose": args.diagnose_interval_sec,
+                "trace": args.trace_interval_sec,
+            },
+            "telemetry_commands_sent": telemetry_command_counts,
             "required_channels": ["status", "diagnosis", "trace"],
             "healthy": (
                 startup_error is None
