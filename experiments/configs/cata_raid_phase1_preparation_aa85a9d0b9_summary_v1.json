@@ -71,7 +71,9 @@
     "push_completed": true,
     "remote_verified_before_eviction": true,
     "workspace_payload_evicted": true,
-    "exact_child_cache_objects_evicted": true,
+    "exact_child_cache_objects_evicted": false,
+    "unique_preparation_only_child_cache_objects_evicted": 6,
+    "shared_capture_child_cache_objects_retained": 3,
     "directory_metadata_retained": true,
     "broad_dvc_gc_used": false
   },
