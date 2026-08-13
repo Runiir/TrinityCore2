@@ -66,6 +66,7 @@ struct Input
     bool SourcesSeparated = false;
     bool SourcesOnFrozenLanes = false;
     bool BoundTankSourceGeometrySafe = false;
+    bool NativeMeleeStopBounded = false;
     bool EvaluatePriorPathProof = false;
     bool PriorProofScopeMatches = false;
     bool PriorProofCandidateMatches = false;
@@ -133,7 +134,7 @@ inline Result Advance(State current, Input const& input)
 
     bool const dynamicEngagementSafe = input.ChargeQueueIdle && !input.ChargePending
         && input.SourcesSeparated && input.SourcesOnFrozenLanes
-        && input.BoundTankSourceGeometrySafe;
+        && input.BoundTankSourceGeometrySafe && input.NativeMeleeStopBounded;
     if (!input.BothCombatTankAnchorsSafe || !dynamicEngagementSafe)
     {
         result.NextDecision = input.SourceCombatStarted

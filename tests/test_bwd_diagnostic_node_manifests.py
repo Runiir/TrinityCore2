@@ -84,6 +84,17 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
         "split_source_home_oracle",
     )
 
+    unsafe_member = deepcopy(drudges)
+    unsafe_member["split_member_anchors"][2].update(
+        unsafe_member["split_source_home_anchors"][0]
+    )
+    unsafe_member["split_member_anchors"][2]["roster_slot"] = 3
+    unsafe_member["split_member_anchors"][2].pop("source_guid", None)
+    assert drudge_split_geometry_status(unsafe_member) == (
+        False,
+        "split_member_anchor_source_unsafe",
+    )
+
 
 def test_canonical_bwd_route_is_still_the_ordered_eleven_node_parent_route():
     routes = _routes(_manifests(), CANONICAL_ID)

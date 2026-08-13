@@ -493,7 +493,7 @@ def test_bwd_magmaw_trash_splits_chainwielder_hazard_from_drudge_charge_contract
     assert drudges["split_lane_b_roster_slots"] == [2, 5, 8, 9, 10]
     assert drudges["split_lane_tank_slots"] == [1, 2]
     assert drudges["split_minimum_separation_yards"] == 15.0
-    assert drudges["split_native_melee_stop_yards"] == 5.0
+    assert drudges["split_native_melee_stop_yards"] == 8.0
     assert [row["source_guid"] for row in drudges["split_source_home_anchors"]] == [250140, 250141]
     tank_anchors = {row["roster_slot"]: row for row in drudges["split_tank_combat_anchors"]}
     assert math.dist(
@@ -580,7 +580,16 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     )
     assert formation_barrier < support
     assert "tankStage.SupportAllowed" in lane[support - 450:support]
-    assert "tryRouteGroupHeal(bot, laneSource)" in lane[support - 450:support]
+    assert "tryRouteGroupHeal(bot, laneSource, false)" in lane[support - 450:support]
+    heal_helper = IMPL[
+        IMPL.index("auto tryRouteGroupHeal"):
+        IMPL.index("bool discoveryLeg", IMPL.index("auto tryRouteGroupHeal"))
+    ]
+    assert "bool allowMovement = true" in heal_helper
+    assert "if (!allowMovement)\n                return false;" in heal_helper
+    assert "if (allowMovement)\n            healer->GetMotionMaster()->Clear" in heal_helper
+    assert "tankStageInput.NativeMeleeStopBounded" in lane
+    assert "GetMeleeRange" in lane
     assert "ValidationRouteDrudgeOwnershipRosterGuids" in lane
     assert "sourceOnFrozenLane" in lane
     assert "laneTank->GetExactDist2d(laneSource)" in lane
@@ -2895,7 +2904,7 @@ def test_drudge_partial_death_cannot_enter_tactical_recovery():
         'if (Cohort().Config.ValidationRouteMechanicProfile == "trash_two_tank_charge_lanes"\n'
         '            && Cohort().Config.ValidationRouteBossRecovery\n'
         '                == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly\n'
-        '            && deadMembers > 0 && groupCombatActive)'
+        '            && deadMembers > 0)'
     )
     generic_recovery = objective.index(
         "if ((majorityDead || criticalRoleDead) && groupCombatActive"
@@ -2907,6 +2916,7 @@ def test_drudge_partial_death_cannot_enter_tactical_recovery():
     assert terminal < hold
     assert "threatSeedCompleteForCurrentScope" in guard[:hold]
     assert "markValidationRouteTrashFailed" in guard[:hold]
+    assert "if (groupCombatActive)" in guard[terminal:hold]
     assert '"drudge_native_full_wipe_hold_partial_death"' in guard
     assert 'action = "native_full_wipe_hold";' in guard
     assert "SetAllOffenseSuppressed" in guard

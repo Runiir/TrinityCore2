@@ -3982,6 +3982,7 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         node.SplitMinimumSeparationYards = readFloat(routeJson, "split_minimum_separation_yards");
         node.SplitNavigationMarginYards = readFloat(routeJson, "split_navigation_margin_yards");
         node.SplitArrivalToleranceYards = readFloat(routeJson, "split_arrival_tolerance_yards");
+        node.SplitNativeMeleeStopYards = readFloat(routeJson, "split_native_melee_stop_yards");
         node.ThunderclapSpellId = uint32(std::max(0, readInt(routeJson, "thunderclap_spell_id")));
         node.ChargeSpellId = uint32(std::max(0, readInt(routeJson, "charge_spell_id")));
         node.ChargeRangeYards = readFloat(routeJson, "charge_range_yards");
@@ -4123,6 +4124,7 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     Cohort().Config.ValidationRouteSplitMinimumSeparationYards = node.SplitMinimumSeparationYards;
     Cohort().Config.ValidationRouteSplitNavigationMarginYards = node.SplitNavigationMarginYards;
     Cohort().Config.ValidationRouteSplitArrivalToleranceYards = node.SplitArrivalToleranceYards;
+    Cohort().Config.ValidationRouteSplitNativeMeleeStopYards = node.SplitNativeMeleeStopYards;
     Cohort().Config.ValidationRouteThunderclapSpellId = node.ThunderclapSpellId;
     Cohort().Config.ValidationRouteChargeSpellId = node.ChargeSpellId;
     Cohort().Config.ValidationRouteChargeRangeYards = node.ChargeRangeYards;
@@ -13839,7 +13841,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         return MoveBotToProfileRange(state, rangeBot, rangeTarget, &rangeAction);
     };
-    auto tryRouteGroupHeal = [this, &state, &power, &stage, &activity, &situation, &action](Player* healer, Unit* combatTarget) -> bool
+    auto tryRouteGroupHeal = [this, &state, &power, &stage, &activity, &situation, &action](
+        Player* healer, Unit* combatTarget, bool allowMovement = true) -> bool
     {
         if (!healer || std::string(GetDungeonRole(healer)) != "healer")
             return false;
@@ -14009,7 +14012,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && healer->GetExactDist2d(tankTarget) > 6.0f
             && !healer->HasUnitState(UNIT_STATE_CASTING)
             && !healer->IsFalling();
-        if (proactiveFeralPickupStack)
+        if (allowMovement && proactiveFeralPickupStack)
         {
             float pickupAngle = combatTarget
                 ? combatTarget->GetAngle(tankTarget)
@@ -14050,7 +14053,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && !healer->HasUnitState(UNIT_STATE_CASTING)
             && !healer->IsFalling()
             && healer->GetExactDist2d(tankTarget) > 6.0f;
-        if (urgentFeralHealerStack)
+        if (allowMovement && urgentFeralHealerStack)
         {
             Unit* nearestAttacker = nullptr;
             float nearestAttackerDistance = std::numeric_limits<float>::max();
@@ -14084,7 +14087,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 return true;
             }
         }
-        if (feralTankApproachesHealerSwarm)
+        if (allowMovement && feralTankApproachesHealerSwarm)
         {
             if (state.ActivePathValid || state.IsMoving || healer->isMoving())
             {
@@ -14100,7 +14103,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             situation = "validation_route_group_heal";
             action = "healer_hold_for_feral_swarm_pickup";
         }
-        else if (!healer->getAttackers().empty() && tankTarget
+        else if (allowMovement && !healer->getAttackers().empty() && tankTarget
             && !healer->HasUnitState(UNIT_STATE_CASTING) && !healer->IsFalling())
         {
             Unit* nearestAttacker = nullptr;
@@ -14138,7 +14141,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
 
         if (lowestHealthPct > 0.88f)
-            return feralTankApproachesHealerSwarm;
+            return allowMovement && feralTankApproachesHealerSwarm;
 
         BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(healer, "healer");
         BotActionProfileSpell const* bestHeal = nullptr;
@@ -14265,7 +14268,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 action = "validation_route_group_heal_pending";
                 return true;
             }
-            return feralTankApproachesHealerSwarm;
+            return allowMovement && feralTankApproachesHealerSwarm;
         }
 
         SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(bestHeal->SpellId);
@@ -14273,8 +14276,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         std::string semantic = BuildSemanticJson(healer, combatTarget, "validation_route_group_heal", &power, stage, activity);
         if (!healer->IsWithinDistInMap(healTarget, std::max(5.0f, healRange - 1.0f)) || !healer->IsWithinLOSInMap(healTarget))
         {
-            if (feralTankApproachesHealerSwarm)
+            if (allowMovement && feralTankApproachesHealerSwarm)
                 return true;
+
+            if (!allowMovement)
+                return false;
 
             float maxApproachRange = Cohort().Config.ValidationRouteEnable && healer->GetMap() && healer->GetMap()->IsRaid() ? 35.0f : 18.0f;
             float approachRange = std::max(3.0f, std::min(healRange - 2.0f, maxApproachRange));
@@ -14287,7 +14293,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
-        healer->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+        if (allowMovement)
+            healer->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
         std::string castFailureReason;
         bool cast = TryCastFriendlySpell(healer, healTarget, bestHeal->SpellId, &castFailureReason);
         if (!cast && castFailureReason == "spell_cast_result_150")
@@ -14308,7 +14315,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         RecordEvent(state, healer, "validation_route_group_heal", healTarget, cast ? "ok" : castFailureReason.c_str(), raw.c_str(), semantic.c_str(), healTargetHealthPct, 0, bestHeal->SpellId);
         situation = "validation_route_group_heal";
         action = cast ? "validation_route_group_heal" : "validation_route_group_heal_failed";
-        return cast || feralTankApproachesHealerSwarm;
+        return cast || (allowMovement && feralTankApproachesHealerSwarm);
     };
     bool discoveryLeg = Cohort().Config.ValidationRouteNodeKind == "discovery_leg";
     auto currentValidationRouteTargetSpawnId = [this]() -> ObjectGuid::LowType
@@ -18581,6 +18588,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && Cohort().Config.ValidationRouteSplitMinimumSeparationYards > 0.0f
             && Cohort().Config.ValidationRouteSplitNavigationMarginYards >= 0.0f
             && Cohort().Config.ValidationRouteSplitArrivalToleranceYards > 0.0f
+            && Cohort().Config.ValidationRouteSplitNativeMeleeStopYards > 0.0f
             && Cohort().Config.ValidationRouteMinimumDistanceYards > 0.0f
             && Cohort().Config.ValidationRouteThunderclapSpellId
             && Cohort().Config.ValidationRouteChargeSpellId
@@ -19726,6 +19734,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         tankStageInput.SourcesOnFrozenLanes = sourceOnFrozenLane(sources[0], 0)
             && sourceOnFrozenLane(sources[1], 1);
         tankStageInput.BoundTankSourceGeometrySafe = boundTankSourceGeometrySafe();
+        tankStageInput.NativeMeleeStopBounded = laneTank && otherTank
+            && laneSource->GetMeleeRange(laneTank)
+                <= Cohort().Config.ValidationRouteSplitNativeMeleeStopYards
+            && otherSource->GetMeleeRange(otherTank)
+                <= Cohort().Config.ValidationRouteSplitNativeMeleeStopYards;
         BotRaidDrudgeGeometry::Result const tankStage =
             BotRaidDrudgeGeometry::Advance(geometryState, tankStageInput);
         state.LastValidationRouteDrudgeChargeGenerationObserved =
@@ -19803,7 +19816,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             // but permit ordinary friendly healer actions so staging does not
             // kill the tanks before ownership and the native Rush window.
             if (tankStage.SupportAllowed && roster->second.Role == "healer"
-                && tryRouteGroupHeal(bot, laneSource))
+                && tryRouteGroupHeal(bot, laneSource, false))
             {
                 record(laneSource, "drudge_staging_support", sourceSeparation);
                 target = laneSource;
@@ -24421,7 +24434,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (Cohort().Config.ValidationRouteMechanicProfile == "trash_two_tank_charge_lanes"
             && Cohort().Config.ValidationRouteBossRecovery
                 == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly
-            && deadMembers > 0 && groupCombatActive)
+            && deadMembers > 0)
         {
             bool const threatSeedCompleteForCurrentScope =
                 Party().ValidationRouteDrudgeThreatSeedComplete
@@ -24448,32 +24461,35 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 target = retreatThreat;
                 return true;
             }
-            for (WorldBotState const& cohortState : Party().Bots)
-                if (Player* cohortBot = GetLoadedBot(cohortState))
-                    BotRaidAreaAuthority::SetAllOffenseSuppressed(
-                        cohortBot->GetGUID().GetRawValue(), true);
-            std::string raw = BuildRawJson(bot, retreatThreat);
-            std::ostringstream gateRaw;
-            gateRaw << "{\"base\":" << raw
-                    << ",\"drudge_native_recovery_gate\":{\"policy\":\"native_full_wipe_only\""
-                    << ",\"authority\":\"native_encounter\""
-                    << ",\"assistance\":\"none\""
-                    << ",\"direct_respawn\":false"
-                    << ",\"direct_state_manufacture\":false"
-                    << ",\"alive_members\":" << aliveMembers
-                    << ",\"dead_members\":" << deadMembers << "}}";
-            std::string semantic = BuildSemanticJson(bot, retreatThreat, "validation_route_recovery", &power, stage, activity);
-            RecordEvent(state, bot, "validation_route_recovery", retreatThreat,
-                "drudge_native_full_wipe_hold_partial_death", gateRaw.str().c_str(), semantic.c_str(),
-                float(aliveMembers), deadMembers);
-            state.LastRecoveryMode = "native_full_wipe_only";
-            state.LastRecoveryResult = "drudge_native_full_wipe_hold_partial_death";
-            state.LastRecoveryMs = NowMs();
-            state.LastNoProgressReason = "drudge_native_full_wipe_hold_partial_death";
-            situation = "validation_route_recovery";
-            action = "native_full_wipe_hold";
-            target = retreatThreat;
-            return true;
+            if (groupCombatActive)
+            {
+                for (WorldBotState const& cohortState : Party().Bots)
+                    if (Player* cohortBot = GetLoadedBot(cohortState))
+                        BotRaidAreaAuthority::SetAllOffenseSuppressed(
+                            cohortBot->GetGUID().GetRawValue(), true);
+                std::string raw = BuildRawJson(bot, retreatThreat);
+                std::ostringstream gateRaw;
+                gateRaw << "{\"base\":" << raw
+                        << ",\"drudge_native_recovery_gate\":{\"policy\":\"native_full_wipe_only\""
+                        << ",\"authority\":\"native_encounter\""
+                        << ",\"assistance\":\"none\""
+                        << ",\"direct_respawn\":false"
+                        << ",\"direct_state_manufacture\":false"
+                        << ",\"alive_members\":" << aliveMembers
+                        << ",\"dead_members\":" << deadMembers << "}}";
+                std::string semantic = BuildSemanticJson(bot, retreatThreat, "validation_route_recovery", &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_recovery", retreatThreat,
+                    "drudge_native_full_wipe_hold_partial_death", gateRaw.str().c_str(), semantic.c_str(),
+                    float(aliveMembers), deadMembers);
+                state.LastRecoveryMode = "native_full_wipe_only";
+                state.LastRecoveryResult = "drudge_native_full_wipe_hold_partial_death";
+                state.LastRecoveryMs = NowMs();
+                state.LastNoProgressReason = "drudge_native_full_wipe_hold_partial_death";
+                situation = "validation_route_recovery";
+                action = "native_full_wipe_hold";
+                target = retreatThreat;
+                return true;
+            }
         }
         if ((majorityDead || criticalRoleDead) && groupCombatActive && !livingCombatResurrectionCaster
             && !currentLivePackCanContinue)
@@ -37897,6 +37913,7 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << "{\"name\":\"validation_route_split_minimum_separation_yards\",\"value\":" << Cohort().Config.ValidationRouteSplitMinimumSeparationYards << "},"
          << "{\"name\":\"validation_route_split_navigation_margin_yards\",\"value\":" << Cohort().Config.ValidationRouteSplitNavigationMarginYards << "},"
          << "{\"name\":\"validation_route_split_arrival_tolerance_yards\",\"value\":" << Cohort().Config.ValidationRouteSplitArrivalToleranceYards << "},"
+         << "{\"name\":\"validation_route_split_native_melee_stop_yards\",\"value\":" << Cohort().Config.ValidationRouteSplitNativeMeleeStopYards << "},"
          << "{\"name\":\"validation_route_thunderclap_spell_id\",\"value\":" << Cohort().Config.ValidationRouteThunderclapSpellId << "},"
          << "{\"name\":\"validation_route_charge_spell_id\",\"value\":" << Cohort().Config.ValidationRouteChargeSpellId << "},"
          << "{\"name\":\"validation_route_charge_range_yards\",\"value\":" << Cohort().Config.ValidationRouteChargeRangeYards << "},"

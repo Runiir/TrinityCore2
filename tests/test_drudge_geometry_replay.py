@@ -29,6 +29,7 @@ int main()
     input.SourcesSeparated = true;
     input.SourcesOnFrozenLanes = true;
     input.BoundTankSourceGeometrySafe = true;
+    input.NativeMeleeStopBounded = true;
     Result result = Advance(state, input);
     assert(result.ScopeReset);
     assert(result.NextDecision == Decision::StageCombatTanks);
@@ -67,6 +68,10 @@ int main()
     unsafe.BoundTankSourceGeometrySafe = false;
     Result wrongTankGeometry = Advance(result.Next, unsafe);
     assert(!wrongTankGeometry.NativeEngagementAllowed);
+    unsafe = input;
+    unsafe.NativeMeleeStopBounded = false;
+    Result oversizedNativeReach = Advance(result.Next, unsafe);
+    assert(!oversizedNativeReach.NativeEngagementAllowed);
 
     // A native Rush invalidates the pre-Rush anchor proof once. Repeated bot
     // ticks for the same pending observation preserve a successful reproof.
@@ -204,7 +209,10 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "tankStageInput.SourcesSeparated" in lane
     assert "tankStageInput.SourcesOnFrozenLanes" in lane
     assert "tankStageInput.BoundTankSourceGeometrySafe" in lane
+    assert "tankStageInput.NativeMeleeStopBounded" in lane
+    assert "GetMeleeRange" in lane
     assert "tankStage.SupportAllowed" in lane
+    assert "tryRouteGroupHeal(bot, laneSource, false)" in lane
     assert "bot->GetInstanceId() != 0" in lane
     assert "ValidationRouteDrudgeAnchorSource0Identity" in lane
 

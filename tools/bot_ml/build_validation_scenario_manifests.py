@@ -115,8 +115,10 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
     source_guids = [int(value) for value in step.get("split_source_guids") or []]
     homes = list(step.get("split_source_home_anchors") or [])
     tanks = list(step.get("split_tank_combat_anchors") or [])
+    members = list(step.get("split_member_anchors") or [])
     tank_slots = [int(value) for value in step.get("split_lane_tank_slots") or []]
-    if len(source_guids) != 2 or len(homes) != 2 or len(tanks) != 2 or len(tank_slots) != 2:
+    if (len(source_guids) != 2 or len(homes) != 2 or len(tanks) != 2
+            or len(tank_slots) != 2 or len(members) != 10):
         return False, "split_combat_anchor_shape"
     home_by_guid = {int(row.get("source_guid") or 0): row for row in homes}
     tank_by_slot = {int(row.get("roster_slot") or 0): row for row in tanks}
@@ -159,6 +161,31 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
     )
     if guaranteed_separation + 1e-6 < minimum + margin:
         return False, "split_combat_anchor_insufficient_native_chase"
+    member_by_slot = {int(row.get("roster_slot") or 0): row for row in members}
+    if set(member_by_slot) != set(range(1, 11)):
+        return False, "split_member_anchor_identity"
+    source_displacements = [
+        max(0.0, displacement - melee_stop - arrival)
+        for displacement in outward
+    ]
+    chased_sources = [
+        (
+            ordered_homes[0][0] - axis_x * source_displacements[0],
+            ordered_homes[0][1] - axis_y * source_displacements[0],
+            ordered_homes[0][2],
+        ),
+        (
+            ordered_homes[1][0] + axis_x * source_displacements[1],
+            ordered_homes[1][1] + axis_y * source_displacements[1],
+            ordered_homes[1][2],
+        ),
+    ]
+    for slot, member in member_by_slot.items():
+        if slot in tank_slots:
+            continue
+        anchor = tuple(float(member.get(axis) or 0.0) for axis in ("x", "y", "z"))
+        if any(math.dist(anchor, source) + 1e-6 < minimum for source in chased_sources):
+            return False, "split_member_anchor_source_unsafe"
     return True, ""
 
 
