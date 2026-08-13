@@ -550,6 +550,9 @@ private:
         uint32 Lane = 0;
         float Threat = 0.0f;
         float Distance = 0.0f;
+        bool IsPlayer = false;
+        bool Alive = false;
+        bool SameMap = false;
         bool Available = false;
         bool LineOfSight = false;
         bool InRange = false;
@@ -632,6 +635,9 @@ private:
         std::vector<ValidationRouteDrudgeMemberGeometry> MemberGeometry;
         std::set<uint32> ReseparatedRosterGuids;
         std::vector<ValidationRouteDrudgeThreatCandidateEvidence> NativeThreatCandidates;
+        uint32 NativeThreatCandidatesCount = 0;
+        bool NativeThreatCandidatesComplete = false;
+        bool NativeThreatCandidatesTruncated = false;
     };
 
     struct ValidationRouteDrudgeThreatSeedEvidence

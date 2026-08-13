@@ -594,6 +594,14 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "ValidationRouteChargeNativeIntervalMs" in cast_hook
     assert "ValidationRouteDrudgeChargeGeneration" in cast_hook
     assert "ValidationRouteDrudgeChargeObservations.push_back" in cast_hook
+    assert "GetUnsortedThreatList" in cast_hook
+    assert "MaxNativeThreatCandidates" in cast_hook
+    assert "NativeThreatCandidatesCount" in cast_hook
+    assert "NativeThreatCandidatesComplete" in cast_hook
+    assert "NativeThreatCandidatesTruncated" in cast_hook
+    assert "candidateEvidence.IsPlayer" in cast_hook
+    assert "candidateEvidence.Alive" in cast_hook
+    assert "candidateEvidence.SameMap" in cast_hook
     assert "ValidationRouteDrudgeChargeQueueOverflow = true" in cast_hook
     assert "void BotWorldPopulationMgr::NotifyNativeCreatureSpellLanded" in cast_hook
     assert "candidate.Sequence == observationSequence" in cast_hook

@@ -281,7 +281,11 @@ def accepted_drudge_status() -> dict:
     }
     observations = []
     sequence = 0
-    for source, target in ((250140, roster_guids[4]), (250141, roster_guids[2])):
+    # The native first-Rush snapshots below include the complete (bounded)
+    # threat list.  The seeded opposite-lane DPS is the farthest eligible
+    # candidate for each source; tanks remain present in the native list but
+    # are ineligible under the exact acceptance predicate.
+    for source, target in ((250140, roster_guids[7]), (250141, roster_guids[5])):
         for interval in (0, 20000):
             sequence += 1
             observations.append({
@@ -301,6 +305,43 @@ def accepted_drudge_status() -> dict:
                 "reseparated_roster_guids": roster_guids,
                 "geometry": geometry,
             })
+    for observation in observations:
+        if observation["sequence"] not in (1, 3):
+            continue
+        source = observation["source_spawn_id"]
+        source_lane = 0 if source == 250140 else 1
+        farthest_guid = roster_guids[7] if source == 250140 else roster_guids[5]
+        distances = {
+            slot: (40.0 if guid == farthest_guid else 35.0 - abs(slot - 6) * 0.5)
+            for slot, guid in ((row["slot"] + 1, row["guid"]) for row in runtime["roster"])
+        }
+        candidate_rows = []
+        for row in runtime["roster"]:
+            slot = row["slot"] + 1
+            lane = 0 if slot in lane_a_slots else 1
+            role = row["role"]
+            cross_lane = lane != source_lane
+            eligible = cross_lane and role != "tank"
+            candidate_rows.append({
+                "guid": row["guid"],
+                "slot": slot,
+                "lane": lane,
+                "threat": float(1000 + slot),
+                "distance": distances[slot],
+                "is_player": True,
+                "alive": True,
+                "same_map": True,
+                "available": True,
+                "line_of_sight": True,
+                "in_range": True,
+                "cross_lane": cross_lane,
+                "eligible": eligible,
+                "role": role,
+            })
+        observation["native_threat_candidates"] = candidate_rows
+        observation["native_threat_candidates_count"] = len(candidate_rows)
+        observation["native_threat_candidates_complete"] = True
+        observation["native_threat_candidates_truncated"] = False
     runtime["drudge_charge"] = {
         "generation": 4,
         "landed_generation": 4,
@@ -567,6 +608,47 @@ def test_drudge_threat_seed_rejects_same_lane_or_unsuppressed_offense():
     accepted, reasons = accepted_drudge_contract([late])
     assert accepted is False
     assert "drudge_threat_seed_not_pre_first_rush" in reasons
+
+
+def test_drudge_native_threat_evidence_fails_closed_when_candidate_list_is_missing_or_truncated():
+    missing = accepted_drudge_status()
+    del missing["raid_runtime"]["drudge_charge"]["observations"][0]["native_threat_candidates"]
+    accepted, reasons = accepted_drudge_contract([missing])
+    assert accepted is False
+    assert "drudge_native_threat_candidates_missing" in reasons
+
+    truncated = accepted_drudge_status()
+    first = truncated["raid_runtime"]["drudge_charge"]["observations"][0]
+    first["native_threat_candidates_count"] = 33
+    first["native_threat_candidates_complete"] = False
+    first["native_threat_candidates_truncated"] = True
+    accepted, reasons = accepted_drudge_contract([truncated])
+    assert accepted is False
+    assert "drudge_native_threat_candidates_metadata_invalid" in reasons
+    assert "drudge_native_threat_candidates_truncated" in reasons
+
+
+def test_drudge_native_threat_evidence_rejects_forged_eligibility_farthest_and_seed_linkage():
+    forged_eligibility = accepted_drudge_status()
+    first = forged_eligibility["raid_runtime"]["drudge_charge"]["observations"][0]
+    first["native_threat_candidates"][0]["eligible"] = True
+    accepted, reasons = accepted_drudge_contract([forged_eligibility])
+    assert accepted is False
+    assert "drudge_native_threat_candidate_eligibility_mismatch" in reasons
+
+    forged_farthest = accepted_drudge_status()
+    first = forged_farthest["raid_runtime"]["drudge_charge"]["observations"][0]
+    first["target_guid"] = forged_farthest["raid_runtime"]["roster"][4]["guid"]
+    first["selected_distance"] = 34.5
+    accepted, reasons = accepted_drudge_contract([forged_farthest])
+    assert accepted is False
+    assert "drudge_native_threat_selected_target_not_farthest" in reasons
+
+    forged_seed = accepted_drudge_status()
+    forged_seed["raid_runtime"]["drudge_threat_seed"]["observations"][0]["source_guid"] = 999999
+    accepted, reasons = accepted_drudge_contract([forged_seed])
+    assert accepted is False
+    assert "drudge_threat_seed_source_identity_invalid" in reasons
 
 
 def test_drudge_anchor_fallback_is_generation_scoped_and_native_path_validated():

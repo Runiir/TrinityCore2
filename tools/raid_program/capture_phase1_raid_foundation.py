@@ -1036,6 +1036,11 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
         for row in roster
         if isinstance(row, dict) and _positive_int(row.get("guid"))
     }
+    roster_by_guid = {
+        row.get("guid"): row
+        for row in roster
+        if isinstance(row, dict) and _positive_int(row.get("guid"))
+    }
 
     # A bad native delivery is permanently disqualifying for this capture,
     # even when a later status snapshot contains a clean-looking generation.
@@ -1155,6 +1160,170 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
     source_guids = {reconstructed[source]["source_guid"] for source in exact_sources}
     if 0 in source_guids or len(source_guids) != len(exact_sources):
         reasons.append("drudge_exact_source_runtime_guids_invalid")
+
+    # The native selector is acceptance evidence, not a claim supplied by the
+    # bot policy.  Reconstruct the candidate predicate from the exact roster
+    # and the serialized core threat-list snapshot.  The runtime intentionally
+    # bounds this list; a missing, truncated, or internally inconsistent first
+    # Rush snapshot cannot prove selector fidelity and therefore fails closed.
+    native_candidate_snapshot_signatures: dict[int, tuple[Any, ...]] = {}
+    native_candidate_rows_by_guid: dict[int, dict[int, dict[str, Any]]] = {}
+    native_candidate_eligible_guids_by_source: dict[int, set[int]] = {}
+    native_first_rush_observed_at_ms: dict[int, int] = {}
+    native_candidate_tolerance = 0.05
+    for candidate_runtime, candidate_evidence in candidates:
+        candidate_observations = candidate_evidence.get("observations")
+        if not isinstance(candidate_observations, list):
+            reasons.append("drudge_native_threat_candidates_observations_missing")
+            continue
+        candidate_roster = candidate_runtime.get("roster")
+        candidate_roster_by_guid = {
+            row.get("guid"): row
+            for row in candidate_roster
+            if isinstance(row, dict) and _positive_int(row.get("guid"))
+        } if isinstance(candidate_roster, list) else {}
+        for source in exact_sources:
+            source_observations = [
+                row for row in candidate_observations
+                if isinstance(row, dict) and row.get("source_spawn_id") == source
+            ]
+            if not source_observations:
+                reasons.append(f"drudge_native_threat_source_{source}_first_rush_missing")
+                continue
+            first_observation = min(
+                source_observations,
+                key=lambda row: (
+                    int(row.get("sequence") or 0),
+                    int(row.get("observed_at_ms") or 0),
+                ),
+            )
+            first_time = first_observation.get("observed_at_ms")
+            if _positive_int(first_time):
+                native_first_rush_observed_at_ms[source] = int(first_time)
+            if first_observation.get("landed") is not True:
+                reasons.append(f"drudge_native_threat_source_{source}_first_rush_not_landed")
+            candidate_rows = first_observation.get("native_threat_candidates")
+            if not isinstance(candidate_rows, list):
+                reasons.append("drudge_native_threat_candidates_missing")
+                continue
+            count = first_observation.get("native_threat_candidates_count")
+            complete = first_observation.get("native_threat_candidates_complete")
+            truncated = first_observation.get("native_threat_candidates_truncated")
+            if (not isinstance(count, int) or isinstance(count, bool) or count < 0
+                    or complete is not True or truncated is not False
+                    or count != len(candidate_rows) or count > 32):
+                reasons.append("drudge_native_threat_candidates_metadata_invalid")
+                if truncated is True or (isinstance(count, int) and count > len(candidate_rows)):
+                    reasons.append("drudge_native_threat_candidates_truncated")
+                continue
+
+            source_lane = 0 if source == 250140 else 1
+            expected_candidates: list[dict[str, Any]] = []
+            reconstructed_eligible_guids: set[int] = set()
+            seen_guids: set[int] = set()
+            for candidate in candidate_rows:
+                if not isinstance(candidate, dict):
+                    reasons.append("drudge_native_threat_candidate_invalid")
+                    continue
+                guid = candidate.get("guid")
+                if not _positive_int(guid) or guid in seen_guids:
+                    reasons.append("drudge_native_threat_candidate_identity_invalid")
+                    continue
+                seen_guids.add(guid)
+                distance = candidate.get("distance")
+                threat = candidate.get("threat")
+                if (not isinstance(distance, (int, float)) or isinstance(distance, bool)
+                        or not isfinite(float(distance)) or distance < 0.0
+                        or not isinstance(threat, (int, float)) or isinstance(threat, bool)
+                        or not isfinite(float(threat)) or threat < 0.0):
+                    reasons.append("drudge_native_threat_candidate_measurement_invalid")
+                    continue
+                boolean_fields = (
+                    "is_player", "alive", "same_map", "available", "line_of_sight",
+                    "in_range", "cross_lane", "eligible",
+                )
+                if any(not isinstance(candidate.get(field), bool) for field in boolean_fields):
+                    reasons.append("drudge_native_threat_candidate_flags_invalid")
+                    continue
+                roster_row = roster_by_guid.get(guid)
+                candidate_runtime_row = candidate_roster_by_guid.get(guid)
+                registered = isinstance(roster_row, dict)
+                role = roster_row.get("role") if registered else "unregistered"
+                slot = (roster_row.get("slot") + 1) if registered and isinstance(roster_row.get("slot"), int) else 0
+                lane = (
+                    0 if slot in lane_a_slots else 1
+                ) if registered else 0
+                active_lease = bool(
+                    registered and roster_row.get("active") is True
+                    and roster_row.get("lease_owned") is True
+                )
+                expected_in_range = float(distance) <= 80.0
+                expected_cross_lane = registered and lane != source_lane
+                expected_eligible = (
+                    candidate.get("is_player") is True
+                    and registered
+                    and active_lease
+                    and candidate.get("alive") is True
+                    and candidate.get("same_map") is True
+                    and candidate.get("available") is True
+                    and candidate.get("line_of_sight") is True
+                    and expected_in_range
+                    and expected_cross_lane
+                    and role != "tank"
+                )
+                if (candidate.get("is_player") is not registered
+                        or candidate_runtime_row is None
+                        or candidate.get("role") != role
+                        or candidate.get("slot") != slot
+                        or candidate.get("lane") != lane
+                        or candidate.get("in_range") is not expected_in_range
+                        or candidate.get("cross_lane") is not expected_cross_lane
+                        or candidate.get("eligible") is not expected_eligible):
+                    reasons.append("drudge_native_threat_candidate_eligibility_mismatch")
+                if expected_eligible:
+                    reconstructed_eligible_guids.add(guid)
+                expected_candidates.append(candidate)
+
+            if len(seen_guids) != len(candidate_rows):
+                reasons.append("drudge_native_threat_candidate_identity_invalid")
+            if not expected_candidates:
+                reasons.append(f"drudge_native_threat_source_{source}_candidate_list_empty")
+                continue
+            eligible_candidates = [
+                row for row in expected_candidates
+                if row.get("guid") in reconstructed_eligible_guids
+            ]
+            target_guid = first_observation.get("target_guid")
+            target = next((row for row in expected_candidates if row.get("guid") == target_guid), None)
+            if target is None or target_guid not in reconstructed_eligible_guids:
+                reasons.append("drudge_native_threat_selected_target_ineligible")
+            else:
+                selected_distance = first_observation.get("selected_distance")
+                if (not isinstance(selected_distance, (int, float))
+                        or isinstance(selected_distance, bool)
+                        or abs(float(selected_distance) - float(target.get("distance"))) > native_candidate_tolerance):
+                    reasons.append("drudge_native_threat_selected_distance_mismatch")
+                if eligible_candidates:
+                    farthest_distance = max(float(row.get("distance")) for row in eligible_candidates)
+                    if farthest_distance - float(target.get("distance")) > native_candidate_tolerance:
+                        reasons.append("drudge_native_threat_selected_target_not_farthest")
+                else:
+                    reasons.append(f"drudge_native_threat_source_{source}_eligible_candidates_missing")
+
+            # Repeated status snapshots must retain the exact first-Rush
+            # candidate set.  Do not let a later forged list erase it.
+            signature = tuple(
+                tuple(sorted(row.items())) for row in sorted(expected_candidates, key=lambda row: row.get("guid", 0))
+            )
+            previous_signature = native_candidate_snapshot_signatures.get(source)
+            if previous_signature is not None and previous_signature != signature:
+                reasons.append("drudge_native_threat_candidate_snapshot_drift")
+            else:
+                native_candidate_snapshot_signatures[source] = signature
+                native_candidate_rows_by_guid[source] = {
+                    row.get("guid"): row for row in expected_candidates
+                }
+                native_candidate_eligible_guids_by_source[source] = reconstructed_eligible_guids
 
     # The pre-first-Rush seed is a bounded, real profile action rather than a
     # threat-manager shortcut.  Reconstruct both cross-lane rows and all
@@ -1278,6 +1447,22 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
             reasons.append("drudge_threat_seed_success_count_invalid")
         if len(successful_member_guids) != 2 or successful_member_guids != seed_roster:
             reasons.append("drudge_threat_seed_roster_evidence_mismatch")
+        for row in successful_seed_rows:
+            source = row.get("source_spawn_id")
+            member_guid = row.get("member_guid")
+            candidate = native_candidate_rows_by_guid.get(source, {}).get(member_guid)
+            if candidate is None:
+                reasons.append("drudge_native_threat_seed_member_missing_from_candidates")
+                continue
+            if (member_guid not in native_candidate_eligible_guids_by_source.get(source, set())
+                    or candidate.get("role") != "dps"
+                    or candidate.get("cross_lane") is not True):
+                reasons.append("drudge_native_threat_seed_member_ineligible")
+            seed_time = row.get("observed_at_ms")
+            first_time = native_first_rush_observed_at_ms.get(source)
+            if (not _positive_int(seed_time) or not _positive_int(first_time)
+                    or int(seed_time) >= int(first_time)):
+                reasons.append("drudge_native_threat_seed_timing_link_invalid")
 
     death_fields = (
         "death_attempt_id", "death_wipe_generation", "death_route_generation",

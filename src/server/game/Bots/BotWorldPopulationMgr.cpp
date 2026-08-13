@@ -31027,6 +31027,9 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
                  << ",\"lane\":" << candidate.Lane
                  << ",\"threat\":" << candidate.Threat
                  << ",\"distance\":" << candidate.Distance
+                 << ",\"is_player\":" << (candidate.IsPlayer ? "true" : "false")
+                 << ",\"alive\":" << (candidate.Alive ? "true" : "false")
+                 << ",\"same_map\":" << (candidate.SameMap ? "true" : "false")
                  << ",\"available\":" << (candidate.Available ? "true" : "false")
                  << ",\"line_of_sight\":" << (candidate.LineOfSight ? "true" : "false")
                  << ",\"in_range\":" << (candidate.InRange ? "true" : "false")
@@ -31035,6 +31038,11 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
                  << ",\"role\":\"" << JsonEscape(candidate.Role) << "\"}";
         }
         json << "]"
+             << ",\"native_threat_candidates_count\":" << observation.NativeThreatCandidatesCount
+             << ",\"native_threat_candidates_complete\":"
+             << (observation.NativeThreatCandidatesComplete ? "true" : "false")
+             << ",\"native_threat_candidates_truncated\":"
+             << (observation.NativeThreatCandidatesTruncated ? "true" : "false")
              << ",\"geometry\":{\"home0_x\":" << observation.Home0X
              << ",\"home0_y\":" << observation.Home0Y
              << ",\"home1_x\":" << observation.Home1X
@@ -35009,10 +35017,17 @@ uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster,
     // combat behavior.
     if (!priorMs)
     {
+        static constexpr size_t MaxNativeThreatCandidates = 32;
         uint32 const sourceLaneIndex = sourceSpawnId
             == Cohort().Config.ValidationRouteSplitSourceGuids[0] ? 0 : 1;
-        for (ThreatReference const* reference :
-            caster->GetThreatManager().GetUnsortedThreatList())
+        auto const& nativeThreatList = caster->GetThreatManager().GetUnsortedThreatList();
+        observation.NativeThreatCandidatesCount = uint32(std::min<size_t>(
+            nativeThreatList.size(), std::numeric_limits<uint32>::max()));
+        observation.NativeThreatCandidatesComplete = nativeThreatList.size()
+            <= MaxNativeThreatCandidates;
+        observation.NativeThreatCandidatesTruncated = nativeThreatList.size()
+            > MaxNativeThreatCandidates;
+        for (ThreatReference const* reference : nativeThreatList)
         {
             if (!reference || !reference->GetVictim())
                 continue;
@@ -35022,6 +35037,9 @@ uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster,
             candidateEvidence.Guid = candidate->GetGUID().GetCounter();
             candidateEvidence.Threat = reference->GetThreat();
             candidateEvidence.Distance = caster->GetExactDist(candidate);
+            candidateEvidence.IsPlayer = candidate->ToPlayer() != nullptr;
+            candidateEvidence.Alive = candidate->IsAlive();
+            candidateEvidence.SameMap = candidate->GetMap() == caster->GetMap();
             candidateEvidence.Available = reference->IsAvailable();
             candidateEvidence.LineOfSight = caster->IsWithinLOSInMap(candidate);
             candidateEvidence.InRange = candidateEvidence.Distance
@@ -35057,7 +35075,7 @@ uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster,
                 && candidateEvidence.InRange && candidateEvidence.CrossLane
                 && candidateEvidence.Role != "tank";
             observation.NativeThreatCandidates.push_back(std::move(candidateEvidence));
-            if (observation.NativeThreatCandidates.size() >= 32)
+            if (observation.NativeThreatCandidates.size() >= MaxNativeThreatCandidates)
                 break;
         }
     }
