@@ -546,16 +546,21 @@ private:
     struct ValidationRouteDrudgeThreatCandidateEvidence
     {
         uint32 Guid = 0;
+        uint64 RawGuid = 0;
         uint32 Slot = 0;
         uint32 Lane = 0;
         float Threat = 0.0f;
         float Distance = 0.0f;
+        float SourceCombatReach = 0.0f;
+        float CandidateCombatReach = 0.0f;
         bool IsPlayer = false;
         bool Alive = false;
         bool SameMap = false;
+        bool SamePhase = false;
         bool Available = false;
         bool LineOfSight = false;
         bool InRange = false;
+        bool NativeCombatRange = false;
         bool CrossLane = false;
         bool NativeSelectorEligible = false;
         bool TacticCrossLaneEligible = false;
@@ -574,6 +579,10 @@ private:
         ObjectGuid TargetGuid;
         uint32 SourceSpawnId = 0;
         float SelectedDistance = 0.0f;
+        float SourceCombatReach = 0.0f;
+        float TargetCombatReach = 0.0f;
+        bool SameMap = false;
+        bool SamePhase = false;
         bool RangeValid = false;
         bool IntervalValid = false;
         bool Landed = false;

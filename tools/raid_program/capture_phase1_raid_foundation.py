@@ -1134,8 +1134,19 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
         if role_by_guid.get(row.get("target_guid")) == "tank":
             reasons.append("drudge_native_rush_target_tank")
         distance = row.get("selected_distance")
-        if (not isinstance(distance, (int, float)) or isinstance(distance, bool)
-                or distance < 0 or distance > 80.0 or row.get("range_valid") is not True):
+        source_reach = row.get("source_combat_reach")
+        target_reach = row.get("target_combat_reach")
+        reach_values = (source_reach, target_reach)
+        native_range = (
+            isinstance(distance, (int, float)) and not isinstance(distance, bool)
+            and isfinite(float(distance)) and float(distance) >= 0.0
+            and all(isinstance(value, (int, float)) and not isinstance(value, bool)
+                    and isfinite(float(value)) and 0.0 <= float(value) <= 100.0
+                    for value in reach_values)
+            and row.get("same_map") is True and row.get("same_phase") is True
+            and float(distance) < 80.0 + float(source_reach) + float(target_reach)
+        )
+        if row.get("range_valid") is not native_range or not native_range:
             reasons.append("drudge_observation_range_invalid")
         reconstructed[source]["delivered"] += 1
         interval = row.get("observed_interval_ms")
@@ -1171,7 +1182,20 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
     native_candidate_eligible_guids_by_source: dict[int, set[int]] = {}
     native_first_rush_observed_at_ms: dict[int, int] = {}
     native_candidate_tolerance = 0.05
+    complete_candidate_snapshots = []
     for candidate_runtime, candidate_evidence in candidates:
+        observations = candidate_evidence.get("observations")
+        observations = observations if isinstance(observations, list) else []
+        observed_sources = {
+            row.get("source_spawn_id") for row in observations
+            if isinstance(row, dict)
+        }
+        if exact_sources.issubset(observed_sources):
+            complete_candidate_snapshots.append((candidate_runtime, candidate_evidence))
+    if not complete_candidate_snapshots:
+        for source in exact_sources:
+            reasons.append(f"drudge_native_threat_source_{source}_first_rush_missing")
+    for candidate_runtime, candidate_evidence in complete_candidate_snapshots:
         candidate_observations = candidate_evidence.get("observations")
         if not isinstance(candidate_observations, list):
             reasons.append("drudge_native_threat_candidates_observations_missing")
@@ -1221,16 +1245,18 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
             expected_candidates: list[dict[str, Any]] = []
             reconstructed_native_selector_guids: set[int] = set()
             reconstructed_tactic_guids: set[int] = set()
-            seen_guids: set[int] = set()
+            seen_raw_guids: set[int] = set()
             for candidate in candidate_rows:
                 if not isinstance(candidate, dict):
                     reasons.append("drudge_native_threat_candidate_invalid")
                     continue
                 guid = candidate.get("guid")
-                if not _positive_int(guid) or guid in seen_guids:
+                raw_guid = candidate.get("raw_guid")
+                if (not _positive_int(guid) or not _positive_int(raw_guid)
+                        or raw_guid in seen_raw_guids):
                     reasons.append("drudge_native_threat_candidate_identity_invalid")
                     continue
-                seen_guids.add(guid)
+                seen_raw_guids.add(raw_guid)
                 distance = candidate.get("distance")
                 threat = candidate.get("threat")
                 if (not isinstance(distance, (int, float)) or isinstance(distance, bool)
@@ -1240,8 +1266,8 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
                     reasons.append("drudge_native_threat_candidate_measurement_invalid")
                     continue
                 boolean_fields = (
-                    "is_player", "alive", "same_map", "available", "line_of_sight",
-                    "in_range", "cross_lane", "native_selector_eligible",
+                    "is_player", "alive", "same_map", "same_phase", "available", "line_of_sight",
+                    "in_range", "native_combat_range", "cross_lane", "native_selector_eligible",
                     "tactic_cross_lane_eligible",
                 )
                 if any(not isinstance(candidate.get(field), bool) for field in boolean_fields):
@@ -1260,12 +1286,25 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
                     and roster_row.get("lease_owned") is True
                 )
                 expected_in_range = float(distance) <= 80.0
+                source_reach = candidate.get("source_combat_reach")
+                candidate_reach = candidate.get("candidate_combat_reach")
+                reaches_valid = all(
+                    isinstance(value, (int, float)) and not isinstance(value, bool)
+                    and isfinite(float(value)) and 0.0 <= float(value) <= 100.0
+                    for value in (source_reach, candidate_reach)
+                )
+                expected_native_combat_range = bool(
+                    reaches_valid
+                    and candidate.get("same_map") is True
+                    and candidate.get("same_phase") is True
+                    and float(distance) < 80.0 + float(source_reach) + float(candidate_reach)
+                )
                 expected_cross_lane = registered and lane != source_lane
                 expected_native_selector_eligible = (
                     candidate.get("is_player") is True
                     and candidate.get("available") is True
                     and candidate.get("line_of_sight") is True
-                    and expected_in_range
+                    and expected_native_combat_range
                 )
                 expected_tactic_eligible = (
                     expected_native_selector_eligible
@@ -1282,6 +1321,7 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
                         or candidate.get("slot") != slot
                         or candidate.get("lane") != lane
                         or candidate.get("in_range") is not expected_in_range
+                        or candidate.get("native_combat_range") is not expected_native_combat_range
                         or candidate.get("cross_lane") is not expected_cross_lane
                         or candidate.get("native_selector_eligible") is not expected_native_selector_eligible
                         or candidate.get("tactic_cross_lane_eligible") is not expected_tactic_eligible):
@@ -1292,7 +1332,7 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
                     reconstructed_tactic_guids.add(guid)
                 expected_candidates.append(candidate)
 
-            if len(seen_guids) != len(candidate_rows):
+            if len(seen_raw_guids) != len(candidate_rows):
                 reasons.append("drudge_native_threat_candidate_identity_invalid")
             if not expected_candidates:
                 reasons.append(f"drudge_native_threat_source_{source}_candidate_list_empty")

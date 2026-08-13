@@ -4154,6 +4154,19 @@ void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
         state.ValidationRouteDrudgeAnchorY = 0.0f;
         state.ValidationRouteDrudgeAnchorZ = 0.0f;
         state.ValidationRouteDrudgeAnchorSearchCooldownUntilMs = 0;
+        // Preserve every suppressed repeatable observation across a normal
+        // route-node boundary. Emit one bounded tail entry under the old node
+        // identity before resetting the route-local dedupe key.
+        uint64 const suppressedTail = uint64(state.SuppressedRepeatableEventCount)
+            + uint64(state.PendingTraceSuppressedRepeatableEventCount);
+        if (suppressedTail)
+        {
+            state.PendingTraceSuppressedRepeatableEventCount = uint32(std::min<uint64>(
+                suppressedTail, std::numeric_limits<uint32>::max()));
+            RecordDecisionTrace(state, "validation_route_transition",
+                "flush_suppressed_repeatable_tail", nullptr, 0, "ok",
+                "route_node_boundary");
+        }
         state.LastRepeatableEventKey.clear();
         state.LastRepeatableEventEmitMs = 0;
         state.SuppressedRepeatableEventCount = 0;
@@ -31013,6 +31026,10 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
              << ",\"source_spawn_id\":" << observation.SourceSpawnId
              << ",\"target_guid\":" << observation.TargetGuid.GetCounter()
              << ",\"selected_distance\":" << observation.SelectedDistance
+             << ",\"source_combat_reach\":" << observation.SourceCombatReach
+             << ",\"target_combat_reach\":" << observation.TargetCombatReach
+             << ",\"same_map\":" << (observation.SameMap ? "true" : "false")
+             << ",\"same_phase\":" << (observation.SamePhase ? "true" : "false")
              << ",\"range_valid\":" << (observation.RangeValid ? "true" : "false")
              << ",\"interval_valid\":" << (observation.IntervalValid ? "true" : "false")
              << ",\"landed\":" << (observation.Landed ? "true" : "false")
@@ -31026,16 +31043,21 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
                 json << ',';
             firstThreatCandidate = false;
             json << "{\"guid\":" << candidate.Guid
+                 << ",\"raw_guid\":" << candidate.RawGuid
                  << ",\"slot\":" << candidate.Slot
                  << ",\"lane\":" << candidate.Lane
                  << ",\"threat\":" << candidate.Threat
                  << ",\"distance\":" << candidate.Distance
+                 << ",\"source_combat_reach\":" << candidate.SourceCombatReach
+                 << ",\"candidate_combat_reach\":" << candidate.CandidateCombatReach
                  << ",\"is_player\":" << (candidate.IsPlayer ? "true" : "false")
                  << ",\"alive\":" << (candidate.Alive ? "true" : "false")
                  << ",\"same_map\":" << (candidate.SameMap ? "true" : "false")
+                 << ",\"same_phase\":" << (candidate.SamePhase ? "true" : "false")
                  << ",\"available\":" << (candidate.Available ? "true" : "false")
                  << ",\"line_of_sight\":" << (candidate.LineOfSight ? "true" : "false")
                  << ",\"in_range\":" << (candidate.InRange ? "true" : "false")
+                 << ",\"native_combat_range\":" << (candidate.NativeCombatRange ? "true" : "false")
                  << ",\"cross_lane\":" << (candidate.CrossLane ? "true" : "false")
                  << ",\"native_selector_eligible\":" << (candidate.NativeSelectorEligible ? "true" : "false")
                  << ",\"tactic_cross_lane_eligible\":" << (candidate.TacticCrossLaneEligible ? "true" : "false")
@@ -35013,7 +35035,13 @@ uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster,
     observation.TargetGuid = targetPlayer->GetGUID();
     observation.SourceSpawnId = sourceSpawnId;
     observation.SelectedDistance = Party().ValidationRouteDrudgeChargeObservedDistance;
-    observation.RangeValid = Party().ValidationRouteDrudgeChargeRangeValid;
+    observation.SourceCombatReach = caster->GetCombatReach();
+    observation.TargetCombatReach = targetPlayer->GetCombatReach();
+    observation.SameMap = caster->IsInMap(targetPlayer);
+    observation.SamePhase = caster->IsInPhase(targetPlayer);
+    observation.RangeValid = caster->IsWithinCombatRange(
+        targetPlayer, Cohort().Config.ValidationRouteChargeRangeYards);
+    Party().ValidationRouteDrudgeChargeRangeValid = observation.RangeValid;
     observation.IntervalValid = Party().ValidationRouteDrudgeChargeIntervalValid;
     // Capture the native threat list only on each source's first Rush edge.
     // This is bounded evidence for the selector's real candidate set; it does
@@ -35043,15 +35071,21 @@ uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster,
             Unit* candidate = reference->GetVictim();
             ValidationRouteDrudgeThreatCandidateEvidence candidateEvidence;
             candidateEvidence.Guid = candidate->GetGUID().GetCounter();
+            candidateEvidence.RawGuid = candidate->GetGUID().GetRawValue();
             candidateEvidence.Threat = reference->GetThreat();
             candidateEvidence.Distance = caster->GetExactDist(candidate);
+            candidateEvidence.SourceCombatReach = caster->GetCombatReach();
+            candidateEvidence.CandidateCombatReach = candidate->GetCombatReach();
             candidateEvidence.IsPlayer = candidate->ToPlayer() != nullptr;
             candidateEvidence.Alive = candidate->IsAlive();
-            candidateEvidence.SameMap = candidate->GetMap() == caster->GetMap();
+            candidateEvidence.SameMap = caster->IsInMap(candidate);
+            candidateEvidence.SamePhase = caster->IsInPhase(candidate);
             candidateEvidence.Available = reference->IsAvailable();
             candidateEvidence.LineOfSight = caster->IsWithinLOSInMap(candidate);
             candidateEvidence.InRange = candidateEvidence.Distance
                 <= Cohort().Config.ValidationRouteChargeRangeYards;
+            candidateEvidence.NativeCombatRange = caster->IsWithinCombatRange(
+                candidate, Cohort().Config.ValidationRouteChargeRangeYards);
             candidateEvidence.Role = "unregistered";
             bool registered = false;
             bool crossLane = false;
@@ -35083,7 +35117,7 @@ uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster,
             // tactic's desired cross-lane non-tank seed/selection predicate.
             candidateEvidence.NativeSelectorEligible = candidateEvidence.IsPlayer
                 && candidateEvidence.Available && candidateEvidence.LineOfSight
-                && candidateEvidence.InRange;
+                && candidateEvidence.NativeCombatRange;
             candidateEvidence.TacticCrossLaneEligible =
                 candidateEvidence.NativeSelectorEligible && registered && activeLease
                 && candidate->IsAlive() && candidate->GetMap() == caster->GetMap()

@@ -283,8 +283,8 @@ def accepted_drudge_status() -> dict:
     sequence = 0
     # The native first-Rush snapshots below include the complete (bounded)
     # threat list.  The seeded opposite-lane DPS is the farthest eligible
-    # candidate for each source; tanks remain present in the native list but
-    # are ineligible under the exact acceptance predicate.
+    # candidate for each source. Tanks and same-lane players remain native
+    # selector candidates even though they are not tactic-eligible.
     for source, target in ((250140, roster_guids[7]), (250141, roster_guids[5])):
         for interval in (0, 20000):
             sequence += 1
@@ -299,6 +299,10 @@ def accepted_drudge_status() -> dict:
                 "source_spawn_id": source,
                 "target_guid": target,
                 "selected_distance": 40.0,
+                "source_combat_reach": 1.5,
+                "target_combat_reach": 1.5,
+                "same_map": True,
+                "same_phase": True,
                 "range_valid": True,
                 "interval_valid": interval == 20000,
                 "landed": True,
@@ -325,16 +329,21 @@ def accepted_drudge_status() -> dict:
             tactic_cross_lane_eligible = cross_lane and role != "tank"
             candidate_rows.append({
                 "guid": row["guid"],
+                "raw_guid": (1 << 60) + row["guid"],
                 "slot": slot,
                 "lane": lane,
                 "threat": float(1000 + slot),
                 "distance": distances[slot],
+                "source_combat_reach": 1.5,
+                "candidate_combat_reach": 1.5,
                 "is_player": True,
                 "alive": True,
                 "same_map": True,
+                "same_phase": True,
                 "available": True,
                 "line_of_sight": True,
                 "in_range": True,
+                "native_combat_range": True,
                 "cross_lane": cross_lane,
                 "native_selector_eligible": native_selector_eligible,
                 "tactic_cross_lane_eligible": tactic_cross_lane_eligible,
@@ -645,22 +654,35 @@ def test_drudge_native_threat_evidence_rejects_forged_eligibility_farthest_and_s
     assert accepted is False
     assert "drudge_native_threat_selected_target_not_farthest" in reasons
 
+    combat_reach_farthest = accepted_drudge_status()
+    first = combat_reach_farthest["raid_runtime"]["drudge_charge"]["observations"][0]
+    first["native_threat_candidates"][2]["distance"] = 81.0
+    first["native_threat_candidates"][2]["in_range"] = False
+    accepted, reasons = accepted_drudge_contract([combat_reach_farthest])
+    assert accepted is False
+    assert "drudge_native_threat_selected_target_not_farthest" in reasons
+
     non_player_reference = accepted_drudge_status()
     for observation in non_player_reference["raid_runtime"]["drudge_charge"]["observations"]:
         if observation["observed_interval_ms"] != 0:
             continue
         observation["native_threat_candidates"].append({
             "guid": 900000 + observation["source_spawn_id"],
+            "raw_guid": (4 << 60) + 900000 + observation["source_spawn_id"],
             "slot": 0,
             "lane": 0,
             "threat": 1.0,
             "distance": 79.0,
+            "source_combat_reach": 1.5,
+            "candidate_combat_reach": 1.5,
             "is_player": False,
             "alive": True,
             "same_map": True,
+            "same_phase": True,
             "available": True,
             "line_of_sight": True,
             "in_range": True,
+            "native_combat_range": True,
             "cross_lane": False,
             "native_selector_eligible": False,
             "tactic_cross_lane_eligible": False,
@@ -668,6 +690,16 @@ def test_drudge_native_threat_evidence_rejects_forged_eligibility_farthest_and_s
         })
         observation["native_threat_candidates_count"] += 1
     accepted, reasons = accepted_drudge_contract([non_player_reference])
+    assert accepted is True
+    assert reasons == []
+
+
+def test_drudge_native_threat_ignores_ordinary_pre_rush_snapshot_until_complete():
+    early = accepted_drudge_status()
+    early["raid_runtime"]["drudge_charge"]["observations"] = []
+    early["raid_runtime"]["drudge_charge"]["prepared_count"] = 0
+    early["raid_runtime"]["drudge_charge"]["delivered_count"] = 0
+    accepted, reasons = accepted_drudge_contract([early, accepted_drudge_status()])
     assert accepted is True
     assert reasons == []
 
