@@ -1034,6 +1034,22 @@ def test_live_evidence_demux_rejects_lease_drift_and_trace_cursor_gap():
     assert "evidence_demux_trace_delta_gap" in reasons
 
 
+def test_live_evidence_demux_rejects_frozen_character_build_drift():
+    active = accepted_status()
+    active["cohort_id"] = "raid"
+    for field, replacement in (
+        ("talents", [{"spell_id": 999999, "rank": 1}]),
+        ("glyphs", [999999]),
+        ("gear_identity_manifest", {"sha256": "forged"}),
+    ):
+        drifted = json.loads(json.dumps(active))
+        drifted["raid_runtime"]["roster"][0][field] = replacement
+        rows = normalized_batch_payload(
+            b"\n".join(json.dumps(row).encode() for row in (active, drifted)) + b"\n"
+        )
+        assert "evidence_demux_cross_identity_row" in evidence_demux_rejections(rows)
+
+
 def test_capture_telemetry_poll_is_incremental_and_bounded():
     root = Path(__file__).resolve().parents[1]
     capture_source = (root / "tools/raid_program/capture_phase1_raid_foundation.py").read_text(encoding="utf-8")

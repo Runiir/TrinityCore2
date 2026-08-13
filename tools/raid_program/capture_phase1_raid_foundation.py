@@ -46,9 +46,8 @@ ROSTER_ID_FIELDS = (
 # wipe look like a cross-shard row.  Keep the full roster contract above for
 # provisioning/acceptance, but demultiplex telemetry against this frozen
 # membership projection and validate the lifecycle flags separately.
-ROSTER_BINDING_ID_FIELDS = (
-    "roster_slot_id", "lease_role_slot", "slot", "guid", "subgroup", "role",
-    "class_id", "class_spec", "gear_identity", "account_id", "account", "name",
+ROSTER_BINDING_ID_FIELDS = tuple(
+    field for field in ROSTER_ID_FIELDS if field not in ("active", "lease_owned")
 )
 FORBIDDEN_ASSISTANCE_FIELDS = (
     "forbidden_completion_assists",

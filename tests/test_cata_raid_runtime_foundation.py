@@ -558,7 +558,7 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert '"drudge_kill_sync_hold_lower_health_lane"' in lane
     assert "ValidationRouteVengefulRageSpellId" in lane
     assert "BotCombatActionCategory::Taunt" in lane
-    assert "if (formationRequired || pairTooClose || nativeChargePending || chargeAwaitingLanding)" in lane
+    assert "if (formationRequiredMutable || pairTooClose || nativeChargePending || chargeAwaitingLanding)" in lane
     assert "laneSource = sources[laneIndex]" in lane
     assert "bool const sourceInLaneA = nativeChargeSource == sources[0]" in lane
     assert "markAllRosterReseparated" in lane
