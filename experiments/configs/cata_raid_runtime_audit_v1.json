@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "audit_id": "cata_raid_runtime_phase1_v1",
-  "updated_at_utc": "2026-08-13T08:16:41Z",
+  "updated_at_utc": "2026-08-13T08:42:27Z",
   "target": {
     "client": "Cataclysm Classic",
     "patch": "4.4.2",
@@ -9,18 +9,18 @@
     "locale": "enUS",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
-  "audited_commit": "a3c42d0e6420a32e92025e6a8bc4f48b21756f72",
-  "gate_state": "in_progress_clean_a3c42d_phase1_remediation_pending_exact_descendant_review_build_and_live_rerun",
+  "audited_commit": "aa85a9d0b9cc34f9a73ce9b5ad9380af5879d3c4",
+  "gate_state": "in_progress_exact_aa85_reviewed_built_and_freshly_prepared_pending_uncapped_live_rerun",
   "foundation": {
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "current_head_sha": "a3c42d0e6420a32e92025e6a8bc4f48b21756f72",
+    "current_head_sha": "aa85a9d0b9cc34f9a73ce9b5ad9380af5879d3c4",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
-    "mandatory_sol_high_rereview": "exact_53840bd89e_approved_zero_critical_high_medium_build_authorized_live_restart_held",
+    "mandatory_sol_high_rereview": "exact_aa85a9d0b9_approved_zero_critical_high_build_authorized_live_restart_requires_fresh_prep",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "acceptance": "Exact 1ee uncapped capture remains an infrastructure abort. Mandatory Sol-high review of clean checkpoint 10c5a969e4 confirmed all prior closures except that a later same-source/same-target Rush could retroactively land an earlier canceled preparation. Exact clean checkpoint a3c42d0e64 carries the manager observation sequence on the exact Spell instance and reports delivery only from that instance after a non-script-prevented default charge hit handler. Independent acceptance also validates positive stable distinct source runtime GUIDs. Mandatory exact descendant review, build, and live proof remain required; no gameplay or fidelity inference is authorized."
+    "acceptance": "Exact 1ee uncapped capture remains an infrastructure abort. Mandatory Sol-high review of exact clean aa85a9d0b9 reports zero unresolved Critical/High findings. Exact gate-bearing configure and worldserver receipts verify, the receipt-produced ELF hash is bound, focused regressions pass 116/116, and fresh deterministic preparation/full verifier/v4 readback pass. The uncapped live capture remains required; no gameplay or fidelity inference is authorized."
   },
   "research": {
     "required_boss_packets": 28,
@@ -46,8 +46,8 @@
   },
   "build": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_state": "historical_exact_1ee_success_stale_for_clean_a3c42d_phase1_remediation",
-    "current_result": "no current receipt; no authserver, worldserver, capture, publisher, or build process active; mandatory exact Sol-high descendant review of a3c42d must precede the next coordinator build",
+    "current_state": "exact_aa85_gate_bearing_build_succeeded_after_one_retained_resource_abort",
+    "current_result": "configure receipt 867db145... and worldserver receipt e08b0e76... independently verify; ELF a5865577... was produced by the exact clean ticket; first attempt 8032acf6... was build_resource_abort and is not code or gameplay failure",
     "receipt_trust_model": "explicit_trusted_local_operator",
     "trusted_operator": "runiir",
     "trusted_uid": 1000,
@@ -169,14 +169,14 @@
   "synthetic_checks": {
     "test_file": "tests/test_cata_raid_runtime_foundation.py",
     "last_result": "116_current_focused_passed",
-    "combined_focus_result": "116_runtime_capture_and_phase9_passed_at_exact_6c7595_remediation",
+    "combined_focus_result": "116_runtime_capture_and_phase9_passed_after_exact_aa85_build",
     "combined_focus_command": "pixi run pytest -q tests/test_cata_raid_runtime_foundation.py tests/test_phase1_raid_foundation_capture.py tests/test_phase9_live_qualification.py",
     "broad_comparison": "autonomy_inclusive_d5ba_review_diagnostic_239_passed_33_inherited_or_stale_failures; focused_phase9_3_passed; no new broad-regression claim until exact descendant review"
   },
   "required_open_work": [
     {
       "area": "current_build",
-      "missing": ["mandatory_exact_a3c42d_descendant_sol_high_zero_critical_high_review", "exact_reviewed_coordinator_build_receipt"]
+      "missing": []
     },
     {
       "area": "live_script_and_decision_review",
@@ -192,8 +192,8 @@
     }
   ],
   "phase1_gate_blockers": [
-    "exact_a3c42d_native_recovery_laser_spell_paired_drudge_delivery_evidence_blocked_cpu_remediation_pending_mandatory_sol_high_descendant_review",
-    "exact_coordinator_rebuild_cpu_measurement_reprovision_and_uncapped_rerun_pending",
+    "exact_aa85_reviewed_build_and_fresh_preparation_complete_uncapped_live_rerun_pending",
+    "single_cohort_cpu_log_db_measurement_and_uncapped_capture_pending",
     "bwd_exact_442_quantitative_and_exact_log_hotfix_evidence_blocks_phase2_fidelity"
   ],
   "acceptance_policy": "Fail closed. Existing Stonecore and older BWD artifacts do not certify this raid-runtime gate."

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-13T08:16:41Z",
+  "updated_at_utc": "2026-08-13T08:42:27Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -17,7 +17,7 @@
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "current_head_sha": "a3c42d0e6420a32e92025e6a8bc4f48b21756f72",
+    "current_head_sha": "aa85a9d0b9cc34f9a73ce9b5ad9380af5879d3c4",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -28,17 +28,17 @@
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
     "critical_high_remediation_implemented_at": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "mandatory_rereview": "exact_53840bd89e_sol_high_approved_zero_critical_high_medium; executor_helpers_unitai_petai_totemai_and_passive_totems_share_immediate_next_encounter_authority; watchdog_requires_exact_ordered_per_member_native_recovery_proof; build_authorized_live_restart_held_pending_exact_receipt_and_fresh_preflight",
+    "mandatory_rereview": "exact_aa85a9d0b9_sol_high_approved_zero_critical_high; exact_spell_owned_drudge_delivery_pairing_and_runtime_source_identity_accepted; build_authorized_and_completed; live_restart_requires_fresh_preparation",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "The 1ee capture remains a Phase 1 infrastructure abort. Mandatory Sol-high review of clean checkpoint 10c5a969e4 confirmed every prior closure except one Rush pairing High: a later same-source/same-target Rush could retroactively land an earlier canceled preparation. Exact clean remediation a3c42d0e64 stores the preparation sequence on the exact Spell instance and passes that identity through the non-script-prevented default charge hit handler, so only that cast can land its observation. Independent acceptance now also requires positive, stable, distinct runtime source GUIDs. Focused tests pass 116. Mandatory exact descendant Sol-high review and one coordinator build remain pending; live restart is not authorized."
+    "current_acceptance": "The 1ee capture remains a Phase 1 infrastructure abort. Mandatory Sol-high review of exact clean aa85a9d0b9 reports zero unresolved Critical/High findings. Exact gate-bearing configure and worldserver receipts verify, the receipt-produced ELF hash is bound, focused tests pass 116, and fresh deterministic provisioning/full verifier/v4 readback pass. The uncapped live capture remains required; no gameplay or fidelity inference is authorized."
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_commit": "a3c42d0e6420a32e92025e6a8bc4f48b21756f72",
-    "current_state": "exact_1ee02778ef_build_is_stale_for_clean_a3c42d0e64_phase1_remediation",
-    "current_result": "no current receipt; no authserver, worldserver, capture, publisher, or build process is active. Mandatory Sol-high review of the exact clean a3c42d descendant and one coordinator build are required before live restart",
+    "current_commit": "aa85a9d0b9cc34f9a73ce9b5ad9380af5879d3c4",
+    "current_state": "exact_aa85_gate_bearing_build_succeeded_after_one_resource_abort",
+    "current_result": "configure receipt 867db145... and worldserver receipt e08b0e76... independently verify; exact ticket produced ELF a5865577...; first attempt 8032acf6... is retained build_resource_abort and is not code/gameplay failure",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -204,6 +204,22 @@
         "worldserver_receipt_sha256": "3af19ab9a853fe026f13909d1273630d5643a38ad93c3d68987be19c4810e4bb",
         "worldserver_sha256": "128edf0720d514945727269618ef68aea09bbc064eba8be8bd15db5bd63b86f4",
         "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000"
+      },
+      {
+        "policy": "cata_raid_build_resource_policy_degraded_v8",
+        "compiler_jobs": 1,
+        "linker_jobs": 1,
+        "classification": "configure_success_then_resource_abort_then_exact_source_worldserver_success_at_aa85a9d0b9_current_gate",
+        "receipts": [
+          "experiments/configs/cata_raid_build_receipts/phase1_foundation_configure_aa85a9d0b9.json",
+          "experiments/configs/cata_raid_build_receipts/phase1_foundation_worldserver_aa85a9d0b9.json",
+          "experiments/configs/cata_raid_build_receipts/phase1_foundation_worldserver_retry_aa85a9d0b9.json"
+        ],
+        "configure_receipt_sha256": "867db1455e875f79878644f2dcc88bcfd130207fe8c40f018a63ac3f363f1a1b",
+        "resource_abort_receipt_sha256": "8032acf62137e219d31564db766465b36fbb53b9c57d05b4451aca0e82d3d349",
+        "worldserver_receipt_sha256": "e08b0e7610a3cee6d4c54163cfad3c31fcb48b51400e222d32dd8e49611ac194",
+        "worldserver_sha256": "a58655770ce841e39829c4291e3f0421845c82e97be6e3d6381df0e57b13a767",
+        "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000"
       }
     ]
   },
@@ -341,9 +357,9 @@
     "phase1_sixteenth_infrastructure_live_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_9a3afe4def_20260813.dvc",
     "phase1_sixteenth_infrastructure_live_dvc_md5": "c1359a231989f1fe00266948788a1c95.dir",
     "phase1_sixteenth_infrastructure_live_remote_status": "remote_verified_exact_workspace_payload_and_eight_child_cache_objects_evicted_receipts_and_compact_summary_retained",
-    "phase1_current_preparation_pointer": "artifacts/cata_raid_program/phase1_preparation_1ee02778ef_20260813.dvc",
-    "phase1_current_preparation_dvc_md5": "7a610416141f5b72d8861c98e769cbda.dir",
-    "phase1_current_preparation_remote_status": "pushed_remote_verified_exact_workspace_payload_and_nine_child_cache_objects_evicted_compact_summary_retained",
+    "phase1_current_preparation_pointer": "artifacts/cata_raid_program/phase1_preparation_aa85a9d0b9_20260813.dvc",
+    "phase1_current_preparation_dvc_md5": "7a81cf466d0bba3f2665b7177e071cad.dir",
+    "phase1_current_preparation_remote_status": "pushed_remote_verified_nine_file_payload_retained_only_until_canonical_capture_preflight_consumes_it",
     "phase1_current_infrastructure_live_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_1ee02778_20260813.dvc",
     "phase1_current_infrastructure_live_dvc_md5": "6ac9cd047fdd69c6ee8a86100cc17d2a.dir",
     "phase1_current_infrastructure_live_remote_status": "remote_verified_exact_workspace_payload_and_eight_child_cache_objects_evicted_receipts_preflight_and_compact_summary_retained",
@@ -572,10 +588,13 @@
       ,"mandatory_sol_high_review_rejected_exact_10c5a969e4_with_one_rush_pairing_high_finding"
       ,"exact_a3c42d0e64_pairs_preparation_and_delivery_by_spell_owned_observation_sequence_and_validates_runtime_source_guids"
       ,"focused_runtime_capture_and_phase9_suite_116_passed"
+      ,"mandatory_sol_high_review_approved_exact_aa85a9d0b9_with_zero_critical_high"
+      ,"exact_policy_v8_configure_and_worldserver_build_succeeded_at_aa85a9d0b9_after_one_non_gameplay_resource_abort"
+      ,"fresh_exact_bwd_10n_provisioning_full_live_verifier_and_v4_readback_passed_at_aa85a9d0b9"
+      ,"phase1_aa85_preparation_nine_file_dvc_artifact_pushed_and_remote_verified"
       ],
       "remaining_requirements": [
-      "mandatory_independent_sol_high_review_of_combined_native_recovery_laser_drudge_blocked_cpu_remediation",
-      "exact_reviewed_coordinator_build_and_cpu_measurement",
+      "single_cohort_live_cpu_log_and_database_measurement",
         "rerun_uncapped_serialized_bwd_10n_entry_formation_difficulty_wipe_reset_evidence_publication_and_cleanup_gate_with_live_stall_diagnosis",
         "phase1_live_evidence_dvc_publish_remote_verify_and_exact_evict_gate"
       ]
@@ -598,8 +617,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "Exact 1ee02778ef is historical and stale. Exact clean checkpoint a3c42d0e64 contains the reviewed-finding remediation for native recovery, Laser Strike, blocked/unstuck stability, Magmaw-only routing, exact Spell-owned Drudge native delivery/lane/Rush/synchronization evidence, and principal CPU/log churn. validation_scenarios object 0829bfe3c4c81f59b24fd4cbc0542974.dir is pushed, remote-synchronized, and exactly evicted locally. Mandatory exact Sol-high descendant review, coordinator build, CPU measurement, reprovision/readback, and uncapped canonical rerun remain required."
+      "detail": "Exact clean aa85a9d0b9 has mandatory Sol-high zero-Critical/High approval, exact gate-bearing configure/worldserver receipts, ELF hash binding, 116 focused passing tests, and fresh remotely verified preparation/full verifier/v4 readback. Live Phase 1 remains incomplete: start one receipt-bound worldserver, attach one Luna-xhigh babysitter, measure CPU/log/DB behavior, and complete the uncapped canonical capture plus DVC publication/eviction."
     }
   ],
-  "next_action": "Obtain mandatory exact Sol-high zero-Critical/High approval for the clean a3c42d descendant and this status checkpoint, then run exactly one coordinator build. Measure optimized single-cohort CPU/log/DB behavior, reprovision and retain v4 readback, and rerun the uncapped canonical Phase 1 Magmaw-only corridor. Require correct Laser Strike exits, independently reconstructed exact Spell-paired Drudge delivered-Rush/lane/reseparation/taunt/health-sync/trained-profile decisions, full per-GUID native recovery order, controlled-unit readiness, post-recovery ready check, and clean DVC publication/eviction. Six parallel boss shards remain downstream of Phase 1 and require one prestarted verified worldserver plus one Luna-xhigh babysitter per boss."
+  "next_action": "Commit the exact aa85 build receipts, preparation pointer, compact summary, and current checkpoint without changing the receipt-bound build worktree. Then start and verify exactly one aa85 worldserver, attach one Luna-xhigh babysitter, measure optimized single-cohort CPU/log/DB behavior, and run the uncapped canonical Phase 1 Magmaw-only corridor. Require correct Laser Strike exits, independently reconstructed exact Spell-paired Drudge delivered-Rush/lane/reseparation/taunt/health-sync/trained-profile decisions, full per-GUID native recovery order, controlled-unit readiness, post-recovery ready check, and clean DVC publication/eviction. Six parallel boss shards remain downstream of Phase 1."
 }
