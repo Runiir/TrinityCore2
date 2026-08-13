@@ -298,6 +298,7 @@ public:
     void NotifyCombatDamage(Unit* attacker, Unit* victim, uint32 spellId, uint32 damage, uint32 unmitigatedDamage,
         uint32 damageType, uint32 schoolMask);
     void NotifyNativeCreatureSpellStarted(Creature* caster, Unit* target, uint32 spellId);
+    void NotifyNativeCreatureSpellLanded(Creature* caster, Unit* target, uint32 spellId);
     void NotifyCombatHeal(Unit* healer, Unit* target, uint32 spellId, uint32 attemptedHeal, uint32 effectiveHeal, uint32 absorbedHeal);
     void NotifyCreatureDeath(Creature* killed);
 
@@ -525,6 +526,8 @@ private:
     struct ValidationRouteDrudgeChargeObservation
     {
         uint64 Sequence = 0;
+        uint64 AttemptId = 0;
+        uint32 WipeGeneration = 0;
         uint64 RouteGeneration = 0;
         uint64 ObservedAtMs = 0;
         uint64 ObservedIntervalMs = 0;
@@ -535,6 +538,7 @@ private:
         bool RangeValid = false;
         bool IntervalValid = false;
         bool Landed = false;
+        std::set<uint32> ReseparatedRosterGuids;
     };
 
     struct WorldBotState
@@ -1793,6 +1797,19 @@ private:
         bool ValidationRouteDrudgeChargeIntervalValid = false;
         std::map<uint32, uint64> ValidationRouteDrudgeLastChargeMsBySpawn;
         std::deque<ValidationRouteDrudgeChargeObservation> ValidationRouteDrudgeChargeObservations;
+        uint64 ValidationRouteDrudgeEvidenceAttemptId = 0;
+        uint32 ValidationRouteDrudgeEvidenceWipeGeneration = 0;
+        uint64 ValidationRouteDrudgeEvidenceRouteGeneration = 0;
+        std::vector<uint32> ValidationRouteDrudgeEvidenceSourceSpawnIds;
+        uint32 ValidationRouteDrudgeChargePreparedCount = 0;
+        uint32 ValidationRouteDrudgeChargeDeliveredCount = 0;
+        bool ValidationRouteDrudgeChargeQueueOverflow = false;
+        std::map<uint32, uint32> ValidationRouteDrudgeDeliveredBySpawn;
+        std::map<uint32, uint32> ValidationRouteDrudgeValidIntervalsBySpawn;
+        std::set<uint32> ValidationRouteDrudgeReseparatedRosterGuids;
+        std::set<uint32> ValidationRouteDrudgeTauntRosterGuids;
+        std::set<uint32> ValidationRouteDrudgeHealthSyncRosterGuids;
+        std::set<uint32> ValidationRouteDrudgeProfileActionRosterGuids;
         uint64 ValidationRoutePackClearCandidateSinceMs = 0;
         uint64 ValidationRouteNodeClearCandidateSinceMs = 0;
         ObjectGuid ValidationRouteBossProgressTargetGuid;

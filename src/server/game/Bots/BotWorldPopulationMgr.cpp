@@ -3900,19 +3900,35 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     Party().ValidationRoutePackSequence = 1;
     Party().ValidationRouteCompletedPackCount = 0;
     Party().ValidationRoutePackObservedEngagement = false;
-    Party().ValidationRouteDrudgeChargeGeneration = 0;
-    Party().ValidationRouteDrudgeChargeLandedGeneration = 0;
-    Party().ValidationRouteDrudgeChargeObservedAtMs = 0;
-    Party().ValidationRouteDrudgeChargeSourceGuid.Clear();
-    Party().ValidationRouteDrudgeChargeTargetGuid.Clear();
-    Party().ValidationRouteDrudgeChargeSourceSpawnId = 0;
-    Party().ValidationRouteDrudgeChargeObservedDistance = 0.0f;
-    Party().ValidationRouteDrudgeChargeRangeValid = false;
-    Party().ValidationRouteDrudgeChargeIntervalValid = false;
-    Party().ValidationRouteDrudgeLastChargeMsBySpawn.clear();
-    Party().ValidationRouteDrudgeChargeObservations.clear();
-    for (WorldBotState& botState : Party().Bots)
-        botState.LastValidationRouteDrudgeChargeGenerationHandled = 0;
+    if (node.MechanicProfile == "trash_two_tank_charge_lanes")
+    {
+        Party().ValidationRouteDrudgeChargeGeneration = 0;
+        Party().ValidationRouteDrudgeChargeLandedGeneration = 0;
+        Party().ValidationRouteDrudgeChargeObservedAtMs = 0;
+        Party().ValidationRouteDrudgeChargeSourceGuid.Clear();
+        Party().ValidationRouteDrudgeChargeTargetGuid.Clear();
+        Party().ValidationRouteDrudgeChargeSourceSpawnId = 0;
+        Party().ValidationRouteDrudgeChargeObservedDistance = 0.0f;
+        Party().ValidationRouteDrudgeChargeRangeValid = false;
+        Party().ValidationRouteDrudgeChargeIntervalValid = false;
+        Party().ValidationRouteDrudgeLastChargeMsBySpawn.clear();
+        Party().ValidationRouteDrudgeChargeObservations.clear();
+        Party().ValidationRouteDrudgeEvidenceAttemptId = Cohort().AttemptId;
+        Party().ValidationRouteDrudgeEvidenceWipeGeneration = Cohort().Raid.WipeGeneration;
+        Party().ValidationRouteDrudgeEvidenceRouteGeneration = Party().ValidationRouteGeneration;
+        Party().ValidationRouteDrudgeEvidenceSourceSpawnIds = node.SplitSourceGuids;
+        Party().ValidationRouteDrudgeChargePreparedCount = 0;
+        Party().ValidationRouteDrudgeChargeDeliveredCount = 0;
+        Party().ValidationRouteDrudgeChargeQueueOverflow = false;
+        Party().ValidationRouteDrudgeDeliveredBySpawn.clear();
+        Party().ValidationRouteDrudgeValidIntervalsBySpawn.clear();
+        Party().ValidationRouteDrudgeReseparatedRosterGuids.clear();
+        Party().ValidationRouteDrudgeTauntRosterGuids.clear();
+        Party().ValidationRouteDrudgeHealthSyncRosterGuids.clear();
+        Party().ValidationRouteDrudgeProfileActionRosterGuids.clear();
+        for (WorldBotState& botState : Party().Bots)
+            botState.LastValidationRouteDrudgeChargeGenerationHandled = 0;
+    }
     Party().ValidationRouteObservedDeadScriptTarget = false;
     Party().ValidationRoutePackClearCandidateSinceMs = 0;
     Party().ValidationRouteNodeClearCandidateSinceMs = 0;
@@ -7313,6 +7329,14 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         if (previousWipeState != "wiped")
         {
             ++raid.WipeGeneration;
+            // A prepared or delivered trash charge belongs to the exact
+            // pre-wipe attempt. Never allow a same-node recovery to consume
+            // it as a new-attempt lane decision or interval baseline.
+            if (Cohort().Config.ValidationRouteMechanicProfile == "trash_two_tank_charge_lanes")
+            {
+                Party().ValidationRouteDrudgeChargeObservations.clear();
+                Party().ValidationRouteDrudgeLastChargeMsBySpawn.clear();
+            }
             // Sampling may observe the last death and the native instance
             // IN_PROGRESS -> reset transition together.  Preserve the
             // generation immediately before that transition so the observed
@@ -18047,7 +18071,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             Party().ValidationRouteDrudgeChargeObservations.end(),
             [&state](ValidationRouteDrudgeChargeObservation const& observation)
             {
-                return observation.Sequence
+                return observation.Landed && observation.Sequence
                     > state.LastValidationRouteDrudgeChargeGenerationHandled;
             });
         bool const nativeChargePending = chargeObservation
@@ -18057,9 +18081,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         Unit* nativeChargeTarget = nativeChargePending
             ? ObjectAccessor::GetUnit(*bot, chargeObservation->TargetGuid) : nullptr;
         bool const nativeChargeContractViolation = nativeChargePending
-            && (chargeObservation->RouteGeneration != Party().ValidationRouteGeneration
+            && (chargeObservation->AttemptId != Cohort().AttemptId
+                || chargeObservation->WipeGeneration != Cohort().Raid.WipeGeneration
+                || chargeObservation->RouteGeneration != Party().ValidationRouteGeneration
                 || !chargeObservation->RangeValid
-                || !chargeObservation->IntervalValid
+                || (chargeObservation->ObservedIntervalMs > 0
+                    && !chargeObservation->IntervalValid)
                 || !nativeChargeSource || !nativeChargeTarget);
 
         bool nativeChargeTargetLaneViolation = false;
@@ -18122,6 +18149,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     if (taunted)
                     {
                         BotRaidAreaAuthority::Set(bot->GetGUID().GetRawValue(), true);
+                        Party().ValidationRouteDrudgeTauntRosterGuids.insert(
+                            bot->GetGUID().GetCounter());
                         record(laneSource, "drudge_lane_native_taunt", sourceSeparation, candidate.SpellId);
                         target = laneSource;
                         state.TargetGuid = laneSource->GetGUID();
@@ -18150,6 +18179,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             holdOffense();
             state.LastValidationRouteDrudgeChargeGenerationHandled =
                 chargeObservation->Sequence;
+            chargeObservation->ReseparatedRosterGuids.insert(bot->GetGUID().GetCounter());
+            Party().ValidationRouteDrudgeReseparatedRosterGuids.insert(
+                bot->GetGUID().GetCounter());
             record(nativeChargeSource, "drudge_native_charge_reseparation_complete",
                 sourceSeparation, nativeChargeTarget->GetGUID().GetCounter());
             target = laneSource;
@@ -18182,6 +18214,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         else if (UnitHealthPct(laneSource) < UnitHealthPct(otherSource))
         {
             holdOffense();
+            Party().ValidationRouteDrudgeHealthSyncRosterGuids.insert(
+                bot->GetGUID().GetCounter());
             record(laneSource, "drudge_kill_sync_hold_lower_health_lane", sourceSeparation);
             target = laneSource;
             state.TargetGuid = laneSource->GetGUID();
@@ -18201,6 +18235,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             1, false, 0, false, false, true, false);
         BotActionResult result = ExecuteProfileCombatAction(&state, bot, laneSource,
             &profileAction, 1, false, 0, false, false, true, false);
+        if (result == BotActionResult::Ok)
+            Party().ValidationRouteDrudgeProfileActionRosterGuids.insert(
+                bot->GetGUID().GetCounter());
         record(laneSource, result == BotActionResult::Ok
             ? "drudge_lane_single_target_action" : "drudge_lane_single_target_hold",
             sourceSeparation, profileAction.SpellId);
@@ -29426,6 +29463,69 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
          << ",\"node_index\":" << Party().ValidationRouteManifestIndex << "}"
          << ",\"drudge_charge\":{\"generation\":" << Party().ValidationRouteDrudgeChargeGeneration
          << ",\"landed_generation\":" << Party().ValidationRouteDrudgeChargeLandedGeneration
+         << ",\"evidence_attempt_id\":" << Party().ValidationRouteDrudgeEvidenceAttemptId
+         << ",\"evidence_wipe_generation\":" << Party().ValidationRouteDrudgeEvidenceWipeGeneration
+         << ",\"evidence_route_generation\":" << Party().ValidationRouteDrudgeEvidenceRouteGeneration
+         << ",\"prepared_count\":" << Party().ValidationRouteDrudgeChargePreparedCount
+         << ",\"delivered_count\":" << Party().ValidationRouteDrudgeChargeDeliveredCount
+         << ",\"queue_overflow\":" << (Party().ValidationRouteDrudgeChargeQueueOverflow ? "true" : "false")
+         << ",\"sources\":[";
+    bool firstChargeSource = true;
+    for (uint32 spawnId : Party().ValidationRouteDrudgeEvidenceSourceSpawnIds)
+    {
+        if (!firstChargeSource)
+            json << ',';
+        firstChargeSource = false;
+        auto delivered = Party().ValidationRouteDrudgeDeliveredBySpawn.find(spawnId);
+        auto intervals = Party().ValidationRouteDrudgeValidIntervalsBySpawn.find(spawnId);
+        json << "{\"spawn_id\":" << spawnId
+             << ",\"delivered_count\":"
+             << (delivered == Party().ValidationRouteDrudgeDeliveredBySpawn.end() ? 0 : delivered->second)
+             << ",\"valid_interval_count\":"
+             << (intervals == Party().ValidationRouteDrudgeValidIntervalsBySpawn.end() ? 0 : intervals->second)
+             << '}';
+    }
+    json << "]"
+         << ",\"reseparated_roster_guids\":[";
+    bool firstReseparatedGuid = true;
+    for (uint32 guid : Party().ValidationRouteDrudgeReseparatedRosterGuids)
+    {
+        if (!firstReseparatedGuid)
+            json << ',';
+        firstReseparatedGuid = false;
+        json << guid;
+    }
+    json << "]"
+         << ",\"taunt_roster_guids\":[";
+    bool firstTauntGuid = true;
+    for (uint32 guid : Party().ValidationRouteDrudgeTauntRosterGuids)
+    {
+        if (!firstTauntGuid)
+            json << ',';
+        firstTauntGuid = false;
+        json << guid;
+    }
+    json << "]"
+         << ",\"health_sync_roster_guids\":[";
+    bool firstHealthSyncGuid = true;
+    for (uint32 guid : Party().ValidationRouteDrudgeHealthSyncRosterGuids)
+    {
+        if (!firstHealthSyncGuid)
+            json << ',';
+        firstHealthSyncGuid = false;
+        json << guid;
+    }
+    json << "]"
+         << ",\"profile_action_roster_guids\":[";
+    bool firstProfileActionGuid = true;
+    for (uint32 guid : Party().ValidationRouteDrudgeProfileActionRosterGuids)
+    {
+        if (!firstProfileActionGuid)
+            json << ',';
+        firstProfileActionGuid = false;
+        json << guid;
+    }
+    json << "]"
          << ",\"observations\":[";
     bool firstChargeObservation = true;
     for (ValidationRouteDrudgeChargeObservation const& observation :
@@ -29435,6 +29535,8 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
             json << ',';
         firstChargeObservation = false;
         json << "{\"sequence\":" << observation.Sequence
+             << ",\"attempt_id\":" << observation.AttemptId
+             << ",\"wipe_generation\":" << observation.WipeGeneration
              << ",\"route_generation\":" << observation.RouteGeneration
              << ",\"observed_at_ms\":" << observation.ObservedAtMs
              << ",\"observed_interval_ms\":" << observation.ObservedIntervalMs
@@ -29444,7 +29546,17 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson() const
              << ",\"selected_distance\":" << observation.SelectedDistance
              << ",\"range_valid\":" << (observation.RangeValid ? "true" : "false")
              << ",\"interval_valid\":" << (observation.IntervalValid ? "true" : "false")
-             << ",\"landed\":" << (observation.Landed ? "true" : "false") << '}';
+             << ",\"landed\":" << (observation.Landed ? "true" : "false")
+             << ",\"reseparated_roster_guids\":[";
+        bool firstObservationGuid = true;
+        for (uint32 guid : observation.ReseparatedRosterGuids)
+        {
+            if (!firstObservationGuid)
+                json << ',';
+            firstObservationGuid = false;
+            json << guid;
+        }
+        json << "]}";
     }
     json << "]}"
          << ",\"strategy_transition\":{\"from_strategy\":\"" << JsonEscape(raid.PreviousStrategyId)
@@ -33192,8 +33304,11 @@ void BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster, U
 
     uint64 const observedAtMs = NowMs();
     uint64 const priorMs = Party().ValidationRouteDrudgeLastChargeMsBySpawn[sourceSpawnId];
-    Party().ValidationRouteDrudgeChargeIntervalValid = !priorMs
-        || observedAtMs - priorMs >= Cohort().Config.ValidationRouteChargeNativeIntervalMs;
+    // The first cast has no native interval evidence. A later cast is valid
+    // only when it is not earlier than the exact declared 20-second cadence;
+    // preserve the observed delta rather than inventing a tolerance.
+    Party().ValidationRouteDrudgeChargeIntervalValid = priorMs
+        && observedAtMs - priorMs >= Cohort().Config.ValidationRouteChargeNativeIntervalMs;
     Party().ValidationRouteDrudgeLastChargeMsBySpawn[sourceSpawnId] = observedAtMs;
     Party().ValidationRouteDrudgeChargeObservedDistance = caster->GetExactDist(targetPlayer);
     Party().ValidationRouteDrudgeChargeRangeValid =
@@ -33206,6 +33321,8 @@ void BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster, U
     ++Party().ValidationRouteDrudgeChargeGeneration;
     ValidationRouteDrudgeChargeObservation observation;
     observation.Sequence = Party().ValidationRouteDrudgeChargeGeneration;
+    observation.AttemptId = Cohort().AttemptId;
+    observation.WipeGeneration = Cohort().Raid.WipeGeneration;
     observation.RouteGeneration = Party().ValidationRouteGeneration;
     observation.ObservedAtMs = observedAtMs;
     observation.ObservedIntervalMs = priorMs ? observedAtMs - priorMs : 0;
@@ -33215,9 +33332,43 @@ void BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster, U
     observation.SelectedDistance = Party().ValidationRouteDrudgeChargeObservedDistance;
     observation.RangeValid = Party().ValidationRouteDrudgeChargeRangeValid;
     observation.IntervalValid = Party().ValidationRouteDrudgeChargeIntervalValid;
-    Party().ValidationRouteDrudgeChargeObservations.push_back(std::move(observation));
-    while (Party().ValidationRouteDrudgeChargeObservations.size() > 32)
+    ++Party().ValidationRouteDrudgeChargePreparedCount;
+    if (Party().ValidationRouteDrudgeChargeObservations.size() >= 32)
+    {
+        Party().ValidationRouteDrudgeChargeQueueOverflow = true;
         Party().ValidationRouteDrudgeChargeObservations.pop_front();
+    }
+    Party().ValidationRouteDrudgeChargeObservations.push_back(std::move(observation));
+}
+
+void BotWorldPopulationMgr::NotifyNativeCreatureSpellLanded(Creature* caster, Unit* target, uint32 spellId)
+{
+    if (!Cohort().Active || !caster || !target
+        || Cohort().Config.ValidationRouteMechanicProfile != "trash_two_tank_charge_lanes"
+        || spellId != Cohort().Config.ValidationRouteChargeSpellId)
+        return;
+
+    auto observation = std::find_if(
+        Party().ValidationRouteDrudgeChargeObservations.begin(),
+        Party().ValidationRouteDrudgeChargeObservations.end(),
+        [this, caster, target](ValidationRouteDrudgeChargeObservation const& candidate)
+        {
+            return !candidate.Landed
+                && candidate.AttemptId == Cohort().AttemptId
+                && candidate.WipeGeneration == Cohort().Raid.WipeGeneration
+                && candidate.RouteGeneration == Party().ValidationRouteGeneration
+                && candidate.SourceGuid == caster->GetGUID()
+                && candidate.TargetGuid == target->GetGUID();
+        });
+    if (observation == Party().ValidationRouteDrudgeChargeObservations.end())
+        return;
+
+    observation->Landed = true;
+    Party().ValidationRouteDrudgeChargeLandedGeneration = observation->Sequence;
+    ++Party().ValidationRouteDrudgeChargeDeliveredCount;
+    ++Party().ValidationRouteDrudgeDeliveredBySpawn[observation->SourceSpawnId];
+    if (observation->IntervalValid && observation->ObservedIntervalMs > 0)
+        ++Party().ValidationRouteDrudgeValidIntervalsBySpawn[observation->SourceSpawnId];
 }
 
 void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uint32 spellId, uint32 damage,
@@ -33225,30 +33376,6 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
 {
     if (!Cohort().Active || !attacker || !victim || (!damage && !unmitigatedDamage))
         return;
-
-    // Confirm native Rush delivery separately from the pre-cast observation.
-    // Do not synthesize a charge from damage alone: target/range/interval were
-    // frozen before the instant movement began.
-    if (Cohort().Config.ValidationRouteMechanicProfile == "trash_two_tank_charge_lanes"
-        && spellId == Cohort().Config.ValidationRouteChargeSpellId)
-        if (Creature* source = attacker->ToCreature(); source
-            && source->GetEntry() == Cohort().Config.ValidationRouteMinimumDistanceSourceEntry)
-            if (Player* targetPlayer = victim->ToPlayer())
-            {
-                if (source->GetGUID() == Party().ValidationRouteDrudgeChargeSourceGuid
-                    && targetPlayer->GetGUID() == Party().ValidationRouteDrudgeChargeTargetGuid)
-                    Party().ValidationRouteDrudgeChargeLandedGeneration =
-                        Party().ValidationRouteDrudgeChargeGeneration;
-                for (auto observation = Party().ValidationRouteDrudgeChargeObservations.rbegin();
-                    observation != Party().ValidationRouteDrudgeChargeObservations.rend(); ++observation)
-                    if (observation->SourceGuid == source->GetGUID()
-                        && observation->TargetGuid == targetPlayer->GetGUID()
-                        && !observation->Landed)
-                    {
-                        observation->Landed = true;
-                        break;
-                    }
-            }
 
     Player* owner = CombatOwnerPlayer(attacker);
     if (owner)

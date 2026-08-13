@@ -491,6 +491,9 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "ValidationRouteSplitArrivalToleranceYards" in lane
     assert "ValidationRouteDrudgeChargeGeneration" in lane
     assert "nativeChargePending" in lane
+    assert "observation.Landed" in lane
+    assert "chargeObservation->AttemptId != Cohort().AttemptId" in lane
+    assert "chargeObservation->WipeGeneration != Cohort().Raid.WipeGeneration" in lane
     assert "ValidationRouteDrudgeChargeObservations" in lane
     assert '"drudge_native_charge_lane_reseparate"' in lane
     assert "UnitHealthPct(laneSource) < UnitHealthPct(otherSource)" in lane
@@ -513,10 +516,18 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "ValidationRouteChargeNativeIntervalMs" in cast_hook
     assert "ValidationRouteDrudgeChargeGeneration" in cast_hook
     assert "ValidationRouteDrudgeChargeObservations.push_back" in cast_hook
+    assert "ValidationRouteDrudgeChargeQueueOverflow = true" in cast_hook
+    assert "void BotWorldPopulationMgr::NotifyNativeCreatureSpellLanded" in cast_hook
+    assert "candidate.AttemptId == Cohort().AttemptId" in cast_hook
+    assert "candidate.WipeGeneration == Cohort().Raid.WipeGeneration" in cast_hook
     spell_impl = (ROOT / "src/server/game/Spells/Spell.cpp").read_text()
     assert "NotifyNativeCreatureSpellStarted" in spell_impl
     assert spell_impl.index("NotifyNativeCreatureSpellStarted") < spell_impl.index(
         "// Creatures focus their target when possible"
+    )
+    assert "NotifyNativeCreatureSpellLanded" in spell_impl
+    assert spell_impl.index("HandleEffects(unit, nullptr, nullptr, nullptr, effIndex") < spell_impl.index(
+        "NotifyNativeCreatureSpellLanded"
     )
     assert "else if (UnitHealthPct(laneSource) < UnitHealthPct(otherSource))" in lane
     assert "else if (!assignedTank && UnitHealthPct" not in lane

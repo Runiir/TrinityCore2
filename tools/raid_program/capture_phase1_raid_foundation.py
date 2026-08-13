@@ -476,6 +476,157 @@ def _route_advancement_marker(runtime: dict[str, Any]) -> int | None:
     return max(values) if values else None
 
 
+def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list[str]]:
+    """Reconstruct the exact two-lane Drudge contract from native evidence.
+
+    Stored counters and booleans are corroboration only. Acceptance is derived
+    from the retained delivered observations, their exact source/target/scope,
+    their per-roster reseparation acknowledgements, and the frozen role slots.
+    """
+
+    reasons: list[str] = []
+    candidates: list[tuple[dict[str, Any], dict[str, Any]]] = []
+    for status in statuses:
+        runtime = status.get("raid_runtime") if isinstance(status, dict) else None
+        evidence = runtime.get("drudge_charge") if isinstance(runtime, dict) else None
+        if isinstance(evidence, dict) and evidence.get("evidence_route_generation") == 3:
+            candidates.append((runtime, evidence))
+    if not candidates:
+        return False, ["drudge_evidence_missing"]
+
+    runtime, evidence = max(
+        candidates,
+        key=lambda pair: (
+            int(pair[1].get("delivered_count") or 0),
+            int(pair[1].get("prepared_count") or 0),
+        ),
+    )
+    roster = runtime.get("roster")
+    if not isinstance(roster, list) or len(roster) != 10:
+        return False, ["drudge_exact_roster_missing"]
+    roster_guids = {
+        row.get("guid") for row in roster
+        if isinstance(row, dict) and _positive_int(row.get("guid"))
+    }
+    if len(roster_guids) != 10:
+        reasons.append("drudge_exact_roster_guids_invalid")
+    tank_guids = {
+        row.get("guid") for row in roster
+        if isinstance(row, dict) and row.get("role") == "tank"
+        and _positive_int(row.get("guid"))
+    }
+    offensive_guids = {
+        row.get("guid") for row in roster
+        if isinstance(row, dict) and row.get("role") in {"tank", "dps"}
+        and _positive_int(row.get("guid"))
+    }
+    if len(tank_guids) != 2 or len(offensive_guids) != 7:
+        reasons.append("drudge_frozen_role_slots_invalid")
+
+    attempt_id = runtime.get("attempt_id")
+    if evidence.get("evidence_attempt_id") != attempt_id:
+        reasons.append("drudge_attempt_scope_mismatch")
+    if evidence.get("evidence_wipe_generation") != 0:
+        reasons.append("drudge_pre_magmaw_wipe_contamination")
+    if evidence.get("queue_overflow") is not False:
+        reasons.append("drudge_observation_queue_overflow")
+
+    observations = evidence.get("observations")
+    if not isinstance(observations, list):
+        observations = []
+        reasons.append("drudge_observations_missing")
+    delivered = [
+        row for row in observations
+        if isinstance(row, dict) and row.get("landed") is True
+    ]
+    sequences = [row.get("sequence") for row in delivered]
+    if (not sequences or any(not _positive_int(sequence) for sequence in sequences)
+            or len(set(sequences)) != len(sequences)
+            or sequences != sorted(sequences)):
+        reasons.append("drudge_delivered_sequence_invalid")
+    if evidence.get("delivered_count") != len(delivered):
+        reasons.append("drudge_delivered_count_mismatch")
+    prepared_count = evidence.get("prepared_count")
+    if not isinstance(prepared_count, int) or isinstance(prepared_count, bool) \
+            or prepared_count < len(delivered):
+        reasons.append("drudge_prepared_count_invalid")
+
+    exact_sources = {250140, 250141}
+    reconstructed: dict[int, dict[str, int]] = {
+        source: {"delivered": 0, "valid_intervals": 0} for source in exact_sources
+    }
+    for row in delivered:
+        source = row.get("source_spawn_id")
+        if (row.get("attempt_id") != attempt_id
+                or row.get("wipe_generation") != 0
+                or row.get("route_generation") != 3):
+            reasons.append("drudge_observation_scope_mismatch")
+        if source not in exact_sources:
+            reasons.append("drudge_observation_source_invalid")
+            continue
+        if row.get("target_guid") not in roster_guids:
+            reasons.append("drudge_observation_target_not_in_roster")
+        distance = row.get("selected_distance")
+        if (not isinstance(distance, (int, float)) or isinstance(distance, bool)
+                or distance < 0 or distance > 80.0 or row.get("range_valid") is not True):
+            reasons.append("drudge_observation_range_invalid")
+        reconstructed[source]["delivered"] += 1
+        interval = row.get("observed_interval_ms")
+        if isinstance(interval, int) and not isinstance(interval, bool) and interval > 0:
+            if interval < 20000 or row.get("interval_valid") is not True:
+                reasons.append("drudge_observation_interval_invalid")
+            else:
+                reconstructed[source]["valid_intervals"] += 1
+        acknowledgements = row.get("reseparated_roster_guids")
+        if not isinstance(acknowledgements, list) or set(acknowledgements) != roster_guids:
+            reasons.append("drudge_observation_not_reseparated_by_exact_roster")
+
+    for source in exact_sources:
+        if reconstructed[source]["delivered"] < 2:
+            reasons.append(f"drudge_source_{source}_two_deliveries_missing")
+        if reconstructed[source]["valid_intervals"] < 1:
+            reasons.append(f"drudge_source_{source}_native_interval_missing")
+
+    source_rows = evidence.get("sources")
+    source_summary = {
+        row.get("spawn_id"): row for row in source_rows
+        if isinstance(row, dict)
+    } if isinstance(source_rows, list) else {}
+    if set(source_summary) != exact_sources:
+        reasons.append("drudge_source_summary_identity_mismatch")
+    else:
+        for source in exact_sources:
+            if source_summary[source].get("delivered_count") != reconstructed[source]["delivered"]:
+                reasons.append("drudge_source_delivered_summary_mismatch")
+            if source_summary[source].get("valid_interval_count") != reconstructed[source]["valid_intervals"]:
+                reasons.append("drudge_source_interval_summary_mismatch")
+
+    def exact_guid_set(field: str) -> set[int]:
+        value = evidence.get(field)
+        if not isinstance(value, list) or any(not _positive_int(guid) for guid in value):
+            reasons.append(f"drudge_{field}_invalid")
+            return set()
+        result = set(value)
+        if len(result) != len(value) or not result.issubset(roster_guids):
+            reasons.append(f"drudge_{field}_identity_mismatch")
+        return result
+
+    reseparated = exact_guid_set("reseparated_roster_guids")
+    taunts = exact_guid_set("taunt_roster_guids")
+    health_sync = exact_guid_set("health_sync_roster_guids")
+    profile_actions = exact_guid_set("profile_action_roster_guids")
+    if reseparated != roster_guids:
+        reasons.append("drudge_exact_roster_reseparation_missing")
+    if taunts != tank_guids:
+        reasons.append("drudge_exact_tank_taunts_missing")
+    if not health_sync or not health_sync.intersection(tank_guids):
+        reasons.append("drudge_tank_health_sync_hold_missing")
+    if profile_actions != offensive_guids:
+        reasons.append("drudge_trained_single_target_profile_missing")
+
+    return not reasons, sorted(set(reasons))
+
+
 def accepted_native_recovery(statuses: list[dict[str, Any]]) -> tuple[bool, list[str]]:
     reasons: list[str] = []
     runtimes = [status.get("raid_runtime") if isinstance(status, dict) else None for status in statuses]
@@ -1974,6 +2125,7 @@ def main() -> int:
             next_probe = 0.0
             seen_statuses = 0
             recovery_accepted = False
+            drudge_accepted = False
             readycheck_requested_for: tuple[Any, ...] | None = None
             semantic_progress_state: dict[str, Any] = {}
             last_semantic_progress_at = time.monotonic()
@@ -1983,7 +2135,8 @@ def main() -> int:
             telemetry_freshness: dict[str, dict[str, float | int]] = {}
             telemetry_abort: dict[str, Any] = {"detected": False}
             while (deadline is None or time.monotonic() < deadline) and not (
-                len(stable) >= args.required_stable_statuses and recovery_accepted
+                len(stable) >= args.required_stable_statuses
+                and recovery_accepted and drudge_accepted
             ):
                 if process.poll() is not None:
                     break
@@ -2052,6 +2205,7 @@ def main() -> int:
                             }
                             break
                     recovery_accepted, _ = accepted_native_recovery(statuses)
+                    drudge_accepted, _ = accepted_drudge_contract(statuses)
                     if statuses:
                         runtime = statuses[-1].get("raid_runtime") or {}
                         native = runtime.get("native_recovery") or {}
@@ -2113,6 +2267,7 @@ def main() -> int:
     profiles = json_actions(log_bytes, "botauto_profile")
     stop_rows = json_actions(log_bytes, "botauto_stop")
     recovery_accepted, recovery_rejections = accepted_native_recovery(active_statuses)
+    drudge_accepted, drudge_rejections = accepted_drudge_contract(active_statuses)
     cleanup_status = statuses[-1] if statuses else {}
     cleanup_ok = cleanup_status.get("bots") == 0 and cleanup_status.get("lease_count") == 0
     postflight = preflight_runtime_exclusions(worktree)
@@ -2128,6 +2283,7 @@ def main() -> int:
         and process_return_code == 0
         and len(stable) >= args.required_stable_statuses
         and recovery_accepted
+        and drudge_accepted
         and cleanup_ok
         and bool(stop_rows and stop_rows[-1].get("ok") is True)
         and process_absent
@@ -2176,6 +2332,8 @@ def main() -> int:
         "last_foundation_rejections": last_rejections,
         "native_recovery_accepted": recovery_accepted,
         "native_recovery_rejections": recovery_rejections,
+        "drudge_contract_accepted": drudge_accepted,
+        "drudge_contract_rejections": drudge_rejections,
         "semantic_stall": semantic_stall,
         "telemetry_abort": telemetry_abort,
         "accepted_raid_runtime": stable[-1].get("raid_runtime") if stable else None,
@@ -2189,6 +2347,12 @@ def main() -> int:
             "ordered_transition_reconstruction": recovery_accepted,
             "rejections": recovery_rejections,
             "synthetic_wipe_or_encounter_command_sent": False,
+        },
+        "drudge_contract_evidence": {
+            "source": "botauto_status.raid_runtime.drudge_charge",
+            "independently_reconstructed": drudge_accepted,
+            "rejections": drudge_rejections,
+            "requirements": "two delivered native Rushes per exact source; one non-early 20000ms interval per source; exact-roster reseparation; both tank taunts; tank health-sync hold; all seven offensive slots use trained single-target profiles",
         },
         "forbidden_assistance": {
             "observed": bool(forbidden_entries),

@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 from tools.raid_program.capture_phase1_raid_foundation import (
     accepted_foundation_status,
+    accepted_drudge_contract,
     accepted_native_recovery,
     json_actions,
     normalized_batch_payload,
@@ -212,6 +213,81 @@ def accepted_status() -> dict:
             },
         },
     }
+
+
+def accepted_drudge_status() -> dict:
+    status = accepted_status()
+    runtime = status["raid_runtime"]
+    roster_guids = [row["guid"] for row in runtime["roster"]]
+    tank_guids = [row["guid"] for row in runtime["roster"] if row["role"] == "tank"]
+    offensive_guids = [row["guid"] for row in runtime["roster"] if row["role"] in {"tank", "dps"}]
+    observations = []
+    sequence = 0
+    for source, target in ((250140, roster_guids[5]), (250141, roster_guids[6])):
+        for interval in (0, 20000):
+            sequence += 1
+            observations.append({
+                "sequence": sequence,
+                "attempt_id": runtime["attempt_id"],
+                "wipe_generation": 0,
+                "route_generation": 3,
+                "observed_at_ms": sequence * 20000,
+                "observed_interval_ms": interval,
+                "source_guid": 5000 + source,
+                "source_spawn_id": source,
+                "target_guid": target,
+                "selected_distance": 40.0,
+                "range_valid": True,
+                "interval_valid": interval == 20000,
+                "landed": True,
+                "reseparated_roster_guids": roster_guids,
+            })
+    runtime["drudge_charge"] = {
+        "generation": 4,
+        "landed_generation": 4,
+        "evidence_attempt_id": runtime["attempt_id"],
+        "evidence_wipe_generation": 0,
+        "evidence_route_generation": 3,
+        "prepared_count": 4,
+        "delivered_count": 4,
+        "queue_overflow": False,
+        "sources": [
+            {"spawn_id": 250140, "delivered_count": 2, "valid_interval_count": 1},
+            {"spawn_id": 250141, "delivered_count": 2, "valid_interval_count": 1},
+        ],
+        "reseparated_roster_guids": roster_guids,
+        "taunt_roster_guids": tank_guids,
+        "health_sync_roster_guids": [tank_guids[0]],
+        "profile_action_roster_guids": offensive_guids,
+        "observations": observations,
+    }
+    return status
+
+
+def test_drudge_contract_reconstructs_delivery_interval_and_exact_roster_tactics():
+    accepted, reasons = accepted_drudge_contract([accepted_drudge_status()])
+    assert accepted is True
+    assert reasons == []
+
+
+def test_drudge_contract_rejects_prepared_only_stale_and_incomplete_tactics():
+    prepared_only = accepted_drudge_status()
+    prepared_only["raid_runtime"]["drudge_charge"]["observations"][0]["landed"] = False
+    accepted, reasons = accepted_drudge_contract([prepared_only])
+    assert accepted is False
+    assert "drudge_delivered_count_mismatch" in reasons
+
+    stale = accepted_drudge_status()
+    stale["raid_runtime"]["drudge_charge"]["observations"][0]["attempt_id"] = 99
+    accepted, reasons = accepted_drudge_contract([stale])
+    assert accepted is False
+    assert "drudge_observation_scope_mismatch" in reasons
+
+    incomplete = accepted_drudge_status()
+    incomplete["raid_runtime"]["drudge_charge"]["health_sync_roster_guids"] = []
+    accepted, reasons = accepted_drudge_contract([incomplete])
+    assert accepted is False
+    assert "drudge_tank_health_sync_hold_missing" in reasons
 
 
 def test_acceptance_reconstructs_all_identity_facts():

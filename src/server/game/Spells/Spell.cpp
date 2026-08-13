@@ -3208,6 +3208,15 @@ void Spell::DoSpellEffectHit(Unit* unit, uint8 effIndex, TargetInfo& hitInfo)
     _spellAura = hitInfo.HitAura;
     HandleEffects(unit, nullptr, nullptr, nullptr, effIndex, SPELL_EFFECT_HANDLE_HIT_TARGET);
     _spellAura = nullptr;
+
+    // The pre-cast hook freezes native target/range/interval selection. Mark
+    // delivery only after the real charge effect reached its hit target and
+    // its core movement handler ran; a prepared, canceled, missed, or vanished
+    // target can never become consumable lane evidence.
+    if (m_spellInfo->Effects[effIndex].Effect == SPELL_EFFECT_CHARGE)
+        if (Creature* creatureCaster = m_caster->ToCreature())
+            sBotWorldPopulationMgr->NotifyNativeCreatureSpellLanded(
+                creatureCaster, unit, m_spellInfo->Id);
 }
 
 void Spell::DoTriggersOnSpellHit(Unit* unit)
