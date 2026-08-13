@@ -20,25 +20,34 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def _frozen_drudge_member_anchors() -> dict[int, tuple[float, float, float]]:
-    """Load the reviewed per-slot Drudge geometry from both sealed routes."""
+def _frozen_drudge_member_anchors(
+    route_manifest: Path | None = None,
+) -> dict[int, tuple[float, float, float]]:
+    """Load reviewed per-slot Drudge geometry from a sealed route manifest.
+
+    Production capture passes the exact generated manifest selected and hashed
+    by ``validate_runtime_profile_assets``.  The default exists only for the
+    pure verifier tests; live capture must never re-read the mutable controller
+    checkout after binding a different worktree.
+    """
     try:
-        payload = json.loads((
-            ROOT / "experiments/configs/validation_scenarios_cata_001.json"
-        ).read_text(encoding="utf-8"))
+        manifest = route_manifest or (
+            ROOT / "dataset/validation_scenarios/validation_routes.jsonl"
+        )
+        rows = [
+            json.loads(line)
+            for line in manifest.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
         by_scenario: list[dict[int, tuple[float, float, float]]] = []
         for scenario_id in (
             "blackwing_descent_10n",
             "blackwing_descent_10n_magmaw_diagnostic",
         ):
-            scenario = next(
-                row for row in (
-                    payload.get("scenarios", []) + payload.get("diagnostic_scenarios", [])
-                ) if row.get("id") == scenario_id
-            )
             node = next(
-                row for row in scenario["route"]
-                if row.get("mechanic_profile") == "trash_two_tank_charge_lanes"
+                row for row in rows
+                if row.get("scenario_id") == scenario_id
+                and row.get("mechanic_profile") == "trash_two_tank_charge_lanes"
             )
             anchors = {
                 int(row["roster_slot"]): (
@@ -676,6 +685,7 @@ def _validate_drudge_observation_geometry(
     observation: dict[str, Any],
     roster: list[dict[str, Any]],
     tank_guids: set[int],
+    frozen_anchors: dict[int, tuple[float, float, float]] | None = None,
 ) -> list[str]:
     """Recompute the frozen two-lane geometry from immutable coordinates.
 
@@ -844,7 +854,7 @@ def _validate_drudge_observation_geometry(
          values["tank1_x"], values["tank1_y"], values["tank1_projection"], values["tank1_source_distance"]),
     )
     canonical_guids: set[int] = set()
-    frozen_anchors = _frozen_drudge_member_anchors()
+    frozen_anchors = frozen_anchors or _frozen_drudge_member_anchors()
     if set(frozen_anchors) != set(range(1, 11)):
         reasons.append("drudge_geometry_frozen_member_anchors_missing")
     for prefix, guid_value, slot_value, source_index, x, y, stored_projection, stored_distance in canonical_tanks:
@@ -978,7 +988,11 @@ def _validate_drudge_observation_geometry(
     return sorted(set(reasons))
 
 
-def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list[str]]:
+def accepted_drudge_contract(
+    statuses: list[dict[str, Any]],
+    *,
+    frozen_anchors: dict[int, tuple[float, float, float]] | None = None,
+) -> tuple[bool, list[str]]:
     """Reconstruct the exact two-lane Drudge contract from native evidence.
 
     Stored counters and booleans are corroboration only. Acceptance is derived
@@ -1210,7 +1224,9 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
         # Geometry is immutable evidence for the acknowledgement.  Never
         # accept a stored reseparation bit/acknowledgement without rebuilding
         # the lane, tank, and member-anchor predicates from coordinates.
-        reasons.extend(_validate_drudge_observation_geometry(row, roster, tank_guids))
+        reasons.extend(_validate_drudge_observation_geometry(
+            row, roster, tank_guids, frozen_anchors=frozen_anchors,
+        ))
 
     for source in exact_sources:
         if reconstructed[source]["delivered"] < 2:
@@ -3746,6 +3762,13 @@ def main() -> int:
     )
     if not runtime_assets["passed"]:
         raise SystemExit("runtime profile assets rejected: " + ",".join(runtime_assets["reasons"]))
+    route_manifest = runtime_assets.get("route_manifest")
+    drudge_frozen_anchors = _frozen_drudge_member_anchors(
+        Path(route_manifest) if isinstance(route_manifest, str) else None
+    )
+    if (profile_name == "blackwing_descent_10n" or profile_name.endswith("_magmaw_diagnostic")) \
+            and set(drudge_frozen_anchors) != set(range(1, 11)):
+        raise SystemExit("runtime profile assets rejected: drudge_frozen_member_anchors_missing")
     build_provenance = validate_build_receipt(
         args.build_receipt.resolve(),
         (worktree / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").resolve(),
@@ -4048,7 +4071,9 @@ def main() -> int:
                             profile_name=profile_name,
                         )
                     if drudge_required:
-                        drudge_accepted, _ = accepted_drudge_contract(monitor_statuses)
+                        drudge_accepted, _ = accepted_drudge_contract(
+                            monitor_statuses, frozen_anchors=drudge_frozen_anchors,
+                        )
                     if monitor_statuses:
                         runtime = monitor_statuses[-1].get("raid_runtime") or {}
                         native = runtime.get("native_recovery") or {}
@@ -4156,7 +4181,8 @@ def main() -> int:
         else (True, ["native_recovery_not_required_for_diagnostic_partition"])
     )
     drudge_accepted, drudge_rejections = (
-        accepted_drudge_contract(active_statuses) if drudge_required
+        accepted_drudge_contract(active_statuses, frozen_anchors=drudge_frozen_anchors)
+        if drudge_required
         else (True, ["drudge_contract_not_required_for_diagnostic_partition"])
     )
     cleanup_status = statuses[-1] if statuses else {}

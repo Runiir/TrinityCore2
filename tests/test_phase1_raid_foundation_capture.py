@@ -29,6 +29,7 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     material_status_signature,
     validate_forced_evidence_bundle,
     bounded_native_shutdown,
+    _frozen_drudge_member_anchors,
 )
 
 
@@ -728,6 +729,22 @@ def test_drudge_contract_reconstructs_delivery_interval_and_exact_roster_tactics
     accepted, reasons = accepted_drudge_contract([accepted_drudge_status()])
     assert accepted is True
     assert reasons == []
+
+
+def test_drudge_geometry_is_loaded_from_explicit_sealed_route_manifest(tmp_path, monkeypatch):
+    sealed = (
+        Path(__file__).resolve().parents[1]
+        / "dataset/validation_scenarios/validation_routes.jsonl"
+    )
+    # A mutable controller checkout with no route assets cannot influence the
+    # explicit generated manifest bound by the capture worktree.
+    monkeypatch.setattr(
+        "tools.raid_program.capture_phase1_raid_foundation.ROOT", tmp_path,
+    )
+    anchors = _frozen_drudge_member_anchors(sealed)
+    assert set(anchors) == set(range(1, 11))
+    assert anchors[1] == (-294.904, -50.6863, 212.232)
+    assert _frozen_drudge_member_anchors() == {}
 
 
 def test_drudge_contract_does_not_skip_an_earlier_unlanded_observation():

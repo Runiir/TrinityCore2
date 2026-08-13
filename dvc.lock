@@ -537,8 +537,8 @@ stages:
     deps:
     - path: dataset/validation_scenarios
       hash: md5
-      md5: 34234a022ee208f2c5a821b77d57e34e.dir
-      size: 292042
+      md5: 20c52c181e6697cc9c5eaf90ce821ac5.dir
+      size: 296100
       nfiles: 5
     - path: tools/bot_ml/build_validation_run_plan.py
       hash: md5
@@ -551,7 +551,7 @@ stages:
     outs:
     - path: dataset/validation_run_plan
       hash: md5
-      md5: d4877b79e4cd50ad2bc33ec575684192.dir
+      md5: aae3a4986c29938a036d38c76589a713.dir
       size: 216571
       nfiles: 2
   live_validation_combined:
