@@ -184,7 +184,8 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
         if slot in tank_slots:
             continue
         anchor = tuple(float(member.get(axis) or 0.0) for axis in ("x", "y", "z"))
-        if any(math.dist(anchor, source) + 1e-6 < minimum for source in chased_sources):
+        if any(math.hypot(anchor[0] - source[0], anchor[1] - source[1]) + 1e-6 < minimum
+               for source in chased_sources):
             return False, "split_member_anchor_source_unsafe"
     return True, ""
 

@@ -433,8 +433,8 @@ stages:
       size: 23898
     - path: tools/bot_ml/build_validation_scenario_manifests.py
       hash: md5
-      md5: 9aff506056a95bc71134a0c44547faae
-      size: 40174
+      md5: ddd7eb8968a65b3b53e597fd6f401c88
+      size: 40220
     - path: tools/bot_ml/common.py
       hash: md5
       md5: 456b2fbeef89f89a13495ebb9a8cf993

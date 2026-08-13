@@ -95,6 +95,13 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
         "split_member_anchor_source_unsafe",
     )
 
+    unsafe_member_high_z = deepcopy(unsafe_member)
+    unsafe_member_high_z["split_member_anchors"][2]["z"] += 100.0
+    assert drudge_split_geometry_status(unsafe_member_high_z) == (
+        False,
+        "split_member_anchor_source_unsafe",
+    )
+
 
 def test_canonical_bwd_route_is_still_the_ordered_eleven_node_parent_route():
     routes = _routes(_manifests(), CANONICAL_ID)

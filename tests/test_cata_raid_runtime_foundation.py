@@ -588,6 +588,9 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "bool allowMovement = true" in heal_helper
     assert "if (!allowMovement)\n                return false;" in heal_helper
     assert "if (allowMovement)\n            healer->GetMotionMaster()->Clear" in heal_helper
+    assert "movement_preserved_cast_time_spell" in heal_helper
+    assert "spellInfo->CalcCastTime(healer->getLevel()) > 0" in heal_helper
+    assert "tryRouteFriendlySpell(\n            healTarget, bestHeal->SpellId" in heal_helper
     assert "tankStageInput.NativeMeleeStopBounded" in lane
     assert "GetMeleeRange" in lane
     assert "ValidationRouteDrudgeOwnershipRosterGuids" in lane

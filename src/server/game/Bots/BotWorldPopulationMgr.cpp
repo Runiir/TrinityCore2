@@ -13859,6 +13859,21 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 && state.RouteHealSuppressedTargetGuid == target->GetGUID()
                 && state.RouteHealSuppressedUntilMs > nowMs;
         };
+        auto tryRouteFriendlySpell = [this, healer, allowMovement](
+            Unit* friendlyTarget, uint32 spellId,
+            std::string* failureReason = nullptr) -> bool
+        {
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+            if (!allowMovement && spellInfo
+                && spellInfo->CalcCastTime(healer->getLevel()) > 0)
+            {
+                if (failureReason)
+                    *failureReason = "movement_preserved_cast_time_spell";
+                return false;
+            }
+            return TryCastFriendlySpell(
+                healer, friendlyTarget, spellId, failureReason);
+        };
 
         // Holy Word: Chastise only becomes a friendly Holy Word: Serenity
         // while Chakra: Serenity is active. Establish Chakra before choosing
@@ -13867,7 +13882,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && healer->HasSpell(14751)
             && !healer->HasAura(14751)
             && !healer->HasAura(81208)
-            && TryCastFriendlySpell(healer, healer, 14751))
+            && tryRouteFriendlySpell(healer, 14751))
         {
             std::string raw = BuildRawJson(healer, combatTarget);
             std::string semantic = BuildSemanticJson(healer, combatTarget, "healer_assignment", &power, stage, activity);
@@ -13904,7 +13919,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         if (healerTargetingHostileCount >= 2
             && healer->HasSpell(586) && !healer->HasAura(586)
-            && TryCastFriendlySpell(healer, healer, 586))
+            && tryRouteFriendlySpell(healer, 586))
         {
             std::string raw = BuildRawJson(healer, combatTarget);
             std::string semantic = BuildSemanticJson(healer, combatTarget, "healer_assignment", &power, stage, activity);
@@ -13921,7 +13936,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         bool guardianSpiritSwarm = healerAttackerCount >= 8 && healerHealthPct <= 0.90f;
         if ((guardianSpiritEmergency || guardianSpiritSwarm)
             && healer->HasSpell(47788) && !healer->HasAura(47788)
-            && TryCastFriendlySpell(healer, healer, 47788))
+            && tryRouteFriendlySpell(healer, 47788))
         {
             std::string raw = BuildRawJson(healer, combatTarget);
             std::string semantic = BuildSemanticJson(healer, combatTarget, "healer_assignment", &power, stage, activity);
@@ -13932,7 +13947,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
         if (healerAttackerCount >= 5 && healerHealthPct <= 0.85f
-            && healer->HasSpell(19236) && TryCastFriendlySpell(healer, healer, 19236))
+            && healer->HasSpell(19236) && tryRouteFriendlySpell(healer, 19236))
         {
             std::string raw = BuildRawJson(healer, combatTarget);
             std::string semantic = BuildSemanticJson(healer, combatTarget, "healer_assignment", &power, stage, activity);
@@ -14296,7 +14311,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (allowMovement)
             healer->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
         std::string castFailureReason;
-        bool cast = TryCastFriendlySpell(healer, healTarget, bestHeal->SpellId, &castFailureReason);
+        bool cast = tryRouteFriendlySpell(
+            healTarget, bestHeal->SpellId, &castFailureReason);
         if (!cast && castFailureReason == "spell_cast_result_150")
         {
             state.RouteHealSuppressedTargetGuid = healTarget->GetGUID();
