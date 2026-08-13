@@ -297,8 +297,8 @@ public:
     void NotifyBotHeal(Unit* healer, Unit* target, uint32 spellId, uint32 attemptedHeal, uint32 effectiveHeal, uint32 absorbedHeal);
     void NotifyCombatDamage(Unit* attacker, Unit* victim, uint32 spellId, uint32 damage, uint32 unmitigatedDamage,
         uint32 damageType, uint32 schoolMask);
-    void NotifyNativeCreatureSpellStarted(Creature* caster, Unit* target, uint32 spellId);
-    void NotifyNativeCreatureSpellLanded(Creature* caster, Unit* target, uint32 spellId);
+    uint64 NotifyNativeCreatureSpellStarted(Creature* caster, Unit* target, uint32 spellId);
+    void NotifyNativeCreatureSpellLanded(Creature* caster, Unit* target, uint32 spellId, uint64 observationSequence);
     void NotifyCombatHeal(Unit* healer, Unit* target, uint32 spellId, uint32 attemptedHeal, uint32 effectiveHeal, uint32 absorbedHeal);
     void NotifyCreatureDeath(Creature* killed);
 

@@ -553,7 +553,8 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
 
     exact_sources = {250140, 250141}
     reconstructed: dict[int, dict[str, int]] = {
-        source: {"delivered": 0, "valid_intervals": 0} for source in exact_sources
+        source: {"delivered": 0, "valid_intervals": 0, "source_guid": 0}
+        for source in exact_sources
     }
     for row in delivered:
         source = row.get("source_spawn_id")
@@ -564,6 +565,13 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
         if source not in exact_sources:
             reasons.append("drudge_observation_source_invalid")
             continue
+        source_guid = row.get("source_guid")
+        if not _positive_int(source_guid):
+            reasons.append("drudge_observation_source_guid_invalid")
+        elif reconstructed[source]["source_guid"] not in {0, source_guid}:
+            reasons.append("drudge_observation_source_guid_drift")
+        else:
+            reconstructed[source]["source_guid"] = source_guid
         if row.get("target_guid") not in roster_guids:
             reasons.append("drudge_observation_target_not_in_roster")
         distance = row.get("selected_distance")
@@ -586,6 +594,9 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
             reasons.append(f"drudge_source_{source}_two_deliveries_missing")
         if reconstructed[source]["valid_intervals"] < 1:
             reasons.append(f"drudge_source_{source}_native_interval_missing")
+    source_guids = {reconstructed[source]["source_guid"] for source in exact_sources}
+    if 0 in source_guids or len(source_guids) != len(exact_sources):
+        reasons.append("drudge_exact_source_runtime_guids_invalid")
 
     source_rows = evidence.get("sources")
     source_summary = {

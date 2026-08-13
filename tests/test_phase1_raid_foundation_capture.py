@@ -283,6 +283,12 @@ def test_drudge_contract_rejects_prepared_only_stale_and_incomplete_tactics():
     assert accepted is False
     assert "drudge_observation_scope_mismatch" in reasons
 
+    wrong_source_guid = accepted_drudge_status()
+    wrong_source_guid["raid_runtime"]["drudge_charge"]["observations"][0]["source_guid"] = 0
+    accepted, reasons = accepted_drudge_contract([wrong_source_guid])
+    assert accepted is False
+    assert "drudge_observation_source_guid_invalid" in reasons
+
     incomplete = accepted_drudge_status()
     incomplete["raid_runtime"]["drudge_charge"]["health_sync_roster_guids"] = []
     accepted, reasons = accepted_drudge_contract([incomplete])

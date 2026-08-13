@@ -508,7 +508,7 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "ResolveProfileCombatAction(bot, laneSource" in lane
     assert "true, false);" in lane  # forbid area, disallow multidot
     cast_hook = IMPL[
-        IMPL.index("void BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted"):
+        IMPL.index("uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted"):
         IMPL.index("void BotWorldPopulationMgr::NotifyCombatDamage")
     ]
     assert 'ValidationRouteMechanicProfile != "trash_two_tank_charge_lanes"' in cast_hook
@@ -518,6 +518,7 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "ValidationRouteDrudgeChargeObservations.push_back" in cast_hook
     assert "ValidationRouteDrudgeChargeQueueOverflow = true" in cast_hook
     assert "void BotWorldPopulationMgr::NotifyNativeCreatureSpellLanded" in cast_hook
+    assert "candidate.Sequence == observationSequence" in cast_hook
     assert "candidate.AttemptId == Cohort().AttemptId" in cast_hook
     assert "candidate.WipeGeneration == Cohort().Raid.WipeGeneration" in cast_hook
     spell_impl = (ROOT / "src/server/game/Spells/Spell.cpp").read_text()
@@ -525,10 +526,10 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert spell_impl.index("NotifyNativeCreatureSpellStarted") < spell_impl.index(
         "// Creatures focus their target when possible"
     )
+    assert "m_nativeCreatureSpellObservationSequence" in spell_impl
+    assert "if (!preventDefault)" in spell_impl
+    assert "effect == SPELL_EFFECT_CHARGE" in spell_impl
     assert "NotifyNativeCreatureSpellLanded" in spell_impl
-    assert spell_impl.index("HandleEffects(unit, nullptr, nullptr, nullptr, effIndex") < spell_impl.index(
-        "NotifyNativeCreatureSpellLanded"
-    )
     assert "else if (UnitHealthPct(laneSource) < UnitHealthPct(otherSource))" in lane
     assert "else if (!assignedTank && UnitHealthPct" not in lane
     assert route_runtime.index("if (tryValidationRouteMinimumDistance())") < route_runtime.index(

@@ -732,6 +732,7 @@ class TC_GAME_API Spell
 
         uint8 m_auraScaleMask;
         std::unique_ptr<PathGenerator> m_preGeneratedPath;
+        uint64 m_nativeCreatureSpellObservationSequence = 0;
 
         ByteBuffer* m_effectExecuteData[MAX_SPELL_EFFECTS];
 

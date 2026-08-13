@@ -3209,14 +3209,6 @@ void Spell::DoSpellEffectHit(Unit* unit, uint8 effIndex, TargetInfo& hitInfo)
     HandleEffects(unit, nullptr, nullptr, nullptr, effIndex, SPELL_EFFECT_HANDLE_HIT_TARGET);
     _spellAura = nullptr;
 
-    // The pre-cast hook freezes native target/range/interval selection. Mark
-    // delivery only after the real charge effect reached its hit target and
-    // its core movement handler ran; a prepared, canceled, missed, or vanished
-    // target can never become consumable lane evidence.
-    if (m_spellInfo->Effects[effIndex].Effect == SPELL_EFFECT_CHARGE)
-        if (Creature* creatureCaster = m_caster->ToCreature())
-            sBotWorldPopulationMgr->NotifyNativeCreatureSpellLanded(
-                creatureCaster, unit, m_spellInfo->Id);
 }
 
 void Spell::DoTriggersOnSpellHit(Unit* unit)
@@ -3466,8 +3458,9 @@ SpellCastResult Spell::prepare(SpellCastTargets const& targets, AuraEffect const
     }
 
     if (Creature* creatureCaster = m_caster->ToCreature())
-        sBotWorldPopulationMgr->NotifyNativeCreatureSpellStarted(
-            creatureCaster, m_targets.GetUnitTarget(), m_spellInfo->Id);
+        m_nativeCreatureSpellObservationSequence =
+            sBotWorldPopulationMgr->NotifyNativeCreatureSpellStarted(
+                creatureCaster, m_targets.GetUnitTarget(), m_spellInfo->Id);
 
     // Creatures focus their target when possible
     if (m_casttime > 0 && m_caster->IsCreature()
@@ -5659,7 +5652,18 @@ void Spell::HandleEffects(Unit* pUnitTarget, Item* pItemTarget, GameObject* pGoT
     bool preventDefault = CallScriptEffectHandlers(effIndex, mode);
 
     if (!preventDefault)
+    {
         (this->*SpellEffectHandlers[effect])(effIndex);
+        // Bind the actual default charge effect to this exact Spell object's
+        // preparation sequence. A later same-source/same-target cast cannot
+        // retroactively complete an older canceled or missed preparation, and
+        // a script-prevented default handler is never treated as delivery.
+        if (mode == SPELL_EFFECT_HANDLE_HIT_TARGET && effect == SPELL_EFFECT_CHARGE)
+            if (Creature* creatureCaster = m_caster->ToCreature())
+                sBotWorldPopulationMgr->NotifyNativeCreatureSpellLanded(
+                    creatureCaster, pUnitTarget, m_spellInfo->Id,
+                    m_nativeCreatureSpellObservationSequence);
+    }
 }
 
 /*static*/ Spell const* Spell::ExtractSpellFromEvent(BasicEvent* event)

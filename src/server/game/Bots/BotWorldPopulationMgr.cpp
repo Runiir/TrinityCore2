@@ -33280,17 +33280,17 @@ void BotWorldPopulationMgr::AddCombatLogEvent(char const* kind, Player* actor, U
     }
 }
 
-void BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster, Unit* target, uint32 spellId)
+uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster, Unit* target, uint32 spellId)
 {
     if (!Cohort().Active || !caster || !target
         || Cohort().Config.ValidationRouteMechanicProfile != "trash_two_tank_charge_lanes"
         || spellId != Cohort().Config.ValidationRouteChargeSpellId
         || caster->GetEntry() != Cohort().Config.ValidationRouteMinimumDistanceSourceEntry)
-        return;
+        return 0;
 
     Player* targetPlayer = target->ToPlayer();
     if (!targetPlayer)
-        return;
+        return 0;
     uint32 const sourceSpawnId = uint32(caster->GetSpawnId());
     bool const exactSource = std::find(
         Cohort().Config.ValidationRouteSplitSourceGuids.begin(),
@@ -33300,7 +33300,7 @@ void BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster, U
     if (!exactSource || roster == Cohort().Raid.RosterByGuid.end()
         || !roster->second.Active || !roster->second.LeaseOwned
         || caster->GetMap() != targetPlayer->GetMap())
-        return;
+        return 0;
 
     uint64 const observedAtMs = NowMs();
     uint64 const priorMs = Party().ValidationRouteDrudgeLastChargeMsBySpawn[sourceSpawnId];
@@ -33339,11 +33339,13 @@ void BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster, U
         Party().ValidationRouteDrudgeChargeObservations.pop_front();
     }
     Party().ValidationRouteDrudgeChargeObservations.push_back(std::move(observation));
+    return Party().ValidationRouteDrudgeChargeGeneration;
 }
 
-void BotWorldPopulationMgr::NotifyNativeCreatureSpellLanded(Creature* caster, Unit* target, uint32 spellId)
+void BotWorldPopulationMgr::NotifyNativeCreatureSpellLanded(
+    Creature* caster, Unit* target, uint32 spellId, uint64 observationSequence)
 {
-    if (!Cohort().Active || !caster || !target
+    if (!Cohort().Active || !caster || !target || !observationSequence
         || Cohort().Config.ValidationRouteMechanicProfile != "trash_two_tank_charge_lanes"
         || spellId != Cohort().Config.ValidationRouteChargeSpellId)
         return;
@@ -33351,9 +33353,10 @@ void BotWorldPopulationMgr::NotifyNativeCreatureSpellLanded(Creature* caster, Un
     auto observation = std::find_if(
         Party().ValidationRouteDrudgeChargeObservations.begin(),
         Party().ValidationRouteDrudgeChargeObservations.end(),
-        [this, caster, target](ValidationRouteDrudgeChargeObservation const& candidate)
+        [this, caster, target, observationSequence](ValidationRouteDrudgeChargeObservation const& candidate)
         {
-            return !candidate.Landed
+            return candidate.Sequence == observationSequence
+                && !candidate.Landed
                 && candidate.AttemptId == Cohort().AttemptId
                 && candidate.WipeGeneration == Cohort().Raid.WipeGeneration
                 && candidate.RouteGeneration == Party().ValidationRouteGeneration
