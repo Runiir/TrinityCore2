@@ -1,5 +1,11 @@
 # Cataclysm raid progression handoff
 
+# 2026-08-13T15:30:00Z — Exact a509 closes session, SOAP and sequence profile bypasses
+
+Mandatory review of c2eb/11ea found three remaining transport-level identity gaps before any rebuild began: a reusable session could pair the Magmaw manifest with an Omnotron `--session-profile`; SOAP execution skipped generated-config enforcement; and route-sequence preflight did not validate empty or cross-profile route sets. Exact `a5098faadb228cadfea62ea8899a4d9c127e12b6` applies the same exact scenario/profile/pool contract to manifest and sequence paths, requires a session profile to equal the selected scenario, and rejects SOAP manifest/sequence and calibration-only runs because SOAP does not own the server config needed to establish those identities.
+
+The focused transport/profile matrix passes 21 checks, including all new session/SOAP/sequence adversarial cases; the broader raid/shard/readback regression set remains 321/321. No build, server, DB or DVC action ran. Mandatory Sol-high rereview of the exact clean descendant is required before the policy-v8 rebuild and fresh Magmaw preparation. Phase 1 and fidelity remain false.
+
 # 2026-08-13T15:18:46Z — Exact 11ea fail-closes raid manifest profile selection; mandatory review pending
 
 Exact `11ea547d2951973cd411eaf91fef74c41c266e50` closes both High findings from the rejected exact-5a5 generator review. Calibration-only mode now rejects any route manifest or sequence and the config writer cannot re-enable a raid route/profile after constructing the empty calibration controller. Manifest execution rejects an empty route set, requires every route's scenario and runtime-profile identity to match the selected shard, and independently requires exactly one runtime profile whose pool tag and validation-route scenario match that same shard. Cross-boss profile selection and base-Stonecore inheritance therefore fail before any worldserver starts.

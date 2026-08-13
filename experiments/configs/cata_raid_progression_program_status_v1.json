@@ -17,8 +17,8 @@
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "reviewed_source_sha": "11ea547d2951973cd411eaf91fef74c41c266e50",
-    "status_checkpoint_identity": "resolve from Git HEAD; status descendant of exact source 11ea547d2951973cd411eaf91fef74c41c266e50 pending mandatory rereview",
+    "reviewed_source_sha": "a5098faadb228cadfea62ea8899a4d9c127e12b6",
+    "status_checkpoint_identity": "resolve from Git HEAD; status descendant of exact source a5098faadb228cadfea62ea8899a4d9c127e12b6 pending mandatory rereview",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -29,18 +29,18 @@
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
     "critical_high_remediation_implemented_at": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "mandatory_rereview": "PENDING for exact 11ea547d2951973cd411eaf91fef74c41c266e50. Exact 5a5 review rejected calibration override and unvalidated route/profile selection; 11ea closes both with fail-closed identity checks and adversarial coverage. No rebuild or live start is authorized before rereview.",
+    "mandatory_rereview": "PENDING for exact a5098faadb228cadfea62ea8899a4d9c127e12b6. Review of c2eb/11ea found session-profile, SOAP-config and route-sequence bypasses; a509 fail-closes all three. No rebuild or live start is authorized before rereview.",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "Exact 11ea makes manifest-scoped execution select only the exact matching scenario/profile/pool contract, rejects empty and cross-shard route sets, and prevents calibration-only mode from restoring any raid profile or route. Fifteen focused manifest/profile negatives and 321 broader raid/shard/readback regressions pass. Mandatory rereview, exact rebuild, fresh 110-character preparation/readback and live evidence remain pending. Phase 1 and fidelity remain false."
+    "current_acceptance": "Exact a509 applies the exact scenario/profile/pool contract to manifest and sequence execution, rejects cross-shard session profiles, and rejects SOAP raid-manifest/sequence or calibration execution because that transport cannot establish the owned config identity. Twenty-one focused transport/profile checks and 321 broader raid/shard/readback regressions pass. Mandatory rereview, exact rebuild, fresh preparation/readback and live evidence remain pending. Phase 1 and fidelity remain false."
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "reviewed_source_commit": "11ea547d2951973cd411eaf91fef74c41c266e50",
-    "exact_build_target": "clean Git HEAD status-only descendant of exact 11ea source after mandatory rereview",
-    "current_state": "exact_11ea_manifest_profile_fail_closed_pending_mandatory_rereview",
-    "current_result": "historical dbe build/preparation caught Stonecore profile contamination before server start; exact 11ea now rejects calibration-route combinations, empty/cross-shard route identities and mismatched profile contracts, but requires mandatory review and a new exact receipt",
+    "reviewed_source_commit": "a5098faadb228cadfea62ea8899a4d9c127e12b6",
+    "exact_build_target": "clean Git HEAD status-only descendant of exact a509 source after mandatory rereview",
+    "current_state": "exact_a509_all_transport_profile_contract_pending_mandatory_rereview",
+    "current_result": "historical dbe preparation caught Stonecore contamination; exact a509 additionally closes session, SOAP and route-sequence identity bypasses but requires mandatory review and a new exact receipt",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -621,7 +621,7 @@
       ,"uncapped_1c7a_three_file_failure_batch_pushed_remote_verified_and_compactly_summarized"
       ],
       "remaining_requirements": [
-        "mandatory_sol_high_review_exact_11ea_manifest_profile_remediation",
+        "mandatory_sol_high_review_exact_a509_transport_profile_remediation",
         "rebuild_exact_remediation_descendant_and_repeat_fresh_preparation_readback",
         "uncapped_four_node_magmaw_rerun_with_trained_profile_and_resource_observation",
         "phase1_live_evidence_exact_evict_after_diagnosis_and_review"

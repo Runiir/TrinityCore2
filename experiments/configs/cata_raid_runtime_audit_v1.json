@@ -9,19 +9,19 @@
     "locale": "enUS",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
-  "audited_commit": "11ea547d2951973cd411eaf91fef74c41c266e50",
-  "gate_state": "exact_11ea_manifest_profile_fail_closed_pending_mandatory_rereview",
+  "audited_commit": "a5098faadb228cadfea62ea8899a4d9c127e12b6",
+  "gate_state": "exact_a509_all_transport_profile_contract_pending_mandatory_rereview",
   "foundation": {
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "reviewed_source_sha": "11ea547d2951973cd411eaf91fef74c41c266e50",
-    "status_checkpoint_identity": "resolve from Git HEAD; status descendant of exact 11ea source pending mandatory rereview",
+    "reviewed_source_sha": "a5098faadb228cadfea62ea8899a4d9c127e12b6",
+    "status_checkpoint_identity": "resolve from Git HEAD; status descendant of exact a509 source pending mandatory rereview",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
-    "mandatory_sol_high_rereview": "PENDING exact 11ea after exact 5a5 rejection; no build or live start authorized before zero-Critical/High decision",
+    "mandatory_sol_high_rereview": "PENDING exact a509 after c2eb/11ea review found session, SOAP and sequence bypasses; no build or live start authorized before zero-Critical/High decision",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "acceptance": "Exact 11ea fail-closes calibration/raid route combinations, empty route manifests, cross-shard runtime profile identities and mismatched profile pool/route contracts. Fifteen focused manifest tests and 321 broader raid/shard/readback tests pass. Mandatory rereview/build/live proof remain pending. Phase 1/fidelity remain false."
+    "acceptance": "Exact a509 fail-closes calibration/raid combinations, empty/cross-shard manifest and sequence routes, mismatched session profiles and SOAP execution that cannot own the required config identity. Twenty-one focused profile/transport tests and 321 broader raid/shard/readback tests pass. Mandatory rereview/build/live proof remain pending. Phase 1/fidelity remain false."
   },
   "research": {
     "required_boss_packets": 28,
@@ -47,8 +47,8 @@
   },
   "build": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_state": "exact_11ea_manifest_profile_fail_closed_pending_mandatory_rereview",
-    "current_result": "historical dbe build/preparation was held before live on inherited Stonecore profile; exact 11ea closes the generator identity paths but has no review or exact receipt yet",
+    "current_state": "exact_a509_all_transport_profile_contract_pending_mandatory_rereview",
+    "current_result": "historical dbe build/preparation was held before live on inherited Stonecore profile; exact a509 closes process/session/SOAP/sequence identity paths but has no review or exact receipt yet",
     "receipt_trust_model": "explicit_trusted_local_operator",
     "trusted_operator": "runiir",
     "trusted_uid": 1000,
@@ -169,15 +169,15 @@
   ],
   "synthetic_checks": {
     "test_file": "tests/test_cata_raid_runtime_foundation.py",
-    "last_result": "321_broader_raid_shard_readback_regressions_passed_plus_15_manifest_profile_tests_passed",
-    "combined_focus_result": "321_runtime_model_capture_readback_generic_trace_phase9_and_bwd_shard_tests_passed; 15 exact_manifest_profile_positive_negative_tests_passed",
+    "last_result": "321_broader_raid_shard_readback_regressions_passed_plus_21_profile_transport_tests_passed",
+    "combined_focus_result": "321 runtime/model/capture/readback/generic/trace/Phase9/shard tests passed; 21 exact profile/transport positive-negative checks passed",
     "combined_focus_command": "pixi run pytest -q tests/test_phase1_raid_foundation_capture.py tests/test_phase1_provisioning_readback.py tests/test_cata_raid_runtime_foundation.py tests/test_cata_raid_foundation_model.py tests/test_phase1_generic_mechanic_smoke.py tests/test_botworld_hotpath_optimization.py tests/test_trace_export_cursor.py tests/test_phase9_live_qualification.py tests/test_raid_build_coordinator.py tests/test_bwd_diagnostic_node_manifests.py tests/test_bwd_shard_fixtures.py",
     "broad_comparison": "same selected broad command at prior exact 1c7a and source 2121: 131 passed, 33 identical inherited stale structural/source-shape failures; no subsequent broad-scope source changes outside reviewed evidence/runtime paths; focused_phase9_3_passed"
   },
   "required_open_work": [
     {
       "area": "current_build",
-      "missing": ["mandatory_sol_high_review_exact_11ea_manifest_profile_remediation", "one_exact_policy_v8_rebuild_of_reviewed_descendant"]
+      "missing": ["mandatory_sol_high_review_exact_a509_transport_profile_remediation", "one_exact_policy_v8_rebuild_of_reviewed_descendant"]
     },
     {
       "area": "live_script_and_decision_review",
