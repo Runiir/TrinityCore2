@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-13T14:18:19Z",
+  "updated_at_utc": "2026-08-13T14:53:58Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -17,8 +17,8 @@
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "reviewed_source_sha": "e50e038fc8486681f34f2f1c60104fbb3a3663b2",
-    "status_checkpoint_identity": "resolve from Git HEAD; status-only descendant of reviewed_source_sha with no source/tool/test/DVC delta",
+    "reviewed_source_sha": "cc57c3f9dde0901500a5110d29bcb76e37aac7bd",
+    "status_checkpoint_identity": "resolve from Git HEAD; status descendant of reviewed_source_sha before the exact coordinator rebuild",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -29,18 +29,18 @@
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
     "critical_high_remediation_implemented_at": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "mandatory_rereview": "COMPLETED exact e50e038fc8486681f34f2f1c60104fbb3a3663b2: build and Magmaw preparation authorized; one downstream High remains because later-boss predecessor saves are metadata-only",
+    "mandatory_rereview": "COMPLETED exact e50e038fc8486681f34f2f1c60104fbb3a3663b2 and exact 45131a1fc26e61ec06db2b1b420060a738251023: zero Critical/High/Medium; build and exact 110-character Magmaw preparation authorized. Exact cc57 readback review found one High canonical account-binding gap; this status descendant contains the remediation and awaits narrow re-review.",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "Exact e50 integrates seven Stonecore-style BWD route identities, six disjoint provisioned 2/3/5 diagnostic pools, exact route rosters, strict current-node authority across player/profile/pet/totem paths, node-scoped native hostile recovery, and transition-aware lower-volume capture scheduling. The unsafe semantic cache was removed. Sol-high review authorizes the build and Magmaw preparation, while later-boss shards remain blocked on executable native predecessor-save setup and Nefarian also remains blocked on legitimate native descent. Phase 1 and fidelity remain false."
+    "current_acceptance": "Exact e50 integrates seven Stonecore-style BWD route identities, six disjoint provisioned 2/3/5 diagnostic pools, exact route rosters, strict current-node authority across player/profile/pet/totem paths, node-scoped native hostile recovery, and transition-aware lower-volume capture scheduling. Exact 45131 fixes live materialization to 110 accounts and 110 characters. Exact cc57 adds scenario-selected independent v5 DB/auth readback. The unsafe semantic cache was removed. Magmaw preparation is source-authorized; later shards and Nefarian remain held pending their separate native setup gates. Phase 1 and fidelity remain false."
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "reviewed_source_commit": "e50e038fc8486681f34f2f1c60104fbb3a3663b2",
+    "reviewed_source_commit": "cc57c3f9dde0901500a5110d29bcb76e37aac7bd",
     "exact_build_target": "clean Git HEAD status-only descendant of reviewed_source_commit",
-    "current_state": "reviewed_build_authorized_exact_build_pending",
-    "current_result": "exact ef04 receipts remain historical only; Sol-high review authorizes an exact policy-v8 build of the e50 source checkpoint for Magmaw preparation",
+    "current_state": "cc57_account_binding_remediation_rereview_pending_then_exact_build",
+    "current_result": "exact 244ca policy-v8 configure/worldserver build succeeded with a receipt-produced bbe8fe4f binary, but its receipts are now historical after tool/readback commits; freeze and build the final reviewed status descendant before live capture",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -221,6 +221,20 @@
         "resource_abort_receipt_sha256": "8032acf62137e219d31564db766465b36fbb53b9c57d05b4451aca0e82d3d349",
         "worldserver_receipt_sha256": "e08b0e7610a3cee6d4c54163cfad3c31fcb48b51400e222d32dd8e49611ac194",
         "worldserver_sha256": "a58655770ce841e39829c4291e3f0421845c82e97be6e3d6381df0e57b13a767",
+        "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000"
+      },
+      {
+        "policy": "cata_raid_build_resource_policy_degraded_v8",
+        "compiler_jobs": 1,
+        "linker_jobs": 1,
+        "classification": "configure_and_worldserver_success_at_244ca69250_then_historical_after_45131_and_cc57_python_tool_identity_changes",
+        "receipts": [
+          "experiments/configs/cata_raid_build_receipts/phase1_foundation_configure_244ca69250.json",
+          "experiments/configs/cata_raid_build_receipts/phase1_foundation_worldserver_244ca69250.json"
+        ],
+        "configure_receipt_sha256": "529e94d674e18c2f4d22694bcfc9494c4c6b35529f77baf2bd12e942703a0974",
+        "worldserver_receipt_sha256": "387838a6faafc7b9e83429d2f94c6971a8424ddf8bfe4bab82eec67bafe39533",
+        "worldserver_sha256": "bbe8fe4f6482a659e54d60afd88f61bc6213f247b60e6a75dc6c564977c9c6c4",
         "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000"
       }
     ]
@@ -607,9 +621,9 @@
       ,"uncapped_1c7a_three_file_failure_batch_pushed_remote_verified_and_compactly_summarized"
       ],
       "remaining_requirements": [
-        "remediate_drudge_exact_lane_targets_full_roster_reseparation_tank_health_sync_and_trained_profile_execution",
-        "reduce_single_cohort_server_capture_cpu_and_repeated_telemetry_amplification_before_parallel_shards",
-        "mandatory_sol_high_review_exact_rebuild_fresh_preparation_and_uncapped_rerun",
+        "complete_cc57_account_binding_remediation_rereview_and_exact_rebuild",
+        "fresh_110_character_reprovision_full_verifier_and_magmaw_v5_readback",
+        "uncapped_four_node_magmaw_rerun_with_trained_profile_and_resource_observation",
         "phase1_live_evidence_exact_evict_after_diagnosis_and_review"
       ]
     }
@@ -631,8 +645,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "Exact ef04 failed closed on Chainwielder and its evidence is remote verified and exactly evicted. Exact e50 closes current/future target authority, trained-profile handoff, hostile recovery scoping, controlled offense and final capture freshness; it binds six disjoint provisioned cohorts to seven Stonecore-style route partitions. Sol-high review authorizes an exact policy-v8 build and Magmaw preparation. Fresh preparation/readback and an uncapped four-node Magmaw run remain required. Later-boss shards are separately blocked on executable native predecessor-save preparation; Nefarian also lacks legitimate native descent."
+      "detail": "Exact e50/45131 close the reviewed Magmaw source and 110-character preparation contract. Exact cc57 added scenario-selected v5 DB/auth readback; mandatory review found one canonical numeric account-binding gap, now remediated in the status descendant and pending narrow re-review. The successful 244ca build is historical after tool identity changes. A final exact build, fresh preparation/readback and uncapped four-node Magmaw run remain required. Later-boss native predecessor-save revision is blocked on two review Highs; Nefarian also lacks proven legitimate native descent."
     }
   ],
-  "next_action": "Run the exact reviewed policy-v8 configure and one-compiler worldserver build, freshly reprovision all tracked cohorts, independently full-verify and retain v4 readback, then prestart and verify one worldserver before attaching the Magmaw Luna-xhigh babysitter. Run only the uncapped four-node Magmaw diagnostic and require trained DPS actions, bounded CPU/log growth, native engagement/full-wipe/reset/recovery/ready-check, clean demux, DVC publication and exact eviction. Keep later boss shards blocked until distinct native predecessor-save setup is executable and read back; keep Nefarian blocked until legitimate ledge descent exists."
+  "next_action": "Commit and obtain zero-Critical/High review of the cc57 canonical-account remediation status descendant, run one exact policy-v8 coordinator rebuild, freshly reprovision all 110 tracked characters, independently full-verify and retain Magmaw v5 readback, then prestart and verify one worldserver before attaching the Magmaw Luna-xhigh babysitter. Run only the uncapped four-node Magmaw diagnostic and require trained DPS actions, bounded CPU/log growth, native engagement/full-wipe/reset/recovery/ready-check, clean demux, DVC publication and exact eviction. Keep later shards blocked until the two predecessor-save review Highs are remediated and native setup is executable/read back; keep Nefarian blocked until legitimate descent is proven."
 }

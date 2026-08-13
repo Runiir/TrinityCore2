@@ -22,7 +22,9 @@ def _rows():
         spec = f"spec_{index}"
         expected.append({"guid": 1200 + index, "name": name, "role": role, "class_spec": spec, "class": index})
         observed.append({
-            "guid": 1200 + index, "name": name, "role": role, "class_spec": spec,
+            "guid": 1200 + index, "account_id": 7000 + index,
+            "account_registry_id": 7000 + index,
+            "name": name, "role": role, "class_spec": spec,
             "class_id": index, "map_id": 669, "x": -345.872, "y": -224.344,
             "z": 193.127, "o": 0.0, "online": 0, "enabled": 1, "in_use": 0,
             "health": VALIDATION_FULL_STAT_SEED, "power1": VALIDATION_FULL_STAT_SEED,
@@ -83,11 +85,12 @@ def test_phase1_provisioning_readback_rejects_persisted_ghost_state():
 def _materialized_observed(contract):
     rows = []
     start = contract["start"]
-    for expected in contract["expected"]:
+    for index, expected in enumerate(contract["expected"], 1):
+        account_id = expected.get("expected_account_id") or 7000 + index
         rows.append({
             "guid": expected.get("guid") or expected["expected_character_guid"],
-            "account_id": expected.get("expected_account_id"),
-            "account_registry_id": expected.get("expected_account_id"),
+            "account_id": account_id,
+            "account_registry_id": account_id,
             "account": expected["account"],
             "name": expected["name"],
             "role": expected["role"],
@@ -133,6 +136,20 @@ def test_materialized_canonical_readback_contract_is_positive_and_exact():
         character_instance_rows=0, group_member_rows=0, ghost_aura_rows=0,
         corpse_rows=0, corpse_phase_rows=0,
     ) == []
+
+
+def test_materialized_canonical_readback_rejects_character_to_auth_account_mismatch():
+    contract = load_materialized_readback_contract(PROVISIONING, SCENARIOS, FIXTURE)
+    observed = _materialized_observed(contract)
+    observed[0]["account_id"] = 71001
+    observed[0]["account_registry_id"] = 71002
+    reasons = validate_readback(
+        contract["expected"], observed,
+        start=contract["start"],
+        character_instance_rows=0, group_member_rows=0, ghost_aura_rows=0,
+        corpse_rows=0, corpse_phase_rows=0,
+    )
+    assert "Bwdtanka:account_binding" in reasons
 
 
 def test_materialized_readback_rejects_cross_shard_identity_contamination():

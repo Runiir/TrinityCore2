@@ -70,9 +70,6 @@ def validate_readback(
             ("account_id", "expected_account_id"),
             ("account_registry_id", "expected_account_id"),
             ("account", "account"),
-            ("canonical_roster_slot_id", "canonical_roster_slot_id"),
-            ("roster_slot_id", "roster_slot_id"),
-            ("runtime_profile_id", "runtime_profile_id"),
             ("pool_tag", "pool_tag"),
         ):
             if expected_key not in expected_row:
@@ -88,6 +85,13 @@ def validate_readback(
                 matches = str(actual_value) == str(expected_value)
             if not matches:
                 reasons.append(f"{name}:{observed_key}")
+        try:
+            character_account_id = int(row.get("account_id") or 0)
+            registry_account_id = int(row.get("account_registry_id") or 0)
+        except (TypeError, ValueError):
+            character_account_id = registry_account_id = 0
+        if character_account_id <= 0 or registry_account_id <= 0 or character_account_id != registry_account_id:
+            reasons.append(f"{name}:account_binding")
         if int(row.get("map_id") or 0) != int(start["map_id"]):
             reasons.append(f"{name}:map")
         if any(abs(float(row[key]) - float(start[source])) > tolerance for key, source, tolerance in (
@@ -270,9 +274,6 @@ def main() -> int:
         account_row = account_by_name.get(str(expected_row["account"]).upper(), {})
         row["account"] = account_row.get("account")
         row["account_registry_id"] = account_row.get("account_id")
-        row["canonical_roster_slot_id"] = expected_row.get("canonical_roster_slot_id")
-        row["roster_slot_id"] = expected_row.get("roster_slot_id")
-        row["runtime_profile_id"] = expected_row.get("runtime_profile_id")
         row["pool_tag"] = row.get("experiment_tags")
 
     reasons = validate_readback(
@@ -301,6 +302,11 @@ def main() -> int:
         },
         "expected_roster": expected,
         "observed_roster": observed,
+        "identity_contract_provenance": {
+            "database_observed": ["guid", "account_id", "account_registry_id", "account", "name", "role", "class_spec", "class_id", "pool_tag"],
+            "contract_derived": ["canonical_roster_slot_id", "roster_slot_id", "runtime_profile_id"],
+            "binding": "the exact DB-observed guid/name/role/class_spec/pool-tag tuple selects one frozen contract row; contract-only slot/profile fields are not represented as DB observations",
+        },
         "character_instance_rows": character_instance_rows,
         "group_member_rows": group_member_rows,
         "ghost_aura_rows": ghost_aura_rows,

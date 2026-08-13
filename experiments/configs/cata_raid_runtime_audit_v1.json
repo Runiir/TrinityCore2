@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "audit_id": "cata_raid_runtime_phase1_v1",
-  "updated_at_utc": "2026-08-13T14:21:32Z",
+  "updated_at_utc": "2026-08-13T14:53:58Z",
   "target": {
     "client": "Cataclysm Classic",
     "patch": "4.4.2",
@@ -9,19 +9,19 @@
     "locale": "enUS",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
-  "audited_commit": "e50e038fc8486681f34f2f1c60104fbb3a3663b2",
-  "gate_state": "sol_high_build_and_magmaw_prep_authorized_later_shards_blocked",
+  "audited_commit": "cc57c3f9dde0901500a5110d29bcb76e37aac7bd",
+  "gate_state": "cc57_account_binding_remediation_rereview_pending_before_exact_build",
   "foundation": {
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "reviewed_source_sha": "e50e038fc8486681f34f2f1c60104fbb3a3663b2",
-    "status_checkpoint_identity": "resolve from Git HEAD; status-only descendant of reviewed_source_sha with no source/tool/test/DVC delta",
+    "reviewed_source_sha": "cc57c3f9dde0901500a5110d29bcb76e37aac7bd",
+    "status_checkpoint_identity": "resolve from Git HEAD; status descendant of reviewed_source_sha before exact build",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
-    "mandatory_sol_high_rereview": "COMPLETED exact e50e038fc8486681f34f2f1c60104fbb3a3663b2: build and Magmaw preparation authorized; later-boss live shards blocked on executable native predecessor-save setup",
+    "mandatory_sol_high_rereview": "COMPLETED exact e50 and exact 45131 with zero Critical/High/Medium; exact cc57 readback review found one High canonical account-binding gap, remediated in this status descendant pending narrow re-review",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "acceptance": "Exact e50 integrates seven Stonecore-style BWD route identities, six disjoint exact 2/3/5 diagnostic rosters, trained-profile authority, node-scoped recovery, controlled-offense closure, and bounded capture scheduling. Mandatory Sol-high review authorizes the build and Magmaw preparation. Later-boss shards remain blocked on executable native predecessor-save preparation; Nefarian also remains blocked on legitimate native descent. Phase 1/fidelity remain false."
+    "acceptance": "Exact e50/45131 integrate seven Stonecore-style BWD route identities, six disjoint exact 2/3/5 diagnostic rosters, trained-profile authority, node-scoped recovery, controlled-offense closure, bounded capture scheduling and full 110-character materialization. Exact cc57 adds scenario-selected v5 DB/auth readback. Review/build/live proof remain pending. Phase 1/fidelity remain false."
   },
   "research": {
     "required_boss_packets": 28,
@@ -47,8 +47,8 @@
   },
   "build": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_state": "exact_e50_reviewed_build_authorized_exact_build_pending",
-    "current_result": "ef04 configure/worldserver receipts are historical-only; exact e50 passed mandatory Sol-high source review for build and Magmaw preparation and requires a new receipt-produced binary",
+    "current_state": "exact_cc57_readback_review_pending_then_rebuild",
+    "current_result": "244ca configure/worldserver succeeded and produced bbe8fe4f, but receipt identity is historical after 45131/cc57 tool changes; final reviewed status descendant requires a new receipt-produced binary",
     "receipt_trust_model": "explicit_trusted_local_operator",
     "trusted_operator": "runiir",
     "trusted_uid": 1000,
@@ -169,15 +169,15 @@
   ],
   "synthetic_checks": {
     "test_file": "tests/test_cata_raid_runtime_foundation.py",
-    "last_result": "355_exact_e50_integrated_route_roster_runtime_capture_gate_passed",
-    "combined_focus_result": "355_runtime_model_capture_generic_trace_phase9_coordinator_and_bwd_shard_tests_passed_before_exact_e50_review",
+    "last_result": "361_cc57_account_binding_remediation_integrated_gate_passed",
+    "combined_focus_result": "361_runtime_model_capture_readback_generic_trace_phase9_coordinator_and_bwd_shard_tests_passed",
     "combined_focus_command": "pixi run pytest -q tests/test_phase1_raid_foundation_capture.py tests/test_cata_raid_runtime_foundation.py tests/test_cata_raid_foundation_model.py tests/test_phase1_generic_mechanic_smoke.py tests/test_botworld_hotpath_optimization.py tests/test_trace_export_cursor.py tests/test_phase9_live_qualification.py tests/test_raid_build_coordinator.py tests/test_bwd_diagnostic_node_manifests.py tests/test_bwd_shard_fixtures.py",
     "broad_comparison": "same selected broad command at prior exact 1c7a and source 2121: 131 passed, 33 identical inherited stale structural/source-shape failures; no subsequent broad-scope source changes outside reviewed evidence/runtime paths; focused_phase9_3_passed"
   },
   "required_open_work": [
     {
       "area": "current_build",
-      "missing": ["one_exact_policy_v8_rebuild_of_reviewed_e50_descendant"]
+      "missing": ["cc57_account_binding_remediation_rereview", "one_exact_policy_v8_rebuild_of_final_reviewed_status_descendant"]
     },
     {
       "area": "live_script_and_decision_review",
@@ -198,7 +198,7 @@
   ],
   "phase1_gate_blockers": [
     "exact_ef04_uncapped_capture_failed_closed_at_chainwielder_before_drudge_or_magmaw",
-    "exact_e50_source_remediations_require_new_coordinator_receipt_and_live_proof",
+    "exact_cc57_account_binding_remediation_requires_rereview_then_final_coordinator_receipt_and_live_proof",
     "general_db_backed_trained_dps_profiles_are_static_verified_but_live_activation_and_damage_remain_unproven",
     "single_cohort_worldserver_cpu_and_log_volume_require_live_measurement_of_bounded_capture_scheduler_before_parallel_shards",
     "later_boss_shards_lack_executable_native_predecessor_save_apply_and_readback",
