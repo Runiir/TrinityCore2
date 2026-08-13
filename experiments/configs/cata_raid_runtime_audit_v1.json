@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "audit_id": "cata_raid_runtime_phase1_v1",
-  "updated_at_utc": "2026-08-13T04:42:05Z",
+  "updated_at_utc": "2026-08-13T04:51:31Z",
   "target": {
     "client": "Cataclysm Classic",
     "patch": "4.4.2",
@@ -9,18 +9,18 @@
     "locale": "enUS",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
-  "audited_commit": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-  "gate_state": "in_progress_exact_538_future_encounter_offense_authority_sol_high_approved_rebuild_and_live_rerun_pending",
+  "audited_commit": "1ee02778ef85aff82887e1917d2c5ac7c3a33112",
+  "gate_state": "in_progress_exact_1ee_gate_bearing_build_complete_fresh_preparation_and_live_rerun_pending",
   "foundation": {
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "current_head_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
+    "current_head_sha": "1ee02778ef85aff82887e1917d2c5ac7c3a33112",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
     "mandatory_sol_high_rereview": "exact_53840bd89e_approved_zero_critical_high_medium_build_authorized_live_restart_held",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "acceptance": "9a3_capture_rejected_as_infrastructure_abort_after_corridor_multishot_and_living_bomb_prematurely_engaged_magmaw_and_reset_churn_masked_stall; exact_53840bd89e centralizes protected_next_encounter_authority_across_bot_pet_controlled_and_totem_offense_and exact_native_recovery_watchdog_proof; sol_high_approved; rebuild_reprovision_and_uncapped_rerun_pending"
+    "acceptance": "9a3_capture_rejected_as_infrastructure_abort_after_corridor_multishot_and_living_bomb_prematurely_engaged_magmaw_and_reset_churn_masked_stall; exact_53840bd89e centralizes protected_next_encounter_authority_across_bot_pet_controlled_and_totem_offense_and exact_native_recovery_watchdog_proof; sol_high_approved; exact_1ee_source_equivalent_gate_bearing_build_complete; reprovision_and_uncapped_rerun_pending"
   },
   "research": {
     "required_boss_packets": 28,
@@ -46,8 +46,8 @@
   },
   "build": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_state": "successful_9a3afe4def_build_stale_after_53840bd89e_future_encounter_offense_authority_remediation",
-    "current_result": "mandatory_review_approved_zero_critical_high_medium; exact_538_incremental_rebuild_required_before_next_uncapped_canonical_rerun",
+    "current_state": "successful_exact_1ee02778ef_policy_v8_configure_and_worldserver_build",
+    "current_result": "both receipts gate-bearing and independently verified; worldserver sha256 128edf0720d514945727269618ef68aea09bbc064eba8be8bd15db5bd63b86f4; post-build focused suite 256 passed; fresh preparation remains before live",
     "receipt_trust_model": "explicit_trusted_local_operator",
     "trusted_operator": "runiir",
     "trusted_uid": 1000,
@@ -167,7 +167,7 @@
   "required_open_work": [
     {
       "area": "current_build",
-      "missing": ["successful_exact_policy_v8_release_coordinated_incremental_build_at_reviewed_538_future_encounter_offense_authority_remediation", "valid_current_production_receipt_bound_to_trusted_local_operator", "post_build_regression_and_orphan_process_check"]
+      "missing": []
     },
     {
       "area": "live_script_and_decision_review",
@@ -183,7 +183,7 @@
     }
   ],
   "phase1_gate_blockers": [
-    "coordinated_policy_v8_release_worldserver_rebuild_of_sol_high_approved_538_source_pending",
+    "fresh_reprovision_full_verifier_v4_readback_for_exact_1ee_binary_pending",
     "uncapped_serialized_bwd_10n_live_formation_difficulty_wipe_reset_gate_rerun_pending",
     "phase1_live_dvc_publication_remote_verification_and_exact_eviction_pending",
     "bwd_exact_442_quantitative_and_exact_log_hotfix_evidence_blocks_phase2_fidelity"

@@ -1,0 +1,320 @@
+{
+  "admitted_at_utc": "2026-08-13T04:47:56.264683Z",
+  "artifact_provenance_required": true,
+  "build_configuration": {
+    "admission": {
+      "build_graph": {
+        "compile_command_count": 1222,
+        "compile_commands_mtime_ns": 1786596379833420291,
+        "compile_commands_sha256": "9f11c9865ef817f9c4aa7942dde71c5d923964308128f0f3d1b5cdf6f3f8ef9a",
+        "compile_commands_valid": true,
+        "file_count": 14,
+        "generated": true,
+        "manifest_sha256": "cd1cb154bc09f21f626148c43d2d74db3508fd69896571151a7b3ee6851f7386"
+      },
+      "cache_path": "/home/runiir/Games/trinity-cata-worktrees/phase1-foundation-build/build/CMakeCache.txt",
+      "cache_sha256": "76ddb3799188d5a64daee878cbe37c9ce1b2c9fa404fb7d4c9bd61a0aae1aa5d",
+      "compiler_sha256": "e6718f7e0c7d057c3ff77b550c603da9bc4030e3ede3c053705acce1293dbe4d",
+      "expected": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_COMPILER": "/usr/bin/c++",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "",
+        "CMAKE_CXX_FLAGS": "",
+        "CMAKE_CXX_FLAGS_RELEASE": "-O1 -DNDEBUG",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_GENERATOR": "Unix Makefiles",
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "OFF",
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE": "OFF",
+        "CMAKE_MAKE_PROGRAM": "/usr/bin/gmake",
+        "UNITY_BUILDS": "OFF",
+        "USE_COREPCH": "OFF",
+        "USE_SCRIPTPCH": "OFF",
+        "WITH_COREDEBUG": "OFF"
+      },
+      "matches_policy": true,
+      "settings": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_COMPILER": "/usr/bin/c++",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "",
+        "CMAKE_CXX_FLAGS": "",
+        "CMAKE_CXX_FLAGS_RELEASE": "-O1 -DNDEBUG",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_GENERATOR": "Unix Makefiles",
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "OFF",
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE": "OFF",
+        "CMAKE_MAKE_PROGRAM": "/usr/bin/gmake",
+        "UNITY_BUILDS": "OFF",
+        "USE_COREPCH": "OFF",
+        "USE_SCRIPTPCH": "OFF",
+        "WITH_COREDEBUG": "OFF"
+      },
+      "settings_sha256": "e62a1831a12b4b1e12913d27ef109f4a0cc794ee1daacbf5da3386b16f297f6f"
+    },
+    "completion": {
+      "build_graph": {
+        "compile_command_count": 1222,
+        "compile_commands_mtime_ns": 1786596379833420291,
+        "compile_commands_sha256": "9f11c9865ef817f9c4aa7942dde71c5d923964308128f0f3d1b5cdf6f3f8ef9a",
+        "compile_commands_valid": true,
+        "file_count": 14,
+        "generated": true,
+        "manifest_sha256": "cd1cb154bc09f21f626148c43d2d74db3508fd69896571151a7b3ee6851f7386"
+      },
+      "cache_path": "/home/runiir/Games/trinity-cata-worktrees/phase1-foundation-build/build/CMakeCache.txt",
+      "cache_sha256": "76ddb3799188d5a64daee878cbe37c9ce1b2c9fa404fb7d4c9bd61a0aae1aa5d",
+      "compiler_sha256": "e6718f7e0c7d057c3ff77b550c603da9bc4030e3ede3c053705acce1293dbe4d",
+      "expected": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_COMPILER": "/usr/bin/c++",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "",
+        "CMAKE_CXX_FLAGS": "",
+        "CMAKE_CXX_FLAGS_RELEASE": "-O1 -DNDEBUG",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_GENERATOR": "Unix Makefiles",
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "OFF",
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE": "OFF",
+        "CMAKE_MAKE_PROGRAM": "/usr/bin/gmake",
+        "UNITY_BUILDS": "OFF",
+        "USE_COREPCH": "OFF",
+        "USE_SCRIPTPCH": "OFF",
+        "WITH_COREDEBUG": "OFF"
+      },
+      "matches_policy": true,
+      "settings": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_COMPILER": "/usr/bin/c++",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "",
+        "CMAKE_CXX_FLAGS": "",
+        "CMAKE_CXX_FLAGS_RELEASE": "-O1 -DNDEBUG",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_GENERATOR": "Unix Makefiles",
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "OFF",
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE": "OFF",
+        "CMAKE_MAKE_PROGRAM": "/usr/bin/gmake",
+        "UNITY_BUILDS": "OFF",
+        "USE_COREPCH": "OFF",
+        "USE_SCRIPTPCH": "OFF",
+        "WITH_COREDEBUG": "OFF"
+      },
+      "settings_sha256": "e62a1831a12b4b1e12913d27ef109f4a0cc794ee1daacbf5da3386b16f297f6f"
+    },
+    "request": {
+      "build_graph": {
+        "compile_command_count": 1222,
+        "compile_commands_mtime_ns": 1786596379833420291,
+        "compile_commands_sha256": "9f11c9865ef817f9c4aa7942dde71c5d923964308128f0f3d1b5cdf6f3f8ef9a",
+        "compile_commands_valid": true,
+        "file_count": 14,
+        "generated": true,
+        "manifest_sha256": "cd1cb154bc09f21f626148c43d2d74db3508fd69896571151a7b3ee6851f7386"
+      },
+      "cache_path": "/home/runiir/Games/trinity-cata-worktrees/phase1-foundation-build/build/CMakeCache.txt",
+      "cache_sha256": "76ddb3799188d5a64daee878cbe37c9ce1b2c9fa404fb7d4c9bd61a0aae1aa5d",
+      "compiler_sha256": "e6718f7e0c7d057c3ff77b550c603da9bc4030e3ede3c053705acce1293dbe4d",
+      "expected": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_COMPILER": "/usr/bin/c++",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "",
+        "CMAKE_CXX_FLAGS": "",
+        "CMAKE_CXX_FLAGS_RELEASE": "-O1 -DNDEBUG",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_GENERATOR": "Unix Makefiles",
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "OFF",
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE": "OFF",
+        "CMAKE_MAKE_PROGRAM": "/usr/bin/gmake",
+        "UNITY_BUILDS": "OFF",
+        "USE_COREPCH": "OFF",
+        "USE_SCRIPTPCH": "OFF",
+        "WITH_COREDEBUG": "OFF"
+      },
+      "matches_policy": true,
+      "settings": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_COMPILER": "/usr/bin/c++",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "",
+        "CMAKE_CXX_FLAGS": "",
+        "CMAKE_CXX_FLAGS_RELEASE": "-O1 -DNDEBUG",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_GENERATOR": "Unix Makefiles",
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "OFF",
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE": "OFF",
+        "CMAKE_MAKE_PROGRAM": "/usr/bin/gmake",
+        "UNITY_BUILDS": "OFF",
+        "USE_COREPCH": "OFF",
+        "USE_SCRIPTPCH": "OFF",
+        "WITH_COREDEBUG": "OFF"
+      },
+      "settings_sha256": "e62a1831a12b4b1e12913d27ef109f4a0cc794ee1daacbf5da3386b16f297f6f"
+    }
+  },
+  "build_configuration_stable": true,
+  "classification": "success",
+  "command_arguments_retained": false,
+  "command_sha256": "5815b18d2297b6066d5f00c3b2bf993ba375170183b7203a17b34dc04e4496ee",
+  "commit": "1ee02778ef85aff82887e1917d2c5ac7c3a33112",
+  "compiler_job_ceiling": 1,
+  "configure_lineage": {
+    "commit": "1ee02778ef85aff82887e1917d2c5ac7c3a33112",
+    "compiler_sha256": "e6718f7e0c7d057c3ff77b550c603da9bc4030e3ede3c053705acce1293dbe4d",
+    "completion_build_graph_sha256": "cd1cb154bc09f21f626148c43d2d74db3508fd69896571151a7b3ee6851f7386",
+    "completion_cache_sha256": "76ddb3799188d5a64daee878cbe37c9ce1b2c9fa404fb7d4c9bd61a0aae1aa5d",
+    "completion_settings_sha256": "e62a1831a12b4b1e12913d27ef109f4a0cc794ee1daacbf5da3386b16f297f6f",
+    "policy_sha256": "d8780f52b441fbb8f0049c184a621e3db2b5449c179ba3b174709bcaafda70bb",
+    "queue_sequence": 98,
+    "receipt_sha256": "64dbdc99a9555dd81db973ad0f4efda1876fb4378aae8beed83227f97751b3a9",
+    "ticket_id": "raid-build-da13edaab11a403385bcf762dc159341"
+  },
+  "ended_at_utc": "2026-08-13T04:49:26.061084Z",
+  "environment_contract": {
+    "base_environment": {
+      "LANG": "C.UTF-8",
+      "LC_ALL": "C.UTF-8",
+      "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "TZ": "UTC"
+    },
+    "coordinator_variables": [
+      "CMAKE_BUILD_PARALLEL_LEVEL",
+      "CTEST_PARALLEL_LEVEL",
+      "MAKEFLAGS",
+      "NINJAFLAGS",
+      "TRINITY_RAID_BUILD_COMPILER_JOBS",
+      "TRINITY_RAID_BUILD_COORDINATED",
+      "TRINITY_RAID_BUILD_LINKER_JOBS",
+      "TRINITY_RAID_BUILD_LINK_LOCK",
+      "TRINITY_RAID_BUILD_TICKET"
+    ],
+    "inherit_parent_environment": false
+  },
+  "error": null,
+  "exit_code": 0,
+  "linker_job_ceiling": 1,
+  "log_sha256": "3f99fd5a066ba0052a3772c8aa57070d3a6d3ef7befd4ce13829d0707d5a7878",
+  "operator_identity": {
+    "effective_uid": 1000,
+    "trust_model": "explicit_trusted_local_operator",
+    "uid": 1000,
+    "username": "runiir"
+  },
+  "output_artifacts": [
+    {
+      "kind": "worldserver_elf",
+      "mtime_ns": 1786596565971678376,
+      "path": "/home/runiir/Games/trinity-cata-worktrees/phase1-foundation-build/build/src/server/worldserver/worldserver",
+      "preexisting_artifact": {
+        "mtime_ns": 1786592103014292076,
+        "sha256": "8b3c6114f13a71fd4b2c8ad6918c0f740419126e2f79fb0e8d615154680f6f5b",
+        "size_bytes": 61008304
+      },
+      "produced_by_ticket": true,
+      "sha256": "128edf0720d514945727269618ef68aea09bbc064eba8be8bd15db5bd63b86f4",
+      "size_bytes": 61032344
+    }
+  ],
+  "peak_observations": {
+    "maximum_load_average_1m": 1.36376953125,
+    "maximum_memory_psi_full_avg10": 0.0,
+    "maximum_memory_psi_some_avg10": 0.0,
+    "maximum_swap_used_bytes": 3242704896,
+    "minimum_filesystem_available_bytes": 118023745536,
+    "minimum_memory_available_bytes": 18632695808,
+    "sample_count": 168
+  },
+  "policy_id": "cata_raid_build_resource_policy_degraded_v8",
+  "policy_sha256": "d8780f52b441fbb8f0049c184a621e3db2b5449c179ba3b174709bcaafda70bb",
+  "preflight": {
+    "captured_at_utc": "2026-08-13T04:47:56.221150Z",
+    "filesystem_available_bytes": 118194655232,
+    "load_average_15m": 1.00537109375,
+    "load_average_1m": 0.91748046875,
+    "load_average_5m": 0.95263671875,
+    "memory_available_bytes": 19900203008,
+    "memory_psi_full_avg10": 0.0,
+    "memory_psi_some_avg10": 0.0,
+    "memory_total_bytes": 32513720320,
+    "swap_used_bytes": 3242704896
+  },
+  "pressure_reasons": [],
+  "provenance_reasons": [],
+  "queue_sequence": 99,
+  "queue_wait_seconds": 0.046719,
+  "receipt_sha256": "3af19ab9a853fe026f13909d1273630d5643a38ad93c3d68987be19c4810e4bb",
+  "resource_class": "worldserver_build",
+  "schema_version": 2,
+  "signal": null,
+  "source_identity": {
+    "admission": {
+      "clean": true,
+      "commit": "1ee02778ef85aff82887e1917d2c5ac7c3a33112",
+      "dirty": false,
+      "porcelain_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tree": "942acacc590799f612c7b0166dccac82f158d86c"
+    },
+    "completion": {
+      "clean": true,
+      "commit": "1ee02778ef85aff82887e1917d2c5ac7c3a33112",
+      "dirty": false,
+      "porcelain_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tree": "942acacc590799f612c7b0166dccac82f158d86c"
+    },
+    "request": {
+      "clean": true,
+      "commit": "1ee02778ef85aff82887e1917d2c5ac7c3a33112",
+      "dirty": false,
+      "porcelain_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tree": "942acacc590799f612c7b0166dccac82f158d86c"
+    }
+  },
+  "source_identity_stable": true,
+  "test_mode": false,
+  "ticket_id": "raid-build-3a4ff50e4fb84451900bb700d5a7a742",
+  "toolchain_identity": {
+    "admission": {
+      "actual": {
+        "/usr/bin/ar": "531473816bf553e863df5aab14c8177c72b732cf80c51dcf0fa990a50125041c",
+        "/usr/bin/as": "4e5fcaa3cdc160173cb5cfe7aa35dc39d7aa1f06ba8d75b8d923bbae5473991b",
+        "/usr/bin/gmake": "27c9f6d806aee15882b01c2c61848f7aa75caa14bc7b6f608ba422f9e46a7d49",
+        "/usr/bin/ld": "97f48d93b8b076a92d2809ec29dcb17f0f37c8827358f832255e2ed22fef6075",
+        "/usr/bin/ranlib": "369cf0d60a6167b11f39ed9b4bbb3d93903cc364975b244e1d084aaccf48dc92",
+        "/usr/bin/strip": "4d2ca6ba80677c3b2975e328306a779cd7bd6590a87948b5ebea9c1b41a049c8",
+        "/usr/libexec/gcc/x86_64-linux-gnu/15/cc1plus": "6f2b2c0e3fd32042eb2acace19a57fdb0b229d9c24cdd5e2cc100639c77e9ff0"
+      },
+      "expected": {
+        "/usr/bin/ar": "531473816bf553e863df5aab14c8177c72b732cf80c51dcf0fa990a50125041c",
+        "/usr/bin/as": "4e5fcaa3cdc160173cb5cfe7aa35dc39d7aa1f06ba8d75b8d923bbae5473991b",
+        "/usr/bin/gmake": "27c9f6d806aee15882b01c2c61848f7aa75caa14bc7b6f608ba422f9e46a7d49",
+        "/usr/bin/ld": "97f48d93b8b076a92d2809ec29dcb17f0f37c8827358f832255e2ed22fef6075",
+        "/usr/bin/ranlib": "369cf0d60a6167b11f39ed9b4bbb3d93903cc364975b244e1d084aaccf48dc92",
+        "/usr/bin/strip": "4d2ca6ba80677c3b2975e328306a779cd7bd6590a87948b5ebea9c1b41a049c8",
+        "/usr/libexec/gcc/x86_64-linux-gnu/15/cc1plus": "6f2b2c0e3fd32042eb2acace19a57fdb0b229d9c24cdd5e2cc100639c77e9ff0"
+      },
+      "identity_sha256": "ef15b93a7dfa324cf565dbeabed1a44fa45f3f6de555bd9366ed90dc5b3b97d6",
+      "matches_policy": true
+    },
+    "completion": {
+      "actual": {
+        "/usr/bin/ar": "531473816bf553e863df5aab14c8177c72b732cf80c51dcf0fa990a50125041c",
+        "/usr/bin/as": "4e5fcaa3cdc160173cb5cfe7aa35dc39d7aa1f06ba8d75b8d923bbae5473991b",
+        "/usr/bin/gmake": "27c9f6d806aee15882b01c2c61848f7aa75caa14bc7b6f608ba422f9e46a7d49",
+        "/usr/bin/ld": "97f48d93b8b076a92d2809ec29dcb17f0f37c8827358f832255e2ed22fef6075",
+        "/usr/bin/ranlib": "369cf0d60a6167b11f39ed9b4bbb3d93903cc364975b244e1d084aaccf48dc92",
+        "/usr/bin/strip": "4d2ca6ba80677c3b2975e328306a779cd7bd6590a87948b5ebea9c1b41a049c8",
+        "/usr/libexec/gcc/x86_64-linux-gnu/15/cc1plus": "6f2b2c0e3fd32042eb2acace19a57fdb0b229d9c24cdd5e2cc100639c77e9ff0"
+      },
+      "expected": {
+        "/usr/bin/ar": "531473816bf553e863df5aab14c8177c72b732cf80c51dcf0fa990a50125041c",
+        "/usr/bin/as": "4e5fcaa3cdc160173cb5cfe7aa35dc39d7aa1f06ba8d75b8d923bbae5473991b",
+        "/usr/bin/gmake": "27c9f6d806aee15882b01c2c61848f7aa75caa14bc7b6f608ba422f9e46a7d49",
+        "/usr/bin/ld": "97f48d93b8b076a92d2809ec29dcb17f0f37c8827358f832255e2ed22fef6075",
+        "/usr/bin/ranlib": "369cf0d60a6167b11f39ed9b4bbb3d93903cc364975b244e1d084aaccf48dc92",
+        "/usr/bin/strip": "4d2ca6ba80677c3b2975e328306a779cd7bd6590a87948b5ebea9c1b41a049c8",
+        "/usr/libexec/gcc/x86_64-linux-gnu/15/cc1plus": "6f2b2c0e3fd32042eb2acace19a57fdb0b229d9c24cdd5e2cc100639c77e9ff0"
+      },
+      "identity_sha256": "ef15b93a7dfa324cf565dbeabed1a44fa45f3f6de555bd9366ed90dc5b3b97d6",
+      "matches_policy": true
+    },
+    "stable": true
+  },
+  "worktree": "/home/runiir/Games/trinity-cata-worktrees/phase1-foundation-build",
+  "worktree_dirty_at_request": false,
+  "worktree_porcelain_sha256_at_request": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}
