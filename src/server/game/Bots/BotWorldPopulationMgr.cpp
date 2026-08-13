@@ -7497,6 +7497,12 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         && raid.NativeReadyCheckActionWipeGeneration == raid.WipeGeneration
         && raid.NativeReadyCheckAssignmentGeneration == raid.AssignmentGeneration;
 
+    // A partial death is not a native wipe.  Keep the full recovery state
+    // machine scoped to an observed all-dead latch with a real wipe
+    // generation; otherwise a partial-death recovery string can manufacture a
+    // wiped/recovery-pending state when the roster becomes all-alive again.
+    bool const nativeWipeRecovery = previousWipeState == "wiped" && raid.WipeGeneration > 0;
+
     if (allDead)
     {
         raid.WipeState = "wiped";
@@ -7505,17 +7511,17 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
     else if (!allAlive)
     {
         raid.WipeState = previousWipeState == "wiped" ? "wiped" : "partial_deaths";
-        raid.RecoveryState = "native_resurrection_runback";
+        raid.RecoveryState = nativeWipeRecovery ? "native_resurrection_runback" : "none";
     }
     else if (raid.EncounterInProgress)
     {
         raid.WipeState = "engaged";
         raid.RecoveryState = "none";
     }
-    else if (previousWipeState == "wiped"
-        || previousRecoveryState == "awaiting_native_reset"
-        || previousRecoveryState == "release_resurrection_pending"
-        || previousRecoveryState == "native_resurrection_runback")
+    else if (nativeWipeRecovery
+        || (raid.WipeGeneration > 0 && previousRecoveryState == "awaiting_native_reset")
+        || (raid.WipeGeneration > 0 && previousRecoveryState == "release_resurrection_pending")
+        || (raid.WipeGeneration > 0 && previousRecoveryState == "native_resurrection_runback"))
     {
         if (raid.NativeRecoveryEvidenceComplete)
         {
@@ -7529,7 +7535,7 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
             raid.RecoveryState = "recovery_evidence_pending";
         }
     }
-    else if (previousRecoveryState == "recovered_ready_check")
+    else if (raid.WipeGeneration > 0 && previousRecoveryState == "recovered_ready_check")
     {
         if (raid.NativeRecoveryEvidenceComplete)
         {

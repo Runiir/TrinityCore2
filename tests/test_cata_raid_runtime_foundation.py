@@ -41,6 +41,64 @@ def _completed_admission_runtime_tick(*, prior_runtime, expected_size,
     return {"identity_drift": False, "runtime": runtime}
 
 
+def _raid_recovery_runtime_tick(*, prior_runtime, expected_size, alive_size,
+                                encounter_in_progress=False,
+                                native_recovery_evidence_complete=False):
+    """Model the wipe-scoped recovery state transition in the C++ refresh."""
+    runtime = dict(prior_runtime)
+    previous_wipe_state = runtime.get("wipe_state", "ready")
+    previous_recovery_state = runtime.get("recovery_state", "none")
+    runtime["alive_size"] = alive_size
+    runtime["encounter_in_progress"] = encounter_in_progress
+    runtime["native_recovery_evidence_complete"] = native_recovery_evidence_complete
+
+    all_dead = alive_size == 0
+    all_alive = alive_size == expected_size
+    if all_dead:
+        if previous_wipe_state != "wiped":
+            runtime["wipe_generation"] = runtime.get("wipe_generation", 0) + 1
+        runtime["wipe_state"] = "wiped"
+        runtime["recovery_state"] = (
+            "awaiting_native_reset" if encounter_in_progress
+            else "release_resurrection_pending"
+        )
+    elif not all_alive:
+        native_wipe_recovery = previous_wipe_state == "wiped" and runtime.get("wipe_generation", 0) > 0
+        runtime["wipe_state"] = "wiped" if previous_wipe_state == "wiped" else "partial_deaths"
+        runtime["recovery_state"] = "native_resurrection_runback" if native_wipe_recovery else "none"
+    elif encounter_in_progress:
+        runtime["wipe_state"] = "engaged"
+        runtime["recovery_state"] = "none"
+    elif (
+        (previous_wipe_state == "wiped" and runtime.get("wipe_generation", 0) > 0)
+        or (
+            runtime.get("wipe_generation", 0) > 0
+            and previous_recovery_state in {
+                "awaiting_native_reset",
+                "release_resurrection_pending",
+                "native_resurrection_runback",
+            }
+        )
+    ):
+        if native_recovery_evidence_complete:
+            runtime["wipe_state"] = "ready"
+            runtime["recovery_state"] = "recovered_ready_check"
+        else:
+            runtime["wipe_state"] = "wiped"
+            runtime["recovery_state"] = "recovery_evidence_pending"
+    elif runtime.get("wipe_generation", 0) > 0 and previous_recovery_state == "recovered_ready_check":
+        if native_recovery_evidence_complete:
+            runtime["wipe_state"] = "ready"
+            runtime["recovery_state"] = "recovered_ready_check"
+        else:
+            runtime["wipe_state"] = "wiped"
+            runtime["recovery_state"] = "recovery_evidence_pending"
+    else:
+        runtime["wipe_state"] = "ready"
+        runtime["recovery_state"] = "none"
+    return runtime
+
+
 def _native_group_identity_gate(*, expected_guids, group_members, frozen_subgroups):
     """Model the fail-closed native group membership/subgroup gate."""
     expected = set(expected_guids)
@@ -1184,6 +1242,64 @@ def test_completed_validation_raid_refresh_advances_all_dead_wipe_and_evidence()
         "signal.CorpseSequence = signal.HasCorpse ? ++raid.EvidenceSequence : 0;",
     ):
         assert token in group
+
+
+def test_partial_death_then_all_alive_does_not_create_native_wipe_recovery():
+    group = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::EnsureValidationCohortGroup()"):
+        IMPL.index("bool BotWorldPopulationMgr::ResolveSpawnPlacement")
+    ]
+    prior = {
+        "alive_size": 10,
+        "wipe_state": "ready",
+        "recovery_state": "none",
+        "wipe_generation": 0,
+    }
+    partial = _raid_recovery_runtime_tick(
+        prior_runtime=prior, expected_size=10, alive_size=9,
+    )
+    recovered = _raid_recovery_runtime_tick(
+        prior_runtime=partial, expected_size=10, alive_size=10,
+    )
+
+    assert partial["wipe_state"] == "partial_deaths"
+    assert partial["recovery_state"] == "none"
+    assert recovered["wipe_state"] == "ready"
+    assert recovered["recovery_state"] == "none"
+    assert recovered["wipe_generation"] == 0
+    assert recovered["native_recovery_evidence_complete"] is False
+    assert "bool const nativeWipeRecovery = previousWipeState == \"wiped\" && raid.WipeGeneration > 0;" in group
+    assert 'raid.RecoveryState = nativeWipeRecovery ? "native_resurrection_runback" : "none";' in group
+    assert 'raid.WipeState = "wiped";' in group
+    assert 'raid.RecoveryState = "recovery_evidence_pending";' in group
+
+
+def test_real_full_wipe_keeps_ordered_native_recovery_evidence_gate():
+    prior = {
+        "alive_size": 10,
+        "wipe_state": "ready",
+        "recovery_state": "none",
+        "wipe_generation": 0,
+    }
+    wiped = _raid_recovery_runtime_tick(
+        prior_runtime=prior, expected_size=10, alive_size=0,
+    )
+    pending = _raid_recovery_runtime_tick(
+        prior_runtime=wiped, expected_size=10, alive_size=10,
+    )
+    recovered = _raid_recovery_runtime_tick(
+        prior_runtime=pending, expected_size=10, alive_size=10,
+        native_recovery_evidence_complete=True,
+    )
+
+    assert wiped["wipe_state"] == "wiped"
+    assert wiped["recovery_state"] == "release_resurrection_pending"
+    assert wiped["wipe_generation"] == 1
+    assert pending["wipe_state"] == "wiped"
+    assert pending["recovery_state"] == "recovery_evidence_pending"
+    assert recovered["wipe_state"] == "ready"
+    assert recovered["recovery_state"] == "recovered_ready_check"
+    assert recovered["wipe_generation"] == 1
 
 
 def test_completed_validation_raid_refresh_observes_native_boss_in_progress():
