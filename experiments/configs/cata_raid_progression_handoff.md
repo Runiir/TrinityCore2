@@ -1,5 +1,13 @@
 # Cataclysm raid progression handoff
 
+## 2026-08-13T08:16:41Z — Exact Spell-owned Rush delivery pairing remediated
+
+Mandatory Sol-high review of exact clean checkpoint `10c5a969e48e145f53b939e80acf5fc57357be6b` confirmed the delivery, attempt/wipe/route, overflow, independent-capture, roster-reseparation, tank-taunt/health-sync, and trained-profile gates, but found one remaining High: a later successful Rush from the same source to the same target could mark the oldest canceled preparation as landed. It also noted two Medium robustness gaps: runtime source GUID was not independently validated and a script-prevented default effect could still reach the prior callback. No build or service was started.
+
+Exact clean code checkpoint `a3c42d0e6420a32e92025e6a8bc4f48b21756f72` binds preparation to delivery with a per-Spell observation sequence. `NotifyNativeCreatureSpellStarted` returns the exact sequence, the Spell instance retains it, and only that exact sequence/source/target/attempt/wipe/route can land. Delivery is emitted inside `HandleEffects` only after the non-prevented default `SPELL_EFFECT_CHARGE` hit handler executes, so canceled, missed, vanished, script-prevented, or older same-target preparations cannot be completed retroactively. Independent capture reconstruction now also requires positive stable runtime GUIDs for both exact Drudge spawns and requires them to be distinct.
+
+The focused runtime/capture/Phase 9 suite remains 116/116, Python compilation and diff checking pass, and the worktree is clean. Exact next gate is another independent Sol-high zero-Critical/High review of the clean status descendant; only then may the single policy-v8 coordinator build run. Live restart remains held.
+
 ## 2026-08-13T08:04:46Z — Native Drudge delivery and independent tactic evidence remediated
 
 Mandatory Sol-high review of exact clean status checkpoint `70c053e22735e8f6951d8883753d516b0aefdbd4` closed forced recovery assistance, controlled-unit readiness, exact Magmaw engagement/wipe binding, tank health synchronization, and canonical status/DVC lineage. It rejected the build gate on three remaining Drudge evidence issues: a prepared Rush could be consumed before delivery, observations lacked attempt/wipe identity, and the canonical capture could pass without reconstructing Rush/reseparation/tactic decisions. No build or service was started.
