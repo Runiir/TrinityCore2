@@ -1,0 +1,4 @@
+interface:
+  display_name: "Raid Shard Architecture"
+  short_description: "Design and operate isolated raid boss shards safely"
+  default_prompt: "Use $raid-shard-architecture to design or validate this boss experiment."

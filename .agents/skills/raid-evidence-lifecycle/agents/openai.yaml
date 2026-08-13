@@ -1,0 +1,4 @@
+interface:
+  display_name: "Raid Evidence Lifecycle"
+  short_description: "Capture, publish, verify, and evict raid evidence"
+  default_prompt: "Use $raid-evidence-lifecycle to capture and validate this experiment run."
