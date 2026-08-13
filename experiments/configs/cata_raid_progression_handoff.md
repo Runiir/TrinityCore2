@@ -1,5 +1,17 @@
 # Cataclysm raid progression handoff
 
+# 2026-08-13T13:00:11Z — Exact ef04 build passed; uncapped Chainwielder run failed closed
+
+Mandatory Sol-high review approved exact `ef04a6f22a67b9b5475ee778f2f0828cd3510b38` with zero Critical, High, or Medium findings. Policy-v8 configure receipt `6b4db60a...` and worldserver receipt `72c780e0...` independently verify. The receipt-produced ELF SHA-256 is `5c64fcdd0468d386dbbf86d07f085f0dbedf8eff3329e1e60339f6c88922c045`; the post-build exact focused gate passed 314/314. Fresh deterministic provisioning, full verifier, and v4 readback passed for the exact offline/unleased 2/3/5 BWD roster with zero instance, group, ghost, corpse, or corpse-phase residue.
+
+The worldserver was live and the exact raid verified before the dedicated Luna-xhigh babysitter attached. The uncapped run failed closed after 302.348 seconds of unchanged semantics on Chainwielder, before Drudges or Magmaw. The current pack ledger contained only entry 42649/GUID 27, but independent trace reconstruction found 349 combat actions against future Drudges entry 42362/GUIDs 59/60. Fire mage 1276 recorded 306 `no_valid_profile_action` decisions, affliction warlock 1278 recorded 288, and elemental shaman 1280 recorded 47. This is a route/profile integration regression and does not invalidate the trained rotation values.
+
+The first full wipe produced ordered native death/corpse/release/runback/reentry/resurrection evidence for all ten GUIDs, but surviving trash killed resurrected members before the native ready check could complete, producing eighteen total deaths and a recovery stall. No Magmaw engagement, Drudge contract, boss reset, ready check, forbidden assistance, or unstuck action was accepted. Cleanup proved the worldserver absent and zero bots/leases.
+
+The nine-file, 95,759,481-byte evidence/preparation batch is DVC-pushed and remotely verified at `artifacts/cata_raid_program/phase1_raid_foundation_ef04a6f22a_20260813.dvc`, object `c7d9b34f49fd2936966bf4c195d6e3ec.dir`. Its workspace, temporary copies, and exactly nine child cache payloads were evicted after diagnosis; directory metadata and compact summary remain, and no broad DVC GC was used.
+
+User-approved route architecture is now explicit: six diagnostic boss scenarios each own only their prerequisite/regroup/trash/boss nodes, while `blackwing_descent_10n` remains the canonical full ordered raid route. The Magmaw scenario is exactly entrance, Chainwielder, Drudge pair, Magmaw and must not include Omnotron trash. Nefarian owns a distinct predecessor-complete diagnostic save and upper-ledge preparation plus legitimate descent. Three Luna-xhigh remediations are active for per-boss manifests, strict current-node/trained-profile authority, and native hostile-reset-before-reentry. After integration: mandatory Sol-high review, one coordinated rebuild, fresh preparation, a prestarted verified worldserver, then an uncapped Magmaw-only rerun with a Luna-xhigh babysitter.
+
 # 2026-08-13T12:54:00Z — Exact 0c43 corrects raw-target struct placement
 
 The first exact-4465 review check caught a compile blocker: `TargetRawGuid` had been inserted on generic `ValidationRouteEvidence`, while the producer and serializer access `ValidationRouteDrudgeChargeObservation::TargetRawGuid`. Exact source `0c432651e7743e3813b67fdcb6d5e0336cf3e9ee` moves the field to the correct Drudge observation type, removes the unused generic field, and pins that placement in runtime source-shape coverage. The exact clean combined suite passes 314/314. No build or live action ran.

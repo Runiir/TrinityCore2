@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-13T12:54:00Z",
+  "updated_at_utc": "2026-08-13T13:00:11Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -17,7 +17,7 @@
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "current_head_sha": "0c432651e7743e3813b67fdcb6d5e0336cf3e9ee",
+    "current_head_sha": "ef04a6f22a67b9b5475ee778f2f0828cd3510b38",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -28,17 +28,17 @@
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
     "critical_high_remediation_implemented_at": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "mandatory_rereview": "pending exact clean status descendant carrying source 0c432651e7743e3813b67fdcb6d5e0336cf3e9ee after correcting the reviewer-found TargetRawGuid struct placement compile blocker",
+    "mandatory_rereview": "APPROVED exact ef04a6f22a67b9b5475ee778f2f0828cd3510b38 with critical 0 high 0 medium 0",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "Review of exact 4465 caught a compile blocker because TargetRawGuid was placed on generic ValidationRouteEvidence rather than ValidationRouteDrudgeChargeObservation. Source 0c432 moves it to the exact producer/serializer type and adds a source-shape regression. The exact clean suite passes 314/314. Mandatory Sol-high rereview remains required; Phase 1 and fidelity remain false."
+    "current_acceptance": "Mandatory Sol-high review approved exact ef04 with C0/H0/M0 and the exact 314-test gate passed. Policy-v8 configure and worldserver receipts verify and produced ELF 5c64fcdd.... The uncapped live run failed closed on Chainwielder after current-node authority leaked 349 actions to future Drudges and native recovery could not complete ready check while surviving trash killed resurrected members. Phase 1 and fidelity remain false."
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_commit": "0c432651e7743e3813b67fdcb6d5e0336cf3e9ee",
-    "current_state": "exact_0c43_compile_identity_remediation_clean_tested_unreviewed_unbuilt",
-    "current_result": "exact clean combined focused command passes 314/314; prior exact-1c7a receipts and ELF are stale for 0c43; mandatory Sol-high rereview remains required before configure/build",
+    "current_commit": "ef04a6f22a67b9b5475ee778f2f0828cd3510b38",
+    "current_state": "exact_ef04_gate_bearing_build_succeeded_live_infrastructure_abort_diagnosed",
+    "current_result": "configure receipt 6b4db60a... and worldserver receipt 72c780e0... verify; ELF 5c64fcdd... was produced from exact clean ef04; post-build focused suite passed 314/314",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -627,8 +627,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "Exact 1c7a was reviewed, built, freshly prepared, and then failed closed at the isolated Drudge pair. The remotely synchronized diagnosis has been consumed and exactly evicted. Exact-62fe review rejected four High and two Medium findings. Source 6d80 closes iterator compilation, route-transition trace loss, native farthest eligibility, non-player threat filtering, test semantics, and the tracked command. Exact clean tests and mandatory Sol-high rereview, exact configure/build receipts, fresh preparation, and uncapped rerun remain required."
+      "detail": "Exact ef04 was approved, built, freshly prepared, and run uncapped. It failed closed on Chainwielder: the current pack ledger was entry 42649/GUID 27 while 349 combat actions targeted future Drudges 42362/GUID 59 or 60; fire mage and affliction warlock repeatedly had no valid profile action. All ten completed native first-wipe resurrection ordering, but surviving trash caused eight further deaths before ready check. Evidence is remote verified and exactly evicted. Per-boss node manifests, strict current-node authority/profile handoff, safe native recovery re-entry, mandatory rereview, one rebuild, and rerun remain required."
     }
   ],
-  "next_action": "Obtain mandatory Sol-high zero-critical/high approval for the exact clean status descendant carrying source 0c432651e7, run one exact policy-v8 coordinated configure and worldserver build, freshly reprovision/full-verify/v4-read back, prestart and verify one worldserver, attach one Luna-xhigh babysitter, and rerun the uncapped canonical Phase 1 capture. Require native opposite-lane Rush selection, exact reseparation, health synchronization, trained profile execution, Magmaw engagement, full native recovery, bounded telemetry, and clean demux. Six parallel boss shards remain downstream of a passing Phase 1 gate."
+  "next_action": "Integrate Luna-xhigh per-boss node manifests, current-node target/trained-profile authority, and native recovery hostile-reentry fixes; obtain mandatory Sol-high zero-critical/high review; rebuild once through policy v8; freshly reprovision/full-verify/v4-read back; prestart and verify one worldserver; attach the Magmaw Luna-xhigh babysitter; rerun the uncapped Magmaw-only four-node manifest. Keep the canonical 11-node route only for later sequential full clears."
 }
