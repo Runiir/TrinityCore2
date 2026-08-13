@@ -2467,6 +2467,97 @@ def test_runtime_reconstructs_native_boss_wipe_reset_and_recovery_state():
         assert token in IMPL
 
 
+def _native_full_wipe_reentry_gate(*, hostile_active, boss_reset_observed,
+                                   hostile_reset_observed):
+    """The native recovery gate must require reset evidence and no active pack."""
+    return (boss_reset_observed or hostile_reset_observed) and not hostile_active
+
+
+def test_native_recovery_blocks_survivor_pack_reentry_until_native_reset():
+    # A trash pack can remain active while the instance script reports no boss
+    # encounter. It must not be allowed to kill newly resurrected members.
+    assert not _native_full_wipe_reentry_gate(
+        hostile_active=True, boss_reset_observed=True, hostile_reset_observed=True,
+    )
+    assert not _native_full_wipe_reentry_gate(
+        hostile_active=False, boss_reset_observed=False, hostile_reset_observed=False,
+    )
+    assert _native_full_wipe_reentry_gate(
+        hostile_active=False, boss_reset_observed=False, hostile_reset_observed=True,
+    )
+
+    runtime = HEADER[HEADER.index("struct RaidRuntime"):HEADER.index("struct CohortRuntime")]
+    for token in (
+        "bool NativeHostileActivityActive",
+        "bool NativeHostileActivitySeenAtWipe",
+        "bool NativeHostileInactivityObserved",
+        "uint64 NativeHostileResetGeneration",
+        "uint64 NativeHostileResetGenerationAtWipe",
+    ):
+        assert token in runtime
+
+    observer = IMPL[
+        IMPL.index("struct NativeRaidHostileActivityVisitor"):
+        IMPL.index("bool BotWorldPopulationMgr::ResolveNativeBlackwingDescentEntrance")
+    ]
+    for token in (
+        "MapStoredObjectTypesContainer",
+        "creature->IsHostileTo(Observer)",
+        "creature->IsInCombat()",
+        "creature->GetVictim()",
+        "creature->IsInEvadeMode()",
+        "native_raid_map_unavailable",
+        "native_hostiles_inactive",
+    ):
+        assert token in observer
+
+    ensure = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::EnsureValidationCohortGroup"):
+        IMPL.index("bool BotWorldPopulationMgr::ResolveSpawnPlacement")
+    ]
+    for token in (
+        "ObserveNativeRaidHostileActivity",
+        "NativeHostileActivitySeenAtWipe",
+        "NativeHostileInactiveSinceMs",
+        "NativeHostileInactivityObserved",
+        "++raid.NativeHostileResetGeneration",
+    ):
+        assert token in ensure
+
+    update = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::UpdateBot"):
+        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    ]
+    gate = update.index("native_recovery_wait_hostile_activity")
+    for token in (
+        "native_recovery_wait_native_reset",
+        "raid.NativeHostileActivityActive",
+        "nativeResetObserved",
+        '"assistance\\":\\"none\\"',
+        '"direct_respawn\\":false',
+        '"direct_state_manufacture\\":false',
+    ):
+        assert token in update[gate - 1800:gate + 1800]
+    gate_block = update[update.index("bool const nativeHostileRecoveryBlocked"):
+                         update.index("if (Cohort().Config.ValidationRouteEnable && Cohort().Config.AllowRaids)", gate)]
+    assert "TeleportTo(" not in gate_block
+    assert "ResurrectPlayer" not in gate_block
+
+    ready = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::TryRespondNativeRaidReadyCheck"):
+        IMPL.index("void BotWorldPopulationMgr::UpdateBot")
+    ]
+    assert "postWipeNativeResetReady" in ready
+    assert "!raid.NativeHostileActivityActive" in ready
+
+    request = IMPL[
+        IMPL.index("std::string BotWorldPopulationMgr::RequestNativeRaidReadyCheckForCohort"):
+        IMPL.index("void BotWorldPopulationMgr::TryRespondNativeRaidReadyCheck")
+    ]
+    assert '"native_recovery_hostile_activity"' in request
+    assert '"native_recovery_reset_not_observed"' in request
+
+
 def test_bwd_profile_pins_10n_and_world_defaults_are_documented():
     profiles = json.loads((ROOT / "dataset/bot_runtime_profiles/profiles.json").read_text(encoding="utf-8"))
     bwd = next(profile for profile in profiles["profiles"] if profile["name"] == "blackwing_descent_10n")

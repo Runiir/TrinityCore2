@@ -104,6 +104,52 @@ uint64 BuildServerEpoch()
     return startedAtUs ^ (CurrentProcessId() << 32);
 }
 
+struct NativeRaidHostileActivityVisitor
+{
+    explicit NativeRaidHostileActivityVisitor(WorldObject const* observer) : Observer(observer) { }
+
+    void Visit(std::unordered_map<ObjectGuid, Creature*>& creatures)
+    {
+        if (Active || !Observer)
+            return;
+
+        for (auto const& pair : creatures)
+        {
+            Creature* creature = pair.second;
+            if (!creature || !creature->IsInWorld() || !creature->IsAlive()
+                || !creature->IsHostileTo(Observer))
+                continue;
+
+            // IsInCombat/GetVictim/attackers cover a pack that still has an
+            // encounter target. Evade, casts, and movement cover the native
+            // reset window while the creature is returning home. Idle
+            // creatures at their home position are not treated as active.
+            bool const active = creature->IsInCombat() || creature->GetVictim()
+                || !creature->getAttackers().empty()
+                || creature->IsInEvadeMode()
+                || creature->HasUnitState(UNIT_STATE_CASTING)
+                || creature->GetCurrentSpell(CURRENT_GENERIC_SPELL)
+                || creature->GetCurrentSpell(CURRENT_CHANNELED_SPELL)
+                || creature->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL);
+            if (!active)
+                continue;
+
+            Active = true;
+            ActiveGuid = creature->GetGUID();
+            ActiveEntry = creature->GetEntry();
+            return;
+        }
+    }
+
+    template<class T>
+    void Visit(std::unordered_map<ObjectGuid, T*>&) { }
+
+    WorldObject const* Observer = nullptr;
+    bool Active = false;
+    ObjectGuid ActiveGuid;
+    uint32 ActiveEntry = 0;
+};
+
 uint64 ReadLastInsertId()
 {
     if (QueryResult result = CharacterDatabase.Query("SELECT LAST_INSERT_ID()"))
@@ -1543,6 +1589,22 @@ std::string BotWorldPopulationMgr::RequestNativeRaidReadyCheckForCohort(std::str
         std::string result = fail("encounter_in_progress");
         _selectedCohortId = previous;
         return result;
+    }
+    if (Cohort().Config.ValidationRouteBossRecovery == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly
+        && raid.WipeGeneration)
+    {
+        bool const nativeHostileResetObserved = raid.NativeHostileInactivityObserved
+            && raid.NativeHostileResetGeneration > raid.NativeHostileResetGenerationAtWipe;
+        bool const nativeResetObserved = raid.BossResetGeneration > raid.BossResetGenerationAtWipe
+            || nativeHostileResetObserved;
+        if (raid.NativeHostileActivityActive || !nativeResetObserved)
+        {
+            std::string result = fail(raid.NativeHostileActivityActive
+                ? "native_recovery_hostile_activity"
+                : "native_recovery_reset_not_observed");
+            _selectedCohortId = previous;
+            return result;
+        }
     }
 
     Group* group = sGroupMgr->GetGroupByGUID(raid.GroupGuid.GetCounter());
@@ -4516,6 +4578,41 @@ bool BotWorldPopulationMgr::HasNativeRaidCorpseAuthority(WorldBotState const& st
         && originalCorpse->GetInstanceId() == state.ValidationCohortInstanceId;
 }
 
+bool BotWorldPopulationMgr::ObserveNativeRaidHostileActivity(Map* raidMap, WorldObject const* observer,
+    bool& active, std::string& reason, uint32& entry, ObjectGuid& guid) const
+{
+    active = false;
+    reason.clear();
+    entry = 0;
+    guid.Clear();
+
+    if (!raidMap || !observer)
+    {
+        // An unavailable map is not an observed reset. The caller must keep
+        // the recovery gate closed instead of interpreting missing state as
+        // an empty, safe encounter.
+        reason = !raidMap ? "native_raid_map_unavailable" : "native_raid_hostility_observer_unavailable";
+        return false;
+    }
+
+    NativeRaidHostileActivityVisitor visitor(observer);
+    TypeContainerVisitor<NativeRaidHostileActivityVisitor, MapStoredObjectTypesContainer> containerVisitor(visitor);
+    containerVisitor.Visit(raidMap->GetObjectsStore());
+    active = visitor.Active;
+    entry = visitor.ActiveEntry;
+    guid = visitor.ActiveGuid;
+    if (active)
+    {
+        std::ostringstream detail;
+        detail << "native_hostile_activity_guid=" << guid.GetRawValue()
+               << ":entry=" << entry;
+        reason = detail.str();
+    }
+    else
+        reason = "native_hostiles_inactive";
+    return true;
+}
+
 bool BotWorldPopulationMgr::ResolveNativeBlackwingDescentEntrance(AreaTriggerEntry const*& entry, AreaTriggerStruct const*& destination) const
 {
     entry = sAreaTriggerStore.LookupEntry(BlackwingDescentEntranceTriggerId);
@@ -7462,6 +7559,47 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
     if (bossResetObserved)
         ++raid.BossResetGeneration;
 
+    // Boss state is not a complete reset signal for trash-only route nodes.
+    // Observe every loaded hostile creature in the exact native instance and
+    // retain the activity edge so recovery can distinguish an evaded/reset
+    // pack from an idle-looking pack that still owns combat state.
+    if (raidValidation)
+    {
+        Map* nativeRaidMap = raidMapObserver
+            ? raidMapObserver->GetMap()
+            : sMapMgr->FindMap(raid.MapId, raid.InstanceId);
+        Player* hostilityObserver = members.empty() ? nullptr : members.front();
+        bool hostileActive = false;
+        std::string hostileReason;
+        uint32 hostileEntry = 0;
+        ObjectGuid hostileGuid;
+        bool const hostileObservationValid = ObserveNativeRaidHostileActivity(nativeRaidMap, hostilityObserver,
+            hostileActive, hostileReason, hostileEntry, hostileGuid);
+        if (!hostileObservationValid)
+            hostileActive = true;
+        raid.NativeHostileActivityActive = hostileActive;
+        raid.NativeHostileActivityReason = hostileReason;
+        raid.NativeHostileActivityEntry = hostileEntry;
+        raid.NativeHostileActivityGuid = hostileGuid;
+        uint64 const nowMs = NowMs();
+        if (hostileActive)
+        {
+            raid.NativeHostileActivitySeen = true;
+            raid.NativeHostileInactiveSinceMs = 0;
+        }
+        else if (raid.WipeGeneration > 0 && raid.NativeHostileActivitySeenAtWipe)
+        {
+            if (!raid.NativeHostileInactiveSinceMs)
+                raid.NativeHostileInactiveSinceMs = nowMs;
+            if (nowMs - raid.NativeHostileInactiveSinceMs >= 5000)
+            {
+                raid.NativeHostileInactivityObserved = true;
+                if (raid.NativeHostileResetGeneration == raid.NativeHostileResetGenerationAtWipe)
+                    ++raid.NativeHostileResetGeneration;
+            }
+        }
+    }
+
     bool const allDead = raid.ActiveSize > 0 && raid.AliveSize == 0;
     bool const allAlive = raid.ActiveSize > 0 && raid.AliveSize == raid.ActiveSize;
     if (allDead)
@@ -7484,6 +7622,10 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
             // reset transition.
             raid.BossResetGenerationAtWipe = bossResetObserved && raid.BossResetGeneration > 0
                 ? raid.BossResetGeneration - 1 : raid.BossResetGeneration;
+            raid.NativeHostileResetGenerationAtWipe = raid.NativeHostileResetGeneration;
+            raid.NativeHostileActivitySeenAtWipe = raid.NativeHostileActivitySeen;
+            raid.NativeHostileInactivityObserved = false;
+            raid.NativeHostileInactiveSinceMs = 0;
             for (auto& [guid, signal] : raid.NativeSignalsByGuid)
             {
                 signal.WipeGeneration = raid.WipeGeneration;
@@ -7586,10 +7728,14 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         [&raid](auto const& row) { return row.second.WipeGeneration == raid.WipeGeneration && row.second.RunbackSequence > row.second.ReleaseSequence; });
     raid.NativeResurrectionObserved = exactSignalRoster && std::all_of(raid.NativeSignalsByGuid.begin(), raid.NativeSignalsByGuid.end(),
         [signalComplete](auto const& row) { return signalComplete(row.second); });
+    bool const nativeHostileResetObserved = raid.NativeHostileInactivityObserved
+        && raid.NativeHostileResetGeneration > raid.NativeHostileResetGenerationAtWipe;
+    bool const nativeResetObserved = raid.BossResetGeneration > raid.BossResetGenerationAtWipe
+        || nativeHostileResetObserved;
     bool const nativeRecoverySignals = raid.NativeDeathObserved
         && raid.NativeCorpseObserved && raid.NativeReleaseObserved
         && raid.NativeResurrectionObserved && raid.NativeRunbackObserved
-        && raid.BossResetGeneration > raid.BossResetGenerationAtWipe;
+        && nativeResetObserved;
     raid.NativeRecoveryEvidenceComplete = nativeRecoverySignals && raid.NativeReadyCheckActionObserved
         && raid.NativeReadyCheckActionAttemptId == raid.AttemptId
         && raid.NativeReadyCheckActionWipeGeneration == raid.WipeGeneration
@@ -9344,6 +9490,12 @@ void BotWorldPopulationMgr::TryRespondNativeRaidReadyCheck(WorldBotState& state,
     bool const postWipeControlledUnitsReady = !raid.WipeGeneration
         || (BotRaidAreaAuthority::IsAllOffenseSuppressed(bot->GetGUID().GetRawValue())
             && AreNativeRaidRecoveryControlledUnitsReady(bot));
+    bool const nativeHostileResetObserved = raid.NativeHostileInactivityObserved
+        && raid.NativeHostileResetGeneration > raid.NativeHostileResetGenerationAtWipe;
+    bool const postWipeNativeResetReady = !raid.WipeGeneration
+        || Cohort().Config.ValidationRouteBossRecovery != ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly
+        || ((raid.BossResetGeneration > raid.BossResetGenerationAtWipe || nativeHostileResetObserved)
+            && !raid.NativeHostileActivityActive);
     bool const independentlyReady = raid.RosterComplete && raid.UniqueLeases
         && raid.RosterCompositionValid && raid.DifficultyMatches
         && !raid.EncounterInProgress && raid.AssignmentGeneration > 0
@@ -9353,6 +9505,7 @@ void BotWorldPopulationMgr::TryRespondNativeRaidReadyCheck(WorldBotState& state,
         && !bot->GetVictim() && bot->getAttackers().empty()
         && !bot->IsNonMeleeSpellCast(false)
         && postWipeControlledUnitsReady
+        && postWipeNativeResetReady
         && bot->GetSession()
         && bot->GetGroup() && bot->GetGroup()->GetGUID() == raid.GroupGuid
         && bot->GetMapId() == raid.MapId && bot->GetInstanceId() == raid.InstanceId;
@@ -9619,6 +9772,50 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             {
                 state.DeadTimer = 0;
                 return;
+            }
+
+            // Raid trash does not necessarily drive InstanceScript's boss
+            // state.  Do not release/run back a corpse merely because group
+            // members look idle: the exact native instance must have
+            // observed either the boss reset or a hostile-pack activity to
+            // stable inactivity transition.  This is observation-only; no
+            // combat stop, reset, teleport, kill, or resurrection is issued.
+            if (Cohort().Config.ValidationRouteBossRecovery == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly)
+            {
+                RaidRuntime const& raid = Cohort().Raid;
+                bool const nativeHostileResetObserved = raid.NativeHostileInactivityObserved
+                    && raid.NativeHostileResetGeneration > raid.NativeHostileResetGenerationAtWipe;
+                bool const nativeResetObserved = raid.BossResetGeneration > raid.BossResetGenerationAtWipe
+                    || nativeHostileResetObserved;
+                bool const nativeHostileRecoveryBlocked = raid.NativeHostileActivityActive || !nativeResetObserved;
+                if (nativeHostileRecoveryBlocked)
+                {
+                    std::string raw = BuildRawJson(bot, nullptr);
+                    std::ostringstream gateRaw;
+                    gateRaw << "{\"base\":" << raw
+                            << ",\"native_recovery_reset_gate\":{\"policy\":\"native_full_wipe_only\""
+                            << ",\"authority\":\"native_encounter\""
+                            << ",\"assistance\":\"none\""
+                            << ",\"hostile_activity_active\":" << (raid.NativeHostileActivityActive ? "true" : "false")
+                            << ",\"hostile_activity_reason\":\"" << JsonEscape(raid.NativeHostileActivityReason) << "\""
+                            << ",\"hostile_reset_observed\":" << (nativeHostileResetObserved ? "true" : "false")
+                            << ",\"boss_reset_observed\":" << (raid.BossResetGeneration > raid.BossResetGenerationAtWipe ? "true" : "false")
+                            << ",\"direct_respawn\":false"
+                            << ",\"direct_state_manufacture\":false}}";
+                    std::string semantic = BuildSemanticJson(bot, nullptr, "native_raid_recovery");
+                    char const* reason = raid.NativeHostileActivityActive
+                        ? "native_recovery_wait_hostile_activity"
+                        : "native_recovery_wait_native_reset";
+                    RecordEvent(state, bot, "validation_route_recovery", nullptr, reason,
+                        gateRaw.str().c_str(), semantic.c_str(),
+                        float(raid.NativeHostileActivityEntry), raid.NativeHostileActivityGuid.GetCounter());
+                    state.LastRecoveryMode = "native_full_wipe_only";
+                    state.LastRecoveryResult = reason;
+                    state.LastRecoveryMs = NowMs();
+                    state.LastNoProgressReason = reason;
+                    state.DeadTimer = 0;
+                    return;
+                }
             }
 
             if (Cohort().Config.ValidationRouteEnable && Cohort().Config.AllowRaids)
@@ -30795,6 +30992,9 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
     {
         json << ",\"wipe_generation\":" << raid.WipeGeneration
              << ",\"boss_reset_generation\":" << raid.BossResetGeneration
+             << ",\"native_hostile_activity_active\":" << (raid.NativeHostileActivityActive ? "true" : "false")
+             << ",\"native_hostile_inactivity_observed\":" << (raid.NativeHostileInactivityObserved ? "true" : "false")
+             << ",\"native_hostile_reset_generation\":" << raid.NativeHostileResetGeneration
              << ",\"recovery_generation\":" << raid.RecoveryGeneration
              << ",\"encounter_in_progress\":" << (raid.EncounterInProgress ? "true" : "false")
              << ",\"strategy_id\":\"" << JsonEscape(raid.StrategyId) << "\""
@@ -30883,6 +31083,14 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
          << ",\"wipe_generation\":" << raid.WipeGeneration
          << ",\"boss_reset_generation\":" << raid.BossResetGeneration
          << ",\"boss_reset_generation_at_wipe\":" << raid.BossResetGenerationAtWipe
+         << ",\"native_hostile_activity_active\":" << (raid.NativeHostileActivityActive ? "true" : "false")
+         << ",\"native_hostile_activity_seen_at_wipe\":" << (raid.NativeHostileActivitySeenAtWipe ? "true" : "false")
+         << ",\"native_hostile_inactivity_observed\":" << (raid.NativeHostileInactivityObserved ? "true" : "false")
+         << ",\"native_hostile_reset_generation\":" << raid.NativeHostileResetGeneration
+         << ",\"native_hostile_reset_generation_at_wipe\":" << raid.NativeHostileResetGenerationAtWipe
+         << ",\"native_hostile_activity_entry\":" << raid.NativeHostileActivityEntry
+         << ",\"native_hostile_activity_guid\":" << raid.NativeHostileActivityGuid.GetRawValue()
+         << ",\"native_hostile_activity_reason\":\"" << JsonEscape(raid.NativeHostileActivityReason) << "\""
          << ",\"recovery_generation\":" << raid.RecoveryGeneration
          << ",\"encounter_in_progress\":" << (raid.EncounterInProgress ? "true" : "false")
          << ",\"ready_check_satisfied\":" << (raid.ReadyCheckSatisfied ? "true" : "false")

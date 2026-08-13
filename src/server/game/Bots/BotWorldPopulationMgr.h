@@ -19,6 +19,7 @@
 #include <vector>
 
 class Creature;
+class Map;
 class Player;
 class Quest;
 class Unit;
@@ -1677,6 +1678,8 @@ private:
     void SuppressNativeRaidRecovery(WorldBotState& state, Player* bot);
     bool TryReattachValidationBot(WorldBotState& state, Player* bot, char const* context);
     bool HasNativeRaidCorpseAuthority(WorldBotState const& state, Player const* bot) const;
+    bool ObserveNativeRaidHostileActivity(Map* raidMap, WorldObject const* observer,
+        bool& active, std::string& reason, uint32& entry, ObjectGuid& guid) const;
     bool ResolveNativeBlackwingDescentEntrance(AreaTriggerEntry const*& entry, AreaTriggerStruct const*& destination) const;
     bool IsNativeReleasedGhostWorldport(WorldBotState const& state, Player* bot) const;
     bool IsNativeBlackwingDescentRunbackWorldport(WorldBotState const& state, Player* bot) const;
@@ -2191,6 +2194,19 @@ private:
         uint64 NativeReadyCheckActionEvidenceSequence = 0;
         std::set<uint32> NativeReadyCheckResponders;
         bool NativeRecoveryEvidenceComplete = false;
+        // A raid instance can contain an active trash pack without an
+        // IN_PROGRESS boss state. Native recovery must observe the pack
+        // itself evading/resetting before released ghosts may re-enter.
+        bool NativeHostileActivityActive = false;
+        bool NativeHostileActivitySeen = false;
+        bool NativeHostileActivitySeenAtWipe = false;
+        bool NativeHostileInactivityObserved = false;
+        uint64 NativeHostileInactiveSinceMs = 0;
+        uint64 NativeHostileResetGeneration = 0;
+        uint64 NativeHostileResetGenerationAtWipe = 0;
+        uint32 NativeHostileActivityEntry = 0;
+        ObjectGuid NativeHostileActivityGuid;
+        std::string NativeHostileActivityReason;
         std::string StrategyId;
         std::string PreviousStrategyId;
         uint64 StrategyTransitionRouteGeneration = 0;
