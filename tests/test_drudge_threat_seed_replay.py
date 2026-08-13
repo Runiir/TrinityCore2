@@ -202,6 +202,8 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
     regular_insert = lane.index(
         "ValidationRouteDrudgeProfileActionRosterGuids.insert", regular_action
     )
+    assert lane.count("ValidationRouteDrudgeProfileActionRosterGuids.insert") == 1
+    assert lane.index("if (sources[0]->IsAlive() && sources[1]->IsAlive() && !exactRosterReSeparated())") < regular_insert
     assert 'profileAction.TargetGuid == laneSource->GetGUID()' in lane[
         regular_action:regular_insert
     ]

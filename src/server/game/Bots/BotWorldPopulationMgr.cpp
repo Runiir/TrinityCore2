@@ -20060,8 +20060,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             {
                 Party().ValidationRouteDrudgeThreatSeedRosterGuids.insert(
                     selectedMember->GetGUID().GetCounter());
-                Party().ValidationRouteDrudgeProfileActionRosterGuids.insert(
-                    selectedMember->GetGUID().GetCounter());
                 selectedState->TargetGuid = sources[selectedLaneIndex]->GetGUID();
                 record(laneSource, "drudge_pre_first_rush_threat_seed", sourceSeparation,
                     selectedAction.SpellId);
