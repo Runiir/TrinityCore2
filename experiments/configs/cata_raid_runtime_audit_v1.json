@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "audit_id": "cata_raid_runtime_phase1_v1",
-  "updated_at_utc": "2026-08-13T12:22:00Z",
+  "updated_at_utc": "2026-08-13T12:25:00Z",
   "target": {
     "client": "Cataclysm Classic",
     "patch": "4.4.2",
@@ -10,7 +10,7 @@
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
   "audited_commit": "6d80303f8b38d86d2bf2dd36486ea3736aa17298",
-  "gate_state": "in_progress_exact_6d80_review_remediation_clean_test_pending",
+  "gate_state": "in_progress_exact_6d80_review_remediation_rereview_pending",
   "foundation": {
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
     "current_head_sha": "6d80303f8b38d86d2bf2dd36486ea3736aa17298",
@@ -176,7 +176,7 @@
   "required_open_work": [
     {
       "area": "current_build",
-      "missing": ["exact_clean_313_test_rerun", "mandatory_sol_high_zero_critical_high_rereview_of_exact_status_descendant_carrying_source_6d80303f8b", "exact_policy_v8_configure_receipt", "exact_policy_v8_worldserver_build_receipt"]
+      "missing": ["mandatory_sol_high_zero_critical_high_rereview_of_exact_status_descendant_carrying_source_6d80303f8b", "exact_policy_v8_configure_receipt", "exact_policy_v8_worldserver_build_receipt"]
     },
     {
       "area": "live_script_and_decision_review",
@@ -194,7 +194,7 @@
   "phase1_gate_blockers": [
     "exact_1c7a_uncapped_capture_failed_closed_at_magmaw_drudge_pair_before_magmaw_engagement",
     "exact_5e51_mandatory_review_rejected_three_high_findings",
-    "exact_6d80_all_62fe_review_findings_remediated_clean_test_rereview_rebuild_pending",
+    "exact_6d80_all_62fe_review_findings_remediated_313_clean_passed_rereview_rebuild_pending",
     "single_cohort_worldserver_cpu_35_percent_and_67mb_log_raw_not_parallel_shard_ready",
     "bwd_exact_442_quantitative_and_exact_log_hotfix_evidence_blocks_phase2_fidelity"
   ],

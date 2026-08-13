@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-13T12:22:00Z",
+  "updated_at_utc": "2026-08-13T12:25:00Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -37,8 +37,8 @@
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
     "current_commit": "6d80303f8b38d86d2bf2dd36486ea3736aa17298",
-    "current_state": "exact_6d80_four_high_two_medium_remediation_unreviewed_unbuilt",
-    "current_result": "the dirty-worktree combined run produced 310 passes, two expected clean-provenance failures and one known coordinator registration race; an exact clean rerun is required before rereview. Prior exact-1c7a receipts and ELF are stale for 6d80",
+    "current_state": "exact_6d80_four_high_two_medium_remediation_clean_tested_unreviewed_unbuilt",
+    "current_result": "exact clean combined focused command passes 313/313; prior exact-1c7a receipts and ELF are stale for 6d80; mandatory Sol-high rereview remains required before configure/build",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -630,5 +630,5 @@
       "detail": "Exact 1c7a was reviewed, built, freshly prepared, and then failed closed at the isolated Drudge pair. The remotely synchronized diagnosis has been consumed and exactly evicted. Exact-62fe review rejected four High and two Medium findings. Source 6d80 closes iterator compilation, route-transition trace loss, native farthest eligibility, non-player threat filtering, test semantics, and the tracked command. Exact clean tests and mandatory Sol-high rereview, exact configure/build receipts, fresh preparation, and uncapped rerun remain required."
     }
   ],
-  "next_action": "Run the exact clean 313-test command, obtain mandatory Sol-high zero-critical/high approval for the status descendant carrying source 6d80303f8b, run one exact policy-v8 coordinated configure and worldserver build, freshly reprovision/full-verify/v4-read back, prestart and verify one worldserver, attach one Luna-xhigh babysitter, and rerun the uncapped canonical Phase 1 capture. Require native opposite-lane Rush selection, exact reseparation, health synchronization, trained profile execution, Magmaw engagement, full native recovery, bounded telemetry, and clean demux. Six parallel boss shards remain downstream of a passing Phase 1 gate."
+  "next_action": "Obtain mandatory Sol-high zero-critical/high approval for the exact clean status descendant carrying source 6d80303f8b, run one exact policy-v8 coordinated configure and worldserver build, freshly reprovision/full-verify/v4-read back, prestart and verify one worldserver, attach one Luna-xhigh babysitter, and rerun the uncapped canonical Phase 1 capture. Require native opposite-lane Rush selection, exact reseparation, health synchronization, trained profile execution, Magmaw engagement, full native recovery, bounded telemetry, and clean demux. Six parallel boss shards remain downstream of a passing Phase 1 gate."
 }
