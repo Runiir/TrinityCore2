@@ -215,7 +215,8 @@ def _partial_recovery_model(*, pack_generation, route_generation, pack_members,
                             dead_pack_members, transition_pack_members,
                             live_pack_attackable, live_pack_combat_linked,
                             living_roles, dead_roles, group_combat_active,
-                            living_combat_resurrection, native_full_wipe_only):
+                            living_combat_resurrection, native_full_wipe_only,
+                            living_tank_paths=None, frozen_living_roles=None):
     """Model the narrow live-pack precedence over partial-death retreat."""
     exact_live_pack = (
         pack_generation == route_generation
@@ -226,11 +227,13 @@ def _partial_recovery_model(*, pack_generation, route_generation, pack_members,
         and live_pack_attackable
         and live_pack_combat_linked
     )
+    frozen_roles = frozen_living_roles if frozen_living_roles is not None else living_roles
     live_pack_can_continue = (
         exact_live_pack
-        and "tank" in living_roles
-        and "healer" in living_roles
-        and "dps" in living_roles
+        and "tank" in frozen_roles
+        and "healer" in frozen_roles
+        and "dps" in frozen_roles
+        and (any(living_tank_paths.values()) if living_tank_paths is not None else True)
     )
     alive_count = len(living_roles)
     dead_count = len(dead_roles)
@@ -263,6 +266,7 @@ def test_partial_death_live_drudge_pack_precedes_generic_retreat():
         group_combat_active=True,
         living_combat_resurrection=False,
         native_full_wipe_only=False,
+        living_tank_paths={"main_tank": False, "off_tank": True},
     )
     assert decision == "continue_live_pack"
 
@@ -288,6 +292,23 @@ def test_partial_death_live_pack_guard_falls_back_when_composition_is_nonviable(
                 live_pack_combat_linked=True, living_roles=["tank"],
                 dead_roles=["healer", "dps", "dps"], group_combat_active=True,
                 living_combat_resurrection=False, native_full_wipe_only=False,
+                living_tank_paths={"off_tank": False},
+            ),
+            "tactical_retreat_no_combat_res",
+        ),
+        (
+            dict(
+                pack_generation=3, route_generation=3,
+                pack_members={59, 60}, dead_pack_members=set(),
+                transition_pack_members=set(), live_pack_attackable=True,
+                live_pack_combat_linked=True,
+                # A foreign same-map tank and mutable role drift cannot
+                # replace missing frozen roster roles.
+                living_roles=["tank", "healer", "dps", "tank"],
+                frozen_living_roles=["healer", "dps"],
+                dead_roles=["tank", "healer", "dps"], group_combat_active=True,
+                living_combat_resurrection=False, native_full_wipe_only=False,
+                living_tank_paths={"foreign_tank": True},
             ),
             "tactical_retreat_no_combat_res",
         ),
@@ -314,18 +335,34 @@ def test_partial_death_live_pack_guard_is_before_generic_retreat_and_preserves_f
     guard = objective.index("auto currentLiveValidationRoutePackCanContinue")
     retreat_gate = objective.index("if ((majorityDead || criticalRoleDead)", guard)
     assert guard < retreat_gate
-    guard_logic = objective[guard:retreat_gate]
+    helper_logic = objective[guard:objective.index("// If most of the party", guard)]
     for token in (
         'Cohort().Config.ValidationRouteKind == "boss"',
+        "Cohort().Raid.RosterComplete",
+        "Cohort().Raid.UniqueLeases",
+        "Cohort().Raid.RosterCompositionValid",
+        "Cohort().Raid.RosterByGuid.size() != Party().Bots.size()",
         "persistedValidationRoutePackHasLiveMembers()",
-        "activeValidationRoutePackTarget()",
-        "isValidationCohortCombatLinked(livePackCreature)",
-        'std::string(GetDungeonRole(member)) == "tank"',
-        'else if (role == "healer")',
-        'else if (role == "dps")',
-        "livingTanks > 0 && livingHealers > 0 && livingDps > 0",
+        "auto isSharedValidationCohortCombatLinked",
+        "auto frozenRaidRole",
+        "std::vector<Player*> livingTanks",
+        "std::sort(livingTanks.begin(), livingTanks.end()",
+        "std::vector<ObjectGuid> packGuids",
+        "std::sort(packGuids.begin(), packGuids.end()",
+        "IsValidationCohortMemberInOriginalInstance(cohortState, member)",
+        "RosterByGuid.find(cohortState.Guid.GetCounter())",
+        "LeaseOwnedByCurrentCohort(cohortState.Guid.GetCounter(), rosterSlot.RosterSlotId)",
+        "rosterSlot.Role",
+        "rosterSlot.Active",
+        "rosterSlot.LeaseOwned",
+        "hasStrictNativePath(tank, creature)",
+        "tank->IsValidAttackTarget(creature)",
+        "livingTanksCount > 0 && livingHealers > 0 && livingDps > 0",
     ):
-        assert token in guard_logic
+        assert token in helper_logic
+    assert "activeValidationRoutePackTarget()" not in helper_logic
+    assert "bot->GetMap()" not in helper_logic
+    assert "GetDungeonRole" not in helper_logic
     assert "&& !currentLivePackCanContinue" in objective[retreat_gate:retreat_gate + 180]
     assert 'action = "native_full_wipe_hold";' in objective
     assert 'validation_route_partial_wipe_retreat_rendezvous' in objective
