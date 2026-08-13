@@ -595,6 +595,8 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "ValidationRouteDrudgeChargeGeneration" in cast_hook
     assert "ValidationRouteDrudgeChargeObservations.push_back" in cast_hook
     assert "GetUnsortedThreatList" in cast_hook
+    assert "nativeThreatList.size()" not in cast_hook
+    assert "nativeThreatCandidateCount" in cast_hook
     assert "MaxNativeThreatCandidates" in cast_hook
     assert "NativeThreatCandidatesCount" in cast_hook
     assert "NativeThreatCandidatesComplete" in cast_hook

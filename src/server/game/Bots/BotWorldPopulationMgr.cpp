@@ -35021,11 +35021,14 @@ uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster,
         uint32 const sourceLaneIndex = sourceSpawnId
             == Cohort().Config.ValidationRouteSplitSourceGuids[0] ? 0 : 1;
         auto const& nativeThreatList = caster->GetThreatManager().GetUnsortedThreatList();
+        size_t nativeThreatCandidateCount = 0;
+        for ([[maybe_unused]] ThreatReference const* reference : nativeThreatList)
+            ++nativeThreatCandidateCount;
         observation.NativeThreatCandidatesCount = uint32(std::min<size_t>(
-            nativeThreatList.size(), std::numeric_limits<uint32>::max()));
-        observation.NativeThreatCandidatesComplete = nativeThreatList.size()
+            nativeThreatCandidateCount, std::numeric_limits<uint32>::max()));
+        observation.NativeThreatCandidatesComplete = nativeThreatCandidateCount
             <= MaxNativeThreatCandidates;
-        observation.NativeThreatCandidatesTruncated = nativeThreatList.size()
+        observation.NativeThreatCandidatesTruncated = nativeThreatCandidateCount
             > MaxNativeThreatCandidates;
         for (ThreatReference const* reference : nativeThreatList)
         {
