@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-13T07:12:31Z",
+  "updated_at_utc": "2026-08-13T07:45:27Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -17,7 +17,7 @@
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "current_head_sha": "1ee02778ef85aff82887e1917d2c5ac7c3a33112",
+    "current_head_sha": "2b63c544855a1d30abd6ef60c1362667bff8b2f6",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -32,13 +32,13 @@
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "1ee capture remains a Phase 1 infrastructure abort. Dirty descendant remediation now covers cumulative native runback evidence, a pre-decision idempotent recovery hold, Laser Strike, blocked/unstuck stability, Magmaw-only trash, exact Drudge lanes, and principal CPU/log churn. Validation-scenario DVC is synchronized. Exact Sol-high review and a coordinator receipt are pending; live restart is not authorized."
+    "current_acceptance": "The 1ee capture remains a Phase 1 infrastructure abort. Exact clean checkpoint 2b63c54485 closes the six High findings from the mandatory d5ba review: the recovery hold no longer performs forced combat stops, post-wipe readiness requires native controlled-unit restoration, capture acceptance is bound to exact Magmaw engagement, Drudge Rush is observed at native spell start in an ordered queue with declared range/interval evidence, tanks participate in health synchronization, and canonical status/DVC lineage is reconciled. Focused tests pass 114. Mandatory exact descendant Sol-high review and one coordinator build remain pending; live restart is not authorized."
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_commit": "1ee02778ef85aff82887e1917d2c5ac7c3a33112",
-    "current_state": "exact_1ee02778ef_build_is_stale_for_dirty_post_capture_remediation",
-    "current_result": "no current build receipt; observer servers and uncoordinated compiler processes are stopped. Exact clean descendant, mandatory Sol-high review, and one coordinator build are required before live restart",
+    "current_commit": "2b63c544855a1d30abd6ef60c1362667bff8b2f6",
+    "current_state": "exact_1ee02778ef_build_is_stale_for_clean_2b63c54485_phase1_remediation",
+    "current_result": "no current receipt; no authserver, worldserver, capture, publisher, or build process is active. Mandatory Sol-high review of the exact clean 2b63 descendant and one coordinator build are required before live restart",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -299,10 +299,10 @@
     "heavyweight_build_active": false
   },
   "dvc": {
-    "broad_status": "inherited_dependency_drift_and_selectively_evicted_outputs_present",
-    "new_raid_artifact_failure": true,
-    "validation_scenario_stage_remote_status": "cache_and_remote_in_sync",
-    "validation_scenario_dvc_md5": "4026b34e6c368f236d7975acf166873a.dir",
+    "broad_status": "inherited_selectively_evicted_outputs_present_no_new_raid_failure",
+    "new_raid_artifact_failure": false,
+    "validation_scenario_stage_remote_status": "remote_verified_workspace_and_exact_five_child_cache_objects_evicted_directory_metadata_retained",
+    "validation_scenario_dvc_md5": "0829bfe3c4c81f59b24fd4cbc0542974.dir",
     "validation_provisioning_dvc_md5": "3f1ca669625982e0cef7699a4e6323f6.dir",
   "validation_gear_dvc_md5": "14bceda375f6e9ae504ed8e80a001d0f.dir",
     "validation_provisioning_remote_status": "cache_and_remote_in_sync_full_stat_ghost_corpse_instance_cleanup_and_live_v3_readback_passed",
@@ -547,7 +547,7 @@
       ,"native_full_wipe_smoke_blocks_partial_tactical_retreat_party_resurrection_and_self_resurrection_shortcuts"
       ,"validation_raid_boss_recovery_blocks_creature_map_respawn_and_database_spawn_manufacture_before_direct_calls"
       ,"first_released_ghost_cannot_revoke_latched_full_wipe_authority_for_remaining_roster_members"
-      ,"validation_scenario_dvc_regenerated_pushed_and_remote_verified_at_4026b34e6c368f236d7975acf166873a_dir"
+      ,"validation_scenario_dvc_regenerated_pushed_remote_verified_and_exactly_evicted_at_0829bfe3c4c81f59b24fd4cbc0542974_dir"
       ,"post_remediation_focused_phase1_research_coordinator_and_phase9_partition_258_passed"
       ,"exact_policy_v8_configure_and_worldserver_build_succeeded_at_1ee02778ef"
       ,"receipt_bound_worldserver_128edf0720d514945727269618ef68aea09bbc064eba8be8bd15db5bd63b86f4"
@@ -565,7 +565,9 @@
       ,"exact_two_tank_permanent_roster_drudge_charge_lanes_implemented"
       ,"progression_scoring_deferred_and_repeated_worldport_logs_rate_limited"
       ,"eleven_node_validation_scenario_dvc_pushed_and_remote_verified"
-      ,"focused_runtime_capture_suite_111_passed"
+      ,"mandatory_sol_high_review_rejected_exact_d5ba8a07_with_six_high_findings"
+      ,"exact_2b63c54485_closes_forced_recovery_stop_controlled_readiness_magmaw_capture_rush_queue_tank_sync_and_status_lineage_findings"
+      ,"focused_runtime_capture_and_phase9_suite_114_passed"
       ],
       "remaining_requirements": [
       "mandatory_independent_sol_high_review_of_combined_native_recovery_laser_drudge_blocked_cpu_remediation",
@@ -592,8 +594,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "Exact 1ee02778ef is historical and stale. Combined native-recovery, Laser Strike, blocked/unstuck, Magmaw-only route, Drudge-lane, and CPU/log remediation is implemented in the dirty integration checkpoint; validation_scenarios is pushed and synchronized. A clean commit, mandatory Sol-high review, coordinator build, CPU measurement, reprovision/readback, and uncapped canonical rerun remain required."
+      "detail": "Exact 1ee02778ef is historical and stale. Exact clean checkpoint 2b63c54485 contains the reviewed-finding remediation for native recovery, Laser Strike, blocked/unstuck stability, Magmaw-only routing, Drudge lanes/Rush/synchronization, and principal CPU/log churn. validation_scenarios object 0829bfe3c4c81f59b24fd4cbc0542974.dir is pushed, remote-synchronized, and exactly evicted locally. Mandatory exact Sol-high descendant review, coordinator build, CPU measurement, reprovision/readback, and uncapped canonical rerun remain required."
     }
   ],
-  "next_action": "Commit the coherent combined remediation, obtain mandatory exact Sol-high zero-Critical/High approval, then run exactly one coordinator build. Measure optimized single-cohort CPU/log/DB behavior, reprovision and retain v4 readback, and rerun the uncapped canonical Phase 1 Magmaw-only corridor. Require correct Laser Strike exits, exact Drudge lane decisions, full per-GUID native recovery order, post-recovery ready check, trained single-target profile use, and clean DVC publication/eviction. Six parallel boss shards remain downstream of Phase 1 and require one prestarted verified worldserver plus one Luna-xhigh babysitter per boss."
+  "next_action": "Obtain mandatory exact Sol-high zero-Critical/High approval for the clean 2b63 descendant and this status checkpoint, then run exactly one coordinator build. Measure optimized single-cohort CPU/log/DB behavior, reprovision and retain v4 readback, and rerun the uncapped canonical Phase 1 Magmaw-only corridor. Require correct Laser Strike exits, exact Drudge lane/Rush/health-sync decisions, full per-GUID native recovery order, controlled-unit readiness, post-recovery ready check, trained single-target profile use, and clean DVC publication/eviction. Six parallel boss shards remain downstream of Phase 1 and require one prestarted verified worldserver plus one Luna-xhigh babysitter per boss."
 }

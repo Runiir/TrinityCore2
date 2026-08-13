@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "audit_id": "cata_raid_runtime_phase1_v1",
-  "updated_at_utc": "2026-08-13T07:12:31Z",
+  "updated_at_utc": "2026-08-13T07:45:27Z",
   "target": {
     "client": "Cataclysm Classic",
     "patch": "4.4.2",
@@ -9,18 +9,18 @@
     "locale": "enUS",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
-  "audited_commit": "1ee02778ef85aff82887e1917d2c5ac7c3a33112",
-  "gate_state": "in_progress_dirty_combined_phase1_remediation_pending_exact_review_build_and_live_rerun",
+  "audited_commit": "2b63c544855a1d30abd6ef60c1362667bff8b2f6",
+  "gate_state": "in_progress_clean_2b63_phase1_remediation_pending_exact_descendant_review_build_and_live_rerun",
   "foundation": {
     "foundation_sha": "53840bd89e3209905eaf82a4d57b5ed9668cae2c",
-    "current_head_sha": "1ee02778ef85aff82887e1917d2c5ac7c3a33112",
+    "current_head_sha": "2b63c544855a1d30abd6ef60c1362667bff8b2f6",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
     "mandatory_sol_high_rereview": "exact_53840bd89e_approved_zero_critical_high_medium_build_authorized_live_restart_held",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "acceptance": "Exact 1ee uncapped capture cleared all five prerequisite targets and reached native Magmaw, then rejected three full-wipe cycles as infrastructure abort because only per-GUID deaths advanced while corpse/release/runback/re-entry/resurrection/ready-check runtime evidence remained absent. Trace decisions showed native release/runback and bots later re-entered, so the observer/state machine and combat hold require remediation; no gameplay or fidelity inference is authorized."
+    "acceptance": "Exact 1ee uncapped capture remains an infrastructure abort. The mandatory d5ba Sol-high review found six High issues. Exact clean checkpoint 2b63c54485 removes forced combat-stop assistance, requires native controlled-unit restoration before post-wipe readiness, binds capture to exact Magmaw engagement, records native Drudge Rush at spell start in an ordered queue with range/interval facts, applies health synchronization to tanks, and reconciles canonical DVC/status lineage. Mandatory exact descendant review, build, and live proof remain required; no gameplay or fidelity inference is authorized."
   },
   "research": {
     "required_boss_packets": 28,
@@ -46,8 +46,8 @@
   },
   "build": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_state": "historical_exact_1ee_success_stale_for_dirty_combined_phase1_remediation",
-    "current_result": "no current receipt; no server or build process active; exact commit and mandatory Sol-high review must precede the next coordinator build",
+    "current_state": "historical_exact_1ee_success_stale_for_clean_2b63_phase1_remediation",
+    "current_result": "no current receipt; no authserver, worldserver, capture, publisher, or build process active; mandatory exact Sol-high descendant review must precede the next coordinator build",
     "receipt_trust_model": "explicit_trusted_local_operator",
     "trusted_operator": "runiir",
     "trusted_uid": 1000,
@@ -62,6 +62,15 @@
       {"policy": "cata_raid_build_resource_policy_degraded_v4", "compiler_jobs": 1, "classification": "build_resource_abort"},
       {"policy": "cata_raid_build_resource_policy_degraded_v5", "compiler_jobs": 1, "classification": "active_pending_result"}
     ]
+  },
+  "validation_scenarios": {
+    "dvc_md5": "0829bfe3c4c81f59b24fd4cbc0542974.dir",
+    "size_bytes": 144215,
+    "file_count": 5,
+    "stage_status_before_eviction": "local_and_cloud_in_sync",
+    "remote_state": "pushed_and_verified",
+    "local_state": "workspace_and_exact_five_child_cache_objects_evicted_directory_metadata_retained",
+    "broad_gc_used": false
   },
   "existing_verified_surfaces": [
     "single_active_cohort_limit",
@@ -159,15 +168,15 @@
   ],
   "synthetic_checks": {
     "test_file": "tests/test_cata_raid_runtime_foundation.py",
-    "last_result": "256_current_focused_passed",
-    "combined_focus_result": "256_phase1_foundation_runtime_corridor_capture_generic_smoke_research_pet_totem_authority_and_phase9_passed",
-    "combined_focus_command": "pixi run pytest -q tests/test_cata_raid_foundation_model.py tests/test_cata_raid_runtime_foundation.py tests/test_phase1_raid_foundation_capture.py tests/test_phase1_generic_mechanic_smoke.py tests/test_phase1_corridor_reengagement.py tests/test_cata_raid_research_contracts.py tests/test_raid_pet_autocast_authority.py tests/test_phase9_live_qualification.py",
-    "broad_comparison": "patched_worktree_329_passed_34_inherited_stale_failures; exact_4012450_control_326_passed_35_failures; no_new_failure"
+    "last_result": "114_current_focused_passed",
+    "combined_focus_result": "114_runtime_capture_and_phase9_passed_at_exact_2b63_remediation",
+    "combined_focus_command": "pixi run pytest -q tests/test_cata_raid_runtime_foundation.py tests/test_phase1_raid_foundation_capture.py tests/test_phase9_live_qualification.py",
+    "broad_comparison": "autonomy_inclusive_d5ba_review_diagnostic_239_passed_33_inherited_or_stale_failures; focused_phase9_3_passed; no new broad-regression claim until exact descendant review"
   },
   "required_open_work": [
     {
       "area": "current_build",
-      "missing": []
+      "missing": ["mandatory_exact_2b63_descendant_sol_high_zero_critical_high_review", "exact_reviewed_coordinator_build_receipt"]
     },
     {
       "area": "live_script_and_decision_review",
@@ -183,7 +192,7 @@
     }
   ],
   "phase1_gate_blockers": [
-    "combined_native_recovery_laser_drudge_blocked_cpu_remediation_pending_exact_commit_and_sol_high_review",
+    "exact_2b63_native_recovery_laser_drudge_blocked_cpu_remediation_pending_mandatory_sol_high_descendant_review",
     "exact_coordinator_rebuild_cpu_measurement_reprovision_and_uncapped_rerun_pending",
     "bwd_exact_442_quantitative_and_exact_log_hotfix_evidence_blocks_phase2_fidelity"
   ],

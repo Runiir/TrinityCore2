@@ -1,5 +1,15 @@
 # Cataclysm raid progression handoff
 
+## 2026-08-13T07:45:27Z — Six mandatory-review High findings remediated at exact clean checkpoint
+
+Observer authserver/worldserver processes, capture writers, publishers, and builds remain stopped. Their stale PID files and approximately 30 MiB of observer logs were removed; MySQL remains healthy. No live restart is authorized.
+
+Exact code checkpoint `2b63c544855a1d30abd6ef60c1362667bff8b2f6` closes the six High findings from the mandatory Sol-high review of `d5ba8a07`. The recovery hold now uses only the existing all-offense authority and performs no forced combat stop, interrupt, attack stop, idle movement, teleport, or resurrection. Post-wipe readiness requires native hunter-pet restoration plus idle/alive controlled units. Capture acceptance is bound to exact Magmaw route generation/node and native boss engagement before the wipe. Native Drudge Rush is captured at successful spell preparation in an ordered bounded queue with exact source, target, pre-charge distance, declared range, and per-source interval evidence. Both assigned tanks now obey health synchronization while retaining independent lane taunt and separation duties.
+
+The focused runtime/capture/Phase 9 suite passes 114 tests, Python compilation and diff checking pass, and no server or heavyweight build ran. `validation_scenarios` is pushed and remotely synchronized at object `0829bfe3c4c81f59b24fd4cbc0542974.dir`, 144,215 bytes and five files. After consuming it for this diagnosis, the workspace and exactly its five child cache objects were removed while the directory metadata was retained; no broad DVC garbage collection was used.
+
+Exact next gate: obtain mandatory independent Sol-high zero-Critical/High approval of the clean status descendant covering the full `d5ba8a07..HEAD` delta, then run exactly one serialized policy-v8 coordinator build. Only after a valid exact receipt may root measure single-cohort CPU/log/DB behavior, reprovision, retain the full verifier and v4 readback, prestart and verify one worldserver, and attach one Luna-xhigh Phase 1 babysitter. The uncapped Magmaw-only capture must prove Laser Strike exits, exact Drudge lane/Rush/health-sync choices, trained damage-profile use, Magmaw engagement, full identity-bound native recovery, controlled readiness, post-recovery ready check, cleanup, DVC publication, and exact eviction. Six parallel boss shards remain downstream of a passing Phase 1 gate.
+
 ## 2026-08-13T07:12:31Z — Combined Phase 1 remediation ready for exact checkpoint and review
 
 All observer services and experiment/build/publisher processes are stopped. The exact BWD fixtures were deterministically reprovisioned after the observer session; v4 readback passed with zero instance/group/ghost/corpse/corpse-phase residue. The historical `1ee02778ef` binary remains stale and no live restart is authorized.
