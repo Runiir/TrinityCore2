@@ -248,9 +248,9 @@ stages:
     outs:
     - path: dataset/validation_provisioning
       hash: md5
-      md5: 94b4b7ad7c3d16ff930117b9e81f6c5e.dir
-      size: 5126626
-      nfiles: 8
+      md5: 72aaa4ab78f4254f4dc4dcf3b1e59c02.dir
+      size: 3526833
+      nfiles: 5
   validation_gear:
     cmd: python -m tools.bot_ml.build_validation_gear_profiles --config
       experiments/configs/validation_provisioning_cata_001.json --output-dir
@@ -345,9 +345,9 @@ stages:
       nfiles: 3
     - path: dataset/validation_provisioning
       hash: md5
-      md5: 94b4b7ad7c3d16ff930117b9e81f6c5e.dir
-      size: 5126626
-      nfiles: 8
+      md5: 72aaa4ab78f4254f4dc4dcf3b1e59c02.dir
+      size: 3526833
+      nfiles: 5
     - path: experiments/configs/all_spec_targets_cata_p4_v1.json
       hash: md5
       md5: 300943155fcdcc1aa7208e9a8e9d2181
