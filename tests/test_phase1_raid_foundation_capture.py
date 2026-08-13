@@ -244,7 +244,7 @@ def accepted_drudge_status() -> dict:
         lane_slots = sorted(lane_a_slots if lane_a else lane_b_slots)
         ordinal = lane_slots.index(slot)
         x = -20.5 if lane_a else 30.5
-        y = (ordinal - 1.5) * 3.0
+        y = (ordinal - (len(lane_slots) - 1) * 0.5) * 3.0
         same_lane_distance = 3.0
         member_geometry.append({
             "guid": row["guid"], "roster_slot": slot, "x": x, "y": y,
