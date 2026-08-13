@@ -341,6 +341,69 @@ def accepted_drudge_status() -> dict:
         "profile_action_roster_guids": offensive_guids,
         "observations": observations,
     }
+    runtime["drudge_threat_seed"] = {
+        "attempt_id": runtime["attempt_id"],
+        "wipe_generation": 0,
+        "route_generation": 3,
+        "closed": True,
+        "complete": True,
+        "failure": False,
+        "roster_guids": [roster_guids[5], roster_guids[7]],
+        "observations": [
+            {
+                "sequence": 8,
+                "attempt_id": runtime["attempt_id"],
+                "wipe_generation": 0,
+                "route_generation": 3,
+                "observed_at_ms": 5000,
+                "member_guid": roster_guids[7],
+                "member_slot": 8,
+                "member_lane": 1,
+                "source_spawn_id": 250140,
+                "source_guid": 255140,
+                "source_lane": 0,
+                "spell_id": 100001,
+                "selected_distance": 40.0,
+                "min_range": 5.0,
+                "max_range": 80.0,
+                "position_safe": True,
+                "line_of_sight": True,
+                "in_range": True,
+                "profile_action_valid": True,
+                "action_succeeded": True,
+                "selected_offense_unsuppressed": True,
+                "other_offense_suppressed": True,
+                "action_debug_name": "trained_single_target",
+                "action_result": "ok",
+            },
+            {
+                "sequence": 9,
+                "attempt_id": runtime["attempt_id"],
+                "wipe_generation": 0,
+                "route_generation": 3,
+                "observed_at_ms": 10000,
+                "member_guid": roster_guids[5],
+                "member_slot": 6,
+                "member_lane": 0,
+                "source_spawn_id": 250141,
+                "source_guid": 255141,
+                "source_lane": 1,
+                "spell_id": 100002,
+                "selected_distance": 40.0,
+                "min_range": 5.0,
+                "max_range": 80.0,
+                "position_safe": True,
+                "line_of_sight": True,
+                "in_range": True,
+                "profile_action_valid": True,
+                "action_succeeded": True,
+                "selected_offense_unsuppressed": True,
+                "other_offense_suppressed": True,
+                "action_debug_name": "trained_single_target",
+                "action_result": "ok",
+            },
+        ],
+    }
     return status
 
 
@@ -482,6 +545,28 @@ def test_drudge_geometry_rejects_unverified_path_fallback():
     accepted, reasons = accepted_drudge_contract([status])
     assert accepted is False
     assert "drudge_geometry_member_anchor_path_unverified" in reasons
+
+
+def test_drudge_threat_seed_rejects_same_lane_or_unsuppressed_offense():
+    same_lane = accepted_drudge_status()
+    same_lane["raid_runtime"]["drudge_threat_seed"]["observations"][0]["member_lane"] = 0
+    accepted, reasons = accepted_drudge_contract([same_lane])
+    assert accepted is False
+    assert "drudge_threat_seed_cross_lane_invalid" in reasons
+
+    unsuppressed = accepted_drudge_status()
+    unsuppressed["raid_runtime"]["drudge_threat_seed"]["observations"][1][
+        "other_offense_suppressed"
+    ] = False
+    accepted, reasons = accepted_drudge_contract([unsuppressed])
+    assert accepted is False
+    assert "drudge_threat_seed_safety_evidence_invalid" in reasons
+
+    late = accepted_drudge_status()
+    late["raid_runtime"]["drudge_threat_seed"]["observations"][0]["observed_at_ms"] = 20000
+    accepted, reasons = accepted_drudge_contract([late])
+    assert accepted is False
+    assert "drudge_threat_seed_not_pre_first_rush" in reasons
 
 
 def test_drudge_anchor_fallback_is_generation_scoped_and_native_path_validated():

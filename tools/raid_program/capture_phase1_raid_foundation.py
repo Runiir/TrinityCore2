@@ -968,6 +968,13 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
             if isinstance(row, dict) and row.get("role") in {"tank", "dps"}
             and _positive_int(row.get("guid"))
         } if isinstance(roster_rows, list) else set()
+        threat_seed = candidate_runtime.get("drudge_threat_seed")
+        threat_seed_complete = (
+            isinstance(threat_seed, dict)
+            and threat_seed.get("closed") is True
+            and threat_seed.get("complete") is True
+            and threat_seed.get("failure") is False
+        )
         def exact_set(field: str) -> set[int]:
             values = candidate_evidence.get(field)
             return set(values) if isinstance(values, list) and all(_positive_int(value) for value in values) else set()
@@ -986,6 +993,7 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
             and _positive_int(candidate_evidence.get("death_evidence_sequence"))
             and _positive_int(candidate_evidence.get("rage_wait_evidence_sequence"))
             and _positive_int(candidate_evidence.get("rage_aura_evidence_sequence"))
+            and threat_seed_complete
         )
         latest_observation = max(
             (int(row.get("sequence") or 0) for row in delivered_rows), default=0
@@ -1147,6 +1155,129 @@ def accepted_drudge_contract(statuses: list[dict[str, Any]]) -> tuple[bool, list
     source_guids = {reconstructed[source]["source_guid"] for source in exact_sources}
     if 0 in source_guids or len(source_guids) != len(exact_sources):
         reasons.append("drudge_exact_source_runtime_guids_invalid")
+
+    # The pre-first-Rush seed is a bounded, real profile action rather than a
+    # threat-manager shortcut.  Reconstruct both cross-lane rows and all
+    # safety/authority predicates from the serialized evidence.
+    threat_seed = runtime.get("drudge_threat_seed")
+    if not isinstance(threat_seed, dict):
+        reasons.append("drudge_threat_seed_missing")
+    else:
+        if (threat_seed.get("attempt_id") != attempt_id
+                or threat_seed.get("wipe_generation") != 0
+                or threat_seed.get("route_generation") != 3):
+            reasons.append("drudge_threat_seed_scope_mismatch")
+        if threat_seed.get("closed") is not True:
+            reasons.append("drudge_threat_seed_not_closed_by_native_rush")
+        if threat_seed.get("complete") is not True:
+            reasons.append("drudge_threat_seed_incomplete")
+        if threat_seed.get("failure") is not False:
+            reasons.append("drudge_threat_seed_failure")
+
+        seed_roster_value = threat_seed.get("roster_guids")
+        seed_roster = (
+            set(seed_roster_value)
+            if isinstance(seed_roster_value, list)
+            and all(_positive_int(guid) for guid in seed_roster_value)
+            and len(set(seed_roster_value)) == len(seed_roster_value)
+            else set()
+        )
+        if len(seed_roster) != 2 or not seed_roster.issubset(roster_guids):
+            reasons.append("drudge_threat_seed_roster_invalid")
+
+        seed_observations = threat_seed.get("observations")
+        if not isinstance(seed_observations, list):
+            seed_observations = []
+            reasons.append("drudge_threat_seed_observations_missing")
+        successful_seed_rows = []
+        successful_source_lanes: set[int] = set()
+        successful_member_guids: set[int] = set()
+        expected_seed_source = {0: 250140, 1: 250141}
+        first_native_observation_ms: dict[int, int] = {}
+        for native_row in delivered:
+            native_source = native_row.get("source_spawn_id")
+            native_time = native_row.get("observed_at_ms")
+            if (native_source in exact_sources and _positive_int(native_time)
+                    and (native_source not in first_native_observation_ms
+                         or native_time < first_native_observation_ms[native_source])):
+                first_native_observation_ms[native_source] = native_time
+        for row in seed_observations:
+            if not isinstance(row, dict):
+                reasons.append("drudge_threat_seed_observation_invalid")
+                continue
+            if (row.get("attempt_id") != attempt_id
+                    or row.get("wipe_generation") != 0
+                    or row.get("route_generation") != 3):
+                reasons.append("drudge_threat_seed_observation_scope_mismatch")
+            source_lane = row.get("source_lane")
+            member_lane = row.get("member_lane")
+            source_spawn = row.get("source_spawn_id")
+            member_guid = row.get("member_guid")
+            if source_lane not in {0, 1} or member_lane not in {0, 1}:
+                reasons.append("drudge_threat_seed_lane_invalid")
+                continue
+            if source_spawn != expected_seed_source[source_lane]:
+                reasons.append("drudge_threat_seed_source_lane_invalid")
+            if member_lane != 1 - source_lane:
+                reasons.append("drudge_threat_seed_cross_lane_invalid")
+            member_row = next(
+                (member for member in roster
+                 if isinstance(member, dict) and member.get("guid") == member_guid),
+                None,
+            )
+            if (not _positive_int(member_guid) or member_guid not in roster_guids
+                    or not isinstance(member_row, dict)
+                    or member_row.get("role") != "dps"):
+                reasons.append("drudge_threat_seed_member_identity_invalid")
+            elif member_row.get("slot") != (row.get("member_slot") or 0) - 1:
+                reasons.append("drudge_threat_seed_member_slot_invalid")
+            if row.get("source_guid") != reconstructed.get(source_spawn, {}).get("source_guid"):
+                reasons.append("drudge_threat_seed_source_identity_invalid")
+            seed_time = row.get("observed_at_ms")
+            first_native_time = first_native_observation_ms.get(source_spawn)
+            if (row.get("action_succeeded") is True
+                    and (not _positive_int(seed_time)
+                         or not _positive_int(first_native_time)
+                         or seed_time >= first_native_time)):
+                reasons.append("drudge_threat_seed_not_pre_first_rush")
+            distance = row.get("selected_distance")
+            minimum = row.get("min_range")
+            maximum = row.get("max_range")
+            if (not isinstance(distance, (int, float)) or isinstance(distance, bool)
+                    or not isfinite(float(distance)) or distance < 0.0 or distance > 80.0
+                    or not isinstance(minimum, (int, float)) or isinstance(minimum, bool)
+                    or not isfinite(float(minimum)) or minimum < 0.0
+                    or not isinstance(maximum, (int, float)) or isinstance(maximum, bool)
+                    or not isfinite(float(maximum)) or maximum < 0.0
+                    or (maximum > 0.0 and distance > maximum)
+                    or distance < minimum):
+                reasons.append("drudge_threat_seed_range_invalid")
+            if (row.get("position_safe") is not True
+                    or row.get("line_of_sight") is not True
+                    or row.get("in_range") is not True
+                    or row.get("profile_action_valid") is not True
+                    or row.get("action_succeeded") is not True
+                    or row.get("selected_offense_unsuppressed") is not True
+                    or row.get("other_offense_suppressed") is not True):
+                reasons.append("drudge_threat_seed_safety_evidence_invalid")
+            if (not _positive_int(row.get("spell_id"))
+                    or not isinstance(row.get("action_debug_name"), str)
+                    or not row.get("action_debug_name", "").strip()
+                    or not isinstance(row.get("action_result"), str)
+                    or not row.get("action_result", "").strip()):
+                reasons.append("drudge_threat_seed_profile_action_invalid")
+            if row.get("action_succeeded") is True:
+                successful_seed_rows.append(row)
+                successful_source_lanes.add(source_lane)
+                if _positive_int(member_guid):
+                    successful_member_guids.add(member_guid)
+
+        if successful_source_lanes != {0, 1}:
+            reasons.append("drudge_threat_seed_source_lanes_incomplete")
+        if len(successful_seed_rows) != 2:
+            reasons.append("drudge_threat_seed_success_count_invalid")
+        if len(successful_member_guids) != 2 or successful_member_guids != seed_roster:
+            reasons.append("drudge_threat_seed_roster_evidence_mismatch")
 
     death_fields = (
         "death_attempt_id", "death_wipe_generation", "death_route_generation",

@@ -543,6 +543,21 @@ private:
         bool SameLaneSpacingValid = false;
     };
 
+    struct ValidationRouteDrudgeThreatCandidateEvidence
+    {
+        uint32 Guid = 0;
+        uint32 Slot = 0;
+        uint32 Lane = 0;
+        float Threat = 0.0f;
+        float Distance = 0.0f;
+        bool Available = false;
+        bool LineOfSight = false;
+        bool InRange = false;
+        bool CrossLane = false;
+        bool Eligible = false;
+        std::string Role;
+    };
+
     struct ValidationRouteDrudgeChargeObservation
     {
         uint64 Sequence = 0;
@@ -616,6 +631,35 @@ private:
         float ArrivalTolerance = 0.0f;
         std::vector<ValidationRouteDrudgeMemberGeometry> MemberGeometry;
         std::set<uint32> ReseparatedRosterGuids;
+        std::vector<ValidationRouteDrudgeThreatCandidateEvidence> NativeThreatCandidates;
+    };
+
+    struct ValidationRouteDrudgeThreatSeedEvidence
+    {
+        uint64 Sequence = 0;
+        uint64 AttemptId = 0;
+        uint32 WipeGeneration = 0;
+        uint64 RouteGeneration = 0;
+        uint64 ObservedAtMs = 0;
+        uint32 MemberGuid = 0;
+        uint32 MemberSlot = 0;
+        uint32 MemberLane = 0;
+        uint32 SourceSpawnId = 0;
+        uint32 SourceGuid = 0;
+        uint32 SourceLane = 0;
+        uint32 SpellId = 0;
+        float SelectedDistance = 0.0f;
+        float MinRange = 0.0f;
+        float MaxRange = 0.0f;
+        bool PositionSafe = false;
+        bool LineOfSight = false;
+        bool InRange = false;
+        bool ProfileActionValid = false;
+        bool ActionSucceeded = false;
+        bool SelectedOffenseUnsuppressed = false;
+        bool OtherOffenseSuppressed = false;
+        std::string ActionDebugName;
+        std::string ActionResult;
     };
 
     struct WorldBotState
@@ -1957,6 +2001,14 @@ private:
         uint32 ValidationRouteDrudgeHealthSyncEvidenceWipeGeneration = 0;
         uint64 ValidationRouteDrudgeHealthSyncEvidenceRouteGeneration = 0;
         std::set<uint32> ValidationRouteDrudgeProfileActionRosterGuids;
+        uint64 ValidationRouteDrudgeThreatSeedAttemptId = 0;
+        uint32 ValidationRouteDrudgeThreatSeedWipeGeneration = 0;
+        uint64 ValidationRouteDrudgeThreatSeedRouteGeneration = 0;
+        bool ValidationRouteDrudgeThreatSeedClosed = false;
+        bool ValidationRouteDrudgeThreatSeedComplete = false;
+        bool ValidationRouteDrudgeThreatSeedFailure = false;
+        std::set<uint32> ValidationRouteDrudgeThreatSeedRosterGuids;
+        std::vector<ValidationRouteDrudgeThreatSeedEvidence> ValidationRouteDrudgeThreatSeedEvidenceRows;
         uint64 ValidationRoutePackClearCandidateSinceMs = 0;
         uint64 ValidationRouteNodeClearCandidateSinceMs = 0;
         ObjectGuid ValidationRouteBossProgressTargetGuid;
