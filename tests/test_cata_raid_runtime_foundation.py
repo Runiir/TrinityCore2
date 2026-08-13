@@ -211,6 +211,126 @@ def test_live_pack_authority_clears_and_blocks_safe_memory_override():
     assert "ValidationRoutePackTransitionGuids.find(guid)" in helper
 
 
+def _partial_recovery_model(*, pack_generation, route_generation, pack_members,
+                            dead_pack_members, transition_pack_members,
+                            live_pack_attackable, live_pack_combat_linked,
+                            living_roles, dead_roles, group_combat_active,
+                            living_combat_resurrection, native_full_wipe_only):
+    """Model the narrow live-pack precedence over partial-death retreat."""
+    exact_live_pack = (
+        pack_generation == route_generation
+        and any(
+            guid not in dead_pack_members and guid not in transition_pack_members
+            for guid in pack_members
+        )
+        and live_pack_attackable
+        and live_pack_combat_linked
+    )
+    live_pack_can_continue = (
+        exact_live_pack
+        and "tank" in living_roles
+        and "healer" in living_roles
+        and "dps" in living_roles
+    )
+    alive_count = len(living_roles)
+    dead_count = len(dead_roles)
+    critical_role_dead = bool(set(dead_roles) & {"tank", "healer"})
+    majority_dead = alive_count <= 2 and dead_count >= 3
+    generic_retreat = (
+        (majority_dead or critical_role_dead)
+        and group_combat_active
+        and not living_combat_resurrection
+    )
+    if generic_retreat and not live_pack_can_continue:
+        return "native_full_wipe_hold_partial_death" if native_full_wipe_only else "tactical_retreat_no_combat_res"
+    return "continue_live_pack" if live_pack_can_continue else "native_route_recovery"
+
+
+def test_partial_death_live_drudge_pack_precedes_generic_retreat():
+    # Exact Phase 1 counterexample: Chainwielder is dead, Drudges 59/60 are
+    # current-generation live members, and the off-tank/healers/living DPS can
+    # continue natively despite the main tank and two DPS being dead.
+    decision = _partial_recovery_model(
+        pack_generation=3,
+        route_generation=3,
+        pack_members={27, 59, 60},
+        dead_pack_members={27},
+        transition_pack_members=set(),
+        live_pack_attackable=True,
+        live_pack_combat_linked=True,
+        living_roles=["tank", "healer", "healer", "dps", "dps", "dps", "dps"],
+        dead_roles=["tank", "dps", "dps"],
+        group_combat_active=True,
+        living_combat_resurrection=False,
+        native_full_wipe_only=False,
+    )
+    assert decision == "continue_live_pack"
+
+
+def test_partial_death_live_pack_guard_falls_back_when_composition_is_nonviable():
+    for kwargs, expected in (
+        (
+            dict(
+                pack_generation=2, route_generation=3,
+                pack_members={59, 60}, dead_pack_members=set(),
+                transition_pack_members=set(), live_pack_attackable=True,
+                live_pack_combat_linked=True, living_roles=["healer", "dps"],
+                dead_roles=["tank", "healer", "dps"], group_combat_active=True,
+                living_combat_resurrection=False, native_full_wipe_only=False,
+            ),
+            "tactical_retreat_no_combat_res",
+        ),
+        (
+            dict(
+                pack_generation=3, route_generation=3,
+                pack_members={59, 60}, dead_pack_members=set(),
+                transition_pack_members=set(), live_pack_attackable=True,
+                live_pack_combat_linked=True, living_roles=["tank"],
+                dead_roles=["healer", "dps", "dps"], group_combat_active=True,
+                living_combat_resurrection=False, native_full_wipe_only=False,
+            ),
+            "tactical_retreat_no_combat_res",
+        ),
+        (
+            dict(
+                pack_generation=3, route_generation=3,
+                pack_members={59, 60}, dead_pack_members={59, 60},
+                transition_pack_members=set(), live_pack_attackable=True,
+                live_pack_combat_linked=True, living_roles=["tank", "healer"],
+                dead_roles=["tank", "healer", "dps"], group_combat_active=True,
+                living_combat_resurrection=False, native_full_wipe_only=True,
+            ),
+            "native_full_wipe_hold_partial_death",
+        ),
+    ):
+        assert _partial_recovery_model(**kwargs) == expected
+
+
+def test_partial_death_live_pack_guard_is_before_generic_retreat_and_preserves_fallbacks():
+    objective = IMPL[
+        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective"):
+        IMPL.index("bool BotWorldPopulationMgr::IsBossContext")
+    ]
+    guard = objective.index("auto currentLiveValidationRoutePackCanContinue")
+    retreat_gate = objective.index("if ((majorityDead || criticalRoleDead)", guard)
+    assert guard < retreat_gate
+    guard_logic = objective[guard:retreat_gate]
+    for token in (
+        'Cohort().Config.ValidationRouteKind == "boss"',
+        "persistedValidationRoutePackHasLiveMembers()",
+        "activeValidationRoutePackTarget()",
+        "isValidationCohortCombatLinked(livePackCreature)",
+        'std::string(GetDungeonRole(member)) == "tank"',
+        'else if (role == "healer")',
+        'else if (role == "dps")',
+        "livingTanks > 0 && livingHealers > 0 && livingDps > 0",
+    ):
+        assert token in guard_logic
+    assert "&& !currentLivePackCanContinue" in objective[retreat_gate:retreat_gate + 180]
+    assert 'action = "native_full_wipe_hold";' in objective
+    assert 'validation_route_partial_wipe_retreat_rendezvous' in objective
+
+
 def test_boss_route_rejects_undeclared_engaged_trash_before_shared_actions():
     route_runtime = IMPL[
         IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective"):

@@ -20953,6 +20953,43 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
     }
+    // A current-generation declared trash pack remains authoritative while
+    // its native target is alive, attackable, combat-linked, and the living
+    // roster still has a tank plus raid members who can continue.  This gate
+    // must precede the generic critical-role/majority-death retreat: that
+    // fallback is for a genuinely non-viable composition and must not bypass
+    // a live pack or manufacture any recovery state.
+    auto currentLiveValidationRoutePackCanContinue = [&]() -> bool
+    {
+        if (Cohort().Config.ValidationRouteKind == "boss"
+            || !bot || !bot->GetGroup()
+            || !persistedValidationRoutePackHasLiveMembers())
+            return false;
+
+        Unit* livePackTarget = activeValidationRoutePackTarget();
+        Creature* livePackCreature = livePackTarget ? livePackTarget->ToCreature() : nullptr;
+        if (!livePackCreature || !isValidationCohortCombatLinked(livePackCreature))
+            return false;
+
+        uint32 livingTanks = 0;
+        uint32 livingHealers = 0;
+        uint32 livingDps = 0;
+        for (GroupReference* itr = bot->GetGroup()->GetFirstMember(); itr != nullptr; itr = itr->next())
+        {
+            Player* member = itr->GetSource();
+            if (!member || !member->IsInWorld() || member->GetMap() != bot->GetMap() || !member->IsAlive())
+                continue;
+            std::string role = GetDungeonRole(member);
+            if (role == "tank")
+                ++livingTanks;
+            else if (role == "healer")
+                ++livingHealers;
+            else if (role == "dps")
+                ++livingDps;
+        }
+        return livingTanks > 0 && livingHealers > 0 && livingDps > 0;
+    };
+    bool currentLivePackCanContinue = currentLiveValidationRoutePackCanContinue();
     // If most of the party or a critical role is dead and no living class can
     // legally resurrect in combat, continuing at the abandoned pack cannot
     // recover the group. Retreat through ordinary movement so the hostile
@@ -21001,7 +21038,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
         }
         bool majorityDead = aliveMembers <= 2 && deadMembers >= 3;
-        if ((majorityDead || criticalRoleDead) && groupCombatActive && !livingCombatResurrectionCaster)
+        if ((majorityDead || criticalRoleDead) && groupCombatActive && !livingCombatResurrectionCaster
+            && !currentLivePackCanContinue)
         {
             if (Cohort().Config.ValidationRouteBossRecovery == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly)
             {
