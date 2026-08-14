@@ -2149,6 +2149,64 @@ def accepted_native_recovery(
     return not reasons, list(dict.fromkeys(reasons))
 
 
+def native_readycheck_request_identity(status: dict[str, Any]) -> tuple[Any, ...]:
+    """Bind one controller request to the exact recovery and route scope."""
+    runtime = status.get("raid_runtime") or {}
+    route = status.get("validation_route") or {}
+    return (
+        runtime.get("attempt_id"),
+        runtime.get("wipe_generation"),
+        runtime.get("assignment_generation"),
+        route.get("generation"),
+        route.get("node_id"),
+    )
+
+
+def ready_for_native_readycheck(status: dict[str, Any]) -> bool:
+    """Mirror the native C++ boss-or-hostile reset admission predicate."""
+    runtime = status.get("raid_runtime") or {}
+    route = status.get("validation_route") or {}
+    native = runtime.get("native_recovery") or {}
+    attempt_id = int(runtime.get("attempt_id") or 0)
+    assignment_generation = int(runtime.get("assignment_generation") or 0)
+    route_generation = int(route.get("generation") or 0)
+    route_node_id = str(route.get("node_id") or "")
+    recovery_scope_matches = (
+        attempt_id > 0
+        and assignment_generation > 0
+        and route_generation > 0
+        and bool(route_node_id)
+        and runtime.get("native_recovery_hold_active") is True
+        and int(runtime.get("native_recovery_route_generation") or 0) == route_generation
+        and str(runtime.get("native_recovery_node_id") or "") == route_node_id
+    )
+    boss_reset_observed = int(runtime.get("boss_reset_generation") or 0) > int(
+        runtime.get("boss_reset_generation_at_wipe") or 0
+    )
+    hostile_reset_observed = (
+        runtime.get("native_hostile_inactivity_observed") is True
+        and int(runtime.get("native_hostile_reset_generation") or 0)
+        > int(runtime.get("native_hostile_reset_generation_at_wipe") or 0)
+        and int(runtime.get("native_hostile_observation_attempt_id") or 0) == attempt_id
+        and int(runtime.get("native_hostile_observation_route_generation") or 0) == route_generation
+        and str(runtime.get("native_hostile_observation_node_id") or "") == route_node_id
+    )
+    return (
+        recovery_scope_matches
+        and runtime.get("alive_size") == 10
+        and runtime.get("encounter_in_progress") is False
+        and int(runtime.get("wipe_generation") or 0) > 0
+        and runtime.get("native_hostile_activity_active") is False
+        and (boss_reset_observed or hostile_reset_observed)
+        and native.get("death_observed") is True
+        and native.get("corpse_observed") is True
+        and native.get("release_observed") is True
+        and native.get("resurrection_observed") is True
+        and native.get("runback_observed") is True
+        and native.get("ready_check_action_observed") is not True
+    )
+
+
 def wait_for_prompt(process: subprocess.Popen[bytes], log_path: Path, timeout_sec: int) -> None:
     deadline = time.monotonic() + timeout_sec
     while time.monotonic() < deadline:
@@ -4346,23 +4404,9 @@ def main() -> int:
                         )
                     if monitor_statuses:
                         runtime = monitor_statuses[-1].get("raid_runtime") or {}
-                        native = runtime.get("native_recovery") or {}
-                        request_identity = (
-                            runtime.get("attempt_id"), runtime.get("wipe_generation"),
-                            runtime.get("boss_reset_generation"),
-                        )
-                        ready_for_native_check = (
-                            runtime.get("alive_size") == 10
-                            and runtime.get("encounter_in_progress") is False
-                            and int(runtime.get("wipe_generation") or 0) > 0
-                            and int(runtime.get("boss_reset_generation") or 0) > 0
-                            and native.get("death_observed") is True
-                            and native.get("corpse_observed") is True
-                            and native.get("release_observed") is True
-                            and native.get("resurrection_observed") is True
-                            and native.get("runback_observed") is True
-                            and native.get("ready_check_action_observed") is not True
-                        )
+                        status = monitor_statuses[-1]
+                        request_identity = native_readycheck_request_identity(status)
+                        ready_for_native_check = ready_for_native_readycheck(status)
                         if ready_for_native_check and readycheck_requested_for != request_identity:
                             # This invokes only the native Group ready-check packet path.
                             # It cannot alter encounter, death, movement, or resurrection state.

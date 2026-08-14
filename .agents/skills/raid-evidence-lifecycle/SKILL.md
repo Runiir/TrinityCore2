@@ -40,6 +40,12 @@ These shutdown and persistence duties belong to the capture controller or coordi
 - Require successful, fresh status, diagnose, and trace envelopes with exactly the frozen roster when the gate needs per-bot decisions.
 - Reconstruct milestones from ordered native observations rather than trusting aggregate completion flags.
 - In uncapped mode, use channel-freshness and monotonic semantic-progress clocks. Activity churn, casting toggles, or changing victim GUIDs are not progress.
+- Keep controller admission predicates byte-for-byte semantic peers of the
+  runtime gate. In particular, post-wipe ready-check orchestration must accept
+  either the scoped boss-reset edge or the scoped native-hostile reset edge
+  used for trash, require inactive hostiles, and bind attempt, wipe,
+  assignment, route generation, and node identity. A missing required
+  controller command is an infrastructure abort, not a gameplay failure.
 
 ## Separate evidence scopes
 

@@ -33,6 +33,8 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     _frozen_drudge_member_anchors,
     process_resource_sample,
     summarize_process_resource_samples,
+    native_readycheck_request_identity,
+    ready_for_native_readycheck,
 )
 
 
@@ -374,6 +376,120 @@ def test_material_signature_schedules_hostile_and_per_guid_recovery_edges():
         "resurrection_sequence": 15,
     }]
     assert material_status_signature(recovery) != baseline
+
+
+def test_readycheck_request_accepts_exact_trash_hostile_reset_without_boss_reset():
+    status = accepted_status()
+    runtime = status["raid_runtime"]
+    status["validation_route"] = {"generation": 3, "node_id": "drudge-node"}
+    runtime.update(
+        attempt_id=2,
+        assignment_generation=7,
+        alive_size=10,
+        encounter_in_progress=False,
+        wipe_generation=1,
+        boss_reset_generation=0,
+        boss_reset_generation_at_wipe=0,
+        native_hostile_activity_active=False,
+        native_hostile_inactivity_observed=True,
+        native_hostile_reset_generation=3,
+        native_hostile_reset_generation_at_wipe=2,
+        native_hostile_observation_attempt_id=2,
+        native_hostile_observation_route_generation=3,
+        native_hostile_observation_node_id="drudge-node",
+        native_recovery_hold_active=True,
+        native_recovery_route_generation=3,
+        native_recovery_node_id="drudge-node",
+    )
+    runtime["native_recovery"].update(
+        death_observed=True,
+        corpse_observed=True,
+        release_observed=True,
+        resurrection_observed=True,
+        runback_observed=True,
+        ready_check_action_observed=False,
+    )
+
+    assert ready_for_native_readycheck(status) is True
+    assert native_readycheck_request_identity(status) == (
+        2, 1, 7, 3, "drudge-node",
+    )
+
+
+def test_readycheck_request_rejects_stale_or_active_native_hostile_reset():
+    status = accepted_status()
+    runtime = status["raid_runtime"]
+    status["validation_route"] = {"generation": 3, "node_id": "drudge-node"}
+    runtime.update(
+        attempt_id=2,
+        assignment_generation=1,
+        alive_size=10,
+        encounter_in_progress=False,
+        wipe_generation=1,
+        boss_reset_generation=0,
+        boss_reset_generation_at_wipe=0,
+        native_hostile_activity_active=False,
+        native_hostile_inactivity_observed=True,
+        native_hostile_reset_generation=2,
+        native_hostile_reset_generation_at_wipe=2,
+        native_hostile_observation_attempt_id=2,
+        native_hostile_observation_route_generation=3,
+        native_hostile_observation_node_id="drudge-node",
+        native_recovery_hold_active=True,
+        native_recovery_route_generation=3,
+        native_recovery_node_id="drudge-node",
+    )
+    runtime["native_recovery"].update(
+        death_observed=True,
+        corpse_observed=True,
+        release_observed=True,
+        resurrection_observed=True,
+        runback_observed=True,
+        ready_check_action_observed=False,
+    )
+    assert ready_for_native_readycheck(status) is False
+
+    runtime["native_hostile_reset_generation"] = 3
+    runtime["native_hostile_activity_active"] = True
+    assert ready_for_native_readycheck(status) is False
+
+    runtime["native_hostile_activity_active"] = False
+    runtime["native_hostile_observation_node_id"] = "stale-node"
+    assert ready_for_native_readycheck(status) is False
+
+    runtime["native_hostile_observation_node_id"] = "drudge-node"
+    runtime["native_recovery_node_id"] = "other-node"
+    assert ready_for_native_readycheck(status) is False
+
+
+def test_readycheck_request_accepts_boss_reset_with_exact_recovery_scope():
+    status = accepted_status()
+    runtime = status["raid_runtime"]
+    status["validation_route"] = {"generation": 4, "node_id": "magmaw-node"}
+    runtime.update(
+        attempt_id=3,
+        assignment_generation=2,
+        alive_size=10,
+        encounter_in_progress=False,
+        wipe_generation=2,
+        boss_reset_generation=5,
+        boss_reset_generation_at_wipe=4,
+        native_hostile_activity_active=False,
+        native_hostile_inactivity_observed=False,
+        native_recovery_hold_active=True,
+        native_recovery_route_generation=4,
+        native_recovery_node_id="magmaw-node",
+    )
+    runtime["native_recovery"].update(
+        death_observed=True,
+        corpse_observed=True,
+        release_observed=True,
+        resurrection_observed=True,
+        runback_observed=True,
+        ready_check_action_observed=False,
+    )
+
+    assert ready_for_native_readycheck(status) is True
 
 
 def _write_runtime_profile_assets(root: Path, route_payload: str) -> None:
