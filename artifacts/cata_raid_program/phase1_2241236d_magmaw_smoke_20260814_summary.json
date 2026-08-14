@@ -1,0 +1,91 @@
+{
+  "schema": "cata_raid_compact_run_summary_v1",
+  "capture_id": "cata_raid_phase1_blackwing_descent_10n_magmaw_diagnostic_v1",
+  "started_at_utc": "2026-08-14T00:10:17Z",
+  "source_commit": "2241236d146a41ac4fcfc26cdde302d70b3c0202",
+  "source_tree": "0ef730b777c86a7538e48ea97f3ca7103fff5de0",
+  "binary_sha256": "1037f91ade47c5ef51b204e17260daef62aadb30639fc179d99bf0d6a663e706",
+  "configure_receipt_sha256": "088c05501ad1de1c87dfd442363044f1a20abc277bedc417591276089aeae5fc",
+  "worldserver_receipt_sha256": "40f8f9e4110b5dd32d9216aec3026dca818810356ad3c585463c3d7d8de73ca1",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
+  "classification": "infrastructure_abort",
+  "phase1_gate_passed": false,
+  "gameplay_failure": false,
+  "fidelity_claim": false,
+  "forbidden_assistance_observed": false,
+  "cleanup": {
+    "gate_passed": true,
+    "worldserver_exit_code": 0,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true
+  },
+  "positive_live_result": {
+    "exact_roster_and_instance_admitted": true,
+    "chainwielder_cleared": true,
+    "drudge_exact_roster_staged": true,
+    "resource_sampling_complete": true,
+    "forced_final_diagnose_and_trace_complete": true
+  },
+  "diagnosis": {
+    "primary": "one-sided tank combat-anchor admission body-pulled the Drudges before the shared threat-seed phase",
+    "slot_1_combat_anchor": [-283.888, -51.6322, 212.2983],
+    "slot_1_result": "strict native path rejected on every bounded retry",
+    "slot_2_result": "combat anchor accepted and movement initiated",
+    "first_native_rush_result": "both Drudges selected healer 30005 before any trained-profile seed action",
+    "threat_seed_complete": false,
+    "threat_seed_failure": true,
+    "threat_seed_roster_guids": [],
+    "native_rush_delivered_count": 6,
+    "final_alive_count": 3,
+    "final_death_count": 7,
+    "terminal_propagation_gap": "per-bot drudge_partial_death_before_threat_seed did not latch cohort failure, so capture waited for semantic stall",
+    "semantic_stall_seconds": 302.841,
+    "unchanged_semantic_samples": 77,
+    "dps_result": "trained offensive resolver and executor were never reached; no DPS-profile regression inference is authorized",
+    "magmaw_result": "not engaged; no Magmaw mechanics or fidelity inference is authorized"
+  },
+  "performance": {
+    "sample_count": 86,
+    "sampling_errors": 0,
+    "elapsed_seconds": 425.201,
+    "mean_cpu_percent_one_core": 37.121,
+    "minimum_rss_bytes": 1389277184,
+    "maximum_rss_bytes": 1452544000,
+    "total_uncompressed_bytes": 48460889,
+    "scheduler_gate": "MaxActiveCohorts=1 and process-wide selected-cohort callbacks still block six-way same-worldserver fanout"
+  },
+  "immutable_artifacts": {
+    "raw": {
+      "bytes": 24135973,
+      "sha256": "1e565f130fee59f45393c96b9042a3c44c44370af60cd7146999e65b38bd8bfb"
+    },
+    "worldserver_log": {
+      "bytes": 24144270,
+      "sha256": "dc4e258b8569de81a702c215c8e23912bb5d0540d9c9d11f0ee27316b45e3e0c"
+    },
+    "report": {
+      "bytes": 180646,
+      "file_sha256": "2fd2d1fa9bf9567a8c02a7f836c934a97bf65600532e09e3561db667763a0b5a",
+      "canonical_sha256": "2f6759e58993421ffb1854be71699841711a27246fec859ce77ed02c76a53fca"
+    }
+  },
+  "retention": {
+    "capture_dvc_pointer": {
+      "path": "artifacts/cata_raid_program/phase1_2241236d_magmaw_smoke_20260814.dvc",
+      "md5": "2efdb1c574502693559fd4b50d670c88.dir",
+      "size": 48460889,
+      "nfiles": 3
+    },
+    "build_prep_dvc_pointer": {
+      "path": "artifacts/cata_raid_program/phase1_2241236d_build_prep_20260814.dvc",
+      "md5": "130a26e4187b097aff0dfc1b2adb4b66.dir",
+      "size": 3914444,
+      "nfiles": 11
+    },
+    "remote_verified": true,
+    "local_payload_evicted": false,
+    "directory_metadata_retained": true
+  }
+}
