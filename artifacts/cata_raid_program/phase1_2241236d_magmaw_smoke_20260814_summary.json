@@ -85,7 +85,7 @@
       "nfiles": 11
     },
     "remote_verified": true,
-    "local_payload_evicted": false,
+    "local_payload_evicted": true,
     "directory_metadata_retained": true
   }
 }
