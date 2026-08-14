@@ -64,8 +64,10 @@ struct Input
     bool BothCombatTankAnchorsSafe = false;
     bool SourceCombatStarted = false;
     bool ChargeQueueIdle = false;
+    bool SourcesAlive = false;
     bool SourcesSeparated = false;
     bool SourcesOnFrozenLanes = false;
+    bool TanksOnFrozenLanes = false;
     bool BoundTankSourceGeometrySafe = false;
     bool NativeMeleeStopBounded = false;
     bool EvaluatePriorPathProof = false;
@@ -86,6 +88,7 @@ struct Result
     bool ReactivatePriorPathProof = false;
     bool SupportAllowed = false;
     bool TankMovementAllowed = false;
+    bool NativeOwnershipAllowed = false;
     bool NativeEngagementAllowed = false;
 };
 
@@ -130,8 +133,13 @@ inline Result Advance(State current, Input const& input)
     }
 
     // Once native body combat has begun, ordinary friendly class support is
-    // allowed while the tanks finish the declared geometry. Hostile offense,
-    // taunts, and threat seeding remain gated by NativeEngagementAllowed.
+    // allowed while the tanks finish the declared geometry. Hostile offense
+    // and threat seeding remain gated by NativeEngagementAllowed. The exact
+    // tanks receive a narrower ownership-only authority once both sealed
+    // anchors are reached: native source separation depends on each Drudge
+    // first following its assigned tank, so tying a real taunt to already-
+    // separated or final-lane sources creates a circular wait after a body
+    // pull. The actual taunt candidate still supplies native range/LOS gates.
     result.SupportAllowed = input.SourceCombatStarted;
 
     // Path discovery is a cohort barrier.  Both exact tank paths must be
@@ -146,9 +154,16 @@ inline Result Advance(State current, Input const& input)
     }
     result.TankMovementAllowed = Valid(input.Identity);
 
+    bool const ownershipSafe = input.BothCombatTankAnchorsSafe
+        && input.ChargeQueueIdle && !input.ChargePending
+        && input.SourcesAlive && input.TanksOnFrozenLanes
+        && input.NativeMeleeStopBounded;
+    result.NativeOwnershipAllowed = ownershipSafe && Valid(input.Identity);
+
     bool const dynamicEngagementSafe = input.ChargeQueueIdle && !input.ChargePending
-        && input.SourcesSeparated && input.SourcesOnFrozenLanes
-        && input.BoundTankSourceGeometrySafe && input.NativeMeleeStopBounded;
+        && input.SourcesAlive && input.SourcesSeparated && input.SourcesOnFrozenLanes
+        && input.TanksOnFrozenLanes && input.BoundTankSourceGeometrySafe
+        && input.NativeMeleeStopBounded;
     if (!input.BothCombatTankAnchorsSafe || !dynamicEngagementSafe)
     {
         result.NextDecision = input.SourceCombatStarted

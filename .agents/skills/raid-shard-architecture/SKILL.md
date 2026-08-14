@@ -38,6 +38,24 @@ Require one exact tuple across config, generated route, runtime status, capture,
   the tanks' outward displacement, minus arrival tolerance and native melee
   reach, to guarantee the configured source separation plus navigation margin.
   Revalidate every non-tank anchor against the resulting source positions.
+- Treat algebraic anchors and navmesh endpoints as different identities. Seal
+  the declared contract coordinate plus the exact native path terminal; prove
+  the full arrival disk, and require a fresh strict path when either identity,
+  instance, source pair, route generation, attempt, or wipe changes.
+- Separate tank ownership acquisition from ordinary engagement. After both
+  exact tank paths and arrivals are proven, allow only a real assigned taunt
+  (with its native range/LOS checks) even if a body-pulled source briefly
+  crossed lanes. Keep threat seeds, healing that can move, and all damage held
+  until observed source separation, frozen lanes, and bound geometry recover.
+- For cross-lane threat seeds, bind at least one trained ranged DPS slot per
+  source. Validate `anchor distance + member arrival tolerance <= resolved
+  hostile action range`, source danger clearance, lane side, and spacing;
+  runtime must still recheck the actual hostile action, LOS, power, cooldown,
+  and exact target before submission.
+- A prerequisite patrol is pullable only in a path-proven phase whose entire
+  chase stays outside every future-encounter guard. A native combat link to a
+  future encounter permanently contaminates that route generation; terminalize
+  it instead of accepting a later evade and quiet `trash_cluster_cleared`.
 - If native body combat begins during geometry staging, keep hostile offense,
   taunts, and threat seeds gated but allow ordinary friendly class support.
   A pre-seed death must terminalize/restart the dirty attempt; do not label a

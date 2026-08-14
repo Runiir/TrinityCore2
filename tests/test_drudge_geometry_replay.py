@@ -26,14 +26,17 @@ int main()
     input.Identity = scope;
     input.ExactPrepullStaged = true;
     input.ChargeQueueIdle = true;
+    input.SourcesAlive = true;
     input.SourcesSeparated = true;
     input.SourcesOnFrozenLanes = true;
+    input.TanksOnFrozenLanes = true;
     input.BoundTankSourceGeometrySafe = true;
     input.NativeMeleeStopBounded = true;
     Result result = Advance(state, input);
     assert(result.ScopeReset);
     assert(result.NextDecision == Decision::StageCombatTanks);
     assert(!result.TankMovementAllowed);
+    assert(!result.NativeOwnershipAllowed);
     assert(!result.NativeEngagementAllowed);
 
     // A single tank proof is intentionally not representable as movement
@@ -43,6 +46,7 @@ int main()
     result = Advance(result.Next, input);
     assert(result.NextDecision == Decision::StageCombatTanks);
     assert(result.TankMovementAllowed);
+    assert(!result.NativeOwnershipAllowed);
     assert(!result.NativeEngagementAllowed);
 
     // If native combat starts out of order, recovery still stages the same
@@ -52,13 +56,26 @@ int main()
     assert(result.NextDecision == Decision::RecoverCombatAtTankAnchors);
     assert(result.SupportAllowed);
     assert(result.TankMovementAllowed);
+    assert(!result.NativeOwnershipAllowed);
     assert(!result.NativeEngagementAllowed);
 
     input.BothCombatTankAnchorsSafe = true;
     result = Advance(result.Next, input);
     assert(result.NextDecision == Decision::AllowNativeEngagement);
     assert(result.SupportAllowed);
+    assert(result.NativeOwnershipAllowed);
     assert(result.NativeEngagementAllowed);
+
+    // Initial source separation is produced by native threat ownership. Once
+    // both sealed tank anchors are safe, a real tank taunt is allowed while
+    // ordinary offense and threat seeding remain held until the sources have
+    // actually followed their tanks far enough apart.
+    Input ownership = input;
+    ownership.SourcesSeparated = false;
+    ownership.BoundTankSourceGeometrySafe = false;
+    Result ownershipOnly = Advance(result.Next, ownership);
+    assert(ownershipOnly.NativeOwnershipAllowed);
+    assert(!ownershipOnly.NativeEngagementAllowed);
 
     // Each live dynamic contract predicate fails closed independently. Tank
     // movement/recovery remains selected, but taunt/offense authority does not.
@@ -66,6 +83,7 @@ int main()
     unsafe.ChargeQueueIdle = false;
     unsafe.ChargePending = true;
     Result pending = Advance(result.Next, unsafe);
+    assert(!pending.NativeOwnershipAllowed);
     assert(!pending.NativeEngagementAllowed);
     unsafe = input;
     unsafe.SourcesSeparated = false;
@@ -74,14 +92,27 @@ int main()
     unsafe = input;
     unsafe.SourcesOnFrozenLanes = false;
     Result crossed = Advance(result.Next, unsafe);
+    assert(crossed.NativeOwnershipAllowed);
     assert(!crossed.NativeEngagementAllowed);
+    unsafe = input;
+    unsafe.SourcesAlive = false;
+    Result deadSource = Advance(result.Next, unsafe);
+    assert(!deadSource.NativeOwnershipAllowed);
+    assert(!deadSource.NativeEngagementAllowed);
+    unsafe = input;
+    unsafe.TanksOnFrozenLanes = false;
+    Result crossedTanks = Advance(result.Next, unsafe);
+    assert(!crossedTanks.NativeOwnershipAllowed);
+    assert(!crossedTanks.NativeEngagementAllowed);
     unsafe = input;
     unsafe.BoundTankSourceGeometrySafe = false;
     Result wrongTankGeometry = Advance(result.Next, unsafe);
+    assert(wrongTankGeometry.NativeOwnershipAllowed);
     assert(!wrongTankGeometry.NativeEngagementAllowed);
     unsafe = input;
     unsafe.NativeMeleeStopBounded = false;
     Result oversizedNativeReach = Advance(result.Next, unsafe);
+    assert(!oversizedNativeReach.NativeOwnershipAllowed);
     assert(!oversizedNativeReach.NativeEngagementAllowed);
 
     // A native Rush invalidates the pre-Rush anchor proof once. Repeated bot
@@ -217,8 +248,10 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "exactCombatTankAnchorsSafe" in lane
     assert "!tankStage.NativeEngagementAllowed" in lane
     assert "tankStageInput.ChargeQueueIdle" in lane
+    assert "tankStageInput.SourcesAlive" in lane
     assert "tankStageInput.SourcesSeparated" in lane
     assert "tankStageInput.SourcesOnFrozenLanes" in lane
+    assert "tankStageInput.TanksOnFrozenLanes" in lane
     assert "tankStageInput.BoundTankSourceGeometrySafe" in lane
     assert "tankStageInput.NativeMeleeStopBounded" in lane
     assert "GetMeleeRange" in lane
@@ -232,4 +265,24 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     first_taunt = lane.index("drudge_lane_native_taunt")
     assert barrier < support
     assert first_taunt < barrier
-    assert "assignedTank && tankStage.NativeEngagementAllowed" in lane[first_taunt - 1200:first_taunt]
+    assert "assignedTank && tankStage.NativeOwnershipAllowed" in lane[first_taunt - 1200:first_taunt]
+
+
+def test_future_encounter_contamination_is_attempt_terminal_not_a_transient_hold():
+    implementation = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
+        encoding="utf-8"
+    )
+    start = implementation.index("Creature* prematureNextEncounter = nullptr;")
+    end = implementation.index("auto validationPartyHasActiveCombat", start)
+    hold = implementation[start:end]
+
+    latch = hold.index(
+        'Cohort().ValidationAttemptFailureReason =\n'
+        '                "validation_route_future_encounter_contamination";'
+    )
+    event = hold.index(
+        'RecordEvent(state, bot, "validation_route_future_encounter_contamination"'
+    )
+    assert latch < event < hold.index("return true;", event)
+    assert "ValidationAttemptFailureAttemptId = Cohort().AttemptId" in hold
+    assert "ValidationAttemptFailureRouteGeneration" in hold

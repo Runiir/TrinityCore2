@@ -9882,7 +9882,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     bool const validationAttemptFailed =
         !Cohort().ValidationAttemptFailureReason.empty()
         && Cohort().ValidationAttemptFailureAttemptId == Cohort().AttemptId;
-    if (validationAttemptFailed)
+    auto holdValidationAttemptFailure = [&]()
     {
         // This is a terminal observation, not an instruction to manufacture
         // a wipe or reset combat.  Suppression gates every newly issued owner
@@ -9903,6 +9903,10 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         state.LastDecisionReason = Cohort().ValidationAttemptFailureReason;
         state.LastNoProgressReason = Cohort().ValidationAttemptFailureReason;
         state.DecisionTimer = 0;
+    };
+    if (validationAttemptFailed && bot->IsAlive())
+    {
+        holdValidationAttemptFailure();
         return;
     }
 
@@ -9955,6 +9959,16 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
                 }
                 RecordBossReplay(state, bot, lastTarget, features, "boss_mechanic_failure", raw.c_str(), semantic.c_str(), "{\"action\":\"survive_boss_mechanic\"}", "{\"reason\":\"bot_died_during_boss\"}");
             }
+        }
+
+        // Preserve the triggering native death edge before entering the
+        // shared terminal hold. This keeps the final immutable bundle
+        // deterministic without allowing the dead member to enter any
+        // release/runback or direct-recovery path.
+        if (validationAttemptFailed)
+        {
+            holdValidationAttemptFailure();
+            return;
         }
 
         if (state.DeadTimer >= 5000)
@@ -14408,7 +14422,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (!bot || !bot->GetMap() || !creature || creature->GetMap() != bot->GetMap())
             return false;
 
-        static constexpr float FutureSourceSocialGuardYards = 35.0f;
+        float const futureSourceSocialGuardYards = std::max(35.0f,
+            Cohort().Config.ValidationRouteClusterRadiusYards);
         for (size_t routeIndex = Party().ValidationRouteManifestIndex + 1;
             routeIndex < Party().ValidationRouteManifest.size(); ++routeIndex)
         {
@@ -14420,7 +14435,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 return true;
             Creature* futureSource = bot->GetMap()->GetCreatureBySpawnId(futureNode.TargetSpawnId);
             if (futureSource && futureSource->IsAlive() && futureSource->GetHealth()
-                && creature->GetExactDist(futureSource) <= FutureSourceSocialGuardYards)
+                && creature->GetExactDist(futureSource) <= futureSourceSocialGuardYards)
                 return true;
             CreatureData const* futureSourceData = sObjectMgr->GetCreatureData(futureNode.TargetSpawnId);
             if (futureSourceData && futureSourceData->mapId == bot->GetMapId()
@@ -14428,7 +14443,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     creature->GetPositionX(),
                     creature->GetPositionY(),
                     futureSourceData->spawnPoint.GetPositionX(),
-                    futureSourceData->spawnPoint.GetPositionY()) <= FutureSourceSocialGuardYards)
+                    futureSourceData->spawnPoint.GetPositionY()) <= futureSourceSocialGuardYards)
                 return true;
         }
         return false;
@@ -14496,7 +14511,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         bool persistedPackMember = Party().ValidationRoutePackGeneration == Party().ValidationRouteGeneration
             && Party().ValidationRoutePackMemberGuids.find(creature->GetGUID()) != Party().ValidationRoutePackMemberGuids.end();
-        if (!persistedPackMember && wouldPullProtectedFutureValidationRouteSource(creature))
+        if (!Party().ValidationRoutePackObservedEngagement
+            && wouldPullProtectedFutureValidationRouteSource(creature))
             return false;
 
         ObjectGuid::LowType canonicalSpawnId = currentValidationRouteTargetSpawnId();
@@ -14581,7 +14597,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         bool focusedDiscoveryCandidate = discoveryLeg && Party().ValidationRouteFocusGuid == creature->GetGUID();
         if (!persistedPackMember && !focusedDiscoveryCandidate && (discoveryLeg || !isValidationRoutePackEntry(creature->GetEntry())))
             return false;
-        if (!persistedPackMember && wouldPullProtectedFutureValidationRouteSource(creature))
+        if (!Party().ValidationRoutePackObservedEngagement
+            && wouldPullProtectedFutureValidationRouteSource(creature))
             return false;
 
         ObjectGuid::LowType canonicalSpawnId = currentValidationRouteTargetSpawnId();
@@ -14674,6 +14691,17 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     });
     if (prematureNextEncounter)
     {
+        // This route generation is contaminated even if the future encounter
+        // later evades. Persist the first edge at cohort scope so a later
+        // quiet snapshot cannot certify the current node as cleared.
+        if (Cohort().ValidationAttemptFailureReason.empty())
+        {
+            Cohort().ValidationAttemptFailureReason =
+                "validation_route_future_encounter_contamination";
+            Cohort().ValidationAttemptFailureAttemptId = Cohort().AttemptId;
+            Cohort().ValidationAttemptFailureRouteGeneration =
+                Party().ValidationRouteGeneration;
+        }
         BotRaidAreaAuthority::SetAllOffenseSuppressed(raidAuthorityOwner, true);
         BotRaidAreaAuthority::Set(raidAuthorityOwner, true);
         for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
@@ -19936,28 +19964,34 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
             return true;
         };
-        auto boundTankSourceGeometrySafe = [&]()
+        auto tankOnFrozenLane = [&](Player const* tank, uint32 slot)
         {
-            if (!laneTank || !otherTank || !laneTank->IsAlive() || !otherTank->IsAlive()
-                || laneTank->GetMap() != bot->GetMap()
-                || otherTank->GetMap() != bot->GetMap())
+            if (!tank)
                 return false;
-            auto tankOnFrozenLane = [&](Player const* tank, uint32 slot)
-            {
-                bool const tankLaneA = std::find(
-                    Cohort().Config.ValidationRouteSplitLaneARosterSlots.begin(),
-                    Cohort().Config.ValidationRouteSplitLaneARosterSlots.end(), slot)
-                    != Cohort().Config.ValidationRouteSplitLaneARosterSlots.end();
-                float const tankLaneSign = tankLaneA ? -1.0f : 1.0f;
-                float const projection = (tank->GetPositionX() - midpointX) * axisX
-                    + (tank->GetPositionY() - midpointY) * axisY;
-                return tankLaneSign * projection >= laneSeparation * 0.25f;
-            };
-            return laneTank->GetExactDist2d(otherTank)
+            bool const tankLaneA = std::find(
+                Cohort().Config.ValidationRouteSplitLaneARosterSlots.begin(),
+                Cohort().Config.ValidationRouteSplitLaneARosterSlots.end(), slot)
+                != Cohort().Config.ValidationRouteSplitLaneARosterSlots.end();
+            float const tankLaneSign = tankLaneA ? -1.0f : 1.0f;
+            float const projection = (tank->GetPositionX() - midpointX) * axisX
+                + (tank->GetPositionY() - midpointY) * axisY;
+            return tankLaneSign * projection >= laneSeparation * 0.25f;
+        };
+        auto tanksOnFrozenLanes = [&]()
+        {
+            return laneTank && otherTank && laneTank->IsAlive() && otherTank->IsAlive()
+                && laneTank->GetMap() == bot->GetMap()
+                && otherTank->GetMap() == bot->GetMap()
+                && laneTank->GetExactDist2d(otherTank)
                     >= Cohort().Config.ValidationRouteSplitMinimumSeparationYards
                 && tankOnFrozenLane(laneTank, laneTankSlot)
-                && tankOnFrozenLane(otherTank, otherTankSlot)
-                && laneTank->GetExactDist2d(laneSource)
+                && tankOnFrozenLane(otherTank, otherTankSlot);
+        };
+        auto boundTankSourceGeometrySafe = [&]()
+        {
+            if (!tanksOnFrozenLanes())
+                return false;
+            return laneTank->GetExactDist2d(laneSource)
                     <= Cohort().Config.ValidationRouteSplitMinimumSeparationYards
                 && otherTank->GetExactDist2d(otherSource)
                     <= Cohort().Config.ValidationRouteSplitMinimumSeparationYards;
@@ -19973,10 +20007,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         tankStageInput.BothCombatTankAnchorsSafe = exactCombatTankAnchorsSafe();
         tankStageInput.ChargeQueueIdle = chargeObservation
             == Party().ValidationRouteDrudgeChargeObservations.end();
+        tankStageInput.SourcesAlive = sources[0]->IsAlive()
+            && sources[1]->IsAlive();
         tankStageInput.SourcesSeparated = sourceSeparation
             >= laneSeparation;
         tankStageInput.SourcesOnFrozenLanes = sourceOnFrozenLane(sources[0], 0)
             && sourceOnFrozenLane(sources[1], 1);
+        tankStageInput.TanksOnFrozenLanes = tanksOnFrozenLanes();
         tankStageInput.BoundTankSourceGeometrySafe = boundTankSourceGeometrySafe();
         tankStageInput.NativeMeleeStopBounded = laneTank && otherTank
             && laneSource->GetMeleeRange(laneTank)
@@ -19997,7 +20034,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             state.TargetGuid = laneSource->GetGUID();
             return true;
         }
-        if (assignedTank && tankStage.NativeEngagementAllowed
+        if (assignedTank && tankStage.NativeOwnershipAllowed
             && laneSource->GetVictim() == bot)
         {
             // Native threat ownership is already the exact frozen lane
@@ -20009,7 +20046,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (ownershipInsert.second)
                 record(laneSource, "drudge_lane_native_ownership", sourceSeparation);
         }
-        if (assignedTank && tankStage.NativeEngagementAllowed
+        if (assignedTank && tankStage.NativeOwnershipAllowed
             && laneSource->GetVictim() != bot)
         {
             BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, "tank");

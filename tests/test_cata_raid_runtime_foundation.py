@@ -2135,6 +2135,19 @@ def test_trash_profile_damage_cannot_pull_or_compound_the_next_boss_encounter():
     assert "SetAllOffenseSuppressed(raidAuthorityOwner, true)" in hold
     assert "controlledCreature->SetReactState(REACT_PASSIVE);" in hold
     assert "charmInfo->SetIsCommandAttack(false);" in hold
+    assert "ValidationAttemptFailureReason" in hold
+    assert '"validation_route_future_encounter_contamination"' in hold
+
+    future_guard = route_runtime[
+        route_runtime.index("auto wouldPullProtectedFutureValidationRouteSource"):
+        route_runtime.index("auto isValidationRouteEntry")
+    ]
+    assert "std::max(35.0f" in future_guard
+    assert "ValidationRouteClusterRadiusYards" in future_guard
+    assert route_runtime.count(
+        "!Party().ValidationRoutePackObservedEngagement\n"
+        "            && wouldPullProtectedFutureValidationRouteSource(creature)"
+    ) >= 2
 
     # Every offensive submission surface shares the same fail-closed policy.
     # This includes the exact manual Hunter Multi-Shot executor path and direct
@@ -2965,6 +2978,11 @@ def test_drudge_preseed_failure_latches_before_dead_member_recovery_and_is_seria
     assert "SetAllOffenseSuppressed" in update[terminal:dead_member]
     assert 'state.LastDecisionAction = "validation_route_terminal_hold";' in update[terminal:dead_member]
     assert "CombatStop" not in update[terminal:dead_member]
+    death_record = update.index("if (!state.DeathEpisodeRecorded)", dead_member)
+    dead_terminal = update.index("if (validationAttemptFailed)", death_record)
+    native_dead_recovery = update.index("if (state.DeadTimer >= 5000)", dead_terminal)
+    assert death_record < dead_terminal < native_dead_recovery
+    assert "holdValidationAttemptFailure();" in update[dead_terminal:native_dead_recovery]
 
     failure = 'Cohort().ValidationAttemptFailureReason =\n                    "drudge_partial_death_before_threat_seed";'
     assert failure in IMPL

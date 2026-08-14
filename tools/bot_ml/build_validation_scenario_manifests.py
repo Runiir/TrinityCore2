@@ -118,9 +118,11 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
     navigation_tanks = list(step.get("split_tank_navigation_anchors") or [])
     members = list(step.get("split_member_anchors") or [])
     tank_slots = [int(value) for value in step.get("split_lane_tank_slots") or []]
+    seed_slots = [int(value) for value in step.get("split_seed_roster_slots") or []]
     if (len(source_guids) != 2 or len(homes) != 2 or len(tanks) != 2
             or len(navigation_tanks) != 2
-            or len(tank_slots) != 2 or len(members) != 10):
+            or len(tank_slots) != 2 or len(seed_slots) != 2
+            or len(members) != 10):
         return False, "split_combat_anchor_shape"
     home_by_guid = {int(row.get("source_guid") or 0): row for row in homes}
     tank_by_slot = {int(row.get("roster_slot") or 0): row for row in tanks}
@@ -248,6 +250,29 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
                < minimum + tank_arrival
                for source in navigation_chased_sources):
             return False, "split_navigation_anchor_member_unsafe"
+    seed_max_range = float(step.get("split_seed_max_range_yards") or 0.0)
+    lane_a_slots = {int(value) for value in step.get("split_lane_a_roster_slots") or []}
+    lane_b_slots = {int(value) for value in step.get("split_lane_b_roster_slots") or []}
+    if (seed_max_range <= 0.0 or len(set(seed_slots)) != 2
+            or seed_slots[0] not in lane_b_slots
+            or seed_slots[1] not in lane_a_slots
+            or any(slot not in member_by_slot or slot in tank_slots for slot in seed_slots)):
+        return False, "split_seed_candidate_contract"
+    for source_index, slot in enumerate(seed_slots):
+        member = member_by_slot[slot]
+        anchor = (float(member["x"]), float(member["y"]))
+        source = navigation_chased_sources[source_index]
+        # The exact member can be anywhere inside its accepted arrival disk.
+        # Prove an ordinary hostile action remains within the trained range at
+        # the far edge, while the same disk remains outside both native source
+        # danger radii. Runtime still rechecks spell range, LOS, power,
+        # cooldown, and exact hostile target before the one seed submission.
+        if math.hypot(anchor[0] - source[0], anchor[1] - source[1]) \
+                + arrival > seed_max_range + 1e-6:
+            return False, "split_seed_candidate_range_unsafe"
+        if any(math.hypot(anchor[0] - peer[0], anchor[1] - peer[1]) + 1e-6
+               < minimum + arrival for peer in navigation_chased_sources):
+            return False, "split_seed_candidate_source_unsafe"
     return True, ""
 
 
@@ -679,6 +704,8 @@ def build_manifests(
                 "split_arrival_tolerance_yards": float(step.get("split_arrival_tolerance_yards") or 0.0),
                 "split_tank_arrival_tolerance_yards": float(step.get("split_tank_arrival_tolerance_yards") or 0.0),
                 "split_native_melee_stop_yards": float(step.get("split_native_melee_stop_yards") or 0.0),
+                "split_seed_roster_slots": [int(value) for value in (step.get("split_seed_roster_slots") or [])],
+                "split_seed_max_range_yards": float(step.get("split_seed_max_range_yards") or 0.0),
                 "thunderclap_spell_id": int(step.get("thunderclap_spell_id") or 0),
                 "charge_spell_id": int(step.get("charge_spell_id") or 0),
                 "charge_range_yards": float(step.get("charge_range_yards") or 0.0),

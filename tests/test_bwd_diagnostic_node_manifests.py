@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 from copy import deepcopy
 from pathlib import Path
 
@@ -66,6 +67,8 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
         if row.get("mechanic_profile") == "trash_two_tank_charge_lanes"
     )
     assert drudge_split_geometry_status(drudges) == (True, "")
+    assert drudges["split_seed_roster_slots"] == [8, 6]
+    assert drudges["split_seed_max_range_yards"] == 35.0
 
     unsafe = deepcopy(drudges)
     unsafe["split_tank_combat_anchors"] = [
@@ -118,6 +121,46 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
         False,
         "split_navigation_anchor_native_chase_unsafe",
     )
+
+    seed_out_of_range = deepcopy(drudges)
+    seed_out_of_range["split_member_anchors"][7]["x"] -= 20.0
+    assert drudge_split_geometry_status(seed_out_of_range) == (
+        False,
+        "split_seed_candidate_range_unsafe",
+    )
+
+    seed_inside_source = deepcopy(drudges)
+    seed_inside_source["split_member_anchors"][7].update(
+        x=-314.887329, y=-48.970574
+    )
+    assert drudge_split_geometry_status(seed_inside_source) == (
+        False,
+        "split_member_anchor_source_unsafe",
+    )
+
+
+def test_chainwielder_wait_anchor_and_pull_guard_are_outside_future_drudge_pack():
+    config = _config()
+    for scenario in [
+        next(row for row in config["scenarios"] if row["id"] == CANONICAL_ID),
+        next(
+            row for row in config["diagnostic_scenarios"]
+            if row["id"] == DIAGNOSTIC_IDS["magmaw"]
+        ),
+    ]:
+        chain = next(
+            row for row in scenario["route"] if row.get("source_entry") == 42649
+        )
+        drudges = next(
+            row for row in scenario["route"]
+            if row.get("mechanic_profile") == "trash_two_tank_charge_lanes"
+        )
+        guard = float(chain["cluster_radius_yards"])
+        assert all(
+            math.hypot(chain["x"] - source["x"], chain["y"] - source["y"])
+            > guard
+            for source in drudges["split_source_home_anchors"]
+        )
 
 
 def test_canonical_bwd_route_is_still_the_ordered_eleven_node_parent_route():
