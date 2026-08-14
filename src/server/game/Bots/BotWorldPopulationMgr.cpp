@@ -3998,6 +3998,7 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         node.SplitMinimumSeparationYards = readFloat(routeJson, "split_minimum_separation_yards");
         node.SplitNavigationMarginYards = readFloat(routeJson, "split_navigation_margin_yards");
         node.SplitArrivalToleranceYards = readFloat(routeJson, "split_arrival_tolerance_yards");
+        node.SplitTankArrivalToleranceYards = readFloat(routeJson, "split_tank_arrival_tolerance_yards");
         node.SplitNativeMeleeStopYards = readFloat(routeJson, "split_native_melee_stop_yards");
         node.ThunderclapSpellId = uint32(std::max(0, readInt(routeJson, "thunderclap_spell_id")));
         node.ChargeSpellId = uint32(std::max(0, readInt(routeJson, "charge_spell_id")));
@@ -4142,6 +4143,8 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     Cohort().Config.ValidationRouteSplitMinimumSeparationYards = node.SplitMinimumSeparationYards;
     Cohort().Config.ValidationRouteSplitNavigationMarginYards = node.SplitNavigationMarginYards;
     Cohort().Config.ValidationRouteSplitArrivalToleranceYards = node.SplitArrivalToleranceYards;
+    Cohort().Config.ValidationRouteSplitTankArrivalToleranceYards =
+        node.SplitTankArrivalToleranceYards;
     Cohort().Config.ValidationRouteSplitNativeMeleeStopYards = node.SplitNativeMeleeStopYards;
     Cohort().Config.ValidationRouteThunderclapSpellId = node.ThunderclapSpellId;
     Cohort().Config.ValidationRouteChargeSpellId = node.ChargeSpellId;
@@ -18655,6 +18658,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && Cohort().Config.ValidationRouteSplitMinimumSeparationYards > 0.0f
             && Cohort().Config.ValidationRouteSplitNavigationMarginYards >= 0.0f
             && Cohort().Config.ValidationRouteSplitArrivalToleranceYards > 0.0f
+            && Cohort().Config.ValidationRouteSplitTankArrivalToleranceYards > 0.0f
+            && Cohort().Config.ValidationRouteSplitTankArrivalToleranceYards
+                <= Cohort().Config.ValidationRouteSplitArrivalToleranceYards
             && Cohort().Config.ValidationRouteSplitNativeMeleeStopYards > 0.0f
             && Cohort().Config.ValidationRouteMinimumDistanceYards > 0.0f
             && Cohort().Config.ValidationRouteThunderclapSpellId
@@ -19051,9 +19057,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                          anchorState.ValidationRouteDrudgeAnchorY, sources[1]->GetPositionX(),
                          sources[1]->GetPositionY()) < Cohort().Config.ValidationRouteMinimumDistanceYards)
                 return false;
+            float const arrivalTolerance = memberRoster->second.Role == "tank"
+                ? Cohort().Config.ValidationRouteSplitTankArrivalToleranceYards
+                : Cohort().Config.ValidationRouteSplitArrivalToleranceYards;
             return member->GetExactDist(anchorState.ValidationRouteDrudgeAnchorX,
                 anchorState.ValidationRouteDrudgeAnchorY, anchorState.ValidationRouteDrudgeAnchorZ)
-                <= Cohort().Config.ValidationRouteSplitArrivalToleranceYards;
+                <= arrivalTolerance;
         };
 
         auto groupPositionSafe = [&](Player const* member) -> bool
@@ -19276,7 +19285,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 && bot->GetExactDist(state.ValidationRouteDrudgeAnchorX,
                     state.ValidationRouteDrudgeAnchorY,
                     state.ValidationRouteDrudgeAnchorZ)
-                    <= Cohort().Config.ValidationRouteSplitArrivalToleranceYards;
+                    <= (tank
+                        ? Cohort().Config.ValidationRouteSplitTankArrivalToleranceYards
+                        : Cohort().Config.ValidationRouteSplitArrivalToleranceYards);
             BotRaidDrudgeGeometry::Scope const proofScope{
                 Cohort().AttemptId,
                 Cohort().Raid.WipeGeneration,
@@ -19513,6 +19524,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             observation.MinimumMemberSpacing = sameLaneMemberMinimum;
             observation.ArrivalTolerance =
                 Cohort().Config.ValidationRouteSplitArrivalToleranceYards;
+            observation.TankArrivalTolerance =
+                Cohort().Config.ValidationRouteSplitTankArrivalToleranceYards;
             observation.MemberGeometry.clear();
             for (WorldBotState const& cohortState : Party().Bots)
             {
@@ -19806,6 +19819,21 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
             if (!navigationPointSeen[0] || !navigationPointSeen[1])
                 return false;
+            float const tankArrivalTolerance =
+                Cohort().Config.ValidationRouteSplitTankArrivalToleranceYards;
+            // The accepted tank position is a disk around each sealed
+            // navigation endpoint, not the endpoint itself.  Native radial
+            // chase (subtracting the melee-stop radius) is 1-Lipschitz, so a
+            // tank displaced by at most the arrival tolerance can displace
+            // its predicted source by at most the same amount.  Prove the
+            // complete arrival envelope before either tank is allowed to
+            // move; exact-end geometry alone can authorize an unrecoverable
+            // body pull at the inward edge of the tolerance disks.
+            if (Distance2d(navigationPoints[0].first, navigationPoints[0].second,
+                    navigationPoints[1].first, navigationPoints[1].second)
+                < Cohort().Config.ValidationRouteSplitMinimumSeparationYards
+                    + 2.0f * tankArrivalTolerance)
+                return false;
 
             std::array<std::pair<float, float>, 2> predictedSources{};
             for (uint32 sourceIndex = 0; sourceIndex < 2; ++sourceIndex)
@@ -19828,12 +19856,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     (predictedSources[sourceIndex].first - midpointX) * axisX
                     + (predictedSources[sourceIndex].second - midpointY) * axisY;
                 float const sourceLaneSign = sourceIndex == 0 ? -1.0f : 1.0f;
-                if (sourceLaneSign * projection < laneSeparation * 0.25f)
+                if (sourceLaneSign * projection
+                    < laneSeparation * 0.25f + tankArrivalTolerance)
                     return false;
             }
             if (Distance2d(predictedSources[0].first, predictedSources[0].second,
                     predictedSources[1].first, predictedSources[1].second)
-                < laneSeparation)
+                < laneSeparation + 2.0f * tankArrivalTolerance)
                 return false;
             for (ValidationRouteMemberAnchor const& memberAnchor :
                 Cohort().Config.ValidationRouteSplitMemberAnchors)
@@ -19846,9 +19875,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 if (Distance2d(memberAnchor.X, memberAnchor.Y,
                         predictedSources[0].first, predictedSources[0].second)
                         < Cohort().Config.ValidationRouteMinimumDistanceYards
+                            + tankArrivalTolerance
                     || Distance2d(memberAnchor.X, memberAnchor.Y,
                         predictedSources[1].first, predictedSources[1].second)
-                        < Cohort().Config.ValidationRouteMinimumDistanceYards)
+                        < Cohort().Config.ValidationRouteMinimumDistanceYards
+                            + tankArrivalTolerance)
                     return false;
             }
             return true;
@@ -32270,6 +32301,7 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
              << ",\"other_tank_source_distance\":" << observation.OtherTankSourceDistance
              << ",\"minimum_member_spacing\":" << observation.MinimumMemberSpacing
              << ",\"arrival_tolerance\":" << observation.ArrivalTolerance
+             << ",\"tank_arrival_tolerance\":" << observation.TankArrivalTolerance
              << ",\"tank0_x\":" << observation.Tank0X
              << ",\"tank0_y\":" << observation.Tank0Y
              << ",\"tank0_guid\":" << observation.Tank0Guid
@@ -38132,6 +38164,7 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << "{\"name\":\"validation_route_split_minimum_separation_yards\",\"value\":" << Cohort().Config.ValidationRouteSplitMinimumSeparationYards << "},"
          << "{\"name\":\"validation_route_split_navigation_margin_yards\",\"value\":" << Cohort().Config.ValidationRouteSplitNavigationMarginYards << "},"
          << "{\"name\":\"validation_route_split_arrival_tolerance_yards\",\"value\":" << Cohort().Config.ValidationRouteSplitArrivalToleranceYards << "},"
+         << "{\"name\":\"validation_route_split_tank_arrival_tolerance_yards\",\"value\":" << Cohort().Config.ValidationRouteSplitTankArrivalToleranceYards << "},"
          << "{\"name\":\"validation_route_split_native_melee_stop_yards\",\"value\":" << Cohort().Config.ValidationRouteSplitNativeMeleeStopYards << "},"
          << "{\"name\":\"validation_route_thunderclap_spell_id\",\"value\":" << Cohort().Config.ValidationRouteThunderclapSpellId << "},"
          << "{\"name\":\"validation_route_charge_spell_id\",\"value\":" << Cohort().Config.ValidationRouteChargeSpellId << "},"

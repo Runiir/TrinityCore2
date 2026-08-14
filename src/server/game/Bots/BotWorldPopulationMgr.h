@@ -132,6 +132,7 @@ struct BotWorldExperimentConfig
     float ValidationRouteSplitMinimumSeparationYards = 0.0f;
     float ValidationRouteSplitNavigationMarginYards = 0.0f;
     float ValidationRouteSplitArrivalToleranceYards = 0.0f;
+    float ValidationRouteSplitTankArrivalToleranceYards = 0.0f;
     float ValidationRouteSplitNativeMeleeStopYards = 0.0f;
     uint32 ValidationRouteThunderclapSpellId = 0;
     uint32 ValidationRouteChargeSpellId = 0;
@@ -504,6 +505,7 @@ private:
         float SplitMinimumSeparationYards = 0.0f;
         float SplitNavigationMarginYards = 0.0f;
         float SplitArrivalToleranceYards = 0.0f;
+        float SplitTankArrivalToleranceYards = 0.0f;
         float SplitNativeMeleeStopYards = 0.0f;
         uint32 ThunderclapSpellId = 0;
         uint32 ChargeSpellId = 0;
@@ -661,6 +663,7 @@ private:
         float OtherTankSourceDistance = 0.0f;
         float MinimumMemberSpacing = 0.0f;
         float ArrivalTolerance = 0.0f;
+        float TankArrivalTolerance = 0.0f;
         std::vector<ValidationRouteDrudgeMemberGeometry> MemberGeometry;
         std::set<uint32> ReseparatedRosterGuids;
         std::vector<ValidationRouteDrudgeThreatCandidateEvidence> NativeThreatCandidates;

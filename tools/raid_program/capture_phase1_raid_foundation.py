@@ -870,7 +870,7 @@ def _validate_drudge_observation_geometry(
         "source0_victim_guid", "source1_victim_guid",
         "source0_alive", "source1_alive",
         "source_separation", "minimum_source_separation", "minimum_member_spacing",
-        "arrival_tolerance", "members",
+        "arrival_tolerance", "tank_arrival_tolerance", "members",
         "tank0_x", "tank0_y", "tank0_guid", "tank0_slot", "tank0_projection",
         "tank0_source_distance", "tank1_x", "tank1_y", "tank1_guid", "tank1_slot",
         "tank1_projection", "tank1_source_distance",
@@ -915,7 +915,10 @@ def _validate_drudge_observation_geometry(
     minimum_source_sep = values["minimum_source_separation"]
     minimum_spacing = values["minimum_member_spacing"]
     arrival_tolerance = values["arrival_tolerance"]
-    if lane_sep <= 0 or minimum_source_sep <= 0 or minimum_spacing <= 0 or arrival_tolerance <= 0:
+    tank_arrival_tolerance = values["tank_arrival_tolerance"]
+    if (lane_sep <= 0 or minimum_source_sep <= 0 or minimum_spacing <= 0
+            or arrival_tolerance <= 0 or tank_arrival_tolerance <= 0
+            or tank_arrival_tolerance > arrival_tolerance):
         reasons.append("drudge_geometry_threshold_invalid")
     # Frozen in validation_scenarios_cata_001.json, BWD step 3
     # (trash_two_tank_charge_lanes); these are contract values, not claims
@@ -927,6 +930,7 @@ def _validate_drudge_observation_geometry(
         "minimum_distance": 15.0,
         "minimum_member_spacing": 3.0,
         "arrival_tolerance": 2.0,
+        "tank_arrival_tolerance": 1.0,
     }
     for name, expected in frozen_thresholds.items():
         if abs(values[name] - expected) > tolerance:
@@ -1031,7 +1035,9 @@ def _validate_drudge_observation_geometry(
         if guid != expected_guid or slot != source_index + 1:
             reasons.append(f"drudge_geometry_{prefix}_identity_invalid")
         expected_anchor = frozen_anchors.get(source_index + 1)
-        if expected_anchor is None or hypot(x - expected_anchor[0], y - expected_anchor[1]) > arrival_tolerance:
+        if (expected_anchor is None
+                or hypot(x - expected_anchor[0], y - expected_anchor[1])
+                > tank_arrival_tolerance):
             reasons.append(f"drudge_geometry_{prefix}_declared_anchor_mismatch")
         computed_projection = projection(x, y)
         if abs(stored_projection - computed_projection) > tolerance:

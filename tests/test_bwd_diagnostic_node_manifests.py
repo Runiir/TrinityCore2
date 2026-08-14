@@ -112,6 +112,13 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
         "split_navigation_anchor_native_chase_unsafe",
     )
 
+    inward_arrival_envelope = deepcopy(drudges)
+    inward_arrival_envelope["split_tank_arrival_tolerance_yards"] = 2.0
+    assert drudge_split_geometry_status(inward_arrival_envelope) == (
+        False,
+        "split_navigation_anchor_native_chase_unsafe",
+    )
+
 
 def test_canonical_bwd_route_is_still_the_ordered_eleven_node_parent_route():
     routes = _routes(_manifests(), CANONICAL_ID)

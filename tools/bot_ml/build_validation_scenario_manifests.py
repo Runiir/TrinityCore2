@@ -157,14 +157,17 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
     minimum = float(step.get("split_minimum_separation_yards") or 0.0)
     margin = float(step.get("split_navigation_margin_yards") or 0.0)
     arrival = float(step.get("split_arrival_tolerance_yards") or 0.0)
+    tank_arrival = float(step.get("split_tank_arrival_tolerance_yards") or 0.0)
     melee_stop = float(step.get("split_native_melee_stop_yards") or 0.0)
-    if minimum <= 0.0 or arrival <= 0.0 or melee_stop <= 0.0 or any(value <= 0.0 for value in outward):
+    if (minimum <= 0.0 or arrival <= 0.0 or tank_arrival <= 0.0
+            or tank_arrival > arrival or melee_stop <= 0.0
+            or any(value <= 0.0 for value in outward)):
         return False, "split_combat_anchor_contract"
     for home, tank in zip(ordered_homes, ordered_tanks):
         if math.hypot(home[0] - float(tank["x"]), home[1] - float(tank["y"])) > minimum:
             return False, "split_combat_anchor_bound"
     guaranteed_separation = home_separation + sum(
-        max(0.0, displacement - melee_stop - arrival) for displacement in outward
+        max(0.0, displacement - melee_stop - tank_arrival) for displacement in outward
     )
     if guaranteed_separation + 1e-6 < minimum + margin:
         return False, "split_combat_anchor_insufficient_native_chase"
@@ -172,7 +175,7 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
     if set(member_by_slot) != set(range(1, 11)):
         return False, "split_member_anchor_identity"
     source_displacements = [
-        max(0.0, displacement - melee_stop - arrival)
+        max(0.0, displacement - melee_stop - tank_arrival)
         for displacement in outward
     ]
     chased_sources = [
@@ -198,7 +201,7 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
     if math.hypot(
         navigation_points[1][0] - navigation_points[0][0],
         navigation_points[1][1] - navigation_points[0][1],
-    ) + 1e-6 < minimum:
+    ) + 1e-6 < minimum + 2.0 * tank_arrival:
         return False, "split_navigation_anchor_tank_separation"
 
     # Mirror native chase geometry in the horizontal plane.  Each Drudge
@@ -217,10 +220,13 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
             home[1] + nav_dy * scale,
             home[2],
         ))
+    # Native radial chase is 1-Lipschitz with respect to the accepted tank
+    # endpoint.  Validate the full tank-arrival disks, not only their centers:
+    # each source may move by up to tank_arrival from this nominal prediction.
     if math.hypot(
         navigation_chased_sources[1][0] - navigation_chased_sources[0][0],
         navigation_chased_sources[1][1] - navigation_chased_sources[0][1],
-    ) + 1e-6 < minimum + margin:
+    ) + 1e-6 < minimum + margin + 2.0 * tank_arrival:
         return False, "split_navigation_anchor_native_chase_unsafe"
     midpoint_x = (ordered_homes[0][0] + ordered_homes[1][0]) * 0.5
     midpoint_y = (ordered_homes[0][1] + ordered_homes[1][1]) * 0.5
@@ -229,7 +235,7 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
         projection = ((source[0] - midpoint_x) * axis_x
                       + (source[1] - midpoint_y) * axis_y)
         lane_sign = -1.0 if index == 0 else 1.0
-        if lane_sign * projection + 1e-6 < lane_threshold:
+        if lane_sign * projection + 1e-6 < lane_threshold + tank_arrival:
             return False, "split_navigation_anchor_source_lane_unsafe"
     for slot, member in member_by_slot.items():
         if slot in tank_slots:
@@ -238,7 +244,8 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
         if any(math.hypot(anchor[0] - source[0], anchor[1] - source[1]) + 1e-6 < minimum
                for source in chased_sources):
             return False, "split_member_anchor_source_unsafe"
-        if any(math.hypot(anchor[0] - source[0], anchor[1] - source[1]) + 1e-6 < minimum
+        if any(math.hypot(anchor[0] - source[0], anchor[1] - source[1]) + 1e-6
+               < minimum + tank_arrival
                for source in navigation_chased_sources):
             return False, "split_navigation_anchor_member_unsafe"
     return True, ""
@@ -670,6 +677,7 @@ def build_manifests(
                 "split_minimum_separation_yards": float(step.get("split_minimum_separation_yards") or 0.0),
                 "split_navigation_margin_yards": float(step.get("split_navigation_margin_yards") or 0.0),
                 "split_arrival_tolerance_yards": float(step.get("split_arrival_tolerance_yards") or 0.0),
+                "split_tank_arrival_tolerance_yards": float(step.get("split_tank_arrival_tolerance_yards") or 0.0),
                 "split_native_melee_stop_yards": float(step.get("split_native_melee_stop_yards") or 0.0),
                 "thunderclap_spell_id": int(step.get("thunderclap_spell_id") or 0),
                 "charge_spell_id": int(step.get("charge_spell_id") or 0),

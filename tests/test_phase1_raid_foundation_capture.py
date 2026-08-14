@@ -651,6 +651,7 @@ def accepted_drudge_status() -> dict:
         "other_tank_slot": 2, "other_tank_projection": projection(*tank1),
         "other_tank_source_distance": hypot(tank1[0] - source1[0], tank1[1] - source1[1]),
         "minimum_member_spacing": 3.0, "arrival_tolerance": 2.0,
+        "tank_arrival_tolerance": 1.0,
         "tank0_x": tank0[0], "tank0_y": tank0[1], "tank0_guid": tank_guids[0],
         "tank0_slot": 1, "tank0_projection": projection(*tank0),
         "tank0_source_distance": hypot(tank0[0] - source0[0], tank0[1] - source0[1]),

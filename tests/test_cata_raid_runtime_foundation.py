@@ -504,6 +504,8 @@ def test_bwd_magmaw_trash_splits_chainwielder_hazard_from_drudge_charge_contract
         row["roster_slot"]: row for row in drudges["split_tank_navigation_anchors"]
     }
     assert set(navigation_anchors) == {1, 2}
+    assert drudges["split_arrival_tolerance_yards"] == 2.0
+    assert drudges["split_tank_arrival_tolerance_yards"] == 1.0
     assert math.dist(
         (navigation_anchors[1]["x"], navigation_anchors[1]["y"]),
         (navigation_anchors[2]["x"], navigation_anchors[2]["y"]),
@@ -555,6 +557,7 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "ValidationRouteSplitMinimumSeparationYards" in lane
     assert "ValidationRouteSplitNavigationMarginYards" in lane
     assert "ValidationRouteSplitArrivalToleranceYards" in lane
+    assert "ValidationRouteSplitTankArrivalToleranceYards" in lane
     assert "ValidationRouteSplitMemberAnchors" in lane
     assert "ValidationRouteSplitTankCombatAnchors" in lane
     assert "ValidationRouteSplitTankNavigationAnchors" in lane
@@ -575,6 +578,9 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "ValidationRouteVengefulRageSpellId" in lane
     assert "BotCombatActionCategory::Taunt" in lane
     assert "exactCombatTankPathsProven" in lane
+    assert "laneSeparation + 2.0f * tankArrivalTolerance" in lane
+    assert "laneSeparation * 0.25f + tankArrivalTolerance" in lane
+    assert "ValidationRouteMinimumDistanceYards\n                            + tankArrivalTolerance" in lane
     assert "predictedSources" in lane
     assert "ValidationRouteSplitNativeMeleeStopYards" in lane
     assert "combatTankPathsProvenBeforeTick" in lane
