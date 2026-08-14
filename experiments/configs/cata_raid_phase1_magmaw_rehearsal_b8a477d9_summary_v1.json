@@ -69,6 +69,9 @@
     "smoke_size_bytes": 40630470,
     "smoke_file_count": 3,
     "remote_verified": true,
-    "local_payload_evicted": false
+    "local_payload_evicted": true,
+    "locally_evicted_unique_child_count": 12,
+    "retained_shared_child_count": 6,
+    "directory_metadata_retained": true
   }
 }
