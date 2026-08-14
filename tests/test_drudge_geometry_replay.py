@@ -17,6 +17,18 @@ using namespace BotRaidDrudgeGeometry;
 
 int main()
 {
+    std::vector<Point2d> safeRecoveryPath{
+        {-11.0f, 0.0f}, {-9.0f, 1.0f}, {-8.0f, 2.0f}
+    };
+    assert(RecoveryPathPreservesTankSeparation(
+        safeRecoveryPath, 0.0f, 0.0f, 1.0f, 0.0f, -1.0f, 8.0f, 15.0f));
+    std::vector<Point2d> crossedRecoveryPath = safeRecoveryPath;
+    crossedRecoveryPath.push_back({-7.0f, 2.0f});
+    assert(!RecoveryPathPreservesTankSeparation(
+        crossedRecoveryPath, 0.0f, 0.0f, 1.0f, 0.0f, -1.0f, 8.0f, 15.0f));
+    assert(!RecoveryPathPreservesTankSeparation(
+        safeRecoveryPath, 0.0f, 0.0f, 1.0f, 0.0f, -1.0f, 7.0f, 15.0f));
+
     Scope scope{7, 0, 3, 669, 14, 250140, 250141};
     State state;
 
@@ -264,7 +276,11 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "landedChargeRecovery" in lane
     assert "drudge_lane_native_taunt_approach" in lane
     assert 'candidate.RejectReason == "out_of_range"' in lane
-    assert "tankLaneSign * recoveryProjection >= laneSeparation * 0.25f" in lane
+    assert "PathGenerator recoveryPath(bot)" in lane
+    assert "recoveryPath.GetActualEndPosition()" in lane
+    assert "RecoveryPathPreservesTankSeparation" in lane
+    assert "ValidationRouteSplitMinimumSeparationYards" in lane
+    assert "* 0.5f" in lane
     assert "tankStageInput.SourcesAlive" in lane
     assert "tankStageInput.SourcesSeparated" in lane
     assert "tankStageInput.SourcesOnFrozenLanes" in lane

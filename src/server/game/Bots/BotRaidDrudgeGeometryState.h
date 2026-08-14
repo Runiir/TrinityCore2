@@ -2,6 +2,7 @@
 #define TRINITY_BOT_RAID_DRUDGE_GEOMETRY_STATE_H
 
 #include <cstdint>
+#include <vector>
 
 namespace BotRaidDrudgeGeometry
 {
@@ -97,6 +98,39 @@ struct Result
     bool NativeOwnershipAllowed = false;
     bool NativeEngagementAllowed = false;
 };
+
+struct Point2d
+{
+    float X = 0.0f;
+    float Y = 0.0f;
+};
+
+// Each tank's recovery path must remain entirely on its frozen half of the
+// lane axis.  Requiring both tanks (and every point of either path) to retain
+// at least half the minimum separation on opposite sides proves their
+// projected pair distance cannot collapse below the configured minimum even
+// when both movements execute concurrently.
+inline bool RecoveryPathPreservesTankSeparation(
+    std::vector<Point2d> const& path, float midpointX, float midpointY,
+    float axisX, float axisY, float laneSign,
+    float otherTankSignedProjection, float minimumSeparation)
+{
+    if (path.empty() || minimumSeparation <= 0.0f
+        || (laneSign != -1.0f && laneSign != 1.0f))
+        return false;
+
+    float const signedFloor = minimumSeparation * 0.5f;
+    if (otherTankSignedProjection < signedFloor)
+        return false;
+    for (Point2d const& point : path)
+    {
+        float const projection = (point.X - midpointX) * axisX
+            + (point.Y - midpointY) * axisY;
+        if (laneSign * projection < signedFloor)
+            return false;
+    }
+    return true;
+}
 
 // Production supplies the native path/position facts and replay varies their
 // ordering through this same transition. A Rush invalidates active anchor

@@ -20198,7 +20198,52 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                             float const recoveryProjection = (recoveryX - midpointX) * axisX
                                 + (recoveryY - midpointY) * axisY;
                             float const tankLaneSign = laneIndex == 0 ? -1.0f : 1.0f;
-                            if (tankLaneSign * recoveryProjection >= laneSeparation * 0.25f
+                            float const otherTankProjection = otherTank
+                                ? (otherTank->GetPositionX() - midpointX) * axisX
+                                    + (otherTank->GetPositionY() - midpointY) * axisY
+                                : 0.0f;
+                            float const otherTankLaneSign = -tankLaneSign;
+                            float const floorZ = bot->GetMap()->GetHeight(
+                                bot->GetPhaseShift(), recoveryX, recoveryY,
+                                recoveryZ + 2.0f, true, 8.0f);
+                            PathGenerator recoveryPath(bot);
+                            bool const pathCalculated = floorZ > INVALID_HEIGHT
+                                && std::fabs(floorZ - recoveryZ) <= 4.0f
+                                && recoveryPath.CalculatePath(
+                                    recoveryX, recoveryY, recoveryZ, false);
+                            PathType const recoveryPathType = pathCalculated
+                                ? recoveryPath.GetPathType() : PATHFIND_NOPATH;
+                            bool const strictRecoveryPath = pathCalculated
+                                && !(recoveryPathType & PATHFIND_NOPATH)
+                                && !(recoveryPathType & PATHFIND_NOT_USING_PATH)
+                                && !(recoveryPathType & PATHFIND_INCOMPLETE)
+                                && !(recoveryPathType & PATHFIND_SHORTCUT)
+                                && !(recoveryPathType & PATHFIND_FARFROMPOLY);
+                            std::vector<BotRaidDrudgeGeometry::Point2d> recoveryPoints;
+                            if (strictRecoveryPath)
+                            {
+                                recoveryPoints.push_back({
+                                    bot->GetPositionX(), bot->GetPositionY() });
+                                for (G3D::Vector3 const& point : recoveryPath.GetPath())
+                                    recoveryPoints.push_back({ point.x, point.y });
+                                G3D::Vector3 const& actualEnd =
+                                    recoveryPath.GetActualEndPosition();
+                                recoveryPoints.push_back({ actualEnd.x, actualEnd.y });
+                                if (std::hypot(actualEnd.x - recoveryX,
+                                        actualEnd.y - recoveryY) > 0.25f
+                                    || std::fabs(actualEnd.z - recoveryZ) > 1.0f)
+                                    recoveryPoints.clear();
+                            }
+                            bool const recoveryGeometrySafe =
+                                BotRaidDrudgeGeometry::RecoveryPathPreservesTankSeparation(
+                                    recoveryPoints, midpointX, midpointY, axisX, axisY,
+                                    tankLaneSign,
+                                    otherTankLaneSign * otherTankProjection,
+                                    Cohort().Config.ValidationRouteSplitMinimumSeparationYards);
+                            if (tankLaneSign * recoveryProjection
+                                    >= Cohort().Config.ValidationRouteSplitMinimumSeparationYards
+                                        * 0.5f
+                                && recoveryGeometrySafe
                                 && MoveBotToPoint(state, bot, recoveryX, recoveryY, recoveryZ))
                             {
                                 record(laneSource, "drudge_lane_native_taunt_approach",
