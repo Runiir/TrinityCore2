@@ -645,9 +645,19 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert 'candidateAction.MovementDirective == "ranged"' in lane[seed_transition:seed_call]
     assert "candidateAction.MaxRange > 5.0f" in lane[seed_transition:seed_call]
     assert 'candidateAction.AutoAttackMode == "ranged"' not in lane[seed_transition:seed_call]
-    assert 'ExtractJsonUIntArrayField(routeJson, "split_seed_roster_slots")' in IMPL
+    assert 'ExtractJsonStrictUIntArrayField(\n            routeJson, "split_seed_roster_slots"' in IMPL
+    strict_array = IMPL[
+        IMPL.index("bool ExtractJsonStrictUIntArrayField") :
+        IMPL.index("bool JsonHasField")
+    ]
+    assert "std::isdigit" in strict_array
+    assert "(std::numeric_limits<uint32>::max() - digit) / 10" in strict_array
+    assert "if (array[index] != ',')" in strict_array
+    assert "values.push_back(uint32(value))" in strict_array
     assert 'readFloat(routeJson, "split_seed_max_range_yards")' in IMPL
     assert "seedSlotsResolved" in lane[:seed_transition]
+    assert "seedSlotHasExactDps" in lane[:seed_transition]
+    assert 'roster.Role == "dps"' in lane[:seed_transition]
     assert "ValidationRouteSplitSeedRosterSlots[laneIndex]" in lane[
         seed_transition:seed_call
     ]

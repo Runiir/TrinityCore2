@@ -702,6 +702,61 @@ std::vector<uint32> ExtractJsonUIntArrayField(std::string const& json, std::stri
     return ParseUIntList(ExtractJsonArrayField(json, key));
 }
 
+bool ExtractJsonStrictUIntArrayField(std::string const& json, std::string const& key,
+    std::vector<uint32>& values)
+{
+    values.clear();
+    std::string const array = ExtractJsonArrayField(json, key);
+    if (array.size() < 2 || array.front() != '[')
+        return false;
+
+    size_t index = 1;
+    auto skipWhitespace = [&]()
+    {
+        while (index < array.size()
+            && std::isspace(static_cast<unsigned char>(array[index])))
+            ++index;
+    };
+    skipWhitespace();
+    if (index < array.size() && array[index] == ']')
+    {
+        ++index;
+        skipWhitespace();
+        return index == array.size();
+    }
+
+    while (index < array.size())
+    {
+        if (!std::isdigit(static_cast<unsigned char>(array[index])))
+            return false;
+        uint64 value = 0;
+        while (index < array.size()
+            && std::isdigit(static_cast<unsigned char>(array[index])))
+        {
+            uint64 const digit = uint64(array[index] - '0');
+            if (value > (std::numeric_limits<uint32>::max() - digit) / 10)
+                return false;
+            value = value * 10 + digit;
+            ++index;
+        }
+        values.push_back(uint32(value));
+        skipWhitespace();
+        if (index >= array.size())
+            return false;
+        if (array[index] == ']')
+        {
+            ++index;
+            skipWhitespace();
+            return index == array.size();
+        }
+        if (array[index] != ',')
+            return false;
+        ++index;
+        skipWhitespace();
+    }
+    return false;
+}
+
 bool JsonHasField(std::string const& json, std::string const& key)
 {
     std::regex pattern("\"" + key + "\"\\s*:");
@@ -4000,7 +4055,9 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         node.SplitArrivalToleranceYards = readFloat(routeJson, "split_arrival_tolerance_yards");
         node.SplitTankArrivalToleranceYards = readFloat(routeJson, "split_tank_arrival_tolerance_yards");
         node.SplitNativeMeleeStopYards = readFloat(routeJson, "split_native_melee_stop_yards");
-        node.SplitSeedRosterSlots = ExtractJsonUIntArrayField(routeJson, "split_seed_roster_slots");
+        if (!ExtractJsonStrictUIntArrayField(
+            routeJson, "split_seed_roster_slots", node.SplitSeedRosterSlots))
+            node.SplitSeedRosterSlots.clear();
         node.SplitSeedMaxRangeYards = readFloat(routeJson, "split_seed_max_range_yards");
         node.ThunderclapSpellId = uint32(std::max(0, readInt(routeJson, "thunderclap_spell_id")));
         node.ChargeSpellId = uint32(std::max(0, readInt(routeJson, "charge_spell_id")));
@@ -18673,6 +18730,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             Cohort().Config.ValidationRouteSplitTankNavigationAnchors)
             navigationTankAnchorSlots.push_back(anchor.RosterSlot);
         std::sort(navigationTankAnchorSlots.begin(), navigationTankAnchorSlots.end());
+        auto seedSlotHasExactDps = [this](uint32 oneBasedSlot) -> bool
+        {
+            for (auto const& [guid, roster] : Cohort().Raid.RosterByGuid)
+            {
+                (void)guid;
+                if (roster.SlotIndex + 1 == oneBasedSlot)
+                    return roster.Active && roster.LeaseOwned && roster.Role == "dps";
+            }
+            return false;
+        };
         bool const seedSlotsResolved =
             Cohort().Config.ValidationRouteSplitSeedRosterSlots.size() == 2
             && Cohort().Config.ValidationRouteSplitSeedRosterSlots[0]
@@ -18692,7 +18759,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && std::find(Cohort().Config.ValidationRouteSplitLaneTankSlots.begin(),
                 Cohort().Config.ValidationRouteSplitLaneTankSlots.end(),
                 Cohort().Config.ValidationRouteSplitSeedRosterSlots[1])
-                == Cohort().Config.ValidationRouteSplitLaneTankSlots.end();
+                == Cohort().Config.ValidationRouteSplitLaneTankSlots.end()
+            && seedSlotHasExactDps(Cohort().Config.ValidationRouteSplitSeedRosterSlots[0])
+            && seedSlotHasExactDps(Cohort().Config.ValidationRouteSplitSeedRosterSlots[1]);
         bool contractResolved = Cohort().Config.ValidationRouteSplitSourceGuids.size() == 2
             && Cohort().Config.ValidationRouteSplitLaneARosterSlots.size() == 5
             && Cohort().Config.ValidationRouteSplitLaneBRosterSlots.size() == 5
@@ -38234,6 +38303,8 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << "{\"name\":\"validation_route_split_tank_arrival_tolerance_yards\",\"value\":" << Cohort().Config.ValidationRouteSplitTankArrivalToleranceYards << "},"
          << "{\"name\":\"validation_route_split_native_melee_stop_yards\",\"value\":" << Cohort().Config.ValidationRouteSplitNativeMeleeStopYards << "},"
          << "{\"name\":\"validation_route_split_seed_slot_count\",\"value\":" << Cohort().Config.ValidationRouteSplitSeedRosterSlots.size() << "},"
+         << "{\"name\":\"validation_route_split_seed_source_0_slot\",\"value\":" << (Cohort().Config.ValidationRouteSplitSeedRosterSlots.size() == 2 ? Cohort().Config.ValidationRouteSplitSeedRosterSlots[0] : 0) << "},"
+         << "{\"name\":\"validation_route_split_seed_source_1_slot\",\"value\":" << (Cohort().Config.ValidationRouteSplitSeedRosterSlots.size() == 2 ? Cohort().Config.ValidationRouteSplitSeedRosterSlots[1] : 0) << "},"
          << "{\"name\":\"validation_route_split_seed_max_range_yards\",\"value\":" << Cohort().Config.ValidationRouteSplitSeedMaxRangeYards << "},"
          << "{\"name\":\"validation_route_thunderclap_spell_id\",\"value\":" << Cohort().Config.ValidationRouteThunderclapSpellId << "},"
          << "{\"name\":\"validation_route_charge_spell_id\",\"value\":" << Cohort().Config.ValidationRouteChargeSpellId << "},"
