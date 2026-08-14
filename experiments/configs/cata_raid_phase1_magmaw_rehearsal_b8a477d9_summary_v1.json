@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "captured_at_utc": "2026-08-14T01:06:00Z",
+  "source_commit": "b8a477d9689d88ca22c0112d08453503f7268dcd",
+  "binary_sha256": "74ecb044431d5685f33bd210d6433aa128a7b147950452bac13627884d0b504b",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "capture_classification": "gameplay_failure",
+  "phase1_gate_passed": false,
+  "magmaw_engaged": false,
+  "fidelity_claim": false,
+  "terminal_failure": {
+    "reason": "drudge_partial_death_before_threat_seed",
+    "elapsed_seconds": 299.078,
+    "final_forced_diagnose_trace_gate_passed": true
+  },
+  "route_observation": {
+    "chainwielder_cleared": true,
+    "chainwielder_future_drudge_contamination_observed": true,
+    "chainwielder_deaths": 5,
+    "all_ten_recovered_before_drudge_node": true,
+    "drudge_native_rush_prepared": 2,
+    "drudge_native_rush_delivered": 2,
+    "drudge_native_rush_landed": 2,
+    "drudge_ownership_roster_guids": [],
+    "drudge_taunt_roster_guids": [],
+    "drudge_threat_seed_roster_guids": [],
+    "drudge_profile_action_roster_guids": []
+  },
+  "decisive_diagnosis": [
+    "Both Drudges body-pulled tank 30001 while the ownership taunt gate incorrectly required already-separated source geometry.",
+    "Both first native Rushes selected tank 30001; no DPS entered either native threat list.",
+    "The configured cross-lane ranged DPS anchors did not guarantee a trained hostile action within the 35-yard range envelope.",
+    "The Chainwielder node engaged future Drudge actors, recovered, and incorrectly advanced after the contaminated generation became quiet."
+  ],
+  "remediation_commit": "85347cc8e0",
+  "resource_summary": {
+    "sample_count": 61,
+    "elapsed_seconds": 299.078,
+    "mean_cpu_percent_one_core": 37.656,
+    "minimum_rss_bytes": 1389072384,
+    "maximum_rss_bytes": 1629954048,
+    "worldserver_log_bytes": 20253977,
+    "normalized_raw_bytes": 20228450
+  },
+  "cleanup": {
+    "gate_passed": true,
+    "stop_observed": true,
+    "zero_bots": true,
+    "zero_leases": true,
+    "worldserver_process_absent": true,
+    "forbidden_assistance_observed": false
+  },
+  "immutable_hashes": {
+    "capture_report_file_sha256": "79e95a3ea157fc910c18550193ec2608be3ff8e9c20e9c21c088830c7623a2e5",
+    "capture_report_canonical_sha256": "94aff63c95808f901230e344689cf75417c191f3839562fc06d5f0242f302b07",
+    "normalized_raw_sha256": "a456d577e9aa793cafa2b6c965f4c78da5cade2e822fa5c44f5f288de7e0cb14",
+    "worldserver_log_sha256": "12655af656f2ea74aeb3a3eabeb999f09182d463d791c0ba0abf30eecacfd962",
+    "configure_receipt_sha256": "d471251ed7ba172b3b5b3cb9012a5d49fe43ef7284178d1b0f25c3bc754580ec",
+    "worldserver_receipt_sha256": "f35853dc521115aab6bef2449edf45fcafcdfa5072d999fc659ee8184d6fd087",
+    "full_provisioning_verifier_sha256": "b25e3df43441553b7b33f51809fb0fc4c9edbba92ab489594e42aeaac7ede6bc",
+    "provisioning_readback_sha256": "0d8fcc7b290b3e176d60df457f50591c37eacb14f6915041776629eee9d089a1"
+  },
+  "dvc": {
+    "build_prep_pointer_md5": "2dac4306eabe7be7546f4c57247e575c.dir",
+    "build_prep_size_bytes": 7673245,
+    "build_prep_file_count": 19,
+    "smoke_pointer_md5": "4dea3f5c12002ef9581573fc812b5306.dir",
+    "smoke_size_bytes": 40630470,
+    "smoke_file_count": 3,
+    "remote_verified": true,
+    "local_payload_evicted": false
+  }
+}
