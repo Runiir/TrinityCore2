@@ -4000,6 +4000,8 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         node.SplitArrivalToleranceYards = readFloat(routeJson, "split_arrival_tolerance_yards");
         node.SplitTankArrivalToleranceYards = readFloat(routeJson, "split_tank_arrival_tolerance_yards");
         node.SplitNativeMeleeStopYards = readFloat(routeJson, "split_native_melee_stop_yards");
+        node.SplitSeedRosterSlots = ExtractJsonUIntArrayField(routeJson, "split_seed_roster_slots");
+        node.SplitSeedMaxRangeYards = readFloat(routeJson, "split_seed_max_range_yards");
         node.ThunderclapSpellId = uint32(std::max(0, readInt(routeJson, "thunderclap_spell_id")));
         node.ChargeSpellId = uint32(std::max(0, readInt(routeJson, "charge_spell_id")));
         node.ChargeRangeYards = readFloat(routeJson, "charge_range_yards");
@@ -4146,6 +4148,8 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     Cohort().Config.ValidationRouteSplitTankArrivalToleranceYards =
         node.SplitTankArrivalToleranceYards;
     Cohort().Config.ValidationRouteSplitNativeMeleeStopYards = node.SplitNativeMeleeStopYards;
+    Cohort().Config.ValidationRouteSplitSeedRosterSlots = node.SplitSeedRosterSlots;
+    Cohort().Config.ValidationRouteSplitSeedMaxRangeYards = node.SplitSeedMaxRangeYards;
     Cohort().Config.ValidationRouteThunderclapSpellId = node.ThunderclapSpellId;
     Cohort().Config.ValidationRouteChargeSpellId = node.ChargeSpellId;
     Cohort().Config.ValidationRouteChargeRangeYards = node.ChargeRangeYards;
@@ -18669,6 +18673,26 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             Cohort().Config.ValidationRouteSplitTankNavigationAnchors)
             navigationTankAnchorSlots.push_back(anchor.RosterSlot);
         std::sort(navigationTankAnchorSlots.begin(), navigationTankAnchorSlots.end());
+        bool const seedSlotsResolved =
+            Cohort().Config.ValidationRouteSplitSeedRosterSlots.size() == 2
+            && Cohort().Config.ValidationRouteSplitSeedRosterSlots[0]
+                != Cohort().Config.ValidationRouteSplitSeedRosterSlots[1]
+            && std::find(Cohort().Config.ValidationRouteSplitLaneBRosterSlots.begin(),
+                Cohort().Config.ValidationRouteSplitLaneBRosterSlots.end(),
+                Cohort().Config.ValidationRouteSplitSeedRosterSlots[0])
+                != Cohort().Config.ValidationRouteSplitLaneBRosterSlots.end()
+            && std::find(Cohort().Config.ValidationRouteSplitLaneARosterSlots.begin(),
+                Cohort().Config.ValidationRouteSplitLaneARosterSlots.end(),
+                Cohort().Config.ValidationRouteSplitSeedRosterSlots[1])
+                != Cohort().Config.ValidationRouteSplitLaneARosterSlots.end()
+            && std::find(Cohort().Config.ValidationRouteSplitLaneTankSlots.begin(),
+                Cohort().Config.ValidationRouteSplitLaneTankSlots.end(),
+                Cohort().Config.ValidationRouteSplitSeedRosterSlots[0])
+                == Cohort().Config.ValidationRouteSplitLaneTankSlots.end()
+            && std::find(Cohort().Config.ValidationRouteSplitLaneTankSlots.begin(),
+                Cohort().Config.ValidationRouteSplitLaneTankSlots.end(),
+                Cohort().Config.ValidationRouteSplitSeedRosterSlots[1])
+                == Cohort().Config.ValidationRouteSplitLaneTankSlots.end();
         bool contractResolved = Cohort().Config.ValidationRouteSplitSourceGuids.size() == 2
             && Cohort().Config.ValidationRouteSplitLaneARosterSlots.size() == 5
             && Cohort().Config.ValidationRouteSplitLaneBRosterSlots.size() == 5
@@ -18690,6 +18714,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && Cohort().Config.ValidationRouteSplitTankArrivalToleranceYards
                 <= Cohort().Config.ValidationRouteSplitArrivalToleranceYards
             && Cohort().Config.ValidationRouteSplitNativeMeleeStopYards > 0.0f
+            && seedSlotsResolved
+            && Cohort().Config.ValidationRouteSplitSeedMaxRangeYards > 0.0f
             && Cohort().Config.ValidationRouteMinimumDistanceYards > 0.0f
             && Cohort().Config.ValidationRouteThunderclapSpellId
             && Cohort().Config.ValidationRouteChargeSpellId
@@ -20369,6 +20395,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             bool selectedInRange = false;
             uint32 selectedSlot = std::numeric_limits<uint32>::max();
             uint32 const selectedLaneIndex = 1 - laneIndex;
+            uint32 const requiredSeedSlot =
+                Cohort().Config.ValidationRouteSplitSeedRosterSlots[laneIndex];
             for (WorldBotState& candidateState : Party().Bots)
             {
                 Player* candidate = GetLoadedBot(candidateState);
@@ -20387,7 +20415,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     Cohort().Config.ValidationRouteSplitLaneARosterSlots.end(), candidateSlot)
                     != Cohort().Config.ValidationRouteSplitLaneARosterSlots.end();
                 uint32 const candidateLaneIndex = candidateLaneA ? 0 : 1;
-                if (candidateLaneIndex != selectedLaneIndex
+                if (candidateSlot != requiredSeedSlot
+                    || candidateLaneIndex != selectedLaneIndex
                     || Party().ValidationRouteDrudgeThreatSeedRosterGuids.count(
                         candidate->GetGUID().GetCounter()))
                     continue;
@@ -20406,6 +20435,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 float const distance = candidate->GetExactDist(laneSource);
                 bool const inRange = profileValid
                     && lineOfSight
+                    && distance <= Cohort().Config.ValidationRouteSplitSeedMaxRangeYards
                     && (!candidateAction.MinRange || distance >= candidateAction.MinRange)
                     && (!candidateAction.MaxRange || distance <= candidateAction.MaxRange);
                 if (!profileValid || !lineOfSight || !inRange)
@@ -38203,6 +38233,8 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << "{\"name\":\"validation_route_split_arrival_tolerance_yards\",\"value\":" << Cohort().Config.ValidationRouteSplitArrivalToleranceYards << "},"
          << "{\"name\":\"validation_route_split_tank_arrival_tolerance_yards\",\"value\":" << Cohort().Config.ValidationRouteSplitTankArrivalToleranceYards << "},"
          << "{\"name\":\"validation_route_split_native_melee_stop_yards\",\"value\":" << Cohort().Config.ValidationRouteSplitNativeMeleeStopYards << "},"
+         << "{\"name\":\"validation_route_split_seed_slot_count\",\"value\":" << Cohort().Config.ValidationRouteSplitSeedRosterSlots.size() << "},"
+         << "{\"name\":\"validation_route_split_seed_max_range_yards\",\"value\":" << Cohort().Config.ValidationRouteSplitSeedMaxRangeYards << "},"
          << "{\"name\":\"validation_route_thunderclap_spell_id\",\"value\":" << Cohort().Config.ValidationRouteThunderclapSpellId << "},"
          << "{\"name\":\"validation_route_charge_spell_id\",\"value\":" << Cohort().Config.ValidationRouteChargeSpellId << "},"
          << "{\"name\":\"validation_route_charge_range_yards\",\"value\":" << Cohort().Config.ValidationRouteChargeRangeYards << "},"

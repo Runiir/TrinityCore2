@@ -645,6 +645,16 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert 'candidateAction.MovementDirective == "ranged"' in lane[seed_transition:seed_call]
     assert "candidateAction.MaxRange > 5.0f" in lane[seed_transition:seed_call]
     assert 'candidateAction.AutoAttackMode == "ranged"' not in lane[seed_transition:seed_call]
+    assert 'ExtractJsonUIntArrayField(routeJson, "split_seed_roster_slots")' in IMPL
+    assert 'readFloat(routeJson, "split_seed_max_range_yards")' in IMPL
+    assert "seedSlotsResolved" in lane[:seed_transition]
+    assert "ValidationRouteSplitSeedRosterSlots[laneIndex]" in lane[
+        seed_transition:seed_call
+    ]
+    assert "candidateSlot != requiredSeedSlot" in lane[seed_transition:seed_call]
+    assert "distance <= Cohort().Config.ValidationRouteSplitSeedMaxRangeYards" in lane[
+        seed_transition:seed_call
+    ]
     unavailable = lane.index('"drudge_pre_first_rush_seed_profile_unavailable"')
     unavailable_branch = lane[lane.rfind("if (!selectedMember || !selectedState)", 0, unavailable):unavailable]
     assert "ValidationRouteDrudgeThreatSeedFailure = true" not in unavailable_branch
