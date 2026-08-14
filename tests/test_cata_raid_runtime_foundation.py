@@ -500,6 +500,14 @@ def test_bwd_magmaw_trash_splits_chainwielder_hazard_from_drudge_charge_contract
         (tank_anchors[1]["x"], tank_anchors[1]["y"]),
         (tank_anchors[2]["x"], tank_anchors[2]["y"]),
     ) > 35.0
+    navigation_anchors = {
+        row["roster_slot"]: row for row in drudges["split_tank_navigation_anchors"]
+    }
+    assert set(navigation_anchors) == {1, 2}
+    assert math.dist(
+        (navigation_anchors[1]["x"], navigation_anchors[1]["y"]),
+        (navigation_anchors[2]["x"], navigation_anchors[2]["y"]),
+    ) > 34.0
     assert (drudges["minimum_distance_source_entry"], drudges["minimum_distance_yards"]) == (42362, 15.0)
     assert (drudges["thunderclap_spell_id"], drudges["charge_spell_id"], drudges["charge_range_yards"]) == (79604, 79630, 80.0)
     assert drudges["charge_native_interval_ms"] == 20000
@@ -548,6 +556,8 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "ValidationRouteSplitNavigationMarginYards" in lane
     assert "ValidationRouteSplitArrivalToleranceYards" in lane
     assert "ValidationRouteSplitMemberAnchors" in lane
+    assert "ValidationRouteSplitTankCombatAnchors" in lane
+    assert "ValidationRouteSplitTankNavigationAnchors" in lane
     assert "anchorSlots == exactRosterSlots" in lane
     assert "exactRosterPrepullStaged" in lane
     assert '"drudge_prepull_exact_roster_staged"' in lane
@@ -564,7 +574,16 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert '"drudge_kill_sync_hold_lower_health_lane"' in lane
     assert "ValidationRouteVengefulRageSpellId" in lane
     assert "BotCombatActionCategory::Taunt" in lane
-    assert "if (!prepullStaged || !tankStage.NativeEngagementAllowed || formationRequiredMutable" in lane
+    assert "exactCombatTankPathsProven" in lane
+    assert "predictedSources" in lane
+    assert "ValidationRouteSplitNativeMeleeStopYards" in lane
+    assert "combatTankPathsProvenBeforeTick" in lane
+    assert '"drudge_tank_anchor_strict_path_rejected"' in lane
+    assert '"drudge_tank_anchor_preflight_wait"' in lane
+    assert lane.index("if (prepullStaged && !combatTankPathsProvenBeforeTick)") \
+        < lane.index("MoveBotToPoint(state, bot,")
+    assert "tankStageInput.BothCombatTankPathsProven" in lane
+    assert "if (!prepullStaged || !tankStage.TankMovementAllowed" in lane
     assert "|| pairTooClose || nativeChargePending || chargeAwaitingLanding)" in lane
     assert "laneSource = sources[laneIndex]" in lane
     assert "bool const sourceInLaneA = nativeChargeSource == sources[0]" in lane
@@ -576,7 +595,7 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "drudge_tank_health_sync_hold" in lane
     support = lane.index('"drudge_staging_support"')
     formation_barrier = lane.index(
-        "if (!prepullStaged || !tankStage.NativeEngagementAllowed || formationRequiredMutable"
+        "if (!prepullStaged || !tankStage.TankMovementAllowed"
     )
     assert formation_barrier < support
     assert "tankStage.SupportAllowed" in lane[support - 450:support]
@@ -2876,6 +2895,8 @@ def test_phase1_magmaw_uses_typed_native_full_wipe_recovery_policy():
     )
     assert diagnostic_drudges["boss_recovery_policy"] == "native_full_wipe_only"
     assert diagnostic_drudges["split_member_anchors"] == drudges["split_member_anchors"]
+    assert diagnostic_drudges["split_tank_navigation_anchors"] \
+        == drudges["split_tank_navigation_anchors"]
 
     generator = (ROOT / "tools/bot_ml/build_validation_scenario_manifests.py").read_text()
     assert '"boss_recovery_policy": str(step.get("boss_recovery_policy") or "")' in generator
@@ -2925,6 +2946,24 @@ def test_drudge_partial_death_cannot_enter_tactical_recovery():
     assert "SetAllOffenseSuppressed" in guard
     assert "CombatStopWithPets" not in guard
     assert "MoveBotToPoint" not in guard
+
+
+def test_drudge_preseed_failure_latches_before_dead_member_recovery_and_is_serialized():
+    update_start = IMPL.index("void BotWorldPopulationMgr::UpdateBot")
+    objective_start = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    update = IMPL[update_start:objective_start]
+    terminal = update.index("bool const validationAttemptFailed")
+    dead_member = update.index("if (!bot->IsAlive())")
+    assert terminal < dead_member
+    assert "ValidationAttemptFailureAttemptId == Cohort().AttemptId" in update[terminal:dead_member]
+    assert "SetAllOffenseSuppressed" in update[terminal:dead_member]
+    assert 'state.LastDecisionAction = "validation_route_terminal_hold";' in update[terminal:dead_member]
+    assert "CombatStop" not in update[terminal:dead_member]
+
+    failure = 'Cohort().ValidationAttemptFailureReason =\n                    "drudge_partial_death_before_threat_seed";'
+    assert failure in IMPL
+    assert '<< ",\\\"failure_reason\\\":"' in IMPL
+    assert "Cohort().ValidationAttemptFailureAttemptId == Cohort().AttemptId" in IMPL
 
 
 def test_repeated_owned_destination_skips_floor_and_native_path_recalculation():

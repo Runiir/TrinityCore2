@@ -33,6 +33,16 @@ int main()
     Result result = Advance(state, input);
     assert(result.ScopeReset);
     assert(result.NextDecision == Decision::StageCombatTanks);
+    assert(!result.TankMovementAllowed);
+    assert(!result.NativeEngagementAllowed);
+
+    // A single tank proof is intentionally not representable as movement
+    // authority. Production freezes both exact proofs before setting this
+    // shared input on a subsequent tick.
+    input.BothCombatTankPathsProven = true;
+    result = Advance(result.Next, input);
+    assert(result.NextDecision == Decision::StageCombatTanks);
+    assert(result.TankMovementAllowed);
     assert(!result.NativeEngagementAllowed);
 
     // If native combat starts out of order, recovery still stages the same
@@ -41,6 +51,7 @@ int main()
     result = Advance(result.Next, input);
     assert(result.NextDecision == Decision::RecoverCombatAtTankAnchors);
     assert(result.SupportAllowed);
+    assert(result.TankMovementAllowed);
     assert(!result.NativeEngagementAllowed);
 
     input.BothCombatTankAnchorsSafe = true;

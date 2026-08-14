@@ -1808,6 +1808,9 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
     Cohort().ExperimentCoordinator.Clear();
     Cohort().FailedSpawnGuids.clear();
     Cohort().LastPopulationFailureReason.clear();
+    Cohort().ValidationAttemptFailureReason.clear();
+    Cohort().ValidationAttemptFailureAttemptId = 0;
+    Cohort().ValidationAttemptFailureRouteGeneration = 0;
     Cohort().ValidationRaidAdmissionComplete = false;
     Cohort().ValidationRaidAdmissionFailed = false;
     Cohort().Metrics = BotWorldStatus();
@@ -1909,6 +1912,9 @@ bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overri
     Cohort().ExperimentCoordinator.Configure(0, Cohort().Config.BrainVersion);
     Cohort().FailedSpawnGuids.clear();
     Cohort().LastPopulationFailureReason.clear();
+    Cohort().ValidationAttemptFailureReason.clear();
+    Cohort().ValidationAttemptFailureAttemptId = 0;
+    Cohort().ValidationAttemptFailureRouteGeneration = 0;
     Cohort().ValidationRaidAdmissionComplete = false;
     Cohort().ValidationRaidAdmissionFailed = false;
     Cohort().Metrics = BotWorldStatus();
@@ -3979,6 +3985,16 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
             anchor.Z = readFloat(anchorJson, "z");
             node.SplitTankCombatAnchors.push_back(anchor);
         }
+        for (std::string const& anchorJson : ExtractJsonObjectArrayItems(
+            ExtractJsonArrayField(routeJson, "split_tank_navigation_anchors")))
+        {
+            ValidationRouteMemberAnchor anchor;
+            anchor.RosterSlot = uint32(std::max(0, readInt(anchorJson, "roster_slot")));
+            anchor.X = readFloat(anchorJson, "x");
+            anchor.Y = readFloat(anchorJson, "y");
+            anchor.Z = readFloat(anchorJson, "z");
+            node.SplitTankNavigationAnchors.push_back(anchor);
+        }
         node.SplitMinimumSeparationYards = readFloat(routeJson, "split_minimum_separation_yards");
         node.SplitNavigationMarginYards = readFloat(routeJson, "split_navigation_margin_yards");
         node.SplitArrivalToleranceYards = readFloat(routeJson, "split_arrival_tolerance_yards");
@@ -4121,6 +4137,8 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     Cohort().Config.ValidationRouteSplitLaneTankSlots = node.SplitLaneTankSlots;
     Cohort().Config.ValidationRouteSplitMemberAnchors = node.SplitMemberAnchors;
     Cohort().Config.ValidationRouteSplitTankCombatAnchors = node.SplitTankCombatAnchors;
+    Cohort().Config.ValidationRouteSplitTankNavigationAnchors =
+        node.SplitTankNavigationAnchors;
     Cohort().Config.ValidationRouteSplitMinimumSeparationYards = node.SplitMinimumSeparationYards;
     Cohort().Config.ValidationRouteSplitNavigationMarginYards = node.SplitNavigationMarginYards;
     Cohort().Config.ValidationRouteSplitArrivalToleranceYards = node.SplitArrivalToleranceYards;
@@ -9857,6 +9875,33 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
 
     Cohort().TelemetryBuffer.Observe(bot, bot->IsInCombat() ? "combat" : "ambient", nullptr, nullptr, nullptr);
     Cohort().TelemetryBuffer.FlushClosedClips(Cohort().ExperimentId, Cohort().RunId, Cohort().Config.BrainVersion, bot->GetGUID());
+
+    bool const validationAttemptFailed =
+        !Cohort().ValidationAttemptFailureReason.empty()
+        && Cohort().ValidationAttemptFailureAttemptId == Cohort().AttemptId;
+    if (validationAttemptFailed)
+    {
+        // This is a terminal observation, not an instruction to manufacture
+        // a wipe or reset combat.  Suppression gates every newly issued owner
+        // and controlled-unit offense while the capture controller obtains
+        // its final evidence and performs the ordinary stop/cleanup path.
+        BotRaidAreaAuthority::SetAllOffenseSuppressed(
+            bot->GetGUID().GetRawValue(), true);
+        if (!state.ValidationRouteTerminalState)
+            state.ValidationRouteTerminalAtMs = NowMs();
+        state.ValidationRouteTerminalState = true;
+        state.ValidationRouteTerminalGeneration =
+            Cohort().ValidationAttemptFailureRouteGeneration;
+        state.ValidationRouteTerminalReason =
+            Cohort().ValidationAttemptFailureReason;
+        state.LastDecisionSituation = "validation_route_terminal";
+        state.LastDecisionAction = "validation_route_terminal_hold";
+        state.LastDecisionResult = Cohort().ValidationAttemptFailureReason;
+        state.LastDecisionReason = Cohort().ValidationAttemptFailureReason;
+        state.LastNoProgressReason = Cohort().ValidationAttemptFailureReason;
+        state.DecisionTimer = 0;
+        return;
+    }
 
     // Install the recovery hold before any decision-timer or route branch can
     // return.  Native pet restoration is permitted while hostile authority is
@@ -18588,6 +18633,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             Cohort().Config.ValidationRouteSplitTankCombatAnchors)
             combatTankAnchorSlots.push_back(anchor.RosterSlot);
         std::sort(combatTankAnchorSlots.begin(), combatTankAnchorSlots.end());
+        std::vector<uint32> navigationTankAnchorSlots;
+        for (ValidationRouteMemberAnchor const& anchor :
+            Cohort().Config.ValidationRouteSplitTankNavigationAnchors)
+            navigationTankAnchorSlots.push_back(anchor.RosterSlot);
+        std::sort(navigationTankAnchorSlots.begin(), navigationTankAnchorSlots.end());
         bool contractResolved = Cohort().Config.ValidationRouteSplitSourceGuids.size() == 2
             && Cohort().Config.ValidationRouteSplitLaneARosterSlots.size() == 5
             && Cohort().Config.ValidationRouteSplitLaneBRosterSlots.size() == 5
@@ -18595,6 +18645,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && laneSlots == exactRosterSlots
             && anchorSlots == exactRosterSlots
             && combatTankAnchorSlots == std::vector<uint32>({ 1, 2 })
+            && navigationTankAnchorSlots == std::vector<uint32>({ 1, 2 })
             && Cohort().Config.ValidationRouteBossRecovery
                 == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly
             && Cohort().Config.ValidationRouteSplitLaneTankSlots[0]
@@ -18725,20 +18776,20 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return anchor == Cohort().Config.ValidationRouteSplitMemberAnchors.end()
                 ? nullptr : &*anchor;
         };
-        auto declaredCombatTankAnchorFor = [&](uint32 slot) -> ValidationRouteMemberAnchor const*
+        auto declaredNavigationTankAnchorFor = [&](uint32 slot) -> ValidationRouteMemberAnchor const*
         {
             auto anchor = std::find_if(
-                Cohort().Config.ValidationRouteSplitTankCombatAnchors.begin(),
-                Cohort().Config.ValidationRouteSplitTankCombatAnchors.end(),
+                Cohort().Config.ValidationRouteSplitTankNavigationAnchors.begin(),
+                Cohort().Config.ValidationRouteSplitTankNavigationAnchors.end(),
                 [slot](ValidationRouteMemberAnchor const& candidate)
                 {
                     return candidate.RosterSlot == slot;
                 });
-            return anchor == Cohort().Config.ValidationRouteSplitTankCombatAnchors.end()
+            return anchor == Cohort().Config.ValidationRouteSplitTankNavigationAnchors.end()
                 ? nullptr : &*anchor;
         };
         ValidationRouteMemberAnchor const* const prepullAnchor = declaredAnchorFor(oneBasedSlot);
-        if (!prepullAnchor || (assignedTank && !declaredCombatTankAnchorFor(oneBasedSlot)))
+        if (!prepullAnchor || (assignedTank && !declaredNavigationTankAnchorFor(oneBasedSlot)))
         {
             holdOffense();
             record(nullptr, "drudge_lane_declared_anchor_missing");
@@ -18877,7 +18928,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 otherTank = member;
         }
 
-        auto strictNativePath = [bot](float x, float y, float z) -> bool
+        auto strictNativePath = [bot](float x, float y, float z,
+            bool requireExactEnd = false) -> bool
         {
             if (!bot || !bot->GetMap())
                 return false;
@@ -18887,12 +18939,17 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             PathGenerator path(bot);
             bool pathOk = path.CalculatePath(x, y, z, false);
             PathType pathType = path.GetPathType();
-            return pathOk
+            bool const pathValid = pathOk
                 && !(pathType & PATHFIND_NOPATH)
                 && !(pathType & PATHFIND_NOT_USING_PATH)
                 && !(pathType & PATHFIND_INCOMPLETE)
                 && !(pathType & PATHFIND_SHORTCUT)
                 && !(pathType & PATHFIND_FARFROMPOLY);
+            if (!pathValid || !requireExactEnd)
+                return pathValid;
+            G3D::Vector3 const& actualEnd = path.GetActualEndPosition();
+            return std::hypot(actualEnd.x - x, actualEnd.y - y) <= 0.25f
+                && std::fabs(actualEnd.z - z) <= 1.0f;
         };
 
         // Every non-tank owns a stable, slot-derived point.  A shared
@@ -18911,7 +18968,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 Cohort().Config.ValidationRouteSplitLaneTankSlots.end(), slot)
                 != Cohort().Config.ValidationRouteSplitLaneTankSlots.end();
             ValidationRouteMemberAnchor const* anchor = tankSlot && combatTankStagingActive()
-                ? declaredCombatTankAnchorFor(slot) : declaredAnchorFor(slot);
+                ? declaredNavigationTankAnchorFor(slot) : declaredAnchorFor(slot);
             if (anchor)
                 return { anchor->X, anchor->Y };
             return { 0.0f, 0.0f };
@@ -19196,7 +19253,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             bool const priorLaneSafe = priorCandidateMatches
                 && laneSign * priorProjection >= laneSeparation * 0.25f;
             bool const sourcesSeparated = sources[0]->GetExactDist2d(sources[1])
-                >= Cohort().Config.ValidationRouteSplitMinimumSeparationYards;
+                >= laneSeparation;
             bool const priorSourceSafe = tank
                 ? (priorCandidateMatches && sourcesSeparated
                     && sourceOnFrozenLane(sources[0], 0)
@@ -19268,7 +19325,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             for (size_t candidateIndex = 0; candidateIndex < candidates.size(); ++candidateIndex)
             {
                 ValidationRouteMemberAnchor const* candidateAnchor = tank && combatTankStagingActive()
-                    ? declaredCombatTankAnchorFor(oneBasedSlot) : declaredAnchorFor(oneBasedSlot);
+                    ? declaredNavigationTankAnchorFor(oneBasedSlot) : declaredAnchorFor(oneBasedSlot);
                 if (!candidateAnchor)
                     continue;
                 float const candidateZ = candidateAnchor->Z;
@@ -19286,7 +19343,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                         candidates[candidateIndex].second)))
                     continue;
                 if (!strictNativePath(candidates[candidateIndex].first,
-                        candidates[candidateIndex].second, candidateZ))
+                        candidates[candidateIndex].second, candidateZ, tank))
                     continue;
                 state.ValidationRouteDrudgeAnchorValid = true;
                 state.ValidationRouteDrudgeAnchorPathProven = true;
@@ -19316,7 +19373,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 || laneTank->GetExactDist2d(otherTank) < Cohort().Config.ValidationRouteSplitMinimumSeparationYards)
                 return false;
             if (sources[0]->GetExactDist2d(sources[1])
-                < Cohort().Config.ValidationRouteSplitMinimumSeparationYards)
+                < laneSeparation)
                 return false;
             if (!sourceOnFrozenLane(sources[0], 0)
                 || !sourceOnFrozenLane(sources[1], 1))
@@ -19673,7 +19730,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 formationRequiredMutable = !groupPositionSafe(bot);
         }
         bool const pairTooClose = sources[0]->IsAlive() && sources[1]->IsAlive()
-            && sourceSeparation < Cohort().Config.ValidationRouteSplitMinimumSeparationYards;
+            && sourceSeparation < laneSeparation;
         bool const nativeChargeTargetViolation = nativeChargePending
             && (nativeChargeContractViolation || nativeChargeTargetLaneViolation);
         if (nativeChargeTargetViolation)
@@ -19692,6 +19749,144 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             Party().ValidationRouteDrudgePrepullRouteGeneration = Party().ValidationRouteGeneration;
             prepullStaged = true;
             record(nullptr, "drudge_prepull_exact_roster_staged");
+        }
+
+        auto exactCombatTankPathsProven = [&]()
+        {
+            if (!laneTank || !otherTank || bot->GetInstanceId() == 0)
+                return false;
+            std::array<std::pair<float, float>, 2> navigationPoints{};
+            std::array<bool, 2> navigationPointSeen{ false, false };
+            for (Player const* tank : { laneTank, otherTank })
+            {
+                auto tankState = std::find_if(Party().Bots.begin(), Party().Bots.end(),
+                    [tank](WorldBotState const& candidate)
+                    {
+                        return candidate.Guid == tank->GetGUID();
+                    });
+                auto tankRoster = Cohort().Raid.RosterByGuid.find(
+                    tank->GetGUID().GetCounter());
+                if (tankState == Party().Bots.end()
+                    || tankRoster == Cohort().Raid.RosterByGuid.end())
+                    return false;
+                uint32 const tankSlot = tankRoster->second.SlotIndex + 1;
+                ValidationRouteMemberAnchor const* combatAnchor =
+                    declaredNavigationTankAnchorFor(tankSlot);
+                if (!combatAnchor || !tankState->ValidationRouteDrudgeAnchorValid
+                    || !tankState->ValidationRouteDrudgeAnchorPathProven
+                    || tankState->ValidationRouteDrudgeAnchorAttemptId != Cohort().AttemptId
+                    || tankState->ValidationRouteDrudgeAnchorWipeGeneration
+                        != Cohort().Raid.WipeGeneration
+                    || tankState->ValidationRouteDrudgeAnchorRouteGeneration
+                        != Party().ValidationRouteGeneration
+                    || tankState->ValidationRouteDrudgeAnchorMapId != bot->GetMapId()
+                    || tankState->ValidationRouteDrudgeAnchorInstanceId != bot->GetInstanceId()
+                    || tankState->ValidationRouteDrudgeAnchorSource0Identity
+                        != sources[0]->GetGUID().GetRawValue()
+                    || tankState->ValidationRouteDrudgeAnchorSource1Identity
+                        != sources[1]->GetGUID().GetRawValue()
+                    || tankState->ValidationRouteDrudgeAnchorCandidateIndex != 0
+                    || Distance2d(tankState->ValidationRouteDrudgeAnchorX,
+                        tankState->ValidationRouteDrudgeAnchorY,
+                        combatAnchor->X, combatAnchor->Y) > 0.01f
+                    || std::fabs(tankState->ValidationRouteDrudgeAnchorZ
+                        - combatAnchor->Z) > 0.01f)
+                    return false;
+                uint32 const sourceIndex = tankSlot
+                    == Cohort().Config.ValidationRouteSplitLaneTankSlots[0] ? 0 : 1;
+                Position const& sourceHome = sourceIndex == 0 ? homeA : homeB;
+                if (Distance2d(combatAnchor->X, combatAnchor->Y,
+                        sourceHome.GetPositionX(), sourceHome.GetPositionY())
+                    > Cohort().Config.ValidationRouteSplitMinimumSeparationYards)
+                    return false;
+                navigationPoints[sourceIndex] = {
+                    combatAnchor->X, combatAnchor->Y
+                };
+                navigationPointSeen[sourceIndex] = true;
+            }
+            if (!navigationPointSeen[0] || !navigationPointSeen[1])
+                return false;
+
+            std::array<std::pair<float, float>, 2> predictedSources{};
+            for (uint32 sourceIndex = 0; sourceIndex < 2; ++sourceIndex)
+            {
+                Position const& sourceHome = sourceIndex == 0 ? homeA : homeB;
+                float const dx = navigationPoints[sourceIndex].first
+                    - sourceHome.GetPositionX();
+                float const dy = navigationPoints[sourceIndex].second
+                    - sourceHome.GetPositionY();
+                float const distance = std::hypot(dx, dy);
+                if (distance <= 0.001f)
+                    return false;
+                float const travel = std::max(0.0f,
+                    distance - Cohort().Config.ValidationRouteSplitNativeMeleeStopYards);
+                predictedSources[sourceIndex] = {
+                    sourceHome.GetPositionX() + dx * travel / distance,
+                    sourceHome.GetPositionY() + dy * travel / distance
+                };
+                float const projection =
+                    (predictedSources[sourceIndex].first - midpointX) * axisX
+                    + (predictedSources[sourceIndex].second - midpointY) * axisY;
+                float const sourceLaneSign = sourceIndex == 0 ? -1.0f : 1.0f;
+                if (sourceLaneSign * projection < laneSeparation * 0.25f)
+                    return false;
+            }
+            if (Distance2d(predictedSources[0].first, predictedSources[0].second,
+                    predictedSources[1].first, predictedSources[1].second)
+                < laneSeparation)
+                return false;
+            for (ValidationRouteMemberAnchor const& memberAnchor :
+                Cohort().Config.ValidationRouteSplitMemberAnchors)
+            {
+                if (std::find(Cohort().Config.ValidationRouteSplitLaneTankSlots.begin(),
+                        Cohort().Config.ValidationRouteSplitLaneTankSlots.end(),
+                        memberAnchor.RosterSlot)
+                    != Cohort().Config.ValidationRouteSplitLaneTankSlots.end())
+                    continue;
+                if (Distance2d(memberAnchor.X, memberAnchor.Y,
+                        predictedSources[0].first, predictedSources[0].second)
+                        < Cohort().Config.ValidationRouteMinimumDistanceYards
+                    || Distance2d(memberAnchor.X, memberAnchor.Y,
+                        predictedSources[1].first, predictedSources[1].second)
+                        < Cohort().Config.ValidationRouteMinimumDistanceYards)
+                    return false;
+            }
+            return true;
+        };
+
+        // Phase one discovers and freezes both strict native paths without
+        // moving either tank.  Even the tick that establishes the second
+        // proof returns through this barrier; movement can begin only on a
+        // later tick that observes the already-complete shared proof set.
+        bool const combatTankPathsProvenBeforeTick =
+            prepullStaged && exactCombatTankPathsProven();
+        if (prepullStaged && !combatTankPathsProvenBeforeTick)
+        {
+            bool pathSearchDue = false;
+            bool currentTankPathProven = false;
+            if (assignedTank)
+            {
+                pathSearchDue = NowMs()
+                    >= state.ValidationRouteDrudgeAnchorSearchCooldownUntilMs;
+                currentTankPathProven = selectPathableDrudgeAnchor(true);
+            }
+            holdOffense();
+            if (sourceCombatStarted && roster->second.Role == "healer"
+                && tryRouteGroupHeal(bot, laneSource, false))
+            {
+                record(laneSource, "drudge_anchor_preflight_support", sourceSeparation);
+                target = laneSource;
+                state.TargetGuid = laneSource->GetGUID();
+                return true;
+            }
+            char const* result = assignedTank && pathSearchDue && !currentTankPathProven
+                ? "drudge_tank_anchor_strict_path_rejected"
+                : "drudge_tank_anchor_preflight_wait";
+            record(laneSource, result, sourceSeparation);
+            target = laneSource;
+            state.TargetGuid = laneSource->GetGUID();
+            action = result;
+            return true;
         }
 
         auto exactCombatTankAnchorsSafe = [&]()
@@ -19742,11 +19937,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             state.ValidationRouteDrudgeAnchorPathProven;
         BotRaidDrudgeGeometry::Input tankStageInput = rushGeometryInput;
         tankStageInput.ExactPrepullStaged = prepullStaged;
+        tankStageInput.BothCombatTankPathsProven =
+            combatTankPathsProvenBeforeTick;
         tankStageInput.BothCombatTankAnchorsSafe = exactCombatTankAnchorsSafe();
         tankStageInput.ChargeQueueIdle = chargeObservation
             == Party().ValidationRouteDrudgeChargeObservations.end();
         tankStageInput.SourcesSeparated = sourceSeparation
-            >= Cohort().Config.ValidationRouteSplitMinimumSeparationYards;
+            >= laneSeparation;
         tankStageInput.SourcesOnFrozenLanes = sourceOnFrozenLane(sources[0], 0)
             && sourceOnFrozenLane(sources[1], 1);
         tankStageInput.BoundTankSourceGeometrySafe = boundTankSourceGeometrySafe();
@@ -19823,7 +20020,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
-        if (!prepullStaged || !tankStage.NativeEngagementAllowed || formationRequiredMutable
+        if (!prepullStaged || !tankStage.TankMovementAllowed
+            || !tankStage.NativeEngagementAllowed || formationRequiredMutable
             || pairTooClose || nativeChargePending || chargeAwaitingLanding)
         {
             holdOffense();
@@ -20051,7 +20249,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             seedInput.SourcesAlive = sources[0]->IsAlive() && sources[1]->IsAlive();
             seedInput.OwnershipSafe = laneOwnershipSafe;
             seedInput.SeparationSafe = sourceSeparation
-                >= Cohort().Config.ValidationRouteSplitMinimumSeparationYards;
+                >= laneSeparation;
             seedInput.FrozenLanesSafe = sourceOnFrozenLane(sources[0], 0)
                 && sourceOnFrozenLane(sources[1], 1);
             seedInput.ChargeObserved = currentScopeHasChargeObservation;
@@ -24466,6 +24664,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     if (Player* cohortBot = GetLoadedBot(cohortState))
                         BotRaidAreaAuthority::SetAllOffenseSuppressed(
                             cohortBot->GetGUID().GetRawValue(), true);
+                Cohort().ValidationAttemptFailureReason =
+                    "drudge_partial_death_before_threat_seed";
+                Cohort().ValidationAttemptFailureAttemptId = Cohort().AttemptId;
+                Cohort().ValidationAttemptFailureRouteGeneration =
+                    Party().ValidationRouteGeneration;
                 markValidationRouteTrashFailed(retreatThreat,
                     "drudge_partial_death_before_threat_seed",
                     "validation_route_recovery", float(aliveMembers), deadMembers);
@@ -38197,6 +38400,9 @@ std::string BotWorldPopulationMgr::BuildValidationRouteEvidenceJson(std::vector<
 
 std::string BotWorldPopulationMgr::GetStatusJson() const
 {
+    std::string const attemptFailure =
+        Cohort().ValidationAttemptFailureAttemptId == Cohort().AttemptId
+        ? Cohort().ValidationAttemptFailureReason : std::string();
     BotWorldStatus status = GetStatus();
     std::ostringstream json;
     json << "{\"ok\":true,\"action\":\"botauto_status\",\"cohort_id\":\"" << JsonEscape(Cohort().Id)
@@ -38265,7 +38471,9 @@ std::string BotWorldPopulationMgr::GetStatusJson() const
          << ",\"stuck\":" << status.StuckEvents
          << ",\"decisions\":" << status.Decisions
          << ",\"failures\":" << status.Failures
-         << ",\"failure_reason\":null}";
+         << ",\"failure_reason\":"
+         << (attemptFailure.empty() ? "null"
+             : ("\"" + JsonEscape(attemptFailure) + "\"")) << "}";
     return json.str();
 }
 
@@ -38315,6 +38523,9 @@ std::string BotWorldPopulationMgr::GetSummaryJson() const
 
 std::string BotWorldPopulationMgr::GetBotDiagnosisJson(std::string const& selector)
 {
+    std::string const attemptFailure =
+        Cohort().ValidationAttemptFailureAttemptId == Cohort().AttemptId
+        ? Cohort().ValidationAttemptFailureReason : std::string();
     std::ostringstream json;
     json << "{\"ok\":true,\"action\":\"botauto_diagnose\",\"cohort_id\":\"" << JsonEscape(Cohort().Id)
          << "\",\"diagnosis_schema_version\":1,\"bots\":[";
@@ -38350,7 +38561,9 @@ std::string BotWorldPopulationMgr::GetBotDiagnosisJson(std::string const& select
 
     json << "]"
          << ",\"raid_runtime\":" << BuildRaidRuntimeJson(true);
-    if (!emitted)
+    if (!attemptFailure.empty())
+        json << ",\"failure_reason\":\"" << JsonEscape(attemptFailure) << "\"";
+    else if (!emitted)
         json << ",\"failure_reason\":\"" << JsonEscape(Cohort().LastPopulationFailureReason.empty() ? "no_matching_bot" : Cohort().LastPopulationFailureReason) << "\"";
     else
         json << ",\"failure_reason\":null";
@@ -38361,6 +38574,9 @@ std::string BotWorldPopulationMgr::GetBotDiagnosisJson(std::string const& select
 std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, uint32 limit, bool delta) const
 {
     uint32 normalizedLimit = limit ? std::min<uint32>(limit, 128) : 20;
+    std::string const attemptFailure =
+        Cohort().ValidationAttemptFailureAttemptId == Cohort().AttemptId
+        ? Cohort().ValidationAttemptFailureReason : std::string();
 
     if (selector.empty() || selector == "all")
     {
@@ -38520,7 +38736,9 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
         }
 
         json << "]";
-        if (!emitted)
+        if (!attemptFailure.empty())
+            json << ",\"failure_reason\":\"" << JsonEscape(attemptFailure) << "\"";
+        else if (!emitted)
             json << ",\"failure_reason\":\"" << JsonEscape(Cohort().LastPopulationFailureReason.empty() ? "no_active_bot" : Cohort().LastPopulationFailureReason) << "\"";
         else
             json << ",\"failure_reason\":null";
@@ -38556,7 +38774,9 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
          << ",\"kind\":\"" << JsonEscape(Cohort().Config.ValidationRouteKind) << "\"}"
          << ",\"raid_runtime\":" << BuildRaidRuntimeJson(true)
          << ",\"entries\":" << BuildBotTraceEntriesJson(*selected, normalizedLimit)
-         << ",\"failure_reason\":null}";
+         << ",\"failure_reason\":"
+         << (attemptFailure.empty() ? "null"
+             : ("\"" + JsonEscape(attemptFailure) + "\"")) << "}";
     return json.str();
 }
 

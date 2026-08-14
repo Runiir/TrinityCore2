@@ -167,11 +167,21 @@ def _frozen_drudge_member_anchors(
                 )
                 for row in node.get("split_tank_combat_anchors", [])
             }
+            navigation_tank_anchors = {
+                int(row["roster_slot"]): (
+                    float(row["x"]), float(row["y"]), float(row["z"])
+                )
+                for row in node.get("split_tank_navigation_anchors", [])
+            }
             if (set(anchors) != set(range(1, 11)) or (
                 node.get("boss_recovery_policy") != "native_full_wipe_only"
-            ) or set(combat_tank_anchors) != {1, 2}):
+            ) or set(combat_tank_anchors) != {1, 2}
+                    or set(navigation_tank_anchors) != {1, 2}):
                 return {}
-            anchors.update(combat_tank_anchors)
+            # The contract anchors prove conservative native chase geometry;
+            # the separately sealed navigation anchors are exact Detour
+            # terminals and therefore own the live tank arrival evidence.
+            anchors.update(navigation_tank_anchors)
             by_scenario.append(anchors)
         return by_scenario[0] if by_scenario[0] == by_scenario[1] else {}
     except (OSError, KeyError, StopIteration, TypeError, ValueError, json.JSONDecodeError):
@@ -764,6 +774,51 @@ def accepted_foundation_status(
     return not reasons, reasons
 
 
+def terminal_runtime_failure_reason(
+    status: dict[str, Any],
+    *,
+    profile_name: str = "blackwing_descent_10n",
+) -> tuple[str | None, list[str]]:
+    """Return an exact active-attempt failure without requiring success state.
+
+    A terminal failure can legitimately have dead members, an incomplete
+    route, and no ready check.  It must still be bound to the selected profile,
+    exact leased roster, native group/instance, and active attempt before the
+    capture controller is allowed to stop the shared worldserver.
+    """
+
+    runtime = status.get("raid_runtime")
+    reason = status.get("failure_reason")
+    rejections: list[str] = []
+    if not isinstance(reason, str) or not reason.strip():
+        return None, ["terminal_failure_reason_missing"]
+    if not isinstance(runtime, dict):
+        return None, ["terminal_failure_runtime_missing"]
+    checks = {
+        "terminal_failure_status_not_ok": status.get("ok") is True,
+        "terminal_failure_action_mismatch": status.get("action") == "botauto_status",
+        "terminal_failure_cohort_mismatch": status.get("cohort_id") == "default",
+        "terminal_failure_profile_mismatch": status.get("active_profile") == profile_name,
+        "terminal_failure_bot_count_mismatch": status.get("bots") == 10,
+        "terminal_failure_lease_count_mismatch": status.get("lease_count") == 10,
+        "terminal_failure_runtime_inactive": runtime.get("active") is True,
+        "terminal_failure_expected_size_mismatch": runtime.get("expected_size") == 10,
+        "terminal_failure_active_size_mismatch": runtime.get("active_size") == 10,
+        "terminal_failure_roster_incomplete": runtime.get("roster_complete") is True,
+        "terminal_failure_map_mismatch": runtime.get("map_id") == 669,
+        "terminal_failure_instance_missing": _positive_int(runtime.get("instance_id")),
+        "terminal_failure_group_missing": _positive_int(runtime.get("group_guid")),
+        "terminal_failure_attempt_missing": _positive_int(runtime.get("attempt_id")),
+        "terminal_failure_assignment_missing": _positive_int(runtime.get("assignment_generation")),
+        "terminal_failure_unique_leases_missing": runtime.get("unique_leases") is True,
+    }
+    rejections.extend(name for name, passed in checks.items() if not passed)
+    rejections.extend(
+        f"terminal_failure_{item}" for item in _roster_rejections(runtime, profile_name)
+    )
+    return (reason.strip() if not rejections else None), list(dict.fromkeys(rejections))
+
+
 def _route_advancement_marker(runtime: dict[str, Any]) -> int | None:
     """Return an explicit monotonic route-progress generation, if present."""
 
@@ -918,7 +973,7 @@ def _validate_drudge_observation_geometry(
     )
     if abs(values["source_separation"] - source_separation) > tolerance:
         reasons.append("drudge_geometry_source_separation_mismatch")
-    if source_separation < minimum_source_sep:
+    if source_separation < lane_sep:
         reasons.append("drudge_geometry_source_separation_unsafe")
 
     roster_by_guid = {
@@ -2330,6 +2385,7 @@ def material_status_signature(status: dict[str, Any]) -> str:
     error_fields = {
         "status_error": status.get("error"),
         "status_failure": status.get("failure"),
+        "status_failure_reason": status.get("failure_reason"),
         "runtime_error": runtime.get("error"),
         "runtime_failure": runtime.get("failure"),
         "runtime_error_state": runtime.get("error_state"),
@@ -3141,6 +3197,7 @@ def evidence_demux_report(
     previous_strategy: str | None = None
     previous_route_advance = 0
     profile_selection_seen = False
+    terminal_failure_seen = False
     for expected_sequence, row in enumerate(rows, start=1):
         binding = row["identity_binding"]
         binding.update(
@@ -3167,6 +3224,12 @@ def evidence_demux_report(
             reject("evidence_demux_unclassified_row")
             continue
         observed_actions.add(str(action))
+
+        if action == "botauto_status":
+            terminal_reason, _ = terminal_runtime_failure_reason(
+                payload, profile_name=profile_name,
+            )
+            terminal_failure_seen = terminal_failure_seen or terminal_reason is not None
 
         if action == "botauto_profile":
             binding["scope"] = "pre_start_profile"
@@ -3272,7 +3335,13 @@ def evidence_demux_report(
     if not inactive_cleanup_seen:
         reasons.append("evidence_demux_inactive_cleanup_missing")
     reasons.extend(telemetry_envelopes["rejections"])
-    for required_action in known_actions - {"botauto_profile"}:
+    required_actions = known_actions - {"botauto_profile"}
+    if terminal_failure_seen:
+        # A recognized failed attempt never reaches the post-wipe ready-check
+        # success gate.  Its exact terminal status plus forced diagnose/trace
+        # and ordinary cleanup remain mandatory evidence.
+        required_actions.discard("botauto_readycheck")
+    for required_action in required_actions:
         if required_action not in observed_actions:
             reasons.append(f"evidence_demux_required_action_missing:{required_action}")
     unique_reasons = list(dict.fromkeys(reasons))
@@ -3915,6 +3984,7 @@ def main() -> int:
         "missing_channels": ["diagnosis", "trace"],
         "rejections": ["forced_bundle_not_requested"],
     }
+    terminal_failure: dict[str, Any] = {"detected": False}
     flush_forced_evidence_callback: Any = None
 
     def request_final_evidence(reason: str) -> dict[str, Any]:
@@ -4156,6 +4226,45 @@ def main() -> int:
                             stable.append(status)
                         else:
                             stable.clear()
+                        failure_reason, failure_rejections = terminal_runtime_failure_reason(
+                            status, profile_name=profile_name,
+                        )
+                        if failure_reason is not None:
+                            forced_evidence_report = request_final_evidence(
+                                "terminal_runtime_failure"
+                            )
+                            terminal_failure = {
+                                "detected": True,
+                                "classification": "gameplay_failure",
+                                "failure_reason": failure_reason,
+                                "status_rejections": failure_rejections,
+                                "route": status.get("validation_route"),
+                                "raid_runtime": status.get("raid_runtime"),
+                                "elapsed_seconds": round(
+                                    time.monotonic() - monitor_started_at, 3
+                                ),
+                                "final_forced_evidence":
+                                    forced_evidence_report.get("gate_passed") is True,
+                                "final_forced_evidence_report": forced_evidence_report,
+                            }
+                            if forced_evidence_report.get("gate_passed") is not True:
+                                telemetry_abort = {
+                                    "detected": True,
+                                    "classification": "infrastructure_abort",
+                                    "reason": "terminal_failure_forced_evidence_incomplete",
+                                    "missing_channels": forced_evidence_report.get(
+                                        "missing_channels", []
+                                    ),
+                                    "rejections": forced_evidence_report.get(
+                                        "rejections", []
+                                    ),
+                                    "elapsed_seconds": round(
+                                        time.monotonic() - monitor_started_at, 3
+                                    ),
+                                }
+                            break
+                    if terminal_failure.get("detected") is True:
+                        break
                     telemetry_now = time.monotonic()
                     stale_channels = observe_telemetry_freshness(
                         telemetry_freshness,
@@ -4382,6 +4491,7 @@ def main() -> int:
         and profiles[0].get("cohort_id") == "default"
         and profiles[0].get("active_profile") == profile_name
         and identity_stable
+        and terminal_failure.get("detected") is not True
         and semantic_stall.get("detected") is not True
         and telemetry_abort.get("detected") is not True
         and forced_evidence_report.get("gate_passed") is True
@@ -4405,7 +4515,11 @@ def main() -> int:
                 or bool(demux_rejections)
                 or not telemetry_envelopes["gate_passed"]
                 or forced_evidence_report.get("gate_passed") is not True
-            ) else "incomplete_evidence")
+            ) else (
+                "gameplay_failure"
+                if terminal_failure.get("detected") is True
+                else "incomplete_evidence"
+            ))
         ),
         "started_at_utc": started_utc,
         "identity": identity_before,
@@ -4443,6 +4557,7 @@ def main() -> int:
         "drudge_contract_accepted": drudge_accepted,
         "drudge_contract_required": drudge_required,
         "drudge_contract_rejections": drudge_rejections,
+        "terminal_failure": terminal_failure,
         "semantic_stall": semantic_stall,
         "telemetry_abort": telemetry_abort,
         "telemetry_schedule": {

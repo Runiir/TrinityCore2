@@ -128,6 +128,7 @@ struct BotWorldExperimentConfig
     std::vector<uint32> ValidationRouteSplitLaneTankSlots;
     std::vector<ValidationRouteMemberAnchor> ValidationRouteSplitMemberAnchors;
     std::vector<ValidationRouteMemberAnchor> ValidationRouteSplitTankCombatAnchors;
+    std::vector<ValidationRouteMemberAnchor> ValidationRouteSplitTankNavigationAnchors;
     float ValidationRouteSplitMinimumSeparationYards = 0.0f;
     float ValidationRouteSplitNavigationMarginYards = 0.0f;
     float ValidationRouteSplitArrivalToleranceYards = 0.0f;
@@ -499,6 +500,7 @@ private:
         std::vector<uint32> SplitLaneTankSlots;
         std::vector<ValidationRouteMemberAnchor> SplitMemberAnchors;
         std::vector<ValidationRouteMemberAnchor> SplitTankCombatAnchors;
+        std::vector<ValidationRouteMemberAnchor> SplitTankNavigationAnchors;
         float SplitMinimumSeparationYards = 0.0f;
         float SplitNavigationMarginYards = 0.0f;
         float SplitArrivalToleranceYards = 0.0f;
@@ -2325,6 +2327,13 @@ private:
         uint32 CalibrationCompletedAoeWindows = 0;
         std::set<uint32> FailedSpawnGuids;
         std::string LastPopulationFailureReason;
+        // A runtime/encounter terminal is different from a transient
+        // population failure.  Keep it for the entire native attempt so
+        // status/capture can stop promptly and every living/dead member holds
+        // the same fail-closed state until the coordinator starts a new run.
+        std::string ValidationAttemptFailureReason;
+        uint64 ValidationAttemptFailureAttemptId = 0;
+        uint64 ValidationAttemptFailureRouteGeneration = 0;
         bool ValidationRaidAdmissionComplete = false;
         bool ValidationRaidAdmissionFailed = false;
         uint64 LastNativeWorldportDeferredLogMs = 0;

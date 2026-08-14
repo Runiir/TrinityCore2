@@ -60,6 +60,7 @@ struct Input
     std::uint64_t ChargeSequence = 0;
     bool ChargePending = false;
     bool ExactPrepullStaged = false;
+    bool BothCombatTankPathsProven = false;
     bool BothCombatTankAnchorsSafe = false;
     bool SourceCombatStarted = false;
     bool ChargeQueueIdle = false;
@@ -84,6 +85,7 @@ struct Result
     bool InvalidateAnchor = false;
     bool ReactivatePriorPathProof = false;
     bool SupportAllowed = false;
+    bool TankMovementAllowed = false;
     bool NativeEngagementAllowed = false;
 };
 
@@ -131,6 +133,18 @@ inline Result Advance(State current, Input const& input)
     // allowed while the tanks finish the declared geometry. Hostile offense,
     // taunts, and threat seeding remain gated by NativeEngagementAllowed.
     result.SupportAllowed = input.SourceCombatStarted;
+
+    // Path discovery is a cohort barrier.  Both exact tank paths must be
+    // proven from the shared prepull state before either tank may start the
+    // combat-anchor movement.  This prevents a single pathable tank from
+    // body-pulling the pack while the other tank is still path-rejected.
+    if (!input.BothCombatTankPathsProven)
+    {
+        result.NextDecision = input.SourceCombatStarted
+            ? Decision::RecoverCombatAtTankAnchors : Decision::StageCombatTanks;
+        return result;
+    }
+    result.TankMovementAllowed = Valid(input.Identity);
 
     bool const dynamicEngagementSafe = input.ChargeQueueIdle && !input.ChargePending
         && input.SourcesSeparated && input.SourcesOnFrozenLanes

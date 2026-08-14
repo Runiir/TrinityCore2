@@ -27,6 +27,7 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     observe_telemetry_freshness,
     TelemetryScheduler,
     material_status_signature,
+    terminal_runtime_failure_reason,
     validate_forced_evidence_bundle,
     bounded_native_shutdown,
     _frozen_drudge_member_anchors,
@@ -89,6 +90,25 @@ def test_default_scheduler_reduces_heavy_payload_volume_without_dropping_channel
     assert set(commands) == {
         "botauto status", "botauto diagnose all", "botauto trace all 128 delta",
     }
+
+
+def test_terminal_runtime_failure_is_exact_roster_bound_and_material():
+    status = accepted_status()
+    status["cohort_id"] = "default"
+    status["active_profile"] = "blackwing_descent_10n"
+    baseline = material_status_signature(status)
+
+    status["failure_reason"] = "drudge_partial_death_before_threat_seed"
+    reason, rejections = terminal_runtime_failure_reason(status)
+
+    assert reason == "drudge_partial_death_before_threat_seed"
+    assert rejections == []
+    assert material_status_signature(status) != baseline
+
+    status["raid_runtime"]["roster"][0]["lease_owned"] = False
+    reason, rejections = terminal_runtime_failure_reason(status)
+    assert reason is None
+    assert "terminal_failure_all_roster_leases_owned" in rejections
 
 
 class _FakeShutdownProcess:
@@ -570,7 +590,7 @@ def accepted_drudge_status() -> dict:
     }
     anchors.update({
         row["roster_slot"]: (row["x"], row["y"])
-        for row in drudges["split_tank_combat_anchors"]
+        for row in drudges["split_tank_navigation_anchors"]
     })
     home0 = (-298.833, -50.349)
     home1 = (-307.913, -49.5694)
@@ -578,8 +598,10 @@ def accepted_drudge_status() -> dict:
     axis_length = hypot(home1[0] - home0[0], home1[1] - home0[1])
     axis = ((home1[0] - home0[0]) / axis_length, (home1[1] - home0[1]) / axis_length)
     projection = lambda x, y: (x - midpoint[0]) * axis[0] + (y - midpoint[1]) * axis[1]
-    source0 = anchors[1]
-    source1 = anchors[2]
+    tank0 = anchors[1]
+    tank1 = anchors[2]
+    source0 = (-295.608573, -52.851976)
+    source1 = (-314.887329, -48.970574)
     member_geometry = []
     for row in runtime["roster"]:
         slot = row["slot"] + 1
@@ -622,15 +644,19 @@ def accepted_drudge_status() -> dict:
         "source0_victim_guid": tank_guids[0], "source1_victim_guid": tank_guids[1],
         "source0_alive": True, "source1_alive": True,
         "source_separation": hypot(source1[0] - source0[0], source1[1] - source0[1]), "minimum_source_separation": 15.0,
-        "lane_tank_x": source0[0], "lane_tank_y": source0[1], "lane_tank_guid": tank_guids[0],
-        "lane_tank_slot": 1, "lane_tank_projection": projection(*source0), "lane_tank_source_distance": 0.0,
-        "other_tank_x": source1[0], "other_tank_y": source1[1], "other_tank_guid": tank_guids[1],
-        "other_tank_slot": 2, "other_tank_projection": projection(*source1), "other_tank_source_distance": 0.0,
+        "lane_tank_x": tank0[0], "lane_tank_y": tank0[1], "lane_tank_guid": tank_guids[0],
+        "lane_tank_slot": 1, "lane_tank_projection": projection(*tank0),
+        "lane_tank_source_distance": hypot(tank0[0] - source0[0], tank0[1] - source0[1]),
+        "other_tank_x": tank1[0], "other_tank_y": tank1[1], "other_tank_guid": tank_guids[1],
+        "other_tank_slot": 2, "other_tank_projection": projection(*tank1),
+        "other_tank_source_distance": hypot(tank1[0] - source1[0], tank1[1] - source1[1]),
         "minimum_member_spacing": 3.0, "arrival_tolerance": 2.0,
-        "tank0_x": source0[0], "tank0_y": source0[1], "tank0_guid": tank_guids[0],
-        "tank0_slot": 1, "tank0_projection": projection(*source0), "tank0_source_distance": 0.0,
-        "tank1_x": source1[0], "tank1_y": source1[1], "tank1_guid": tank_guids[1],
-        "tank1_slot": 2, "tank1_projection": projection(*source1), "tank1_source_distance": 0.0,
+        "tank0_x": tank0[0], "tank0_y": tank0[1], "tank0_guid": tank_guids[0],
+        "tank0_slot": 1, "tank0_projection": projection(*tank0),
+        "tank0_source_distance": hypot(tank0[0] - source0[0], tank0[1] - source0[1]),
+        "tank1_x": tank1[0], "tank1_y": tank1[1], "tank1_guid": tank_guids[1],
+        "tank1_slot": 2, "tank1_projection": projection(*tank1),
+        "tank1_source_distance": hypot(tank1[0] - source1[0], tank1[1] - source1[1]),
         "members": member_geometry,
     }
     observations = []
@@ -832,7 +858,7 @@ def test_drudge_geometry_is_loaded_from_explicit_sealed_route_manifest(tmp_path,
     )
     anchors = _frozen_drudge_member_anchors(sealed)
     assert set(anchors) == set(range(1, 11))
-    assert anchors[1] == (-283.888, -51.6322, 212.2983)
+    assert anchors[1] == (-289.289093, -57.7575, 212.932236)
     assert _frozen_drudge_member_anchors() == {}
 
 
@@ -1900,6 +1926,56 @@ def test_live_evidence_demux_rejects_unclassified_and_unbound_readycheck():
     reasons = evidence_demux_rejections(rows)
     assert "evidence_demux_unclassified_row" in reasons
     assert "evidence_demux_cleanup_missing" in reasons
+
+
+def test_live_evidence_demux_accepts_bound_terminal_without_readycheck():
+    active = accepted_status()
+    active["cohort_id"] = "default"
+    active["active_profile"] = "blackwing_descent_10n"
+    terminal = json.loads(json.dumps(active))
+    terminal["failure_reason"] = "drudge_partial_death_before_threat_seed"
+    terminal["raid_runtime"]["alive_size"] = 3
+    bots = [{"bot_guid": 1001 + index} for index in range(10)]
+    diagnosis = {
+        "ok": True, "action": "botauto_diagnose", "cohort_id": "default",
+        "failure_reason": terminal["failure_reason"],
+        "raid_runtime": terminal["raid_runtime"], "bots": bots,
+    }
+    trace = {
+        "ok": True, "action": "botauto_trace", "cohort_id": "default",
+        "failure_reason": terminal["failure_reason"],
+        "raid_runtime": terminal["raid_runtime"],
+        "bots": [{"bot_guid": 1001 + index, "entries": [], "delta": True, "gap": False}
+                 for index in range(10)],
+    }
+    profile = {
+        "ok": True, "action": "botauto_profile", "cohort_id": "default",
+        "active_profile": "blackwing_descent_10n",
+    }
+    stop = {
+        "ok": True, "action": "botauto_stop", "cohort_id": "default",
+        "server_epoch": 88, "attempt_id": 1,
+        "raid_runtime_before_cleanup": terminal["raid_runtime"],
+        "post_cleanup": {"active": False, "bots": 0, "lease_count": 0},
+    }
+    inactive = json.loads(json.dumps(terminal))
+    inactive["active"] = False
+    inactive["bots"] = 0
+    inactive["lease_count"] = 0
+    inactive["server_epoch"] = 88
+    inactive["attempt_id"] = 1
+    inactive["raid_runtime"]["active"] = False
+    rows = normalized_batch_payload(
+        b"\n".join(json.dumps(row).encode() for row in (
+            profile, active, terminal, diagnosis, trace, stop, inactive,
+        )) + b"\n"
+    )
+
+    report = evidence_demux_report(rows)
+
+    assert "evidence_demux_required_action_missing:botauto_readycheck" not in report["rejections"]
+    assert report["rejections"] == []
+    assert report["gate_passed"] is True
 
 
 def test_live_evidence_demux_reconstructs_bindings_and_rejects_missing_lifecycle_identity():

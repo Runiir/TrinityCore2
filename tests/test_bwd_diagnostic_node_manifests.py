@@ -102,6 +102,16 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
         "split_member_anchor_source_unsafe",
     )
 
+    unsafe_navigation = deepcopy(drudges)
+    unsafe_navigation["split_tank_navigation_anchors"] = [
+        {"roster_slot": 1, "x": -291.7762, "y": -56.0799, "z": 212.9},
+        {"roster_slot": 2, "x": -319.8744, "y": -48.5998, "z": 212.0},
+    ]
+    assert drudge_split_geometry_status(unsafe_navigation) == (
+        False,
+        "split_navigation_anchor_native_chase_unsafe",
+    )
+
 
 def test_canonical_bwd_route_is_still_the_ordered_eleven_node_parent_route():
     routes = _routes(_manifests(), CANONICAL_ID)

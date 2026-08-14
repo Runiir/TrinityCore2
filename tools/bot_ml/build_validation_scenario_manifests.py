@@ -115,14 +115,21 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
     source_guids = [int(value) for value in step.get("split_source_guids") or []]
     homes = list(step.get("split_source_home_anchors") or [])
     tanks = list(step.get("split_tank_combat_anchors") or [])
+    navigation_tanks = list(step.get("split_tank_navigation_anchors") or [])
     members = list(step.get("split_member_anchors") or [])
     tank_slots = [int(value) for value in step.get("split_lane_tank_slots") or []]
     if (len(source_guids) != 2 or len(homes) != 2 or len(tanks) != 2
+            or len(navigation_tanks) != 2
             or len(tank_slots) != 2 or len(members) != 10):
         return False, "split_combat_anchor_shape"
     home_by_guid = {int(row.get("source_guid") or 0): row for row in homes}
     tank_by_slot = {int(row.get("roster_slot") or 0): row for row in tanks}
-    if set(home_by_guid) != set(source_guids) or set(tank_by_slot) != set(tank_slots):
+    navigation_by_slot = {
+        int(row.get("roster_slot") or 0): row for row in navigation_tanks
+    }
+    if (set(home_by_guid) != set(source_guids)
+            or set(tank_by_slot) != set(tank_slots)
+            or set(navigation_by_slot) != set(tank_slots)):
         return False, "split_combat_anchor_identity"
     source_sql = str(step.get("source_sql") or "")
     source_entry = int(step.get("source_entry") or 0)
@@ -154,7 +161,7 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
     if minimum <= 0.0 or arrival <= 0.0 or melee_stop <= 0.0 or any(value <= 0.0 for value in outward):
         return False, "split_combat_anchor_contract"
     for home, tank in zip(ordered_homes, ordered_tanks):
-        if math.dist(home, (float(tank["x"]), float(tank["y"]), float(tank["z"]))) > minimum:
+        if math.hypot(home[0] - float(tank["x"]), home[1] - float(tank["y"])) > minimum:
             return False, "split_combat_anchor_bound"
     guaranteed_separation = home_separation + sum(
         max(0.0, displacement - melee_stop - arrival) for displacement in outward
@@ -180,6 +187,50 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
             ordered_homes[1][2],
         ),
     ]
+    ordered_navigation = [navigation_by_slot[slot] for slot in tank_slots]
+    navigation_points = [
+        (float(row["x"]), float(row["y"]), float(row["z"]))
+        for row in ordered_navigation
+    ]
+    for home, navigation in zip(ordered_homes, navigation_points):
+        if math.hypot(home[0] - navigation[0], home[1] - navigation[1]) > minimum + 1e-6:
+            return False, "split_navigation_anchor_source_bound"
+    if math.hypot(
+        navigation_points[1][0] - navigation_points[0][0],
+        navigation_points[1][1] - navigation_points[0][1],
+    ) + 1e-6 < minimum:
+        return False, "split_navigation_anchor_tank_separation"
+
+    # Mirror native chase geometry in the horizontal plane.  Each Drudge
+    # approaches its bound tank and stops at the declared native melee range;
+    # this exact model is also rechecked from live positions before runtime
+    # grants taunt, threat-seed, or hostile-profile authority.
+    navigation_chased_sources: list[tuple[float, float, float]] = []
+    for home, navigation in zip(ordered_homes, navigation_points):
+        nav_dx = navigation[0] - home[0]
+        nav_dy = navigation[1] - home[1]
+        nav_distance = math.hypot(nav_dx, nav_dy)
+        travel = max(0.0, nav_distance - melee_stop)
+        scale = travel / nav_distance if nav_distance > 0.0 else 0.0
+        navigation_chased_sources.append((
+            home[0] + nav_dx * scale,
+            home[1] + nav_dy * scale,
+            home[2],
+        ))
+    if math.hypot(
+        navigation_chased_sources[1][0] - navigation_chased_sources[0][0],
+        navigation_chased_sources[1][1] - navigation_chased_sources[0][1],
+    ) + 1e-6 < minimum + margin:
+        return False, "split_navigation_anchor_native_chase_unsafe"
+    midpoint_x = (ordered_homes[0][0] + ordered_homes[1][0]) * 0.5
+    midpoint_y = (ordered_homes[0][1] + ordered_homes[1][1]) * 0.5
+    lane_threshold = (minimum + margin) * 0.25
+    for index, source in enumerate(navigation_chased_sources):
+        projection = ((source[0] - midpoint_x) * axis_x
+                      + (source[1] - midpoint_y) * axis_y)
+        lane_sign = -1.0 if index == 0 else 1.0
+        if lane_sign * projection + 1e-6 < lane_threshold:
+            return False, "split_navigation_anchor_source_lane_unsafe"
     for slot, member in member_by_slot.items():
         if slot in tank_slots:
             continue
@@ -187,6 +238,9 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
         if any(math.hypot(anchor[0] - source[0], anchor[1] - source[1]) + 1e-6 < minimum
                for source in chased_sources):
             return False, "split_member_anchor_source_unsafe"
+        if any(math.hypot(anchor[0] - source[0], anchor[1] - source[1]) + 1e-6 < minimum
+               for source in navigation_chased_sources):
+            return False, "split_navigation_anchor_member_unsafe"
     return True, ""
 
 
@@ -603,6 +657,15 @@ def build_manifests(
                         "z": float(anchor.get("z") or 0.0),
                     }
                     for anchor in (step.get("split_tank_combat_anchors") or [])
+                ],
+                "split_tank_navigation_anchors": [
+                    {
+                        "roster_slot": int(anchor.get("roster_slot") or 0),
+                        "x": float(anchor.get("x") or 0.0),
+                        "y": float(anchor.get("y") or 0.0),
+                        "z": float(anchor.get("z") or 0.0),
+                    }
+                    for anchor in (step.get("split_tank_navigation_anchors") or [])
                 ],
                 "split_minimum_separation_yards": float(step.get("split_minimum_separation_yards") or 0.0),
                 "split_navigation_margin_yards": float(step.get("split_navigation_margin_yards") or 0.0),
