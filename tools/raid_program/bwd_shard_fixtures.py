@@ -28,6 +28,16 @@ SHARD_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {"boss_key": "chimaeron", "profile_id": "blackwing_descent_10n_chimaeron_diagnostic", "name_code": "Chi", "precompleted_boss_entries": [41570, 42166, 41378, 41442], "upper_ledge_start": False, "requires_native_descent_before_engagement": False},
     {"boss_key": "nefarian", "profile_id": "blackwing_descent_10n_nefarian_diagnostic", "name_code": "Nef", "precompleted_boss_entries": [41570, 42166, 41378, 41442, 43296], "upper_ledge_start": True, "requires_native_descent_before_engagement": True},
 )
+# Boss shards may use a mechanic-compatible class/spec composition while
+# retaining the canonical 2/3/5 slot and identity contract.  Drudge ranged
+# lanes keep every non-tank outside the repeated native Thunderclap radius, so
+# a melee-only Rogue profile can never execute its trained hostile action from
+# the certified formation.  The Magmaw diagnostic therefore uses the proven
+# Fire Mage setup for that DPS slot; other shards and the canonical roster are
+# unchanged.
+SHARD_ROSTER_SOURCE_OVERRIDES: dict[str, dict[str, str]] = {
+    "magmaw": {"raid_dps_2": "raid_dps_1"},
+}
 LIVE_IDENTITY_FIELDS = ("group_id", "map_instance_id", "save_id", "attempt_id", "strategy_id", "assignment_generation")
 
 
@@ -104,12 +114,18 @@ def build_shard_fixture(config: dict[str, Any]) -> dict[str, Any]:
             raise ValueError(f"runtime_profile_missing:{profile_id}")
         namespace = _namespace(str(definition["boss_key"]))
         bots: list[dict[str, Any]] = []
-        for slot_index, (slot_id, source) in enumerate(slots.items(), 1):
+        source_overrides = SHARD_ROSTER_SOURCE_OVERRIDES.get(
+            str(definition["boss_key"]), {}
+        )
+        for slot_index, slot_id in enumerate(slots, 1):
+            source_slot_id = source_overrides.get(slot_id, slot_id)
+            source = slots[source_slot_id]
             account_id = 20000 + shard_index * 100 + slot_index
             guid = 30000 + shard_index * 100 + slot_index
             bot = copy.deepcopy(source)
             bot.update({
                 "canonical_roster_slot_id": slot_id,
+                "roster_source_slot_id": source_slot_id,
                 "roster_slot_id": f"{profile_id}:{slot_id}",
                 "account_id": account_id,
                 "expected_account_id": account_id,

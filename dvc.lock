@@ -223,8 +223,8 @@ stages:
       size: 20123
     - path: experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json
       hash: md5
-      md5: 0b6266f479cd9141a9950388fdf81372
-      size: 105088
+      md5: 0d54984b39f27dded3e636ebe46af2b0
+      size: 108034
     - path: experiments/configs/validation_provisioning_cata_001.json
       hash: md5
       md5: 904570c99aed581a529e28f7d3ed9a84
@@ -243,13 +243,13 @@ stages:
       size: 2993
     - path: tools/raid_program/bwd_shard_fixtures.py
       hash: md5
-      md5: bd53d0cd8500289491771330cfa186da
-      size: 21339
+      md5: 06f356d53141f812b67db7e77348d585
+      size: 22186
     outs:
     - path: dataset/validation_provisioning
       hash: md5
-      md5: 72aaa4ab78f4254f4dc4dcf3b1e59c02.dir
-      size: 3526833
+      md5: 9fb1ad3d1e91c296d842deace5aeea20.dir
+      size: 3527324
       nfiles: 5
   validation_gear:
     cmd: python -m tools.bot_ml.build_validation_gear_profiles --config
@@ -345,8 +345,8 @@ stages:
       nfiles: 3
     - path: dataset/validation_provisioning
       hash: md5
-      md5: 72aaa4ab78f4254f4dc4dcf3b1e59c02.dir
-      size: 3526833
+      md5: 9fb1ad3d1e91c296d842deace5aeea20.dir
+      size: 3527324
       nfiles: 5
     - path: experiments/configs/all_spec_targets_cata_p4_v1.json
       hash: md5
@@ -362,8 +362,8 @@ stages:
       size: 3975
     - path: experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json
       hash: md5
-      md5: 0b6266f479cd9141a9950388fdf81372
-      size: 105088
+      md5: 0d54984b39f27dded3e636ebe46af2b0
+      size: 108034
     - path: experiments/configs/validation_provisioning_cata_001.json
       hash: md5
       md5: 904570c99aed581a529e28f7d3ed9a84
@@ -394,12 +394,12 @@ stages:
       size: 2993
     - path: tools/raid_program/bwd_shard_fixtures.py
       hash: md5
-      md5: bd53d0cd8500289491771330cfa186da
-      size: 21339
+      md5: 06f356d53141f812b67db7e77348d585
+      size: 22186
     outs:
     - path: dataset/validation_provisioning_verification/report.json
       hash: md5
-      md5: ccd7dc5bcd6b721a379980e1d1dd199f
+      md5: 14e4635eec6a47c2fa5eeb4c60ffeb82
       size: 1651
   validation_scenarios:
     cmd: python -m tools.bot_ml.build_validation_scenario_manifests --config
@@ -413,19 +413,19 @@ stages:
     deps:
     - path: dataset/validation_provisioning/report.json
       hash: md5
-      md5: 0999d38d7f932e7e6dceb9f37123cf64
-      size: 15233
+      md5: 653b82d0f849370f6c92becb1a357b96
+      size: 15223
     - path: dataset/validation_provisioning_verification/report.json
       hash: md5
-      md5: ccd7dc5bcd6b721a379980e1d1dd199f
+      md5: 14e4635eec6a47c2fa5eeb4c60ffeb82
       size: 1651
     - path: experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json
       hash: md5
-      md5: 0b6266f479cd9141a9950388fdf81372
-      size: 105088
+      md5: 0d54984b39f27dded3e636ebe46af2b0
+      size: 108034
     - path: experiments/configs/validation_scenarios_cata_001.json
       hash: md5
-      md5: 88ac9db92609b8764bf028236c77b2c1
+      md5: c59447ccd657595d2f908eea64345b81
       size: 31996
     - path: sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql
       hash: md5
@@ -442,8 +442,8 @@ stages:
     outs:
     - path: dataset/validation_scenarios
       hash: md5
-      md5: 76208180c87840534d754adf69239445.dir
-      size: 305752
+      md5: fe6e681b9d973c6c67e5d1d4e4071236.dir
+      size: 305702
       nfiles: 5
   live_scenario_reports:
     cmd: python -m tools.bot_ml.build_live_scenario_reports --live-report
@@ -541,8 +541,8 @@ stages:
     deps:
     - path: dataset/validation_scenarios
       hash: md5
-      md5: 76208180c87840534d754adf69239445.dir
-      size: 305752
+      md5: fe6e681b9d973c6c67e5d1d4e4071236.dir
+      size: 305702
       nfiles: 5
     - path: tools/bot_ml/build_validation_run_plan.py
       hash: md5
@@ -555,7 +555,7 @@ stages:
     outs:
     - path: dataset/validation_run_plan
       hash: md5
-      md5: a4758fe648af71a60669c73247b3b4b6.dir
+      md5: 249ff58606356acc5a377b5fd398d546.dir
       size: 216567
       nfiles: 2
   live_validation_combined:

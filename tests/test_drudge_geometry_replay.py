@@ -77,14 +77,26 @@ int main()
     assert(ownershipOnly.NativeOwnershipAllowed);
     assert(!ownershipOnly.NativeEngagementAllowed);
 
-    // Each live dynamic contract predicate fails closed independently. Tank
-    // movement/recovery remains selected, but taunt/offense authority does not.
+    // An in-flight Rush still denies ownership. Once that exact authoritative
+    // observation lands, only the assigned tanks regain native taunt
+    // authority so they can split the sources. Ordinary engagement/offense
+    // remains denied until the queue is retired by exact-roster reseparation.
     Input unsafe = input;
     unsafe.ChargeQueueIdle = false;
     unsafe.ChargePending = true;
     Result pending = Advance(result.Next, unsafe);
     assert(!pending.NativeOwnershipAllowed);
     assert(!pending.NativeEngagementAllowed);
+    unsafe.ChargeLanded = true;
+    Result landed = Advance(result.Next, unsafe);
+    assert(landed.NativeOwnershipAllowed);
+    assert(!landed.NativeEngagementAllowed);
+    unsafe.BothCombatTankAnchorsSafe = false;
+    Result displacedTank = Advance(result.Next, unsafe);
+    assert(displacedTank.NativeOwnershipAllowed);
+    unsafe.TanksOnFrozenLanes = false;
+    Result crossedRecoveryTank = Advance(result.Next, unsafe);
+    assert(!crossedRecoveryTank.NativeOwnershipAllowed);
     unsafe = input;
     unsafe.SourcesSeparated = false;
     Result tooClose = Advance(result.Next, unsafe);
@@ -248,6 +260,11 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "exactCombatTankAnchorsSafe" in lane
     assert "!tankStage.NativeEngagementAllowed" in lane
     assert "tankStageInput.ChargeQueueIdle" in lane
+    assert "tankStageInput.ChargeLanded = nativeChargePending" in lane
+    assert "landedChargeRecovery" in lane
+    assert "drudge_lane_native_taunt_approach" in lane
+    assert 'candidate.RejectReason == "out_of_range"' in lane
+    assert "tankLaneSign * recoveryProjection >= laneSeparation * 0.25f" in lane
     assert "tankStageInput.SourcesAlive" in lane
     assert "tankStageInput.SourcesSeparated" in lane
     assert "tankStageInput.SourcesOnFrozenLanes" in lane
@@ -286,3 +303,26 @@ def test_future_encounter_contamination_is_attempt_terminal_not_a_transient_hold
     assert latch < event < hold.index("return true;", event)
     assert "ValidationAttemptFailureAttemptId = Cohort().AttemptId" in hold
     assert "ValidationAttemptFailureRouteGeneration" in hold
+
+
+def test_second_same_source_rush_terminalizes_an_unclosed_native_reseparation():
+    implementation = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
+        encoding="utf-8"
+    )
+    start = implementation.index(
+        "uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted"
+    )
+    end = implementation.index(
+        "void BotWorldPopulationMgr::NotifyNativeCreatureSpellLanded", start
+    )
+    callback = implementation[start:end]
+    assert "observation.SourceSpawnId == sourceSpawnId" in callback
+    assert "observation.Landed && !observation.ReseparationRecorded" in callback
+    latch = callback.index(
+        'Cohort().ValidationAttemptFailureReason =\n'
+        '            "drudge_reseparation_deadline_missed";'
+    )
+    append = callback.index(
+        "Party().ValidationRouteDrudgeChargeObservations.push_back"
+    )
+    assert latch < append

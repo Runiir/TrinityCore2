@@ -52,6 +52,11 @@ Require one exact tuple across config, generated route, runtime status, capture,
   hostile action range`, source danger clearance, lane side, and spacing;
   runtime must still recheck the actual hostile action, LOS, power, cooldown,
   and exact target before submission.
+- Treat periodic native displacement as a deadline contract. Prove the real
+  tank approach/taunt, source chase, member return paths, decision cadence, and
+  exact-roster acknowledgement fit below the observed native interval. If the
+  next native edge arrives first, retain it and terminalize the missed recovery
+  instead of accumulating an unbounded queue or telemetry flood.
 - A prerequisite patrol is pullable only in a path-proven phase whose entire
   chase stays outside every future-encounter guard. A native combat link to a
   future encounter permanently contaminates that route generation; terminalize
@@ -125,6 +130,11 @@ edges for every bot and target scope:
 - A correct DB profile can select a valid spell while route movement, hazard,
   formation, future-encounter, recovery, or target authority returns before
   execution. Treat that as an architecture/path failure, not lost tuning.
+- Prove every selected profile has an executable action envelope at its node.
+  A boss-only shard may clone a reviewed, mechanic-compatible trained profile
+  into an independently provisioned slot while preserving the frozen 2/3/5
+  roster; keep that override explicit and leave the canonical full-raid roster
+  unchanged until its own melee/ranged node geometry is proven.
 - Keep counters for selected, blocked-before-execute, submitted, landed, and
   rejection reason. Emit full candidate masks only on profile-generation or
   material target-state changes.

@@ -151,6 +151,7 @@
           "race": 1,
           "role": "tank",
           "roster_slot_id": "blackwing_descent_10n_magmaw_diagnostic:raid_tank_1",
+          "roster_source_slot_id": "raid_tank_1",
           "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic"
         },
         {
@@ -191,6 +192,7 @@
           "race": 1,
           "role": "tank",
           "roster_slot_id": "blackwing_descent_10n_magmaw_diagnostic:raid_tank_2",
+          "roster_source_slot_id": "raid_tank_2",
           "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic"
         },
         {
@@ -231,6 +233,7 @@
           "race": 4,
           "role": "healer",
           "roster_slot_id": "blackwing_descent_10n_magmaw_diagnostic:raid_healer_1",
+          "roster_source_slot_id": "raid_healer_1",
           "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic"
         },
         {
@@ -271,6 +274,7 @@
           "race": 1,
           "role": "healer",
           "roster_slot_id": "blackwing_descent_10n_magmaw_diagnostic:raid_healer_2",
+          "roster_source_slot_id": "raid_healer_2",
           "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic"
         },
         {
@@ -311,6 +315,7 @@
           "race": 1,
           "role": "healer",
           "roster_slot_id": "blackwing_descent_10n_magmaw_diagnostic:raid_healer_3",
+          "roster_source_slot_id": "raid_healer_3",
           "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic"
         },
         {
@@ -351,36 +356,37 @@
           "race": 1,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_magmaw_diagnostic:raid_dps_1",
+          "roster_source_slot_id": "raid_dps_1",
           "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic"
         },
         {
           "account": "BWDMGWA07",
           "account_id": 20007,
-          "action_profile_id": "assassination_rogue",
+          "action_profile_id": "fire_mage",
           "canonical_roster_slot_id": "raid_dps_2",
           "canonical_setup": {
-            "action_profile_id": "assassination_rogue",
+            "action_profile_id": "fire_mage",
             "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
-            "class_spec": "assassination_rogue",
-            "gear_profile_id": "assassination_rogue",
+            "class_spec": "fire_mage",
+            "gear_profile_id": "fire_mage",
             "glyph_ids": [
-              42954,
-              42957,
-              42969
+              42739,
+              42743,
+              42753
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
-            "talent_build_id": "assassination_rogue"
+            "talent_build_id": "fire_mage"
           },
           "character_guid": 30007,
-          "class": 4,
-          "class_spec": "assassination_rogue",
+          "class": 8,
+          "class_spec": "fire_mage",
           "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_dps_2",
           "expected_account_id": 20007,
           "expected_character_guid": 30007,
           "glyphs": [
-            42954,
-            42957,
-            42969
+            42739,
+            42743,
+            42753
           ],
           "legacy_names": [
             "Mgwdps2"
@@ -391,6 +397,7 @@
           "race": 1,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_magmaw_diagnostic:raid_dps_2",
+          "roster_source_slot_id": "raid_dps_1",
           "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic"
         },
         {
@@ -431,6 +438,7 @@
           "race": 1,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_magmaw_diagnostic:raid_dps_3",
+          "roster_source_slot_id": "raid_dps_3",
           "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic"
         },
         {
@@ -486,6 +494,7 @@
           "race": 1,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_magmaw_diagnostic:raid_dps_4",
+          "roster_source_slot_id": "raid_dps_4",
           "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic"
         },
         {
@@ -526,6 +535,7 @@
           "race": 11,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_magmaw_diagnostic:raid_dps_5",
+          "roster_source_slot_id": "raid_dps_5",
           "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic"
         }
       ],
@@ -632,6 +642,7 @@
           "race": 1,
           "role": "tank",
           "roster_slot_id": "blackwing_descent_10n_omnotron_diagnostic:raid_tank_1",
+          "roster_source_slot_id": "raid_tank_1",
           "runtime_profile_id": "blackwing_descent_10n_omnotron_diagnostic"
         },
         {
@@ -672,6 +683,7 @@
           "race": 1,
           "role": "tank",
           "roster_slot_id": "blackwing_descent_10n_omnotron_diagnostic:raid_tank_2",
+          "roster_source_slot_id": "raid_tank_2",
           "runtime_profile_id": "blackwing_descent_10n_omnotron_diagnostic"
         },
         {
@@ -712,6 +724,7 @@
           "race": 4,
           "role": "healer",
           "roster_slot_id": "blackwing_descent_10n_omnotron_diagnostic:raid_healer_1",
+          "roster_source_slot_id": "raid_healer_1",
           "runtime_profile_id": "blackwing_descent_10n_omnotron_diagnostic"
         },
         {
@@ -752,6 +765,7 @@
           "race": 1,
           "role": "healer",
           "roster_slot_id": "blackwing_descent_10n_omnotron_diagnostic:raid_healer_2",
+          "roster_source_slot_id": "raid_healer_2",
           "runtime_profile_id": "blackwing_descent_10n_omnotron_diagnostic"
         },
         {
@@ -792,6 +806,7 @@
           "race": 1,
           "role": "healer",
           "roster_slot_id": "blackwing_descent_10n_omnotron_diagnostic:raid_healer_3",
+          "roster_source_slot_id": "raid_healer_3",
           "runtime_profile_id": "blackwing_descent_10n_omnotron_diagnostic"
         },
         {
@@ -832,6 +847,7 @@
           "race": 1,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_omnotron_diagnostic:raid_dps_1",
+          "roster_source_slot_id": "raid_dps_1",
           "runtime_profile_id": "blackwing_descent_10n_omnotron_diagnostic"
         },
         {
@@ -872,6 +888,7 @@
           "race": 1,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_omnotron_diagnostic:raid_dps_2",
+          "roster_source_slot_id": "raid_dps_2",
           "runtime_profile_id": "blackwing_descent_10n_omnotron_diagnostic"
         },
         {
@@ -912,6 +929,7 @@
           "race": 1,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_omnotron_diagnostic:raid_dps_3",
+          "roster_source_slot_id": "raid_dps_3",
           "runtime_profile_id": "blackwing_descent_10n_omnotron_diagnostic"
         },
         {
@@ -967,6 +985,7 @@
           "race": 1,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_omnotron_diagnostic:raid_dps_4",
+          "roster_source_slot_id": "raid_dps_4",
           "runtime_profile_id": "blackwing_descent_10n_omnotron_diagnostic"
         },
         {
@@ -1007,6 +1026,7 @@
           "race": 11,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_omnotron_diagnostic:raid_dps_5",
+          "roster_source_slot_id": "raid_dps_5",
           "runtime_profile_id": "blackwing_descent_10n_omnotron_diagnostic"
         }
       ],
@@ -1115,6 +1135,7 @@
           "race": 1,
           "role": "tank",
           "roster_slot_id": "blackwing_descent_10n_maloriak_diagnostic:raid_tank_1",
+          "roster_source_slot_id": "raid_tank_1",
           "runtime_profile_id": "blackwing_descent_10n_maloriak_diagnostic"
         },
         {
@@ -1155,6 +1176,7 @@
           "race": 1,
           "role": "tank",
           "roster_slot_id": "blackwing_descent_10n_maloriak_diagnostic:raid_tank_2",
+          "roster_source_slot_id": "raid_tank_2",
           "runtime_profile_id": "blackwing_descent_10n_maloriak_diagnostic"
         },
         {
@@ -1195,6 +1217,7 @@
           "race": 4,
           "role": "healer",
           "roster_slot_id": "blackwing_descent_10n_maloriak_diagnostic:raid_healer_1",
+          "roster_source_slot_id": "raid_healer_1",
           "runtime_profile_id": "blackwing_descent_10n_maloriak_diagnostic"
         },
         {
@@ -1235,6 +1258,7 @@
           "race": 1,
           "role": "healer",
           "roster_slot_id": "blackwing_descent_10n_maloriak_diagnostic:raid_healer_2",
+          "roster_source_slot_id": "raid_healer_2",
           "runtime_profile_id": "blackwing_descent_10n_maloriak_diagnostic"
         },
         {
@@ -1275,6 +1299,7 @@
           "race": 1,
           "role": "healer",
           "roster_slot_id": "blackwing_descent_10n_maloriak_diagnostic:raid_healer_3",
+          "roster_source_slot_id": "raid_healer_3",
           "runtime_profile_id": "blackwing_descent_10n_maloriak_diagnostic"
         },
         {
@@ -1315,6 +1340,7 @@
           "race": 1,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_maloriak_diagnostic:raid_dps_1",
+          "roster_source_slot_id": "raid_dps_1",
           "runtime_profile_id": "blackwing_descent_10n_maloriak_diagnostic"
         },
         {
@@ -1355,6 +1381,7 @@
           "race": 1,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_maloriak_diagnostic:raid_dps_2",
+          "roster_source_slot_id": "raid_dps_2",
           "runtime_profile_id": "blackwing_descent_10n_maloriak_diagnostic"
         },
         {
@@ -1395,6 +1422,7 @@
           "race": 1,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_maloriak_diagnostic:raid_dps_3",
+          "roster_source_slot_id": "raid_dps_3",
           "runtime_profile_id": "blackwing_descent_10n_maloriak_diagnostic"
         },
         {
@@ -1450,6 +1478,7 @@
           "race": 1,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_maloriak_diagnostic:raid_dps_4",
+          "roster_source_slot_id": "raid_dps_4",
           "runtime_profile_id": "blackwing_descent_10n_maloriak_diagnostic"
         },
         {
@@ -1490,6 +1519,7 @@
           "race": 11,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_maloriak_diagnostic:raid_dps_5",
+          "roster_source_slot_id": "raid_dps_5",
           "runtime_profile_id": "blackwing_descent_10n_maloriak_diagnostic"
         }
       ],
@@ -1599,6 +1629,7 @@
           "race": 1,
           "role": "tank",
           "roster_slot_id": "blackwing_descent_10n_atramedes_diagnostic:raid_tank_1",
+          "roster_source_slot_id": "raid_tank_1",
           "runtime_profile_id": "blackwing_descent_10n_atramedes_diagnostic"
         },
         {
@@ -1639,6 +1670,7 @@
           "race": 1,
           "role": "tank",
           "roster_slot_id": "blackwing_descent_10n_atramedes_diagnostic:raid_tank_2",
+          "roster_source_slot_id": "raid_tank_2",
           "runtime_profile_id": "blackwing_descent_10n_atramedes_diagnostic"
         },
         {
@@ -1679,6 +1711,7 @@
           "race": 4,
           "role": "healer",
           "roster_slot_id": "blackwing_descent_10n_atramedes_diagnostic:raid_healer_1",
+          "roster_source_slot_id": "raid_healer_1",
           "runtime_profile_id": "blackwing_descent_10n_atramedes_diagnostic"
         },
         {
@@ -1719,6 +1752,7 @@
           "race": 1,
           "role": "healer",
           "roster_slot_id": "blackwing_descent_10n_atramedes_diagnostic:raid_healer_2",
+          "roster_source_slot_id": "raid_healer_2",
           "runtime_profile_id": "blackwing_descent_10n_atramedes_diagnostic"
         },
         {
@@ -1759,6 +1793,7 @@
           "race": 1,
           "role": "healer",
           "roster_slot_id": "blackwing_descent_10n_atramedes_diagnostic:raid_healer_3",
+          "roster_source_slot_id": "raid_healer_3",
           "runtime_profile_id": "blackwing_descent_10n_atramedes_diagnostic"
         },
         {
@@ -1799,6 +1834,7 @@
           "race": 1,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_atramedes_diagnostic:raid_dps_1",
+          "roster_source_slot_id": "raid_dps_1",
           "runtime_profile_id": "blackwing_descent_10n_atramedes_diagnostic"
         },
         {
@@ -1839,6 +1875,7 @@
           "race": 1,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_atramedes_diagnostic:raid_dps_2",
+          "roster_source_slot_id": "raid_dps_2",
           "runtime_profile_id": "blackwing_descent_10n_atramedes_diagnostic"
         },
         {
@@ -1879,6 +1916,7 @@
           "race": 1,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_atramedes_diagnostic:raid_dps_3",
+          "roster_source_slot_id": "raid_dps_3",
           "runtime_profile_id": "blackwing_descent_10n_atramedes_diagnostic"
         },
         {
@@ -1934,6 +1972,7 @@
           "race": 1,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_atramedes_diagnostic:raid_dps_4",
+          "roster_source_slot_id": "raid_dps_4",
           "runtime_profile_id": "blackwing_descent_10n_atramedes_diagnostic"
         },
         {
@@ -1974,6 +2013,7 @@
           "race": 11,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_atramedes_diagnostic:raid_dps_5",
+          "roster_source_slot_id": "raid_dps_5",
           "runtime_profile_id": "blackwing_descent_10n_atramedes_diagnostic"
         }
       ],
@@ -2084,6 +2124,7 @@
           "race": 1,
           "role": "tank",
           "roster_slot_id": "blackwing_descent_10n_chimaeron_diagnostic:raid_tank_1",
+          "roster_source_slot_id": "raid_tank_1",
           "runtime_profile_id": "blackwing_descent_10n_chimaeron_diagnostic"
         },
         {
@@ -2124,6 +2165,7 @@
           "race": 1,
           "role": "tank",
           "roster_slot_id": "blackwing_descent_10n_chimaeron_diagnostic:raid_tank_2",
+          "roster_source_slot_id": "raid_tank_2",
           "runtime_profile_id": "blackwing_descent_10n_chimaeron_diagnostic"
         },
         {
@@ -2164,6 +2206,7 @@
           "race": 4,
           "role": "healer",
           "roster_slot_id": "blackwing_descent_10n_chimaeron_diagnostic:raid_healer_1",
+          "roster_source_slot_id": "raid_healer_1",
           "runtime_profile_id": "blackwing_descent_10n_chimaeron_diagnostic"
         },
         {
@@ -2204,6 +2247,7 @@
           "race": 1,
           "role": "healer",
           "roster_slot_id": "blackwing_descent_10n_chimaeron_diagnostic:raid_healer_2",
+          "roster_source_slot_id": "raid_healer_2",
           "runtime_profile_id": "blackwing_descent_10n_chimaeron_diagnostic"
         },
         {
@@ -2244,6 +2288,7 @@
           "race": 1,
           "role": "healer",
           "roster_slot_id": "blackwing_descent_10n_chimaeron_diagnostic:raid_healer_3",
+          "roster_source_slot_id": "raid_healer_3",
           "runtime_profile_id": "blackwing_descent_10n_chimaeron_diagnostic"
         },
         {
@@ -2284,6 +2329,7 @@
           "race": 1,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_chimaeron_diagnostic:raid_dps_1",
+          "roster_source_slot_id": "raid_dps_1",
           "runtime_profile_id": "blackwing_descent_10n_chimaeron_diagnostic"
         },
         {
@@ -2324,6 +2370,7 @@
           "race": 1,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_chimaeron_diagnostic:raid_dps_2",
+          "roster_source_slot_id": "raid_dps_2",
           "runtime_profile_id": "blackwing_descent_10n_chimaeron_diagnostic"
         },
         {
@@ -2364,6 +2411,7 @@
           "race": 1,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_chimaeron_diagnostic:raid_dps_3",
+          "roster_source_slot_id": "raid_dps_3",
           "runtime_profile_id": "blackwing_descent_10n_chimaeron_diagnostic"
         },
         {
@@ -2419,6 +2467,7 @@
           "race": 1,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_chimaeron_diagnostic:raid_dps_4",
+          "roster_source_slot_id": "raid_dps_4",
           "runtime_profile_id": "blackwing_descent_10n_chimaeron_diagnostic"
         },
         {
@@ -2459,6 +2508,7 @@
           "race": 11,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_chimaeron_diagnostic:raid_dps_5",
+          "roster_source_slot_id": "raid_dps_5",
           "runtime_profile_id": "blackwing_descent_10n_chimaeron_diagnostic"
         }
       ],
@@ -2570,6 +2620,7 @@
           "race": 1,
           "role": "tank",
           "roster_slot_id": "blackwing_descent_10n_nefarian_diagnostic:raid_tank_1",
+          "roster_source_slot_id": "raid_tank_1",
           "runtime_profile_id": "blackwing_descent_10n_nefarian_diagnostic"
         },
         {
@@ -2610,6 +2661,7 @@
           "race": 1,
           "role": "tank",
           "roster_slot_id": "blackwing_descent_10n_nefarian_diagnostic:raid_tank_2",
+          "roster_source_slot_id": "raid_tank_2",
           "runtime_profile_id": "blackwing_descent_10n_nefarian_diagnostic"
         },
         {
@@ -2650,6 +2702,7 @@
           "race": 4,
           "role": "healer",
           "roster_slot_id": "blackwing_descent_10n_nefarian_diagnostic:raid_healer_1",
+          "roster_source_slot_id": "raid_healer_1",
           "runtime_profile_id": "blackwing_descent_10n_nefarian_diagnostic"
         },
         {
@@ -2690,6 +2743,7 @@
           "race": 1,
           "role": "healer",
           "roster_slot_id": "blackwing_descent_10n_nefarian_diagnostic:raid_healer_2",
+          "roster_source_slot_id": "raid_healer_2",
           "runtime_profile_id": "blackwing_descent_10n_nefarian_diagnostic"
         },
         {
@@ -2730,6 +2784,7 @@
           "race": 1,
           "role": "healer",
           "roster_slot_id": "blackwing_descent_10n_nefarian_diagnostic:raid_healer_3",
+          "roster_source_slot_id": "raid_healer_3",
           "runtime_profile_id": "blackwing_descent_10n_nefarian_diagnostic"
         },
         {
@@ -2770,6 +2825,7 @@
           "race": 1,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_nefarian_diagnostic:raid_dps_1",
+          "roster_source_slot_id": "raid_dps_1",
           "runtime_profile_id": "blackwing_descent_10n_nefarian_diagnostic"
         },
         {
@@ -2810,6 +2866,7 @@
           "race": 1,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_nefarian_diagnostic:raid_dps_2",
+          "roster_source_slot_id": "raid_dps_2",
           "runtime_profile_id": "blackwing_descent_10n_nefarian_diagnostic"
         },
         {
@@ -2850,6 +2907,7 @@
           "race": 1,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_nefarian_diagnostic:raid_dps_3",
+          "roster_source_slot_id": "raid_dps_3",
           "runtime_profile_id": "blackwing_descent_10n_nefarian_diagnostic"
         },
         {
@@ -2905,6 +2963,7 @@
           "race": 1,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_nefarian_diagnostic:raid_dps_4",
+          "roster_source_slot_id": "raid_dps_4",
           "runtime_profile_id": "blackwing_descent_10n_nefarian_diagnostic"
         },
         {
@@ -2945,6 +3004,7 @@
           "race": 11,
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_nefarian_diagnostic:raid_dps_5",
+          "roster_source_slot_id": "raid_dps_5",
           "runtime_profile_id": "blackwing_descent_10n_nefarian_diagnostic"
         }
       ],

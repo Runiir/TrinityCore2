@@ -81,8 +81,10 @@ def test_fixture_clones_canonical_profile_inputs_and_preserves_canonical_config(
     assert len([row for row in merged["scenarios"] if row["id"] == CANONICAL_SCENARIO_ID]) == 1
     assert len([row for row in merged["scenarios"] if row.get("diagnostic_only")]) == 6
     canonical = next(row for row in config["scenarios"] if row["id"] == CANONICAL_SCENARIO_ID)
+    canonical_by_slot = dict(zip(CANONICAL_ROSTER_SLOT_IDS, canonical["bots"], strict=True))
     for shard in fixture["shards"]:
-        for source, clone in zip(canonical["bots"], shard["bots"], strict=True):
+        for clone in shard["bots"]:
+            source = canonical_by_slot[clone["roster_source_slot_id"]]
             for field in ("class", "class_spec", "role", "race", "level", "glyphs"):
                 assert clone[field] == source[field]
             assert clone["account"] != source["account"]
@@ -184,6 +186,32 @@ def test_each_shard_has_all_canonical_roster_slots():
     fixture = _fixture()
     for shard in fixture["shards"]:
         assert {bot["canonical_roster_slot_id"] for bot in shard["bots"]} == set(CANONICAL_ROSTER_SLOT_IDS)
+
+
+def test_magmaw_shard_uses_ranged_trained_profiles_for_all_five_dps_slots():
+    fixture = _fixture()
+    magmaw = next(row for row in fixture["shards"] if row["boss_key"] == "magmaw")
+    dps = [bot for bot in magmaw["bots"] if bot["role"] == "dps"]
+    assert [bot["class_spec"] for bot in dps] == [
+        "fire_mage",
+        "fire_mage",
+        "affliction_warlock",
+        "marksmanship_hunter",
+        "elemental_shaman",
+    ]
+    replaced = next(bot for bot in dps if bot["canonical_roster_slot_id"] == "raid_dps_2")
+    assert replaced["roster_source_slot_id"] == "raid_dps_1"
+    assert replaced["canonical_setup"]["action_profile_id"] == "fire_mage"
+
+    for shard in fixture["shards"]:
+        if shard["boss_key"] == "magmaw":
+            continue
+        slot = next(
+            bot for bot in shard["bots"]
+            if bot["canonical_roster_slot_id"] == "raid_dps_2"
+        )
+        assert slot["class_spec"] == "assassination_rogue"
+        assert slot["roster_source_slot_id"] == "raid_dps_2"
 
 
 def test_provisioning_entrypoint_loads_all_six_tracked_shard_pools():

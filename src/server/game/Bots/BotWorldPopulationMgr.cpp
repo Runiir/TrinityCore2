@@ -19386,15 +19386,26 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 && laneSign * priorProjection >= laneSeparation * 0.25f;
             bool const sourcesSeparated = sources[0]->GetExactDist2d(sources[1])
                 >= laneSeparation;
+            bool const landedChargeRecovery = std::any_of(
+                Party().ValidationRouteDrudgeChargeObservations.begin(),
+                Party().ValidationRouteDrudgeChargeObservations.end(),
+                [this](ValidationRouteDrudgeChargeObservation const& observation)
+                {
+                    return observation.Landed && !observation.ReseparationRecorded
+                        && observation.AttemptId == Cohort().AttemptId
+                        && observation.WipeGeneration == Cohort().Raid.WipeGeneration
+                        && observation.RouteGeneration == Party().ValidationRouteGeneration;
+                });
             bool const priorSourceSafe = tank
-                ? (priorCandidateMatches && sourcesSeparated
-                    && sourceOnFrozenLane(sources[0], 0)
-                    && sourceOnFrozenLane(sources[1], 1)
-                    && Distance2d(state.ValidationRouteDrudgeAnchorX,
-                        state.ValidationRouteDrudgeAnchorY,
-                        sources[laneIndex]->GetPositionX(),
-                        sources[laneIndex]->GetPositionY())
-                        <= Cohort().Config.ValidationRouteSplitMinimumSeparationYards)
+                ? (priorCandidateMatches && (landedChargeRecovery
+                    || (sourcesSeparated
+                        && sourceOnFrozenLane(sources[0], 0)
+                        && sourceOnFrozenLane(sources[1], 1)
+                        && Distance2d(state.ValidationRouteDrudgeAnchorX,
+                            state.ValidationRouteDrudgeAnchorY,
+                            sources[laneIndex]->GetPositionX(),
+                            sources[laneIndex]->GetPositionY())
+                            <= Cohort().Config.ValidationRouteSplitMinimumSeparationYards)))
                 : (priorCandidateMatches
                     && Distance2d(state.ValidationRouteDrudgeAnchorX,
                         state.ValidationRouteDrudgeAnchorY, sources[0]->GetPositionX(),
@@ -20102,6 +20113,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         tankStageInput.BothCombatTankAnchorsSafe = exactCombatTankAnchorsSafe();
         tankStageInput.ChargeQueueIdle = chargeObservation
             == Party().ValidationRouteDrudgeChargeObservations.end();
+        tankStageInput.ChargeLanded = nativeChargePending;
         tankStageInput.SourcesAlive = sources[0]->IsAlive()
             && sources[1]->IsAlive();
         tankStageInput.SourcesSeparated = sourceSeparation
@@ -20147,21 +20159,55 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, "tank");
             for (BotActionCandidate const& candidate :
                 BotClassSpecActionProfileStore::BuildCandidates(bot, laneSource, profile))
-                if (candidate.Category == BotCombatActionCategory::Taunt
-                    && candidate.RejectReason.empty())
+                if (candidate.Category == BotCombatActionCategory::Taunt)
                 {
-                    BotRaidAreaAuthority::SetAllOffenseSuppressed(bot->GetGUID().GetRawValue(), false);
-                    bool const taunted = TryCastCombatSpell(bot, laneSource, candidate.SpellId);
-                    BotRaidAreaAuthority::SetAllOffenseSuppressed(bot->GetGUID().GetRawValue(), true);
-                    if (taunted)
+                    if (candidate.RejectReason.empty())
                     {
-                        BotRaidAreaAuthority::Set(bot->GetGUID().GetRawValue(), true);
-                        Party().ValidationRouteDrudgeTauntRosterGuids.insert(
-                            bot->GetGUID().GetCounter());
-                        record(laneSource, "drudge_lane_native_taunt", sourceSeparation, candidate.SpellId);
-                        target = laneSource;
-                        state.TargetGuid = laneSource->GetGUID();
-                        return true;
+                        BotRaidAreaAuthority::SetAllOffenseSuppressed(bot->GetGUID().GetRawValue(), false);
+                        bool const taunted = TryCastCombatSpell(bot, laneSource, candidate.SpellId);
+                        BotRaidAreaAuthority::SetAllOffenseSuppressed(bot->GetGUID().GetRawValue(), true);
+                        if (taunted)
+                        {
+                            BotRaidAreaAuthority::Set(bot->GetGUID().GetRawValue(), true);
+                            Party().ValidationRouteDrudgeTauntRosterGuids.insert(
+                                bot->GetGUID().GetCounter());
+                            record(laneSource, "drudge_lane_native_taunt", sourceSeparation, candidate.SpellId);
+                            target = laneSource;
+                            state.TargetGuid = laneSource->GetGUID();
+                            return true;
+                        }
+                    }
+                    else if (nativeChargePending && candidate.RejectReason == "out_of_range")
+                    {
+                        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
+                        float const maxRange = spellInfo
+                            ? bot->GetSpellMaxRangeForTarget(laneSource, spellInfo) : 0.0f;
+                        float const distance = bot->GetExactDist2d(laneSource);
+                        float const travel = distance - std::max(5.0f, maxRange - 1.0f);
+                        if (maxRange > 5.0f && travel > 0.0f && distance > 0.001f)
+                        {
+                            float const recoveryX = bot->GetPositionX()
+                                + (laneSource->GetPositionX() - bot->GetPositionX())
+                                    * travel / distance;
+                            float const recoveryY = bot->GetPositionY()
+                                + (laneSource->GetPositionY() - bot->GetPositionY())
+                                    * travel / distance;
+                            float const recoveryZ = bot->GetPositionZ()
+                                + (laneSource->GetPositionZ() - bot->GetPositionZ())
+                                    * travel / distance;
+                            float const recoveryProjection = (recoveryX - midpointX) * axisX
+                                + (recoveryY - midpointY) * axisY;
+                            float const tankLaneSign = laneIndex == 0 ? -1.0f : 1.0f;
+                            if (tankLaneSign * recoveryProjection >= laneSeparation * 0.25f
+                                && MoveBotToPoint(state, bot, recoveryX, recoveryY, recoveryZ))
+                            {
+                                record(laneSource, "drudge_lane_native_taunt_approach",
+                                    distance, candidate.SpellId);
+                                target = laneSource;
+                                state.TargetGuid = laneSource->GetGUID();
+                                return true;
+                            }
+                        }
                     }
                 }
         }
@@ -36331,6 +36377,31 @@ uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster,
         return 0;
 
     uint64 const observedAtMs = NowMs();
+    bool const sameSourceRecoveryMissed = std::any_of(
+        Party().ValidationRouteDrudgeChargeObservations.begin(),
+        Party().ValidationRouteDrudgeChargeObservations.end(),
+        [this, sourceSpawnId](ValidationRouteDrudgeChargeObservation const& observation)
+        {
+            return observation.SourceSpawnId == sourceSpawnId
+                && observation.Landed && !observation.ReseparationRecorded
+                && observation.AttemptId == Cohort().AttemptId
+                && observation.WipeGeneration == Cohort().Raid.WipeGeneration
+                && observation.RouteGeneration == Party().ValidationRouteGeneration;
+        });
+    if (sameSourceRecoveryMissed && Cohort().ValidationAttemptFailureReason.empty())
+    {
+        // The native 20-second clock is the production deadline. Preserve the
+        // new native observation below, but terminal-latch the experiment as
+        // soon as the same source begins another Rush before the authoritative
+        // head observation has exact-roster closure. This converts an
+        // unrecoverable queue into a prompt gameplay failure instead of a
+        // telemetry/CPU flood.
+        Cohort().ValidationAttemptFailureReason =
+            "drudge_reseparation_deadline_missed";
+        Cohort().ValidationAttemptFailureAttemptId = Cohort().AttemptId;
+        Cohort().ValidationAttemptFailureRouteGeneration =
+            Party().ValidationRouteGeneration;
+    }
     bool const currentScopeHasChargeObservation = std::any_of(
         Party().ValidationRouteDrudgeChargeObservations.begin(),
         Party().ValidationRouteDrudgeChargeObservations.end(),

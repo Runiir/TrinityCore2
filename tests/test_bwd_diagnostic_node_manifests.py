@@ -69,6 +69,21 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
     assert drudge_split_geometry_status(drudges) == (True, "")
     assert drudges["split_seed_roster_slots"] == [8, 6]
     assert drudges["split_seed_max_range_yards"] == 35.0
+    member_by_slot = {
+        row["roster_slot"]: row for row in drudges["split_member_anchors"]
+    }
+    # Slot 6 is the source-250141 seed.  It must be farther than the adjacent
+    # healer at the declared formation while retaining its 35-yard hostile
+    # action envelope; native SMART_TARGET_FARTHEST remains untouched.
+    source_1 = (-314.887329, -48.970574, 212.2623)
+    seed_distance = math.dist(
+        tuple(member_by_slot[6][axis] for axis in ("x", "y", "z")), source_1,
+    )
+    healer_distance = math.dist(
+        tuple(member_by_slot[4][axis] for axis in ("x", "y", "z")), source_1,
+    )
+    assert seed_distance > healer_distance
+    assert seed_distance + drudges["split_arrival_tolerance_yards"] <= 35.0
 
     unsafe = deepcopy(drudges)
     unsafe["split_tank_combat_anchors"] = [

@@ -64,6 +64,12 @@ struct Input
     bool BothCombatTankAnchorsSafe = false;
     bool SourceCombatStarted = false;
     bool ChargeQueueIdle = false;
+    // The authoritative head observation has landed.  This is distinct from
+    // ChargePending, which also covers the in-flight window.  After landing,
+    // the assigned tanks must be allowed to use their ordinary native taunts
+    // to pull the two Drudges back apart; requiring an already-empty queue
+    // would make reseparation depend on an ownership action that cannot run.
+    bool ChargeLanded = false;
     bool SourcesAlive = false;
     bool SourcesSeparated = false;
     bool SourcesOnFrozenLanes = false;
@@ -154,8 +160,18 @@ inline Result Advance(State current, Input const& input)
     }
     result.TankMovementAllowed = Valid(input.Identity);
 
-    bool const ownershipSafe = input.BothCombatTankAnchorsSafe
-        && input.ChargeQueueIdle && !input.ChargePending
+    bool const ownershipWindow = input.ChargeQueueIdle
+        || (input.ChargePending && input.ChargeLanded);
+    bool const initialOwnershipSafe = input.ChargeQueueIdle
+        && input.BothCombatTankAnchorsSafe;
+    // A landed Rush can put the source beyond taunt range. The tanks may walk
+    // toward it only while remaining on their frozen sides, use the ordinary
+    // trained taunt, then return to their sealed anchors. Requiring them to be
+    // at those anchors throughout would make the pull-back impossible.
+    bool const landedRecoverySafe = input.ChargePending && input.ChargeLanded
+        && input.TanksOnFrozenLanes;
+    bool const ownershipSafe = ownershipWindow
+        && (initialOwnershipSafe || landedRecoverySafe)
         && input.SourcesAlive && input.TanksOnFrozenLanes
         && input.NativeMeleeStopBounded;
     result.NativeOwnershipAllowed = ownershipSafe && Valid(input.Identity);

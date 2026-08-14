@@ -1262,23 +1262,31 @@ def test_magmaw_diagnostic_accepts_only_its_materialized_roster_identity():
     runtime["route_progress"] = {"generation": 4, "node_index": 3}
     for row in runtime["roster"]:
         identity = expected[row["roster_slot_id"]]
+        gear_guid_by_slot = {
+            item["slot"]: item["guid"]
+            for item in row["gear_identity_manifest"]["items"]
+        }
         row.update(
             guid=identity["character_guid"],
             account_id=identity["account_id"],
             account=identity["account"],
             name=identity["name"],
+            class_id=identity["class_id"],
+            class_spec=identity["class_spec"],
             talents=list(identity["talents"]),
             glyphs=list(identity["glyphs"]),
         )
-        for item, expected_item in zip(
-            row["gear_identity_manifest"]["items"], identity["gear"], strict=True
-        ):
-            item.update(
-                entry=expected_item["entry"],
-                enchant_id=expected_item["enchant_id"],
-                gem_item_ids=list(expected_item["gem_item_ids"]),
-                reforge_id=expected_item["reforge_id"],
-            )
+        row["gear_identity_manifest"]["items"] = [
+            {
+                "slot": item["slot"],
+                "guid": gear_guid_by_slot[item["slot"]],
+                "entry": item["entry"],
+                "enchant_id": item["enchant_id"],
+                "gem_item_ids": list(item["gem_item_ids"]),
+                "reforge_id": item["reforge_id"],
+            }
+            for item in identity["gear"]
+        ]
     runtime["leader_guid"] = runtime["roster"][0]["guid"]
     accepted, reasons = accepted_foundation_status(
         status,
