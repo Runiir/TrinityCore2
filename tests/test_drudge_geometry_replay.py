@@ -276,11 +276,15 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "landedChargeRecovery" in lane
     assert "drudge_lane_native_taunt_approach" in lane
     assert 'candidate.RejectReason == "out_of_range"' in lane
-    assert "PathGenerator recoveryPath(bot)" in lane
-    assert "recoveryPath.GetActualEndPosition()" in lane
+    assert "auto strictTankRecoveryPath" in lane
+    assert "path.GetActualEndPosition()" in lane
     assert "RecoveryPathPreservesTankSeparation" in lane
     assert "ValidationRouteSplitMinimumSeparationYards" in lane
     assert "* 0.5f" in lane
+    assert lane.count("strictTankRecoveryPath(") == 2
+    return_guard = lane.index("!assignedTank || !nativeChargePending")
+    return_move = lane.index("moved = MoveBotToPoint", return_guard)
+    assert return_guard < lane.index("strictTankRecoveryPath(", return_guard) < return_move
     assert "tankStageInput.SourcesAlive" in lane
     assert "tankStageInput.SourcesSeparated" in lane
     assert "tankStageInput.SourcesOnFrozenLanes" in lane

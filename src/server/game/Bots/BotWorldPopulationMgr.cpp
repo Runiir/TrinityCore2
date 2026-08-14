@@ -19080,6 +19080,43 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return std::hypot(actualEnd.x - x, actualEnd.y - y) <= 0.25f
                 && std::fabs(actualEnd.z - z) <= 1.0f;
         };
+        auto strictTankRecoveryPath = [&](float x, float y, float z) -> bool
+        {
+            if (!assignedTank || !otherTank || !bot->GetMap())
+                return false;
+            float const floorZ = bot->GetMap()->GetHeight(
+                bot->GetPhaseShift(), x, y, z + 2.0f, true, 8.0f);
+            if (floorZ <= INVALID_HEIGHT || std::fabs(floorZ - z) > 4.0f)
+                return false;
+            PathGenerator path(bot);
+            bool const pathCalculated = path.CalculatePath(x, y, z, false);
+            PathType const pathType = pathCalculated
+                ? path.GetPathType() : PATHFIND_NOPATH;
+            if (!pathCalculated || (pathType & PATHFIND_NOPATH)
+                || (pathType & PATHFIND_NOT_USING_PATH)
+                || (pathType & PATHFIND_INCOMPLETE)
+                || (pathType & PATHFIND_SHORTCUT)
+                || (pathType & PATHFIND_FARFROMPOLY))
+                return false;
+            G3D::Vector3 const& actualEnd = path.GetActualEndPosition();
+            if (std::hypot(actualEnd.x - x, actualEnd.y - y) > 0.25f
+                || std::fabs(actualEnd.z - z) > 1.0f)
+                return false;
+
+            std::vector<BotRaidDrudgeGeometry::Point2d> points;
+            points.push_back({ bot->GetPositionX(), bot->GetPositionY() });
+            for (G3D::Vector3 const& point : path.GetPath())
+                points.push_back({ point.x, point.y });
+            points.push_back({ actualEnd.x, actualEnd.y });
+            float const tankLaneSign = laneIndex == 0 ? -1.0f : 1.0f;
+            float const otherTankProjection =
+                (otherTank->GetPositionX() - midpointX) * axisX
+                + (otherTank->GetPositionY() - midpointY) * axisY;
+            return BotRaidDrudgeGeometry::RecoveryPathPreservesTankSeparation(
+                points, midpointX, midpointY, axisX, axisY, tankLaneSign,
+                -tankLaneSign * otherTankProjection,
+                Cohort().Config.ValidationRouteSplitMinimumSeparationYards);
+        };
 
         // Every non-tank owns a stable, slot-derived point.  A shared
         // groupAnchor is only a coarse lane reference; accepting it directly
@@ -20198,52 +20235,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                             float const recoveryProjection = (recoveryX - midpointX) * axisX
                                 + (recoveryY - midpointY) * axisY;
                             float const tankLaneSign = laneIndex == 0 ? -1.0f : 1.0f;
-                            float const otherTankProjection = otherTank
-                                ? (otherTank->GetPositionX() - midpointX) * axisX
-                                    + (otherTank->GetPositionY() - midpointY) * axisY
-                                : 0.0f;
-                            float const otherTankLaneSign = -tankLaneSign;
-                            float const floorZ = bot->GetMap()->GetHeight(
-                                bot->GetPhaseShift(), recoveryX, recoveryY,
-                                recoveryZ + 2.0f, true, 8.0f);
-                            PathGenerator recoveryPath(bot);
-                            bool const pathCalculated = floorZ > INVALID_HEIGHT
-                                && std::fabs(floorZ - recoveryZ) <= 4.0f
-                                && recoveryPath.CalculatePath(
-                                    recoveryX, recoveryY, recoveryZ, false);
-                            PathType const recoveryPathType = pathCalculated
-                                ? recoveryPath.GetPathType() : PATHFIND_NOPATH;
-                            bool const strictRecoveryPath = pathCalculated
-                                && !(recoveryPathType & PATHFIND_NOPATH)
-                                && !(recoveryPathType & PATHFIND_NOT_USING_PATH)
-                                && !(recoveryPathType & PATHFIND_INCOMPLETE)
-                                && !(recoveryPathType & PATHFIND_SHORTCUT)
-                                && !(recoveryPathType & PATHFIND_FARFROMPOLY);
-                            std::vector<BotRaidDrudgeGeometry::Point2d> recoveryPoints;
-                            if (strictRecoveryPath)
-                            {
-                                recoveryPoints.push_back({
-                                    bot->GetPositionX(), bot->GetPositionY() });
-                                for (G3D::Vector3 const& point : recoveryPath.GetPath())
-                                    recoveryPoints.push_back({ point.x, point.y });
-                                G3D::Vector3 const& actualEnd =
-                                    recoveryPath.GetActualEndPosition();
-                                recoveryPoints.push_back({ actualEnd.x, actualEnd.y });
-                                if (std::hypot(actualEnd.x - recoveryX,
-                                        actualEnd.y - recoveryY) > 0.25f
-                                    || std::fabs(actualEnd.z - recoveryZ) > 1.0f)
-                                    recoveryPoints.clear();
-                            }
-                            bool const recoveryGeometrySafe =
-                                BotRaidDrudgeGeometry::RecoveryPathPreservesTankSeparation(
-                                    recoveryPoints, midpointX, midpointY, axisX, axisY,
-                                    tankLaneSign,
-                                    otherTankLaneSign * otherTankProjection,
-                                    Cohort().Config.ValidationRouteSplitMinimumSeparationYards);
                             if (tankLaneSign * recoveryProjection
                                     >= Cohort().Config.ValidationRouteSplitMinimumSeparationYards
                                         * 0.5f
-                                && recoveryGeometrySafe
+                                && strictTankRecoveryPath(
+                                    recoveryX, recoveryY, recoveryZ)
                                 && MoveBotToPoint(state, bot, recoveryX, recoveryY, recoveryZ))
                             {
                                 record(laneSource, "drudge_lane_native_taunt_approach",
@@ -20305,7 +20301,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 {
                     alreadySafe = assignedTank
                         ? cachedAnchorSafe(state, bot) : groupPositionSafe(bot);
-                    if (!alreadySafe)
+                    if (!alreadySafe
+                        && (!assignedTank || !nativeChargePending
+                            || strictTankRecoveryPath(
+                                state.ValidationRouteDrudgeAnchorX,
+                                state.ValidationRouteDrudgeAnchorY,
+                                state.ValidationRouteDrudgeAnchorZ)))
                         moved = MoveBotToPoint(state, bot,
                             state.ValidationRouteDrudgeAnchorX,
                             state.ValidationRouteDrudgeAnchorY,
