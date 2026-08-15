@@ -6,6 +6,7 @@
 #include "Bots/BotMgr.h"
 #include "Bots/BotProgressionGoalPolicy.h"
 #include "Bots/BotRaidAreaAuthority.h"
+#include "Bots/BotRaidHazardState.h"
 #include "Bots/BotRaidDrudgeGeometryState.h"
 #include "Bots/BotRaidDrudgeThreatSeedState.h"
 #include "Bots/BotRaidDrudgeNativeRushState.h"
@@ -4523,6 +4524,10 @@ void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
         state.ValidationRouteDrudgeAnchorY = 0.0f;
         state.ValidationRouteDrudgeAnchorZ = 0.0f;
         state.ValidationRouteDrudgeAnchorSearchCooldownUntilMs = 0;
+        state.ValidationRouteDodgeCasterGuid.Clear();
+        state.ValidationRouteDodgeSpellId = 0;
+        state.ValidationRouteDodgeUntilMs = 0;
+        state.ValidationRouteDodgeBearingAttempt = 0;
         state.LastRepeatableEventKey.clear();
         state.LastRepeatableEventEmitMs = 0;
         state.SuppressedRepeatableEventCount = 0;
@@ -14016,7 +14021,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         return MoveBotToProfileRange(state, rangeBot, rangeTarget, &rangeAction);
     };
     auto tryRouteGroupHeal = [this, &state, &power, &stage, &activity, &situation, &action](
-        Player* healer, Unit* combatTarget, bool allowMovement = true) -> bool
+        Player* healer, Unit* combatTarget, bool allowMovement = true,
+        bool allowStationaryCastTime = false) -> bool
     {
         if (!healer || std::string(GetDungeonRole(healer)) != "healer")
             return false;
@@ -14033,12 +14039,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 && state.RouteHealSuppressedTargetGuid == target->GetGUID()
                 && state.RouteHealSuppressedUntilMs > nowMs;
         };
-        auto tryRouteFriendlySpell = [this, healer, allowMovement](
+        auto tryRouteFriendlySpell = [this, healer, allowMovement,
+            allowStationaryCastTime](
             Unit* friendlyTarget, uint32 spellId,
             std::string* failureReason = nullptr) -> bool
         {
             SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
             if (!allowMovement && spellInfo
+                && !allowStationaryCastTime
                 && spellInfo->CalcCastTime(healer->getLevel()) > 0)
             {
                 if (failureReason)
@@ -17270,7 +17278,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         state.WasInCombat = true;
         return true;
     };
-    auto tryValidationRouteMovementCheck = [this, &state, bot, &power, stage, activity, &situation, &action, &isValidationCohortCombatLinked](Unit* preferredTarget) -> bool
+    auto tryValidationRouteMovementCheck = [this, &state, bot, &power, stage,
+        activity, &situation, &action, &isValidationCohortCombatLinked,
+        &tryRouteGroupHeal](Unit* preferredTarget) -> bool
     {
         if (!bot
             || !bot->IsAlive()
@@ -17333,11 +17343,31 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (!hazard || !definition || !hazard->IsAlive())
                 return false;
 
-            // Non-attackable radial hazards are persistent ground objects (the
-            // BWD Laser Strike creature is one); attackable sources only count
-            // while their declared detection/damage spell is being cast.
+            // Most non-attackable radial hazards are persistent ground objects.
+            // The Chainwielder's Overhead Smash is different: its native
+            // summon lives for 27 seconds, while spell 79580 is dangerous only
+            // for its 3-second cast plus 2-second effect. Treating the visual
+            // marker's full lifetime as damage repeatedly starved healing and
+            // pulled the raid back into an already completed dodge.
             bool active = definition->Shape == "radial"
                     && !bot->IsValidAttackTarget(hazard);
+            if (active && definition->SourceEntry == 42690
+                && definition->DamageSpellId == 79580)
+            {
+                TempSummon const* summon = hazard->ToTempSummon();
+                SpellInfo const* damageSpell = sSpellMgr->GetSpellInfo(
+                    definition->DamageSpellId);
+                if (!summon || !damageSpell)
+                    return true;
+
+                uint32 castTimeMs = uint32(std::max<int32>(
+                    0, damageSpell->CalcCastTime(hazard->getLevel())));
+                uint32 effectDurationMs = uint32(std::max<int32>(
+                    0, damageSpell->GetDuration()));
+                active = BotRaidHazard::TimedMarkerDangerActive(
+                    summon->GetTimer(), summon->GetLifetime(), castTimeMs,
+                    effectDurationMs);
+            }
             if (definition->DetectionSpellId)
                 for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
                     if (Spell* spell = hazard->GetCurrentSpell(spellType))
@@ -18114,21 +18144,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     bool outsideActiveHazard = !insideActiveHazard;
                     outsideHazard = outsideHazard && outsideActiveHazard;
                 }
-                // Persistent ground objects (lava fissures, gravity wells)
-                // remain active while alive, but attackable radial sources
-                // such as Stonecore Flayers are dangerous only during their
-                // declared cast. Treating every living Flayer as an always-on
-                // hazard starved the party's combat rotation indefinitely.
-                bool hazardActive = previousDefinition->Shape == "radial"
-                    && previousHazard->IsAlive()
-                    && !bot->IsValidAttackTarget(previousHazard);
-                if (!hazardActive && previousHazard->IsAlive())
-                    for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
-                        if (Spell* spell = previousHazard->GetCurrentSpell(spellType))
-                            if (SpellInfo const* spellInfo = spell->GetSpellInfo(); spellInfo
-                                && (spellInfo->Id == previousDefinition->DetectionSpellId
-                                    || spellInfo->Id == previousDefinition->DamageSpellId))
-                                hazardActive = true;
+                // Persistent ground objects and native timed markers share the
+                // same activity predicate used by the fresh-hazard scan.
+                bool hazardActive = hazardIsActive(
+                    previousHazard->ToCreature(), previousDefinition);
                 if (outsideHazard && hazardActive && state.ValidationRouteDodgeUntilMs > nowMs)
                 {
                     if (previousDefinition->Shape == "radial"
@@ -18174,6 +18193,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
                     state.ActivePathValid = false;
                     state.IsMoving = false;
+                    // Once safely outside, a healer may use the native trained
+                    // healing profile from this exact position. Movement-owned
+                    // healer convergence remains disabled, but cast-time heals
+                    // are safe because the accepted hazard exit is complete.
+                    if (tryRouteGroupHeal(bot, preferredTarget, false, true))
+                        return true;
                     if (tryHealerInFlightHazardFade())
                         return true;
                     if (tryTankHazardHoldAreaThreat(previousHazard, safeRadius,
@@ -18193,6 +18218,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     state.ValidationRouteDodgeCasterGuid.Clear();
                     state.ValidationRouteDodgeSpellId = 0;
                     state.ValidationRouteDodgeUntilMs = 0;
+                    state.ValidationRouteDodgeBearingAttempt = 0;
                 }
                 else if (state.ActivePathValid && state.IsMoving)
                 {
@@ -18377,7 +18403,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
             else
             {
-                float spreadOffset = (int32(bot->GetGUID().GetCounter() % 5) - 2) * 0.16f;
+                uint8 bearingBucket = BotRaidHazard::RotatedBearingBucket(
+                    bot->GetGUID().GetCounter(),
+                    state.ValidationRouteDodgeBearingAttempt);
+                float spreadOffset = (int32(bearingBucket) - 2) * 0.16f;
                 absoluteAwayAngle += spreadOffset;
             }
             angle = absoluteAwayAngle - bot->GetOrientation();
@@ -18553,11 +18582,22 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 break;
             }
         }
+        bool const newDodgeSource = state.ValidationRouteDodgeCasterGuid
+            != caster->GetGUID();
+        if (newDodgeSource)
+            state.ValidationRouteDodgeBearingAttempt = 0;
         state.ValidationRouteDodgeCasterGuid = caster->GetGUID();
         state.ValidationRouteDodgeSpellId = castSpell->Id;
         state.ValidationRouteDodgeUntilMs = nowMs + (moved ? 3000 : 500);
         if (configuredHazard && moved)
             state.ValidationRouteDodgeUntilMs = nowMs + (configuredHazardShape == "radial" ? 6000 : 3000);
+        if (configuredHazard && !moved)
+        {
+            state.ValidationRouteDodgeBearingAttempt = uint8(
+                (state.ValidationRouteDodgeBearingAttempt + 1) % 5);
+            state.LastPathRejectReason = "hazard_exit_no_union_safe_native_path";
+            state.LastRecoveryResult = state.LastPathRejectReason;
+        }
 
         std::string raw = BuildRawJson(bot, caster);
         std::string semantic = BuildSemanticJson(bot, caster, "validation_route_mechanic", &power, stage, activity);

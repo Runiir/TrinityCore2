@@ -114,6 +114,12 @@ Require one exact tuple across config, generated route, runtime status, capture,
   anchor; a safe creature path is not sufficient if profile range movement can
   chase the patrol back into the protected pack. Hazard exits may temporarily
   preempt the anchor, but the route must reacquire it before ordinary offense.
+- Bind hazard activity to native spell timing, not the visual marker's summon
+  lifetime. A non-attackable marker may outlive its cast/effect; prove the
+  radius, cast time, effect duration, and summon lifetime from native data,
+  move during that bounded danger window, then permit stationary friendly
+  support from a proven safe side. Rotate a bounded rejected exit bearing;
+  never repeat one GUID-derived path forever or shrink the native radius.
 - If native body combat begins during geometry staging, keep hostile offense,
   taunts, and threat seeds gated but allow ordinary friendly class support.
   A pre-seed death must terminalize/restart the dirty attempt; do not label a
@@ -123,6 +129,25 @@ Require one exact tuple across config, generated route, runtime status, capture,
   assignment actions before a post-pull/reseparation gate can return. Keep all
   regular offense and kill synchronization behind that geometry gate. Never
   force the native target to compensate for a prerequisite that ran too late.
+
+## Arbitrate actions instead of accumulating gates
+
+- Keep route sequencing in the manifest, but express each node's live behavior
+  as prioritized candidate actions: emergency safety, mechanic movement,
+  stationary support, ownership, ordinary role action, then route movement.
+- A retryable candidate rejection must expose a typed reason and let the next
+  compatible candidate run in the same decision tick. Reserve terminal latches
+  for identity loss, forbidden assistance, contaminated scope, or a missed
+  native deadline—not a single rejected path or temporarily unavailable spell.
+- Give movement one explicit priority/owner token. A higher-priority mechanic
+  may preempt a lower one; equal/lower priorities preserve the active path.
+  Clear ownership on observed completion or scope change, not on every tick.
+- Keep evidence assertions observational. Do not make a certification field a
+  live prerequisite unless the mechanic itself needs that fact for safety.
+- Prefer small trigger/action/multiplier components with prerequisites and
+  alternatives over adding another early return to a monolithic route handler.
+  Borrow this arbitration shape from Playerbots, but not its WotLK/AzerothCore
+  APIs, incomplete-path acceptance, forced movement, or teleport recovery.
 
 ## Model prerequisites as a DAG
 

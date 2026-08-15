@@ -86,6 +86,7 @@ class TC_GAME_API TempSummon : public Creature
         ObjectGuid GetSummonerGUID() const { return m_summonerGUID; }
         TempSummonType const& GetSummonType() { return m_type; }
         uint32 GetTimer() const { return m_timer; }
+        uint32 GetLifetime() const { return m_lifetime; }
 
         SummonPropertiesEntry const* const m_Properties;
     private:

@@ -833,6 +833,7 @@ private:
         ObjectGuid ValidationRouteDodgeCasterGuid;
         uint32 ValidationRouteDodgeSpellId = 0;
         uint64 ValidationRouteDodgeUntilMs = 0;
+        uint8 ValidationRouteDodgeBearingAttempt = 0;
         uint64 HunterPetRevivePendingUntilMs = 0;
         uint64 HunterPetReviveStartedMs = 0;
         uint32 HunterPetReviveAttemptCount = 0;
