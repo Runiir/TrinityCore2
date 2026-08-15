@@ -1694,10 +1694,14 @@ def test_rerun195_descent_path_probe_cannot_terminalize_before_native_jump():
 def test_move_bot_to_point_keeps_matching_active_motion():
     move_bot_to_point = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::MoveBotToPoint")
     assert "constexpr float activeDestinationEpsilon = 0.1f;" in move_bot_to_point
+    assert "bool const nativePointPathActive = bot->GetMotionMaster()" in move_bot_to_point
+    assert "GetCurrentMovementGeneratorType()\n            == POINT_MOTION_TYPE" in move_bot_to_point
+    assert "state.ActivePathValid && (state.IsMoving || nativePointPathActive)" in move_bot_to_point
+    assert "if (nativePointPathActive)\n            state.IsMoving = true;" in move_bot_to_point
     assert_ordered(
         move_bot_to_point,
-        "if (recentFailureMemory)",
-        "if (state.ActivePathValid && state.IsMoving",
+        "bool const nativePointPathActive",
+        "state.ActivePathValid && (state.IsMoving || nativePointPathActive)",
         "return true;",
         "state.ActivePathFromX = bot->GetPositionX();",
         "bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);",

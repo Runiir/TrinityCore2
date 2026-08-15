@@ -9337,11 +9337,24 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
             && state.ActivePathWipeGeneration == Cohort().Raid.WipeGeneration
             && state.ActivePathRouteGeneration == Party().ValidationRouteGeneration
             && state.ActivePathRouteNodeId == Cohort().Config.ValidationRouteNodeId);
-    if (state.ActivePathValid && state.IsMoving && activePathScopeMatches
+    // The cached movement bit is sampled before the decision tick.  A point
+    // generator submitted on the previous decision can therefore already own
+    // native movement while state.IsMoving is still false.  Reissuing the same
+    // path in that window clears and restarts MOTION_SLOT_ACTIVE every second;
+    // the adaptive route/trash candidates then make no geometric progress even
+    // though every path submission is legal.  Preserve the native generator as
+    // the stronger signal for an exact, same-scope destination.
+    bool const nativePointPathActive = bot->GetMotionMaster()
+        && bot->GetMotionMaster()->GetCurrentMovementGeneratorType()
+            == POINT_MOTION_TYPE;
+    if (state.ActivePathValid && (state.IsMoving || nativePointPathActive)
+        && activePathScopeMatches
         && std::fabs(x - state.ActivePathToX) <= activeDestinationEpsilon
         && std::fabs(y - state.ActivePathToY) <= activeDestinationEpsilon
         && std::fabs(z - state.ActivePathToZ) <= activeDestinationEpsilon)
     {
+        if (nativePointPathActive)
+            state.IsMoving = true;
         Apply(state.MovementLease, movementRequest);
         return true;
     }
