@@ -1,0 +1,180 @@
+{
+  "schema": "cata_raid_compact_run_summary_v1",
+  "capture_id": "cata_raid_phase1_blackwing_descent_10n_magmaw_diagnostic_v1",
+  "started_at_utc": "2026-08-14T03:15:37Z",
+  "source_commit": "ecf2f127dc5da7afdfdc7bbaf3b073a5e2b19c25",
+  "source_tree": "7fea23c56de1f324d51c1e37381599293b01eda7",
+  "binary_sha256": "33bb70fb8ae313af571eb804ef96154f9e474e5089a637ea5d706f17205a78b7",
+  "config_sha256": "00e8ee88d8818d4e17c7fcb483b5466bbeb4bb5018a506555d201b01257c3985",
+  "configure_receipt": {
+    "file_sha256": "6fa8f98569d6713fdb52c6e6652d6bd61e3bf10269818bd24f1eb8d226d2cca3",
+    "canonical_receipt_sha256": "1e569941105d9473192894e998e9b85c85b66813b48540347e901595ce85cc20"
+  },
+  "worldserver_receipt": {
+    "path": "artifacts/cata_raid_program/phase1_ecf2f127_build_prep_20260814/worldserver_receipt_retry.json",
+    "file_sha256": "12f21c068dc7bca9ee43f0eff7469768756af40cfabeee95c07a12fb2aef4a39",
+    "canonical_receipt_sha256": "13b00cba8fc8e7c1bb61d918a52759e88ce3330f997fc1de48eb43e5717cd0d5",
+    "classification": "success",
+    "exit_code": 0,
+    "request_admission_completion_identity_equal_and_clean": true
+  },
+  "provisioning": {
+    "readback_path": "artifacts/cata_raid_program/phase1_ecf2f127_build_prep_20260814/magmaw_provisioning_readback_v5.json",
+    "readback_file_sha256": "414f36c4274900eb3ec4d3923b0a86c8d958cd23650cc12004a4ce87737a599e",
+    "readback_passed": true,
+    "full_verifier_path": "artifacts/cata_raid_program/phase1_ecf2f127_build_prep_20260814/full_provisioning_verifier.json",
+    "full_verifier_file_sha256": "50ce73933730165f5c6ea7a1cae625a282b1f25c3090077111c8475aee95faf8",
+    "all_passed": true,
+    "database_valid": true,
+    "failure_count": 0,
+    "selected_name_count": 10,
+    "zero_group_instance_corpse_ghost_residue": true
+  },
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
+  "instance_id": 14,
+  "attempt_id": 2,
+  "assignment_generation": 1,
+  "classification": "gameplay_failure",
+  "phase1_gate_passed": false,
+  "gameplay_failure": true,
+  "fidelity_claim": false,
+  "forbidden_assistance_observed": false,
+  "terminal_failure": {
+    "reason": "drudge_reseparation_deadline_missed",
+    "elapsed_seconds": 233.529,
+    "final_forced_diagnose_and_trace_complete": true,
+    "alive_count": 10,
+    "active_count": 10
+  },
+  "positive_live_result": {
+    "exact_roster_and_instance_admitted": true,
+    "chainwielder_cleared": true,
+    "drudge_exact_roster_staged": true,
+    "threat_seed_complete": true,
+    "first_native_rushes_landed": true,
+    "all_ten_alive_at_terminal": true,
+    "all_seven_offensive_slots_executed_trained_profiles": true,
+    "resource_sampling_complete": true,
+    "formal_stuck_or_unstuck_actions": 0
+  },
+  "drudge_evidence": {
+    "profile_action_roster_guids": [
+      30001,
+      30002,
+      30006,
+      30007,
+      30008,
+      30009,
+      30010
+    ],
+    "profile_action_roster_count": 7,
+    "seed_observations": [
+      {
+        "source_spawn_id": 250141,
+        "source_guid": 60,
+        "member_guid": 30006,
+        "spell_id": 44457,
+        "distance": 31.7323,
+        "action_succeeded": true
+      },
+      {
+        "source_spawn_id": 250140,
+        "source_guid": 59,
+        "member_guid": 30008,
+        "spell_id": 172,
+        "distance": 31.295,
+        "action_succeeded": true
+      }
+    ],
+    "first_native_rush_observations": [
+      {
+        "source_spawn_id": 250141,
+        "source_guid": 60,
+        "target_guid": 30006,
+        "selected_distance": 33.0835,
+        "landed": true,
+        "observed_at_ms": 1786677555054
+      },
+      {
+        "source_spawn_id": 250140,
+        "source_guid": 59,
+        "target_guid": 30008,
+        "selected_distance": 31.295,
+        "landed": true,
+        "observed_at_ms": 1786677555054
+      }
+    ],
+    "native_rush_delivered_count": 2,
+    "tank_ownership_roster_guids": [
+      30001,
+      30002
+    ],
+    "failure_boundary": "the charged members did not re-form before the next native Rush cycle; exact-roster reseparation was absent",
+    "magmaw_result": "not engaged; no Magmaw mechanic, boss-DPS, or kill inference is authorized"
+  },
+  "cleanup": {
+    "gate_passed": true,
+    "worldserver_exit_code": 0,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true
+  },
+  "performance": {
+    "sample_count": 48,
+    "sampling_errors": 0,
+    "elapsed_seconds": 233.529,
+    "mean_cpu_percent_one_core": 35.533,
+    "minimum_rss_bytes": 1389748224,
+    "maximum_rss_bytes": 1449078784,
+    "worldserver_log_bytes": 17265821,
+    "total_uncompressed_bytes": 42346313
+  },
+  "immutable_artifacts": {
+    "raw": {
+      "bytes": 17232887,
+      "sha256": "deb41e4deb2c1909422458f4e23621a4332df17dcc866795b9be84f70a517dc0"
+    },
+    "worldserver_log": {
+      "bytes": 17265821,
+      "sha256": "49146a2af30b81ce987c2d9ad11bdce3d5db3d0395b4632931f4430b3a597c1c"
+    },
+    "report": {
+      "bytes": 151747,
+      "file_sha256": "a9c0a47f7c7bfba96e831f0a4a14b2180ec6f27dfcb8cc0297eaeb786ef7a023",
+      "canonical_sha256": "871e54351a4303a991052614caea583de333b880509b0b92bae8ff51a40a3ac5"
+    }
+  },
+  "next_action": {
+    "commit": "3a1eb97902ba3625c459bce274103ddda6c93228",
+    "tree": "5c0b941c0a88720c781c894ae0d0c0ab2fc11002",
+    "subject": "Fix Drudge post-Rush formation recovery",
+    "required_validation": "build, exact provisioning/readback, then rerun the same production-parity Magmaw diagnostic"
+  },
+  "retention": {
+    "capture_dvc_pointer": {
+      "path": "artifacts/cata_raid_program/phase1_ecf2f127_magmaw_smoke_20260814.dvc",
+      "md5": "8b98b0f8e5d6d5264159a7d27d121dcf.dir",
+      "size": 34650455,
+      "nfiles": 3
+    },
+    "build_prep_dvc_pointer": {
+      "path": "artifacts/cata_raid_program/phase1_ecf2f127_build_prep_20260814.dvc",
+      "md5": "38839c0ed9c003369d733cd8f039857d.dir",
+      "size": 7695858,
+      "nfiles": 21
+    },
+    "remote_verified": true,
+    "remote_objects_verified": 21,
+    "remote_objects_missing": 0,
+    "remote_unique_object_bytes": 38835039,
+    "local_payload_evicted": true,
+    "directory_metadata_retained": true,
+    "directory_metadata_sha256": {
+      "capture": "fa3968fcd926616aa0d18b360512aced05b9f0779d18fd1d03ef6552869b8bcc",
+      "build_prep": "36366b4354669731d762714d52626bab4d8c8c0046156556938dc9e210a4ce18"
+    },
+    "unique_cache_children_evicted": 15,
+    "shared_cache_children_retained": 4
+  }
+}
