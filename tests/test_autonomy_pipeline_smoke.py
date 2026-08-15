@@ -1694,17 +1694,22 @@ def test_rerun195_descent_path_probe_cannot_terminalize_before_native_jump():
 def test_move_bot_to_point_keeps_matching_active_motion():
     move_bot_to_point = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::MoveBotToPoint")
     assert "constexpr float activeDestinationEpsilon = 0.1f;" in move_bot_to_point
-    assert "bool const nativePointPathActive = bot->GetMotionMaster()" in move_bot_to_point
-    assert "GetCurrentMovementGeneratorType()\n            == POINT_MOTION_TYPE" in move_bot_to_point
-    assert "state.ActivePathValid && (state.IsMoving || nativePointPathActive)" in move_bot_to_point
-    assert "if (nativePointPathActive)\n            state.IsMoving = true;" in move_bot_to_point
+    assert "GetMotionSlotType(MOTION_SLOT_ACTIVE)" in move_bot_to_point
+    assert "bool const nativePointPathActive = nativeActiveMotionType == POINT_MOTION_TYPE;" in move_bot_to_point
+    assert "nativeActiveMotionType == CHASE_MOTION_TYPE" in move_bot_to_point
+    assert "static_cast<ChaseMovementGenerator*>(active)->GetTarget()" in move_bot_to_point
+    assert "state.ActivePathTargetGuid == dynamicTarget->GetGUID()" in move_bot_to_point
+    assert "state.IsMoving || nativePointPathActive || nativeTargetChaseActive" in move_bot_to_point
+    assert "if (nativePointPathActive || nativeTargetChaseActive)\n            state.IsMoving = true;" in move_bot_to_point
     assert_ordered(
         move_bot_to_point,
         "bool const nativePointPathActive",
-        "state.ActivePathValid && (state.IsMoving || nativePointPathActive)",
+        "bool nativeTargetChaseActive",
+        "state.IsMoving || nativePointPathActive || nativeTargetChaseActive",
         "return true;",
         "state.ActivePathFromX = bot->GetPositionX();",
         "bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);",
+        "bot->GetMotionMaster()->MoveChase(dynamicTarget);",
         "bot->GetMotionMaster()->MovePoint(0, x, y, z, true);",
     )
 
@@ -1715,8 +1720,8 @@ def test_move_bot_to_profile_range_projects_approaches_to_terrain():
     assert "Map* map = bot->GetMap();" in profile_range
     assert "map->GetHeight(bot->GetPhaseShift(), x, y, z + 2.0f, true, 64.0f)" in profile_range
     assert "if (floorZ == INVALID_HEIGHT)\n            return false;" in profile_range
-    assert "return MoveBotToPoint(state, bot, x, y, floorZ, false);" in profile_range
-    assert "return moveToTerrainProjectedPoint(reference->GetPositionX(), reference->GetPositionY(), reference->GetPositionZ());" in profile_range
+    assert "return MoveBotToPoint(state, bot, x, y, floorZ, false," in profile_range
+    assert "BotMovementArbitration::Priority::Combat, reference);" in profile_range
     assert "Player* partyRangedAnchor = nullptr;" in profile_range
     assert 'std::string(GetDungeonRole(member)) == "healer"' in profile_range
     assert "member->IsWithinLOSInMap(reference)" not in profile_range

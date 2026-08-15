@@ -20,6 +20,7 @@
 #include "Bots/BotRaidDrudgeNativeRushState.h"
 #include "CellImpl.h"
 #include "CharmInfo.h"
+#include "ChaseMovementGenerator.h"
 #include "Config.h"
 #include "Corpse.h"
 #include "DatabaseEnv.h"
@@ -9253,7 +9254,7 @@ void BotWorldPopulationMgr::MarkPoiVisited(uint64 poiId) const
 
 bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, float x, float y, float z,
     bool terminalOnFailure, BotMovementArbitration::Owner movementOwner,
-    BotMovementArbitration::Priority movementPriority)
+    BotMovementArbitration::Priority movementPriority, Unit* dynamicTarget)
 {
     if (!bot)
         return false;
@@ -9261,6 +9262,7 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     auto rejectPath = [&](char const* reason) -> bool
     {
         state.ActivePathValid = false;
+        state.ActivePathTargetGuid.Clear();
         state.LastPathRejectReason = reason ? reason : "route_destination_unreachable";
         state.LastNoProgressReason = state.LastPathRejectReason;
         state.LastRecoveryResult = state.LastPathRejectReason;
@@ -9321,6 +9323,11 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     movementRequest.X = x;
     movementRequest.Y = y;
     movementRequest.Z = z;
+    bool const targetAwareChase = dynamicTarget && dynamicTarget->IsAlive()
+        && dynamicTarget->IsInWorld() && dynamicTarget->GetMap() == bot->GetMap()
+        && bot->GetVictim() == dynamicTarget;
+    movementRequest.DynamicTargetGuid = targetAwareChase
+        ? dynamicTarget->GetGUID().GetRawValue() : 0;
     Decision const movementDecision = Evaluate(state.MovementLease, movementRequest, nowMs);
     if (movementDecision == Decision::RejectInvalid)
         return rejectPath("movement_lease_invalid_scope");
@@ -9337,24 +9344,36 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
             && state.ActivePathWipeGeneration == Cohort().Raid.WipeGeneration
             && state.ActivePathRouteGeneration == Party().ValidationRouteGeneration
             && state.ActivePathRouteNodeId == Cohort().Config.ValidationRouteNodeId);
-    // The cached movement bit is sampled before the decision tick.  A point
-    // generator submitted on the previous decision can therefore already own
-    // native movement while state.IsMoving is still false.  Reissuing the same
-    // path in that window clears and restarts MOTION_SLOT_ACTIVE every second;
-    // the adaptive route/trash candidates then make no geometric progress even
-    // though every path submission is legal.  Preserve the native generator as
-    // the stronger signal for an exact, same-scope destination.
-    bool const nativePointPathActive = bot->GetMotionMaster()
-        && bot->GetMotionMaster()->GetCurrentMovementGeneratorType()
-            == POINT_MOTION_TYPE;
-    if (state.ActivePathValid && (state.IsMoving || nativePointPathActive)
-        && activePathScopeMatches
-        && std::fabs(x - state.ActivePathToX) <= activeDestinationEpsilon
-        && std::fabs(y - state.ActivePathToY) <= activeDestinationEpsilon
-        && std::fabs(z - state.ActivePathToZ) <= activeDestinationEpsilon)
+    // The top generator can temporarily be controlled movement while the
+    // adaptive path still owns MOTION_SLOT_ACTIVE. Inspect the slot directly.
+    // For live melee targets also verify the native chase object's target, so
+    // target motion refreshes evidence/leases without clearing its repath loop.
+    MotionMaster* motion = bot->GetMotionMaster();
+    MovementGeneratorType const nativeActiveMotionType = motion
+        ? motion->GetMotionSlotType(MOTION_SLOT_ACTIVE) : MAX_MOTION_TYPE;
+    bool const nativePointPathActive = nativeActiveMotionType == POINT_MOTION_TYPE;
+    bool nativeTargetChaseActive = false;
+    if (targetAwareChase && nativeActiveMotionType == CHASE_MOTION_TYPE)
+        if (MovementGenerator* active = motion->GetMotionSlot(MOTION_SLOT_ACTIVE))
+            nativeTargetChaseActive =
+                static_cast<ChaseMovementGenerator*>(active)->GetTarget()
+                    == dynamicTarget;
+    bool const matchingActiveDestination = targetAwareChase
+        ? (nativeTargetChaseActive
+            && state.ActivePathTargetGuid == dynamicTarget->GetGUID())
+        : (state.ActivePathTargetGuid.IsEmpty()
+            && std::fabs(x - state.ActivePathToX) <= activeDestinationEpsilon
+            && std::fabs(y - state.ActivePathToY) <= activeDestinationEpsilon
+            && std::fabs(z - state.ActivePathToZ) <= activeDestinationEpsilon);
+    if (state.ActivePathValid
+        && (state.IsMoving || nativePointPathActive || nativeTargetChaseActive)
+        && activePathScopeMatches && matchingActiveDestination)
     {
-        if (nativePointPathActive)
+        if (nativePointPathActive || nativeTargetChaseActive)
             state.IsMoving = true;
+        state.ActivePathToX = x;
+        state.ActivePathToY = y;
+        state.ActivePathToZ = z;
         Apply(state.MovementLease, movementRequest);
         return true;
     }
@@ -9396,6 +9415,8 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     state.ActivePathToY = y;
     state.ActivePathToZ = z;
     state.ActivePathValid = true;
+    state.ActivePathTargetGuid = targetAwareChase
+        ? dynamicTarget->GetGUID() : ObjectGuid::Empty;
     state.ActivePathAttemptId = Cohort().Config.ValidationRouteEnable ? Cohort().AttemptId : 0;
     state.ActivePathWipeGeneration = Cohort().Config.ValidationRouteEnable
         ? Cohort().Raid.WipeGeneration : 0;
@@ -9408,7 +9429,10 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     Apply(state.MovementLease, movementRequest);
 
     bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
-    bot->GetMotionMaster()->MovePoint(0, x, y, z, true);
+    if (targetAwareChase)
+        bot->GetMotionMaster()->MoveChase(dynamicTarget);
+    else
+        bot->GetMotionMaster()->MovePoint(0, x, y, z, true);
     return true;
 }
 
@@ -9609,7 +9633,21 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
     }
 
     if (directive == "melee" || (minRange <= 0.0f && maxRange <= 5.0f))
-        return moveToTerrainProjectedPoint(reference->GetPositionX(), reference->GetPositionY(), reference->GetPositionZ());
+    {
+        Map* map = bot->GetMap();
+        if (!map)
+            return false;
+        float const targetX = reference->GetPositionX();
+        float const targetY = reference->GetPositionY();
+        float const targetZ = reference->GetPositionZ();
+        float floorZ = map->GetHeight(bot->GetPhaseShift(), targetX, targetY,
+            targetZ + 2.0f, true, 64.0f);
+        if (floorZ == INVALID_HEIGHT)
+            return false;
+        return MoveBotToPoint(state, bot, targetX, targetY, floorZ, false,
+            BotMovementArbitration::Owner::CombatRange,
+            BotMovementArbitration::Priority::Combat, reference);
+    }
 
     // A small center-to-center offset is not enough around bosses with a large
     // combat reach: the movement can finish while the ranged weapon is still
@@ -12046,8 +12084,16 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             {
                 std::string const& result = state.LastCombatAttempt.Result;
                 if (result == "ok")
+                {
+                    if (state.LastCombatAttempt.Reason == "no_line_of_sight"
+                        || state.LastCombatAttempt.Reason == "target_missing"
+                        || state.LastCombatAttempt.Reason == "target_dead"
+                        || state.LastCombatAttempt.Reason == "target_not_attackable")
+                        return BotActionArbitration::Outcome::Retryable(
+                            state.LastCombatAttempt.Reason);
                     return BotActionArbitration::Outcome::Committed(
                         "route_combat_committed");
+                }
                 if (result == "casting" || result == "global_cooldown")
                     return BotActionArbitration::Outcome::Started(
                         "route_combat_scheduled");
@@ -12142,8 +12188,16 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             {
                 std::string const& result = state.LastCombatAttempt.Result;
                 if (result == "ok")
+                {
+                    if (state.LastCombatAttempt.Reason == "no_line_of_sight"
+                        || state.LastCombatAttempt.Reason == "target_missing"
+                        || state.LastCombatAttempt.Reason == "target_dead"
+                        || state.LastCombatAttempt.Reason == "target_not_attackable")
+                        return BotActionArbitration::Outcome::Retryable(
+                            state.LastCombatAttempt.Reason);
                     return BotActionArbitration::Outcome::Committed(
                         "boss_combat_committed");
+                }
                 if (result == "casting" || result == "global_cooldown")
                     return BotActionArbitration::Outcome::Started(
                         "boss_combat_scheduled");
@@ -12184,12 +12238,18 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         trash.RequiredResources = BotActionArbitration::Uses(
             BotActionArbitration::Resource::GlobalCooldown,
             BotActionArbitration::Resource::Cast,
+            BotActionArbitration::Resource::Movement,
             BotActionArbitration::Resource::Target);
         trash.Attempt = [&]()
         {
             if (!IsDungeonTrashContext(bot, target))
                 return BotActionArbitration::Outcome::NotApplicable(
                     "not_dungeon_trash_context");
+            Unit* const targetBeforeTrash = target;
+            ObjectGuid const stateTargetBeforeTrash = state.TargetGuid;
+            uint64 const previousPathChangeMs = state.LastPathChangeMs;
+            uint64 const previousCombatAttemptMs =
+                state.LastCombatAttempt.RecordedAtMs;
             trashAction = TryDungeonTrash(state, bot, power, stage,
                 chosenActivity.Activity);
             if (!trashAction.Handled)
@@ -12199,9 +12259,76 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             action = trashAction.Action;
             target = trashAction.Target;
             state.LastDecisionHandler = "dungeon_trash";
-            return trashAction.Failure
-                ? BotActionArbitration::Outcome::Retryable("trash_action_failed")
-                : BotActionArbitration::Outcome::Committed("trash_action_committed");
+            if (state.LastPathChangeMs > previousPathChangeMs
+                && state.ActivePathValid)
+                return BotActionArbitration::Outcome::Progressed(
+                    "trash_movement_submitted");
+            if (state.LastCombatAttempt.RecordedAtMs > previousCombatAttemptMs)
+            {
+                std::string const& result = state.LastCombatAttempt.Result;
+                if (result == "ok")
+                {
+                    if (state.LastCombatAttempt.Reason == "no_line_of_sight"
+                        || state.LastCombatAttempt.Reason == "target_missing"
+                        || state.LastCombatAttempt.Reason == "target_dead"
+                        || state.LastCombatAttempt.Reason == "target_not_attackable")
+                        return BotActionArbitration::Outcome::Retryable(
+                            state.LastCombatAttempt.Reason);
+                    return BotActionArbitration::Outcome::Committed(
+                        "trash_combat_committed");
+                }
+                if (result == "casting")
+                    return BotActionArbitration::Outcome::Started(
+                        "trash_combat_started");
+                return BotActionArbitration::Outcome::Retryable(
+                    state.LastCombatAttempt.Reason.empty()
+                        ? std::string_view("trash_combat_retryable")
+                        : std::string_view(state.LastCombatAttempt.Reason));
+            }
+            if (trashAction.Failure)
+                return BotActionArbitration::Outcome::Retryable(
+                    "trash_action_failed");
+            if (trashAction.SpellId)
+                return BotActionArbitration::Outcome::Started(
+                    "trash_spell_submitted");
+
+            bool const followAction = action == "formation_follow"
+                || action == "healer_follow_tank"
+                || action == "avoid_extra_pull";
+            MotionMaster* trashMotion = bot->GetMotionMaster();
+            bool const nativeFollowActive = trashMotion
+                && (trashMotion->GetCurrentMovementGeneratorType()
+                        == FOLLOW_MOTION_TYPE
+                    || trashMotion->GetMotionSlotType(MOTION_SLOT_IDLE)
+                        == FOLLOW_MOTION_TYPE
+                    || trashMotion->GetMotionSlotType(MOTION_SLOT_ACTIVE)
+                        == FOLLOW_MOTION_TYPE);
+            if (followAction && nativeFollowActive)
+                return BotActionArbitration::Outcome::Started(
+                    "trash_follow_started");
+
+            bool const observedPostcondition =
+                action.find("_complete") != std::string::npos;
+            if (observedPostcondition)
+                return BotActionArbitration::Outcome::Committed(
+                    "trash_postcondition_observed");
+            bool const trashYield = action.find("hold") != std::string::npos
+                || action.find("wait") != std::string::npos
+                || action.find("pending") != std::string::npos
+                || action.find("retry") != std::string::npos
+                || action.find("failed") != std::string::npos
+                || action.find("readiness") != std::string::npos
+                || followAction;
+            if (trashYield && targetBeforeTrash && targetBeforeTrash->IsAlive()
+                && bot->IsValidAttackTarget(targetBeforeTrash)
+                && (bot->IsInCombat() || targetBeforeTrash->IsInCombat()))
+            {
+                target = targetBeforeTrash;
+                state.TargetGuid = stateTargetBeforeTrash;
+            }
+            return BotActionArbitration::Outcome::Retryable(
+                trashYield ? std::string_view("trash_yield")
+                    : std::string_view("trash_no_observable_effect"));
         };
         state.DecisionKernel.Submit(std::move(trash));
 
@@ -12256,6 +12383,13 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             }
             state.WasInCombat = true;
             state.LastDecisionHandler = "combat";
+            if (result == BotActionResult::Ok
+                && (state.LastCombatAttempt.Reason == "no_line_of_sight"
+                    || state.LastCombatAttempt.Reason == "target_missing"
+                    || state.LastCombatAttempt.Reason == "target_dead"
+                    || state.LastCombatAttempt.Reason == "target_not_attackable"))
+                return BotActionArbitration::Outcome::Retryable(
+                    state.LastCombatAttempt.Reason);
             BotActionArbitration::Outcome outcome =
                 BotActionArbitration::FromBotActionResult(result);
             return outcome.Result == BotActionArbitration::Disposition::NotApplicable
@@ -40785,6 +40919,7 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
     uint64 sinceDecisionMs = state.LastDecisionTickMs ? nowMs - state.LastDecisionTickMs : 0;
     uint64 sinceProgressMs = state.LastMovementProgressMs ? nowMs - state.LastMovementProgressMs : 0;
     uint64 sincePathChangeMs = state.LastPathChangeMs ? nowMs - state.LastPathChangeMs : 0;
+    MotionMaster const* nativeMotion = bot ? bot->GetMotionMaster() : nullptr;
     bool hasValidationRouteActivation = Cohort().Config.ValidationRouteActivationDataId
         || Cohort().Config.ValidationRouteActivationSpawnGroupId
         || Cohort().Config.ValidationRouteActivationActionEntry
@@ -40908,6 +41043,9 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << "{\"name\":\"alive\",\"value\":" << (bot && bot->IsAlive() ? "true" : "false") << "},"
          << "{\"name\":\"in_combat\",\"value\":" << (bot && bot->IsInCombat() ? "true" : "false") << "},"
          << "{\"name\":\"is_moving\",\"value\":" << (state.IsMoving ? "true" : "false") << "},"
+         << "{\"name\":\"native_current_motion_type\",\"value\":" << (nativeMotion ? uint32(nativeMotion->GetCurrentMovementGeneratorType()) : uint32(MAX_MOTION_TYPE)) << "},"
+         << "{\"name\":\"native_active_motion_type\",\"value\":" << (nativeMotion ? uint32(nativeMotion->GetMotionSlotType(MOTION_SLOT_ACTIVE)) : uint32(MAX_MOTION_TYPE)) << "},"
+         << "{\"name\":\"active_path_target_guid\",\"value\":" << (state.ActivePathValid ? state.ActivePathTargetGuid.GetCounter() : 0) << "},"
          << "{\"name\":\"stuck_timer_ms\",\"value\":" << state.StuckTimer << "},"
          << "{\"name\":\"distance_moved_since_last_decision\",\"value\":" << state.LastDecisionDistanceMoved << "},"
          << "{\"name\":\"time_since_last_decision_ms\",\"value\":" << sinceDecisionMs << "},"
@@ -41047,6 +41185,7 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
 std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState const& state, Player const* bot) const
 {
     uint64 nowMs = NowMs();
+    MotionMaster const* nativeMotion = bot ? bot->GetMotionMaster() : nullptr;
     std::ostringstream json;
     json << "{\"identity\":{\"bot_guid\":" << state.Guid.GetCounter()
          << ",\"bot_name\":\"" << JsonEscape(bot ? bot->GetName() : "") << "\"}"
@@ -41059,6 +41198,9 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << ",\"time_since_last_decision_ms\":" << (state.LastDecisionTickMs ? nowMs - state.LastDecisionTickMs : 0)
          << ",\"loop_recovery_cooldown_until_ms\":" << state.LoopRecoveryCooldownUntilMs << "}"
          << ",\"movement\":{\"is_moving\":" << (state.IsMoving ? "true" : "false")
+         << ",\"native_current_motion_type\":" << (nativeMotion ? uint32(nativeMotion->GetCurrentMovementGeneratorType()) : uint32(MAX_MOTION_TYPE))
+         << ",\"native_active_motion_type\":" << (nativeMotion ? uint32(nativeMotion->GetMotionSlotType(MOTION_SLOT_ACTIVE)) : uint32(MAX_MOTION_TYPE))
+         << ",\"active_path_target_guid\":" << (state.ActivePathValid ? state.ActivePathTargetGuid.GetCounter() : 0)
          << ",\"stuck_timer_ms\":" << state.StuckTimer
          << ",\"distance_moved_since_last_decision\":" << state.LastDecisionDistanceMoved
          << ",\"time_since_last_progress_ms\":" << (state.LastMovementProgressMs ? nowMs - state.LastMovementProgressMs : 0)

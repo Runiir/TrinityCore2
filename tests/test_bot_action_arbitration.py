@@ -89,6 +89,21 @@ int main()
     assert(Evaluate(lease, refreshSameDestination, 1002)
         == Decision::Refresh);
 
+    Request targetAwareUpgrade{ Owner::CombatRange,
+        BotMovementArbitration::Priority::Combat, 1300, scope,
+        4.0f, 5.0f, 6.0f, 7001 };
+    assert(Evaluate(lease, targetAwareUpgrade, 1002) == Decision::Preempt);
+    Apply(lease, targetAwareUpgrade);
+    Request movingSameTarget{ Owner::CombatRange,
+        BotMovementArbitration::Priority::Combat, 1400, scope,
+        40.0f, 50.0f, 60.0f, 7001 };
+    assert(Evaluate(lease, movingSameTarget, 1003) == Decision::Refresh);
+    Request differentLiveTarget{ Owner::CombatRange,
+        BotMovementArbitration::Priority::Combat, 1400, scope,
+        40.0f, 50.0f, 60.0f, 7002 };
+    assert(Evaluate(lease, differentLiveTarget, 1003)
+        == Decision::PreserveExisting);
+
     assert(FromBotActionResult(BotActionResult::GlobalCooldown).Result
         == Disposition::Retryable);
 
@@ -557,6 +572,26 @@ def test_boss_adapter_requires_observable_work_and_rejects_stale_focus() -> None
     focus_filter = source[focus_start:focus_end]
     assert "isValidationRouteObjectiveTarget" in focus_filter
     assert "isValidationRouteScriptTarget" not in focus_filter
+
+
+def test_trash_adapter_requires_observable_work_and_yields_passive_waits() -> None:
+    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
+        encoding="utf-8"
+    )
+    start = source.index('trash.Key = "world.dungeon_trash"')
+    end = source.index('combat.Key = "world.profile_combat"', start)
+    adapter = source[start:end]
+
+    assert "previousPathChangeMs" in adapter
+    assert "previousCombatAttemptMs" in adapter
+    assert 'state.LastCombatAttempt.Reason == "no_line_of_sight"' in adapter
+    assert "nativeFollowActive" in adapter
+    assert 'action.find("wait")' in adapter
+    assert 'action.find("readiness")' in adapter
+    assert "trash_no_observable_effect" in adapter
+    assert "trash_action_committed" not in adapter
+    resources = adapter.split("trash.Attempt", 1)[0]
+    assert "Resource::Movement" in resources
 
 
 def test_raid_healing_is_independent_and_does_not_cancel_hazard_movement() -> None:

@@ -904,6 +904,7 @@ private:
         float ActivePathToY = 0.0f;
         float ActivePathToZ = 0.0f;
         bool ActivePathValid = false;
+        ObjectGuid ActivePathTargetGuid;
         uint64 ActivePathAttemptId = 0;
         uint32 ActivePathWipeGeneration = 0;
         uint64 ActivePathRouteGeneration = 0;
@@ -1787,7 +1788,8 @@ private:
     bool MoveBotToPoint(WorldBotState& state, Player* bot, float x, float y, float z,
         bool terminalOnFailure = false,
         BotMovementArbitration::Owner movementOwner = BotMovementArbitration::Owner::None,
-        BotMovementArbitration::Priority movementPriority = BotMovementArbitration::Priority::Idle);
+        BotMovementArbitration::Priority movementPriority = BotMovementArbitration::Priority::Idle,
+        Unit* dynamicTarget = nullptr);
     BotActionArbitration::Outcome ExecuteNativeActionIntent(WorldBotState& state, Player* bot,
         BotNativeAction::Intent const& intent,
         BotMovementArbitration::Owner movementOwner = BotMovementArbitration::Owner::None,
