@@ -35,6 +35,34 @@ int main()
     assert(SelectMinimumDistanceOwner(true, true)
         == MinimumDistanceOwner::LandedRushRecovery);
 
+    // A landed Rush can occupy the sealed anchor for many ticks. Dynamic
+    // source/spacing blocks never arm or preserve the expensive path retry;
+    // the first safe edge must attempt the native path immediately.
+    AnchorPathSearchDecision sourceBlocked = SelectAnchorPathSearch(
+        9000, 5000, false, true);
+    assert(sourceBlocked.SourceBlocked);
+    assert(!sourceBlocked.SpacingBlocked);
+    assert(!sourceBlocked.NativePathSearchDue);
+    assert(sourceBlocked.RetryAfterMs == 0);
+    AnchorPathSearchDecision repeatedSourceBlock = SelectAnchorPathSearch(
+        sourceBlocked.RetryAfterMs, 6000, false, true);
+    assert(repeatedSourceBlock.RetryAfterMs == 0);
+    assert(!repeatedSourceBlock.NativePathSearchDue);
+    AnchorPathSearchDecision spacingBlocked = SelectAnchorPathSearch(
+        9000, 6000, true, false);
+    assert(!spacingBlocked.SourceBlocked);
+    assert(spacingBlocked.SpacingBlocked);
+    assert(spacingBlocked.RetryAfterMs == 0);
+    AnchorPathSearchDecision firstSafeEdge = SelectAnchorPathSearch(
+        repeatedSourceBlock.RetryAfterMs, 6001, true, true);
+    assert(!firstSafeEdge.SourceBlocked);
+    assert(!firstSafeEdge.SpacingBlocked);
+    assert(firstSafeEdge.NativePathSearchDue);
+    AnchorPathSearchDecision realPathCooldown = SelectAnchorPathSearch(
+        11000, 6001, true, true);
+    assert(!realPathCooldown.NativePathSearchDue);
+    assert(realPathCooldown.RetryAfterMs == 11000);
+
     std::vector<Point2d> safeRecoveryPath{
         {-11.0f, 0.0f}, {-9.0f, 1.0f}, {-8.0f, 2.0f}
     };
@@ -324,19 +352,24 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     barrier = lane.index("!tankStage.NativeEngagementAllowed || formationRequiredMutable")
     exact_reseparation = lane.index("if (nativeChargePending && exactRosterReSeparated())")
     specialized_escape = lane.index("if (tryValidationRouteMinimumDistance(true))")
+    unresolved_contract = lane.index("if (!contractResolved")
     recovery_choice = lane.index("SelectMemberRecoveryAction", barrier)
     recovery_move = lane.index("tryFormationRecovery();", recovery_choice)
     support = lane.index("drudge_staging_support")
     first_taunt = lane.index("drudge_lane_native_taunt")
-    assert exact_reseparation < specialized_escape < barrier
+    assert specialized_escape < unresolved_contract < exact_reseparation < barrier
     assert barrier < recovery_choice < recovery_move < support
     assert first_taunt < barrier
     assert "assignedTank && tankStage.NativeOwnershipAllowed" in lane[first_taunt - 1200:first_taunt]
 
     source_unsafe = lane.index('"drudge_anchor_source_unsafe"')
-    cooldown = lane.index("nowMs < state.ValidationRouteDrudgeAnchorSearchCooldownUntilMs")
+    spacing_unsafe = lane.index('"drudge_anchor_spacing_unsafe"')
+    cooldown = lane.index("if (!pathSearch.NativePathSearchDue)")
     strict_path = lane.index("if (!strictNativePath", cooldown)
-    assert source_unsafe < cooldown < strict_path
+    transition = lane.index("SelectAnchorPathSearch(")
+    assert transition < source_unsafe < spacing_unsafe < cooldown < strict_path
+    assert "pathSearch.RetryAfterMs" in lane[transition:source_unsafe]
+    assert "state.LastRecoveryResult.clear();" in lane[strict_path:exact_reseparation]
 
     minimum = implementation[
         implementation.index("auto drudgeLandedRushPending") :
@@ -344,6 +377,12 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     ]
     assert "SelectMinimumDistanceOwner" in minimum
     assert "MinimumDistanceOwner::LandedRushRecovery" in minimum
+    assert "auto observation = std::find_if(" in minimum
+    assert "&& observation->Landed" in minimum
+    assert "std::any_of(" not in minimum[
+        minimum.index("auto drudgeLandedRushPending") :
+        minimum.index("auto tryValidationRouteMinimumDistance")
+    ]
 
 
 def test_future_encounter_contamination_is_attempt_terminal_not_a_transient_hold():

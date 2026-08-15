@@ -1,0 +1,163 @@
+#!/usr/bin/env python3
+"""Fail-closed native-nav parity probe for the recorded BWD Drudge returns."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import subprocess
+import tempfile
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[2]
+MMAP_ROOT = ROOT / "data" / "mmaps"
+PROBE_SOURCE = Path(__file__).with_name("drudge_navmesh_recovery_probe.cpp")
+
+EXPECTED_ASSETS = {
+    "669.mmap": "3b794515424ff374f2fc2fb9bc75c9d0bcdfa355c712894d5b73c582671ea421",
+    "6693131.mmtile": "ec53ab238b671d2b41f707648adcc1cd9b69699a6a424d7c673bed8aeb31b1ef",
+    "6693132.mmtile": "0879cbb27dce969579f789796c6c63a8ffd3c81ff66c303ea3dde1321f852ec5",
+    "6693133.mmtile": "116e3649739b423536fd3ba746dde75655aae3f140f64096aa4cbc9a8bbb6196",
+    "6693231.mmtile": "9bf7e5e6b956886a96d19b8672595ce53246ee975466b4e231dd85fd71cd4019",
+    "6693232.mmtile": "d444daf82f09d2e4d7c8708f7f3c4f4420c0f96ce1db604c722689fa4e57cb32",
+    "6693233.mmtile": "c9a0a2787aaefe0cff05d7d2877d82995a5317eda0ed496ee3323f1ad0bf3467",
+    "6693332.mmtile": "f91db1f81a7f95a824f9bd3c4eca6e665e3a80954cb4b472cab80214c19efbeb",
+}
+
+EXPECTED_OUTPUT = (
+    "loaded=7",
+    "30003 findPath=0x40000000 polys=4 complete=1",
+    "30003 smooth=0x40000000 points=5 terminal=-295,-71.5,213.25 end2d=0 endz=0",
+    "30008 findPath=0x40000000 polys=2 complete=1",
+    "30008 smooth=0x40000000 points=5 terminal=-325,-64,212.82 end2d=0 endz=0",
+)
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def verify_assets() -> dict[str, str]:
+    actual_names = {path.name for path in MMAP_ROOT.glob("669*.mmtile")}
+    expected_names = {name for name in EXPECTED_ASSETS if name.endswith(".mmtile")}
+    if actual_names != expected_names:
+        raise RuntimeError(
+            "drudge_navmesh_asset_set_mismatch:"
+            f"expected={sorted(expected_names)}:actual={sorted(actual_names)}"
+        )
+    observed: dict[str, str] = {}
+    for name, expected_hash in EXPECTED_ASSETS.items():
+        path = MMAP_ROOT / name
+        if not path.is_file():
+            raise RuntimeError(f"drudge_navmesh_asset_missing:{name}")
+        observed[name] = _sha256(path)
+        if observed[name] != expected_hash:
+            raise RuntimeError(
+                f"drudge_navmesh_asset_hash_mismatch:{name}:"
+                f"expected={expected_hash}:actual={observed[name]}"
+            )
+    return observed
+
+
+def compile_and_run_probe() -> str:
+    detour_sources = sorted(
+        (ROOT / "dep" / "recastnavigation" / "Detour" / "Source").glob("*.cpp")
+    )
+    if len(detour_sources) != 7:
+        raise RuntimeError(
+            f"drudge_navmesh_detour_source_set_mismatch:{len(detour_sources)}"
+        )
+    with tempfile.TemporaryDirectory(prefix="drudge-navmesh-parity-") as temp_dir:
+        binary = Path(temp_dir) / "drudge_navmesh_recovery_probe"
+        compile_result = subprocess.run(
+            [
+                "g++",
+                "-std=c++17",
+                "-O2",
+                str(PROBE_SOURCE),
+                *(str(path) for path in detour_sources),
+                "-I",
+                str(ROOT / "dep" / "recastnavigation" / "Detour" / "Include"),
+                "-o",
+                str(binary),
+            ],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if compile_result.returncode:
+            raise RuntimeError(
+                "drudge_navmesh_probe_compile_failed:"
+                + (compile_result.stderr.strip() or compile_result.stdout.strip())
+            )
+        probe_result = subprocess.run(
+            [str(binary)],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if probe_result.returncode:
+            raise RuntimeError(
+                "drudge_navmesh_probe_execution_failed:"
+                + (probe_result.stderr.strip() or probe_result.stdout.strip())
+            )
+        for required_line in EXPECTED_OUTPUT:
+            if required_line not in probe_result.stdout:
+                raise RuntimeError(
+                    "drudge_navmesh_probe_result_mismatch:"
+                    f"missing={required_line}:output={probe_result.stdout}"
+                )
+        return probe_result.stdout
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--json-out", type=Path)
+    args = parser.parse_args()
+
+    assets = verify_assets()
+    output = compile_and_run_probe()
+    result = {
+        "all_passed": True,
+        "map_id": 669,
+        "asset_sha256": assets,
+        "player_nav_include_flags": ["NAV_GROUND", "NAV_WATER", "NAV_MAGMA_SLIME"],
+        "nearest_poly_extents": [3.0, 5.0, 3.0],
+        "nearest_poly_vertical_fallback": 50.0,
+        "corridor_cap": 74,
+        "smooth_step": 4.0,
+        "smooth_slop": 0.3,
+        "validated_returns": {
+            "30003": {
+                "start": [-288.8, -86.483, 214.15],
+                "terminal": [-295.0, -71.5, 213.25],
+                "polygons": 4,
+                "smooth_points": 5,
+            },
+            "30008": {
+                "start": [-338.018, -64.932, 212.751],
+                "terminal": [-325.0, -64.0, 212.82],
+                "polygons": 2,
+                "smooth_points": 5,
+            },
+        },
+        "raw_probe_sha256": hashlib.sha256(output.encode("utf-8")).hexdigest(),
+    }
+    serialized = json.dumps(result, indent=2, sort_keys=True) + "\n"
+    if args.json_out:
+        args.json_out.parent.mkdir(parents=True, exist_ok=True)
+        args.json_out.write_text(serialized, encoding="utf-8")
+    print(serialized, end="")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

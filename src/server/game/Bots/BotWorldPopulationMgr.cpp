@@ -18534,16 +18534,18 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (Cohort().Config.ValidationRouteMechanicProfile
             != "trash_two_tank_charge_lanes")
             return false;
-        return std::any_of(
+        auto observation = std::find_if(
             Party().ValidationRouteDrudgeChargeObservations.begin(),
             Party().ValidationRouteDrudgeChargeObservations.end(),
             [this](ValidationRouteDrudgeChargeObservation const& observation)
             {
-                return observation.Landed && !observation.ReseparationRecorded
+                return !observation.ReseparationRecorded
                     && observation.AttemptId == Cohort().AttemptId
                     && observation.WipeGeneration == Cohort().Raid.WipeGeneration
                     && observation.RouteGeneration == Party().ValidationRouteGeneration;
             });
+        return observation != Party().ValidationRouteDrudgeChargeObservations.end()
+            && observation->Landed;
     };
     auto tryValidationRouteMinimumDistance = [this, &state, bot, &power, stage, activity,
         &situation, &action, &target, &isValidationCohortCombatLinked,
@@ -18862,6 +18864,19 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             situation = "validation_route_mechanic";
             action = result;
         };
+
+        // The earliest unresolved observation is the sole authority for both
+        // generic radius escape and Drudge reseparation.  Run the safety exit
+        // before contract/roster/source validation can return: an incomplete
+        // later stage must never strand a member inside a landed Rush radius.
+        // Once outside the radius, normal fail-closed validation below retains
+        // the same observation as the durable return obligation.
+        if (bot->GetMap() && drudgeLandedRushPending())
+        {
+            holdOffense();
+            if (tryValidationRouteMinimumDistance(true))
+                return true;
+        }
         if (!contractResolved || !bot->GetMap() || !Cohort().Raid.RosterComplete
             || Cohort().Raid.RosterByGuid.size() != exactRosterSlots.size())
         {
@@ -19563,12 +19578,23 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     state.LastRecoveryResult = state.LastPathRejectReason;
                     continue;
                 }
-                if (!tank && (Distance2d(candidates[candidateIndex].first,
-                        candidates[candidateIndex].second, sources[0]->GetPositionX(),
-                        sources[0]->GetPositionY()) < Cohort().Config.ValidationRouteMinimumDistanceYards
-                    || Distance2d(candidates[candidateIndex].first,
-                        candidates[candidateIndex].second, sources[1]->GetPositionX(),
-                        sources[1]->GetPositionY()) < Cohort().Config.ValidationRouteMinimumDistanceYards))
+                bool const dynamicSourceSafe = tank
+                    || (Distance2d(candidates[candidateIndex].first,
+                            candidates[candidateIndex].second, sources[0]->GetPositionX(),
+                            sources[0]->GetPositionY()) >= Cohort().Config.ValidationRouteMinimumDistanceYards
+                        && Distance2d(candidates[candidateIndex].first,
+                            candidates[candidateIndex].second, sources[1]->GetPositionX(),
+                            sources[1]->GetPositionY()) >= Cohort().Config.ValidationRouteMinimumDistanceYards);
+                bool const dynamicSpacingSafe = tank
+                    || candidateSpacingSafe(candidates[candidateIndex].first,
+                        candidates[candidateIndex].second);
+                BotRaidDrudgeGeometry::AnchorPathSearchDecision const pathSearch =
+                    BotRaidDrudgeGeometry::SelectAnchorPathSearch(
+                        state.ValidationRouteDrudgeAnchorSearchCooldownUntilMs,
+                        nowMs, dynamicSourceSafe, dynamicSpacingSafe);
+                state.ValidationRouteDrudgeAnchorSearchCooldownUntilMs =
+                    pathSearch.RetryAfterMs;
+                if (pathSearch.SourceBlocked)
                 {
                     // Dynamic source proximity is expected immediately after
                     // a Rush lands on the sealed anchor.  Do not arm the
@@ -19580,14 +19606,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     state.LastRecoveryResult = state.LastPathRejectReason;
                     continue;
                 }
-                if (!tank && !candidateSpacingSafe(candidates[candidateIndex].first,
-                        candidates[candidateIndex].second))
+                if (pathSearch.SpacingBlocked)
                 {
+                    // A transient member crossing must not preserve an older
+                    // native-path retry delay after spacing becomes safe.
                     state.LastPathRejectReason = "drudge_anchor_spacing_unsafe";
                     state.LastRecoveryResult = state.LastPathRejectReason;
                     continue;
                 }
-                if (nowMs < state.ValidationRouteDrudgeAnchorSearchCooldownUntilMs)
+                if (!pathSearch.NativePathSearchDue)
                 {
                     state.LastPathRejectReason = "drudge_anchor_path_retry_cooldown";
                     state.LastRecoveryResult = state.LastPathRejectReason;
@@ -19625,6 +19652,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 state.ValidationRouteDrudgeAnchorY = candidates[candidateIndex].second;
                 state.ValidationRouteDrudgeAnchorZ = candidateZ;
                 state.LastPathRejectReason.clear();
+                state.LastRecoveryResult.clear();
                 return true;
             }
             return false;
@@ -20352,20 +20380,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             target = laneSource;
             state.TargetGuid = laneSource ? laneSource->GetGUID() : ObjectGuid::Empty;
             return true;
-        }
-
-        // Once a Rush has landed, this exact observation owns both sides of
-        // member recovery.  The generic safety exit is still used to leave
-        // the native damaging radius, but it is invoked from this state so
-        // the unresolved observation remains the durable return obligation.
-        // On the next tick, a member outside the radius continues directly
-        // into sealed-anchor recovery instead of being returned early by the
-        // generic route handler.
-        if (nativeChargePending)
-        {
-            holdOffense();
-            if (tryValidationRouteMinimumDistance(true))
-                return true;
         }
 
         if (!prepullStaged || !tankStage.TankMovementAllowed

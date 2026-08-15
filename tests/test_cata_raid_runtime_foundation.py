@@ -2249,9 +2249,25 @@ def test_raid_trash_uses_native_threat_headroom_and_declared_minimum_distance():
     assert "MinimumDistanceOwner::LandedRushRecovery" in minimum
     assert "specializedDrudgeRecovery" in minimum
     assert "if (tryValidationRouteMinimumDistance(true))" in minimum
+    landed_owner = route_runtime[
+        route_runtime.index("auto drudgeLandedRushPending") :
+        route_runtime.index("auto tryValidationRouteMinimumDistance")
+    ]
+    assert "auto observation = std::find_if(" in landed_owner
+    assert "&& observation->Landed" in landed_owner
+    assert "std::any_of(" not in landed_owner
     assert minimum.index("drudge_anchor_source_unsafe") < minimum.index(
-        "nowMs < state.ValidationRouteDrudgeAnchorSearchCooldownUntilMs"
+        "if (!pathSearch.NativePathSearchDue)"
     )
+    source_reject = minimum.index('"drudge_anchor_source_unsafe"')
+    spacing_reject = minimum.index('"drudge_anchor_spacing_unsafe"')
+    path_transition = minimum.index("SelectAnchorPathSearch(")
+    assert path_transition < source_reject < spacing_reject
+    assert "pathSearch.RetryAfterMs" in minimum[path_transition:source_reject]
+    assert minimum.index("if (tryValidationRouteMinimumDistance(true))") < minimum.index(
+        "if (!contractResolved"
+    )
+    assert "state.LastRecoveryResult.clear();" in minimum
     assert route_runtime.index("if (tryValidationRouteMovementCheck(target))") < route_runtime.index(
         "if (tryValidationRouteMinimumDistance())"
     )

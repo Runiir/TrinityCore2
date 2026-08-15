@@ -68,6 +68,33 @@ enum class MinimumDistanceOwner : std::uint8_t
     LandedRushRecovery
 };
 
+struct AnchorPathSearchDecision
+{
+    std::uint64_t RetryAfterMs = 0;
+    bool SourceBlocked = false;
+    bool SpacingBlocked = false;
+    bool NativePathSearchDue = false;
+};
+
+// Dynamic source proximity and member spacing change as the assigned tanks
+// pull the Drudges home after Rush. They must never consume or preserve the
+// expensive native-path retry heartbeat: the first source-safe/spacing-safe
+// edge owns an immediate PathGenerator attempt. Only an actual native path
+// rejection may arm RetryAfterMs in production.
+inline AnchorPathSearchDecision SelectAnchorPathSearch(
+    std::uint64_t retryAfterMs, std::uint64_t nowMs,
+    bool dynamicSourceSafe, bool dynamicSpacingSafe)
+{
+    AnchorPathSearchDecision decision;
+    decision.SourceBlocked = !dynamicSourceSafe;
+    decision.SpacingBlocked = dynamicSourceSafe && !dynamicSpacingSafe;
+    decision.RetryAfterMs = decision.SourceBlocked || decision.SpacingBlocked
+        ? 0 : retryAfterMs;
+    decision.NativePathSearchDue = !decision.SourceBlocked
+        && !decision.SpacingBlocked && nowMs >= decision.RetryAfterMs;
+    return decision;
+}
+
 // Generic minimum-distance movement remains authoritative everywhere except
 // an unresolved landed Drudge Rush.  In that window the exact observation is
 // already the durable return obligation, so the Drudge recovery state must

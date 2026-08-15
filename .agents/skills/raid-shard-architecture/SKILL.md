@@ -167,6 +167,11 @@ edges for every bot and target scope:
 - Keep the parity boundary explicit: replay certifies the shared decision
   transition; one live shard must still certify native pathfinding, spell
   legality, threat selection, SmartAI timing, and observable script behavior.
+- For a live native-path counterexample, add an asset-hash-bound preflight that
+  loads the exact map `.mmap`/tiles and uses PathGenerator-parity filter flags,
+  nearest-poly extents, corridor cap, and smoothing to prove the recorded
+  start→sealed-anchor terminal. Missing or changed assets fail live prep; a
+  source-shape assertion or algebraic straight line is not navigation proof.
 - Run the replay gate before every native rebuild/live attempt. A failed replay
   blocks the live run; a passing replay reduces but never replaces the final
   native confirmation.
