@@ -86,9 +86,9 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
     assert seed_distance + drudges["split_arrival_tolerance_yards"] <= 35.0
 
     # Slot 8 is both the source-250140 seed and its permanent recovery point.
-    # The one-yard west shift retains a wide unique-farthest/range margin and
-    # stays outside the restored opposite Drudge even across both accepted
-    # member and tank arrival envelopes, avoiding an A/B-only live contract.
+    # This static check proves only the configured range and restored-source
+    # clearance envelopes. Runtime still reconstructs native threat-list
+    # eligibility/farthest selection and requires a strict return path.
     source_0 = (-295.608573, -52.851976, 212.2983)
     slot_8 = tuple(member_by_slot[8][axis] for axis in ("x", "y", "z"))
     assert slot_8 == (-325.0, -64.0, 212.82)

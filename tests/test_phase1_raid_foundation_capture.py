@@ -1232,6 +1232,23 @@ def test_drudge_native_threat_ignores_ordinary_pre_rush_snapshot_until_complete(
     assert accepted is False
     assert "drudge_native_threat_landing_regressed" in reasons
 
+    changed_target = accepted_drudge_status()
+    changed_target["raid_runtime"]["drudge_charge"]["observations"][0]["landed"] = False
+    changed_target_landed = accepted_drudge_status()
+    changed = changed_target_landed["raid_runtime"]["drudge_charge"]["observations"][0]
+    changed["target_guid"] = changed_target_landed["raid_runtime"]["roster"][4]["guid"]
+    changed["target_raw_guid"] = changed["target_guid"]
+    accepted, reasons = accepted_drudge_contract([changed_target, changed_target_landed])
+    assert accepted is False
+    assert "drudge_native_threat_observation_identity_drift" in reasons
+
+    changed_scope = accepted_drudge_status()
+    changed_scope["raid_runtime"]["drudge_charge"]["observations"][0]["landed"] = False
+    changed_scope["raid_runtime"]["drudge_charge"]["observations"][0]["attempt_id"] = 99
+    accepted, reasons = accepted_drudge_contract([changed_scope, accepted_drudge_status()])
+    assert accepted is False
+    assert "drudge_native_threat_observation_scope_drift" in reasons
+
     forged_farthest = accepted_drudge_status()
     first = forged_farthest["raid_runtime"]["drudge_charge"]["observations"][0]
     first["target_guid"] = forged_farthest["raid_runtime"]["roster"][4]["guid"]

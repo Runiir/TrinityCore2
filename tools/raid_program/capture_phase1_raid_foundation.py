@@ -1271,6 +1271,27 @@ def accepted_drudge_contract(
         for row in roster
         if isinstance(row, dict) and _positive_int(row.get("guid"))
     }
+    attempt_id = runtime.get("attempt_id")
+    expected_observation_scope = (attempt_id, 0, 3)
+
+    # A capture can contain statuses from an earlier attempt.  They are not
+    # part of the selected immutable Drudge evidence scope and must neither
+    # poison nor complete it.  Conversely, a status that claims the selected
+    # attempt while carrying a different evidence scope is corrupt and fails
+    # closed instead of being silently ignored.
+    scoped_candidates: list[tuple[dict[str, Any], dict[str, Any]]] = []
+    for candidate_runtime, candidate_evidence in candidates:
+        if candidate_runtime.get("attempt_id") != attempt_id:
+            continue
+        candidate_scope = (
+            candidate_evidence.get("evidence_attempt_id"),
+            candidate_evidence.get("evidence_wipe_generation"),
+            candidate_evidence.get("evidence_route_generation"),
+        )
+        if candidate_scope != expected_observation_scope:
+            reasons.append("drudge_candidate_evidence_scope_mismatch")
+            continue
+        scoped_candidates.append((candidate_runtime, candidate_evidence))
 
     # A bad native delivery is permanently disqualifying for this capture,
     # even when a later status snapshot contains a clean-looking generation.
@@ -1278,7 +1299,7 @@ def accepted_drudge_contract(
     # status and the resulting dataset would certify a formation that never
     # satisfied the native farthest-target selector.
     lane_a_slots = {1, 3, 4, 6, 7}
-    for candidate_runtime, candidate_evidence in candidates:
+    for candidate_runtime, candidate_evidence in scoped_candidates:
         candidate_roster = candidate_runtime.get("roster")
         candidate_roles = {
             row.get("guid"): row
@@ -1306,7 +1327,6 @@ def accepted_drudge_contract(
             if target_in_lane_a == source_in_lane_a:
                 reasons.append("drudge_native_rush_lane_target_invalid")
 
-    attempt_id = runtime.get("attempt_id")
     if evidence.get("evidence_attempt_id") != attempt_id:
         reasons.append("drudge_attempt_scope_mismatch")
     if evidence.get("evidence_wipe_generation") != 0:
@@ -1413,10 +1433,11 @@ def accepted_drudge_contract(
     native_candidate_rows_by_guid: dict[int, dict[int, dict[str, Any]]] = {}
     native_candidate_eligible_guids_by_source: dict[int, set[int]] = {}
     native_first_rush_observed_at_ms: dict[int, int] = {}
-    native_first_rush_landed_by_key: dict[tuple[int, int], bool] = {}
+    native_first_rush_landed_by_key: dict[tuple[Any, ...], bool] = {}
+    native_first_rush_identity_by_key: dict[tuple[Any, ...], tuple[Any, ...]] = {}
     native_candidate_tolerance = 0.05
     complete_candidate_snapshots = []
-    for candidate_runtime, candidate_evidence in candidates:
+    for candidate_runtime, candidate_evidence in scoped_candidates:
         observations = candidate_evidence.get("observations")
         observations = observations if isinstance(observations, list) else []
         observed_sources = {
@@ -1454,14 +1475,44 @@ def accepted_drudge_contract(
                     int(row.get("observed_at_ms") or 0),
                 ),
             )
+            observation_scope = (
+                first_observation.get("attempt_id"),
+                first_observation.get("wipe_generation"),
+                first_observation.get("route_generation"),
+            )
+            if observation_scope != expected_observation_scope:
+                reasons.append("drudge_native_threat_observation_scope_drift")
+                continue
             first_time = first_observation.get("observed_at_ms")
-            if _positive_int(first_time):
-                native_first_rush_observed_at_ms[source] = int(first_time)
             sequence = first_observation.get("sequence")
             if not _positive_int(sequence):
                 reasons.append("drudge_native_threat_observation_sequence_invalid")
             else:
-                landing_key = (source, int(sequence))
+                landing_key = (*expected_observation_scope, source, int(sequence))
+                observation_identity = (
+                    first_observation.get("source_guid"),
+                    first_observation.get("target_guid"),
+                    first_observation.get("target_raw_guid"),
+                    first_observation.get("observed_at_ms"),
+                    first_observation.get("observed_interval_ms"),
+                    first_observation.get("selected_distance"),
+                    first_observation.get("source_combat_reach"),
+                    first_observation.get("target_combat_reach"),
+                    first_observation.get("same_map"),
+                    first_observation.get("same_phase"),
+                    first_observation.get("range_valid"),
+                )
+                prior_identity = native_first_rush_identity_by_key.get(landing_key)
+                if prior_identity is not None and prior_identity != observation_identity:
+                    reasons.append("drudge_native_threat_observation_identity_drift")
+                    continue
+                native_first_rush_identity_by_key[landing_key] = observation_identity
+                if _positive_int(first_time):
+                    prior_time = native_first_rush_observed_at_ms.get(source)
+                    if prior_time is not None and prior_time != int(first_time):
+                        reasons.append("drudge_native_threat_observation_identity_drift")
+                        continue
+                    native_first_rush_observed_at_ms[source] = int(first_time)
                 landed = first_observation.get("landed") is True
                 prior_landed = native_first_rush_landed_by_key.get(landing_key)
                 # A status sampled between SpellStarted and SpellLanded is a
@@ -1635,9 +1686,9 @@ def accepted_drudge_contract(
 
     for source in exact_sources:
         source_landings = [
-            landed for (observed_source, _), landed
+            landed for landing_key, landed
             in native_first_rush_landed_by_key.items()
-            if observed_source == source
+            if landing_key[3] == source
         ]
         if not source_landings or not any(source_landings):
             reasons.append(f"drudge_native_threat_source_{source}_first_rush_not_landed")

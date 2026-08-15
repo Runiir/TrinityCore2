@@ -607,6 +607,9 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     recovery_choice = lane.index("SelectMemberRecoveryAction", formation_barrier)
     recovery_move = lane.index("tryFormationRecovery();", recovery_choice)
     assert formation_barrier < recovery_choice < recovery_move < support
+    preflight_support = lane.index('"drudge_anchor_preflight_support"')
+    preflight_branch = lane.rfind("if (prepullStaged && !combatTankPathsProvenBeforeTick)", 0, preflight_support)
+    assert "&& !nativeChargePending" in lane[preflight_branch:preflight_support]
     assert "tankStage.SupportAllowed" in lane[formation_barrier:recovery_choice]
     assert "tryRouteGroupHeal(bot, laneSource, false)" in lane[support - 450:support]
     heal_helper = IMPL[

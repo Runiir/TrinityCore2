@@ -20073,7 +20073,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 currentTankPathProven = selectPathableDrudgeAnchor(true);
             }
             holdOffense();
-            if (sourceCombatStarted && roster->second.Role == "healer"
+            if (sourceCombatStarted && !nativeChargePending
+                && roster->second.Role == "healer"
                 && tryRouteGroupHeal(bot, laneSource, false))
             {
                 record(laneSource, "drudge_anchor_preflight_support", sourceSeparation);
