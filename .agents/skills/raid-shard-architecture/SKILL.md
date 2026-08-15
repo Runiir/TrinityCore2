@@ -62,6 +62,13 @@ Require one exact tuple across config, generated route, runtime status, capture,
   that member is back in the sealed formation. A single bait/recovery anchor is
   valid only when combined arrival envelopes prove both hostile-action range
   and post-return source clearance and its native return path is exact.
+- Do not certify post-charge formation from the source home or initial radial
+  chase alone. Once the source returns to its tank, it may stop anywhere in the
+  native melee-reach disk. Seal a separate pull-away tank anchor when needed,
+  preflight both tank paths before either moves, and prove the worst-case disks:
+  source-pair separation subtracts both `(melee reach + tank tolerance)` radii;
+  every member clearance adds melee reach, member tolerance, and tank tolerance.
+  Keep the native victim unchanged so the source follows by ordinary threat.
 - Give the active mechanic state ownership of generic safety movement while a
   landed displacement remains unresolved. The generic controller may compute
   and submit the outward escape, but it must not return outside the mechanic's

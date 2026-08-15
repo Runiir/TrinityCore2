@@ -69,6 +69,13 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
     assert drudge_split_geometry_status(drudges) == (True, "")
     assert drudges["split_seed_roster_slots"] == [8, 6]
     assert drudges["split_seed_max_range_yards"] == 35.0
+    recovery_by_slot = {
+        row["roster_slot"]: row for row in drudges["split_tank_recovery_anchors"]
+    }
+    assert recovery_by_slot == {
+        1: {"roster_slot": 1, "x": -288.8, "y": -43.0, "z": 212.301},
+        2: {"roster_slot": 2, "x": -321.5, "y": -30.0, "z": 212.3},
+    }
     member_by_slot = {
         row["roster_slot"]: row for row in drudges["split_member_anchors"]
     }
@@ -100,6 +107,36 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
         - drudges["split_tank_arrival_tolerance_yards"]
         >= drudges["minimum_distance_yards"]
     )
+    # A returning Rush can approach the tank from any direction.  Prove the
+    # full melee-stop and arrival disks, rather than the initial radial chase.
+    recovery_points = {
+        slot: (row["x"], row["y"])
+        for slot, row in recovery_by_slot.items()
+    }
+    worst_source_radius = (
+        drudges["split_native_melee_stop_yards"]
+        + drudges["split_tank_arrival_tolerance_yards"]
+    )
+    assert (
+        math.dist(recovery_points[1], recovery_points[2])
+        - 2.0 * worst_source_radius
+        >= drudges["split_minimum_separation_yards"]
+        + drudges["split_navigation_margin_yards"]
+    )
+    required_member_clearance = (
+        drudges["minimum_distance_yards"]
+        + drudges["split_native_melee_stop_yards"]
+        + drudges["split_arrival_tolerance_yards"]
+        + drudges["split_tank_arrival_tolerance_yards"]
+    )
+    for slot, anchor in member_by_slot.items():
+        if slot in (1, 2):
+            continue
+        point = (anchor["x"], anchor["y"])
+        assert all(
+            math.dist(point, recovery) >= required_member_clearance
+            for recovery in recovery_points.values()
+        )
 
     unsafe = deepcopy(drudges)
     unsafe["split_tank_combat_anchors"] = [
@@ -151,6 +188,24 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
     assert drudge_split_geometry_status(inward_arrival_envelope) == (
         False,
         "split_navigation_anchor_native_chase_unsafe",
+    )
+
+    unsafe_recovery_pair = deepcopy(drudges)
+    unsafe_recovery_pair["split_tank_recovery_anchors"][1].update(
+        x=-314.4, y=-20.5334, z=211.221,
+    )
+    assert drudge_split_geometry_status(unsafe_recovery_pair) == (
+        False,
+        "split_tank_recovery_source_separation_unsafe",
+    )
+
+    unsafe_recovery_member = deepcopy(drudges)
+    unsafe_recovery_member["split_tank_recovery_anchors"][0].update(
+        x=-289.289093, y=-57.7575, z=212.932236,
+    )
+    assert drudge_split_geometry_status(unsafe_recovery_member) == (
+        False,
+        "split_tank_recovery_member_unsafe",
     )
 
     seed_out_of_range = deepcopy(drudges)

@@ -561,6 +561,7 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "ValidationRouteSplitMemberAnchors" in lane
     assert "ValidationRouteSplitTankCombatAnchors" in lane
     assert "ValidationRouteSplitTankNavigationAnchors" in lane
+    assert "ValidationRouteSplitTankRecoveryAnchors" in lane
     assert "anchorSlots == exactRosterSlots" in lane
     assert "exactRosterPrepullStaged" in lane
     assert '"drudge_prepull_exact_roster_staged"' in lane
@@ -586,9 +587,20 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "combatTankPathsProvenBeforeTick" in lane
     assert '"drudge_tank_anchor_strict_path_rejected"' in lane
     assert '"drudge_tank_anchor_preflight_wait"' in lane
-    assert lane.index("if (prepullStaged && !combatTankPathsProvenBeforeTick)") \
+    assert lane.index("if (prepullStaged && !nativeChargePending\n            && !combatTankPathsProvenBeforeTick)") \
         < lane.index("MoveBotToPoint(state, bot,")
+    assert "exactRecoveryTankPathsProven" in lane
+    assert "laneSeparation + 2.0f * (meleeStop + tankArrivalTolerance)" in lane
+    assert "ValidationRouteMinimumDistanceYards\n                + meleeStop" in lane
+    recovery_preflight = lane.index(
+        "if (nativeChargePending && !recoveryTankPathsProvenBeforeTick)"
+    )
+    recovery_move = lane.index("MoveBotToPoint(state, bot,", recovery_preflight)
+    assert recovery_preflight < recovery_move
+    assert '"drudge_tank_recovery_anchor_preflight_wait"' in lane
+    assert '"drudge_tank_recovery_anchor_strict_path_rejected"' in lane
     assert "tankStageInput.BothCombatTankPathsProven" in lane
+    assert "nativeChargePending ? recoveryTankPathsProvenBeforeTick" in lane
     assert "if (!prepullStaged || !tankStage.TankMovementAllowed" in lane
     assert "|| pairTooClose || nativeChargePending || chargeAwaitingLanding)" in lane
     assert "laneSource = sources[laneIndex]" in lane
@@ -608,7 +620,7 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     recovery_move = lane.index("tryFormationRecovery();", recovery_choice)
     assert formation_barrier < recovery_choice < recovery_move < support
     preflight_support = lane.index('"drudge_anchor_preflight_support"')
-    preflight_branch = lane.rfind("if (prepullStaged && !combatTankPathsProvenBeforeTick)", 0, preflight_support)
+    preflight_branch = lane.rfind("if (prepullStaged && !nativeChargePending", 0, preflight_support)
     assert "&& !nativeChargePending" in lane[preflight_branch:preflight_support]
     assert "tankStage.SupportAllowed" in lane[formation_barrier:recovery_choice]
     assert "tryRouteGroupHeal(bot, laneSource, false)" in lane[support - 450:support]
@@ -2202,6 +2214,10 @@ def test_trash_profile_damage_cannot_pull_or_compound_the_next_boss_encounter():
     assert "BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid)" in TOTEM_AI
     assert "BotRaidAreaAuthority::IsAllOffenseSuppressed(ownerGuid)" in TOTEM_AI
     assert "ProtectedTotemTarget(owner, victim)" in TOTEM_AI
+    # UnitAI.cpp and TotemAI.cpp share one CMake unity translation unit, so
+    # their anonymous-namespace helpers must not have colliding names.
+    assert "bool TotemSpellHasHostileMultiTargetSemantics" in TOTEM_AI
+    assert "bool TotemSpellHasHostileMultiTargetSemantics" not in UNIT_AI
     assert "RaidTotemSpellSuppressed(this, GetSpell())" in TOTEM
     assert "UnSummon();" in TOTEM
 

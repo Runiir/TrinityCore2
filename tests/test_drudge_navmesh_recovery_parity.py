@@ -61,3 +61,15 @@ def test_recorded_drudge_returns_match_native_navmesh(tmp_path):
         -64.0,
         212.82,
     ]
+    assert payload["validated_returns"]["tank1_pull_away"] == {
+        "polygons": 4,
+        "smooth_points": 6,
+        "start": [-289.289093, -57.7575, 212.932236],
+        "terminal": [-288.8, -43.0, 212.301],
+    }
+    assert payload["validated_returns"]["tank2_pull_away"] == {
+        "polygons": 4,
+        "smooth_points": 6,
+        "start": [-322.858002, -48.286201, 211.999359],
+        "terminal": [-321.5, -30.0, 212.3],
+    }

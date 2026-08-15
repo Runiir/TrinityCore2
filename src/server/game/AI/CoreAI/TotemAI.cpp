@@ -28,7 +28,7 @@
 
 namespace
 {
-bool SpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth = 0)
+bool TotemSpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth = 0)
 {
     if (!spellInfo || depth > 4)
         return false;
@@ -45,7 +45,7 @@ bool SpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth
                 || effect.IsAreaAuraEffect()))
             return true;
         if (effect.TriggerSpell
-            && SpellHasHostileMultiTargetSemantics(
+            && TotemSpellHasHostileMultiTargetSemantics(
                 sSpellMgr->GetSpellInfo(effect.TriggerSpell), depth + 1))
             return true;
     }
@@ -122,7 +122,7 @@ void TotemAI::UpdateAI(uint32 /*diff*/)
         return;
     }
     if (ownerGuid && BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid)
-        && SpellHasHostileMultiTargetSemantics(spellInfo))
+        && TotemSpellHasHostileMultiTargetSemantics(spellInfo))
     {
         me->InterruptNonMeleeSpells(false);
         _victimGUID.Clear();

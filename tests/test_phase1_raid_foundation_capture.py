@@ -706,7 +706,7 @@ def accepted_drudge_status() -> dict:
     }
     anchors.update({
         row["roster_slot"]: (row["x"], row["y"])
-        for row in drudges["split_tank_navigation_anchors"]
+        for row in drudges["split_tank_recovery_anchors"]
     })
     home0 = (-298.833, -50.349)
     home1 = (-307.913, -49.5694)
@@ -716,8 +716,20 @@ def accepted_drudge_status() -> dict:
     projection = lambda x, y: (x - midpoint[0]) * axis[0] + (y - midpoint[1]) * axis[1]
     tank0 = anchors[1]
     tank1 = anchors[2]
-    source0 = (-295.608573, -52.851976)
-    source1 = (-314.887329, -48.970574)
+    tank_pair_distance = hypot(tank1[0] - tank0[0], tank1[1] - tank0[1])
+    tank_pair_axis = (
+        (tank1[0] - tank0[0]) / tank_pair_distance,
+        (tank1[1] - tank0[1]) / tank_pair_distance,
+    )
+    melee_stop = drudges["split_native_melee_stop_yards"]
+    source0 = (
+        tank0[0] + tank_pair_axis[0] * melee_stop,
+        tank0[1] + tank_pair_axis[1] * melee_stop,
+    )
+    source1 = (
+        tank1[0] - tank_pair_axis[0] * melee_stop,
+        tank1[1] - tank_pair_axis[1] * melee_stop,
+    )
     member_geometry = []
     for row in runtime["roster"]:
         slot = row["slot"] + 1
@@ -975,7 +987,8 @@ def test_drudge_geometry_is_loaded_from_explicit_sealed_route_manifest(tmp_path,
     )
     anchors = _frozen_drudge_member_anchors(sealed)
     assert set(anchors) == set(range(1, 11))
-    assert anchors[1] == (-289.289093, -57.7575, 212.932236)
+    assert anchors[1] == (-288.8, -43.0, 212.301)
+    assert anchors[2] == (-321.5, -30.0, 212.3)
     assert _frozen_drudge_member_anchors() == {}
 
 

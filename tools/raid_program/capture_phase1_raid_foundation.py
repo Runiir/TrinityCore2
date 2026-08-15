@@ -175,6 +175,12 @@ def _frozen_drudge_member_anchors(
                 )
                 for row in node.get("split_tank_navigation_anchors", [])
             }
+            recovery_tank_anchors = {
+                int(row["roster_slot"]): (
+                    float(row["x"]), float(row["y"]), float(row["z"])
+                )
+                for row in node.get("split_tank_recovery_anchors", [])
+            }
             if (set(anchors) != set(range(1, 11)) or (
                 node.get("boss_recovery_policy") != "native_full_wipe_only"
             ) or set(combat_tank_anchors) != {1, 2}
@@ -183,7 +189,12 @@ def _frozen_drudge_member_anchors(
             # The contract anchors prove conservative native chase geometry;
             # the separately sealed navigation anchors are exact Detour
             # terminals and therefore own the live tank arrival evidence.
-            anchors.update(navigation_tank_anchors)
+            if set(recovery_tank_anchors) != {1, 2}:
+                return {}
+            # Completed post-Rush geometry is certified at the sealed
+            # pull-away tank anchors.  The initial navigation anchors remain
+            # the pre-Rush ownership/seed geometry only.
+            anchors.update(recovery_tank_anchors)
             by_scenario.append(anchors)
         return by_scenario[0] if by_scenario[0] == by_scenario[1] else {}
     except (OSError, KeyError, StopIteration, TypeError, ValueError, json.JSONDecodeError):

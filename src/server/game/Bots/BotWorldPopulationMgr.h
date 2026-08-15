@@ -129,6 +129,7 @@ struct BotWorldExperimentConfig
     std::vector<ValidationRouteMemberAnchor> ValidationRouteSplitMemberAnchors;
     std::vector<ValidationRouteMemberAnchor> ValidationRouteSplitTankCombatAnchors;
     std::vector<ValidationRouteMemberAnchor> ValidationRouteSplitTankNavigationAnchors;
+    std::vector<ValidationRouteMemberAnchor> ValidationRouteSplitTankRecoveryAnchors;
     float ValidationRouteSplitMinimumSeparationYards = 0.0f;
     float ValidationRouteSplitNavigationMarginYards = 0.0f;
     float ValidationRouteSplitArrivalToleranceYards = 0.0f;
@@ -504,6 +505,7 @@ private:
         std::vector<ValidationRouteMemberAnchor> SplitMemberAnchors;
         std::vector<ValidationRouteMemberAnchor> SplitTankCombatAnchors;
         std::vector<ValidationRouteMemberAnchor> SplitTankNavigationAnchors;
+        std::vector<ValidationRouteMemberAnchor> SplitTankRecoveryAnchors;
         float SplitMinimumSeparationYards = 0.0f;
         float SplitNavigationMarginYards = 0.0f;
         float SplitArrivalToleranceYards = 0.0f;

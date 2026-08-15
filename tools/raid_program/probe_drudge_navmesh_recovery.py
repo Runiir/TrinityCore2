@@ -30,6 +30,10 @@ EXPECTED_OUTPUT = (
     "30003 smooth=0x40000000 points=5 terminal=-295,-71.5,213.25 end2d=0 endz=0",
     "30008 findPath=0x40000000 polys=2 complete=1",
     "30008 smooth=0x40000000 points=5 terminal=-325,-64,212.82 end2d=0 endz=0",
+    "tank1_pull_away findPath=0x40000000 polys=4 complete=1",
+    "tank1_pull_away smooth=0x40000000 points=6 terminal=-288.8,-43,212.301",
+    "tank2_pull_away findPath=0x40000000 polys=4 complete=1",
+    "tank2_pull_away smooth=0x40000000 points=6 terminal=-321.5,-30,212.3",
 )
 
 
@@ -144,6 +148,18 @@ def run_probe(root: Path = ROOT) -> dict[str, object]:
                 "terminal": [-325.0, -64.0, 212.82],
                 "polygons": 2,
                 "smooth_points": 5,
+            },
+            "tank1_pull_away": {
+                "start": [-289.289093, -57.7575, 212.932236],
+                "terminal": [-288.8, -43.0, 212.301],
+                "polygons": 4,
+                "smooth_points": 6,
+            },
+            "tank2_pull_away": {
+                "start": [-322.858002, -48.286201, 211.999359],
+                "terminal": [-321.5, -30.0, 212.3],
+                "polygons": 4,
+                "smooth_points": 6,
             },
         },
         "raw_probe_sha256": hashlib.sha256(output.encode("utf-8")).hexdigest(),
