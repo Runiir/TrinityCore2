@@ -4085,6 +4085,7 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         node.Label = ExtractJsonStringField(routeJson, "label");
         node.Kind = ExtractJsonStringField(routeJson, "kind");
         node.NodeKind = ExtractJsonStringField(routeJson, "node_kind");
+        node.DescentAction = ExtractJsonStringField(routeJson, "descent_action");
         node.MechanicProfile = ExtractJsonStringField(routeJson, "mechanic_profile");
         std::string const bossRecoveryPolicy = ExtractJsonStringField(routeJson, "boss_recovery_policy");
         if (bossRecoveryPolicy == "native_full_wipe_only")
@@ -4556,6 +4557,7 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     Cohort().Config.ValidationRouteLabel = node.Label;
     Cohort().Config.ValidationRouteKind = node.Kind;
     Cohort().Config.ValidationRouteNodeKind = node.NodeKind;
+    Cohort().Config.ValidationRouteDescentAction = node.DescentAction;
     Cohort().Config.ValidationRouteMechanicProfile = node.MechanicProfile;
     Cohort().Config.ValidationRouteBossRecovery = node.BossRecoveryPolicy;
     // Recovery authority is owned by the exact node/generation that observed
@@ -28100,13 +28102,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
-        if (Cohort().Config.ValidationRouteKind == "descent")
+        if (Cohort().Config.ValidationRouteKind == "descent"
+            && !Cohort().Config.ValidationRouteDescentAction.empty())
         {
-            // The server cannot synthesize the Nefarian ledge descent. A
-            // MoveJump, teleport, or direct position mutation would turn a
-            // diagnostic shard into assisted completion evidence. Keep the
-            // node observable and fail closed until a legitimate native
-            // client/world movement event reaches the declared lower anchor.
+            // Some manifests explicitly require a client-like walk, jump, or
+            // fall (currently Nefarian's ledge). Do not synthesize those
+            // inputs. Ordinary walkable dungeon descents leave descent_action
+            // empty and flow through the same native path reconciliation as
+            // any other route anchor below.
             state.ActivePathValid = false;
             state.LastPathRejectReason = "native_descent_semantics_unavailable";
             state.LastNoProgressReason = "native_descent_semantics_unavailable";
@@ -28119,11 +28122,17 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             target = nullptr;
             return true;
         }
-        else
-            moveToRouteAnchor();
-        RecordEvent(state, bot, "validation_route_regroup", nullptr, Cohort().Config.ValidationRouteLabel.empty() ? "move_to_arrival" : Cohort().Config.ValidationRouteLabel.c_str(), raw.c_str(), semantic.c_str(), routeDistance, Cohort().Config.ValidationRouteTargetEntry);
+        bool const moved = moveToRouteAnchor();
+        char const* movementResult = moved
+            ? (Cohort().Config.ValidationRouteLabel.empty()
+                ? "move_to_arrival" : Cohort().Config.ValidationRouteLabel.c_str())
+            : (state.LastPathRejectReason.empty()
+                ? "route_anchor_retryable" : state.LastPathRejectReason.c_str());
+        RecordEvent(state, bot, "validation_route_regroup", nullptr,
+            movementResult, raw.c_str(), semantic.c_str(), routeDistance,
+            Cohort().Config.ValidationRouteTargetEntry);
         situation = "validation_route_regroup";
-        action = "move_to_validation_route_anchor";
+        action = moved ? "move_to_validation_route_anchor" : "validation_route_hold_anchor";
         return true;
     }
     if (Cohort().Config.ValidationRouteKind != "boss"

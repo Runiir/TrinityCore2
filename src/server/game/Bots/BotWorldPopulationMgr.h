@@ -105,6 +105,7 @@ struct BotWorldExperimentConfig
     std::string ValidationRouteLabel;
     std::string ValidationRouteKind;
     std::string ValidationRouteNodeKind;
+    std::string ValidationRouteDescentAction;
     std::string ValidationRouteMechanicProfile;
     ValidationRouteBossRecoveryPolicy ValidationRouteBossRecovery = ValidationRouteBossRecoveryPolicy::NativeEncounter;
     uint32 ValidationRouteMapId = 0;
@@ -420,6 +421,7 @@ private:
         std::string Label;
         std::string Kind;
         std::string NodeKind;
+        std::string DescentAction;
         std::string MechanicProfile;
         std::string MechanicContractId;
         ValidationRouteBossRecoveryPolicy BossRecoveryPolicy = ValidationRouteBossRecoveryPolicy::NativeEncounter;

@@ -87,12 +87,15 @@ def test_current_generation_guid_wins_when_next_node_reuses_identity_family():
 
 
 def test_nefarian_descent_fails_closed_without_synthetic_jump_or_position_assistance():
-    descent = RUNTIME[RUNTIME.index('if (Cohort().Config.ValidationRouteKind == "descent")'):]
+    descent = RUNTIME[RUNTIME.index('if (Cohort().Config.ValidationRouteKind == "descent"\n            && !Cohort().Config.ValidationRouteDescentAction.empty())'):]
     descent = descent[:descent.index('if (Cohort().Config.ValidationRouteKind != "boss"', 1)]
+    assert 'node.DescentAction = ExtractJsonStringField(routeJson, "descent_action")' in RUNTIME
+    assert 'Cohort().Config.ValidationRouteDescentAction = node.DescentAction' in RUNTIME
     assert 'native_descent_semantics_unavailable' in descent
     assert 'validation_route_descent_blocked' in descent
     assert 'MoveJump(' not in descent
     assert 'TeleportTo(' not in descent
+    assert 'bool const moved = moveToRouteAnchor();' in descent
 
 
 def test_diagnostic_profile_and_pool_admission_are_manifest_owned_and_exact():

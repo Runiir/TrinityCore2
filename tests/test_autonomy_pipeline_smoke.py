@@ -1656,7 +1656,7 @@ def test_move_bot_to_point_only_terminalizes_strategic_route_failures():
     assert "bool terminalOnFailure" in mgr
     assert_ordered(
         move_bot_to_point,
-        "if (_config.ValidationRouteEnable)",
+        "if (Cohort().Config.ValidationRouteEnable)",
         "if (terminalOnFailure)",
         "state.ValidationRouteTerminalState = true;",
         'RecordEvent(state, bot, "validation_route_recovery"',
@@ -1673,7 +1673,7 @@ def test_move_bot_to_point_only_terminalizes_strategic_route_failures():
     assert "GetFirstCollisionPosition(profileAction.MinRange" not in route_objective
 
 
-def test_rerun195_descent_path_probe_cannot_terminalize_before_native_jump():
+def test_walkable_descent_uses_native_pathing_while_declared_jump_stays_fail_closed():
     route_objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     anchor_move = route_objective.split("auto moveToRouteAnchor = [&]() -> bool", 1)[1].split("auto routeFocusTankOwned", 1)[0]
     arrival = route_objective.split("if (arrivalRoute && !arrivalCombatActive)", 1)[1].split(
@@ -1684,11 +1684,14 @@ def test_rerun195_descent_path_probe_cannot_terminalize_before_native_jump():
     assert "MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ, terminalOnFailure)" in anchor_move
     assert_ordered(
         arrival,
-        'if (Cohort().Config.ValidationRouteKind == "descent")',
-        "state.ActivePathFromX = bot->GetPositionX();",
-        "bot->GetMotionMaster()->MoveJump(routeAnchorX, routeAnchorY, routeAnchorZ",
-        'action = "move_to_validation_route_anchor";',
+        'if (Cohort().Config.ValidationRouteKind == "descent"',
+        "&& !Cohort().Config.ValidationRouteDescentAction.empty()",
+        'action = "validation_route_descent_blocked";',
+        "bool const moved = moveToRouteAnchor();",
+        'action = moved ? "move_to_validation_route_anchor" : "validation_route_hold_anchor";',
     )
+    assert "MoveJump(" not in arrival
+    assert "TeleportTo(" not in arrival
     assert "state.ValidationRouteTerminalState = true;" not in anchor_move
 
 
