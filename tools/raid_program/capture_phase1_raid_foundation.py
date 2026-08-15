@@ -18,10 +18,12 @@ from typing import Any
 
 try:
     from tools.raid_program.capture_no_bots_baseline import process_sample as _baseline_process_sample
+    from tools.raid_program.probe_drudge_navmesh_recovery import run_probe as _drudge_navmesh_probe
 except ModuleNotFoundError:
     # Direct execution places tools/raid_program, not the repository root, on
     # sys.path. Keep the CLI and imported test/module paths on the same sampler.
     from capture_no_bots_baseline import process_sample as _baseline_process_sample
+    from probe_drudge_navmesh_recovery import run_probe as _drudge_navmesh_probe
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -4088,6 +4090,20 @@ def main() -> int:
     if not runtime_assets["passed"]:
         raise SystemExit("runtime profile assets rejected: " + ",".join(runtime_assets["reasons"]))
     route_manifest = runtime_assets.get("route_manifest")
+    drudge_required = profile_name == "blackwing_descent_10n" \
+        or profile_name.endswith("_magmaw_diagnostic")
+    drudge_navmesh_preflight: dict[str, Any] = {
+        "required": drudge_required,
+        "all_passed": None,
+    }
+    if drudge_required:
+        try:
+            drudge_navmesh_preflight = {
+                "required": True,
+                **_drudge_navmesh_probe(worktree),
+            }
+        except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
+            raise SystemExit(f"drudge navmesh preflight rejected: {exc}") from exc
     drudge_frozen_anchors = _frozen_drudge_member_anchors(
         Path(route_manifest) if isinstance(route_manifest, str) else None
     )
@@ -4105,7 +4121,6 @@ def main() -> int:
 
     started_utc = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     recovery_required = profile_name == "blackwing_descent_10n"
-    drudge_required = profile_name == "blackwing_descent_10n" or profile_name.endswith("_magmaw_diagnostic")
     stable: list[dict[str, Any]] = []
     last_rejections: list[str] = ["no_status_observed"]
     startup_error: str | None = None
@@ -4660,6 +4675,7 @@ def main() -> int:
         "identity_stable_during_run": identity_stable,
         "build_provenance": build_provenance,
         "runtime_profile_assets": runtime_assets,
+        "drudge_navmesh_preflight": drudge_navmesh_preflight,
         "binary_sha256": build_provenance.get("binary_sha256"),
         "config_sha256": sha256_file(config),
         "worldserver_exit_code": process_return_code,

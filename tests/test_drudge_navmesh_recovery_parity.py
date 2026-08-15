@@ -5,9 +5,26 @@ from pathlib import Path
 
 import pytest
 
+from tools.raid_program.probe_drudge_navmesh_recovery import verify_assets
+
 
 ROOT = Path(__file__).parents[1]
 MMAP = ROOT / "data" / "mmaps" / "669.mmap"
+
+
+def test_missing_navmesh_assets_fail_closed(tmp_path):
+    with pytest.raises(RuntimeError, match="drudge_navmesh_asset_set_mismatch"):
+        verify_assets(tmp_path)
+
+
+def test_capture_runs_navmesh_probe_before_worldserver_start():
+    source = (
+        ROOT / "tools" / "raid_program" / "capture_phase1_raid_foundation.py"
+    ).read_text(encoding="utf-8")
+    preflight = source.index("_drudge_navmesh_probe(worktree)")
+    process_start = source.index("subprocess.Popen(", preflight)
+    assert preflight < process_start
+    assert '"drudge_navmesh_preflight": drudge_navmesh_preflight' in source
 
 
 @pytest.mark.skipif(not MMAP.is_file(), reason="authoritative map-669 mmap assets unavailable")

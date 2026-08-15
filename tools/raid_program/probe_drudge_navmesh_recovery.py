@@ -12,8 +12,6 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-MMAP_ROOT = ROOT / "data" / "mmaps"
-PROBE_SOURCE = Path(__file__).with_name("drudge_navmesh_recovery_probe.cpp")
 
 EXPECTED_ASSETS = {
     "669.mmap": "3b794515424ff374f2fc2fb9bc75c9d0bcdfa355c712894d5b73c582671ea421",
@@ -43,8 +41,9 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def verify_assets() -> dict[str, str]:
-    actual_names = {path.name for path in MMAP_ROOT.glob("669*.mmtile")}
+def verify_assets(root: Path = ROOT) -> dict[str, str]:
+    mmap_root = root / "data" / "mmaps"
+    actual_names = {path.name for path in mmap_root.glob("669*.mmtile")}
     expected_names = {name for name in EXPECTED_ASSETS if name.endswith(".mmtile")}
     if actual_names != expected_names:
         raise RuntimeError(
@@ -53,7 +52,7 @@ def verify_assets() -> dict[str, str]:
         )
     observed: dict[str, str] = {}
     for name, expected_hash in EXPECTED_ASSETS.items():
-        path = MMAP_ROOT / name
+        path = mmap_root / name
         if not path.is_file():
             raise RuntimeError(f"drudge_navmesh_asset_missing:{name}")
         observed[name] = _sha256(path)
@@ -65,9 +64,10 @@ def verify_assets() -> dict[str, str]:
     return observed
 
 
-def compile_and_run_probe() -> str:
+def compile_and_run_probe(root: Path = ROOT) -> str:
+    probe_source = root / "tools" / "raid_program" / "drudge_navmesh_recovery_probe.cpp"
     detour_sources = sorted(
-        (ROOT / "dep" / "recastnavigation" / "Detour" / "Source").glob("*.cpp")
+        (root / "dep" / "recastnavigation" / "Detour" / "Source").glob("*.cpp")
     )
     if len(detour_sources) != 7:
         raise RuntimeError(
@@ -80,14 +80,14 @@ def compile_and_run_probe() -> str:
                 "g++",
                 "-std=c++17",
                 "-O2",
-                str(PROBE_SOURCE),
+                str(probe_source),
                 *(str(path) for path in detour_sources),
                 "-I",
-                str(ROOT / "dep" / "recastnavigation" / "Detour" / "Include"),
+                str(root / "dep" / "recastnavigation" / "Detour" / "Include"),
                 "-o",
                 str(binary),
             ],
-            cwd=ROOT,
+            cwd=root,
             check=False,
             capture_output=True,
             text=True,
@@ -99,7 +99,7 @@ def compile_and_run_probe() -> str:
             )
         probe_result = subprocess.run(
             [str(binary)],
-            cwd=ROOT,
+            cwd=root,
             check=False,
             capture_output=True,
             text=True,
@@ -118,14 +118,11 @@ def compile_and_run_probe() -> str:
         return probe_result.stdout
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--json-out", type=Path)
-    args = parser.parse_args()
-
-    assets = verify_assets()
-    output = compile_and_run_probe()
-    result = {
+def run_probe(root: Path = ROOT) -> dict[str, object]:
+    root = root.resolve()
+    assets = verify_assets(root)
+    output = compile_and_run_probe(root)
+    return {
         "all_passed": True,
         "map_id": 669,
         "asset_sha256": assets,
@@ -151,6 +148,14 @@ def main() -> int:
         },
         "raw_probe_sha256": hashlib.sha256(output.encode("utf-8")).hexdigest(),
     }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--json-out", type=Path)
+    args = parser.parse_args()
+
+    result = run_probe()
     serialized = json.dumps(result, indent=2, sort_keys=True) + "\n"
     if args.json_out:
         args.json_out.parent.mkdir(parents=True, exist_ok=True)

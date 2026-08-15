@@ -19486,16 +19486,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 && laneSign * priorProjection >= laneSeparation * 0.25f;
             bool const sourcesSeparated = sources[0]->GetExactDist2d(sources[1])
                 >= laneSeparation;
-            bool const landedChargeRecovery = std::any_of(
-                Party().ValidationRouteDrudgeChargeObservations.begin(),
-                Party().ValidationRouteDrudgeChargeObservations.end(),
-                [this](ValidationRouteDrudgeChargeObservation const& observation)
-                {
-                    return observation.Landed && !observation.ReseparationRecorded
-                        && observation.AttemptId == Cohort().AttemptId
-                        && observation.WipeGeneration == Cohort().Raid.WipeGeneration
-                        && observation.RouteGeneration == Party().ValidationRouteGeneration;
-                });
+            bool const landedChargeRecovery = drudgeLandedRushPending();
             bool const priorSourceSafe = tank
                 ? (priorCandidateMatches && (landedChargeRecovery
                     || (sourcesSeparated
