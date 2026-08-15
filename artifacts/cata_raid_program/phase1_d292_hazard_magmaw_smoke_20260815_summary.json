@@ -1,0 +1,42 @@
+{
+  "schema": "cata_raid_compact_evidence_summary_v1",
+  "captured_commit": "d2926d2b38322e54d69dce408a133553014ceab9",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "classification": "infrastructure_abort",
+  "classification_detail": "capture required a native ready-check action that was never scheduled",
+  "terminal_failure_detected": false,
+  "worldserver_exit_code": 0,
+  "cleanup_zero_bots_and_leases": true,
+  "diagnostic_finding": {
+    "component": "Magmaw Chainwielder trash hazard handling",
+    "root_cause": "the controller treated the 27-second Overhead Smash visual marker lifetime as the damage window even though native spell 79580 is dangerous for its 3-second cast plus 2-second effect",
+    "effect": "bots repeatedly re-entered hazard-exit handling, healing and trained damage were starved, and repeated rejected bearings amplified telemetry",
+    "next_fix_commit": "8f2fb560ca239e1dc736b03610c061c6e950d0f1"
+  },
+  "build": {
+    "receipt_sha256": "d9dd1eec4231ca1581ce55392c24b5697dbaffedbbe17f22e08bdd0afbc003c4",
+    "binary_sha256": "a590d15460dde87a337e4583122dc111d0494ded3bbeeb7a583ecba619976932"
+  },
+  "capture": {
+    "report_sha256": "ca43b2e200f971fb49f9c63f29748b8fbd55df8ef0752acf472171b83260b606",
+    "worldserver_log_sha256": "a2bb8c4971f3c7503de8066d94d4c3852b52465b326affebf193264ff107bad4",
+    "worldserver_log_bytes": 49500376,
+    "resource_sample_count": 188,
+    "sampled_duration_seconds": 941.248887736001,
+    "cpu_ticks_delta": 34943,
+    "rss_min_bytes": 1389334528,
+    "rss_max_bytes": 1645481984
+  },
+  "dvc": {
+    "build_prep_dir": "ac831f3885ee46531c2d9271aa5e2b17.dir",
+    "build_prep_bytes": 3824549,
+    "build_prep_files": 12,
+    "smoke_dir": "191ebfe9b59993fbe882ab97c6af69b8.dir",
+    "smoke_bytes": 99289886,
+    "smoke_files": 3,
+    "remote_synced": true,
+    "local_payload_evicted": true,
+    "unique_child_objects_evicted": 10,
+    "directory_metadata_retained": true
+  }
+}
