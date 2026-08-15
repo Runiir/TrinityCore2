@@ -2131,7 +2131,7 @@ def test_phase1_magmaw_engagement_contract_has_explicit_safe_target_authority():
     assert magmaw["mechanic_contract"] == {
         "id": "phase1_magmaw_native_engagement_recovery_v1",
         "target_control": "focus_fire",
-        "target_entries": [41570],
+        "target_entries": [41570, 42347, 41806, 42321],
         "allow_area_damage": False,
         "allow_multidot": False,
     }
@@ -2262,8 +2262,8 @@ def test_trash_profile_damage_cannot_pull_or_compound_the_next_boss_encounter():
     assert "pet->AttackStop();" in hold
     assert "controlled->AttackStop();" in hold
     assert "SetAllOffenseSuppressed(raidAuthorityOwner, true)" in hold
-    assert "controlledCreature->SetReactState(REACT_PASSIVE);" in hold
-    assert "charmInfo->SetIsCommandAttack(false);" in hold
+    assert "controlledCreature->SetReactState(REACT_PASSIVE);" not in hold
+    assert "charmInfo->SetIsCommandAttack(false);" not in hold
     assert "ValidationAttemptFailureReason" in hold
     assert '"validation_route_future_encounter_contamination"' in hold
 
@@ -3288,20 +3288,17 @@ def test_validation_raid_boss_recovery_fails_closed_before_direct_spawn_manufact
     lambda_start = objective.index("auto tryCanonicalValidationRouteBossRecovery")
     lambda_end = objective.index("auto isNaturalValidationRoutePackMember", lambda_start)
     recovery = objective[lambda_start:lambda_end]
-    raid_guard = recovery.index("bot->GetMap()->IsRaid()")
-    direct_respawn = recovery.index("loaded->Respawn(true)")
-    direct_scheduled_respawn = recovery.index("routeMap->Respawn")
-    direct_load = recovery.index("recovered->LoadFromDB")
-    assert raid_guard < direct_respawn < direct_scheduled_respawn < direct_load
-    raid_block = recovery[raid_guard:direct_respawn]
-    assert 'recoveryResult = "native_boss_recovery_pending"' in raid_block
-    assert '"assistance\\":\\"none\\"' in raid_block
-    assert '"direct_respawn\\":false' in raid_block
-    assert '"direct_state_manufacture\\":false' in raid_block
-    assert "SetBossState" not in raid_block
+    assert 'recoveryResult = "native_boss_recovery_pending"' in recovery
+    assert '"assistance\\":\\"none\\"' in recovery
+    assert '"direct_respawn\\":false' in recovery
+    assert '"direct_state_manufacture\\":false' in recovery
+    assert "SetBossState" not in recovery
+    assert "Respawn(" not in recovery
+    assert "LoadFromDB" not in recovery
+    assert "SpawnGroupSpawn" not in recovery
 
 
-def test_nonraid_canonical_recovery_remains_explicitly_scoped():
+def test_nonraid_canonical_recovery_is_native_only_too():
     objective = IMPL[
         IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective"):
         IMPL.index("bool BotWorldPopulationMgr::IsBossContext")
@@ -3309,7 +3306,7 @@ def test_nonraid_canonical_recovery_remains_explicitly_scoped():
     lambda_start = objective.index("auto tryCanonicalValidationRouteBossRecovery")
     lambda_end = objective.index("auto isNaturalValidationRoutePackMember", lambda_start)
     recovery = objective[lambda_start:lambda_end]
-    raid_guard = recovery.index("bot->GetMap()->IsRaid()")
-    legacy = recovery.index("This legacy canonical-spawn recovery is intentionally scoped to")
-    assert raid_guard < legacy
-    assert "non-raid validation routes only" in recovery[legacy:]
+    assert "regardless of map type" in recovery
+    assert "Respawn(" not in recovery
+    assert "LoadFromDB" not in recovery
+    assert "SpawnGroupSpawn" not in recovery

@@ -1,14 +1,15 @@
 #include "Bots/BotActionExecutor.h"
 #include "Bots/BotRaidAreaAuthority.h"
+#include "CharmInfo.h"
 #include "DataStores/DBCStores.h"
 #include "Entities/Item/Container/Bag.h"
 #include "Entities/Item/Item.h"
 #include "Entities/Pet/Pet.h"
-#include "AI/CreatureAI.h"
 #include "MotionMaster.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
 #include "Server/WorldSession.h"
+#include "WorldPacket.h"
 #include "Spell.h"
 #include "SpellHistory.h"
 #include "SpellInfo.h"
@@ -25,11 +26,8 @@
 namespace
 {
 constexpr uint32 ActionDarkTransformationSpellId = 63560;
-constexpr uint32 DoomguardEntry = 11859;
-constexpr uint32 DoomBoltSpellId = 85692;
 constexpr uint32 FelguardEntry = 17252;
 constexpr uint32 FelstormSpellId = 89751;
-constexpr uint32 ShadowfiendEntry = 19668;
 constexpr uint32 ShadowfiendSpellId = 34433;
 
 bool SpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth = 0)
@@ -277,41 +275,17 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
             && !bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
             bot->CastSpell(target, 75, false); // Auto Shot
 
-        for (Unit* controlled : bot->m_Controlled)
-            if (Creature* minion = controlled ? controlled->ToCreature() : nullptr)
-                if (minion->IsAlive() && minion->AI() && minion->IsValidAttackTarget(target)
-                    && (!minion->GetVictim() || minion->GetVictim() == target))
-                {
-                    minion->SetReactState(REACT_AGGRESSIVE);
-                    minion->AI()->AttackStart(target);
-                    if (!minion->GetVictim())
-                    {
-                        minion->Attack(target, true);
-                        minion->GetMotionMaster()->MoveChase(target);
-                    }
-                    if (minion->GetEntry() == DoomguardEntry && !minion->HasUnitState(UNIT_STATE_CASTING))
-                        if (SpellInfo const* doomBolt = sSpellMgr->GetSpellInfo(DoomBoltSpellId))
-                            if (!minion->GetSpellHistory()->HasGlobalCooldown(doomBolt)
-                                && minion->GetSpellHistory()->IsReady(doomBolt))
-                                minion->CastSpell(target, DoomBoltSpellId, false);
-                }
-
-        // Shadowfiend is a temporary guardian rather than a persistent Pet.  Its
-        // summon can inherit passive react state, so explicitly release it onto
-        // the owner's current hostile target just like the normal controlled set.
-        if (Guardian* guardian = bot->GetGuardianPet(); guardian && guardian->GetEntry() == ShadowfiendEntry
-            && guardian->IsAlive() && guardian->IsValidAttackTarget(target)
-            && (!guardian->GetVictim() || guardian->GetVictim() == target))
-        {
-            guardian->SetReactState(REACT_AGGRESSIVE);
-            if (guardian->AI())
-                guardian->AI()->AttackStart(target);
-            else
-            {
-                guardian->Attack(target, true);
-                guardian->GetMotionMaster()->MoveChase(target);
-            }
-        }
+        // Command the player's primary pet through the same validated handler
+        // used by CMSG_PET_ACTION. Guardians and totems retain their native AI;
+        // autonomous runtime never writes their victim/react/movement state.
+        if (Unit* controlled = bot->GetFirstControlled(); controlled
+            && controlled->IsAlive() && controlled->GetCharmInfo()
+            && controlled->IsValidAttackTarget(target)
+            && bot->GetSession())
+            bot->GetSession()->HandlePetActionHelper(controlled,
+                controlled->GetGUID(), COMMAND_ATTACK, ACT_COMMAND,
+                target->GetGUID(), target->GetPositionX(),
+                target->GetPositionY(), target->GetPositionZ());
 
         if (Pet* pet = bot->GetPet())
             if (pet->GetEntry() == FelguardEntry && pet->IsWithinMeleeRange(target)
@@ -395,9 +369,7 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     if (action.SpellId == ShadowfiendSpellId && target != bot)
         bot->SetTarget(target->GetGUID());
 
-    CastSpellExtraArgs castArgs(action.SpellId == ActionDarkTransformationSpellId
-        ? TRIGGERED_IGNORE_POWER_COST
-        : TRIGGERED_NONE);
+    CastSpellExtraArgs castArgs(TRIGGERED_NONE);
     SpellCastResult result = spellInfo && (spellInfo->GetExplicitTargetMask() & TARGET_FLAG_DEST_LOCATION)
         ? bot->CastSpell(Position{ target->GetPositionX(), target->GetPositionY(), target->GetPositionZ() }, action.SpellId, castArgs)
         : bot->CastSpell(target, action.SpellId, castArgs);
@@ -445,48 +417,11 @@ BotEconomyActionResult BotActionExecutor::VendorTrash(Player* owner, Player* bot
         return result;
     }
 
-    std::vector<std::pair<uint8, uint8>> slots;
-    auto considerItem = [&slots](Item* item)
-    {
-        if (!item || item->IsNotEmptyBag())
-            return;
-
-        ItemTemplate const* proto = item->GetTemplate();
-        if (!proto || proto->GetQuality() != ITEM_QUALITY_POOR || proto->GetSellPrice() == 0)
-            return;
-
-        slots.push_back(std::make_pair(item->GetBagSlot(), item->GetSlot()));
-    };
-
-    for (uint8 slot = INVENTORY_SLOT_ITEM_START; slot < INVENTORY_SLOT_ITEM_END; ++slot)
-        considerItem(bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot));
-
-    for (uint8 bagSlot = INVENTORY_SLOT_BAG_START; bagSlot < INVENTORY_SLOT_BAG_END; ++bagSlot)
-    {
-        if (Bag* bag = bot->GetBagByPos(bagSlot))
-            for (uint32 slot = 0; slot < bag->GetBagSize(); ++slot)
-                considerItem(bag->GetItemByPos(slot));
-    }
-
-    for (auto const& slot : slots)
-    {
-        Item* item = bot->GetItemByPos(slot.first, slot.second);
-        if (!item)
-            continue;
-
-        ItemTemplate const* proto = item->GetTemplate();
-        if (!proto)
-            continue;
-
-        uint32 count = item->GetCount();
-        uint64 money = uint64(proto->GetSellPrice()) * count;
-        bot->DestroyItem(slot.first, slot.second, true);
-        bot->ModifyMoney(money);
-        result.ItemCount += count;
-        result.Money += money;
-    }
-
-    result.Result = result.ItemCount ? BotActionResult::Ok : BotActionResult::NoAction;
+    // This command has no vendor parameter.  Selling without a visible,
+    // interactable vendor bypasses the client and must not mutate inventory or
+    // money.  A future native VendorIntent supplies the vendor GUID and uses
+    // the normal sell-item opcode handler.
+    result.Result = BotActionResult::NoAction;
     return result;
 }
 
@@ -504,11 +439,9 @@ BotEconomyActionResult BotActionExecutor::Repair(Player* owner, Player* bot)
         return result;
     }
 
-    uint64 before = bot->GetMoney();
-    bot->DurabilityRepairAll(true, 0.0f, false);
-    uint64 after = bot->GetMoney();
-    result.Money = before > after ? before - after : 0;
-    result.Result = BotActionResult::Ok;
+    // Repair also requires a real visible vendor and the native repair opcode.
+    // Do not grant a vendorless repair from an administrative bot command.
+    result.Result = BotActionResult::NoAction;
     return result;
 }
 
@@ -581,56 +514,54 @@ BotActionExecutor::LootResult BotActionExecutor::AutoLoot(Player* bot, Unit* tar
         return result;
     }
 
-    bot->SendLoot(creature->GetGUID(), LOOT_CORPSE);
+    WorldSession* session = bot->GetSession();
+    if (!session)
+    {
+        result.Result = BotActionResult::NoAction;
+        result.Reason = "session_unavailable";
+        return result;
+    }
+
+    WorldPacket lootRequest(CMSG_LOOT, 8);
+    lootRequest << creature->GetGUID();
+    session->HandleLootOpcode(lootRequest);
     if (bot->GetLootGUID() != creature->GetGUID())
     {
         result.Result = BotActionResult::InvalidTarget;
         result.Reason = "loot_permission_denied";
-        bot->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_LOOTING);
         result.LootStateCleared = bot->GetLootGUID().IsEmpty() && !bot->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_LOOTING);
         return result;
     }
 
     uint8 beforeUnlooted = loot->unlootedCount;
     uint32 beforeGold = loot->gold;
+    uint64 beforeMoney = bot->GetMoney();
     if (loot->gold)
     {
-        loot->NotifyMoneyRemoved();
-        bot->ModifyMoney(loot->gold);
-        bot->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_LOOT_MONEY, loot->gold);
-        result.Money = loot->gold;
-        loot->gold = 0;
+        WorldPacket moneyRequest(CMSG_LOOT_MONEY, 0);
+        session->HandleLootMoneyOpcode(moneyRequest);
+        result.Money = bot->GetMoney() >= beforeMoney ? bot->GetMoney() - beforeMoney : 0;
     }
 
-    bool storedAny = true;
-    while (storedAny)
+    uint32 const maxSlot = loot->GetMaxSlotInLootFor(bot);
+    for (uint32 slot = 0; slot < maxSlot; ++slot)
     {
-        storedAny = false;
-        uint32 maxSlot = loot->GetMaxSlotInLootFor(bot);
-        for (uint32 slot = 0; slot < maxSlot; ++slot)
-        {
-            LootItem* item = loot->LootItemInSlot(slot, bot);
-            if (!item)
-                continue;
+        LootItem* item = loot->LootItemInSlot(slot, bot);
+        if (!item)
+            continue;
 
-            uint8 unlootedBeforeSlot = loot->unlootedCount;
-            uint8 count = item->count;
-            bot->StoreLootItem(creature->GetGUID(), uint8(slot), loot);
-            if (loot->unlootedCount < unlootedBeforeSlot)
-            {
-                result.ItemsCount += count;
-                storedAny = true;
-            }
-        }
+        uint8 const unlootedBeforeSlot = loot->unlootedCount;
+        uint8 const count = item->count;
+        WorldPacket storeRequest(CMSG_AUTOSTORE_LOOT_ITEM, 1);
+        storeRequest << uint8(slot);
+        session->HandleAutostoreLootItemOpcode(storeRequest);
+        if (loot->unlootedCount < unlootedBeforeSlot)
+            result.ItemsCount += count;
     }
 
-    if (WorldSession* session = bot->GetSession())
-        session->DoLootRelease(creature->GetGUID());
-    else
-    {
-        bot->SetLootGUID(ObjectGuid::Empty);
-        bot->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_LOOTING);
-    }
+    WorldPacket releaseRequest(CMSG_LOOT_RELEASE, 8);
+    releaseRequest << creature->GetGUID();
+    session->HandleLootReleaseOpcode(releaseRequest);
 
     result.LootStateCleared = bot->GetLootGUID().IsEmpty() && !bot->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_LOOTING);
     if (result.ItemsCount || result.Money)

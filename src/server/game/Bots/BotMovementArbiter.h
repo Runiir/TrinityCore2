@@ -108,7 +108,8 @@ inline Decision Evaluate(Lease const& lease, Request const& request, uint64 nowM
     if (lease.MovementOwner == Owner::None || lease.ExpiresAtMs <= nowMs
         || !SameScope(lease.MovementScope, request.MovementScope))
         return Decision::Acquire;
-    if (lease.MovementOwner == request.MovementOwner)
+    if (lease.MovementOwner == request.MovementOwner
+        && SameDestination(lease, request))
         return Decision::Refresh;
     if (uint8(request.MovementPriority) > uint8(lease.MovementPriority))
         return Decision::Preempt;

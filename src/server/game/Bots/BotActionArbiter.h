@@ -107,9 +107,11 @@ inline Outcome FromBotActionResult(BotActionResult result)
         case BotActionResult::Casting:
             return Outcome::Started("casting");
         case BotActionResult::GlobalCooldown:
-            return Outcome::Started("global_cooldown");
+            // The requested action was not submitted. Preserve cast/GCD
+            // truth while allowing independent movement or off-GCD work.
+            return Outcome::Retryable("global_cooldown");
         case BotActionResult::NoOwner:
-            return Outcome::Terminal("owner_unavailable");
+            return Outcome::Retryable("owner_unavailable");
         case BotActionResult::NoBot:
             return Outcome::Terminal("bot_unavailable");
         case BotActionResult::InvalidTarget:

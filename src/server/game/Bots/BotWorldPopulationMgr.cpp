@@ -1,5 +1,13 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotActionExecutor.h"
+#include "Bots/BotAdaptiveDrudgeStrategy.h"
+#include "Bots/BotAdaptiveAtramedesStrategy.h"
+#include "Bots/BotAdaptiveChimaeronStrategy.h"
+#include "Bots/BotAdaptiveMagmawStrategy.h"
+#include "Bots/BotAdaptiveMaloriakStrategy.h"
+#include "Bots/BotAdaptiveNefarianStrategy.h"
+#include "Bots/BotAdaptiveOmnotronStrategy.h"
+#include "Bots/BotAdaptiveRaidTrashStrategy.h"
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotDatasetEvent.h"
 #include "Bots/BotEncounterMechanicCatalog.h"
@@ -20,6 +28,7 @@
 #include "GameTime.h"
 #include "GameObject.h"
 #include "GridNotifiersImpl.h"
+#include "GossipDef.h"
 #include "Group.h"
 #include "GroupMgr.h"
 #include "GroupReference.h"
@@ -56,6 +65,8 @@
 #include "CreatureGroups.h"
 #include "WorldSession.h"
 #include "WorldPacket.h"
+#include "Server/Packets/QuestPackets.h"
+#include "Server/Packets/NPCPackets.h"
 
 #include <array>
 #include <algorithm>
@@ -80,6 +91,18 @@
 
 namespace
 {
+char const* RuntimeModeName(BotWorldRuntimeMode mode)
+{
+    switch (mode)
+    {
+        case BotWorldRuntimeMode::AlwaysOnAutonomy: return "always_on_autonomy";
+        case BotWorldRuntimeMode::CalibrationFixture: return "calibration_fixture";
+        case BotWorldRuntimeMode::ReplayFixture: return "replay_fixture";
+        case BotWorldRuntimeMode::ManualExperiment: return "manual_experiment";
+    }
+    return "unknown";
+}
+
 // Blackwing Descent's native entrance is the only runback contract used by
 // the phase-one validation route.  Keep these IDs tied to the DBC/SQL
 // contract instead of selecting an arbitrary area trigger at runtime.
@@ -91,6 +114,37 @@ constexpr uint32 ValidationResurrectAtLoginFlag = 0x0100;
 constexpr uint32 ValidationGhostAuraId = 8326;
 constexpr uint32 DecisionFingerprintPersistHeartbeatMs = 5000;
 constexpr uint32 RepeatableDiagnosticEventHeartbeatMs = 5000;
+
+bool SubmitNativeQuestAccept(Player* bot, WorldObject* giver, uint32 questId)
+{
+    if (!bot || !giver || !questId || !bot->GetSession()
+        || !bot->IsWithinDistInMap(giver, INTERACTION_DISTANCE))
+        return false;
+
+    WorldPackets::Quest::QuestGiverAcceptQuest packet(
+        WorldPacket(CMSG_QUEST_GIVER_ACCEPT_QUEST, 0));
+    packet.QuestGiverGUID = giver->GetGUID();
+    packet.QuestID = questId;
+    packet.StartCheat = 0;
+    bot->GetSession()->HandleQuestgiverAcceptQuestOpcode(packet);
+    QuestStatus const status = bot->GetQuestStatus(questId);
+    return status == QUEST_STATUS_INCOMPLETE || status == QUEST_STATUS_COMPLETE;
+}
+
+bool SubmitNativeQuestReward(Player* bot, WorldObject* giver, uint32 questId, uint32 rewardChoice)
+{
+    if (!bot || !giver || !questId || !bot->GetSession()
+        || !bot->IsWithinDistInMap(giver, INTERACTION_DISTANCE))
+        return false;
+
+    WorldPackets::Quest::QuestGiverChooseReward packet(
+        WorldPacket(CMSG_QUEST_GIVER_CHOOSE_REWARD, 0));
+    packet.QuestGiverGUID = giver->GetGUID();
+    packet.QuestID = int32(questId);
+    packet.ItemChoiceID = int32(rewardChoice);
+    bot->GetSession()->HandleQuestgiverChooseRewardOpcode(packet);
+    return bot->GetQuestStatus(questId) != QUEST_STATUS_COMPLETE;
+}
 
 uint64 CurrentProcessId()
 {
@@ -922,21 +976,6 @@ float EvalPortableTree(BotPolicyModelConfig::Tree const& tree, std::map<std::str
     }
 
     return 0.0f;
-}
-
-std::vector<std::string> SplitRecoveryModes(std::string const& mode)
-{
-    if (mode == "corpse_recover")
-        return { "corpse_recover", "safe_local_resurrect", "nearest_graveyard_or_spirit_healer", "last_safe_position", "configured_center_fallback" };
-    if (mode == "safe_local" || mode == "safe_local_resurrect" || mode == "corpse_or_safe_local")
-        return { "safe_local_resurrect", "last_safe_position", "nearest_graveyard_or_spirit_healer", "corpse_recover", "configured_center_fallback" };
-    if (mode == "nearest_graveyard_or_spirit_healer" || mode == "graveyard")
-        return { "nearest_graveyard_or_spirit_healer", "last_safe_position", "safe_local_resurrect", "configured_center_fallback" };
-    if (mode == "last_safe_position")
-        return { "last_safe_position", "safe_local_resurrect", "nearest_graveyard_or_spirit_healer", "configured_center_fallback" };
-    if (mode == "configured_center_fallback")
-        return { "configured_center_fallback" };
-    return { "safe_local_resurrect", "last_safe_position", "nearest_graveyard_or_spirit_healer", "corpse_recover", "configured_center_fallback" };
 }
 
 bool SpellLooksLikeHeal(SpellInfo const* spellInfo)
@@ -2071,6 +2110,8 @@ std::string BotWorldPopulationMgr::StartCombatCalibration(std::string const& mod
 {
     if (!Cohort().Active || Cohort().RuntimeMode != BotWorldRuntimeMode::AlwaysOnAutonomy)
         return "{\"ok\":false,\"action\":\"botauto_calibrate_start\",\"failure_reason\":\"autonomy_not_active\"}";
+    if (!Party().Bots.empty() || Cohort().Config.TargetPopulation != 0)
+        return "{\"ok\":false,\"action\":\"botauto_calibrate_start\",\"failure_reason\":\"fixture_population_not_isolated\"}";
 
     static std::set<std::string> const SupportedModes = {
         "single_target_300", "aoe_300", "tank_threat_300", "healer_controlled_damage_300"
@@ -2104,6 +2145,9 @@ std::string BotWorldPopulationMgr::StartCombatCalibration(std::string const& mod
     if (Cohort().CalibrationActive || !Party().CalibrationBots.empty())
         StopCombatCalibration();
 
+    Cohort().RuntimeMode = BotWorldRuntimeMode::CalibrationFixture;
+    Cohort().Metrics.Mode = BotWorldRuntimeMode::CalibrationFixture;
+    Cohort().NonCertifyingAssistance = true;
     Cohort().CalibrationActive = true;
     Cohort().CalibrationAoePhase = mode == "aoe_300" || mode == "tank_threat_300";
     Cohort().CalibrationWindowComplete = false;
@@ -2183,6 +2227,12 @@ std::string BotWorldPopulationMgr::StopCombatCalibration()
             CharacterDatabase.DirectPExecute("UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", guid.GetCounter());
     }
     Cohort().CalibrationStopping = false;
+    Cohort().NonCertifyingAssistance = false;
+    if (Cohort().Active)
+    {
+        Cohort().RuntimeMode = BotWorldRuntimeMode::AlwaysOnAutonomy;
+        Cohort().Metrics.Mode = BotWorldRuntimeMode::AlwaysOnAutonomy;
+    }
 
     std::ostringstream json;
     json << "{\"ok\":true,\"action\":\"botauto_calibrate_stop\",\"removed\":" << removed
@@ -3292,6 +3342,248 @@ bool BotWorldPopulationMgr::SelectConfiguredRuntimeProfile()
     return true;
 }
 
+void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
+{
+    // The encounter view is a cohort observation, not per-bot perception.
+    // Keep it immutable for the entire decision slice so one candidate cannot
+    // erase or retarget facts that a later candidate still needs.
+    if (Cohort().EncounterSnapshot && nowMs < Cohort().EncounterSnapshotNextRefreshMs)
+        return;
+
+    Player* observer = nullptr;
+    for (WorldBotState const& state : Party().Bots)
+    {
+        Player* candidate = GetLoadedBot(state);
+        if (candidate && candidate->IsInWorld())
+        {
+            observer = candidate;
+            break;
+        }
+    }
+
+    if (!observer)
+    {
+        Cohort().EncounterSnapshot.reset();
+        Cohort().EncounterSnapshotNextRefreshMs = nowMs + 100;
+        return;
+    }
+
+    auto snapshot = std::make_shared<BotEncounter::Blackboard>();
+    snapshot->Revision = ++Cohort().EncounterSnapshotRevision;
+    snapshot->ObservedAtMs = nowMs;
+    snapshot->CurrentScope.CohortId = Cohort().Id;
+    snapshot->CurrentScope.AttemptId = Cohort().AttemptId;
+    snapshot->CurrentScope.WipeGeneration = uint32(Cohort().Raid.WipeGeneration);
+    snapshot->CurrentScope.RouteGeneration = Party().ValidationRouteGeneration;
+    snapshot->CurrentScope.NodeId = Cohort().Config.ValidationRouteNodeId;
+    snapshot->CurrentScope.MapId = observer->GetMapId();
+    snapshot->CurrentScope.InstanceId = observer->GetInstanceId();
+    snapshot->CurrentScope.EncounterId = Cohort().Config.ValidationRouteMechanicProfile.empty()
+        ? Cohort().Config.ValidationRouteKind
+        : Cohort().Config.ValidationRouteMechanicProfile;
+    snapshot->NativeBossState = Cohort().Raid.EncounterInProgress ? "in_progress" : "not_in_progress";
+
+    snapshot->Route.NodeId = Cohort().Config.ValidationRouteNodeId;
+    snapshot->Route.Kind = Cohort().Config.ValidationRouteNodeKind.empty()
+        ? Cohort().Config.ValidationRouteKind
+        : Cohort().Config.ValidationRouteNodeKind;
+    snapshot->Route.Label = Cohort().Config.ValidationRouteLabel;
+    snapshot->Route.MechanicProfile = Cohort().Config.ValidationRouteMechanicProfile;
+    snapshot->Route.HazardSourceEntry = Cohort().Config.ValidationRouteHazardSourceEntry;
+    snapshot->Route.HazardDetectionSpellId = Cohort().Config.ValidationRouteHazardDetectionSpellId;
+    snapshot->Route.HazardRadius = Cohort().Config.ValidationRouteHazardRadiusYards;
+    snapshot->Route.HazardSafetyMargin = Cohort().Config.ValidationRouteHazardSafetyMarginYards;
+    snapshot->Route.MinimumDistance = Cohort().Config.ValidationRouteMinimumDistanceYards;
+    if (Party().ValidationRouteManifestIndex < Party().ValidationRouteManifest.size())
+    {
+        ValidationRouteManifestNode const& routeNode =
+            Party().ValidationRouteManifest[Party().ValidationRouteManifestIndex];
+        snapshot->Route.InteractionAction = routeNode.NativeInteractionAction;
+        snapshot->Route.InteractionEntry = routeNode.NativeInteractionEntry;
+        snapshot->Route.InteractionMenus = routeNode.NativeInteractionMenus;
+        snapshot->Route.InteractionOption = routeNode.NativeInteractionOption;
+        snapshot->Route.CompletionKind = routeNode.NativeCompletionKind;
+        snapshot->Route.CompletionEntry = routeNode.NativeCompletionEntry;
+        snapshot->Route.CompletionSpellId = routeNode.NativeCompletionSpellId;
+    }
+    snapshot->Route.Complete = Party().ValidationRouteManifestComplete;
+    snapshot->Route.NavigationHints.push_back({ Cohort().Config.ValidationRouteX,
+        Cohort().Config.ValidationRouteY, Cohort().Config.ValidationRouteZ });
+    auto appendEntries = [&snapshot](std::vector<uint32> const& entries)
+    {
+        snapshot->Route.AllowedEntries.insert(snapshot->Route.AllowedEntries.end(), entries.begin(), entries.end());
+    };
+    if (Cohort().Config.ValidationRouteTargetEntry)
+        snapshot->Route.AllowedEntries.push_back(Cohort().Config.ValidationRouteTargetEntry);
+    appendEntries(Cohort().Config.ValidationRouteAlternateTargetEntries);
+    appendEntries(Cohort().Config.ValidationRouteAddTargetEntries);
+    appendEntries(Cohort().Config.ValidationRoutePackTargetEntries);
+    appendEntries(Cohort().Config.ValidationRouteScriptedEventEntries);
+    std::sort(snapshot->Route.AllowedEntries.begin(), snapshot->Route.AllowedEntries.end());
+    snapshot->Route.AllowedEntries.erase(std::unique(snapshot->Route.AllowedEntries.begin(),
+        snapshot->Route.AllowedEntries.end()), snapshot->Route.AllowedEntries.end());
+
+    auto buildUnit = [nowMs](Unit* unit, BotEncounter::ActorKind kind)
+    {
+        BotEncounter::ActorSnapshot actor;
+        actor.Guid = unit->GetGUID();
+        actor.Entry = unit->GetEntry();
+        actor.Kind = kind;
+        actor.Position = { unit->GetPositionX(), unit->GetPositionY(), unit->GetPositionZ() };
+        actor.Facing = unit->GetOrientation();
+        actor.Health = unit->GetHealth();
+        actor.MaxHealth = unit->GetMaxHealth();
+        actor.AlternatePower = unit->GetPower(POWER_ALTERNATE_POWER);
+        actor.MaxAlternatePower = unit->GetMaxPower(POWER_ALTERNATE_POWER);
+        actor.HealthPct = unit->GetMaxHealth() ? 100.0f * float(unit->GetHealth()) / float(unit->GetMaxHealth()) : 0.0f;
+        actor.Alive = unit->IsAlive();
+        actor.Attackable = unit->IsAlive() && !unit->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+        actor.Selectable = !unit->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+        actor.InCombat = unit->IsInCombat();
+        actor.Flying = unit->IsFlying();
+        actor.ReactAggressive = unit->ToCreature()
+            && unit->ToCreature()->GetReactState() == REACT_AGGRESSIVE;
+        actor.Interactable = unit->ToCreature()
+            && (unit->ToCreature()->GetUInt32Value(UNIT_NPC_FLAGS) != 0
+                || unit->ToCreature()->HasFlag(UNIT_NPC_FLAGS,
+                    UNIT_NPC_FLAG_SPELLCLICK));
+        actor.VictimGuid = unit->GetVictim() ? unit->GetVictim()->GetGUID() : ObjectGuid::Empty;
+        actor.VehicleGuid = unit->GetVehicleBase() ? unit->GetVehicleBase()->GetGUID() : ObjectGuid::Empty;
+
+        for (auto const& [_, application] : unit->GetAppliedAuras())
+        {
+            Aura const* aura = application ? application->GetBase() : nullptr;
+            if (!aura)
+                continue;
+            BotEncounter::AuraSnapshot auraSnapshot;
+            auraSnapshot.SpellId = aura->GetId();
+            auraSnapshot.CasterGuid = aura->GetCasterGUID();
+            auraSnapshot.Stacks = aura->GetStackAmount();
+            auraSnapshot.ExpiresAtMs = aura->GetDuration() > 0 ? nowMs + uint64(aura->GetDuration()) : 0;
+            actor.Auras.push_back(auraSnapshot);
+        }
+
+        for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
+        {
+            Spell* spell = unit->GetCurrentSpell(spellType);
+            SpellInfo const* spellInfo = spell ? spell->GetSpellInfo() : nullptr;
+            if (!spellInfo)
+                continue;
+            BotEncounter::CastSnapshot cast;
+            cast.SpellId = spellInfo->Id;
+            cast.TargetGuid = spell->m_targets.GetUnitTargetGUID();
+            cast.ObservedAtMs = nowMs;
+            cast.Channeled = spellType == CURRENT_CHANNELED_SPELL;
+            cast.Interruptible = spellInfo->CanBeInterrupted(unit, false);
+            actor.Cast = cast;
+            break;
+        }
+        return actor;
+    };
+
+    std::set<ObjectGuid> seenUnits;
+    for (WorldBotState const& state : Party().Bots)
+    {
+        Player* bot = GetLoadedBot(state);
+        if (!bot || !bot->IsInWorld() || bot->GetMap() != observer->GetMap())
+            continue;
+        BotEncounter::ActorSnapshot player = buildUnit(bot, BotEncounter::ActorKind::Player);
+        player.Role = GetDungeonRole(bot);
+        snapshot->Players.push_back(std::move(player));
+        seenUnits.insert(bot->GetGUID());
+
+        BotEncounter::TargetChannels channels;
+        channels.DamageTarget = state.TargetGuid;
+        channels.MechanicTarget = Party().ValidationRouteFocusGuid;
+        auto roster = Cohort().Raid.RosterByGuid.find(bot->GetGUID().GetCounter());
+        if (roster != Cohort().Raid.RosterByGuid.end() && roster->second.Role == "tank")
+            channels.TankAssignment = state.TargetGuid;
+        snapshot->BotTargets.emplace(bot->GetGUID(), channels);
+
+        for (Unit* controlled : bot->m_Controlled)
+        {
+            if (!controlled || !controlled->IsInWorld() || controlled->GetMap() != observer->GetMap()
+                || !seenUnits.insert(controlled->GetGUID()).second)
+                continue;
+            snapshot->Summons.push_back(buildUnit(controlled, BotEncounter::ActorKind::Pet));
+        }
+    }
+
+    std::vector<WorldObject*> objects;
+    Trinity::AllWorldObjectsInRange check(observer, 180.0f);
+    Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(observer, objects, check);
+    Cell::VisitAllObjects(observer, searcher, 180.0f);
+    for (WorldObject* object : objects)
+    {
+        if (!object || object->GetMap() != observer->GetMap())
+            continue;
+
+        if (Unit* unit = object->ToUnit())
+        {
+            if (!seenUnits.insert(unit->GetGUID()).second)
+                continue;
+            Creature* creature = unit->ToCreature();
+            bool const attackable = observer->IsValidAttackTarget(unit);
+            if (!attackable)
+            {
+                if (!creature)
+                    continue;
+                bool const routeObserved = creature->GetEntry()
+                        == snapshot->Route.InteractionEntry
+                    || creature->GetEntry() == snapshot->Route.CompletionEntry;
+                BotEncounter::ActorSnapshot actor = buildUnit(creature,
+                    creature->IsSummon() ? BotEncounter::ActorKind::Summon
+                        : BotEncounter::ActorKind::Interactable);
+                actor.Attackable = false;
+                actor.Interactable = creature->GetUInt32Value(UNIT_NPC_FLAGS) != 0
+                    || creature->HasFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_SPELLCLICK);
+                if (creature->IsSummon())
+                    snapshot->Summons.push_back(std::move(actor));
+                else if (actor.Interactable || routeObserved)
+                    snapshot->Interactables.push_back(std::move(actor));
+                continue;
+            }
+            BotEncounter::ActorKind const kind = creature
+                && (creature->IsSummon() || creature->IsGuardian() || !creature->GetOwnerGUID().IsEmpty())
+                ? BotEncounter::ActorKind::Summon
+                : BotEncounter::ActorKind::Hostile;
+            BotEncounter::ActorSnapshot actor = buildUnit(unit, kind);
+            if (kind == BotEncounter::ActorKind::Summon)
+                snapshot->Summons.push_back(std::move(actor));
+            else
+                snapshot->Hostiles.push_back(std::move(actor));
+            continue;
+        }
+
+        if (GameObject* gameObject = object->ToGameObject())
+        {
+            BotEncounter::ActorSnapshot actor;
+            actor.Guid = gameObject->GetGUID();
+            actor.Entry = gameObject->GetEntry();
+            actor.Kind = BotEncounter::ActorKind::Interactable;
+            actor.Position = { gameObject->GetPositionX(), gameObject->GetPositionY(), gameObject->GetPositionZ() };
+            actor.Facing = gameObject->GetOrientation();
+            actor.Alive = gameObject->isSpawned();
+            actor.Selectable = gameObject->isSpawned()
+                && !gameObject->HasFlag(GAMEOBJECT_FLAGS, GO_FLAG_NOT_SELECTABLE);
+            actor.Interactable = actor.Selectable;
+            snapshot->Interactables.push_back(std::move(actor));
+        }
+    }
+
+    auto actorOrder = [](BotEncounter::ActorSnapshot const& left, BotEncounter::ActorSnapshot const& right)
+    {
+        return left.Guid < right.Guid;
+    };
+    std::sort(snapshot->Players.begin(), snapshot->Players.end(), actorOrder);
+    std::sort(snapshot->Hostiles.begin(), snapshot->Hostiles.end(), actorOrder);
+    std::sort(snapshot->Summons.begin(), snapshot->Summons.end(), actorOrder);
+    std::sort(snapshot->Interactables.begin(), snapshot->Interactables.end(), actorOrder);
+
+    Cohort().EncounterSnapshot = std::move(snapshot);
+    Cohort().EncounterSnapshotNextRefreshMs = nowMs + 100;
+}
+
 void BotWorldPopulationMgr::Update(uint32 diff)
 {
     if (!_runningCohortId.empty())
@@ -3305,6 +3597,7 @@ void BotWorldPopulationMgr::Update(uint32 diff)
     UpdatePendingHealCasts();
     EnsurePopulation();
     uint64 nowMs = NowMs();
+    PublishEncounterBlackboard(nowMs);
 
     for (auto itr = Party().Bots.begin(); itr != Party().Bots.end();)
     {
@@ -3985,6 +4278,87 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
             if (!node.MechanicContractResolved && node.MechanicContractError.empty())
                 node.MechanicContractError = "unsupported_or_incomplete_contract";
         }
+        std::string const nativeInteractionContract =
+            ExtractJsonObjectField(routeJson, "interaction_contract");
+        if (!nativeInteractionContract.empty())
+        {
+            static std::set<std::string> const AllowedInteractionFields =
+                { "action", "entry", "menu", "menus", "option" };
+            for (std::string const& key : ExtractJsonTopLevelKeys(nativeInteractionContract))
+                if (AllowedInteractionFields.find(key) == AllowedInteractionFields.end())
+                {
+                    Party().ValidationRouteManifestLoadError =
+                        "native_interaction_unknown_field:" + key;
+                    return;
+                }
+            node.NativeInteractionAction =
+                ExtractJsonStringField(nativeInteractionContract, "action");
+            node.NativeInteractionEntry = uint32(std::max(
+                0, readInt(nativeInteractionContract, "entry")));
+            node.NativeInteractionMenus =
+                ExtractJsonUIntArrayField(nativeInteractionContract, "menus");
+            uint32 const singleMenu = uint32(std::max(
+                0, readInt(nativeInteractionContract, "menu")));
+            if (singleMenu)
+                node.NativeInteractionMenus.push_back(singleMenu);
+            node.NativeInteractionOption = uint32(std::max(
+                0, readInt(nativeInteractionContract, "option")));
+
+            bool const interactionShapeValid =
+                (node.NativeInteractionAction == "gameobject_use"
+                    && node.NativeInteractionEntry > 0
+                    && node.NativeInteractionMenus.empty())
+                || ((node.NativeInteractionAction == "gossip_select"
+                        || node.NativeInteractionAction == "gossip_select_sequence")
+                    && node.NativeInteractionEntry > 0
+                    && !node.NativeInteractionMenus.empty());
+            if (!interactionShapeValid)
+            {
+                Party().ValidationRouteManifestLoadError =
+                    "native_interaction_contract_invalid";
+                return;
+            }
+        }
+
+        std::string const nativeCompletionContract =
+            ExtractJsonObjectField(routeJson, "completion_contract");
+        if (!nativeCompletionContract.empty())
+        {
+            static std::set<std::string> const AllowedCompletionFields =
+                { "kind", "entry", "spell_id" };
+            for (std::string const& key : ExtractJsonTopLevelKeys(nativeCompletionContract))
+                if (AllowedCompletionFields.find(key) == AllowedCompletionFields.end())
+                {
+                    Party().ValidationRouteManifestLoadError =
+                        "native_completion_unknown_field:" + key;
+                    return;
+                }
+            node.NativeCompletionKind =
+                ExtractJsonStringField(nativeCompletionContract, "kind");
+            node.NativeCompletionEntry = uint32(std::max(
+                0, readInt(nativeCompletionContract, "entry")));
+            node.NativeCompletionSpellId = uint32(std::max(
+                0, readInt(nativeCompletionContract, "spell_id")));
+
+            bool const completionShapeValid =
+                ((node.NativeCompletionKind == "gameobject_selectable"
+                    || node.NativeCompletionKind == "boss_summoned"
+                    || node.NativeCompletionKind == "creature_summoned"
+                    || node.NativeCompletionKind == "creature_aggressive_with_victim"
+                    || node.NativeCompletionKind == "creature_grounded_aggressive_or_engaged"
+                    || node.NativeCompletionKind == "intro_complete_and_elevator_ready")
+                    && node.NativeCompletionEntry > 0)
+                || (node.NativeCompletionKind == "aura_present"
+                    && node.NativeCompletionEntry > 0
+                    && node.NativeCompletionSpellId > 0)
+                || node.NativeCompletionKind == "player_in_nefarian_arena";
+            if (!completionShapeValid)
+            {
+                Party().ValidationRouteManifestLoadError =
+                    "native_completion_contract_invalid";
+                return;
+            }
+        }
         node.MapId = uint32(std::max(0, readInt(routeJson, "map_id")));
         node.X = readFloat(routeJson, "x");
         node.Y = readFloat(routeJson, "y");
@@ -4649,6 +5023,7 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
                 && (state.ValidationRouteTerminalReason == "all_routes_complete"
                     || (Cohort().Config.ValidationRouteKind == "boss"
                         && state.ValidationRouteTerminalReason == "boss_killed")
+                    || (state.ValidationRouteTerminalReason == "native_postcondition")
                     || (Cohort().Config.ValidationRouteKind != "boss"
                         && state.ValidationRouteTerminalReason == "trash_cluster_cleared"));
             if (successfulTerminal)
@@ -8302,18 +8677,19 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
 
 bool BotWorldPopulationMgr::ResolveSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const
 {
+    // A certifying route starts from the character's persisted world state.
+    // Arbitrary center/near-player/race-start placement is fixture or
+    // provisioning assistance and must never enter a live raid attempt.
+    if (Cohort().Config.ValidationRouteEnable)
+        return Cohort().Config.UseSavedPosition
+            && ResolveSavedSpawnPlacement(candidateGuid, placement);
+
     std::string mode = Cohort().Config.SpawnMode.empty() ? "resume_or_race_start" : Cohort().Config.SpawnMode;
     bool allowResume = Cohort().Config.UseSavedPosition && (mode == "resume_or_race_start" || mode == "resume_only" || mode == "saved_or_near_player");
     if (allowResume)
     {
         if (ResolveSavedSpawnPlacement(candidateGuid, placement))
             return true;
-
-        // Validation routes are bound to their configured map before any bot
-        // is loaded. Never turn stale or missing persisted raid placement
-        // into a race-start/near-player spawn and a split native group.
-        if (Cohort().Config.ValidationRouteEnable)
-            return false;
 
         if (mode == "resume_only")
             return false;
@@ -8952,7 +9328,7 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     {
         state.LastRecoveryMode = "movement_lease_preserved";
         state.LastRecoveryResult = "higher_priority_movement_active";
-        return true;
+        return false;
     }
 
     constexpr float activeDestinationEpsilon = 0.1f;
@@ -9021,6 +9397,141 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
     bot->GetMotionMaster()->MovePoint(0, x, y, z, true);
     return true;
+}
+
+BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
+    WorldBotState& state, Player* bot, BotNativeAction::Intent const& intent,
+    BotMovementArbitration::Owner movementOwner,
+    BotMovementArbitration::Priority movementPriority)
+{
+    if (!bot || !bot->IsInWorld() || !bot->GetSession())
+        return BotActionArbitration::Outcome::Retryable("native_intent_bot_unavailable");
+
+    return std::visit([&](auto const& action) -> BotActionArbitration::Outcome
+    {
+        using T = std::decay_t<decltype(action)>;
+        if constexpr (std::is_same_v<T, BotNativeAction::Move>)
+        {
+            bool moved = MoveBotToPoint(state, bot, action.X, action.Y, action.Z,
+                false, movementOwner, movementPriority);
+            return moved
+                ? BotActionArbitration::Outcome::Progressed("native_move_submitted")
+                : BotActionArbitration::Outcome::Retryable("native_move_retryable");
+        }
+        else if constexpr (std::is_same_v<T, BotNativeAction::CastSpell>)
+        {
+            Unit* target = action.Target.IsEmpty() ? bot : ObjectAccessor::GetUnit(*bot, action.Target);
+            if (!target || !target->IsInWorld())
+                return BotActionArbitration::Outcome::Retryable("native_cast_target_unavailable");
+            SpellCastResult result = bot->CastSpell(target, action.SpellId, false);
+            return result == SPELL_CAST_OK
+                ? BotActionArbitration::Outcome::Committed("native_cast_submitted")
+                : BotActionArbitration::Outcome::Retryable("native_cast_rejected");
+        }
+        else if constexpr (std::is_same_v<T, BotNativeAction::StartAttack>)
+        {
+            Unit* target = ObjectAccessor::GetUnit(*bot, action.Target);
+            if (!target || !target->IsAlive() || !bot->IsValidAttackTarget(target))
+                return BotActionArbitration::Outcome::Unsafe("native_attack_target_invalid");
+            return bot->Attack(target, action.Melee)
+                ? BotActionArbitration::Outcome::Committed("native_attack_started")
+                : BotActionArbitration::Outcome::Retryable("native_attack_retryable");
+        }
+        else if constexpr (std::is_same_v<T, BotNativeAction::StopAttack>)
+        {
+            bot->AttackStop();
+            return BotActionArbitration::Outcome::Committed("native_attack_stopped");
+        }
+        else if constexpr (std::is_same_v<T, BotNativeAction::SpellClick>
+            || std::is_same_v<T, BotNativeAction::VehicleEnter>)
+        {
+            Creature* clickable = ObjectAccessor::GetCreatureOrPetOrVehicle(
+                *bot, action.Target);
+            if (!clickable || !clickable->IsInWorld()
+                || !clickable->HasFlag(UNIT_NPC_FLAGS,
+                    UNIT_NPC_FLAG_SPELLCLICK))
+                return BotActionArbitration::Outcome::Unsafe(
+                    "native_spellclick_target_invalid");
+            if (!bot->IsWithinDistInMap(clickable, INTERACTION_DISTANCE))
+                return BotActionArbitration::Outcome::Retryable(
+                    "native_spellclick_out_of_range");
+            WorldPacket click(CMSG_SPELLCLICK, sizeof(uint64));
+            click << action.Target;
+            bot->GetSession()->HandleSpellClick(click);
+            return BotActionArbitration::Outcome::Committed("native_spellclick_submitted");
+        }
+        else if constexpr (std::is_same_v<T, BotNativeAction::GameObjectUse>)
+        {
+            WorldPacket use(CMSG_GAMEOBJ_USE, sizeof(uint64));
+            use << action.Target;
+            bot->GetSession()->HandleGameObjectUseOpcode(use);
+            return BotActionArbitration::Outcome::Committed("native_gameobject_use_submitted");
+        }
+        else if constexpr (std::is_same_v<T, BotNativeAction::GossipOpen>)
+        {
+            if (action.Target.IsCreatureOrVehicle())
+            {
+                WorldPackets::NPC::Hello hello(
+                    WorldPacket(CMSG_GOSSIP_HELLO, sizeof(uint64)));
+                hello.Unit = action.Target;
+                bot->GetSession()->HandleGossipHelloOpcode(hello);
+            }
+            else if (action.Target.IsGameObject())
+            {
+                WorldPacket use(CMSG_GAMEOBJ_USE, sizeof(uint64));
+                use << action.Target;
+                bot->GetSession()->HandleGameObjectUseOpcode(use);
+            }
+            else
+                return BotActionArbitration::Outcome::Unsafe(
+                    "native_gossip_source_invalid");
+            return BotActionArbitration::Outcome::Committed(
+                "native_gossip_open_submitted");
+        }
+        else if constexpr (std::is_same_v<T, BotNativeAction::GossipSelect>)
+        {
+            WorldPacket select(CMSG_GOSSIP_SELECT_OPTION, 24);
+            select << action.Target << action.MenuId << action.OptionId;
+            bot->GetSession()->HandleGossipSelectOptionOpcode(select);
+            return BotActionArbitration::Outcome::Committed("native_gossip_select_submitted");
+        }
+        else if constexpr (std::is_same_v<T, BotNativeAction::VehicleAction>)
+        {
+            Unit* target = action.Target.IsEmpty() ? bot : ObjectAccessor::GetUnit(*bot, action.Target);
+            SpellCastResult result = bot->CastSpell(target ? target : bot, action.SpellId, false);
+            return result == SPELL_CAST_OK
+                ? BotActionArbitration::Outcome::Committed("native_vehicle_action_submitted")
+                : BotActionArbitration::Outcome::Retryable("native_vehicle_action_rejected");
+        }
+        else if constexpr (std::is_same_v<T, BotNativeAction::PetCommand>)
+        {
+            Unit* pet = ObjectAccessor::GetUnit(*bot, action.Pet);
+            Unit* target = ObjectAccessor::GetUnit(*bot, action.Target);
+            if (!pet || !target || pet->GetCharmerOrOwnerPlayerOrPlayerItself() != bot
+                || !pet->GetCharmInfo())
+                return BotActionArbitration::Outcome::Unsafe("native_pet_command_invalid");
+            bot->GetSession()->HandlePetActionHelper(pet, pet->GetGUID(), action.Command,
+                ACT_COMMAND, target->GetGUID(), target->GetPositionX(),
+                target->GetPositionY(), target->GetPositionZ());
+            return BotActionArbitration::Outcome::Committed("native_pet_command_submitted");
+        }
+        else if constexpr (std::is_same_v<T, BotNativeAction::ReleaseSpirit>)
+        {
+            WorldPacket repop(CMSG_REPOP_REQUEST, 1);
+            repop << uint8(0);
+            bot->GetSession()->HandleRepopRequestOpcode(repop);
+            return BotActionArbitration::Outcome::Committed("native_release_submitted");
+        }
+        else if constexpr (std::is_same_v<T, BotNativeAction::ReclaimCorpse>)
+        {
+            WorldPacket reclaim(CMSG_RECLAIM_CORPSE, sizeof(uint64));
+            reclaim << action.Corpse;
+            bot->GetSession()->HandleReclaimCorpseOpcode(reclaim);
+            return BotActionArbitration::Outcome::Committed("native_reclaim_submitted");
+        }
+        else
+            return BotActionArbitration::Outcome::Unsafe("native_intent_not_implemented");
+    }, intent);
 }
 
 bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* bot, Unit* reference,
@@ -9657,10 +10168,11 @@ bool BotWorldPopulationMgr::TryResolveBotBlocker(WorldBotState& state, Player* b
 BotWorldPopulationMgr::BotDeathRecoveryPolicy BotWorldPopulationMgr::BuildDeathRecoveryPolicy() const
 {
     BotDeathRecoveryPolicy policy;
-    policy.Modes = SplitRecoveryModes(Cohort().Config.DeathRecoveryMode);
-    policy.CenterFallbackEnabled = Cohort().Config.TeleportToCenterOnDeath;
+    // Autonomous recovery must remain achievable by an ordinary client.
+    // Legacy configuration names selected direct resurrection/teleport paths;
+    // retain the setting for compatibility/telemetry but never execute them.
+    policy.Modes = { "native_corpse_run" };
     policy.MaxDeathsBeforeFallback = Cohort().Config.MaxDeathsBeforeFallback;
-    policy.SafePositionMemorySec = Cohort().Config.SafePositionMemorySec;
     return policy;
 }
 
@@ -9680,30 +10192,10 @@ BotWorldPopulationMgr::DeathRecoveryResult BotWorldPopulationMgr::RecoverDeadBot
     std::vector<ScoredMode> scoredModes;
     for (std::string const& mode : policy.Modes)
     {
-        float x = bot->GetPositionX();
-        float y = bot->GetPositionY();
-        float z = bot->GetPositionZ();
-        if (mode == "last_safe_position" && !state.SafePositions.empty())
-        {
-            WorldBotState::SafePosition const& safe = state.SafePositions.back();
-            x = safe.X;
-            y = safe.Y;
-            z = safe.Z;
-        }
-        else if (mode == "configured_center_fallback")
-        {
-            x = Cohort().Config.CenterX;
-            y = Cohort().Config.CenterY;
-            z = Cohort().Config.CenterZ;
-        }
-
-        BotLearnedScore learned = BotExperienceLearningPolicy::ScoreRecoveryMode(bot, mode.c_str(), x, y, z, state.RecentDeathCount, Cohort().LearningConfig);
-        float staticScore = mode == "last_safe_position" ? 20.0f
-            : mode == "safe_local_resurrect" ? 10.0f
-            : mode == "nearest_graveyard_or_spirit_healer" ? 8.0f
-            : mode == "corpse_recover" ? 6.0f
-            : 0.0f;
-        scoredModes.push_back({ mode, staticScore + learned.Score });
+        BotLearnedScore learned = BotExperienceLearningPolicy::ScoreRecoveryMode(bot,
+            mode.c_str(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(),
+            state.RecentDeathCount, Cohort().LearningConfig);
+        scoredModes.push_back({ mode, 10.0f + learned.Score });
     }
     std::sort(scoredModes.begin(), scoredModes.end(), [](ScoredMode const& left, ScoredMode const& right)
     {
@@ -9715,29 +10207,16 @@ BotWorldPopulationMgr::DeathRecoveryResult BotWorldPopulationMgr::RecoverDeadBot
     for (ScoredMode const& scored : scoredModes)
     {
         std::string const& mode = scored.Mode;
-        if (mode == "configured_center_fallback" && (!policy.CenterFallbackEnabled || !recovery.RepeatedDeath))
-            continue;
-        if (Cohort().Config.ValidationRouteEnable && (mode == "configured_center_fallback" || mode == "nearest_graveyard_or_spirit_healer"))
-            continue;
-
         std::string result;
-        bool ok = false;
-        if (mode == "corpse_recover")
-            ok = TryCorpseRecovery(bot, result);
-        else if (mode == "safe_local_resurrect")
-            ok = TrySafeLocalResurrect(bot, result);
-        else if (mode == "nearest_graveyard_or_spirit_healer")
-            ok = TryNearestGraveyardResurrect(bot, result);
-        else if (mode == "last_safe_position")
-            ok = TryLastSafePositionResurrect(state, bot, result);
-        else if (mode == "configured_center_fallback")
-            ok = TryConfiguredCenterDeathFallback(bot, result);
+        bool const ok = mode == "native_corpse_run"
+            && TryNativeCorpseRun(state, bot, result);
 
         if (!ok)
             continue;
 
-        recovery.Recovered = true;
-        recovery.UsedFallback = mode == "configured_center_fallback";
+        recovery.Recovered = bot->IsAlive();
+        recovery.InProgress = !recovery.Recovered;
+        recovery.UsedFallback = false;
         recovery.Mode = mode;
         recovery.Result = result.empty() ? "ok" : result;
         return recovery;
@@ -9747,190 +10226,51 @@ BotWorldPopulationMgr::DeathRecoveryResult BotWorldPopulationMgr::RecoverDeadBot
     return recovery;
 }
 
-bool BotWorldPopulationMgr::TryCorpseRecovery(Player* bot, std::string& result) const
+bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot, std::string& result)
 {
-    Corpse* corpse = bot ? bot->GetCorpse() : nullptr;
-    if (!bot || !corpse || corpse->GetMapId() != bot->GetMapId())
+    if (!bot || !bot->GetSession())
     {
-        result = "corpse_unavailable";
+        result = "bot_session_unavailable";
         return false;
     }
 
-    Position pos = corpse->GetNearPosition(3.0f, frand(0.0f, 2.0f * float(M_PI)));
-    bot->ResurrectPlayer(0.7f, false);
-    bot->NearTeleportTo(pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(), pos.GetOrientation());
-    result = "corpse_recovered";
-    return true;
-}
-
-bool BotWorldPopulationMgr::TrySafeLocalResurrect(Player* bot, std::string& result) const
-{
-    if (!bot)
+    if (!bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST))
     {
-        result = "bot_unavailable";
-        return false;
-    }
-
-    Position pos = bot->GetFirstCollisionPosition(4.0f, frand(0.0f, 2.0f * float(M_PI)));
-    if (Cohort().Config.ValidationRouteEnable && GetLocalDangerScore(bot->GetGUID().GetCounter(), bot->GetMapId(), pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ()) >= 3.0f)
-    {
-        result = "safe_local_dangerous";
-        return false;
-    }
-
-    bot->ResurrectPlayer(0.7f, false);
-    bot->NearTeleportTo(pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(), pos.GetOrientation());
-    result = "safe_local_resurrected";
-    return true;
-}
-
-bool BotWorldPopulationMgr::TryNearestGraveyardResurrect(Player* bot, std::string& result) const
-{
-    if (Cohort().Config.ValidationRouteEnable)
-    {
-        result = "validation_artificial_graveyard_teleport_blocked";
-        return false;
-    }
-
-    if (!bot)
-    {
-        result = "bot_unavailable";
-        return false;
-    }
-
-    WorldSafeLocsEntry const* graveyard = sObjectMgr->GetClosestGraveyard(*bot, bot->GetTeam(), bot);
-    if (!graveyard)
-    {
-        result = "graveyard_unavailable";
-        return false;
-    }
-
-    bot->ResurrectPlayer(0.7f, false);
-    bot->TeleportTo(graveyard->Continent, graveyard->Loc.X, graveyard->Loc.Y, graveyard->Loc.Z, bot->GetOrientation());
-    result = "nearest_graveyard_resurrected";
-    return true;
-}
-
-bool BotWorldPopulationMgr::TryLastSafePositionResurrect(WorldBotState& state, Player* bot, std::string& result)
-{
-    if (!bot)
-    {
-        result = "bot_unavailable";
-        return false;
-    }
-
-    auto unsafeValidationSafePosition = [this, &state, bot](uint32 mapId, float x, float y, float z) -> bool
-    {
-        if (!Cohort().Config.ValidationRouteEnable)
-            return false;
-        if (mapId != bot->GetMapId())
-            return true;
-        if (GetLocalDangerScore(state.Guid.GetCounter(), mapId, x, y, z) >= 3.0f)
-            return true;
-        return state.RecentDeathCount >= 2
-            && state.LastDeathMapId == mapId
-            && Distance2d(state.LastDeathX, state.LastDeathY, x, y) <= 70.0f;
-    };
-
-    uint64 nowMs = NowMs();
-    if (Cohort().Config.ValidationRouteEnable
-        && state.ValidationRouteAnchorOverrideValid
-        && state.ValidationRouteAnchorOverrideUntilMs > nowMs
-        && state.ValidationRouteAnchorOverrideReason == "validation_route_partial_wipe_retreat_rendezvous")
-    {
-        bot->ResurrectPlayer(0.7f, false);
-        bot->NearTeleportTo(state.ValidationRouteAnchorOverrideX, state.ValidationRouteAnchorOverrideY,
-            state.ValidationRouteAnchorOverrideZ, bot->GetOrientation());
-        result = "validation_route_retreat_anchor_resurrected";
+        WorldPacket repop(CMSG_REPOP_REQUEST, 1);
+        repop << uint8(0);
+        bot->GetSession()->HandleRepopRequestOpcode(repop);
+        result = bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)
+            ? "native_release_requested"
+            : "native_release_pending";
         return true;
     }
 
-    PruneSafePositions(state, nowMs);
-    if (state.SafePositions.empty())
+    Corpse* corpse = bot->GetCorpse();
+    if (!corpse)
     {
-        QueryResult stored = CharacterDatabase.PQuery(
-            "SELECT map_id, x, y, z, o FROM bot_memory_safe_positions "
-            "WHERE bot_guid = %u AND last_seen_at >= DATE_SUB(NOW(), INTERVAL %u SECOND) "
-            "ORDER BY last_seen_at DESC LIMIT 16",
-            state.Guid.GetCounter(), Cohort().Config.SafePositionMemorySec);
-        if (!stored)
-        {
-            result = "safe_position_unavailable";
-            return false;
-        }
-
-        do
-        {
-            Field* fields = stored->Fetch();
-            uint32 mapId = fields[0].GetUInt32();
-            float x = fields[1].GetFloat();
-            float y = fields[2].GetFloat();
-            float z = fields[3].GetFloat();
-            float o = fields[4].GetFloat();
-            if (unsafeValidationSafePosition(mapId, x, y, z))
-                continue;
-
-            bot->ResurrectPlayer(0.7f, false);
-            bot->SpawnCorpseBones();
-            if (mapId == bot->GetMapId())
-                bot->NearTeleportTo(x, y, z, o);
-            else
-                bot->TeleportTo(mapId, x, y, z, o);
-            result = "stored_safe_position_resurrected";
-            return true;
-        } while (stored->NextRow());
-
-        result = "safe_position_dangerous";
+        result = "native_corpse_unavailable";
+        return false;
+    }
+    if (corpse->GetMapId() != bot->GetMapId())
+    {
+        result = "native_corpse_cross_map_unreachable";
         return false;
     }
 
-    WorldBotState::SafePosition const* selected = nullptr;
-    for (auto itr = state.SafePositions.rbegin(); itr != state.SafePositions.rend(); ++itr)
+    if (!corpse->IsWithinDistInMap(bot, CORPSE_RECLAIM_RADIUS, true))
     {
-        if (unsafeValidationSafePosition(itr->MapId, itr->X, itr->Y, itr->Z))
-            continue;
-
-        selected = &(*itr);
-        break;
-    }
-    if (!selected)
-    {
-        result = "safe_position_dangerous";
-        return false;
+        bool const moving = MoveBotToPoint(state, bot, corpse->GetPositionX(),
+            corpse->GetPositionY(), corpse->GetPositionZ(), false,
+            BotMovementArbitration::Owner::Recovery,
+            BotMovementArbitration::Priority::Recovery);
+        result = moving ? "native_corpse_run_moving" : "native_corpse_path_retryable";
+        return moving;
     }
 
-    WorldBotState::SafePosition const& position = *selected;
-    if (Cohort().Config.ValidationRouteEnable && position.MapId != bot->GetMapId())
-    {
-        result = "validation_cross_map_safe_position_blocked";
-        return false;
-    }
-    bot->ResurrectPlayer(0.7f, false);
-    if (position.MapId == bot->GetMapId())
-        bot->NearTeleportTo(position.X, position.Y, position.Z, position.O);
-    else
-        bot->TeleportTo(position.MapId, position.X, position.Y, position.Z, position.O);
-    result = "last_safe_position_resurrected";
-    return true;
-}
-
-bool BotWorldPopulationMgr::TryConfiguredCenterDeathFallback(Player* bot, std::string& result) const
-{
-    if (Cohort().Config.ValidationRouteEnable)
-    {
-        result = "validation_configured_center_teleport_blocked";
-        return false;
-    }
-
-    if (!bot)
-    {
-        result = "bot_unavailable";
-        return false;
-    }
-
-    bot->ResurrectPlayer(0.7f, false);
-    bot->TeleportTo(Cohort().Config.MapId, Cohort().Config.CenterX, Cohort().Config.CenterY, Cohort().Config.CenterZ, bot->GetOrientation());
-    result = "configured_center_fallback";
+    WorldPacket reclaim(CMSG_RECLAIM_CORPSE, 8);
+    reclaim << corpse->GetGUID();
+    bot->GetSession()->HandleReclaimCorpseOpcode(reclaim);
+    result = bot->IsAlive() ? "native_corpse_reclaimed" : "native_reclaim_delay_pending";
     return true;
 }
 
@@ -10570,6 +10910,10 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
                 if (recovery.UsedFallback)
                     RecordEvent(state, bot, "teleport_fallback_used", nullptr, recovery.Result.c_str(), raw.c_str(), semantic.c_str(), float(state.RecentDeathCount), Cohort().Metrics.Deaths);
             }
+            else if (recovery.InProgress)
+                RecordEvent(state, bot, "death_recovery_progress", nullptr,
+                    recovery.Result.c_str(), raw.c_str(), semantic.c_str(),
+                    float(state.RecentDeathCount), Cohort().Metrics.Deaths);
             else
                 RecordEvent(state, bot, "death_recovery_failed", nullptr, recovery.Result.c_str(), raw.c_str(), semantic.c_str(), float(state.RecentDeathCount), Cohort().Metrics.Deaths);
         }
@@ -10741,19 +11085,934 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         uint64 const decisionNowMs = NowMs();
         state.DecisionKernel.Begin(decisionNowMs);
 
+        bool adaptiveDrudgeOwnsNode = false;
+        bool adaptiveAtramedesOwnsNode = false;
+        bool adaptiveChimaeronOwnsNode = false;
+        bool adaptiveChimaeronHealingDisabled = false;
+        bool adaptiveMagmawOwnsNode = false;
+        bool adaptiveMaloriakOwnsNode = false;
+        bool adaptiveNefarianOwnsNode = false;
+        bool adaptiveOmnotronOwnsNode = false;
+        bool adaptiveOmnotronSuppressOffense = false;
+        bool adaptiveNativeRouteOwnsNode = false;
+        ObjectGuid adaptiveDrudgeTankTargetGuid;
+        ObjectGuid adaptiveChimaeronPriorityHealTargetGuid;
+        ObjectGuid adaptiveMaloriakDispelTargetGuid;
+        ObjectGuid adaptiveMaloriakInterruptTargetGuid;
+        ObjectGuid adaptiveNefarianInterruptTargetGuid;
+        ObjectGuid adaptiveOmnotronInterruptTargetGuid;
+        std::optional<BotNativeAction::Candidate> adaptiveDrudgeMovement;
+        std::optional<BotNativeAction::Candidate> adaptiveAtramedesMovement;
+        std::optional<BotNativeAction::Candidate> adaptiveAtramedesInteraction;
+        std::optional<BotNativeAction::Candidate> adaptiveChimaeronMovement;
+        std::optional<BotNativeAction::Candidate> adaptiveMagmawMovement;
+        std::optional<BotNativeAction::Candidate> adaptiveMagmawInteraction;
+        std::optional<BotNativeAction::Candidate> adaptiveMaloriakMovement;
+        std::optional<BotNativeAction::Candidate> adaptiveNefarianMovement;
+        std::optional<BotNativeAction::Candidate> adaptiveOmnotronMovement;
+        if (Cohort().EncounterSnapshot)
+        {
+            BotEncounter::Blackboard const& blackboard =
+                *Cohort().EncounterSnapshot;
+            adaptiveNativeRouteOwnsNode =
+                !blackboard.Route.InteractionAction.empty()
+                || !blackboard.Route.CompletionKind.empty();
+
+            auto actorWithEntry = [&blackboard](uint32 entry)
+                -> BotEncounter::ActorSnapshot const*
+            {
+                auto find = [entry](std::vector<BotEncounter::ActorSnapshot> const& actors)
+                    -> BotEncounter::ActorSnapshot const*
+                {
+                    auto itr = std::find_if(actors.begin(), actors.end(),
+                        [entry](BotEncounter::ActorSnapshot const& actor)
+                        {
+                            return actor.Entry == entry && actor.Alive;
+                        });
+                    return itr == actors.end() ? nullptr : &*itr;
+                };
+                if (BotEncounter::ActorSnapshot const* actor = find(blackboard.Hostiles))
+                    return actor;
+                if (BotEncounter::ActorSnapshot const* actor = find(blackboard.Summons))
+                    return actor;
+                return find(blackboard.Interactables);
+            };
+
+            bool nativePostconditionSatisfied = false;
+            BotEncounter::ActorSnapshot const* completionActor =
+                actorWithEntry(blackboard.Route.CompletionEntry);
+            if (blackboard.Route.CompletionKind == "gameobject_selectable")
+                nativePostconditionSatisfied = completionActor
+                    && completionActor->Selectable && completionActor->Interactable;
+            else if (blackboard.Route.CompletionKind == "boss_summoned"
+                || blackboard.Route.CompletionKind == "creature_summoned")
+                nativePostconditionSatisfied = completionActor != nullptr;
+            else if (blackboard.Route.CompletionKind == "aura_present")
+                nativePostconditionSatisfied = completionActor
+                    && std::any_of(completionActor->Auras.begin(), completionActor->Auras.end(),
+                        [&blackboard](BotEncounter::AuraSnapshot const& aura)
+                        {
+                            return aura.SpellId == blackboard.Route.CompletionSpellId;
+                        });
+            else if (blackboard.Route.CompletionKind == "creature_aggressive_with_victim")
+                nativePostconditionSatisfied = completionActor
+                    && completionActor->ReactAggressive
+                    && !completionActor->VictimGuid.IsEmpty();
+            else if (blackboard.Route.CompletionKind == "creature_grounded_aggressive_or_engaged")
+                nativePostconditionSatisfied = completionActor
+                    && !completionActor->Flying
+                    && (completionActor->ReactAggressive
+                        || completionActor->InCombat
+                        || !completionActor->VictimGuid.IsEmpty());
+
+            bool nativePostconditionAlreadyRecorded =
+                std::any_of(Party().Bots.begin(), Party().Bots.end(),
+                    [this](WorldBotState const& cohortState)
+                    {
+                        return cohortState.ValidationRouteTerminalState
+                            && cohortState.ValidationRouteTerminalGeneration
+                                == Party().ValidationRouteGeneration
+                            && cohortState.ValidationRouteTerminalReason
+                                == "native_postcondition";
+                    });
+            if (nativePostconditionSatisfied && !nativePostconditionAlreadyRecorded)
+            {
+                uint64 const observedAtMs = NowMs();
+                for (WorldBotState& cohortState : Party().Bots)
+                {
+                    cohortState.ValidationRouteTerminalState = true;
+                    cohortState.ValidationRouteTerminalAtMs = observedAtMs;
+                    cohortState.ValidationRouteTerminalGeneration =
+                        Party().ValidationRouteGeneration;
+                    cohortState.ValidationRouteTerminalReason =
+                        "native_postcondition";
+                }
+                std::string raw = BuildRawJson(bot,
+                    completionActor ? ObjectAccessor::GetUnit(*bot,
+                        completionActor->Guid) : nullptr);
+                std::string semantic = BuildSemanticJson(bot, nullptr,
+                    "native_route_postcondition", &power, stage,
+                    chosenActivity.Activity);
+                RecordEvent(state, bot, "native_route_postcondition",
+                    completionActor ? ObjectAccessor::GetUnit(*bot,
+                        completionActor->Guid) : nullptr,
+                    blackboard.Route.CompletionKind.c_str(), raw.c_str(),
+                    semantic.c_str(), 1.0f,
+                    blackboard.Route.CompletionEntry,
+                    blackboard.Route.CompletionSpellId);
+            }
+
+            if (!nativePostconditionSatisfied
+                && !blackboard.Route.InteractionAction.empty())
+            {
+                ObjectGuid electedInteractor;
+                for (BotEncounter::ActorSnapshot const& member : blackboard.Players)
+                    if (member.Alive && (electedInteractor.IsEmpty()
+                            || member.Guid.GetRawValue()
+                                < electedInteractor.GetRawValue()))
+                        electedInteractor = member.Guid;
+
+                BotEncounter::ActorSnapshot const* interactionActor =
+                    actorWithEntry(blackboard.Route.InteractionEntry);
+                if (interactionActor && bot->GetGUID() == electedInteractor)
+                {
+                    BotNativeAction::Candidate interaction;
+                    interaction.Id.ScopeKey = blackboard.CurrentScope.Key();
+                    interaction.Id.Strategy = "native_route_interaction";
+                    interaction.Id.Mechanic = blackboard.Route.InteractionAction;
+                    interaction.Id.Actor = interactionActor->Guid;
+                    interaction.Id.EventGeneration = blackboard.Revision;
+                    interaction.ActionPriority =
+                        BotActionArbitration::Priority::Mechanic;
+                    interaction.Utility = 6.0f;
+                    interaction.ExpiresAtMs = decisionNowMs + 500;
+
+                    WorldObject* interactionObject =
+                        ObjectAccessor::GetWorldObject(*bot, interactionActor->Guid);
+                    if (!interactionObject
+                        || !bot->IsWithinDistInMap(interactionObject,
+                            INTERACTION_DISTANCE))
+                        interaction.Action = BotNativeAction::Move{
+                            interactionActor->Position.X,
+                            interactionActor->Position.Y,
+                            interactionActor->Position.Z };
+                    else if (blackboard.Route.InteractionAction
+                        == "gameobject_use")
+                        interaction.Action = BotNativeAction::GameObjectUse{
+                            interactionActor->Guid };
+                    else
+                    {
+                        uint32 const currentMenu =
+                            bot->PlayerTalkClass->GetGossipMenu().GetMenuId();
+                        bool const sourceBound = bot->PlayerTalkClass
+                            ->GetInteractionData().SourceGuid
+                                == interactionActor->Guid;
+                        bool const configuredMenu = sourceBound
+                            && std::find(blackboard.Route.InteractionMenus.begin(),
+                                blackboard.Route.InteractionMenus.end(), currentMenu)
+                                != blackboard.Route.InteractionMenus.end();
+                        interaction.Action = configuredMenu
+                            ? BotNativeAction::Intent(BotNativeAction::GossipSelect{
+                                interactionActor->Guid, currentMenu,
+                                blackboard.Route.InteractionOption })
+                            : BotNativeAction::Intent(BotNativeAction::GossipOpen{
+                                interactionActor->Guid });
+                    }
+
+                    BotActionArbitration::Candidate candidate;
+                    candidate.Key = interaction.Id.Key();
+                    candidate.Source = interaction.Id.Strategy;
+                    candidate.ActionPriority = interaction.ActionPriority;
+                    candidate.UtilityScore = interaction.Utility;
+                    candidate.RequiredResources = interaction.Resources();
+                    candidate.ExpiresAtMs = interaction.ExpiresAtMs;
+                    candidate.Attempt = [&, intent = interaction.Action]()
+                    {
+                        BotActionArbitration::Outcome outcome =
+                            ExecuteNativeActionIntent(state, bot, intent,
+                                BotMovementArbitration::Owner::Route,
+                                BotMovementArbitration::Priority::Route);
+                        if (outcome.Result
+                            == BotActionArbitration::Disposition::Committed)
+                        {
+                            situation = "native_route_interaction";
+                            action = "native_route_interaction_submitted";
+                            state.LastDecisionHandler =
+                                "native_route_interaction";
+                        }
+                        return outcome;
+                    };
+                    state.DecisionKernel.Submit(std::move(candidate));
+                }
+            }
+
+            BotEncounter::AdaptiveDrudgeStrategy drudgeStrategy;
+            BotEncounter::AdaptiveDrudgePlan drudgePlan = drudgeStrategy.Propose(
+                *Cohort().EncounterSnapshot, bot->GetGUID(), GetDungeonRole(bot));
+            adaptiveDrudgeOwnsNode = drudgePlan.OwnsNode;
+            adaptiveDrudgeTankTargetGuid = drudgePlan.TankTarget;
+            adaptiveDrudgeMovement = std::move(drudgePlan.Movement);
+
+            ObjectGuid const adaptiveTargetGuid = std::string(GetDungeonRole(bot)) == "tank"
+                ? drudgePlan.TankTarget : drudgePlan.DamageTarget;
+            if (!adaptiveTargetGuid.IsEmpty())
+                if (Unit* adaptiveTarget = ObjectAccessor::GetUnit(*bot, adaptiveTargetGuid);
+                    adaptiveTarget && adaptiveTarget->IsAlive()
+                        && bot->IsValidAttackTarget(adaptiveTarget))
+                {
+                    target = adaptiveTarget;
+                    state.TargetGuid = adaptiveTargetGuid;
+                }
+
+            if (adaptiveDrudgeOwnsNode)
+                for (BotEncounter::ActorSnapshot const& hostile : Cohort().EncounterSnapshot->Hostiles)
+                    if (hostile.Entry == BotEncounter::AdaptiveDrudgeStrategy::DrudgeEntry
+                        && hostile.Alive && (hostile.InCombat || hostile.HealthPct < 99.9f))
+                    {
+                        Party().ValidationRoutePackObservedEngagement = true;
+                        break;
+                    }
+
+            BotEncounter::AdaptiveMagmawStrategy magmawStrategy;
+            BotEncounter::AdaptiveMagmawPlan magmawPlan = magmawStrategy.Propose(
+                *Cohort().EncounterSnapshot, bot->GetGUID(), GetDungeonRole(bot));
+            adaptiveMagmawOwnsNode = magmawPlan.OwnsNode;
+            adaptiveMagmawMovement = std::move(magmawPlan.Movement);
+            adaptiveMagmawInteraction = std::move(magmawPlan.Interaction);
+            if (!magmawPlan.DamageTarget.IsEmpty())
+                if (Unit* adaptiveTarget = ObjectAccessor::GetUnit(*bot,
+                        magmawPlan.DamageTarget);
+                    adaptiveTarget && adaptiveTarget->IsAlive()
+                        && bot->IsValidAttackTarget(adaptiveTarget))
+                {
+                    target = adaptiveTarget;
+                    state.TargetGuid = magmawPlan.DamageTarget;
+                }
+
+            BotEncounter::AdaptiveOmnotronStrategy omnotronStrategy;
+            BotEncounter::AdaptiveOmnotronPlan omnotronPlan =
+                omnotronStrategy.Propose(*Cohort().EncounterSnapshot,
+                    bot->GetGUID(), GetDungeonRole(bot));
+            adaptiveOmnotronOwnsNode = omnotronPlan.OwnsNode;
+            adaptiveOmnotronSuppressOffense = omnotronPlan.SuppressOffense;
+            adaptiveOmnotronInterruptTargetGuid = omnotronPlan.InterruptTarget;
+            adaptiveOmnotronMovement = std::move(omnotronPlan.Movement);
+            if (!omnotronPlan.DamageTarget.IsEmpty())
+                if (Unit* adaptiveTarget = ObjectAccessor::GetUnit(*bot,
+                        omnotronPlan.DamageTarget);
+                    adaptiveTarget && adaptiveTarget->IsAlive()
+                        && bot->IsValidAttackTarget(adaptiveTarget))
+                {
+                    target = adaptiveTarget;
+                    state.TargetGuid = omnotronPlan.DamageTarget;
+                }
+
+            BotEncounter::AdaptiveMaloriakStrategy maloriakStrategy;
+            BotEncounter::AdaptiveMaloriakPlan maloriakPlan =
+                maloriakStrategy.Propose(*Cohort().EncounterSnapshot,
+                    bot->GetGUID(), GetDungeonRole(bot));
+            adaptiveMaloriakOwnsNode = maloriakPlan.OwnsNode;
+            adaptiveMaloriakInterruptTargetGuid = maloriakPlan.InterruptTarget;
+            adaptiveMaloriakDispelTargetGuid = maloriakPlan.DispelTarget;
+            adaptiveMaloriakMovement = std::move(maloriakPlan.Movement);
+            if (!maloriakPlan.DamageTarget.IsEmpty())
+                if (Unit* adaptiveTarget = ObjectAccessor::GetUnit(*bot,
+                        maloriakPlan.DamageTarget);
+                    adaptiveTarget && adaptiveTarget->IsAlive()
+                        && bot->IsValidAttackTarget(adaptiveTarget))
+                {
+                    target = adaptiveTarget;
+                    state.TargetGuid = maloriakPlan.DamageTarget;
+                }
+
+            BotEncounter::AdaptiveChimaeronStrategy chimaeronStrategy;
+            BotEncounter::AdaptiveChimaeronPlan chimaeronPlan =
+                chimaeronStrategy.Propose(*Cohort().EncounterSnapshot,
+                    bot->GetGUID(), GetDungeonRole(bot));
+            adaptiveChimaeronOwnsNode = chimaeronPlan.OwnsNode;
+            adaptiveChimaeronHealingDisabled = chimaeronPlan.HealingDisabled;
+            adaptiveChimaeronPriorityHealTargetGuid =
+                chimaeronPlan.PriorityHealTarget;
+            adaptiveChimaeronMovement = std::move(chimaeronPlan.Movement);
+            if (!chimaeronPlan.DamageTarget.IsEmpty())
+                if (Unit* adaptiveTarget = ObjectAccessor::GetUnit(*bot,
+                        chimaeronPlan.DamageTarget);
+                    adaptiveTarget && adaptiveTarget->IsAlive()
+                        && bot->IsValidAttackTarget(adaptiveTarget))
+                {
+                    target = adaptiveTarget;
+                    state.TargetGuid = chimaeronPlan.DamageTarget;
+                }
+
+            BotEncounter::AdaptiveAtramedesStrategy atramedesStrategy;
+            BotEncounter::AdaptiveAtramedesPlan atramedesPlan =
+                atramedesStrategy.Propose(*Cohort().EncounterSnapshot,
+                    bot->GetGUID(), GetDungeonRole(bot));
+            adaptiveAtramedesOwnsNode = atramedesPlan.OwnsNode;
+            adaptiveAtramedesMovement = std::move(atramedesPlan.Movement);
+            adaptiveAtramedesInteraction = std::move(atramedesPlan.Interaction);
+            if (!atramedesPlan.DamageTarget.IsEmpty())
+                if (Unit* adaptiveTarget = ObjectAccessor::GetUnit(*bot,
+                        atramedesPlan.DamageTarget);
+                    adaptiveTarget && adaptiveTarget->IsAlive()
+                        && bot->IsValidAttackTarget(adaptiveTarget))
+                {
+                    target = adaptiveTarget;
+                    state.TargetGuid = atramedesPlan.DamageTarget;
+                }
+
+            BotEncounter::AdaptiveNefarianStrategy nefarianStrategy;
+            BotEncounter::AdaptiveNefarianPlan nefarianPlan =
+                nefarianStrategy.Propose(*Cohort().EncounterSnapshot,
+                    bot->GetGUID(), GetDungeonRole(bot));
+            adaptiveNefarianOwnsNode = nefarianPlan.OwnsNode;
+            adaptiveNefarianInterruptTargetGuid = nefarianPlan.InterruptTarget;
+            adaptiveNefarianMovement = std::move(nefarianPlan.Movement);
+            if (!nefarianPlan.DamageTarget.IsEmpty())
+                if (Unit* adaptiveTarget = ObjectAccessor::GetUnit(*bot,
+                        nefarianPlan.DamageTarget);
+                    adaptiveTarget && adaptiveTarget->IsAlive()
+                        && bot->IsValidAttackTarget(adaptiveTarget))
+                {
+                    target = adaptiveTarget;
+                    state.TargetGuid = nefarianPlan.DamageTarget;
+                }
+        }
+
+        if (adaptiveDrudgeMovement && adaptiveDrudgeMovement->ExpiresAtMs > decisionNowMs)
+        {
+            BotActionArbitration::Candidate movement;
+            movement.Key = adaptiveDrudgeMovement->Id.Key();
+            movement.Source = adaptiveDrudgeMovement->Id.Strategy;
+            movement.ActionPriority = adaptiveDrudgeMovement->ActionPriority;
+            movement.UtilityScore = adaptiveDrudgeMovement->Utility;
+            movement.RequiredResources = adaptiveDrudgeMovement->Resources();
+            movement.ExpiresAtMs = adaptiveDrudgeMovement->ExpiresAtMs;
+            movement.Attempt = [&, intent = adaptiveDrudgeMovement->Action]()
+            {
+                BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
+                    state, bot, intent, BotMovementArbitration::Owner::Mechanic,
+                    BotMovementArbitration::Priority::Mechanic);
+                if (outcome.Result == BotActionArbitration::Disposition::Committed)
+                {
+                    situation = "adaptive_drudge";
+                    action = "adaptive_drudge_movement";
+                    state.LastDecisionHandler = "adaptive_drudge";
+                }
+                return outcome;
+            };
+            state.DecisionKernel.Submit(std::move(movement));
+        }
+
+        if (adaptiveMagmawMovement && adaptiveMagmawMovement->ExpiresAtMs > decisionNowMs)
+        {
+            BotActionArbitration::Candidate movement;
+            movement.Key = adaptiveMagmawMovement->Id.Key();
+            movement.Source = adaptiveMagmawMovement->Id.Strategy;
+            movement.ActionPriority = adaptiveMagmawMovement->ActionPriority;
+            movement.UtilityScore = adaptiveMagmawMovement->Utility;
+            movement.RequiredResources = adaptiveMagmawMovement->Resources();
+            movement.ExpiresAtMs = adaptiveMagmawMovement->ExpiresAtMs;
+            movement.Attempt = [&, intent = adaptiveMagmawMovement->Action]()
+            {
+                BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
+                    state, bot, intent, BotMovementArbitration::Owner::Hazard,
+                    BotMovementArbitration::Priority::Hazard);
+                if (outcome.Result == BotActionArbitration::Disposition::Committed)
+                {
+                    situation = "adaptive_magmaw";
+                    action = "pillar_evade";
+                    state.LastDecisionHandler = "adaptive_magmaw";
+                }
+                return outcome;
+            };
+            state.DecisionKernel.Submit(std::move(movement));
+        }
+
+        if (adaptiveMagmawInteraction
+            && adaptiveMagmawInteraction->ExpiresAtMs > decisionNowMs)
+        {
+            BotActionArbitration::Candidate mechanic;
+            mechanic.Key = adaptiveMagmawInteraction->Id.Key();
+            mechanic.Source = adaptiveMagmawInteraction->Id.Strategy;
+            mechanic.ActionPriority = adaptiveMagmawInteraction->ActionPriority;
+            mechanic.UtilityScore = adaptiveMagmawInteraction->Utility;
+            mechanic.RequiredResources = adaptiveMagmawInteraction->Resources();
+            mechanic.ExpiresAtMs = adaptiveMagmawInteraction->ExpiresAtMs;
+            mechanic.Attempt = [&, intent = adaptiveMagmawInteraction->Action]()
+            {
+                BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
+                    state, bot, intent, BotMovementArbitration::Owner::Mechanic,
+                    BotMovementArbitration::Priority::Mechanic);
+                if (outcome.Result == BotActionArbitration::Disposition::Committed)
+                {
+                    situation = "adaptive_magmaw";
+                    action = "native_pincer_interaction";
+                    state.LastDecisionHandler = "adaptive_magmaw";
+                }
+                return outcome;
+            };
+            state.DecisionKernel.Submit(std::move(mechanic));
+        }
+
+        if (adaptiveOmnotronMovement
+            && adaptiveOmnotronMovement->ExpiresAtMs > decisionNowMs)
+        {
+            BotActionArbitration::Candidate movement;
+            movement.Key = adaptiveOmnotronMovement->Id.Key();
+            movement.Source = adaptiveOmnotronMovement->Id.Strategy;
+            movement.ActionPriority = adaptiveOmnotronMovement->ActionPriority;
+            movement.UtilityScore = adaptiveOmnotronMovement->Utility;
+            movement.RequiredResources = adaptiveOmnotronMovement->Resources();
+            movement.ExpiresAtMs = adaptiveOmnotronMovement->ExpiresAtMs;
+            movement.Attempt = [&, intent = adaptiveOmnotronMovement->Action]()
+            {
+                BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
+                    state, bot, intent, BotMovementArbitration::Owner::Hazard,
+                    BotMovementArbitration::Priority::Hazard);
+                if (outcome.Result == BotActionArbitration::Disposition::Committed)
+                {
+                    situation = "adaptive_omnotron";
+                    action = "omnotron_hazard_movement";
+                    state.LastDecisionHandler = "adaptive_omnotron";
+                }
+                return outcome;
+            };
+            state.DecisionKernel.Submit(std::move(movement));
+        }
+
+        if (adaptiveOmnotronSuppressOffense)
+        {
+            BotActionArbitration::Candidate suppress;
+            suppress.Key = "adaptive_omnotron:shield_suppress:"
+                + std::to_string(Party().ValidationRouteGeneration);
+            suppress.Source = "adaptive_omnotron";
+            suppress.ActionPriority = BotActionArbitration::Priority::Mechanic;
+            suppress.UtilityScore = 100.0f;
+            suppress.RequiredResources = BotActionArbitration::Uses(
+                BotActionArbitration::Resource::Target,
+                BotActionArbitration::Resource::Pet);
+            suppress.Attempt = [&]()
+            {
+                BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
+                    state, bot, BotNativeAction::StopAttack{},
+                    BotMovementArbitration::Owner::Mechanic,
+                    BotMovementArbitration::Priority::Mechanic);
+                if (Pet* pet = bot->GetPet(); pet && pet->GetCharmInfo())
+                    ExecuteNativeActionIntent(state, bot,
+                        BotNativeAction::PetCommand{ pet->GetGUID(),
+                            bot->GetGUID(), COMMAND_FOLLOW },
+                        BotMovementArbitration::Owner::Mechanic,
+                        BotMovementArbitration::Priority::Mechanic);
+                state.TargetGuid.Clear();
+                target = nullptr;
+                situation = "adaptive_omnotron";
+                action = "shield_damage_suppressed";
+                state.LastDecisionHandler = "adaptive_omnotron";
+                return outcome;
+            };
+            state.DecisionKernel.Submit(std::move(suppress));
+        }
+
+        if (!adaptiveOmnotronInterruptTargetGuid.IsEmpty())
+        {
+            BotActionArbitration::Candidate interrupt;
+            interrupt.Key = "adaptive_omnotron:arcane_annihilator:"
+                + std::to_string(adaptiveOmnotronInterruptTargetGuid.GetRawValue());
+            interrupt.Source = "adaptive_omnotron";
+            interrupt.ActionPriority = BotActionArbitration::Priority::Interrupt;
+            interrupt.UtilityScore = 90.0f;
+            interrupt.RequiredResources = BotActionArbitration::Uses(
+                BotActionArbitration::Resource::GlobalCooldown,
+                BotActionArbitration::Resource::Cast,
+                BotActionArbitration::Resource::Target);
+            interrupt.Attempt = [&, adaptiveOmnotronInterruptTargetGuid]()
+            {
+                Unit* caster = ObjectAccessor::GetUnit(*bot,
+                    adaptiveOmnotronInterruptTargetGuid);
+                if (!caster || !caster->IsAlive())
+                    return BotActionArbitration::Outcome::NotApplicable(
+                        "interrupt_caster_stale");
+                uint32 interruptSpell = 0;
+                for (uint32 spellId : { 6552u, 1766u, 2139u, 57994u,
+                        96231u, 47528u, 80964u, 80965u, 15487u, 34490u })
+                    if (bot->HasSpell(spellId))
+                    {
+                        interruptSpell = spellId;
+                        break;
+                    }
+                if (!interruptSpell
+                    || !TryCastCombatSpell(bot, caster, interruptSpell))
+                    return BotActionArbitration::Outcome::Retryable(
+                        "native_interrupt_retryable");
+                situation = "adaptive_omnotron";
+                action = "arcane_annihilator_interrupt";
+                state.LastDecisionHandler = "adaptive_omnotron";
+                return BotActionArbitration::Outcome::Started(
+                    "native_interrupt_submitted");
+            };
+            state.DecisionKernel.Submit(std::move(interrupt));
+        }
+
+        if (adaptiveMaloriakMovement
+            && adaptiveMaloriakMovement->ExpiresAtMs > decisionNowMs)
+        {
+            BotActionArbitration::Candidate movement;
+            movement.Key = adaptiveMaloriakMovement->Id.Key();
+            movement.Source = adaptiveMaloriakMovement->Id.Strategy;
+            movement.ActionPriority = adaptiveMaloriakMovement->ActionPriority;
+            movement.UtilityScore = adaptiveMaloriakMovement->Utility;
+            movement.RequiredResources = adaptiveMaloriakMovement->Resources();
+            movement.ExpiresAtMs = adaptiveMaloriakMovement->ExpiresAtMs;
+            movement.Attempt = [&, intent = adaptiveMaloriakMovement->Action]()
+            {
+                BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
+                    state, bot, intent, BotMovementArbitration::Owner::Hazard,
+                    BotMovementArbitration::Priority::Hazard);
+                if (outcome.Result == BotActionArbitration::Disposition::Committed)
+                {
+                    situation = "adaptive_maloriak";
+                    action = "maloriak_mechanic_movement";
+                    state.LastDecisionHandler = "adaptive_maloriak";
+                }
+                return outcome;
+            };
+            state.DecisionKernel.Submit(std::move(movement));
+        }
+
+        if (!adaptiveMaloriakInterruptTargetGuid.IsEmpty())
+        {
+            BotActionArbitration::Candidate interrupt;
+            interrupt.Key = "adaptive_maloriak:arcane_storm:"
+                + std::to_string(adaptiveMaloriakInterruptTargetGuid.GetRawValue());
+            interrupt.Source = "adaptive_maloriak";
+            interrupt.ActionPriority = BotActionArbitration::Priority::Interrupt;
+            interrupt.UtilityScore = 95.0f;
+            interrupt.RequiredResources = BotActionArbitration::Uses(
+                BotActionArbitration::Resource::GlobalCooldown,
+                BotActionArbitration::Resource::Cast,
+                BotActionArbitration::Resource::Target);
+            interrupt.Attempt = [&, adaptiveMaloriakInterruptTargetGuid]()
+            {
+                Unit* caster = ObjectAccessor::GetUnit(*bot,
+                    adaptiveMaloriakInterruptTargetGuid);
+                if (!caster || !caster->IsAlive())
+                    return BotActionArbitration::Outcome::NotApplicable(
+                        "interrupt_caster_stale");
+                uint32 interruptSpell = 0;
+                for (uint32 spellId : { 6552u, 1766u, 2139u, 57994u,
+                        96231u, 47528u, 80964u, 80965u, 15487u, 34490u })
+                    if (bot->HasSpell(spellId))
+                    {
+                        interruptSpell = spellId;
+                        break;
+                    }
+                if (!interruptSpell
+                    || !TryCastCombatSpell(bot, caster, interruptSpell))
+                    return BotActionArbitration::Outcome::Retryable(
+                        "native_interrupt_retryable");
+                situation = "adaptive_maloriak";
+                action = "arcane_storm_interrupt";
+                state.LastDecisionHandler = "adaptive_maloriak";
+                return BotActionArbitration::Outcome::Started(
+                    "native_interrupt_submitted");
+            };
+            state.DecisionKernel.Submit(std::move(interrupt));
+        }
+
+        if (!adaptiveMaloriakDispelTargetGuid.IsEmpty())
+        {
+            BotActionArbitration::Candidate dispel;
+            dispel.Key = "adaptive_maloriak:remedy:"
+                + std::to_string(adaptiveMaloriakDispelTargetGuid.GetRawValue());
+            dispel.Source = "adaptive_maloriak";
+            dispel.ActionPriority = BotActionArbitration::Priority::Interrupt;
+            dispel.UtilityScore = 85.0f;
+            dispel.RequiredResources = BotActionArbitration::Uses(
+                BotActionArbitration::Resource::GlobalCooldown,
+                BotActionArbitration::Resource::Cast,
+                BotActionArbitration::Resource::Target);
+            dispel.Attempt = [&, adaptiveMaloriakDispelTargetGuid]()
+            {
+                Unit* auraTarget = ObjectAccessor::GetUnit(*bot,
+                    adaptiveMaloriakDispelTargetGuid);
+                if (!auraTarget || !auraTarget->IsAlive())
+                    return BotActionArbitration::Outcome::NotApplicable(
+                        "dispel_target_stale");
+                uint32 dispelSpell = 0;
+                for (uint32 spellId : { 370u, 30449u, 528u, 19801u })
+                    if (bot->HasSpell(spellId))
+                    {
+                        dispelSpell = spellId;
+                        break;
+                    }
+                if (!dispelSpell
+                    || !TryCastCombatSpell(bot, auraTarget, dispelSpell))
+                    return BotActionArbitration::Outcome::Retryable(
+                        "native_dispel_retryable");
+                situation = "adaptive_maloriak";
+                action = "remedy_native_dispel";
+                state.LastDecisionHandler = "adaptive_maloriak";
+                return BotActionArbitration::Outcome::Started(
+                    "native_dispel_submitted");
+            };
+            state.DecisionKernel.Submit(std::move(dispel));
+        }
+
+        if (adaptiveChimaeronMovement
+            && adaptiveChimaeronMovement->ExpiresAtMs > decisionNowMs)
+        {
+            BotActionArbitration::Candidate movement;
+            movement.Key = adaptiveChimaeronMovement->Id.Key();
+            movement.Source = adaptiveChimaeronMovement->Id.Strategy;
+            movement.ActionPriority = adaptiveChimaeronMovement->ActionPriority;
+            movement.UtilityScore = adaptiveChimaeronMovement->Utility;
+            movement.RequiredResources = adaptiveChimaeronMovement->Resources();
+            movement.ExpiresAtMs = adaptiveChimaeronMovement->ExpiresAtMs;
+            movement.Attempt = [&, intent = adaptiveChimaeronMovement->Action]()
+            {
+                BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
+                    state, bot, intent, BotMovementArbitration::Owner::Mechanic,
+                    BotMovementArbitration::Priority::Mechanic);
+                if (outcome.Result == BotActionArbitration::Disposition::Committed)
+                {
+                    situation = "adaptive_chimaeron";
+                    action = "chimaeron_formation_movement";
+                    state.LastDecisionHandler = "adaptive_chimaeron";
+                }
+                return outcome;
+            };
+            state.DecisionKernel.Submit(std::move(movement));
+        }
+
+        auto submitAtramedesCandidate = [&](BotNativeAction::Candidate const& intent,
+            char const* actionName, BotMovementArbitration::Owner movementOwner,
+            BotMovementArbitration::Priority movementPriority)
+        {
+            if (intent.ExpiresAtMs <= decisionNowMs)
+                return;
+            BotActionArbitration::Candidate candidate;
+            candidate.Key = intent.Id.Key();
+            candidate.Source = intent.Id.Strategy;
+            candidate.ActionPriority = intent.ActionPriority;
+            candidate.UtilityScore = intent.Utility;
+            candidate.RequiredResources = intent.Resources();
+            candidate.ExpiresAtMs = intent.ExpiresAtMs;
+            candidate.Attempt = [&, nativeIntent = intent.Action, actionName,
+                movementOwner, movementPriority]()
+            {
+                BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
+                    state, bot, nativeIntent, movementOwner, movementPriority);
+                if (outcome.Result == BotActionArbitration::Disposition::Committed)
+                {
+                    situation = "adaptive_atramedes";
+                    action = actionName;
+                    state.LastDecisionHandler = "adaptive_atramedes";
+                }
+                return outcome;
+            };
+            state.DecisionKernel.Submit(std::move(candidate));
+        };
+        if (adaptiveAtramedesMovement)
+            submitAtramedesCandidate(*adaptiveAtramedesMovement,
+                "atramedes_hazard_movement",
+                BotMovementArbitration::Owner::Hazard,
+                BotMovementArbitration::Priority::Hazard);
+        if (adaptiveAtramedesInteraction)
+            submitAtramedesCandidate(*adaptiveAtramedesInteraction,
+                "atramedes_native_gong",
+                BotMovementArbitration::Owner::Mechanic,
+                BotMovementArbitration::Priority::Mechanic);
+
+        if (adaptiveNefarianMovement
+            && adaptiveNefarianMovement->ExpiresAtMs > decisionNowMs)
+        {
+            BotActionArbitration::Candidate movement;
+            movement.Key = adaptiveNefarianMovement->Id.Key();
+            movement.Source = adaptiveNefarianMovement->Id.Strategy;
+            movement.ActionPriority = adaptiveNefarianMovement->ActionPriority;
+            movement.UtilityScore = adaptiveNefarianMovement->Utility;
+            movement.RequiredResources = adaptiveNefarianMovement->Resources();
+            movement.ExpiresAtMs = adaptiveNefarianMovement->ExpiresAtMs;
+            movement.Attempt = [&, intent = adaptiveNefarianMovement->Action]()
+            {
+                BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
+                    state, bot, intent, BotMovementArbitration::Owner::Hazard,
+                    BotMovementArbitration::Priority::Hazard);
+                if (outcome.Result == BotActionArbitration::Disposition::Committed)
+                {
+                    situation = "adaptive_nefarian";
+                    action = "nefarian_mechanic_movement";
+                    state.LastDecisionHandler = "adaptive_nefarian";
+                }
+                return outcome;
+            };
+            state.DecisionKernel.Submit(std::move(movement));
+        }
+
+        if (!adaptiveNefarianInterruptTargetGuid.IsEmpty())
+        {
+            BotActionArbitration::Candidate interrupt;
+            interrupt.Key = "adaptive_nefarian:blast_nova:"
+                + std::to_string(adaptiveNefarianInterruptTargetGuid.GetRawValue());
+            interrupt.Source = "adaptive_nefarian";
+            interrupt.ActionPriority = BotActionArbitration::Priority::Interrupt;
+            interrupt.UtilityScore = 100.0f;
+            interrupt.RequiredResources = BotActionArbitration::Uses(
+                BotActionArbitration::Resource::GlobalCooldown,
+                BotActionArbitration::Resource::Cast,
+                BotActionArbitration::Resource::Target);
+            interrupt.Attempt = [&, adaptiveNefarianInterruptTargetGuid]()
+            {
+                Unit* caster = ObjectAccessor::GetUnit(*bot,
+                    adaptiveNefarianInterruptTargetGuid);
+                if (!caster || !caster->IsAlive())
+                    return BotActionArbitration::Outcome::NotApplicable(
+                        "interrupt_caster_stale");
+                uint32 interruptSpell = 0;
+                for (uint32 spellId : { 6552u, 1766u, 2139u, 57994u,
+                        96231u, 47528u, 80964u, 80965u, 15487u, 34490u })
+                    if (bot->HasSpell(spellId))
+                    {
+                        interruptSpell = spellId;
+                        break;
+                    }
+                if (!interruptSpell
+                    || !TryCastCombatSpell(bot, caster, interruptSpell))
+                    return BotActionArbitration::Outcome::Retryable(
+                        "native_interrupt_retryable");
+                situation = "adaptive_nefarian";
+                action = "blast_nova_interrupt";
+                state.LastDecisionHandler = "adaptive_nefarian";
+                return BotActionArbitration::Outcome::Started(
+                    "native_interrupt_submitted");
+            };
+            state.DecisionKernel.Submit(std::move(interrupt));
+        }
+
+        if (!adaptiveDrudgeTankTargetGuid.IsEmpty())
+        {
+            BotActionArbitration::Candidate ownership;
+            ownership.Key = "adaptive_drudge:taunt:"
+                + std::to_string(adaptiveDrudgeTankTargetGuid.GetRawValue());
+            ownership.Source = "adaptive_drudge";
+            ownership.ActionPriority = BotActionArbitration::Priority::ThreatControl;
+            ownership.UtilityScore = 4.0f;
+            ownership.RequiredResources = BotActionArbitration::Uses(
+                BotActionArbitration::Resource::GlobalCooldown,
+                BotActionArbitration::Resource::Cast,
+                BotActionArbitration::Resource::Target);
+            ownership.Attempt = [&, adaptiveDrudgeTankTargetGuid]()
+            {
+                Unit* source = ObjectAccessor::GetUnit(*bot,
+                    adaptiveDrudgeTankTargetGuid);
+                if (!source || !source->IsAlive())
+                    return BotActionArbitration::Outcome::Retryable(
+                        "assigned_drudge_stale");
+                if (source->GetVictim() == bot)
+                    return BotActionArbitration::Outcome::NotApplicable(
+                        "native_ownership_established");
+                uint32 tauntSpell = 0;
+                switch (bot->getClass())
+                {
+                    case CLASS_WARRIOR: tauntSpell = 355; break;
+                    case CLASS_PALADIN: tauntSpell = 62124; break;
+                    case CLASS_DEATH_KNIGHT: tauntSpell = 56222; break;
+                    case CLASS_DRUID: tauntSpell = 6795; break;
+                    default: break;
+                }
+                if (!tauntSpell || !bot->HasSpell(tauntSpell))
+                    return BotActionArbitration::Outcome::Retryable(
+                        "native_taunt_unavailable");
+                if (!TryCastCombatSpell(bot, source, tauntSpell))
+                    return BotActionArbitration::Outcome::Retryable(
+                        "native_taunt_retryable");
+                situation = "adaptive_drudge";
+                action = "native_taunt";
+                state.LastDecisionHandler = "adaptive_drudge";
+                return BotActionArbitration::Outcome::Started(
+                    "native_taunt_submitted");
+            };
+            state.DecisionKernel.Submit(std::move(ownership));
+        }
+
+        bool adaptiveHazardMovementProposed = false;
+        if (Cohort().EncounterSnapshot)
+        {
+            BotEncounter::AdaptiveRaidTrashStrategy adaptiveTrash;
+            std::optional<BotNativeAction::Candidate> hazard =
+                adaptiveTrash.ProposeHazardExit(*Cohort().EncounterSnapshot, bot->GetGUID());
+            if (hazard && hazard->ExpiresAtMs > decisionNowMs)
+            {
+                adaptiveHazardMovementProposed = true;
+                BotActionArbitration::Candidate candidate;
+                candidate.Key = hazard->Id.Key();
+                candidate.Source = hazard->Id.Strategy;
+                candidate.ActionPriority = hazard->ActionPriority;
+                candidate.UtilityScore = hazard->Utility;
+                candidate.RequiredResources = hazard->Resources();
+                candidate.ExpiresAtMs = hazard->ExpiresAtMs;
+                candidate.Attempt = [&, intent = hazard->Action]()
+                {
+                    BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
+                        state, bot, intent, BotMovementArbitration::Owner::Hazard,
+                        BotMovementArbitration::Priority::Hazard);
+                    if (outcome.Result != BotActionArbitration::Disposition::Committed)
+                        return outcome;
+                    situation = "raid_trash_hazard";
+                    action = "adaptive_hazard_exit";
+                    state.LastDecisionHandler = "adaptive_raid_trash";
+                    return outcome;
+                };
+                state.DecisionKernel.Submit(std::move(candidate));
+            }
+        }
+
+        // Healing is an independent candidate. A route wait or movement
+        // transition must never suppress ordinary trained healing. While a
+        // survival movement is active, select only an instant heal so the
+        // cast cannot cancel the player's dodge spline.
+        if (Cohort().EncounterSnapshot && std::string(GetDungeonRole(bot)) == "healer"
+            && !adaptiveChimaeronHealingDisabled)
+        {
+            ObjectGuid healTargetGuid = adaptiveChimaeronPriorityHealTargetGuid;
+            float lowestHealth = 94.0f;
+            if (!healTargetGuid.IsEmpty())
+                if (BotEncounter::ActorSnapshot const* priority =
+                        Cohort().EncounterSnapshot->FindActor(healTargetGuid))
+                    lowestHealth = priority->HealthPct;
+            if (healTargetGuid.IsEmpty())
+                for (BotEncounter::ActorSnapshot const& member : Cohort().EncounterSnapshot->Players)
+                    if (member.Alive && member.HealthPct < lowestHealth)
+                {
+                    lowestHealth = member.HealthPct;
+                    healTargetGuid = member.Guid;
+                }
+
+            if (!healTargetGuid.IsEmpty())
+            {
+                BotActionArbitration::Candidate support;
+                support.Key = "raid.support.heal."
+                    + std::to_string(healTargetGuid.GetRawValue());
+                support.Source = "adaptive_raid_support";
+                support.ActionPriority = lowestHealth < 50.0f
+                    ? BotActionArbitration::Priority::Mechanic
+                    : BotActionArbitration::Priority::Support;
+                support.UtilityScore = (100.0f - lowestHealth) / 100.0f;
+                support.RequiredResources = BotActionArbitration::Uses(
+                    BotActionArbitration::Resource::GlobalCooldown,
+                    BotActionArbitration::Resource::Cast);
+                support.Attempt = [&, healTargetGuid, adaptiveHazardMovementProposed]()
+                {
+                    Unit* healTarget = ObjectAccessor::GetUnit(*bot, healTargetGuid);
+                    if (!healTarget || !healTarget->IsAlive()
+                        || !bot->IsValidAssistTarget(healTarget))
+                        return BotActionArbitration::Outcome::Retryable(
+                            "heal_target_stale");
+                    uint32 const healSpell = SelectHealSpell(
+                        bot, healTarget, adaptiveHazardMovementProposed);
+                    if (!healSpell)
+                        return BotActionArbitration::Outcome::Retryable(
+                            adaptiveHazardMovementProposed
+                                ? "no_instant_heal_while_moving"
+                                : "no_trained_heal");
+                    std::string failureReason;
+                    if (!TryCastFriendlySpell(
+                            bot, healTarget, healSpell, &failureReason))
+                        return BotActionArbitration::Outcome::Retryable(
+                            failureReason.empty()
+                                ? std::string_view("heal_cast_retryable")
+                                : std::string_view(failureReason));
+
+                    std::string raw = BuildRawJson(bot, healTarget);
+                    std::string semantic = BuildSemanticJson(bot, healTarget,
+                        "adaptive_raid_support", &power, stage,
+                        chosenActivity.Activity);
+                    RecordEvent(state, bot, "raid_heal", healTarget, "ok",
+                        raw.c_str(), semantic.c_str(),
+                        UnitHealthPct(healTarget), 0.0f, healSpell);
+                    situation = "adaptive_raid_support";
+                    action = "trained_heal";
+                    state.LastDecisionHandler = "adaptive_raid_support";
+                    return BotActionArbitration::Outcome::Started(
+                        "trained_heal_submitted");
+                };
+                state.DecisionKernel.Submit(std::move(support));
+            }
+        }
+
         BotActionArbitration::Candidate route;
         route.Key = "world.validation_route";
         route.Source = "validation_route_adapter";
         route.ActionPriority = BotActionArbitration::Priority::Mechanic;
         route.UtilityScore = 3.0f;
         route.RequiredResources = BotActionArbitration::Uses(
-            BotActionArbitration::Resource::GlobalCooldown,
-            BotActionArbitration::Resource::Cast,
             BotActionArbitration::Resource::Movement,
-            BotActionArbitration::Resource::Target,
             BotActionArbitration::Resource::Interaction);
         route.Attempt = [&]()
         {
+            if (adaptiveDrudgeOwnsNode || adaptiveMagmawOwnsNode
+                || adaptiveOmnotronOwnsNode || adaptiveMaloriakOwnsNode
+                || adaptiveChimaeronOwnsNode || adaptiveAtramedesOwnsNode
+                || adaptiveNefarianOwnsNode || adaptiveNativeRouteOwnsNode)
+                return BotActionArbitration::Outcome::NotApplicable(
+                    adaptiveDrudgeOwnsNode
+                        ? "adaptive_drudge_owns_live_pack"
+                        : (adaptiveMagmawOwnsNode
+                            ? "adaptive_magmaw_owns_live_encounter"
+                            : (adaptiveOmnotronOwnsNode
+                                ? "adaptive_omnotron_owns_live_encounter"
+                                : (adaptiveMaloriakOwnsNode
+                                    ? "adaptive_maloriak_owns_live_encounter"
+                                    : (adaptiveChimaeronOwnsNode
+                                        ? "adaptive_chimaeron_owns_live_encounter"
+                                        : (adaptiveAtramedesOwnsNode
+                                            ? "adaptive_atramedes_owns_live_encounter"
+                                            : (adaptiveNefarianOwnsNode
+                                                ? "adaptive_nefarian_owns_live_encounter"
+                                                : "native_route_contract_owns_node")))))));
+            Unit* const targetBeforeRoute = target;
+            ObjectGuid const stateTargetBeforeRoute = state.TargetGuid;
             uint64 const previousPathChangeMs = state.LastPathChangeMs;
             uint64 const previousCombatAttemptMs = state.LastCombatAttempt.RecordedAtMs;
             bool const handled = TryValidationRouteObjective(state, bot, power,
@@ -10762,6 +12021,11 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
                 return BotActionArbitration::Outcome::NotApplicable(
                     "route_not_applicable");
             state.LastDecisionHandler = "validation_route";
+            if (state.ValidationRouteTerminalState)
+                return BotActionArbitration::Outcome::Terminal(
+                    state.ValidationRouteTerminalReason.empty()
+                        ? std::string_view("route_terminal")
+                        : std::string_view(state.ValidationRouteTerminalReason));
             if (state.LastPathChangeMs > previousPathChangeMs && state.ActivePathValid)
                 return BotActionArbitration::Outcome::Progressed(
                     "route_movement_submitted");
@@ -10779,17 +12043,31 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
                         ? std::string_view("route_combat_retryable")
                         : std::string_view(state.LastCombatAttempt.Reason));
             }
-            if (action == "validation_route_target_blocked"
-                || action == "validation_route_wrong_map"
-                || action == "blocked_no_fallback"
-                || action == "boss_route_prerequisite_blocked"
-                || action == "raid_target_not_declared_hold"
-                || action == "raid_mechanic_contract_fail_closed"
-                || action == "hold_tactical_path_rejected")
+            bool const routeYield = action.find("hold") != std::string::npos
+                || action.find("wait") != std::string::npos
+                || action.find("blocked") != std::string::npos
+                || action.find("pending") != std::string::npos
+                || action.find("retry") != std::string::npos
+                || action.find("failed") != std::string::npos
+                || action == "validation_route_wrong_map";
+            if (routeYield)
+            {
+                // Legacy route handlers mutate their output target before
+                // returning a hold. Restore a still-valid native combat target
+                // so lower-priority healing/damage candidates can actually
+                // fall through during this migration.
+                if (targetBeforeRoute && targetBeforeRoute->IsAlive()
+                    && bot->IsValidAttackTarget(targetBeforeRoute)
+                    && (bot->IsInCombat() || targetBeforeRoute->IsInCombat()))
+                {
+                    target = targetBeforeRoute;
+                    state.TargetGuid = stateTargetBeforeRoute;
+                }
                 return BotActionArbitration::Outcome::Retryable(
                     state.LastNoProgressReason.empty()
                         ? std::string_view("route_retryable")
                         : std::string_view(state.LastNoProgressReason));
+            }
             return BotActionArbitration::Outcome::Committed("route_handled");
         };
         state.DecisionKernel.Submit(std::move(route));
@@ -10802,14 +12080,30 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         boss.RequiredResources = BotActionArbitration::Uses(
             BotActionArbitration::Resource::GlobalCooldown,
             BotActionArbitration::Resource::Cast,
-            BotActionArbitration::Resource::Movement,
             BotActionArbitration::Resource::Target,
             BotActionArbitration::Resource::Interaction);
         boss.Attempt = [&]()
         {
+            if (adaptiveMagmawOwnsNode || adaptiveOmnotronOwnsNode
+                || adaptiveMaloriakOwnsNode || adaptiveChimaeronOwnsNode
+                || adaptiveAtramedesOwnsNode || adaptiveNefarianOwnsNode)
+                return BotActionArbitration::Outcome::NotApplicable(
+                    adaptiveMagmawOwnsNode
+                        ? "adaptive_magmaw_owns_live_encounter"
+                        : (adaptiveOmnotronOwnsNode
+                            ? "adaptive_omnotron_owns_live_encounter"
+                            : (adaptiveMaloriakOwnsNode
+                                ? "adaptive_maloriak_owns_live_encounter"
+                                : (adaptiveChimaeronOwnsNode
+                                    ? "adaptive_chimaeron_owns_live_encounter"
+                                    : (adaptiveAtramedesOwnsNode
+                                        ? "adaptive_atramedes_owns_live_encounter"
+                                        : "adaptive_nefarian_owns_live_encounter")))));
             if (!IsBossContext(bot, target))
                 return BotActionArbitration::Outcome::NotApplicable(
                     "not_boss_context");
+            uint64 const previousPathChangeMs = state.LastPathChangeMs;
+            uint64 const previousCombatAttemptMs = state.LastCombatAttempt.RecordedAtMs;
             bossAction = TryBossMechanics(state, bot, power, stage,
                 chosenActivity.Activity);
             if (!bossAction.Handled)
@@ -10819,9 +12113,53 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             action = bossAction.Action;
             target = bossAction.Target;
             state.LastDecisionHandler = "boss_mechanics";
-            return bossAction.Failure
-                ? BotActionArbitration::Outcome::Retryable("boss_action_failed")
-                : BotActionArbitration::Outcome::Committed("boss_action_committed");
+            if (bossAction.Failure)
+                return BotActionArbitration::Outcome::Retryable(
+                    "boss_action_failed");
+
+            // Handled is a legacy routing signal, not proof that the game
+            // accepted work. A rejected path, an already-owned movement lease,
+            // or a passive wait must yield so another compatible candidate can
+            // run in the same tick.
+            if (state.LastPathChangeMs > previousPathChangeMs
+                && state.ActivePathValid)
+                return BotActionArbitration::Outcome::Progressed(
+                    "boss_movement_submitted");
+            if (state.LastCombatAttempt.RecordedAtMs > previousCombatAttemptMs)
+            {
+                std::string const& result = state.LastCombatAttempt.Result;
+                if (result == "ok")
+                    return BotActionArbitration::Outcome::Committed(
+                        "boss_combat_committed");
+                if (result == "casting" || result == "global_cooldown")
+                    return BotActionArbitration::Outcome::Started(
+                        "boss_combat_scheduled");
+                return BotActionArbitration::Outcome::Retryable(
+                    state.LastCombatAttempt.Reason.empty()
+                        ? std::string_view("boss_combat_retryable")
+                        : std::string_view(state.LastCombatAttempt.Reason));
+            }
+            if (bossAction.SpellId)
+                return BotActionArbitration::Outcome::Committed(
+                    "boss_spell_committed");
+            if (bossAction.Action.find("_submitted") != std::string::npos)
+                return BotActionArbitration::Outcome::Started(
+                    "boss_native_submission_started");
+            bool const observedPostcondition =
+                bossAction.Action.find("_complete") != std::string::npos
+                || bossAction.Action.find("_postcondition") != std::string::npos
+                || bossAction.Action.find("_boarded") != std::string::npos
+                || bossAction.Action.find("_entered") != std::string::npos;
+            bool const safetyHold = bossAction.Action == "raid_do_not_damage_hold"
+                || bossAction.Action == "raid_soak_wait_for_assigned_count"
+                || bossAction.Action == "raid_kill_sync_execution_hold_low_target";
+            if (observedPostcondition || safetyHold)
+                return BotActionArbitration::Outcome::Committed(
+                    observedPostcondition
+                        ? std::string_view("boss_postcondition_observed")
+                        : std::string_view("boss_safety_hold_committed"));
+            return BotActionArbitration::Outcome::Retryable(
+                "boss_no_observable_effect");
         };
         state.DecisionKernel.Submit(std::move(boss));
 
@@ -10833,7 +12171,6 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         trash.RequiredResources = BotActionArbitration::Uses(
             BotActionArbitration::Resource::GlobalCooldown,
             BotActionArbitration::Resource::Cast,
-            BotActionArbitration::Resource::Movement,
             BotActionArbitration::Resource::Target);
         trash.Attempt = [&]()
         {
@@ -10863,7 +12200,6 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         combat.RequiredResources = BotActionArbitration::Uses(
             BotActionArbitration::Resource::GlobalCooldown,
             BotActionArbitration::Resource::Cast,
-            BotActionArbitration::Resource::Movement,
             BotActionArbitration::Resource::Target);
         combat.Attempt = [&]()
         {
@@ -10939,15 +12275,12 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     {
         bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
         bot->GetMotionMaster()->MoveIdle();
-        state.RestTimer += state.DecisionTimer;
-        if (state.RestTimer >= 3000)
-        {
-            bot->SetFullHealth();
-            bot->SetFullPower(bot->GetPowerType());
-            state.RestTimer = 0;
-        }
+        // Remaining idle lets the core's ordinary regeneration proceed.  A
+        // future food/drink candidate may accelerate this using normal item
+        // spells, but autonomous runtime never writes health or power.
+        state.RestTimer = 0;
         situation = "idle";
-        action = "rest";
+        action = "native_regeneration";
         state.LastDecisionHandler = "rest";
     }
     else if (TryValidationRouteObjective(state, bot, power, stage, chosenActivity.Activity, situation, action, target))
@@ -11014,7 +12347,6 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             std::string semantic = BuildSemanticJson(bot, target, "target_rejected", &power, stage, chosenActivity.Activity);
             RecordEvent(state, bot, "target_rejected", target, state.LastRejectedTargetReason.c_str(), raw.c_str(), semantic.c_str());
             bot->AttackStop();
-            bot->CombatStop(true);
             state.TargetGuid.Clear();
             target = nullptr;
             situation = "target_rejected";
@@ -11204,7 +12536,6 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         state.TargetGuid.Clear();
         state.QuestWork.SelectedTargetGuid.Clear();
         bot->AttackStop();
-        bot->CombatStop(true);
         Position pos = bot->GetFirstCollisionPosition(6.0f, frand(0.0f, 2.0f * float(M_PI)));
         MoveBotToPoint(state, bot, pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ());
         situation = "runtime_recovery";
@@ -11793,8 +13124,6 @@ bool BotWorldPopulationMgr::VerifyQuestObjectiveProgress(WorldBotState& state, P
         state.QuestWork.VerifiedCasts = 0;
         state.LastNoProgressReason.clear();
         RecordQuestEvent(state, bot, "objective_progress", plan.QuestId, target, reason ? reason : ToString(plan.ObjectiveType), rawJson, semanticJson, after, plan.ItemId);
-        if (completed)
-            bot->CompleteQuest(plan.QuestId);
         return true;
     }
 
@@ -11984,7 +13313,6 @@ bool BotWorldPopulationMgr::StopDisallowedDummyCombat(WorldBotState& state, Play
         return false;
 
     bot->AttackStop();
-    bot->CombatStop(true);
     bot->ClearUnitState(UNIT_STATE_CHASE);
     bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
     bot->GetMotionMaster()->MoveIdle();
@@ -13116,7 +14444,16 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
                 }
             }
         }
-        bot->RewardQuest(quest, rewardChoice, turnIn, true);
+        if (!SubmitNativeQuestReward(bot, turnIn, questId, rewardChoice))
+        {
+            result.Failure = true;
+            result.Rare = true;
+            std::string raw = BuildRawJson(bot, nullptr);
+            std::string semantic = BuildSemanticJson(bot, nullptr, "quest_turn_in_failed", &power, stage, activity);
+            RecordQuestEvent(state, bot, "objective_failed", questId, nullptr,
+                "native_reward_submission_failed", raw.c_str(), semantic.c_str(), 0, rewardItemId);
+            return result;
+        }
         ++Cohort().Metrics.QuestsCompleted;
         state.LastQuestCompletedCount = Cohort().Metrics.QuestsCompleted;
         uint32 elapsed = state.QuestStartTime ? (Cohort().ElapsedMs / 1000) - state.QuestStartTime : 0;
@@ -13167,46 +14504,10 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
         float turnInDistance = turnInRoute.MapId == bot->GetMapId() ? Distance2d(bot->GetPositionX(), bot->GetPositionY(), turnInRoute.X, turnInRoute.Y) : 100000.0f;
         if (turnInDistance <= INTERACTION_DISTANCE)
         {
-            uint32 rewardItemId = 0;
-            uint32 rewardChoice = ChooseQuestReward(bot, completedQuest, &rewardItemId);
-            result.RewardChoice = rewardChoice;
-            result.RewardItemId = rewardItemId;
-            if (!bot->CanRewardQuest(completedQuest, rewardChoice, false))
-            {
-                result.Failure = true;
-                result.Rare = true;
-                std::string raw = BuildRawJson(bot, nullptr);
-                std::string semantic = BuildSemanticJson(bot, nullptr, "quest_turn_in_failed", &power, stage, activity);
-                RecordQuestEvent(state, bot, "objective_failed", questStatus.first, nullptr, "db_turnin_reward_blocked", raw.c_str(), semantic.c_str(), 0, rewardItemId);
-                return result;
-            }
-
-            float powerBefore = power.Total;
-            uint8 levelBefore = bot->getLevel();
-            uint64 moneyBefore = bot->GetMoney();
-            bot->RewardQuest(completedQuest, rewardChoice, bot, true);
-            ++Cohort().Metrics.QuestsCompleted;
-            state.LastQuestCompletedCount = Cohort().Metrics.QuestsCompleted;
-            uint32 elapsed = state.QuestStartTime ? (Cohort().ElapsedMs / 1000) - state.QuestStartTime : 0;
-            uint32 deaths = Cohort().Metrics.Deaths >= state.QuestStartDeaths ? Cohort().Metrics.Deaths - state.QuestStartDeaths : 0;
-            BotRolePowerBreakdown powerAfter = BotLongTermProgressionBrain::CalculateRolePower(bot);
-            std::ostringstream context;
-            context << "{\"reward_choice\":" << rewardChoice
-                    << ",\"reward_item_id\":" << rewardItemId
-                    << ",\"time_to_complete_sec\":" << elapsed
-                    << ",\"death_count\":" << deaths
-                    << ",\"level_delta\":" << int32(bot->getLevel()) - int32(levelBefore)
-                    << ",\"gold_delta\":" << int64(bot->GetMoney()) - int64(moneyBefore)
-                    << ",\"power_gain\":" << (powerAfter.Total - powerBefore)
-                    << ",\"turnin_source\":\"" << JsonEscape(turnInRoute.Source) << "\"}";
-            std::string raw = BuildRawJson(bot, nullptr);
-            std::string semantic = BuildSemanticJson(bot, nullptr, "quest_completed", &powerAfter, stage, activity);
-            RecordQuestEvent(state, bot, "reward_chosen", questStatus.first, nullptr, "db_questender_reached", raw.c_str(), semantic.c_str(), rewardChoice, rewardItemId, context.str().c_str());
-            RecordQuestEvent(state, bot, "quest_completed", questStatus.first, nullptr, "db_questender_reached", raw.c_str(), semantic.c_str(), elapsed, rewardItemId, context.str().c_str());
-            RecordQuestEvent(state, bot, "chain_step_turnin", questStatus.first, nullptr, "db_questender_reached", raw.c_str(), semantic.c_str(), elapsed, rewardItemId, context.str().c_str());
-            result.Action = "complete_quest_db_fallback";
-            ResetQuestWork(state);
-            state.QuestSearchRadiusIndex = 0;
+            // Coordinates discovered from DB are navigation hints.  They do
+            // not authorize a reward without an observed questgiver object.
+            result.Action = "await_visible_quest_turnin";
+            state.LastNoQuestReason = "db_turnin_reached_without_visible_giver";
             return result;
         }
         MoveBotToPoint(state, bot, turnInRoute.X, turnInRoute.Y, turnInRoute.Z);
@@ -13267,7 +14568,7 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
                 continue;
             }
 
-            bot->AddQuestAndCheckCompletion(quest, object);
+            SubmitNativeQuestAccept(bot, object, candidateQuestId);
             QuestStatus status = bot->GetQuestStatus(candidateQuestId);
             auto questItr = bot->getQuestStatusMap().find(candidateQuestId);
             bool accepted = questItr != bot->getQuestStatusMap().end() && (status == QUEST_STATUS_INCOMPLETE || status == QUEST_STATUS_COMPLETE);
@@ -13495,9 +14796,12 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
             state.QuestWork.SelectedObjectGuid = questObject->GetGUID();
             if (GameObject* go = questObject->ToGameObject())
             {
-                go->Use(bot);
-                if (plan.IsItemObjective)
-                    bot->SendLoot(go->GetGUID(), LOOT_CORPSE);
+                if (WorldSession* session = bot->GetSession())
+                {
+                    WorldPacket useRequest(CMSG_GAMEOBJ_USE, 8);
+                    useRequest << go->GetGUID();
+                    session->HandleGameObjectUseOpcode(useRequest);
+                }
             }
             std::string raw = BuildRawJson(bot, nullptr);
             std::string semantic = BuildSemanticJson(bot, nullptr, "quest_objective", &power, stage, activity);
@@ -13635,16 +14939,6 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
         BotActionResult pull = executor.Pull(bot, objectiveTarget);
         if (spellId)
             TryCastCombatSpell(bot, objectiveTarget, spellId);
-        if (pull == BotActionResult::Ok
-            && sConfigMgr->GetBoolDefault("BotWorld.TeacherQuestKillAssist", true)
-            && IsSimpleOpenWorldQuestMobAssistTarget(bot, plan.ObjectiveType, plan.IsItemObjective, plan.RequiredEntry, objectiveTarget)
-            && objectiveTarget->IsAlive())
-        {
-            std::string raw = BuildRawJson(bot, objectiveTarget);
-            std::string semantic = BuildSemanticJson(bot, objectiveTarget, "teacher_quest_mob_assist", &power, stage, activity);
-            RecordEvent(state, bot, "teacher_kill_assist", objectiveTarget, "simple_open_world_quest_mob_target", raw.c_str(), semantic.c_str(), UnitHealthPct(objectiveTarget), objectiveTarget->GetEntry());
-            Unit::DealDamage(bot, objectiveTarget, objectiveTarget->GetHealth(), 0, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
-        }
         if (pull != BotActionResult::Ok)
         {
             result.Failure = true;
@@ -13694,7 +14988,7 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
         attemptKey << giver->GetGUID().GetCounter() << ":" << questId;
         ++state.QuestPickupAttemptCount[attemptKey.str()];
 
-        bot->AddQuestAndCheckCompletion(quest, giver);
+        SubmitNativeQuestAccept(bot, giver, questId);
         std::string raw = BuildRawJson(bot, nullptr);
         std::string semantic = BuildSemanticJson(bot, nullptr, "quest_accepted", &power, stage, activity);
         RecordQuestEvent(state, bot, "quest_seen", questId, nullptr, "ok", raw.c_str(), semantic.c_str());
@@ -13787,43 +15081,11 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
                         std::string raw = BuildRawJson(bot, nullptr);
                         std::string semantic = BuildSemanticJson(bot, nullptr, "quest_pickup_db_fallback", &power, stage, activity);
                         RecordQuestEvent(state, bot, "quest_seen", pickup.QuestId, nullptr, pickup.Source.c_str(), raw.c_str(), semantic.c_str());
-                        bot->AddQuestAndCheckCompletion(quest, nullptr);
-                        QuestStatus status = bot->GetQuestStatus(pickup.QuestId);
-                        auto questItr = bot->getQuestStatusMap().find(pickup.QuestId);
-                        bool accepted = questItr != bot->getQuestStatusMap().end() && (status == QUEST_STATUS_INCOMPLETE || status == QUEST_STATUS_COMPLETE);
-                        if (accepted)
-                        {
-                            ++Cohort().Metrics.QuestsAccepted;
-                            state.LastQuestId = pickup.QuestId;
-                            state.NewlyAcceptedQuestId = pickup.QuestId;
-                            state.RecentlyAcceptedQuestUntilMs = NowMs() + 30000;
-                            state.QuestStartTime = Cohort().ElapsedMs / 1000;
-                            state.QuestStartDeaths = Cohort().Metrics.Deaths;
-                            state.QuestSearchRadiusIndex = 0;
-                            state.LastNoQuestReason = "accepted_from_reached_db_queststarter";
-                            result.Action = "accept_quest_db_fallback";
-                            RecordQuestEvent(state, bot, "quest_accepted", pickup.QuestId, nullptr, "db_queststarter_reached", raw.c_str(), semantic.c_str(), Cohort().Metrics.QuestsAccepted);
-
-                            QuestObjectivePlan acceptedObjective;
-                            if (FindQuestObjective(bot, pickup.QuestId, acceptedObjective))
-                            {
-                                SetQuestWorkFromPlan(state, acceptedObjective);
-                                SetQuestWorkPhase(state, "choose_objective");
-                                RecordQuestEvent(state, bot, "quest_work_started", pickup.QuestId, nullptr, ToString(acceptedObjective.ObjectiveType), raw.c_str(), semantic.c_str(), acceptedObjective.CurrentCount, acceptedObjective.ItemId);
-                            }
-                            else if (classification == QuestClassification::ChainQuest)
-                            {
-                                state.LastObjectiveNotFoundReason = "chain_step_accepted";
-                                RecordQuestEvent(state, bot, "chain_step_accepted", pickup.QuestId, nullptr, "db_queststarter_reached", raw.c_str(), semantic.c_str(), Cohort().Metrics.QuestsAccepted);
-                            }
-                            return result;
-                        }
-
-                        state.QuestCooldownUntilMs[pickup.QuestId] = NowMs() + 60000;
-                        state.LastObjectiveNotFoundReason = "quest_log_entry_missing";
-                        result.Failure = true;
-                        result.Action = "quest_accept_db_fallback_failed";
-                        RecordQuestEvent(state, bot, "quest_accept_failed", pickup.QuestId, nullptr, "db_queststarter_reached_but_log_entry_missing", raw.c_str(), semantic.c_str());
+                        // Wait for SelectQuestGiver to see the real object; a DB
+                        // coordinate is not an authority to accept against a
+                        // null questgiver.
+                        state.LastNoQuestReason = "db_queststarter_reached_without_visible_giver";
+                        result.Action = "await_visible_quest_giver";
                         return result;
                     }
                 }
@@ -14107,7 +15369,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     if (Party().ValidationRouteManifestComplete)
     {
         bot->AttackStop();
-        bot->CombatStop(true);
         bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
         state.ActivePathValid = false;
         state.IsMoving = false;
@@ -15227,12 +16488,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                         if ((castCreature && isImmediateNextValidationRouteEncounterMember(castCreature))
                             || SpellHasHostileMultiTargetSemantics(current->GetSpellInfo()))
                             controlled->InterruptSpell(spellType, false);
-                    }
+                }
                 controlled->AttackStop();
-                if (Creature* controlledCreature = controlled->ToCreature())
-                    controlledCreature->SetReactState(REACT_PASSIVE);
-                if (CharmInfo* charmInfo = controlled->GetCharmInfo())
-                    charmInfo->SetIsCommandAttack(false);
             }
 
         std::string raw = BuildRawJson(bot, prematureNextEncounter);
@@ -15373,134 +16630,23 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (deathParticipants < 2 || recentDeathCount < 2 || validationPartyHasActiveCombat())
             return false;
 
-        // Validation raid bosses are owned exclusively by their native
-        // InstanceScript/BossAI.  In particular, never force a loaded spawn,
-        // advance a respawn timer, or manufacture a Creature from DB data for
-        // a route target.  Keep this outcome machine-readable so the capture
-        // can distinguish native reset pending from forbidden assistance.
-        if (bot->GetMap()->IsRaid())
-        {
-            recoveryResult = "native_boss_recovery_pending";
-            std::ostringstream raw;
-            raw << "{\"base\":" << BuildRawJson(bot, nullptr)
-                << ",\"native_recovery_gate\":{\"authority\":\"native_encounter\""
-                << ",\"assistance\":\"none\",\"direct_respawn\":false"
-                << ",\"direct_state_manufacture\":false"
-                << ",\"death_participants\":" << deathParticipants
-                << ",\"recent_death_count\":" << recentDeathCount << "}}";
-            std::string semantic = BuildSemanticJson(bot, nullptr, "native_raid_recovery", &power, stage, activity);
-            RecordEvent(state, bot, "validation_route_recovery", nullptr, recoveryResult.c_str(),
-                raw.str().c_str(), semantic.c_str(), float(deathParticipants), recentDeathCount);
-            MarkBotBlocked(state, bot, recoveryResult.c_str());
-            return true;
-        }
-
-        uint64 nowMs = NowMs();
-        if (Party().ValidationRouteCanonicalBossRecoveryAttempts >= 2
-            || (Party().ValidationRouteCanonicalBossRecoveryLastMs
-                && nowMs - Party().ValidationRouteCanonicalBossRecoveryLastMs < 10000))
-            return false;
-
-        ValidationRouteManifestNode const& node = Party().ValidationRouteManifest[Party().ValidationRouteManifestIndex];
-        ObjectGuid::LowType canonicalSpawnId = 0;
-        float canonicalDistance = 0.0f;
-        for (auto const& pair : sObjectMgr->GetAllCreatureData())
-        {
-            CreatureData const& data = pair.second;
-            if (data.id != Cohort().Config.ValidationRouteTargetEntry || data.mapId != bot->GetMapId())
-                continue;
-
-            float distance = Distance2d(node.X, node.Y, data.spawnPoint.GetPositionX(), data.spawnPoint.GetPositionY());
-            if (!canonicalSpawnId || distance < canonicalDistance)
-            {
-                canonicalSpawnId = pair.first;
-                canonicalDistance = distance;
-            }
-        }
-
-        ++Party().ValidationRouteCanonicalBossRecoveryAttempts;
-        Party().ValidationRouteCanonicalBossRecoveryLastMs = nowMs;
-        if (!canonicalSpawnId || canonicalDistance > 80.0f)
-            recoveryResult = "canonical_boss_spawn_not_found";
-        else
-        {
-            // This legacy canonical-spawn recovery is intentionally scoped to
-            // non-raid validation routes only.  The raid guard above must
-            // remain before every direct Respawn/LoadFromDB operation.
-            Map* routeMap = bot->GetMap();
-            if (Creature* loaded = routeMap->GetCreatureBySpawnId(canonicalSpawnId))
-            {
-                loaded->Respawn(true);
-                recoveryResult = "canonical_boss_loaded_spawn_forced_respawn";
-                recoveryInitiated = true;
-            }
-            else if (routeMap->GetCreatureRespawnTime(canonicalSpawnId))
-            {
-                routeMap->Respawn(SPAWN_TYPE_CREATURE, canonicalSpawnId);
-                recoveryResult = "canonical_boss_scheduled_respawn_advanced";
-                recoveryInitiated = true;
-            }
-            else
-            {
-                Creature* recovered = new Creature();
-                if (recovered->LoadFromDB(canonicalSpawnId, routeMap, true, false))
-                {
-                    recoveryResult = "canonical_boss_spawn_loaded_from_database";
-                    recoveryInitiated = true;
-                }
-                else
-                {
-                    delete recovered;
-                    recoveryResult = "canonical_boss_spawn_load_failed";
-                }
-            }
-        }
-
-        if (recoveryInitiated)
-        {
-            Party().ValidationRouteFocusGuid.Clear();
-            Party().ValidationRouteFocusEntry = 0;
-            Party().ValidationRouteFocusMapId = 0;
-            Party().ValidationRouteFocusX = 0.0f;
-            Party().ValidationRouteFocusY = 0.0f;
-            Party().ValidationRouteFocusZ = 0.0f;
-            Party().ValidationRouteFocusSeenMs = 0;
-            Party().ValidationRouteBossProgressTargetGuid.Clear();
-            Party().ValidationRouteBossSlowProgressCount = 0;
-            Party().ValidationRouteEngagedBossGuid.Clear();
-            Party().ValidationRouteEngagedBossGeneration = 0;
-            Party().ValidationRouteEngagedBossMapId = 0;
-            Party().ValidationRouteEngagedBossInstanceId = 0;
-            ResetValidationRouteBossAddDensityState();
-            for (WorldBotState& cohortState : Party().Bots)
-            {
-                cohortState.TargetGuid.Clear();
-                cohortState.ValidationRouteCombatProgressTargetGuid.Clear();
-                cohortState.ValidationRouteCombatBestHealthPct = 1.0f;
-                cohortState.ValidationRouteCombatNoProgressCount = 0;
-                cohortState.ValidationRouteCombatNoProgressSinceMs = 0;
-                cohortState.ValidationRouteBossSlowProgressCount = 0;
-                cohortState.ValidationRouteTargetSearchMissCount = 0;
-                cohortState.ValidationRouteAnchorOverrideValid = false;
-                cohortState.ValidationRouteAnchorOverrideUntilMs = 0;
-                cohortState.ValidationRouteAnchorOverrideReason.clear();
-            }
-        }
-
+        // Boss recovery is always owned by the encounter script and ordinary
+        // player lifecycle, regardless of map type. Never force a spawn,
+        // advance a respawn clock, or load a creature from DB for autonomy.
+        recoveryResult = "native_boss_recovery_pending";
         std::ostringstream raw;
         raw << "{\"base\":" << BuildRawJson(bot, nullptr)
-            << ",\"canonical_boss_recovery\":{\"spawn_id\":" << canonicalSpawnId
-            << ",\"entry\":" << Cohort().Config.ValidationRouteTargetEntry
-            << ",\"route_generation\":" << Party().ValidationRouteGeneration
-            << ",\"distance\":" << canonicalDistance
+            << ",\"native_recovery_gate\":{\"authority\":\"native_encounter\""
+            << ",\"assistance\":\"none\",\"direct_respawn\":false"
+            << ",\"direct_state_manufacture\":false"
             << ",\"death_participants\":" << deathParticipants
             << ",\"recent_death_count\":" << recentDeathCount
-            << ",\"attempt\":" << Party().ValidationRouteCanonicalBossRecoveryAttempts
-            << ",\"initiated\":" << (recoveryInitiated ? "true" : "false") << "}}";
-        std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_canonical_boss_recovery", &power, stage, activity);
-        RecordEvent(state, bot, "validation_route_recovery", nullptr, recoveryResult.c_str(), raw.str().c_str(), semantic.c_str(), canonicalDistance, Cohort().Config.ValidationRouteTargetEntry);
-        if (!recoveryInitiated)
-            MarkBotBlocked(state, bot, recoveryResult.c_str());
+            << "}}";
+        std::string semantic = BuildSemanticJson(bot, nullptr,
+            "native_boss_recovery", &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_recovery", nullptr,
+            recoveryResult.c_str(), raw.str().c_str(), semantic.c_str(),
+            float(deathParticipants), recentDeathCount);
         return true;
     };
     auto isNaturalValidationRoutePackMember = [
@@ -16821,14 +17967,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && Party().ValidationRouteFocusSeenMs
             && NowMs() - Party().ValidationRouteFocusSeenMs <= (Cohort().Config.ValidationRouteKind == "boss" ? 60000 : 20000);
     };
-    auto routeUsableValidationFocus = [this, &routeUsableCombatTarget, &isValidationRouteScriptTarget, &isValidationCohortCombatLinked](Unit* focus) -> Unit*
+    auto routeUsableValidationFocus = [this, &routeUsableCombatTarget,
+        &isValidationRouteObjectiveTarget, &isValidationCohortCombatLinked](Unit* focus) -> Unit*
     {
         focus = routeUsableCombatTarget(focus);
         if (!focus)
             return nullptr;
 
         if (Cohort().Config.ValidationRouteKind != "boss" || !Party().ValidationRouteActivationApplied
-            || isValidationRouteScriptTarget(focus->ToCreature()) || focus->IsInCombat() || focus->GetVictim())
+            || isValidationRouteObjectiveTarget(focus->ToCreature())
+            || focus->IsInCombat() || focus->GetVictim())
             return focus;
 
         Creature* creature = focus->ToCreature();
@@ -17081,125 +18229,31 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         rememberValidationRouteFocus(creature);
         return creature;
     };
-    auto tryValidationRouteActivation = [this, &state, bot, &power, stage, activity, &isValidationRouteScriptTarget, &rememberValidationRouteFocus](Unit* seenTarget, char const* reason) -> bool
+    auto tryValidationRouteActivation = [this, &state, bot, &power, stage, activity](Unit* seenTarget, char const* reason) -> bool
     {
+        (void)reason;
         if ((!Cohort().Config.ValidationRouteActivationDataId
             && !Cohort().Config.ValidationRouteActivationSpawnGroupId
             && (!Cohort().Config.ValidationRouteActivationActionEntry || !Cohort().Config.ValidationRouteActivationActionId)
             && !Cohort().Config.ValidationRouteActivationSummonEntry
             && !Cohort().Config.ValidationRouteOpenerSummonEntry) || !bot)
             return false;
-        if (Cohort().Config.ValidationRouteKind == "boss" && std::string(GetDungeonRole(bot)) != "tank")
-            return false;
-
-        if (Party().ValidationRouteActivationApplied)
+        // These legacy fields describe privileged server-side activation
+        // (SetData, SpawnGroupSpawn, AI::DoAction, or SummonCreature). They are
+        // never executed by autonomous bots. Encounter modules must instead
+        // propose normal gossip/spell-click/attack/area-trigger interactions.
+        if (!state.ValidationRouteActivationAttempts)
         {
-            state.ValidationRouteActivationApplied = true;
-            state.ValidationRouteActivationAttempts = Party().ValidationRouteActivationAttempts;
-            return false;
+            state.ValidationRouteActivationAttempts = 1;
+            std::string raw = BuildRawJson(bot, seenTarget);
+            std::string semantic = BuildSemanticJson(bot, seenTarget,
+                "validation_route_activation", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_activation", seenTarget,
+                "native_player_interaction_required", raw.c_str(),
+                semantic.c_str(), 0.0f,
+                Cohort().Config.ValidationRouteActivationActionEntry);
         }
-
-        Unit* activationTarget = seenTarget;
-        auto makeRouteSummonCombatReady = [this, bot, &rememberValidationRouteFocus](TempSummon* summon) -> Unit*
-        {
-            if (!summon)
-                return nullptr;
-
-            summon->SetFaction(FACTION_MONSTER);
-            summon->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE | UNIT_FLAG_IMMUNE_TO_PC | UNIT_FLAG_IMMUNE_TO_NPC);
-            summon->SetReactState(REACT_AGGRESSIVE);
-            summon->SetHomePosition(summon->GetPositionX(), summon->GetPositionY(), summon->GetPositionZ(), summon->GetOrientation());
-
-            if (Cohort().Config.ValidationRouteKind == "boss" && bot && bot->IsAlive())
-            {
-                summon->SetInCombatWith(bot);
-                bot->SetInCombatWith(summon);
-                if (summon->AI())
-                    summon->AI()->AttackStart(bot);
-                rememberValidationRouteFocus(summon);
-            }
-
-            return summon;
-        };
-        InstanceMap* instanceMap = bot->GetMap() ? bot->GetMap()->ToInstanceMap() : nullptr;
-        InstanceScript* instance = instanceMap ? instanceMap->GetInstanceScript() : nullptr;
-        if (!instanceMap || !instance)
-            return false;
-
-        if (instance && Cohort().Config.ValidationRouteActivationDataId)
-            instance->SetData(Cohort().Config.ValidationRouteActivationDataId, Cohort().Config.ValidationRouteActivationDataValue);
-
-        if (Cohort().Config.ValidationRouteActivationSpawnGroupId)
-        {
-            std::vector<WorldObject*> spawnedObjects;
-            bot->GetMap()->SpawnGroupSpawn(Cohort().Config.ValidationRouteActivationSpawnGroupId, true, true, &spawnedObjects);
-            for (WorldObject* object : spawnedObjects)
-            {
-                Unit* unit = object ? object->ToUnit() : nullptr;
-                Creature* creature = unit ? unit->ToCreature() : nullptr;
-                if (!creature)
-                    continue;
-
-                if ((Cohort().Config.ValidationRouteActivationActionEntry && creature->GetEntry() == Cohort().Config.ValidationRouteActivationActionEntry)
-                    || isValidationRouteScriptTarget(creature))
-                {
-                    activationTarget = creature;
-                    break;
-                }
-            }
-        }
-        if (Cohort().Config.ValidationRouteActivationActionEntry && Cohort().Config.ValidationRouteActivationActionId)
-        {
-            std::vector<WorldObject*> objects;
-            Trinity::AllWorldObjectsInRange check(bot, 260.0f);
-            Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
-            Cell::VisitAllObjects(bot, searcher, 260.0f);
-            for (WorldObject* object : objects)
-            {
-                Creature* creature = object ? object->ToCreature() : nullptr;
-                if (!creature || creature->GetEntry() != Cohort().Config.ValidationRouteActivationActionEntry || !creature->IsAIEnabled())
-                    continue;
-
-                creature->AI()->DoAction(Cohort().Config.ValidationRouteActivationActionId);
-                activationTarget = creature;
-                break;
-            }
-        }
-        if (Cohort().Config.ValidationRouteActivationSummonEntry)
-        {
-            Position summonPos(Cohort().Config.ValidationRouteActivationSummonX, Cohort().Config.ValidationRouteActivationSummonY, Cohort().Config.ValidationRouteActivationSummonZ, Cohort().Config.ValidationRouteActivationSummonO);
-            if (Unit* summon = makeRouteSummonCombatReady(bot->SummonCreature(Cohort().Config.ValidationRouteActivationSummonEntry, summonPos, TEMPSUMMON_MANUAL_DESPAWN)))
-                activationTarget = summon;
-        }
-        if (Cohort().Config.ValidationRouteOpenerSummonEntry)
-        {
-            Position openerPos(Cohort().Config.ValidationRouteOpenerSummonX, Cohort().Config.ValidationRouteOpenerSummonY, Cohort().Config.ValidationRouteOpenerSummonZ, Cohort().Config.ValidationRouteOpenerSummonO);
-            if (Unit* summon = makeRouteSummonCombatReady(bot->SummonCreature(Cohort().Config.ValidationRouteOpenerSummonEntry, openerPos, TEMPSUMMON_MANUAL_DESPAWN)))
-                activationTarget = summon;
-        }
-        Party().ValidationRouteActivationApplied = true;
-        ++Party().ValidationRouteActivationAttempts;
-        state.ValidationRouteActivationApplied = true;
-        state.ValidationRouteActivationAttempts = Party().ValidationRouteActivationAttempts;
-        if (Cohort().Config.ValidationRouteKind == "boss" && activationTarget && activationTarget->IsAlive() && bot->IsValidAttackTarget(activationTarget))
-        {
-            rememberValidationRouteFocus(activationTarget);
-            state.TargetGuid = activationTarget->GetGUID();
-        }
-        else if (Cohort().Config.ValidationRouteKind == "boss")
-            state.TargetGuid.Clear();
-
-        std::string raw = BuildRawJson(bot, activationTarget);
-        std::string semantic = BuildSemanticJson(bot, activationTarget, "validation_route_activation", &power, stage, activity);
-        uint32 activationSource = Cohort().Config.ValidationRouteActivationDataId
-            ? Cohort().Config.ValidationRouteActivationDataId
-            : (Cohort().Config.ValidationRouteActivationSpawnGroupId
-                ? Cohort().Config.ValidationRouteActivationSpawnGroupId
-                : (Cohort().Config.ValidationRouteActivationActionEntry
-                    ? Cohort().Config.ValidationRouteActivationActionEntry
-                    : Cohort().Config.ValidationRouteActivationSummonEntry));
-        RecordEvent(state, bot, "validation_route_activation", activationTarget, reason ? reason : "activate_route_script", raw.c_str(), semantic.c_str(), float(Cohort().Config.ValidationRouteActivationDataValue), activationSource);
-        return true;
+        return false;
     };
     auto routeTankFocusTarget = [this, bot, &routeUsableCombatTarget, &rememberValidationRouteFocus](ObjectGuid expectedGuid) -> Unit*
     {
@@ -26494,10 +27548,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             {
                 for (WorldBotState& cohortState : Party().Bots)
                 {
-                    // Bind every cohort member to the same post-retreat
-                    // rendezvous before combat is released. Dead members then
-                    // resurrect beside the survivors instead of returning to
-                    // an individual safe position near the abandoned pack.
+                    // Bind every living cohort member to the same ordinary
+                    // movement rendezvous. Native combat/evade and corpse
+                    // recovery remain authoritative.
                     cohortState.ValidationRouteAnchorOverrideValid = true;
                     cohortState.ValidationRouteAnchorOverrideUntilMs = nowMs + 120000;
                     cohortState.ValidationRouteAnchorOverrideX = retreatX;
@@ -26509,25 +27562,24 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     if (!cohortBot || !cohortBot->IsAlive() || cohortBot->GetMap() != bot->GetMap())
                         continue;
                     cohortBot->AttackStop();
-                    cohortBot->CombatStopWithPets(true);
                     cohortBot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
                     cohortState.TargetGuid.Clear();
-                    cohortState.WasInCombat = false;
+                    cohortState.WasInCombat = cohortBot->IsInCombat();
                     cohortState.ActivePathValid = false;
                     cohortState.IsMoving = false;
                 }
 
                 std::string raw = BuildRawJson(bot, retreatThreat);
                 std::string semantic = BuildSemanticJson(bot, retreatThreat, "validation_route_recovery", &power, stage, activity);
-                std::string retreatReason = std::string("partial_wipe_retreat_combat_disengaged_") + retreatDestination;
+                std::string retreatReason = std::string("partial_wipe_retreat_arrived_") + retreatDestination;
                 RecordEvent(state, bot, "validation_route_recovery", retreatThreat,
                     retreatReason.c_str(), raw.c_str(), semantic.c_str(), 0.0f, deadMembers);
                 state.LastRecoveryMode = "tactical_retreat_no_combat_res";
-                state.LastRecoveryResult = std::string("combat_disengaged_") + retreatDestination;
+                state.LastRecoveryResult = std::string("retreat_arrived_") + retreatDestination;
                 state.LastRecoveryMs = nowMs;
                 ++state.RecoveryAttemptCount;
                 situation = "validation_route_recovery";
-                action = "validation_route_retreat_disengage";
+                action = "validation_route_retreat_arrived";
                 target = nullptr;
                 return true;
             }
@@ -26691,7 +27743,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && routeDistance > terminalCohortRadius)
         {
             bot->AttackStop();
-            bot->CombatStop(true);
             target = nullptr;
             state.TargetGuid.Clear();
             if (moveToRouteAnchor())
@@ -26706,7 +27757,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
 
         bot->AttackStop();
-        bot->CombatStop(true);
         state.TargetGuid.Clear();
         state.WasInCombat = false;
         state.LoopRecoveryCooldownUntilMs = NowMs() + 60000;
@@ -26735,7 +27785,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     if (arrivalRoute && !arrivalCombatActive)
     {
         bot->AttackStop();
-        bot->CombatStop(true);
         target = nullptr;
         state.TargetGuid.Clear();
         std::string raw = BuildRawJson(bot, nullptr);
@@ -32569,7 +33618,7 @@ uint32 BotWorldPopulationMgr::SelectInterruptSpell(Player* bot) const
     return 0;
 }
 
-uint32 BotWorldPopulationMgr::SelectHealSpell(Player* bot, Unit* target) const
+uint32 BotWorldPopulationMgr::SelectHealSpell(Player* bot, Unit* target, bool instantOnly) const
 {
     if (!bot || !target)
         return 0;
@@ -32598,8 +33647,13 @@ uint32 BotWorldPopulationMgr::SelectHealSpell(Player* bot, Unit* target) const
         }
         if (!candidate.RejectReason.empty())
             continue;
-        if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
-            spellInfo && (target->IsImmunedToSpell(spellInfo, bot)
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
+        if (instantOnly && spellInfo && spellInfo->CalcCastTime(bot->getLevel()) > 0)
+        {
+            candidate.RejectReason = "movement_requires_instant_heal";
+            continue;
+        }
+        if (spellInfo && (target->IsImmunedToSpell(spellInfo, bot)
                 || (spellInfo->HasOnlyDamageEffects() && target->IsImmunedToDamage(spellInfo))))
         {
             candidate.RejectReason = "target_immune";
@@ -35191,20 +36245,25 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
             if (currentEnchantId == desiredEnchantId)
                 return false;
 
-            constexpr uint32 ShamanWeaponImbueDurationMs = 1800000;
-            if (currentEnchantId)
-                bot->ApplyEnchantment(weapon, TEMP_ENCHANTMENT_SLOT, false);
-            weapon->SetEnchantment(TEMP_ENCHANTMENT_SLOT, desiredEnchantId,
-                ShamanWeaponImbueDurationMs, 0, bot->GetGUID());
-            bot->ApplyEnchantment(weapon, TEMP_ENCHANTMENT_SLOT, true);
+            if (!spellInfo || bot->HasUnitState(UNIT_STATE_CASTING)
+                || bot->GetSpellHistory()->HasGlobalCooldown(spellInfo)
+                || !bot->GetSpellHistory()->IsReady(spellInfo))
+                return true;
 
             ResolvedCombatAction action;
             action.Valid = true;
-            action.Type = "apply_enchant";
+            action.Type = "cast";
             action.SpellId = spellId;
             action.TargetGuid = bot->GetGUID();
             action.DebugName = name;
-            RecordCombatAttempt(state, bot, bot, "persistent_setup", &action, BotActionResult::Ok, name);
+            SpellCastResult const castResult = bot->CastSpell(
+                weapon, spellId, CastSpellExtraArgs(TRIGGERED_NONE));
+            BotActionResult const result = castResult == SPELL_CAST_OK
+                ? BotActionResult::Ok : BotActionResult::CastFailed;
+            std::string const reason = result == BotActionResult::Ok
+                ? name
+                : "weapon_imbue_spell_cast_result_" + std::to_string(uint32(castResult));
+            RecordCombatAttempt(state, bot, bot, "persistent_setup", &action, result, reason.c_str());
             return true;
         };
 
@@ -35220,7 +36279,6 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
 
     if (bot->getClass() == CLASS_ROGUE)
     {
-        constexpr uint32 PoisonDurationMs = 3600000;
         constexpr uint32 PoisonRefreshThresholdMs = 900000;
         auto ensureWeaponPoison = [&](uint8 equipmentSlot, uint32 enchantId, char const* name) -> bool
         {
@@ -35238,18 +36296,14 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
             if (currentEnchantId == enchantId && currentDurationMs >= PoisonRefreshThresholdMs)
                 return false;
 
-            if (currentEnchantId)
-                bot->ApplyEnchantment(weapon, TEMP_ENCHANTMENT_SLOT, false);
-            weapon->SetEnchantment(TEMP_ENCHANTMENT_SLOT, enchantId, PoisonDurationMs, 0, bot->GetGUID());
-            bot->ApplyEnchantment(weapon, TEMP_ENCHANTMENT_SLOT, true);
-
-            ResolvedCombatAction action;
-            action.Valid = true;
-            action.Type = "apply_enchant";
-            action.TargetGuid = bot->GetGUID();
-            action.DebugName = name;
-            RecordCombatAttempt(state, bot, bot, "persistent_setup", &action, BotActionResult::Ok, name);
-            return true;
+            // Poisons are consumable item uses in the client.  Provision the
+            // real poison item and submit it through the item-use path; never
+            // manufacture its temporary enchant from the autonomy runtime.
+            std::string const blocker = std::string("persistent_setup_native_poison_item_required:") + name;
+            ObserveBotCandidateFailure(state, bot,
+                "world.setup.weapon_poison:" + std::string(name), blocker,
+                1000, 15000, 3, 15000);
+            return false;
         };
 
         if (ensureWeaponPoison(EQUIPMENT_SLOT_MAINHAND, 7, "deadly_poison_mainhand"))
@@ -35343,27 +36397,7 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
                 || totem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == spellId
                 || totem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == 2894);
         if (ready)
-        {
-            // Training dummies do not always establish the ordinary victim
-            // relationship used by TotemAI's proximity search. Pin an active
-            // fire totem to the bot's already validated combat target; the AI
-            // still enforces targetability, range, visibility, and faction.
-            if (slot == SUMMON_SLOT_TOTEM_FIRE && totem->GetTotemType() == TOTEM_ACTIVE)
-                totem->AI()->AttackStart(target);
-            if (slot == SUMMON_SLOT_TOTEM_FIRE
-                && totem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == 2894)
-            {
-                for (Unit* controlled : bot->m_Controlled)
-                {
-                    Creature* elemental = controlled ? controlled->ToCreature() : nullptr;
-                    if (!elemental || elemental->GetEntry() != 15438 || !elemental->IsAlive())
-                        continue;
-                    elemental->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
-                    elemental->AI()->AttackStart(target);
-                }
-            }
             continue;
-        }
 
         std::string const attemptKey = "totem:" + std::to_string(spellId);
         auto retryItr = state.ReadinessRetryUntilMs.find(attemptKey);
@@ -35833,10 +36867,15 @@ BotWorldPopulationMgr::ReplayExecutionResult BotWorldPopulationMgr::ExecuteRepla
     uint64 oldExperimentId = Cohort().ExperimentId;
     uint64 oldRunId = Cohort().RunId;
     uint32 oldElapsedMs = Cohort().ElapsedMs;
+    BotWorldRuntimeMode oldRuntimeMode = Cohort().RuntimeMode;
+    bool oldNonCertifyingAssistance = Cohort().NonCertifyingAssistance;
     BotWorldExperimentConfig oldConfig = Cohort().Config;
     BotWorldStatus oldMetrics = Cohort().Metrics;
     std::vector<WorldBotState> oldBots = Party().Bots;
     std::set<uint32> oldFailedSpawnGuids = Cohort().FailedSpawnGuids;
+
+    Cohort().RuntimeMode = BotWorldRuntimeMode::ReplayFixture;
+    Cohort().NonCertifyingAssistance = true;
 
     Cohort().Config = BotWorldExperimentConfig();
     Cohort().Config.Name = "replay_" + std::to_string(record.Id);
@@ -35881,6 +36920,8 @@ BotWorldPopulationMgr::ReplayExecutionResult BotWorldPopulationMgr::ExecuteRepla
         Cohort().ExperimentId = oldExperimentId;
         Cohort().RunId = oldRunId;
         Cohort().ElapsedMs = oldElapsedMs;
+        Cohort().RuntimeMode = oldRuntimeMode;
+        Cohort().NonCertifyingAssistance = oldNonCertifyingAssistance;
         Cohort().Config = oldConfig;
         Cohort().Metrics = oldMetrics;
         Party().Bots = oldBots;
@@ -35952,6 +36993,8 @@ BotWorldPopulationMgr::ReplayExecutionResult BotWorldPopulationMgr::ExecuteRepla
     Cohort().ExperimentId = oldExperimentId;
     Cohort().RunId = oldRunId;
     Cohort().ElapsedMs = oldElapsedMs;
+    Cohort().RuntimeMode = oldRuntimeMode;
+    Cohort().NonCertifyingAssistance = oldNonCertifyingAssistance;
     Cohort().Config = oldConfig;
     Cohort().Metrics = oldMetrics;
     Party().Bots = oldBots;
@@ -36532,8 +37575,6 @@ void BotWorldPopulationMgr::RecordQuestObjectiveProgressForTarget(WorldBotState&
                 state.LastQuestObjectiveProgress = Cohort().Metrics.QuestObjectiveProgress;
                 RecordQuestEvent(state, bot, "objective_progress", quest->GetQuestId(), target, "kill_verified", rawJson, semanticJson, current, 0, context.str().c_str());
 
-                if (completed)
-                    bot->CompleteQuest(quest->GetQuestId());
             }
             else
             {
@@ -38888,7 +39929,8 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
     std::ostringstream json;
     json << "{\"name\":\"" << JsonEscape(Cohort().Config.Name)
          << "\",\"type\":\"bot_world_autonomy\""
-         << ",\"runtime_mode\":\"" << (Cohort().RuntimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy ? "always_on_autonomy" : "manual_experiment") << "\""
+         << ",\"runtime_mode\":\"" << RuntimeModeName(Cohort().RuntimeMode) << "\""
+         << ",\"non_certifying_assistance\":" << (Cohort().NonCertifyingAssistance ? "true" : "false")
          << ",\"active_profile\":" << (Cohort().SelectedProfileName.empty() ? "null" : ("\"" + JsonEscape(Cohort().SelectedProfileName) + "\""))
          << ",\"profile_manifest_path\":\"" << JsonEscape(Cohort().ProfileManifestPath) << "\""
          << ",\"loaded_profile_count\":" << Cohort().RuntimeProfiles.size()
@@ -39996,7 +41038,8 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
     json << "{\"identity\":{\"bot_guid\":" << state.Guid.GetCounter()
          << ",\"bot_name\":\"" << JsonEscape(bot ? bot->GetName() : "") << "\"}"
          << ",\"runtime\":{\"active\":" << (Cohort().Active ? "true" : "false")
-         << ",\"mode\":\"" << (Cohort().RuntimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy ? "always_on_autonomy" : "manual_experiment") << "\""
+         << ",\"mode\":\"" << RuntimeModeName(Cohort().RuntimeMode) << "\""
+         << ",\"non_certifying_assistance\":" << (Cohort().NonCertifyingAssistance ? "true" : "false")
          << ",\"spawn_source\":\"" << JsonEscape(state.SpawnSource) << "\""
          << ",\"decision_timer_ms\":" << state.DecisionTimer
          << ",\"last_decision_tick_ms\":" << state.LastDecisionTickMs
@@ -40219,7 +41262,8 @@ std::string BotWorldPopulationMgr::GetStatusJson() const
          << "\",\"lease_count\":" << Cohort().RosterLeases.size()
          << ",\"experiment\":\"" << JsonEscape(status.Name)
          << "\",\"run\":" << status.RunId
-         << ",\"mode\":\"" << (status.Mode == BotWorldRuntimeMode::AlwaysOnAutonomy ? "always_on_autonomy" : "manual_experiment") << "\""
+         << ",\"mode\":\"" << RuntimeModeName(status.Mode) << "\""
+         << ",\"non_certifying_assistance\":" << (Cohort().NonCertifyingAssistance ? "true" : "false")
          << ",\"active_profile\":" << (Cohort().SelectedProfileName.empty() ? "null" : ("\"" + JsonEscape(Cohort().SelectedProfileName) + "\""))
          << ",\"loaded_profile_count\":" << Cohort().RuntimeProfiles.size()
          << ",\"profile_manifest_path\":\"" << JsonEscape(Cohort().ProfileManifestPath) << "\""

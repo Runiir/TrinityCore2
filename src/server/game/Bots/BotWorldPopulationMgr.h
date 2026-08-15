@@ -3,9 +3,11 @@
 
 #include "ObjectGuid.h"
 #include "Bots/BotActionArbiter.h"
+#include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotExperimentCoordinator.h"
 #include "Bots/BotLongTermProgressionBrain.h"
 #include "Bots/BotMovementArbiter.h"
+#include "Bots/BotNativeActionIntent.h"
 #include "Bots/BotRoleSaturationPolicy.h"
 #include "Bots/BotTelemetryBuffer.h"
 #include "Bots/BotTelemetryPolicy.h"
@@ -32,7 +34,9 @@ struct AreaTriggerStruct;
 enum class BotWorldRuntimeMode
 {
     ManualExperiment,
-    AlwaysOnAutonomy
+    AlwaysOnAutonomy,
+    CalibrationFixture,
+    ReplayFixture
 };
 
 // Boss recovery authority is part of the checked-in validation contract.  A
@@ -176,7 +180,7 @@ struct BotWorldExperimentConfig
     bool UseSavedPosition = true;
     float NearPlayerRadius = 20.0f;
     std::string TrainingDummyEntries;
-    std::string DeathRecoveryMode = "safe_local";
+    std::string DeathRecoveryMode = "native_corpse_run";
     bool TeleportToCenterOnDeath = false;
     uint32 MaxDeathsBeforeFallback = 3;
     uint32 SafePositionMemorySec = 120;
@@ -472,6 +476,13 @@ private:
         std::string BattleResurrectionPolicy = "native_rotation";
         std::vector<uint32> BattleResurrectionSlots;
         std::string InteractionKind = "none";
+        std::string NativeInteractionAction;
+        uint32 NativeInteractionEntry = 0;
+        std::vector<uint32> NativeInteractionMenus;
+        uint32 NativeInteractionOption = 0;
+        std::string NativeCompletionKind;
+        uint32 NativeCompletionEntry = 0;
+        uint32 NativeCompletionSpellId = 0;
         uint32 JumpPadEntry = 0;
         std::string MovementLink = "none";
         std::string PlatformPolicy = "ground";
@@ -1697,14 +1708,13 @@ private:
     struct BotDeathRecoveryPolicy
     {
         std::vector<std::string> Modes;
-        bool CenterFallbackEnabled = false;
         uint32 MaxDeathsBeforeFallback = 3;
-        uint32 SafePositionMemorySec = 120;
     };
 
     struct DeathRecoveryResult
     {
         bool Recovered = false;
+        bool InProgress = false;
         bool UsedFallback = false;
         bool RepeatedDeath = false;
         std::string Mode;
@@ -1750,6 +1760,7 @@ private:
     bool IsConfiguredCenterPosition(uint32 mapId, float x, float y, float z) const;
     void PersistBotPosition(Player* bot) const;
     void RecordSpawnResolved(WorldBotState& state, Player* bot, SpawnPlacement const& placement, char const* result);
+    void PublishEncounterBlackboard(uint64 nowMs);
     void UpdateBot(WorldBotState& state, uint32 diff);
     void TryRespondNativeRaidReadyCheck(WorldBotState& state, Player* bot);
     bool IsNativeRaidRecoveryEvidencePending() const;
@@ -1777,13 +1788,13 @@ private:
         bool terminalOnFailure = false,
         BotMovementArbitration::Owner movementOwner = BotMovementArbitration::Owner::None,
         BotMovementArbitration::Priority movementPriority = BotMovementArbitration::Priority::Idle);
+    BotActionArbitration::Outcome ExecuteNativeActionIntent(WorldBotState& state, Player* bot,
+        BotNativeAction::Intent const& intent,
+        BotMovementArbitration::Owner movementOwner = BotMovementArbitration::Owner::None,
+        BotMovementArbitration::Priority movementPriority = BotMovementArbitration::Priority::Idle);
     BotDeathRecoveryPolicy BuildDeathRecoveryPolicy() const;
     DeathRecoveryResult RecoverDeadBot(WorldBotState& state, Player* bot);
-    bool TryCorpseRecovery(Player* bot, std::string& result) const;
-    bool TrySafeLocalResurrect(Player* bot, std::string& result) const;
-    bool TryNearestGraveyardResurrect(Player* bot, std::string& result) const;
-    bool TryLastSafePositionResurrect(WorldBotState& state, Player* bot, std::string& result);
-    bool TryConfiguredCenterDeathFallback(Player* bot, std::string& result) const;
+    bool TryNativeCorpseRun(WorldBotState& state, Player* bot, std::string& result);
     Player* GetLoadedBot(WorldBotState const& state) const;
     Player* GetBot(WorldBotState const& state) const;
     std::vector<RaidRosterPlanSlot> BuildRosterPlan() const;
@@ -1854,7 +1865,7 @@ private:
     bool TryEnsurePersistentCombatSetup(WorldBotState& state, Player* bot, Unit* target) const;
     char const* GetDungeonRole(Player* bot) const;
     uint32 SelectInterruptSpell(Player* bot) const;
-    uint32 SelectHealSpell(Player* bot, Unit* target) const;
+    uint32 SelectHealSpell(Player* bot, Unit* target, bool instantOnly = false) const;
     bool TryCastFriendlySpell(Player* bot, Unit* target, uint32 spellId, std::string* failureReason = nullptr);
     bool TryNativePartyResurrection(WorldBotState& state, Player* healer, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, DungeonTrashActionResult& result, std::string const& targetPolicy = {});
     bool TryNativeSelfResurrection(WorldBotState& state, Player* bot);
@@ -2337,11 +2348,17 @@ private:
         std::set<uint32> RosterLeases;
         bool Active = false;
         BotWorldRuntimeMode RuntimeMode = BotWorldRuntimeMode::ManualExperiment;
+        // Synthetic setup is permitted only inside an isolated fixture mode.
+        // It is always non-certifying and may never coexist with live Party().Bots.
+        bool NonCertifyingAssistance = false;
         uint64 ExperimentId = 0;
         uint64 RunId = 0;
         uint32 ElapsedMs = 0;
         uint32 RecordingWindowElapsedMs = 0;
         uint32 RecordingWindowIndex = 0;
+        uint64 EncounterSnapshotRevision = 0;
+        uint64 EncounterSnapshotNextRefreshMs = 0;
+        std::shared_ptr<BotEncounter::Blackboard const> EncounterSnapshot;
         BotWorldExperimentConfig Config;
         std::string ProfileManifestPath;
         std::map<std::string, BotWorldExperimentProfile> RuntimeProfiles;

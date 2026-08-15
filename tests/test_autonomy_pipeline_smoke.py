@@ -575,7 +575,7 @@ def test_headless_bot_spawn_forces_visibility_after_registration():
         "bot->GetMap()->AddPlayerToMap(bot)",
         "ObjectAccessor::AddObject(bot)",
         "bot->LoadPetsFromDB(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_ALL_PETS))",
-        "petData->Active = true",
+        "provisioning must assign a valid active pet",
         "bot->RemoveAurasByType(SPELL_AURA_MOUNTED)",
         "bot->LoadPet()",
         "bot->UpdateObjectVisibility(true)",
@@ -586,11 +586,10 @@ def test_headless_bot_spawn_forces_visibility_after_registration():
     assert "session->IsBotSession()" in load
     assert "bot->IsWithinDistInMap(player, bot->GetVisibilityRange())" in load
     assert "PlayerBot pets loaded" in load
-    assert "PlayerBot hunter active-slot pet selected" in load
     assert "PlayerBot dismounted before pet load" in load
 
 
-def test_headless_hunter_promotes_a_valid_stable_pet_without_displacing_active_slots():
+def test_headless_hunter_requires_a_provisioned_active_pet_without_stable_mutation():
     bot_mgr = read(PLAYER_BOT_MGR)
     load = function_body(bot_mgr, "Player* BotMgr::LoadCharacterAsBotSession")
 
@@ -598,23 +597,16 @@ def test_headless_hunter_promotes_a_valid_stable_pet_without_displacing_active_s
         load,
         "bot->LoadPetsFromDB(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_ALL_PETS))",
         "if (bot->getClass() == CLASS_HUNTER)",
-        "for (uint8 slot = PET_SLOT_FIRST_ACTIVE_SLOT; slot <= PET_SLOT_LAST_ACTIVE_SLOT; ++slot)",
-        "if (!bot->GetPlayerPetDataCurrent())",
-        "if (Optional<uint8> activeSlot = bot->GetFirstUnusedActivePetSlot())",
-        "for (uint8 slot = PET_SLOT_FIRST_STABLE_SLOT; slot <= PET_SLOT_LAST_STABLE_SLOT; ++slot)",
-        "stagedStablePet = petData;",
-        "petData->Slot = *activeSlot;",
-        "petData->Active = true;",
-        "PlayerBot hunter stable pet staged",
+        "PlayerPetData const* currentPet = bot->GetPlayerPetDataCurrent()",
+        "provisioning must assign a valid active pet",
         "bot->LoadPet()",
-        "loadedPet->GetCharmInfo()->GetPetNumber() == stagedStablePet->PetId",
-        "UPDATE character_pet SET active = 1, slot = %u WHERE owner = %u AND id = %u",
-        "PlayerBot hunter stable pet activated",
     )
     assert "isLoadableHunterPet" in load
     assert "creatureInfo->IsTameable(bot->CanTameExoticPets())" in load
-    assert "GetFirstUnusedActivePetSlot" in load
-    assert "CHAR_UPD_CHAR_PET_SLOT_BY_SLOT" not in load
+    assert "PET_SLOT_FIRST_STABLE_SLOT" not in load
+    assert "GetFirstUnusedActivePetSlot" not in load
+    assert "UPDATE character_pet SET active" not in load
+    assert "petData->Active = true" not in load
     assert "TryCastFriendlySpell(bot, bot, 883)" not in load
 
 
@@ -641,8 +633,6 @@ def test_shaman_totems_are_combat_entry_setup_without_spam():
     assert "totem && totem->IsAlive()" in totems
     assert "totem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == spellId" in totems
     assert "totem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == 2894" in totems
-    assert "elemental->GetEntry() != 15438" in totems
-    assert "elemental->AI()->AttackStart(target)" in totems
     assert "totem->GetSpell() == spellId" not in totems
     assert "ReadinessRetryUntilMs" in totems
     assert "totem_cast_failed:" in totems
@@ -652,9 +642,10 @@ def test_shaman_totems_are_combat_entry_setup_without_spam():
     assert "SUMMON_SLOT_TOTEM_EARTH" in totems
     assert "SUMMON_SLOT_TOTEM_WATER" in totems
     assert "SUMMON_SLOT_TOTEM_AIR" in totems
-    assert "TryEnsureCombatTotems(*state, bot, target, hostileCount)" in execute_profile
+    assert "TryEnsureCombatTotems(*state, bot, target, forbidArea ? 1 : hostileCount)" in execute_profile
     assert "hostileCount >= 3 && bot->HasSpell(8190) ? 8190 : 3599" in totems
-    assert "totem->AI()->AttackStart(target)" in totems
+    assert "AI()->AttackStart" not in totems
+    assert "UNIT_FLAG_PLAYER_CONTROLLED" not in totems
 
     totem_ai = read(ROOT / "src/server/game/AI/CoreAI/TotemAI.cpp")
     assert "me->ToTotem()->GetOwner()" in totem_ai
@@ -3168,7 +3159,7 @@ def test_host_world_makefile_can_generate_always_on_recording_config():
     assert "BotWorld.AutoRecordingWindowMinutes = $(BOTWORLD_RECORDING_WINDOW_MINUTES)" in makefile
     assert "s|^BotWorld\\.SpawnMode\\s*=.*$$|BotWorld.SpawnMode = \"$(BOTWORLD_SPAWN_MODE)\"|gm" in makefile
     assert "BotWorld.UseSavedPosition = $(BOTWORLD_USE_SAVED_POSITION)" in makefile
-    assert "BotWorld.RespawnMode = \"safe_local\"" in makefile
+    assert "BotWorld.RespawnMode = \"native_corpse_run\"" in makefile
     assert "BotWorld.AllowQuesting = 1" in makefile
 
 

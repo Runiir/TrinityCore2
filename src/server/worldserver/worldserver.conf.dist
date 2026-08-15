@@ -3498,9 +3498,9 @@ PlayerBot.Debug = 1
 #        Default:     0
 #
 #    BotWorld.DeathRecoveryMode
-#        Description: Death recovery strategy. Supported values include safe_local, corpse_recover,
-#                     nearest_graveyard_or_spirit_healer, last_safe_position, and configured_center_fallback.
-#        Default:     "safe_local"
+#        Description: Player-legal death recovery strategy. Autonomous runtime uses client release,
+#                     native ghost movement, and the core corpse-reclaim opcode.
+#        Default:     "native_corpse_run"
 #
 #    BotWorld.TeleportToCenterOnDeath
 #        Description: Explicitly enables configured-center fallback for repeated death recovery.
@@ -3592,7 +3592,7 @@ BotWorld.UseSavedPosition = 1
 BotWorld.NearPlayerRadius = 20
 BotWorld.TrainingDummyEntries = ""
 BotWorld.CombatCalibration.ReferenceConditions = 0
-BotWorld.DeathRecoveryMode = "safe_local"
+BotWorld.DeathRecoveryMode = "native_corpse_run"
 BotWorld.TeleportToCenterOnDeath = 0
 BotWorld.MaxDeathsBeforeFallback = 3
 BotWorld.SafePositionMemorySec = 120

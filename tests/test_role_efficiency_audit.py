@@ -86,7 +86,8 @@ def test_stonecore_role_profiles_include_runtime_efficiency_gates():
     assert "UnitHealthPct(tankTarget) <= 0.60f" in manager
     assert 'action.AutoAttackMode == "ranged"' in executor
     assert "TARGET_FLAG_DEST_LOCATION" in executor
-    assert "pet->AI()->AttackStart(target)" in executor
+    assert "HandlePetActionHelper" in executor
+    assert "AI()->AttackStart" not in executor
     assert "a.`required_self_aura_stacks` = 5" in sql
     assert "a.`requires_interruptible_target` = 1" in sql
     assert "a.`required_target_aura` = 1978" in sql
@@ -107,7 +108,7 @@ def test_stonecore_role_profiles_include_runtime_efficiency_gates():
         '        Player* defenseTarget = nullptr;'
     ) in manager
     assert "'rapid_fire,burn', 1.20" in sql
-    assert "_validationRoutePackTransitionGuids.find(creature->GetGUID())" in manager
+    assert "Party().ValidationRoutePackTransitionGuids.find(creature->GetGUID())" in manager
     for spell_id in (31850, 85673, 86150, 11129, 3045, 34490, 30823, 51533, 73680):
         assert str(spell_id) in sql
 

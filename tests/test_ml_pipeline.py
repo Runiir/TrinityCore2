@@ -8125,12 +8125,12 @@ def test_live_bot_validation_dry_run_writes_command_file(tmp_path, monkeypatch):
 
 
 def test_upsert_trinity_config_normalizes_literal_newline_fragments():
-    text = 'BotWorld.DeathRecoveryMode = "safe_local"\\nBotWorld.RespawnMode = "safe_local"\n'
+    text = 'BotWorld.DeathRecoveryMode = "native_corpse_run"\\nBotWorld.RespawnMode = "native_corpse_run"\n'
 
     generated = upsert_trinity_config(text, "BotWorld.ValidationRoute.Enable", "1")
 
     assert "\\n" not in generated
-    assert 'BotWorld.DeathRecoveryMode = "safe_local"\nBotWorld.RespawnMode = "safe_local"' in generated
+    assert 'BotWorld.DeathRecoveryMode = "native_corpse_run"\nBotWorld.RespawnMode = "native_corpse_run"' in generated
     assert "BotWorld.ValidationRoute.Enable = 1" in generated
 
 

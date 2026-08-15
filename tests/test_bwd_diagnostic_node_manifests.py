@@ -344,21 +344,34 @@ def test_chainwielder_wait_anchor_and_pull_guard_are_outside_future_drudge_pack(
         assert generated["patrol_future_guard_margin_yards"] == 2.0
 
 
-def test_canonical_bwd_route_is_still_the_ordered_eleven_node_parent_route():
+def test_canonical_bwd_route_is_the_ordered_native_prerequisite_union():
     routes = _routes(_manifests(), CANONICAL_ID)
-    assert [(row["step"], row["kind"], row["label"]) for row in routes] == [
-        (1, "regroup", "BWD entrance junction regroup"),
-        (2, "trash", "Magmaw Chainwielder trash"),
-        (3, "trash", "Magmaw Drudge pair"),
-        (4, "boss", "Magmaw"),
-        (5, "trash", "Omnotron Golem Sentries"),
-        (6, "boss", "Omnotron Defense System"),
-        (7, "trash", "laboratory trash"),
-        (8, "boss", "Maloriak"),
-        (9, "boss", "Atramedes"),
-        (10, "boss", "Chimaeron"),
-        (11, "boss", "Nefarian"),
+    assert [row["route_node_id"] for row in routes] == [
+        "bwd.entry.regroup",
+        "bwd.magmaw.chainwielder",
+        "bwd.magmaw.drudges",
+        "bwd.magmaw.encounter",
+        "bwd.omnotron.sentries",
+        "bwd.omnotron.encounter",
+        "bwd.maloriak.lab_trash",
+        "bwd.maloriak.encounter",
+        "bwd.atramedes.north_spirits",
+        "bwd.atramedes.south_spirits",
+        "bwd.atramedes.bell_ready",
+        "bwd.atramedes.bell",
+        "bwd.atramedes.intro_wait",
+        "bwd.atramedes.encounter",
+        "bwd.chimaeron.regroup",
+        "bwd.chimaeron.finkle",
+        "bwd.chimaeron.wake_wait",
+        "bwd.chimaeron.encounter",
+        "bwd.nefarian.orb_regroup",
+        "bwd.nefarian.orb_gossip",
+        "bwd.nefarian.intro_wait",
+        "bwd.nefarian.descent",
+        "bwd.nefarian.encounter",
     ]
+    assert [row["step"] for row in routes] == list(range(1, 24))
     assert all(row["diagnostic_only"] is False for row in routes)
     assert all(row["runtime_profile_id"] == CANONICAL_ID for row in routes)
 
@@ -366,16 +379,16 @@ def test_canonical_bwd_route_is_still_the_ordered_eleven_node_parent_route():
 def test_each_bwd_diagnostic_shard_has_exact_local_membership_and_unique_profile():
     manifests = _manifests()
     expected = {
-        "magmaw": ["BWD entrance junction regroup", "Magmaw Chainwielder trash", "Magmaw Drudge pair", "Magmaw"],
-        "omnotron": ["Omnotron sentry approach regroup", "Omnotron Golem Sentries", "Omnotron Defense System"],
-        "maloriak": ["Maloriak laboratory regroup", "laboratory trash", "Maloriak"],
-        "atramedes": ["Atramedes chamber regroup", "Atramedes"],
-        "chimaeron": ["Chimaeron chamber regroup", "Chimaeron"],
-        "nefarian": ["Nefarian upper ledge preparation", "Nefarian legitimate upper-ledge descent", "Nefarian"],
+        "magmaw": ["bwd.entry.regroup", "bwd.magmaw.chainwielder", "bwd.magmaw.drudges", "bwd.magmaw.encounter"],
+        "omnotron": ["bwd.omnotron.regroup", "bwd.omnotron.sentries", "bwd.omnotron.encounter"],
+        "maloriak": ["bwd.maloriak.regroup", "bwd.maloriak.lab_trash", "bwd.maloriak.encounter"],
+        "atramedes": ["bwd.atramedes.north_spirits", "bwd.atramedes.south_spirits", "bwd.atramedes.bell_ready", "bwd.atramedes.bell", "bwd.atramedes.intro_wait", "bwd.atramedes.regroup", "bwd.atramedes.encounter"],
+        "chimaeron": ["bwd.chimaeron.regroup", "bwd.chimaeron.finkle", "bwd.chimaeron.wake_wait", "bwd.chimaeron.encounter"],
+        "nefarian": ["bwd.nefarian.orb_regroup", "bwd.nefarian.orb_gossip", "bwd.nefarian.intro_wait", "bwd.nefarian.descent", "bwd.nefarian.encounter"],
     }
     for boss, scenario_id in DIAGNOSTIC_IDS.items():
         routes = _routes(manifests, scenario_id)
-        assert [row["label"] for row in routes] == expected[boss]
+        assert [row["route_node_id"] for row in routes] == expected[boss]
         assert [row["step"] for row in routes] == list(range(1, len(routes) + 1))
         assert all(row["diagnostic_only"] is True for row in routes)
         assert all(row["runtime_profile_id"] == scenario_id for row in routes)
@@ -402,7 +415,9 @@ def test_diagnostic_prerequisites_are_explicitly_non_certifying():
     assert set(DIAGNOSTIC_IDS.values()).issubset(scenarios)
     assert scenarios[CANONICAL_ID]["diagnostic_only"] is False
     assert scenarios[CANONICAL_ID]["prerequisite_contract"] == {}
-    assert scenarios[DIAGNOSTIC_IDS["omnotron"]]["prerequisite_contract"]["precompleted_boss_entries"] == [41570]
+    assert scenarios[DIAGNOSTIC_IDS["omnotron"]]["prerequisite_contract"]["precompleted_boss_entries"] == []
+    for boss in ("maloriak", "atramedes", "chimaeron"):
+        assert scenarios[DIAGNOSTIC_IDS[boss]]["prerequisite_contract"]["precompleted_boss_entries"] == [41570, 42166]
     assert scenarios[DIAGNOSTIC_IDS["nefarian"]]["prerequisite_contract"]["precompleted_boss_entries"] == [41570, 42166, 41378, 41442, 43296]
     for scenario_id in DIAGNOSTIC_IDS.values():
         row = scenarios[scenario_id]
@@ -410,18 +425,61 @@ def test_diagnostic_prerequisites_are_explicitly_non_certifying():
         assert row["diagnostic_parent_scenario_id"] == CANONICAL_ID
 
 
-def test_nefarian_shard_starts_on_upper_ledge_and_descends_before_engagement():
+def test_nefarian_shard_uses_native_orb_intro_and_player_descent():
     routes = _routes(_manifests(), DIAGNOSTIC_IDS["nefarian"])
-    preparation, descent, boss = routes
-    assert preparation["label"] == "Nefarian upper ledge preparation"
-    assert preparation["z"] == 6.57143
-    assert preparation["diagnostic_prerequisite_state"]["upper_ledge_start"] is True
+    preparation, orb, intro, descent, boss = routes
+    assert preparation["source_entry"] == 203254
+    assert (preparation["x"], preparation["y"], preparation["z"]) == (-27.84375, -224.4774, 63.30268)
+    assert orb["interaction_contract"] == {"action": "gossip_select", "entry": 203254, "menu": 11492, "option": 0}
+    assert intro["completion_contract"]["kind"] == "intro_complete_and_elevator_ready"
     assert descent["node_kind"] == "descent"
-    assert descent["descent_action"] == "native_jump_or_fall"
-    assert descent["z"] < preparation["z"]
-    assert descent["diagnostic_prerequisite_state"]["requires_native_descent_before_engagement"] is True
+    assert descent["descent_action"] == "native_walk_jump_or_fall"
+    assert descent["completion_contract"] == {"kind": "player_in_nefarian_arena"}
     assert boss["label"] == "Nefarian"
-    assert [row["kind"] for row in routes] == ["regroup", "descent", "boss"]
+    assert [row["kind"] for row in routes] == ["regroup", "interaction", "interaction", "descent", "boss"]
+
+
+def test_atramedes_and_chimaeron_prerequisites_are_native_interactions():
+    manifests = _manifests()
+    atramedes = {row["route_node_id"]: row for row in _routes(manifests, DIAGNOSTIC_IDS["atramedes"])}
+    assert atramedes["bwd.atramedes.north_spirits"]["pack_target_entries"] == [43122, 43125, 43128, 43129]
+    assert atramedes["bwd.atramedes.south_spirits"]["pack_target_entries"] == [43119, 43126, 43127, 43130]
+    assert atramedes["bwd.atramedes.bell"]["interaction_contract"] == {
+        "action": "gameobject_use",
+        "entry": 204276,
+    }
+    assert atramedes["bwd.atramedes.intro_wait"]["completion_contract"]["kind"] == "creature_grounded_aggressive_or_engaged"
+
+    chimaeron = {row["route_node_id"]: row for row in _routes(manifests, DIAGNOSTIC_IDS["chimaeron"])}
+    assert chimaeron["bwd.chimaeron.finkle"]["interaction_contract"] == {
+        "action": "gossip_select_sequence",
+        "entry": 44202,
+        "menus": [11812, 11834, 11835, 11836, 11837],
+        "option": 0,
+    }
+    assert chimaeron["bwd.chimaeron.finkle"]["completion_contract"] == {
+        "kind": "aura_present",
+        "entry": 44418,
+        "spell_id": 82705,
+    }
+    assert chimaeron["bwd.chimaeron.wake_wait"]["completion_contract"]["kind"] == "creature_aggressive_with_victim"
+
+
+def test_declared_route_node_ids_are_strict_and_fail_closed():
+    config = _config()
+    canonical = next(row for row in config["scenarios"] if row["id"] == CANONICAL_ID)
+    canonical["route"][0]["node_id"] = "BWD invalid node"
+    try:
+        build_manifests(
+            config,
+            {"all_ready": True, "scenarios": []},
+            {"all_passed": True},
+            json.loads(SHARD_FIXTURE.read_text(encoding="utf-8")),
+        )
+    except ValueError as exc:
+        assert "route_node_id_invalid" in str(exc)
+    else:
+        raise AssertionError("malformed node id was accepted")
 
 
 def test_runtime_profiles_select_only_the_matching_diagnostic_scenario():
