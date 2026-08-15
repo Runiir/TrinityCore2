@@ -153,7 +153,8 @@
     "unique_cache_children": 8,
     "shared_cache_children_retained": 8,
     "unique_cache_child_bytes": 37157613,
-    "local_payload_evicted": false,
+    "local_payload_evicted": true,
+    "unique_cache_children_evicted": 8,
     "directory_metadata_retained": true,
     "directory_metadata_sha256": {
       "capture": "c6525d27958c5a3adc9757c8ab2b23fa1c9d850a79ce1caeb99497b0da9677a3",
