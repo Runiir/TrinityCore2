@@ -231,3 +231,29 @@ def test_live_route_function_does_not_reintroduce_direct_cheat_actions() -> None
         "AddThreat(",
     ):
         assert forbidden not in route
+
+
+def test_route_adapter_yields_retryable_holds_and_declared_boss_adds() -> None:
+    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
+        encoding="utf-8"
+    )
+    start = source.index("bool BotWorldPopulationMgr::TryValidationRouteObjective(")
+    end = source.index("\nbool BotWorldPopulationMgr::IsBossContext", start)
+    route = source[start:end]
+
+    objective_start = route.index("auto isValidationRouteObjectiveTarget")
+    objective_end = route.index("\n    auto findNearestTrashClusterMob", objective_start)
+    objective = route[objective_start:objective_end]
+    assert "ValidationRouteAddTargetEntries.begin()" in objective
+    assert "creature->GetEntry()" in objective
+
+    kernel_start = source.index('route.Key = "world.validation_route"')
+    kernel_end = source.index('boss.Key = "world.boss_mechanics"', kernel_start)
+    route_adapter = source[kernel_start:kernel_end]
+    for retryable_hold in (
+        "boss_route_prerequisite_blocked",
+        "raid_target_not_declared_hold",
+        "raid_mechanic_contract_fail_closed",
+        "hold_tactical_path_rejected",
+    ):
+        assert retryable_hold in route_adapter

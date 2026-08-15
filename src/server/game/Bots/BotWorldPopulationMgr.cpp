@@ -10781,7 +10781,11 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             }
             if (action == "validation_route_target_blocked"
                 || action == "validation_route_wrong_map"
-                || action == "blocked_no_fallback")
+                || action == "blocked_no_fallback"
+                || action == "boss_route_prerequisite_blocked"
+                || action == "raid_target_not_declared_hold"
+                || action == "raid_mechanic_contract_fail_closed"
+                || action == "hold_tactical_path_rejected")
                 return BotActionArbitration::Outcome::Retryable(
                     state.LastNoProgressReason.empty()
                         ? std::string_view("route_retryable")
@@ -15890,9 +15894,20 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (!creature)
             return false;
 
-        return Cohort().Config.ValidationRouteKind == "boss"
-            ? isValidationRouteScriptTarget(creature)
-            : isEligibleTrashClusterMob(creature);
+        if (Cohort().Config.ValidationRouteKind != "boss")
+            return isEligibleTrashClusterMob(creature);
+
+        // A boss node's explicit add list is part of that node's hostile
+        // authority. Treating a listed add as an undeclared prerequisite made
+        // the fail-closed route adapter monopolize every tick while Corborus
+        // was burrowed, even though the boss mechanic adapter was prepared to
+        // switch to entry 43917. Keep arbitrary corridor targets masked, but
+        // allow declared adds to flow through the typed mechanic policy.
+        return isValidationRouteScriptTarget(creature)
+            || std::find(Cohort().Config.ValidationRouteAddTargetEntries.begin(),
+                Cohort().Config.ValidationRouteAddTargetEntries.end(),
+                creature->GetEntry())
+                != Cohort().Config.ValidationRouteAddTargetEntries.end();
     };
     auto findNearestTrashClusterMob = [&]() -> Unit*
     {
