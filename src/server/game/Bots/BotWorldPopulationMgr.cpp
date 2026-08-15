@@ -2744,7 +2744,13 @@ std::string BotWorldPopulationMgr::PrepareValidationProfile(std::string const& n
     BotWorldExperimentProfile const& profile = selectedProfile->second;
     if (!IsValidationProfileName(profileName))
         return "{\"ok\":false,\"action\":\"botauto_prepare\",\"failure_reason\":\"not_executable_validation_profile\"}";
-    if (!poolTag.empty()
+    bool const exactPartyRequested = !classSpecs.empty();
+    // The profile owns the default pool.  A fully specified exact-party
+    // request may instead lease canonical members from the shared all-spec
+    // pool; the size, uniqueness, target identities, and resulting leases are
+    // validated below and again after admission.  A bare pool override remains
+    // forbidden.
+    if (!poolTag.empty() && !exactPartyRequested
         && (!profile.HasPoolTagFilter || profile.Config.PoolTagFilter != poolTag))
         return "{\"ok\":false,\"action\":\"botauto_prepare\",\"failure_reason\":\"pool_tag_profile_mismatch\"}";
     if (!classSpecs.empty())

@@ -111,6 +111,17 @@ def test_world_validation_path_uses_kernel_and_recovery_supervisor() -> None:
     assert "world.recovery.sidestep_left" in recovery
     assert "world.recovery.sidestep_right" in recovery
 
+    prepare_start = source.index(
+        "std::string BotWorldPopulationMgr::PrepareValidationProfile("
+    )
+    prepare_end = source.index(
+        "bool BotWorldPopulationMgr::PrepareCurrentValidationProfile", prepare_start
+    )
+    prepare = source[prepare_start:prepare_end]
+    assert "exactPartyRequested" in prepare
+    assert "!exactPartyRequested" in prepare
+    assert "invalid_exact_party_contract" in prepare
+
     record_start = source.index("void BotWorldPopulationMgr::RecordDecision(")
     record_end = source.index("void BotWorldPopulationMgr::RecordDecisionFingerprintMemory", record_start)
     record = source[record_start:record_end]
