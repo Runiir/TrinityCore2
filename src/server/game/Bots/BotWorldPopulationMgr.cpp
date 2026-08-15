@@ -9529,9 +9529,11 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     // Server-controlled players do not have a client to emit a jump key. For
     // an explicitly ordinary descent, permit one short, locally observed jump
     // only after native paths and walkable steps are exhausted. Ground, LOS,
-    // drop height, horizontal reach, goal progress, and the lower navmesh are
-    // all checked. Declared special descents remain fail-closed before this
-    // helper is called, and this never mutates position or teleports.
+    // horizontal reach, goal progress, the lower navmesh, and the player's
+    // current health against the core fall-damage curve are all checked.
+    // Declared special descents remain fail-closed before this helper is
+    // called, and this never mutates position or teleports.
+    char const* descentRejectReason = nullptr;
     if (!segmentSelected && progressiveStaticRoute
         && Cohort().Config.ValidationRouteKind == "descent"
         && Cohort().Config.ValidationRouteDescentAction.empty()
@@ -9543,8 +9545,18 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
             float(M_PI) / 6.0f, -float(M_PI) / 6.0f,
             float(M_PI) / 4.0f, -float(M_PI) / 4.0f
         };
-        std::array<float, 4> const jumpDistances{ 4.0f, 6.0f, 8.0f, 10.0f };
+        // A running player can carry horizontal velocity while falling. Search
+        // a bounded two-second run/jump envelope instead of assuming every
+        // legal dungeon drop is shorter than a standing jump.
+        std::array<float, 8> const jumpDistances{
+            4.0f, 6.0f, 8.0f, 10.0f, 12.0f, 14.0f, 16.0f, 18.0f
+        };
         float bestGoalDistance = currentGoalDistance;
+        bool observedGround = false;
+        bool observedSurvivableDrop = false;
+        bool observedProgressLanding = false;
+        bool observedLineOfSight = false;
+        bool observedLowerNavmesh = false;
         for (float jumpDistance : jumpDistances)
         {
             for (float angleOffset : angleOffsets)
@@ -9556,13 +9568,27 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
                     candidateX, candidateY, bot->GetPositionZ() + 2.0f, true, 32.0f);
                 if (candidateZ <= INVALID_HEIGHT)
                     continue;
+                observedGround = true;
                 float const drop = bot->GetPositionZ() - candidateZ;
+                float const safeFallReduction = std::max(0.0f,
+                    float(bot->GetTotalAuraModifier(SPELL_AURA_SAFE_FALL)));
+                float const effectiveDrop = std::max(0.0f, drop - safeFallReduction);
+                float const predictedFallDamagePct = std::max(0.0f,
+                    0.018f * effectiveDrop - 0.2426f);
+                float const currentHealthPct = bot->GetMaxHealth()
+                    ? float(bot->GetHealth()) / float(bot->GetMaxHealth()) : 0.0f;
                 float const candidateGoalDistance = distanceToGoal(candidateX, candidateY, candidateZ);
-                if (drop < 1.5f || drop > 22.0f
-                    || candidateGoalDistance + 2.0f >= currentGoalDistance
-                    || candidateGoalDistance >= bestGoalDistance
-                    || !bot->IsWithinLOS(candidateX, candidateY, candidateZ))
+                if (drop < 1.5f || drop > 32.0f
+                    || predictedFallDamagePct + 0.35f > currentHealthPct)
                     continue;
+                observedSurvivableDrop = true;
+                if (candidateGoalDistance + 2.0f >= currentGoalDistance
+                    || candidateGoalDistance >= bestGoalDistance)
+                    continue;
+                observedProgressLanding = true;
+                if (!bot->IsWithinLOS(candidateX, candidateY, candidateZ))
+                    continue;
+                observedLineOfSight = true;
 
                 Position landing(candidateX, candidateY, candidateZ, angle);
                 Position goal(x, y, z, angle);
@@ -9583,6 +9609,7 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
                         >= candidateGoalDistance)
                         continue;
                 }
+                observedLowerNavmesh = true;
 
                 bestGoalDistance = candidateGoalDistance;
                 segmentX = candidateX;
@@ -9593,10 +9620,25 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
                 segmentSelected = true;
             }
         }
+        if (!segmentSelected)
+        {
+            if (!observedGround)
+                descentRejectReason = "route_descent_no_observed_ground";
+            else if (!observedSurvivableDrop)
+                descentRejectReason = "route_descent_no_survivable_drop";
+            else if (!observedProgressLanding)
+                descentRejectReason = "route_descent_no_progress_landing";
+            else if (!observedLineOfSight)
+                descentRejectReason = "route_descent_landing_no_los";
+            else if (!observedLowerNavmesh)
+                descentRejectReason = "route_descent_landing_off_mesh";
+        }
     }
 
     if (!segmentSelected)
     {
+        if (descentRejectReason)
+            return rejectPath(descentRejectReason);
         if (!pathOk || (pathType & PATHFIND_NOPATH))
             return rejectPath("route_destination_unreachable");
         if (pathType & PATHFIND_NOT_USING_PATH)

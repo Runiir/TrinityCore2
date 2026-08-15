@@ -1702,9 +1702,15 @@ def test_walkable_descent_uses_bounded_native_movement_while_declared_jump_stays
     ):
         assert traversal_mode in move_bot_to_point
     assert "candidateGoalDistance + 2.0f >= currentGoalDistance" in move_bot_to_point
-    assert "drop < 1.5f || drop > 22.0f" in move_bot_to_point
+    assert "drop < 1.5f || drop > 32.0f" in move_bot_to_point
+    assert "0.018f * effectiveDrop - 0.2426f" in move_bot_to_point
+    assert "predictedFallDamagePct + 0.35f > currentHealthPct" in move_bot_to_point
+    assert "12.0f, 14.0f, 16.0f, 18.0f" in move_bot_to_point
     assert "bot->IsWithinLOS(candidateX, candidateY, candidateZ)" in move_bot_to_point
     assert "landingPath.CalculatePath(landing, goal, false)" in move_bot_to_point
+    assert 'descentRejectReason = "route_descent_no_survivable_drop";' in move_bot_to_point
+    assert 'descentRejectReason = "route_descent_landing_no_los";' in move_bot_to_point
+    assert 'return rejectPath(descentRejectReason);' in move_bot_to_point
     assert "bot->GetMotionMaster()->MoveJump(segmentX, segmentY, segmentZ" in move_bot_to_point
     assert "TeleportTo(" not in move_bot_to_point
     assert "NearTeleportTo(" not in move_bot_to_point
