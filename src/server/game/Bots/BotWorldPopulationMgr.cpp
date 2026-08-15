@@ -9528,9 +9528,11 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
 
     // Server-controlled players do not have a client to emit a jump key. For
     // an explicitly ordinary descent, permit one short, locally observed jump
-    // only after native paths and walkable steps are exhausted. Ground, LOS,
+    // only after native paths and walkable steps are exhausted. Ground,
     // horizontal reach, goal progress, the lower navmesh, and the player's
-    // current health against the core fall-damage curve are all checked.
+    // current health against the core fall-damage curve are all checked. A
+    // player jump does not require spell-style line of sight to its landing;
+    // cave lips commonly occlude otherwise valid lower-floor destinations.
     // Declared special descents remain fail-closed before this helper is
     // called, and this never mutates position or teleports.
     char const* descentRejectReason = nullptr;
@@ -9555,7 +9557,6 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
         bool observedGround = false;
         bool observedSurvivableDrop = false;
         bool observedProgressLanding = false;
-        bool observedLineOfSight = false;
         bool observedLowerNavmesh = false;
         for (float jumpDistance : jumpDistances)
         {
@@ -9586,10 +9587,6 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
                     || candidateGoalDistance >= bestGoalDistance)
                     continue;
                 observedProgressLanding = true;
-                if (!bot->IsWithinLOS(candidateX, candidateY, candidateZ))
-                    continue;
-                observedLineOfSight = true;
-
                 Position landing(candidateX, candidateY, candidateZ, angle);
                 Position goal(x, y, z, angle);
                 PathGenerator landingPath(bot);
@@ -9628,8 +9625,6 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
                 descentRejectReason = "route_descent_no_survivable_drop";
             else if (!observedProgressLanding)
                 descentRejectReason = "route_descent_no_progress_landing";
-            else if (!observedLineOfSight)
-                descentRejectReason = "route_descent_landing_no_los";
             else if (!observedLowerNavmesh)
                 descentRejectReason = "route_descent_landing_off_mesh";
         }
