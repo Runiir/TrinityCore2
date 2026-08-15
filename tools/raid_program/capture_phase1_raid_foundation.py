@@ -1513,7 +1513,11 @@ def accepted_drudge_contract(
                         reasons.append("drudge_native_threat_observation_identity_drift")
                         continue
                     native_first_rush_observed_at_ms[source] = int(first_time)
-                landed = first_observation.get("landed") is True
+                landed_value = first_observation.get("landed")
+                if not isinstance(landed_value, bool):
+                    reasons.append("drudge_native_threat_landing_type_invalid")
+                    continue
+                landed = landed_value
                 prior_landed = native_first_rush_landed_by_key.get(landing_key)
                 # A status sampled between SpellStarted and SpellLanded is a
                 # legitimate partial observation.  Preserve the edge, merge

@@ -1249,6 +1249,12 @@ def test_drudge_native_threat_ignores_ordinary_pre_rush_snapshot_until_complete(
     assert accepted is False
     assert "drudge_native_threat_observation_scope_drift" in reasons
 
+    malformed_landing = accepted_drudge_status()
+    malformed_landing["raid_runtime"]["drudge_charge"]["observations"][0]["landed"] = "false"
+    accepted, reasons = accepted_drudge_contract([malformed_landing, accepted_drudge_status()])
+    assert accepted is False
+    assert "drudge_native_threat_landing_type_invalid" in reasons
+
     forged_farthest = accepted_drudge_status()
     first = forged_farthest["raid_runtime"]["drudge_charge"]["observations"][0]
     first["target_guid"] = forged_farthest["raid_runtime"]["roster"][4]["guid"]
