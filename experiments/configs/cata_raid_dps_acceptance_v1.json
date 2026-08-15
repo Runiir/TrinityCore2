@@ -1,0 +1,47 @@
+{
+  "schema": "cata_raid_dps_acceptance_v1",
+  "roster": "experiments/configs/cata_raid_roster_25_v1.json",
+  "stonecore_pair_policy": "experiments/configs/stonecore_phase9_pair_policy_v1.json",
+  "role_calibration_policy": "experiments/configs/all_spec_role_calibration_policy_v2.json",
+  "target_catalog": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+  "reference_catalog": "experiments/configs/all_spec_references_cata_p4_v1.json",
+  "supported_specialization_target_count": 24,
+  "supported_dps_spec_count": 16,
+  "default_dps_slot_count": 17,
+  "encounter_dps_slot_counts": [16, 18, 19],
+  "dps_targets": [
+    "affliction_warlock",
+    "arms_warrior",
+    "assassination_rogue",
+    "balance_druid",
+    "combat_rogue",
+    "demonology_warlock",
+    "elemental_shaman",
+    "feral_druid_dps",
+    "fire_mage",
+    "frost_death_knight",
+    "fury_warrior",
+    "marksmanship_hunter",
+    "retribution_paladin",
+    "shadow_priest",
+    "survival_hunter",
+    "unholy_death_knight"
+  ],
+  "modes": ["single_target_300", "aoe_300"],
+  "seeds": [1, 2, 3],
+  "acceptance": {
+    "hard_reference_ratio": 0.75,
+    "optimization_reference_ratio": 0.85,
+    "all_targets_must_pass_hard_floor": true,
+    "all_targets_must_meet_optimization_target": true,
+    "all_attempts_require_remote_verified_publication": true,
+    "evict_after_remote_verification": true,
+    "retain_published_batch": false
+  },
+  "notes": [
+    "The authoritative current roster contains 24 supported specialization targets and 16 unique DPS specs; 18 is an encounter DPS-slot shape, not the checked-in unique-spec count.",
+    "Every listed DPS spec is evaluated against its pinned compatible WoWSims reference under the Phase 4 reference-condition contract.",
+    "Warcraft Logs snapshots may corroborate encounter realism but cannot replace the simulator ratio unless their build, gear, buffs, duration, target count, and percentile identity are pinned.",
+    "Raw and compact per-attempt batches are DVC-pushed, remotely verified, and target-evicted by default. Only compact reports, manifests, receipts, and DVC pointers remain local."
+  ]
+}

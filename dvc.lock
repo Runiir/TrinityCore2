@@ -1718,3 +1718,58 @@ stages:
       md5: e055d2c5da0208dc99e8860753047af0.dir
       size: 137250
       nfiles: 2
+  cata_raid_dps_acceptance_contract:
+    cmd: python -m tools.bot_ml.verify_cata_raid_dps_acceptance --config
+      experiments/configs/cata_raid_dps_acceptance_v1.json --output
+      dataset/cata_raid_dps_acceptance_contract/report.json
+    deps:
+    - path: experiments/configs/all_spec_references_cata_p4_v1.json
+      hash: md5
+      md5: 81b8563443e5dc60a4c1af3b96427309
+      size: 157405
+    - path: experiments/configs/all_spec_role_calibration_policy_v2.json
+      hash: md5
+      md5: 94147fda60c3ee1c0b848f3af0913c45
+      size: 2622
+    - path: experiments/configs/all_spec_targets_cata_p4_v1.json
+      hash: md5
+      md5: 300943155fcdcc1aa7208e9a8e9d2181
+      size: 219139
+    - path: experiments/configs/cata_raid_dps_acceptance_v1.json
+      hash: md5
+      md5: 7a6a017d398d0c87aa58846ef92dd622
+      size: 2131
+    - path: experiments/configs/cata_raid_roster_25_v1.json
+      hash: md5
+      md5: 46212bcc5fcf1ac6c6fb01e199d627a4
+      size: 2853
+    - path: experiments/configs/stonecore_phase9_pair_policy_v1.json
+      hash: md5
+      md5: 9a5f5c08aa1997a2aaf760f1cbde4576
+      size: 6956
+    - path: tools/bot_ml/phase8_calibration_adapter.py
+      hash: md5
+      md5: 3a0482c466408f153aa506c322289eec
+      size: 17266
+    - path: tools/bot_ml/role_calibration_harness.py
+      hash: md5
+      md5: fa87ed8967c3cb2106e533180fa7f9ba
+      size: 13178
+    - path: tools/bot_ml/run_cata_raid_dps_acceptance.py
+      hash: md5
+      md5: 71e61947f7575184abab90b3ad900d58
+      size: 15754
+    - path: tools/bot_ml/run_live_bot_validation.py
+      hash: md5
+      md5: 2a9f9852292b94a05de791a7bf3f40a5
+      size: 244588
+    - path: tools/bot_ml/verify_cata_raid_dps_acceptance.py
+      hash: md5
+      md5: 136deed442b1304a90ef300d7c815be8
+      size: 7704
+    outs:
+    - path: dataset/cata_raid_dps_acceptance_contract
+      hash: md5
+      md5: 75760b01b2ad853f9d5bed703b44e6fb.dir
+      size: 8828
+      nfiles: 1

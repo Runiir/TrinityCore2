@@ -2,7 +2,9 @@
 #define TRINITY_BOT_CONTROLLER_H
 
 #include "Bots/BotActionExecutor.h"
+#include "Bots/BotActionArbiter.h"
 #include "Bots/BotClassSpecActionProfile.h"
+#include "Bots/BotMovementArbiter.h"
 #include "Bots/HealerBotPolicy.h"
 #include "Bots/HolyPaladinResolver.h"
 #include "ObjectGuid.h"
@@ -43,7 +45,7 @@ private:
     BotActionCandidate const* SelectProfileCombatAction(Player* bot, Unit* target, BotCombatState const& state, BotClassSpecActionProfile const& profile, std::vector<BotActionCandidate>& candidates) const;
     ResolvedCombatAction ResolveProfileCombat(BotCombatDecision const& decision, BotCombatState const& state, Player* bot, Unit* target) const;
     bool TryResolveHealerAction(BotActionExecutor& executor, Player* owner, Player* bot, BotRecentEvents const& recentEvents, bool shouldRecord, BotMovementFrame const& movementFrame);
-    void ApplyMovementPolicy(BotActionExecutor& executor, Player* owner, Player* bot, BotMovementFrame const& movementFrame);
+    bool ApplyMovementPolicy(BotActionExecutor& executor, Player* owner, Player* bot, BotMovementFrame const& movementFrame);
     bool TryExecuteQueuedCombatAction(BotActionExecutor& executor, Player* owner, Player* bot, BotActionResult& result);
     void RecordFrame(HealerFrame const& frame, HealerDecision const& decision, ResolvedBotAction const* action, BotActionResult result, Player* owner, Player* bot) const;
     void RecordMovementFrame(BotMovementFrame const& frame, char const* policyMode, char const* intent, char const* action, bool valid, Player* owner, Player* bot) const;
@@ -60,6 +62,9 @@ private:
     ObjectGuid _combatTargetGuid;
     ResolvedCombatAction _queuedCombatAction;
     uint32 _queuedCombatActionMs = 0;
+    BotActionArbitration::Kernel _decisionKernel;
+    BotMovementArbitration::Lease _movementLease;
+    std::string _lastDecisionKernelTraceJson = "{}";
     uint32 _updateTimer = 0;
     bool _recording = false;
     mutable uint32 _sequence = 0;

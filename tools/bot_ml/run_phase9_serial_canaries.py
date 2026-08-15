@@ -132,6 +132,8 @@ def main() -> int:
                 "remote_verified": receipt.get("remote_verified"),
                 "receipt_sha256": receipt.get("receipt_sha256"),
                 "raw_retained_locally": (output_dir / "batch/raw").exists(),
+                "compact_retained_locally": (output_dir / "batch/compact").exists(),
+                "batch_cache_retained_locally": (output_dir / "batch/.batch-dvc-cache").exists(),
                 "server_process_id": session.get("server_process_id"),
                 "server_epoch": session.get("server_epoch"),
                 "profile_generation": session.get("profile_generation"),
@@ -155,11 +157,17 @@ def main() -> int:
         )
         current["identity_matches"] = identity_matches
         current["cleanup_complete"] = cleanup_complete
+        current["targeted_eviction_complete"] = bool(
+            current["remote_verified"]
+            and not current["raw_retained_locally"]
+            and not current["compact_retained_locally"]
+            and not current["batch_cache_retained_locally"]
+        )
         current["passed"] = bool(
             result.returncode == 0
             and current["acceptable_final_evidence"]
             and current["remote_verified"]
-            and not current["raw_retained_locally"]
+            and current["targeted_eviction_complete"]
             and current["exact_party_verified"]
             and current["route_start_restored"]
             and identity_matches
@@ -171,6 +179,11 @@ def main() -> int:
             state["failed_serial_index"] = serial_index
             write_json(args.state_output.resolve(), state)
             return 1
+        # The immutable command/output stream is already present in the
+        # remotely verified batch.  The outer operator log is redundant bulk
+        # and is removed only after the acceptance and cleanup gates pass.
+        log_path.unlink(missing_ok=True)
+        current["operator_log_evicted_after_publication"] = True
         write_json(args.state_output.resolve(), state)
 
     state["status"] = "passed"

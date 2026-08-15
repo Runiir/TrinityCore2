@@ -426,6 +426,25 @@ stages:
     outs:
     - dataset/all_spec_phase9_pairwise_contract:
         persist: true
+  cata_raid_dps_acceptance_contract:
+    cmd: python -m tools.bot_ml.verify_cata_raid_dps_acceptance --config
+      experiments/configs/cata_raid_dps_acceptance_v1.json --output
+      dataset/cata_raid_dps_acceptance_contract/report.json
+    deps:
+    - tools/bot_ml/verify_cata_raid_dps_acceptance.py
+    - tools/bot_ml/run_cata_raid_dps_acceptance.py
+    - tools/bot_ml/run_live_bot_validation.py
+    - tools/bot_ml/phase8_calibration_adapter.py
+    - tools/bot_ml/role_calibration_harness.py
+    - experiments/configs/cata_raid_dps_acceptance_v1.json
+    - experiments/configs/all_spec_role_calibration_policy_v2.json
+    - experiments/configs/all_spec_targets_cata_p4_v1.json
+    - experiments/configs/all_spec_references_cata_p4_v1.json
+    - experiments/configs/cata_raid_roster_25_v1.json
+    - experiments/configs/stonecore_phase9_pair_policy_v1.json
+    outs:
+    - dataset/cata_raid_dps_acceptance_contract:
+        persist: true
   validation_provisioning_verify:
     cmd: python -m tools.bot_ml.validate_validation_provisioning --config
       experiments/configs/validation_provisioning_cata_001.json --gear-profiles

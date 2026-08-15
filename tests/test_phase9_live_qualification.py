@@ -61,9 +61,16 @@ def test_phase9_serial_plan_covers_targeted_specs_and_protection_regression() ->
     assert plan["qualification_excluded_targets"] == TARGETED_EXCLUSIONS
     assert plan["target_union_count"] == 24
     assert plan["restore_route_bot_start_each_attempt"] is True
+    assert plan["publish_each_closed_batch"] is True
+    assert plan["remote_verify_before_evict"] is True
+    assert plan["retain_published_batch"] is False
     assert not (set(TARGETED_EXCLUSIONS) & set(plan["target_union"]))
     assert all(
         "--skip-route-bot-start-mutation" not in attempt["command"]
+        for attempt in plan["attempts"]
+    )
+    assert all(
+        "--retain-published-batch" not in attempt["command"]
         for attempt in plan["attempts"]
     )
     assert plan["attempts"][3]["ordered_party"] == [

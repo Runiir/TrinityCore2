@@ -2,8 +2,10 @@
 #define TRINITY_BOT_WORLD_POPULATION_MGR_H
 
 #include "ObjectGuid.h"
+#include "Bots/BotActionArbiter.h"
 #include "Bots/BotExperimentCoordinator.h"
 #include "Bots/BotLongTermProgressionBrain.h"
+#include "Bots/BotMovementArbiter.h"
 #include "Bots/BotRoleSaturationPolicy.h"
 #include "Bots/BotTelemetryBuffer.h"
 #include "Bots/BotTelemetryPolicy.h"
@@ -801,6 +803,8 @@ private:
         float RosterAverageItemLevel = 0.0f;
         uint32 DecisionTimer = 0;
         uint32 StuckTimer = 0;
+        uint8 StuckRecoveryStage = 0;
+        uint64 StuckRecoveryStartedMs = 0;
         uint32 DeadTimer = 0;
         bool DeathEpisodeRecorded = false;
         uint64 NativeReadyCheckRequestGenerationResponded = 0;
@@ -969,6 +973,9 @@ private:
         std::string LastDecisionResult = "ok";
         std::string LastDecisionReason;
         std::string LastDecisionHandler = "none";
+        BotActionArbitration::Kernel DecisionKernel;
+        BotMovementArbitration::Lease MovementLease;
+        std::string LastDecisionKernelJson = "{}";
         std::string LastActionCategory = "wait";
         std::string LastClassSpecProfile = "{}";
         std::string LastRoleGoal = "increase_character_power";
@@ -1766,7 +1773,10 @@ private:
     bool IsFailedPathRecently(uint32 botGuid, uint32 mapId, float fromX, float fromY, float toX, float toY) const;
     bool FindMemoryPoiTarget(Player* bot, float& x, float& y, float& z, uint64& poiId) const;
     void MarkPoiVisited(uint64 poiId) const;
-    bool MoveBotToPoint(WorldBotState& state, Player* bot, float x, float y, float z, bool terminalOnFailure = false);
+    bool MoveBotToPoint(WorldBotState& state, Player* bot, float x, float y, float z,
+        bool terminalOnFailure = false,
+        BotMovementArbitration::Owner movementOwner = BotMovementArbitration::Owner::None,
+        BotMovementArbitration::Priority movementPriority = BotMovementArbitration::Priority::Idle);
     BotDeathRecoveryPolicy BuildDeathRecoveryPolicy() const;
     DeathRecoveryResult RecoverDeadBot(WorldBotState& state, Player* bot);
     bool TryCorpseRecovery(Player* bot, std::string& result) const;
@@ -1858,8 +1868,13 @@ private:
         ResolvedCombatAction const* action = nullptr, bool forceRangedReposition = false);
     bool TryCastCombatSpell(Player* bot, Unit* target, uint32 spellId) const;
     void MarkBotBlocked(WorldBotState& state, Player* bot, char const* reason) const;
+    void ObserveBotCandidateFailure(WorldBotState& state, Player* bot,
+        std::string const& key, std::string const& reason,
+        uint32 retryBaseMs = 250, uint32 retryMaxMs = 5000,
+        uint8 escalateAfter = 5, uint64 minimumFailureDurationMs = 5000) const;
     void MarkBotUnstuck(WorldBotState& state, Player* bot, char const* reason) const;
     bool TryResolveBotBlocker(WorldBotState& state, Player* bot, char const* resolvedBy) const;
+    bool TryRecoverStuckBot(WorldBotState& state, Player* bot);
     void MoveToWanderPoint(Player* bot, WorldBotState& state);
     void RecordRunStart();
     void RecordRunStop();

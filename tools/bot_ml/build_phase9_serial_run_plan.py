@@ -125,6 +125,7 @@ def build_plan(
         "timeout_sec": 2100,
         "publish_each_closed_batch": True,
         "remote_verify_before_evict": True,
+        "retain_published_batch": False,
         "restore_route_bot_start_each_attempt": True,
         "attempt_count": len(attempts),
         "canonical_target_count": int(matrix.get("canonical_target_count") or matrix.get("target_count") or 0),

@@ -1304,7 +1304,11 @@ def apply_calibration_only_acceptance(report: dict[str, Any]) -> dict[str, Any]:
     return report
 
 
-def attach_phase8_role_calibration(report: dict[str, Any]) -> dict[str, Any]:
+def attach_phase8_role_calibration(
+    report: dict[str, Any],
+    *,
+    policy_path: Path = Path("experiments/configs/all_spec_role_calibration_policy_v1.json"),
+) -> dict[str, Any]:
     """Attach canonical target normalization and independent role acceptance."""
     requested = report.get("requested_calibration") or {}
     calibration = report.get("combat_calibration") or {}
@@ -1314,6 +1318,7 @@ def attach_phase8_role_calibration(report: dict[str, Any]) -> dict[str, Any]:
             calibration,
             target_spec=str(requested.get("target_spec") or ""),
             mode=str(requested.get("mode") or ""),
+            policy_path=policy_path,
         )
         role_rejections = [str(value) for value in evaluation.get("failure_reasons") or []]
     except (
@@ -4449,6 +4454,7 @@ def main() -> int:
     parser.add_argument("--calibration-mode", choices=["single_target_300", "aoe_300", "tank_threat_300", "healer_controlled_damage_300"], default="single_target_300")
     parser.add_argument("--calibration-target-spec", default="protection_paladin", help="Canonical all-spec target selected from the calibration candidate pool.")
     parser.add_argument("--calibration-seed", type=int, default=1, help="Deterministic calibration target/support selection seed.")
+    parser.add_argument("--role-calibration-policy", type=Path, default=Path("experiments/configs/all_spec_role_calibration_policy_v1.json"), help="Versioned role/DPS threshold policy used for independent calibration acceptance.")
     parser.add_argument("--transport", choices=["process", "soap", "session"], default="process")
     parser.add_argument("--soap-url", default="http://127.0.0.1:7878/")
     parser.add_argument("--soap-user", default=os.environ.get("TRINITY_SOAP_USER"))
@@ -4897,7 +4903,7 @@ def main() -> int:
     attach_stonecore_role_quality_audit(report, validation_context, validation_route_manifest)
     if args.calibration_only:
         apply_calibration_only_acceptance(report)
-        attach_phase8_role_calibration(report)
+        attach_phase8_role_calibration(report, policy_path=args.role_calibration_policy)
     report["evidence_envelope"] = attempt_evidence_envelope(
         args,
         report,

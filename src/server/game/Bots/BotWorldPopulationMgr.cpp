@@ -8869,7 +8869,9 @@ void BotWorldPopulationMgr::MarkPoiVisited(uint64 poiId) const
     CharacterDatabase.DirectPExecute("UPDATE bot_memory_pois SET visit_count = visit_count + 1, last_seen_at = NOW() WHERE id = " UI64FMTD, poiId);
 }
 
-bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, float x, float y, float z, bool terminalOnFailure)
+bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, float x, float y, float z,
+    bool terminalOnFailure, BotMovementArbitration::Owner movementOwner,
+    BotMovementArbitration::Priority movementPriority)
 {
     if (!bot)
         return false;
@@ -8903,6 +8905,50 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     if (!bot->IsInWorld() || !bot->GetMap())
         return rejectPath("route_destination_unreachable");
 
+    using namespace BotMovementArbitration;
+    uint64 const nowMs = NowMs();
+    if (movementOwner == Owner::None)
+    {
+        if (bot->IsInCombat())
+        {
+            movementOwner = Owner::CombatRange;
+            movementPriority = Priority::Combat;
+        }
+        else if (Cohort().Config.ValidationRouteEnable)
+        {
+            movementOwner = Owner::Route;
+            movementPriority = Priority::Route;
+        }
+        else
+        {
+            movementOwner = Owner::Formation;
+            movementPriority = Priority::Formation;
+        }
+    }
+
+    Request movementRequest;
+    movementRequest.MovementOwner = movementOwner;
+    movementRequest.MovementPriority = movementPriority;
+    movementRequest.ExpiresAtMs = nowMs + 1500;
+    movementRequest.MovementScope = Scope{
+        Cohort().Config.ValidationRouteEnable ? Cohort().AttemptId : 0,
+        Cohort().Config.ValidationRouteEnable ? uint32(Cohort().Raid.WipeGeneration) : 0,
+        Cohort().Config.ValidationRouteEnable ? Party().ValidationRouteGeneration : 0,
+        bot->GetMapId(), bot->GetInstanceId()
+    };
+    movementRequest.X = x;
+    movementRequest.Y = y;
+    movementRequest.Z = z;
+    Decision const movementDecision = Evaluate(state.MovementLease, movementRequest, nowMs);
+    if (movementDecision == Decision::RejectInvalid)
+        return rejectPath("movement_lease_invalid_scope");
+    if (movementDecision == Decision::PreserveExisting)
+    {
+        state.LastRecoveryMode = "movement_lease_preserved";
+        state.LastRecoveryResult = "higher_priority_movement_active";
+        return true;
+    }
+
     constexpr float activeDestinationEpsilon = 0.1f;
     bool const activePathScopeMatches = !Cohort().Config.ValidationRouteEnable
         || (state.ActivePathAttemptId == Cohort().AttemptId
@@ -8913,7 +8959,10 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
         && std::fabs(x - state.ActivePathToX) <= activeDestinationEpsilon
         && std::fabs(y - state.ActivePathToY) <= activeDestinationEpsilon
         && std::fabs(z - state.ActivePathToZ) <= activeDestinationEpsilon)
+    {
+        Apply(state.MovementLease, movementRequest);
         return true;
+    }
 
     float floorZ = bot->GetMap()->GetHeight(bot->GetPhaseShift(), x, y, z + 2.0f, true, 8.0f);
     if (floorZ <= INVALID_HEIGHT)
@@ -8961,6 +9010,7 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
         ? Cohort().Config.ValidationRouteNodeId : std::string();
     state.LastPathRejectReason.clear();
     state.LastPathChangeMs = NowMs();
+    Apply(state.MovementLease, movementRequest);
 
     bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
     bot->GetMotionMaster()->MovePoint(0, x, y, z, true);
@@ -8983,7 +9033,9 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
         if (floorZ == INVALID_HEIGHT)
             return false;
 
-        return MoveBotToPoint(state, bot, x, y, floorZ, false);
+        return MoveBotToPoint(state, bot, x, y, floorZ, false,
+            BotMovementArbitration::Owner::CombatRange,
+            BotMovementArbitration::Priority::Combat);
     };
 
     std::string role = GetDungeonRole(bot);
@@ -9338,6 +9390,125 @@ std::string BotWorldPopulationMgr::BuildBlockedDiagnosticText(WorldBotState cons
     if (!state.LastCombatAttempt.Summary.empty())
         return "Blocked: " + state.LastCombatAttempt.Summary;
     return "Blocked: " + std::string(reason && *reason ? reason : "blocked");
+}
+
+bool BotWorldPopulationMgr::TryRecoverStuckBot(WorldBotState& state, Player* bot)
+{
+    if (!bot || !bot->IsInWorld() || !bot->GetMap())
+        return false;
+
+    uint64 const nowMs = NowMs();
+    if (!state.StuckRecoveryStartedMs)
+        state.StuckRecoveryStartedMs = nowMs;
+    ++state.RecoveryAttemptCount;
+    ++state.StuckRecoveryStage;
+    state.LastRecoveryMs = nowMs;
+
+    float const previousX = state.ActivePathToX;
+    float const previousY = state.ActivePathToY;
+    float const previousZ = state.ActivePathToZ;
+    bool const previousPathScoped = state.ActivePathValid
+        && (!Cohort().Config.ValidationRouteEnable
+            || (state.ActivePathAttemptId == Cohort().AttemptId
+                && state.ActivePathWipeGeneration == Cohort().Raid.WipeGeneration
+                && state.ActivePathRouteGeneration == Party().ValidationRouteGeneration
+                && state.ActivePathRouteNodeId == Cohort().Config.ValidationRouteNodeId));
+
+    state.DecisionKernel.Begin(nowMs);
+    auto submitMovement = [&](std::string key, float utility, bool allowed,
+        float x, float y, float z, bool invalidateCurrentPath)
+    {
+        BotActionArbitration::Candidate candidate;
+        candidate.Key = std::move(key);
+        candidate.Source = "stuck_recovery_supervisor";
+        candidate.ActionPriority = BotActionArbitration::Priority::Survival;
+        candidate.UtilityScore = utility;
+        candidate.RequiredResources = BotActionArbitration::Uses(
+            BotActionArbitration::Resource::Movement);
+        candidate.Allowed = allowed;
+        candidate.RejectReason = "recovery_geometry_unavailable";
+        candidate.RetryBaseMs = 500;
+        candidate.RetryMaxMs = 6000;
+        candidate.EscalateAfter = 3;
+        candidate.Attempt = [&, x, y, z, invalidateCurrentPath]()
+        {
+            if (invalidateCurrentPath)
+                state.ActivePathValid = false;
+            bool const moved = MoveBotToPoint(state, bot, x, y, z, false,
+                BotMovementArbitration::Owner::Recovery,
+                BotMovementArbitration::Priority::Recovery);
+            return moved
+                ? BotActionArbitration::Outcome::Progressed("native_repath_submitted")
+                : BotActionArbitration::Outcome::Retryable(
+                    state.LastPathRejectReason.empty()
+                        ? std::string_view("native_repath_rejected")
+                        : std::string_view(state.LastPathRejectReason));
+        };
+        state.DecisionKernel.Submit(std::move(candidate));
+    };
+
+    // Rotate the preferred native recovery on each no-progress episode. A
+    // successfully submitted-but-ineffective path therefore cannot monopolize
+    // every later recovery tick; rejected preferences still fall through to
+    // the remaining candidates in this same resolution.
+    uint8 const recoveryStrategy = uint8((state.StuckRecoveryStage - 1) % 4);
+    submitMovement("world.recovery.revalidate_destination",
+        recoveryStrategy == 0 ? 4.0f : 0.5f,
+        previousPathScoped, previousX, previousY, previousZ, true);
+
+    bool const routeAnchorAvailable = Cohort().Config.ValidationRouteEnable
+        && Cohort().Config.ValidationRouteMapId == bot->GetMapId();
+    submitMovement("world.recovery.route_anchor",
+        recoveryStrategy == 1 ? 4.0f : 1.0f, routeAnchorAvailable,
+        Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY,
+        Cohort().Config.ValidationRouteZ, true);
+
+    float const sideDistance = 2.5f + float((state.StuckRecoveryStage - 1) % 2);
+    Position const left = bot->GetFirstCollisionPosition(
+        sideDistance, bot->GetOrientation() + float(M_PI) / 2.0f);
+    Position const right = bot->GetFirstCollisionPosition(
+        sideDistance, bot->GetOrientation() - float(M_PI) / 2.0f);
+    submitMovement("world.recovery.sidestep_left",
+        recoveryStrategy == 2 ? 4.0f : 2.0f, true,
+        left.GetPositionX(), left.GetPositionY(), left.GetPositionZ(), true);
+    submitMovement("world.recovery.sidestep_right",
+        recoveryStrategy == 3 ? 4.0f : 1.0f, true,
+        right.GetPositionX(), right.GetPositionY(), right.GetPositionZ(), true);
+
+    BotActionArbitration::Resolution const& resolution = state.DecisionKernel.Resolve();
+    state.LastDecisionKernelJson = state.DecisionKernel.LastResolutionJson();
+    state.StuckTimer = 0;
+    if (resolution.AnyCommitted)
+    {
+        state.LastRecoveryMode = "native_priority_repath";
+        state.LastRecoveryResult = resolution.CommittedCandidates.empty()
+            ? "native_repath_submitted" : resolution.CommittedCandidates.front();
+        state.LastNoProgressReason = "stuck_recovery_in_progress";
+        return true;
+    }
+
+    state.LastRecoveryMode = "native_priority_repath_exhausted";
+    state.LastRecoveryResult = "all_recovery_candidates_rejected";
+    state.LastNoProgressReason = state.LastRecoveryResult;
+    return state.StuckRecoveryStage < 3;
+}
+
+void BotWorldPopulationMgr::ObserveBotCandidateFailure(WorldBotState& state,
+    Player* bot, std::string const& key, std::string const& reason,
+    uint32 retryBaseMs, uint32 retryMaxMs, uint8 escalateAfter,
+    uint64 minimumFailureDurationMs) const
+{
+    uint64 const nowMs = NowMs();
+    state.DecisionKernel.Observe(key,
+        BotActionArbitration::Outcome::Retryable(reason), nowMs,
+        retryBaseMs, retryMaxMs, escalateAfter);
+    state.LastRecoveryMs = nowMs;
+    state.LastRecoveryMode = "candidate_backoff";
+    state.LastRecoveryResult = reason;
+    state.LastNoProgressReason = reason;
+    if (state.DecisionKernel.ShouldEscalate(
+            key, nowMs, minimumFailureDurationMs))
+        MarkBotBlocked(state, bot, reason.c_str());
 }
 
 void BotWorldPopulationMgr::MarkBotBlocked(WorldBotState& state, Player* bot, char const* reason) const
@@ -10447,7 +10618,11 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     if (movementProgress || combatOrCasting)
         state.LastMovementProgressMs = NowMs();
     if (movementProgress)
+    {
+        state.StuckRecoveryStage = 0;
+        state.StuckRecoveryStartedMs = 0;
         TryResolveBotBlocker(state, bot, "movement_progress");
+    }
     bool validationRouteComplete = Cohort().Config.ValidationRouteEnable && Party().ValidationRouteManifestComplete;
     bool terminalRouteAction = Cohort().Config.ValidationRouteEnable
         && (state.LastDecisionAction == "validation_route_complete"
@@ -10485,39 +10660,32 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         ensureProgressionScored();
         ++Cohort().Metrics.StuckEvents;
         MarkStuckFailure(state, bot);
-        if (Cohort().Config.ValidationRouteEnable)
-        {
-            uint64 nowMs = NowMs();
-            ++state.RecoveryAttemptCount;
-            state.LastRecoveryMs = nowMs;
-            state.LastRecoveryMode = "validation_route_stuck_no_fallback";
-            state.LastRecoveryResult = "fallback_disabled";
-
-            std::string recoveryReason = "validation_route_stuck_no_fallback";
-            float routeAnchorDistance = Cohort().Config.ValidationRouteMapId == bot->GetMapId()
-                ? bot->GetExactDist(Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY, Cohort().Config.ValidationRouteZ)
-                : std::numeric_limits<float>::max();
-            state.StuckTimer = 0;
-            state.LastDecisionHandler = "validation_route";
-            state.LastRecoveryResult = "fallback_disabled";
-            state.LastNoProgressReason = recoveryReason;
-            MarkBotBlocked(state, bot, recoveryReason.c_str());
-            std::string raw = BuildRawJson(bot, target);
-            std::string semantic = BuildSemanticJson(bot, target, "validation_route_recovery", &power, stage, chosenActivity.Activity);
-            RecordEvent(state, bot, "stuck_detected", target, recoveryReason.c_str(), raw.c_str(), semantic.c_str(), routeAnchorDistance, Cohort().Config.ValidationRouteTargetEntry);
-            RecordDecision(state, bot, "validation_route_recovery", "validation_route_stuck", target, raw.c_str(), semantic.c_str(), activityScores, chosenActivity, power, true, false);
-            return;
-        }
-        state.StuckTimer = 0;
-        std::string raw = BuildRawJson(bot, nullptr);
-        std::string semantic = BuildSemanticJson(bot, nullptr, "stuck_blocked", &power, stage, chosenActivity.Activity);
-        state.LastRecoveryMode = "stuck_no_fallback";
-        state.LastRecoveryResult = "fallback_disabled";
-        state.LastNoProgressReason = "stuck_no_fallback";
-        MarkBotBlocked(state, bot, "stuck_no_fallback");
-        RecordEvent(state, bot, "stuck_detected", nullptr, "stuck_no_fallback", raw.c_str(), semantic.c_str(), 1.0f, Cohort().Metrics.StuckEvents);
-        state.LastDecisionHandler = "stuck_blocked";
-        RecordDecision(state, bot, "stuck_blocked", "stuck_no_fallback", nullptr, raw.c_str(), semantic.c_str(), activityScores, chosenActivity, power, true, false);
+        bool const recoveryScheduled = TryRecoverStuckBot(state, bot);
+        bool const validationRecovery = Cohort().Config.ValidationRouteEnable;
+        char const* situationName = validationRecovery
+            ? "validation_route_recovery" : "runtime_recovery";
+        char const* actionName = recoveryScheduled
+            ? "native_priority_repath" : "native_priority_repath_exhausted";
+        char const* reason = recoveryScheduled
+            ? "stuck_recovery_candidate_committed" : "stuck_recovery_candidates_exhausted";
+        float const routeAnchorDistance = validationRecovery
+            && Cohort().Config.ValidationRouteMapId == bot->GetMapId()
+                ? bot->GetExactDist(Cohort().Config.ValidationRouteX,
+                    Cohort().Config.ValidationRouteY, Cohort().Config.ValidationRouteZ)
+                : 0.0f;
+        state.LastDecisionHandler = recoveryScheduled
+            ? "recovery_supervisor" : "stuck_blocked";
+        if (!recoveryScheduled)
+            MarkBotBlocked(state, bot, reason);
+        std::string raw = BuildRawJson(bot, target);
+        std::string semantic = BuildSemanticJson(bot, target, situationName,
+            &power, stage, chosenActivity.Activity);
+        RecordEvent(state, bot, recoveryScheduled ? "stuck_recovery_started" : "stuck_detected",
+            target, reason, raw.c_str(), semantic.c_str(), routeAnchorDistance,
+            validationRecovery ? Cohort().Config.ValidationRouteTargetEntry : Cohort().Metrics.StuckEvents);
+        RecordDecision(state, bot, situationName, actionName, target, raw.c_str(),
+            semantic.c_str(), activityScores, chosenActivity, power,
+            !recoveryScheduled, true);
         return;
     }
 
@@ -10557,7 +10725,207 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         && !hasActiveQuestObjective
         && state.Sequence >= 2;
 
-    if (hpPct < 0.35f && !bot->IsInCombat())
+    // Validation runs are the first live adapter onto the decision kernel.
+    // The route remains the preferred policy, but a retryable route outcome no
+    // longer prevents boss, trash, or trained combat fallbacks from acting in
+    // the same tick.  Native safety checks remain inside every legacy adapter.
+    bool const validationKernelOwnsTick = Cohort().Config.ValidationRouteEnable;
+    if (validationKernelOwnsTick)
+    {
+        uint64 const decisionNowMs = NowMs();
+        state.DecisionKernel.Begin(decisionNowMs);
+
+        BotActionArbitration::Candidate route;
+        route.Key = "world.validation_route";
+        route.Source = "validation_route_adapter";
+        route.ActionPriority = BotActionArbitration::Priority::Mechanic;
+        route.UtilityScore = 3.0f;
+        route.RequiredResources = BotActionArbitration::Uses(
+            BotActionArbitration::Resource::GlobalCooldown,
+            BotActionArbitration::Resource::Cast,
+            BotActionArbitration::Resource::Movement,
+            BotActionArbitration::Resource::Target,
+            BotActionArbitration::Resource::Interaction);
+        route.Attempt = [&]()
+        {
+            uint64 const previousPathChangeMs = state.LastPathChangeMs;
+            uint64 const previousCombatAttemptMs = state.LastCombatAttempt.RecordedAtMs;
+            bool const handled = TryValidationRouteObjective(state, bot, power,
+                stage, chosenActivity.Activity, situation, action, target);
+            if (!handled)
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "route_not_applicable");
+            state.LastDecisionHandler = "validation_route";
+            if (state.LastPathChangeMs > previousPathChangeMs && state.ActivePathValid)
+                return BotActionArbitration::Outcome::Progressed(
+                    "route_movement_submitted");
+            if (state.LastCombatAttempt.RecordedAtMs > previousCombatAttemptMs)
+            {
+                std::string const& result = state.LastCombatAttempt.Result;
+                if (result == "ok")
+                    return BotActionArbitration::Outcome::Committed(
+                        "route_combat_committed");
+                if (result == "casting" || result == "global_cooldown")
+                    return BotActionArbitration::Outcome::Started(
+                        "route_combat_scheduled");
+                return BotActionArbitration::Outcome::Retryable(
+                    state.LastCombatAttempt.Reason.empty()
+                        ? std::string_view("route_combat_retryable")
+                        : std::string_view(state.LastCombatAttempt.Reason));
+            }
+            if (action == "validation_route_target_blocked"
+                || action == "validation_route_wrong_map"
+                || action == "blocked_no_fallback")
+                return BotActionArbitration::Outcome::Retryable(
+                    state.LastNoProgressReason.empty()
+                        ? std::string_view("route_retryable")
+                        : std::string_view(state.LastNoProgressReason));
+            return BotActionArbitration::Outcome::Committed("route_handled");
+        };
+        state.DecisionKernel.Submit(std::move(route));
+
+        BotActionArbitration::Candidate boss;
+        boss.Key = "world.boss_mechanics";
+        boss.Source = "boss_mechanics_adapter";
+        boss.ActionPriority = BotActionArbitration::Priority::Mechanic;
+        boss.UtilityScore = 2.0f;
+        boss.RequiredResources = BotActionArbitration::Uses(
+            BotActionArbitration::Resource::GlobalCooldown,
+            BotActionArbitration::Resource::Cast,
+            BotActionArbitration::Resource::Movement,
+            BotActionArbitration::Resource::Target,
+            BotActionArbitration::Resource::Interaction);
+        boss.Attempt = [&]()
+        {
+            if (!IsBossContext(bot, target))
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "not_boss_context");
+            bossAction = TryBossMechanics(state, bot, power, stage,
+                chosenActivity.Activity);
+            if (!bossAction.Handled)
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "boss_adapter_not_applicable");
+            situation = bossAction.Situation;
+            action = bossAction.Action;
+            target = bossAction.Target;
+            state.LastDecisionHandler = "boss_mechanics";
+            return bossAction.Failure
+                ? BotActionArbitration::Outcome::Retryable("boss_action_failed")
+                : BotActionArbitration::Outcome::Committed("boss_action_committed");
+        };
+        state.DecisionKernel.Submit(std::move(boss));
+
+        BotActionArbitration::Candidate trash;
+        trash.Key = "world.dungeon_trash";
+        trash.Source = "dungeon_trash_adapter";
+        trash.ActionPriority = BotActionArbitration::Priority::ThreatControl;
+        trash.UtilityScore = 2.0f;
+        trash.RequiredResources = BotActionArbitration::Uses(
+            BotActionArbitration::Resource::GlobalCooldown,
+            BotActionArbitration::Resource::Cast,
+            BotActionArbitration::Resource::Movement,
+            BotActionArbitration::Resource::Target);
+        trash.Attempt = [&]()
+        {
+            if (!IsDungeonTrashContext(bot, target))
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "not_dungeon_trash_context");
+            trashAction = TryDungeonTrash(state, bot, power, stage,
+                chosenActivity.Activity);
+            if (!trashAction.Handled)
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "trash_adapter_not_applicable");
+            situation = trashAction.Situation;
+            action = trashAction.Action;
+            target = trashAction.Target;
+            state.LastDecisionHandler = "dungeon_trash";
+            return trashAction.Failure
+                ? BotActionArbitration::Outcome::Retryable("trash_action_failed")
+                : BotActionArbitration::Outcome::Committed("trash_action_committed");
+        };
+        state.DecisionKernel.Submit(std::move(trash));
+
+        BotActionArbitration::Candidate combat;
+        combat.Key = "world.profile_combat";
+        combat.Source = "db_class_spec_profile";
+        combat.ActionPriority = BotActionArbitration::Priority::TrainedDamage;
+        combat.UtilityScore = target && target->IsAlive() ? 1.0f : 0.0f;
+        combat.RequiredResources = BotActionArbitration::Uses(
+            BotActionArbitration::Resource::GlobalCooldown,
+            BotActionArbitration::Resource::Cast,
+            BotActionArbitration::Resource::Movement,
+            BotActionArbitration::Resource::Target);
+        combat.Attempt = [&]()
+        {
+            if (!target || !target->IsAlive())
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "no_live_combat_target");
+            char const* rejectReason = nullptr;
+            if (!bot->IsInCombat() && !IsQuestRelevantTarget(bot, target)
+                && !IsProgressionCombatTarget(bot, target, &rejectReason))
+            {
+                state.LastRejectedTargetReason = rejectReason
+                    ? rejectReason : "not_progression_relevant";
+                state.TargetGuid.Clear();
+                target = nullptr;
+                return BotActionArbitration::Outcome::Unsafe(
+                    "combat_target_hard_masked");
+            }
+
+            state.TargetGuid = target->GetGUID();
+            ResolvedCombatAction profileAction;
+            BotActionResult const result = ExecuteProfileCombatAction(
+                &state, bot, target, &profileAction);
+            uint32 const spellId = profileAction.SpellId;
+            situation = "open_world_combat";
+            action = spellId ? "cast_combat_spell" : "attack";
+            if (result == BotActionResult::Ok && spellId)
+            {
+                std::string raw = BuildRawJson(bot, target);
+                std::string semantic = BuildSemanticJson(bot, target,
+                    situation.c_str(), &power, stage, chosenActivity.Activity);
+                RecordEvent(state, bot, "spell_cast", target, "ok",
+                    raw.c_str(), semantic.c_str(), 0.0f, 0, spellId);
+            }
+            if (!state.WasInCombat)
+            {
+                std::string raw = BuildRawJson(bot, target);
+                std::string semantic = BuildSemanticJson(bot, target,
+                    situation.c_str(), &power, stage, chosenActivity.Activity);
+                RecordEvent(state, bot, "combat_started", target, "ok",
+                    raw.c_str(), semantic.c_str());
+            }
+            state.WasInCombat = true;
+            state.LastDecisionHandler = "combat";
+            BotActionArbitration::Outcome outcome =
+                BotActionArbitration::FromBotActionResult(result);
+            return outcome.Result == BotActionArbitration::Disposition::NotApplicable
+                ? BotActionArbitration::Outcome::Retryable(
+                    profileAction.DebugName.empty()
+                        ? std::string_view("profile_combat_retryable")
+                        : std::string_view(profileAction.DebugName))
+                : outcome;
+        };
+        state.DecisionKernel.Submit(std::move(combat));
+
+        BotActionArbitration::Resolution const& resolution =
+            state.DecisionKernel.Resolve();
+        state.LastDecisionKernelJson = state.DecisionKernel.LastResolutionJson();
+        if (!resolution.AnyCommitted)
+        {
+            situation = "decision_kernel_retry";
+            action = "wait_for_candidate_backoff";
+            state.LastDecisionHandler = "decision_kernel";
+            state.LastRecoveryMode = "candidate_backoff";
+            state.LastRecoveryResult = "no_candidate_committed";
+        }
+    }
+
+    if (validationKernelOwnsTick)
+    {
+        // The kernel-owned branch has already selected or deferred the tick.
+    }
+    else if (hpPct < 0.35f && !bot->IsInCombat())
     {
         bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
         bot->GetMotionMaster()->MoveIdle();
@@ -32763,7 +33131,10 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
     {
         ++state.ReadinessAttemptCount[key];
         state.ReadinessRetryUntilMs[key] = nowMs + 15000;
-        MarkBotBlocked(state, bot, blockedReason);
+        ObserveBotCandidateFailure(state, bot,
+            "world.readiness." + key,
+            blockedReason && *blockedReason ? blockedReason : "readiness_retryable",
+            1000, 15000, 3, 15000);
     };
 
     auto targetLabel = [](Unit const* unit) -> std::string
@@ -32797,7 +33168,10 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
         std::string attemptKey = std::string("self:") + readyReason;
         if (!bot->HasSpell(spellId))
         {
-            MarkBotBlocked(state, bot, blockedReason);
+            ObserveBotCandidateFailure(state, bot,
+                "world.readiness." + attemptKey,
+                blockedReason && *blockedReason ? blockedReason : "self_buff_missing",
+                1000, 15000, 3, 15000);
             return true;
         }
         if (!canAttempt(attemptKey))
@@ -32832,7 +33206,10 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
         }
         if (!bot->HasSpell(spellId))
         {
-            MarkBotBlocked(state, bot, blockedReason);
+            ObserveBotCandidateFailure(state, bot,
+                "world.readiness." + attemptKey,
+                blockedReason && *blockedReason ? blockedReason : "party_buff_missing",
+                1000, 15000, 3, 15000);
             return true;
         }
         if (!canAttempt(attemptKey))
@@ -32962,12 +33339,13 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
                     failedReason << "hunter_pet_call_failed:" << petData->PetId << ":entry=" << petData->CreatureId << ":slot=" << uint32(petSlot) << ":spell=" << callPetSpell << ":reason=" << (castFailureReason.empty() ? "spell_unknown" : castFailureReason);
                     state.LastPetReadinessAction = failedReason.str();
                     deferAttempt(attemptKey, state.LastPetReadinessAction.c_str());
-                    MarkBotBlocked(state, bot, state.LastPetReadinessAction.c_str());
                     return true;
                 }
 
                 state.LastPetReadinessAction = "hunter_pet_missing";
-                MarkBotBlocked(state, bot, state.LastPetReadinessAction.c_str());
+                ObserveBotCandidateFailure(state, bot,
+                    "world.readiness.hunter_pet_missing",
+                    state.LastPetReadinessAction, 1000, 15000, 3, 15000);
                 return true;
             }
             state.LastPetReadinessPetEntry = bot->GetPet()->GetEntry();
@@ -33013,7 +33391,9 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
                 }
                 state.LastPetReadinessAction = "hunter_pet_revive_failed:" + (castFailureReason.empty() ? std::string("spell_unknown") : castFailureReason);
                 state.ReadinessRetryUntilMs[attemptKey] = nowMs + 3000;
-                MarkBotBlocked(state, bot, "hunter_pet_dead");
+                ObserveBotCandidateFailure(state, bot,
+                    "world.readiness.hunter_pet_dead",
+                    state.LastPetReadinessAction, 500, 5000, 3, 5000);
                 return true;
             }
             if (state.HunterPetReviveStartedMs)
@@ -34691,7 +35071,8 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
         if (!bot->HasSpell(buff.SpellId))
         {
             std::string blocker = std::string("persistent_setup_spell_missing:") + std::to_string(buff.SpellId);
-            MarkBotBlocked(state, bot, blocker.c_str());
+            ObserveBotCandidateFailure(state, bot,
+                "world.setup.self_buff:" + std::to_string(buff.SpellId), blocker);
             continue;
         }
 
@@ -34726,7 +35107,9 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
             constexpr uint32 ConjureManaGemSpellId = 759;
             if (!bot->HasSpell(ConjureManaGemSpellId))
             {
-                MarkBotBlocked(state, bot, "persistent_setup_spell_missing:759");
+                ObserveBotCandidateFailure(state, bot,
+                    "world.setup.conjure_mana_gem",
+                    "persistent_setup_spell_missing:759");
                 return true;
             }
 
@@ -34761,7 +35144,8 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
             if (!bot->HasSpell(spellId))
             {
                 std::string blocker = std::string("persistent_setup_spell_missing:") + std::to_string(spellId);
-                MarkBotBlocked(state, bot, blocker.c_str());
+                ObserveBotCandidateFailure(state, bot,
+                    "world.setup.weapon_imbue:" + std::to_string(spellId), blocker);
                 return false;
             }
 
@@ -34777,7 +35161,8 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
             if (!desiredEnchantId)
             {
                 std::string blocker = std::string("persistent_setup_enchant_missing:") + std::to_string(spellId);
-                MarkBotBlocked(state, bot, blocker.c_str());
+                ObserveBotCandidateFailure(state, bot,
+                    "world.setup.weapon_enchant:" + std::to_string(spellId), blocker);
                 return true;
             }
 
@@ -34822,7 +35207,8 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
             if (!weapon)
             {
                 std::string blocker = std::string("persistent_setup_weapon_missing:") + name;
-                MarkBotBlocked(state, bot, blocker.c_str());
+                ObserveBotCandidateFailure(state, bot,
+                    "world.setup.weapon_poison:" + std::string(name), blocker);
                 return true;
             }
 
@@ -34914,7 +35300,8 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
 
         std::string key = "totem_spell_missing:" + std::to_string(spellId);
         state.ReadinessRetryUntilMs[key] = nowMs + 15000;
-        MarkBotBlocked(state, bot, key.c_str());
+        ObserveBotCandidateFailure(state, bot,
+            "world.setup." + key, key, 1000, 15000, 3, 15000);
         return true;
     }
 
@@ -34986,7 +35373,8 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
         RecordCombatAttempt(state, bot, bot, "totems", &action, BotActionResult::CastFailed, "totem_cast_failed");
         state.ReadinessRetryUntilMs[attemptKey] = nowMs + 3000;
         std::string const blocker = "totem_cast_failed:" + std::to_string(spellId);
-        MarkBotBlocked(state, bot, blocker.c_str());
+        ObserveBotCandidateFailure(state, bot,
+            "world.setup." + attemptKey, blocker, 500, 5000, 3, 5000);
         return true;
     }
 
@@ -35007,7 +35395,16 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
         {
             RecordCombatAttempt(*state, bot, target, "profile_resolve", &rejected,
                 BotActionResult::NoAction, rejected.DebugName.c_str());
-            MarkBotBlocked(*state, bot, rejected.DebugName.c_str());
+            state->DecisionKernel.Observe("world.hard_mask.future_encounter",
+                BotActionArbitration::Outcome::Unsafe(rejected.DebugName), NowMs(),
+                500, 5000, 5);
+            state->LastRecoveryMode = "hard_safety_mask";
+            state->LastRecoveryResult = rejected.DebugName;
+            state->LastNoProgressReason = rejected.DebugName;
+            state->TargetGuid.Clear();
+            if (state->DecisionKernel.ShouldEscalate(
+                    "world.hard_mask.future_encounter", NowMs(), 5000))
+                MarkBotBlocked(*state, bot, rejected.DebugName.c_str());
         }
         return BotActionResult::NoAction;
     }
@@ -35044,12 +35441,24 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
             RecordCombatAttempt(*state, bot, target, "profile_resolve", &action,
                 invalidResult, action.DebugName.c_str());
         if (state && invalidResult == BotActionResult::NoAction)
-            MarkBotBlocked(*state, bot, action.DebugName.c_str());
+        {
+            state->DecisionKernel.Observe("world.profile_resolve",
+                BotActionArbitration::Outcome::Retryable(action.DebugName), nowMs,
+                100, 3000, 5);
+            state->LastRecoveryMode = "candidate_backoff";
+            state->LastRecoveryResult = action.DebugName;
+            state->LastNoProgressReason = action.DebugName;
+            if (state->DecisionKernel.ShouldEscalate(
+                    "world.profile_resolve", nowMs, 5000))
+                MarkBotBlocked(*state, bot, action.DebugName.c_str());
+        }
         return invalidResult;
     }
 
     if (state)
     {
+        state->DecisionKernel.MarkProgress("world.profile_resolve", nowMs,
+            "profile_action_valid");
         TryResolveBotBlocker(*state, bot, "profile_action_valid");
     }
 
@@ -35088,6 +35497,12 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
     BotActionResult result = executor.ExecuteCombat(bot, bot, action);
     if (state)
     {
+        std::string const castLifecycleKey = "world.profile_cast:"
+            + std::to_string(action.SpellId) + ":"
+            + std::to_string(action.TargetGuid.GetCounter());
+        state->DecisionKernel.Observe(castLifecycleKey,
+            BotActionArbitration::FromBotActionResult(result), nowMs,
+            100, 3000, 5);
         bool recoverLineOfSight = false;
         std::string castFailureReason;
         if (result == BotActionResult::CastFailed)
@@ -35132,7 +35547,14 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
             }
             return result;
         }
-        MarkBotBlocked(*state, bot, ToString(result));
+        std::string const castLifecycleKey = "world.profile_cast:"
+            + std::to_string(action.SpellId) + ":"
+            + std::to_string(action.TargetGuid.GetCounter());
+        state->LastRecoveryMode = "candidate_backoff";
+        state->LastRecoveryResult = ToString(result);
+        state->LastNoProgressReason = state->LastRecoveryResult;
+        if (state->DecisionKernel.ShouldEscalate(castLifecycleKey, nowMs, 5000))
+            MarkBotBlocked(*state, bot, ToString(result));
     }
     return result;
 }
@@ -37056,9 +37478,12 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
         ? BotClassSpecActionProfileStore::CandidateMaskJson(std::vector<BotActionCandidate>(), decisionProfile, state.LastRoleGoal.c_str(), state.LastRoleSaturationStateJson.c_str())
         : state.LastValidActionMaskJson;
     std::ostringstream candidateJsonOut;
-    candidateJsonOut << "{\"schema\":\"bot_decision_mask_v2\""
+    std::string const decisionKernelJson = state.LastDecisionKernelJson.empty()
+        ? "{}" : state.LastDecisionKernelJson;
+    candidateJsonOut << "{\"schema\":\"bot_decision_mask_v3\""
                      << ",\"activity_candidates\":" << activityCandidateJson
                      << ",\"combat_action_mask\":" << combatMaskJson
+                     << ",\"decision_kernel\":" << decisionKernelJson
                      << ",\"class_spec_profile\":" << state.LastClassSpecProfile
                      << ",\"role_goal\":\"" << JsonEscape(state.LastRoleGoal) << "\""
                      << ",\"role_saturation_state_json\":" << state.LastRoleSaturationStateJson
@@ -37077,6 +37502,7 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
         : state.LastChosenActionJson;
     chosen << "{\"action\":\"" << JsonEscape(action ? action : "wait") << "\""
            << ",\"structured_action\":" << structuredChosen
+           << ",\"decision_kernel\":" << decisionKernelJson
            << ",\"action_category\":\"" << JsonEscape(state.LastActionCategory.empty() ? "wait" : state.LastActionCategory) << "\""
            << ",\"class_spec_profile\":" << state.LastClassSpecProfile
            << ",\"role_goal\":\"" << JsonEscape(state.LastRoleGoal) << "\""
@@ -37111,6 +37537,7 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
     chosen << "}";
     std::ostringstream outcome;
     outcome << "{\"main_goal\":\"increase_character_power\""
+            << ",\"decision_kernel\":" << decisionKernelJson
             << ",\"current_stage\":\"" << JsonEscape(state.ProgressionStage) << "\""
             << ",\"chosen_activity\":\"" << JsonEscape(BotLongTermProgressionBrain::ToString(chosenActivity.Activity)) << "\""
             << ",\"expected_value\":" << chosenActivity.Score
@@ -39395,6 +39822,7 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << ",\"blocker\":\"" << JsonEscape(diagnosis.Blocker) << "\""
          << ",\"combat_attempt\":" << BuildCombatAttemptJson(state.LastCombatAttempt)
          << ",\"route_progress\":" << BuildRouteProgressJson(state.LastRouteProgress)
+         << ",\"decision_kernel\":" << (state.LastDecisionKernelJson.empty() ? "{}" : state.LastDecisionKernelJson)
          << ",\"evidence\":["
          << "{\"name\":\"loaded\",\"value\":" << (bot ? "true" : "false") << "},"
          << "{\"name\":\"in_world\",\"value\":" << (bot && bot->IsInWorld() ? "true" : "false") << "},"
@@ -39597,7 +40025,8 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << ",\"profession_goal\":" << (state.LastProfessionGoal.empty() ? "{}" : state.LastProfessionGoal)
          << ",\"valid_action_mask_json\":" << (state.LastValidActionMaskJson.empty() ? "{}" : state.LastValidActionMaskJson)
          << ",\"chosen_action_json\":" << (state.LastChosenActionJson.empty() ? "{}" : state.LastChosenActionJson)
-         << ",\"next_expected_action\":\"" << JsonEscape(state.LastNextExpectedAction) << "\"}"
+         << ",\"next_expected_action\":\"" << JsonEscape(state.LastNextExpectedAction) << "\""
+         << ",\"decision_kernel\":" << (state.LastDecisionKernelJson.empty() ? "{}" : state.LastDecisionKernelJson) << "}"
          << ",\"routing\":{\"active_path_valid\":" << (state.ActivePathValid ? "true" : "false")
          << ",\"from\":{\"x\":" << state.ActivePathFromX << ",\"y\":" << state.ActivePathFromY << ",\"z\":" << state.ActivePathFromZ << "}"
          << ",\"to\":{\"x\":" << state.ActivePathToX << ",\"y\":" << state.ActivePathToY << ",\"z\":" << state.ActivePathToZ << "}"
@@ -40382,6 +40811,7 @@ std::string BotWorldPopulationMgr::GetBotDebugJson(std::string const& selector) 
          << ",\"recovery_attempt_count\":" << selected->RecoveryAttemptCount
          << ",\"last_recovery_mode\":\"" << JsonEscape(selected->LastRecoveryMode) << "\""
          << ",\"last_recovery_result\":\"" << JsonEscape(selected->LastRecoveryResult) << "\""
+         << ",\"decision_kernel\":" << (selected->LastDecisionKernelJson.empty() ? "{}" : selected->LastDecisionKernelJson)
          << ",\"last_no_progress_reason\":\"" << JsonEscape(selected->LastNoProgressReason) << "\""
          << ",\"last_objective_not_found_reason\":\"" << JsonEscape(selected->LastObjectiveNotFoundReason) << "\""
          << ",\"last_grinding_allowed_reason\":\"" << JsonEscape(selected->LastGrindingAllowedReason) << "\""

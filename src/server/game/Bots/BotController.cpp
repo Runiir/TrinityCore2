@@ -252,13 +252,13 @@ void BotController::Update(uint32 diff, BotActionExecutor& executor, Player* own
         return;
 
     BotMovementFrame movementFrame = BuildMovementFrame(owner, bot, updateMs);
-    ApplyMovementPolicy(executor, owner, bot, movementFrame);
     bool shouldRecord = _recording || sConfigMgr->GetBoolDefault("PlayerBot.Record.Enable", false);
     if (shouldRecord)
         RecordProfessionFrame(BuildProfessionFrame(owner, bot), owner, bot);
 
     if (_movementMode == BotMovementMode::Stop)
     {
+        ApplyMovementPolicy(executor, owner, bot, movementFrame);
         if (shouldRecord)
             RecordMovementFrame(movementFrame, ToString(_movementMode), "stop", "stop", true, owner, bot);
         return;
@@ -266,8 +266,6 @@ void BotController::Update(uint32 diff, BotActionExecutor& executor, Player* own
 
     BotRecentEvents recentEvents = sBotMgr->ConsumeRecentEvents(_botGuid);
     BotCombatState combatState = BuildCombatState(owner, bot, recentEvents);
-    if (_runtimeRole == "healer" && TryResolveHealerAction(executor, owner, bot, recentEvents, shouldRecord, movementFrame))
-        return;
 
     if (!_combatTargetGuid.IsEmpty() || combatState.InCombat || combatState.TargetLootable)
     {
@@ -277,23 +275,89 @@ void BotController::Update(uint32 diff, BotActionExecutor& executor, Player* own
         Unit* target = combatState.TargetGuid.IsEmpty() ? nullptr : ObjectAccessor::GetUnit(*bot, combatState.TargetGuid);
         BotActionResult combatResult = BotActionResult::NoAction;
         ResolvedCombatAction combatAction;
-        bool hadQueuedAction = _queuedCombatAction.Valid && _queuedCombatAction.SpellId;
-        if (hadQueuedAction)
-            combatAction = _queuedCombatAction;
-        if (!TryExecuteQueuedCombatAction(executor, owner, bot, combatResult))
+        bool healerCommitted = false;
+        bool combatAttempted = false;
+        _decisionKernel.Begin(PlayerBotNowMs());
+
+        if (_runtimeRole == "healer")
         {
-            combatAction = ResolveProfileCombat(combatDecision, combatState, bot, target);
-            combatResult = executor.ExecuteCombat(owner, bot, combatAction);
-            if (combatResult == BotActionResult::Casting || combatResult == BotActionResult::GlobalCooldown)
+            BotActionArbitration::Candidate healer;
+            healer.Key = "attached.healer_profile";
+            healer.Source = "db_class_spec_profile";
+            healer.ActionPriority = BotActionArbitration::Priority::Support;
+            healer.UtilityScore = 1.0f;
+            healer.RequiredResources = BotActionArbitration::Uses(
+                BotActionArbitration::Resource::GlobalCooldown,
+                BotActionArbitration::Resource::Cast,
+                BotActionArbitration::Resource::Movement,
+                BotActionArbitration::Resource::Target);
+            healer.Attempt = [&]()
             {
-                _queuedCombatAction = combatAction;
-                _queuedCombatActionMs = 1500;
-            }
+                healerCommitted = TryResolveHealerAction(executor, owner, bot,
+                    recentEvents, shouldRecord, movementFrame);
+                return healerCommitted
+                    ? BotActionArbitration::Outcome::Committed("healer_action_committed")
+                    : BotActionArbitration::Outcome::NotApplicable("no_valid_healer_action");
+            };
+            _decisionKernel.Submit(std::move(healer));
         }
+
+        BotActionArbitration::Candidate combat;
+        combat.Key = "attached.profile_combat";
+        combat.Source = "db_class_spec_profile";
+        combat.ActionPriority = combatDecision.Intent == BotCombatIntent::Recover
+            ? BotActionArbitration::Priority::Survival
+            : BotActionArbitration::Priority::TrainedDamage;
+        combat.UtilityScore = combatState.TargetCastingSpellId ? 2.0f : 1.0f;
+        combat.RequiredResources = BotActionArbitration::Uses(
+            BotActionArbitration::Resource::GlobalCooldown,
+            BotActionArbitration::Resource::Cast,
+            BotActionArbitration::Resource::Movement,
+            BotActionArbitration::Resource::Target);
+        combat.Attempt = [&]()
+        {
+            combatAttempted = true;
+            bool hadQueuedAction = _queuedCombatAction.Valid && _queuedCombatAction.SpellId;
+            if (hadQueuedAction)
+                combatAction = _queuedCombatAction;
+            if (!TryExecuteQueuedCombatAction(executor, owner, bot, combatResult))
+            {
+                combatAction = ResolveProfileCombat(combatDecision, combatState, bot, target);
+                combatResult = executor.ExecuteCombat(owner, bot, combatAction);
+                if (combatResult == BotActionResult::Casting || combatResult == BotActionResult::GlobalCooldown)
+                {
+                    _queuedCombatAction = combatAction;
+                    _queuedCombatActionMs = 1500;
+                }
+            }
+            return BotActionArbitration::FromBotActionResult(combatResult);
+        };
+        _decisionKernel.Submit(std::move(combat));
+
+        BotActionArbitration::Candidate movement;
+        movement.Key = "attached.movement";
+        movement.Source = "movement_mode_adapter";
+        movement.ActionPriority = _movementMode == BotMovementMode::MoveSafe
+                || _movementMode == BotMovementMode::Unstuck
+                || movementFrame.StuckScore >= 1.0f
+            ? BotActionArbitration::Priority::Survival
+            : BotActionArbitration::Priority::CombatMovement;
+        movement.UtilityScore = movementFrame.NearbyHazard ? 3.0f : 0.5f;
+        movement.RequiredResources = BotActionArbitration::Uses(BotActionArbitration::Resource::Movement);
+        movement.Attempt = [&]()
+        {
+            return ApplyMovementPolicy(executor, owner, bot, movementFrame)
+                ? BotActionArbitration::Outcome::Committed("movement_policy_applied")
+                : BotActionArbitration::Outcome::NotApplicable("movement_lease_preserved");
+        };
+        _decisionKernel.Submit(std::move(movement));
+        _decisionKernel.Resolve();
+        _lastDecisionKernelTraceJson = _decisionKernel.LastResolutionJson();
+
         if (combatDecision.Intent == BotCombatIntent::Loot && combatResult == BotActionResult::Ok)
             ClearCombatTarget();
 
-        if (shouldRecord)
+        if (shouldRecord && combatAttempted && !healerCommitted)
         {
             RecordCombatFrame(combatState, combatDecision, combatAction, combatResult, owner, bot);
             RecordMovementFrame(movementFrame, ToString(_movementMode), ToString(combatDecision.Intent), combatAction.DebugName.c_str(), combatResult != BotActionResult::Disabled, owner, bot);
@@ -301,6 +365,27 @@ void BotController::Update(uint32 diff, BotActionExecutor& executor, Player* own
 
         return;
     }
+
+    _decisionKernel.Begin(PlayerBotNowMs());
+    BotActionArbitration::Candidate movement;
+    movement.Key = "attached.movement";
+    movement.Source = "movement_mode_adapter";
+    movement.ActionPriority = _movementMode == BotMovementMode::MoveSafe
+            || _movementMode == BotMovementMode::Unstuck
+            || movementFrame.StuckScore >= 1.0f
+        ? BotActionArbitration::Priority::Survival
+        : BotActionArbitration::Priority::RouteMovement;
+    movement.UtilityScore = movementFrame.NearbyHazard ? 3.0f : 0.5f;
+    movement.RequiredResources = BotActionArbitration::Uses(BotActionArbitration::Resource::Movement);
+    movement.Attempt = [&]()
+    {
+        return ApplyMovementPolicy(executor, owner, bot, movementFrame)
+            ? BotActionArbitration::Outcome::Committed("movement_policy_applied")
+            : BotActionArbitration::Outcome::NotApplicable("movement_lease_preserved");
+    };
+    _decisionKernel.Submit(std::move(movement));
+    _decisionKernel.Resolve();
+    _lastDecisionKernelTraceJson = _decisionKernel.LastResolutionJson();
 
     HealerFrame frame = BuildFrame(owner, bot, recentEvents);
     if (_runtimeRole != "healer")
@@ -374,6 +459,7 @@ std::string BotController::GetStatus(Player const* owner, Player const* bot) con
        << ",\"safe_position_available\":" << (movement.SafePositionAvailable ? "true" : "false") << "}"
        << ",\"combat\":{\"target_guid\":" << (_combatTargetGuid.IsEmpty() ? 0 : _combatTargetGuid.GetCounter())
        << ",\"archetype\":\"" << ToString(bot ? CombatArchetypeForClass(bot->getClass(), _runtimeRole, _classSpec) : GetSoloCombatArchetype(_role)) << "\"}"
+       << ",\"decision_kernel\":" << _lastDecisionKernelTraceJson
        << "}";
     return ss.str();
 }
@@ -1004,12 +1090,85 @@ bool BotController::TryResolveHealerAction(BotActionExecutor& executor, Player* 
     return result == BotActionResult::Ok || result == BotActionResult::Casting || result == BotActionResult::GlobalCooldown;
 }
 
-void BotController::ApplyMovementPolicy(BotActionExecutor& executor, Player* owner, Player* bot, BotMovementFrame const& movementFrame)
+bool BotController::ApplyMovementPolicy(BotActionExecutor& executor, Player* owner, Player* bot, BotMovementFrame const& movementFrame)
 {
+    if (!bot || !bot->IsInWorld())
+        return false;
+
+    using namespace BotMovementArbitration;
+    uint64 const nowMs = PlayerBotNowMs();
+    Request request;
+    request.ExpiresAtMs = nowMs + 1500;
+    request.MovementScope = Scope{
+        PlayerBotRunId(), 0, 0, bot->GetMapId(), bot->GetInstanceId()
+    };
+    request.X = bot->GetPositionX();
+    request.Y = bot->GetPositionY();
+    request.Z = bot->GetPositionZ();
+
+    if (_movementMode == BotMovementMode::Stop)
+    {
+        request.MovementOwner = Owner::Recovery;
+        request.MovementPriority = Priority::Recovery;
+    }
+    else if (movementFrame.StuckScore >= 1.0f || _movementMode == BotMovementMode::Unstuck)
+    {
+        request.MovementOwner = Owner::Recovery;
+        request.MovementPriority = Priority::Recovery;
+        if (owner)
+        {
+            request.X = owner->GetPositionX();
+            request.Y = owner->GetPositionY();
+            request.Z = owner->GetPositionZ();
+        }
+    }
+    else if (_movementMode == BotMovementMode::Follow || _movementMode == BotMovementMode::ReturnToGroup)
+    {
+        request.MovementOwner = Owner::Formation;
+        request.MovementPriority = Priority::Formation;
+        if (owner)
+        {
+            request.X = owner->GetPositionX();
+            request.Y = owner->GetPositionY();
+            request.Z = owner->GetPositionZ();
+        }
+    }
+    else if (_movementMode == BotMovementMode::MoveSafe)
+    {
+        request.MovementOwner = Owner::Hazard;
+        request.MovementPriority = Priority::Hazard;
+        if (owner)
+        {
+            request.X = owner->GetPositionX();
+            request.Y = owner->GetPositionY();
+            request.Z = owner->GetPositionZ();
+        }
+    }
+    else if (_movementMode == BotMovementMode::MoveTo && _movementTarget.Active)
+    {
+        request.MovementOwner = Owner::Route;
+        request.MovementPriority = Priority::Route;
+        request.X = _movementTarget.X;
+        request.Y = _movementTarget.Y;
+        request.Z = _movementTarget.Z;
+    }
+    else
+    {
+        request.MovementOwner = Owner::Mechanic;
+        request.MovementPriority = Priority::Mechanic;
+    }
+
+    Decision const leaseDecision = Evaluate(_movementLease, request, nowMs);
+    if (leaseDecision == Decision::RejectInvalid
+        || leaseDecision == Decision::PreserveExisting)
+        return false;
+    Apply(_movementLease, request);
+
     if (movementFrame.StuckScore >= 1.0f || _movementMode == BotMovementMode::Unstuck)
     {
+        executor.MoveUnstuck(owner, bot);
         _movementMode = BotMovementMode::Follow;
-        return;
+        return true;
     }
 
     if (_movementMode == BotMovementMode::Follow)
@@ -1025,6 +1184,7 @@ void BotController::ApplyMovementPolicy(BotActionExecutor& executor, Player* own
         executor.MoveTo(bot, _movementTarget.X, _movementTarget.Y, _movementTarget.Z);
     else if (_movementMode == BotMovementMode::ReturnToGroup || _movementMode == BotMovementMode::MoveSafe)
         executor.MoveFollow(owner, bot);
+    return true;
 }
 
 HealerFrame BotController::BuildFrame(Player* owner, Player* bot, BotRecentEvents const& recentEvents) const
