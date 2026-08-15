@@ -1,0 +1,103 @@
+{
+  "schema": "cata_raid_compact_run_summary_v1",
+  "capture_id": "cata_raid_phase1_blackwing_descent_10n_magmaw_diagnostic_v1",
+  "started_at_utc": "2026-08-15T08:15:28Z",
+  "source_commit": "3876878184792f771302a02295355b90760e7d9c",
+  "source_tree": "34277b819af85005f16f6d85b0a50f9005bb3a1a",
+  "binary_sha256": "d417ef785053fc78eb58e37080d22d5f3d75f36b83cfc9417170458f9a6d795c",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
+  "pool_tag_filter": "blackwing_descent_10n_magmaw_diagnostic",
+  "server_epoch": 2139484448075276,
+  "instance_id": 14,
+  "attempt_id": 2,
+  "assignment_generation": 1,
+  "classification": "gameplay_failure",
+  "phase1_gate_passed": false,
+  "fidelity_claim": false,
+  "forbidden_assistance_observed": false,
+  "terminal_failure": {
+    "reason": "drudge_reseparation_deadline_missed",
+    "elapsed_seconds": 223.388,
+    "final_forced_diagnose_and_trace_complete": true,
+    "alive_count": 10,
+    "active_count": 10
+  },
+  "positive_live_result": {
+    "identity_stable": true,
+    "exact_roster_and_instance_admitted": true,
+    "chainwielder_cleared": true,
+    "drudge_exact_roster_staged": true,
+    "threat_seed_complete": true,
+    "first_native_rushes_landed": true,
+    "all_ten_alive_at_terminal": true,
+    "all_seven_offensive_slots_executed_trained_profiles": true,
+    "formal_stuck_or_unstuck_actions": 0,
+    "cleanup_gate_passed": true
+  },
+  "drudge_evidence": {
+    "profile_action_roster_guids": [30001, 30002, 30006, 30007, 30008, 30009, 30010],
+    "seed_roster_guids": [30006, 30008],
+    "tank_ownership_roster_guids": [30001, 30002],
+    "first_native_rushes": [
+      {"source_spawn_id": 250141, "source_guid": 60, "target_guid": 30006, "selected_distance": 33.1422, "landed": true},
+      {"source_spawn_id": 250140, "source_guid": 59, "target_guid": 30008, "selected_distance": 32.2418, "landed": true}
+    ],
+    "prepared_count_at_terminal": 4,
+    "delivered_count_at_terminal": 4,
+    "reseparated_roster_guids": [],
+    "failure_boundary": "the second tank recovery anchor failed the live exact-end Z gate by 0.016571 yards; the all-tank preflight correctly prevented one-sided movement and the next native Rush triggered the deadline failure",
+    "tank2_live_path_rejection": "drudge_anchor_native_end_rejected:end2d=0.000000:endz=1.016571",
+    "magmaw_result": "not engaged; no Magmaw mechanic, boss-DPS, or kill inference is authorized"
+  },
+  "cleanup": {
+    "gate_passed": true,
+    "worldserver_exit_code": 0,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true
+  },
+  "performance": {
+    "sample_count": 178,
+    "elapsed_seconds": 223.388,
+    "mean_cpu_percent_one_core": 34.317,
+    "minimum_rss_bytes": 1389199360,
+    "maximum_rss_bytes": 1447821312,
+    "final_rss_bytes": 1394274304,
+    "raw_bytes": 24805683,
+    "worldserver_log_bytes": 24811986,
+    "report_bytes": 256798,
+    "total_uncompressed_bytes": 49874467
+  },
+  "immutable_artifacts": {
+    "raw_sha256": "2bee2e8bdadf5f3f0db7084c4388524ac9a52819a67532d395db7d9c17d3a9f4",
+    "worldserver_log_sha256": "47b396b616ad6b7a6360c17ce8b41a38dc85b47120e0c6a891f680fa5fce5cfe",
+    "canonical_report_sha256": "ec04448449890684245dc03773d467ee2f25d35df3a30af2f5b20b9f2fe4fc76",
+    "configure_receipt_file_sha256": "685a3cef5581b4b9fbff06f64f32d5e866f33b1fdf36cc8ff9ed79d7562c25a1",
+    "worldserver_receipt_file_sha256": "ecbd45fa37c15c07d0b7586f0dc91a0391e585fd09a5dc4ec514ce847c8142eb",
+    "provisioning_readback_file_sha256": "4d65f993a6a471f4c71ed3063d17f3f74965cf0614436d510f3c873eeb024798"
+  },
+  "next_action": {
+    "required_change": "bind the recovery-anchor Z to the live PathGenerator terminal and make the offline parity probe validate the native terminal instead of echoing the requested endpoint",
+    "required_validation": "focused tests, exact native build, fresh provisioning/readback, then the same production-parity Magmaw diagnostic"
+  },
+  "retention": {
+    "build_prep_dvc_pointer": {
+      "path": "artifacts/cata_raid_program/phase1_38768781_build_prep_20260815.dvc",
+      "md5": "5773d25de3f3fb3adf92239fcd891bb9.dir",
+      "size": 3806659,
+      "nfiles": 11,
+      "file_sha256": "a2637d22910729700376e2d8106296cf2ac77cb5ba400e656c7931a640e0800f"
+    },
+    "capture_dvc_pointer": {
+      "path": "artifacts/cata_raid_program/phase1_38768781_magmaw_smoke_20260815.dvc",
+      "md5": "602044920264f63749f927d00c994747.dir",
+      "size": 49874467,
+      "nfiles": 3,
+      "file_sha256": "e7bde21d6595bccbe233e555d18b20125f8d0eae41574c64bc3a857a3fd76c7b"
+    },
+    "remote_verified": true,
+    "directory_metadata_retained": true,
+    "local_payload_evicted": true
+  }
+}

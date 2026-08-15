@@ -1,0 +1,6 @@
+outs:
+- md5: 5773d25de3f3fb3adf92239fcd891bb9.dir
+  size: 3806659
+  nfiles: 11
+  hash: md5
+  path: phase1_38768781_build_prep_20260815
