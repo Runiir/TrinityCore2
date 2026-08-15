@@ -587,7 +587,7 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "combatTankPathsProvenBeforeTick" in lane
     assert '"drudge_tank_anchor_strict_path_rejected"' in lane
     assert '"drudge_tank_anchor_preflight_wait"' in lane
-    assert lane.index("if (prepullStaged && !nativeChargePending\n            && !combatTankPathsProvenBeforeTick)") \
+    assert lane.index("if (prepullStaged && !nativeChargePending\n            && !activeTankPathsProvenBeforeTick)") \
         < lane.index("MoveBotToPoint(state, bot,")
     assert "exactRecoveryTankPathsProven" in lane
     assert "laneSeparation + 2.0f * (meleeStop + tankArrivalTolerance)" in lane
@@ -615,7 +615,22 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
         live_recovery_preflight:first_native_taunt
     ]
     assert "tankStageInput.BothCombatTankPathsProven" in lane
-    assert "nativeChargePending ? recoveryTankPathsProvenBeforeTick" in lane
+    assert "auto drudgeRecoveryFormationActive" in route_runtime
+    recovery_helper = route_runtime[
+        route_runtime.index("auto drudgeRecoveryFormationActive") :
+        route_runtime.index("auto tryValidationRouteDrudgeChargeLanes")
+    ]
+    assert "observation.Landed" in recovery_helper
+    assert "observation.AttemptId == Cohort().AttemptId" in recovery_helper
+    assert "observation.WipeGeneration == Cohort().Raid.WipeGeneration" in recovery_helper
+    assert "observation.RouteGeneration == Party().ValidationRouteGeneration" in recovery_helper
+    assert "!observation.ReseparationRecorded" not in recovery_helper
+    assert "bool const recoveryFormationActive = drudgeRecoveryFormationActive();" in lane
+    assert "activeTankPathsProvenBeforeTick = recoveryFormationActive" in lane
+    assert "tankStageInput.BothCombatTankPathsProven =\n            activeTankPathsProvenBeforeTick;" in lane
+    assert "&& drudgeRecoveryFormationActive()" in lane
+    assert "bool const recoveryFormationActiveForProof =" in lane
+    assert "drudgeRecoveryFormationActive();" in lane
     assert "if (!prepullStaged || !tankStage.TankMovementAllowed" in lane
     assert "|| pairTooClose || nativeChargePending || chargeAwaitingLanding)" in lane
     assert "laneSource = sources[laneIndex]" in lane

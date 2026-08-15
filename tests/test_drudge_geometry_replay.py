@@ -319,10 +319,10 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "!tankStage.NativeEngagementAllowed" in lane
     assert "tankStageInput.ChargeQueueIdle" in lane
     assert "tankStageInput.ChargeLanded = nativeChargePending" in lane
-    assert "landedChargeRecovery" in lane
-    landed_recovery = lane.index("bool const landedChargeRecovery")
-    assert "drudgeLandedRushPending()" in lane[
-        landed_recovery : landed_recovery + 160
+    assert "recoveryFormationActiveForProof" in lane
+    recovery_formation = lane.index("bool const recoveryFormationActiveForProof")
+    assert "drudgeRecoveryFormationActive()" in lane[
+        recovery_formation : recovery_formation + 180
     ]
     assert "drudge_lane_native_taunt_approach" in lane
     assert 'candidate.RejectReason == "out_of_range"' in lane

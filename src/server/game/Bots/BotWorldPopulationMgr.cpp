@@ -18756,9 +18756,24 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         action = moved ? "move_to_minimum_distance" : "hold_minimum_distance_exit_failed";
         return true;
     };
+    auto drudgeRecoveryFormationActive = [this]() -> bool
+    {
+        if (Cohort().Config.ValidationRouteMechanicProfile
+            != "trash_two_tank_charge_lanes")
+            return false;
+        for (ValidationRouteDrudgeChargeObservation const& observation :
+            Party().ValidationRouteDrudgeChargeObservations)
+            if (observation.Landed
+                && observation.AttemptId == Cohort().AttemptId
+                && observation.WipeGeneration == Cohort().Raid.WipeGeneration
+                && observation.RouteGeneration == Party().ValidationRouteGeneration)
+                return true;
+        return false;
+    };
     auto tryValidationRouteDrudgeChargeLanes = [this, &state, bot, &power, stage,
         activity, &situation, &action, &target, &tryRouteGroupHeal,
         &tryValidationRouteMinimumDistance, &drudgeLandedRushPending,
+        &drudgeRecoveryFormationActive,
         &canonicalRouteDistance,
         &routeArrivalRadius]() -> bool
     {
@@ -19241,8 +19256,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 Cohort().Config.ValidationRouteSplitLaneTankSlots.begin(),
                 Cohort().Config.ValidationRouteSplitLaneTankSlots.end(), slot)
                 != Cohort().Config.ValidationRouteSplitLaneTankSlots.end();
-            bool const landedRecovery = tankSlot && drudgeLandedRushPending();
-            ValidationRouteMemberAnchor const* anchor = landedRecovery
+            bool const recoveryFormation = tankSlot
+                && drudgeRecoveryFormationActive();
+            ValidationRouteMemberAnchor const* anchor = recoveryFormation
                 ? declaredRecoveryTankAnchorFor(slot)
                 : (tankSlot && combatTankStagingActive()
                     ? declaredNavigationTankAnchorFor(slot) : declaredAnchorFor(slot));
@@ -19534,9 +19550,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 && laneSign * priorProjection >= laneSeparation * 0.25f;
             bool const sourcesSeparated = sources[0]->GetExactDist2d(sources[1])
                 >= laneSeparation;
-            bool const landedChargeRecovery = drudgeLandedRushPending();
+            bool const recoveryFormationActiveForProof =
+                drudgeRecoveryFormationActive();
             bool const priorSourceSafe = tank
-                ? (priorCandidateMatches && (landedChargeRecovery
+                ? (priorCandidateMatches && (recoveryFormationActiveForProof
                     || (sourcesSeparated
                         && sourceOnFrozenLane(sources[0], 0)
                         && sourceOnFrozenLane(sources[1], 1)
@@ -19601,7 +19618,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             for (size_t candidateIndex = 0; candidateIndex < candidates.size(); ++candidateIndex)
             {
                 ValidationRouteMemberAnchor const* candidateAnchor = tank
-                    && drudgeLandedRushPending()
+                    && drudgeRecoveryFormationActive()
                     ? declaredRecoveryTankAnchorFor(oneBasedSlot)
                     : (tank && combatTankStagingActive()
                         ? declaredNavigationTankAnchorFor(oneBasedSlot)
@@ -20306,10 +20323,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // moving either tank.  Even the tick that establishes the second
         // proof returns through this barrier; movement can begin only on a
         // later tick that observes the already-complete shared proof set.
-        bool const combatTankPathsProvenBeforeTick =
-            prepullStaged && exactCombatTankPathsProven();
+        bool const recoveryFormationActive = drudgeRecoveryFormationActive();
+        bool const combatTankPathsProvenBeforeTick = prepullStaged
+            && !recoveryFormationActive && exactCombatTankPathsProven();
+        bool const recoveryTankPathsProvenBeforeTick = prepullStaged
+            && recoveryFormationActive && exactRecoveryTankPathsProven();
+        bool const activeTankPathsProvenBeforeTick = recoveryFormationActive
+            ? recoveryTankPathsProvenBeforeTick : combatTankPathsProvenBeforeTick;
         if (prepullStaged && !nativeChargePending
-            && !combatTankPathsProvenBeforeTick)
+            && !activeTankPathsProvenBeforeTick)
         {
             bool pathSearchDue = false;
             bool currentTankPathProven = false;
@@ -20338,8 +20360,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             action = result;
             return true;
         }
-        bool const recoveryTankPathsProvenBeforeTick = nativeChargePending
-            && exactRecoveryTankPathsProven();
         if (nativeChargePending && !recoveryTankPathsProvenBeforeTick)
         {
             bool currentTankPathProven = false;
@@ -20503,8 +20523,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         BotRaidDrudgeGeometry::Input tankStageInput = rushGeometryInput;
         tankStageInput.ExactPrepullStaged = prepullStaged;
         tankStageInput.BothCombatTankPathsProven =
-            nativeChargePending ? recoveryTankPathsProvenBeforeTick
-                                : combatTankPathsProvenBeforeTick;
+            activeTankPathsProvenBeforeTick;
         tankStageInput.BothCombatTankAnchorsSafe = exactCombatTankAnchorsSafe();
         tankStageInput.ChargeQueueIdle = chargeObservation
             == Party().ValidationRouteDrudgeChargeObservations.end();
