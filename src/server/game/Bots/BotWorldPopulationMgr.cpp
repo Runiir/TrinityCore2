@@ -4081,6 +4081,15 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         node.ChargeNativeIntervalMs = uint32(std::max(0, readInt(routeJson, "charge_native_interval_ms")));
         node.VengefulRageSpellId = uint32(std::max(0, readInt(routeJson, "vengeful_rage_spell_id")));
         node.ClusterRadiusYards = readFloat(routeJson, "cluster_radius_yards");
+        node.PatrolPullPolicy = ExtractJsonStringField(routeJson, "patrol_pull_policy");
+        node.PatrolWaitX = readFloat(routeJson, "patrol_wait_x");
+        node.PatrolWaitY = readFloat(routeJson, "patrol_wait_y");
+        node.PatrolWaitZ = readFloat(routeJson, "patrol_wait_z");
+        node.PatrolWaitToleranceYards = readFloat(routeJson, "patrol_wait_tolerance_yards");
+        node.PatrolAnchorToleranceYards = readFloat(routeJson, "patrol_anchor_tolerance_yards");
+        node.PatrolEngageRadiusYards = readFloat(routeJson, "patrol_engage_radius_yards");
+        node.PatrolFutureGuardMarginYards = readFloat(routeJson, "patrol_future_guard_margin_yards");
+        node.PatrolPullOwnerRosterSlot = uint32(std::max(0, readInt(routeJson, "patrol_pull_owner_roster_slot")));
         node.ExpectedAliveCount = uint32(std::max(0, readInt(routeJson, "expected_alive_count")));
         node.ActivationDataId = uint32(std::max(0, readInt(routeJson, "activation_data_id")));
         node.ActivationDataValue = uint32(std::max(0, readInt(routeJson, "activation_data_value")));
@@ -4234,6 +4243,15 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     Cohort().Config.ValidationRouteChargeNativeIntervalMs = node.ChargeNativeIntervalMs;
     Cohort().Config.ValidationRouteVengefulRageSpellId = node.VengefulRageSpellId;
     Cohort().Config.ValidationRouteClusterRadiusYards = node.ClusterRadiusYards;
+    Cohort().Config.ValidationRoutePatrolPullPolicy = node.PatrolPullPolicy;
+    Cohort().Config.ValidationRoutePatrolWaitX = node.PatrolWaitX;
+    Cohort().Config.ValidationRoutePatrolWaitY = node.PatrolWaitY;
+    Cohort().Config.ValidationRoutePatrolWaitZ = node.PatrolWaitZ;
+    Cohort().Config.ValidationRoutePatrolWaitToleranceYards = node.PatrolWaitToleranceYards;
+    Cohort().Config.ValidationRoutePatrolAnchorToleranceYards = node.PatrolAnchorToleranceYards;
+    Cohort().Config.ValidationRoutePatrolEngageRadiusYards = node.PatrolEngageRadiusYards;
+    Cohort().Config.ValidationRoutePatrolFutureGuardMarginYards = node.PatrolFutureGuardMarginYards;
+    Cohort().Config.ValidationRoutePatrolPullOwnerRosterSlot = node.PatrolPullOwnerRosterSlot;
     Cohort().Config.ValidationRouteExpectedAliveCount = node.ExpectedAliveCount;
     Party().ValidationRouteAddFocusGuid.Clear();
     Party().ValidationRouteAddFocusGeneration = Party().ValidationRouteGeneration;
@@ -21524,6 +21542,344 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         state.WasInCombat = laneSource->IsInCombat();
         return true;
     };
+    auto tryValidationRoutePatrolPull = [
+        this,
+        &state,
+        bot,
+        &power,
+        stage,
+        activity,
+        &situation,
+        &action,
+        &target,
+        &tryRouteGroupHeal,
+        &currentValidationRouteTargetSpawnId,
+        &isValidationCohortCombatLinked,
+        &enrollValidationRoutePackMember
+    ]() -> bool
+    {
+        if (Cohort().Config.ValidationRoutePatrolPullPolicy.empty())
+            return false;
+
+        auto hold = [&](char const* result, Creature* source = nullptr) -> bool
+        {
+            BotRaidAreaAuthority::SetAllOffenseSuppressed(
+                bot->GetGUID().GetRawValue(), true);
+            state.TargetGuid.Clear();
+            target = source;
+            situation = "validation_route_patrol_pull";
+            action = result;
+            return true;
+        };
+        if (Cohort().Config.ValidationRoutePatrolPullPolicy
+                != "ranged_patrol_to_anchor"
+            || !Cohort().Config.ValidationRoutePatrolPullOwnerRosterSlot
+            || Cohort().Config.ValidationRoutePatrolWaitToleranceYards <= 0.0f
+            || Cohort().Config.ValidationRoutePatrolAnchorToleranceYards <= 0.0f
+            || Cohort().Config.ValidationRoutePatrolEngageRadiusYards <= 0.0f
+            || Cohort().Config.ValidationRoutePatrolFutureGuardMarginYards <= 0.0f
+            || Cohort().Config.ValidationRouteClusterRadiusYards <= 0.0f)
+        {
+            state.LastNoProgressReason = "patrol_pull_contract_unresolved";
+            return hold("validation_route_patrol_pull_contract_hold");
+        }
+
+        ObjectGuid::LowType const spawnId = currentValidationRouteTargetSpawnId();
+        Creature* source = spawnId && bot->GetMap()
+            ? bot->GetMap()->GetCreatureBySpawnId(spawnId) : nullptr;
+        if (!source || !source->IsAlive() || !source->GetHealth()
+            || source->GetMap() != bot->GetMap())
+            return false;
+
+        auto exactRosterAtAnchor = [this, bot]() -> bool
+        {
+            if (!bot || !bot->GetMap() || !Cohort().Config.TargetPopulation
+                || Party().Bots.size() != Cohort().Config.TargetPopulation
+                || Cohort().Raid.RosterByGuid.size()
+                    != Cohort().Config.TargetPopulation)
+                return false;
+            std::set<uint32> seen;
+            for (WorldBotState const& cohortState : Party().Bots)
+            {
+                Player* member = GetLoadedBot(cohortState);
+                auto const roster = Cohort().Raid.RosterByGuid.find(
+                    cohortState.Guid.GetCounter());
+                if (!member || !member->IsInWorld() || !member->IsAlive()
+                    || member->GetMap() != bot->GetMap()
+                    || !IsValidationCohortMemberInOriginalInstance(
+                        cohortState, member)
+                    || roster == Cohort().Raid.RosterByGuid.end()
+                    || !roster->second.Active || !roster->second.LeaseOwned
+                    || !seen.insert(member->GetGUID().GetCounter()).second
+                    || member->GetExactDist(
+                        Cohort().Config.ValidationRouteX,
+                        Cohort().Config.ValidationRouteY,
+                        Cohort().Config.ValidationRouteZ)
+                        > Cohort().Config.ValidationRoutePatrolAnchorToleranceYards)
+                    return false;
+            }
+            return seen.size() == Cohort().Config.TargetPopulation;
+        };
+        auto sourcePathKeepsFutureEncountersSafe = [this, bot, source]() -> bool
+        {
+            if (!bot || !bot->GetMap() || !source
+                || source->GetMap() != bot->GetMap())
+                return false;
+            PathGenerator path(source);
+            bool const calculated = path.CalculatePath(
+                Cohort().Config.ValidationRouteX,
+                Cohort().Config.ValidationRouteY,
+                Cohort().Config.ValidationRouteZ, false);
+            PathType const pathType = calculated
+                ? path.GetPathType() : PATHFIND_NOPATH;
+            if (!calculated || (pathType & PATHFIND_NOPATH)
+                || (pathType & PATHFIND_NOT_USING_PATH)
+                || (pathType & PATHFIND_INCOMPLETE)
+                || (pathType & PATHFIND_SHORTCUT)
+                || (pathType & PATHFIND_FARFROMPOLY))
+                return false;
+            G3D::Vector3 const& actualEnd = path.GetActualEndPosition();
+            if (std::hypot(
+                    actualEnd.x - Cohort().Config.ValidationRouteX,
+                    actualEnd.y - Cohort().Config.ValidationRouteY) > 0.25f
+                || std::fabs(
+                    actualEnd.z - Cohort().Config.ValidationRouteZ) > 1.0f)
+                return false;
+
+            std::vector<G3D::Vector3> points;
+            points.emplace_back(source->GetPositionX(), source->GetPositionY(),
+                source->GetPositionZ());
+            points.insert(points.end(), path.GetPath().begin(), path.GetPath().end());
+            points.push_back(actualEnd);
+            float const requiredClearance =
+                Cohort().Config.ValidationRouteClusterRadiusYards
+                + Cohort().Config.ValidationRoutePatrolFutureGuardMarginYards;
+            for (size_t routeIndex = Party().ValidationRouteManifestIndex + 1;
+                routeIndex < Party().ValidationRouteManifest.size(); ++routeIndex)
+            {
+                ValidationRouteManifestNode const& futureNode =
+                    Party().ValidationRouteManifest[routeIndex];
+                if (futureNode.Kind != "trash" || !futureNode.TargetSpawnId
+                    || futureNode.MapId != bot->GetMapId())
+                    continue;
+                std::vector<ObjectGuid::LowType> protectedSpawnIds = {
+                    futureNode.TargetSpawnId,
+                };
+                protectedSpawnIds.insert(protectedSpawnIds.end(),
+                    futureNode.SplitSourceGuids.begin(),
+                    futureNode.SplitSourceGuids.end());
+                std::sort(protectedSpawnIds.begin(), protectedSpawnIds.end());
+                protectedSpawnIds.erase(std::unique(protectedSpawnIds.begin(),
+                    protectedSpawnIds.end()), protectedSpawnIds.end());
+                for (ObjectGuid::LowType const protectedSpawnId :
+                    protectedSpawnIds)
+                {
+                    Creature* futureSource = bot->GetMap()->GetCreatureBySpawnId(
+                        protectedSpawnId);
+                    CreatureData const* futureData = sObjectMgr->GetCreatureData(
+                        protectedSpawnId);
+                    for (G3D::Vector3 const& point : points)
+                    {
+                        if (futureSource && futureSource->IsAlive()
+                            && Distance2d(point.x, point.y,
+                                futureSource->GetPositionX(),
+                                futureSource->GetPositionY()) <= requiredClearance)
+                            return false;
+                        if (futureData && futureData->mapId == bot->GetMapId()
+                            && Distance2d(point.x, point.y,
+                                futureData->spawnPoint.GetPositionX(),
+                                futureData->spawnPoint.GetPositionY())
+                                <= requiredClearance)
+                            return false;
+                    }
+                }
+            }
+            return true;
+        };
+
+        bool const sourceEngaged = isValidationCohortCombatLinked(source);
+        bool const atWait = source->GetExactDist(
+            Cohort().Config.ValidationRoutePatrolWaitX,
+            Cohort().Config.ValidationRoutePatrolWaitY,
+            Cohort().Config.ValidationRoutePatrolWaitZ)
+            <= Cohort().Config.ValidationRoutePatrolWaitToleranceYards;
+        bool const rosterStaged = exactRosterAtAnchor();
+
+        for (WorldBotState const& cohortState : Party().Bots)
+            if (Player* member = GetLoadedBot(cohortState))
+                BotRaidAreaAuthority::SetAllOffenseSuppressed(
+                    member->GetGUID().GetRawValue(), true);
+
+        float const anchorDistance = bot->GetExactDist(
+            Cohort().Config.ValidationRouteX,
+            Cohort().Config.ValidationRouteY,
+            Cohort().Config.ValidationRouteZ);
+        if (anchorDistance
+            > Cohort().Config.ValidationRoutePatrolAnchorToleranceYards)
+        {
+            bool const moved = MoveBotToPoint(state, bot,
+                Cohort().Config.ValidationRouteX,
+                Cohort().Config.ValidationRouteY,
+                Cohort().Config.ValidationRouteZ, true);
+            return hold(moved ? "validation_route_patrol_anchor_move"
+                              : "validation_route_patrol_anchor_path_rejected",
+                source);
+        }
+
+        if (!sourceEngaged)
+        {
+            if (!rosterStaged)
+                return hold("validation_route_patrol_roster_stage", source);
+            if (!atWait)
+                return hold("validation_route_patrol_wait_for_safe_phase", source);
+            if (!sourcePathKeepsFutureEncountersSafe())
+            {
+                state.LastPathRejectReason =
+                    "patrol_pull_native_chase_path_rejected";
+                return hold("validation_route_patrol_chase_path_rejected", source);
+            }
+
+            auto const roster = Cohort().Raid.RosterByGuid.find(
+                bot->GetGUID().GetCounter());
+            bool const pullOwner = roster != Cohort().Raid.RosterByGuid.end()
+                && roster->second.Active && roster->second.LeaseOwned
+                && roster->second.SlotIndex + 1
+                    == Cohort().Config.ValidationRoutePatrolPullOwnerRosterSlot;
+            if (!pullOwner)
+                return hold("validation_route_patrol_wait_for_puller", source);
+
+            Player* tank = nullptr;
+            for (WorldBotState const& cohortState : Party().Bots)
+            {
+                Player* member = GetLoadedBot(cohortState);
+                auto const memberRoster = Cohort().Raid.RosterByGuid.find(
+                    cohortState.Guid.GetCounter());
+                if (member && memberRoster != Cohort().Raid.RosterByGuid.end()
+                    && memberRoster->second.Active
+                    && memberRoster->second.LeaseOwned
+                    && memberRoster->second.Role == "tank"
+                    && (!tank || memberRoster->second.SlotIndex
+                        < Cohort().Raid.RosterByGuid.at(
+                            tank->GetGUID().GetCounter()).SlotIndex))
+                    tank = member;
+            }
+            if (!tank)
+                return hold("validation_route_patrol_puller_no_tank", source);
+
+            if (bot->getClass() == CLASS_HUNTER && bot->HasSpell(34477)
+                && !bot->HasAura(34477)
+                && TryCastFriendlySpell(bot, tank, 34477))
+            {
+                std::string raw = BuildRawJson(bot, source);
+                std::string semantic = BuildSemanticJson(bot, source,
+                    "validation_route_patrol_pull", &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_patrol_pull", source,
+                    "misdirection_to_anchor_tank", raw.c_str(), semantic.c_str(),
+                    bot->GetExactDist(source), source->GetEntry(), 34477);
+                target = source;
+                state.TargetGuid = source->GetGUID();
+                situation = "validation_route_patrol_pull";
+                action = "validation_route_patrol_misdirection";
+                return true;
+            }
+
+            BotRaidAreaAuthority::SetAllOffenseSuppressed(
+                bot->GetGUID().GetRawValue(), false);
+            BotRaidAreaAuthority::Set(bot->GetGUID().GetRawValue(), true);
+            ResolvedCombatAction pullAction = ResolveProfileCombatAction(
+                bot, source, 1, false, 0, false, false, true, false, true);
+            bool const pullActionValid = pullAction.Valid
+                && pullAction.Type == "cast" && pullAction.SpellId
+                && pullAction.TargetGuid == source->GetGUID()
+                && bot->IsWithinLOSInMap(source)
+                && bot->GetExactDist(source)
+                    <= std::max(5.0f, pullAction.MaxRange);
+            BotActionResult result = pullActionValid
+                ? ExecuteProfileCombatAction(&state, bot, source, &pullAction,
+                    1, false, 0, false, false, true, false, true)
+                : BotActionResult::NoAction;
+            BotRaidAreaAuthority::SetAllOffenseSuppressed(
+                bot->GetGUID().GetRawValue(), true);
+            std::string raw = BuildRawJson(bot, source);
+            std::string semantic = BuildSemanticJson(bot, source,
+                "validation_route_patrol_pull", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_patrol_pull", source,
+                result == BotActionResult::Ok ? "ordinary_ranged_pull_submitted"
+                    : "ordinary_ranged_pull_pending",
+                raw.c_str(), semantic.c_str(), bot->GetExactDist(source),
+                source->GetEntry(),
+                result == BotActionResult::Ok ? pullAction.SpellId : 0);
+            target = source;
+            state.TargetGuid = source->GetGUID();
+            situation = "validation_route_patrol_pull";
+            action = result == BotActionResult::Ok
+                ? "validation_route_patrol_pull_submitted"
+                : "validation_route_patrol_pull_pending";
+            return true;
+        }
+
+        enrollValidationRoutePackMember(source, true);
+        float const sourceAnchorDistance = source->GetExactDist(
+            Cohort().Config.ValidationRouteX,
+            Cohort().Config.ValidationRouteY,
+            Cohort().Config.ValidationRouteZ);
+        if (sourceAnchorDistance
+            > Cohort().Config.ValidationRoutePatrolEngageRadiusYards)
+            return hold("validation_route_patrol_chase_to_anchor", source);
+
+        bool const tankOwned = source->GetVictim()
+            && source->GetVictim()->ToPlayer()
+            && Cohort().Raid.RosterByGuid.find(
+                source->GetVictim()->GetGUID().GetCounter())
+                != Cohort().Raid.RosterByGuid.end()
+            && Cohort().Raid.RosterByGuid.at(
+                source->GetVictim()->GetGUID().GetCounter()).Role == "tank";
+        auto const roster = Cohort().Raid.RosterByGuid.find(
+            bot->GetGUID().GetCounter());
+        bool const botIsTank = roster != Cohort().Raid.RosterByGuid.end()
+            && roster->second.Role == "tank";
+        if (!botIsTank && !tankOwned)
+            return hold("validation_route_patrol_wait_for_tank_threat", source);
+
+        BotRaidAreaAuthority::SetAllOffenseSuppressed(
+            bot->GetGUID().GetRawValue(), false);
+        BotRaidAreaAuthority::Set(bot->GetGUID().GetRawValue(), true);
+        if (roster != Cohort().Raid.RosterByGuid.end()
+            && roster->second.Role == "healer"
+            && tryRouteGroupHeal(bot, source, false))
+            return true;
+
+        ResolvedCombatAction profileAction = ResolveProfileCombatAction(
+            bot, source, 1, false, 0, false, false, true, false, true);
+        float const sourceDistance = bot->GetExactDist(source);
+        bool const actionReady = profileAction.Valid
+            && profileAction.TargetGuid == source->GetGUID()
+            && bot->IsWithinLOSInMap(source)
+            && sourceDistance <= std::max(5.0f, profileAction.MaxRange)
+            && sourceDistance >= profileAction.MinRange;
+        if (!actionReady)
+            return hold("validation_route_patrol_hold_profile_range", source);
+        BotActionResult const result = ExecuteProfileCombatAction(
+            &state, bot, source, &profileAction,
+            1, false, 0, false, false, true, false, true);
+        float const healthPct = UnitHealthPct(source);
+        RecordRouteProgress(state, bot, source,
+            "route_target_combat_progress", healthPct, healthPct, 0, 20);
+        std::string raw = BuildRawJson(bot, source);
+        std::string semantic = BuildSemanticJson(bot, source,
+            "validation_route_patrol_pull", &power, stage, activity);
+        RecordEvent(state, bot, "trash_action", source, ToString(result),
+            raw.c_str(), semantic.c_str(), sourceDistance,
+            Cohort().Config.ValidationRouteTargetEntry,
+            result == BotActionResult::Ok ? profileAction.SpellId : 0);
+        target = source;
+        state.TargetGuid = source->GetGUID();
+        state.WasInCombat = true;
+        situation = "validation_route_patrol_pull";
+        action = botIsTank ? "validation_route_patrol_tank_action"
+                           : "validation_route_patrol_anchor_action";
+        return true;
+    };
     auto tryValidationRouteAdds = [this, &state, bot, &power, stage, activity,
         &situation, &action, &target, &routeEngageRange, &tryRouteGroupHeal,
         &canonicalRouteDistance, &routeArrivalRadius]() -> bool
@@ -26026,6 +26382,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
     }
     if (tryValidationRouteMovementCheck(target))
+        return true;
+    if (tryValidationRoutePatrolPull())
         return true;
     if (tryValidationRouteMinimumDistance())
         return true;

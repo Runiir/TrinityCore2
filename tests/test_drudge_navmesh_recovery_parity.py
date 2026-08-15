@@ -99,3 +99,14 @@ def test_recorded_drudge_returns_match_native_navmesh(tmp_path):
         "detour_nearest_terminal": [-321.5, -30.0, 211.513],
         "detour_nearest_requested_z_delta": 0.22937,
     }
+    assert payload["validated_returns"]["chainwielder_patrol_pull"] == {
+        "start": [-346.5827, -83.71657, 213.9893],
+        "terminal": [-345.872, -110.0, 213.964],
+        "polygons": 10,
+        "smooth_points": 8,
+        "future_source_minimum_distances": {
+            "250140": 58.2531,
+            "250141": 51.5885,
+        },
+        "required_future_guard_distance": 50.0,
+    }

@@ -10,6 +10,7 @@ from tools.bot_ml.run_live_bot_validation import write_validation_config
 from tools.bot_ml.build_validation_scenario_manifests import (
     build_manifests,
     drudge_split_geometry_status,
+    patrol_pull_contract_status,
 )
 from tools.bot_ml.build_live_scenario_reports import build_reports
 
@@ -303,11 +304,44 @@ def test_chainwielder_wait_anchor_and_pull_guard_are_outside_future_drudge_pack(
             if row.get("mechanic_profile") == "trash_two_tank_charge_lanes"
         )
         guard = float(chain["cluster_radius_yards"])
+        assert chain["patrol_pull_policy"] == "ranged_patrol_to_anchor"
+        assert chain["patrol_pull_owner_roster_slot"] == 9
+        assert chain["patrol_wait_anchor"] == {
+            "x": -346.5827,
+            "y": -83.71657,
+            "z": 213.9893,
+        }
+        assert patrol_pull_contract_status(chain, scenario["route"]) == (True, "")
         assert all(
             math.hypot(chain["x"] - source["x"], chain["y"] - source["y"])
             > guard
             for source in drudges["split_source_home_anchors"]
         )
+
+        unsafe_wait = deepcopy(chain)
+        unsafe_wait["patrol_wait_anchor"] = {
+            "x": drudges["split_source_home_anchors"][0]["x"],
+            "y": drudges["split_source_home_anchors"][0]["y"],
+            "z": drudges["split_source_home_anchors"][0]["z"],
+        }
+        mutated_route = [
+            unsafe_wait if row is chain else row for row in scenario["route"]
+        ]
+        assert patrol_pull_contract_status(unsafe_wait, mutated_route) == (
+            False,
+            "patrol_chase_future_guard",
+        )
+
+        generated = next(
+            row for row in _routes(_manifests(), scenario["id"])
+            if row["source_guid"] == "250050"
+        )
+        assert generated["patrol_pull_policy"] == "ranged_patrol_to_anchor"
+        assert generated["patrol_pull_owner_roster_slot"] == 9
+        assert generated["patrol_wait_tolerance_yards"] == 3.0
+        assert generated["patrol_anchor_tolerance_yards"] == 8.0
+        assert generated["patrol_engage_radius_yards"] == 30.0
+        assert generated["patrol_future_guard_margin_yards"] == 2.0
 
 
 def test_canonical_bwd_route_is_still_the_ordered_eleven_node_parent_route():

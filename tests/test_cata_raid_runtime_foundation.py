@@ -485,6 +485,11 @@ def test_bwd_magmaw_trash_splits_chainwielder_hazard_from_drudge_charge_contract
     assert chainwielder["pack_target_entries"] == [42649]
     assert (chainwielder["hazard_source_entry"], chainwielder["hazard_damage_spell_id"]) == (42690, 79580)
     assert (chainwielder["hazard_shape"], chainwielder["hazard_radius_yards"]) == ("radial", 20.0)
+    assert chainwielder["patrol_pull_policy"] == "ranged_patrol_to_anchor"
+    assert chainwielder["patrol_wait_anchor"] == {
+        "x": -346.5827, "y": -83.71657, "z": 213.9893,
+    }
+    assert chainwielder["patrol_pull_owner_roster_slot"] == 9
 
     assert (drudges["step"], drudges["source_entry"], drudges["source_guid"]) == (3, 42362, "250140")
     assert drudges["pack_target_entries"] == [42362]
@@ -517,6 +522,34 @@ def test_bwd_magmaw_trash_splits_chainwielder_hazard_from_drudge_charge_contract
     assert bwd["mechanic_profiles"]["trash_ground_danger_movement"] == [
         "ground_danger", "movement_check", "minimum_distance"
     ]
+
+
+def test_patrol_pull_owns_group_movement_until_chainwielder_reaches_anchor():
+    patrol = IMPL[
+        IMPL.index("auto tryValidationRoutePatrolPull"):
+        IMPL.index("auto tryValidationRouteAdds")
+    ]
+    dispatch = IMPL[
+        IMPL.index("if (tryValidationRouteMovementCheck(target))"):
+        IMPL.index("struct TrashThreatControl")
+    ]
+    assert '!= "ranged_patrol_to_anchor"' in patrol
+    assert "exactRosterAtAnchor" in patrol
+    assert "sourcePathKeepsFutureEncountersSafe" in patrol
+    assert "path.GetActualEndPosition()" in patrol
+    assert "path.GetPath()" in patrol
+    assert "ValidationRoutePatrolFutureGuardMarginYards" in patrol
+    assert "ValidationRoutePatrolPullOwnerRosterSlot" in patrol
+    assert "misdirection_to_anchor_tank" in patrol
+    assert "ordinary_ranged_pull_submitted" in patrol
+    assert "validation_route_patrol_chase_to_anchor" in patrol
+    assert "MoveBotToProfileRange" not in patrol
+    assert dispatch.index("tryValidationRouteMovementCheck(target)") < dispatch.index(
+        "tryValidationRoutePatrolPull()"
+    )
+    assert dispatch.index("tryValidationRoutePatrolPull()") < dispatch.index(
+        "tryValidationRouteMinimumDistance()"
+    )
 
 
 def test_bwd_omnotron_golem_sentry_uses_authoritative_laser_strike_geometry_after_magmaw():

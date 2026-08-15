@@ -528,6 +528,68 @@ def route_navigation_anchor_status(step: dict[str, Any]) -> tuple[bool, str]:
     return route_coordinate_status(anchor)
 
 
+def _point_segment_distance_2d(
+    point: tuple[float, float],
+    start: tuple[float, float],
+    end: tuple[float, float],
+) -> float:
+    dx = end[0] - start[0]
+    dy = end[1] - start[1]
+    length_squared = dx * dx + dy * dy
+    if length_squared <= 1e-9:
+        return math.hypot(point[0] - start[0], point[1] - start[1])
+    projection = ((point[0] - start[0]) * dx + (point[1] - start[1]) * dy) / length_squared
+    projection = min(1.0, max(0.0, projection))
+    closest = (start[0] + projection * dx, start[1] + projection * dy)
+    return math.hypot(point[0] - closest[0], point[1] - closest[1])
+
+
+def patrol_pull_contract_status(
+    step: dict[str, Any], route_steps: list[dict[str, Any]]
+) -> tuple[bool, str]:
+    policy = str(step.get("patrol_pull_policy") or "")
+    if not policy:
+        return True, ""
+    if policy != "ranged_patrol_to_anchor":
+        return False, "patrol_pull_policy"
+    wait = step.get("patrol_wait_anchor")
+    if not isinstance(wait, dict) or not all(axis in wait for axis in ("x", "y", "z")):
+        return False, "patrol_wait_anchor"
+    if int(step.get("patrol_pull_owner_roster_slot") or 0) <= 0:
+        return False, "patrol_pull_owner"
+    if float(step.get("patrol_wait_tolerance_yards") or 0.0) <= 0.0:
+        return False, "patrol_wait_tolerance"
+    if float(step.get("patrol_anchor_tolerance_yards") or 0.0) <= 0.0:
+        return False, "patrol_anchor_tolerance"
+    if float(step.get("patrol_engage_radius_yards") or 0.0) <= 0.0:
+        return False, "patrol_engage_radius"
+    margin = float(step.get("patrol_future_guard_margin_yards") or 0.0)
+    if margin <= 0.0:
+        return False, "patrol_future_guard_margin"
+    guard = float(step.get("cluster_radius_yards") or 0.0)
+    if guard <= 0.0:
+        return False, "patrol_future_guard"
+
+    start = (float(wait["x"]), float(wait["y"]))
+    navigation = step.get("navigation_anchor") or step
+    end = (float(navigation.get("x") or 0.0), float(navigation.get("y") or 0.0))
+    future_sources = [
+        (float(anchor.get("x") or 0.0), float(anchor.get("y") or 0.0))
+        for later in route_steps
+        if int(later.get("step") or 0) > int(step.get("step") or 0)
+        for anchor in (later.get("split_source_home_anchors") or [])
+    ]
+    if not future_sources:
+        return False, "patrol_future_sources"
+    required_clearance = guard + margin
+    if any(
+        _point_segment_distance_2d(source, start, end) <= required_clearance
+        for source in future_sources
+    ):
+        return False, "patrol_chase_future_guard"
+    return True, ""
+
+
 def diagnostic_contract_status(
     scenario: dict[str, Any],
     scenario_ids: set[str],
@@ -651,6 +713,10 @@ def build_manifests(
             int(step.get("step") or 0): drudge_split_geometry_status(step)
             for step in route_steps
         }
+        patrol_pull_status = {
+            int(step.get("step") or 0): patrol_pull_contract_status(step, route_steps)
+            for step in route_steps
+        }
         invalid_route_steps = [
             {
                 "step": int(step.get("step") or 0),
@@ -658,12 +724,14 @@ def build_manifests(
                 "label": step.get("label") or "",
                 "reason": route_coordinate_status(step)[1]
                     or route_navigation_anchor_status(step)[1]
-                    or split_geometry_status[int(step.get("step") or 0)][1],
+                    or split_geometry_status[int(step.get("step") or 0)][1]
+                    or patrol_pull_status[int(step.get("step") or 0)][1],
             }
             for step in route_steps
             if not route_coordinate_status(step)[0]
             or not route_navigation_anchor_status(step)[0]
             or not split_geometry_status[int(step.get("step") or 0)][0]
+            or not patrol_pull_status[int(step.get("step") or 0)][0]
         ]
         if invalid_route_steps:
             missing.append("route_coordinates")
@@ -746,6 +814,15 @@ def build_manifests(
                 "cluster_id": step.get("cluster_id") or (f"{scenario_id}_{int(step.get('step') or 0):02d}_{node_kind}" if node_kind == "trash_cluster" else ""),
                 "cluster_center": [float(step.get("x") or 0.0), float(step.get("y") or 0.0), float(step.get("z") or 0.0)],
                 "cluster_radius_yards": cluster_radius_yards,
+                "patrol_pull_policy": str(step.get("patrol_pull_policy") or ""),
+                "patrol_wait_x": float((step.get("patrol_wait_anchor") or {}).get("x") or 0.0),
+                "patrol_wait_y": float((step.get("patrol_wait_anchor") or {}).get("y") or 0.0),
+                "patrol_wait_z": float((step.get("patrol_wait_anchor") or {}).get("z") or 0.0),
+                "patrol_wait_tolerance_yards": float(step.get("patrol_wait_tolerance_yards") or 0.0),
+                "patrol_anchor_tolerance_yards": float(step.get("patrol_anchor_tolerance_yards") or 0.0),
+                "patrol_engage_radius_yards": float(step.get("patrol_engage_radius_yards") or 0.0),
+                "patrol_future_guard_margin_yards": float(step.get("patrol_future_guard_margin_yards") or 0.0),
+                "patrol_pull_owner_roster_slot": int(step.get("patrol_pull_owner_roster_slot") or 0),
                 "pack_target_entries": cluster_entries,
                 "scripted_event_entries": event_entries,
                 "scripted_event_transition_aura_ids": event_transition_aura_ids,

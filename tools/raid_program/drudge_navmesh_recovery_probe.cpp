@@ -2,6 +2,7 @@
 #include "DetourNavMeshQuery.h"
 #include "DetourAlloc.h"
 #include "DetourCommon.h"
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -193,7 +194,9 @@ int main()
         {"tank1_pull_away", -289.289093f, -57.7575f, 212.932236f,
             -288.8f, -43.0f, 212.301f},
         {"tank2_pull_away", -322.858002f, -48.286201f, 211.999359f,
-            -321.5f, -30.0f, 211.283429f}
+            -321.5f, -30.0f, 211.283429f},
+        {"chainwielder_patrol_pull", -346.5827f, -83.71657f, 213.9893f,
+            -345.872f, -110.0f, 213.964f}
     };
     for (TestPoint const& test : tests)
     {
@@ -258,6 +261,22 @@ int main()
                       << " endz=" << std::fabs(terminal[1] - test.dz);
         }
         std::cout << '\n';
+        if (std::string(test.label) == "chainwielder_patrol_pull")
+        {
+            float minimumSource0 = 10000.0f;
+            float minimumSource1 = 10000.0f;
+            for (int i = 0; i < smoothSize; ++i)
+            {
+                float const x = smooth[i * 3 + 2];
+                float const y = smooth[i * 3];
+                minimumSource0 = std::min(minimumSource0,
+                    std::hypot(x - -298.833f, y - -50.349f));
+                minimumSource1 = std::min(minimumSource1,
+                    std::hypot(x - -307.913f, y - -49.5694f));
+            }
+            std::cout << test.label << " future_guard_minimums="
+                      << minimumSource0 << ',' << minimumSource1 << '\n';
+        }
     }
     dtFreeNavMeshQuery(query);
     dtFreeNavMesh(mesh);

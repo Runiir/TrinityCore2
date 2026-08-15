@@ -106,6 +106,14 @@ Require one exact tuple across config, generated route, runtime status, capture,
   chase stays outside every future-encounter guard. A native combat link to a
   future encounter permanently contaminates that route generation; terminalize
   it instead of accepting a later evade and quiet `trash_cluster_cleared`.
+- Make the pull anchor own the raid as well as the hostile chase. Stage the
+  exact leased roster at that anchor, admit only the declared ranged puller at
+  the declared safe patrol phase, and inspect every native chase-path point
+  against every future source identity before the ordinary pull. While the
+  hostile is still approaching, suppress pursuit and keep all members at the
+  anchor; a safe creature path is not sufficient if profile range movement can
+  chase the patrol back into the protected pack. Hazard exits may temporarily
+  preempt the anchor, but the route must reacquire it before ordinary offense.
 - If native body combat begins during geometry staging, keep hostile offense,
   taunts, and threat seeds gated but allow ordinary friendly class support.
   A pre-seed death must terminalize/restart the dirty attempt; do not label a

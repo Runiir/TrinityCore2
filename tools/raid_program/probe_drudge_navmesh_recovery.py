@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed native-nav parity probe for the recorded BWD Drudge returns."""
+"""Fail-closed native-nav parity probe for the BWD Magmaw corridor."""
 
 from __future__ import annotations
 
@@ -43,6 +43,9 @@ EXPECTED_OUTPUT = (
     "tank2_pull_away findPath=0x40000000 polys=4 complete=1",
     "tank2_pull_away nearest_terminal=-321.5,-30,211.513 requested_endz=0.22937",
     "tank2_pull_away smooth=0x40000000 points=6 terminal=-321.5,-30,211.283",
+    "chainwielder_patrol_pull findPath=0x40000000 polys=10 complete=1",
+    "chainwielder_patrol_pull smooth=0x40000000 points=8 terminal=-345.872,-110,213.964 end2d=0 endz=0",
+    "chainwielder_patrol_pull future_guard_minimums=58.2531,51.5885",
 )
 
 
@@ -195,6 +198,17 @@ def run_probe(root: Path = ROOT) -> dict[str, object]:
                 "detour_nearest_requested_z_delta": 0.22937,
                 "polygons": 4,
                 "smooth_points": 6,
+            },
+            "chainwielder_patrol_pull": {
+                "start": [-346.5827, -83.71657, 213.9893],
+                "terminal": [-345.872, -110.0, 213.964],
+                "polygons": 10,
+                "smooth_points": 8,
+                "future_source_minimum_distances": {
+                    "250140": 58.2531,
+                    "250141": 51.5885,
+                },
+                "required_future_guard_distance": 50.0,
             },
         },
         "raw_probe_sha256": hashlib.sha256(output.encode("utf-8")).hexdigest(),

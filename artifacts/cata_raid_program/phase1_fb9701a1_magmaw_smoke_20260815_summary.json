@@ -1,0 +1,58 @@
+{
+  "schema": "cata_raid_compact_evidence_summary_v1",
+  "source_commit": "fb9701a15e0ac619f2b9d2e42355ca40434bdfc2",
+  "source_tree": "23f879f2534fd5d26012357a769fd96ef108e46a",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "classification": "gameplay_failure",
+  "failure_reason": "validation_route_future_encounter_contamination",
+  "elapsed_seconds": 137.647,
+  "route_generation": 2,
+  "route_node_id": "fc968dbaf1adddbd",
+  "route_label": "Magmaw Chainwielder trash",
+  "alive_at_terminal": 10,
+  "decisive_findings": [
+    "The prior temporal Drudge threat remediation was not reached; the run terminalized on the prerequisite Chainwielder node.",
+    "Only the declared Chainwielder was intentionally attacked, but ordinary profile-range movement spread raid members away from the safe pull anchor and a future Drudge acquired native combat linkage.",
+    "The existing generation-scoped contamination latch correctly prevented a later evade from being accepted as trash_cluster_cleared.",
+    "The remediation binds a safe patrol phase, exact ranged puller, exact-ten anchor staging, native chase-path proof against both future Drudge spawn identities, and anchor-owned raid movement for the whole chase.",
+    "The production-parity map-669 Detour probe proves the configured waypoint-to-anchor path complete with minimum future-source clearances 58.2531 and 51.5885 yards against the required 50-yard guard."
+  ],
+  "resource_summary": {
+    "sample_count": 56,
+    "mean_cpu_percent_one_core": 35.104,
+    "minimum_rss_bytes": 1389281280,
+    "maximum_rss_bytes": 1441955840,
+    "log_bytes": 15856425,
+    "normalized_bytes": 15829166
+  },
+  "identity": {
+    "binary_sha256": "78f7f8bedf8a13101be4c706e901c681d418b1bc86a0aa6dfbfd8bcfffeb3fd5",
+    "build_receipt_sha256": "238a3cc5d468f2d03933066804d414674c4536274be6be6a9230f50151ad0b13",
+    "raw_sha256": "2e5bd066b4ae1384cec71b83a229db2de226da85de7c5eae56bdc30b62e359bf",
+    "server_log_sha256": "4e454013673e79180065e3e341f4d98a6c02e563ff6d8ae1e5bf8da90761c7ae",
+    "report_sha256": "460eb367845b55737da13b716f5e43c96caf730df8a1f305a142f9c840dc3d1e"
+  },
+  "cleanup": {
+    "gate_passed": true,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true,
+    "forbidden_assistance_observed": false
+  },
+  "dvc": {
+    "capture_dir_md5": "5d44c41af3673416a92d2cbec152d234.dir",
+    "capture_size_bytes": 31820043,
+    "capture_file_count": 3,
+    "build_prep_dir_md5": "ab9e048c91d70f59d6c2200f6838b951.dir",
+    "build_prep_size_bytes": 3807924,
+    "build_prep_file_count": 11,
+    "remote_verified": true,
+    "local_payload_evicted": false
+  },
+  "validation": {
+    "bounded_tests_passed": 420,
+    "native_worldserver_build_passed": true,
+    "map_669_navmesh_patrol_path_passed": true
+  },
+  "next_action": "Build and rerun the exact descendant whose declared ranged patrol pull keeps all ten raid members at the safe anchor until the Chainwielder reaches them."
+}
