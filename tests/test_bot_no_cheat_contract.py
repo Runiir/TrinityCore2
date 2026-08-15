@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WORLD = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 EXECUTOR = ROOT / "src/server/game/Bots/BotActionExecutor.cpp"
 BOT_MGR = ROOT / "src/server/game/Bots/BotMgr.cpp"
+BOT_CONTROLLER = ROOT / "src/server/game/Bots/BotController.cpp"
 
 
 def function_body(source: str, signature: str) -> str:
@@ -64,11 +65,16 @@ FORBIDDEN_LIVE_MUTATIONS = (
 def test_live_autonomy_functions_do_not_mutate_native_game_state() -> None:
     world = WORLD.read_text(encoding="utf-8")
     executor = EXECUTOR.read_text(encoding="utf-8")
+    controller = BOT_CONTROLLER.read_text(encoding="utf-8")
     live_functions = (
+        function_body(world, "void BotWorldPopulationMgr::UpdateBot"),
         function_body(world, "BotWorldPopulationMgr::DeathRecoveryResult BotWorldPopulationMgr::RecoverDeadBot"),
         function_body(world, "bool BotWorldPopulationMgr::TryNativeCorpseRun"),
         function_body(world, "BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting"),
         function_body(world, "bool BotWorldPopulationMgr::TryValidationRouteObjective"),
+        function_body(world, "BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent"),
+        function_body(world, "BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMechanics"),
+        function_body(world, "BotWorldPopulationMgr::DungeonTrashActionResult BotWorldPopulationMgr::TryDungeonTrash"),
         function_body(world, "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup"),
         function_body(world, "bool BotWorldPopulationMgr::TryEnsureCombatTotems"),
         function_body(world, "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*"),
@@ -76,11 +82,19 @@ def test_live_autonomy_functions_do_not_mutate_native_game_state() -> None:
         function_body(executor, "BotActionExecutor::LootResult BotActionExecutor::AutoLoot"),
         function_body(executor, "BotEconomyActionResult BotActionExecutor::VendorTrash"),
         function_body(executor, "BotEconomyActionResult BotActionExecutor::Repair"),
+        function_body(controller, "void BotController::Update"),
     )
 
     for body in map(code_only, live_functions):
         for forbidden in FORBIDDEN_LIVE_MUTATIONS:
             assert forbidden not in body, forbidden
+        for forbidden_command_path in (
+            "ChatHandler(",
+            "ParseCommands(",
+            "ExecuteCommand(",
+            "HandleCommand(",
+        ):
+            assert forbidden_command_path not in body, forbidden_command_path
 
 
 def test_native_player_handlers_are_the_only_progression_boundaries() -> None:
@@ -108,6 +122,25 @@ def test_native_player_handlers_are_the_only_progression_boundaries() -> None:
     combat = function_body(executor, "BotActionResult BotActionExecutor::ExecuteCombat")
     assert "HandlePetActionHelper" in combat
     assert "TRIGGERED_IGNORE_POWER_COST" not in combat
+
+    native_intents = function_body(
+        world,
+        "BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent",
+    )
+    for allowed_player_boundary in (
+        "MoveBotToPoint",
+        "CastSpell",
+        "Attack(",
+        "HandlePetActionHelper",
+        "HandleSpellClick",
+        "HandleGameObjectUseOpcode",
+        "HandleAreaTriggerOpcode",
+        "HandleGossipHelloOpcode",
+        "HandleGossipSelectOptionOpcode",
+        "HandleRepopRequestOpcode",
+        "HandleReclaimCorpseOpcode",
+    ):
+        assert allowed_player_boundary in native_intents
 
 
 def test_login_does_not_promote_stabled_pets_or_restore_resources() -> None:

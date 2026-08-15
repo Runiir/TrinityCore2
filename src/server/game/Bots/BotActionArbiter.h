@@ -82,6 +82,16 @@ struct Outcome
         return { Disposition::Committed, std::string(reason), Phase::Completed };
     }
 
+    static Outcome Submitted(std::string_view reason)
+    {
+        return { Disposition::Committed, std::string(reason), Phase::Submitted };
+    }
+
+    static Outcome Selected(std::string_view reason)
+    {
+        return { Disposition::NotApplicable, std::string(reason), Phase::Selected };
+    }
+
     static Outcome Started(std::string_view reason)
     {
         return { Disposition::Committed, std::string(reason), Phase::Started };
@@ -103,7 +113,7 @@ inline Outcome FromBotActionResult(BotActionResult result)
     switch (result)
     {
         case BotActionResult::Ok:
-            return Outcome::Committed("ok");
+            return Outcome::Submitted("native_action_submitted");
         case BotActionResult::Casting:
             return Outcome::Started("casting");
         case BotActionResult::GlobalCooldown:
@@ -379,7 +389,9 @@ public:
             lifecycle.ConsecutiveFailures = 0;
             lifecycle.FirstFailureAtMs = 0;
             lifecycle.RetryAfterMs = 0;
-            lifecycle.LastProgressAtMs = nowMs;
+            if (outcome.LifecyclePhase == Phase::Progressed
+                || outcome.LifecyclePhase == Phase::Completed)
+                lifecycle.LastProgressAtMs = nowMs;
             return;
         }
         if (outcome.Result == Disposition::NotApplicable)

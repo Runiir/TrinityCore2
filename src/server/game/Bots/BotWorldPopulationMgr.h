@@ -1876,7 +1876,7 @@ private:
     std::string BuildDungeonTrashPackJson(DungeonTrashPackFeatures const& pack) const;
     std::string BuildBossMechanicsJson(BossMechanicFeatures const& features) const;
     uint32 SelectCombatSpell(Player* bot, Unit* target) const;
-    ResolvedCombatAction ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true, bool hostileTargetOnly = false) const;
+    ResolvedCombatAction ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true, bool hostileTargetOnly = false, bool movementCompatibleOnly = false) const;
     BotActionResult ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true, bool hostileTargetOnly = false);
     BotActionResult ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true, bool hostileTargetOnly = false);
     bool MoveBotToProfileRange(WorldBotState& state, Player* bot, Unit* reference,

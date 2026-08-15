@@ -116,6 +116,17 @@ constexpr uint32 ValidationGhostAuraId = 8326;
 constexpr uint32 DecisionFingerprintPersistHeartbeatMs = 5000;
 constexpr uint32 RepeatableDiagnosticEventHeartbeatMs = 5000;
 
+bool IsNativeCombatObserved(Player const* bot, Unit const* target)
+{
+    if (!bot || !target)
+        return false;
+
+    // These are the same postconditions visible to an ordinary client. Merely
+    // selecting a target or submitting Attack/CastSpell is intent, not proof
+    // that combat started or that the target made health progress.
+    return bot->IsInCombat() || target->IsInCombat();
+}
+
 bool SubmitNativeQuestAccept(Player* bot, WorldObject* giver, uint32 questId)
 {
     if (!bot || !giver || !questId || !bot->GetSession()
@@ -9455,7 +9466,7 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
             bool moved = MoveBotToPoint(state, bot, action.X, action.Y, action.Z,
                 false, movementOwner, movementPriority);
             return moved
-                ? BotActionArbitration::Outcome::Progressed("native_move_submitted")
+                ? BotActionArbitration::Outcome::Submitted("native_move_submitted")
                 : BotActionArbitration::Outcome::Retryable("native_move_retryable");
         }
         else if constexpr (std::is_same_v<T, BotNativeAction::CastSpell>)
@@ -9465,7 +9476,7 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
                 return BotActionArbitration::Outcome::Retryable("native_cast_target_unavailable");
             SpellCastResult result = bot->CastSpell(target, action.SpellId, false);
             return result == SPELL_CAST_OK
-                ? BotActionArbitration::Outcome::Committed("native_cast_submitted")
+                ? BotActionArbitration::Outcome::Submitted("native_cast_submitted")
                 : BotActionArbitration::Outcome::Retryable("native_cast_rejected");
         }
         else if constexpr (std::is_same_v<T, BotNativeAction::StartAttack>)
@@ -9473,8 +9484,14 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
             Unit* target = ObjectAccessor::GetUnit(*bot, action.Target);
             if (!target || !target->IsAlive() || !bot->IsValidAttackTarget(target))
                 return BotActionArbitration::Outcome::Unsafe("native_attack_target_invalid");
+            if (!bot->IsWithinLOSInMap(target))
+                return BotActionArbitration::Outcome::Retryable(
+                    "native_attack_no_line_of_sight");
+            if (action.Melee && !bot->IsWithinMeleeRange(target))
+                return BotActionArbitration::Outcome::Retryable(
+                    "native_attack_out_of_range");
             return bot->Attack(target, action.Melee)
-                ? BotActionArbitration::Outcome::Committed("native_attack_started")
+                ? BotActionArbitration::Outcome::Started("native_attack_started")
                 : BotActionArbitration::Outcome::Retryable("native_attack_retryable");
         }
         else if constexpr (std::is_same_v<T, BotNativeAction::StopAttack>)
@@ -9498,14 +9515,14 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
             WorldPacket click(CMSG_SPELLCLICK, sizeof(uint64));
             click << action.Target;
             bot->GetSession()->HandleSpellClick(click);
-            return BotActionArbitration::Outcome::Committed("native_spellclick_submitted");
+            return BotActionArbitration::Outcome::Submitted("native_spellclick_submitted");
         }
         else if constexpr (std::is_same_v<T, BotNativeAction::GameObjectUse>)
         {
             WorldPacket use(CMSG_GAMEOBJ_USE, sizeof(uint64));
             use << action.Target;
             bot->GetSession()->HandleGameObjectUseOpcode(use);
-            return BotActionArbitration::Outcome::Committed("native_gameobject_use_submitted");
+            return BotActionArbitration::Outcome::Submitted("native_gameobject_use_submitted");
         }
         else if constexpr (std::is_same_v<T, BotNativeAction::AreaTrigger>)
         {
@@ -9520,7 +9537,7 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
             WorldPacket areaTrigger(CMSG_AREATRIGGER, sizeof(uint32));
             areaTrigger << action.TriggerId;
             bot->GetSession()->HandleAreaTriggerOpcode(areaTrigger);
-            return BotActionArbitration::Outcome::Committed(
+            return BotActionArbitration::Outcome::Submitted(
                 "native_area_trigger_submitted");
         }
         else if constexpr (std::is_same_v<T, BotNativeAction::GossipOpen>)
@@ -9541,7 +9558,7 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
             else
                 return BotActionArbitration::Outcome::Unsafe(
                     "native_gossip_source_invalid");
-            return BotActionArbitration::Outcome::Committed(
+            return BotActionArbitration::Outcome::Submitted(
                 "native_gossip_open_submitted");
         }
         else if constexpr (std::is_same_v<T, BotNativeAction::GossipSelect>)
@@ -9549,14 +9566,14 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
             WorldPacket select(CMSG_GOSSIP_SELECT_OPTION, 24);
             select << action.Target << action.MenuId << action.OptionId;
             bot->GetSession()->HandleGossipSelectOptionOpcode(select);
-            return BotActionArbitration::Outcome::Committed("native_gossip_select_submitted");
+            return BotActionArbitration::Outcome::Submitted("native_gossip_select_submitted");
         }
         else if constexpr (std::is_same_v<T, BotNativeAction::VehicleAction>)
         {
             Unit* target = action.Target.IsEmpty() ? bot : ObjectAccessor::GetUnit(*bot, action.Target);
             SpellCastResult result = bot->CastSpell(target ? target : bot, action.SpellId, false);
             return result == SPELL_CAST_OK
-                ? BotActionArbitration::Outcome::Committed("native_vehicle_action_submitted")
+                ? BotActionArbitration::Outcome::Submitted("native_vehicle_action_submitted")
                 : BotActionArbitration::Outcome::Retryable("native_vehicle_action_rejected");
         }
         else if constexpr (std::is_same_v<T, BotNativeAction::PetCommand>)
@@ -9569,21 +9586,21 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
             bot->GetSession()->HandlePetActionHelper(pet, pet->GetGUID(), action.Command,
                 ACT_COMMAND, target->GetGUID(), target->GetPositionX(),
                 target->GetPositionY(), target->GetPositionZ());
-            return BotActionArbitration::Outcome::Committed("native_pet_command_submitted");
+            return BotActionArbitration::Outcome::Submitted("native_pet_command_submitted");
         }
         else if constexpr (std::is_same_v<T, BotNativeAction::ReleaseSpirit>)
         {
             WorldPacket repop(CMSG_REPOP_REQUEST, 1);
             repop << uint8(0);
             bot->GetSession()->HandleRepopRequestOpcode(repop);
-            return BotActionArbitration::Outcome::Committed("native_release_submitted");
+            return BotActionArbitration::Outcome::Submitted("native_release_submitted");
         }
         else if constexpr (std::is_same_v<T, BotNativeAction::ReclaimCorpse>)
         {
             WorldPacket reclaim(CMSG_RECLAIM_CORPSE, sizeof(uint64));
             reclaim << action.Corpse;
             bot->GetSession()->HandleReclaimCorpseOpcode(reclaim);
-            return BotActionArbitration::Outcome::Committed("native_reclaim_submitted");
+            return BotActionArbitration::Outcome::Submitted("native_reclaim_submitted");
         }
         else
             return BotActionArbitration::Outcome::Unsafe("native_intent_not_implemented");
@@ -9911,7 +9928,13 @@ void BotWorldPopulationMgr::RecordCombatAttempt(WorldBotState& state, Player* bo
     diagnostic.KnownSpell = bot && diagnostic.SpellId && bot->HasSpell(diagnostic.SpellId);
     diagnostic.HasPower = bot && spellInfo && HasPowerForSpell(bot, spellInfo);
     diagnostic.LineOfSight = bot && actionTarget && bot->IsWithinLOSInMap(actionTarget);
-    diagnostic.InRange = bot && actionTarget && spellInfo && bot->IsWithinDistInMap(actionTarget, std::max(5.0f, spellInfo->GetMaxRange(false)));
+    if (bot && actionTarget && action && action->Type == "auto_attack"
+        && action->AutoAttackMode == "melee")
+        diagnostic.InRange = bot->IsWithinMeleeRange(actionTarget);
+    else
+        diagnostic.InRange = bot && actionTarget && spellInfo
+            && bot->IsWithinDistInMap(actionTarget,
+                std::max(5.0f, spellInfo->GetMaxRange(false)));
     diagnostic.TargetAlive = actionTarget && actionTarget->IsAlive();
     diagnostic.TargetAttackable = bot && actionTarget && (actionTarget == bot || (spellInfo ? bot->IsValidAttackTarget(actionTarget, spellInfo) : bot->IsValidAttackTarget(actionTarget)));
     diagnostic.MeleeAutoAttacking = bot && bot->HasUnitState(UNIT_STATE_MELEE_ATTACKING) && bot->GetVictim();
@@ -12058,6 +12081,9 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         route.UtilityScore = 3.0f;
         route.RequiredResources = BotActionArbitration::Uses(
             BotActionArbitration::Resource::Movement,
+            BotActionArbitration::Resource::GlobalCooldown,
+            BotActionArbitration::Resource::Cast,
+            BotActionArbitration::Resource::Target,
             BotActionArbitration::Resource::Interaction);
         route.Attempt = [&]()
         {
@@ -12097,7 +12123,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
                         ? std::string_view("route_terminal")
                         : std::string_view(state.ValidationRouteTerminalReason));
             if (state.LastPathChangeMs > previousPathChangeMs && state.ActivePathValid)
-                return BotActionArbitration::Outcome::Progressed(
+                return BotActionArbitration::Outcome::Started(
                     "route_movement_submitted");
             if (state.LastCombatAttempt.RecordedAtMs > previousCombatAttemptMs)
             {
@@ -12110,8 +12136,11 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
                         || state.LastCombatAttempt.Reason == "target_not_attackable")
                         return BotActionArbitration::Outcome::Retryable(
                             state.LastCombatAttempt.Reason);
-                    return BotActionArbitration::Outcome::Committed(
-                        "route_combat_committed");
+                    return IsNativeCombatObserved(bot, target)
+                        ? BotActionArbitration::Outcome::Progressed(
+                            "route_native_combat_observed")
+                        : BotActionArbitration::Outcome::Started(
+                            "route_combat_submitted");
                 }
                 if (result == "casting" || result == "global_cooldown")
                     return BotActionArbitration::Outcome::Started(
@@ -12146,7 +12175,8 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
                         ? std::string_view("route_retryable")
                         : std::string_view(state.LastNoProgressReason));
             }
-            return BotActionArbitration::Outcome::Committed("route_handled");
+            return BotActionArbitration::Outcome::Started(
+                "route_handled_pending_postcondition");
         };
         state.DecisionKernel.Submit(std::move(route));
 
@@ -12158,6 +12188,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         boss.RequiredResources = BotActionArbitration::Uses(
             BotActionArbitration::Resource::GlobalCooldown,
             BotActionArbitration::Resource::Cast,
+            BotActionArbitration::Resource::Movement,
             BotActionArbitration::Resource::Target,
             BotActionArbitration::Resource::Interaction);
         boss.Attempt = [&]()
@@ -12201,7 +12232,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             // run in the same tick.
             if (state.LastPathChangeMs > previousPathChangeMs
                 && state.ActivePathValid)
-                return BotActionArbitration::Outcome::Progressed(
+                return BotActionArbitration::Outcome::Started(
                     "boss_movement_submitted");
             if (state.LastCombatAttempt.RecordedAtMs > previousCombatAttemptMs)
             {
@@ -12214,8 +12245,11 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
                         || state.LastCombatAttempt.Reason == "target_not_attackable")
                         return BotActionArbitration::Outcome::Retryable(
                             state.LastCombatAttempt.Reason);
-                    return BotActionArbitration::Outcome::Committed(
-                        "boss_combat_committed");
+                    return IsNativeCombatObserved(bot, target)
+                        ? BotActionArbitration::Outcome::Progressed(
+                            "boss_native_combat_observed")
+                        : BotActionArbitration::Outcome::Started(
+                            "boss_combat_submitted");
                 }
                 if (result == "casting" || result == "global_cooldown")
                     return BotActionArbitration::Outcome::Started(
@@ -12226,8 +12260,8 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
                         : std::string_view(state.LastCombatAttempt.Reason));
             }
             if (bossAction.SpellId)
-                return BotActionArbitration::Outcome::Committed(
-                    "boss_spell_committed");
+                return BotActionArbitration::Outcome::Started(
+                    "boss_spell_submitted");
             if (bossAction.Action.find("_submitted") != std::string::npos)
                 return BotActionArbitration::Outcome::Started(
                     "boss_native_submission_started");
@@ -12240,10 +12274,11 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
                 || bossAction.Action == "raid_soak_wait_for_assigned_count"
                 || bossAction.Action == "raid_kill_sync_execution_hold_low_target";
             if (observedPostcondition || safetyHold)
-                return BotActionArbitration::Outcome::Committed(
-                    observedPostcondition
-                        ? std::string_view("boss_postcondition_observed")
-                        : std::string_view("boss_safety_hold_committed"));
+                return observedPostcondition
+                    ? BotActionArbitration::Outcome::Committed(
+                        "boss_postcondition_observed")
+                    : BotActionArbitration::Outcome::Submitted(
+                        "boss_safety_hold_submitted");
             return BotActionArbitration::Outcome::Retryable(
                 "boss_no_observable_effect");
         };
@@ -12280,7 +12315,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             state.LastDecisionHandler = "dungeon_trash";
             if (state.LastPathChangeMs > previousPathChangeMs
                 && state.ActivePathValid)
-                return BotActionArbitration::Outcome::Progressed(
+                return BotActionArbitration::Outcome::Started(
                     "trash_movement_submitted");
             if (state.LastCombatAttempt.RecordedAtMs > previousCombatAttemptMs)
             {
@@ -12293,8 +12328,11 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
                         || state.LastCombatAttempt.Reason == "target_not_attackable")
                         return BotActionArbitration::Outcome::Retryable(
                             state.LastCombatAttempt.Reason);
-                    return BotActionArbitration::Outcome::Committed(
-                        "trash_combat_committed");
+                    return IsNativeCombatObserved(bot, target)
+                        ? BotActionArbitration::Outcome::Progressed(
+                            "trash_native_combat_observed")
+                        : BotActionArbitration::Outcome::Started(
+                            "trash_combat_submitted");
                 }
                 if (result == "casting")
                     return BotActionArbitration::Outcome::Started(
@@ -31993,12 +32031,15 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
     result.Situation = bot->GetMap() && bot->GetMap()->IsRaid() ? "raid_boss" : "dungeon_boss";
     result.Features = BuildBossMechanicFeatures(bot, result.Target);
     state.TargetGuid = result.Target->GetGUID();
+    bool const nativeCombatObservedBeforeAction =
+        IsNativeCombatObserved(bot, result.Target);
     if (state.LastRaidTankSwapWipeGeneration != Cohort().Raid.WipeGeneration)
     {
         state.LastRaidTankSwapTriggerKey.clear();
         state.LastRaidTankSwapWipeGeneration = Cohort().Raid.WipeGeneration;
     }
-    if (result.Features.RaidEncounter && !state.WasInCombat)
+    if (result.Features.RaidEncounter && !state.WasInCombat
+        && nativeCombatObservedBeforeAction)
     {
         ++state.RaidAttempts;
         state.LastRaidTankSwapTriggerKey.clear();
@@ -32911,19 +32952,40 @@ raid_cooldown_complete:
         &state, bot, result.Target, &profileAction, result.Features.AddCount, false,
         0, false, false, forbidArea, raidAdapter.AllowMultidot);
     uint32 spellId = profileAction.SpellId;
-    result.Action = std::string(role) == "tank" ? "tank_boss_position" : "boss_single_target";
+    bool const nativePositionReconciled = actionResult == BotActionResult::Casting
+        && state.ActivePathTargetGuid == result.Target->GetGUID()
+        && state.LastCombatAttempt.Phase == "position_reconcile";
+    if (nativePositionReconciled)
+        result.Action = "move_to_boss_action_range";
+    else
+        result.Action = std::string(role) == "tank"
+            ? "tank_boss_position" : "boss_single_target";
     result.SpellId = actionResult == BotActionResult::Ok ? spellId : 0;
-    result.Failure = actionResult != BotActionResult::Ok;
+    result.Failure = actionResult == BotActionResult::NoOwner
+        || actionResult == BotActionResult::NoBot
+        || actionResult == BotActionResult::InvalidTarget
+        || actionResult == BotActionResult::NotFriendly
+        || actionResult == BotActionResult::DeadTarget
+        || actionResult == BotActionResult::BadSpell
+        || actionResult == BotActionResult::CastFailed;
     result.Rare = result.Features.DangerScore >= 0.5f || result.Features.BossCasting || result.Features.AddsActive;
 
     RecordEvent(state, bot, "boss_action", result.Target, ToString(actionResult), raw.c_str(), semantic.c_str(), result.Features.DangerScore, result.Features.CastSpellId, result.SpellId);
     if (result.Features.RaidEncounter)
         RecordRaidTelemetry(state, bot, result.Target, "raid_boss_action", ToString(actionResult), result.Features, raidAssignment, raidAnchors, raidAdapter, raidGearPlan, heroicProgression, raw.c_str(), semantic.c_str(), result.Features.DangerScore, result.Features.CastSpellId, result.SpellId);
-    if (!state.WasInCombat)
+    bool const nativeCombatObserved = IsNativeCombatObserved(bot, result.Target);
+    if (result.Features.RaidEncounter && !state.WasInCombat
+        && nativeCombatObserved)
+    {
+        ++state.RaidAttempts;
+        state.LastRaidTankSwapTriggerKey.clear();
+        state.LastRaidTankSwapMs = NowMs();
+    }
+    if (!state.WasInCombat && nativeCombatObserved)
         RecordEvent(state, bot, "boss_started", result.Target, result.Situation.c_str(), raw.c_str(), semantic.c_str(), result.Features.DangerScore, result.Features.BossEntry);
     if (result.Failure || (result.Features.DangerScore >= 0.85f && result.Features.BossCasting))
         RecordBossReplay(state, bot, result.Target, result.Features, "boss_mechanic_failure", raw.c_str(), semantic.c_str(), "{\"action\":\"boss_single_target\"}", result.Failure ? "{\"reason\":\"boss_action_failed\"}" : "{\"reason\":\"high_danger_boss_state\"}");
-    state.WasInCombat = true;
+    state.WasInCombat = nativeCombatObserved;
     return result;
 }
 
@@ -35697,7 +35759,7 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
     return best ? best->SpellId : 0;
 }
 
-ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly, bool forbidArea, bool allowMultidot, bool hostileTargetOnly) const
+ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly, bool forbidArea, bool allowMultidot, bool hostileTargetOnly, bool movementCompatibleOnly) const
 {
     ResolvedCombatAction action;
     action.Valid = false;
@@ -35908,6 +35970,13 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         }
 
         SpellInfo const* candidateSpellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
+        if (movementCompatibleOnly && candidateSpellInfo
+            && (candidateSpellInfo->CalcCastTime(bot->getLevel()) > 0
+                || candidateSpellInfo->IsChanneled()))
+        {
+            candidate.RejectReason = "movement_requires_instant_action";
+            continue;
+        }
         if (BotRaidAreaAuthority::HasProtectedEncounterEntries(bot->GetGUID().GetRawValue())
             && SpellHasHostileMultiTargetSemantics(candidateSpellInfo))
         {
@@ -36729,9 +36798,15 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
         && state->ProfileCastSuppressedTargetGuid == target->GetGUID())
         excludedSpellId = state->ProfileCastSuppressedSpellId;
 
+    bool const movementCompatibleOnly = state && bot
+        && (bot->isMoving() || bot->HasUnitState(UNIT_STATE_MOVING))
+        && state->MovementLease.ExpiresAtMs > nowMs
+        && uint8(state->MovementLease.MovementPriority)
+            >= uint8(BotMovementArbitration::Priority::Combat);
     ResolvedCombatAction action = ResolveProfileCombatAction(
         bot, target, hostileCount, densityOnly, excludedSpellId, areaOnly,
-        selfCenteredOnly, forbidArea, allowMultidot && !forbidArea, hostileTargetOnly);
+        selfCenteredOnly, forbidArea, allowMultidot && !forbidArea,
+        hostileTargetOnly, movementCompatibleOnly);
     if (actionOut)
         *actionOut = action;
     if (!action.Valid)
@@ -36758,8 +36833,9 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
 
     if (state)
     {
-        state->DecisionKernel.MarkProgress("world.profile_resolve", nowMs,
-            "profile_action_valid");
+        state->DecisionKernel.Observe("world.profile_resolve",
+            BotActionArbitration::Outcome::Selected("profile_action_valid"),
+            nowMs, 100, 3000, 5);
         TryResolveBotBlocker(*state, bot, "profile_action_valid");
     }
 
@@ -36828,6 +36904,37 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
         // from the same blocked point.
         if (recoverLineOfSight && target)
             MoveBotToProfileRange(*state, bot, target, &action, true);
+    }
+    if (state && target
+        && (result == BotActionResult::OutOfRange
+            || result == BotActionResult::NoLineOfSight))
+    {
+        bool const moved = result == BotActionResult::NoLineOfSight
+            ? MoveBotToProfileRange(*state, bot, target, &action, true)
+            : MoveBotToProfileRange(*state, bot, target, &action);
+        if (moved)
+        {
+            // Reconcile native action feedback exactly as a player would: the
+            // rejected action does not count as combat progress; it produces a
+            // target-aware movement intent and the unchanged action is retried
+            // after the core reports a legal position on a later tick.
+            state->DecisionKernel.Observe(
+                "world.profile_position:" +
+                    std::to_string(action.TargetGuid.GetCounter()),
+                BotActionArbitration::Outcome::Started(
+                    "native_position_reconciled"),
+                nowMs, 100, 3000, 5);
+            state->LastRecoveryMode = "native_position_reconciliation";
+            state->LastRecoveryResult = result == BotActionResult::OutOfRange
+                ? "move_to_action_range" : "move_to_action_line_of_sight";
+            state->LastNoProgressReason.clear();
+            RecordCombatAttempt(*state, bot, target, "position_reconcile",
+                &action, BotActionResult::Casting,
+                result == BotActionResult::OutOfRange
+                    ? "native_out_of_range" : "native_no_line_of_sight");
+            TryResolveBotBlocker(*state, bot, "native_position_reconciled");
+            return BotActionResult::Casting;
+        }
     }
     if (state && result == BotActionResult::Ok)
     {

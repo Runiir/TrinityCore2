@@ -244,9 +244,13 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     {
         if (!target || !target->IsAlive() || !bot->IsValidAttackTarget(target))
             return BotActionResult::InvalidTarget;
+        if (!bot->IsWithinLOSInMap(target))
+            return BotActionResult::NoLineOfSight;
         Face(bot, target);
         if (action.AutoAttackMode == "melee")
         {
+            if (!bot->IsWithinMeleeRange(target))
+                return BotActionResult::OutOfRange;
             bot->Attack(target, true);
             return BotActionResult::Ok;
         }
@@ -705,7 +709,11 @@ BotActionResult BotActionExecutor::CheckHostileSpell(Player* owner, Player* bot,
         return BotActionResult::InvalidTarget;
     if (!bot->IsWithinLOSInMap(target))
         return BotActionResult::NoLineOfSight;
-    if (!bot->IsWithinDistInMap(target, std::max(5.0f, spellInfo->GetMaxRange(false))))
+    float const targetDistance = bot->GetExactDist(target);
+    float const minRange = spellInfo->GetMinRange(false);
+    float const maxRange = std::max(5.0f, spellInfo->GetMaxRange(false));
+    if ((minRange > 0.0f && targetDistance < minRange)
+        || !bot->IsWithinDistInMap(target, maxRange))
         return BotActionResult::OutOfRange;
     // Rerun157 captured eight spell_cast_result_150 submissions when scripted
     // control landed between profile resolution and CastSpell. Repeat the

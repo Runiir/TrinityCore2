@@ -4659,6 +4659,84 @@ def test_profile_los_failure_is_recorded_before_existing_range_recovery():
     )
 
 
+def test_profile_combat_reconciles_native_position_feedback_before_retrying():
+    manager = read(BOT_MGR)
+    executor = read(ROOT / "src/server/game/Bots/BotActionExecutor.cpp")
+    execute_combat = function_body(
+        executor, "BotActionResult BotActionExecutor::ExecuteCombat"
+    )
+    execute_profile = function_body(
+        manager,
+        "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state",
+    )
+    boss = function_body(
+        manager,
+        "BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMechanics",
+    )
+
+    auto_attack = execute_combat.split('if (action.Type == "auto_attack")', 1)[1].split(
+        'if (!action.SpellId)', 1
+    )[0]
+    assert "IsWithinLOSInMap(target)" in auto_attack
+    assert "IsWithinMeleeRange(target)" in auto_attack
+    assert_ordered(
+        auto_attack,
+        "IsWithinLOSInMap(target)",
+        "IsWithinMeleeRange(target)",
+        "bot->Attack(target, true)",
+    )
+    assert "return BotActionResult::NoLineOfSight" in auto_attack
+    assert "return BotActionResult::OutOfRange" in auto_attack
+
+    assert "result == BotActionResult::OutOfRange" in execute_profile
+    assert "result == BotActionResult::NoLineOfSight" in execute_profile
+    assert "MoveBotToProfileRange(*state, bot, target, &action" in execute_profile
+    assert '"native_position_reconciled"' in execute_profile
+    assert '"position_reconcile"' in execute_profile
+    assert '"native_out_of_range"' in execute_profile
+    assert_ordered(
+        execute_profile,
+        "executor.ExecuteCombat(bot, bot, action)",
+        "result == BotActionResult::OutOfRange",
+        "MoveBotToProfileRange(*state, bot, target, &action",
+        '"native_position_reconciled"',
+    )
+
+    assert 'result.Action = "move_to_boss_action_range"' in boss
+    assert "nativeCombatObserved" in boss
+    assert "if (!state.WasInCombat && nativeCombatObserved)" in boss
+    assert "state.WasInCombat = nativeCombatObserved;" in boss
+
+    assert 'Outcome::Started(\n                    "route_movement_submitted")' in manager
+    assert '"route_native_combat_observed"' in manager
+    assert '"route_combat_submitted"' in manager
+
+
+def test_combat_keeps_high_priority_movement_and_selects_instant_dps():
+    manager = read(BOT_MGR)
+    resolver = function_body(
+        manager, "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction"
+    )
+    execute_profile = function_body(
+        manager,
+        "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state",
+    )
+
+    assert "movementCompatibleOnly" in resolver
+    assert "candidateSpellInfo->CalcCastTime(bot->getLevel()) > 0" in resolver
+    assert "candidateSpellInfo->IsChanneled()" in resolver
+    assert 'candidate.RejectReason = "movement_requires_instant_action";' in resolver
+    assert "state->MovementLease.ExpiresAtMs > nowMs" in execute_profile
+    assert "BotMovementArbitration::Priority::Combat" in execute_profile
+    assert_ordered(
+        execute_profile,
+        "bool const movementCompatibleOnly",
+        "ResolveProfileCombatAction(",
+        "hostileTargetOnly, movementCompatibleOnly",
+    )
+    assert 'Outcome::Selected("profile_action_valid")' in execute_profile
+
+
 def test_native_self_resurrection_uses_only_the_player_spell_cast_path():
     mgr = read(BOT_MGR)
     update = function_body(mgr, "void BotWorldPopulationMgr::UpdateBot")

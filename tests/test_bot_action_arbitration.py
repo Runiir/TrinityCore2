@@ -105,6 +105,8 @@ int main()
     assert(Evaluate(lease, differentLiveTarget, 1003)
         == Decision::PreserveExisting);
 
+    assert(FromBotActionResult(BotActionResult::Ok).LifecyclePhase
+        == Phase::Submitted);
     assert(FromBotActionResult(BotActionResult::GlobalCooldown).Result
         == Disposition::Retryable);
 
@@ -209,6 +211,27 @@ int main()
     assert(kernel.ShouldEscalate("hazard", 7100, 5000));
     kernel.MarkProgress("hazard", 7101, "movement_progress");
     assert(!kernel.ShouldEscalate("hazard", 7101, 0));
+
+    // Native submission owns its resource lane but is not semantic progress.
+    // Only an observed game-state postcondition advances LastProgressAtMs.
+    kernel.Begin(7200);
+    kernel.Submit(Candidate{
+        "native_submission", "player_signal", BotActionArbitration::Priority::TrainedDamage,
+        1.0f, 0.0f, 0.0f, Uses(Resource::Cast), 0, 100, 3000, 5, true, "", []
+        {
+            return Outcome::Submitted("native_cast_submitted");
+        }
+    });
+    kernel.Resolve();
+    Lifecycle const* submittedLifecycle = kernel.FindLifecycle("native_submission");
+    assert(submittedLifecycle);
+    assert(submittedLifecycle->CurrentPhase == Phase::Submitted);
+    assert(submittedLifecycle->LastProgressAtMs == 0);
+    kernel.MarkProgress("native_submission", 7201, "native_combat_observed");
+    assert(kernel.FindLifecycle("native_submission")->LastProgressAtMs == 7201);
+    kernel.Observe("native_selection", Outcome::Selected("profile_action_valid"), 7202);
+    assert(kernel.FindLifecycle("native_selection")->CurrentPhase == Phase::Selected);
+    assert(kernel.FindLifecycle("native_selection")->LastProgressAtMs == 0);
 
     // Resolution must own callback-local reason text for later replay/export.
     kernel.Begin(8000);
@@ -549,10 +572,15 @@ def test_route_adapter_yields_retryable_holds_and_declared_boss_adds() -> None:
         assert retryable_fragment in route_adapter
     assert "targetBeforeRoute" in route_adapter
     assert "stateTargetBeforeRoute" in route_adapter
-    assert "Resource::GlobalCooldown" not in route_adapter.split(
-        "route.Attempt", 1
-    )[0]
-    assert "Resource::Cast" not in route_adapter.split("route.Attempt", 1)[0]
+    resources = route_adapter.split("route.Attempt", 1)[0]
+    for resource in (
+        "Resource::Movement",
+        "Resource::GlobalCooldown",
+        "Resource::Cast",
+        "Resource::Target",
+        "Resource::Interaction",
+    ):
+        assert resource in resources
 
 
 def test_boss_adapter_requires_observable_work_and_rejects_stale_focus() -> None:
@@ -566,6 +594,9 @@ def test_boss_adapter_requires_observable_work_and_rejects_stale_focus() -> None
     assert "previousCombatAttemptMs" in boss_adapter
     assert "boss_no_observable_effect" in boss_adapter
     assert "boss_action_committed" not in boss_adapter
+    resources = boss_adapter.split("boss.Attempt", 1)[0]
+    assert "Resource::Movement" in resources
+    assert "Resource::Cast" in resources
 
     route_start = source.index("bool BotWorldPopulationMgr::TryValidationRouteObjective(")
     focus_start = source.index("auto routeUsableValidationFocus", route_start)
