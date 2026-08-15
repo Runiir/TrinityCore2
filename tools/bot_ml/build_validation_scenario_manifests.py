@@ -792,13 +792,10 @@ def build_manifests(
                 "node_kind": node_kind,
                 "label": step.get("label") or "",
                 "mechanic_profile": step.get("mechanic_profile") or "",
-                "mechanic_contract": step.get("mechanic_contract") or {},
                 # Native prerequisite nodes are declarative.  Runtime strategy
                 # candidates consume these closed contracts and may only use
                 # the listed player-facing interaction; completion is an
                 # observed native postcondition, never a controller mutation.
-                "interaction_contract": step.get("interaction_contract") or {},
-                "completion_contract": step.get("completion_contract") or {},
                 # Boss recovery authority is a route contract, not a bot
                 # tuning knob.  Omit it for ordinary nodes; the runtime
                 # defaults to native encounter recovery.  Phase 1 Magmaw is
@@ -947,6 +944,18 @@ def build_manifests(
                     "actions": EVIDENCE_ACTIONS["instance_reset"],
                 },
             }
+            # Optional contracts are fail-closed when declared.  Omitting an
+            # undeclared contract keeps ordinary route nodes outside that
+            # validation path; serializing `{}` would incorrectly declare an
+            # incomplete native interaction/completion contract.
+            for contract_name in (
+                "mechanic_contract",
+                "interaction_contract",
+                "completion_contract",
+            ):
+                contract = step.get(contract_name)
+                if contract:
+                    route[contract_name] = contract
             if node_kind != "discovery_leg":
                 route["expected_alive_count"] = expected_alive_count(step, cluster_entries)
             declared_node_id = str(step.get("node_id") or "")

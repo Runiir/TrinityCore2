@@ -731,3 +731,6 @@ def test_dungeon_intro_activation_uses_native_area_trigger_opcode() -> None:
     }
     assert stonecore_routes["Corborus"]["activation_area_trigger_id"] == 6076
     assert stonecore_routes["Slabhide"]["activation_area_trigger_id"] == 6070
+    assert "interaction_contract" not in stonecore_routes["Corborus"]
+    assert "completion_contract" not in stonecore_routes["Corborus"]
+    assert "mechanic_contract" not in stonecore_routes["Corborus"]
