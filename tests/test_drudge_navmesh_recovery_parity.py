@@ -71,5 +71,7 @@ def test_recorded_drudge_returns_match_native_navmesh(tmp_path):
         "polygons": 4,
         "smooth_points": 6,
         "start": [-322.858002, -48.286201, 211.999359],
-        "terminal": [-321.5, -30.0, 212.3],
+        "terminal": [-321.5, -30.0, 211.283429],
+        "detour_nearest_terminal": [-321.5, -30.0, 211.513],
+        "detour_nearest_requested_z_delta": 0.22937,
     }

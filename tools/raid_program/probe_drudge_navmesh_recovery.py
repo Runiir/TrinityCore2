@@ -33,7 +33,8 @@ EXPECTED_OUTPUT = (
     "tank1_pull_away findPath=0x40000000 polys=4 complete=1",
     "tank1_pull_away smooth=0x40000000 points=6 terminal=-288.8,-43,212.301",
     "tank2_pull_away findPath=0x40000000 polys=4 complete=1",
-    "tank2_pull_away smooth=0x40000000 points=6 terminal=-321.5,-30,212.3",
+    "tank2_pull_away nearest_terminal=-321.5,-30,211.513 requested_endz=0.22937",
+    "tank2_pull_away smooth=0x40000000 points=6 terminal=-321.5,-30,211.283",
 )
 
 
@@ -157,7 +158,9 @@ def run_probe(root: Path = ROOT) -> dict[str, object]:
             },
             "tank2_pull_away": {
                 "start": [-322.858002, -48.286201, 211.999359],
-                "terminal": [-321.5, -30.0, 212.3],
+                "terminal": [-321.5, -30.0, 211.283429],
+                "detour_nearest_terminal": [-321.5, -30.0, 211.513],
+                "detour_nearest_requested_z_delta": 0.22937,
                 "polygons": 4,
                 "smooth_points": 6,
             },

@@ -988,7 +988,7 @@ def test_drudge_geometry_is_loaded_from_explicit_sealed_route_manifest(tmp_path,
     anchors = _frozen_drudge_member_anchors(sealed)
     assert set(anchors) == set(range(1, 11))
     assert anchors[1] == (-288.8, -43.0, 212.301)
-    assert anchors[2] == (-321.5, -30.0, 212.3)
+    assert anchors[2] == (-321.5, -30.0, 211.283429)
     assert _frozen_drudge_member_anchors() == {}
 
 

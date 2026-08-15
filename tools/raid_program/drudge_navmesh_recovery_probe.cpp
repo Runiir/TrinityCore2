@@ -185,7 +185,7 @@ int main()
         {"tank1_pull_away", -289.289093f, -57.7575f, 212.932236f,
             -288.8f, -43.0f, 212.301f},
         {"tank2_pull_away", -322.858002f, -48.286201f, 211.999359f,
-            -321.5f, -30.0f, 212.3f}
+            -321.5f, -30.0f, 211.283429f}
     };
     for (TestPoint const& test : tests)
     {
@@ -211,6 +211,9 @@ int main()
                   << " nearest=" << startClosest[2] << ',' << startClosest[0] << ',' << startClosest[1] << " distance=" << Distance3(start, startClosest) << '\n';
         std::cout << test.label << " end_status=0x" << std::hex << endStatus << " ref=" << endRef << std::dec
                   << " nearest=" << endClosest[2] << ',' << endClosest[0] << ',' << endClosest[1] << " distance=" << Distance3(end, endClosest) << '\n';
+        std::cout << test.label << " nearest_terminal=" << endClosest[2] << ','
+                  << endClosest[0] << ',' << endClosest[1]
+                  << " requested_endz=" << std::fabs(endClosest[1] - test.dz) << '\n';
 
         dtPolyRef corridor[74]{};
         int corridorSize = 0;

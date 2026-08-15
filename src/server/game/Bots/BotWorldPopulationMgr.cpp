@@ -4303,6 +4303,10 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
             botState.LastValidationRouteDrudgeChargeGenerationObserved = 0;
             botState.ValidationRouteDrudgeAnchorValid = false;
             botState.ValidationRouteDrudgeAnchorPathProven = false;
+            botState.ValidationRouteDrudgeRecoveryAnchorPathProven = false;
+            botState.ValidationRouteDrudgeRecoveryAnchorX = 0.0f;
+            botState.ValidationRouteDrudgeRecoveryAnchorY = 0.0f;
+            botState.ValidationRouteDrudgeRecoveryAnchorZ = 0.0f;
             botState.ValidationRouteDrudgeAnchorAttemptId = 0;
             botState.ValidationRouteDrudgeAnchorWipeGeneration = 0;
             botState.ValidationRouteDrudgeAnchorRouteGeneration = 0;
@@ -4476,6 +4480,10 @@ void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
         state.LastDecisionFingerprintPersistedFailureCount = 0;
         state.ValidationRouteDrudgeAnchorValid = false;
         state.ValidationRouteDrudgeAnchorPathProven = false;
+        state.ValidationRouteDrudgeRecoveryAnchorPathProven = false;
+        state.ValidationRouteDrudgeRecoveryAnchorX = 0.0f;
+        state.ValidationRouteDrudgeRecoveryAnchorY = 0.0f;
+        state.ValidationRouteDrudgeRecoveryAnchorZ = 0.0f;
         state.ValidationRouteDrudgeAnchorAttemptId = 0;
         state.ValidationRouteDrudgeAnchorWipeGeneration = 0;
         state.ValidationRouteDrudgeAnchorRouteGeneration = 0;
@@ -7946,6 +7954,10 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
                     botState.LastValidationRouteDrudgeChargeGenerationObserved = 0;
                     botState.ValidationRouteDrudgeAnchorValid = false;
                     botState.ValidationRouteDrudgeAnchorPathProven = false;
+                    botState.ValidationRouteDrudgeRecoveryAnchorPathProven = false;
+                    botState.ValidationRouteDrudgeRecoveryAnchorX = 0.0f;
+                    botState.ValidationRouteDrudgeRecoveryAnchorY = 0.0f;
+                    botState.ValidationRouteDrudgeRecoveryAnchorZ = 0.0f;
                     botState.ValidationRouteDrudgeAnchorMapId = 0;
                     botState.ValidationRouteDrudgeAnchorInstanceId = 0;
                     botState.ValidationRouteDrudgeAnchorSource0Identity = 0;
@@ -20359,6 +20371,99 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
             return true;
         };
+        auto exactLiveRecoveryTankPathsPreflighted = [&]()
+        {
+            if (!laneTank || !otherTank || bot->GetInstanceId() == 0)
+                return false;
+            for (Player const* tank : { laneTank, otherTank })
+            {
+                auto tankState = std::find_if(Party().Bots.begin(), Party().Bots.end(),
+                    [tank](WorldBotState const& candidate)
+                    {
+                        return candidate.Guid == tank->GetGUID();
+                    });
+                auto tankRoster = Cohort().Raid.RosterByGuid.find(
+                    tank->GetGUID().GetCounter());
+                if (tankState == Party().Bots.end()
+                    || tankRoster == Cohort().Raid.RosterByGuid.end())
+                    return false;
+                ValidationRouteMemberAnchor const* recoveryAnchor =
+                    declaredRecoveryTankAnchorFor(tankRoster->second.SlotIndex + 1);
+                if (!recoveryAnchor
+                    || !tankState->ValidationRouteDrudgeRecoveryAnchorPathProven
+                    || tankState->ValidationRouteDrudgeAnchorAttemptId != Cohort().AttemptId
+                    || tankState->ValidationRouteDrudgeAnchorWipeGeneration
+                        != Cohort().Raid.WipeGeneration
+                    || tankState->ValidationRouteDrudgeAnchorRouteGeneration
+                        != Party().ValidationRouteGeneration
+                    || tankState->ValidationRouteDrudgeAnchorMapId != bot->GetMapId()
+                    || tankState->ValidationRouteDrudgeAnchorInstanceId != bot->GetInstanceId()
+                    || tankState->ValidationRouteDrudgeAnchorSource0Identity
+                        != sources[0]->GetGUID().GetRawValue()
+                    || tankState->ValidationRouteDrudgeAnchorSource1Identity
+                        != sources[1]->GetGUID().GetRawValue()
+                    || Distance2d(tankState->ValidationRouteDrudgeRecoveryAnchorX,
+                        tankState->ValidationRouteDrudgeRecoveryAnchorY,
+                        recoveryAnchor->X, recoveryAnchor->Y) > 0.01f
+                    || std::fabs(tankState->ValidationRouteDrudgeRecoveryAnchorZ
+                        - recoveryAnchor->Z) > 0.01f)
+                    return false;
+            }
+            return true;
+        };
+        // Detour-only probes cannot reproduce Map::GetHeight and the exact
+        // PathGenerator terminal Z used by the live server.  Once both tanks
+        // occupy their sealed combat anchors, prove both recovery legs with
+        // the live PathGenerator before taunt, threat seed, or ordinary
+        // offense can begin.  A bad sealed Z therefore ends the diagnostic at
+        // preflight instead of spending a native Rush cycle validating a path
+        // that the production server will reject.
+        bool const liveRecoveryPreflightedBeforeTick =
+            exactLiveRecoveryTankPathsPreflighted();
+        if (prepullStaged && !nativeChargePending
+            && exactCombatTankAnchorsSafe()
+            && !liveRecoveryPreflightedBeforeTick)
+        {
+            bool currentTankPathProven = false;
+            std::string nativePathRejection;
+            if (assignedTank)
+            {
+                ValidationRouteMemberAnchor const* recoveryAnchor =
+                    declaredRecoveryTankAnchorFor(oneBasedSlot);
+                currentTankPathProven = recoveryAnchor
+                    && strictNativePath(recoveryAnchor->X, recoveryAnchor->Y,
+                        recoveryAnchor->Z, true, &nativePathRejection);
+                if (currentTankPathProven)
+                {
+                    state.ValidationRouteDrudgeRecoveryAnchorPathProven = true;
+                    state.ValidationRouteDrudgeRecoveryAnchorX = recoveryAnchor->X;
+                    state.ValidationRouteDrudgeRecoveryAnchorY = recoveryAnchor->Y;
+                    state.ValidationRouteDrudgeRecoveryAnchorZ = recoveryAnchor->Z;
+                    state.LastPathRejectReason.clear();
+                    state.LastRecoveryResult.clear();
+                }
+                else
+                {
+                    state.ValidationRouteDrudgeRecoveryAnchorPathProven = false;
+                    state.LastPathRejectReason = nativePathRejection.empty()
+                        ? "drudge_recovery_anchor_live_preflight_rejected"
+                        : nativePathRejection;
+                    state.LastRecoveryResult = state.LastPathRejectReason;
+                    if (Cohort().ValidationAttemptFailureReason.empty())
+                        Cohort().ValidationAttemptFailureReason =
+                            "drudge_recovery_anchor_live_preflight_failed";
+                }
+            }
+            holdOffense();
+            char const* result = assignedTank && !currentTankPathProven
+                ? "drudge_recovery_anchor_live_preflight_failed"
+                : "drudge_recovery_anchor_live_preflight_wait";
+            record(laneSource, result, sourceSeparation);
+            target = laneSource;
+            state.TargetGuid = laneSource->GetGUID();
+            action = result;
+            return true;
+        }
         auto tankOnFrozenLane = [&](Player const* tank, uint32 slot)
         {
             if (!tank)

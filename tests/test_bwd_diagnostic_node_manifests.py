@@ -74,7 +74,7 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
     }
     assert recovery_by_slot == {
         1: {"roster_slot": 1, "x": -288.8, "y": -43.0, "z": 212.301},
-        2: {"roster_slot": 2, "x": -321.5, "y": -30.0, "z": 212.3},
+        2: {"roster_slot": 2, "x": -321.5, "y": -30.0, "z": 211.283429},
     }
     member_by_slot = {
         row["roster_slot"]: row for row in drudges["split_member_anchors"]

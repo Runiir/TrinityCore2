@@ -599,6 +599,21 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert recovery_preflight < recovery_move
     assert '"drudge_tank_recovery_anchor_preflight_wait"' in lane
     assert '"drudge_tank_recovery_anchor_strict_path_rejected"' in lane
+    assert "exactLiveRecoveryTankPathsPreflighted" in lane
+    assert "ValidationRouteDrudgeRecoveryAnchorPathProven" in lane
+    assert '"drudge_recovery_anchor_live_preflight_failed"' in lane
+    live_recovery_preflight = lane.index(
+        "if (prepullStaged && !nativeChargePending\n"
+        "            && exactCombatTankAnchorsSafe()"
+    )
+    first_native_taunt = lane.index("drudge_lane_native_taunt")
+    assert live_recovery_preflight < first_native_taunt
+    assert "strictNativePath(recoveryAnchor->X" in lane[
+        live_recovery_preflight:first_native_taunt
+    ]
+    assert "Cohort().ValidationAttemptFailureReason" in lane[
+        live_recovery_preflight:first_native_taunt
+    ]
     assert "tankStageInput.BothCombatTankPathsProven" in lane
     assert "nativeChargePending ? recoveryTankPathsProvenBeforeTick" in lane
     assert "if (!prepullStaged || !tankStage.TankMovementAllowed" in lane

@@ -1042,6 +1042,14 @@ private:
         // A Rush can invalidate current dynamic geometry without invalidating
         // the earlier strict native path proof for the identical scoped point.
         bool ValidationRouteDrudgeAnchorPathProven = false;
+        // This is a separate, live PathGenerator proof from the sealed combat
+        // anchor to the post-Rush tank pull-away anchor.  The ordinary anchor
+        // cache changes identity when a Rush lands, so it cannot also prove
+        // that the recovery leg was valid before native combat was opened.
+        bool ValidationRouteDrudgeRecoveryAnchorPathProven = false;
+        float ValidationRouteDrudgeRecoveryAnchorX = 0.0f;
+        float ValidationRouteDrudgeRecoveryAnchorY = 0.0f;
+        float ValidationRouteDrudgeRecoveryAnchorZ = 0.0f;
         uint64 ValidationRouteDrudgeAnchorAttemptId = 0;
         uint32 ValidationRouteDrudgeAnchorWipeGeneration = 0;
         uint64 ValidationRouteDrudgeAnchorRouteGeneration = 0;

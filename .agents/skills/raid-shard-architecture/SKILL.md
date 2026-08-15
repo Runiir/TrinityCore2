@@ -179,6 +179,13 @@ edges for every bot and target scope:
   nearest-poly extents, corridor cap, and smoothing to prove the recorded
   start→sealed-anchor terminal. Missing or changed assets fail live prep; a
   source-shape assertion or algebraic straight line is not navigation proof.
+- Keep offline Detour and live height authority distinct. Detour may preserve
+  the requested terminal Z even when production `Map::GetHeight` and
+  `PathGenerator::GetActualEndPosition()` choose another floor. Before native
+  combat opens, run the exact live PathGenerator from each sealed start,
+  require its actual XY/Z terminal within the configured bounds, and latch a
+  terminal preflight failure instead of discovering a bad endpoint after the
+  mechanic timer starts.
 - Run the replay gate before every native rebuild/live attempt. A failed replay
   blocks the live run; a passing replay reduces but never replaces the final
   native confirmation.
