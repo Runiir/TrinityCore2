@@ -1,0 +1,179 @@
+{
+  "schema": "cata_raid_compact_run_summary_v1",
+  "capture_id": "cata_raid_phase1_blackwing_descent_10n_magmaw_diagnostic_v1",
+  "started_at_utc": "2026-08-15T06:29:47Z",
+  "source_commit": "622b5e8bbd258dd2cb8c18411e8296c30b22f62c",
+  "source_tree": "cce0316e3e118f2176df6baac3f87480b9d6070e",
+  "binary_sha256": "37dbac36258485ac3b76438880eafda960b3ac399c6c0842281816aacadac893",
+  "config_sha256": "ef09cd982001db7098e3ea6fc49c73d102da4fafed84f76613f89e221a71ec20",
+  "configure_receipt": {
+    "file_sha256": "62db9e105cff59657e0bdb657772371ef8a0fd723ce88cfdc8f1f0ade6aed925",
+    "canonical_receipt_sha256": "97e58f78e960282db1875a8d3ec1e054b166660ed9c284f9df633f30f4607eb0"
+  },
+  "worldserver_receipt": {
+    "path": "artifacts/cata_raid_program/phase1_622b5e8b_build_prep_20260815/worldserver_receipt.json",
+    "file_sha256": "7f3b9f2a85b1641d06812353f2e26b112c8839bed6f2cdad3ae8f3ff36062307",
+    "canonical_receipt_sha256": "85321fba2ed5ad24010495c8b59428acdcba3a57947a426550cdc7ccb8811ec9",
+    "classification": "success",
+    "exit_code": 0,
+    "request_admission_completion_identity_equal_and_clean": true
+  },
+  "provisioning": {
+    "readback_path": "artifacts/cata_raid_program/phase1_622b5e8b_build_prep_20260815/magmaw_provisioning_readback_v5.json",
+    "readback_file_sha256": "a3b0a5e2bfbca2333cfbb86a5231cd844e4372d8e9273f29ac4b314b47d140aa",
+    "readback_passed": true,
+    "full_verifier_path": "artifacts/cata_raid_program/phase1_622b5e8b_build_prep_20260815/full_provisioning_verifier.json",
+    "full_verifier_file_sha256": "50ce73933730165f5c6ea7a1cae625a282b1f25c3090077111c8475aee95faf8",
+    "all_passed": true,
+    "database_valid": true,
+    "failure_count": 0,
+    "selected_name_count": 10,
+    "zero_group_instance_corpse_ghost_residue": true
+  },
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
+  "instance_id": 3,
+  "attempt_id": 1,
+  "assignment_generation": 1,
+  "classification": "gameplay_failure",
+  "phase1_gate_passed": false,
+  "gameplay_failure": true,
+  "fidelity_claim": false,
+  "forbidden_assistance_observed": false,
+  "terminal_failure": {
+    "reason": "drudge_reseparation_deadline_missed",
+    "elapsed_seconds": 229.455,
+    "final_forced_diagnose_and_trace_complete": true,
+    "alive_count": 9,
+    "active_count": 10,
+    "dead_guid": 30006
+  },
+  "positive_live_result": {
+    "exact_roster_and_instance_admitted": true,
+    "chainwielder_cleared": true,
+    "drudge_exact_roster_staged": true,
+    "threat_seed_complete": true,
+    "first_native_rushes_landed": true,
+    "first_native_rushes_selected_both_declared_seed_members": true,
+    "all_seven_offensive_slots_executed_trained_profiles": true,
+    "resource_sampling_complete": true,
+    "formal_stuck_or_unstuck_actions": 0
+  },
+  "drudge_evidence": {
+    "profile_action_roster_guids": [
+      30001,
+      30002,
+      30006,
+      30007,
+      30008,
+      30009,
+      30010
+    ],
+    "profile_action_roster_count": 7,
+    "seed_observations": [
+      {
+        "source_spawn_id": 250140,
+        "source_guid": 59,
+        "member_guid": 30008,
+        "spell_id": 172,
+        "distance": 32.2418,
+        "action_succeeded": true
+      },
+      {
+        "source_spawn_id": 250141,
+        "source_guid": 60,
+        "member_guid": 30006,
+        "spell_id": 44457,
+        "distance": 31.6894,
+        "action_succeeded": true
+      }
+    ],
+    "first_native_rush_observations": [
+      {
+        "source_spawn_id": 250141,
+        "source_guid": 60,
+        "target_guid": 30006,
+        "selected_distance": 35.6316,
+        "landed": true,
+        "observed_at_ms": 1786775599021
+      },
+      {
+        "source_spawn_id": 250140,
+        "source_guid": 59,
+        "target_guid": 30008,
+        "selected_distance": 32.2418,
+        "landed": true,
+        "observed_at_ms": 1786775599021
+      }
+    ],
+    "native_rush_delivered_count": 4,
+    "tank_ownership_roster_guids": [
+      30001,
+      30002
+    ],
+    "failure_boundary": "the first Rush pair remained unreseparated when the second native 20-second pair arrived; displaced members 30003 and 30008 repeatedly failed the strict native-path formation proof",
+    "magmaw_result": "not engaged; no Magmaw mechanic, boss-DPS, or kill inference is authorized"
+  },
+  "cleanup": {
+    "gate_passed": true,
+    "worldserver_exit_code": 0,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true
+  },
+  "performance": {
+    "sample_count": 47,
+    "sampling_errors": 0,
+    "elapsed_seconds": 229.455,
+    "mean_cpu_percent_one_core": 35.663,
+    "minimum_rss_bytes": 1387073536,
+    "maximum_rss_bytes": 1446543360,
+    "worldserver_log_bytes": 16077247,
+    "total_uncompressed_capture_bytes": 32284858
+  },
+  "immutable_artifacts": {
+    "raw": {
+      "bytes": 16056702,
+      "sha256": "79579663e054bf9fb87e0442e12af451d91feb321f90011387b7ea629d49870b"
+    },
+    "worldserver_log": {
+      "bytes": 16077247,
+      "sha256": "cd3f8697e238d4928beb0d5cc32f7f5aca3cbc16bbfb5c85c5a6c25220ca80df"
+    },
+    "report": {
+      "bytes": 150909,
+      "file_sha256": "6e73e67b0a0e408b367d244088144d06d51a0240bfced2d0ea550b97fdcff952",
+      "canonical_sha256": "6c878361c045d162918c95fa81734cb72db34cf7abef16a7d06770a8a06107cc"
+    }
+  },
+  "next_action": {
+    "required_remediation": "make the post-Rush strict formation recovery path complete for every displaced exact-roster member without weakening the native-path or 20-second deadline gates",
+    "required_validation": "focused replay and capture tests, independent exact review, exact build and fresh provisioning/readback, then rerun the same production-parity Magmaw diagnostic"
+  },
+  "retention": {
+    "capture_dvc_pointer": {
+      "path": "artifacts/cata_raid_program/phase1_622b5e8b_magmaw_smoke_20260815.dvc",
+      "md5": "71046240b421152d3a264e28077e3454.dir",
+      "size": 32284858,
+      "nfiles": 3
+    },
+    "build_prep_dvc_pointer": {
+      "path": "artifacts/cata_raid_program/phase1_622b5e8b_build_prep_20260815.dvc",
+      "md5": "54040053e3363866ede9c40aabeae2ef.dir",
+      "size": 3926126,
+      "nfiles": 12
+    },
+    "remote_verified": true,
+    "remote_objects_verified": 17,
+    "remote_objects_missing": 0,
+    "remote_unique_object_bytes": 36212443,
+    "local_payload_evicted": true,
+    "directory_metadata_retained": true,
+    "directory_metadata_sha256": {
+      "capture": "ef855d397e1fc6a9ff09548e2bb247e4f244a245556752761d999be24a39890c",
+      "build_prep": "74484667ad8922808920cf5dec8dc70407e36fdc833db4b3168dbb759a9843fe"
+    },
+    "unique_cache_children_evicted": 10,
+    "shared_cache_children_retained": 5
+  }
+}
