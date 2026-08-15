@@ -17,6 +17,15 @@ using namespace BotRaidDrudgeGeometry;
 
 int main()
 {
+    assert(SelectMemberRecoveryAction(true, false, true)
+        == MemberRecoveryAction::RecoverFormation);
+    assert(SelectMemberRecoveryAction(true, true, true)
+        == MemberRecoveryAction::PreferFriendlySupport);
+    assert(SelectMemberRecoveryAction(false, false, true)
+        == MemberRecoveryAction::PreferFriendlySupport);
+    assert(SelectMemberRecoveryAction(false, false, false)
+        == MemberRecoveryAction::Continue);
+
     std::vector<Point2d> safeRecoveryPath{
         {-11.0f, 0.0f}, {-9.0f, 1.0f}, {-8.0f, 2.0f}
     };
@@ -294,13 +303,16 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "GetMeleeRange" in lane
     assert "tankStage.SupportAllowed" in lane
     assert "tryRouteGroupHeal(bot, laneSource, false)" in lane
+    assert "SelectMemberRecoveryAction" in lane
     assert "bot->GetInstanceId() != 0" in lane
     assert "ValidationRouteDrudgeAnchorSource0Identity" in lane
 
     barrier = lane.index("!tankStage.NativeEngagementAllowed || formationRequiredMutable")
+    recovery_choice = lane.index("SelectMemberRecoveryAction", barrier)
+    recovery_move = lane.index("tryFormationRecovery();", recovery_choice)
     support = lane.index("drudge_staging_support")
     first_taunt = lane.index("drudge_lane_native_taunt")
-    assert barrier < support
+    assert barrier < recovery_choice < recovery_move < support
     assert first_taunt < barrier
     assert "assignedTank && tankStage.NativeOwnershipAllowed" in lane[first_taunt - 1200:first_taunt]
 

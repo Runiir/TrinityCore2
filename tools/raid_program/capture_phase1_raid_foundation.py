@@ -1413,6 +1413,7 @@ def accepted_drudge_contract(
     native_candidate_rows_by_guid: dict[int, dict[int, dict[str, Any]]] = {}
     native_candidate_eligible_guids_by_source: dict[int, set[int]] = {}
     native_first_rush_observed_at_ms: dict[int, int] = {}
+    native_first_rush_landed_by_key: dict[tuple[int, int], bool] = {}
     native_candidate_tolerance = 0.05
     complete_candidate_snapshots = []
     for candidate_runtime, candidate_evidence in candidates:
@@ -1456,8 +1457,24 @@ def accepted_drudge_contract(
             first_time = first_observation.get("observed_at_ms")
             if _positive_int(first_time):
                 native_first_rush_observed_at_ms[source] = int(first_time)
-            if first_observation.get("landed") is not True:
-                reasons.append(f"drudge_native_threat_source_{source}_first_rush_not_landed")
+            sequence = first_observation.get("sequence")
+            if not _positive_int(sequence):
+                reasons.append("drudge_native_threat_observation_sequence_invalid")
+            else:
+                landing_key = (source, int(sequence))
+                landed = first_observation.get("landed") is True
+                prior_landed = native_first_rush_landed_by_key.get(landing_key)
+                # A status sampled between SpellStarted and SpellLanded is a
+                # legitimate partial observation.  Preserve the edge, merge
+                # the later landing monotonically, and reject only an actual
+                # true -> false regression.  Treating the early false row as
+                # permanently disqualifying made a native landed Rush fail
+                # capture even though every later scoped status retained it.
+                if prior_landed is True and not landed:
+                    reasons.append("drudge_native_threat_landing_regressed")
+                native_first_rush_landed_by_key[landing_key] = bool(
+                    prior_landed or landed
+                )
             candidate_rows = first_observation.get("native_threat_candidates")
             if not isinstance(candidate_rows, list):
                 reasons.append("drudge_native_threat_candidates_missing")
@@ -1615,6 +1632,15 @@ def accepted_drudge_contract(
                     row.get("guid") for row in expected_candidates
                     if row.get("raw_guid") in reconstructed_tactic_guids
                 }
+
+    for source in exact_sources:
+        source_landings = [
+            landed for (observed_source, _), landed
+            in native_first_rush_landed_by_key.items()
+            if observed_source == source
+        ]
+        if not source_landings or not any(source_landings):
+            reasons.append(f"drudge_native_threat_source_{source}_first_rush_not_landed")
 
     # The pre-first-Rush seed is a bounded, real profile action rather than a
     # threat-manager shortcut.  Reconstruct both cross-lane rows and all

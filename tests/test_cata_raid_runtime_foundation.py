@@ -604,7 +604,10 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
         "if (!prepullStaged || !tankStage.TankMovementAllowed"
     )
     assert formation_barrier < support
-    assert "tankStage.SupportAllowed" in lane[support - 450:support]
+    recovery_choice = lane.index("SelectMemberRecoveryAction", formation_barrier)
+    recovery_move = lane.index("tryFormationRecovery();", recovery_choice)
+    assert formation_barrier < recovery_choice < recovery_move < support
+    assert "tankStage.SupportAllowed" in lane[formation_barrier:recovery_choice]
     assert "tryRouteGroupHeal(bot, laneSource, false)" in lane[support - 450:support]
     heal_helper = IMPL[
         IMPL.index("auto tryRouteGroupHeal"):

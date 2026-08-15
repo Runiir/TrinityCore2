@@ -55,6 +55,27 @@ enum class Decision : std::uint8_t
     AllowNativeEngagement
 };
 
+enum class MemberRecoveryAction : std::uint8_t
+{
+    Continue,
+    RecoverFormation,
+    PreferFriendlySupport
+};
+
+// A landed Rush owns movement priority for every displaced exact-roster
+// member. Friendly support remains available while staging and after the
+// healer is geometrically safe, but it cannot starve the bounded return to the
+// sealed formation before the next native Rush edge.
+inline MemberRecoveryAction SelectMemberRecoveryAction(
+    bool landedRushPending, bool memberGeometrySafe, bool friendlySupportAvailable)
+{
+    if (landedRushPending && !memberGeometrySafe)
+        return MemberRecoveryAction::RecoverFormation;
+    if (friendlySupportAvailable)
+        return MemberRecoveryAction::PreferFriendlySupport;
+    return MemberRecoveryAction::Continue;
+}
+
 struct Input
 {
     Scope Identity;

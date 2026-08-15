@@ -57,6 +57,11 @@ Require one exact tuple across config, generated route, runtime status, capture,
   exact-roster acknowledgement fit below the observed native interval. If the
   next native edge arrives first, retain it and terminalize the missed recovery
   instead of accumulating an unbounded queue or telemetry flood.
+- During a landed-displacement recovery, move any geometry-unsafe member before
+  routine healing or support; allow support first only while staging or once
+  that member is back in the sealed formation. A single bait/recovery anchor is
+  valid only when combined arrival envelopes prove both hostile-action range
+  and post-return source clearance and its native return path is exact.
 - A prerequisite patrol is pullable only in a path-proven phase whose entire
   chase stays outside every future-encounter guard. A native combat link to a
   future encounter permanently contaminates that route generation; terminalize

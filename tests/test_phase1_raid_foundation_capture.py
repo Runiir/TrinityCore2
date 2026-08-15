@@ -1219,6 +1219,19 @@ def test_drudge_native_threat_ignores_ordinary_pre_rush_snapshot_until_complete(
     assert accepted is True
     assert reasons == []
 
+    started = accepted_drudge_status()
+    started["raid_runtime"]["drudge_charge"]["observations"][0]["landed"] = False
+    landed = accepted_drudge_status()
+    accepted, reasons = accepted_drudge_contract([started, landed])
+    assert accepted is True
+    assert "drudge_native_threat_source_250140_first_rush_not_landed" not in reasons
+
+    regressed = accepted_drudge_status()
+    regressed["raid_runtime"]["drudge_charge"]["observations"][0]["landed"] = False
+    accepted, reasons = accepted_drudge_contract([landed, regressed])
+    assert accepted is False
+    assert "drudge_native_threat_landing_regressed" in reasons
+
     forged_farthest = accepted_drudge_status()
     first = forged_farthest["raid_runtime"]["drudge_charge"]["observations"][0]
     first["target_guid"] = forged_farthest["raid_runtime"]["roster"][4]["guid"]

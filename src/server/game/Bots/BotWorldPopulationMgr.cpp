@@ -20275,23 +20275,19 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             || pairTooClose || nativeChargePending || chargeAwaitingLanding)
         {
             holdOffense();
-            // A body pull can begin while the tanks are still proving the
-            // declared combat geometry.  Preserve the hostile-offense gate,
-            // but permit ordinary friendly healer actions so staging does not
-            // kill the tanks before ownership and the native Rush window.
-            if (tankStage.SupportAllowed && roster->second.Role == "healer"
-                && tryRouteGroupHeal(bot, laneSource, false))
-            {
-                record(laneSource, "drudge_staging_support", sourceSeparation);
-                target = laneSource;
-                state.TargetGuid = laneSource->GetGUID();
-                return true;
-            }
             bool moved = false;
             bool alreadySafe = assignedTank
                 ? cachedAnchorSafe(state, bot) : groupPositionSafe(bot);
-            if (!bot->IsFalling() && !alreadySafe)
+            bool const friendlySupportAvailable = tankStage.SupportAllowed
+                && roster->second.Role == "healer";
+            BotRaidDrudgeGeometry::MemberRecoveryAction const recoveryAction =
+                BotRaidDrudgeGeometry::SelectMemberRecoveryAction(
+                    nativeChargePending, alreadySafe, friendlySupportAvailable);
+
+            auto tryFormationRecovery = [&]()
             {
+                if (bot->IsFalling() || alreadySafe)
+                    return;
                 // The primary point is a contract reference, not a promise
                 // that this bot's current polygon can reach it.  Select one
                 // native-pathable collision-safe fallback and persist it for
@@ -20312,7 +20308,31 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                             state.ValidationRouteDrudgeAnchorY,
                             state.ValidationRouteDrudgeAnchorZ);
                 }
+            };
+
+            if (recoveryAction
+                == BotRaidDrudgeGeometry::MemberRecoveryAction::RecoverFormation)
+                tryFormationRecovery();
+
+            // A body pull can begin while the tanks are still proving the
+            // declared combat geometry. Preserve the hostile-offense gate,
+            // but permit ordinary movement-free friendly actions. A landed
+            // Rush is different: an unsafe healer must first recover the
+            // sealed formation, or repeated heals can consume the complete
+            // native 20-second reseparation window.
+            if (recoveryAction
+                    == BotRaidDrudgeGeometry::MemberRecoveryAction::PreferFriendlySupport
+                && tryRouteGroupHeal(bot, laneSource, false))
+            {
+                record(laneSource, "drudge_staging_support", sourceSeparation);
+                target = laneSource;
+                state.TargetGuid = laneSource->GetGUID();
+                return true;
             }
+
+            if (recoveryAction
+                != BotRaidDrudgeGeometry::MemberRecoveryAction::RecoverFormation)
+                tryFormationRecovery();
             char const* result = nativeChargePending
                 ? (nativeChargeTargetViolation
                     ? (nativeChargeTargetRoleViolation
