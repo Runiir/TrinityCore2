@@ -346,6 +346,8 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "tryRouteGroupHeal(bot, laneSource, false)" in lane
     assert "SelectMemberRecoveryAction" in lane
     assert "if (tryValidationRouteMinimumDistance(true))" in lane
+    outer_capture = lane[: lane.index("]() -> bool")]
+    assert "&drudgeLandedRushPending" in outer_capture
     assert "drudge_anchor_source_unsafe" in lane
     assert "drudge_anchor_spacing_unsafe" in lane
     assert "drudge_anchor_native_path_rejected:path_type=" in lane

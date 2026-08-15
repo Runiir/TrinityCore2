@@ -18734,7 +18734,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     };
     auto tryValidationRouteDrudgeChargeLanes = [this, &state, bot, &power, stage,
         activity, &situation, &action, &target, &tryRouteGroupHeal,
-        &tryValidationRouteMinimumDistance, &canonicalRouteDistance,
+        &tryValidationRouteMinimumDistance, &drudgeLandedRushPending,
+        &canonicalRouteDistance,
         &routeArrivalRadius]() -> bool
     {
         if (Cohort().Config.ValidationRouteMechanicProfile != "trash_two_tank_charge_lanes")
