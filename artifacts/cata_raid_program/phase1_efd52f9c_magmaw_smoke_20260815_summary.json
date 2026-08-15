@@ -1,0 +1,110 @@
+{
+  "schema": "cata_raid_compact_run_summary_v1",
+  "capture_id": "cata_raid_phase1_blackwing_descent_10n_magmaw_diagnostic_v1",
+  "started_at_utc": "2026-08-15T08:42:24Z",
+  "source_commit": "efd52f9c944043ae878c824371a9573664b59c12",
+  "source_tree": "52b8d17c7c7f0623d8d907d8287408c7a60f5f48",
+  "binary_sha256": "9c0707c2cab1010ef86d13c5e0fc997ee30159709ce09dd664c560b0e5b1973e",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
+  "pool_tag_filter": "blackwing_descent_10n_magmaw_diagnostic",
+  "server_epoch": 1218035190362389,
+  "instance_id": 14,
+  "attempt_id": 2,
+  "assignment_generation": 1,
+  "classification": "gameplay_failure",
+  "phase1_gate_passed": false,
+  "fidelity_claim": false,
+  "forbidden_assistance_observed": false,
+  "terminal_failure": {
+    "reason": "drudge_reseparation_deadline_missed",
+    "elapsed_seconds": 268.806,
+    "final_forced_diagnose_and_trace_complete": true,
+    "alive_count": 8,
+    "active_count": 10,
+    "dead_guids": [30005, 30009]
+  },
+  "positive_live_result": {
+    "identity_stable": true,
+    "exact_roster_and_instance_admitted": true,
+    "chainwielder_cleared": true,
+    "drudge_live_recovery_path_preflight_passed": true,
+    "drudge_exact_roster_staged": true,
+    "threat_seed_complete": true,
+    "first_six_native_rush_observations_reseparated_exact_ten": true,
+    "all_seven_offensive_slots_executed_trained_profiles": true,
+    "formal_stuck_or_unstuck_actions": 0,
+    "cleanup_gate_passed": true
+  },
+  "drudge_evidence": {
+    "profile_action_roster_guids": [30001, 30002, 30006, 30007, 30008, 30009, 30010],
+    "seed_roster_guids": [30006, 30008],
+    "tank_ownership_roster_guids": [30001, 30002],
+    "first_three_native_rush_pairs": [
+      {"source_spawn_id": 250141, "sequence": 1, "target_guid": 30006, "landed": true, "reseparated_exact_ten": true},
+      {"source_spawn_id": 250140, "sequence": 2, "target_guid": 30008, "landed": true, "reseparated_exact_ten": true},
+      {"source_spawn_id": 250141, "sequence": 3, "target_guid": 30006, "landed": true, "reseparated_exact_ten": true},
+      {"source_spawn_id": 250140, "sequence": 4, "target_guid": 30005, "landed": true, "reseparated_exact_ten": true},
+      {"source_spawn_id": 250140, "sequence": 5, "target_guid": 30005, "landed": true, "reseparated_exact_ten": true},
+      {"source_spawn_id": 250141, "sequence": 6, "target_guid": 30006, "landed": true, "reseparated_exact_ten": true}
+    ],
+    "fourth_native_rush_pair": [
+      {"source_spawn_id": 250141, "sequence": 7, "target_guid": 30001, "target_role": "tank", "selected_distance": 51.9883, "landed": true, "reseparated_exact_ten": false},
+      {"source_spawn_id": 250140, "sequence": 8, "target_guid": 30005, "target_role": "healer", "selected_distance": 65.2489, "landed": true, "reseparated_exact_ten": false}
+    ],
+    "prepared_count_at_terminal": 10,
+    "delivered_count_at_terminal": 10,
+    "failure_boundary": "the live recovery preflight and three full native Rush cycles passed; the fourth pair selected an opposite-lane tank and a healer, recovery began, GUIDs 30005 and 30009 died about nine seconds later, and the unresolved pair reached the next 20-second native Rush deadline",
+    "magmaw_result": "not engaged; no Magmaw mechanic, boss-DPS, or kill inference is authorized"
+  },
+  "cleanup": {
+    "gate_passed": true,
+    "worldserver_exit_code": 0,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true
+  },
+  "performance": {
+    "sample_count": 214,
+    "elapsed_seconds": 268.806,
+    "mean_cpu_percent_one_core": 34.542,
+    "minimum_rss_bytes": 1389293568,
+    "maximum_rss_bytes": 1452056576,
+    "raw_bytes": 30340035,
+    "worldserver_log_bytes": 30335089,
+    "report_bytes": 348089,
+    "total_uncompressed_bytes": 61023213
+  },
+  "immutable_artifacts": {
+    "raw_sha256": "8b9d957458f450ad42bf848562b8cbc26ebd5c3f60c5937da83525dad4f4c9e7",
+    "worldserver_log_sha256": "7289af4548044f79ffe2b2170059f6008f00b83120190845a13c5e98fec1dbf4",
+    "canonical_report_sha256": "564433dbe987b94f07bd96b1a66e4b55137f2f9d13e97cf51f513fa738e1a073",
+    "report_file_sha256": "e5165285dacc584f1741379a947aeb682319f342388645fb89715d4d07768706",
+    "configure_receipt_file_sha256": "2f8537d24b932ec31eabb6f0b353058b9aeba564e264641f6ee8bbda63131511",
+    "worldserver_receipt_file_sha256": "ab803e069eac30001f87a49bebc83f0bf7c151178c66e06fee8780454338ad40",
+    "provisioning_readback_file_sha256": "7f3364854e7f4677c5e33a7a882026086bee29d1d082172ae22aec48eda62091"
+  },
+  "next_action": {
+    "required_change": "make the repeated-Rush tank/healer target case survivable without changing the native farthest-target selector, preserving the exact ten-member reseparation and no-assistance contract",
+    "required_validation": "focused replay and geometry tests, exact native build, fresh provisioning/readback, then the same production-parity Magmaw diagnostic"
+  },
+  "retention": {
+    "build_prep_dvc_pointer": {
+      "path": "artifacts/cata_raid_program/phase1_efd52f9c_build_prep_20260815.dvc",
+      "md5": "f16f8291bd7a9e35d2fc2b97a19e5553.dir",
+      "size": 3807099,
+      "nfiles": 11,
+      "file_sha256": "f53fb024c7da4310fbfbe7757abb1a3eb70197160c64d4ae458f68c0c3f99f3b"
+    },
+    "capture_dvc_pointer": {
+      "path": "artifacts/cata_raid_program/phase1_efd52f9c_magmaw_smoke_20260815.dvc",
+      "md5": "1bfde6a968962da8defd5895d303cc12.dir",
+      "size": 61023213,
+      "nfiles": 3,
+      "file_sha256": "4ce34592e4e64a82ff8d5b602dca903e732381ab08cbbbad1fad47db723bc4d2"
+    },
+    "remote_verified": true,
+    "directory_metadata_retained": true,
+    "local_payload_evicted": false
+  }
+}
