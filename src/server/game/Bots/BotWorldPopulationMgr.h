@@ -161,6 +161,7 @@ struct BotWorldExperimentConfig
     float ValidationRoutePatrolFutureGuardMarginYards = 0.0f;
     uint32 ValidationRoutePatrolPullOwnerRosterSlot = 0;
     uint32 ValidationRouteExpectedAliveCount = 0;
+    uint32 ValidationRouteActivationAreaTriggerId = 0;
     uint32 ValidationRouteActivationDataId = 0;
     uint32 ValidationRouteActivationDataValue = 0;
     uint32 ValidationRouteActivationSpawnGroupId = 0;
@@ -555,6 +556,7 @@ private:
         float PatrolFutureGuardMarginYards = 0.0f;
         uint32 PatrolPullOwnerRosterSlot = 0;
         uint32 ExpectedAliveCount = 0;
+        uint32 ActivationAreaTriggerId = 0;
         uint32 ActivationDataId = 0;
         uint32 ActivationDataValue = 0;
         uint32 ActivationSpawnGroupId = 0;

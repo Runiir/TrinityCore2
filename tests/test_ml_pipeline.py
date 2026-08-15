@@ -1933,6 +1933,7 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert omnotron["target_priority"]["alternate_target_entries"] == [42166, 42178, 42179, 42180]
     assert "interrupts" in omnotron["required_evidence"]
     assert slabhide["x"] == 1292.352
+    assert slabhide["activation_area_trigger_id"] == 6070
     assert slabhide["activation_data_id"] == 10
     assert slabhide["activation_data_value"] == 2
     assert slabhide["activation_summon_entry"] == 0
@@ -1948,6 +1949,7 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert corborus["bot_start_y"] == 864.733
     assert corborus["bot_start_z"] == 287.98
     assert corborus["bot_start_o"] == 0.25
+    assert corborus["activation_area_trigger_id"] == 6076
     assert corborus["activation_data_id"] == 10
     assert corborus["activation_data_value"] == 1
     assert corborus["activation_summon_entry"] == 0
@@ -7254,6 +7256,7 @@ def test_live_bot_validation_config_writes_alternate_route_targets(tmp_path):
             "hazard_radius_yards": 6.0,
             "hazard_safety_margin_yards": 2.5,
             "cluster_radius_yards": 80.0,
+            "activation_area_trigger_id": 6076,
             "expected_bot_count": 10,
         },
     )
@@ -7271,6 +7274,7 @@ def test_live_bot_validation_config_writes_alternate_route_targets(tmp_path):
     assert "BotWorld.ValidationRoute.HazardRadiusYards = 6.0" in config_text
     assert "BotWorld.ValidationRoute.HazardSafetyMarginYards = 2.5" in config_text
     assert "BotWorld.ValidationRoute.ClusterRadiusYards = 80.0" in config_text
+    assert "BotWorld.ValidationRoute.ActivationAreaTriggerId = 6076" in config_text
     assert "BotProgression.AllowDungeons = 1" in config_text
 
 

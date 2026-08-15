@@ -779,6 +779,7 @@ def write_validation_config(
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.HazardRadiusYards", str(float(route.get("hazard_radius_yards") or 0.0)))
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.HazardSafetyMarginYards", str(float(route.get("hazard_safety_margin_yards") or 0.0)))
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ClusterRadiusYards", str(float(route.get("cluster_radius_yards") or 0.0)))
+        text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ActivationAreaTriggerId", str(int(route.get("activation_area_trigger_id") or 0)))
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ActivationDataId", str(int(route.get("activation_data_id") or 0)))
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ActivationDataValue", str(int(route.get("activation_data_value") or 0)))
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ActivationSpawnGroupId", str(int(route.get("activation_spawn_group_id") or 0)))

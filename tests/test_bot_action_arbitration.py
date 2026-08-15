@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 
@@ -665,3 +666,68 @@ def test_native_route_interactions_use_player_handlers_and_observed_postconditio
     ]
     assert "adaptiveNativeRouteOwnsNode" in route_adapter
     assert '"native_route_contract_owns_node"' in route_adapter
+
+
+def test_dungeon_intro_activation_uses_native_area_trigger_opcode() -> None:
+    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
+        encoding="utf-8"
+    )
+    header = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text(
+        encoding="utf-8"
+    )
+    config = (ROOT / "src/server/worldserver/worldserver.conf.dist").read_text(
+        encoding="utf-8"
+    )
+    live_runner = (ROOT / "tools/bot_ml/run_live_bot_validation.py").read_text(
+        encoding="utf-8"
+    )
+
+    activation = source[
+        source.index("auto tryValidationRouteActivation"):
+        source.index("auto routeTankFocusTarget")
+    ]
+    assert "ValidationRouteActivationAreaTriggerId" in header
+    assert "BotWorld.ValidationRoute.ActivationAreaTriggerId = 0" in config
+    assert 'readInt(routeJson, "activation_area_trigger_id")' in source
+    assert '"activation_area_trigger_id"' in live_runner
+    assert "sAreaTriggerStore.LookupEntry(triggerId)" in activation
+    assert "bot->IsInAreaTriggerRadius(trigger)" in activation
+    assert "BotNativeAction::Move" in activation
+    assert "BotNativeAction::AreaTrigger" in activation
+    assert "struct AreaTrigger" in (ROOT / "src/server/game/Bots/BotNativeActionIntent.h").read_text(
+        encoding="utf-8"
+    )
+    assert "HandleAreaTriggerOpcode(areaTrigger)" in source
+    assert '"native_area_trigger_submitted"' in activation
+    assert "InstanceScript::SetData" in activation
+    assert "->SetData(" not in activation
+    assert "SpawnGroupSpawn(" not in activation
+    assert "AI()->DoAction(" not in activation
+    assert "SummonCreature(" not in activation
+
+    scenario_config = json.loads((
+        ROOT / "experiments/configs/validation_scenarios_cata_001.json"
+    ).read_text(encoding="utf-8"))
+    stonecore_steps = {
+        step["label"]: step
+        for scenario in scenario_config["scenarios"]
+        if scenario["id"] == "stonecore_5n"
+        for step in scenario["route"]
+    }
+    assert stonecore_steps["Corborus"]["activation_area_trigger_id"] == 6076
+    assert stonecore_steps["Slabhide"]["activation_area_trigger_id"] == 6070
+
+    generated_routes = [
+        json.loads(line)
+        for line in (
+            ROOT / "dataset/validation_scenarios/validation_routes.jsonl"
+        ).read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    stonecore_routes = {
+        route["label"]: route
+        for route in generated_routes
+        if route["scenario_id"] == "stonecore_5n"
+    }
+    assert stonecore_routes["Corborus"]["activation_area_trigger_id"] == 6076
+    assert stonecore_routes["Slabhide"]["activation_area_trigger_id"] == 6070

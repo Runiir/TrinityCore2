@@ -3888,6 +3888,7 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     Cohort().Config.ValidationRouteMinimumDistanceSourceEntry = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.MinimumDistanceSourceEntry", Cohort().Config.ValidationRouteMinimumDistanceSourceEntry);
     Cohort().Config.ValidationRouteMinimumDistanceYards = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.MinimumDistanceYards", Cohort().Config.ValidationRouteMinimumDistanceYards);
     Cohort().Config.ValidationRouteClusterRadiusYards = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.ClusterRadiusYards", Cohort().Config.ValidationRouteClusterRadiusYards);
+    Cohort().Config.ValidationRouteActivationAreaTriggerId = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.ActivationAreaTriggerId", Cohort().Config.ValidationRouteActivationAreaTriggerId);
     Cohort().Config.ValidationRouteActivationDataId = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.ActivationDataId", Cohort().Config.ValidationRouteActivationDataId);
     Cohort().Config.ValidationRouteActivationDataValue = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.ActivationDataValue", Cohort().Config.ValidationRouteActivationDataValue);
     Cohort().Config.ValidationRouteActivationSummonEntry = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.ActivationSummonEntry", Cohort().Config.ValidationRouteActivationSummonEntry);
@@ -4473,6 +4474,7 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         node.PatrolFutureGuardMarginYards = readFloat(routeJson, "patrol_future_guard_margin_yards");
         node.PatrolPullOwnerRosterSlot = uint32(std::max(0, readInt(routeJson, "patrol_pull_owner_roster_slot")));
         node.ExpectedAliveCount = uint32(std::max(0, readInt(routeJson, "expected_alive_count")));
+        node.ActivationAreaTriggerId = uint32(std::max(0, readInt(routeJson, "activation_area_trigger_id")));
         node.ActivationDataId = uint32(std::max(0, readInt(routeJson, "activation_data_id")));
         node.ActivationDataValue = uint32(std::max(0, readInt(routeJson, "activation_data_value")));
         node.ActivationSpawnGroupId = uint32(std::max(0, readInt(routeJson, "activation_spawn_group_id")));
@@ -4733,6 +4735,7 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     Party().ValidationRouteObservedDeadScriptTarget = false;
     Party().ValidationRoutePackClearCandidateSinceMs = 0;
     Party().ValidationRouteNodeClearCandidateSinceMs = 0;
+    Cohort().Config.ValidationRouteActivationAreaTriggerId = node.ActivationAreaTriggerId;
     Cohort().Config.ValidationRouteActivationDataId = node.ActivationDataId;
     Cohort().Config.ValidationRouteActivationDataValue = node.ActivationDataValue;
     Cohort().Config.ValidationRouteActivationSpawnGroupId = node.ActivationSpawnGroupId;
@@ -9503,6 +9506,22 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
             use << action.Target;
             bot->GetSession()->HandleGameObjectUseOpcode(use);
             return BotActionArbitration::Outcome::Committed("native_gameobject_use_submitted");
+        }
+        else if constexpr (std::is_same_v<T, BotNativeAction::AreaTrigger>)
+        {
+            AreaTriggerEntry const* trigger =
+                sAreaTriggerStore.LookupEntry(action.TriggerId);
+            if (!trigger || trigger->ContinentID != bot->GetMapId())
+                return BotActionArbitration::Outcome::Unsafe(
+                    "native_area_trigger_invalid");
+            if (!bot->IsInAreaTriggerRadius(trigger))
+                return BotActionArbitration::Outcome::Retryable(
+                    "native_area_trigger_out_of_radius");
+            WorldPacket areaTrigger(CMSG_AREATRIGGER, sizeof(uint32));
+            areaTrigger << action.TriggerId;
+            bot->GetSession()->HandleAreaTriggerOpcode(areaTrigger);
+            return BotActionArbitration::Outcome::Committed(
+                "native_area_trigger_submitted");
         }
         else if constexpr (std::is_same_v<T, BotNativeAction::GossipOpen>)
         {
@@ -18379,12 +18398,90 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     auto tryValidationRouteActivation = [this, &state, bot, &power, stage, activity](Unit* seenTarget, char const* reason) -> bool
     {
         (void)reason;
-        if ((!Cohort().Config.ValidationRouteActivationDataId
+        if ((!Cohort().Config.ValidationRouteActivationAreaTriggerId
+            && !Cohort().Config.ValidationRouteActivationDataId
             && !Cohort().Config.ValidationRouteActivationSpawnGroupId
             && (!Cohort().Config.ValidationRouteActivationActionEntry || !Cohort().Config.ValidationRouteActivationActionId)
             && !Cohort().Config.ValidationRouteActivationSummonEntry
-            && !Cohort().Config.ValidationRouteOpenerSummonEntry) || !bot)
+            && !Cohort().Config.ValidationRouteOpenerSummonEntry) || !bot
+            || !bot->GetSession())
             return false;
+
+        // A real client reports DBC area-trigger crossings with
+        // CMSG_AREATRIGGER. Server-side bots have a native WorldSession but no
+        // client process, so walking through the volume alone cannot start
+        // encounters such as Corborus or Slabhide. Submit the same opcode only
+        // after the native radius check accepts the tank's real position. This
+        // preserves the encounter script as authority and never falls back to
+        // privileged InstanceScript::SetData activation.
+        if (uint32 triggerId = Cohort().Config.ValidationRouteActivationAreaTriggerId)
+        {
+            if (std::string(GetDungeonRole(bot)) != "tank")
+                return false;
+
+            AreaTriggerEntry const* trigger = sAreaTriggerStore.LookupEntry(triggerId);
+            if (!trigger || trigger->ContinentID != bot->GetMapId())
+            {
+                if (!state.ValidationRouteActivationAttempts)
+                {
+                    state.ValidationRouteActivationAttempts = 1;
+                    std::string raw = BuildRawJson(bot, seenTarget);
+                    std::string semantic = BuildSemanticJson(bot, seenTarget,
+                        "validation_route_activation", &power, stage, activity);
+                    RecordEvent(state, bot, "validation_route_activation", seenTarget,
+                        "native_area_trigger_unavailable", raw.c_str(),
+                        semantic.c_str(), 0.0f, triggerId);
+                }
+                return false;
+            }
+
+            if (!bot->IsInAreaTriggerRadius(trigger))
+            {
+                BotActionArbitration::Outcome moveOutcome =
+                    ExecuteNativeActionIntent(state, bot,
+                    BotNativeAction::Move{ trigger->Pos.X, trigger->Pos.Y,
+                        trigger->Pos.Z },
+                    BotMovementArbitration::Owner::Route,
+                    BotMovementArbitration::Priority::Route);
+                bool moved = moveOutcome.Result
+                    == BotActionArbitration::Disposition::Committed;
+                if (!state.ValidationRouteActivationAttempts)
+                {
+                    state.ValidationRouteActivationAttempts = 1;
+                    std::string raw = BuildRawJson(bot, seenTarget);
+                    std::string semantic = BuildSemanticJson(bot, seenTarget,
+                        "validation_route_activation", &power, stage, activity);
+                    RecordEvent(state, bot, "validation_route_activation", seenTarget,
+                        moved ? "native_area_trigger_path" : "native_area_trigger_path_rejected",
+                        raw.c_str(), semantic.c_str(),
+                        bot->GetExactDist(trigger->Pos.X, trigger->Pos.Y,
+                            trigger->Pos.Z), triggerId);
+                }
+                return moved;
+            }
+
+            BotActionArbitration::Outcome activationOutcome =
+                ExecuteNativeActionIntent(state, bot,
+                    BotNativeAction::AreaTrigger{ triggerId },
+                    BotMovementArbitration::Owner::Route,
+                    BotMovementArbitration::Priority::Route);
+            if (activationOutcome.Result
+                != BotActionArbitration::Disposition::Committed)
+                return false;
+            ++Party().ValidationRouteActivationAttempts;
+            Party().ValidationRouteActivationApplied = true;
+            state.ValidationRouteActivationAttempts =
+                Party().ValidationRouteActivationAttempts;
+            state.ValidationRouteActivationApplied = true;
+            std::string raw = BuildRawJson(bot, seenTarget);
+            std::string semantic = BuildSemanticJson(bot, seenTarget,
+                "validation_route_activation", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_activation", seenTarget,
+                "native_area_trigger_submitted", raw.c_str(), semantic.c_str(),
+                0.0f, triggerId);
+            return true;
+        }
+
         // These legacy fields describe privileged server-side activation
         // (SetData, SpawnGroupSpawn, AI::DoAction, or SummonCreature). They are
         // never executed by autonomous bots. Encounter modules must instead
@@ -18813,7 +18910,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 return true;
         return false;
     };
-    bool hasValidationRouteActivation = Cohort().Config.ValidationRouteActivationDataId
+    bool hasValidationRouteActivation = Cohort().Config.ValidationRouteActivationAreaTriggerId
+        || Cohort().Config.ValidationRouteActivationDataId
         || Cohort().Config.ValidationRouteActivationSpawnGroupId
         || Cohort().Config.ValidationRouteActivationActionEntry
         || Cohort().Config.ValidationRouteActivationSummonEntry
@@ -30869,7 +30967,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     if (Cohort().Config.ValidationRouteKind == "boss"
         && hasValidationRouteActivation
         && !Party().ValidationRouteActivationApplied
-        && routeDistance <= routeArrivalRadius
+        && (Cohort().Config.ValidationRouteActivationAreaTriggerId
+            || routeDistance <= routeArrivalRadius)
         && tryValidationRouteActivation(nullptr, "boss_route_early_activation"))
     {
         action = "validation_route_activate_target";
@@ -40181,6 +40280,7 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
         json << Cohort().Config.ValidationRouteAddTargetEntries[index];
     }
     json << "]"
+         << ",\"activation_area_trigger_id\":" << Cohort().Config.ValidationRouteActivationAreaTriggerId
          << ",\"activation_data_id\":" << Cohort().Config.ValidationRouteActivationDataId
          << ",\"activation_data_value\":" << Cohort().Config.ValidationRouteActivationDataValue
          << ",\"activation_spawn_group_id\":" << Cohort().Config.ValidationRouteActivationSpawnGroupId
@@ -40920,7 +41020,8 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
     uint64 sinceProgressMs = state.LastMovementProgressMs ? nowMs - state.LastMovementProgressMs : 0;
     uint64 sincePathChangeMs = state.LastPathChangeMs ? nowMs - state.LastPathChangeMs : 0;
     MotionMaster const* nativeMotion = bot ? bot->GetMotionMaster() : nullptr;
-    bool hasValidationRouteActivation = Cohort().Config.ValidationRouteActivationDataId
+    bool hasValidationRouteActivation = Cohort().Config.ValidationRouteActivationAreaTriggerId
+        || Cohort().Config.ValidationRouteActivationDataId
         || Cohort().Config.ValidationRouteActivationSpawnGroupId
         || Cohort().Config.ValidationRouteActivationActionEntry
         || Cohort().Config.ValidationRouteActivationSummonEntry
@@ -41107,6 +41208,7 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
         json << Cohort().Config.ValidationRouteAddTargetEntries[index];
     }
     json << "\"},"
+         << "{\"name\":\"validation_route_config_activation_area_trigger_id\",\"value\":" << Cohort().Config.ValidationRouteActivationAreaTriggerId << "},"
          << "{\"name\":\"validation_route_config_activation_data_id\",\"value\":" << Cohort().Config.ValidationRouteActivationDataId << "},"
          << "{\"name\":\"validation_route_config_activation_spawn_group_id\",\"value\":" << Cohort().Config.ValidationRouteActivationSpawnGroupId << "},"
          << "{\"name\":\"validation_route_config_activation_action_entry\",\"value\":" << Cohort().Config.ValidationRouteActivationActionEntry << "},"

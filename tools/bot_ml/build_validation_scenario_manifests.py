@@ -971,6 +971,7 @@ def build_manifests(
             route["bot_start_z"] = float(bot_start.get("z") or step.get("bot_start_z") or 0.0)
             route["bot_start_o"] = float(bot_start.get("o") or step.get("bot_start_o") or 0.0)
             route["opener_target_entry"] = int(step.get("opener_target_entry") or 0)
+            route["activation_area_trigger_id"] = int(step.get("activation_area_trigger_id") or 0)
             route["activation_data_id"] = int(step.get("activation_data_id") or 0)
             route["activation_data_value"] = int(step.get("activation_data_value") or 0)
             route["activation_spawn_group_id"] = int(step.get("activation_spawn_group_id") or 0)

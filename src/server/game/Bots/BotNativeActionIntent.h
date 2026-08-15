@@ -17,6 +17,7 @@ struct GossipOpen { ObjectGuid Target; };
 struct GossipSelect { ObjectGuid Target; uint32 MenuId = 0; uint32 OptionId = 0; };
 struct SpellClick { ObjectGuid Target; };
 struct GameObjectUse { ObjectGuid Target; };
+struct AreaTrigger { uint32 TriggerId = 0; };
 struct VehicleEnter { ObjectGuid Target; int8 Seat = -1; };
 struct VehicleAction { uint32 SpellId = 0; ObjectGuid Target; };
 struct VehicleExit { };
@@ -26,7 +27,7 @@ struct ReleaseSpirit { };
 struct ReclaimCorpse { ObjectGuid Corpse; };
 
 using Intent = std::variant<CastSpell, StartAttack, StopAttack, Move,
-    GossipOpen, GossipSelect, SpellClick, GameObjectUse, VehicleEnter, VehicleAction,
+    GossipOpen, GossipSelect, SpellClick, GameObjectUse, AreaTrigger, VehicleEnter, VehicleAction,
     VehicleExit, PetCommand, UseItem, ReleaseSpirit, ReclaimCorpse>;
 
 inline BotActionArbitration::ResourceMask RequiredResources(Intent const& intent)
@@ -51,6 +52,7 @@ inline BotActionArbitration::ResourceMask RequiredResources(Intent const& intent
             || std::is_same_v<T, GossipSelect>
             || std::is_same_v<T, SpellClick>
             || std::is_same_v<T, GameObjectUse>
+            || std::is_same_v<T, AreaTrigger>
             || std::is_same_v<T, VehicleEnter>
             || std::is_same_v<T, VehicleExit>
             || std::is_same_v<T, ReleaseSpirit>
