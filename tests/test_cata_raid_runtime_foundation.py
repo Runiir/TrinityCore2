@@ -733,6 +733,8 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "ValidationRouteSplitTankThreatHeadroomMultiplier" in post_seed
     assert "BotRaidDrudgeNativeRush::Evaluate(input)" in post_seed
     assert '"drudge_native_tank_threat_build"' in post_seed
+    assert '"drudge_native_tank_threat_sustain"' in post_seed
+    assert "ShouldBuildTankThreat(" in post_seed
     assert '"drudge_pre_first_rush_ready_hold"' in post_seed
     assert '"drudge_native_farthest_seed_wait"' in post_seed
     assert "ExecuteProfileCombatAction(" in post_seed

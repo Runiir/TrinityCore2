@@ -1,0 +1,66 @@
+{
+  "schema": "cata_raid_compact_evidence_summary_v1",
+  "source_commit": "dc381440698448c7a2e32f5427d9db1871f81051",
+  "source_tree": "cf995e281cb8a632a08e349090ebaafe4d2e219a",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "classification": "gameplay_failure",
+  "failure_reason": "drudge_reseparation_deadline_missed",
+  "elapsed_seconds": 324.388,
+  "route_generation": 3,
+  "route_node_id": "e35c52b904dcbcbe",
+  "route_label": "Magmaw Drudge pair",
+  "alive_at_terminal": 2,
+  "decisive_findings": [
+    "Both ordinary trained seed casts succeeded before the first native Rush.",
+    "A one-tick 2.5x tank-threat and unique-farthest readiness snapshot was reached, but the seeded DoTs continued generating threat while tanks stopped attacking.",
+    "Source 250141 then selected tank 30002 at 45.019 yards; source 250140 selected healer 30004 at 37.5432 yards. Native SMART_TARGET_FARTHEST was not overridden.",
+    "Six of ten delivered native Rush observations were exactly reseparated, but later unresolved observations reached the native deadline after eight deaths.",
+    "The remediation makes assigned tanks sustain ordinary single-target profile threat until the first native Rush is actually observed; all non-tank offense remains suppressed."
+  ],
+  "native_rush": {
+    "delivered_count": 10,
+    "landed_count": 10,
+    "reseparated_observation_count": 6,
+    "first_source_250141_target_guid": 30002,
+    "first_source_250141_distance": 45.019,
+    "first_source_250140_target_guid": 30004,
+    "first_source_250140_distance": 37.5432
+  },
+  "resource_summary": {
+    "sample_count": 131,
+    "mean_cpu_percent_one_core": 34.579,
+    "minimum_rss_bytes": 1389162496,
+    "maximum_rss_bytes": 1449971712,
+    "log_bytes": 37006453,
+    "normalized_bytes": 37024676
+  },
+  "identity": {
+    "binary_sha256": "776d1687cec0a66e925bb73b4b7849ab44885c072eb8a8c9fdab1682b65ced52",
+    "build_receipt_sha256": "9ed9cdd24e8913270fe293ec7490d61b8d026a3771978e7dda6235cd1188bacb",
+    "raw_sha256": "0de225e1b6af215fca6025953ced79ac00721a2759c0d16dd66fa1e4985c1d73",
+    "server_log_sha256": "50d1d90d78ed8b5e7b1d40b46cf68ccfd6fd270b79beb7ac1b62b6b50c078675",
+    "report_sha256": "8d36c02024da515bc3538c4fb09e26fad1474a37a2521709c4191dead1d1e8da"
+  },
+  "cleanup": {
+    "gate_passed": true,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true,
+    "forbidden_assistance_observed": false
+  },
+  "dvc": {
+    "capture_dir_md5": "9d96cdf75c42d7a4320ecb7b80bcce3f.dir",
+    "capture_size_bytes": 74311717,
+    "capture_file_count": 3,
+    "build_prep_dir_md5": "e81a4a13d09ba3a14ee922cc6f7a0674.dir",
+    "build_prep_size_bytes": 3807924,
+    "build_prep_file_count": 11,
+    "remote_verified": true,
+    "local_payload_evicted": false
+  },
+  "validation": {
+    "bounded_tests_passed": 394,
+    "native_worldserver_build_passed": true
+  },
+  "next_action": "Build and run the exact descendant whose temporal pre-Rush threat gate keeps both assigned tanks executing real single-target profiles until the first native Rush edge."
+}

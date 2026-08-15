@@ -60,6 +60,13 @@ Require one exact tuple across config, generated route, runtime status, capture,
   edge, inspect the real live threat lists with the core selector predicate and
   require each configured seed to be the unique farthest eligible player. Do
   not rewrite threat or force the native target.
+- Treat pre-native-selector threat readiness as a temporal invariant, not a
+  one-tick threshold. Seed DoTs and required healing keep generating threat
+  after readiness first becomes true, so assigned tanks must continue ordinary
+  single-target profile actions until the first native selector edge is
+  actually observed. Re-evaluate victim, headroom, and unique-farthest identity
+  every decision tick; a transient ready snapshot must never stop tank threat
+  production while the native timer is still running.
 - Keep the same guard after the first Rush. Before admitting a new ordinary DPS
   action, prove that this prospective threat-list member is still nearer than
   the configured opposite-lane seed by the sealed arrival margin. A static

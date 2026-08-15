@@ -55,6 +55,17 @@ inline SourceResult Evaluate(SourceInput const& input)
         && result.SeedIsUniqueFarthest;
     return result;
 }
+
+// Seed DoTs and required friendly support continue to create native threat
+// after a single readiness snapshot.  Until the first Rush is actually
+// observed, an assigned tank must therefore keep submitting ordinary
+// single-target profile actions even while the current headroom is secure.
+// After the first Rush, only rebuild when the live headroom has regressed.
+inline bool ShouldBuildTankThreat(bool currentScopeHasNativeRush,
+    SourceResult const& readiness)
+{
+    return !currentScopeHasNativeRush || !readiness.TankThreatSecure;
+}
 }
 
 #endif

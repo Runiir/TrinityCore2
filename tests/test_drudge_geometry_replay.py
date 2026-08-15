@@ -50,6 +50,14 @@ int main()
     assert(ready.TankThreatSecure);
     assert(ready.SeedIsUniqueFarthest);
     assert(ready.Ready);
+    // Exact dc381 live counterexample: a one-tick secure snapshot was followed
+    // by periodic seed threat, ownership loss, and a bad first native target.
+    // The assigned tank must sustain ordinary threat until the first Rush
+    // actually exists; afterward a secure source no longer needs this special
+    // pre-Rush action, while an insecure source still does.
+    assert(BotRaidDrudgeNativeRush::ShouldBuildTankThreat(false, ready));
+    assert(!BotRaidDrudgeNativeRush::ShouldBuildTankThreat(true, ready));
+    assert(BotRaidDrudgeNativeRush::ShouldBuildTankThreat(true, rejected855));
     readyRush.SeedDistance = 33.0f;
     assert(!BotRaidDrudgeNativeRush::Evaluate(readyRush).SeedIsUniqueFarthest);
 

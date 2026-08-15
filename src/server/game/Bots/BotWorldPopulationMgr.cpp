@@ -21380,7 +21380,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         {
             if (!assignedTank || !laneSource->IsAlive()
                 || laneSource->GetVictim() != bot
-                || nativeRushReadiness[laneIndex].TankThreatSecure)
+                || !BotRaidDrudgeNativeRush::ShouldBuildTankThreat(
+                    currentScopeHasNativeRush, nativeRushReadiness[laneIndex]))
                 return false;
             BotRaidAreaAuthority::SetAllOffenseSuppressed(
                 bot->GetGUID().GetRawValue(), false);
@@ -21397,7 +21398,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 bot->GetGUID().GetRawValue(), true);
             BotRaidAreaAuthority::Set(bot->GetGUID().GetRawValue(), true);
             if (succeeded)
-                record(laneSource, "drudge_native_tank_threat_build",
+                record(laneSource, currentScopeHasNativeRush
+                    ? "drudge_native_tank_threat_build"
+                    : "drudge_native_tank_threat_sustain",
                     nativeRushReadiness[laneIndex].TankThreat, tankAction.SpellId);
             return succeeded;
         };
