@@ -1,0 +1,53 @@
+{
+  "schema": "cata_raid_compact_live_run_summary_v1",
+  "captured_at_utc": "2026-08-15",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "source_commit": "37ab4836ebd1f22cc3d9abe1ca4a2c4d6cc4456a",
+  "source_tree": "f5412fda2b1c6e34019c70d0438392053fb01fd3",
+  "binary_sha256": "2a5c6e3996d3bcbae540bea54cf163dd47708ed155cf27c8a5bc174a0d9410b2",
+  "build_receipt_sha256": "4a892c62c06b78525feac4637c3b9917a53fa7b3060a796c3cbd52808f41cf1d",
+  "classification": "gameplay_failure",
+  "failure_reason": "drudge_reseparation_deadline_missed",
+  "elapsed_seconds": 294.149,
+  "worldserver_exit_code": 0,
+  "cleanup_zero_bots_and_leases": true,
+  "identity_stable": true,
+  "forbidden_assistance_observed": false,
+  "chainwielder_cleared": true,
+  "drudge_seed_complete": true,
+  "drudge_seed_roster_guids": [30006, 30008],
+  "drudge_profile_action_roster_guids": [30001, 30002, 30006, 30007, 30008, 30009, 30010],
+  "drudge_observations_delivered": 10,
+  "drudge_observations_reseparated_exact_roster": 6,
+  "first_unresolved_pair": [
+    {"sequence": 7, "source_spawn_id": 250141, "target_guid": 30006, "selected_distance": 45.4405},
+    {"sequence": 8, "source_spawn_id": 250140, "target_guid": 30007, "selected_distance": 35.6512}
+  ],
+  "diagnosis": "Persistent outward tank recovery closed three native Rush pairs. At the repeated melee-stop geometry, source 250140 then selected same-lane slot 7 instead of cross-lane slot 8; the fourth pair did not reseparate and two members died before the next native interval.",
+  "resource_sampling": {
+    "sample_count": 234,
+    "mean_cpu_percent_one_core": 34.211,
+    "minimum_rss_bytes": 1389174784,
+    "maximum_rss_bytes": 1450110976
+  },
+  "evidence": {
+    "build_prep_dvc": {
+      "md5": "57fafa8953f6c2e99b2d5e1c2306984d.dir",
+      "size": 3807103,
+      "nfiles": 11,
+      "pointer_sha256": "70d3f7f7ce2454cf18c33c1215e7811c803b0b5de9478990e2f629097d00edd5"
+    },
+    "smoke_dvc": {
+      "md5": "b0805bc14c5089d05b66860b6385de91.dir",
+      "size": 67098688,
+      "nfiles": 3,
+      "pointer_sha256": "5281990337e51e8f3dbb73d666a4001e87eb1c0142ae91f2855601ca0c4cb1d0"
+    },
+    "report_file_sha256": "d4317ea2cd94c954108979c780c8f34b2b2b53850871b9634a1e4f58eb48e687",
+    "raw_sha256": "8e66552b9b41f2c3feea1ae267042a18564fc7873633487bf369535c578f8e35",
+    "worldserver_log_sha256": "d35dc5e677ce1afceb822dcb69ce0c5695f0e172668d6cfba97e6cfe14eb1303",
+    "remote_synced": true,
+    "local_payload_evicted": false
+  },
+  "next_action": "Use the exact native-path-proven steady-state member anchors and identical generator/runtime repeated-farthest predicate, then rebuild and rerun Magmaw."
+}

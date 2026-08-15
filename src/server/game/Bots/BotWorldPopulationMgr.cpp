@@ -4066,6 +4066,9 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         node.SplitTankArrivalToleranceYards = readFloat(routeJson, "split_tank_arrival_tolerance_yards");
         node.SplitNativeMeleeStopYards = readFloat(routeJson, "split_native_melee_stop_yards");
         if (!ExtractJsonStrictUIntArrayField(
+            routeJson, "split_healer_roster_slots", node.SplitHealerRosterSlots))
+            node.SplitHealerRosterSlots.clear();
+        if (!ExtractJsonStrictUIntArrayField(
             routeJson, "split_seed_roster_slots", node.SplitSeedRosterSlots))
             node.SplitSeedRosterSlots.clear();
         node.SplitSeedMaxRangeYards = readFloat(routeJson, "split_seed_max_range_yards");
@@ -4205,6 +4208,7 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     Cohort().Config.ValidationRouteSplitLaneARosterSlots = node.SplitLaneARosterSlots;
     Cohort().Config.ValidationRouteSplitLaneBRosterSlots = node.SplitLaneBRosterSlots;
     Cohort().Config.ValidationRouteSplitLaneTankSlots = node.SplitLaneTankSlots;
+    Cohort().Config.ValidationRouteSplitHealerRosterSlots = node.SplitHealerRosterSlots;
     Cohort().Config.ValidationRouteSplitMemberAnchors = node.SplitMemberAnchors;
     Cohort().Config.ValidationRouteSplitTankCombatAnchors = node.SplitTankCombatAnchors;
     Cohort().Config.ValidationRouteSplitTankNavigationAnchors =
@@ -18805,16 +18809,26 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             Cohort().Config.ValidationRouteSplitTankRecoveryAnchors)
             recoveryTankAnchorSlots.push_back(anchor.RosterSlot);
         std::sort(recoveryTankAnchorSlots.begin(), recoveryTankAnchorSlots.end());
-        auto seedSlotHasExactDps = [this](uint32 oneBasedSlot) -> bool
+        auto rosterSlotHasExactRole = [this](uint32 oneBasedSlot, char const* role) -> bool
         {
             for (auto const& [guid, roster] : Cohort().Raid.RosterByGuid)
             {
                 (void)guid;
                 if (roster.SlotIndex + 1 == oneBasedSlot)
-                    return roster.Active && roster.LeaseOwned && roster.Role == "dps";
+                    return roster.Active && roster.LeaseOwned && roster.Role == role;
             }
             return false;
         };
+        std::vector<uint32> healerSlots =
+            Cohort().Config.ValidationRouteSplitHealerRosterSlots;
+        std::sort(healerSlots.begin(), healerSlots.end());
+        bool const healerSlotsResolved = healerSlots.size() == 3
+            && std::adjacent_find(healerSlots.begin(), healerSlots.end()) == healerSlots.end()
+            && std::all_of(healerSlots.begin(), healerSlots.end(),
+                [&rosterSlotHasExactRole](uint32 oneBasedSlot)
+                {
+                    return rosterSlotHasExactRole(oneBasedSlot, "healer");
+                });
         bool const seedSlotsResolved =
             Cohort().Config.ValidationRouteSplitSeedRosterSlots.size() == 2
             && Cohort().Config.ValidationRouteSplitSeedRosterSlots[0]
@@ -18835,8 +18849,77 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 Cohort().Config.ValidationRouteSplitLaneTankSlots.end(),
                 Cohort().Config.ValidationRouteSplitSeedRosterSlots[1])
                 == Cohort().Config.ValidationRouteSplitLaneTankSlots.end()
-            && seedSlotHasExactDps(Cohort().Config.ValidationRouteSplitSeedRosterSlots[0])
-            && seedSlotHasExactDps(Cohort().Config.ValidationRouteSplitSeedRosterSlots[1]);
+            && rosterSlotHasExactRole(
+                Cohort().Config.ValidationRouteSplitSeedRosterSlots[0], "dps")
+            && rosterSlotHasExactRole(
+                Cohort().Config.ValidationRouteSplitSeedRosterSlots[1], "dps");
+        auto repeatedNativeFarthestGeometrySafe = [this, &healerSlots]() -> bool
+        {
+            if (Cohort().Config.ValidationRouteSplitSeedRosterSlots.size() != 2
+                || Cohort().Config.ValidationRouteSplitLaneARosterSlots.size() != 5
+                || Cohort().Config.ValidationRouteSplitLaneBRosterSlots.size() != 5
+                || Cohort().Config.ValidationRouteSplitLaneTankSlots.size() != 2
+                || Cohort().Config.ValidationRouteSplitTankRecoveryAnchors.size() != 2
+                || Cohort().Config.ValidationRouteSplitNativeMeleeStopYards <= 0.0f
+                || Cohort().Config.ValidationRouteSplitArrivalToleranceYards <= 0.0f)
+                return false;
+            auto findAnchor = [](std::vector<ValidationRouteMemberAnchor> const& anchors,
+                                  uint32 rosterSlot) -> ValidationRouteMemberAnchor const*
+            {
+                auto const itr = std::find_if(anchors.begin(), anchors.end(),
+                    [rosterSlot](ValidationRouteMemberAnchor const& anchor)
+                    {
+                        return anchor.RosterSlot == rosterSlot;
+                    });
+                return itr == anchors.end() ? nullptr : &*itr;
+            };
+            std::array<std::vector<uint32> const*, 2> const laneSets = {
+                &Cohort().Config.ValidationRouteSplitLaneARosterSlots,
+                &Cohort().Config.ValidationRouteSplitLaneBRosterSlots,
+            };
+            for (uint32 sourceIndex = 0; sourceIndex < 2; ++sourceIndex)
+            {
+                uint32 const seedSlot =
+                    Cohort().Config.ValidationRouteSplitSeedRosterSlots[sourceIndex];
+                ValidationRouteMemberAnchor const* seed = findAnchor(
+                    Cohort().Config.ValidationRouteSplitMemberAnchors, seedSlot);
+                ValidationRouteMemberAnchor const* recovery = findAnchor(
+                    Cohort().Config.ValidationRouteSplitTankRecoveryAnchors,
+                    Cohort().Config.ValidationRouteSplitLaneTankSlots[sourceIndex]);
+                if (!seed || !recovery)
+                    return false;
+                float const toSeedX = seed->X - recovery->X;
+                float const toSeedY = seed->Y - recovery->Y;
+                float const toSeedDistance = std::hypot(toSeedX, toSeedY);
+                float const meleeStop =
+                    Cohort().Config.ValidationRouteSplitNativeMeleeStopYards;
+                if (toSeedDistance <= meleeStop)
+                    return false;
+                float const sourceX = recovery->X + toSeedX * meleeStop / toSeedDistance;
+                float const sourceY = recovery->Y + toSeedY * meleeStop / toSeedDistance;
+                float const seedDistance = Distance2d(sourceX, sourceY, seed->X, seed->Y);
+                std::vector<uint32> forbiddenSlots = *laneSets[sourceIndex];
+                forbiddenSlots.insert(
+                    forbiddenSlots.end(), healerSlots.begin(), healerSlots.end());
+                std::sort(forbiddenSlots.begin(), forbiddenSlots.end());
+                forbiddenSlots.erase(
+                    std::unique(forbiddenSlots.begin(), forbiddenSlots.end()),
+                    forbiddenSlots.end());
+                for (uint32 forbiddenSlot : forbiddenSlots)
+                {
+                    if (forbiddenSlot == seedSlot)
+                        continue;
+                    ValidationRouteMemberAnchor const* forbidden = findAnchor(
+                        Cohort().Config.ValidationRouteSplitMemberAnchors, forbiddenSlot);
+                    if (!forbidden
+                        || seedDistance + 0.0001f
+                            < Distance2d(sourceX, sourceY, forbidden->X, forbidden->Y)
+                                + 2.0f * Cohort().Config.ValidationRouteSplitArrivalToleranceYards)
+                        return false;
+                }
+            }
+            return true;
+        };
         bool contractResolved = Cohort().Config.ValidationRouteSplitSourceGuids.size() == 2
             && Cohort().Config.ValidationRouteSplitLaneARosterSlots.size() == 5
             && Cohort().Config.ValidationRouteSplitLaneBRosterSlots.size() == 5
@@ -18859,7 +18942,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && Cohort().Config.ValidationRouteSplitTankArrivalToleranceYards
                 <= Cohort().Config.ValidationRouteSplitArrivalToleranceYards
             && Cohort().Config.ValidationRouteSplitNativeMeleeStopYards > 0.0f
+            && healerSlotsResolved
             && seedSlotsResolved
+            && repeatedNativeFarthestGeometrySafe()
             && Cohort().Config.ValidationRouteSplitSeedMaxRangeYards > 0.0f
             && Cohort().Config.ValidationRouteMinimumDistanceYards > 0.0f
             && Cohort().Config.ValidationRouteThunderclapSpellId

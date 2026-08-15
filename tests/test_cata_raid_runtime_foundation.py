@@ -504,7 +504,7 @@ def test_bwd_magmaw_trash_splits_chainwielder_hazard_from_drudge_charge_contract
         row["roster_slot"]: row for row in drudges["split_tank_navigation_anchors"]
     }
     assert set(navigation_anchors) == {1, 2}
-    assert drudges["split_arrival_tolerance_yards"] == 2.0
+    assert drudges["split_arrival_tolerance_yards"] == 1.0
     assert drudges["split_tank_arrival_tolerance_yards"] == 1.0
     assert math.dist(
         (navigation_anchors[1]["x"], navigation_anchors[1]["y"]),
@@ -694,6 +694,7 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "candidateAction.MaxRange > 5.0f" in lane[seed_transition:seed_call]
     assert 'candidateAction.AutoAttackMode == "ranged"' not in lane[seed_transition:seed_call]
     assert 'ExtractJsonStrictUIntArrayField(\n            routeJson, "split_seed_roster_slots"' in IMPL
+    assert 'ExtractJsonStrictUIntArrayField(\n            routeJson, "split_healer_roster_slots"' in IMPL
     strict_array = IMPL[
         IMPL.index("bool ExtractJsonStrictUIntArrayField") :
         IMPL.index("bool JsonHasField")
@@ -704,8 +705,10 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "values.push_back(uint32(value))" in strict_array
     assert 'readFloat(routeJson, "split_seed_max_range_yards")' in IMPL
     assert "seedSlotsResolved" in lane[:seed_transition]
-    assert "seedSlotHasExactDps" in lane[:seed_transition]
-    assert 'roster.Role == "dps"' in lane[:seed_transition]
+    assert "healerSlotsResolved" in lane[:seed_transition]
+    assert "repeatedNativeFarthestGeometrySafe" in lane[:seed_transition]
+    assert "rosterSlotHasExactRole" in lane[:seed_transition]
+    assert 'rosterSlotHasExactRole(oneBasedSlot, "healer")' in lane[:seed_transition]
     assert "ValidationRouteSplitSeedRosterSlots[laneIndex]" in lane[
         seed_transition:seed_call
     ]
@@ -3009,6 +3012,7 @@ def test_phase1_magmaw_uses_typed_native_full_wipe_recovery_policy():
     )
     assert diagnostic_drudges["boss_recovery_policy"] == "native_full_wipe_only"
     assert diagnostic_drudges["split_member_anchors"] == drudges["split_member_anchors"]
+    assert diagnostic_drudges["split_healer_roster_slots"] == [3, 4, 5]
     assert diagnostic_drudges["split_tank_navigation_anchors"] \
         == drudges["split_tank_navigation_anchors"]
 

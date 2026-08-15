@@ -126,6 +126,7 @@ struct BotWorldExperimentConfig
     std::vector<uint32> ValidationRouteSplitLaneARosterSlots;
     std::vector<uint32> ValidationRouteSplitLaneBRosterSlots;
     std::vector<uint32> ValidationRouteSplitLaneTankSlots;
+    std::vector<uint32> ValidationRouteSplitHealerRosterSlots;
     std::vector<ValidationRouteMemberAnchor> ValidationRouteSplitMemberAnchors;
     std::vector<ValidationRouteMemberAnchor> ValidationRouteSplitTankCombatAnchors;
     std::vector<ValidationRouteMemberAnchor> ValidationRouteSplitTankNavigationAnchors;
@@ -512,6 +513,7 @@ private:
         float SplitTankArrivalToleranceYards = 0.0f;
         float SplitNativeMeleeStopYards = 0.0f;
         std::vector<uint32> SplitSeedRosterSlots;
+        std::vector<uint32> SplitHealerRosterSlots;
         float SplitSeedMaxRangeYards = 0.0f;
         uint32 ThunderclapSpellId = 0;
         uint32 ChargeSpellId = 0;

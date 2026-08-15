@@ -52,6 +52,12 @@ Require one exact tuple across config, generated route, runtime status, capture,
   hostile action range`, source danger clearance, lane side, and spacing;
   runtime must still recheck the actual hostile action, LOS, power, cooldown,
   and exact target before submission.
+- Validate native farthest-target geometry as a steady-state invariant, not
+  only at the initial pull. Reconstruct the source's post-Rush return point at
+  the sealed tank/melee-stop anchor; the intended opposite-lane DPS must remain
+  farther than every same-lane member and every healer after both arrival
+  tolerances. Run the identical predicate in manifest generation and live
+  admission, while leaving native target selection untouched.
 - Treat periodic native displacement as a deadline contract. Prove the real
   tank approach/taunt, source chase, member return paths, decision cadence, and
   exact-roster acknowledgement fit below the observed native interval. If the

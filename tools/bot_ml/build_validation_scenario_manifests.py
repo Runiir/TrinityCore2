@@ -119,10 +119,11 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
     recovery_tanks = list(step.get("split_tank_recovery_anchors") or [])
     members = list(step.get("split_member_anchors") or [])
     tank_slots = [int(value) for value in step.get("split_lane_tank_slots") or []]
+    healer_slots = [int(value) for value in step.get("split_healer_roster_slots") or []]
     seed_slots = [int(value) for value in step.get("split_seed_roster_slots") or []]
     if (len(source_guids) != 2 or len(homes) != 2 or len(tanks) != 2
             or len(navigation_tanks) != 2 or len(recovery_tanks) != 2
-            or len(tank_slots) != 2 or len(seed_slots) != 2
+            or len(tank_slots) != 2 or len(healer_slots) != 3 or len(seed_slots) != 2
             or len(members) != 10):
         return False, "split_combat_anchor_shape"
     home_by_guid = {int(row.get("source_guid") or 0): row for row in homes}
@@ -296,6 +297,8 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
     lane_a_slots = {int(value) for value in step.get("split_lane_a_roster_slots") or []}
     lane_b_slots = {int(value) for value in step.get("split_lane_b_roster_slots") or []}
     if (seed_max_range <= 0.0 or len(set(seed_slots)) != 2
+            or len(set(healer_slots)) != 3
+            or any(slot not in member_by_slot or slot in tank_slots for slot in healer_slots)
             or seed_slots[0] not in lane_b_slots
             or seed_slots[1] not in lane_a_slots
             or any(slot not in member_by_slot or slot in tank_slots for slot in seed_slots)):
@@ -315,6 +318,37 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
         if any(math.hypot(anchor[0] - peer[0], anchor[1] - peer[1]) + 1e-6
                < minimum + arrival for peer in navigation_chased_sources):
             return False, "split_seed_candidate_source_unsafe"
+
+    # Once the first native Rush has landed, each assigned tank remains at its
+    # sealed recovery anchor.  Reconstruct the repeatable native melee-stop
+    # point on the tank-to-seed ray and prove that the configured cross-lane
+    # DPS remains farther than every same-lane member and every healer.  The
+    # two arrival disks are included so a merely nominal ordering cannot pass.
+    lane_sets = [lane_a_slots, lane_b_slots]
+    for source_index, seed_slot in enumerate(seed_slots):
+        recovery = recovery_points[source_index]
+        seed = member_by_slot[seed_slot]
+        seed_point = (float(seed["x"]), float(seed["y"]))
+        to_seed_x = seed_point[0] - recovery[0]
+        to_seed_y = seed_point[1] - recovery[1]
+        to_seed_distance = math.hypot(to_seed_x, to_seed_y)
+        if to_seed_distance <= melee_stop:
+            return False, "split_repeated_native_farthest_unsafe"
+        repeated_source = (
+            recovery[0] + to_seed_x * melee_stop / to_seed_distance,
+            recovery[1] + to_seed_y * melee_stop / to_seed_distance,
+        )
+        seed_distance = math.dist(repeated_source, seed_point)
+        forbidden_slots = (lane_sets[source_index] | set(healer_slots)) - {seed_slot}
+        if any(
+            seed_distance + 1e-6
+            < math.dist(
+                repeated_source,
+                tuple(float(member_by_slot[slot][axis]) for axis in ("x", "y")),
+            ) + 2.0 * arrival
+            for slot in forbidden_slots
+        ):
+            return False, "split_repeated_native_farthest_unsafe"
     return True, ""
 
 
@@ -714,6 +748,7 @@ def build_manifests(
                 "split_lane_a_roster_slots": [int(value) for value in (step.get("split_lane_a_roster_slots") or [])],
                 "split_lane_b_roster_slots": [int(value) for value in (step.get("split_lane_b_roster_slots") or [])],
                 "split_lane_tank_slots": [int(value) for value in (step.get("split_lane_tank_slots") or [])],
+                "split_healer_roster_slots": [int(value) for value in (step.get("split_healer_roster_slots") or [])],
                 "split_member_anchors": [
                     {
                         "roster_slot": int(anchor.get("roster_slot") or 0),

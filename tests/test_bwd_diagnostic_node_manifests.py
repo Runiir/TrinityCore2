@@ -68,6 +68,7 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
     )
     assert drudge_split_geometry_status(drudges) == (True, "")
     assert drudges["split_seed_roster_slots"] == [8, 6]
+    assert drudges["split_healer_roster_slots"] == [3, 4, 5]
     assert drudges["split_seed_max_range_yards"] == 35.0
     recovery_by_slot = {
         row["roster_slot"]: row for row in drudges["split_tank_recovery_anchors"]
@@ -78,6 +79,18 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
     }
     member_by_slot = {
         row["roster_slot"]: row for row in drudges["split_member_anchors"]
+    }
+    assert member_by_slot[3] == {
+        "roster_slot": 3, "x": -296.0, "y": -69.9, "z": 213.485,
+    }
+    assert member_by_slot[4] == {
+        "roster_slot": 4, "x": -298.8, "y": -71.5, "z": 213.461,
+    }
+    assert member_by_slot[5] == {
+        "roster_slot": 5, "x": -311.5, "y": -71.3, "z": 213.292,
+    }
+    assert member_by_slot[7] == {
+        "roster_slot": 7, "x": -292.5, "y": -69.1, "z": 214.024,
     }
     # Slot 6 is the source-250141 seed.  It must be farther than the adjacent
     # healer at the declared formation while retaining its 35-yard hostile
@@ -107,12 +120,39 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
         - drudges["split_tank_arrival_tolerance_yards"]
         >= drudges["minimum_distance_yards"]
     )
-    # A returning Rush can approach the tank from any direction.  Prove the
-    # full melee-stop and arrival disks, rather than the initial radial chase.
     recovery_points = {
         slot: (row["x"], row["y"])
         for slot, row in recovery_by_slot.items()
     }
+
+    # The first successful Rush moves each source back toward its sealed tank
+    # from the declared seed.  At that repeatable melee-stop point, the seed
+    # remains farther than every same-lane member and every healer, including
+    # both configured arrival disks.  This is the live invariant that prevents a
+    # later native cycle from selecting a same-lane DPS or healer.
+    lane_sets = [
+        set(drudges["split_lane_a_roster_slots"]),
+        set(drudges["split_lane_b_roster_slots"]),
+    ]
+    healer_slots = set(drudges["split_healer_roster_slots"])
+    for source_index, seed_slot in enumerate(drudges["split_seed_roster_slots"]):
+        recovery = recovery_points[source_index + 1]
+        seed = (member_by_slot[seed_slot]["x"], member_by_slot[seed_slot]["y"])
+        seed_ray = (seed[0] - recovery[0], seed[1] - recovery[1])
+        seed_ray_length = math.hypot(*seed_ray)
+        source = (
+            recovery[0] + seed_ray[0] * drudges["split_native_melee_stop_yards"] / seed_ray_length,
+            recovery[1] + seed_ray[1] * drudges["split_native_melee_stop_yards"] / seed_ray_length,
+        )
+        seed_distance = math.dist(source, seed)
+        for slot in (lane_sets[source_index] | healer_slots) - {seed_slot}:
+            peer = (member_by_slot[slot]["x"], member_by_slot[slot]["y"])
+            assert seed_distance >= (
+                math.dist(source, peer)
+                + 2.0 * drudges["split_arrival_tolerance_yards"]
+            )
+    # A returning Rush can approach the tank from any direction.  Prove the
+    # full melee-stop and arrival disks, rather than the initial radial chase.
     worst_source_radius = (
         drudges["split_native_melee_stop_yards"]
         + drudges["split_tank_arrival_tolerance_yards"]
@@ -184,6 +224,7 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
     )
 
     inward_arrival_envelope = deepcopy(drudges)
+    inward_arrival_envelope["split_arrival_tolerance_yards"] = 2.0
     inward_arrival_envelope["split_tank_arrival_tolerance_yards"] = 2.0
     assert drudge_split_geometry_status(inward_arrival_envelope) == (
         False,
@@ -222,6 +263,18 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
     assert drudge_split_geometry_status(seed_inside_source) == (
         False,
         "split_member_anchor_source_unsafe",
+    )
+
+    old_repeat_geometry = deepcopy(drudges)
+    old_repeat_geometry["split_member_anchors"][4].update(
+        x=-343.508, y=-44.4466, z=211.947,
+    )
+    old_repeat_geometry["split_member_anchors"][6].update(
+        x=-295.0, y=-82.0, z=213.8,
+    )
+    assert drudge_split_geometry_status(old_repeat_geometry) == (
+        False,
+        "split_repeated_native_farthest_unsafe",
     )
 
 

@@ -61,6 +61,30 @@ def test_recorded_drudge_returns_match_native_navmesh(tmp_path):
         -64.0,
         212.82,
     ]
+    assert payload["validated_returns"]["30003_reposition"] == {
+        "polygons": 1,
+        "smooth_points": 2,
+        "start": [-295.0, -71.5, 213.25],
+        "terminal": [-296.0, -69.9, 213.485],
+    }
+    assert payload["validated_returns"]["30004_reposition"] == {
+        "polygons": 1,
+        "smooth_points": 2,
+        "start": [-299.0, -75.0, 213.65],
+        "terminal": [-298.8, -71.5, 213.461],
+    }
+    assert payload["validated_returns"]["30005_reposition"] == {
+        "polygons": 6,
+        "smooth_points": 12,
+        "start": [-343.508, -44.4466, 211.947],
+        "terminal": [-311.5, -71.3, 213.292],
+    }
+    assert payload["validated_returns"]["30007_reposition"] == {
+        "polygons": 3,
+        "smooth_points": 5,
+        "start": [-295.0, -82.0, 213.8],
+        "terminal": [-292.5, -69.1, 214.024],
+    }
     assert payload["validated_returns"]["tank1_pull_away"] == {
         "polygons": 4,
         "smooth_points": 6,
