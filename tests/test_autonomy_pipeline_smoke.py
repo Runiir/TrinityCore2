@@ -1673,7 +1673,7 @@ def test_move_bot_to_point_only_terminalizes_strategic_route_failures():
     assert "GetFirstCollisionPosition(profileAction.MinRange" not in route_objective
 
 
-def test_walkable_descent_uses_native_pathing_while_declared_jump_stays_fail_closed():
+def test_walkable_descent_uses_bounded_native_movement_while_declared_jump_stays_fail_closed():
     route_objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     anchor_move = route_objective.split("auto moveToRouteAnchor = [&]() -> bool", 1)[1].split("auto routeFocusTankOwned", 1)[0]
     arrival = route_objective.split("if (arrivalRoute && !arrivalCombatActive)", 1)[1].split(
@@ -1693,6 +1693,21 @@ def test_walkable_descent_uses_native_pathing_while_declared_jump_stays_fail_clo
     assert "MoveJump(" not in arrival
     assert "TeleportTo(" not in arrival
     assert "state.ValidationRouteTerminalState = true;" not in anchor_move
+
+    move_bot_to_point = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::MoveBotToPoint")
+    for traversal_mode in (
+        '"native_partial_path"',
+        '"native_walkable_step"',
+        '"native_bounded_descent_jump"',
+    ):
+        assert traversal_mode in move_bot_to_point
+    assert "candidateGoalDistance + 2.0f >= currentGoalDistance" in move_bot_to_point
+    assert "drop < 1.5f || drop > 22.0f" in move_bot_to_point
+    assert "bot->IsWithinLOS(candidateX, candidateY, candidateZ)" in move_bot_to_point
+    assert "landingPath.CalculatePath(landing, goal, false)" in move_bot_to_point
+    assert "bot->GetMotionMaster()->MoveJump(segmentX, segmentY, segmentZ" in move_bot_to_point
+    assert "TeleportTo(" not in move_bot_to_point
+    assert "NearTeleportTo(" not in move_bot_to_point
 
 
 def test_move_bot_to_point_keeps_matching_active_motion():
@@ -1716,6 +1731,8 @@ def test_move_bot_to_point_keeps_matching_active_motion():
         "bot->GetMotionMaster()->MoveChase(dynamicTarget);",
         "bot->GetMotionMaster()->MovePoint(0, x, y, z, true);",
     )
+    assert "state.ActivePathSegmentToX = segmentX;" in move_bot_to_point
+    assert "state.ActivePathTraversalMode = traversalMode;" in move_bot_to_point
 
 
 def test_move_bot_to_profile_range_projects_approaches_to_terrain():

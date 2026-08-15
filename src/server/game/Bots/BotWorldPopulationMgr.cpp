@@ -9278,6 +9278,8 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     auto rejectPath = [&](char const* reason) -> bool
     {
         state.ActivePathValid = false;
+        state.ActivePathSegmentValid = false;
+        state.ActivePathTraversalMode.clear();
         state.ActivePathTargetGuid.Clear();
         state.LastPathRejectReason = reason ? reason : "route_destination_unreachable";
         state.LastNoProgressReason = state.LastPathRejectReason;
@@ -9400,19 +9402,213 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     if (std::fabs(floorZ - z) > 4.0f)
         return rejectPath("route_destination_invalid_z_transition");
 
+    float segmentX = x;
+    float segmentY = y;
+    float segmentZ = z;
+    char const* traversalMode = "native_complete_path";
+    bool boundedDescent = false;
+    bool segmentSelected = false;
+    bool const progressiveStaticRoute = !targetAwareChase
+        && movementOwner == Owner::Route;
+    float const currentGoalDistance = bot->GetExactDist(x, y, z);
+    auto distanceToGoal = [x, y, z](float candidateX, float candidateY, float candidateZ)
+    {
+        float const dx = candidateX - x;
+        float const dy = candidateY - y;
+        float const dz = candidateZ - z;
+        return std::sqrt(dx * dx + dy * dy + dz * dz);
+    };
+    auto selectProgressEndpoint = [&](PathGenerator const& candidatePath,
+        char const* candidateMode, float minimumProgress) -> bool
+    {
+        PathType const candidateType = candidatePath.GetPathType();
+        if ((candidateType & PATHFIND_NOPATH)
+            || (candidateType & PATHFIND_NOT_USING_PATH)
+            || (candidateType & PATHFIND_SHORTCUT)
+            || (candidateType & PATHFIND_FARFROMPOLY_START))
+            return false;
+        if (!(candidateType & (PATHFIND_NORMAL | PATHFIND_INCOMPLETE)))
+            return false;
+
+        G3D::Vector3 const& endpoint = candidatePath.GetActualEndPosition();
+        float const endpointTravel = bot->GetExactDist(endpoint.x, endpoint.y, endpoint.z);
+        float const endpointGoalDistance = distanceToGoal(endpoint.x, endpoint.y, endpoint.z);
+        if (endpointTravel < 1.5f
+            || endpointGoalDistance + minimumProgress >= currentGoalDistance)
+            return false;
+
+        segmentX = endpoint.x;
+        segmentY = endpoint.y;
+        segmentZ = endpoint.z;
+        traversalMode = candidateMode;
+        segmentSelected = true;
+        return true;
+    };
+
     PathGenerator path(bot);
-    bool pathOk = path.CalculatePath(x, y, z, false);
-    PathType pathType = path.GetPathType();
-    if (!pathOk || (pathType & PATHFIND_NOPATH))
+    bool const pathOk = path.CalculatePath(x, y, z, false);
+    PathType const pathType = path.GetPathType();
+    if (pathOk && (pathType & PATHFIND_NORMAL)
+        && !(pathType & PATHFIND_NOPATH)
+        && !(pathType & PATHFIND_NOT_USING_PATH)
+        && !(pathType & PATHFIND_SHORTCUT)
+        && !(pathType & PATHFIND_FARFROMPOLY)
+        && !(pathType & PATHFIND_INCOMPLETE))
+        segmentSelected = true;
+    else if (progressiveStaticRoute && pathOk && (pathType & PATHFIND_INCOMPLETE))
+        selectProgressEndpoint(path, "native_partial_path", 3.0f);
+
+    // A route goal is a logical destination, not an instruction to repeatedly
+    // replace native motion with a straight-line shortcut. When mmap cannot
+    // solve the whole route, try deterministic, nearby walkable segments and
+    // reconcile again after the committed spline finishes. This is the same
+    // feedback loop a player uses while walking around incomplete geometry.
+    if (!segmentSelected && progressiveStaticRoute)
+    {
+        float const baseAngle = bot->GetAngle(x, y);
+        std::array<float, 7> const angleOffsets{
+            0.0f, float(M_PI) / 6.0f, -float(M_PI) / 6.0f,
+            float(M_PI) / 3.0f, -float(M_PI) / 3.0f,
+            float(M_PI) / 2.0f, -float(M_PI) / 2.0f
+        };
+        std::array<float, 2> const stepDistances{ 12.0f, 7.0f };
+        float bestGoalDistance = currentGoalDistance;
+        float bestX = 0.0f;
+        float bestY = 0.0f;
+        float bestZ = 0.0f;
+        bool foundWalkableStep = false;
+        for (float stepDistance : stepDistances)
+        {
+            for (float angleOffset : angleOffsets)
+            {
+                float const angle = baseAngle + angleOffset;
+                float const candidateX = bot->GetPositionX() + std::cos(angle) * stepDistance;
+                float const candidateY = bot->GetPositionY() + std::sin(angle) * stepDistance;
+                float const candidateZ = bot->GetMap()->GetHeight(bot->GetPhaseShift(),
+                    candidateX, candidateY, bot->GetPositionZ() + 2.0f, true, 8.0f);
+                if (candidateZ <= INVALID_HEIGHT
+                    || std::fabs(candidateZ - bot->GetPositionZ()) > 4.0f)
+                    continue;
+
+                PathGenerator stepPath(bot);
+                if (!stepPath.CalculatePath(candidateX, candidateY, candidateZ, false))
+                    continue;
+                PathType const stepType = stepPath.GetPathType();
+                if ((stepType & PATHFIND_NOPATH)
+                    || (stepType & PATHFIND_NOT_USING_PATH)
+                    || (stepType & PATHFIND_SHORTCUT)
+                    || (stepType & PATHFIND_FARFROMPOLY_START)
+                    || !(stepType & (PATHFIND_NORMAL | PATHFIND_INCOMPLETE)))
+                    continue;
+
+                G3D::Vector3 const& endpoint = stepPath.GetActualEndPosition();
+                float const endpointTravel = bot->GetExactDist(endpoint.x, endpoint.y, endpoint.z);
+                float const endpointGoalDistance = distanceToGoal(endpoint.x, endpoint.y, endpoint.z);
+                if (endpointTravel < 1.5f
+                    || endpointGoalDistance + 2.0f >= currentGoalDistance
+                    || endpointGoalDistance >= bestGoalDistance)
+                    continue;
+
+                foundWalkableStep = true;
+                bestGoalDistance = endpointGoalDistance;
+                bestX = endpoint.x;
+                bestY = endpoint.y;
+                bestZ = endpoint.z;
+            }
+        }
+        if (foundWalkableStep)
+        {
+            segmentX = bestX;
+            segmentY = bestY;
+            segmentZ = bestZ;
+            traversalMode = "native_walkable_step";
+            segmentSelected = true;
+        }
+    }
+
+    // Server-controlled players do not have a client to emit a jump key. For
+    // an explicitly ordinary descent, permit one short, locally observed jump
+    // only after native paths and walkable steps are exhausted. Ground, LOS,
+    // drop height, horizontal reach, goal progress, and the lower navmesh are
+    // all checked. Declared special descents remain fail-closed before this
+    // helper is called, and this never mutates position or teleports.
+    if (!segmentSelected && progressiveStaticRoute
+        && Cohort().Config.ValidationRouteKind == "descent"
+        && Cohort().Config.ValidationRouteDescentAction.empty()
+        && !bot->IsInCombat())
+    {
+        float const baseAngle = bot->GetAngle(x, y);
+        std::array<float, 7> const angleOffsets{
+            0.0f, float(M_PI) / 12.0f, -float(M_PI) / 12.0f,
+            float(M_PI) / 6.0f, -float(M_PI) / 6.0f,
+            float(M_PI) / 4.0f, -float(M_PI) / 4.0f
+        };
+        std::array<float, 4> const jumpDistances{ 4.0f, 6.0f, 8.0f, 10.0f };
+        float bestGoalDistance = currentGoalDistance;
+        for (float jumpDistance : jumpDistances)
+        {
+            for (float angleOffset : angleOffsets)
+            {
+                float const angle = baseAngle + angleOffset;
+                float const candidateX = bot->GetPositionX() + std::cos(angle) * jumpDistance;
+                float const candidateY = bot->GetPositionY() + std::sin(angle) * jumpDistance;
+                float const candidateZ = bot->GetMap()->GetHeight(bot->GetPhaseShift(),
+                    candidateX, candidateY, bot->GetPositionZ() + 2.0f, true, 32.0f);
+                if (candidateZ <= INVALID_HEIGHT)
+                    continue;
+                float const drop = bot->GetPositionZ() - candidateZ;
+                float const candidateGoalDistance = distanceToGoal(candidateX, candidateY, candidateZ);
+                if (drop < 1.5f || drop > 22.0f
+                    || candidateGoalDistance + 2.0f >= currentGoalDistance
+                    || candidateGoalDistance >= bestGoalDistance
+                    || !bot->IsWithinLOS(candidateX, candidateY, candidateZ))
+                    continue;
+
+                Position landing(candidateX, candidateY, candidateZ, angle);
+                Position goal(x, y, z, angle);
+                PathGenerator landingPath(bot);
+                if (!landingPath.CalculatePath(landing, goal, false))
+                    continue;
+                PathType const landingType = landingPath.GetPathType();
+                if ((landingType & PATHFIND_NOPATH)
+                    || (landingType & PATHFIND_NOT_USING_PATH)
+                    || (landingType & PATHFIND_SHORTCUT)
+                    || (landingType & PATHFIND_FARFROMPOLY_START)
+                    || !(landingType & (PATHFIND_NORMAL | PATHFIND_INCOMPLETE)))
+                    continue;
+                if (landingType & PATHFIND_INCOMPLETE)
+                {
+                    G3D::Vector3 const& lowerEndpoint = landingPath.GetActualEndPosition();
+                    if (distanceToGoal(lowerEndpoint.x, lowerEndpoint.y, lowerEndpoint.z) + 2.0f
+                        >= candidateGoalDistance)
+                        continue;
+                }
+
+                bestGoalDistance = candidateGoalDistance;
+                segmentX = candidateX;
+                segmentY = candidateY;
+                segmentZ = candidateZ;
+                traversalMode = "native_bounded_descent_jump";
+                boundedDescent = true;
+                segmentSelected = true;
+            }
+        }
+    }
+
+    if (!segmentSelected)
+    {
+        if (!pathOk || (pathType & PATHFIND_NOPATH))
+            return rejectPath("route_destination_unreachable");
+        if (pathType & PATHFIND_NOT_USING_PATH)
+            return rejectPath("route_destination_missing_mmap");
+        if (pathType & PATHFIND_INCOMPLETE)
+            return rejectPath("route_destination_partial_path");
+        if (pathType & PATHFIND_SHORTCUT)
+            return rejectPath("route_destination_shortcut_path");
+        if (pathType & PATHFIND_FARFROMPOLY)
+            return rejectPath("route_destination_off_mesh");
         return rejectPath("route_destination_unreachable");
-    if (pathType & PATHFIND_NOT_USING_PATH)
-        return rejectPath("route_destination_missing_mmap");
-    if (pathType & PATHFIND_INCOMPLETE)
-        return rejectPath("route_destination_partial_path");
-    if (pathType & PATHFIND_SHORTCUT)
-        return rejectPath("route_destination_shortcut_path");
-    if (pathType & PATHFIND_FARFROMPOLY)
-        return rejectPath("route_destination_off_mesh");
+    }
 
     BotLearnedScore pathScore = BotExperienceLearningPolicy::ScorePath(bot, bot->GetPositionX(), bot->GetPositionY(), x, y, Cohort().LearningConfig);
     bool recentFailureMemory = IsFailedPathRecently(bot->GetGUID().GetCounter(), bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), x, y)
@@ -9430,6 +9626,11 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     state.ActivePathToX = x;
     state.ActivePathToY = y;
     state.ActivePathToZ = z;
+    state.ActivePathSegmentToX = segmentX;
+    state.ActivePathSegmentToY = segmentY;
+    state.ActivePathSegmentToZ = segmentZ;
+    state.ActivePathSegmentValid = true;
+    state.ActivePathTraversalMode = traversalMode;
     state.ActivePathValid = true;
     state.ActivePathTargetGuid = targetAwareChase
         ? dynamicTarget->GetGUID() : ObjectGuid::Empty;
@@ -9441,12 +9642,22 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     state.ActivePathRouteNodeId = Cohort().Config.ValidationRouteEnable
         ? Cohort().Config.ValidationRouteNodeId : std::string();
     state.LastPathRejectReason.clear();
+    state.LastNoProgressReason.clear();
+    state.LastRecoveryMode = traversalMode;
+    state.LastRecoveryResult = "native_movement_submitted";
     state.LastPathChangeMs = NowMs();
     Apply(state.MovementLease, movementRequest);
 
     bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
     if (targetAwareChase)
         bot->GetMotionMaster()->MoveChase(dynamicTarget);
+    else if (boundedDescent)
+        bot->GetMotionMaster()->MoveJump(segmentX, segmentY, segmentZ,
+            bot->GetAngle(segmentX, segmentY), bot->GetSpeed(MOVE_RUN), 7.0f, EVENT_JUMP, true);
+    else if (std::fabs(segmentX - x) > activeDestinationEpsilon
+        || std::fabs(segmentY - y) > activeDestinationEpsilon
+        || std::fabs(segmentZ - z) > activeDestinationEpsilon)
+        bot->GetMotionMaster()->MovePoint(0, segmentX, segmentY, segmentZ, true);
     else
         bot->GetMotionMaster()->MovePoint(0, x, y, z, true);
     return true;
@@ -18937,13 +19148,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY, Cohort().Config.ValidationRouteZ);
     auto moveToRouteAnchor = [&]() -> bool
     {
-        // Descent anchors intentionally cross one-way or disconnected mmap
-        // topology and are completed by the native MoveJump path below.
-        // Residual party-combat state can temporarily route a bot through the
-        // ordinary pre-anchor movement branch first.  Preserve that path
-        // rejection as diagnostic evidence, but do not make it terminal or
-        // the bot can never reach the subsequent descent jump after combat
-        // clears while the rest of the cohort continues without it.
+        // Ordinary descents use progressive native walking and, only at a
+        // locally verified ledge, a bounded player-like jump. Preserve a
+        // rejected segment as diagnostic evidence without terminalizing the
+        // route so the next observation can reconcile changed geometry.
         bool terminalOnFailure = Cohort().Config.ValidationRouteKind != "descent";
         return MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ, terminalOnFailure);
     };
@@ -41480,6 +41688,9 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << ",\"routing\":{\"active_path_valid\":" << (state.ActivePathValid ? "true" : "false")
          << ",\"from\":{\"x\":" << state.ActivePathFromX << ",\"y\":" << state.ActivePathFromY << ",\"z\":" << state.ActivePathFromZ << "}"
          << ",\"to\":{\"x\":" << state.ActivePathToX << ",\"y\":" << state.ActivePathToY << ",\"z\":" << state.ActivePathToZ << "}"
+         << ",\"segment\":{\"valid\":" << (state.ActivePathValid && state.ActivePathSegmentValid ? "true" : "false")
+         << ",\"x\":" << state.ActivePathSegmentToX << ",\"y\":" << state.ActivePathSegmentToY << ",\"z\":" << state.ActivePathSegmentToZ
+         << ",\"traversal_mode\":\"" << JsonEscape(state.ActivePathTraversalMode) << "\"}"
          << ",\"quest_search_destination\":{\"valid\":" << (state.QuestSearchDestination.Valid ? "true" : "false")
          << ",\"map\":" << state.QuestSearchDestination.MapId << ",\"x\":" << state.QuestSearchDestination.X << ",\"y\":" << state.QuestSearchDestination.Y << ",\"z\":" << state.QuestSearchDestination.Z
          << ",\"quest_id\":" << state.QuestSearchDestination.QuestId << ",\"reason\":\"" << JsonEscape(state.QuestSearchDestination.Reason) << "\"}"

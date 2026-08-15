@@ -907,6 +907,11 @@ private:
         float ActivePathToX = 0.0f;
         float ActivePathToY = 0.0f;
         float ActivePathToZ = 0.0f;
+        float ActivePathSegmentToX = 0.0f;
+        float ActivePathSegmentToY = 0.0f;
+        float ActivePathSegmentToZ = 0.0f;
+        bool ActivePathSegmentValid = false;
+        std::string ActivePathTraversalMode;
         bool ActivePathValid = false;
         ObjectGuid ActivePathTargetGuid;
         uint64 ActivePathAttemptId = 0;
