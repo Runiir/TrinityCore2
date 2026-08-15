@@ -26,6 +26,15 @@ int main()
     assert(SelectMemberRecoveryAction(false, false, false)
         == MemberRecoveryAction::Continue);
 
+    assert(SelectMinimumDistanceOwner(false, false)
+        == MinimumDistanceOwner::GenericRouteSafety);
+    assert(SelectMinimumDistanceOwner(false, true)
+        == MinimumDistanceOwner::GenericRouteSafety);
+    assert(SelectMinimumDistanceOwner(true, false)
+        == MinimumDistanceOwner::GenericRouteSafety);
+    assert(SelectMinimumDistanceOwner(true, true)
+        == MinimumDistanceOwner::LandedRushRecovery);
+
     std::vector<Point2d> safeRecoveryPath{
         {-11.0f, 0.0f}, {-9.0f, 1.0f}, {-8.0f, 2.0f}
     };
@@ -304,17 +313,37 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "tankStage.SupportAllowed" in lane
     assert "tryRouteGroupHeal(bot, laneSource, false)" in lane
     assert "SelectMemberRecoveryAction" in lane
+    assert "if (tryValidationRouteMinimumDistance(true))" in lane
+    assert "drudge_anchor_source_unsafe" in lane
+    assert "drudge_anchor_spacing_unsafe" in lane
+    assert "drudge_anchor_native_path_rejected:path_type=" in lane
+    assert "drudge_anchor_native_end_rejected:end2d=" in lane
     assert "bot->GetInstanceId() != 0" in lane
     assert "ValidationRouteDrudgeAnchorSource0Identity" in lane
 
     barrier = lane.index("!tankStage.NativeEngagementAllowed || formationRequiredMutable")
+    exact_reseparation = lane.index("if (nativeChargePending && exactRosterReSeparated())")
+    specialized_escape = lane.index("if (tryValidationRouteMinimumDistance(true))")
     recovery_choice = lane.index("SelectMemberRecoveryAction", barrier)
     recovery_move = lane.index("tryFormationRecovery();", recovery_choice)
     support = lane.index("drudge_staging_support")
     first_taunt = lane.index("drudge_lane_native_taunt")
+    assert exact_reseparation < specialized_escape < barrier
     assert barrier < recovery_choice < recovery_move < support
     assert first_taunt < barrier
     assert "assignedTank && tankStage.NativeOwnershipAllowed" in lane[first_taunt - 1200:first_taunt]
+
+    source_unsafe = lane.index('"drudge_anchor_source_unsafe"')
+    cooldown = lane.index("nowMs < state.ValidationRouteDrudgeAnchorSearchCooldownUntilMs")
+    strict_path = lane.index("if (!strictNativePath", cooldown)
+    assert source_unsafe < cooldown < strict_path
+
+    minimum = implementation[
+        implementation.index("auto drudgeLandedRushPending") :
+        implementation.index("auto tryValidationRouteDrudgeChargeLanes")
+    ]
+    assert "SelectMinimumDistanceOwner" in minimum
+    assert "MinimumDistanceOwner::LandedRushRecovery" in minimum
 
 
 def test_future_encounter_contamination_is_attempt_terminal_not_a_transient_hold():

@@ -62,6 +62,26 @@ enum class MemberRecoveryAction : std::uint8_t
     PreferFriendlySupport
 };
 
+enum class MinimumDistanceOwner : std::uint8_t
+{
+    GenericRouteSafety,
+    LandedRushRecovery
+};
+
+// Generic minimum-distance movement remains authoritative everywhere except
+// an unresolved landed Drudge Rush.  In that window the exact observation is
+// already the durable return obligation, so the Drudge recovery state must
+// own both the outward safety exit and the return to the sealed anchor.  This
+// prevents the generic handler from moving a member and returning before the
+// specialized state can preserve/retry the corresponding formation proof.
+inline MinimumDistanceOwner SelectMinimumDistanceOwner(
+    bool drudgeLaneProfile, bool landedRushPending)
+{
+    return drudgeLaneProfile && landedRushPending
+        ? MinimumDistanceOwner::LandedRushRecovery
+        : MinimumDistanceOwner::GenericRouteSafety;
+}
+
 // A landed Rush owns movement priority for every displaced exact-roster
 // member. Friendly support remains available while staging and after the
 // healer is geometrically safe, but it cannot starve the bounded return to the

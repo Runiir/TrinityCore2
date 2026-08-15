@@ -62,6 +62,13 @@ Require one exact tuple across config, generated route, runtime status, capture,
   that member is back in the sealed formation. A single bait/recovery anchor is
   valid only when combined arrival envelopes prove both hostile-action range
   and post-return source clearance and its native return path is exact.
+- Give the active mechanic state ownership of generic safety movement while a
+  landed displacement remains unresolved. The generic controller may compute
+  and submit the outward escape, but it must not return outside the mechanic's
+  durable return obligation. Dynamic source/spacing rejection must retry on
+  the first safe edge and must not arm the expensive native-path heartbeat;
+  rate-limit only a real floor/path rejection. Emit the rejected predicate,
+  path flags, and native-end delta so a live failure is exactly diagnosable.
 - A prerequisite patrol is pullable only in a path-proven phase whose entire
   chase stays outside every future-encounter guard. A native combat link to a
   future encounter permanently contaminates that route generation; terminalize

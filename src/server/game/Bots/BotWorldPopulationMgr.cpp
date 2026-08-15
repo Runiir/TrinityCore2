@@ -18529,9 +18529,36 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             : (configuredHazard ? "hold_hazard_exit_failed" : "hold_tactical_path_rejected");
         return true;
     };
-    auto tryValidationRouteMinimumDistance = [this, &state, bot, &power, stage, activity,
-        &situation, &action, &target, &isValidationCohortCombatLinked]() -> bool
+    auto drudgeLandedRushPending = [this]() -> bool
     {
+        if (Cohort().Config.ValidationRouteMechanicProfile
+            != "trash_two_tank_charge_lanes")
+            return false;
+        return std::any_of(
+            Party().ValidationRouteDrudgeChargeObservations.begin(),
+            Party().ValidationRouteDrudgeChargeObservations.end(),
+            [this](ValidationRouteDrudgeChargeObservation const& observation)
+            {
+                return observation.Landed && !observation.ReseparationRecorded
+                    && observation.AttemptId == Cohort().AttemptId
+                    && observation.WipeGeneration == Cohort().Raid.WipeGeneration
+                    && observation.RouteGeneration == Party().ValidationRouteGeneration;
+            });
+    };
+    auto tryValidationRouteMinimumDistance = [this, &state, bot, &power, stage, activity,
+        &situation, &action, &target, &isValidationCohortCombatLinked,
+        &drudgeLandedRushPending](bool specializedDrudgeRecovery = false) -> bool
+    {
+        bool const drudgeProfile = Cohort().Config.ValidationRouteMechanicProfile
+            == "trash_two_tank_charge_lanes";
+        BotRaidDrudgeGeometry::MinimumDistanceOwner const minimumDistanceOwner =
+            BotRaidDrudgeGeometry::SelectMinimumDistanceOwner(
+                drudgeProfile, drudgeLandedRushPending());
+        if (specializedDrudgeRecovery
+            != (minimumDistanceOwner
+                == BotRaidDrudgeGeometry::MinimumDistanceOwner::LandedRushRecovery))
+            return false;
+
         uint32 sourceEntry = Cohort().Config.ValidationRouteMinimumDistanceSourceEntry;
         float minimumDistance = Cohort().Config.ValidationRouteMinimumDistanceYards;
         if (!sourceEntry || minimumDistance <= 0.0f
@@ -18705,7 +18732,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     };
     auto tryValidationRouteDrudgeChargeLanes = [this, &state, bot, &power, stage,
         activity, &situation, &action, &target, &tryRouteGroupHeal,
-        &canonicalRouteDistance, &routeArrivalRadius]() -> bool
+        &tryValidationRouteMinimumDistance, &canonicalRouteDistance,
+        &routeArrivalRadius]() -> bool
     {
         if (Cohort().Config.ValidationRouteMechanicProfile != "trash_two_tank_charge_lanes")
             return false;
@@ -19058,13 +19086,20 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
 
         auto strictNativePath = [bot](float x, float y, float z,
-            bool requireExactEnd = false) -> bool
+            bool requireExactEnd = false,
+            std::string* rejectionOut = nullptr) -> bool
         {
-            if (!bot || !bot->GetMap())
+            auto reject = [rejectionOut](std::string reason)
+            {
+                if (rejectionOut)
+                    *rejectionOut = std::move(reason);
                 return false;
+            };
+            if (!bot || !bot->GetMap())
+                return reject("drudge_anchor_map_unavailable");
             float floorZ = bot->GetMap()->GetHeight(bot->GetPhaseShift(), x, y, z + 2.0f, true, 8.0f);
             if (floorZ <= INVALID_HEIGHT || std::fabs(floorZ - z) > 4.0f)
-                return false;
+                return reject("drudge_anchor_floor_rejected");
             PathGenerator path(bot);
             bool pathOk = path.CalculatePath(x, y, z, false);
             PathType pathType = path.GetPathType();
@@ -19074,11 +19109,24 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 && !(pathType & PATHFIND_INCOMPLETE)
                 && !(pathType & PATHFIND_SHORTCUT)
                 && !(pathType & PATHFIND_FARFROMPOLY);
-            if (!pathValid || !requireExactEnd)
-                return pathValid;
+            if (!pathValid)
+                return reject("drudge_anchor_native_path_rejected:path_type="
+                    + std::to_string(uint32(pathType)));
+            if (!requireExactEnd)
+            {
+                if (rejectionOut)
+                    rejectionOut->clear();
+                return true;
+            }
             G3D::Vector3 const& actualEnd = path.GetActualEndPosition();
-            return std::hypot(actualEnd.x - x, actualEnd.y - y) <= 0.25f
-                && std::fabs(actualEnd.z - z) <= 1.0f;
+            float const end2d = std::hypot(actualEnd.x - x, actualEnd.y - y);
+            float const endZ = std::fabs(actualEnd.z - z);
+            if (end2d > 0.25f || endZ > 1.0f)
+                return reject("drudge_anchor_native_end_rejected:end2d="
+                    + std::to_string(end2d) + ":endz=" + std::to_string(endZ));
+            if (rejectionOut)
+                rejectionOut->clear();
+            return true;
         };
         auto strictTankRecoveryPath = [&](float x, float y, float z) -> bool
         {
@@ -19495,38 +19543,72 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
             state.ValidationRouteDrudgeAnchorValid = false;
             uint64 const nowMs = NowMs();
-            if (nowMs < state.ValidationRouteDrudgeAnchorSearchCooldownUntilMs)
-                return false;
-            // A failed native path search is an infrastructure/pathfinding
-            // observation, not permission to fan out path generation on each
-            // bot tick.  Retry at a bounded heartbeat while preserving the
-            // exact edge/heartbeat diagnostic count.
-            state.ValidationRouteDrudgeAnchorSearchCooldownUntilMs = nowMs
-                + RepeatableDiagnosticEventHeartbeatMs;
 
             for (size_t candidateIndex = 0; candidateIndex < candidates.size(); ++candidateIndex)
             {
                 ValidationRouteMemberAnchor const* candidateAnchor = tank && combatTankStagingActive()
                     ? declaredNavigationTankAnchorFor(oneBasedSlot) : declaredAnchorFor(oneBasedSlot);
                 if (!candidateAnchor)
+                {
+                    state.LastPathRejectReason = "drudge_anchor_missing";
+                    state.LastRecoveryResult = state.LastPathRejectReason;
                     continue;
+                }
                 float const candidateZ = candidateAnchor->Z;
                 float const projection = (candidates[candidateIndex].first - midpointX) * axisX
                     + (candidates[candidateIndex].second - midpointY) * axisY;
                 if (laneSign * projection < laneSeparation * 0.25f)
+                {
+                    state.LastPathRejectReason = "drudge_anchor_lane_unsafe";
+                    state.LastRecoveryResult = state.LastPathRejectReason;
                     continue;
+                }
                 if (!tank && (Distance2d(candidates[candidateIndex].first,
                         candidates[candidateIndex].second, sources[0]->GetPositionX(),
                         sources[0]->GetPositionY()) < Cohort().Config.ValidationRouteMinimumDistanceYards
                     || Distance2d(candidates[candidateIndex].first,
                         candidates[candidateIndex].second, sources[1]->GetPositionX(),
-                        sources[1]->GetPositionY()) < Cohort().Config.ValidationRouteMinimumDistanceYards
-                    || !candidateSpacingSafe(candidates[candidateIndex].first,
-                        candidates[candidateIndex].second)))
+                        sources[1]->GetPositionY()) < Cohort().Config.ValidationRouteMinimumDistanceYards))
+                {
+                    // Dynamic source proximity is expected immediately after
+                    // a Rush lands on the sealed anchor.  Do not arm the
+                    // expensive-path heartbeat here: the assigned tank can
+                    // pull the source clear on the next tick, and that exact
+                    // source-safe edge must receive an immediate return-path
+                    // attempt.
+                    state.LastPathRejectReason = "drudge_anchor_source_unsafe";
+                    state.LastRecoveryResult = state.LastPathRejectReason;
                     continue;
+                }
+                if (!tank && !candidateSpacingSafe(candidates[candidateIndex].first,
+                        candidates[candidateIndex].second))
+                {
+                    state.LastPathRejectReason = "drudge_anchor_spacing_unsafe";
+                    state.LastRecoveryResult = state.LastPathRejectReason;
+                    continue;
+                }
+                if (nowMs < state.ValidationRouteDrudgeAnchorSearchCooldownUntilMs)
+                {
+                    state.LastPathRejectReason = "drudge_anchor_path_retry_cooldown";
+                    state.LastRecoveryResult = state.LastPathRejectReason;
+                    continue;
+                }
+                std::string nativePathRejection;
                 if (!strictNativePath(candidates[candidateIndex].first,
-                        candidates[candidateIndex].second, candidateZ, tank))
+                        candidates[candidateIndex].second, candidateZ, tank,
+                        &nativePathRejection))
+                {
+                    // Only a real floor/native-path rejection is rate-limited.
+                    // Dynamic source and spacing predicates above remain
+                    // edge-responsive so they cannot consume the native
+                    // 20-second Rush interval before the first retry.
+                    state.ValidationRouteDrudgeAnchorSearchCooldownUntilMs = nowMs
+                        + RepeatableDiagnosticEventHeartbeatMs;
+                    state.LastPathRejectReason = nativePathRejection.empty()
+                        ? "drudge_anchor_native_path_rejected" : nativePathRejection;
+                    state.LastRecoveryResult = state.LastPathRejectReason;
                     continue;
+                }
                 state.ValidationRouteDrudgeAnchorValid = true;
                 state.ValidationRouteDrudgeAnchorPathProven = true;
                 state.ValidationRouteDrudgeAnchorAttemptId = Cohort().AttemptId;
@@ -19542,6 +19624,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 state.ValidationRouteDrudgeAnchorX = candidates[candidateIndex].first;
                 state.ValidationRouteDrudgeAnchorY = candidates[candidateIndex].second;
                 state.ValidationRouteDrudgeAnchorZ = candidateZ;
+                state.LastPathRejectReason.clear();
                 return true;
             }
             return false;
@@ -20269,6 +20352,20 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             target = laneSource;
             state.TargetGuid = laneSource ? laneSource->GetGUID() : ObjectGuid::Empty;
             return true;
+        }
+
+        // Once a Rush has landed, this exact observation owns both sides of
+        // member recovery.  The generic safety exit is still used to leave
+        // the native damaging radius, but it is invoked from this state so
+        // the unresolved observation remains the durable return obligation.
+        // On the next tick, a member outside the radius continues directly
+        // into sealed-anchor recovery instead of being returned early by the
+        // generic route handler.
+        if (nativeChargePending)
+        {
+            holdOffense();
+            if (tryValidationRouteMinimumDistance(true))
+                return true;
         }
 
         if (!prepullStaged || !tankStage.TankMovementAllowed

@@ -2245,6 +2245,13 @@ def test_raid_trash_uses_native_threat_headroom_and_declared_minimum_distance():
     assert "std::min(startDistance, minimumDistance) - 0.25f" in minimum
     assert "< safeDistance" in minimum
     assert '"minimum_distance_exit_started"' in minimum
+    assert "SelectMinimumDistanceOwner" in minimum
+    assert "MinimumDistanceOwner::LandedRushRecovery" in minimum
+    assert "specializedDrudgeRecovery" in minimum
+    assert "if (tryValidationRouteMinimumDistance(true))" in minimum
+    assert minimum.index("drudge_anchor_source_unsafe") < minimum.index(
+        "nowMs < state.ValidationRouteDrudgeAnchorSearchCooldownUntilMs"
+    )
     assert route_runtime.index("if (tryValidationRouteMovementCheck(target))") < route_runtime.index(
         "if (tryValidationRouteMinimumDistance())"
     )
