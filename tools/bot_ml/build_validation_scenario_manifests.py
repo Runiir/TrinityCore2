@@ -294,9 +294,13 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
                for recovery in recovery_points):
             return False, "split_tank_recovery_member_unsafe"
     seed_max_range = float(step.get("split_seed_max_range_yards") or 0.0)
+    tank_threat_headroom = float(
+        step.get("split_tank_threat_headroom_multiplier") or 0.0
+    )
     lane_a_slots = {int(value) for value in step.get("split_lane_a_roster_slots") or []}
     lane_b_slots = {int(value) for value in step.get("split_lane_b_roster_slots") or []}
-    if (seed_max_range <= 0.0 or len(set(seed_slots)) != 2
+    if (seed_max_range <= 0.0 or tank_threat_headroom < 1.3
+            or len(set(seed_slots)) != 2
             or len(set(healer_slots)) != 3
             or any(slot not in member_by_slot or slot in tank_slots for slot in healer_slots)
             or seed_slots[0] not in lane_b_slots
@@ -318,6 +322,25 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
         if any(math.hypot(anchor[0] - peer[0], anchor[1] - peer[1]) + 1e-6
                < minimum + arrival for peer in navigation_chased_sources):
             return False, "split_seed_candidate_source_unsafe"
+
+        # Before the first Rush, hostile authority permits only the two
+        # declared seeds and their assigned tanks; healers can acquire native
+        # threat through ordinary support. Prove the seed's entire arrival
+        # disk stays farther than those production-eligible competitors at the
+        # nominal native chase point. Runtime independently inspects the real
+        # threat list and exact live positions before holding this phase ready.
+        seed_near_edge = math.hypot(
+            anchor[0] - source[0], anchor[1] - source[1]
+        ) - arrival
+        initial_forbidden_slots = set(healer_slots) | {tank_slots[source_index]}
+        if any(
+            seed_near_edge <= math.hypot(
+                float(member_by_slot[other_slot]["x"]) - source[0],
+                float(member_by_slot[other_slot]["y"]) - source[1],
+            ) + (tank_arrival if other_slot in tank_slots else arrival) + 1e-6
+            for other_slot in initial_forbidden_slots
+        ):
+            return False, "split_initial_native_farthest_unsafe"
 
     # Once the first native Rush has landed, each assigned tank remains at its
     # sealed recovery anchor.  Reconstruct the repeatable native melee-stop
@@ -792,6 +815,7 @@ def build_manifests(
                 "split_native_melee_stop_yards": float(step.get("split_native_melee_stop_yards") or 0.0),
                 "split_seed_roster_slots": [int(value) for value in (step.get("split_seed_roster_slots") or [])],
                 "split_seed_max_range_yards": float(step.get("split_seed_max_range_yards") or 0.0),
+                "split_tank_threat_headroom_multiplier": float(step.get("split_tank_threat_headroom_multiplier") or 0.0),
                 "thunderclap_spell_id": int(step.get("thunderclap_spell_id") or 0),
                 "charge_spell_id": int(step.get("charge_spell_id") or 0),
                 "charge_range_yards": float(step.get("charge_range_yards") or 0.0),

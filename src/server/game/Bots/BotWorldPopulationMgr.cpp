@@ -8,6 +8,7 @@
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/BotRaidDrudgeGeometryState.h"
 #include "Bots/BotRaidDrudgeThreatSeedState.h"
+#include "Bots/BotRaidDrudgeNativeRushState.h"
 #include "CellImpl.h"
 #include "CharmInfo.h"
 #include "Config.h"
@@ -4072,6 +4073,8 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
             routeJson, "split_seed_roster_slots", node.SplitSeedRosterSlots))
             node.SplitSeedRosterSlots.clear();
         node.SplitSeedMaxRangeYards = readFloat(routeJson, "split_seed_max_range_yards");
+        node.SplitTankThreatHeadroomMultiplier = readFloat(
+            routeJson, "split_tank_threat_headroom_multiplier");
         node.ThunderclapSpellId = uint32(std::max(0, readInt(routeJson, "thunderclap_spell_id")));
         node.ChargeSpellId = uint32(std::max(0, readInt(routeJson, "charge_spell_id")));
         node.ChargeRangeYards = readFloat(routeJson, "charge_range_yards");
@@ -4223,6 +4226,8 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     Cohort().Config.ValidationRouteSplitNativeMeleeStopYards = node.SplitNativeMeleeStopYards;
     Cohort().Config.ValidationRouteSplitSeedRosterSlots = node.SplitSeedRosterSlots;
     Cohort().Config.ValidationRouteSplitSeedMaxRangeYards = node.SplitSeedMaxRangeYards;
+    Cohort().Config.ValidationRouteSplitTankThreatHeadroomMultiplier =
+        node.SplitTankThreatHeadroomMultiplier;
     Cohort().Config.ValidationRouteThunderclapSpellId = node.ThunderclapSpellId;
     Cohort().Config.ValidationRouteChargeSpellId = node.ChargeSpellId;
     Cohort().Config.ValidationRouteChargeRangeYards = node.ChargeRangeYards;
@@ -18946,6 +18951,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && seedSlotsResolved
             && repeatedNativeFarthestGeometrySafe()
             && Cohort().Config.ValidationRouteSplitSeedMaxRangeYards > 0.0f
+            && Cohort().Config.ValidationRouteSplitTankThreatHeadroomMultiplier >= 1.3f
             && Cohort().Config.ValidationRouteMinimumDistanceYards > 0.0f
             && Cohort().Config.ValidationRouteThunderclapSpellId
             && Cohort().Config.ValidationRouteChargeSpellId
@@ -21276,6 +21282,161 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (tryPreFirstRushThreatSeed())
                 return true;
 
+        using NativeRushSourceReadiness = BotRaidDrudgeNativeRush::SourceResult;
+        auto rosterMemberForSlot = [this](uint32 oneBasedSlot) -> Player*
+        {
+            for (auto const& [guid, rosterEntry] : Cohort().Raid.RosterByGuid)
+                if (rosterEntry.Active && rosterEntry.LeaseOwned
+                    && rosterEntry.SlotIndex + 1 == oneBasedSlot)
+                    for (WorldBotState const& memberState : Party().Bots)
+                        if (memberState.Guid.GetCounter() == guid)
+                            return GetLoadedBot(memberState);
+            return nullptr;
+        };
+        auto nativeRushSourceReadiness = [&](uint32 sourceIndex)
+        {
+            BotRaidDrudgeNativeRush::SourceInput input;
+            if (sourceIndex >= sources.size()
+                || Cohort().Config.ValidationRouteSplitLaneTankSlots.size() != 2
+                || Cohort().Config.ValidationRouteSplitSeedRosterSlots.size() != 2)
+                return BotRaidDrudgeNativeRush::Evaluate(input);
+            Creature* source = sources[sourceIndex];
+            Player* assignedSourceTank = rosterMemberForSlot(
+                Cohort().Config.ValidationRouteSplitLaneTankSlots[sourceIndex]);
+            Player* intendedSeed = rosterMemberForSlot(
+                Cohort().Config.ValidationRouteSplitSeedRosterSlots[sourceIndex]);
+            if (!source || !source->IsAlive() || !assignedSourceTank
+                || !assignedSourceTank->IsAlive() || !intendedSeed
+                || !intendedSeed->IsAlive() || source->GetMap() != assignedSourceTank->GetMap()
+                || source->GetMap() != intendedSeed->GetMap())
+                return BotRaidDrudgeNativeRush::Evaluate(input);
+
+            input.ExactTankVictim = source->GetVictim() == assignedSourceTank;
+            input.TankThreat = source->GetThreatManager().GetThreat(
+                assignedSourceTank, true);
+            Unit* farthest = nullptr;
+            float farthestDistance = -1.0f;
+            float secondFarthestDistance = -1.0f;
+            for (ThreatReference const* reference :
+                source->GetThreatManager().GetUnsortedThreatList())
+            {
+                Unit* candidate = reference ? reference->GetVictim() : nullptr;
+                if (!candidate)
+                    continue;
+                if (candidate != assignedSourceTank && reference->IsAvailable()
+                    && candidate->IsAlive() && source->IsInMap(candidate)
+                    && source->IsInPhase(candidate))
+                    input.HighestOtherThreat = std::max(
+                        input.HighestOtherThreat, reference->GetThreat());
+                if (!candidate->ToPlayer() || !reference->IsAvailable()
+                    || !source->IsWithinLOSInMap(candidate)
+                    || !source->IsWithinCombatRange(
+                        candidate, Cohort().Config.ValidationRouteChargeRangeYards))
+                    continue;
+                float const distance = source->GetExactDist(candidate);
+                if (candidate == intendedSeed)
+                {
+                    input.IntendedSeedPresent = true;
+                    input.SeedDistance = distance;
+                }
+                if (distance > farthestDistance)
+                {
+                    secondFarthestDistance = farthestDistance;
+                    farthestDistance = distance;
+                    farthest = candidate;
+                }
+                else if (distance > secondFarthestDistance)
+                    secondFarthestDistance = distance;
+            }
+            input.FarthestIsIntendedSeed = farthest == intendedSeed;
+            input.SecondFarthestDistance = std::max(0.0f, secondFarthestDistance);
+            input.FarthestGuid = farthest ? farthest->GetGUID().GetCounter() : 0;
+            input.ThreatHeadroomMultiplier =
+                Cohort().Config.ValidationRouteSplitTankThreatHeadroomMultiplier;
+            input.FarthestDistanceMargin = secondFarthestDistance < 0.0f
+                ? 0.0f
+                : 2.0f * Cohort().Config.ValidationRouteSplitArrivalToleranceYards;
+            return BotRaidDrudgeNativeRush::Evaluate(input);
+        };
+        std::array<NativeRushSourceReadiness, 2> const nativeRushReadiness = {
+            nativeRushSourceReadiness(0), nativeRushSourceReadiness(1)
+        };
+        bool const currentScopeHasNativeRush = std::any_of(
+            Party().ValidationRouteDrudgeChargeObservations.begin(),
+            Party().ValidationRouteDrudgeChargeObservations.end(),
+            [this](ValidationRouteDrudgeChargeObservation const& observation)
+            {
+                return observation.AttemptId == Cohort().AttemptId
+                    && observation.WipeGeneration == Cohort().Raid.WipeGeneration
+                    && observation.RouteGeneration == Party().ValidationRouteGeneration;
+            });
+        bool const nativeRushAuthorityReady = std::all_of(
+            nativeRushReadiness.begin(), nativeRushReadiness.end(),
+            [](NativeRushSourceReadiness const& readiness)
+            {
+                return readiness.Ready;
+            });
+        auto tryBuildNativeTankThreat = [&]()
+        {
+            if (!assignedTank || !laneSource->IsAlive()
+                || laneSource->GetVictim() != bot
+                || nativeRushReadiness[laneIndex].TankThreatSecure)
+                return false;
+            BotRaidAreaAuthority::SetAllOffenseSuppressed(
+                bot->GetGUID().GetRawValue(), false);
+            BotRaidAreaAuthority::Set(bot->GetGUID().GetRawValue(), true);
+            ResolvedCombatAction tankAction = ResolveProfileCombatAction(
+                bot, laneSource, 1, false, 0, false, false, true, false, true);
+            BotActionResult const tankResult = ExecuteProfileCombatAction(
+                &state, bot, laneSource, &tankAction,
+                1, false, 0, false, false, true, false, true);
+            bool const succeeded = tankResult == BotActionResult::Ok
+                && tankAction.Valid && tankAction.Type == "cast"
+                && tankAction.SpellId && tankAction.TargetGuid == laneSource->GetGUID();
+            BotRaidAreaAuthority::SetAllOffenseSuppressed(
+                bot->GetGUID().GetRawValue(), true);
+            BotRaidAreaAuthority::Set(bot->GetGUID().GetRawValue(), true);
+            if (succeeded)
+                record(laneSource, "drudge_native_tank_threat_build",
+                    nativeRushReadiness[laneIndex].TankThreat, tankAction.SpellId);
+            return succeeded;
+        };
+
+        // The two seed casts establish native threat references; they are not
+        // permission to start the full damage rotation. Keep every non-tank
+        // hostile action suppressed until both assigned tanks own their source
+        // with conservative native threat headroom and the real live threat
+        // list names the configured seed as the unique farthest eligible
+        // player. This mirrors SMART_TARGET_FARTHEST without rewriting its
+        // target or manufacturing threat. The same gate remains active after
+        // reseparation so ordinary maximum-DPS profiles cannot pull a source
+        // away from its tank or change the next Rush target.
+        if (sources[0]->IsAlive() && sources[1]->IsAlive()
+            && Party().ValidationRouteDrudgeThreatSeedComplete
+            && (!currentScopeHasNativeRush || !nativeRushAuthorityReady))
+        {
+            holdOffense();
+            if (tryBuildNativeTankThreat())
+            {
+                target = laneSource;
+                state.TargetGuid = laneSource->GetGUID();
+                return true;
+            }
+            char const* result = nativeRushAuthorityReady
+                ? "drudge_pre_first_rush_ready_hold"
+                : (!nativeRushReadiness[laneIndex].ExactTankVictim
+                    ? "drudge_native_tank_ownership_wait"
+                    : (!nativeRushReadiness[laneIndex].TankThreatSecure
+                        ? "drudge_native_tank_threat_wait"
+                        : "drudge_native_farthest_seed_wait"));
+            record(laneSource, result,
+                nativeRushReadiness[laneIndex].SeedDistance,
+                nativeRushReadiness[laneIndex].FarthestGuid);
+            target = laneSource;
+            state.TargetGuid = laneSource->GetGUID();
+            return true;
+        }
+
         // The two native threat seeds must be submitted after both sources
         // have exact tank ownership but before the first 20-second Rush.  Do
         // not make those ordinary, cross-lane profile casts wait for the
@@ -21307,6 +21468,27 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             target = laneSource;
             state.TargetGuid = laneSource->GetGUID();
             return true;
+        }
+
+        if (sources[0]->IsAlive() && sources[1]->IsAlive()
+            && roster->second.Role == "dps")
+        {
+            Player* intendedSeed = rosterMemberForSlot(
+                Cohort().Config.ValidationRouteSplitSeedRosterSlots[laneIndex]);
+            float const prospectiveDistance = laneSource->GetExactDist(bot);
+            float const intendedSeedDistance = intendedSeed
+                ? laneSource->GetExactDist(intendedSeed) : 0.0f;
+            if (!intendedSeed || intendedSeed->GetMap() != laneSource->GetMap()
+                || intendedSeedDistance < prospectiveDistance
+                    + 2.0f * Cohort().Config.ValidationRouteSplitArrivalToleranceYards)
+            {
+                holdOffense();
+                record(laneSource, "drudge_native_farthest_profile_hold",
+                    intendedSeedDistance, bot->GetGUID().GetCounter());
+                target = laneSource;
+                state.TargetGuid = laneSource->GetGUID();
+                return true;
+            }
         }
 
         if (bot->GetVictim() && bot->GetVictim() != laneSource)
@@ -38905,6 +39087,7 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << "{\"name\":\"validation_route_split_seed_source_0_slot\",\"value\":" << (Cohort().Config.ValidationRouteSplitSeedRosterSlots.size() == 2 ? Cohort().Config.ValidationRouteSplitSeedRosterSlots[0] : 0) << "},"
          << "{\"name\":\"validation_route_split_seed_source_1_slot\",\"value\":" << (Cohort().Config.ValidationRouteSplitSeedRosterSlots.size() == 2 ? Cohort().Config.ValidationRouteSplitSeedRosterSlots[1] : 0) << "},"
          << "{\"name\":\"validation_route_split_seed_max_range_yards\",\"value\":" << Cohort().Config.ValidationRouteSplitSeedMaxRangeYards << "},"
+         << "{\"name\":\"validation_route_split_tank_threat_headroom_multiplier\",\"value\":" << Cohort().Config.ValidationRouteSplitTankThreatHeadroomMultiplier << "},"
          << "{\"name\":\"validation_route_thunderclap_spell_id\",\"value\":" << Cohort().Config.ValidationRouteThunderclapSpellId << "},"
          << "{\"name\":\"validation_route_charge_spell_id\",\"value\":" << Cohort().Config.ValidationRouteChargeSpellId << "},"
          << "{\"name\":\"validation_route_charge_range_yards\",\"value\":" << Cohort().Config.ValidationRouteChargeRangeYards << "},"

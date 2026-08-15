@@ -704,6 +704,7 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "if (array[index] != ',')" in strict_array
     assert "values.push_back(uint32(value))" in strict_array
     assert 'readFloat(routeJson, "split_seed_max_range_yards")' in IMPL
+    assert 'readFloat(\n            routeJson, "split_tank_threat_headroom_multiplier")' in IMPL
     assert "seedSlotsResolved" in lane[:seed_transition]
     assert "healerSlotsResolved" in lane[:seed_transition]
     assert "repeatedNativeFarthestGeometrySafe" in lane[:seed_transition]
@@ -716,6 +717,28 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert "distance <= Cohort().Config.ValidationRouteSplitSeedMaxRangeYards" in lane[
         seed_transition:seed_call
     ]
+    post_seed_guard = lane.index(
+        "using NativeRushSourceReadiness = BotRaidDrudgeNativeRush::SourceResult",
+        seed_call,
+    )
+    profile_geometry_gate = lane.index(
+        "if (sources[0]->IsAlive() && sources[1]->IsAlive() && !exactRosterReSeparated())"
+    )
+    assert seed_call < post_seed_guard < profile_geometry_gate
+    post_seed = lane[post_seed_guard:profile_geometry_gate]
+    assert "GetUnsortedThreatList()" in post_seed
+    assert "reference->IsAvailable()" in post_seed
+    assert "IsWithinLOSInMap(candidate)" in post_seed
+    assert "IsWithinCombatRange(" in post_seed
+    assert "ValidationRouteSplitTankThreatHeadroomMultiplier" in post_seed
+    assert "BotRaidDrudgeNativeRush::Evaluate(input)" in post_seed
+    assert '"drudge_native_tank_threat_build"' in post_seed
+    assert '"drudge_pre_first_rush_ready_hold"' in post_seed
+    assert '"drudge_native_farthest_seed_wait"' in post_seed
+    assert "ExecuteProfileCombatAction(" in post_seed
+    prospective_hold = lane.index('"drudge_native_farthest_profile_hold"')
+    regular_action = lane.index('"drudge_lane_single_target_action"')
+    assert profile_geometry_gate < prospective_hold < regular_action
     unavailable = lane.index('"drudge_pre_first_rush_seed_profile_unavailable"')
     unavailable_branch = lane[lane.rfind("if (!selectedMember || !selectedState)", 0, unavailable):unavailable]
     assert "ValidationRouteDrudgeThreatSeedFailure = true" not in unavailable_branch

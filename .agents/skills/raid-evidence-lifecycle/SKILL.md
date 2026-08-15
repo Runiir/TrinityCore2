@@ -14,6 +14,11 @@ Before live execution, require:
 - an exact clean Git commit and tree;
 - a successful gate-bearing build receipt whose request, admission, and completion identities are equal and clean;
 - the exact binary hash and generated config hash;
+- an exact materialized DVC workspace for every runtime asset. A detached Git
+  checkout does not update DVC outputs: run targeted `dvc pull`/`dvc checkout`
+  against that commit's lock, require local and cloud status clean, then verify
+  the runtime manifest's decisive node IDs and mechanic fields before
+  provisioning;
 - deterministic provisioning verification against the source manifests/DBC inputs;
 - fresh DB readback of the exact roster, account linkage, positions, and zero group/instance/corpse/ghost residue.
 - native-loadable character identity: normalized 2–12-letter player names and `at_login == 0`; a digit or rename flag makes `Player::LoadFromDB` fail even when ordinary row equality passes.

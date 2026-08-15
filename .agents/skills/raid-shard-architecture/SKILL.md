@@ -52,6 +52,19 @@ Require one exact tuple across config, generated route, runtime status, capture,
   hostile action range`, source danger clearance, lane side, and spacing;
   runtime must still recheck the actual hostile action, LOS, power, cooldown,
   and exact target before submission.
+- Treat a successful seed cast only as creation of a native threat reference,
+  never as proof of the eventual selector result. After both ordinary seed
+  submissions, keep every non-tank hostile action suppressed while the
+  assigned tanks use real profile actions/taunts to regain exact victims and a
+  declared threat-headroom multiplier. Immediately before the native clock
+  edge, inspect the real live threat lists with the core selector predicate and
+  require each configured seed to be the unique farthest eligible player. Do
+  not rewrite threat or force the native target.
+- Keep the same guard after the first Rush. Before admitting a new ordinary DPS
+  action, prove that this prospective threat-list member is still nearer than
+  the configured opposite-lane seed by the sealed arrival margin. A static
+  formation check that ignores threat-driven source movement is not equivalent
+  to native selector parity.
 - Validate native farthest-target geometry as a steady-state invariant, not
   only at the initial pull. Reconstruct the source's post-Rush return point at
   the sealed tank/melee-stop anchor; the intended opposite-lane DPS must remain

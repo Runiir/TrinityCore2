@@ -70,6 +70,7 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
     assert drudges["split_seed_roster_slots"] == [8, 6]
     assert drudges["split_healer_roster_slots"] == [3, 4, 5]
     assert drudges["split_seed_max_range_yards"] == 35.0
+    assert drudges["split_tank_threat_headroom_multiplier"] == 2.5
     recovery_by_slot = {
         row["roster_slot"]: row for row in drudges["split_tank_recovery_anchors"]
     }
@@ -274,7 +275,14 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
     )
     assert drudge_split_geometry_status(old_repeat_geometry) == (
         False,
-        "split_repeated_native_farthest_unsafe",
+        "split_initial_native_farthest_unsafe",
+    )
+
+    weak_native_threat_headroom = deepcopy(drudges)
+    weak_native_threat_headroom["split_tank_threat_headroom_multiplier"] = 1.29
+    assert drudge_split_geometry_status(weak_native_threat_headroom) == (
+        False,
+        "split_seed_candidate_contract",
     )
 
 

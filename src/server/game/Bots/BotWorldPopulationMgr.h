@@ -138,6 +138,7 @@ struct BotWorldExperimentConfig
     float ValidationRouteSplitNativeMeleeStopYards = 0.0f;
     std::vector<uint32> ValidationRouteSplitSeedRosterSlots;
     float ValidationRouteSplitSeedMaxRangeYards = 0.0f;
+    float ValidationRouteSplitTankThreatHeadroomMultiplier = 0.0f;
     uint32 ValidationRouteThunderclapSpellId = 0;
     uint32 ValidationRouteChargeSpellId = 0;
     float ValidationRouteChargeRangeYards = 0.0f;
@@ -515,6 +516,7 @@ private:
         std::vector<uint32> SplitSeedRosterSlots;
         std::vector<uint32> SplitHealerRosterSlots;
         float SplitSeedMaxRangeYards = 0.0f;
+        float SplitTankThreatHeadroomMultiplier = 0.0f;
         uint32 ThunderclapSpellId = 0;
         uint32 ChargeSpellId = 0;
         float ChargeRangeYards = 0.0f;

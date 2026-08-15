@@ -1,0 +1,120 @@
+{
+  "schema": "cata_raid_compact_run_summary_v1",
+  "capture_id": "cata_raid_phase1_blackwing_descent_10n_magmaw_diagnostic_v1",
+  "started_at_utc": "2026-08-15T09:44:49Z",
+  "source_commit": "855cdb801050c0bbba29e75bd881bab334928318",
+  "source_tree": "8cedf14639536a1dd934c6ee10812f02ac48b288",
+  "binary_sha256": "8d3c7f09fbd106f77d62eb7482ac4f68b3287dafc5649f9322044317b34bcc38",
+  "config_sha256": "c5528e9abf00c2cd68d846ccb40fc88d9c97a88bfe854b8bf4309438b73c3724",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
+  "instance_id": 14,
+  "attempt_id": 2,
+  "assignment_generation": 1,
+  "classification": "gameplay_failure",
+  "phase1_gate_passed": false,
+  "fidelity_claim": false,
+  "forbidden_assistance_observed": false,
+  "terminal_failure": {
+    "reason": "drudge_reseparation_deadline_missed",
+    "elapsed_seconds": 223.337,
+    "final_forced_diagnose_and_trace_complete": true,
+    "alive_count": 10,
+    "active_count": 10
+  },
+  "positive_live_result": {
+    "exact_roster_and_instance_admitted": true,
+    "chainwielder_cleared": true,
+    "drudge_exact_roster_staged": true,
+    "threat_seed_complete": true,
+    "both_seed_profile_actions_succeeded": true,
+    "cleanup_gate_passed": true,
+    "formal_stuck_or_unstuck_actions": 0
+  },
+  "drudge_first_cause": {
+    "boundary": "first native Rush target selection after ordinary same-lane DPS and seed periodic threat changed the live source/threat geometry",
+    "source_spawn_id": 250141,
+    "source_guid": 60,
+    "native_selected_target_guid": 30010,
+    "native_selected_target_role": "dps",
+    "native_selected_target_lane": 1,
+    "native_selected_distance": 46.7208,
+    "configured_seed_guid": 30006,
+    "configured_seed_lane": 0,
+    "configured_seed_distance": 7.45609,
+    "assigned_tank_guid": 30002,
+    "assigned_tank_threat": 38105.0,
+    "configured_seed_threat": 85968.0,
+    "interpretation": "native SMART_TARGET_FARTHEST behaved correctly; the route released ordinary DPS without first proving tank threat headroom and the actual live unique-farthest seed",
+    "dps_profile_regression": false,
+    "magmaw_result": "not engaged; no Magmaw fidelity, boss-DPS, or kill inference is authorized"
+  },
+  "cleanup": {
+    "gate_passed": true,
+    "worldserver_exit_code": 0,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true
+  },
+  "performance": {
+    "sample_count": 178,
+    "sampling_errors": 0,
+    "elapsed_seconds": 223.337,
+    "mean_cpu_percent_one_core": 35.153,
+    "minimum_rss_bytes": 1389318144,
+    "maximum_rss_bytes": 1450037248,
+    "worldserver_log_bytes": 25249872,
+    "total_uncompressed_bytes": 50748018
+  },
+  "immutable_artifacts": {
+    "raw": {
+      "bytes": 25243280,
+      "sha256": "69a122c8dc165304163d75d7205737919c167769577b79bcb93ec15fc719e970"
+    },
+    "worldserver_log": {
+      "bytes": 25249872,
+      "sha256": "4c388959fd8f46873caf6ac9043d8e5db4716029151a87ad8025fc8f8b6be042"
+    },
+    "report": {
+      "bytes": 254866,
+      "file_sha256": "e65511eadb6da25fb315ab8fe111bc34ce972f4b0820b253089caf5b312f57ed",
+      "canonical_sha256": "6382c7ebc7a32f774c67292f67f5f68bba704f61f4906087dc512c409b7d5c69"
+    }
+  },
+  "build_and_preparation": {
+    "configure_receipt_file_sha256": "39a5fdee4c494a884e0603cd30993c0c23543f2f3aaf7e1722e21f992d6415bf",
+    "configure_receipt_sha256": "6ba76d68cd4ca7e76f15547150bb22ec781586cf7e48daaaaf5445fca102d623",
+    "worldserver_receipt_file_sha256": "f4c7bd56572cb70f857ca9b22d385f2e53545e14d28500de63122f65572dd5c3",
+    "worldserver_receipt_sha256": "9f06805a45d3c371e0f3c516c517614652cdc45f72c50f06f03c5881c704f80d",
+    "worldserver_build_classification": "success",
+    "provisioning_readback_file_sha256": "65389fdd1523e86d9ed76288aca3ed90844b0d1dabacb05bd1c3b283154753c5",
+    "provisioning_readback_passed": true,
+    "selected_name_count": 10,
+    "zero_group_instance_corpse_ghost_residue": true
+  },
+  "next_action": {
+    "subject": "Gate Drudge offense on native tank threat and live farthest-target parity",
+    "required_validation": "independent review, exact coordinated build, fresh provisioning/readback, then rerun the same Magmaw diagnostic"
+  },
+  "retention": {
+    "capture_dvc_pointer": {
+      "path": "artifacts/cata_raid_program/phase1_855cdb80_magmaw_smoke_20260815.dvc",
+      "md5": "17a6aff5915642a0f1d128ecc213c1bc.dir",
+      "size": 50748018,
+      "nfiles": 3
+    },
+    "build_prep_dvc_pointer": {
+      "path": "artifacts/cata_raid_program/phase1_855cdb80_build_prep_20260815.dvc",
+      "md5": "2cbd57e818cba58a0b5f190fdb8e5345.dir",
+      "size": 3807508,
+      "nfiles": 11
+    },
+    "remote_verified": true,
+    "local_payload_evicted": false,
+    "directory_metadata_retained": true,
+    "directory_metadata_sha256": {
+      "capture": "5aebd2aa65a8ceb107b7a0a2f0ed87895897bdffe40b77730b1f9d945a3be241",
+      "build_prep": "6f7c569f276b27f8f7c0f57ac7cc5c7be2a137ca5af198a4e41d118519a52c07"
+    }
+  }
+}

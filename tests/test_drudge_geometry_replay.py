@@ -11,12 +11,48 @@ def test_production_drudge_geometry_transition_replays_charge_edges_and_pull_ord
     source.write_text(
         r'''
 #include "Bots/BotRaidDrudgeGeometryState.h"
+#include "Bots/BotRaidDrudgeNativeRushState.h"
 #include <cassert>
 
 using namespace BotRaidDrudgeGeometry;
 
 int main()
 {
+    // Exact 855 live counterexample: the seeded mage was only 7.45609 yards
+    // away while same-lane DPS 30010 was 46.7208 yards away, and tank threat
+    // (38105) was below the 2.5x headroom over the seed (85968). Production
+    // must keep ordinary offense suppressed without changing native target or
+    // threat state.
+    BotRaidDrudgeNativeRush::SourceInput live855;
+    live855.ExactTankVictim = true;
+    live855.IntendedSeedPresent = true;
+    live855.FarthestIsIntendedSeed = false;
+    live855.TankThreat = 38105.0f;
+    live855.HighestOtherThreat = 85968.0f;
+    live855.SeedDistance = 7.45609f;
+    live855.SecondFarthestDistance = 36.023f;
+    live855.ThreatHeadroomMultiplier = 2.5f;
+    live855.FarthestDistanceMargin = 2.0f;
+    live855.FarthestGuid = 30010;
+    auto rejected855 = BotRaidDrudgeNativeRush::Evaluate(live855);
+    assert(!rejected855.TankThreatSecure);
+    assert(!rejected855.SeedIsUniqueFarthest);
+    assert(!rejected855.Ready);
+
+    BotRaidDrudgeNativeRush::SourceInput readyRush = live855;
+    readyRush.FarthestIsIntendedSeed = true;
+    readyRush.TankThreat = 250000.0f;
+    readyRush.HighestOtherThreat = 90000.0f;
+    readyRush.SeedDistance = 34.0f;
+    readyRush.SecondFarthestDistance = 31.5f;
+    readyRush.FarthestGuid = 30006;
+    auto ready = BotRaidDrudgeNativeRush::Evaluate(readyRush);
+    assert(ready.TankThreatSecure);
+    assert(ready.SeedIsUniqueFarthest);
+    assert(ready.Ready);
+    readyRush.SeedDistance = 33.0f;
+    assert(!BotRaidDrudgeNativeRush::Evaluate(readyRush).SeedIsUniqueFarthest);
+
     assert(SelectMemberRecoveryAction(true, false, true)
         == MemberRecoveryAction::RecoverFormation);
     assert(SelectMemberRecoveryAction(true, true, true)
