@@ -242,18 +242,8 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
         return Loot(bot, target);
     if (action.Type == "auto_attack")
     {
-        if (!target || !target->IsAlive() || !bot->IsValidAttackTarget(target))
-            return BotActionResult::InvalidTarget;
-        if (!bot->IsWithinLOSInMap(target))
-            return BotActionResult::NoLineOfSight;
-        Face(bot, target);
         if (action.AutoAttackMode == "melee")
-        {
-            if (!bot->IsWithinMeleeRange(target))
-                return BotActionResult::OutOfRange;
-            bot->Attack(target, true);
-            return BotActionResult::Ok;
-        }
+            return SubmitMeleeAutoAttack(bot, target);
         return BotActionResult::NoAction;
     }
     if (!action.SpellId)
@@ -274,7 +264,7 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     if (target != bot && bot->IsValidAttackTarget(target))
     {
         if (action.AutoAttackMode == "melee")
-            bot->Attack(target, true);
+            SubmitMeleeAutoAttack(bot, target);
         else if (action.AutoAttackMode == "ranged" && bot->getClass() == CLASS_HUNTER
             && !bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
             bot->CastSpell(target, 75, false); // Auto Shot
@@ -385,6 +375,39 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     }
 
     RecordSuccess(bot->GetGUID());
+    return BotActionResult::Ok;
+}
+
+BotActionResult BotActionExecutor::SubmitMeleeAutoAttack(Player* bot, Unit* target)
+{
+    if (!bot || !bot->IsAlive())
+        return BotActionResult::NoBot;
+    if (!target || !target->IsAlive() || !bot->IsValidAttackTarget(target))
+        return BotActionResult::InvalidTarget;
+
+    uint64 const ownerGuid = bot->GetGUID().GetRawValue();
+    if (BotRaidAreaAuthority::IsAllOffenseSuppressed(ownerGuid))
+        return BotActionResult::NoAction;
+    if (Creature const* creature = target->ToCreature();
+        creature && BotRaidAreaAuthority::IsProtectedEncounterTarget(
+            ownerGuid, creature->GetEntry(), creature->GetSpawnId(),
+            creature->GetGUID().GetRawValue()))
+        return BotActionResult::NoAction;
+
+    Face(bot, target);
+    bool const inLineOfSight = bot->IsWithinLOSInMap(target);
+    bool const inMeleeRange = bot->IsWithinMeleeRange(target);
+    // The client auto-attack toggle binds a victim even before the first swing
+    // is legal. Keep that native state across chase/hazard movement; the core
+    // will produce white swings automatically on every in-range swing timer.
+    bool const attackBound = bot->Attack(target, true)
+        || bot->GetVictim() == target;
+    if (!attackBound)
+        return BotActionResult::NoAction;
+    if (!inLineOfSight)
+        return BotActionResult::NoLineOfSight;
+    if (!inMeleeRange)
+        return BotActionResult::OutOfRange;
     return BotActionResult::Ok;
 }
 

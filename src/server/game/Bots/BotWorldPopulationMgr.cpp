@@ -9484,15 +9484,19 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
             Unit* target = ObjectAccessor::GetUnit(*bot, action.Target);
             if (!target || !target->IsAlive() || !bot->IsValidAttackTarget(target))
                 return BotActionArbitration::Outcome::Unsafe("native_attack_target_invalid");
-            if (!bot->IsWithinLOSInMap(target))
+            bool const inLineOfSight = bot->IsWithinLOSInMap(target);
+            bool const inMeleeRange = !action.Melee || bot->IsWithinMeleeRange(target);
+            bool const attackBound = bot->Attack(target, action.Melee)
+                || bot->GetVictim() == target;
+            if (!attackBound)
+                return BotActionArbitration::Outcome::Retryable("native_attack_retryable");
+            if (!inLineOfSight)
                 return BotActionArbitration::Outcome::Retryable(
                     "native_attack_no_line_of_sight");
-            if (action.Melee && !bot->IsWithinMeleeRange(target))
+            if (!inMeleeRange)
                 return BotActionArbitration::Outcome::Retryable(
                     "native_attack_out_of_range");
-            return bot->Attack(target, action.Melee)
-                ? BotActionArbitration::Outcome::Started("native_attack_started")
-                : BotActionArbitration::Outcome::Retryable("native_attack_retryable");
+            return BotActionArbitration::Outcome::Started("native_attack_started");
         }
         else if constexpr (std::is_same_v<T, BotNativeAction::StopAttack>)
         {
@@ -9636,6 +9640,15 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
 
     if (profile.MissingProfile || directive.empty())
         return false;
+
+    // Auto-attack is a persistent native toggle, not a rotation candidate.
+    // Bind it before movement so a melee player chases the same victim and
+    // white swings resume immediately whenever native melee reach is legal.
+    if (action && action->AutoAttackMode == "melee")
+    {
+        BotActionExecutor executor;
+        executor.SubmitMeleeAutoAttack(bot, reference);
+    }
 
     if (action && action->SpellId == 5221 && directive == "melee_behind")
     {

@@ -4677,16 +4677,30 @@ def test_profile_combat_reconciles_native_position_feedback_before_retrying():
     auto_attack = execute_combat.split('if (action.Type == "auto_attack")', 1)[1].split(
         'if (!action.SpellId)', 1
     )[0]
-    assert "IsWithinLOSInMap(target)" in auto_attack
-    assert "IsWithinMeleeRange(target)" in auto_attack
+    submit_auto_attack = function_body(
+        executor, "BotActionResult BotActionExecutor::SubmitMeleeAutoAttack"
+    )
+    move_to_range = function_body(
+        manager, "bool BotWorldPopulationMgr::MoveBotToProfileRange"
+    )
+    assert "SubmitMeleeAutoAttack(bot, target)" in auto_attack
+    assert "IsWithinLOSInMap(target)" in submit_auto_attack
+    assert "IsWithinMeleeRange(target)" in submit_auto_attack
     assert_ordered(
-        auto_attack,
+        submit_auto_attack,
         "IsWithinLOSInMap(target)",
         "IsWithinMeleeRange(target)",
         "bot->Attack(target, true)",
+        "if (!inLineOfSight)",
+        "if (!inMeleeRange)",
     )
-    assert "return BotActionResult::NoLineOfSight" in auto_attack
-    assert "return BotActionResult::OutOfRange" in auto_attack
+    assert "bot->GetVictim() == target" in submit_auto_attack
+    assert "if (!attackBound)" in submit_auto_attack
+    assert "return BotActionResult::NoLineOfSight" in submit_auto_attack
+    assert "return BotActionResult::OutOfRange" in submit_auto_attack
+    assert 'action->AutoAttackMode == "melee"' in move_to_range
+    assert "executor.SubmitMeleeAutoAttack(bot, reference)" in move_to_range
+    assert "AttackStop" not in move_to_range
 
     assert "result == BotActionResult::OutOfRange" in execute_profile
     assert "result == BotActionResult::NoLineOfSight" in execute_profile
