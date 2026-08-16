@@ -3,6 +3,7 @@
 
 #include "Define.h"
 #include <cmath>
+#include <limits>
 
 namespace BotMovementArbitration
 {
@@ -35,7 +36,7 @@ struct Scope
     uint64 AttemptId = 0;
     uint32 WipeGeneration = 0;
     uint64 RouteGeneration = 0;
-    uint32 MapId = 0;
+    uint32 MapId = std::numeric_limits<uint32>::max();
     uint32 InstanceId = 0;
 };
 
@@ -77,9 +78,10 @@ enum class Decision : uint8
 
 constexpr bool ValidScope(Scope const& scope)
 {
-    // Instance zero is the canonical open-world scope.  Map zero remains
-    // invalid because it cannot bind a movement request to world geometry.
-    return scope.MapId != 0;
+    // Map zero is Eastern Kingdoms and instance zero is the canonical
+    // open-world scope. Reserve UINT32_MAX for an uninitialized scope so
+    // ordinary player movement on map zero remains fully arbitrated.
+    return scope.MapId != std::numeric_limits<uint32>::max();
 }
 
 constexpr bool SameScope(Scope const& left, Scope const& right)

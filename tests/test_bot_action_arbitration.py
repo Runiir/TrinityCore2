@@ -64,6 +64,16 @@ int main()
     assert(!inversion.OrderingValid());
 
     using namespace BotMovementArbitration;
+    Scope uninitialized;
+    assert(!ValidScope(uninitialized));
+    Scope easternKingdoms{ 0, 0, 0, 0, 0 };
+    assert(ValidScope(easternKingdoms));
+    Lease easternKingdomsLease;
+    Request easternKingdomsMove{ Owner::CombatRange,
+        BotMovementArbitration::Priority::Combat, 1100,
+        easternKingdoms, 1.0f, 2.0f, 3.0f };
+    assert(Evaluate(easternKingdomsLease, easternKingdomsMove, 1000)
+        == Decision::Acquire);
     Scope scope{ 7, 2, 9, 669, 41 };
     Lease lease;
     Request route{ Owner::Route, BotMovementArbitration::Priority::Route,

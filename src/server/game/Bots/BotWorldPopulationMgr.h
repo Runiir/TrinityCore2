@@ -1973,7 +1973,7 @@ private:
         bool terminalOnFailure = false,
         BotMovementArbitration::Owner movementOwner = BotMovementArbitration::Owner::None,
         BotMovementArbitration::Priority movementPriority = BotMovementArbitration::Priority::Idle,
-        Unit* dynamicTarget = nullptr);
+        Unit* dynamicTarget = nullptr, float dynamicTargetRange = 0.0f);
     BotActionArbitration::Outcome ExecuteNativeActionIntent(WorldBotState& state, Player* bot,
         BotNativeAction::Intent const& intent,
         BotMovementArbitration::Owner movementOwner = BotMovementArbitration::Owner::None,

@@ -1901,6 +1901,13 @@ def test_move_bot_to_profile_range_projects_approaches_to_terrain():
     assert "for (float spread : { 3.0f, -3.0f, 0.0f })" in profile_range
     assert "partyRangedAnchor->GetPositionX() + std::cos(tangentAngle) * spread" in profile_range
     assert "float candidateRange = reference->GetExactDist(rangedPosition);" in profile_range
+    assert_ordered(
+        profile_range,
+        "PathGenerator approachPath(bot);",
+        "bool const completeNativeApproach",
+        "if (MoveBotToPoint(state, bot, x, y, z, false,",
+        "for (float const nativePathSegment",
+    )
     assert "bool movingOutward = distance < desiredRange - 1.0f;" in profile_range
     assert "reference->GetAngle(bot) : bot->GetAngle(reference)" in profile_range
     assert "bot->GetFirstCollisionPosition(travelDistance, relativeBearing + angleOffset)" in profile_range
@@ -1914,7 +1921,7 @@ def test_move_bot_to_profile_range_projects_approaches_to_terrain():
     assert "MoveChase(reference, desiredRange)" not in profile_range
     assert "float minimumCandidateRange = movingOutward" in profile_range
     assert "if (candidateRange < minimumCandidateRange" in profile_range
-    assert "|| bot->GetExactDist(rangedPosition) < 1.0f)" in profile_range
+    assert "|| bot->GetExactDist(rangedPosition) < minimumMovementDistance)" in profile_range
     assert "if (moveToTerrainProjectedPoint(rangedPosition.GetPositionX(), rangedPosition.GetPositionY(), rangedPosition.GetPositionZ()))" in profile_range
     assert "return true;" in profile_range
 

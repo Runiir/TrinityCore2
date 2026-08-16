@@ -752,8 +752,19 @@ BotActionResult BotActionExecutor::CheckHostileSpell(Player* owner, Player* bot,
     if (!bot->IsWithinLOSInMap(target))
         return BotActionResult::NoLineOfSight;
     float const targetDistance = bot->GetExactDist(target);
-    float const minRange = spellInfo->GetMinRange(false);
-    float const maxRange = std::max(5.0f, spellInfo->GetMaxRange(false));
+    float minRange = bot->GetSpellMinRangeForTarget(target, spellInfo);
+    float maxRange = bot->GetSpellMaxRangeForTarget(target, spellInfo);
+    if (spellInfo->RangeEntry
+        && (spellInfo->RangeEntry->Flags & SPELL_RANGE_MELEE))
+        maxRange = std::max(maxRange, bot->GetMeleeRange(target));
+    else
+    {
+        if (spellInfo->RangeEntry
+            && (spellInfo->RangeEntry->Flags & SPELL_RANGE_RANGED))
+            minRange += bot->GetMeleeRange(target);
+        maxRange += bot->GetCombatReach() + target->GetCombatReach();
+    }
+    maxRange = std::max(5.0f, maxRange);
     if ((minRange > 0.0f && targetDistance < minRange)
         || !bot->IsWithinDistInMap(target, maxRange))
         return BotActionResult::OutOfRange;

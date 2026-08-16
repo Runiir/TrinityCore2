@@ -79,11 +79,18 @@ def test_profile_range_prefilter_preserves_native_combat_reach() -> None:
         ROOT / "src/server/game/Bots/BotClassSpecActionProfile.cpp"
     ).read_text()
     world_source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    executor_source = (ROOT / "src/server/game/Bots/BotActionExecutor.cpp").read_text()
 
     assert "ProfileSpellMaximumRange" in profile_source
     assert "maximumRange + bot->GetCombatReach() + target->GetCombatReach()" in profile_source
     assert "effectiveSpellMaxRange" in world_source
     assert "nativeMaxRange += bot->GetCombatReach() + target->GetCombatReach()" in world_source
+    assert "std::min(configuredMaxRange, nativeMaxRange)" in world_source
+    assert "A profile maximum is a policy cap" in world_source
+    assert "float minRange = bot->GetSpellMinRangeForTarget(target, spellInfo);" in executor_source
+    assert "float maxRange = bot->GetSpellMaxRangeForTarget(target, spellInfo);" in executor_source
+    assert "minRange += bot->GetMeleeRange(target);" in executor_source
+    assert "maxRange += bot->GetCombatReach() + target->GetCombatReach();" in executor_source
 
 
 def test_higher_priority_short_range_action_moves_before_long_range_filler() -> None:
@@ -93,3 +100,37 @@ def test_higher_priority_short_range_action_moves_before_long_range_filler() -> 
     assert 'candidate.RejectReason == "out_of_range"' in source
     assert "candidatePreferred(candidate, bestRangeRecovery)" in source
     assert "candidatePreferred(*bestRangeRecovery, best)" in source
+    assert "bool const preciseMaximumRangeApproach = action && minRange <= 0.0f" in source
+    assert "maxRange - maximumRangeSafetyMargin" in source
+    assert "minimumTravelDistance = preciseMaximumRangeApproach" in source
+    assert "minimumMovementDistance = preciseMaximumRangeApproach" in source
+    assert "desiredPlanarDistance = std::sqrt(std::max(0.0f" in source
+    assert "for (float const nativePathSegment : { 1.5f, 3.0f, 5.0f, 7.0f })" in source
+    assert "float const lateralAngle = std::acos(cosine);" in source
+    assert "PathGenerator approachPath(bot);" in source
+    assert "completeNativeApproach" in source
+    assert "uint32(std::ceil(segmentLength / 0.5f))" in source
+    assert "candidateRange > desiredRange" in source
+    assert "Preserve its native path height" in source
+    assert "target-centered ring points" in source
+    assert "reference->GetPositionZ() + 4.0f" in source
+    assert "candidateRange > maxRange - maximumRangeSafetyMargin" in source
+    assert source.index("PathGenerator approachPath(bot);") < source.index(
+        "for (float const nativePathSegment : { 1.5f, 3.0f, 5.0f, 7.0f })"
+    )
+    assert "BotMovementArbitration::Priority::Combat))" in source
+    assert "moveToTerrainProjectedPoint(x, y, bot->GetPositionZ())" in source
+
+
+def test_shadowflame_uses_a_self_cast_with_a_hostile_range_anchor() -> None:
+    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    migration = (
+        ROOT / "sql/custom/world/2026_08_16_01_affliction_warlock_apl_rotation.sql"
+    ).read_text()
+
+    assert "selfCenteredHostileRangeAction" in source
+    assert '"self_centered_position_reconcile"' in source
+    assert "bot->SetFacingToObject(target);" in source
+    assert "action.MaxRange = selfTarget" in source
+    assert "'self', 'ranged', 'none', 0, 8" in migration
+    assert '\\\"movement_diagnostic\\\"' in source

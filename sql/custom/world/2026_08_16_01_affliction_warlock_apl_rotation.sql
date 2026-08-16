@@ -57,10 +57,11 @@ INSERT INTO `bot_rotation_action`
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=9 AND `spec_tag`='affliction_warlock' AND `role`='dps'),
   90, 77799, 'spender', 'fel_flame,proc,apl_priority_8',
   0.82, 0.00, 9, 1, 1, 0.00, 1.00, 89937, 'enemy', 'ranged', 'none', 12, 35, 0, 0, 0.00, 1.00, 0),
--- Shadowflame remains native-range limited; Shadow Bolt is the final filler.
+-- Shadowflame is a self-cast frontal cone with a hostile movement/facing
+-- anchor; Shadow Bolt is the final filler.
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=9 AND `spec_tag`='affliction_warlock' AND `role`='dps'),
   100, 47897, 'spender', 'shadowflame,short_range,apl_priority_10',
-  0.84, 0.00, 10, 1, 1, 0.00, 1.00, 0, 'enemy', 'ranged', 'none', 0, 15, 0, 0, 0.00, 1.00, 0),
+  0.84, 0.00, 10, 1, 1, 0.00, 1.00, 0, 'self', 'ranged', 'none', 0, 8, 0, 0, 0.00, 1.00, 0),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=9 AND `spec_tag`='affliction_warlock' AND `role`='dps'),
   130, 686, 'builder', 'shadow_bolt,filler,apl_priority_13',
   0.78, 0.00, 13, 1, 1, 0.00, 1.00, 0, 'enemy', 'ranged', 'none', 12, 35, 0, 0, 0.00, 1.00, 0);

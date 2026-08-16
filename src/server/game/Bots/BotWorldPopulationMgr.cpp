@@ -3918,6 +3918,13 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                  << (!completedWindow && rejectsItr != Party().LastCombatRejectsByBot.end() ? rejectsItr->second : "null")
                  << ",\"last_chosen_action\":"
                  << (!completedWindow && chosenItr != Party().LastChosenCombatByBot.end() ? chosenItr->second : "null")
+                 << ",\"movement_diagnostic\":{\"last_path_reject_reason\":\""
+                 << JsonEscape(state.LastPathRejectReason)
+                 << "\",\"last_recovery_mode\":\"" << JsonEscape(state.LastRecoveryMode)
+                 << "\",\"last_recovery_result\":\"" << JsonEscape(state.LastRecoveryResult)
+                 << "\",\"active_path_valid\":" << (state.ActivePathValid ? "true" : "false")
+                 << ",\"active_path_traversal_mode\":\""
+                 << JsonEscape(state.ActivePathTraversalMode) << "\"}"
                  << '}';
         }
         json << ']';
@@ -11470,7 +11477,7 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
         ? actionCategory->second : action.DebugName;
     float distance = bot->GetExactDist(target);
     if ((action.MinRange > 0.0f && distance < action.MinRange)
-        || (action.MaxRange > 0.0f && distance > std::max(5.0f, action.MaxRange - 1.0f))
+        || (action.MaxRange > 0.0f && distance > std::max(5.0f, action.MaxRange - 0.25f))
         || !bot->IsWithinLOSInMap(target))
     {
         if (scored)
@@ -13611,7 +13618,8 @@ void BotWorldPopulationMgr::MarkPoiVisited(uint64 poiId) const
 
 bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, float x, float y, float z,
     bool terminalOnFailure, BotMovementArbitration::Owner movementOwner,
-    BotMovementArbitration::Priority movementPriority, Unit* dynamicTarget)
+    BotMovementArbitration::Priority movementPriority, Unit* dynamicTarget,
+    float dynamicTargetRange)
 {
     if (!bot)
         return false;
@@ -13683,8 +13691,7 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     movementRequest.Y = y;
     movementRequest.Z = z;
     bool const targetAwareChase = dynamicTarget && dynamicTarget->IsAlive()
-        && dynamicTarget->IsInWorld() && dynamicTarget->GetMap() == bot->GetMap()
-        && bot->GetVictim() == dynamicTarget;
+        && dynamicTarget->IsInWorld() && dynamicTarget->GetMap() == bot->GetMap();
     movementRequest.DynamicTargetGuid = targetAwareChase
         ? dynamicTarget->GetGUID().GetRawValue() : 0;
     Decision const movementDecision = Evaluate(state.MovementLease, movementRequest, nowMs);
@@ -13734,6 +13741,47 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
         state.ActivePathToY = y;
         state.ActivePathToZ = z;
         Apply(state.MovementLease, movementRequest);
+        return true;
+    }
+
+    if (targetAwareChase)
+    {
+        // A dynamic hostile is not a fixed route coordinate. Commit the
+        // arbitration lease, then let Trinity's native chase generator own
+        // mmap repathing and the requested stop distance as the target and
+        // caster move. Static route points continue through the strict
+        // complete-path validation below.
+        state.ActivePathFromX = bot->GetPositionX();
+        state.ActivePathFromY = bot->GetPositionY();
+        state.ActivePathFromZ = bot->GetPositionZ();
+        state.ActivePathToX = x;
+        state.ActivePathToY = y;
+        state.ActivePathToZ = z;
+        state.ActivePathSegmentValid = false;
+        state.ActivePathTraversalMode = "native_target_chase";
+        state.ActivePathValid = true;
+        state.ActivePathTargetGuid = dynamicTarget->GetGUID();
+        state.ActivePathAttemptId = Cohort().Config.ValidationRouteEnable
+            ? Cohort().AttemptId : 0;
+        state.ActivePathWipeGeneration = Cohort().Config.ValidationRouteEnable
+            ? Cohort().Raid.WipeGeneration : 0;
+        state.ActivePathRouteGeneration = Cohort().Config.ValidationRouteEnable
+            ? Party().ValidationRouteGeneration : 0;
+        state.ActivePathRouteNodeId = Cohort().Config.ValidationRouteEnable
+            ? Cohort().Config.ValidationRouteNodeId : std::string();
+        state.LastPathRejectReason.clear();
+        state.LastNoProgressReason.clear();
+        state.LastRecoveryMode = "native_target_chase";
+        state.LastRecoveryResult = "native_movement_submitted";
+        state.LastPathChangeMs = nowMs;
+        state.IsMoving = true;
+        Apply(state.MovementLease, movementRequest);
+
+        bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+        if (dynamicTargetRange > 0.0f)
+            bot->GetMotionMaster()->MoveChase(dynamicTarget, dynamicTargetRange);
+        else
+            bot->GetMotionMaster()->MoveChase(dynamicTarget);
         return true;
     }
 
@@ -13938,7 +13986,12 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
 
     bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
     if (targetAwareChase)
-        bot->GetMotionMaster()->MoveChase(dynamicTarget);
+    {
+        if (dynamicTargetRange > 0.0f)
+            bot->GetMotionMaster()->MoveChase(dynamicTarget, dynamicTargetRange);
+        else
+            bot->GetMotionMaster()->MoveChase(dynamicTarget);
+    }
     else if (std::fabs(segmentX - x) > activeDestinationEpsilon
         || std::fabs(segmentY - y) > activeDestinationEpsilon
         || std::fabs(segmentZ - z) > activeDestinationEpsilon)
@@ -14970,18 +15023,162 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
     // combat reach: the movement can finish while the ranged weapon is still
     // inside its hostile minimum range.  Use a stable ranged band for every
     // real dead-zone escape, while retaining the profile maximum as the cap.
-    float desiredRange = minRange > 0.0f
-        ? std::max(12.0f, minRange + 4.0f)
-        : std::max(12.0f, std::min(maxRange - 2.0f, 25.0f));
+    // When the selected action is shorter-ranged than the profile's ordinary
+    // lane, preserve its declared priority with the smallest useful inward
+    // correction.  The general ranged mover deliberately uses broad four-yard
+    // steps, but that overshoots a legal edge-range action such as Shadowflame
+    // and can also fail to find a same-floor path for a sub-yard correction.
+    // Stay just inside the native envelope; the core still revalidates range
+    // before accepting the later cast.
+    bool const preciseMaximumRangeApproach = action && minRange <= 0.0f
+        && maxRange > 5.0f && profile.MaxRange > maxRange;
+    float const maximumRangeSafetyMargin = preciseMaximumRangeApproach
+        ? 0.40f : 1.0f;
+    float desiredRange = preciseMaximumRangeApproach
+        ? std::max(5.0f, maxRange - maximumRangeSafetyMargin)
+        : (minRange > 0.0f
+            ? std::max(12.0f, minRange + 4.0f)
+            : std::max(12.0f, std::min(maxRange - 2.0f, 25.0f)));
     if (maxRange > 0.0f)
-        desiredRange = std::min(desiredRange, std::max(5.0f, maxRange - 2.0f));
+        desiredRange = std::min(desiredRange, std::max(5.0f,
+            maxRange - (preciseMaximumRangeApproach
+                ? maximumRangeSafetyMargin : 2.0f)));
     desiredRange = std::max(5.0f, desiredRange);
 
     float distance = bot->GetExactDist(reference);
     if (!forceRangedReposition && distance >= desiredRange - 1.0f
-        && (maxRange <= 0.0f || distance <= maxRange - 1.0f)
+        && (maxRange <= 0.0f || distance <= maxRange - maximumRangeSafetyMargin)
         && bot->IsWithinLOSInMap(reference))
         return false;
+
+    if (preciseMaximumRangeApproach && distance > desiredRange)
+    {
+        // Follow the already-proven complete mmap route toward the target and
+        // stop at its first sampled point inside the legal spell envelope.
+        // A chase generator aims at the target's collision body, which can be
+        // across a courtyard ledge even when an earlier point on the same
+        // native path is a legal player casting position.
+        PathGenerator approachPath(bot);
+        if (approachPath.CalculatePath(reference->GetPositionX(),
+                reference->GetPositionY(), reference->GetPositionZ(), false))
+        {
+            PathType const approachType = approachPath.GetPathType();
+            bool const completeNativeApproach =
+                !(approachType & (PATHFIND_NOPATH | PATHFIND_NOT_USING_PATH
+                    | PATHFIND_INCOMPLETE | PATHFIND_SHORTCUT
+                    | PATHFIND_FARFROMPOLY));
+            Movement::PointsArray const& points = approachPath.GetPath();
+            if (completeNativeApproach && points.size() >= 2)
+                for (std::size_t index = 1; index < points.size(); ++index)
+                {
+                    G3D::Vector3 const& from = points[index - 1];
+                    G3D::Vector3 const& to = points[index];
+                    float const segmentX = to.x - from.x;
+                    float const segmentY = to.y - from.y;
+                    float const segmentZ = to.z - from.z;
+                    float const segmentLength = std::sqrt(segmentX * segmentX
+                        + segmentY * segmentY + segmentZ * segmentZ);
+                    uint32 const sampleCount = std::max<uint32>(1,
+                        uint32(std::ceil(segmentLength / 0.5f)));
+                    for (uint32 sample = 1; sample <= sampleCount; ++sample)
+                    {
+                        float const t = float(sample) / float(sampleCount);
+                        float const x = from.x + segmentX * t;
+                        float const y = from.y + segmentY * t;
+                        float const z = from.z + segmentZ * t;
+                        float const candidateRange = reference->GetExactDist(x, y, z);
+                        if (candidateRange > desiredRange || candidateRange < 5.0f)
+                            continue;
+                        // Preserve its native path height: a terrain ray at
+                        // the same X/Y can select the other side of the ledge.
+                        if (MoveBotToPoint(state, bot, x, y, z, false,
+                                BotMovementArbitration::Owner::CombatRange,
+                                BotMovementArbitration::Priority::Combat))
+                            return true;
+                    }
+                }
+        }
+
+        // The full path to the hostile can be valid even when its final point
+        // is on the other side of a terrain shelf.  Resolve deterministic
+        // target-centered ring points against the target's observed floor,
+        // then let the ordinary point mover require a complete mmap path from
+        // the player.  Projecting these X/Y points from the ranged bot's Z can
+        // select the upper shelf (or no floor) and made a legal short-range
+        // self-centered action permanently unreachable.
+        if (Map* map = bot->GetMap())
+        {
+            float const baseAngle = reference->GetAngle(bot);
+            for (float const ringRange : { desiredRange,
+                std::max(5.25f, desiredRange - 0.75f) })
+                for (uint8 ringIndex = 0; ringIndex < 16; ++ringIndex)
+                {
+                    int8 const signedStep = ringIndex == 0 ? 0
+                        : (ringIndex % 2 ? int8((ringIndex + 1) / 2)
+                                         : -int8(ringIndex / 2));
+                    float const angle = baseAngle
+                        + float(signedStep) * float(M_PI) / 8.0f;
+                    float const x = reference->GetPositionX()
+                        + std::cos(angle) * ringRange;
+                    float const y = reference->GetPositionY()
+                        + std::sin(angle) * ringRange;
+                    float const z = map->GetHeight(bot->GetPhaseShift(), x, y,
+                        reference->GetPositionZ() + 4.0f, true, 64.0f);
+                    if (!std::isfinite(z) || z <= INVALID_HEIGHT)
+                        continue;
+                    float const candidateRange = reference->GetExactDist(x, y, z);
+                    if (candidateRange < 5.0f
+                        || candidateRange > maxRange - maximumRangeSafetyMargin)
+                        continue;
+                    if (MoveBotToPoint(state, bot, x, y, z, false,
+                            BotMovementArbitration::Owner::CombatRange,
+                            BotMovementArbitration::Priority::Combat))
+                        return true;
+                }
+        }
+
+        // GetFirstCollisionPosition is intentionally optimized for ordinary
+        // multi-yard movement and can collapse a sub-yard ray back to the
+        // current point. Keep the exact desired range, but add a small lateral
+        // component so the complete native mmap path has a real segment to
+        // validate. Both deterministic sides retain normal terrain, lease, and
+        // native motion authority.
+        float const deltaX = reference->GetPositionX() - bot->GetPositionX();
+        float const deltaY = reference->GetPositionY() - bot->GetPositionY();
+        float const planarDistance = std::sqrt(deltaX * deltaX + deltaY * deltaY);
+        float const verticalDelta = reference->GetPositionZ() - bot->GetPositionZ();
+        float const desiredPlanarDistance = std::sqrt(std::max(0.0f,
+            desiredRange * desiredRange - verticalDelta * verticalDelta));
+        if (planarDistance > 0.001f && desiredPlanarDistance > 0.001f)
+        {
+            float const radialAngle = reference->GetAngle(bot);
+            // The closest point can sit across a ledge or a missing polygon.
+            // Widen the deterministic same-ring arc until mmap finds a
+            // complete player-walkable route; every candidate still ends at
+            // the exact legal spell radius and passes MoveBotToPoint.
+            for (float const nativePathSegment : { 1.5f, 3.0f, 5.0f, 7.0f })
+            {
+                float const cosine = std::clamp(
+                    (planarDistance * planarDistance
+                        + desiredPlanarDistance * desiredPlanarDistance
+                        - nativePathSegment * nativePathSegment)
+                        / (2.0f * planarDistance * desiredPlanarDistance),
+                    -1.0f, 1.0f);
+                float const lateralAngle = std::acos(cosine);
+                for (float const side : { 1.0f, -1.0f })
+                {
+                    float const angle = radialAngle + side * lateralAngle;
+                    float const x = reference->GetPositionX()
+                        + std::cos(angle) * desiredPlanarDistance;
+                    float const y = reference->GetPositionY()
+                        + std::sin(angle) * desiredPlanarDistance;
+                    if (moveToTerrainProjectedPoint(x, y, bot->GetPositionZ()))
+                        return true;
+                }
+            }
+        }
+
+    }
 
     // A party member already casting from a legal ranged lane is stronger
     // navigation evidence than a ray projected out of a large boss model.
@@ -14996,7 +15193,8 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
             {
                 float memberRange = member->GetExactDist(reference);
                 if (memberRange >= (minRange > 0.0f ? minRange + 1.0f : 5.0f)
-                    && (maxRange <= 0.0f || memberRange <= maxRange - 1.0f))
+                    && (maxRange <= 0.0f
+                        || memberRange <= maxRange - maximumRangeSafetyMargin))
                 {
                     partyRangedAnchor = member;
                     break;
@@ -15014,7 +15212,8 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
             rangedPosition.Relocate(x, y, partyRangedAnchor->GetPositionZ(), tangentAngle);
             float candidateRange = reference->GetExactDist(rangedPosition);
             if (candidateRange < (minRange > 0.0f ? minRange + 1.0f : 5.0f)
-                || (maxRange > 0.0f && candidateRange > maxRange - 1.0f))
+                || (maxRange > 0.0f
+                    && candidateRange > maxRange - maximumRangeSafetyMargin))
                 continue;
             if (moveToTerrainProjectedPoint(x, y, rangedPosition.GetPositionZ()))
                 return true;
@@ -15029,7 +15228,12 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
     bool movingOutward = distance < desiredRange - 1.0f;
     float absoluteBearing = movingOutward ? reference->GetAngle(bot) : bot->GetAngle(reference);
     float relativeBearing = absoluteBearing - bot->GetOrientation();
-    float travelDistance = std::max(4.0f, std::fabs(desiredRange - distance) + (movingOutward ? 2.0f : 0.0f));
+    float const minimumTravelDistance = preciseMaximumRangeApproach
+        ? 0.10f : 4.0f;
+    float const minimumMovementDistance = preciseMaximumRangeApproach
+        ? 0.05f : 1.0f;
+    float travelDistance = std::max(minimumTravelDistance,
+        std::fabs(desiredRange - distance) + (movingOutward ? 2.0f : 0.0f));
     float minimumCandidateRange = movingOutward
         ? std::max(minRange > 0.0f ? minRange + 1.0f : 5.0f, desiredRange - 1.0f)
         : (minRange > 0.0f ? minRange + 1.0f : 5.0f);
@@ -15038,8 +15242,9 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
         Position rangedPosition = bot->GetFirstCollisionPosition(travelDistance, relativeBearing + angleOffset);
         float candidateRange = reference->GetExactDist(rangedPosition);
         if (candidateRange < minimumCandidateRange
-            || (maxRange > 0.0f && candidateRange > maxRange - 1.0f)
-            || bot->GetExactDist(rangedPosition) < 1.0f)
+            || (maxRange > 0.0f
+                && candidateRange > maxRange - maximumRangeSafetyMargin)
+            || bot->GetExactDist(rangedPosition) < minimumMovementDistance)
             continue;
         if (moveToTerrainProjectedPoint(rangedPosition.GetPositionX(), rangedPosition.GetPositionY(), rangedPosition.GetPositionZ()))
             return true;
@@ -15080,8 +15285,9 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
                     reference->GetPositionZ(), angle);
                 float candidateRange = reference->GetExactDist(rangedPosition);
                 if (candidateRange < minimumRingRange
-                    || (maxRange > 0.0f && candidateRange > maxRange - 1.0f)
-                    || bot->GetExactDist(rangedPosition) < 1.0f)
+                    || (maxRange > 0.0f
+                        && candidateRange > maxRange - maximumRangeSafetyMargin)
+                    || bot->GetExactDist(rangedPosition) < minimumMovementDistance)
                     continue;
                 if (moveToTerrainProjectedPoint(rangedPosition.GetPositionX(), rangedPosition.GetPositionY(), rangedPosition.GetPositionZ()))
                     return true;
@@ -41590,7 +41796,14 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
                 bot->GetMeleeRange(target));
         else
             nativeMaxRange += bot->GetCombatReach() + target->GetCombatReach();
-        return std::max(configuredMaxRange, nativeMaxRange);
+        // A profile maximum is a policy cap, never permission to extend the
+        // native spell envelope.  Shadowflame exposed the distinction: its
+        // profile allowed a 15-yard approach while the core rejected that
+        // point.  Intersect the configured and native limits so movement and
+        // final Spell::CheckRange agree.
+        return configuredMaxRange > 0.0f
+            ? std::min(configuredMaxRange, nativeMaxRange)
+            : nativeMaxRange;
     };
 
     if (!hostileCount)
@@ -42220,7 +42433,15 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     action.MinRange = selfTarget ? 0.0f : (best->Profile.MinRange > 0.0f ? best->Profile.MinRange : profile.MinRange);
     if (!selfTarget)
         action.MinRange = effectiveSpellMinRange(*best, action.MinRange);
-    action.MaxRange = selfTarget ? 0.0f : (best->Profile.MaxRange > 0.0f ? best->Profile.MaxRange : profile.MaxRange);
+    // A self-centered hostile action can still have a player-positioning
+    // envelope. Shadowflame and Holy Wrath are cast on the player, while the
+    // selected hostile remains the movement/facing anchor. Preserve an
+    // explicitly configured maximum for that generic action shape; the final
+    // native cast still targets self and validates its own spell contract.
+    action.MaxRange = selfTarget
+        ? best->Profile.MaxRange
+        : (best->Profile.MaxRange > 0.0f
+            ? best->Profile.MaxRange : profile.MaxRange);
     action.SuppressAreaDamage = forbidArea;
     if (!selfTarget && best->Profile.MaxRange <= 0.0f)
         if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(best->SpellId))
@@ -43163,6 +43384,31 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
             state->ProfileCastSuppressedUntilMs = nowMs + 3000;
             return BotActionResult::NoAction;
         }
+    }
+
+    bool const selfCenteredHostileRangeAction = state && bot && target
+        && target != bot && action.TargetGuid == bot->GetGUID()
+        && action.MaxRange > 0.0f;
+    if (selfCenteredHostileRangeAction)
+    {
+        float const distance = bot->GetExactDist(target);
+        if (distance > std::max(5.0f, action.MaxRange - 0.25f)
+            || !bot->IsWithinLOSInMap(target))
+        {
+            bool const moved = MoveBotToProfileRange(*state, bot, target,
+                &action, !bot->IsWithinLOSInMap(target));
+            RecordCombatAttempt(*state, bot, target,
+                "self_centered_position_reconcile", &action,
+                moved ? BotActionResult::Casting : BotActionResult::NoAction,
+                moved ? "native_self_centered_range"
+                    : "native_self_centered_path_rejected");
+            if (moved)
+                return BotActionResult::Casting;
+            return BotActionResult::NoAction;
+        }
+        // The core spell is self-targeted, so explicitly retain the hostile
+        // cone/area anchor a player would face before pressing the action.
+        bot->SetFacingToObject(target);
     }
 
     BotActionExecutor executor;
