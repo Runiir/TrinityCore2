@@ -8940,23 +8940,33 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
                     CharacterDatabase.DirectPExecute(
                         "UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u",
                         candidateGuid);
-                Cohort().LastPopulationFailureReason = !fixtureTarget
-                    ? "calibration_isolated_target_summon_failed"
-                    : (!fixtureTargetFidelityValidated
-                        ? "calibration_isolated_target_fidelity_mismatch"
-                        : (!fixtureTargetAttackable
-                            ? "calibration_isolated_target_not_attackable"
-                            : (!fixtureClearanceValidated
-                                ? "calibration_isolated_target_hostile_clearance_failed"
-                                : (!nativeLineOfSight
-                                    ? "calibration_isolated_target_line_of_sight_failed"
-                                    : (!rangedDistanceValidated
-                                        ? "calibration_isolated_target_distance_failed"
-                                        : (!nativePathReachable
-                                            ? "calibration_isolated_target_path_failed"
-                                            : (!nativeMeleeFixtureReady
-                                                ? "calibration_isolated_melee_fixture_unreachable"
-                                                : "calibration_isolated_target_provisioning_failed"))))));
+                if (!fixtureTarget)
+                    Cohort().LastPopulationFailureReason =
+                        "calibration_isolated_target_summon_failed";
+                else if (!fixtureTargetFidelityValidated)
+                    Cohort().LastPopulationFailureReason =
+                        "calibration_isolated_target_fidelity_mismatch";
+                else if (!fixtureTargetAttackable)
+                    Cohort().LastPopulationFailureReason =
+                        "calibration_isolated_target_not_attackable";
+                else if (!fixtureClearanceValidated)
+                    Cohort().LastPopulationFailureReason =
+                        "calibration_isolated_target_hostile_clearance_failed";
+                else if (!nativeLineOfSight)
+                    Cohort().LastPopulationFailureReason =
+                        "calibration_isolated_target_line_of_sight_failed";
+                else if (!rangedDistanceValidated)
+                    Cohort().LastPopulationFailureReason =
+                        "calibration_isolated_target_distance_failed";
+                else if (!nativePathReachable)
+                    Cohort().LastPopulationFailureReason =
+                        "calibration_isolated_target_path_failed";
+                else if (!nativeMeleeFixtureReady)
+                    Cohort().LastPopulationFailureReason =
+                        "calibration_isolated_melee_fixture_unreachable";
+                else
+                    Cohort().LastPopulationFailureReason =
+                        "calibration_isolated_target_provisioning_failed";
                 Cohort().CalibrationFailureReason =
                     Cohort().LastPopulationFailureReason;
                 Cohort().CalibrationWindowComplete = true;
