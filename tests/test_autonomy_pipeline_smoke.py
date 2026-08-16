@@ -5830,6 +5830,9 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "IsolatedSingleTargetRangedRadius = 15.0f" in population
     assert "sTerrainMgr.LoadTerrain(0)" in population
     assert "PhasingHandler::GetEmptyPhaseShift()" in population
+    assert "terrain->GetGridHeight(" in population
+    assert "fixtureGridZ + 4.0f" in population
+    assert "calibrationFixtureGroundZ + 4.0f" in population
     assert "calibrationSpawnZ" in population
     assert "calibrationSpawnZ <= INVALID_HEIGHT" in population
     assert '"calibration_isolated_spawn_ground_unavailable"' in population

@@ -8844,6 +8844,7 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
     float const calibrationZ = isolatedSingleTargetMode
         ? IsolatedSingleTargetGroundZ : 81.5856f;
     float calibrationSpawnZ = calibrationZ;
+    float calibrationFixtureGroundZ = calibrationZ;
     struct CalibrationSpawnCandidate
     {
         float X = 0.0f;
@@ -8876,10 +8877,21 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
         // active player is relocated and normal movement remains authoritative
         // once the calibration controller starts.
         std::shared_ptr<TerrainInfo> terrain = sTerrainMgr.LoadTerrain(0);
-        float const fixtureGroundZ = terrain ? terrain->GetStaticHeight(
+        // Seed the collision query from the raw map surface rather than the
+        // historical fixture Z.  GetStaticHeight only accepts map ground at
+        // or below the supplied probe; a valid dry hill above that old Z must
+        // not be misclassified as missing terrain.
+        float const fixtureGridZ = terrain ? terrain->GetGridHeight(
             PhasingHandler::GetEmptyPhaseShift(), 0,
-            IsolatedSingleTargetDummyX, IsolatedSingleTargetDummyY,
-            calibrationZ + 4.0f, true, 64.0f) : INVALID_HEIGHT;
+            IsolatedSingleTargetDummyX, IsolatedSingleTargetDummyY)
+            : INVALID_HEIGHT;
+        float const fixtureGroundZ = terrain
+            && std::isfinite(fixtureGridZ) && fixtureGridZ > INVALID_HEIGHT
+            ? terrain->GetStaticHeight(
+                PhasingHandler::GetEmptyPhaseShift(), 0,
+                IsolatedSingleTargetDummyX, IsolatedSingleTargetDummyY,
+                fixtureGridZ + 4.0f, true, 64.0f)
+            : INVALID_HEIGHT;
         if (!std::isfinite(fixtureGroundZ)
             || fixtureGroundZ <= INVALID_HEIGHT)
         {
@@ -8901,6 +8913,7 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
             Cohort().CalibrationWindowComplete = true;
             return;
         }
+        calibrationFixtureGroundZ = fixtureGroundZ;
 
         // Both the historical four-yard melee point and the historical
         // fifteen-yard ranged point can land on a different terrain shelf.
@@ -9048,7 +9061,7 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
             Map* map = bot->GetMap();
             float fixtureZ = map ? map->GetHeight(bot->GetPhaseShift(),
                 IsolatedSingleTargetDummyX, IsolatedSingleTargetDummyY,
-                IsolatedSingleTargetGroundZ + 4.0f, true, 64.0f) : INVALID_HEIGHT;
+                calibrationFixtureGroundZ + 4.0f, true, 64.0f) : INVALID_HEIGHT;
             TempSummon* fixtureTarget = nullptr;
             if (map && fixtureZ != INVALID_HEIGHT)
             {
