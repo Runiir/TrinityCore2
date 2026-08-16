@@ -4946,6 +4946,34 @@ def run_reusable_validation_session(
             lifecycle["watchdog_completed"] = True
         finally:
             try:
+                fixture_cleanup_required = bool(args.calibration_only)
+                fixture_cleanup_submitted_or_absent = not fixture_cleanup_required
+                if fixture_cleanup_required:
+                    calibration_stop_output = checked(
+                        f".botauto calibrate {admitted.cohort_id} stop",
+                        executor.calibration("stop"),
+                    )
+                    calibration_stop = next(
+                        (
+                            row
+                            for row in reversed(
+                                parse_json_objects(calibration_stop_output)
+                            )
+                            if row.get("action") == "botauto_calibrate_stop"
+                        ),
+                        None,
+                    )
+                    fixture_cleanup_submitted_or_absent = bool(
+                        calibration_stop
+                        and calibration_stop.get(
+                            "fixture_cleanup_submitted_or_absent"
+                        )
+                        is True
+                    )
+                    if not fixture_cleanup_submitted_or_absent:
+                        raise RuntimeError(
+                            "calibration fixture cleanup was not submitted or absent"
+                        )
                 checked(f".botauto stop {admitted.cohort_id}", executor.stop())
                 inactive_output, inactive_status = wait_for_bot_status_state(
                     execute,
@@ -4973,6 +5001,7 @@ def run_reusable_validation_session(
                     and not bool(cohort_row.get("active"))
                     and int(cohort_row.get("lease_count") or 0) == 0
                     and int(cohort_row.get("party_bot_count") or 0) == 0
+                    and fixture_cleanup_submitted_or_absent
                 )
                 if not clean:
                     raise RuntimeError("cohort cleanup left active bots, leases, or party state")
@@ -4986,6 +5015,10 @@ def run_reusable_validation_session(
                     "lease_count": 0,
                     "party_bot_count": 0,
                     "server_epoch": int(registry.get("server_epoch") or 0),
+                    "fixture_cleanup_required": fixture_cleanup_required,
+                    "fixture_cleanup_submitted_or_absent": (
+                        fixture_cleanup_submitted_or_absent
+                    ),
                 }
                 if lifecycle["cleanup"]["server_epoch"] != lifecycle["server_epoch"]:
                     raise RuntimeError("server epoch changed during validation attempt")

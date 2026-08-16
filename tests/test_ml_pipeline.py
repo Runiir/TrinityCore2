@@ -3372,6 +3372,60 @@ def test_transport_completion_watchdog_never_sends_server_shutdown(tmp_path):
     assert "$ .botauto status" in result
 
 
+def test_rejected_calibration_start_returns_promptly_and_runs_cleanup(tmp_path):
+    commands: list[str] = []
+
+    def execute(command: str, _timeout: int):
+        commands.append(command)
+        if " calibrate " in f" {command} " and " start " in f" {command} ":
+            return (
+                '{"ok":false,"action":"botauto_calibrate_start",'
+                '"failure_reason":"calibration_isolated_target_provisioning_failed"}',
+                0,
+                False,
+            )
+        if " calibrate " in f" {command} " and command.endswith(" stop"):
+            return (
+                '{"ok":true,"action":"botauto_calibrate_stop",'
+                '"fixture_cleanup_submitted_or_absent":true}',
+                0,
+                False,
+            )
+        return "{}", 0, False
+
+    output, returncode, timed_out, _command = run_transport_completion_watchdog(
+        execute,
+        ["session"],
+        30,
+        command_script(
+            start=False,
+            stop=True,
+            exit_server=False,
+            combat_calibration=True,
+            calibration_only=True,
+            cohort_id="calibration-rejected",
+            calibration_target_spec="fire_mage",
+        ),
+        tmp_path,
+        {},
+        {},
+        heartbeat_sec=10,
+        sleep=lambda _seconds: (_ for _ in ()).throw(
+            AssertionError("rejected startup must not enter the heartbeat loop")
+        ),
+    )
+
+    assert returncode == 1
+    assert timed_out is False
+    assert "calibration_isolated_target_provisioning_failed" in output
+    assert commands == [
+        ".botauto calibrate calibration-rejected start single_target_300 fire_mage 1",
+        ".botauto combatlog calibration-rejected",
+        ".botauto calibrate calibration-rejected stop",
+        ".botauto stop calibration-rejected",
+    ]
+
+
 def test_transport_completion_watchdog_stops_manifest_semantic_plateau(tmp_path, monkeypatch):
     commands: list[str] = []
     output = "\n".join(
@@ -11177,6 +11231,14 @@ def test_phase7_role_calibration_harness_passes_modes_and_detects_faults():
         "healer_controlled_damage_300",
     }
     assert all(evaluate_calibration(record, policy)["passed"] for record in records.values())
+
+    coordinate_fault = json.loads(json.dumps(records["single_target_300"]))
+    coordinate_fault["metrics"]["isolated_fixture_target"].update(
+        {"x": 123.0, "y": 456.0, "z": -100.0}
+    )
+    coordinate_evaluation = evaluate_calibration(coordinate_fault, policy)
+    assert coordinate_evaluation["passed"] is False
+    assert "isolated_single_target_fixture" in coordinate_evaluation["failure_reasons"]
 
     fault_sources = {
         "missing_damage_delivery": "healer_controlled_damage_300",

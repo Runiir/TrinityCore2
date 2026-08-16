@@ -307,6 +307,23 @@ def _raw_cleanup_projection(
         and isinstance(payload.get("cohorts"), list)
     ]
     registry = registries[-1] if registries else {}
+    calibration_attempt = any(
+        payload.get("action") in {
+            "botauto_calibrate_start",
+            "botauto_calibrate_status",
+        }
+        for payload in payloads
+    )
+    calibration_stops = [
+        payload
+        for payload in payloads
+        if payload.get("action") == "botauto_calibrate_stop"
+    ]
+    calibration_stop = calibration_stops[-1] if calibration_stops else {}
+    fixture_cleanup_submitted_or_absent = bool(
+        not calibration_attempt
+        or calibration_stop.get("fixture_cleanup_submitted_or_absent") is True
+    )
     cohort_row = next(
         (
             row
@@ -322,6 +339,10 @@ def _raw_cleanup_projection(
         "lease_count": _integer(status.get("lease_count")),
         "party_bot_count": _integer(cohort_row.get("party_bot_count")),
         "server_epoch": _integer(registry.get("server_epoch")),
+        "fixture_cleanup_required": calibration_attempt,
+        "fixture_cleanup_submitted_or_absent": (
+            fixture_cleanup_submitted_or_absent
+        ),
     }
     registry_verified = (
         bool(cohort_id)
@@ -337,6 +358,7 @@ def _raw_cleanup_projection(
             and facts["active_bots"] == 0
             and facts["lease_count"] == 0
             and facts["party_bot_count"] == 0
+            and fixture_cleanup_submitted_or_absent
             and registry_verified
         ),
         "registry_verified": registry_verified,
@@ -347,6 +369,11 @@ def _report_cleanup_projection(session: Mapping[str, Any]) -> dict[str, Any]:
     cleanup = session.get("cleanup")
     cleanup = cleanup if isinstance(cleanup, Mapping) else {}
     verified = session.get("inactive_after_attempt") is True
+    fixture_cleanup_required = cleanup.get("fixture_cleanup_required") is True
+    fixture_cleanup_submitted_or_absent = bool(
+        not fixture_cleanup_required
+        or cleanup.get("fixture_cleanup_submitted_or_absent") is True
+    )
     return {
         "facts": {
             "active": cleanup.get("active") is True,
@@ -354,8 +381,13 @@ def _report_cleanup_projection(session: Mapping[str, Any]) -> dict[str, Any]:
             "lease_count": _integer(cleanup.get("lease_count")),
             "party_bot_count": _integer(cleanup.get("party_bot_count")),
             "server_epoch": _integer(cleanup.get("server_epoch")),
+            "fixture_cleanup_required": fixture_cleanup_required,
+            "fixture_cleanup_submitted_or_absent": (
+                fixture_cleanup_submitted_or_absent
+            ),
         },
-        "inactive_after_attempt": verified,
+        "inactive_after_attempt": verified
+        and fixture_cleanup_submitted_or_absent,
         # The controller sets inactive_after_attempt only after it has checked
         # the cohort-registry row, so this claim must match the raw registry.
         "registry_verified": verified,

@@ -40,6 +40,12 @@ def _report_base() -> dict:
 def _cleanup_payloads(cohort_id: str = "cohort-a") -> list[dict]:
     return [
         {
+            "action": "botauto_calibrate_stop",
+            "cohort_id": cohort_id,
+            "fixture_target_found": True,
+            "fixture_cleanup_submitted_or_absent": True,
+        },
+        {
             "action": "botauto_status",
             "cohort_id": cohort_id,
             "active": False,
@@ -212,6 +218,12 @@ def _calibration_report(calibration: dict) -> dict:
 
 
 def _capture_calibration(tmp_path: Path, report: dict, payloads: list[dict]):
+    report["session"]["cleanup"].update(
+        {
+            "fixture_cleanup_required": True,
+            "fixture_cleanup_submitted_or_absent": True,
+        }
+    )
     output = _raw_output(payloads)
     return lifecycle.capture_batch(
         tmp_path / "batch",
@@ -641,9 +653,29 @@ def test_unpinned_fixture_coordinates_are_retained_but_fail_evaluation(
     }
 
 
+def test_false_fixture_cleanup_receipt_rejects_calibration_capture(
+    tmp_path: Path,
+):
+    calibration = _calibration_payload()
+    report = _calibration_report(calibration)
+    cleanup = _cleanup_payloads()
+    cleanup[0]["fixture_cleanup_submitted_or_absent"] = False
+
+    with pytest.raises(
+        lifecycle.BatchLifecycleError,
+        match="acceptance source report decisive facts do not match raw telemetry",
+    ):
+        _capture_calibration(tmp_path, report, [calibration, *cleanup])
+
+
 def test_reusable_session_returns_output_only_after_cleanup_telemetry_is_appended():
     source = inspect.getsource(run_reusable_validation_session)
     assert source.count('return "".join(output_parts)') == 1
+    assert 'executor.calibration("stop")' in source
+    assert '"fixture_cleanup_submitted_or_absent"' in source
+    assert source.index('executor.calibration("stop")') < source.rindex(
+        "executor.stop()"
+    )
     assert source.index('write_json(args.output_dir / "session.json", lifecycle)') < source.index(
         'return "".join(output_parts)'
     )
