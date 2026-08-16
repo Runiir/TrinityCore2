@@ -5823,8 +5823,11 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "calibrationSpawnZ" in population
     assert "calibrationSpawnZ <= INVALID_HEIGHT" in population
     assert '"calibration_isolated_spawn_ground_unavailable"' in population
-    assert "std::array<float, 3>{ 15.0f, 14.8f, 15.2f }" in population
-    assert "std::array<float, 3>{ 2.0f, 2.5f, 3.0f }" in population
+    assert "std::vector<float>{ 13.5f, 14.0f, 14.5f, 15.0f, 15.5f }" in population
+    assert "std::vector<float>{ 2.0f, 2.5f, 3.0f }" in population
+    assert "RuntimeMinimumDistanceYards" in population
+    assert "RuntimeMaximumDistanceYards" in population
+    assert "approximateDistance" in population
     assert '"calibration_isolated_ranged_ground_unavailable"' in population
     assert "heightDelta > 1.0f" in population
     assert '"calibration_isolated_melee_ground_unavailable"' in population
@@ -5832,6 +5835,7 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "bot->IsWithinLOSInMap(fixtureTarget)" in population
     assert "PATHFIND_NORMAL" in population
     assert "PATHFIND_INCOMPLETE" in population
+    assert "path_calculated=%u path_type=%u" in population
     assert '"calibration_isolated_melee_fixture_unreachable"' in population
     for geometry_field in (
         "CalibrationFixtureBotSpawnX",

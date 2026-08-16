@@ -8697,10 +8697,24 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
         float Y = 0.0f;
         float Z = 0.0f;
         float HeightDelta = 0.0f;
+        float DistanceError = 0.0f;
     };
     std::vector<CalibrationSpawnCandidate> calibrationSpawnCandidates;
+    BotCalibrationFixtureContractGenerated::SpecContract const*
+        distanceContract = isolatedSingleTargetMode
+            ? BotCalibrationFixtureContractGenerated::FindSpec(
+                Cohort().CalibrationTargetSpec)
+            : nullptr;
     if (isolatedSingleTargetMode)
     {
+        if (!distanceContract)
+        {
+            Cohort().LastPopulationFailureReason =
+                "calibration_fixture_spec_contract_missing";
+            Cohort().CalibrationFailureReason = Cohort().LastPopulationFailureReason;
+            Cohort().CalibrationWindowComplete = true;
+            return;
+        }
         // The old fixture used the dummy's historical reference Z for both
         // player placement and terrain lookup.  At the isolated lane the real
         // floor is several yards lower, leaving melee profiles off-mesh and
@@ -8729,9 +8743,9 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
         // Search deterministic rings around the observed fixture floor for
         // both lanes. The post-summon native reach/LOS/path gate below remains
         // the final authority.
-        std::array<float, 3> const candidateRadii = rangedSingleTargetMode
-            ? std::array<float, 3>{ 15.0f, 14.8f, 15.2f }
-            : std::array<float, 3>{ 2.0f, 2.5f, 3.0f };
+        std::vector<float> const candidateRadii = rangedSingleTargetMode
+            ? std::vector<float>{ 13.5f, 14.0f, 14.5f, 15.0f, 15.5f }
+            : std::vector<float>{ 2.0f, 2.5f, 3.0f };
         constexpr uint32 CandidateAngles = 16;
         for (float radius : candidateRadii)
             for (uint32 index = 0; index < CandidateAngles; ++index)
@@ -8749,16 +8763,35 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
                     || candidateZ <= INVALID_HEIGHT)
                     continue;
                 float const heightDelta = std::fabs(candidateZ - fixtureGroundZ);
-                if (heightDelta > 1.0f)
+                // A ranged point may legitimately be on the lower side of a
+                // walkable slope while remaining at the exact three-dimensional
+                // comparison distance. Do not discard it solely because its
+                // terrain height differs from the target; the native path gate
+                // below is authoritative. Melee still requires the same-floor
+                // bound before the stronger native reach check.
+                if (!rangedSingleTargetMode && heightDelta > 1.0f)
+                    continue;
+                float const approximateDistance = std::sqrt(
+                    radius * radius + heightDelta * heightDelta);
+                if (approximateDistance
+                        < distanceContract->RuntimeMinimumDistanceYards - 0.25f
+                    || approximateDistance
+                        > distanceContract->RuntimeMaximumDistanceYards + 0.25f)
                     continue;
                 calibrationSpawnCandidates.push_back({ candidateX,
-                    candidateY, candidateZ, heightDelta });
+                    candidateY, candidateZ, heightDelta,
+                    std::fabs(approximateDistance
+                        - (rangedSingleTargetMode
+                            ? IsolatedSingleTargetRangedRadius
+                            : BotCalibrationFixtureContractGenerated::MeleeDistanceYards)) });
             }
         std::stable_sort(calibrationSpawnCandidates.begin(),
             calibrationSpawnCandidates.end(),
             [](CalibrationSpawnCandidate const& left,
                 CalibrationSpawnCandidate const& right)
             {
+                if (left.DistanceError != right.DistanceError)
+                    return left.DistanceError < right.DistanceError;
                 return left.HeightDelta < right.HeightDelta;
             });
         if (calibrationSpawnCandidates.empty())
@@ -8894,21 +8927,23 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
             bool nativeLineOfSight = fixtureTarget
                 && bot->IsWithinLOSInMap(fixtureTarget);
             bool nativePathReachable = false;
+            bool nativePathCalculated = false;
+            PathType nativePathType = PATHFIND_NOPATH;
             if (fixtureTarget)
             {
                 PathGenerator nativePath(bot);
-                bool const pathCalculated = nativePath.CalculatePath(
+                nativePathCalculated = nativePath.CalculatePath(
                     fixtureTarget->GetPositionX(),
                     fixtureTarget->GetPositionY(),
                     fixtureTarget->GetPositionZ(), false);
-                PathType const pathType = nativePath.GetPathType();
-                nativePathReachable = pathCalculated
-                    && (pathType & PATHFIND_NORMAL)
-                    && !(pathType & PATHFIND_NOPATH)
-                    && !(pathType & PATHFIND_NOT_USING_PATH)
-                    && !(pathType & PATHFIND_INCOMPLETE)
-                    && !(pathType & PATHFIND_SHORTCUT)
-                    && !(pathType & PATHFIND_FARFROMPOLY);
+                nativePathType = nativePath.GetPathType();
+                nativePathReachable = nativePathCalculated
+                    && (nativePathType & PATHFIND_NORMAL)
+                    && !(nativePathType & PATHFIND_NOPATH)
+                    && !(nativePathType & PATHFIND_NOT_USING_PATH)
+                    && !(nativePathType & PATHFIND_INCOMPLETE)
+                    && !(nativePathType & PATHFIND_SHORTCUT)
+                    && !(nativePathType & PATHFIND_FARFROMPOLY);
             }
             bool const nativeMeleeReachable = fixtureTarget
                 && bot->IsWithinMeleeRange(fixtureTarget);
@@ -8918,8 +8953,12 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
             float const botTargetDistance = fixtureTarget
                 ? bot->GetExactDist(fixtureTarget) : 0.0f;
             bool const fixtureGeometryValidated = rangedSingleTargetMode
-                ? (nativeLineOfSight && botTargetDistance >= 5.0f
-                    && botTargetDistance <= 40.0f && nativePathReachable)
+                ? (nativeLineOfSight
+                    && botTargetDistance
+                        >= distanceContract->RuntimeMinimumDistanceYards
+                    && botTargetDistance
+                        <= distanceContract->RuntimeMaximumDistanceYards
+                    && nativePathReachable)
                 : nativeMeleeFixtureReady;
             bool const fixtureTargetFidelityValidated = fixtureTarget
                 && fixtureTarget->getLevel() == IsolatedSingleTargetLevel
@@ -8933,7 +8972,10 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
             bool const fixtureClearanceValidated = fixtureTarget
                 && nearestHostileClearance >= MinimumIsolatedDummyClearance;
             bool const rangedDistanceValidated = !rangedSingleTargetMode
-                || (botTargetDistance >= 5.0f && botTargetDistance <= 40.0f);
+                || (botTargetDistance
+                        >= distanceContract->RuntimeMinimumDistanceYards
+                    && botTargetDistance
+                        <= distanceContract->RuntimeMaximumDistanceYards);
 
             bool const fixtureValid = fixtureTarget
                 && fixtureTargetAttackable
@@ -8944,12 +8986,14 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
             {
                 TC_LOG_INFO("server",
                     "BotWorld calibration isolated target rejected bot=%s target=%s "
-                    "attackable=%u clearance=%.3f clearance_ok=%u los=%u path=%u "
+                    "attackable=%u clearance=%.3f clearance_ok=%u los=%u "
+                    "path_calculated=%u path_type=%u path=%u "
                     "melee=%u distance=%.3f distance_ok=%u geometry=%u fidelity=%u",
                     bot->GetGUID().ToString().c_str(),
                     fixtureTarget ? fixtureTarget->GetGUID().ToString().c_str() : "none",
                     uint32(fixtureTargetAttackable), nearestHostileClearance,
                     uint32(fixtureClearanceValidated), uint32(nativeLineOfSight),
+                    uint32(nativePathCalculated), uint32(nativePathType),
                     uint32(nativePathReachable), uint32(nativeMeleeReachable),
                     botTargetDistance, uint32(rangedDistanceValidated),
                     uint32(fixtureGeometryValidated),
