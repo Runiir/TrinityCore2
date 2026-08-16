@@ -807,8 +807,10 @@ def test_persistent_spec_setup_precedes_dummy_and_profile_rotations():
     assert "EQUIPMENT_SLOT_MAINHAND" in setup
     assert "EQUIPMENT_SLOT_OFFHAND" in setup
     assert "TEMP_ENCHANTMENT_SLOT" in setup
-    assert "TryEnsurePersistentCombatSetup(state, bot, target)" in calibration
-    assert_ordered(calibration, "TryEnsurePersistentCombatSetup(state, bot, target)", "metrics.WindowStartedMs = Cohort().CalibrationScoredStartedMs")
+    assert "TryEnsurePersistentCombatSetup(state, bot, target," in calibration
+    assert "Cohort().CalibrationTargetSpec.c_str()" in calibration
+    assert "BotClassSpecActionProfileStore::BuildForSpec(" in calibration
+    assert_ordered(calibration, "TryEnsurePersistentCombatSetup(state, bot, target,", "metrics.WindowStartedMs = Cohort().CalibrationScoredStartedMs")
     assert "TryEnsurePersistentCombatSetup(*state, bot, target)" in execute_profile
 
     calibration_json = function_body(mgr, "std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const")
