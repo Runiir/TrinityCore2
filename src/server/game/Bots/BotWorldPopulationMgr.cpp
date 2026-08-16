@@ -9498,6 +9498,31 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
                 <= fixtureContract->RuntimeMaximumDistanceYards;
         if (!targetReady)
         {
+            TC_LOG_ERROR("server",
+                "BotWorld calibration target fidelity drift before scoring "
+                "spec=%s fixture=%u bot=%u contract=%u level=%u/%u "
+                "armor=%u/%u type=%u/%u max_health=%u/%u alive=%u "
+                "combat=%u victim=%u distance=%.3f range=[%.3f,%.3f]",
+                Cohort().CalibrationTargetSpec.c_str(),
+                fixtureTarget ? fixtureTarget->GetGUID().GetCounter() : 0,
+                targetBot ? targetBot->GetGUID().GetCounter() : 0,
+                fixtureContract ? 1u : 0u,
+                fixtureTarget ? uint32(fixtureTarget->getLevel()) : 0,
+                Cohort().CalibrationFixtureExpectedTargetLevel,
+                fixtureTarget ? fixtureTarget->GetArmor() : 0,
+                Cohort().CalibrationFixtureExpectedTargetArmor,
+                fixtureTarget ? uint32(fixtureTarget->GetCreatureType()) : 0,
+                Cohort().CalibrationFixtureExpectedTargetCreatureType,
+                fixtureTarget ? fixtureTarget->GetMaxHealth() : 0,
+                Cohort().CalibrationFixtureExpectedTargetMaxHealth,
+                fixtureTarget && fixtureTarget->IsAlive() ? 1u : 0u,
+                fixtureTarget && fixtureTarget->IsInCombat() ? 1u : 0u,
+                fixtureTarget && fixtureTarget->GetVictim() ? 1u : 0u,
+                observedTargetDistance,
+                fixtureContract
+                    ? fixtureContract->RuntimeMinimumDistanceYards : 0.0f,
+                fixtureContract
+                    ? fixtureContract->RuntimeMaximumDistanceYards : 0.0f);
             Cohort().LastPopulationFailureReason =
                 "calibration_target_fidelity_drift_before_scoring";
             Cohort().CalibrationFailureReason =

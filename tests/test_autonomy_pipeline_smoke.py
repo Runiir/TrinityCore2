@@ -5866,6 +5866,8 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "CalibrationFailureReason" in header
     assert "calibration_isolated_target_provisioning_failed" in population
     assert "BotWorld calibration isolated target rejected" in population
+    assert "BotWorld calibration target fidelity drift before scoring" in manager
+    assert 'distance=%.3f range=[%.3f,%.3f]' in manager
     for rejection in (
         "calibration_isolated_target_summon_failed",
         "calibration_isolated_target_not_attackable",
