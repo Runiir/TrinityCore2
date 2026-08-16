@@ -5841,6 +5841,9 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "RuntimeMinimumDistanceYards" in population
     assert "RuntimeMaximumDistanceYards" in population
     assert "approximateDistance" in population
+    assert "selfCenteredHostileAction" in manager
+    assert "!candidateSpellInfo->IsPositive()" in manager
+    assert "bot->GetExactDist(target)" in manager
     assert '"calibration_isolated_ranged_ground_unavailable"' in population
     assert "heightDelta > 1.0f" in population
     assert '"calibration_isolated_melee_ground_unavailable"' in population

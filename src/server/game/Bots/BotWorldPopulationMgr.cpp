@@ -42398,6 +42398,14 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             continue;
         }
         bool selfTarget = candidate.Profile.TargetSelector == "self";
+        // Self-targeted hostile cones and point-blank effects still have a
+        // hostile positioning envelope. A ranged profile may use one when
+        // naturally close, but must not run into melee for it and then retreat
+        // for the rest of its rotation. WoWSims likewise treats an out-of-range
+        // action as unavailable rather than simulating a movement excursion.
+        bool const selfCenteredHostileAction = selfTarget && target != bot
+            && candidate.Profile.MaxRange > 0.0f && candidateSpellInfo
+            && !candidateSpellInfo->IsPositive();
         Unit* actionTarget = selfTarget ? static_cast<Unit*>(bot) : target;
         if (!selfTarget)
         {
@@ -42435,7 +42443,9 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             candidate.RejectReason = "maintain_aura_active";
             continue;
         }
-        float distance = selfTarget ? 0.0f : bot->GetExactDist(actionTarget);
+        float distance = selfCenteredHostileAction
+            ? bot->GetExactDist(target)
+            : (selfTarget ? 0.0f : bot->GetExactDist(actionTarget));
         float minRange = selfTarget ? 0.0f
             : (candidate.Profile.MinRange > 0.0f ? candidate.Profile.MinRange : profile.MinRange);
         if (!selfTarget)

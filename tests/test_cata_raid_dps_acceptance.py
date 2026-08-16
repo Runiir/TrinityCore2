@@ -647,7 +647,7 @@ def test_runtime_calibration_uses_only_generated_verified_reference_dps(
             "map_id": 0,
             "x": -9140.0,
             "y": 520.0,
-            "z": 68.3695,
+            "z": 146.203,
             "nearest_other_hostile_clearance": 46.7,
             "provisioned_at_ms": 500,
             "provisioned_before_scoring": True,

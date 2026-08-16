@@ -972,7 +972,7 @@ def _single_target_fixture_evaluation(
         "map_zero": _integer(fixture.get("map_id")) == 0,
         "fixture_x_pinned": abs(_number(fixture.get("x")) - (-9140.0)) <= 0.01,
         "fixture_y_pinned": abs(_number(fixture.get("y")) - 520.0) <= 0.01,
-        "fixture_z_bounded": 65.0 <= _number(fixture.get("z")) <= 85.0,
+        "fixture_z_bounded": 145.0 <= _number(fixture.get("z")) <= 147.0,
         "hostile_clearance": _number(
             fixture.get("nearest_other_hostile_clearance")
         ) >= 45.0,
