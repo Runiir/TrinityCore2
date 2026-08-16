@@ -8691,6 +8691,14 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
     float const calibrationZ = isolatedSingleTargetMode
         ? IsolatedSingleTargetGroundZ : 81.5856f;
     float calibrationSpawnZ = calibrationZ;
+    struct CalibrationSpawnCandidate
+    {
+        float X = 0.0f;
+        float Y = 0.0f;
+        float Z = 0.0f;
+        float HeightDelta = 0.0f;
+    };
+    std::vector<CalibrationSpawnCandidate> calibrationSpawnCandidates;
     if (isolatedSingleTargetMode)
     {
         // The old fixture used the dummy's historical reference Z for both
@@ -8725,8 +8733,6 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
             ? std::array<float, 3>{ 15.0f, 14.8f, 15.2f }
             : std::array<float, 3>{ 2.0f, 2.5f, 3.0f };
         constexpr uint32 CandidateAngles = 16;
-        float bestHeightDelta = std::numeric_limits<float>::max();
-        bool foundCandidate = false;
         for (float radius : candidateRadii)
             for (uint32 index = 0; index < CandidateAngles; ++index)
             {
@@ -8743,16 +8749,19 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
                     || candidateZ <= INVALID_HEIGHT)
                     continue;
                 float const heightDelta = std::fabs(candidateZ - fixtureGroundZ);
-                if (heightDelta > 1.0f
-                    || (foundCandidate && heightDelta >= bestHeightDelta))
+                if (heightDelta > 1.0f)
                     continue;
-                calibrationX = candidateX;
-                calibrationY = candidateY;
-                calibrationSpawnZ = candidateZ;
-                bestHeightDelta = heightDelta;
-                foundCandidate = true;
+                calibrationSpawnCandidates.push_back({ candidateX,
+                    candidateY, candidateZ, heightDelta });
             }
-        if (!foundCandidate)
+        std::stable_sort(calibrationSpawnCandidates.begin(),
+            calibrationSpawnCandidates.end(),
+            [](CalibrationSpawnCandidate const& left,
+                CalibrationSpawnCandidate const& right)
+            {
+                return left.HeightDelta < right.HeightDelta;
+            });
+        if (calibrationSpawnCandidates.empty())
         {
             Cohort().LastPopulationFailureReason = rangedSingleTargetMode
                 ? "calibration_isolated_ranged_ground_unavailable"
@@ -8761,6 +8770,9 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
             Cohort().CalibrationWindowComplete = true;
             return;
         }
+        calibrationX = calibrationSpawnCandidates.front().X;
+        calibrationY = calibrationSpawnCandidates.front().Y;
+        calibrationSpawnZ = calibrationSpawnCandidates.front().Z;
         if (!std::isfinite(calibrationSpawnZ)
             || calibrationSpawnZ <= INVALID_HEIGHT)
         {
@@ -8799,8 +8811,12 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
             }
 
     uint32 attempts = 0;
+    uint32 const maximumPopulationAttempts = isolatedSingleTargetMode
+        ? uint32(calibrationSpawnCandidates.size())
+        : calibrationPopulation * 4;
     while (Cohort().CalibrationActive && !Cohort().CalibrationWindowComplete
-        && Party().CalibrationBots.size() < calibrationPopulation && attempts++ < calibrationPopulation * 4)
+        && Party().CalibrationBots.size() < calibrationPopulation
+        && attempts++ < maximumPopulationAttempts)
     {
         size_t slot = Party().CalibrationBots.size();
         uint32 candidateGuid = SelectCalibrationPoolCandidateGuid(slot);
@@ -8810,9 +8826,15 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
         if (!ClaimBotGuid(candidateGuid, "calibration_" + std::to_string(slot)))
             continue;
 
-        float x = calibrationX + float(slot % 2) * 2.0f;
-        float y = calibrationY + float(slot / 2) * 2.0f;
-        Player* bot = sBotMgr->SpawnWorldBot("any", std::to_string(candidateGuid), 0, x, y, calibrationSpawnZ, 0.0f);
+        CalibrationSpawnCandidate const* spawnCandidate =
+            isolatedSingleTargetMode
+                ? &calibrationSpawnCandidates[attempts - 1] : nullptr;
+        float x = spawnCandidate ? spawnCandidate->X
+            : calibrationX + float(slot % 2) * 2.0f;
+        float y = spawnCandidate ? spawnCandidate->Y
+            : calibrationY + float(slot / 2) * 2.0f;
+        float z = spawnCandidate ? spawnCandidate->Z : calibrationSpawnZ;
+        Player* bot = sBotMgr->SpawnWorldBot("any", std::to_string(candidateGuid), 0, x, y, z, 0.0f);
         if (!bot)
         {
             if (ReleaseBotGuid(candidateGuid))
@@ -8940,6 +8962,14 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
                     CharacterDatabase.DirectPExecute(
                         "UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u",
                         candidateGuid);
+                bool const retryAlternateSpawn =
+                    attempts < maximumPopulationAttempts
+                    && fixtureTarget && fixtureTargetFidelityValidated
+                    && fixtureTargetAttackable && fixtureClearanceValidated
+                    && (!nativeLineOfSight || !rangedDistanceValidated
+                        || !nativePathReachable || !nativeMeleeFixtureReady);
+                if (retryAlternateSpawn)
+                    continue;
                 if (!fixtureTarget)
                     Cohort().LastPopulationFailureReason =
                         "calibration_isolated_target_summon_failed";

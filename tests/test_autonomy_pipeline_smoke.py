@@ -5846,7 +5846,12 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     ):
         assert geometry_field in header
         assert geometry_field in population or geometry_field in manager
-    assert "std::to_string(candidateGuid), 0, x, y, calibrationSpawnZ" in population
+    assert "std::vector<CalibrationSpawnCandidate> calibrationSpawnCandidates" in population
+    assert "std::stable_sort(calibrationSpawnCandidates.begin()" in population
+    assert "maximumPopulationAttempts" in population
+    assert "&calibrationSpawnCandidates[attempts - 1]" in population
+    assert "std::to_string(candidateGuid), 0, x, y, z" in population
+    assert "retryAlternateSpawn" in population
     assert "MinimumIsolatedDummyClearance = 45.0f" in population
     assert "map->SummonCreature(IsolatedSingleTargetDummyEntry" in population
     assert "fixtureArgs.SetSummonDuration(" in population
