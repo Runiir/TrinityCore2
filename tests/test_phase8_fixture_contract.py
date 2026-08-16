@@ -205,6 +205,21 @@ def test_native_summoned_pet_identities_are_content_addressed_and_complete() -> 
         assert runtime["pet_spellbook"]
 
 
+def test_affliction_uses_the_short_ranged_shadowflame_lane() -> None:
+    contract, _digest = load_fixture_contract()
+    distance = contract["distance_contracts"]["short_ranged"]
+    affliction = contract["specs"]["affliction_warlock"]
+
+    assert distance == {
+        "simulator_yards": 8.0,
+        "runtime_min_yards": 7.5,
+        "runtime_max_yards": 8.5,
+    }
+    assert affliction["lane"] == "short_ranged"
+    assert affliction["simulator_options"]["starting_distance_yards"] == 8.0
+    assert affliction["runtime_expected"]["target_distance"] == distance
+
+
 def test_shadow_external_windows_are_exact_and_non_stochastic() -> None:
     contract, _digest = load_fixture_contract()
     external = contract["reference_environment"][

@@ -127,10 +127,16 @@ def test_shadowflame_uses_a_self_cast_with_a_hostile_range_anchor() -> None:
     migration = (
         ROOT / "sql/custom/world/2026_08_16_01_affliction_warlock_apl_rotation.sql"
     ).read_text()
+    short_lane_migration = (
+        ROOT / "sql/custom/world/2026_08_16_04_affliction_short_ranged_lane.sql"
+    ).read_text()
 
     assert "selfCenteredHostileRangeAction" in source
     assert '"self_centered_position_reconcile"' in source
     assert "bot->SetFacingToObject(target);" in source
     assert "action.MaxRange = selfTarget" in source
     assert "'self', 'ranged', 'none', 0, 8" in migration
+    assert "SET `action`.`min_range` = 0" in short_lane_migration
+    assert "`action`.`target_selector` = 'enemy'" in short_lane_migration
+    assert "`action`.`min_range` = 12" in short_lane_migration
     assert '\\\"movement_diagnostic\\\"' in source

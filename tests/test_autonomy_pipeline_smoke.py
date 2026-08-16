@@ -2778,7 +2778,8 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "action.MinRange = effectiveSpellMinRange(*best, action.MinRange)",
         'bool selfTarget = best->Profile.TargetSelector == "self";',
         "action.MinRange = selfTarget ? 0.0f",
-        "action.MaxRange = selfTarget ? 0.0f",
+        "action.MaxRange = selfTarget",
+        "? best->Profile.MaxRange",
     ]:
         assert required in profile_action
     assert_ordered(
@@ -5836,7 +5837,9 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "calibrationSpawnZ" in population
     assert "calibrationSpawnZ <= INVALID_HEIGHT" in population
     assert '"calibration_isolated_spawn_ground_unavailable"' in population
-    assert "std::vector<float>{ 13.5f, 14.0f, 14.5f, 15.0f, 15.5f }" in population
+    assert "distanceContract->RuntimeMinimumDistanceYards" in population
+    assert "distanceContract->RuntimeMaximumDistanceYards" in population
+    assert "distanceMidpoint" in population
     assert "std::vector<float>{ 2.0f, 2.5f, 3.0f }" in population
     assert "RuntimeMinimumDistanceYards" in population
     assert "RuntimeMaximumDistanceYards" in population

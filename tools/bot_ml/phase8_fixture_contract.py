@@ -1072,8 +1072,13 @@ def validate_fixture_contract(contract: Mapping[str, Any]) -> None:
     )
 
     distances = contract.get("distance_contracts") or {}
-    _require(set(distances) == {"melee", "ranged"}, "distance_lanes")
-    for lane, simulator_yards in (("melee", 2.0), ("ranged", 15.0)):
+    expected_distance_lanes = {
+        "melee": 2.0,
+        "short_ranged": 8.0,
+        "ranged": 15.0,
+    }
+    _require(set(distances) == set(expected_distance_lanes), "distance_lanes")
+    for lane, simulator_yards in expected_distance_lanes.items():
         row = distances[lane]
         _require(float(row.get("simulator_yards", -1)) == simulator_yards, f"{lane}_sim_distance")
         _require(

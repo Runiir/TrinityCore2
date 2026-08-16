@@ -9,7 +9,7 @@
 namespace BotCalibrationFixtureContractGenerated
 {
 inline constexpr char Schema[] = "phase8_calibration_fixture_contract_v1";
-inline constexpr char ContentSha256[] = "267257e2a6b4825d9128a453599f3d45ed47007af9858de661e805c8b5608359";
+inline constexpr char ContentSha256[] = "26e5cbdffd5587082be2da2a478fa70370c17d6cdbf5052a1c1e3b8d280c32f2";
 inline constexpr char UpstreamRevision[] = "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6";
 inline constexpr uint32_t TargetEntry = 44548;
 inline constexpr uint8_t TargetLevel = 88;
@@ -101,7 +101,7 @@ inline constexpr std::array<uint32_t, 17> RequiredSetupAuraSpellIds = {{
 }};
 
 inline constexpr std::array<SpecContract, 16> SpecContracts = {{
-    { "affliction_warlock", "ranged", "8f38bcba47d99fbac658ea0dba1ccfd11cd1703e5d66b26fec9f4368384d3d64", 0, 3, 0, 255, false, true, 0, 1, 58086, 79470, 0, 0, true, 14.5f, 15.5f } ,
+    { "affliction_warlock", "short_ranged", "8f38bcba47d99fbac658ea0dba1ccfd11cd1703e5d66b26fec9f4368384d3d64", 0, 3, 0, 255, false, true, 0, 1, 58086, 79470, 0, 0, true, 7.5f, 8.5f } ,
     { "arms_warrior", "melee", "ab03ac6c2277f834fa6e5e6f5e07499a247ef9d6a4a3d0f510d6bc0282d307de", 3, 1, 0, 255, false, false, 1, 1, 58088, 79472, 0, 0, true, 2.0f, 3.2f } ,
     { "assassination_rogue", "melee", "03a96ae47e8f4548a31b86346ffdf1e0607d50fc1172a78b90112c8d8e12926d", 4, 1, 0, 0, false, false, 2, 0, 58087, 79471, 0, 0, true, 2.0f, 3.2f } ,
     { "balance_druid", "ranged", "b006fd31e0cea891eae20d3c9ce0b1fe8d9a4438f67d59f481c0ed1721c96384", 5, 2, 0, 255, true, false, 2, 1, 58086, 79470, 62671, 87547, true, 14.5f, 15.5f } ,

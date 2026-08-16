@@ -8920,8 +8920,14 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
         // Search deterministic rings around the observed fixture floor for
         // both lanes. The post-summon native reach/LOS/path gate below remains
         // the final authority.
+        float const distanceMidpoint = 0.5f
+            * (distanceContract->RuntimeMinimumDistanceYards
+                + distanceContract->RuntimeMaximumDistanceYards);
         std::vector<float> const candidateRadii = rangedSingleTargetMode
-            ? std::vector<float>{ 13.5f, 14.0f, 14.5f, 15.0f, 15.5f }
+            ? std::vector<float>{
+                distanceContract->RuntimeMinimumDistanceYards,
+                distanceMidpoint,
+                distanceContract->RuntimeMaximumDistanceYards }
             : std::vector<float>{ 2.0f, 2.5f, 3.0f };
         constexpr uint32 CandidateAngles = 16;
         for (float radius : candidateRadii)
@@ -8961,9 +8967,7 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
                 calibrationSpawnCandidates.push_back({ candidateX,
                     candidateY, candidateZ, heightDelta,
                     std::fabs(approximateDistance
-                        - (rangedSingleTargetMode
-                            ? IsolatedSingleTargetRangedRadius
-                            : BotCalibrationFixtureContractGenerated::MeleeDistanceYards)) });
+                        - distanceMidpoint) });
             }
         std::stable_sort(calibrationSpawnCandidates.begin(),
             calibrationSpawnCandidates.end(),
