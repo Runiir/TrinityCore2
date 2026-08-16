@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import inspect
 import json
 import subprocess
 import sys
@@ -1192,6 +1193,12 @@ def test_dvc_reconstruction_rejects_receipt_cycle_before_transport(
             protoc_binary=tmp_path / "protoc",
             protoc_gen_go_binary=tmp_path / "protoc-gen-go",
         )
+
+
+def test_dvc_cache_read_uses_supported_config_query_syntax() -> None:
+    source = inspect.getsource(exact_runner.reconstruct_generation_with_dvc)
+    assert '[str(dvc_binary.resolve()), "config", "--local", "cache.dir"]' in source
+    assert '"--get", "cache.dir"' not in source
 
 
 def test_dvc_receipt_rejects_publication_domain_relabel(tmp_path: Path) -> None:

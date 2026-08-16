@@ -4197,7 +4197,7 @@ def reconstruct_generation_with_dvc(
             "transport": cache_outcome,
         }
         configured_cache = subprocess.run(
-            [str(dvc_binary.resolve()), "config", "--local", "--get", "cache.dir"],
+            [str(dvc_binary.resolve()), "config", "--local", "cache.dir"],
             cwd=clone_path,
             env=env,
             check=True,
