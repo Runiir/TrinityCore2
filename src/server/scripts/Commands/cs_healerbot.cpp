@@ -879,7 +879,9 @@ private:
     static bool SendCalibrationStatusResult(ChatHandler* handler, std::string const& cohortId,
         std::string const& result)
     {
-        static constexpr size_t RawChunkSize = 24 * 1024;
+        // Base64 plus the JSON envelope must remain well below ChatHandler's
+        // formatted-message buffer. Twelve raw KiB expands to roughly 16 KiB.
+        static constexpr size_t RawChunkSize = 12 * 1024;
         if (!handler || result.size() <= RawChunkSize)
             return SendAutoResult(handler, result);
 
@@ -1227,7 +1229,7 @@ private:
         if (handler)
         {
             std::string combatLog = sBotWorldPopulationMgr->GetCombatLogJsonForCohort(cohortId);
-            static constexpr size_t RawChunkSize = 24 * 1024;
+            static constexpr size_t RawChunkSize = 12 * 1024;
             size_t chunkCount = std::max<size_t>(1, (combatLog.size() + RawChunkSize - 1) / RawChunkSize);
             for (size_t sequence = 0; sequence < chunkCount; ++sequence)
             {

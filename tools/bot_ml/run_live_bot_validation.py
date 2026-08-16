@@ -5599,9 +5599,10 @@ def main() -> int:
         else:
             output, returncode, timed_out, command = run_worldserver(args.worldserver, effective_config, args.timeout_sec, script, args.observe_sec)
 
-    retained_console_output = strip_calibration_status_chunks(
-        strip_combat_log_chunks(output)
-    )
+    # Keep calibration chunks as raw transport evidence. The decoded status is
+    # retained in report.json, but malformed/incomplete chunks must remain
+    # diagnosable. Combat-log chunks have their own decoded artifact.
+    retained_console_output = strip_combat_log_chunks(output)
     (args.output_dir / "worldserver_output.log").write_text(
         retained_console_output,
         encoding="utf-8",
