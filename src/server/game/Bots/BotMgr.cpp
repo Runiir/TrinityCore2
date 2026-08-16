@@ -22,6 +22,7 @@
 #include "Player.h"
 #include "QueryHolder.h"
 #include "SpellInfo.h"
+#include "SpellHistory.h"
 #include "SpellMgr.h"
 #include "Unit.h"
 #include "World.h"
@@ -248,6 +249,78 @@ Player* BotMgr::SpawnWorldBotInGroup(Player* groupAnchor, std::string const& rol
     _worldBots.insert(botGuid);
     TC_LOG_INFO("server", "PlayerBot world grouped spawn complete bot=%s name=%s leader=%s map=%u instance=%u position=%f,%f,%f",
         botGuid.ToString().c_str(), bot->GetName().c_str(), groupAnchor->GetGUID().ToString().c_str(), bot->GetMapId(), bot->GetInstanceId(), x, y, z);
+    return bot;
+}
+
+Player* BotMgr::ProvisionWorldBot(std::string const& role, std::string const& selector, uint32 mapId,
+    float x, float y, float z, float o, uint8 dungeonDifficulty, uint8 raidDifficulty)
+{
+    if (!sConfigMgr->GetBoolDefault("PlayerBot.Enable", false)
+        || (dungeonDifficulty == NoProvisionedDungeonDifficulty
+            && raidDifficulty == NoProvisionedRaidDifficulty)
+        || (dungeonDifficulty != NoProvisionedDungeonDifficulty
+            && dungeonDifficulty >= MAX_DUNGEON_DIFFICULTY)
+        || (raidDifficulty != NoProvisionedRaidDifficulty
+            && raidDifficulty >= MAX_RAID_DIFFICULTY))
+        return nullptr;
+
+    std::string normalizedRole = NormalizeBotRole(role);
+    if (!IsKnownBotRole(normalizedRole) && !IsMixedBotRoleSelector(normalizedRole))
+        return nullptr;
+
+    BotSpawnPlacement placement = { mapId, x, y, z, o };
+    Player* bot = LoadBotFromPool(nullptr, normalizedRole, selector, &placement,
+        nullptr, dungeonDifficulty, raidDifficulty);
+    if (!bot)
+        return nullptr;
+
+    ObjectGuid botGuid = bot->GetGUID();
+    bot->CastStop();
+    bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+    bot->GetMotionMaster()->MoveIdle();
+    _worldBots.insert(botGuid);
+    TC_LOG_INFO("server", "PlayerBot server provision complete bot=%s name=%s map=%u instance=%u dungeon_difficulty=%u raid_difficulty=%u position=%f,%f,%f",
+        botGuid.ToString().c_str(), bot->GetName().c_str(), bot->GetMapId(), bot->GetInstanceId(),
+        uint32(dungeonDifficulty), uint32(raidDifficulty), x, y, z);
+    return bot;
+}
+
+Player* BotMgr::ProvisionWorldBotInGroup(Player* groupAnchor, std::string const& role, std::string const& selector,
+    uint32 mapId, float x, float y, float z, float o, uint8 dungeonDifficulty, uint8 raidDifficulty)
+{
+    if (!groupAnchor || !groupAnchor->GetGroup())
+        return ProvisionWorldBot(role, selector, mapId, x, y, z, o,
+            dungeonDifficulty, raidDifficulty);
+
+    if (!sConfigMgr->GetBoolDefault("PlayerBot.Enable", false)
+        || (dungeonDifficulty == NoProvisionedDungeonDifficulty
+            && raidDifficulty == NoProvisionedRaidDifficulty)
+        || (dungeonDifficulty != NoProvisionedDungeonDifficulty
+            && (dungeonDifficulty >= MAX_DUNGEON_DIFFICULTY
+                || groupAnchor->GetGroup()->GetDungeonDifficulty() != Difficulty(dungeonDifficulty)))
+        || (raidDifficulty != NoProvisionedRaidDifficulty
+            && (raidDifficulty >= MAX_RAID_DIFFICULTY
+                || groupAnchor->GetGroup()->GetRaidDifficulty() != Difficulty(raidDifficulty))))
+        return nullptr;
+
+    std::string normalizedRole = NormalizeBotRole(role);
+    if (!IsKnownBotRole(normalizedRole) && !IsMixedBotRoleSelector(normalizedRole))
+        return nullptr;
+
+    BotSpawnPlacement placement = { mapId, x, y, z, o };
+    Player* bot = LoadBotFromPool(nullptr, normalizedRole, selector, &placement,
+        groupAnchor, dungeonDifficulty, raidDifficulty);
+    if (!bot)
+        return nullptr;
+
+    ObjectGuid botGuid = bot->GetGUID();
+    bot->CastStop();
+    bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+    bot->GetMotionMaster()->MoveIdle();
+    _worldBots.insert(botGuid);
+    TC_LOG_INFO("server", "PlayerBot server grouped provision complete bot=%s name=%s leader=%s map=%u instance=%u dungeon_difficulty=%u raid_difficulty=%u position=%f,%f,%f",
+        botGuid.ToString().c_str(), bot->GetName().c_str(), groupAnchor->GetGUID().ToString().c_str(), bot->GetMapId(), bot->GetInstanceId(),
+        uint32(dungeonDifficulty), uint32(raidDifficulty), x, y, z);
     return bot;
 }
 
@@ -957,7 +1030,8 @@ bool BotMgr::IsTrackedPartyMember(ObjectGuid botGuid, ObjectGuid unitGuid) const
     return owner->GetGroup()->IsMember(unitGuid);
 }
 
-Player* BotMgr::LoadBotFromPool(Player* owner, std::string const& role, std::string const& selector, BotSpawnPlacement const* placement, Player* groupAnchor)
+Player* BotMgr::LoadBotFromPool(Player* owner, std::string const& role, std::string const& selector, BotSpawnPlacement const* placement,
+    Player* groupAnchor, uint8 provisionedDungeonDifficulty, uint8 provisionedRaidDifficulty)
 {
     std::string normalizedRole = NormalizeBotRole(role);
     bool mixedRole = IsMixedBotRoleSelector(normalizedRole);
@@ -1009,7 +1083,8 @@ Player* BotMgr::LoadBotFromPool(Player* owner, std::string const& role, std::str
         return nullptr;
     }
 
-    Player* bot = LoadCharacterAsBotSession(botGuid, accountId, owner, placement, groupAnchor);
+    Player* bot = LoadCharacterAsBotSession(botGuid, accountId, owner, placement,
+        groupAnchor, provisionedDungeonDifficulty, provisionedRaidDifficulty);
     if (!bot)
         return nullptr;
 
@@ -1024,7 +1099,8 @@ Player* BotMgr::LoadBotFromPool(Player* owner, std::string const& role, std::str
     return bot;
 }
 
-Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Player* nearPlayer, BotSpawnPlacement const* placement, Player* groupAnchor)
+Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Player* nearPlayer, BotSpawnPlacement const* placement,
+    Player* groupAnchor, uint8 provisionedDungeonDifficulty, uint8 provisionedRaidDifficulty)
 {
     uint8 expansion = nearPlayer && nearPlayer->GetSession() ? nearPlayer->GetSession()->GetExpansion() : uint8(sWorld->getIntConfig(CONFIG_EXPANSION));
     LocaleConstant locale = nearPlayer && nearPlayer->GetSession() ? nearPlayer->GetSession()->GetSessionDbcLocale() : LOCALE_enUS;
@@ -1051,6 +1127,36 @@ Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Pla
     bot->GetMotionMaster()->Initialize();
     session->SetPlayer(bot);
 
+    if (provisionedDungeonDifficulty != NoProvisionedDungeonDifficulty)
+    {
+        if (!placement || provisionedDungeonDifficulty >= MAX_DUNGEON_DIFFICULTY)
+        {
+            TC_LOG_ERROR("server", "PlayerBot provision failed character=%s stage=invalid_server_provisioning_difficulty difficulty=%u",
+                guid.ToString().c_str(), uint32(provisionedDungeonDifficulty));
+            session->SetPlayer(nullptr);
+            delete bot;
+            return nullptr;
+        }
+
+        // This is run-controller provisioning, before the bot is registered or
+        // allowed to make decisions. It is deliberately not a bot-session
+        // opcode and cannot be reached by the active action scheduler.
+        bot->SetDungeonDifficulty(Difficulty(provisionedDungeonDifficulty));
+    }
+    if (provisionedRaidDifficulty != NoProvisionedRaidDifficulty)
+    {
+        if (!placement || provisionedRaidDifficulty >= MAX_RAID_DIFFICULTY)
+        {
+            TC_LOG_ERROR("server", "PlayerBot provision failed character=%s stage=invalid_server_provisioning_raid_difficulty difficulty=%u",
+                guid.ToString().c_str(), uint32(provisionedRaidDifficulty));
+            session->SetPlayer(nullptr);
+            delete bot;
+            return nullptr;
+        }
+
+        bot->SetRaidDifficulty(Difficulty(provisionedRaidDifficulty));
+    }
+
     Group* prejoinedGroup = groupAnchor ? groupAnchor->GetGroup() : nullptr;
     if (prejoinedGroup && !bot->GetGroup())
     {
@@ -1063,11 +1169,55 @@ Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Pla
         }
     }
 
+    if (provisionedDungeonDifficulty != NoProvisionedDungeonDifficulty && prejoinedGroup
+        && (!bot->GetGroup() || bot->GetGroup()->GetDungeonDifficulty() != Difficulty(provisionedDungeonDifficulty)))
+    {
+        TC_LOG_ERROR("server", "PlayerBot provision failed character=%s stage=provisioned_group_difficulty_mismatch expected=%u",
+            guid.ToString().c_str(), uint32(provisionedDungeonDifficulty));
+        if (prejoinedGroup && bot->GetGroup() == prejoinedGroup)
+            prejoinedGroup->RemoveMember(bot->GetGUID());
+        session->SetPlayer(nullptr);
+        delete bot;
+        return nullptr;
+    }
+    if (provisionedRaidDifficulty != NoProvisionedRaidDifficulty && prejoinedGroup
+        && (!bot->GetGroup() || bot->GetGroup()->GetRaidDifficulty() != Difficulty(provisionedRaidDifficulty)))
+    {
+        TC_LOG_ERROR("server", "PlayerBot provision failed character=%s stage=provisioned_group_raid_difficulty_mismatch expected=%u",
+            guid.ToString().c_str(), uint32(provisionedRaidDifficulty));
+        if (prejoinedGroup && bot->GetGroup() == prejoinedGroup)
+            prejoinedGroup->RemoveMember(bot->GetGUID());
+        session->SetPlayer(nullptr);
+        delete bot;
+        return nullptr;
+    }
+
     if (placement)
     {
+        if (Map::EnterState const denyReason = Map::PlayerCannotEnter(placement->MapId, bot, false))
+        {
+            TC_LOG_ERROR("server", "PlayerBot placement failed character=%s stage=player_cannot_enter map=%u reason=%u",
+                guid.ToString().c_str(), placement->MapId, uint32(denyReason));
+            if (prejoinedGroup && bot->GetGroup() == prejoinedGroup)
+                prejoinedGroup->RemoveMember(bot->GetGUID());
+            session->SetPlayer(nullptr);
+            delete bot;
+            return nullptr;
+        }
         if (bot->FindMap())
             bot->ResetMap();
-        bot->SetMap(sMapMgr->CreateMap(placement->MapId, bot));
+        Map* destinationMap = sMapMgr->CreateMap(placement->MapId, bot);
+        if (!destinationMap || destinationMap->CannotEnter(bot))
+        {
+            TC_LOG_ERROR("server", "PlayerBot placement failed character=%s stage=destination_map_rejected map=%u",
+                guid.ToString().c_str(), placement->MapId);
+            if (prejoinedGroup && bot->GetGroup() == prejoinedGroup)
+                prejoinedGroup->RemoveMember(bot->GetGUID());
+            session->SetPlayer(nullptr);
+            delete bot;
+            return nullptr;
+        }
+        bot->SetMap(destinationMap);
         bot->Relocate(placement->X, placement->Y, placement->Z, placement->O);
     }
     else if (nearPlayer)
@@ -1092,6 +1242,26 @@ Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Pla
         return nullptr;
     }
     TC_LOG_INFO("server", "PlayerBot add_to_map complete character=%s map=%u", guid.ToString().c_str(), bot->GetMapId());
+
+    bool const serverProvisioning =
+        provisionedDungeonDifficulty != NoProvisionedDungeonDifficulty
+        || provisionedRaidDifficulty != NoProvisionedRaidDifficulty;
+    if (serverProvisioning)
+    {
+        // A new run owns exactly one pre-activation baseline transition. This
+        // capability is private to server admission and is never exposed to a
+        // bot session or the decision scheduler. Death or resource loss after
+        // activation must be reconciled through ordinary player mechanics.
+        bot->CombatStopWithPets(true);
+        bot->CastStop();
+        if (!bot->IsAlive())
+        {
+            bot->ResurrectPlayer(1.0f, false);
+            bot->SpawnCorpseBones();
+        }
+        bot->ResetAllPowers();
+        bot->GetSpellHistory()->ResetAllCooldowns();
+    }
 
     ObjectAccessor::AddObject(bot);
     TC_LOG_INFO("server", "PlayerBot object_accessor_add complete character=%s", guid.ToString().c_str());

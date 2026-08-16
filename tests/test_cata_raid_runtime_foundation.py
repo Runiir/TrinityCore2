@@ -199,9 +199,9 @@ def test_native_recovery_refresh_keeps_worldport_intermediate_edges_observable()
         IMPL.index("bool BotWorldPopulationMgr::ResolveSpawnPlacement")
     ]
     member_sample = admitted_group[:admitted_group.index("if (members.empty())")]
-    assert "Cohort().ValidationRaidAdmissionComplete" in member_sample
+    assert "Cohort().ValidationAdmission == ValidationAdmissionPhase::Active" in member_sample
     assert "IsNativeReleasedGhostWorldport(state, bot)" in member_sample
-    assert "IsNativeBlackwingDescentRunbackWorldport(state, bot)" in member_sample
+    assert "IsNativeValidationRunbackWorldport(state, bot)" in member_sample
     assert "Include only the two independently-authorized native worldports" in member_sample
 
     runtime_refresh = admitted_group[
@@ -211,7 +211,8 @@ def test_native_recovery_refresh_keeps_worldport_intermediate_edges_observable()
     assert "HasNativeRaidCorpseAuthority(*botState, bot)" in runtime_refresh
     assert "releaseLandingIdentityBound" in runtime_refresh
     assert "NativeReleaseLandingWipeGeneration == raid.WipeGeneration" in runtime_refresh
-    assert "NativeRunbackAreaTriggerId == BlackwingDescentEntranceTriggerId" in runtime_refresh
+    assert "NativeRunbackAreaTriggerId" in runtime_refresh
+    assert "AdmissionRecoveryEntranceAreaTriggerId" in runtime_refresh
     assert "nativeReleaseMovedOutside" not in runtime_refresh
     assert "botState->NativeReleaseRequested" in runtime_refresh
     assert "bot->GetCorpse() != nullptr" not in runtime_refresh
@@ -1465,8 +1466,8 @@ def test_live_raid_instance_identity_freezes_atomically_from_the_exact_roster():
         IMPL.index("void BotWorldPopulationMgr::MarkValidationCohortViolation")
     ]
 
-    assert 'Cohort().Config.ValidationRouteEnable || placement.Source != "saved_position"' in population
-    assert 'sBotMgr->SpawnWorldBot("any", std::to_string(candidateGuid), placement.MapId' in population
+    assert 'Cohort().Config.ValidationRouteEnable || placement.Source != "saved_position"' not in population
+    assert 'sBotMgr->ProvisionWorldBot("any", std::to_string(candidateGuid),' in population
     assert 'Cohort().LastPopulationFailureReason = "validation_cohort_formation_pending";' in group
     assert group.index("members.size() != exactFormationSize") < group.index("RaidRuntime& raid")
     assert 'Cohort().LastPopulationFailureReason = "validation_cohort_live_instance_pending";' in group
@@ -1516,7 +1517,7 @@ def test_validation_raid_preflights_exact_saved_roster_before_first_claim_or_spa
     ]
     admission = population.index("if (validationRaidAdmission)")
     first_claim = population.index("ClaimBotGuid(planned.Guid, planned.RosterSlotId)")
-    first_spawn = population.index('sBotMgr->SpawnWorldBot("any", std::to_string(planned.Guid)')
+    first_spawn = population.index('sBotMgr->ProvisionWorldBot("any", std::to_string(planned.Guid)')
     generic_population = population.index("uint32 attempts = 0;")
 
     assert admission < first_claim < first_spawn < generic_population
@@ -1531,23 +1532,23 @@ def test_validation_raid_preflights_exact_saved_roster_before_first_claim_or_spa
         "ValidationResurrectAtLoginFlag",
         "ValidationGhostAuraId",
         "SELECT c.health, c.power1, c.characterFlags, c.at_login",
-        "ResolveSavedSpawnPlacement(candidateGuid, placement)",
-        "placement.MapId != routeStart.BotStartMapId",
-        "RouteStartHorizontalToleranceYards",
-        "RouteStartVerticalToleranceYards",
-        'validation_raid_preflight_route_start_mismatch',
+        "placement.MapId = routeStart.BotStartMapId",
+        "placement.X = routeStart.BotStartX",
+        'placement.Source = "server_route_manifest_entrance"',
     ):
         assert token in population
     before_claim = population[admission:first_claim]
     assert "ClaimBotGuid(" not in before_claim
-    assert "SpawnWorldBot" not in before_claim
-    assert "SpawnWorldBotInGroup" not in before_claim
+    assert "ProvisionWorldBot" not in before_claim
+    assert "ProvisionWorldBotInGroup" not in before_claim
     assert "new Group" not in before_claim
     assert "ResolveSpawnPlacement(candidateGuid, placement)" not in before_claim
     admission_runtime = population[admission:generic_population]
     assert "ResolveSpawnPlacement(" not in admission_runtime
     assert "AllowConfiguredCenterFallback" not in admission_runtime
     assert "validationRaidSpawnPlan" in admission_runtime
+    assert "ProvisionWorldBot(" in admission_runtime
+    assert "ProvisionWorldBotInGroup(" in admission_runtime
     assert "!bot->IsAlive()" in admission_runtime
     assert "bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)" in admission_runtime
     assert "bot->HasCorpse()" in admission_runtime
@@ -1611,7 +1612,7 @@ def test_completed_validation_raid_drift_verifies_exact_identity_and_cleans_all_
         "LeaseOwnedByCurrentCohort(expected.Guid, expected.RosterSlotId)",
         "frozen->second.RosterSlotId != expected.RosterSlotId",
         "IsNativeReleasedGhostWorldport(*state, bot)",
-        "IsNativeBlackwingDescentRunbackWorldport(*state, bot)",
+        "IsNativeValidationRunbackWorldport(*state, bot)",
         "!bot->IsInWorld() && !nativeRecoveryWorldport",
         "IsValidationCohortMemberInOriginalInstance(*state, bot)",
         "group->GetGUID() != state->ValidationCohortGroupGuid",
@@ -2028,11 +2029,11 @@ def test_bwd_native_ghost_runback_acks_only_corpse_bound_worldports_and_canonica
     ]
     corpse_authority = IMPL[
         IMPL.index("bool BotWorldPopulationMgr::HasNativeRaidCorpseAuthority"):
-        IMPL.index("bool BotWorldPopulationMgr::ResolveNativeBlackwingDescentEntrance")
+        IMPL.index("bool BotWorldPopulationMgr::ResolveNativeValidationEntrance")
     ]
     native_runback = IMPL[
-        IMPL.index("if (Cohort().Config.ValidationRouteEnable && Cohort().Config.AllowRaids)"):
-        IMPL.index("// A critical-role death can make the survivors retreat", IMPL.index("if (Cohort().Config.ValidationRouteEnable && Cohort().Config.AllowRaids)"))
+        IMPL.index("bool BotWorldPopulationMgr::TryNativeCorpseRun"):
+        IMPL.index("bool BotWorldPopulationMgr::AreNativeRaidRecoveryControlledUnitsReady")
     ]
 
     assert "constexpr uint32 BlackwingDescentMapId = 669;" in IMPL
@@ -2054,41 +2055,58 @@ def test_bwd_native_ghost_runback_acks_only_corpse_bound_worldports_and_canonica
     assert "originalMap->GetCorpseByPlayer(bot->GetGUID())" in corpse_authority
     assert "originalCorpse->GetOwnerGUID() == bot->GetGUID()" in corpse_authority
     assert "originalCorpse->GetInstanceId() == state.ValidationCohortInstanceId" in corpse_authority
-    assert "ResolveNativeBlackwingDescentEntrance" in native_release
+    assert "ResolveNativeValidationEntrance" in native_release
     assert "sObjectMgr->GetClosestGraveyard(*bot, bot->GetTeam()" in native_release
-    assert "graveyard->Continent != entranceEntry->ContinentID" in native_release
+    assert "ResolveNativeValidationEntrance" in native_release
     assert "destination.GetPositionX() - graveyard->Loc.X" in native_release
     assert "destination.GetPositionY() - graveyard->Loc.Y" in native_release
     assert "destination.GetPositionZ() - graveyard->Loc.Z" in native_release
     assert "GetGraveyardOrientation(graveyard->ID)" in native_release
     assert "!bot->GetTeleportDestInstanceId()" in native_release
     assert "bot->GetTeleportDestOptions() == TELE_TO_NONE" in native_release
-    assert "destination.GetMapId() == entranceDestination->target_mapId" in native_release
+    assert "worldport.GetMapId() == entranceDestination->target_mapId" in native_release
     assert "bot->GetTeleportDestOptions() == TELE_TO_NOT_LEAVE_TRANSPORT" in native_release
 
-    assert "ResolveNativeBlackwingDescentEntrance(entranceEntry, entranceDestination)" in native_runback
-    assert "bot->GetMapId() == entranceEntry->ContinentID" in native_runback
-    assert "uint32 entranceTriggerId = BlackwingDescentEntranceTriggerId;" in native_runback
-    assert "WorldPacket areaTrigger(CMSG_AREATRIGGER" in native_runback
+    assert "ResolveNativeValidationEntrance" in native_runback
+    assert "BotNativeAction::Move" in native_runback
+    assert "BotNativeAction::AreaTrigger" in native_runback
+    assert "BotMovementArbitration::Owner::Recovery" in native_runback
+    assert "native_entrance_unavailable" in native_runback
+    assert "native_runback_no_progress" in native_runback
+    assert "GetMotionMaster()->MovePoint" not in native_runback
     assert "TeleportTo(" not in native_runback
     assert "NearTeleportTo(" not in native_runback
     assert "ResurrectPlayer" not in native_runback
 
 
-def test_validation_party_resurrection_fails_closed_until_exact_corpse_authority_exists():
-    start = IMPL.index("bool BotWorldPopulationMgr::TryNativePartyResurrection")
-    end = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteReadiness", start)
-    native = IMPL[start:end]
+def test_validation_party_resurrection_fails_closed_to_exact_typed_target_identity():
+    builder = IMPL[
+        IMPL.index("BotWorldPopulationMgr::BuildCombatResNativeActionCandidate"):
+        IMPL.index("void BotWorldPopulationMgr::ApplyRuntimeConfigOverride")
+    ]
+    predicate = IMPL[
+        IMPL.index("bool BotWorldPopulationMgr::CurrentCombatResOwnerUsable"):
+        IMPL.index("void BotWorldPopulationMgr::PublishNativeBattleResDecision")
+    ]
+    executor = IMPL[
+        IMPL.index("BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent"):
+        IMPL.index("void BotWorldPopulationMgr::BeginMeleeAutoAttackDecision")
+    ]
 
-    gate = "Cohort().Config.ValidationRouteEnable && Cohort().Config.AllowRaids"
-    assert gate in native
-    assert "!HasNativeRaidCorpseAuthority(*memberState, member)" in native
-    assert native.index("memberState != nullptr") < native.index(gate) < native.index("bool requestedByHealer")
-    assert "KillPlayer leaves only a dead Player object" in native
-    assert "Non-validation party resurrection deliberately keeps its" in native
+    assert "TryNativePartyResurrection" not in IMPL
+    assert "CurrentCombatResOwnerUsable" in builder
+    assert "IsNativeCombatResTarget(targetState, target)" in predicate
+    assert "targetState.NativeBattleResOwnerGuid" in predicate
+    assert "targetState.NativeBattleResSpellId" in predicate
+    assert "targetState->NativeBattleResDecisionAtMs != reservationAtMs" in executor
+    assert "targetState->NativeBattleResDecisionUntilMs != reservationUntilMs" in executor
+    assert "BotNativeAction::CombatResApproach" in executor
+    assert "BotNativeAction::CombatResCast" in executor
+    assert "BotNativeAction::CombatResAccept" in executor
+    assert "HandleResurrectResponseOpcode(response)" in executor
 
     authority_start = IMPL.index("bool BotWorldPopulationMgr::HasNativeRaidCorpseAuthority")
-    authority_end = IMPL.index("bool BotWorldPopulationMgr::ResolveNativeBlackwingDescentEntrance", authority_start)
+    authority_end = IMPL.index("bool BotWorldPopulationMgr::ResolveNativeValidationEntrance", authority_start)
     authority = IMPL[authority_start:authority_end]
     for rejection in (
         "!bot->HasCorpse()",
@@ -2258,7 +2276,10 @@ def test_trash_profile_damage_cannot_pull_or_compound_the_next_boss_encounter():
     assert "future_encounter_premature_engagement" in hold
     assert "hold_for_native_future_encounter_reset" in hold
     assert "InterruptSpell(CURRENT_AUTOREPEAT_SPELL" in hold
-    assert "bot->AttackStop();" in hold
+    assert "SubmitMeleeAutoAttackIntent(state," in hold
+    assert "BotMeleeAutoAttack::Kind::Suppress" in hold
+    assert '"future_encounter_contamination"' in hold
+    assert "bot->AttackStop();" not in hold
     assert "pet->AttackStop();" in hold
     assert "controlled->AttackStop();" in hold
     assert "SetAllOffenseSuppressed(raidAuthorityOwner, true)" in hold
@@ -2527,7 +2548,8 @@ def test_phase1_target_transfer_and_swap_controls_are_executable():
     for token in (
         'raidAdapter.TargetControl == "focus_fire"',
         '"declared_target_selected"',
-        'raidAdapter.BattleResurrectionPolicy != "assigned_only"',
+        "BuildCombatResNativeActionCandidate",
+        "BotNativeAction::CombatResCast",
         'currentTank->GetGUID() == raidAssignment.MainTankGuid',
         'currentTank->GetGUID() == raidAssignment.OffTankGuid',
         '"raid_kill_sync_execution_hold_low_target"',
@@ -2563,15 +2585,19 @@ def test_tank_swap_level_triggers_are_edge_latched_until_the_condition_clears():
 
 def test_battle_res_slots_allow_native_capable_non_healers_and_role_priority_is_real():
     raid_brez = IMPL[
-        IMPL.index("bool battleResOwner"):
-        IMPL.index("if (result.Features.RaidEncounter && raidAdapter.ContractResolved && raidAdapter.DispelAuraId)")
+        IMPL.index("void BotWorldPopulationMgr::ReconcileNativeBattleResDecisions"):
+        IMPL.index("BotWorldPopulationMgr::BuildCombatResNativeActionCandidate")
     ]
     assert 'std::string(role) == "healer"' not in raid_brez
-    assert "raidAdapter.BattleResurrectionPolicy" in raid_brez
     for token in (
-        'targetPolicy == "tank_then_healer_then_dps"',
-        'deadRole == "tank" ? 3 : deadRole == "healer" ? 2 : 1',
-        "requestedByHealer ? 100 : pendingByHealer ? 90 : rolePriority",
+        'uint32 score = role == "tank" ? 300 : role == "healer" ? 250 : 100;',
+        "if (bossCommitment)",
+        "if (living.size() <= 2)",
+        "std::max_element(eligibleDead.begin(), eligibleDead.end()",
+        'applyDecision(member, "declined_lower_priority")',
+    ):
+        assert token in raid_brez
+    for token in (
         "uniqueBattleResSlots.size() == node.BattleResurrectionSlots.size()",
         "slot > 0 && slot <= Cohort().Config.RaidSize",
     ):
@@ -2654,13 +2680,16 @@ def test_focus_fire_owns_target_and_cancels_every_wrong_attacker():
     focus_end = IMPL.index('if (result.Features.RaidEncounter && raidAdapter.ContractResolved)\n    {', focus_start)
     focus = IMPL[focus_start:focus_end]
     for token in (
-        "auto stopWrongFocusTarget = [focus](Unit* attacker)",
+        "auto stopWrongControlledFocusTarget = [focus, &interruptWrongFocusCasts](Unit* attacker)",
+        "auto stopWrongPlayerFocusTarget = [&]()",
         "attacker->InterruptSpell(CURRENT_GENERIC_SPELL, false);",
         "attacker->InterruptSpell(CURRENT_AUTOREPEAT_SPELL, false);",
         "attacker->InterruptSpell(CURRENT_CHANNELED_SPELL, false);",
-        "stopWrongFocusTarget(bot);",
-        "stopWrongFocusTarget(pet);",
-        "stopWrongFocusTarget(controlled);",
+        "SubmitMeleeAutoAttackIntent(state,",
+        '"raid_focus_target_transition"',
+        "stopWrongPlayerFocusTarget();",
+        "stopWrongControlledFocusTarget(pet);",
+        "stopWrongControlledFocusTarget(controlled);",
         "state.TargetGuid = focus->GetGUID();",
         "if (!focus || current->m_targets.GetUnitTarget() != focus)",
     ):
@@ -2752,8 +2781,10 @@ def test_permanent_roster_slots_and_exact_role_shapes_fail_closed():
         "lease.RoleSlot == roleSlot",
         "SelectNextRosterSlot()",
         'slot.RosterSlotId = "raid_tank_"',
-        "raid.ExpectedSize == 10 ? 3 : 6",
-        "raid.ExpectedSize == 10 ? 5 : 17",
+        "uint32 const expectedTanks = uint32(std::count_if(rosterPlan.begin(), rosterPlan.end()",
+        "uint32 const expectedHealers = uint32(std::count_if(rosterPlan.begin(), rosterPlan.end()",
+        "uint32 const expectedDps = uint32(std::count_if(rosterPlan.begin(), rosterPlan.end()",
+        "tankCount == expectedTanks && healerCount == expectedHealers && dpsCount == expectedDps",
         '"exact_raid_role_composition_mismatch"',
     ):
         assert token in IMPL
@@ -2931,7 +2962,7 @@ def test_native_recovery_blocks_survivor_pack_reentry_until_native_reset():
     ]
     observer = IMPL[
         IMPL.index("struct NativeRaidHostileActivityVisitor"):
-        IMPL.index("bool BotWorldPopulationMgr::ResolveNativeBlackwingDescentEntrance")
+        IMPL.index("bool BotWorldPopulationMgr::ResolveNativeValidationEntrance")
     ]
     for token in (
         "MapStoredObjectTypesContainer",
@@ -2991,7 +3022,7 @@ def test_native_recovery_blocks_survivor_pack_reentry_until_native_reset():
     ):
         assert token in update[gate - 1800:gate + 1800]
     gate_block = update[update.index("bool const nativeHostileRecoveryBlocked"):
-                         update.index("if (Cohort().Config.ValidationRouteEnable && Cohort().Config.AllowRaids)", gate)]
+                         update.index("// A critical-role death can make the survivors retreat", gate)]
     assert "TeleportTo(" not in gate_block
     assert "ResurrectPlayer" not in gate_block
 
@@ -3137,7 +3168,9 @@ def test_drudge_preseed_failure_latches_before_dead_member_recovery_and_is_seria
     assert "CombatStop" not in update[terminal:dead_member]
     death_record = update.index("if (!state.DeathEpisodeRecorded)", dead_member)
     dead_terminal = update.index("if (validationAttemptFailed)", death_record)
-    native_dead_recovery = update.index("if (state.DeadTimer >= 5000)", dead_terminal)
+    native_dead_recovery = update.index(
+        "bool const nativeDeathDecisionWindowComplete", dead_terminal
+    )
     assert death_record < dead_terminal < native_dead_recovery
     assert "holdValidationAttemptFailure();" in update[dead_terminal:native_dead_recovery]
 
@@ -3207,24 +3240,20 @@ def test_native_full_wipe_policy_disables_native_resurrection_shortcuts_for_smok
         IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
     ]
     self_res = update.index("&& TryNativeSelfResurrection(state, bot)")
-    assert (
-        "Cohort().Config.ValidationRouteBossRecovery != "
-        "ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly"
-    ) in update[self_res - 220:self_res]
-
-    objective = IMPL[
-        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective"):
-        IMPL.index("bool BotWorldPopulationMgr::IsBossContext")
+    # No certifying route may use a class self-res shortcut. The native CR
+    # reservation/decline contract precedes this branch; only non-certifying
+    # free-roam autonomy retains ordinary class self-res behavior.
+    assert "if (!Cohort().Config.ValidationRouteEnable" in update[
+        self_res - 220:self_res
     ]
-    party_res = objective.index("TryNativePartyResurrection(state, bot")
-    assert "ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly" in objective[party_res - 300:party_res]
 
-    mechanics = IMPL[
-        IMPL.index("BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMechanics"):
-        IMPL.index("BotWorldPopulationMgr::RaidRoleAssignment BotWorldPopulationMgr::BuildRaidRoleAssignment")
+    builder = IMPL[
+        IMPL.index("BotWorldPopulationMgr::BuildCombatResNativeActionCandidate"):
+        IMPL.index("void BotWorldPopulationMgr::ApplyRuntimeConfigOverride")
     ]
-    battle_res = mechanics.index("TryNativePartyResurrection(state, bot")
-    assert "ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly" in mechanics[battle_res - 500:battle_res]
+    assert "ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly" in builder
+    assert "return std::nullopt;" in builder
+    assert "TryNativePartyResurrection" not in IMPL
 
 
 def test_native_full_wipe_latch_survives_first_ghost_leaving_instance():

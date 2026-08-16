@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import base64
 import contextlib
+import functools
 import hashlib
 import html
 import json
@@ -28,8 +29,9 @@ try:
     from .build_validation_provisioning import DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE, VALIDATION_FULL_STAT_SEED, VALIDATION_GHOST_AURA_ID, VALIDATION_GHOST_CHARACTER_FLAG, VALIDATION_RESURRECT_AT_LOGIN_FLAG, apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config_with_bwd_diagnostic_shards, load_gear_profiles
     from .common import write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
+    from .generate_bot_admission_identities import source_content_sha256 as admission_identity_source_sha256
     from .live_validation_session import apply_acceptance_evaluation, build_evidence_envelope, build_session, canonical_sha256, ensure_healthy_matching_session, git_dirty_state_sha256, git_head, live_validation_lock, sha256_file, sha256_text, stop_session
-    from .phase8_calibration_adapter import Phase8CalibrationNormalizationError, evaluate_runtime_calibration
+    from .phase8_calibration_adapter import Phase8CalibrationNormalizationError, canonical_gear_manifest, canonical_gear_profile_id, evaluate_runtime_calibration, expected_gear_manifest
     from .phase8_evidence_identity import validate_manifest as validate_phase8_evidence_manifest
     from .phase9_evidence_identity import validate_manifest as validate_phase9_evidence_manifest
 except ImportError:
@@ -39,8 +41,9 @@ except ImportError:
     from build_validation_provisioning import DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE, VALIDATION_FULL_STAT_SEED, VALIDATION_GHOST_AURA_ID, VALIDATION_GHOST_CHARACTER_FLAG, VALIDATION_RESURRECT_AT_LOGIN_FLAG, apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config_with_bwd_diagnostic_shards, load_gear_profiles
     from common import write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
+    from generate_bot_admission_identities import source_content_sha256 as admission_identity_source_sha256
     from live_validation_session import apply_acceptance_evaluation, build_evidence_envelope, build_session, canonical_sha256, ensure_healthy_matching_session, git_dirty_state_sha256, git_head, live_validation_lock, sha256_file, sha256_text, stop_session
-    from phase8_calibration_adapter import Phase8CalibrationNormalizationError, evaluate_runtime_calibration
+    from phase8_calibration_adapter import Phase8CalibrationNormalizationError, canonical_gear_manifest, canonical_gear_profile_id, evaluate_runtime_calibration, expected_gear_manifest
     from phase8_evidence_identity import validate_manifest as validate_phase8_evidence_manifest
     from phase9_evidence_identity import validate_manifest as validate_phase9_evidence_manifest
 
@@ -303,6 +306,9 @@ class ImmutableCaptureWriter:
         report: Mapping[str, Any],
         output: str,
         exact_manifests: Mapping[str, Any],
+        *,
+        returncode: int,
+        timed_out: bool,
     ) -> dict[str, Any]:
         batch_root = attempt.output_dir / "batch"
         payloads = parse_json_objects(output)
@@ -327,6 +333,14 @@ class ImmutableCaptureWriter:
                 "completion_reason": str(report.get("completion_reason") or ""),
             }
         ]
+        context = report.get("validation_context")
+        context = context if isinstance(context, Mapping) else {}
+        if report.get("calibration_only") is True:
+            evidence_kind = "dps_calibration"
+        elif str(context.get("scenario_id") or "") == "stonecore_5h":
+            evidence_kind = "stonecore_5h"
+        else:
+            evidence_kind = "live_validation"
         return capture_batch(
             batch_root,
             batch_id=f"{attempt.cohort_id}-{attempt.attempt_index}",
@@ -335,6 +349,12 @@ class ImmutableCaptureWriter:
             exact_manifests=dict(exact_manifests),
             summary=compact_rows[0],
             acceptance_report=dict(report),
+            raw_transport_output=output,
+            transport_outcome={
+                "returncode": returncode,
+                "timed_out": timed_out,
+            },
+            semantic_evidence_kind=evidence_kind,
         )
 
 
@@ -895,7 +915,6 @@ def build_bot_pool_reset_sql(tags: list[str] | None = None, world_database: str 
         f"WHERE g.`leaderGuid` IN ({guid_select});",
         f"DELETE pc FROM `characters`.`pet_spell_cooldown` pc JOIN `characters`.`character_pet` cp ON cp.`id` = pc.`guid` WHERE cp.`owner` IN ({guid_select});",
         f"DELETE pa FROM `characters`.`pet_aura` pa JOIN `characters`.`character_pet` cp ON cp.`id` = pa.`guid` WHERE cp.`owner` IN ({guid_select});",
-        f"DELETE ps FROM `characters`.`pet_spell` ps JOIN `characters`.`character_pet` cp ON cp.`id` = ps.`guid` WHERE cp.`owner` IN ({guid_select});",
         f"DELETE FROM `characters`.`mail_items` WHERE `receiver` IN ({guid_select});",
         f"DELETE FROM `characters`.`mail` WHERE `receiver` IN ({guid_select});",
     ]
@@ -973,46 +992,32 @@ def prepare_validation_provisioning(
     return report
 
 
-def prepare_route_bot_start(output_dir: Path, route: dict[str, Any], worldserver_conf: Path, tags: list[str], apply: bool = False) -> dict[str, Any]:
+def server_route_start_contract(route: dict[str, Any]) -> dict[str, Any]:
+    """Describe the entrance placement owned by the inactive server admission gate.
+
+    The live operator must never rewrite character position, health, power, or
+    corpse state to manufacture a clean attempt.  The population coordinator
+    consumes these pinned coordinates while the cohort is still inert, proves
+    the resulting native map/group/difficulty state in its admission receipt,
+    and only then enables bot actions.
+    """
     map_id = int(route.get("bot_start_map_id") or 0)
     x = float(route.get("bot_start_x") or 0.0)
     y = float(route.get("bot_start_y") or 0.0)
     z = float(route.get("bot_start_z") or 0.0)
     o = float(route.get("bot_start_o") or 0.0)
     if not map_id or (x == 0.0 and y == 0.0 and z == 0.0):
-        return {"schema": "bot_live_validation_route_start_v1", "applied": False, "reason": "route_start_not_configured"}
-
-    predicate = tag_predicate(tags or ["test_account"])
-    sql = (
-        "-- Generated by tools.bot_ml.run_live_bot_validation.\n"
-        "-- Moves scenario-scoped bot-pool characters to a route-specific validation start.\n"
-        "UPDATE `characters`.`characters` c "
-        "JOIN `characters`.`character_bot_pool` p ON p.`guid` = c.`guid` "
-        f"SET c.`map` = {map_id}, c.`position_x` = {x}, c.`position_y` = {y}, c.`position_z` = {z}, c.`orientation` = {o}, "
-        f"c.`health` = {VALIDATION_FULL_STAT_SEED}, c.`power1` = {VALIDATION_FULL_STAT_SEED}, c.`online` = 0, "
-        f"c.`characterFlags` = c.`characterFlags` & ~{VALIDATION_GHOST_CHARACTER_FLAG}, "
-        f"c.`at_login` = c.`at_login` & ~{VALIDATION_RESURRECT_AT_LOGIN_FLAG} "
-        "WHERE p.`enabled` = 1 AND "
-        + predicate
-        + ";\n"
-        f"DELETE FROM `characters`.`corpse_phases` WHERE `OwnerGuid` IN (SELECT p.`guid` FROM `characters`.`character_bot_pool` p WHERE p.`enabled` = 1 AND {predicate});\n"
-        f"DELETE FROM `characters`.`corpse` WHERE `guid` IN (SELECT p.`guid` FROM `characters`.`character_bot_pool` p WHERE p.`enabled` = 1 AND {predicate});\n"
-        f"DELETE FROM `characters`.`character_aura` WHERE `guid` IN (SELECT p.`guid` FROM `characters`.`character_bot_pool` p WHERE p.`enabled` = 1 AND {predicate}) AND `spell` = {VALIDATION_GHOST_AURA_ID};\n"
-    )
-    character_url = database_url_from_worldserver_conf(worldserver_conf, "CharacterDatabaseInfo")
-    sql = qualify_sql_schema(sql, "characters", database_name(character_url))
-    start_dir = output_dir / "route_bot_start"
-    start_dir.mkdir(parents=True, exist_ok=True)
-    sql_path = start_dir / "route_bot_start.sql"
-    sql_path.write_text(sql, encoding="utf-8")
-    statements = 0
-    if apply:
-        statements = execute_sql_text(character_url, sql)
+        return {
+            "schema": "bot_live_validation_server_route_start_v2",
+            "provisioning_owner": "server_population_coordinator",
+            "orchestrator_mutation_applied": False,
+            "reason": "route_start_not_configured",
+        }
     return {
-        "schema": "bot_live_validation_route_start_v1",
-        "applied": bool(apply),
-        "statements": statements,
-        "sql": str(sql_path),
+        "schema": "bot_live_validation_server_route_start_v2",
+        "provisioning_owner": "server_population_coordinator",
+        "orchestrator_mutation_applied": False,
+        "action_gate_state": "inactive_until_admission_receipt_commit",
         "map_id": map_id,
         "x": x,
         "y": y,
@@ -1254,6 +1259,10 @@ def apply_calibration_only_acceptance(report: dict[str, Any]) -> dict[str, Any]:
         rejections.append("missing_calibration_target")
     if str(calibration.get("runtime_authority") or "") != "explicit_sql_rule_profiles":
         rejections.append("invalid_runtime_authority")
+    if str(calibration.get("runtime_mode") or "") != "calibration_fixture":
+        rejections.append("calibration_runtime_mode_mismatch")
+    if calibration.get("non_certifying_assistance") is not True:
+        rejections.append("calibration_non_certifying_assistance_not_declared")
     if bool(calibration.get("generic_ml_runtime_authority")):
         rejections.append("generic_ml_runtime_authority_enabled")
     if not bool(calibration.get("reset_applied")) or not str(calibration.get("reset_id") or ""):
@@ -2053,7 +2062,513 @@ def scenario_int(report: dict[str, Any], *keys: str) -> int:
 
 
 def scenario_group_ready(report: dict[str, Any]) -> bool:
+    if str(report.get("difficulty") or "") == "heroic_5man":
+        return bool(report.get("heroic_admission_verified"))
     return scenario_bool(report, "prepared_group", "group_ready", "provisioning_ready")
+
+
+@functools.lru_cache(maxsize=1)
+def expected_class_spec_runtime_identities() -> dict[str, tuple[int, int]]:
+    catalog_path = REPO_ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.json"
+    try:
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    result: dict[str, tuple[int, int]] = {}
+    for target in catalog.get("targets") or []:
+        if not isinstance(target, dict):
+            continue
+        spec = str(target.get("spec_target_id") or "")
+        provisioning = target.get("provisioning_bot")
+        if not spec or not isinstance(provisioning, dict):
+            continue
+        try:
+            class_id = int(target["class_id"])
+            tree_id = int(provisioning["primary_talent_tree_id"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if class_id > 0 and tree_id > 0 \
+                and provisioning.get("class") == class_id \
+                and provisioning.get("class_spec") == spec:
+            result[spec] = (class_id, tree_id)
+    return result
+
+
+@functools.lru_cache(maxsize=1)
+def expected_class_spec_talent_spells() -> dict[str, tuple[int, ...]]:
+    catalog_path = REPO_ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.json"
+    try:
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    result: dict[str, tuple[int, ...]] = {}
+    for target in catalog.get("targets") or []:
+        if not isinstance(target, dict):
+            continue
+        spec = str(target.get("spec_target_id") or "")
+        provisioning = target.get("provisioning_bot")
+        if not spec or not isinstance(provisioning, dict):
+            continue
+        spells = sorted(
+            int(row.get("spell_id") or 0)
+            for row in provisioning.get("talents") or []
+            if isinstance(row, dict) and int(row.get("spell_id") or 0) > 0
+        )
+        if spells:
+            result[spec] = tuple(spells)
+    return result
+
+
+ALL_SPEC_PET_GUID_BASE = 8_700_000
+
+
+def _pet_spellbook_sha256(spellbook: tuple[tuple[int, int], ...]) -> str:
+    canonical = ";".join(f"{spell_id}:{active}" for spell_id, active in spellbook)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+@functools.lru_cache(maxsize=1)
+def expected_class_spec_pet_identities() -> dict[str, dict[str, Any]]:
+    """Return the exact ordinary-pet identities pinned by all-spec provisioning."""
+    catalog_path = REPO_ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.json"
+    try:
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    result: dict[str, dict[str, Any]] = {}
+    for target in catalog.get("targets") or []:
+        if not isinstance(target, dict):
+            continue
+        spec = str(target.get("spec_target_id") or "")
+        provisioning = target.get("provisioning_bot")
+        pet = provisioning.get("pet") if isinstance(provisioning, dict) else None
+        if not spec or not isinstance(pet, dict):
+            continue
+        normalized: list[tuple[int, int]] = []
+        valid = True
+        for row in pet.get("spells") or []:
+            if isinstance(row, bool):
+                valid = False
+                break
+            if isinstance(row, int):
+                spell_id, active = row, 1
+            elif isinstance(row, dict):
+                spell_id = row.get("id")
+                active = row.get("active", 1)
+                if isinstance(spell_id, bool) or isinstance(active, bool) \
+                        or not isinstance(spell_id, int) or not isinstance(active, int):
+                    valid = False
+                    break
+            else:
+                valid = False
+                break
+            if spell_id <= 0 or active < 0 or active > 255:
+                valid = False
+                break
+            normalized.append((spell_id, active))
+        try:
+            id_offset = pet["id_offset"]
+            entry = pet["entry"]
+        except KeyError:
+            continue
+        if isinstance(id_offset, bool) or isinstance(entry, bool) \
+                or not isinstance(id_offset, int) or not isinstance(entry, int) \
+                or id_offset <= 0 or entry <= 0 or not valid or not normalized:
+            continue
+        spellbook = tuple(sorted(normalized))
+        if len({spell_id for spell_id, _active in spellbook}) != len(spellbook):
+            continue
+        result[spec] = {
+            "pet_id": ALL_SPEC_PET_GUID_BASE + id_offset,
+            "pet_entry": entry,
+            "spellbook": spellbook,
+            "spellbook_sha256": _pet_spellbook_sha256(spellbook),
+        }
+    return result
+
+
+@functools.lru_cache(maxsize=1)
+def _expected_class_spec_gear_identities_json() -> str:
+    """Reconstruct the one exact gear identity declared across pinned catalogs."""
+    target_path = REPO_ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.json"
+    reference_path = REPO_ROOT / "experiments/configs/all_spec_references_cata_p4_v1.json"
+    try:
+        target_catalog = json.loads(target_path.read_text(encoding="utf-8"))
+        reference_catalog = json.loads(reference_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return "{}"
+    references = {
+        str(row.get("spec_target_id") or ""): row
+        for row in reference_catalog.get("references") or []
+        if isinstance(row, dict) and row.get("spec_target_id")
+    }
+    result: dict[str, dict[str, Any]] = {}
+    for target in target_catalog.get("targets") or []:
+        if not isinstance(target, dict):
+            continue
+        spec = str(target.get("spec_target_id") or "")
+        reference = references.get(spec)
+        if not spec or not isinstance(reference, dict):
+            continue
+        try:
+            gear_profile_id = canonical_gear_profile_id(target, reference)
+            manifest = expected_gear_manifest(gear_profile_id)
+        except (Phase8CalibrationNormalizationError, TypeError, ValueError):
+            continue
+        result[spec] = {
+            "gear_profile_id": gear_profile_id,
+            "manifest": manifest,
+            "manifest_sha256": canonical_sha256(manifest),
+        }
+    return json.dumps(result, sort_keys=True, separators=(",", ":"))
+
+
+def expected_class_spec_gear_identities() -> dict[str, dict[str, Any]]:
+    """Return an isolated copy so callers cannot mutate the cached authority."""
+    return json.loads(_expected_class_spec_gear_identities_json())
+
+
+@functools.lru_cache(maxsize=1)
+def expected_admission_identity_source_sha256() -> str:
+    return admission_identity_source_sha256()
+
+
+def _strict_admission_gear_manifest(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        raise TypeError
+    required_fields = {
+        "slot", "item_id", "enchant_id", "reforge_id", "gem_item_ids"
+    }
+    for row in value:
+        if not isinstance(row, dict) or set(row) != required_fields:
+            raise TypeError
+        scalar_values = (
+            row["slot"], row["item_id"], row["enchant_id"], row["reforge_id"]
+        )
+        if any(isinstance(field, bool) or not isinstance(field, int)
+               for field in scalar_values):
+            raise TypeError
+        gems = row["gem_item_ids"]
+        if not isinstance(gems, list) or any(
+            isinstance(gem, bool) or not isinstance(gem, int) or gem < 0
+            for gem in gems
+        ):
+            raise TypeError
+    return canonical_gear_manifest(value, label="admission_member.gear_manifest")
+
+
+def validate_heroic_admission_receipt(
+    status: dict[str, Any], *, expected_size: int = 5, expected_map_id: int = 725,
+    expected_class_specs: list[str] | None = None,
+    expected_start: tuple[float, float, float] | None = None,
+    expected_route_manifest_sha256: str = "",
+    expected_recovery_entrance: tuple[int, int, int] | None = None,
+    horizontal_tolerance: float = 5.0, vertical_tolerance: float = 3.0,
+) -> dict[str, Any]:
+    runtime = status.get("raid_runtime") if isinstance(status.get("raid_runtime"), dict) else {}
+    receipt = runtime.get("admission_receipt") if isinstance(runtime.get("admission_receipt"), dict) else {}
+    members = receipt.get("members") if isinstance(receipt.get("members"), list) else []
+    expected_attempt = int(status.get("attempt_id") or 0)
+    expected_group = int(runtime.get("group_guid") or 0)
+    expected_instance = int(runtime.get("instance_id") or 0)
+    expected_slots = [
+        "party_tank_1",
+        "party_healer_1",
+        "party_dps_1",
+        "party_dps_2",
+        "party_dps_3",
+    ]
+    expected_roles_by_slot = {
+        "party_tank_1": "tank",
+        "party_healer_1": "healer",
+        "party_dps_1": "dps",
+        "party_dps_2": "dps",
+        "party_dps_3": "dps",
+    }
+    expected_specs_by_slot = dict(zip(expected_slots, expected_class_specs or [], strict=False))
+    reasons: list[str] = []
+    if expected_start is None or len(expected_route_manifest_sha256) != 64 \
+        or expected_recovery_entrance is None:
+        reasons.append("expected_admission_contract_missing")
+    if str(runtime.get("admission_phase") or "") != "active":
+        reasons.append("admission_phase_not_active")
+    if not bool(runtime.get("server_provisioning_complete")):
+        reasons.append("server_provisioning_incomplete")
+    if not bool(runtime.get("bot_actions_enabled")):
+        reasons.append("bot_action_gate_closed")
+    if not bool(runtime.get("difficulty_matches")):
+        reasons.append("heroic_difficulty_readback_mismatch")
+    if int(runtime.get("expected_difficulty") or -1) != 1:
+        reasons.append("expected_difficulty_not_heroic")
+    if int(runtime.get("group_difficulty") or -1) != 1 or int(runtime.get("map_difficulty") or -1) != 1:
+        reasons.append("group_or_map_not_heroic")
+    if int(runtime.get("expected_size") or 0) != expected_size:
+        reasons.append("unexpected_admission_size")
+    if int(receipt.get("attempt_id") or 0) != expected_attempt or not expected_attempt:
+        reasons.append("admission_attempt_identity_mismatch")
+    if str(receipt.get("scenario_id") or "") != "stonecore_5h":
+        reasons.append("admission_scenario_identity_mismatch")
+    if str(receipt.get("runtime_profile") or "") != "stonecore_5h":
+        reasons.append("admission_profile_identity_mismatch")
+    if str(receipt.get("identity_catalog_source_sha256") or "").lower() \
+            != expected_admission_identity_source_sha256():
+        reasons.append("admission_identity_catalog_source_mismatch")
+    if str(receipt.get("route_manifest_sha256") or "").lower() != expected_route_manifest_sha256.lower():
+        reasons.append("admission_route_manifest_identity_mismatch")
+    if expected_recovery_entrance is not None and (
+        int(receipt.get("recovery_entrance_area_trigger_id") or 0),
+        int(receipt.get("recovery_entrance_source_map_id") or 0),
+        int(receipt.get("recovery_entrance_target_map_id") or 0),
+    ) != expected_recovery_entrance:
+        reasons.append("admission_recovery_entrance_identity_mismatch")
+    if int(receipt.get("entrance_map_id") or 0) != expected_map_id:
+        reasons.append("admission_entrance_map_identity_mismatch")
+    if expected_start is not None:
+        try:
+            receipt_entrance = (
+                float(receipt["entrance_x"]),
+                float(receipt["entrance_y"]),
+                float(receipt["entrance_z"]),
+            )
+        except (KeyError, TypeError, ValueError):
+            reasons.append("admission_entrance_receipt_missing")
+        else:
+            if math.hypot(
+                receipt_entrance[0] - expected_start[0],
+                receipt_entrance[1] - expected_start[1],
+            ) > horizontal_tolerance or abs(
+                receipt_entrance[2] - expected_start[2]
+            ) > vertical_tolerance:
+                reasons.append("admission_entrance_position_identity_mismatch")
+    if int(receipt.get("profile_generation") or 0) != int(status.get("profile_generation") or 0):
+        reasons.append("admission_profile_generation_mismatch")
+    if str(receipt.get("profile_content_hash") or "") != str(status.get("profile_content_hash") or ""):
+        reasons.append("admission_profile_hash_mismatch")
+    if int(receipt.get("leader_guid") or 0) != int(runtime.get("leader_guid") or 0):
+        reasons.append("admission_leader_identity_mismatch")
+    if not bool(receipt.get("bot_actions_enabled_at_commit")):
+        reasons.append("admission_not_committed_before_actions")
+    if receipt.get("all_current_gear_matches_admission") is not True:
+        reasons.append("admission_current_gear_identity_unverified")
+    if len(members) != expected_size:
+        reasons.append("admission_member_count_mismatch")
+
+    guids: set[int] = set()
+    observed_specs: list[str] = []
+    observed_slots: set[str] = set()
+    observed_roles_by_slot: dict[str, str] = {}
+    observed_specs_by_slot: dict[str, str] = {}
+    observed_gear_profiles_by_slot: dict[str, str] = {}
+    observed_gear_hashes_by_slot: dict[str, str] = {}
+    expected_runtime_identities = expected_class_spec_runtime_identities()
+    expected_gear_identities = expected_class_spec_gear_identities()
+    for member in members:
+        if not isinstance(member, dict):
+            reasons.append("invalid_admission_member")
+            continue
+        guid = int(member.get("guid") or 0)
+        if not guid or guid in guids:
+            reasons.append("duplicate_or_zero_admission_guid")
+        guids.add(guid)
+        roster_slot_id = str(member.get("roster_slot_id") or "")
+        class_spec = str(member.get("class_spec") or "")
+        if not roster_slot_id or roster_slot_id in observed_slots:
+            reasons.append("duplicate_or_empty_admission_roster_slot")
+        observed_slots.add(roster_slot_id)
+        if not class_spec:
+            reasons.append("empty_admission_class_spec")
+        observed_specs.append(class_spec)
+        observed_roles_by_slot[roster_slot_id] = str(member.get("role") or "")
+        observed_specs_by_slot[roster_slot_id] = class_spec
+        expected_runtime_identity = expected_runtime_identities.get(class_spec)
+        if expected_runtime_identity is None:
+            reasons.append("unsupported_admission_class_spec")
+        else:
+            try:
+                observed_runtime_identity = (
+                    int(member["class_id"]),
+                    int(member["primary_talent_tree_id"]),
+                )
+                active_spec_index = int(member["active_spec_index"])
+                active_talent_count = int(member["active_talent_count"])
+            except (KeyError, TypeError, ValueError):
+                reasons.append("member_runtime_spec_identity_missing")
+            else:
+                if observed_runtime_identity != expected_runtime_identity:
+                    reasons.append("member_runtime_spec_identity_mismatch")
+                if active_spec_index not in {0, 1}:
+                    reasons.append("member_active_spec_index_invalid")
+                if active_talent_count <= 0:
+                    reasons.append("member_active_talent_set_empty")
+                try:
+                    observed_talent_spells = tuple(sorted(
+                        int(spell_id) for spell_id in member["active_talent_spell_ids"]
+                    ))
+                except (KeyError, TypeError, ValueError):
+                    reasons.append("member_active_talent_identity_missing")
+                else:
+                    expected_talent_spells = expected_class_spec_talent_spells().get(class_spec)
+                    if expected_talent_spells is None:
+                        reasons.append("expected_talent_identity_missing")
+                    elif observed_talent_spells != expected_talent_spells \
+                            or active_talent_count != len(observed_talent_spells):
+                        reasons.append("member_active_talent_identity_mismatch")
+        expected_pet_identity = expected_class_spec_pet_identities().get(class_spec)
+        if expected_pet_identity is None:
+            if member.get("pet_identity_present") is not False \
+                    or member.get("pet_id") not in (0, None) \
+                    or member.get("pet_entry") not in (0, None) \
+                    or member.get("pet_spell_count") not in (0, None) \
+                    or member.get("pet_spellbook") not in ([], None) \
+                    or member.get("pet_spellbook_sha256") not in ("", None):
+                reasons.append("non_hunter_pet_identity_fabricated")
+        else:
+            if member.get("pet_identity_present") is not True:
+                reasons.append("member_hunter_pet_identity_missing")
+            try:
+                pet_id = member["pet_id"]
+                pet_entry = member["pet_entry"]
+                pet_spell_count = member["pet_spell_count"]
+                raw_pet_spellbook = member["pet_spellbook"]
+                pet_spellbook_hash = member["pet_spellbook_sha256"]
+                if any(isinstance(value, bool) or not isinstance(value, int)
+                       for value in (pet_id, pet_entry, pet_spell_count)):
+                    raise TypeError
+                if not isinstance(raw_pet_spellbook, list) \
+                        or not isinstance(pet_spellbook_hash, str):
+                    raise TypeError
+                observed_pet_spellbook_rows: list[tuple[int, int]] = []
+                for row in raw_pet_spellbook:
+                    if not isinstance(row, dict):
+                        raise TypeError
+                    spell_id = row.get("spell_id")
+                    active = row.get("active")
+                    if isinstance(spell_id, bool) or isinstance(active, bool) \
+                            or not isinstance(spell_id, int) or not isinstance(active, int):
+                        raise TypeError
+                    observed_pet_spellbook_rows.append((spell_id, active))
+                observed_pet_spellbook = tuple(sorted(observed_pet_spellbook_rows))
+            except (KeyError, TypeError, ValueError):
+                reasons.append("member_hunter_pet_identity_missing")
+            else:
+                expected_pet_spellbook = expected_pet_identity["spellbook"]
+                if pet_id != expected_pet_identity["pet_id"] \
+                        or pet_entry != expected_pet_identity["pet_entry"] \
+                        or pet_spell_count != len(observed_pet_spellbook) \
+                        or observed_pet_spellbook != expected_pet_spellbook:
+                    reasons.append("member_hunter_pet_identity_mismatch")
+                observed_hash = _pet_spellbook_sha256(observed_pet_spellbook)
+                if pet_spellbook_hash.lower() != observed_hash \
+                        or pet_spellbook_hash.lower() != expected_pet_identity["spellbook_sha256"]:
+                    reasons.append("member_hunter_pet_spellbook_hash_mismatch")
+        expected_gear_identity = expected_gear_identities.get(class_spec)
+        try:
+            gear_profile_id = member["gear_profile_id"]
+            gear_item_count = member["gear_item_count"]
+            gear_manifest_hash = member["gear_manifest_sha256"]
+            current_gear_manifest_hash = member["current_gear_manifest_sha256"]
+            current_matches_admission = member[
+                "gear_identity_current_matches_admission"
+            ]
+            if not isinstance(gear_profile_id, str) \
+                    or isinstance(gear_item_count, bool) \
+                    or not isinstance(gear_item_count, int) \
+                    or not isinstance(gear_manifest_hash, str) \
+                    or not isinstance(current_gear_manifest_hash, str) \
+                    or not isinstance(current_matches_admission, bool):
+                raise TypeError
+            observed_gear_manifest = _strict_admission_gear_manifest(
+                member["gear_manifest"]
+            )
+        except (KeyError, TypeError, ValueError, Phase8CalibrationNormalizationError):
+            reasons.append("member_gear_identity_missing")
+        else:
+            observed_gear_profiles_by_slot[roster_slot_id] = gear_profile_id
+            observed_gear_hashes_by_slot[roster_slot_id] = gear_manifest_hash.lower()
+            observed_manifest_hash = canonical_sha256(observed_gear_manifest)
+            hashes_are_hex = re.fullmatch(r"[0-9a-f]{64}", gear_manifest_hash.lower()) \
+                and re.fullmatch(r"[0-9a-f]{64}", current_gear_manifest_hash.lower())
+            if gear_item_count != len(observed_gear_manifest) \
+                    or gear_item_count < 16:
+                reasons.append("member_gear_identity_missing")
+            if expected_gear_identity is None:
+                reasons.append("expected_gear_identity_missing")
+            else:
+                if gear_profile_id != expected_gear_identity["gear_profile_id"]:
+                    reasons.append("member_gear_profile_identity_mismatch")
+                if observed_gear_manifest != expected_gear_identity["manifest"]:
+                    reasons.append("member_gear_manifest_mismatch")
+                if not hashes_are_hex \
+                        or gear_manifest_hash.lower() != observed_manifest_hash \
+                        or gear_manifest_hash.lower() != expected_gear_identity["manifest_sha256"]:
+                    reasons.append("member_gear_manifest_hash_mismatch")
+            if current_matches_admission is not True \
+                    or current_gear_manifest_hash.lower() != gear_manifest_hash.lower():
+                reasons.append("member_current_gear_identity_drift")
+        if int(member.get("group_guid") or 0) != expected_group or not expected_group:
+            reasons.append("admission_group_identity_mismatch")
+        if int(member.get("leader_guid") or 0) != int(runtime.get("leader_guid") or 0):
+            reasons.append("member_leader_identity_mismatch")
+        if int(member.get("map_id") or 0) != expected_map_id:
+            reasons.append("admission_map_identity_mismatch")
+        if int(member.get("instance_id") or 0) != expected_instance or not expected_instance:
+            reasons.append("admission_instance_identity_mismatch")
+        if int(member.get("expected_difficulty") or -1) != 1:
+            reasons.append("member_expected_difficulty_not_heroic")
+        if int(member.get("player_difficulty") or -1) != 1:
+            reasons.append("member_player_difficulty_not_heroic")
+        if int(member.get("map_difficulty") or -1) != 1:
+            reasons.append("member_map_difficulty_not_heroic")
+        try:
+            spawn_x = float(member["spawn_x"])
+            spawn_y = float(member["spawn_y"])
+            spawn_z = float(member["spawn_z"])
+        except (KeyError, TypeError, ValueError):
+            reasons.append("member_spawn_receipt_missing")
+        else:
+            if expected_start is not None:
+                horizontal_distance = math.hypot(
+                    spawn_x - expected_start[0], spawn_y - expected_start[1]
+                )
+                if horizontal_distance > horizontal_tolerance:
+                    reasons.append("member_not_provisioned_at_dungeon_entrance")
+                if abs(spawn_z - expected_start[2]) > vertical_tolerance:
+                    reasons.append("member_not_provisioned_at_dungeon_entrance")
+        if not bool(member.get("server_provisioned")):
+            reasons.append("member_not_server_provisioned")
+        if not bool(member.get("initial_baseline_normalized")):
+            reasons.append("member_initial_baseline_not_normalized")
+        if not bool(member.get("initial_alive_state_verified")):
+            reasons.append("member_initial_alive_state_unverified")
+    if observed_slots != set(expected_slots):
+        reasons.append("admission_roster_slot_contract_mismatch")
+    if observed_roles_by_slot != expected_roles_by_slot:
+        reasons.append("admission_role_shape_mismatch")
+    if expected_class_specs and observed_specs_by_slot != expected_specs_by_slot:
+        reasons.append("admission_class_spec_roster_mismatch")
+
+    unique_reasons = sorted(set(reasons))
+    return {
+        "verified": not unique_reasons,
+        "failure_reasons": unique_reasons,
+        "attempt_id": expected_attempt,
+        "group_guid": expected_group,
+        "map_id": expected_map_id,
+        "instance_id": expected_instance,
+        "expected_difficulty": 1,
+        "member_guids": sorted(guids),
+        "class_specs": sorted(observed_specs),
+        "roster_slots": sorted(observed_slots),
+        "roles_by_slot": dict(sorted(observed_roles_by_slot.items())),
+        "class_specs_by_slot": dict(sorted(observed_specs_by_slot.items())),
+        "gear_profiles_by_slot": dict(sorted(observed_gear_profiles_by_slot.items())),
+        "gear_manifest_sha256_by_slot": dict(sorted(observed_gear_hashes_by_slot.items())),
+        "gear_identity_sha256": canonical_sha256({
+            "gear_profiles_by_slot": dict(sorted(observed_gear_profiles_by_slot.items())),
+            "gear_manifest_sha256_by_slot": dict(sorted(observed_gear_hashes_by_slot.items())),
+        }) if observed_gear_hashes_by_slot else "",
+        "receipt_sha256": canonical_sha256(receipt) if receipt else "",
+    }
 
 
 def scenario_trash_ready(report: dict[str, Any]) -> bool:
@@ -2083,7 +2598,7 @@ def scenario_missing(report: dict[str, Any], missing_name: str) -> list[str]:
 
 
 def scenario_stage_missing(stage: str, scenario_reports: dict[str, dict[str, Any]]) -> list[str]:
-    stonecore = scenario_reports.get("stonecore_5n") or {}
+    stonecore = scenario_reports.get("stonecore_5h") or {}
     bwd = scenario_reports.get("blackwing_descent_10n") or {}
     if stage == "normal_dungeon_trash":
         missing = scenario_missing(stonecore, "stonecore_live_clear_report")
@@ -2635,13 +3150,22 @@ def watchdog_state(
     max_death_loops: int = DEFAULT_MAX_DEATH_LOOPS,
 ) -> dict[str, Any]:
     counters = progress_counters_from_evidence(evidence)
+    # Starting/continuing a boss attempt is activity, but it is not durable
+    # progress once the evidence classifies that attempt as having produced no
+    # kill.  Counting those repeated actions here lets an endless pull/reset
+    # loop keep the completion watchdog alive forever.
+    effective_boss_progress = (
+        0
+        if "boss_attempt_no_kill" in failure_labels
+        else counters["boss_engagement_actions"]
+    )
     progress_total = (
         counters["quest_objective_progress"]
         + counters["quests_accepted"]
         + counters["quests_completed"]
         + counters["kills"]
         + counters["boss_kill_evidence"]
-        + counters["boss_engagement_actions"]
+        + effective_boss_progress
         + counters["gear_upgrades"]
         + counters["validation_route_terminal_evidence"]
         + counters["validation_route_manifest_complete"]
@@ -2823,7 +3347,7 @@ def attach_stonecore_role_quality_audit(
     context = validation_context or {}
     manifest = validation_route_manifest or {}
     is_full_stonecore = (
-        context.get("scenario_id") == "stonecore_5n"
+        context.get("scenario_id") in {"stonecore_5n", "stonecore_5h"}
         and bool(manifest.get("routes"))
         and not context.get("segment_id")
         and not context.get("route_node_id")
@@ -3839,6 +4363,7 @@ def attempt_evidence_envelope(
     session_lifecycle: dict[str, Any],
 ) -> dict[str, Any]:
     """Bind one closed attempt to the shared Phase 2 evidence identity."""
+    party_spec_target = list(getattr(args, "party_spec_target", None) or [])
     supplied: dict[str, Any] = {}
     manifest_path = getattr(args, "evidence_identity_manifest", None)
     if manifest_path:
@@ -3910,12 +4435,12 @@ def attempt_evidence_envelope(
                 "phase9_matrix_sha256": file_hash(phase9_matrix, "phase9_pairwise_matrix"),
                 "phase9_pair_policy_sha256": file_hash(phase9_pair_policy, "phase9_pair_policy"),
             }
-        ) if args.party_spec_target else file_hash(scenario_config, "scenario_config"),
+        ) if party_spec_target else file_hash(scenario_config, "scenario_config"),
         "route_sha256": canonical_sha256(validation_route_manifest or validation_context or {"state": "no_route"}),
     }
     generated = int(report.get("generated_at_unix") or 0)
     scenario_id = str(validation_context.get("scenario_id") or "unscoped")
-    exact_party_id = canonical_sha256(list(args.party_spec_target)) if args.party_spec_target else scenario_id
+    exact_party_id = canonical_sha256(party_spec_target) if party_spec_target else scenario_id
     scope_defaults = {
         "batch_id": str(args.output_dir.parent.resolve()),
         "cohort_id": str(args.cohort_id) if args.transport == "session" else (",".join(sorted(str(value) for value in (args.bot_pool_tag or []))) or str(args.selector)),
@@ -4128,7 +4653,7 @@ def run_reusable_validation_session(
             "target_catalog_sha256": sha256_file(args.all_spec_target_catalog.resolve()),
             "pair_policy_sha256": sha256_file(phase9_pair_policy),
             "pairwise_matrix_sha256": sha256_file(phase9_matrix),
-            "route_manifest_sha256": canonical_sha256(validation_route_manifest),
+            "route_manifest_sha256": sha256_file(validation_route_manifest_path),
         }
     if args.evidence_identity_manifest:
         try:
@@ -4277,16 +4802,9 @@ def run_reusable_validation_session(
                     ),
                 )
             if validation_route and int(validation_route.get("bot_start_map_id") or 0):
-                if args.skip_route_bot_start_mutation:
-                    lifecycle["preparation"]["route_bot_start"] = {
-                        "schema": "bot_live_validation_route_start_v1",
-                        "applied": False,
-                        "reason": "preapplied_before_evidence_identity",
-                    }
-                else:
-                    lifecycle["preparation"]["route_bot_start"] = prepare_route_bot_start(
-                        args.output_dir, validation_route, args.config, bot_pool_tags, apply=True,
-                    )
+                lifecycle["preparation"]["route_bot_start"] = (
+                    server_route_start_contract(validation_route)
+                )
 
             if args.calibration_only:
                 lifecycle["preparation"]["profile"] = "calibration_only"
@@ -4322,6 +4840,36 @@ def run_reusable_validation_session(
             lifecycle["profile_generation"] = int(ready_payload.get("profile_generation") or 0)
             lifecycle["profile_content_hash"] = str(ready_payload.get("profile_content_hash") or "")
             lifecycle["lease_count_after_start"] = int(ready_payload.get("lease_count") or 0)
+            if args.validation_scenario_id == "stonecore_5h":
+                # Retain the bounded, five-member admission snapshot so the
+                # remote evidence round-trip can independently re-run the
+                # heroic entrance/role/spec receipt verifier.
+                lifecycle["admission_status"] = ready_payload
+                heroic_admission = validate_heroic_admission_receipt(
+                    ready_payload,
+                    expected_class_specs=list(args.party_spec_target) or None,
+                    expected_map_id=int(validation_route.get("bot_start_map_id") or 0),
+                    expected_start=(
+                        float(validation_route.get("bot_start_x") or 0.0),
+                        float(validation_route.get("bot_start_y") or 0.0),
+                        float(validation_route.get("bot_start_z") or 0.0),
+                    ),
+                    expected_route_manifest_sha256=str(
+                        phase9_artifact_hashes.get("route_manifest_sha256") or ""
+                    ),
+                    expected_recovery_entrance=(
+                        int(validation_route.get("recovery_entrance_area_trigger_id") or 0),
+                        int(validation_route.get("recovery_entrance_source_map_id") or 0),
+                        int(validation_route.get("recovery_entrance_target_map_id") or 0),
+                    ),
+                )
+                lifecycle["heroic_admission"] = heroic_admission
+                lifecycle["heroic_admission_verified"] = bool(heroic_admission["verified"])
+                if not heroic_admission["verified"]:
+                    raise RuntimeError(
+                        "Stonecore 5H admission receipt rejected: "
+                        + ", ".join(heroic_admission["failure_reasons"])
+                    )
             if args.party_spec_target:
                 observed_party = [str(value) for value in ready_payload.get("exact_party_class_specs") or []]
                 if observed_party != list(args.party_spec_target):
@@ -4373,7 +4921,6 @@ def run_reusable_validation_session(
             )
             output_parts.append(output)
             lifecycle["watchdog_completed"] = True
-            return "".join(output_parts), returncode, timed_out, command, lifecycle
         finally:
             try:
                 checked(f".botauto stop {admitted.cohort_id}", executor.stop())
@@ -4431,6 +4978,10 @@ def run_reusable_validation_session(
                     for command_text in executor.commands
                 )
                 write_json(args.output_dir / "session.json", lifecycle)
+    # Joining after cleanup is deliberate: stop/status/cohort-registry output
+    # is part of the immutable raw evidence, not an unretained side effect of
+    # returning from the protected attempt body.
+    return "".join(output_parts), returncode, timed_out, command, lifecycle
 
 
 def main() -> int:
@@ -4479,13 +5030,12 @@ def main() -> int:
     parser.add_argument("--keep-bot-pool-position", action="store_true", help="Do not move reset bot-pool characters back to race/class start positions.")
     parser.add_argument("--keep-bot-pool-quests", action="store_true", help="Do not clear quest/aura/cooldown state for reset bot-pool characters.")
     parser.add_argument("--keep-bot-pool-memory", action="store_true", help="Do not clear persistent bot memory tables for reset bot-pool characters.")
-    parser.add_argument("--skip-route-bot-start-mutation", action="store_true", help="Do not apply route-start character SQL after an evidence identity has been captured.")
     parser.add_argument("--apply-validation-provisioning", action="store_true", help="Apply deterministic Stonecore/BWD validation account and character SQL before running diagnostics.")
     parser.add_argument("--prepare-only", action="store_true", help="Apply requested deterministic provisioning and route-start state, write a report, and exit without launching a worldserver.")
     parser.add_argument("--validation-provisioning-config", type=Path, default=Path("experiments/configs/validation_provisioning_cata_001.json"))
     parser.add_argument("--bwd-diagnostic-shard-fixture", type=Path, default=DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE)
     parser.add_argument("--gear-profiles", type=Path, default=Path("dataset/validation_gear_profiles/profiles.json"))
-    parser.add_argument("--scenario-report-dir", type=Path, help="Optional directory or JSON file containing scenario live reports such as stonecore_5n.json and blackwing_descent_10n.json.")
+    parser.add_argument("--scenario-report-dir", type=Path, help="Optional directory or JSON file containing scenario live reports such as stonecore_5h.json and blackwing_descent_10n.json.")
     parser.add_argument("--validation-scenario-id", default="", help="Scenario ID this live validation run is measuring.")
     parser.add_argument("--validation-segment-id", default="", help="Boss/route segment ID this live validation run is measuring.")
     parser.add_argument("--validation-route-node-id", default="", help="Route node ID this live validation run is measuring.")
@@ -4515,10 +5065,6 @@ def main() -> int:
             raise SystemExit("--prepare-only requires a live non-session preparation run")
         if not args.apply_validation_provisioning:
             raise SystemExit("--prepare-only requires --apply-validation-provisioning")
-    if args.skip_route_bot_start_mutation and (
-        args.transport != "session" or not args.evidence_identity_manifest
-    ):
-        raise SystemExit("--skip-route-bot-start-mutation requires session transport and an evidence identity manifest")
     if args.transport == "soap" and not args.input_log and (
         args.validation_scenario_id or args.validation_route_manifest or args.validation_route_sequence
     ):
@@ -4530,8 +5076,8 @@ def main() -> int:
     if exact_party_specs:
         if args.transport != "session":
             raise SystemExit("--party-spec-target requires --transport session")
-        if args.validation_scenario_id != "stonecore_5n":
-            raise SystemExit("--party-spec-target requires --validation-scenario-id stonecore_5n")
+        if args.validation_scenario_id != "stonecore_5h":
+            raise SystemExit("--party-spec-target requires --validation-scenario-id stonecore_5h")
         if len(exact_party_specs) != 5 or len(set(exact_party_specs)) != 5:
             raise SystemExit("--party-spec-target requires exactly five unique targets")
         if not args.party_pool_tag:
@@ -4685,20 +5231,7 @@ def main() -> int:
                 preparation["validation_provisioning"],
             )
     if validation_route and int(validation_route.get("bot_start_map_id") or 0):
-        if args.skip_route_bot_start_mutation:
-            preparation["route_bot_start"] = {
-                "schema": "bot_live_validation_route_start_v1",
-                "applied": False,
-                "reason": "preapplied_before_evidence_identity",
-            }
-        else:
-            preparation["route_bot_start"] = prepare_route_bot_start(
-                args.output_dir,
-                validation_route,
-                args.config,
-                bot_pool_tags,
-                apply=not args.dry_run and args.transport != "session",
-            )
+        preparation["route_bot_start"] = server_route_start_contract(validation_route)
 
     if args.prepare_only:
         report = {
@@ -4936,6 +5469,8 @@ def main() -> int:
                 "validation_context": validation_context,
                 "validation_route_manifest": validation_route_manifest,
             },
+            returncode=returncode,
+            timed_out=timed_out,
         )
         report["batch_capture"] = capture_manifest
         if args.publish_batch:

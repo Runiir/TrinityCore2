@@ -7,7 +7,11 @@ import json
 import os
 from pathlib import Path
 
-from .build_phase8_evidence_identity_manifest import _database_identity, _soap_payload
+from .build_phase8_evidence_identity_manifest import (
+    _clean_source_identity,
+    _database_identity,
+    _soap_payload,
+)
 from .common import write_json
 from .live_validation_session import (
     build_session,
@@ -17,6 +21,8 @@ from .live_validation_session import (
     sha256_file,
 )
 from .phase9_evidence_identity import (
+    SCHEMA,
+    build_projection,
     profile_generation_identity,
     server_epoch_identity,
     validate_manifest,
@@ -50,16 +56,17 @@ def build_manifest(
     soap_password: str,
     output_path: Path,
 ) -> dict[str, object]:
+    initial_source_identity = _clean_source_identity(REPO_ROOT, worldserver)
     runtime_dir = output_path.parent / "session_runtime"
     routes = load_validation_routes_for_scenario(
         REPO_ROOT / "dataset/validation_scenarios",
-        "stonecore_5n",
+        "stonecore_5h",
     )
     if len(routes) != 14:
         raise ValueError("Phase 9 identity requires the complete 14-node Stonecore route")
     route_manifest_path, route_manifest = write_validation_route_manifest(
         runtime_dir,
-        "stonecore_5n",
+        "stonecore_5h",
         routes,
     )
     effective_config = write_validation_config(
@@ -154,24 +161,55 @@ def build_manifest(
         profile_generation=int(dump_payload.get("snapshot_generation") or 0),
         profile_content_hash=str(dump_payload.get("snapshot_content_hash") or ""),
     )
+    final_source_identity = _clean_source_identity(REPO_ROOT, worldserver)
+    if final_source_identity != initial_source_identity:
+        raise RuntimeError("source commit or worldserver binary changed while building evidence identity")
+    final_database = _database_identity(effective_config)
+    if any(
+        final_database[name] != database[name]
+        for name in ("database_snapshot_sha256", "database_schema_sha256")
+    ):
+        raise RuntimeError("database snapshot or schema changed while building evidence identity")
+    if (
+        str(metadata.get("git_head") or "").lower() != initial_source_identity["git_commit"]
+        or str(metadata.get("binary_sha256") or "").lower()
+        != initial_source_identity["worldserver_binary_sha256"]
+    ):
+        raise RuntimeError("owned Phase 9 worldserver session does not match the clean build identity")
+    build_identity = {
+        **initial_source_identity,
+        "database_snapshot_sha256": str(database["database_snapshot_sha256"]),
+        "database_schema_sha256": str(database["database_schema_sha256"]),
+        "profile_content_hash": profile_identity["profile_content_hash"],
+    }
+    projection_sha256 = canonical_sha256(build_projection({"build_identity": build_identity}))
     artifact_hashes = {
         "target_catalog_sha256": sha256_file(TARGET_CATALOG),
         "pair_policy_sha256": sha256_file(PAIR_POLICY),
         "pairwise_matrix_sha256": sha256_file(PAIRWISE_MATRIX),
-        "route_manifest_sha256": canonical_sha256(route_manifest),
+        "route_manifest_sha256": sha256_file(route_manifest_path),
     }
     manifest: dict[str, object] = {
-        "schema": "all_spec_phase9_evidence_identity_manifest_v1",
+        "schema": SCHEMA,
         "component_hashes": {
             **restart_components,
+            "source_identity_sha256": canonical_sha256(
+                {
+                    "git_commit": build_identity["git_commit"],
+                    "source_tree_clean": True,
+                }
+            ),
+            "worldserver_binary_sha256": build_identity["worldserver_binary_sha256"],
             "server_epoch_sha256": canonical_sha256(server_identity),
             "profile_generation_sha256": canonical_sha256(profile_identity),
+            "build_projection_sha256": projection_sha256,
         },
         "artifact_hashes": artifact_hashes,
+        "build_identity": build_identity,
         "runtime_identity": {**server_identity, **profile_identity},
         "database_summary": database["summary"],
         "route_summary": {
-            "scenario_id": "stonecore_5n",
+            "scenario_id": "stonecore_5h",
             "route_node_count": len(routes),
             "route_manifest_path": str(route_manifest_path.relative_to(REPO_ROOT)),
         },

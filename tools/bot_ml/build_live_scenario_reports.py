@@ -250,6 +250,8 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
     raid = "10" in difficulty or "raid" in difficulty
     entries = trace_entries(report.get("trace") if isinstance(report.get("trace"), dict) else {})
     evidence = report.get("evidence") if isinstance(report.get("evidence"), dict) else {}
+    session = report.get("session") if isinstance(report.get("session"), dict) else {}
+    heroic_admission_verified = bool(session.get("heroic_admission_verified"))
     validation_context = report.get("validation_context") if isinstance(report.get("validation_context"), dict) else {}
     failure_labels = unique_strings(report.get("failure_labels") or [])
     failure_reason = str(report.get("failure_reason") or (failure_labels[0] if failure_labels else ""))
@@ -359,6 +361,7 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
         and not forbidden_assists
         and not failure_labels
         and not failure_reason
+        and (difficulty != "heroic_5man" or heroic_admission_verified)
     )
     observed_boss_kills = len(real_boss_kill_evidence)
     trash_pulls = sum(
@@ -474,7 +477,10 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
         "instance": scenario.get("instance") or "",
         "map_id": int(scenario.get("map_id") or 0),
         "difficulty": difficulty,
-        "prepared_group": bool(existing.get("prepared_group") or existing.get("group_ready") or scenario.get("provisioning_ready")),
+        "prepared_group": bool(existing.get("prepared_group") or existing.get("group_ready") or scenario.get("provisioning_ready"))
+        and (difficulty != "heroic_5man" or heroic_admission_verified),
+        "heroic_admission_verified": heroic_admission_verified,
+        "heroic_admission_receipt_sha256": str((session.get("heroic_admission") or {}).get("receipt_sha256") or ""),
         "trash_pulls": trash_pulls,
         "trash_cleared": bool(existing.get("trash_cleared")) or stage_passed(report, trash_stage) or trash_pulls > 0,
         "boss_kills": boss_kills,
@@ -619,6 +625,8 @@ def merge_report_rows(left: dict[str, Any], right: dict[str, Any]) -> dict[str, 
     segmented_evidence = "route_segment_context" in evidence_modes and bool(expected_segments)
     natural_full_clear = bool(left.get("natural_full_clear_evidence") or right.get("natural_full_clear_evidence"))
     attached_full_clear = bool(left.get("attached_full_clear_evidence") or right.get("attached_full_clear_evidence"))
+    heroic_required = str(left.get("difficulty") or right.get("difficulty") or "") == "heroic_5man"
+    heroic_admission_verified = bool(left.get("heroic_admission_verified")) and bool(right.get("heroic_admission_verified"))
     completed_segment_scopes = {
         (str(row.get("route_node_id") or ""), int(row.get("route_generation") or 0))
         for row in segment_results
@@ -632,6 +640,8 @@ def merge_report_rows(left: dict[str, Any], right: dict[str, Any]) -> dict[str, 
         and not forbidden_assists
     )
     clear_complete = (natural_full_clear or attached_full_clear) and evidence_complete and strict_completion_evidence
+    if heroic_required and not heroic_admission_verified:
+        clear_complete = False
     if failure_labels or failure_reason:
         clear_complete = False
     completion_evidence_mode = "uninterrupted_live_clear" if natural_full_clear else ("attached_uninterrupted_live_clear" if attached_full_clear else ("segment_debug_only" if segmented_evidence else "incomplete_or_smoke_only"))
@@ -647,7 +657,9 @@ def merge_report_rows(left: dict[str, Any], right: dict[str, Any]) -> dict[str, 
     )
     merged.update(
         {
-            "prepared_group": bool(left.get("prepared_group") or right.get("prepared_group")),
+            "prepared_group": bool(left.get("prepared_group") or right.get("prepared_group"))
+            and (not heroic_required or heroic_admission_verified),
+            "heroic_admission_verified": heroic_admission_verified,
             "trash_pulls": int(left.get("trash_pulls") or 0) + int(right.get("trash_pulls") or 0),
             "trash_cleared": bool(left.get("trash_cleared") or right.get("trash_cleared")),
             "boss_kills": boss_kills,

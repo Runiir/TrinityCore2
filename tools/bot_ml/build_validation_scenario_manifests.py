@@ -446,7 +446,7 @@ def pack_target_entries(scenario_id: str, step: dict[str, Any]) -> list[int]:
     if step.get("kind") != "trash":
         return []
     label = str(step.get("label") or "")
-    entries = list(STONECORE_TRASH_PACKS.get(label, [])) if scenario_id == "stonecore_5n" else []
+    entries = list(STONECORE_TRASH_PACKS.get(label, [])) if scenario_id in {"stonecore_5n", "stonecore_5h"} else []
     scripted_entries = set(scripted_event_entries(scenario_id, step))
     entries = [entry for entry in entries if entry not in scripted_entries]
     source_entry = int(step.get("source_entry") or 0)
@@ -459,7 +459,7 @@ def scripted_event_entries(scenario_id: str, step: dict[str, Any]) -> list[int]:
     explicit = [int(entry) for entry in (step.get("scripted_event_entries") or []) if int(entry)]
     if explicit:
         return sorted(set(explicit))
-    if step.get("kind") != "trash" or scenario_id != "stonecore_5n":
+    if step.get("kind") != "trash" or scenario_id not in {"stonecore_5n", "stonecore_5h"}:
         return []
     return list(STONECORE_SCRIPTED_EVENT_ACTORS.get(str(step.get("label") or ""), []))
 
@@ -743,6 +743,7 @@ def build_manifests(
             "difficulty": scenario.get("difficulty") or "",
             "group_kind": scenario_group_kind,
             "provisioning_scenario_id": provision_id,
+            "recovery_entrance": scenario.get("recovery_entrance") or {},
             "runtime_profile_id": str(scenario.get("runtime_profile_id") or scenario_id),
             "diagnostic_only": diagnostic_metadata["diagnostic_only"],
             "diagnostic_parent_scenario_id": diagnostic_metadata["parent_scenario_id"],
@@ -787,6 +788,9 @@ def build_manifests(
                 "upper_ledge_preparation": bool(step.get("upper_ledge_preparation")),
                 "descent_action": str(step.get("descent_action") or ""),
                 "map_id": int(scenario.get("map_id") or 0),
+                "recovery_entrance_area_trigger_id": int((scenario.get("recovery_entrance") or {}).get("area_trigger_id") or 0),
+                "recovery_entrance_source_map_id": int((scenario.get("recovery_entrance") or {}).get("source_map_id") or 0),
+                "recovery_entrance_target_map_id": int((scenario.get("recovery_entrance") or {}).get("target_map_id") or 0),
                 "step": int(step.get("step") or 0),
                 "kind": step.get("kind") or "unknown",
                 "node_kind": node_kind,

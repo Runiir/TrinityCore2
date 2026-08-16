@@ -11,6 +11,7 @@
 #include <string>
 
 class Group;
+class BotWorldPopulationMgr;
 class Player;
 class Unit;
 class WorldSession;
@@ -56,6 +57,14 @@ public:
     void OnHeal(Unit* healer, Unit* receiver, uint32 gain);
 
 private:
+    friend class BotWorldPopulationMgr;
+    // Server-owned admission capability. Only the population coordinator can
+    // call these helpers, and its active decision paths are contract-tested
+    // never to do so after the cohort action gate opens.
+    Player* ProvisionWorldBot(std::string const& role, std::string const& selector, uint32 mapId, float x, float y, float z, float o,
+        uint8 dungeonDifficulty, uint8 raidDifficulty = 0xFF);
+    Player* ProvisionWorldBotInGroup(Player* groupAnchor, std::string const& role, std::string const& selector, uint32 mapId, float x, float y, float z, float o,
+        uint8 dungeonDifficulty, uint8 raidDifficulty = 0xFF);
     BotController* GetController(ObjectGuid botGuid);
     BotController const* GetController(ObjectGuid botGuid) const;
     Player* FindLoadedPlayer(ObjectGuid guid) const;
@@ -74,8 +83,14 @@ private:
         float O;
     };
 
-    Player* LoadBotFromPool(Player* owner, std::string const& role, std::string const& selector, BotSpawnPlacement const* placement = nullptr, Player* groupAnchor = nullptr);
-    Player* LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Player* nearPlayer, BotSpawnPlacement const* placement = nullptr, Player* groupAnchor = nullptr);
+    static constexpr uint8 NoProvisionedDungeonDifficulty = 0xFF;
+    static constexpr uint8 NoProvisionedRaidDifficulty = 0xFF;
+    Player* LoadBotFromPool(Player* owner, std::string const& role, std::string const& selector, BotSpawnPlacement const* placement = nullptr,
+        Player* groupAnchor = nullptr, uint8 provisionedDungeonDifficulty = NoProvisionedDungeonDifficulty,
+        uint8 provisionedRaidDifficulty = NoProvisionedRaidDifficulty);
+    Player* LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Player* nearPlayer, BotSpawnPlacement const* placement = nullptr,
+        Player* groupAnchor = nullptr, uint8 provisionedDungeonDifficulty = NoProvisionedDungeonDifficulty,
+        uint8 provisionedRaidDifficulty = NoProvisionedRaidDifficulty);
     bool AddToOwnerGroup(Player* owner, Player* bot, std::string const& runtimeRole, BotRole role);
     void CleanupBot(ObjectGuid botGuid, bool logoutPlayer);
     void SetBotCharacterOnline(ObjectGuid botGuid, bool online);

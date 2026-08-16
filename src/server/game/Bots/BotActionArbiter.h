@@ -161,7 +161,11 @@ enum class Resource : uint16
     Movement = 1 << 2,
     Target = 1 << 3,
     Interaction = 1 << 4,
-    Pet = 1 << 5
+    Pet = 1 << 5,
+    // A player's melee autoattack is a persistent toggle, not a one-shot
+    // target/GCD action. It owns a dedicated continuous resource lane so a
+    // movement or spell candidate can commit in the same decision tick.
+    AutoAttackToggle = 1 << 6
 };
 
 using ResourceMask = uint16;

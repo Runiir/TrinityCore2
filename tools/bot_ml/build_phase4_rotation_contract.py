@@ -126,12 +126,18 @@ def static_contract(repository: Path = REPO_ROOT) -> dict[str, Any]:
     candidate_scoring = source[
         source.index("candidate.Score =") : source.index("candidate.Reason =")
     ]
-    mechanic_descriptive_only = (
-        "MechanicTags" not in compiled_conditions
-        and "MechanicTags" not in candidate_scoring
+    mechanic_tags_bounded_to_typed_resource_selection = (
+        "MechanicTags" not in candidate_scoring
         and "spell.MechanicTags = fields[14].GetString();" in source
         and "spell.MechanicTags << '|'" in source
-        and "candidate.Profile.MechanicTags" in source
+        and source.count("HasMechanicTag(spell.MechanicTags,") == 4
+        and all(
+            f'HasMechanicTag(spell.MechanicTags, "{tag}")' in compiled_conditions
+            for tag in ("lacerate_spender", "lacerate", "holy_power_3")
+        )
+        and world_mgr.count("hasMechanicTag(candidate.Profile.MechanicTags") == 2
+        and 'hasMechanicTag(candidate.Profile.MechanicTags, "mana_recovery")' in world_mgr
+        and 'hasMechanicTag(candidate.Profile.MechanicTags, "resource_fallback")' in world_mgr
     )
 
     checks = {
@@ -172,10 +178,12 @@ def static_contract(repository: Path = REPO_ROOT) -> dict[str, Any]:
             and "bot->CastSpell(Position{ target->GetPositionX(), target->GetPositionY(), target->GetPositionZ() }" in executor
         ),
         "deterministic_world_selection_ties": (
-            world_mgr.count("candidate.Profile.SortOrder <") >= 4
+            # Candidate arbitration was centralized; both remaining owners use
+            # the same score/sort-order/action-id tie break.
+            world_mgr.count("candidate.Profile.SortOrder <") >= 2
             and "spell.SortOrder < bestHeal->SortOrder" in world_mgr
         ),
-        "mechanic_tags_descriptive_only": mechanic_descriptive_only,
+        "mechanic_tags_bounded_to_typed_resource_selection": mechanic_tags_bounded_to_typed_resource_selection,
         "typed_columns_forward_and_rollback": all(
             f"`{column}`" in forward and f"`{column}`" in rollback
             for column in TYPED_COLUMNS

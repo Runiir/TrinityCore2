@@ -24,6 +24,7 @@ def test_action_and_movement_arbiters_compile_and_replay(tmp_path: Path) -> None
 #include "Bots/BotAdaptiveRaidTrashStrategy.h"
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotMovementArbiter.h"
+#include "Bots/BotMeleeAutoAttackIntent.h"
 #include "Bots/BotNativeActionIntent.h"
 #include <cassert>
 #include <string>
@@ -109,6 +110,28 @@ int main()
         == Phase::Submitted);
     assert(FromBotActionResult(BotActionResult::GlobalCooldown).Result
         == Disposition::Retryable);
+
+    BotNativeAction::Intent descent = BotNativeAction::NativeDescent{
+        10.0f, 20.0f, 30.0f, 15.0f, 25.0f, 30.0f, 9, true };
+    assert(BotNativeAction::RequiredResources(descent)
+        == Uses(Resource::Movement));
+    BotNativeAction::Intent combatResApproach =
+        BotNativeAction::CombatResApproach{ ObjectGuid{}, 20484,
+            1000, 9000 };
+    assert(BotNativeAction::RequiredResources(combatResApproach)
+        == Uses(Resource::Movement, Resource::GlobalCooldown,
+            Resource::Cast, Resource::Target));
+    BotNativeAction::Intent combatResCast =
+        BotNativeAction::CombatResCast{ ObjectGuid{}, 20484,
+            1000, 9000 };
+    assert(BotNativeAction::RequiredResources(combatResCast)
+        == Uses(Resource::Movement, Resource::GlobalCooldown,
+            Resource::Cast, Resource::Target));
+    BotNativeAction::Intent combatResAccept =
+        BotNativeAction::CombatResAccept{ ObjectGuid{}, 20484,
+            1000, 9000 };
+    assert(BotNativeAction::RequiredResources(combatResAccept)
+        == Uses(Resource::Interaction, Resource::Target));
 
     Scope newInstance = scope;
     newInstance.InstanceId = 42;
@@ -275,6 +298,46 @@ int main()
     assert(RequiredResources(click) == Uses(Resource::Interaction));
     Intent pet = PetCommand{ ObjectGuid(HighGuid::Pet, uint32(1), uint32(5)), channels.DamageTarget, 2 };
     assert((RequiredResources(pet) & Uses(Resource::Pet)) != 0);
+
+    // Melee autoattack is a separate persistent resource lane. It resolves
+    // independently from movement/GCD work, ignores producer order, and lets
+    // a higher-priority suppression prevent a lower-priority start in the
+    // same tick.
+    BotMeleeAutoAttack::Lane meleeLane;
+    meleeLane.Begin(8500);
+    BotMeleeAutoAttack::Intent profileStart;
+    profileStart.Toggle = BotMeleeAutoAttack::Kind::StartOrSwitch;
+    profileStart.IntentOwner = BotMeleeAutoAttack::Owner::Profile;
+    profileStart.ActionPriority = BotActionArbitration::Priority::TrainedDamage;
+    profileStart.Target = channels.MechanicTarget;
+    profileStart.Reason = "profile_melee_autoattack";
+    assert(profileStart.Resources() == Uses(Resource::AutoAttackToggle));
+    assert(!Conflicts(profileStart.Resources(), Uses(Resource::Movement)));
+    assert(!Conflicts(profileStart.Resources(), Uses(Resource::GlobalCooldown)));
+    assert(meleeLane.Submit(profileStart));
+    BotMeleeAutoAttack::Intent mechanicSuppress;
+    mechanicSuppress.Toggle = BotMeleeAutoAttack::Kind::Suppress;
+    mechanicSuppress.IntentOwner = BotMeleeAutoAttack::Owner::Mechanic;
+    mechanicSuppress.ActionPriority = BotActionArbitration::Priority::Mechanic;
+    mechanicSuppress.Reason = "mechanic_hold";
+    assert(meleeLane.Submit(mechanicSuppress));
+    auto selectedToggle = meleeLane.Resolve();
+    assert(selectedToggle);
+    assert(selectedToggle->Toggle == BotMeleeAutoAttack::Kind::Suppress);
+
+    // Cross-bot safety work submitted after a peer's scope remains queued
+    // across Begin and is consumed by that peer's sole next resolution.
+    BotMeleeAutoAttack::Intent queuedStop;
+    queuedStop.Toggle = BotMeleeAutoAttack::Kind::Stop;
+    queuedStop.IntentOwner = BotMeleeAutoAttack::Owner::Recovery;
+    queuedStop.ActionPriority = BotActionArbitration::Priority::Survival;
+    queuedStop.Reason = "peer_recovery_hold";
+    assert(meleeLane.Submit(queuedStop));
+    meleeLane.Begin(8600);
+    selectedToggle = meleeLane.Resolve();
+    assert(selectedToggle);
+    assert(selectedToggle->Toggle == BotMeleeAutoAttack::Kind::Stop);
+    assert(!meleeLane.Resolve());
 
     // A raid hazard is proposed independently from trained damage. The
     // endpoint is derived from the observed source, not a fixed route point.

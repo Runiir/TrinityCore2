@@ -26,6 +26,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/protection-warrior-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "protection_warrior",
         "runtime_profile_id": "protection_warrior",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
@@ -139,6 +140,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/protection-paladin-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "protection_paladin",
         "runtime_profile_id": "protection_paladin",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
@@ -253,6 +255,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/blood-death-knight-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "blood_death_knight",
         "runtime_profile_id": "blood_death_knight",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
@@ -367,6 +370,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/feral-druid-tank-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "feral_druid_tank",
         "runtime_profile_id": "feral_druid_tank",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
@@ -480,6 +484,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/holy-paladin-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "holy_paladin",
         "runtime_profile_id": "holy_paladin",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
@@ -590,6 +595,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/discipline-priest-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "discipline_priest",
         "runtime_profile_id": "discipline_priest",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
@@ -700,6 +706,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/holy-priest-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "holy_priest",
         "runtime_profile_id": "holy_priest",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
@@ -810,6 +817,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/restoration-shaman-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "restoration_shaman",
         "runtime_profile_id": "restoration_shaman",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
@@ -920,6 +928,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/restoration-druid-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "restoration_druid",
         "runtime_profile_id": "restoration_druid",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
@@ -1030,6 +1039,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/arms-warrior-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "arms_warrior",
         "runtime_profile_id": "arms_warrior",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
@@ -1142,6 +1152,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/fury-warrior-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "fury_warrior",
         "runtime_profile_id": "fury_warrior",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
@@ -1254,6 +1265,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/retribution-paladin-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "retribution_paladin",
         "runtime_profile_id": "retribution_paladin",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
@@ -1366,6 +1378,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/beast-mastery-hunter-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "beast_mastery_hunter",
         "runtime_profile_id": "beast_mastery_hunter",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
@@ -1479,6 +1492,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/marksmanship-hunter-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "marksmanship_hunter",
         "runtime_profile_id": "marksmanship_hunter",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
@@ -1592,9 +1606,10 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/survival-hunter-pve-guide",
       "gear": {
         "phase": "phase_4",
-        "runtime_profile_id": "survival_hunter",
+        "gear_profile_id": "wowsims_cata_p4_survival_hunter",
+        "runtime_profile_id": "wowsims_cata_p4_survival_hunter",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
-        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "runtime_manifest": "experiments/configs/wowsims_cata_p4_gear_profiles.json",
         "simulator_preset": {
           "path": "ui/hunter/survival/gear_sets/p4_sv.gear.json",
           "phase": "phase_4"
@@ -1705,9 +1720,10 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/assassination-rogue-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "assassination_rogue",
         "runtime_profile_id": "assassination_rogue",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
-        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "runtime_manifest": "experiments/configs/wowsims_cata_p4_gear_profiles.json",
         "simulator_preset": {
           "path": "ui/rogue/assassination/gear_sets/p4_assassination.gear.json",
           "phase": "phase_4"
@@ -1817,6 +1833,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/combat-rogue-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "combat_rogue",
         "runtime_profile_id": "combat_rogue",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
@@ -1929,6 +1946,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/subtlety-rogue-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "subtlety_rogue",
         "runtime_profile_id": "subtlety_rogue",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
@@ -2041,6 +2059,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/frost-death-knight-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "frost_death_knight",
         "runtime_profile_id": "frost_death_knight",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
@@ -2154,6 +2173,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/unholy-death-knight-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "unholy_death_knight",
         "runtime_profile_id": "unholy_death_knight",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
@@ -2267,6 +2287,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/elemental-shaman-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "elemental_shaman",
         "runtime_profile_id": "elemental_shaman",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
@@ -2379,9 +2400,10 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/enhancement-shaman-pve-guide",
       "gear": {
         "phase": "phase_4",
-        "runtime_profile_id": "enhancement_shaman",
+        "gear_profile_id": "wowsims_cata_p4_enhancement_shaman",
+        "runtime_profile_id": "wowsims_cata_p4_enhancement_shaman",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
-        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "runtime_manifest": "experiments/configs/wowsims_cata_p4_gear_profiles.json",
         "simulator_preset": {
           "path": "ui/shaman/enhancement/gear_sets/p4.orc.gear.json",
           "phase": "phase_4"
@@ -2491,6 +2513,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/arcane-mage-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "arcane_mage",
         "runtime_profile_id": "arcane_mage",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
@@ -2603,9 +2626,10 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/fire-mage-pve-guide",
       "gear": {
         "phase": "phase_4",
-        "runtime_profile_id": "fire_mage",
+        "gear_profile_id": "wowsims_cata_p4_fire_mage",
+        "runtime_profile_id": "wowsims_cata_p4_fire_mage",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
-        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "runtime_manifest": "experiments/configs/wowsims_cata_p4_gear_profiles.json",
         "simulator_preset": {
           "path": "ui/mage/fire/gear_sets/p4_fire.gear.json",
           "phase": "phase_4"
@@ -2715,6 +2739,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/frost-mage-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "frost_mage",
         "runtime_profile_id": "frost_mage",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
@@ -2825,6 +2850,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/affliction-warlock-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "affliction_warlock",
         "runtime_profile_id": "affliction_warlock",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
@@ -2937,9 +2963,10 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/demonology-warlock-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "demonology_warlock",
         "runtime_profile_id": "demonology_warlock",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
-        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "runtime_manifest": "experiments/configs/wowsims_cata_p4_gear_profiles.json",
         "simulator_preset": {
           "path": "ui/warlock/demonology/gear_sets/p4.gear.json",
           "phase": "phase_4"
@@ -3049,6 +3076,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/destruction-warlock-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "destruction_warlock",
         "runtime_profile_id": "destruction_warlock",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
@@ -3161,9 +3189,10 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/shadow-priest-pve-guide",
       "gear": {
         "phase": "phase_4",
-        "runtime_profile_id": "shadow_priest",
+        "gear_profile_id": "wowsims_cata_p4_shadow_priest",
+        "runtime_profile_id": "wowsims_cata_p4_shadow_priest",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
-        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "runtime_manifest": "experiments/configs/wowsims_cata_p4_gear_profiles.json",
         "simulator_preset": {
           "path": "ui/priest/shadow/gear_sets/p4.gear.json",
           "phase": "phase_4"
@@ -3273,6 +3302,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/balance-druid-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "wowsims_cata_p4_balance_druid",
         "runtime_profile_id": "wowsims_cata_p4_balance_druid",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/wowsims_cata_p4_gear_profiles.json",
@@ -3385,6 +3415,7 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/feral-druid-dps-pve-guide",
       "gear": {
         "phase": "phase_4",
+        "gear_profile_id": "feral_druid_dps",
         "runtime_profile_id": "feral_druid_dps",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",

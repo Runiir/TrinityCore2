@@ -9,6 +9,7 @@ from typing import Any, Mapping
 
 from .common import write_json
 from .live_validation_session import canonical_sha256, sha256_file
+from .phase8_calibration_adapter import expected_gear_manifest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -30,6 +31,35 @@ def _resolve(config_path: Path, value: str) -> Path:
     if repository_candidate.exists():
         return repository_candidate
     return config_path.parent / candidate
+
+
+def gear_profile_binding(
+    target: Mapping[str, Any], reference: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Project the canonical gear id through target, provisioning, and reference."""
+    target_profile_id = str(target.get("gear_profile_id") or "")
+    provisioning = target.get("provisioning_bot") or {}
+    reference_gear = reference.get("gear") or {}
+    provisioning_profile_id = str(provisioning.get("gear_profile_id") or "")
+    provisioning_profile_name = str(provisioning.get("gear_profile") or "")
+    reference_profile_id = str(reference_gear.get("gear_profile_id") or "")
+    reference_runtime_profile_id = str(
+        reference_gear.get("runtime_profile_id") or ""
+    )
+    return {
+        "gear_profile_id": target_profile_id,
+        "provisioning_gear_profile_id": provisioning_profile_id,
+        "provisioning_gear_profile": provisioning_profile_name,
+        "reference_gear_profile_id": reference_profile_id,
+        "reference_runtime_profile_id": reference_runtime_profile_id,
+        "gear_profile_binding_verified": bool(
+            target_profile_id
+            and provisioning_profile_id == target_profile_id
+            and provisioning_profile_name == target_profile_id
+            and reference_profile_id == target_profile_id
+            and reference_runtime_profile_id == target_profile_id
+        ),
+    }
 
 
 def verify(config_path: Path = DEFAULT_CONFIG) -> dict[str, Any]:
@@ -85,9 +115,23 @@ def verify(config_path: Path = DEFAULT_CONFIG) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     reference_complete = True
     target_identity_complete = True
+    gear_profile_identity_complete = True
     for target_id in configured:
         target = target_by_id.get(target_id) or {}
         reference = reference_by_id.get(target_id) or {}
+        gear_binding = gear_profile_binding(target, reference)
+        try:
+            gear_manifest = expected_gear_manifest(
+                str(gear_binding["gear_profile_id"])
+            )
+        except (OSError, ValueError):
+            gear_manifest = []
+        gear_binding["gear_manifest_sha256"] = (
+            canonical_sha256(gear_manifest) if gear_manifest else ""
+        )
+        gear_binding["gear_profile_binding_verified"] = bool(
+            gear_binding["gear_profile_binding_verified"] and gear_manifest
+        )
         metrics = ((reference.get("expected_output") or {}).get("metrics") or {})
         reference_dps = float(metrics.get("dps") or 0.0)
         target_valid = bool(target and target.get("role") == "dps")
@@ -98,6 +142,10 @@ def verify(config_path: Path = DEFAULT_CONFIG) -> dict[str, Any]:
         )
         target_identity_complete = target_identity_complete and target_valid
         reference_complete = reference_complete and reference_valid
+        gear_profile_identity_complete = (
+            gear_profile_identity_complete
+            and gear_binding["gear_profile_binding_verified"]
+        )
         rows.append(
             {
                 "spec_target_id": target_id,
@@ -113,14 +161,14 @@ def verify(config_path: Path = DEFAULT_CONFIG) -> dict[str, Any]:
                 ),
                 "target_valid": target_valid,
                 "reference_valid": reference_valid,
+                **gear_binding,
             }
         )
 
-    expected_attempt_count = (
-        len(configured)
-        * len(config.get("modes") or [])
-        * len(config.get("seeds") or [])
-    )
+    qualification_mode = str(config.get("qualification_mode") or "")
+    qualification_seed = int(config.get("qualification_seed") or 0)
+    max_tries = int(config.get("max_tries_per_dps_spec") or 0)
+    expected_attempt_count = len(configured)
     checks = {
         "current_stonecore_dps_target_set_exact": configured == supported,
         "configured_dps_target_count_exact": len(configured)
@@ -128,6 +176,9 @@ def verify(config_path: Path = DEFAULT_CONFIG) -> dict[str, Any]:
         == 16,
         "all_targets_are_canonical_dps_specs": target_identity_complete,
         "all_targets_have_positive_pinned_references": reference_complete,
+        "all_targets_have_one_canonical_gear_profile_id": (
+            gear_profile_identity_complete
+        ),
         "hard_floor_is_75_percent": hard_ratio
         == float(acceptance.get("hard_reference_ratio") or 0.0)
         == 0.75,
@@ -142,9 +193,17 @@ def verify(config_path: Path = DEFAULT_CONFIG) -> dict[str, Any]:
             if isinstance(row, Mapping)
         )
         == sorted(int(value) for value in config.get("encounter_dps_slot_counts") or []),
-        "three_seed_single_and_aoe_matrix": config.get("seeds") == [1, 2, 3]
-        and config.get("modes") == ["single_target_300", "aoe_300"]
-        and expected_attempt_count == 96,
+        "one_qualification_per_unique_dps_spec": qualification_mode
+        == "single_target_300"
+        and qualification_seed == 1
+        and expected_attempt_count == 16,
+        "one_retry_maximum": max_tries == 2,
+        "benchmark_provenance_explicit": config.get("evidence_role")
+        == "non_certifying_controller_benchmark"
+        and config.get("expected_runtime_mode") == "calibration_fixture"
+        and config.get("non_certifying_assistance_expected") is True
+        and config.get("excluded_from_training_corpus") is True
+        and config.get("requires_player_like_clear_gate") is True,
         "remote_publication_required": acceptance.get(
             "all_attempts_require_remote_verified_publication"
         )
@@ -164,8 +223,20 @@ def verify(config_path: Path = DEFAULT_CONFIG) -> dict[str, Any]:
             config.get("supported_specialization_target_count") or 0
         ),
         "attempt_count": expected_attempt_count,
-        "modes": list(config.get("modes") or []),
-        "seeds": list(config.get("seeds") or []),
+        "qualification_mode": qualification_mode,
+        "qualification_seed": qualification_seed,
+        "max_tries_per_dps_spec": max_tries,
+        "evidence_role": config.get("evidence_role"),
+        "expected_runtime_mode": config.get("expected_runtime_mode"),
+        "non_certifying_assistance_expected": config.get(
+            "non_certifying_assistance_expected"
+        ),
+        "excluded_from_training_corpus": config.get(
+            "excluded_from_training_corpus"
+        ),
+        "requires_player_like_clear_gate": config.get(
+            "requires_player_like_clear_gate"
+        ),
         "hard_reference_ratio": hard_ratio,
         "optimization_reference_ratio": optimization_ratio,
         "targets": rows,

@@ -19,7 +19,7 @@ from ml.raid.scheduler import RaidAssignmentScheduler
 from tools.bot_ml.common import DATASET_CONTRACT_VERSION, EXPORT_TABLES, numeric_features, split_by_run_ids
 from tools.bot_ml import orchestrator_daemon as daemon
 from tools.bot_ml.build_autonomy_master_checklist import refresh_checklist_from_evidence
-from tools.bot_ml.build_decision_dataset import build_row, build_rows, filter_rows_by_map, index_decision_fingerprints, index_future_events, index_semantic_stats, label_decision
+from tools.bot_ml.build_decision_dataset import build_row, build_rows, filter_rows_by_map, index_decision_fingerprints, index_future_events, index_semantic_stats, label_decision, player_like_training_run_ids
 from tools.bot_ml.extract_world_knowledge import (
     REQUIRED_NONEMPTY_WORLD_MANIFESTS,
     WORLD_MANIFEST_NAMES,
@@ -91,7 +91,9 @@ from tools.bot_ml import build_phase6_serial_soak_contract as phase6_contract
 from tools.bot_ml import build_phase7_role_calibration_contract as phase7_contract
 from tools.bot_ml import build_phase8_all_spec_calibration_contract as phase8_contract
 from tools.bot_ml import run_phase8_all_spec_calibration as phase8_runner
-from tools.bot_ml.phase8_evidence_identity import profile_generation_identity, server_epoch_identity, validate_manifest as validate_phase8_evidence_manifest
+from tools.bot_ml.build_phase8_evidence_identity_manifest import _clean_source_identity
+from tools.bot_ml.phase8_evidence_identity import build_projection as phase8_build_projection, profile_generation_identity, server_epoch_identity, validate_manifest as validate_phase8_evidence_manifest
+from tools.bot_ml.phase8_calibration_adapter import Phase8CalibrationNormalizationError, canonical_gear_profile_id
 from tools.bot_ml.role_calibration_harness import evaluate_calibration, inject_fault, load_policy
 from tools.bot_ml.bt_masked_ga_combined import run as run_bt_masked_ga_combined
 from tools.bot_ml.evaluate_policy_model import policy_score, ranking_metrics
@@ -502,6 +504,50 @@ def test_bot_ml_decision_builder_filters_teacher_source_by_map():
 
     assert [row["id"] for row in filter_rows_by_map(rows, {725})] == [1, 3]
     assert filter_rows_by_map(rows, set()) == rows
+
+
+def test_bot_ml_training_run_filter_excludes_all_fixture_assistance():
+    runs = [
+        {
+            "id": 1,
+            "config_json": json.dumps(
+                {
+                    "runtime_mode": "always_on_autonomy",
+                    "non_certifying_assistance": False,
+                }
+            ),
+        },
+        {
+            "id": 2,
+            "config_json": json.dumps(
+                {
+                    "runtime_mode": "calibration_fixture",
+                    "non_certifying_assistance": True,
+                }
+            ),
+        },
+        {
+            "id": 3,
+            "config_json": json.dumps(
+                {
+                    "runtime_mode": "replay_fixture",
+                    "non_certifying_assistance": True,
+                }
+            ),
+        },
+        {"id": 4, "config_json": "{}"},
+        {
+            "id": 5,
+            "config_json": json.dumps(
+                {
+                    "runtime_mode": "manual_experiment",
+                    "non_certifying_assistance": False,
+                }
+            ),
+        },
+    ]
+
+    assert player_like_training_run_ids(runs) == {1, 5}
 
 
 def test_bt_masked_ga_combined_writes_offline_artifacts_and_baseline_comparison(tmp_path):
@@ -1883,6 +1929,8 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     mechanics = manifests["validation_mechanics"]
 
     assert scenarios["stonecore_5n"]["provisioning_ready"] is True
+    assert scenarios["stonecore_5h"]["provisioning_ready"] is True
+    assert scenarios["stonecore_5h"]["difficulty"] == "heroic_5man"
     assert scenarios["blackwing_descent_10n"]["provisioning_ready"] is True
     assert scenarios["stonecore_5n"]["route_coordinates_ready"] is True
     assert scenarios["blackwing_descent_10n"]["route_coordinates_ready"] is True
@@ -1904,6 +1952,11 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert scenarios["stonecore_5n"]["boss_count"] == 4
     assert scenarios["blackwing_descent_10n"]["boss_count"] == 6
     assert any(row["scenario_id"] == "stonecore_5n" and row["kind"] == "trash" for row in routes)
+    heroic_entrance_rows = [row for row in routes if row["scenario_id"] == "stonecore_5h"]
+    assert heroic_entrance_rows
+    assert all(row["recovery_entrance_area_trigger_id"] == 6196 for row in heroic_entrance_rows)
+    assert all(row["recovery_entrance_source_map_id"] == 646 for row in heroic_entrance_rows)
+    assert all(row["recovery_entrance_target_map_id"] == 725 for row in heroic_entrance_rows)
     assert any(row["scenario_id"] == "blackwing_descent_10n" and row["kind"] == "boss" and row["coordinates_valid"] is True and row["source_entry"] == 41570 for row in routes)
     bwd_boss_entries = {row["source_entry"] for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["kind"] == "boss"}
     assert {41570, 42166, 41378, 41442, 43296, 41376}.issubset(bwd_boss_entries)
@@ -1913,7 +1966,7 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     omnotron = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Omnotron Defense System")
     corborus_approach_corridor = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "Corborus approach corridor")
     stonecore_sentry_gauntlet = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "stonecore sentry gauntlet")
-    ozruk_approach_clearance = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "Ozruk approach clearance")
+    ozruk_approach_pack = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "Ozruk approach pack")
     post_slabhide_regroup = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "post-Slabhide regroup")
     stonecore_descent_regroup = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "stonecore descent regroup")
     stonecore_east_descent_shelf_regroup = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "stonecore east descent shelf regroup")
@@ -1928,8 +1981,8 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert atramedes["expected_bot_count"] == 10
     assert omnotron["source_entry"] == 42166
     assert omnotron["alternate_target_entries"] == [42166, 42178, 42179, 42180]
-    assert omnotron["activation_action_entry"] == 42186
-    assert omnotron["activation_action_id"] == 1
+    assert omnotron["activation_action_entry"] == 0
+    assert omnotron["activation_action_id"] == 0
     assert omnotron["target_priority"]["alternate_target_entries"] == [42166, 42178, 42179, 42180]
     assert "interrupts" in omnotron["required_evidence"]
     assert slabhide["x"] == 1292.352
@@ -1972,19 +2025,21 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert lower_stonecore_regroup["step"] == 11
     assert lower_stonecore_regroup["kind"] == "descent"
     assert lower_stonecore_regroup["node_kind"] == "descent"
-    assert lower_stonecore_regroup["completion_policy"] == "arrival"
+    assert lower_stonecore_regroup["descent_action"] == "native_walkable_descent"
+    assert lower_stonecore_regroup["completion_policy"] == "native_grounded_landing_and_onward_path"
     assert lower_stonecore_regroup["required_evidence"] == ["regrouping"]
     assert stonecore_sentry_gauntlet["step"] == 12
     assert stonecore_sentry_gauntlet["bot_start_x"] == 1364.55
     assert stonecore_sentry_gauntlet["bot_start_z"] == 214.4
-    assert ozruk_approach_clearance["step"] == 13
-    assert ozruk_approach_clearance["kind"] == "regroup"
-    assert ozruk_approach_clearance["node_kind"] == "regroup"
-    assert ozruk_approach_clearance["source_entry"] == 0
-    assert ozruk_approach_clearance["pack_target_entries"] == []
-    assert ozruk_approach_clearance["cluster_radius_yards"] == 0.0
-    assert ozruk_approach_clearance["completion_policy"] == "arrival"
-    assert ozruk_approach_clearance["required_evidence"] == ["regrouping"]
+    assert ozruk_approach_pack["step"] == 13
+    assert ozruk_approach_pack["kind"] == "trash"
+    assert ozruk_approach_pack["node_kind"] == "trash_cluster"
+    assert ozruk_approach_pack["source_entry"] == 42691
+    assert ozruk_approach_pack["source_guid"] == "340709"
+    assert ozruk_approach_pack["pack_target_entries"] == [42691, 42692, 42696, 42789]
+    assert ozruk_approach_pack["cluster_radius_yards"] == 10.0
+    assert ozruk_approach_pack["completion_policy"] == "cluster_clear_after_pull"
+    assert ozruk_approach_pack["required_evidence"] == ["pulls"]
     assert ozruk["step"] == 14
     assert ozruk["bot_start_x"] == 1507.859
     assert ozruk["bot_start_z"] == 217.3286
@@ -1993,7 +2048,8 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert post_ozruk_flayer_regroup["node_kind"] == "descent"
     assert post_ozruk_flayer_regroup["x"] == 1329.93
     assert post_ozruk_flayer_regroup["z"] == 207.804
-    assert post_ozruk_flayer_regroup["completion_policy"] == "arrival"
+    assert post_ozruk_flayer_regroup["descent_action"] == "native_walkable_descent"
+    assert post_ozruk_flayer_regroup["completion_policy"] == "native_grounded_landing_and_onward_path"
     assert post_ozruk_flayer_regroup["required_evidence"] == ["regrouping"]
     assert twilight_flayer_packs["step"] == 16
     assert twilight_flayer_packs["source_entry"] == 42808
@@ -2031,18 +2087,18 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert slabhide["completion_policy"] == "boss_kill"
     assert nefarian["expected_bot_count"] == 10
     assert atramedes["activation_data_id"] == 0
-    assert atramedes["source_guid"] == "native_instance_unlock"
+    assert atramedes["source_guid"] == "native_bell_summon"
     assert nefarian["activation_data_id"] == 0
     assert nefarian["activation_spawn_group_id"] == 0
     assert nefarian["activation_action_entry"] == 0
     assert nefarian["activation_action_id"] == 0
     assert nefarian["activation_summon_entry"] == 0
     assert nefarian["activation_summon_z"] == 0.0
-    assert nefarian["source_guid"] == "native_instance_unlock"
+    assert nefarian["source_guid"] == "native_orb_summon"
     assert nefarian["opener_target_entry"] == 41270
     assert nefarian["opener_summon_entry"] == 0
     assert nefarian["bot_start_map_id"] == 669
-    assert nefarian["bot_start_z"] == 6.57143
+    assert nefarian["bot_start_z"] == 193.127
     assert "pulls" in nefarian["required_evidence"]
     assert "target_priority" in nefarian["required_evidence"]
     assert "tank_positioning" in nefarian["required_evidence"]
@@ -2053,7 +2109,7 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert any(row["scenario_id"] == "blackwing_descent_10n" and "raid_aoe" in row["families"] for row in mechanics)
     chimaeron_mechanics = next(row for row in mechanics if row["scenario_id"] == "blackwing_descent_10n" and row["mechanic_profile"] == "raid_aoe_healer_assignment")
     assert {"healer_assignments", "recovery", "instance_reset"}.issubset(set(chimaeron_mechanics["required_evidence"]))
-    assert manifests["report"]["ready_scenarios"] == 2
+    assert manifests["report"]["ready_scenarios"] == 3
     assert "interrupts" in manifests["report"]["evidence_surfaces"]
     assert manifests["report"]["invalid_route_steps"] == []
     assert manifests["report"]["invalid_mechanic_profiles"] == []
@@ -2118,7 +2174,7 @@ def test_bwd_magmaw_preserves_boss_source_and_uses_db_ground_anchor():
     assert magmaw["mechanic_contract"] == {
         "id": "phase1_magmaw_native_engagement_recovery_v1",
         "target_control": "focus_fire",
-        "target_entries": [41570],
+        "target_entries": [41570, 42347, 41806, 42321],
         "allow_area_damage": False,
         "allow_multidot": False,
     }
@@ -2160,7 +2216,8 @@ def test_validation_route_bosses_are_scripted_encounter_targets():
     for key, (entry, loader_path, addsc, script_path, script_symbol) in scripted_bosses.items():
         assert routes[key]["source_entry"] == entry
         if key == ("blackwing_descent_10n", "Omnotron Defense System"):
-            assert routes[key]["activation_action_entry"] == 42186
+            assert routes[key]["activation_action_entry"] == 0
+            assert routes[key]["activation_action_id"] == 0
         assert addsc in Path(loader_path).read_text(encoding="utf-8")
         script = Path(script_path).read_text(encoding="utf-8")
         assert script_symbol in script
@@ -3420,7 +3477,10 @@ def test_live_bot_validation_parallel_combat_calibration_commands_and_report():
     )
     startup, heartbeat, cleanup = heartbeat_commands_from_script(script)
 
-    assert startup == [".botauto start", ".botauto calibrate start"]
+    assert startup == [
+        ".botauto start",
+        ".botauto calibrate start single_target_300 protection_paladin 1",
+    ]
     assert ".botauto calibrate status" in heartbeat
     assert cleanup == [".botauto combatlog", ".botauto calibrate stop", ".botauto stop"]
 
@@ -3457,34 +3517,44 @@ TC> {"ok":true,"action":"botauto_calibrate_status","active":true,"normalization"
     ]
 
 
-def test_calibration_only_acceptance_uses_configured_performance_floors_not_dungeon_gates():
-    bots = [
-        {
-            "class_id": class_id,
-            "elapsed_seconds": 120,
-            "dps": 10000,
-            "attempts": 10,
-            "persistent_setup": {"ready": True},
-        }
-        for class_id in (2, 3, 7, 8)
-    ]
-    report = {
+def calibration_transport_report() -> dict:
+    return {
         "returncode": 0,
         "timed_out": False,
+        "requested_calibration": {
+            "mode": "single_target_300",
+            "target_spec": "protection_paladin",
+            "seed": 1,
+        },
         "combat_calibration": {
-            "completed_windows": {"single_target": 1, "aoe": 1},
-            "best_windows": {"single_target": bots, "aoe": bots},
-            "external_reference": {
-                "live_acceptance": {
-                    "minimum_dps": {
-                        "single_target": {"2": 9000, "3": 9000, "7": 9000, "8": 9000},
-                        "aoe": {"2": 9000, "3": 9000, "7": 9000, "8": 9000},
-                    }
-                }
+            "window_complete": True,
+            "phase": "complete",
+            "mode": "single_target_300",
+            "target_spec": "protection_paladin",
+            "seed": 1,
+            "target_guid": 101,
+            "runtime_authority": "explicit_sql_rule_profiles",
+            "runtime_mode": "calibration_fixture",
+            "non_certifying_assistance": True,
+            "generic_ml_runtime_authority": False,
+            "reset_applied": True,
+            "reset_id": "scored-window-1",
+            "cross_window_event_count": 0,
+            "scored_seconds": 300,
+            "scored_started_at_ms": 1000,
+            "scored_ended_at_ms": 301000,
+            "profile_generation": 7,
+            "profile_content_hash": "a" * 64,
+            "previous_window": {
+                "bots": [{"guid": 101, "class_id": 2, "attempts": 10, "dps": 10000}]
             },
         },
         "stages": [{"stage": "full_stonecore_clear", "passed": False}],
     }
+
+
+def test_calibration_only_acceptance_verifies_fixture_transport_not_dungeon_gates():
+    report = calibration_transport_report()
 
     apply_calibration_only_acceptance(report)
 
@@ -3492,79 +3562,31 @@ def test_calibration_only_acceptance_uses_configured_performance_floors_not_dung
     assert report["acceptable_final_evidence"] is True
     assert report["completion_reason"] == "combat_calibration_complete"
     assert report["stages"] == [{"stage": "combat_calibration", "passed": True, "missing": []}]
-    assert report["calibration_acceptance"]["performance_threshold_applied"] is True
+    assert report["calibration_acceptance"]["rejections"] == []
 
 
-def test_calibration_only_acceptance_rejects_below_live_dps_floor():
-    bots = [
-        {
-            "class_id": class_id,
-            "elapsed_seconds": 120,
-            "dps": 39000 if class_id != 2 else 15000,
-            "attempts": 10,
-            "persistent_setup": {"ready": True},
-        }
-        for class_id in (2, 3, 7, 8)
-    ]
-    report = {
-        "returncode": 0,
-        "timed_out": False,
-        "combat_calibration": {
-            "completed_windows": {"single_target": 1, "aoe": 1},
-            "best_windows": {"single_target": bots, "aoe": bots},
-            "external_reference": {
-                "live_acceptance": {
-                    "minimum_dps": {
-                        "single_target": {"2": 14000, "3": 40000, "7": 40000, "8": 40000}
-                    }
-                }
-            },
-        },
-    }
+def test_calibration_only_acceptance_rejects_non_fixture_runtime():
+    report = calibration_transport_report()
+    report["combat_calibration"]["runtime_mode"] = "always_on_autonomy"
+    report["combat_calibration"]["non_certifying_assistance"] = False
 
     apply_calibration_only_acceptance(report)
 
     assert report["all_passed"] is False
     assert report["calibration_acceptance"]["rejections"] == [
-        "below_single_target_dps_class_3",
-        "below_single_target_dps_class_7",
-        "below_single_target_dps_class_8",
+        "calibration_runtime_mode_mismatch",
+        "calibration_non_certifying_assistance_not_declared",
     ]
 
 
-def test_calibration_only_acceptance_verifies_reference_conditions():
-    bots = [
-        {
-            "class_id": class_id,
-            "elapsed_seconds": 120,
-            "dps": 10000,
-            "attempts": 10,
-            "persistent_setup": {"ready": True},
-            "reference_setup": {
-                "buffs_ready": True,
-                "target_debuffs_ready": class_id != 3,
-                "heroism_window_observed": True,
-            },
-        }
-        for class_id in (2, 3, 7, 8)
-    ]
-    report = {
-        "returncode": 0,
-        "timed_out": False,
-        "combat_calibration": {
-            "normalization": {"reference_conditions": True},
-            "completed_windows": {"single_target": 1, "aoe": 1},
-            "best_windows": {"single_target": bots, "aoe": bots},
-        },
-    }
+def test_calibration_only_acceptance_rejects_cross_window_contamination():
+    report = calibration_transport_report()
+    report["combat_calibration"]["cross_window_event_count"] = 1
 
     apply_calibration_only_acceptance(report)
 
     assert report["all_passed"] is False
-    assert report["calibration_acceptance"]["rejections"] == [
-        "incomplete_single_target_target_debuffs",
-        "incomplete_aoe_target_debuffs",
-    ]
+    assert report["calibration_acceptance"]["rejections"] == ["cross_window_contamination"]
 
 
 def test_live_bot_validation_counts_labeled_teacher_assist_as_kill_quest_evidence():
@@ -4030,10 +4052,10 @@ TC> {"duration_minutes":3,"decisions":4,"total_kills":0,"quests_completed":0}
 """
     scenario_dir = tmp_path / "scenario_reports"
     scenario_dir.mkdir()
-    (scenario_dir / "stonecore_5n.json").write_text(
+    (scenario_dir / "stonecore_5h.json").write_text(
         json.dumps(
             {
-                "scenario_id": "stonecore_5n",
+                "scenario_id": "stonecore_5h",
                 "prepared_group": True,
                 "trash_pulls": 4,
                 "boss_kills": 4,
@@ -4060,7 +4082,7 @@ TC> {"duration_minutes":3,"decisions":4,"total_kills":0,"quests_completed":0}
     assert gates["raid_boss"]["passed"] is True
     assert gates["full_blackwing_descent_clear"]["passed"] is False
     assert gates["full_blackwing_descent_clear"]["missing"] == ["blackwing_descent_full_clear_evidence"]
-    assert sorted(report["scenario_reports"]) == ["blackwing_descent_10n", "stonecore_5n"]
+    assert sorted(report["scenario_reports"]) == ["blackwing_descent_10n", "stonecore_5h"]
 
 
 def test_live_scenario_report_builder_rejects_unscoped_cross_scenario_kills(tmp_path):
@@ -4708,6 +4730,7 @@ def test_live_bot_validation_process_mode_observes_after_start(tmp_path, monkeyp
         "    if command.startswith('.botauto diagnose'): print('{\"diagnosis_schema_version\": 1}')\n"
         "    if command.startswith('.botauto trace'): print('{\"trace_schema_version\": 1}')\n"
         "    if command == '.botexp summary': print('{\"duration_minutes\": 1}')\n"
+        "    if command.startswith('server shutdown'): break\n"
         "    print('TC> ', flush=True)\n",
         encoding="utf-8",
     )
@@ -4732,7 +4755,9 @@ def test_live_bot_validation_process_mode_observes_after_start(tmp_path, monkeyp
     assert "TC>" in output
     assert "CMD .botauto start" in output
     assert "CMD .botauto diagnose all" in output
-    assert "CMD server shutdown force 0" in output
+    assert "server shutdown force 0" in command_script(
+        selector="all", trace_limit=5, start=True, stop=False
+    ).splitlines()
 
 
 def test_live_bot_validation_process_mode_observes_before_diagnose_without_start(tmp_path, monkeypatch):
@@ -4749,6 +4774,7 @@ def test_live_bot_validation_process_mode_observes_before_diagnose_without_start
         "    if command.startswith('.botauto diagnose'): print('{\"diagnosis_schema_version\": 1}')\n"
         "    if command.startswith('.botauto trace'): print('{\"trace_schema_version\": 1}')\n"
         "    if command == '.botexp summary': print('{\"duration_minutes\": 1}')\n"
+        "    if command.startswith('server shutdown'): break\n"
         "    print('TC> ', flush=True)\n",
         encoding="utf-8",
     )
@@ -4774,7 +4800,9 @@ def test_live_bot_validation_process_mode_observes_before_diagnose_without_start
     assert "CMD .botauto start" not in output
     assert "CMD .botauto status" in output
     assert "CMD .botauto diagnose all" in output
-    assert "CMD server shutdown force 0" in output
+    assert "server shutdown force 0" in command_script(
+        selector="all", trace_limit=5, start=False, stop=False
+    ).splitlines()
 
 
 def test_live_bot_validation_process_mode_calibration_only_observes_once(tmp_path, monkeypatch):
@@ -4786,7 +4814,7 @@ def test_live_bot_validation_process_mode_calibration_only_observes_once(tmp_pat
         "for line in sys.stdin:\n"
         "    command = line.strip()\n"
         "    print('CMD ' + command)\n"
-        "    if command == '.botauto calibrate start': print('{\"ok\": true, \"action\": \"botauto_calibrate_start\"}')\n"
+        "    if command.startswith('.botauto calibrate start '): print('{\"ok\": true, \"action\": \"botauto_calibrate_start\"}')\n"
         "    if command == '.botauto calibrate status': print('{\"ok\": true, \"action\": \"botauto_calibrate_status\", \"active\": true}')\n"
         "    if command.startswith('server shutdown'): break\n"
         "    print('TC> ', flush=True)\n",
@@ -4810,7 +4838,7 @@ def test_live_bot_validation_process_mode_calibration_only_observes_once(tmp_pat
     assert timed_out is False
     assert sleeps.count(31) == 1
     assert "CMD .botauto start" not in output
-    assert "CMD .botauto calibrate start" in output
+    assert "CMD .botauto calibrate start single_target_300 protection_paladin 1" in output
     assert "CMD .botauto calibrate status" in output
 
 
@@ -6482,8 +6510,8 @@ def test_live_bot_validation_completion_watchdog_writes_heartbeats(tmp_path):
     )
     report = json.loads((tmp_path / "validation" / "report.json").read_text(encoding="utf-8"))
 
-    assert returncode == 0
-    assert timed_out is False
+    assert returncode == 124
+    assert timed_out is True
     assert command == [str(fake_worldserver), "--config", str(config)]
     assert "CMD .botauto status" in output
     assert (tmp_path / "validation" / "heartbeat_events.jsonl").exists()
@@ -6631,8 +6659,10 @@ def test_completion_watchdog_keeps_manifest_run_alive_while_party_is_moving(tmp_
     )
     report = json.loads((tmp_path / "validation" / "report.json").read_text(encoding="utf-8"))
 
-    assert report["completion_reason"] != "semantic_progress_plateau_watchdog"
+    # Movement without ordered route progress must not keep a stalled run alive.
+    assert report["completion_reason"] == "semantic_progress_plateau_watchdog"
     assert report["watchdog_state"]["progress_counters"]["moved_diagnoses"] > 0
+    assert report["watchdog_state"]["progress_total"] == 4
 
 
 def test_bounded_console_deadline_caps_command_read_to_heartbeat_window():
@@ -6721,7 +6751,7 @@ def test_live_bot_validation_main_preserves_watchdog_report(tmp_path, monkeypatc
         ],
     )
 
-    assert live_validation_main() == 0
+    assert live_validation_main() == 1
     capsys.readouterr()
     report = json.loads((output_dir / "report.json").read_text(encoding="utf-8"))
 
@@ -6731,6 +6761,8 @@ def test_live_bot_validation_main_preserves_watchdog_report(tmp_path, monkeypatc
     assert report["base_config"] == str(config)
     assert report["validation_context"]["route_node_id"] == "stonecore_entry"
     assert report["validation_route"]["source_entry"] == 42696
+    assert report["acceptable_final_evidence"] is False
+    assert report["returncode"] == 124
 
 
 def test_route_segment_complete_accepts_terminal_trash_evidence():
@@ -8217,7 +8249,7 @@ def test_live_bot_validation_bot_pool_reset_sql_is_scoped_to_tags():
     assert "DELETE gi FROM `characters`.`group_instance`" in sql
     assert "DELETE gm FROM `characters`.`group_member`" in sql
     assert "DELETE g FROM `characters`.`groups`" in sql
-    assert "DELETE ps FROM `characters`.`pet_spell`" in sql
+    assert "DELETE ps FROM `characters`.`pet_spell`" not in sql
     assert "DELETE pa FROM `characters`.`pet_aura`" in sql
     assert "DELETE pc FROM `characters`.`pet_spell_cooldown`" in sql
     assert "DELETE FROM `characters`.`mail_items`" in sql
@@ -8604,7 +8636,7 @@ def test_validation_gear_profiles_can_complete_slots_from_item_rows():
     assert report["all_equipment_slots_complete"] is True
     assert report["all_enchanted"] is False
     assert profile["stat_weight_manifest"]["schema"] == "bot_cata_434_combat_loot_profiles_v1"
-    assert profile["stat_weights"]["stamina"] == 2.0
+    assert profile["stat_weights"]["stamina"] == 1.2
     assert len(profile["bis_source_report"]) == len(profile["equipment"])
     assert report["smart_loot_validation_surface"]["selected_equipment_count"] == len(profile["equipment"])
 
@@ -8620,25 +8652,30 @@ def test_combat_loot_profile_manifest_externalizes_stat_weights_and_reporting(tm
 
 
 def test_validation_gear_profiles_complete_from_local_db2_files():
-    config = json.loads(Path("experiments/configs/validation_provisioning_cata_001.json").read_text(encoding="utf-8"))
+    config = load_validation_provisioning_config(Path("experiments/configs/validation_provisioning_cata_001.json"))
     items = fetch_items("mysql://trinity:trinity@172.20.0.2:3306/hotfixes", Path("data/dbc/enUS"), min_item_level=1, max_required_level=85)
     enchantments = load_spell_item_enchantments(Path("data/dbc/enUS"))
     gems = build_gem_catalog(items, load_gem_properties(Path("data/dbc/enUS")), {int(enchantment["id"]): enchantment for enchantment in enchantments})
     profiles = build_profiles(config, items, enchantments, gems)
     report = build_report(profiles, {"database": "hotfixes"})
 
-    assert report["profile_count"] == 14
+    expected_profiles = {
+        str(bot.get("class_spec") or bot["name"])
+        for scenario in config["scenarios"]
+        for bot in scenario["bots"]
+    }
+    assert report["profile_count"] == len(expected_profiles)
     assert report["all_equipment_slots_complete"] is True
     assert report["all_gemmed"] is True
     assert report["all_enchanted"] is True
-    assert report["source_counts"]["enchanted_items"] >= 14 * 16
+    assert report["source_counts"]["enchanted_items"] >= len(expected_profiles) * 16
     assert report["source_counts"]["gemmed_items"] == report["source_counts"]["socketed_items"]
     assert report["enchant_applicability_verified_by_server"] is False
     assert report["profile_manifest"]["schema"] == "bot_cata_434_combat_loot_profiles_v1"
     assert report["smart_loot_validation_surface"]["ready_for_upgrade_scoring"] is True
-    assert report["smart_loot_validation_surface"]["selected_equipment_count"] >= 14 * 16
+    assert report["smart_loot_validation_surface"]["selected_equipment_count"] >= len(expected_profiles) * 16
     assert "dps_intellect" in report["stat_weight_archetypes"]
-    assert report["source_counts"]["client_db2_items"] >= 14 * 16
+    assert report["source_counts"]["client_db2_items"] >= len(expected_profiles) * 16
     assert all(not profile["missing_slots"] for profile in profiles.values())
     assert next(item for item in profiles["blood_death_knight"]["equipment"] if item["slot"] == 15)["name"] == "Gurthalak, Voice of the Deeps"
     assert next(item for item in profiles["marksmanship_hunter"]["equipment"] if item["slot"] == 15)["name"] == "Kiril, Fury of Beasts"
@@ -8691,10 +8728,28 @@ def test_validation_provisioning_applies_gear_profiles_to_bots():
     report = scenario_report(equipped)
 
     assert equipped["scenarios"][0]["bots"][0]["gear_profile"] == "protection_paladin"
+    assert equipped["scenarios"][0]["bots"][0]["gear_profile_id"] == "protection_paladin"
     assert len(equipped["scenarios"][0]["bots"][0]["equipment"]) == 17
     assert report["scenarios"][0]["gear_missing_slots"]["Tank"] == []
     assert "complete_equipment_slots" not in report["scenarios"][0]["missing"]
     assert "enchants" in report["scenarios"][0]["missing"]
+
+
+def test_validation_provisioning_rejects_mismatched_explicit_gear_profile_id():
+    config = {
+        "scenarios": [{
+            "id": "all_spec_candidate_pool",
+            "bots": [{
+                "name": "Firemage",
+                "class_spec": "fire_mage",
+                "gear_profile": "fire_mage",
+                "gear_profile_id": "wowsims_cata_p4_fire_mage",
+            }],
+        }],
+    }
+
+    with pytest.raises(ValueError, match="canonical gear profile identity mismatch"):
+        apply_gear_profiles(config, {"fire_mage": {}, "wowsims_cata_p4_fire_mage": {}})
 
 
 def test_validation_provisioning_writes_equipment_cache_and_filters_glyphs():
@@ -9862,7 +9917,8 @@ def test_phase13_triggered_experiment_segments_surface():
     ]:
         assert column in schema
 
-    assert "BotExperimentCoordinator _experimentCoordinator" in mgr_header
+    assert "BotExperimentCoordinator ExperimentCoordinator" in mgr_header
+    assert "Cohort().ExperimentCoordinator" in mgr_impl
     assert "RecordExperimentSegmentEvent" in mgr_header
     assert "RecordExperimentSegmentEvent(bot, eventType, result, questId" in mgr_impl
     assert "RecordExperimentSegmentEvent(bot, eventType, result, 0" in mgr_impl
@@ -10336,9 +10392,11 @@ def test_baseline_inventory_policy_contract_coverage_and_manifest_are_determinis
     declared_rotation_paths = {row["path"] for row in policy["artifact_declarations"] if row["artifact_class"] == "effective_rotation_sql"}
     referenced_rotation_paths = {str(path.relative_to(root)) for path in (root / "sql/custom/world").glob("*.sql") if "bot_rotation_profile" in path.read_text(encoding="utf-8")}
     post_baseline_rotation_paths = {
-        "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
-        "sql/custom/world/2026_07_19_00_phase4_rotation_snapshots.sql",
+        path
+        for path in referenced_rotation_paths
+        if Path(path).name >= "2026_07_18_00"
     }
+    assert post_baseline_rotation_paths
     assert declared_rotation_paths == referenced_rotation_paths - post_baseline_rotation_paths
     assert {row["temporal_state"] for row in classified} <= {"current_diagnostic", "historical", "superseded", "unusable"}
     assert all("rotation_profile" in row["gameplay_payload"] for row in report["rows"] if row["status"] == "configured")
@@ -10507,17 +10565,21 @@ def test_phase1_catalog_gate_has_exact_targets_links_and_reviewed_provenance(tmp
     assert len(targets) == 31
     assert {role: sum(row["role"] == role for row in targets) for role in ("tank", "healer", "dps")} == {"tank": 4, "healer": 5, "dps": 22}
     assert len({row["runtime_join_key"] for row in targets}) == 31
+    references_by_target = {row["spec_target_id"]: row for row in references}
     assert all(
-        row["gear_profile_id"] == row["spec_target_id"]
+        row["gear_profile_id"]
+        == row["provisioning_bot"]["gear_profile_id"]
+        == row["provisioning_bot"]["gear_profile"]
+        == references_by_target[row["spec_target_id"]]["gear"]["gear_profile_id"]
+        == references_by_target[row["spec_target_id"]]["gear"]["runtime_profile_id"]
         for row in targets
-        if row["spec_target_id"] != "survival_hunter"
     )
     assert all(row["action_profile_spell_ids"] for row in targets)
     assert all(row["reference_id"] == f"cata_p4:{row['spec_target_id']}" for row in targets)
     assert {row["spec_target_id"] for row in references} == {row["spec_target_id"] for row in targets}
     assert all(row["review_status"] == "reviewed" and row["source_assets"] for row in references)
     assert all(row["guide_url"] in {asset["url"] for asset in row["source_assets"]} for row in references)
-    assert all(row["gear"]["phase"] == "phase_4" and row["gear"]["runtime_profile_id"] == row["spec_target_id"] for row in references)
+    assert all(row["gear"]["phase"] == "phase_4" for row in references)
     assert len({row["runtime_rotation_profile"]["identity"] for row in targets}) == 31
     assert all(row["runtime_rotation_profile"]["authority"] == "world_db_bot_rotation_profile" for row in targets)
     by_target = {row["spec_target_id"]: row for row in targets}
@@ -10534,23 +10596,33 @@ def test_phase1_catalog_gate_has_exact_targets_links_and_reviewed_provenance(tmp
     assert survival["gear_profile_id"] == "wowsims_cata_p4_survival_hunter"
     assert survival["provisioning_bot"]["gear_profile"] == "wowsims_cata_p4_survival_hunter"
     assert survival["provisioning_bot"]["race"] == 2
+    fire = by_target["fire_mage"]
+    assert fire["gear_profile_id"] == "wowsims_cata_p4_fire_mage"
+    assert fire["provisioning_bot"]["gear_profile"] == "wowsims_cata_p4_fire_mage"
     assert 20572 in survival["action_profile_spell_ids"]
-    for hunter in (row for row in targets if row["class_name"] == "hunter" and row["spec_target_id"] != "survival_hunter"):
+    hunter_pet_offsets = set()
+    for hunter in (row for row in targets if row["class_name"] == "hunter"):
+        pet = hunter["provisioning_bot"]["pet"]
+        hunter_pet_offsets.add(int(pet["id_offset"]))
+        assert int(pet["entry"]) == 8959
         pet_spells = {
             int(spell["id"] if isinstance(spell, dict) else spell): int(spell.get("active", 1) if isinstance(spell, dict) else 1)
-            for spell in hunter["provisioning_bot"]["pet"]["spells"]
+            for spell in pet["spells"]
         }
-        assert {
-            19596: 1,
+        assert pet_spells == {
+            2649: 1,
+            17253: 1,
+            23145: 193,
             53184: 1,
+            53186: 1,
             53205: 1,
             53401: 193,
             53434: 193,
             61681: 1,
             61683: 1,
-            61684: 193,
-            62762: 1,
-        }.items() <= pet_spells.items()
+            62760: 1,
+        }
+    assert hunter_pet_offsets == {113, 114, 115}
     survival_pet_spells = {
         int(spell["id"] if isinstance(spell, dict) else spell): int(spell.get("active", 1) if isinstance(spell, dict) else 1)
         for spell in survival["provisioning_bot"]["pet"]["spells"]
@@ -10612,6 +10684,33 @@ def test_phase1_research_second_pass_is_limited_to_explicit_unsupported_targets(
     )
 
 
+def test_phase1_catalog_and_phase8_identity_reject_reference_gear_profile_mismatch():
+    payloads = {
+        name: json.loads(Path("experiments/configs", name).read_text(encoding="utf-8"))
+        for name in (
+            "all_spec_targets_cata_p4_v1.json",
+            "all_spec_references_cata_p4_v1.json",
+            "all_spec_calibration_scenarios_v1.json",
+            "stonecore_pairwise_constraints_v1.json",
+        )
+    }
+    targets = payloads["all_spec_targets_cata_p4_v1.json"]["targets"]
+    references = payloads["all_spec_references_cata_p4_v1.json"]["references"]
+    fire_target = next(row for row in targets if row["spec_target_id"] == "fire_mage")
+    fire_reference = next(
+        row for row in references if row["spec_target_id"] == "fire_mage"
+    )
+    fire_reference["gear"]["gear_profile_id"] = "fire_mage"
+
+    with pytest.raises(ValueError, match="canonical gear profile identity mismatch"):
+        validate_phase1_catalogs(payloads, check_linked=False)
+    with pytest.raises(
+        Phase8CalibrationNormalizationError,
+        match="gear_profile_identity_mismatch:fire_mage",
+    ):
+        canonical_gear_profile_id(fire_target, fire_reference)
+
+
 def test_phase1_pairwise_constraints_cover_all_tank_healer_pairs_and_dps():
     payloads = build_phase1_catalogs(False)
     targets = payloads["all_spec_targets_cata_p4_v1.json"]["targets"]
@@ -10637,17 +10736,16 @@ def test_validation_provisioning_loads_canonical_leaseable_candidate_pool():
     assert len({bot["account"] for bot in bots}) == 31
     assert len({bot["name"] for bot in bots}) == 31
     assert len({bot["class_spec"] for bot in bots}) == 31
-    assert all(
-        bot["gear_profile"] == bot["class_spec"]
-        for bot in bots
-        if bot["class_spec"] != "survival_hunter"
-    )
+    assert all(bot["gear_profile_id"] == bot["gear_profile"] for bot in bots)
+    assert next(bot for bot in bots if bot["class_spec"] == "fire_mage")[
+        "gear_profile_id"
+    ] == "wowsims_cata_p4_fire_mage"
     assert all(bot["talents"] and bot["primary_tree_spells"] for bot in bots)
     assert all(3 <= len(bot["glyphs"]) <= 9 for bot in bots)
     survival = next(bot for bot in bots if bot["class_spec"] == "survival_hunter")
     assert survival["gear_profile"] == "wowsims_cata_p4_survival_hunter"
     assert survival["race"] == 2
-    assert 20572 in survival["spells"]
+    assert 20572 in bot_spell_ids(survival)
     survival_pet_spells = {
         int(spell["id"] if isinstance(spell, dict) else spell): int(spell.get("active", 1) if isinstance(spell, dict) else 1)
         for spell in survival["pet"]["spells"]
@@ -10703,7 +10801,7 @@ def test_phase3_capture_is_bounded_compressed_and_content_addressed(tmp_path):
         measurement_window_ids=["window-001"],
     )
 
-    assert manifest["raw"]["format"] == "jsonl.zst"
+    assert manifest["raw"]["format"] == "chunked_jsonl_zst"
     assert manifest["compact"]["format"] == "parquet_zstd"
     assert manifest["database_export"]["measurement_window_ids"] == ["window-001"]
     assert manifest["duplicate_uncompressed_jsonl_retained"] is False
@@ -11160,7 +11258,40 @@ def test_phase8_campaign_schedule_and_publication_identity(tmp_path: Path):
     assert phase8_runner.valid_publication(attempt_dir, mismatched) is False
 
 
-def test_phase8_evidence_manifest_rejects_runtime_mismatch():
+def phase8_evidence_identity_fixture(
+    server_binding: dict, profile_binding: dict
+) -> dict:
+    build_identity = {
+        "git_commit": "d" * 40,
+        "source_tree_clean": True,
+        "worldserver_binary_sha256": "e" * 64,
+        "database_snapshot_sha256": "b" * 64,
+        "database_schema_sha256": "c" * 64,
+        "profile_content_hash": profile_binding["profile_content_hash"],
+    }
+    projection = phase8_build_projection({"build_identity": build_identity})
+    manifest = {
+        "schema": "all_spec_phase8_evidence_identity_manifest_v2",
+        "component_hashes": {
+            "source_identity_sha256": canonical_sha256(
+                {"git_commit": build_identity["git_commit"], "source_tree_clean": True}
+            ),
+            "worldserver_binary_sha256": build_identity["worldserver_binary_sha256"],
+            "database_snapshot_sha256": build_identity["database_snapshot_sha256"],
+            "database_schema_sha256": build_identity["database_schema_sha256"],
+            "server_epoch_sha256": canonical_sha256(server_binding),
+            "profile_generation_sha256": canonical_sha256(profile_binding),
+            "build_projection_sha256": canonical_sha256(projection),
+        },
+        "build_identity": build_identity,
+        "runtime_identity": {**server_binding, **profile_binding},
+        "database_summary": {},
+    }
+    manifest["manifest_sha256"] = canonical_sha256(manifest)
+    return manifest
+
+
+def test_phase8_evidence_manifest_rejects_runtime_and_build_mismatch():
     server_binding = server_epoch_identity(
         server_epoch=10,
         server_process_id=20,
@@ -11170,18 +11301,7 @@ def test_phase8_evidence_manifest_rejects_runtime_mismatch():
         profile_generation=3,
         profile_content_hash="a" * 64,
     )
-    manifest = {
-        "schema": "all_spec_phase8_evidence_identity_manifest_v1",
-        "component_hashes": {
-            "database_snapshot_sha256": "b" * 64,
-            "database_schema_sha256": "c" * 64,
-            "server_epoch_sha256": canonical_sha256(server_binding),
-            "profile_generation_sha256": canonical_sha256(profile_binding),
-        },
-        "runtime_identity": {**server_binding, **profile_binding},
-        "database_summary": {},
-    }
-    manifest["manifest_sha256"] = canonical_sha256(manifest)
+    manifest = phase8_evidence_identity_fixture(server_binding, profile_binding)
 
     assert validate_phase8_evidence_manifest(manifest)["manifest_sha256"]
     with pytest.raises(ValueError, match="live runtime does not match"):
@@ -11193,6 +11313,47 @@ def test_phase8_evidence_manifest_rejects_runtime_mismatch():
                 "server_epoch": 11,
             },
         )
+    dirty = json.loads(json.dumps(manifest))
+    dirty["build_identity"]["source_tree_clean"] = False
+    dirty["manifest_sha256"] = canonical_sha256(
+        {key: value for key, value in dirty.items() if key != "manifest_sha256"}
+    )
+    with pytest.raises(ValueError, match="build projection is invalid"):
+        validate_phase8_evidence_manifest(dirty)
+    changed_binary = json.loads(json.dumps(manifest))
+    changed_binary["build_identity"]["worldserver_binary_sha256"] = "f" * 64
+    changed_binary["manifest_sha256"] = canonical_sha256(
+        {key: value for key, value in changed_binary.items() if key != "manifest_sha256"}
+    )
+    with pytest.raises(ValueError, match="build binding is invalid"):
+        validate_phase8_evidence_manifest(changed_binary)
+
+
+def test_phase8_source_identity_refuses_dirty_tree(tmp_path: Path):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    worldserver = tmp_path / "worldserver"
+    worldserver.write_bytes(b"exact binary")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "worldserver"], check=True)
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(tmp_path),
+            "-c",
+            "user.name=Identity Test",
+            "-c",
+            "user.email=identity@example.invalid",
+            "commit",
+            "-qm",
+            "fixture",
+        ],
+        check=True,
+    )
+
+    assert _clean_source_identity(tmp_path, worldserver)["source_tree_clean"] is True
+    worldserver.write_bytes(b"dirty binary")
+    with pytest.raises(RuntimeError, match="clean, complete Git source tree"):
+        _clean_source_identity(tmp_path, worldserver)
 
 
 def test_phase8_contract_reconstructs_all_attempts_and_rejects_duplicate_state(tmp_path: Path):
@@ -11210,19 +11371,8 @@ def test_phase8_contract_reconstructs_all_attempts_and_rejects_duplicate_state(t
         profile_generation=7,
         profile_content_hash="a" * 64,
     )
-    components = {
-        "database_snapshot_sha256": "b" * 64,
-        "database_schema_sha256": "c" * 64,
-        "server_epoch_sha256": canonical_sha256(server_binding),
-        "profile_generation_sha256": canonical_sha256(profile_binding),
-    }
-    evidence_manifest = {
-        "schema": "all_spec_phase8_evidence_identity_manifest_v1",
-        "component_hashes": components,
-        "runtime_identity": {**server_binding, **profile_binding},
-        "database_summary": {},
-    }
-    evidence_manifest["manifest_sha256"] = canonical_sha256(evidence_manifest)
+    evidence_manifest = phase8_evidence_identity_fixture(server_binding, profile_binding)
+    components = evidence_manifest["component_hashes"]
     (tmp_path / "evidence_identity_manifest.json").write_text(
         json.dumps(evidence_manifest),
         encoding="utf-8",

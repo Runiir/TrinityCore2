@@ -396,7 +396,21 @@ def load_config(path: Path) -> dict[str, Any]:
         if not catalog_path.is_absolute():
             catalog_path = REPO_ROOT / catalog_path
         catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
-        catalog_bots = [json.loads(json.dumps(row["provisioning_bot"])) for row in catalog.get("targets", [])]
+        catalog_targets = catalog.get("targets", [])
+        for row in catalog_targets:
+            target_id = str(row.get("spec_target_id") or "")
+            gear_profile_id = str(row.get("gear_profile_id") or "")
+            bot = row.get("provisioning_bot") or {}
+            if (
+                not target_id
+                or not gear_profile_id
+                or str(bot.get("gear_profile_id") or "") != gear_profile_id
+                or str(bot.get("gear_profile") or "") != gear_profile_id
+            ):
+                raise ValueError(
+                    f"{target_id or '<unknown>'}: canonical gear profile identity mismatch"
+                )
+        catalog_bots = [json.loads(json.dumps(row["provisioning_bot"])) for row in catalog_targets]
         scenario_id = str(config.get("canonical_candidate_pool_scenario_id") or catalog.get("candidate_pool_scenario_id") or "")
         if not scenario_id or len(catalog_bots) != int(catalog.get("target_count") or 0):
             raise ValueError("canonical target catalog candidate pool is incomplete")
@@ -494,14 +508,32 @@ def apply_gear_profiles(config: dict[str, Any], profiles: dict[str, Any]) -> dic
     copied = json.loads(json.dumps(config))
     for scenario in copied["scenarios"]:
         for bot in scenario["bots"]:
+            explicit_profile_id = str(bot.get("gear_profile_id") or "")
+            legacy_profile_name = str(bot.get("gear_profile") or "")
+            if (
+                explicit_profile_id
+                and legacy_profile_name
+                and explicit_profile_id != legacy_profile_name
+            ):
+                raise ValueError(
+                    f"{bot.get('name') or '<unknown>'}: canonical gear profile identity mismatch"
+                )
             if bot.get("equipment"):
                 continue
-            profile_name = str(bot.get("gear_profile") or bot.get("class_spec") or "")
+            profile_name = explicit_profile_id or legacy_profile_name or str(
+                bot.get("class_spec") or ""
+            )
             profile = profiles.get(profile_name)
             if profile:
                 bot["equipment"] = profile.get("equipment", [])
                 bot["gear_profile"] = profile_name
+                bot["gear_profile_id"] = profile_name
                 bot["gear_profile_source"] = profile.get("source", {})
+            elif explicit_profile_id:
+                raise ValueError(
+                    f"{bot.get('name') or '<unknown>'}: unknown canonical gear profile "
+                    f"{explicit_profile_id!r}"
+                )
     return copied
 
 
@@ -843,6 +875,9 @@ def scenario_report(config: dict[str, Any], action_profiles: dict[str, Any] | No
                 "missing": missing,
                 "gear_missing_slots": gear_missing,
                 "gear_profiles": {bot["name"]: bot.get("gear_profile", "") for bot in bots},
+                "gear_profile_ids": {
+                    bot["name"]: bot.get("gear_profile_id", "") for bot in bots
+                },
                 "action_profile_manifest": {
                     "path": action_profiles["path"],
                     "schema": action_profiles["schema"],

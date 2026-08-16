@@ -27,6 +27,7 @@ PAIRWISE_CATALOG_PATH = REPO_ROOT / "experiments/configs/stonecore_pairwise_cons
 PROVISIONING_PATH = REPO_ROOT / "experiments/configs/validation_provisioning_cata_001.json"
 ACTION_PROFILES_PATH = REPO_ROOT / "experiments/configs/cata_434_action_profiles.json"
 COMBAT_LOOT_PATH = REPO_ROOT / "experiments/configs/cata_434_combat_loot_profiles.json"
+WOWSIMS_GEAR_PROFILES_PATH = REPO_ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json"
 
 CLASS_META = {
     "warrior": {"class_id": 1, "race": 1, "archetype": "strength"},
@@ -102,6 +103,39 @@ TALENT_VARIANT = {
 RESULT_TALENT_OVERRIDE = {
     "survival_hunter": "03-2302-23203003023022121311",
 }
+
+# Gear identity is deliberately separate from the specialization join key.
+# Most generated validation profiles use the specialization id, while these
+# checked-in WoWSims overlays reproduce the exact preset used by the pinned
+# numeric reference.  Every catalog/provisioning consumer must carry this id
+# verbatim; it is not an alias that may be substituted at runtime.
+CANONICAL_GEAR_PROFILE_IDS = {
+    "balance_druid": "wowsims_cata_p4_balance_druid",
+    "enhancement_shaman": "wowsims_cata_p4_enhancement_shaman",
+    "fire_mage": "wowsims_cata_p4_fire_mage",
+    "shadow_priest": "wowsims_cata_p4_shadow_priest",
+    "survival_hunter": "wowsims_cata_p4_survival_hunter",
+}
+
+WOWSIMS_GEAR_PROFILE_TARGETS = {
+    "assassination_rogue",
+    "balance_druid",
+    "demonology_warlock",
+    "enhancement_shaman",
+    "fire_mage",
+    "shadow_priest",
+    "survival_hunter",
+}
+
+
+def canonical_gear_profile_id(target_id: str) -> str:
+    return CANONICAL_GEAR_PROFILE_IDS.get(target_id, target_id)
+
+
+def gear_profile_runtime_manifest(target_id: str) -> str:
+    if target_id in WOWSIMS_GEAR_PROFILE_TARGETS:
+        return "experiments/configs/wowsims_cata_p4_gear_profiles.json"
+    return "experiments/configs/cata_434_combat_loot_profiles.json"
 
 GEAR_PATH = {
     "protection_warrior": "ui/warrior/protection/gear_sets/p4_bis.gear.json",
@@ -375,7 +409,7 @@ RUNTIME_ACTION_SPELL_IDS = {
     "unholy_death_knight": [45462, 46584, 47528, 47541, 55090, 57330, 63560, 77575, 85948],
     "arcane_mage": [1449, 2139, 5143, 12042, 12051, 30451, 44425],
     "frost_mage": [10, 116, 2139, 12472, 30455, 31687, 44572, 44614],
-    "demonology_warlock": [172, 348, 686, 1949, 6353, 47241, 71521, 77801],
+    "demonology_warlock": [172, 348, 686, 689, 1454, 1949, 6353, 47241, 71521, 77801],
     "destruction_warlock": [348, 5740, 6353, 17877, 17962, 29722, 50796, 77801],
     "shadow_priest": [588, 589, 2944, 8092, 8122, 15407, 15473, 26297, 32379, 34433, 34914, 47585, 48045, 87151, 87153],
     "balance_druid": [5570, 8921, 16914, 2912, 5176, 33831, 48505, 50516, 78674],
@@ -690,11 +724,7 @@ def build_catalogs(refresh_sources: bool) -> dict[str, dict[str, Any]]:
             consumables.append(58091)
         if target_id == "demonology_warlock":
             consumables.append(70142)
-        runtime_gear_profile = {
-            "enhancement_shaman": "wowsims_cata_p4_enhancement_shaman",
-            "shadow_priest": "wowsims_cata_p4_shadow_priest",
-            "survival_hunter": "wowsims_cata_p4_survival_hunter",
-        }.get(target_id, target_id)
+        runtime_gear_profile = canonical_gear_profile_id(target_id)
         runtime_race = {
             "demonology_warlock": 2,
             "shadow_priest": 8,
@@ -709,6 +739,7 @@ def build_catalogs(refresh_sources: bool) -> dict[str, dict[str, Any]]:
             "class": class_id,
             "level": 85,
             "gear_profile": runtime_gear_profile,
+            "gear_profile_id": runtime_gear_profile,
             "glyphs": glyphs,
             "consumable_item_ids": consumables,
             **build,
@@ -800,9 +831,10 @@ def build_catalogs(refresh_sources: bool) -> dict[str, dict[str, Any]]:
                 "guide_url": GUIDE_URL[target_id],
                 "gear": {
                     "phase": "phase_4",
-                    "runtime_profile_id": target_id,
+                    "gear_profile_id": runtime_gear_profile,
+                    "runtime_profile_id": runtime_gear_profile,
                     "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
-                    "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+                    "runtime_manifest": gear_profile_runtime_manifest(target_id),
                     "simulator_preset": {
                         "path": gear_path,
                         "phase": "phase_4" if any(token in gear_path.lower() for token in ("p4", "t13")) else "best_executable_legacy_preset",
@@ -944,6 +976,16 @@ def validate_catalogs(payloads: dict[str, dict[str, Any]], *, check_linked: bool
         validate_talent_manifest({"name": row["spec_target_id"], **row["talent_build"]})
         if not 3 <= len(row["glyph_item_ids"]) <= 9 or not row["action_profile_spell_ids"]:
             raise ValueError(f"{row['spec_target_id']}: incomplete provisioning/profile link")
+        expected_gear_profile_id = canonical_gear_profile_id(row["spec_target_id"])
+        provisioning = row.get("provisioning_bot") or {}
+        if (
+            row.get("gear_profile_id") != expected_gear_profile_id
+            or provisioning.get("gear_profile_id") != expected_gear_profile_id
+            or provisioning.get("gear_profile") != expected_gear_profile_id
+        ):
+            raise ValueError(
+                f"{row['spec_target_id']}: canonical gear profile identity mismatch"
+            )
         runtime_profile = row.get("runtime_rotation_profile") or {}
         expected_runtime_identity = (
             f"{row['class_id']}:{RUNTIME_PROFILE_SPEC_TAG.get(row['spec_target_id'], row['spec_target_id'])}:{row['role']}"
@@ -966,6 +1008,9 @@ def validate_catalogs(payloads: dict[str, dict[str, Any]], *, check_linked: bool
             if previous != row["spec_target_id"]:
                 raise ValueError(f"alias {alias!r} conflicts between {previous} and {row['spec_target_id']}")
     references = reference_catalog["references"]
+    wowsims_gear_profiles = json.loads(
+        WOWSIMS_GEAR_PROFILES_PATH.read_text(encoding="utf-8")
+    ).get("profiles", {})
     if {row["spec_target_id"] for row in references} != set(ids) or any(row["review_status"] != "reviewed" for row in references):
         raise ValueError("every target requires reviewed reference provenance")
     for row in references:
@@ -978,8 +1023,30 @@ def validate_catalogs(payloads: dict[str, dict[str, Any]], *, check_linked: bool
         ):
             raise ValueError(f"{row['spec_target_id']}: incomplete source hash provenance")
         gear = row.get("gear") or {}
-        if gear.get("phase") != "phase_4" or gear.get("runtime_profile_id") != row["spec_target_id"]:
-            raise ValueError(f"{row['spec_target_id']}: incomplete Phase 4 gear record")
+        expected_gear_profile_id = canonical_gear_profile_id(row["spec_target_id"])
+        if (
+            gear.get("phase") != "phase_4"
+            or gear.get("gear_profile_id") != expected_gear_profile_id
+            or gear.get("runtime_profile_id") != expected_gear_profile_id
+            or gear.get("runtime_manifest")
+            != gear_profile_runtime_manifest(row["spec_target_id"])
+        ):
+            raise ValueError(
+                f"{row['spec_target_id']}: canonical gear profile identity mismatch"
+            )
+        if row["spec_target_id"] in WOWSIMS_GEAR_PROFILE_TARGETS:
+            profile = wowsims_gear_profiles.get(expected_gear_profile_id) or {}
+            source = profile.get("source") or {}
+            simulator_preset = gear.get("simulator_preset") or {}
+            if (
+                source.get("repository") != WOWSIMS_REPOSITORY
+                or source.get("commit") != row.get("provider_revision")
+                or source.get("path") != simulator_preset.get("path")
+                or len(profile.get("items") or []) < 16
+            ):
+                raise ValueError(
+                    f"{row['spec_target_id']}: WoWSims gear source identity mismatch"
+                )
     if {row["spec_target_id"] for row in calibration_catalog["scenarios"]} != set(ids):
         raise ValueError("every target requires calibration scenarios")
     parties = pairwise_catalog["parties"]

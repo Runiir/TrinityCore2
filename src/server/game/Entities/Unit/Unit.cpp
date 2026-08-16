@@ -126,7 +126,7 @@ namespace
 bool RaidControlledUnitOffenseRejected(Unit const* attacker, Unit const* target)
 {
     Player* owner = attacker ? attacker->GetCharmerOrOwnerPlayerOrPlayerItself() : nullptr;
-    if (!owner || owner == attacker)
+    if (!owner)
         return false;
 
     uint64 const ownerGuid = owner->GetGUID().GetRawValue();

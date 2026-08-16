@@ -9,16 +9,19 @@ import time
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-from .build_baseline_inventory import _normalized_rows, _schema_identity
+from .build_baseline_inventory import _normalized_rows, _schema_identity, git_identity
 from .common import write_json
 from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf
 from .live_validation_session import (
     build_session,
     canonical_sha256,
     ensure_healthy_matching_session,
+    sha256_file,
     live_validation_lock,
 )
 from .phase8_evidence_identity import (
+    SCHEMA,
+    build_projection,
     profile_generation_identity,
     server_epoch_identity,
     validate_manifest,
@@ -55,6 +58,25 @@ CHARACTER_TABLES = (
     "character_pet",
     "pet_spell",
 )
+
+
+def _clean_source_identity(repository: Path, worldserver: Path) -> dict[str, Any]:
+    """Fail closed unless the executable belongs to one exact clean Git tree."""
+    source = git_identity(repository)
+    commit = str(source.get("head") or "").lower()
+    if (
+        source.get("available") is not True
+        or source.get("identity_complete") is not True
+        or source.get("worktree_state") != "clean"
+        or len(commit) not in (40, 64)
+        or any(character not in "0123456789abcdef" for character in commit)
+    ):
+        raise RuntimeError("evidence identity requires a clean, complete Git source tree")
+    return {
+        "git_commit": commit,
+        "source_tree_clean": True,
+        "worldserver_binary_sha256": sha256_file(worldserver.resolve()),
+    }
 
 
 def _query_rows(connection: Any, query: str, parameters: Sequence[Any] = ()) -> list[dict[str, Any]]:
@@ -210,6 +232,7 @@ def build_manifest(
     soap_password: str,
     identity_config_dir: Path,
 ) -> dict[str, Any]:
+    initial_source_identity = _clean_source_identity(REPO_ROOT, worldserver)
     effective_config = write_validation_config(
         config,
         identity_config_dir,
@@ -298,13 +321,44 @@ def build_manifest(
         profile_generation=int(dump_payload.get("snapshot_generation") or 0),
         profile_content_hash=str(dump_payload.get("snapshot_content_hash") or ""),
     )
+    final_source_identity = _clean_source_identity(REPO_ROOT, worldserver)
+    if final_source_identity != initial_source_identity:
+        raise RuntimeError("source commit or worldserver binary changed while building evidence identity")
+    final_database = _database_identity(effective_config)
+    if any(
+        final_database[name] != database[name]
+        for name in ("database_snapshot_sha256", "database_schema_sha256")
+    ):
+        raise RuntimeError("database snapshot or schema changed while building evidence identity")
+    if (
+        str(metadata.get("git_head") or "").lower() != initial_source_identity["git_commit"]
+        or str(metadata.get("binary_sha256") or "").lower()
+        != initial_source_identity["worldserver_binary_sha256"]
+    ):
+        raise RuntimeError("owned worldserver session does not match the clean build identity")
+    build_identity = {
+        **initial_source_identity,
+        "database_snapshot_sha256": str(database["database_snapshot_sha256"]),
+        "database_schema_sha256": str(database["database_schema_sha256"]),
+        "profile_content_hash": profile_identity["profile_content_hash"],
+    }
+    projection_sha256 = canonical_sha256(build_projection({"build_identity": build_identity}))
     manifest = {
-        "schema": "all_spec_phase8_evidence_identity_manifest_v1",
+        "schema": SCHEMA,
         "component_hashes": {
             **restart_components,
+            "source_identity_sha256": canonical_sha256(
+                {
+                    "git_commit": build_identity["git_commit"],
+                    "source_tree_clean": True,
+                }
+            ),
+            "worldserver_binary_sha256": build_identity["worldserver_binary_sha256"],
             "server_epoch_sha256": canonical_sha256(server_identity),
             "profile_generation_sha256": canonical_sha256(profile_identity),
+            "build_projection_sha256": projection_sha256,
         },
+        "build_identity": build_identity,
         "runtime_identity": {**server_identity, **profile_identity},
         "database_summary": database["summary"],
     }

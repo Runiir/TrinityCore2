@@ -218,6 +218,10 @@ struct ResolvedCombatAction
     std::string DebugName;
     std::string MovementDirective;
     std::string AutoAttackMode;
+    // World-bot scheduling owns the persistent melee toggle through its typed
+    // desired-target reconciler. Attached/playerbot callers leave this false
+    // and retain the executor's immediate native toggle behavior.
+    bool MeleeAutoAttackExternallyReconciled = false;
     float MinRange = 0.0f;
     float MaxRange = 0.0f;
     // Declarative raid target-control authority.  The executor must not start

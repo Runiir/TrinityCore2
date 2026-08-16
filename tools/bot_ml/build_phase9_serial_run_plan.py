@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .common import write_json
-from .live_validation_session import canonical_sha256, sha256_file
+from .live_validation_session import canonical_sha256, git_head, sha256_file
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -28,32 +28,46 @@ def render_command(parts: list[str]) -> str:
     return " ".join(shlex.quote(part) for part in parts)
 
 
+def display_path(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(REPO_ROOT))
+    except ValueError:
+        return str(path.resolve())
+
+
 def build_plan(
     matrix_path: Path,
     output_root: Path,
     evidence_identity_manifest: Path,
     session_environment: str,
     cohort_id: str,
+    dps_acceptance_state: Path,
 ) -> dict[str, Any]:
     matrix = load_object(matrix_path)
     if matrix.get("schema") != "stonecore_phase9_pairwise_matrix_v1":
         raise ValueError("unexpected Phase 9 matrix schema")
-    compositions = {
-        str(row["composition_id"]): row for row in matrix.get("compositions") or []
-    }
+    compositions = list(matrix.get("serial_canaries") or [])
+    repetitions_per_combination = 2
     attempts: list[dict[str, Any]] = []
-    for serial in matrix.get("serial_canaries") or []:
-        serial_index = int(serial["serial_index"])
-        composition_id = str(serial["composition_id"])
-        composition = compositions.get(composition_id)
-        if not composition:
-            raise ValueError(f"serial canary references unknown composition: {composition_id}")
+    seen_targets: set[str] = set()
+    serial_index = 0
+    for combination_index, composition in enumerate(compositions, start=1):
+        composition_id = str(composition["composition_id"])
         ordered_party = [str(value) for value in composition.get("ordered_party") or []]
         if len(ordered_party) != 5:
-            raise ValueError(f"serial canary has malformed ordered party: {composition_id}")
-        attempt_id = f"phase9_serial_{serial_index:02d}_{composition_id}"
-        attempt_dir = output_root / attempt_id
-        command = [
+            raise ValueError(f"selected composition has malformed ordered party: {composition_id}")
+        for clear_ordinal in range(1, repetitions_per_combination + 1):
+            serial_index += 1
+            new_targets = [
+                target for target in ordered_party if target not in seen_targets
+            ]
+            seen_targets.update(ordered_party)
+            attempt_id = (
+                f"phase9_combo_{combination_index:02d}_clear_{clear_ordinal}_"
+                f"{composition_id}"
+            )
+            attempt_dir = output_root / attempt_id
+            command = [
             "pixi",
             "run",
             "python",
@@ -66,13 +80,15 @@ def build_plan(
             "--session-runtime-dir",
             str(output_root / "session_runtime"),
             "--session-profile",
-            "stonecore_5n",
+            "stonecore_5h",
             "--cohort-id",
             cohort_id,
+            "--party-pool-tag",
+            "all_spec_candidate_pool",
             "--session-attempt-index",
             str(serial_index),
             "--validation-scenario-id",
-            "stonecore_5n",
+            "stonecore_5h",
             "--validation-route-manifest",
             "--duration-policy",
             "completion-watchdog",
@@ -85,23 +101,26 @@ def build_plan(
             str(evidence_identity_manifest),
             "--output-dir",
             str(attempt_dir),
-        ]
-        for target in ordered_party:
-            command.extend(("--party-spec-target", target))
-        attempts.append(
-            {
-                "attempt_id": attempt_id,
-                "serial_index": serial_index,
-                "composition_id": composition_id,
-                "composition_sha256": composition["composition_sha256"],
-                "ordered_party": ordered_party,
-                "party_sha256": canonical_sha256(ordered_party),
-                "new_targets": list(serial.get("new_targets") or []),
-                "output_dir": str(attempt_dir.relative_to(REPO_ROOT)),
-                "command": command,
-                "command_text": render_command(command),
-            }
-        )
+            ]
+            for target in ordered_party:
+                command.extend(("--party-spec-target", target))
+            attempts.append(
+                {
+                    "attempt_id": attempt_id,
+                    "serial_index": serial_index,
+                    "combination_index": combination_index,
+                    "clear_ordinal": clear_ordinal,
+                    "composition_id": composition_id,
+                    "cohort_id": cohort_id,
+                    "composition_sha256": composition["composition_sha256"],
+                    "ordered_party": ordered_party,
+                    "party_sha256": canonical_sha256(ordered_party),
+                    "new_targets": new_targets,
+                    "output_dir": str(attempt_dir.relative_to(REPO_ROOT)),
+                    "command": command,
+                    "command_text": render_command(command),
+                }
+            )
     target_union = sorted(
         {target for attempt in attempts for target in attempt["ordered_party"]}
     )
@@ -111,14 +130,21 @@ def build_plan(
         "matrix_path": str(matrix_path.relative_to(REPO_ROOT)),
         "matrix_file_sha256": sha256_file(matrix_path),
         "matrix_identity_sha256": matrix.get("matrix_sha256"),
+        "git_head": git_head(REPO_ROOT),
         "evidence_identity_manifest_path": str(evidence_identity_manifest.relative_to(REPO_ROOT)),
+        "dps_acceptance_state_path": display_path(dps_acceptance_state),
+        "dps_acceptance_state_sha256": sha256_file(dps_acceptance_state),
+        "promotion_requires_dps_acceptance": True,
         "session_environment": session_environment,
         "session_runtime_dir": str((output_root / "session_runtime").relative_to(REPO_ROOT)),
         "cohort_id": cohort_id,
-        "runtime_profile": "stonecore_5n",
+        "runtime_profile": "stonecore_5h",
         "candidate_pool_tag": "all_spec_candidate_pool",
         "transport": "session",
         "max_active_cohorts": 1,
+        "matrix_execution_scope": "pinned_seven_serial_canary_combinations_twice",
+        "combination_count": len(compositions),
+        "required_successes_per_combination": repetitions_per_combination,
         "route_mode": "strict_uninterrupted_current_manifest_full_clear",
         "route_node_count": 14,
         "observe_sec": 300,
@@ -126,7 +152,7 @@ def build_plan(
         "publish_each_closed_batch": True,
         "remote_verify_before_evict": True,
         "retain_published_batch": False,
-        "restore_route_bot_start_each_attempt": True,
+        "server_provisions_route_start_each_attempt": True,
         "attempt_count": len(attempts),
         "canonical_target_count": int(matrix.get("canonical_target_count") or matrix.get("target_count") or 0),
         "qualification_excluded_targets": list(matrix.get("qualification_excluded_targets") or []),
@@ -135,11 +161,21 @@ def build_plan(
         "attempts": attempts,
     }
     if (
-        len(attempts) != int(matrix.get("serial_canary_count") or 0)
+        len(compositions) != 7
+        or int(matrix.get("serial_canary_count") or 0) != 7
+        or len(attempts) != 14
+        or any(
+            sum(
+                attempt["composition_id"] == composition["composition_id"]
+                for attempt in attempts
+            )
+            != repetitions_per_combination
+            for composition in compositions
+        )
         or target_union != expected_target_union
         or len(target_union) != int(matrix.get("target_count") or 0)
     ):
-        raise ValueError("serial run plan does not preserve the matrix canary set and live-qualification target union")
+        raise ValueError("serial run plan must preserve the seven pinned combinations twice and their live-qualification target union")
     plan["plan_sha256"] = canonical_sha256(plan)
     return plan
 
@@ -149,12 +185,14 @@ def main() -> int:
     parser.add_argument("--matrix", type=Path, default=DEFAULT_MATRIX)
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--evidence-identity-manifest", type=Path, required=True)
+    parser.add_argument("--dps-acceptance-state", type=Path, required=True)
     parser.add_argument("--session-environment", default="phase9-serial-stonecore")
     parser.add_argument("--cohort-id", default="phase9-serial-canary")
     args = parser.parse_args()
     matrix_path = args.matrix.resolve()
     output_root = args.output_root.resolve()
     evidence_identity_manifest = args.evidence_identity_manifest.resolve()
+    dps_acceptance_state = args.dps_acceptance_state.resolve()
     output_root.mkdir(parents=True, exist_ok=True)
     plan = build_plan(
         matrix_path,
@@ -162,6 +200,7 @@ def main() -> int:
         evidence_identity_manifest,
         args.session_environment,
         args.cohort_id,
+        dps_acceptance_state,
     )
     write_json(output_root / "run_plan.json", plan)
     (output_root / "commands.txt").write_text(

@@ -68,6 +68,7 @@ def live_validate_command(
     output_dir: Path | None = None,
 ) -> list[str]:
     scenario_id = str(scenario.get("scenario_id") or "")
+    bot_pool_tag = str(scenario.get("provisioning_scenario_id") or scenario_id)
     output_dir = output_dir or output_root / scenario_output_name(scenario_id)
     context_args: list[str] = [
         "--validation-scenario-id",
@@ -104,7 +105,7 @@ def live_validate_command(
         "--apply-validation-provisioning",
         "--reset-bot-pool",
         "--bot-pool-tag",
-        scenario_id,
+        bot_pool_tag,
         "--keep-bot-pool-position",
         "--heartbeat-sec",
         str(heartbeat_sec),

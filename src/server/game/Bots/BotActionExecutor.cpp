@@ -243,7 +243,19 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     if (action.Type == "auto_attack")
     {
         if (action.AutoAttackMode == "melee")
+        {
+            if (action.MeleeAutoAttackExternallyReconciled)
+            {
+                if (!target || bot->GetVictim() != target)
+                    return BotActionResult::NoAction;
+                if (!bot->IsWithinLOSInMap(target))
+                    return BotActionResult::NoLineOfSight;
+                if (!bot->IsWithinMeleeRange(target))
+                    return BotActionResult::OutOfRange;
+                return BotActionResult::Ok;
+            }
             return SubmitMeleeAutoAttack(bot, target);
+        }
         return BotActionResult::NoAction;
     }
     if (!action.SpellId)
@@ -263,7 +275,8 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     // cooldown does not leave a tank, melee DPS, hunter, or pet class idle.
     if (target != bot && bot->IsValidAttackTarget(target))
     {
-        if (action.AutoAttackMode == "melee")
+        if (action.AutoAttackMode == "melee"
+            && !action.MeleeAutoAttackExternallyReconciled)
             SubmitMeleeAutoAttack(bot, target);
         else if (action.AutoAttackMode == "ranged" && bot->getClass() == CLASS_HUNTER
             && !bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))

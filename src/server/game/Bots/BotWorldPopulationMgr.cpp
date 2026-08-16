@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotAdmissionIdentityGenerated.h"
 #include "Bots/BotActionExecutor.h"
 #include "Bots/BotAdaptiveDrudgeStrategy.h"
 #include "Bots/BotAdaptiveAtramedesStrategy.h"
@@ -64,10 +65,12 @@
 #include "VehicleDefines.h"
 #include "Creature.h"
 #include "CreatureGroups.h"
+#include "Cryptography/CryptoHash.h"
 #include "WorldSession.h"
 #include "WorldPacket.h"
 #include "Server/Packets/QuestPackets.h"
 #include "Server/Packets/NPCPackets.h"
+#include "Util.h"
 
 #include <array>
 #include <algorithm>
@@ -76,6 +79,7 @@
 #include <cctype>
 #include <cstdlib>
 #include <fstream>
+#include <functional>
 #include <iomanip>
 #include <limits>
 #include <regex>
@@ -92,6 +96,17 @@
 
 namespace
 {
+struct ReconcileOnScopeExit
+{
+    std::function<void()> Callback;
+
+    ~ReconcileOnScopeExit()
+    {
+        if (Callback)
+            Callback();
+    }
+};
+
 char const* RuntimeModeName(BotWorldRuntimeMode mode)
 {
     switch (mode)
@@ -102,6 +117,167 @@ char const* RuntimeModeName(BotWorldRuntimeMode mode)
         case BotWorldRuntimeMode::ManualExperiment: return "manual_experiment";
     }
     return "unknown";
+}
+
+struct HunterPetIdentitySnapshot
+{
+    uint32 PetId = 0;
+    uint32 PetEntry = 0;
+    std::vector<std::pair<uint32, uint8>> Spellbook;
+    std::string SpellbookSha256;
+};
+
+BotAdmissionIdentityGenerated::Identity const* FindExpectedBotAdmissionIdentity(
+    std::string const& classSpec)
+{
+    for (BotAdmissionIdentityGenerated::Identity const& identity :
+        BotAdmissionIdentityGenerated::Identities)
+        if (classSpec == identity.ClassSpec)
+            return &identity;
+    return nullptr;
+}
+
+bool ResolveExpectedHunterPetIdentity(std::string const& classSpec,
+    uint32& petId, uint32& petEntry,
+    std::vector<std::pair<uint32, uint8>>& spellbook)
+{
+    // Admission only observes this generated compile-time authority; it must
+    // never repair, summon, or rewrite a pet after the cohort becomes active.
+    BotAdmissionIdentityGenerated::Identity const* identity =
+        FindExpectedBotAdmissionIdentity(classSpec);
+    if (!identity || !identity->PetId || !identity->PetEntry
+        || !identity->PetSpellCount
+        || identity->PetSpellOffset + identity->PetSpellCount
+            > BotAdmissionIdentityGenerated::PetSpells.size())
+        return false;
+    petId = identity->PetId;
+    petEntry = identity->PetEntry;
+    spellbook.clear();
+    for (uint32 index = 0; index < identity->PetSpellCount; ++index)
+    {
+        BotAdmissionIdentityGenerated::PetSpellIdentity const& spell =
+            BotAdmissionIdentityGenerated::PetSpells[
+                identity->PetSpellOffset + index];
+        spellbook.emplace_back(spell.SpellId, spell.Active);
+    }
+    return true;
+}
+
+std::string HunterPetSpellbookSha256(std::vector<std::pair<uint32, uint8>> const& spellbook)
+{
+    std::ostringstream canonical;
+    for (size_t index = 0; index < spellbook.size(); ++index)
+    {
+        if (index)
+            canonical << ';';
+        canonical << spellbook[index].first << ':' << uint32(spellbook[index].second);
+    }
+    std::string digest = ByteArrayToHexStr(
+        Trinity::Crypto::SHA256::GetDigestOf(canonical.str()));
+    std::transform(digest.begin(), digest.end(), digest.begin(),
+        [](unsigned char c) { return char(std::tolower(c)); });
+    return digest;
+}
+
+bool ObserveActiveOrdinaryHunterPet(Player const* bot, HunterPetIdentitySnapshot& snapshot)
+{
+    if (!bot || bot->getClass() != CLASS_HUNTER)
+        return false;
+
+    Pet* pet = bot->GetPet();
+    PlayerPetData const* stored = const_cast<Player*>(bot)->GetPlayerPetDataCurrent();
+    if (!pet || !stored || !stored->Active || stored->Type != HUNTER_PET
+        || pet->getPetType() != HUNTER_PET || !pet->IsInWorld() || !pet->IsAlive()
+        || !pet->IsPermanentPetFor(const_cast<Player*>(bot)) || pet->GetOwner() != bot
+        || !pet->GetCharmInfo() || !stored->PetId || !stored->CreatureId
+        || pet->GetCharmInfo()->GetPetNumber() != stored->PetId
+        || pet->GetEntry() != stored->CreatureId)
+        return false;
+
+    snapshot.PetId = stored->PetId;
+    snapshot.PetEntry = stored->CreatureId;
+    // Family passives are deterministically derived from world DBC data and
+    // are intentionally never persisted by Pet::_SaveSpells.  The pinned
+    // provisioning identity is the mutable, persistable runtime spellbook;
+    // including derived family passives would make an exact catalog check
+    // depend on unrelated world-data implementation details.
+    for (auto const& [spellId, petSpell] : pet->m_spells)
+        if (petSpell.state != PETSPELL_REMOVED
+            && petSpell.type != PETSPELL_FAMILY)
+            snapshot.Spellbook.emplace_back(spellId, uint8(petSpell.active));
+    std::sort(snapshot.Spellbook.begin(), snapshot.Spellbook.end());
+    snapshot.SpellbookSha256 = HunterPetSpellbookSha256(snapshot.Spellbook);
+    return true;
+}
+
+bool LoadedBotMatchesPinnedHunterPet(Player const* bot, std::string const& classSpec)
+{
+    if (!bot || bot->getClass() != CLASS_HUNTER)
+        return true;
+
+    uint32 expectedPetId = 0;
+    uint32 expectedPetEntry = 0;
+    std::vector<std::pair<uint32, uint8>> expectedSpellbook;
+    HunterPetIdentitySnapshot observed;
+    return ResolveExpectedHunterPetIdentity(classSpec, expectedPetId,
+            expectedPetEntry, expectedSpellbook)
+        && ObserveActiveOrdinaryHunterPet(bot, observed)
+        && observed.PetId == expectedPetId
+        && observed.PetEntry == expectedPetEntry
+        && observed.Spellbook == expectedSpellbook
+        && observed.SpellbookSha256 == HunterPetSpellbookSha256(expectedSpellbook);
+}
+
+bool ResolveExpectedBotSpecIdentity(std::string const& classSpec, uint8& classId, uint32& talentTreeId)
+{
+    BotAdmissionIdentityGenerated::Identity const* identity =
+        FindExpectedBotAdmissionIdentity(classSpec);
+    if (!identity)
+        return false;
+    classId = identity->ClassId;
+    talentTreeId = identity->PrimaryTalentTreeId;
+    return true;
+}
+
+bool ResolveExpectedBotGearIdentity(std::string const& classSpec,
+    std::string& gearProfileId, std::string& gearManifestSha256)
+{
+    // Generated from the canonical target/provisioning gear catalog. Keeping
+    // the digest at the native admission boundary means a stale or edited DB
+    // load never becomes active merely because its average item level looks
+    // plausible.  Python independently reconstructs the same manifest from
+    // the pinned catalog and rejects any catalog/native drift.
+    BotAdmissionIdentityGenerated::Identity const* identity =
+        FindExpectedBotAdmissionIdentity(classSpec);
+    if (!identity)
+        return false;
+    gearProfileId = identity->GearProfileId;
+    gearManifestSha256 = identity->GearManifestSha256;
+    return !gearProfileId.empty() && gearManifestSha256.size() == 64;
+}
+
+bool LoadedBotMatchesDeclaredSpec(Player const* bot, std::string const& classSpec)
+{
+    BotAdmissionIdentityGenerated::Identity const* identity =
+        FindExpectedBotAdmissionIdentity(classSpec);
+    if (!bot || !identity || !identity->TalentCount
+        || identity->TalentOffset + identity->TalentCount
+            > BotAdmissionIdentityGenerated::TalentSpellIds.size())
+        return false;
+    if (bot->getClass() != identity->ClassId
+        || bot->GetPrimaryTalentTree(bot->GetActiveSpec())
+            != identity->PrimaryTalentTreeId)
+        return false;
+
+    std::vector<uint32> observedTalents;
+    for (auto const& [spellId, talent] : bot->GetTalentMap(bot->GetActiveSpec()))
+        if (talent.State != PLAYERSPELL_REMOVED)
+            observedTalents.push_back(spellId);
+    std::sort(observedTalents.begin(), observedTalents.end());
+    auto const expectedBegin = BotAdmissionIdentityGenerated::TalentSpellIds.begin()
+        + identity->TalentOffset;
+    return observedTalents.size() == identity->TalentCount
+        && std::equal(observedTalents.begin(), observedTalents.end(), expectedBegin);
 }
 
 // Blackwing Descent's native entrance is the only runback contract used by
@@ -1919,6 +2095,9 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
     Cohort().ValidationAttemptFailureReason.clear();
     Cohort().ValidationAttemptFailureAttemptId = 0;
     Cohort().ValidationAttemptFailureRouteGeneration = 0;
+    Cohort().ValidationAdmission = ValidationAdmissionPhase::Provisioning;
+    Cohort().ValidationAdmissionStarted = false;
+    Cohort().ValidationAdmissionBatchSealed = false;
     Cohort().ValidationRaidAdmissionComplete = false;
     Cohort().ValidationRaidAdmissionFailed = false;
     Cohort().Metrics = BotWorldStatus();
@@ -2023,6 +2202,9 @@ bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overri
     Cohort().ValidationAttemptFailureReason.clear();
     Cohort().ValidationAttemptFailureAttemptId = 0;
     Cohort().ValidationAttemptFailureRouteGeneration = 0;
+    Cohort().ValidationAdmission = ValidationAdmissionPhase::Provisioning;
+    Cohort().ValidationAdmissionStarted = false;
+    Cohort().ValidationAdmissionBatchSealed = false;
     Cohort().ValidationRaidAdmissionComplete = false;
     Cohort().ValidationRaidAdmissionFailed = false;
     Cohort().Metrics = BotWorldStatus();
@@ -2445,6 +2627,41 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                  << (bot ? bot->GetAverageItemLevel() : 0.0f)
                  << ",\"grouped\":" << (bot && bot->GetGroup() ? "true" : "false")
                  << ",\"group_size\":" << (bot && bot->GetGroup() ? bot->GetGroup()->GetMembersCount() : 0)
+                 << ",\"gear_profile_observation\":{\"items\":[";
+            bool firstGearItem = true;
+            if (bot)
+                for (uint8 equipmentSlot = EQUIPMENT_SLOT_START;
+                    equipmentSlot < EQUIPMENT_SLOT_END; ++equipmentSlot)
+                    if (Item const* item = bot->GetItemByPos(
+                        INVENTORY_SLOT_BAG_0, equipmentSlot))
+                    {
+                        if (!firstGearItem)
+                            json << ',';
+                        firstGearItem = false;
+                        json << "{\"slot\":" << uint32(equipmentSlot)
+                             << ",\"item_id\":" << item->GetEntry()
+                             << ",\"enchant_id\":"
+                             << item->GetEnchantmentId(PERM_ENCHANTMENT_SLOT)
+                             << ",\"reforge_id\":"
+                             << item->GetEnchantmentId(REFORGE_ENCHANTMENT_SLOT)
+                             << ",\"gem_item_ids\":[";
+                        bool firstGem = true;
+                        for (uint8 gemSlot = 0; gemSlot < MAX_GEM_SOCKETS; ++gemSlot)
+                        {
+                            uint32 const gemEnchantId = item->GetEnchantmentId(
+                                EnchantmentSlot(SOCK_ENCHANTMENT_SLOT + gemSlot));
+                            uint32 gemItemId = 0;
+                            if (SpellItemEnchantmentEntry const* enchant =
+                                sSpellItemEnchantmentStore.LookupEntry(gemEnchantId))
+                                gemItemId = enchant->Src_itemID;
+                            if (!firstGem)
+                                json << ',';
+                            firstGem = false;
+                            json << gemItemId;
+                        }
+                        json << "]}";
+                    }
+            json << "]}"
                  << ",\"persistent_setup\":{\"ready\":" << (persistentSetupReady ? "true" : "false")
                  << ",\"arcane_brilliance\":" << (bot && (bot->HasAura(1459) || bot->HasAura(79058)) ? "true" : "false")
                  << ",\"molten_armor\":" << (bot && bot->HasAura(30482) ? "true" : "false")
@@ -2689,6 +2906,8 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
     }
     json << "{\"ok\":true,\"action\":\"botauto_calibrate_status\",\"cohort_id\":\"" << JsonEscape(Cohort().Id)
          << "\",\"active\":" << (Cohort().CalibrationActive ? "true" : "false")
+         << ",\"runtime_mode\":\"" << RuntimeModeName(Cohort().RuntimeMode) << "\""
+         << ",\"non_certifying_assistance\":" << (Cohort().NonCertifyingAssistance ? "true" : "false")
          << ",\"window_complete\":" << (Cohort().CalibrationWindowComplete ? "true" : "false")
          << ",\"mode\":\"" << JsonEscape(Cohort().CalibrationMode) << "\""
          << ",\"target_spec\":\"" << JsonEscape(Cohort().CalibrationTargetSpec) << "\""
@@ -2767,7 +2986,7 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
 
 bool BotWorldPopulationMgr::IsValidationProfileName(std::string const& name) const
 {
-    if (name == "stonecore_5n" || name == "blackwing_descent_10n")
+    if (name == "stonecore_5n" || name == "stonecore_5h" || name == "blackwing_descent_10n")
         return true;
 
     // Validation profiles are data-owned. Boss-shard names must not be
@@ -2984,6 +3203,12 @@ bool BotWorldPopulationMgr::ResetValidationBotPool(char const* reason)
             return false;
         }
     }
+    else if (Cohort().Config.ValidationRouteEnable && expectedPoolSize == MAXGROUPSIZE
+        && (tankCount != 1 || healerCount != 1 || dpsCount != 3))
+    {
+        Cohort().LastPopulationFailureReason = "validation_pool_exact_party_composition_mismatch";
+        return false;
+    }
 
     if (!Cohort().Config.PoolClassSpecFilter.empty())
     {
@@ -3038,7 +3263,6 @@ bool BotWorldPopulationMgr::ResetValidationBotPool(char const* reason)
     CharacterDatabase.DirectExecute(("DELETE g FROM `groups` g WHERE g.`leaderGuid` IN (" + guidSelect + ")").c_str());
     CharacterDatabase.DirectExecute(("DELETE pc FROM `pet_spell_cooldown` pc JOIN `character_pet` cp ON cp.`id` = pc.`guid` WHERE cp.`owner` IN (" + guidSelect + ")").c_str());
     CharacterDatabase.DirectExecute(("DELETE pa FROM `pet_aura` pa JOIN `character_pet` cp ON cp.`id` = pa.`guid` WHERE cp.`owner` IN (" + guidSelect + ")").c_str());
-    CharacterDatabase.DirectExecute(("DELETE ps FROM `pet_spell` ps JOIN `character_pet` cp ON cp.`id` = ps.`guid` WHERE cp.`owner` IN (" + guidSelect + ")").c_str());
     CharacterDatabase.DirectExecute(("DELETE FROM `mail_items` WHERE `receiver` IN (" + guidSelect + ")").c_str());
     CharacterDatabase.DirectExecute(("DELETE FROM `mail` WHERE `receiver` IN (" + guidSelect + ")").c_str());
 
@@ -3210,6 +3434,13 @@ bool BotWorldPopulationMgr::LoadRuntimeProfiles(std::string* failureReason)
         if (profile.HasAllowDungeons) profile.Config.AllowDungeons = boolValue;
         if (!readBool(profileJson, "allow_raids", boolValue, profile.HasAllowRaids)) return false;
         if (profile.HasAllowRaids) profile.Config.AllowRaids = boolValue;
+        if (!readUInt(profileJson, "dungeon_difficulty", uintValue, profile.HasDungeonDifficulty)) return false;
+        if (profile.HasDungeonDifficulty)
+        {
+            if (uintValue >= MAX_DUNGEON_DIFFICULTY)
+                return fail("profile_bad_dungeon_difficulty");
+            profile.Config.DungeonDifficulty = uint8(uintValue);
+        }
         if (!readUInt(profileJson, "raid_size", uintValue, profile.HasRaidSize)) return false;
         if (profile.HasRaidSize)
         {
@@ -3610,12 +3841,24 @@ void BotWorldPopulationMgr::Update(uint32 diff)
     EnsurePopulation();
     uint64 nowMs = NowMs();
     PublishEncounterBlackboard(nowMs);
+    ReconcileNativeBattleResDecisions(nowMs);
 
     for (auto itr = Party().Bots.begin(); itr != Party().Bots.end();)
     {
         Player* loadedBot = GetLoadedBot(*itr);
         if (!loadedBot)
         {
+            if (Cohort().Config.ValidationRouteEnable
+                && (Cohort().Raid.ServerProvisioningComplete
+                    || Cohort().Raid.BotActionsEnabled))
+            {
+                MarkValidationCohortViolation(*itr, nullptr,
+                    "validation_active_member_unloaded");
+                itr->LastDecisionResult = "validation_cohort_action_gate_closed";
+                itr->LastDecisionReason = "validation_active_member_unloaded";
+                ++itr;
+                continue;
+            }
             if (itr->SpawnedMs && nowMs - itr->SpawnedMs < 10000)
             {
                 ++itr;
@@ -3642,6 +3885,14 @@ void BotWorldPopulationMgr::Update(uint32 diff)
             Cohort().LastPopulationFailureReason = "loaded_bot_not_in_world";
             if (Cohort().Config.ValidationRouteEnable)
             {
+                if (TryReattachValidationBot(*itr, loadedBot, "population_update_loaded_not_in_world"))
+                {
+                    Cohort().LastPopulationFailureReason.clear();
+                    UpdateBot(*itr, diff);
+                    ++itr;
+                    continue;
+                }
+
                 bool validationBotStillDeciding = Cohort().Config.ValidationRouteEnable && itr->SpawnedMs && nowMs - itr->SpawnedMs >= 30000
                     && itr->LastDecisionTickMs && nowMs - itr->LastDecisionTickMs < 15000;
                 if (validationBotStillDeciding)
@@ -3655,14 +3906,6 @@ void BotWorldPopulationMgr::Update(uint32 diff)
                     }
                     else
                         ++itr->SuppressedNotInWorldInfoLogs;
-                    ++itr;
-                    continue;
-                }
-
-                if (TryReattachValidationBot(*itr, loadedBot, "population_update_loaded_not_in_world"))
-                {
-                    Cohort().LastPopulationFailureReason.clear();
-                    UpdateBot(*itr, diff);
                     ++itr;
                     continue;
                 }
@@ -3755,6 +3998,530 @@ void BotWorldPopulationMgr::Update(uint32 diff)
     MaybeAdvanceValidationRouteManifest();
 }
 
+bool BotWorldPopulationMgr::CurrentCombatResOwnerUsable(WorldBotState const& targetState,
+    Player const* target, uint64 nowMs, std::string& declineReason) const
+{
+    declineReason.clear();
+    bool const approachReservation = targetState.NativeBattleResDecision == "reserved_approach";
+    bool const submittedCastPending = targetState.NativeBattleResDecision == "reserved_cast_submitted";
+    if (!approachReservation && !submittedCastPending)
+    {
+        declineReason = "declined_reservation_missing";
+        return false;
+    }
+    if (!targetState.NativeBattleResDecisionAtMs
+        || targetState.NativeBattleResDecisionAtMs > nowMs
+        || targetState.NativeBattleResDecisionUntilMs <= nowMs)
+    {
+        declineReason = submittedCastPending
+            ? "declined_submitted_cast_expired" : "declined_approach_reservation_expired";
+        return false;
+    }
+    if (!IsNativeCombatResTarget(targetState, target))
+    {
+        declineReason = "declined_target_ineligible";
+        return false;
+    }
+    if (targetState.NativeBattleResOwnerGuid.IsEmpty() || !targetState.NativeBattleResSpellId)
+    {
+        declineReason = "declined_owner_or_spell_missing";
+        return false;
+    }
+
+    WorldBotState const* ownerState = nullptr;
+    Player* owner = nullptr;
+    for (WorldBotState const& candidate : Party().Bots)
+        if (candidate.Guid == targetState.NativeBattleResOwnerGuid)
+        {
+            ownerState = &candidate;
+            owner = GetLoadedBot(candidate);
+            break;
+        }
+    if (!ownerState || !owner)
+    {
+        declineReason = "declined_owner_unloaded";
+        return false;
+    }
+    if (!owner->IsInWorld())
+    {
+        declineReason = "declined_owner_not_in_world";
+        return false;
+    }
+    if (!owner->IsAlive())
+    {
+        declineReason = "declined_owner_dead";
+        return false;
+    }
+    if (!ownerState->ValidationCohortLocked)
+    {
+        declineReason = "declined_owner_identity_unlocked";
+        return false;
+    }
+    if (owner->GetMap() != target->GetMap() || owner->GetMapId() != target->GetMapId())
+    {
+        declineReason = "declined_owner_wrong_map";
+        return false;
+    }
+    if (owner->GetInstanceId() != target->GetInstanceId())
+    {
+        declineReason = "declined_owner_wrong_instance";
+        return false;
+    }
+    Group const* targetGroup = target->GetGroup();
+    Group const* ownerGroup = owner->GetGroup();
+    if (!targetGroup || !ownerGroup || ownerGroup != targetGroup
+        || !owner->IsInSameGroupWith(target)
+        || targetGroup->GetGUID() != targetState.ValidationCohortGroupGuid
+        || targetGroup->GetLeaderGUID() != targetState.ValidationCohortLeaderGuid
+        || ownerGroup->GetGUID() != ownerState->ValidationCohortGroupGuid
+        || ownerGroup->GetLeaderGUID() != ownerState->ValidationCohortLeaderGuid)
+    {
+        declineReason = "declined_owner_wrong_group";
+        return false;
+    }
+
+    uint32 const spellId = targetState.NativeBattleResSpellId;
+    auto const playerSpell = owner->GetSpellMap().find(spellId);
+    if (playerSpell == owner->GetSpellMap().end()
+        || playerSpell->second.state == PLAYERSPELL_REMOVED
+        || playerSpell->second.disabled || !playerSpell->second.active
+        || !owner->HasSpell(spellId))
+    {
+        declineReason = "declined_combat_res_not_learned";
+        return false;
+    }
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+    if (!spellInfo || !spellInfo->HasAttribute(SPELL_ATTR8_ENFORCE_IN_COMBAT_RESSURECTION_LIMIT)
+        || (!spellInfo->HasEffect(SPELL_EFFECT_RESURRECT)
+            && !spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_NEW)
+            && !spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_WITH_AURA)))
+    {
+        declineReason = "declined_spell_not_combat_res";
+        return false;
+    }
+
+    float const resurrectionRange = std::max(5.0f,
+        owner->GetSpellMaxRangeForTarget(target, spellInfo));
+    bool const inCastEnvelope = owner->IsWithinLOSInMap(target)
+        && owner->IsWithinDistInMap(target, resurrectionRange);
+    if (!inCastEnvelope)
+    {
+        PathGenerator path(owner);
+        bool const pathOk = path.CalculatePath(target->GetPositionX(),
+            target->GetPositionY(), target->GetPositionZ(), false);
+        PathType const pathType = path.GetPathType();
+        bool const validApproachPath = pathOk
+            && !(pathType & PATHFIND_NOPATH)
+            && !(pathType & PATHFIND_NOT_USING_PATH)
+            && !(pathType & PATHFIND_INCOMPLETE)
+            && !(pathType & PATHFIND_SHORTCUT)
+            && !(pathType & PATHFIND_FARFROMPOLY);
+        if (!validApproachPath)
+        {
+            declineReason = "declined_no_los_or_valid_path";
+            return false;
+        }
+    }
+
+    if (submittedCastPending)
+    {
+        bool const submittedIdentityCurrent = targetState.NativeResurrectionPendingUntilMs > nowMs
+            && targetState.NativeResurrectionCasterGuid == owner->GetGUID()
+            && targetState.NativeResurrectionSpellId == spellId;
+        bool const exactCastInProgress = owner->FindCurrentSpellBySpellId(spellId) != nullptr;
+        bool const exactNativeRequestPending = target->IsResurrectRequestedBy(owner->GetGUID());
+        if (!submittedIdentityCurrent || (!exactCastInProgress && !exactNativeRequestPending))
+        {
+            declineReason = "declined_submitted_cast_identity_drift";
+            return false;
+        }
+        if (owner->HasUnitState(UNIT_STATE_CASTING) && !exactCastInProgress)
+        {
+            declineReason = "declined_owner_casting_other_spell";
+            return false;
+        }
+
+        // A cast already accepted by the native spell system owns its normal
+        // cast/GCD/cooldown lifecycle.  Requiring those pre-submit resources
+        // again would invalidate every legitimate in-flight resurrection.
+        return true;
+    }
+
+    if (owner->HasUnitState(UNIT_STATE_CASTING))
+    {
+        declineReason = "declined_owner_casting";
+        return false;
+    }
+    if (!owner->GetSpellHistory()->IsReady(spellInfo))
+    {
+        declineReason = "declined_combat_res_cooldown";
+        return false;
+    }
+    if (owner->GetSpellHistory()->HasGlobalCooldown(spellInfo))
+    {
+        declineReason = "declined_owner_global_cooldown";
+        return false;
+    }
+    if (!HasPowerForSpell(owner, spellInfo))
+    {
+        declineReason = "declined_insufficient_power";
+        return false;
+    }
+    if (target->IsResurrectRequested()
+        || targetState.NativeResurrectionPendingUntilMs > nowMs)
+    {
+        declineReason = "declined_approach_reservation_state_drift";
+        return false;
+    }
+    return true;
+}
+
+void BotWorldPopulationMgr::PublishNativeBattleResDecision(WorldBotState& targetState,
+    Player* target, std::string const& decision, ObjectGuid ownerGuid, uint32 spellId,
+    uint64 nowMs, uint64 decisionUntilMs)
+{
+    bool const declined = decision.rfind("declined_", 0) == 0;
+    ObjectGuid const observedOwnerGuid = ownerGuid;
+    uint32 const observedSpellId = spellId;
+    if (declined)
+    {
+        ownerGuid.Clear();
+        spellId = 0;
+        targetState.NativeResurrectionPendingUntilMs = 0;
+        targetState.NativeResurrectionCasterGuid.Clear();
+        targetState.NativeResurrectionSpellId = 0;
+    }
+
+    bool const changed = targetState.NativeBattleResDecision != decision
+        || targetState.NativeBattleResOwnerGuid != ownerGuid
+        || targetState.NativeBattleResSpellId != spellId;
+    if (!changed)
+        return;
+
+    targetState.NativeBattleResApproachIntentDecisionAtMs = 0;
+    targetState.NativeBattleResApproachIntentAcceptedUntilMs = 0;
+    targetState.NativeBattleResDecision = decision;
+    targetState.NativeBattleResOwnerGuid = ownerGuid;
+    targetState.NativeBattleResSpellId = spellId;
+    targetState.NativeBattleResDecisionAtMs = nowMs;
+    targetState.NativeBattleResDecisionUntilMs = decisionUntilMs;
+    if (!target)
+        return;
+
+    std::string raw = BuildRawJson(target, nullptr);
+    std::string semantic = BuildSemanticJson(target, nullptr, "battle_res_decision");
+    RecordEvent(targetState, target, "battle_res_decision", nullptr, decision.c_str(),
+        raw.c_str(), semantic.c_str(), 0.0f, observedOwnerGuid.GetCounter(), observedSpellId);
+}
+
+void BotWorldPopulationMgr::ReconcileNativeBattleResDecisions(uint64 nowMs)
+{
+    if (!Cohort().Config.ValidationRouteEnable || Party().Bots.empty())
+        return;
+
+    struct Member
+    {
+        WorldBotState* State = nullptr;
+        Player* Bot = nullptr;
+    };
+    std::vector<Member> living;
+    std::vector<Member> dead;
+    bool groupCombatActive = false;
+    for (WorldBotState& state : Party().Bots)
+    {
+        Player* bot = GetLoadedBot(state);
+        if (!bot || !bot->IsInWorld() || !state.ValidationCohortLocked
+            || !bot->GetGroup() || !IsValidationCohortMemberInOriginalInstance(state, bot))
+            continue;
+        if (bot->IsAlive())
+        {
+            living.push_back({ &state, bot });
+            groupCombatActive = groupCombatActive || bot->IsInCombat()
+                || bot->GetVictim() || !bot->getAttackers().empty();
+        }
+        else
+            dead.push_back({ &state, bot });
+    }
+    if (dead.empty())
+        return;
+
+    if (!groupCombatActive)
+        if (Player* observer = living.empty() ? nullptr : living.front().Bot)
+            if (InstanceScript* instance = observer->GetInstanceScript())
+                groupCombatActive = instance->IsEncounterInProgress();
+
+    static constexpr uint64 CombatResReservationLifetimeMs = 8000;
+    static constexpr uint64 CombatResDeclineObservationMs = 5000;
+    auto applyDecision = [&](Member const& member, char const* decision,
+        ObjectGuid ownerGuid = ObjectGuid::Empty, uint32 spellId = 0,
+        uint64 decisionUntilMs = 0)
+    {
+        if (!decisionUntilMs)
+            decisionUntilMs = nowMs + CombatResDeclineObservationMs;
+        PublishNativeBattleResDecision(*member.State, member.Bot, decision,
+            ownerGuid, spellId, nowMs, decisionUntilMs);
+    };
+
+    // A reservation is a continuously reconciled promise, not a timer-only
+    // latch.  Any owner, target, spell, path, power, cooldown, or cast-state
+    // drift becomes an explicit decline before the dead member is updated.
+    for (Member const& member : dead)
+        if (member.State->NativeBattleResDecision == "reserved_approach"
+            || member.State->NativeBattleResDecision == "reserved_cast_submitted")
+        {
+            std::string declineReason;
+            if (!CurrentCombatResOwnerUsable(*member.State, member.Bot, nowMs, declineReason))
+                applyDecision(member, declineReason.c_str(),
+                    member.State->NativeBattleResOwnerGuid,
+                    member.State->NativeBattleResSpellId);
+        }
+
+    if (!groupCombatActive)
+    {
+        for (Member const& member : dead)
+            if (member.State->NativeBattleResDecision != "reserved_cast_submitted")
+                applyDecision(member, "declined_out_of_combat");
+        return;
+    }
+
+    std::vector<Member> eligibleDead;
+    eligibleDead.reserve(dead.size());
+    for (Member const& member : dead)
+    {
+        if (member.State->NativeBattleResDecision == "reserved_approach"
+            || member.State->NativeBattleResDecision == "reserved_cast_submitted")
+            continue;
+
+        bool const terminalDecisionHeld = member.State->NativeBattleResDecisionUntilMs > nowMs
+            && member.State->NativeBattleResDecision.rfind("declined_", 0) == 0;
+        if (terminalDecisionHeld)
+            continue;
+
+        // A combat resurrection targets the native, unreleased dead Player.
+        // TrinityCore creates the Corpse object only when Release Spirit is
+        // accepted, so requiring a Corpse here would make pre-release combat
+        // resurrection impossible.
+        if (!IsNativeCombatResTarget(*member.State, member.Bot))
+        {
+            applyDecision(member, "declined_target_ineligible");
+            continue;
+        }
+        eligibleDead.push_back(member);
+    }
+
+    if (eligibleDead.empty())
+        return;
+
+    bool const bossCommitment = Cohort().Config.ValidationRouteKind == "boss";
+    auto utility = [&](Member const& member) -> uint32
+    {
+        std::string const role = GetDungeonRole(member.Bot);
+        uint32 score = role == "tank" ? 300 : role == "healer" ? 250 : 100;
+        if (bossCommitment)
+            score += 60;
+        if (living.size() <= 2)
+            score += 100;
+        return score;
+    };
+    auto selected = std::max_element(eligibleDead.begin(), eligibleDead.end(), [&](Member const& left, Member const& right)
+    {
+        uint32 const leftUtility = utility(left);
+        uint32 const rightUtility = utility(right);
+        if (leftUtility != rightUtility)
+            return leftUtility < rightUtility;
+        return left.Bot->GetGUID() > right.Bot->GetGUID();
+    });
+    uint32 const selectedUtility = selected == eligibleDead.end() ? 0 : utility(*selected);
+    if (selected == eligibleDead.end() || selectedUtility < 140)
+    {
+        for (Member const& member : eligibleDead)
+            applyDecision(member, "declined_low_recovery_utility");
+        return;
+    }
+
+    struct OwnerCandidate
+    {
+        Member Owner;
+        uint32 SpellId = 0;
+        uint32 RecoveryMs = 0;
+    };
+    std::vector<OwnerCandidate> owners;
+    for (Member const& member : living)
+        for (auto const& [spellId, playerSpell] : member.Bot->GetSpellMap())
+        {
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+            if (!spellInfo || !spellInfo->HasAttribute(SPELL_ATTR8_ENFORCE_IN_COMBAT_RESSURECTION_LIMIT)
+                || (!spellInfo->HasEffect(SPELL_EFFECT_RESURRECT)
+                    && !spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_NEW)
+                    && !spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_WITH_AURA)))
+                continue;
+            owners.push_back({ member, spellId,
+                std::max(spellInfo->RecoveryTime, spellInfo->CategoryRecoveryTime) });
+        }
+
+    if (owners.empty())
+    {
+        for (Member const& member : eligibleDead)
+            applyDecision(member, "declined_no_combat_res_spell");
+        return;
+    }
+    std::sort(owners.begin(), owners.end(), [](OwnerCandidate const& left, OwnerCandidate const& right)
+    {
+        if (left.RecoveryMs != right.RecoveryMs)
+            return left.RecoveryMs < right.RecoveryMs;
+        if (left.Owner.Bot->GetGUID() != right.Owner.Bot->GetGUID())
+            return left.Owner.Bot->GetGUID() < right.Owner.Bot->GetGUID();
+        return left.SpellId < right.SpellId;
+    });
+
+    OwnerCandidate const* owner = nullptr;
+    for (OwnerCandidate const& candidate : owners)
+    {
+        // Stage the exact bounded approach reservation so the same predicate
+        // used by re-reconciliation, execution, and dead-member waiting also
+        // decides whether the planner may publish it.
+        std::string const previousDecision = selected->State->NativeBattleResDecision;
+        ObjectGuid const previousOwner = selected->State->NativeBattleResOwnerGuid;
+        uint32 const previousSpell = selected->State->NativeBattleResSpellId;
+        uint64 const previousAt = selected->State->NativeBattleResDecisionAtMs;
+        uint64 const previousUntil = selected->State->NativeBattleResDecisionUntilMs;
+        selected->State->NativeBattleResDecision = "reserved_approach";
+        selected->State->NativeBattleResOwnerGuid = candidate.Owner.Bot->GetGUID();
+        selected->State->NativeBattleResSpellId = candidate.SpellId;
+        selected->State->NativeBattleResDecisionAtMs = nowMs;
+        selected->State->NativeBattleResDecisionUntilMs = nowMs + CombatResReservationLifetimeMs;
+        std::string declineReason;
+        bool const usable = CurrentCombatResOwnerUsable(*selected->State,
+            selected->Bot, nowMs, declineReason);
+        selected->State->NativeBattleResDecision = previousDecision;
+        selected->State->NativeBattleResOwnerGuid = previousOwner;
+        selected->State->NativeBattleResSpellId = previousSpell;
+        selected->State->NativeBattleResDecisionAtMs = previousAt;
+        selected->State->NativeBattleResDecisionUntilMs = previousUntil;
+        if (usable)
+        {
+            owner = &candidate;
+            break;
+        }
+    }
+    if (!owner)
+    {
+        for (Member const& member : eligibleDead)
+            applyDecision(member, "declined_no_usable_combat_res");
+        return;
+    }
+
+    for (Member const& member : eligibleDead)
+    {
+        if (member.Bot == selected->Bot)
+            applyDecision(member, "reserved_approach", owner->Owner.Bot->GetGUID(), owner->SpellId,
+                nowMs + CombatResReservationLifetimeMs);
+        else
+            applyDecision(member, "declined_lower_priority");
+    }
+}
+
+std::optional<BotNativeAction::Candidate>
+BotWorldPopulationMgr::BuildCombatResNativeActionCandidate(
+    WorldBotState& ownerState, Player* owner, uint64 nowMs)
+{
+    if (!Cohort().Config.ValidationRouteEnable || !owner || !owner->IsInWorld()
+        || !owner->IsAlive() || !ownerState.ValidationCohortLocked
+        || Cohort().Config.ValidationRouteBossRecovery
+            == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly)
+        return std::nullopt;
+
+    WorldBotState* targetState = nullptr;
+    Player* target = nullptr;
+    for (WorldBotState& candidate : Party().Bots)
+    {
+        if (candidate.NativeBattleResOwnerGuid != owner->GetGUID()
+            || (candidate.NativeBattleResDecision != "reserved_approach"
+                && candidate.NativeBattleResDecision != "reserved_cast_submitted"))
+            continue;
+        Player* candidateTarget = GetLoadedBot(candidate);
+        if (!candidateTarget || (target
+                && candidateTarget->GetGUID() > target->GetGUID()))
+            continue;
+        targetState = &candidate;
+        target = candidateTarget;
+    }
+    if (!targetState || !target)
+        return std::nullopt;
+
+    std::string declineReason;
+    if (!CurrentCombatResOwnerUsable(*targetState, target, nowMs,
+            declineReason))
+    {
+        ObjectGuid const declinedOwner = targetState->NativeBattleResOwnerGuid;
+        uint32 const declinedSpell = targetState->NativeBattleResSpellId;
+        PublishNativeBattleResDecision(*targetState, target,
+            declineReason.empty() ? "declined_owner_unusable" : declineReason,
+            declinedOwner, declinedSpell, nowMs, nowMs + 5000);
+        return std::nullopt;
+    }
+
+    BotNativeAction::Candidate candidate;
+    candidate.Id.ScopeKey = Cohort().Config.ValidationRouteScenarioId + ":"
+        + Cohort().Config.ValidationRouteNodeId;
+    candidate.Id.Strategy = "typed_combat_res";
+    candidate.Id.Actor = target->GetGUID();
+    candidate.Id.EventGeneration = targetState->NativeBattleResDecisionAtMs;
+    // Beat the broad legacy route adapter (Mechanic/utility 3) without ever
+    // outranking a Survival hazard exit. This prevents the route candidate's
+    // wide resource mask from starving a current combat-res intent.
+    candidate.ActionPriority = BotActionArbitration::Priority::Mechanic;
+    std::string const targetRole = GetDungeonRole(target);
+    candidate.Utility = targetRole == "tank" ? 9.0f
+        : targetRole == "healer" ? 8.0f : 6.0f;
+    candidate.ExpiresAtMs = targetState->NativeBattleResDecisionUntilMs;
+
+    uint32 const spellId = targetState->NativeBattleResSpellId;
+    uint64 const reservationAtMs = targetState->NativeBattleResDecisionAtMs;
+    uint64 const reservationUntilMs =
+        targetState->NativeBattleResDecisionUntilMs;
+    if (targetState->NativeBattleResDecision == "reserved_cast_submitted")
+    {
+        if (target->IsResurrectRequestedBy(owner->GetGUID()))
+        {
+            candidate.Id.Mechanic = "accept_submitted_combat_res";
+            candidate.Action = BotNativeAction::CombatResAccept{
+                target->GetGUID(), spellId, reservationAtMs,
+                reservationUntilMs };
+        }
+        else
+        {
+            candidate.Id.Mechanic = "reconcile_submitted_combat_res_cast";
+            candidate.Action = BotNativeAction::CombatResCast{
+                target->GetGUID(), spellId, reservationAtMs,
+                reservationUntilMs };
+        }
+        return candidate;
+    }
+
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+    float const resurrectionRange = spellInfo
+        ? std::max(5.0f, owner->GetSpellMaxRangeForTarget(target, spellInfo))
+        : 5.0f;
+    bool const inCastEnvelope = owner->IsWithinLOSInMap(target)
+        && owner->IsWithinDistInMap(target, resurrectionRange);
+    if (inCastEnvelope)
+    {
+        candidate.Id.Mechanic = "submit_combat_res_cast";
+        candidate.Action = BotNativeAction::CombatResCast{
+            target->GetGUID(), spellId, reservationAtMs,
+            reservationUntilMs };
+    }
+    else
+    {
+        candidate.Id.Mechanic = "approach_combat_res_target";
+        candidate.Action = BotNativeAction::CombatResApproach{
+            target->GetGUID(), spellId, reservationAtMs,
+            reservationUntilMs };
+    }
+    return candidate;
+}
+
 void BotWorldPopulationMgr::ApplyRuntimeConfigOverride(BotWorldExperimentConfig const& overrideConfig)
 {
     Cohort().Config = overrideConfig;
@@ -3778,6 +4545,7 @@ void BotWorldPopulationMgr::ApplyRuntimeProfile(BotWorldExperimentProfile const&
     if (profile.HasAllowQuesting) Cohort().Config.AllowQuesting = profile.Config.AllowQuesting;
     if (profile.HasAllowDungeons) Cohort().Config.AllowDungeons = profile.Config.AllowDungeons;
     if (profile.HasAllowRaids) Cohort().Config.AllowRaids = profile.Config.AllowRaids;
+    if (profile.HasDungeonDifficulty) Cohort().Config.DungeonDifficulty = profile.Config.DungeonDifficulty;
     if (profile.HasRaidSize) Cohort().Config.RaidSize = profile.Config.RaidSize;
     if (profile.HasRaidDifficulty) Cohort().Config.RaidDifficulty = profile.Config.RaidDifficulty;
     if (profile.HasTrackHeroicRaidProgression) Cohort().Config.TrackHeroicRaidProgression = profile.Config.TrackHeroicRaidProgression;
@@ -3839,8 +4607,16 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     Cohort().Config.AllowQuesting = sConfigMgr->GetBoolDefault("BotProgression.AllowQuesting", sConfigMgr->GetBoolDefault("BotWorld.AllowQuesting", Cohort().Config.AllowQuesting));
     Cohort().Config.AllowDungeons = sConfigMgr->GetBoolDefault("BotProgression.AllowDungeons", Cohort().Config.AllowDungeons);
     Cohort().Config.AllowRaids = sConfigMgr->GetBoolDefault("BotProgression.AllowRaids", Cohort().Config.AllowRaids);
+    int32 const configuredDungeonDifficulty = sConfigMgr->GetIntDefault("BotProgression.DungeonDifficulty", Cohort().Config.DungeonDifficulty);
     int32 const configuredRaidSize = sConfigMgr->GetIntDefault("BotProgression.RaidSize", Cohort().Config.RaidSize);
     int32 const configuredRaidDifficulty = sConfigMgr->GetIntDefault("BotProgression.RaidDifficulty", Cohort().Config.RaidDifficulty);
+    if (configuredDungeonDifficulty < DUNGEON_DIFFICULTY_NORMAL || configuredDungeonDifficulty >= MAX_DUNGEON_DIFFICULTY)
+    {
+        Cohort().Config.AllowDungeons = false;
+        Cohort().LastPopulationFailureReason = "invalid_dungeon_difficulty";
+    }
+    else
+        Cohort().Config.DungeonDifficulty = uint8(configuredDungeonDifficulty);
     if (configuredRaidSize != 10 && configuredRaidSize != 25)
     {
         Cohort().Config.AllowRaids = false;
@@ -4029,6 +4805,7 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
 {
     Party().ValidationRoutePendingFinalTransitionGuids.clear();
     Party().ValidationRouteFinalTransitionGuids.clear();
+    Party().ValidationRouteManifestSha256.clear();
     if (Cohort().Config.ValidationRouteManifestPath.empty())
         return;
 
@@ -4038,6 +4815,13 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         Party().ValidationRouteManifestLoadError = "manifest_unreadable";
         return;
     }
+    Party().ValidationRouteManifestSha256 = ByteArrayToHexStr(
+        Trinity::Crypto::SHA256::GetDigestOf(manifestJson));
+    std::transform(
+        Party().ValidationRouteManifestSha256.begin(),
+        Party().ValidationRouteManifestSha256.end(),
+        Party().ValidationRouteManifestSha256.begin(),
+        [](unsigned char c) { return char(std::tolower(c)); });
 
     std::string routesJson = ExtractJsonArrayField(manifestJson, "routes");
     std::vector<std::string> routeObjects = routesJson.empty()
@@ -4374,6 +5158,12 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
             }
         }
         node.MapId = uint32(std::max(0, readInt(routeJson, "map_id")));
+        node.RecoveryEntranceAreaTriggerId = uint32(std::max(0,
+            readInt(routeJson, "recovery_entrance_area_trigger_id")));
+        node.RecoveryEntranceSourceMapId = uint32(std::max(0,
+            readInt(routeJson, "recovery_entrance_source_map_id")));
+        node.RecoveryEntranceTargetMapId = uint32(std::max(0,
+            readInt(routeJson, "recovery_entrance_target_map_id")));
         node.X = readFloat(routeJson, "x");
         node.Y = readFloat(routeJson, "y");
         node.Z = readFloat(routeJson, "z");
@@ -4749,6 +5539,9 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     Party().ValidationRoutePackClearCandidateSinceMs = 0;
     Party().ValidationRouteNodeClearCandidateSinceMs = 0;
     Cohort().Config.ValidationRouteActivationAreaTriggerId = node.ActivationAreaTriggerId;
+    Cohort().Config.ValidationRecoveryEntranceAreaTriggerId = node.RecoveryEntranceAreaTriggerId;
+    Cohort().Config.ValidationRecoveryEntranceSourceMapId = node.RecoveryEntranceSourceMapId;
+    Cohort().Config.ValidationRecoveryEntranceTargetMapId = node.RecoveryEntranceTargetMapId;
     Cohort().Config.ValidationRouteActivationDataId = node.ActivationDataId;
     Cohort().Config.ValidationRouteActivationDataValue = node.ActivationDataValue;
     Cohort().Config.ValidationRouteActivationSpawnGroupId = node.ActivationSpawnGroupId;
@@ -4858,6 +5651,9 @@ void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
         // has already left the world because the stream stores its identity.
         FlushDecisionFingerprintMemory(state);
         state.TargetGuid.Clear();
+        state.ActivePathValid = false;
+        state.ActivePathSegmentValid = false;
+        state.ActivePathTraversalMode.clear();
         state.ValidationRouteCombatProgressTargetGuid.Clear();
         state.ValidationRouteCombatBestHealthPct = 1.0f;
         state.ValidationRouteCombatNoProgressCount = 0;
@@ -4877,6 +5673,26 @@ void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
         state.ValidationRouteGeneration = Party().ValidationRouteGeneration;
         state.ValidationRouteTerminalGeneration = 0;
         state.ValidationRouteTerminalReason.clear();
+        state.ValidationRouteDescentPhase = WorldBotState::ValidationDescentPhase::Unobserved;
+        state.ValidationRouteDescentGeneration = 0;
+        state.ValidationRouteDescentStartX = 0.0f;
+        state.ValidationRouteDescentStartY = 0.0f;
+        state.ValidationRouteDescentStartZ = 0.0f;
+        state.ValidationRouteDescentInitialGoalDistance = 0.0f;
+        state.ValidationRouteDescentBestGoalDistance = 0.0f;
+        state.ValidationRouteDescentLandingX = 0.0f;
+        state.ValidationRouteDescentLandingY = 0.0f;
+        state.ValidationRouteDescentLandingZ = 0.0f;
+        state.ValidationRouteDescentLandingHealthPct = 0.0f;
+        state.ValidationRouteDescentLastProgressMs = 0;
+        state.ValidationRouteDescentGroundedSinceMs = 0;
+        state.ValidationRouteDescentDepartureObserved = false;
+        state.ValidationRouteDescentFallingObserved = false;
+        state.ValidationRouteDescentLandingObserved = false;
+        state.ValidationRouteDescentHealthMarginSatisfied = false;
+        state.ValidationRouteDescentLandingPathProven = false;
+        state.ValidationRouteDescentMonotonicProgressObserved = false;
+        state.ValidationRouteDescentRejectReason.clear();
         state.ValidationRouteAnchorOverrideValid = false;
         state.ValidationRouteAnchorOverrideUntilMs = 0;
         state.ValidationRouteAnchorOverrideReason.clear();
@@ -4969,6 +5785,10 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
     std::string terminalReason = Party().ValidationRouteManifestAdvanceReason;
     if (arrivalRoute)
     {
+        bool const typedNativeDescent =
+            Cohort().Config.ValidationRouteKind == "descent"
+            && Cohort().Config.ValidationRouteDescentAction
+                == "native_walkable_descent";
         uint32 loadedParticipants = 0;
         bool allLoadedArrived = true;
         float arrivalRadius = 18.0f;
@@ -4986,7 +5806,28 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
                 break;
             }
 
-            if (loadedBot->GetExactDist(Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY, Cohort().Config.ValidationRouteZ) > arrivalRadius)
+            if (typedNativeDescent
+                && (state.ValidationRouteDescentGeneration
+                        != Party().ValidationRouteGeneration
+                    || state.ValidationRouteDescentPhase
+                        != WorldBotState::ValidationDescentPhase::Ready
+                    || !state.ValidationRouteDescentDepartureObserved
+                    || !state.ValidationRouteDescentLandingObserved
+                    || !state.ValidationRouteDescentHealthMarginSatisfied
+                    || !state.ValidationRouteDescentLandingPathProven
+                    || !state.ValidationRouteDescentMonotonicProgressObserved
+                    || loadedBot->IsFalling()))
+            {
+                allLoadedArrived = false;
+                break;
+            }
+
+            float const verticalArrivalError = std::fabs(
+                loadedBot->GetPositionZ() - Cohort().Config.ValidationRouteZ);
+            if (loadedBot->GetExactDist(Cohort().Config.ValidationRouteX,
+                    Cohort().Config.ValidationRouteY,
+                    Cohort().Config.ValidationRouteZ) > arrivalRadius
+                || verticalArrivalError > 4.0f)
             {
                 allLoadedArrived = false;
                 break;
@@ -4999,7 +5840,8 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
         if (loadedParticipants && allLoadedArrived)
         {
             terminal = true;
-            terminalReason = "arrival";
+            terminalReason = typedNativeDescent
+                ? "native_descent_landed_path_proven" : "arrival";
         }
     }
     else
@@ -5115,8 +5957,8 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
 bool BotWorldPopulationMgr::TryReattachValidationBot(WorldBotState& state, Player* bot, char const* context)
 {
     bool const nativeReleasedGhostWorldport = IsNativeReleasedGhostWorldport(state, bot);
-    bool const nativeBlackwingDescentRunbackWorldport = IsNativeBlackwingDescentRunbackWorldport(state, bot);
-    bool const nativeRecoveryWorldport = nativeReleasedGhostWorldport || nativeBlackwingDescentRunbackWorldport;
+    bool const nativeValidationRunbackWorldport = IsNativeValidationRunbackWorldport(state, bot);
+    bool const nativeRecoveryWorldport = nativeReleasedGhostWorldport || nativeValidationRunbackWorldport;
 
     if (!Cohort().Config.ValidationRouteEnable || !bot)
         return false;
@@ -5139,15 +5981,13 @@ bool BotWorldPopulationMgr::TryReattachValidationBot(WorldBotState& state, Playe
 
     if (bot->IsBeingTeleportedFar())
     {
-        WorldLocation const& destination = bot->GetTeleportDest();
-        Optional<uint32> destinationInstance = bot->GetTeleportDestInstanceId();
         if (nativeRecoveryWorldport)
         {
             // ReleaseSpirit and the area-trigger entrance both use the
             // server's native far-worldport protocol.  A validation bot is
-            // allowed to acknowledge only the corpse-authorized BWD release
-            // or the exact canonical 6581 return destination; arbitrary
-            // outside teleports still fail closed below.
+            // allowed to acknowledge only a corpse-authorized native release
+            // or the exact configured-instance entrance return destination;
+            // arbitrary outside teleports still fail closed below.
             if (WorldSession* session = bot->GetSession())
             {
                 session->HandleMoveWorldportAck();
@@ -5159,7 +5999,9 @@ bool BotWorldPopulationMgr::TryReattachValidationBot(WorldBotState& state, Playe
                     nativeWorldportComplete = bot->IsInWorld() && !bot->IsAlive()
                         && bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)
                         && HasNativeRaidCorpseAuthority(state, bot)
-                        && ResolveNativeBlackwingDescentEntrance(entranceEntry, entranceDestination)
+                        && ResolveNativeValidationEntrance(state.ValidationCohortMapId,
+                            bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(),
+                            entranceEntry, entranceDestination)
                         && bot->GetMapId() == entranceEntry->ContinentID;
                 }
                 else
@@ -5196,14 +6038,14 @@ bool BotWorldPopulationMgr::TryReattachValidationBot(WorldBotState& state, Playe
                         state.NativeReleaseLandingY = bot->GetPositionY();
                         state.NativeReleaseLandingZ = bot->GetPositionZ();
                     }
-                    else if (nativeBlackwingDescentRunbackWorldport)
+                    else if (nativeValidationRunbackWorldport)
                     {
                         state.NativeReleaseRequested = false;
                         state.NativeRunbackAreaTriggerId = 0;
                     }
-                    TC_LOG_INFO("server", "BotWorld native raid worldport complete bot=%s context=%s map=%u instance=%u release=%u runback=%u",
+                    TC_LOG_INFO("server", "BotWorld native validation worldport complete bot=%s context=%s map=%u instance=%u release=%u runback=%u",
                         bot->GetGUID().ToString().c_str(), context ? context : "", bot->GetMapId(), bot->GetInstanceId(),
-                        nativeReleasedGhostWorldport ? 1u : 0u, nativeBlackwingDescentRunbackWorldport ? 1u : 0u);
+                        nativeReleasedGhostWorldport ? 1u : 0u, nativeValidationRunbackWorldport ? 1u : 0u);
                     return true;
                 }
             }
@@ -5214,38 +6056,32 @@ bool BotWorldPopulationMgr::TryReattachValidationBot(WorldBotState& state, Playe
             return false;
         }
 
-        if (destination.GetMapId() == state.ValidationCohortMapId
-            && (!destinationInstance || *destinationInstance == state.ValidationCohortInstanceId))
-        {
-            if (WorldSession* session = bot->GetSession())
-            {
-                session->HandleMoveWorldportAck();
-                if (bot->IsInWorld()
-                    && bot->GetMapId() == state.ValidationCohortMapId
-                    && bot->GetInstanceId() == state.ValidationCohortInstanceId)
-                {
-                    TC_LOG_INFO("server", "BotWorld validation same-instance worldport complete bot=%s context=%s map=%u instance=%u",
-                        bot->GetGUID().ToString().c_str(), context ? context : "", bot->GetMapId(), bot->GetInstanceId());
-                    return true;
-                }
-            }
-        }
-        else
-        {
-            bot->CancelDelayedTeleport();
-            bot->SetSemaphoreTeleportFar(false);
-        }
+        // An active validation bot may acknowledge only a typed native
+        // release or the exact area-trigger worldport recorded by the corpse
+        // run coordinator above. Map/instance coincidence is not authority,
+        // and an unexpected teleport must be observed as an attempt failure
+        // rather than cancelled or repaired by bot code.
+        return false;
     }
 
-    if (bot->IsInGrid())
-        bot->RemoveFromGrid();
+    // There is no client-equivalent acknowledgement to reconcile. Runtime
+    // must never repair an active bot by directly adding it back to a map.
+    return false;
+}
 
-    if (!bot->GetMap()->AddPlayerToMap(bot))
+bool BotWorldPopulationMgr::IsNativeCombatResTarget(WorldBotState const& state, Player const* bot) const
+{
+    if (!Cohort().Config.ValidationRouteEnable || !state.ValidationCohortLocked || !bot
+        || !bot->IsInWorld() || bot->IsAlive() || bot->getDeathState() != CORPSE
+        || bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST) || state.NativeReleaseRequested
+        || bot->GetMapId() != state.ValidationCohortMapId
+        || bot->GetInstanceId() != state.ValidationCohortInstanceId)
         return false;
 
-    TC_LOG_INFO("server", "BotWorld validation same-instance reattach complete bot=%s context=%s map=%u instance=%u",
-        bot->GetGUID().ToString().c_str(), context ? context : "", bot->GetMapId(), bot->GetInstanceId());
-    return true;
+    Group const* group = bot->GetGroup();
+    return group
+        && group->GetGUID() == state.ValidationCohortGroupGuid
+        && group->GetLeaderGUID() == state.ValidationCohortLeaderGuid;
 }
 
 bool BotWorldPopulationMgr::HasNativeRaidCorpseAuthority(WorldBotState const& state, Player const* bot) const
@@ -5308,39 +6144,68 @@ bool BotWorldPopulationMgr::ObserveNativeRaidHostileActivity(Map* raidMap, World
     return true;
 }
 
-bool BotWorldPopulationMgr::ResolveNativeBlackwingDescentEntrance(AreaTriggerEntry const*& entry, AreaTriggerStruct const*& destination) const
+bool BotWorldPopulationMgr::ResolveNativeValidationEntrance(uint32 targetMapId, uint32 sourceMapId,
+    float /*sourceX*/, float /*sourceY*/, AreaTriggerEntry const*& entry, AreaTriggerStruct const*& destination) const
 {
-    entry = sAreaTriggerStore.LookupEntry(BlackwingDescentEntranceTriggerId);
-    destination = entry ? sObjectMgr->GetAreaTrigger(BlackwingDescentEntranceTriggerId) : nullptr;
-    return entry
-        && destination
-        && entry->ID == BlackwingDescentEntranceTriggerId
-        && entry->ContinentID == BlackwingDescentEntranceMapId
-        && destination->target_mapId == BlackwingDescentMapId
-        && sMapStore.LookupEntry(entry->ContinentID)
-        && sMapStore.LookupEntry(BlackwingDescentMapId);
+    entry = nullptr;
+    destination = nullptr;
+    RaidRuntime const& admission = Cohort().Raid;
+    bool const certifiedAttempt = !Party().ValidationRouteManifest.empty();
+    if (certifiedAttempt && (!admission.ServerProvisioningComplete
+        || admission.AdmissionAttemptId != Cohort().AttemptId))
+        return false;
+
+    // Once admission commits, native corpse recovery is bound to the same
+    // immutable entrance receipt as initial provisioning.  A profile/config
+    // reload must never be able to redirect an active ghost run.
+    uint32 triggerId = certifiedAttempt
+        ? admission.AdmissionRecoveryEntranceAreaTriggerId
+        : Cohort().Config.ValidationRecoveryEntranceAreaTriggerId;
+    uint32 expectedSourceMapId = certifiedAttempt
+        ? admission.AdmissionRecoveryEntranceSourceMapId
+        : Cohort().Config.ValidationRecoveryEntranceSourceMapId;
+    uint32 expectedTargetMapId = certifiedAttempt
+        ? admission.AdmissionRecoveryEntranceTargetMapId
+        : Cohort().Config.ValidationRecoveryEntranceTargetMapId;
+    if (!triggerId && targetMapId == BlackwingDescentMapId)
+    {
+        triggerId = BlackwingDescentEntranceTriggerId;
+        expectedSourceMapId = BlackwingDescentEntranceMapId;
+        expectedTargetMapId = BlackwingDescentMapId;
+    }
+    if (!triggerId || expectedSourceMapId != sourceMapId
+        || expectedTargetMapId != targetMapId)
+        return false;
+
+    entry = sAreaTriggerStore.LookupEntry(triggerId);
+    destination = entry ? sObjectMgr->GetAreaTrigger(triggerId) : nullptr;
+    return entry && destination
+        && entry->ID == triggerId
+        && entry->ContinentID == expectedSourceMapId
+        && destination->target_mapId == expectedTargetMapId
+        && sMapStore.LookupEntry(expectedSourceMapId)
+        && sMapStore.LookupEntry(expectedTargetMapId);
 }
 
 bool BotWorldPopulationMgr::IsNativeReleasedGhostWorldport(WorldBotState const& state, Player* bot) const
 {
     if (!state.NativeReleaseRequested || state.NativeRunbackAreaTriggerId
-        || state.ValidationCohortMapId != BlackwingDescentMapId || !bot
+        || !state.ValidationCohortMapId || !bot
         || bot->IsInWorld() || !bot->IsBeingTeleportedFar()
         || bot->IsAlive() || !bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)
         || bot->GetMapId() != state.ValidationCohortMapId
         || !HasNativeRaidCorpseAuthority(state, bot))
         return false;
 
-    AreaTriggerEntry const* entranceEntry = nullptr;
-    AreaTriggerStruct const* entranceDestination = nullptr;
-    if (!ResolveNativeBlackwingDescentEntrance(entranceEntry, entranceDestination))
-        return false;
-
     // Bind the pending worldport to the exact graveyard that native
     // RepopAtGraveyard resolves from this dead player.  Map identity alone is
     // insufficient because unrelated far teleports can also target map 0.
     WorldSafeLocsEntry const* graveyard = sObjectMgr->GetClosestGraveyard(*bot, bot->GetTeam(), bot);
-    if (!graveyard || graveyard->Continent != entranceEntry->ContinentID)
+    AreaTriggerEntry const* entranceEntry = nullptr;
+    AreaTriggerStruct const* entranceDestination = nullptr;
+    if (!graveyard || !ResolveNativeValidationEntrance(state.ValidationCohortMapId,
+            graveyard->Continent, graveyard->Loc.X, graveyard->Loc.Y,
+            entranceEntry, entranceDestination))
         return false;
 
     WorldLocation const& destination = bot->GetTeleportDest();
@@ -5355,29 +6220,31 @@ bool BotWorldPopulationMgr::IsNativeReleasedGhostWorldport(WorldBotState const& 
         && std::fabs(destination.GetOrientation() - expectedOrientation) <= 0.01f;
 }
 
-bool BotWorldPopulationMgr::IsNativeBlackwingDescentRunbackWorldport(WorldBotState const& state, Player* bot) const
+bool BotWorldPopulationMgr::IsNativeValidationRunbackWorldport(WorldBotState const& state, Player* bot) const
 {
-    if (!state.NativeReleaseRequested || state.NativeRunbackAreaTriggerId != BlackwingDescentEntranceTriggerId
-        || state.ValidationCohortMapId != BlackwingDescentMapId || !bot
+    if (!state.NativeReleaseRequested || !state.NativeRunbackAreaTriggerId
+        || !state.ValidationCohortMapId || !bot
         || bot->IsInWorld() || !bot->IsBeingTeleportedFar()
         || bot->IsAlive() || !bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)
         || !HasNativeRaidCorpseAuthority(state, bot))
         return false;
 
-    AreaTriggerEntry const* entranceEntry = nullptr;
-    AreaTriggerStruct const* entranceDestination = nullptr;
-    if (!ResolveNativeBlackwingDescentEntrance(entranceEntry, entranceDestination))
+    AreaTriggerEntry const* entranceEntry = sAreaTriggerStore.LookupEntry(state.NativeRunbackAreaTriggerId);
+    AreaTriggerStruct const* entranceDestination = entranceEntry
+        ? sObjectMgr->GetAreaTrigger(state.NativeRunbackAreaTriggerId) : nullptr;
+    if (!entranceEntry || !entranceDestination
+        || entranceDestination->target_mapId != state.ValidationCohortMapId)
         return false;
 
-    WorldLocation const& destination = bot->GetTeleportDest();
+    WorldLocation const& worldport = bot->GetTeleportDest();
     return bot->GetMapId() == entranceEntry->ContinentID
-        && destination.GetMapId() == entranceDestination->target_mapId
+        && worldport.GetMapId() == entranceDestination->target_mapId
         && !bot->GetTeleportDestInstanceId()
         && bot->GetTeleportDestOptions() == TELE_TO_NOT_LEAVE_TRANSPORT
-        && std::fabs(destination.GetPositionX() - entranceDestination->target_X) <= 0.01f
-        && std::fabs(destination.GetPositionY() - entranceDestination->target_Y) <= 0.01f
-        && std::fabs(destination.GetPositionZ() - entranceDestination->target_Z) <= 0.01f
-        && std::fabs(destination.GetOrientation() - entranceDestination->target_Orientation) <= 0.01f;
+        && std::fabs(worldport.GetPositionX() - entranceDestination->target_X) <= 0.01f
+        && std::fabs(worldport.GetPositionY() - entranceDestination->target_Y) <= 0.01f
+        && std::fabs(worldport.GetPositionZ() - entranceDestination->target_Z) <= 0.01f
+        && std::fabs(worldport.GetOrientation() - entranceDestination->target_Orientation) <= 0.01f;
 }
 
 bool BotWorldPopulationMgr::IsValidationCohortMemberInOriginalInstance(WorldBotState const& state, Player const* bot) const
@@ -5418,11 +6285,32 @@ bool BotWorldPopulationMgr::IsValidationCohortMemberInOriginalInstance(WorldBotS
 
 void BotWorldPopulationMgr::MarkValidationCohortViolation(WorldBotState& state, Player const* bot, char const* reason)
 {
-    if (!Cohort().Config.ValidationRouteEnable || state.ValidationCohortViolation)
+    if (!Cohort().Config.ValidationRouteEnable)
+        return;
+
+    std::string const violationReason = reason && *reason
+        ? reason : "validation_cohort_instance_violation";
+    Cohort().ValidationAdmission = ValidationAdmissionPhase::Terminal;
+    Cohort().ValidationAdmissionBatchSealed = false;
+    Cohort().Raid.ServerProvisioningComplete = false;
+    Cohort().Raid.BotActionsEnabled = false;
+    for (WorldBotState const& member : Party().Bots)
+        BotRaidAreaAuthority::SetAllOffenseSuppressed(
+            member.Guid.GetRawValue(), true);
+    Cohort().LastPopulationFailureReason = violationReason;
+    if (Cohort().ValidationAttemptFailureReason.empty()
+        || Cohort().ValidationAttemptFailureAttemptId != Cohort().AttemptId)
+    {
+        Cohort().ValidationAttemptFailureReason = violationReason;
+        Cohort().ValidationAttemptFailureAttemptId = Cohort().AttemptId;
+        Cohort().ValidationAttemptFailureRouteGeneration = Party().ValidationRouteGeneration;
+    }
+
+    if (state.ValidationCohortViolation)
         return;
 
     state.ValidationCohortViolation = true;
-    state.ValidationCohortViolationReason = reason && *reason ? reason : "validation_cohort_instance_violation";
+    state.ValidationCohortViolationReason = violationReason;
     state.ValidationRouteTerminalState = true;
     state.ValidationRouteTerminalAtMs = NowMs();
     state.ValidationRouteTerminalGeneration = Party().ValidationRouteGeneration;
@@ -5435,6 +6323,81 @@ void BotWorldPopulationMgr::MarkValidationCohortViolation(WorldBotState& state, 
             bot->GetGUID().ToString().c_str(), bot->GetMapId(), bot->GetInstanceId(),
             state.ValidationCohortMapId, state.ValidationCohortInstanceId, state.ValidationCohortViolationReason.c_str());
     }
+}
+
+bool BotWorldPopulationMgr::FailValidationAttemptOnce(
+    WorldBotState& reporterState, Player* reporter,
+    std::string const& reason, uint64 routeGeneration)
+{
+    if (!Cohort().Config.ValidationRouteEnable || reason.empty()
+        || !routeGeneration
+        || routeGeneration != Party().ValidationRouteGeneration)
+        return false;
+
+    // A validation attempt has one terminal edge. Later members observe the
+    // latched cohort result and hold; they must not emit one terminal event
+    // each or replace the first attributable cause with a secondary symptom.
+    if (!Cohort().ValidationAttemptFailureReason.empty()
+        && Cohort().ValidationAttemptFailureAttemptId == Cohort().AttemptId)
+        return false;
+
+    uint64 const nowMs = NowMs();
+    Cohort().ValidationAttemptFailureReason = reason;
+    Cohort().ValidationAttemptFailureAttemptId = Cohort().AttemptId;
+    Cohort().ValidationAttemptFailureRouteGeneration = routeGeneration;
+    Cohort().LastPopulationFailureReason = reason;
+    // Preserve the immutable admission receipt for evidence, but move its
+    // lifecycle out of Active before closing the gates. EnsurePopulation then
+    // returns at the terminal guard and cannot re-enter cohort validation or
+    // provisioning for this failed attempt.
+    Cohort().ValidationAdmission = ValidationAdmissionPhase::Terminal;
+    Cohort().Raid.BotActionsEnabled = false;
+    Cohort().Raid.AdmissionActionGateEnabled = false;
+
+    // Close every continuous action owner at cohort scope. Offense is masked
+    // immediately; the typed melee reconciler observes that mask on scope exit
+    // (and on every later closed-gate tick). Grounded route movement is
+    // cancelled without manufacturing a fall or changing player position.
+    for (WorldBotState& member : Party().Bots)
+    {
+        BotRaidAreaAuthority::SetAllOffenseSuppressed(
+            member.Guid.GetRawValue(), true);
+        BotMovementArbitration::Clear(member.MovementLease);
+        member.ActivePathValid = false;
+        member.TargetGuid.Clear();
+        member.DecisionTimer = 0;
+        member.ValidationRouteTerminalState = true;
+        member.ValidationRouteTerminalAtMs = nowMs;
+        member.ValidationRouteTerminalGeneration = routeGeneration;
+        member.ValidationRouteTerminalReason = reason;
+        member.LastDecisionSituation = "validation_route_terminal";
+        member.LastDecisionAction = "validation_route_terminal_hold";
+        member.LastDecisionResult = reason;
+        member.LastDecisionReason = reason;
+        member.LastNoProgressReason = reason;
+
+        if (Player* loaded = GetLoadedBot(member);
+            loaded && loaded->IsInWorld() && !loaded->IsFalling())
+            loaded->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+    }
+
+    if (reporter)
+    {
+        std::ostringstream raw;
+        raw << "{\"attempt_id\":" << Cohort().AttemptId
+            << ",\"route_generation\":" << routeGeneration
+            << ",\"failure_reason\":\"" << JsonEscape(reason) << "\""
+            << ",\"native_recovery_episode\":"
+            << BuildNativeRecoveryEpisodeJson(&reporterState) << "}";
+        std::ostringstream semantic;
+        semantic << "{\"terminal\":true,\"scope\":\"validation_cohort\""
+                 << ",\"failure_reason\":\"" << JsonEscape(reason) << "\"}";
+        RecordEvent(reporterState, reporter, "validation_route_terminal",
+            nullptr, reason.c_str(), raw.str().c_str(),
+            semantic.str().c_str(), 0.0f, uint32(routeGeneration));
+    }
+
+    return true;
 }
 
 void BotWorldPopulationMgr::MaybeStartAutoRecordingWindow()
@@ -5623,26 +6586,70 @@ bool BotWorldPopulationMgr::LoadPolicyModelArtifact(std::string const& artifactP
 
 void BotWorldPopulationMgr::EnsurePopulation()
 {
+    auto terminateValidationAdmission = [this](std::string const& reason)
+    {
+        Cohort().ValidationAdmission = ValidationAdmissionPhase::Terminal;
+        Cohort().ValidationAdmissionBatchSealed = false;
+        Cohort().Raid.BotActionsEnabled = false;
+        Cohort().Raid.AdmissionActionGateEnabled = false;
+        for (WorldBotState const& member : Party().Bots)
+            BotRaidAreaAuthority::SetAllOffenseSuppressed(
+                member.Guid.GetRawValue(), true);
+        Cohort().LastPopulationFailureReason = reason;
+        if (Cohort().ValidationAttemptFailureReason.empty()
+            || Cohort().ValidationAttemptFailureAttemptId != Cohort().AttemptId)
+        {
+            Cohort().ValidationAttemptFailureReason = reason;
+            Cohort().ValidationAttemptFailureAttemptId = Cohort().AttemptId;
+            Cohort().ValidationAttemptFailureRouteGeneration = Party().ValidationRouteGeneration;
+        }
+    };
+    auto rejectPopulation = [this, &terminateValidationAdmission](std::string const& reason)
+    {
+        if (Cohort().Config.ValidationRouteEnable)
+            terminateValidationAdmission(reason);
+        else
+            Cohort().LastPopulationFailureReason = reason;
+    };
+
     std::vector<RaidRosterPlanSlot> const rosterPlan = BuildRosterPlan();
     bool const raidMode = Cohort().Config.AllowRaids;
     if (raidMode && rosterPlan.empty())
     {
-        Cohort().LastPopulationFailureReason = "unsupported_exact_raid_size";
+        rejectPopulation("unsupported_exact_raid_size");
         return;
     }
     if (raidMode && Cohort().Config.TargetPopulation != rosterPlan.size())
     {
-        Cohort().LastPopulationFailureReason = "raid_target_population_mismatch";
+        rejectPopulation("raid_target_population_mismatch");
         return;
     }
     if (!Cohort().Config.PoolClassSpecFilter.empty()
         && Cohort().Config.PoolClassSpecFilter.size() != rosterPlan.size())
     {
-        Cohort().LastPopulationFailureReason = "roster_class_spec_plan_mismatch";
+        rejectPopulation("roster_class_spec_plan_mismatch");
         return;
     }
 
     uint32 const expectedPopulation = raidMode ? uint32(rosterPlan.size()) : Cohort().Config.TargetPopulation;
+    if (Cohort().Config.ValidationRouteEnable)
+    {
+        if (Cohort().ValidationAdmission == ValidationAdmissionPhase::Terminal)
+            return;
+        if (Cohort().ValidationAdmission == ValidationAdmissionPhase::Active)
+        {
+            // The active phase is observation-only. It can fail closed, but it
+            // can never form, refill, replace, relocate, or re-admit a member.
+            EnsureValidationCohortGroup();
+            return;
+        }
+        if (Cohort().ValidationAdmissionStarted)
+        {
+            terminateValidationAdmission("validation_admission_reentry_before_activation");
+            return;
+        }
+        Cohort().ValidationAdmissionStarted = true;
+    }
     struct PlannedValidationRaidSpawn
     {
         std::string RosterSlotId;
@@ -5715,8 +6722,8 @@ void BotWorldPopulationMgr::EnsurePopulation()
                     // transitions.  No generic death or teleport grace window
                     // is permitted here.
                     bool const nativeRecoveryWorldport = !bot->IsInWorld()
-                        && (IsNativeReleasedGhostWorldport(*state, bot)
-                            || IsNativeBlackwingDescentRunbackWorldport(*state, bot));
+                    && (IsNativeReleasedGhostWorldport(*state, bot)
+                            || IsNativeValidationRunbackWorldport(*state, bot));
                     auto const frozen = Cohort().Raid.RosterByGuid.find(expected.Guid);
                     if (!bot->IsInWorld() && !nativeRecoveryWorldport)
                     {
@@ -5852,11 +6859,11 @@ void BotWorldPopulationMgr::EnsurePopulation()
             return;
         }
 
-        auto terminalFailure = [this](char const* reason)
+        auto terminalFailure = [this, &terminateValidationAdmission](char const* reason)
         {
             Cohort().ValidationRaidAdmissionComplete = false;
             Cohort().ValidationRaidAdmissionFailed = true;
-            Cohort().LastPopulationFailureReason = reason;
+            terminateValidationAdmission(reason);
         };
 
         // An admission transaction may only start from a demonstrably empty
@@ -5886,10 +6893,11 @@ void BotWorldPopulationMgr::EnsurePopulation()
             return;
         }
 
-        // Read and validate every GUID and saved placement before the first
-        // lease or native login, using the route-start identity generated from
-        // the authoritative scenario/provisioning contract. No teleport,
-        // alternate placement, or live repair is permitted.
+        // Read and validate every GUID before the first lease or native login.
+        // Entrance placement is owned by this inactive server admission
+        // transaction and comes directly from the pinned route manifest.  The
+        // operator must not pre-relocate characters in SQL, and active bots
+        // have no path back to this provisioning capability.
         if (Party().ValidationRouteManifest.empty())
         {
             terminalFailure("validation_raid_preflight_route_start_missing");
@@ -5960,20 +6968,14 @@ void BotWorldPopulationMgr::EnsurePopulation()
             }
 
             SpawnPlacement placement;
-            if (!ResolveSavedSpawnPlacement(candidateGuid, placement)
-                || placement.Source != "saved_position")
-            {
-                terminalFailure("validation_raid_preflight_saved_placement_missing");
-                return;
-            }
-            if (placement.MapId != routeStart.BotStartMapId
-                || Distance2d(placement.X, placement.Y, routeStart.BotStartX, routeStart.BotStartY)
-                    > RouteStartHorizontalToleranceYards
-                || std::fabs(placement.Z - routeStart.BotStartZ) > RouteStartVerticalToleranceYards)
-            {
-                terminalFailure("validation_raid_preflight_route_start_mismatch");
-                return;
-            }
+            placement.Valid = true;
+            placement.MapId = routeStart.BotStartMapId;
+            placement.X = routeStart.BotStartX;
+            placement.Y = routeStart.BotStartY;
+            placement.Z = routeStart.BotStartZ;
+            placement.O = routeStart.BotStartO;
+            placement.Source = "server_route_manifest_entrance";
+            placement.RaceStartFallbackUsed = false;
 
             plannedGuids.insert(candidateGuid);
             validationRaidSpawnPlan.push_back({ slot.RosterSlotId, candidateGuid, placement });
@@ -6036,12 +7038,14 @@ void BotWorldPopulationMgr::EnsurePopulation()
             }
 
             Player* bot = groupAnchor
-                ? sBotMgr->SpawnWorldBotInGroup(groupAnchor, "any", std::to_string(planned.Guid),
+                ? sBotMgr->ProvisionWorldBotInGroup(groupAnchor, "any", std::to_string(planned.Guid),
                     planned.Placement.MapId, planned.Placement.X, planned.Placement.Y,
-                    planned.Placement.Z, planned.Placement.O)
-                : sBotMgr->SpawnWorldBot("any", std::to_string(planned.Guid),
+                    planned.Placement.Z, planned.Placement.O,
+                    BotMgr::NoProvisionedDungeonDifficulty, Cohort().Config.RaidDifficulty)
+                : sBotMgr->ProvisionWorldBot("any", std::to_string(planned.Guid),
                     planned.Placement.MapId, planned.Placement.X, planned.Placement.Y,
-                    planned.Placement.Z, planned.Placement.O);
+                    planned.Placement.Z, planned.Placement.O,
+                    BotMgr::NoProvisionedDungeonDifficulty, Cohort().Config.RaidDifficulty);
             if (!bot)
             {
                 rollbackAdmission("validation_raid_admission_spawn_failed");
@@ -6051,6 +7055,8 @@ void BotWorldPopulationMgr::EnsurePopulation()
 
             WorldBotState state;
             state.Guid = bot->GetGUID();
+            state.ServerProvisioned = true;
+            state.ServerBaselineNormalized = true;
             state.RosterSlotId = planned.RosterSlotId;
             for (RaidRosterPlanSlot const& slot : rosterPlan)
                 if (slot.RosterSlotId == planned.RosterSlotId)
@@ -6110,6 +7116,9 @@ void BotWorldPopulationMgr::EnsurePopulation()
                 || bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST) || bot->HasCorpse() || !group
                 || !state.ValidationCohortLocked
                 || bot->GetMapId() != routeStart.BotStartMapId || !bot->GetInstanceId()
+                || Distance2d(bot->GetPositionX(), bot->GetPositionY(),
+                    routeStart.BotStartX, routeStart.BotStartY) > RouteStartHorizontalToleranceYards
+                || std::fabs(bot->GetPositionZ() - routeStart.BotStartZ) > RouteStartVerticalToleranceYards
                 || state.ValidationCohortMapId != bot->GetMapId()
                 || state.ValidationCohortInstanceId != bot->GetInstanceId())
             {
@@ -6130,6 +7139,13 @@ void BotWorldPopulationMgr::EnsurePopulation()
             return;
         }
 
+        Cohort().ValidationAdmissionBatchSealed = true;
+        EnsureValidationCohortGroup();
+        if (Cohort().ValidationAdmission != ValidationAdmissionPhase::Active)
+        {
+            rollbackAdmission("validation_raid_admission_activation_failed");
+            return;
+        }
         Cohort().ValidationRaidAdmissionComplete = true;
         Cohort().ValidationRaidAdmissionFailed = false;
         Cohort().LastPopulationFailureReason.clear();
@@ -6163,7 +7179,39 @@ void BotWorldPopulationMgr::EnsurePopulation()
         }
 
         SpawnPlacement placement;
-        if (!ResolveSpawnPlacement(candidateGuid, placement))
+        if (Cohort().Config.ValidationRouteEnable)
+        {
+            if (Party().ValidationRouteManifest.empty())
+            {
+                Cohort().LastPopulationFailureReason =
+                    "validation_admission_route_start_missing";
+                Cohort().FailedSpawnGuids.insert(candidateGuid);
+                ReleaseBotGuid(candidateGuid);
+                continue;
+            }
+            ValidationRouteManifestNode const& routeStart =
+                Party().ValidationRouteManifest.front();
+            if (!routeStart.BotStartMapId
+                || !MapManager::IsValidMapCoord(routeStart.BotStartMapId,
+                    routeStart.BotStartX, routeStart.BotStartY,
+                    routeStart.BotStartZ, routeStart.BotStartO))
+            {
+                Cohort().LastPopulationFailureReason =
+                    "validation_admission_route_start_invalid";
+                Cohort().FailedSpawnGuids.insert(candidateGuid);
+                ReleaseBotGuid(candidateGuid);
+                continue;
+            }
+            placement.Valid = true;
+            placement.MapId = routeStart.BotStartMapId;
+            placement.X = routeStart.BotStartX;
+            placement.Y = routeStart.BotStartY;
+            placement.Z = routeStart.BotStartZ;
+            placement.O = routeStart.BotStartO;
+            placement.Source = "server_route_manifest_entrance";
+            placement.RaceStartFallbackUsed = false;
+        }
+        else if (!ResolveSpawnPlacement(candidateGuid, placement))
         {
             TC_LOG_ERROR("server", "BotWorld spawn skipped bot_guid=%u spawn_mode=%s fallback=%u reason=no_saved_or_local_spawn",
                 candidateGuid, Cohort().Config.SpawnMode.c_str(), Cohort().Config.AllowConfiguredCenterFallback ? 1 : 0);
@@ -6188,14 +7236,19 @@ void BotWorldPopulationMgr::EnsurePopulation()
         }
 
         Player* bot = nullptr;
-        if (groupAnchor)
-            bot = sBotMgr->SpawnWorldBotInGroup(groupAnchor, "any", std::to_string(candidateGuid), placement.MapId, placement.X, placement.Y, placement.Z, placement.O);
+        if (Cohort().Config.ValidationRouteEnable && groupAnchor)
+            bot = sBotMgr->ProvisionWorldBotInGroup(groupAnchor, "any", std::to_string(candidateGuid),
+                placement.MapId, placement.X, placement.Y, placement.Z, placement.O,
+                Cohort().Config.DungeonDifficulty);
+        else if (Cohort().Config.ValidationRouteEnable)
+            bot = sBotMgr->ProvisionWorldBot("any", std::to_string(candidateGuid),
+                placement.MapId, placement.X, placement.Y, placement.Z, placement.O,
+                Cohort().Config.DungeonDifficulty);
+        else if (groupAnchor)
+            bot = sBotMgr->SpawnWorldBotInGroup(groupAnchor, "any", std::to_string(candidateGuid),
+                placement.MapId, placement.X, placement.Y, placement.Z, placement.O);
         else
-            // Validation already resolved and audited the persisted placement.
-            // Pass it through explicitly so native login relocation cannot
-            // replace an instanced raid position with the character home bind
-            // before the validation group owns the live instance.
-            bot = Cohort().Config.ValidationRouteEnable || placement.Source != "saved_position"
+            bot = placement.Source != "saved_position"
                 ? sBotMgr->SpawnWorldBot("any", std::to_string(candidateGuid), placement.MapId, placement.X, placement.Y, placement.Z, placement.O)
                 : sBotMgr->SpawnWorldBotAtSavedPosition("any", std::to_string(candidateGuid));
         if (!bot)
@@ -6210,6 +7263,8 @@ void BotWorldPopulationMgr::EnsurePopulation()
 
         WorldBotState state;
         state.Guid = bot->GetGUID();
+        state.ServerProvisioned = Cohort().Config.ValidationRouteEnable;
+        state.ServerBaselineNormalized = Cohort().Config.ValidationRouteEnable;
         state.RosterSlotId = rosterSlotId;
         for (RaidRosterPlanSlot const& slot : rosterPlan)
             if (slot.RosterSlotId == rosterSlotId)
@@ -6256,7 +7311,27 @@ void BotWorldPopulationMgr::EnsurePopulation()
         EnsureValidationCohortGroup();
     }
 
+    if (!Cohort().Config.ValidationRouteEnable)
+    {
+        EnsureValidationCohortGroup();
+        return;
+    }
+
+    if (Party().Bots.size() != expectedPopulation
+        || Cohort().RosterLeases.size() != expectedPopulation)
+    {
+        terminateValidationAdmission(Cohort().LastPopulationFailureReason.empty()
+            ? "validation_admission_incomplete_batch"
+            : "validation_admission_incomplete_batch:" + Cohort().LastPopulationFailureReason);
+        return;
+    }
+
+    Cohort().ValidationAdmissionBatchSealed = true;
     EnsureValidationCohortGroup();
+    if (Cohort().ValidationAdmission != ValidationAdmissionPhase::Active)
+        terminateValidationAdmission(Cohort().LastPopulationFailureReason.empty()
+            ? "validation_admission_activation_failed"
+            : "validation_admission_activation_failed:" + Cohort().LastPopulationFailureReason);
 }
 
 void BotWorldPopulationMgr::EnsureCalibrationPopulation()
@@ -7347,6 +8422,14 @@ std::pair<bool, bool> BotWorldPopulationMgr::ApplyCalibrationReferenceConditions
 
 void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 diff)
 {
+    Player* bot = GetBot(state);
+    BeginMeleeAutoAttackDecision(state, bot);
+    ReconcileOnScopeExit meleeAutoAttackReconcile{
+        [this, &state, bot]()
+        {
+            ResolveAndReconcileMeleeAutoAttack(state, bot);
+        }};
+
     if (state.DecisionTimer > diff)
     {
         state.DecisionTimer -= diff;
@@ -7368,7 +8451,6 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
         || Cohort().CalibrationTargetSpec == "balance_druid";
     state.DecisionTimer = fixtureReactionTime ? 100 : (responsiveCalibration ? 250 : 500);
 
-    Player* bot = GetBot(state);
     if (!bot || Cohort().CalibrationWindowComplete)
         return;
 
@@ -7770,10 +8852,97 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     }
 }
 
+bool BotWorldPopulationMgr::ObserveEquippedGearIdentity(Player const* bot,
+    std::vector<RaidRosterItemIdentity>& manifest,
+    std::string& manifestSha256) const
+{
+    manifest.clear();
+    manifestSha256.clear();
+    if (!bot)
+        return false;
+
+    for (uint8 equipmentSlot = EQUIPMENT_SLOT_START;
+        equipmentSlot < EQUIPMENT_SLOT_END; ++equipmentSlot)
+    {
+        Item const* item = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, equipmentSlot);
+        if (!item)
+            continue;
+
+        RaidRosterItemIdentity row;
+        row.Slot = equipmentSlot;
+        row.Entry = item->GetEntry();
+        row.EnchantId = item->GetEnchantmentId(PERM_ENCHANTMENT_SLOT);
+        row.ReforgeId = item->GetEnchantmentId(REFORGE_ENCHANTMENT_SLOT);
+        for (uint8 gemSlot = 0; gemSlot < MAX_GEM_SOCKETS; ++gemSlot)
+        {
+            uint32 gemItemId = 0;
+            uint32 const gemEnchantId = item->GetEnchantmentId(
+                EnchantmentSlot(SOCK_ENCHANTMENT_SLOT + gemSlot));
+            if (SpellItemEnchantmentEntry const* enchant =
+                sSpellItemEnchantmentStore.LookupEntry(gemEnchantId))
+                gemItemId = enchant->Src_itemID;
+            row.GemItemIds.push_back(gemItemId);
+        }
+        while (!row.GemItemIds.empty() && row.GemItemIds.back() == 0)
+            row.GemItemIds.pop_back();
+        manifest.push_back(std::move(row));
+    }
+
+    // Match Python canonical_sha256(canonical_gear_manifest): dictionary keys
+    // are lexicographically sorted and no insignificant whitespace is present.
+    std::ostringstream canonical;
+    canonical << '[';
+    for (size_t index = 0; index < manifest.size(); ++index)
+    {
+        if (index)
+            canonical << ',';
+        RaidRosterItemIdentity const& row = manifest[index];
+        canonical << "{\"enchant_id\":" << row.EnchantId
+                  << ",\"gem_item_ids\":[";
+        for (size_t gemIndex = 0; gemIndex < row.GemItemIds.size(); ++gemIndex)
+        {
+            if (gemIndex)
+                canonical << ',';
+            canonical << row.GemItemIds[gemIndex];
+        }
+        canonical << "],\"item_id\":" << row.Entry
+                  << ",\"reforge_id\":" << row.ReforgeId
+                  << ",\"slot\":" << uint32(row.Slot) << '}';
+    }
+    canonical << ']';
+    manifestSha256 = ByteArrayToHexStr(
+        Trinity::Crypto::SHA256::GetDigestOf(canonical.str()));
+    std::transform(manifestSha256.begin(), manifestSha256.end(),
+        manifestSha256.begin(),
+        [](unsigned char c) { return char(std::tolower(c)); });
+    return manifest.size() >= 16;
+}
+
+bool BotWorldPopulationMgr::EquippedGearManifestsEqual(
+    std::vector<RaidRosterItemIdentity> const& left,
+    std::vector<RaidRosterItemIdentity> const& right) const
+{
+    if (left.size() != right.size())
+        return false;
+    for (size_t index = 0; index < left.size(); ++index)
+    {
+        RaidRosterItemIdentity const& lhs = left[index];
+        RaidRosterItemIdentity const& rhs = right[index];
+        if (lhs.Slot != rhs.Slot || lhs.Entry != rhs.Entry
+            || lhs.EnchantId != rhs.EnchantId
+            || lhs.ReforgeId != rhs.ReforgeId
+            || lhs.GemItemIds != rhs.GemItemIds)
+            return false;
+    }
+    return true;
+}
+
 void BotWorldPopulationMgr::EnsureValidationCohortGroup()
 {
     if (!Cohort().Config.ValidationRouteEnable || Party().Bots.empty())
         return;
+    bool const activeObservationOnly = Cohort().ValidationAdmission == ValidationAdmissionPhase::Active
+        || Cohort().Raid.BotActionsEnabled;
 
     std::vector<Player*> members;
     members.reserve(Party().Bots.size());
@@ -7794,11 +8963,163 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         // Omitting that member here freezes RaidRuntime at the pre-release
         // snapshot; the subsequent re-entry cannot prove release/runback.
         // Include only the two independently-authorized native worldports.
-        if (Cohort().ValidationRaidAdmissionComplete
-            && Cohort().Config.ValidationRouteEnable
+        if (state.ValidationCohortLocked && Cohort().Config.ValidationRouteEnable
             && (IsNativeReleasedGhostWorldport(state, bot)
-                || IsNativeBlackwingDescentRunbackWorldport(state, bot)))
+                || IsNativeValidationRunbackWorldport(state, bot)))
             members.push_back(bot);
+    }
+
+    // Admission is not a one-shot latch. Once actions have been enabled,
+    // revalidate the complete native group and immutable difficulty/instance
+    // identity before every decision pass. Partial deaths and the two typed
+    // corpse-recovery transits remain valid; roster, group, difficulty, or
+    // unexplained worldport drift fails the whole attempt closed.
+    if (activeObservationOnly)
+    {
+        RaidRuntime const& admission = Cohort().Raid;
+        WorldBotState* invalidState = nullptr;
+        Player* invalidBot = nullptr;
+        char const* invalidReason = nullptr;
+        auto invalidate = [&](WorldBotState& state, Player* bot, char const* reason)
+        {
+            if (!invalidReason)
+            {
+                invalidState = &state;
+                invalidBot = bot;
+                invalidReason = reason;
+            }
+        };
+
+        if (!admission.ExpectedSize || Party().Bots.size() != admission.ExpectedSize)
+            invalidate(Party().Bots.front(), GetLoadedBot(Party().Bots.front()),
+                "validation_active_roster_size_drift");
+
+        Group* admittedGroup = nullptr;
+        std::set<ObjectGuid> expectedGuids;
+        for (WorldBotState& state : Party().Bots)
+        {
+            Player* bot = GetLoadedBot(state);
+            expectedGuids.insert(state.Guid);
+            if (!bot || !state.ServerProvisioned || !state.ValidationCohortLocked)
+            {
+                invalidate(state, bot, "validation_active_member_identity_missing");
+                continue;
+            }
+
+            Group* group = bot->GetGroup();
+            if (!group || group->GetGUID() != state.ValidationCohortGroupGuid
+                || group->GetLeaderGUID() != state.ValidationCohortLeaderGuid
+                || group->GetGUID() != admission.GroupGuid
+                || group->GetLeaderGUID() != admission.LeaderGuid)
+            {
+                invalidate(state, bot, "validation_active_group_identity_drift");
+                continue;
+            }
+            if (!admittedGroup)
+                admittedGroup = group;
+            else if (admittedGroup != group)
+                invalidate(state, bot, "validation_active_group_split");
+
+            Difficulty const memberDifficulty = admission.RaidInstance
+                ? bot->GetRaidDifficulty() : bot->GetDungeonDifficulty();
+            Difficulty const groupDifficulty = admission.RaidInstance
+                ? group->GetRaidDifficulty() : group->GetDungeonDifficulty();
+            if (uint8(memberDifficulty) != admission.ExpectedDifficulty
+                || uint8(groupDifficulty) != admission.ExpectedDifficulty)
+                invalidate(state, bot, "validation_active_difficulty_drift");
+
+            if (!bot->IsInWorld())
+            {
+                if (!IsNativeReleasedGhostWorldport(state, bot)
+                    && !IsNativeValidationRunbackWorldport(state, bot))
+                    invalidate(state, bot, "validation_active_untyped_worldport");
+                continue;
+            }
+
+            if (!IsValidationCohortMemberInOriginalInstance(state, bot))
+            {
+                invalidate(state, bot, "validation_active_instance_drift");
+                continue;
+            }
+
+            bool const inOriginalInstance = bot->GetMapId() == state.ValidationCohortMapId
+                && bot->GetInstanceId() == state.ValidationCohortInstanceId;
+            if (inOriginalInstance && (!bot->GetMap()
+                || uint8(bot->GetMap()->GetDifficulty()) != admission.ExpectedDifficulty))
+                invalidate(state, bot, "validation_active_map_difficulty_drift");
+            if (!inOriginalInstance && (!state.NativeReleaseRequested
+                || !state.NativeReleaseLandingObserved
+                || !HasNativeRaidCorpseAuthority(state, bot)))
+                invalidate(state, bot, "validation_active_untyped_recovery_transit");
+
+            if (bot->getClass() == CLASS_HUNTER)
+            {
+                auto const admittedPet = admission.AdmissionReceiptByGuid.find(
+                    state.Guid.GetCounter());
+                if (admittedPet == admission.AdmissionReceiptByGuid.end()
+                    || !admittedPet->second.PetIdentityPresent)
+                {
+                    invalidate(state, bot,
+                        "validation_active_hunter_pet_receipt_missing");
+                    continue;
+                }
+
+                HunterPetIdentitySnapshot observedPet;
+                if (!ObserveActiveOrdinaryHunterPet(bot, observedPet))
+                {
+                    invalidate(state, bot,
+                        "validation_active_hunter_pet_missing");
+                    continue;
+                }
+
+                uint32 expectedPetId = 0;
+                uint32 expectedPetEntry = 0;
+                std::vector<std::pair<uint32, uint8>> expectedSpellbook;
+                bool const canonicalPetMatches = ResolveExpectedHunterPetIdentity(
+                        admittedPet->second.ClassSpec, expectedPetId, expectedPetEntry,
+                        expectedSpellbook)
+                    && observedPet.PetId == expectedPetId
+                    && observedPet.PetEntry == expectedPetEntry
+                    && observedPet.Spellbook == expectedSpellbook
+                    && observedPet.SpellbookSha256
+                        == HunterPetSpellbookSha256(expectedSpellbook);
+                if (!canonicalPetMatches)
+                {
+                    invalidate(state, bot,
+                        "validation_active_hunter_pet_canonical_identity_drift");
+                    continue;
+                }
+
+                CohortAdmissionMemberReceipt const& frozenPet = admittedPet->second;
+                bool const frozenPetMatches = frozenPet.PetId == observedPet.PetId
+                    && frozenPet.PetEntry == observedPet.PetEntry
+                    && frozenPet.PetSpellCount == observedPet.Spellbook.size()
+                    && frozenPet.PetSpellbook == observedPet.Spellbook
+                    && frozenPet.PetSpellbookSha256 == observedPet.SpellbookSha256;
+                if (!frozenPetMatches)
+                    invalidate(state, bot,
+                        "validation_active_hunter_pet_admission_identity_drift");
+            }
+        }
+
+        if (admittedGroup)
+        {
+            std::set<ObjectGuid> nativeGroupGuids;
+            for (Group::MemberSlot const& slot : admittedGroup->GetMemberSlots())
+                nativeGroupGuids.insert(slot.guid);
+            if (nativeGroupGuids != expectedGuids)
+                invalidate(Party().Bots.front(), GetLoadedBot(Party().Bots.front()),
+                    "validation_active_native_group_membership_drift");
+        }
+        else
+            invalidate(Party().Bots.front(), GetLoadedBot(Party().Bots.front()),
+                "validation_active_group_missing");
+
+        if (invalidReason)
+        {
+            MarkValidationCohortViolation(*invalidState, invalidBot, invalidReason);
+            return;
+        }
     }
 
     if (members.empty())
@@ -7815,6 +9136,12 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
     Group* group = leader->GetGroup();
     if (!group)
     {
+        if (activeObservationOnly)
+        {
+            MarkValidationCohortViolation(Party().Bots.front(), leader,
+                "validation_active_group_missing");
+            return;
+        }
         group = new Group();
         if (!group->Create(leader))
         {
@@ -7830,7 +9157,7 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
 
     bool const raidValidation = Cohort().Config.AllowRaids || members.size() > MAXGROUPSIZE || (leader->GetMap() && leader->GetMap()->IsRaid());
     std::vector<RaidRosterPlanSlot> const rosterPlan = BuildRosterPlan();
-    if (raidValidation && !group->isRaidGroup())
+    if (!activeObservationOnly && raidValidation && !group->isRaidGroup())
         group->ConvertToRaid();
 
     // Form the exact group before invoking client-equivalent difficulty
@@ -7840,7 +9167,7 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
     {
         if (!member || member == leader)
             continue;
-        if (!member->GetGroup() && !group->AddMember(member))
+        if (!activeObservationOnly && !member->GetGroup() && !group->AddMember(member))
         {
             Cohort().LastPopulationFailureReason = "validation_group_add_member_failed";
             return;
@@ -7875,8 +9202,16 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
             return;
         }
 
-    if (group->GetDungeonDifficulty() != DUNGEON_DIFFICULTY_NORMAL)
-        group->SetDungeonDifficulty(DUNGEON_DIFFICULTY_NORMAL);
+    Difficulty const requestedDungeonDifficulty = Difficulty(Cohort().Config.DungeonDifficulty);
+    if (!raidValidation && group->GetDungeonDifficulty() != requestedDungeonDifficulty)
+    {
+        // Every bot receives the native player difficulty request before map
+        // admission. Group::Create inherits the leader's value. A mismatch at
+        // this point is evidence of an invalid admission sequence; never
+        // repair it by mutating the live group from inside the instance.
+        Cohort().LastPopulationFailureReason = "native_dungeon_difficulty_preentry_readback_mismatch";
+        return;
+    }
     Difficulty requestedRaidDifficulty = Difficulty(Cohort().Config.RaidDifficulty);
     bool const requested25Player = (Cohort().Config.RaidDifficulty & RAID_DIFFICULTY_MASK_25MAN) != 0;
     if (raidValidation && ((Cohort().Config.RaidSize == 25) != requested25Player))
@@ -7964,20 +9299,32 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
     int16 const previousMapDifficulty = raid.MapDifficulty;
     uint32 const previousLockoutSaveId = raid.LockoutSaveId;
     raid.Active = raidValidation;
+    raid.RaidInstance = raidValidation;
     raid.GroupGuid = group->GetGUID();
     raid.LeaderGuid = leader->GetGUID();
     raid.ExpectedSize = raidValidation ? uint32(rosterPlan.size()) : uint32(members.size());
-    raid.ExpectedDifficulty = Cohort().Config.RaidDifficulty;
-    raid.GroupDifficulty = uint8(group->GetRaidDifficulty());
-    Player* raidMapObserver = nullptr;
+    raid.ExpectedDifficulty = raidValidation
+        ? Cohort().Config.RaidDifficulty : Cohort().Config.DungeonDifficulty;
+    raid.GroupDifficulty = uint8(raidValidation
+        ? group->GetRaidDifficulty() : group->GetDungeonDifficulty());
+    Player* instanceMapObserver = nullptr;
+    raid.DifficultyMemberCount = 0;
+    raid.DifficultyMatchingMemberCount = 0;
     for (Player* member : members)
-        if (member && member->GetMap() && member->GetMap()->IsRaid()
+        if (member && member->GetMap() && member->GetMap()->IsDungeon()
             && member->GetMapId() == leaderMapId && member->GetInstanceId() == leaderInstanceId)
         {
-            raidMapObserver = member;
-            break;
+            if (!instanceMapObserver)
+                instanceMapObserver = member;
+            ++raid.DifficultyMemberCount;
+            Difficulty const memberDifficulty = raidValidation
+                ? member->GetRaidDifficulty() : member->GetDungeonDifficulty();
+            if (uint8(memberDifficulty) == raid.ExpectedDifficulty
+                && uint8(member->GetMap()->GetDifficulty()) == raid.ExpectedDifficulty)
+                ++raid.DifficultyMatchingMemberCount;
         }
-    raid.MapDifficulty = raidMapObserver ? int16(raidMapObserver->GetMap()->GetDifficulty()) : previousMapDifficulty;
+    raid.MapDifficulty = instanceMapObserver
+        ? int16(instanceMapObserver->GetMap()->GetDifficulty()) : previousMapDifficulty;
     raid.MapId = leaderMapId;
     raid.InstanceId = leaderInstanceId;
     raid.ServerEpoch = _serverEpoch;
@@ -7992,15 +9339,19 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         raid.StrategyTransitionRouteGeneration = Party().ValidationRouteGeneration;
     }
     raid.StrategyId = currentStrategyId;
+    raid.DifficultyReadbackComplete = raid.ExpectedSize > 0
+        && raid.DifficultyMemberCount == raid.ExpectedSize;
     raid.DifficultyMatches = raid.GroupDifficulty == raid.ExpectedDifficulty
-        && (raid.MapDifficulty < 0 || raid.MapDifficulty == int16(raid.ExpectedDifficulty));
+        && raid.DifficultyReadbackComplete
+        && raid.DifficultyMatchingMemberCount == raid.ExpectedSize
+        && raid.MapDifficulty == int16(raid.ExpectedDifficulty);
     // A live in-instance observer must provide the current bind.  Preserve
     // the prior save only while every released ghost is legitimately outside
     // the instance during native runback; never attribute a stale save to a
     // currently observed raid map.
-    raid.LockoutSaveId = raidMapObserver ? 0 : previousLockoutSaveId;
-    if (raidMapObserver)
-        if (InstanceGroupBind* bind = group->GetBoundInstance(raidMapObserver->GetMap()))
+    raid.LockoutSaveId = instanceMapObserver ? 0 : previousLockoutSaveId;
+    if (instanceMapObserver)
+        if (InstanceGroupBind* bind = group->GetBoundInstance(instanceMapObserver->GetMap()))
             if (bind->save)
                 raid.LockoutSaveId = bind->save->GetInstanceId();
 
@@ -8049,11 +9400,11 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         if (auto stateItr = stateByGuid.find(guid); stateItr != stateByGuid.end())
             botState = stateItr->second;
         RaidRosterPlanSlot const* plannedSlot = botState ? findRosterPlanSlot(botState->RosterSlotId) : nullptr;
-        if (raidValidation && !plannedSlot)
+        if (Cohort().Config.ValidationRouteEnable && !plannedSlot)
             raid.RosterCompositionValid = false;
 
         uint8 const subgroup = plannedSlot ? plannedSlot->SubGroup : uint8(std::min<size_t>(memberIndex / MAXGROUPSIZE, 4));
-        if (raidValidation && group->GetMemberGroup(bot->GetGUID()) != subgroup)
+        if (!activeObservationOnly && raidValidation && group->GetMemberGroup(bot->GetGUID()) != subgroup)
             group->ChangeMembersGroup(bot->GetGUID(), subgroup);
 
         RaidRosterSlot slot;
@@ -8136,7 +9487,14 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
             || slot.RosterSlotId.empty() || !slot.LeaseOwned)
             raid.UniqueLeases = false;
 
-        if (raidValidation && (!plannedSlot || slot.Role != plannedSlot->Role))
+        if (Cohort().Config.ValidationRouteEnable
+            && (!plannedSlot || slot.Role != plannedSlot->Role
+                || (!Cohort().Config.PoolClassSpecFilter.empty()
+                    && (plannedSlot->SlotIndex >= Cohort().Config.PoolClassSpecFilter.size()
+                        || slot.ClassSpec != Cohort().Config.PoolClassSpecFilter[plannedSlot->SlotIndex]))
+                || !LoadedBotMatchesDeclaredSpec(bot, slot.ClassSpec)
+                || (!activeObservationOnly
+                    && !LoadedBotMatchesPinnedHunterPet(bot, slot.ClassSpec))))
             raid.RosterCompositionValid = false;
 
         RaidNativeSignalState currentSignal;
@@ -8162,11 +9520,11 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         raid.NativeSignalsByGuid[guid] = currentSignal;
 
         std::string role = slot.Role;
-        if (role == "tank")
+        if (!activeObservationOnly && role == "tank")
             group->SetLfgRoles(bot->GetGUID(), lfg::PLAYER_ROLE_TANK);
-        else if (role == "healer")
+        else if (!activeObservationOnly && role == "healer")
             group->SetLfgRoles(bot->GetGUID(), lfg::PLAYER_ROLE_HEALER);
-        else
+        else if (!activeObservationOnly)
             group->SetLfgRoles(bot->GetGUID(), lfg::PLAYER_ROLE_DAMAGE);
 
         if (botState && !IsValidationCohortMemberInOriginalInstance(*botState, bot))
@@ -8189,7 +9547,11 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         return member && member->IsAlive();
     }));
     raid.RosterComplete = raid.ActiveSize == raid.ExpectedSize;
-    if (raidValidation)
+    bool const typedValidationRoster = Cohort().Config.ValidationRouteEnable
+        && rosterPlan.size() == raid.ExpectedSize
+        && std::all_of(rosterPlan.begin(), rosterPlan.end(),
+            [](RaidRosterPlanSlot const& slot) { return !slot.Role.empty(); });
+    if (typedValidationRoster)
     {
         uint32 tankCount = 0;
         uint32 healerCount = 0;
@@ -8205,14 +9567,19 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
             else
                 raid.RosterCompositionValid = false;
         }
-        uint32 const expectedTanks = 2;
-        uint32 const expectedHealers = raid.ExpectedSize == 10 ? 3 : 6;
-        uint32 const expectedDps = raid.ExpectedSize == 10 ? 5 : 17;
+        uint32 const expectedTanks = uint32(std::count_if(rosterPlan.begin(), rosterPlan.end(),
+            [](RaidRosterPlanSlot const& slot) { return slot.Role == "tank"; }));
+        uint32 const expectedHealers = uint32(std::count_if(rosterPlan.begin(), rosterPlan.end(),
+            [](RaidRosterPlanSlot const& slot) { return slot.Role == "healer"; }));
+        uint32 const expectedDps = uint32(std::count_if(rosterPlan.begin(), rosterPlan.end(),
+            [](RaidRosterPlanSlot const& slot) { return slot.Role == "dps"; }));
         raid.RosterCompositionValid = raid.RosterCompositionValid
             && tankCount == expectedTanks && healerCount == expectedHealers && dpsCount == expectedDps;
     }
-    else
+    else if (!Cohort().Config.ValidationRouteEnable)
         raid.RosterCompositionValid = true;
+    else
+        raid.RosterCompositionValid = false;
 
     if (previousRoster.size() != raid.RosterByGuid.size())
         ++raid.AssignmentGeneration;
@@ -8233,7 +9600,7 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
 
     raid.BossStates = previousBossStates;
     raid.EncounterInProgress = false;
-    if (InstanceScript* instance = raidMapObserver ? raidMapObserver->GetInstanceScript() : nullptr)
+    if (InstanceScript* instance = instanceMapObserver ? instanceMapObserver->GetInstanceScript() : nullptr)
     {
         raid.BossStates.clear();
         raid.EncounterInProgress = instance->IsEncounterInProgress();
@@ -8285,8 +9652,8 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
     // pack from an idle-looking pack that still owns combat state.
     if (raidValidation)
     {
-        Map* nativeRaidMap = raidMapObserver
-            ? raidMapObserver->GetMap()
+        Map* nativeRaidMap = instanceMapObserver
+            ? instanceMapObserver->GetMap()
             : sMapMgr->FindMap(raid.MapId, raid.InstanceId);
         Player* hostilityObserver = members.empty() ? nullptr : members.front();
         bool hostileActive = false;
@@ -8478,7 +9845,9 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
                 && botState->NativeReleaseRequested
                 && botState->NativeReleaseLandingObserved
                 && botState->NativeReleaseLandingWipeGeneration == raid.WipeGeneration
-                && botState->NativeRunbackAreaTriggerId == BlackwingDescentEntranceTriggerId
+                && raid.AdmissionRecoveryEntranceAreaTriggerId
+                && botState->NativeRunbackAreaTriggerId
+                    == raid.AdmissionRecoveryEntranceAreaTriggerId
                 && !signal.Alive && signal.HasCorpse && signal.Released && signal.OutsideOriginalInstance
                 && signal.MapId == botState->NativeReleaseLandingMapId
                 && signal.InstanceId == botState->NativeReleaseLandingInstanceId;
@@ -8619,12 +9988,278 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         && raid.RosterCompositionValid && allAlive && !raid.EncounterInProgress
         && (previousWipeState != "wiped" || raid.NativeRecoveryEvidenceComplete);
 
+    // Freeze the server-provisioned identity before the action gate opens.
+    // This is admission metadata, not a bot decision; UpdateBot remains inert
+    // until BotActionsEnabled is committed below.
+    for (Player* member : members)
+    {
+        if (!member || member->GetGroup() != group)
+            continue;
+        auto stateItr = stateByGuid.find(member->GetGUID().GetCounter());
+        if (stateItr == stateByGuid.end())
+            continue;
+        WorldBotState& state = *stateItr->second;
+        if (state.ValidationCohortLocked
+            && (state.ValidationCohortLeaderGuid != leader->GetGUID()
+                || state.ValidationCohortGroupGuid != group->GetGUID()
+                || state.ValidationCohortMapId != leaderMapId
+                || state.ValidationCohortInstanceId != leaderInstanceId))
+        {
+            MarkValidationCohortViolation(state, member,
+                "validation_cohort_immutable_identity_drift");
+            return;
+        }
+        if (!state.ValidationCohortLocked)
+        {
+            state.ValidationCohortLocked = true;
+            state.ValidationCohortLeaderGuid = leader->GetGUID();
+            state.ValidationCohortGroupGuid = group->GetGUID();
+            state.ValidationCohortMapId = leaderMapId;
+            state.ValidationCohortInstanceId = leaderInstanceId;
+            state.ValidationCohortPhaseMask = 0;
+        }
+    }
+
+    std::set<ObjectGuid> expectedNativeGroupGuids;
+    for (WorldBotState const& state : Party().Bots)
+        expectedNativeGroupGuids.insert(state.Guid);
+    std::set<ObjectGuid> observedNativeGroupGuids;
+    for (Group::MemberSlot const& slot : group->GetMemberSlots())
+        observedNativeGroupGuids.insert(slot.guid);
+    bool const nativeGroupMembershipExact = expectedNativeGroupGuids == observedNativeGroupGuids
+        && observedNativeGroupGuids.size() == raid.ExpectedSize;
+
+    // Admission gear is immutable for the whole attempt.  Re-observe the
+    // loaded Player equipment on every active cohort pass so an item/enchant/
+    // reforge/gem edit after the receipt was committed cannot qualify through
+    // an old receipt or an unchanged average item level.
+    if (raid.ServerProvisioningComplete)
+    {
+        if (raid.AdmissionReceiptByGuid.size() != raid.ExpectedSize)
+        {
+            if (!Party().Bots.empty())
+                MarkValidationCohortViolation(Party().Bots.front(),
+                    GetLoadedBot(Party().Bots.front()),
+                    "validation_cohort_gear_identity_drift");
+            return;
+        }
+        for (WorldBotState& state : Party().Bots)
+        {
+            Player* member = GetLoadedBot(state);
+            auto const receiptItr = raid.AdmissionReceiptByGuid.find(
+                state.Guid.GetCounter());
+            std::vector<RaidRosterItemIdentity> currentManifest;
+            std::string currentManifestSha256;
+            std::string expectedGearProfileId;
+            std::string expectedManifestSha256;
+            if (!member || receiptItr == raid.AdmissionReceiptByGuid.end()
+                || !ResolveExpectedBotGearIdentity(state.RosterClassSpec,
+                    expectedGearProfileId, expectedManifestSha256)
+                || !ObserveEquippedGearIdentity(member,
+                    currentManifest, currentManifestSha256)
+                || receiptItr->second.ClassSpec != state.RosterClassSpec
+                || receiptItr->second.GearProfileId != expectedGearProfileId
+                || receiptItr->second.GearManifestSha256 != expectedManifestSha256
+                || currentManifestSha256 != receiptItr->second.GearManifestSha256
+                || !EquippedGearManifestsEqual(
+                    currentManifest, receiptItr->second.GearManifest))
+            {
+                MarkValidationCohortViolation(state, member,
+                    "validation_cohort_gear_identity_drift");
+                return;
+            }
+        }
+    }
+
+    if (!raid.ServerProvisioningComplete)
+    {
+        raid.ProvisionedMemberCount = 0;
+        for (Player* member : members)
+        {
+            if (!member || !member->IsInWorld() || member->GetGroup() != group
+                || member->GetMapId() != leaderMapId
+                || member->GetInstanceId() != leaderInstanceId)
+                continue;
+            auto const stateItr = stateByGuid.find(member->GetGUID().GetCounter());
+            if (stateItr != stateByGuid.end() && stateItr->second->ServerProvisioned)
+                ++raid.ProvisionedMemberCount;
+        }
+        bool exactEntrancePlacement = Cohort().ValidationAdmissionBatchSealed
+            && !Party().ValidationRouteManifest.empty();
+        bool exactInitialAliveState = exactEntrancePlacement;
+        if (exactEntrancePlacement)
+        {
+            ValidationRouteManifestNode const& routeStart = Party().ValidationRouteManifest.front();
+            static constexpr float RouteStartHorizontalToleranceYards = 5.0f;
+            static constexpr float RouteStartVerticalToleranceYards = 3.0f;
+            for (WorldBotState const& state : Party().Bots)
+                if (state.SpawnMapId != routeStart.BotStartMapId
+                    || Distance2d(state.SpawnX, state.SpawnY,
+                        routeStart.BotStartX, routeStart.BotStartY) > RouteStartHorizontalToleranceYards
+                    || std::fabs(state.SpawnZ - routeStart.BotStartZ) > RouteStartVerticalToleranceYards)
+                {
+                    exactEntrancePlacement = false;
+                    break;
+                }
+        }
+        if (exactInitialAliveState)
+            for (Player* member : members)
+                if (!member || !member->IsAlive()
+                    || member->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)
+                    || member->HasCorpse())
+                {
+                    exactInitialAliveState = false;
+                    break;
+                }
+        raid.ServerProvisioningComplete = raid.ExpectedSize > 0
+            && raid.ProvisionedMemberCount == raid.ExpectedSize
+            && raid.RosterComplete && raid.UniqueLeases
+            && raid.RosterCompositionValid && raid.DifficultyMatches
+            && nativeGroupMembershipExact && exactEntrancePlacement
+            && exactInitialAliveState;
+        if (raid.ServerProvisioningComplete)
+        {
+            std::map<uint32, CohortAdmissionMemberReceipt> receipt;
+            for (Player* member : members)
+            {
+                auto const stateItr = member
+                    ? stateByGuid.find(member->GetGUID().GetCounter()) : stateByGuid.end();
+                if (!member || stateItr == stateByGuid.end() || !member->GetMap())
+                {
+                    receipt.clear();
+                    break;
+                }
+                CohortAdmissionMemberReceipt row;
+                row.Guid = member->GetGUID();
+                row.GroupGuid = group->GetGUID();
+                row.LeaderGuid = group->GetLeaderGUID();
+                row.RosterSlotId = stateItr->second->RosterSlotId;
+                row.Role = stateItr->second->RosterRole.empty()
+                    ? GetDungeonRole(member) : stateItr->second->RosterRole;
+                row.ClassSpec = stateItr->second->RosterClassSpec.empty()
+                    ? GetBotClassSpec(member) : stateItr->second->RosterClassSpec;
+                row.ClassId = member->getClass();
+                row.ActiveSpecIndex = member->GetActiveSpec();
+                row.PrimaryTalentTreeId = member->GetPrimaryTalentTree(row.ActiveSpecIndex);
+                row.ActiveTalentCount = uint32(std::count_if(
+                    member->GetTalentMap(row.ActiveSpecIndex).begin(),
+                    member->GetTalentMap(row.ActiveSpecIndex).end(),
+                    [](auto const& talent) { return talent.second.State != PLAYERSPELL_REMOVED; }));
+                for (auto const& [spellId, talent] : member->GetTalentMap(row.ActiveSpecIndex))
+                    if (talent.State != PLAYERSPELL_REMOVED)
+                        row.ActiveTalentSpellIds.push_back(spellId);
+                std::sort(row.ActiveTalentSpellIds.begin(), row.ActiveTalentSpellIds.end());
+                std::string expectedGearManifestSha256;
+                if (!ResolveExpectedBotGearIdentity(row.ClassSpec,
+                        row.GearProfileId, expectedGearManifestSha256)
+                    || !ObserveEquippedGearIdentity(member,
+                        row.GearManifest, row.GearManifestSha256)
+                    || row.GearManifestSha256 != expectedGearManifestSha256)
+                {
+                    receipt.clear();
+                    raid.ServerProvisioningComplete = false;
+                    Cohort().LastPopulationFailureReason =
+                        "validation_cohort_gear_identity_mismatch";
+                    break;
+                }
+                row.GearItemCount = uint32(row.GearManifest.size());
+                if (member->getClass() == CLASS_HUNTER)
+                {
+                    HunterPetIdentitySnapshot petIdentity;
+                    if (!LoadedBotMatchesPinnedHunterPet(member, row.ClassSpec)
+                        || !ObserveActiveOrdinaryHunterPet(member, petIdentity))
+                    {
+                        receipt.clear();
+                        raid.ServerProvisioningComplete = false;
+                        break;
+                    }
+                    row.PetIdentityPresent = true;
+                    row.PetId = petIdentity.PetId;
+                    row.PetEntry = petIdentity.PetEntry;
+                    row.PetSpellCount = uint32(petIdentity.Spellbook.size());
+                    row.PetSpellbook = std::move(petIdentity.Spellbook);
+                    row.PetSpellbookSha256 = std::move(petIdentity.SpellbookSha256);
+                }
+                row.MapId = member->GetMapId();
+                row.InstanceId = member->GetInstanceId();
+                row.ExpectedDifficulty = raid.ExpectedDifficulty;
+                row.PlayerDifficulty = uint8(raidValidation
+                    ? member->GetRaidDifficulty() : member->GetDungeonDifficulty());
+                row.MapDifficulty = int16(member->GetMap()->GetDifficulty());
+                row.SpawnX = stateItr->second->SpawnX;
+                row.SpawnY = stateItr->second->SpawnY;
+                row.SpawnZ = stateItr->second->SpawnZ;
+                row.SpawnO = stateItr->second->SpawnO;
+                row.ServerProvisioned = stateItr->second->ServerProvisioned;
+                row.InitialBaselineNormalized =
+                    stateItr->second->ServerBaselineNormalized;
+                row.InitialAliveStateVerified = member->IsAlive()
+                    && !member->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)
+                    && !member->HasCorpse();
+                receipt.emplace(row.Guid.GetCounter(), row);
+            }
+            if (receipt.size() != raid.ExpectedSize)
+                raid.ServerProvisioningComplete = false;
+            else
+            {
+                ValidationRouteManifestNode const& admissionStart =
+                    Party().ValidationRouteManifest.front();
+                raid.AdmissionReceiptByGuid = std::move(receipt);
+                raid.AdmissionAttemptId = Cohort().AttemptId;
+                raid.AdmissionCommittedAtMs = NowMs();
+                raid.AdmissionActionGateEnabled = false;
+                raid.AdmissionScenarioId = Cohort().Config.ValidationRouteScenarioId;
+                raid.AdmissionRuntimeProfile = Cohort().SelectedProfileName;
+                raid.AdmissionRouteManifestSha256 = Party().ValidationRouteManifestSha256;
+                raid.AdmissionRecoveryEntranceAreaTriggerId =
+                    admissionStart.RecoveryEntranceAreaTriggerId;
+                raid.AdmissionRecoveryEntranceSourceMapId =
+                    admissionStart.RecoveryEntranceSourceMapId;
+                raid.AdmissionRecoveryEntranceTargetMapId =
+                    admissionStart.RecoveryEntranceTargetMapId;
+                raid.AdmissionEntranceMapId = admissionStart.BotStartMapId;
+                raid.AdmissionEntranceX = admissionStart.BotStartX;
+                raid.AdmissionEntranceY = admissionStart.BotStartY;
+                raid.AdmissionEntranceZ = admissionStart.BotStartZ;
+                raid.AdmissionEntranceO = admissionStart.BotStartO;
+            }
+        }
+    }
+    bool const currentAttemptFailed = !Cohort().ValidationAttemptFailureReason.empty()
+        && Cohort().ValidationAttemptFailureAttemptId == Cohort().AttemptId;
+    if (!raid.BotActionsEnabled && raid.ServerProvisioningComplete && !currentAttemptFailed)
+    {
+        raid.BotActionsEnabled = true;
+        Cohort().ValidationAdmission = ValidationAdmissionPhase::Active;
+        // Committing the receipt and opening the action gate are one server
+        // tick transaction; UpdateBot cannot run between these two writes.
+        raid.AdmissionActionGateEnabled = true;
+    }
+
     if (raidValidation && members.size() > raid.ExpectedSize)
         Cohort().LastPopulationFailureReason = "raid_roster_exceeds_expected_size";
     else if (raidValidation && !raid.RosterCompositionValid)
         Cohort().LastPopulationFailureReason = "exact_raid_role_composition_mismatch";
     else if (raidValidation && leader->GetMap() && leader->GetMap()->IsRaid() && !raid.DifficultyMatches)
         Cohort().LastPopulationFailureReason = "raid_live_difficulty_mismatch";
+    else if (!raidValidation && leader->GetMap() && leader->GetMap()->IsNonRaidDungeon() && !raid.DifficultyMatches)
+        Cohort().LastPopulationFailureReason = "dungeon_live_difficulty_mismatch";
+    else if (!nativeGroupMembershipExact)
+        Cohort().LastPopulationFailureReason = "validation_native_group_membership_mismatch";
+
+    // This is the server-to-agent activation barrier. Before it succeeds the
+    // loaded characters exist only as an inert provisioned cohort; UpdateBot
+    // rejects every decision because ValidationCohortLocked remains false.
+    if (!raid.BotActionsEnabled)
+    {
+        if (Cohort().LastPopulationFailureReason.empty()
+            || Cohort().LastPopulationFailureReason == "validation_cohort_formation_pending")
+            Cohort().LastPopulationFailureReason = "server_provisioning_activation_pending";
+        return;
+    }
+    if (Cohort().LastPopulationFailureReason == "validation_cohort_formation_pending"
+        || Cohort().LastPopulationFailureReason == "server_provisioning_activation_pending")
+        Cohort().LastPopulationFailureReason.clear();
 
     for (Player* bot : members)
     {
@@ -8658,7 +10293,7 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         Party().RoleByGuid[bot->GetGUID().GetCounter()] = role;
         uint8 const expectedLfgRole = role == "tank" ? lfg::PLAYER_ROLE_TANK
             : (role == "healer" ? lfg::PLAYER_ROLE_HEALER : lfg::PLAYER_ROLE_DAMAGE);
-        if (group->GetLfgRoles(bot->GetGUID()) != expectedLfgRole)
+        if (!activeObservationOnly && group->GetLfgRoles(bot->GetGUID()) != expectedLfgRole)
             group->SetLfgRoles(bot->GetGUID(), expectedLfgRole);
 
         // Formation payloads are immutable admission evidence. Do not rebuild
@@ -8694,12 +10329,11 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
 
 bool BotWorldPopulationMgr::ResolveSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const
 {
-    // A certifying route starts from the character's persisted world state.
-    // Arbitrary center/near-player/race-start placement is fixture or
-    // provisioning assistance and must never enter a live raid attempt.
+    // Certifying route placement is resolved only by the inactive admission
+    // transaction from the pinned route manifest; it never consults mutable
+    // character positions or the free-roam placement fallbacks below.
     if (Cohort().Config.ValidationRouteEnable)
-        return Cohort().Config.UseSavedPosition
-            && ResolveSavedSpawnPlacement(candidateGuid, placement);
+        return false;
 
     std::string mode = Cohort().Config.SpawnMode.empty() ? "resume_or_race_start" : Cohort().Config.SpawnMode;
     bool allowResume = Cohort().Config.UseSavedPosition && (mode == "resume_or_race_start" || mode == "resume_only" || mode == "saved_or_near_player");
@@ -9406,10 +11040,13 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     float segmentY = y;
     float segmentZ = z;
     char const* traversalMode = "native_complete_path";
-    bool boundedDescent = false;
     bool segmentSelected = false;
     bool const progressiveStaticRoute = !targetAwareChase
         && movementOwner == Owner::Route;
+    bool const strictNativeDescent = progressiveStaticRoute
+        && Cohort().Config.ValidationRouteKind == "descent"
+        && Cohort().Config.ValidationRouteDescentAction
+            == "native_walkable_descent";
     float const currentGoalDistance = bot->GetExactDist(x, y, z);
     auto distanceToGoal = [x, y, z](float candidateX, float candidateY, float candidateZ)
     {
@@ -9431,6 +11068,12 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
             return false;
 
         G3D::Vector3 const& endpoint = candidatePath.GetActualEndPosition();
+        float const endpointFloorZ = bot->GetMap()->GetHeight(
+            bot->GetPhaseShift(), endpoint.x, endpoint.y, endpoint.z + 2.0f,
+            true, 8.0f);
+        if (endpointFloorZ <= INVALID_HEIGHT
+            || std::fabs(endpointFloorZ - endpoint.z) > 1.5f)
+            return false;
         float const endpointTravel = bot->GetExactDist(endpoint.x, endpoint.y, endpoint.z);
         float const endpointGoalDistance = distanceToGoal(endpoint.x, endpoint.y, endpoint.z);
         if (endpointTravel < 1.5f
@@ -9455,7 +11098,8 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
         && !(pathType & PATHFIND_FARFROMPOLY)
         && !(pathType & PATHFIND_INCOMPLETE))
         segmentSelected = true;
-    else if (progressiveStaticRoute && pathOk && (pathType & PATHFIND_INCOMPLETE))
+    else if (!strictNativeDescent && progressiveStaticRoute
+        && pathOk && (pathType & PATHFIND_INCOMPLETE))
         selectProgressEndpoint(path, "native_partial_path", 3.0f);
 
     // A route goal is a logical destination, not an instruction to repeatedly
@@ -9463,7 +11107,7 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     // solve the whole route, try deterministic, nearby walkable segments and
     // reconcile again after the committed spline finishes. This is the same
     // feedback loop a player uses while walking around incomplete geometry.
-    if (!segmentSelected && progressiveStaticRoute)
+    if (!segmentSelected && progressiveStaticRoute && !strictNativeDescent)
     {
         float const baseAngle = bot->GetAngle(x, y);
         std::array<float, 7> const angleOffsets{
@@ -9526,109 +11170,9 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
         }
     }
 
-    // Server-controlled players do not have a client to emit a jump key. For
-    // an explicitly ordinary descent, permit one short, locally observed jump
-    // only after native paths and walkable steps are exhausted. Ground,
-    // horizontal reach, goal progress, the lower navmesh, and the player's
-    // current health against the core fall-damage curve are all checked. A
-    // player jump does not require spell-style line of sight to its landing;
-    // cave lips commonly occlude otherwise valid lower-floor destinations.
-    // Declared special descents remain fail-closed before this helper is
-    // called, and this never mutates position or teleports.
     char const* descentRejectReason = nullptr;
-    if (!segmentSelected && progressiveStaticRoute
-        && Cohort().Config.ValidationRouteKind == "descent"
-        && Cohort().Config.ValidationRouteDescentAction.empty()
-        && !bot->IsInCombat())
-    {
-        float const baseAngle = bot->GetAngle(x, y);
-        std::array<float, 7> const angleOffsets{
-            0.0f, float(M_PI) / 12.0f, -float(M_PI) / 12.0f,
-            float(M_PI) / 6.0f, -float(M_PI) / 6.0f,
-            float(M_PI) / 4.0f, -float(M_PI) / 4.0f
-        };
-        // A running player can carry horizontal velocity while falling. Search
-        // a bounded two-second run/jump envelope instead of assuming every
-        // legal dungeon drop is shorter than a standing jump.
-        std::array<float, 8> const jumpDistances{
-            4.0f, 6.0f, 8.0f, 10.0f, 12.0f, 14.0f, 16.0f, 18.0f
-        };
-        float bestGoalDistance = currentGoalDistance;
-        bool observedGround = false;
-        bool observedSurvivableDrop = false;
-        bool observedProgressLanding = false;
-        bool observedLowerNavmesh = false;
-        for (float jumpDistance : jumpDistances)
-        {
-            for (float angleOffset : angleOffsets)
-            {
-                float const angle = baseAngle + angleOffset;
-                float const candidateX = bot->GetPositionX() + std::cos(angle) * jumpDistance;
-                float const candidateY = bot->GetPositionY() + std::sin(angle) * jumpDistance;
-                float const candidateZ = bot->GetMap()->GetHeight(bot->GetPhaseShift(),
-                    candidateX, candidateY, bot->GetPositionZ() + 2.0f, true, 32.0f);
-                if (candidateZ <= INVALID_HEIGHT)
-                    continue;
-                observedGround = true;
-                float const drop = bot->GetPositionZ() - candidateZ;
-                float const safeFallReduction = std::max(0.0f,
-                    float(bot->GetTotalAuraModifier(SPELL_AURA_SAFE_FALL)));
-                float const effectiveDrop = std::max(0.0f, drop - safeFallReduction);
-                float const predictedFallDamagePct = std::max(0.0f,
-                    0.018f * effectiveDrop - 0.2426f);
-                float const currentHealthPct = bot->GetMaxHealth()
-                    ? float(bot->GetHealth()) / float(bot->GetMaxHealth()) : 0.0f;
-                float const candidateGoalDistance = distanceToGoal(candidateX, candidateY, candidateZ);
-                if (drop < 1.5f || drop > 32.0f
-                    || predictedFallDamagePct + 0.35f > currentHealthPct)
-                    continue;
-                observedSurvivableDrop = true;
-                if (candidateGoalDistance + 2.0f >= currentGoalDistance
-                    || candidateGoalDistance >= bestGoalDistance)
-                    continue;
-                observedProgressLanding = true;
-                Position landing(candidateX, candidateY, candidateZ, angle);
-                Position goal(x, y, z, angle);
-                PathGenerator landingPath(bot);
-                if (!landingPath.CalculatePath(landing, goal, false))
-                    continue;
-                PathType const landingType = landingPath.GetPathType();
-                if ((landingType & PATHFIND_NOPATH)
-                    || (landingType & PATHFIND_NOT_USING_PATH)
-                    || (landingType & PATHFIND_SHORTCUT)
-                    || (landingType & PATHFIND_FARFROMPOLY_START)
-                    || !(landingType & (PATHFIND_NORMAL | PATHFIND_INCOMPLETE)))
-                    continue;
-                if (landingType & PATHFIND_INCOMPLETE)
-                {
-                    G3D::Vector3 const& lowerEndpoint = landingPath.GetActualEndPosition();
-                    if (distanceToGoal(lowerEndpoint.x, lowerEndpoint.y, lowerEndpoint.z) + 2.0f
-                        >= candidateGoalDistance)
-                        continue;
-                }
-                observedLowerNavmesh = true;
-
-                bestGoalDistance = candidateGoalDistance;
-                segmentX = candidateX;
-                segmentY = candidateY;
-                segmentZ = candidateZ;
-                traversalMode = "native_bounded_descent_jump";
-                boundedDescent = true;
-                segmentSelected = true;
-            }
-        }
-        if (!segmentSelected)
-        {
-            if (!observedGround)
-                descentRejectReason = "route_descent_no_observed_ground";
-            else if (!observedSurvivableDrop)
-                descentRejectReason = "route_descent_no_survivable_drop";
-            else if (!observedProgressLanding)
-                descentRejectReason = "route_descent_no_progress_landing";
-            else if (!observedLowerNavmesh)
-                descentRejectReason = "route_descent_landing_off_mesh";
-        }
-    }
+    if (!segmentSelected && strictNativeDescent && !bot->IsInCombat())
+        descentRejectReason = "native_descent_complete_path_required";
 
     if (!segmentSelected)
     {
@@ -9688,9 +11232,6 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
     if (targetAwareChase)
         bot->GetMotionMaster()->MoveChase(dynamicTarget);
-    else if (boundedDescent)
-        bot->GetMotionMaster()->MoveJump(segmentX, segmentY, segmentZ,
-            bot->GetAngle(segmentX, segmentY), bot->GetSpeed(MOVE_RUN), 7.0f, EVENT_JUMP, true);
     else if (std::fabs(segmentX - x) > activeDestinationEpsilon
         || std::fabs(segmentY - y) > activeDestinationEpsilon
         || std::fabs(segmentZ - z) > activeDestinationEpsilon)
@@ -9700,6 +11241,314 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     return true;
 }
 
+char const* BotWorldPopulationMgr::ValidationDescentPhaseName(
+    WorldBotState::ValidationDescentPhase phase)
+{
+    switch (phase)
+    {
+        case WorldBotState::ValidationDescentPhase::Unobserved: return "unobserved";
+        case WorldBotState::ValidationDescentPhase::Approaching: return "approaching";
+        case WorldBotState::ValidationDescentPhase::Departed: return "departed";
+        case WorldBotState::ValidationDescentPhase::Falling: return "falling";
+        case WorldBotState::ValidationDescentPhase::Landed: return "landed";
+        case WorldBotState::ValidationDescentPhase::Ready: return "ready";
+        case WorldBotState::ValidationDescentPhase::Blocked: return "blocked";
+    }
+    return "unknown";
+}
+
+BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeDescentIntent(
+    WorldBotState& state, Player* bot,
+    BotNativeAction::NativeDescent const& intent)
+{
+    using Phase = WorldBotState::ValidationDescentPhase;
+    constexpr float ArrivalRadius = 18.0f;
+    constexpr float ArrivalVerticalTolerance = 4.0f;
+    constexpr float MinimumLandingHealthPct = 0.15f;
+    constexpr float MinimumPreDescentHealthPct = 0.50f;
+    constexpr float MaximumNativeWalkStepDown = 4.0f;
+    constexpr uint64 GroundedStableMs = 500;
+    constexpr uint64 NoProgressTerminalMs = 30000;
+    uint64 const nowMs = NowMs();
+
+    auto reject = [&](char const* reason) -> BotActionArbitration::Outcome
+    {
+        state.ValidationRouteDescentPhase = Phase::Blocked;
+        state.ValidationRouteDescentRejectReason = reason;
+        state.LastPathRejectReason = reason;
+        state.LastNoProgressReason = reason;
+        state.LastRecoveryMode = "native_walkable_descent";
+        state.LastRecoveryResult = reason;
+        return BotActionArbitration::Outcome::Retryable(reason);
+    };
+
+    if (!bot || !bot->IsInWorld() || !bot->GetMap())
+        return reject("native_descent_bot_unavailable");
+    if (Cohort().Config.ValidationRouteKind != "descent"
+        || Cohort().Config.ValidationRouteDescentAction
+            != "native_walkable_descent")
+        return reject("native_descent_action_contract_mismatch");
+    if (!intent.RouteGeneration
+        || intent.RouteGeneration != Party().ValidationRouteGeneration)
+        return reject("native_descent_generation_mismatch");
+    if (!intent.HasNextGoal)
+        return reject("native_descent_next_goal_missing");
+
+    float const goalDistance = bot->GetExactDist(intent.LandingX,
+        intent.LandingY, intent.LandingZ);
+    if (state.ValidationRouteDescentGeneration != intent.RouteGeneration)
+    {
+        state.ValidationRouteDescentPhase = Phase::Approaching;
+        state.ValidationRouteDescentGeneration = intent.RouteGeneration;
+        state.ValidationRouteDescentStartX = bot->GetPositionX();
+        state.ValidationRouteDescentStartY = bot->GetPositionY();
+        state.ValidationRouteDescentStartZ = bot->GetPositionZ();
+        state.ValidationRouteDescentInitialGoalDistance = goalDistance;
+        state.ValidationRouteDescentBestGoalDistance = goalDistance;
+        state.ValidationRouteDescentLandingHealthPct = 0.0f;
+        state.ValidationRouteDescentLastProgressMs = nowMs;
+        state.ValidationRouteDescentGroundedSinceMs = 0;
+        state.ValidationRouteDescentDepartureObserved = false;
+        state.ValidationRouteDescentFallingObserved = false;
+        state.ValidationRouteDescentLandingObserved = false;
+        state.ValidationRouteDescentHealthMarginSatisfied = false;
+        state.ValidationRouteDescentLandingPathProven = false;
+        state.ValidationRouteDescentMonotonicProgressObserved = false;
+        state.ValidationRouteDescentRejectReason.clear();
+    }
+
+    if (!bot->IsAlive())
+        return reject("native_descent_member_not_alive");
+
+    if (state.ValidationRouteDescentLastProgressMs
+        && nowMs - state.ValidationRouteDescentLastProgressMs
+            >= NoProgressTerminalMs)
+    {
+        char const* const stalledPhase = ValidationDescentPhaseName(
+            state.ValidationRouteDescentPhase);
+        state.ValidationRouteDescentPhase = Phase::Blocked;
+        state.ValidationRouteDescentRejectReason =
+            std::string("native_descent_no_progress_")
+            + stalledPhase;
+        state.LastPathRejectReason =
+            state.ValidationRouteDescentRejectReason;
+        state.LastNoProgressReason =
+            state.ValidationRouteDescentRejectReason;
+        state.LastRecoveryMode = "native_walkable_descent";
+        state.LastRecoveryResult = "native_descent_no_progress_terminal";
+        state.LoopRecoveryCooldownUntilMs = nowMs + 60000;
+        std::string const failureReason =
+            std::string("native_descent_no_progress_terminal:")
+            + state.ValidationRouteDescentRejectReason;
+        FailValidationAttemptOnce(state, bot, failureReason,
+            intent.RouteGeneration);
+        return BotActionArbitration::Outcome::Terminal(
+            failureReason);
+    }
+
+    if (goalDistance + 0.25f
+        < state.ValidationRouteDescentBestGoalDistance)
+    {
+        state.ValidationRouteDescentBestGoalDistance = goalDistance;
+        state.ValidationRouteDescentLastProgressMs = nowMs;
+        state.ValidationRouteDescentMonotonicProgressObserved = true;
+    }
+
+    float const departureX = bot->GetPositionX()
+        - state.ValidationRouteDescentStartX;
+    float const departureY = bot->GetPositionY()
+        - state.ValidationRouteDescentStartY;
+    float const departure2d = std::sqrt(departureX * departureX
+        + departureY * departureY);
+    float const verticalDeparture = std::fabs(bot->GetPositionZ()
+        - state.ValidationRouteDescentStartZ);
+    if (!state.ValidationRouteDescentDepartureObserved
+        && (departure2d >= 1.0f || verticalDeparture >= 0.75f
+            || goalDistance + 0.5f
+                < state.ValidationRouteDescentInitialGoalDistance))
+    {
+        state.ValidationRouteDescentDepartureObserved = true;
+        state.ValidationRouteDescentPhase = Phase::Departed;
+        state.ValidationRouteDescentLastProgressMs = nowMs;
+    }
+
+    // Falling is observation-only. Never replace the native transition with a
+    // movement spline or repeatedly submit another path while gravity owns the
+    // player. The ordinary route candidate reconciles again after landing.
+    if (bot->IsFalling())
+    {
+        SubmitMeleeAutoAttackIntent(state,
+            BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+            BotMeleeAutoAttack::Owner::Route,
+            BotActionArbitration::Priority::Mechanic,
+            "native_descent_falling");
+        state.ValidationRouteDescentFallingObserved = true;
+        state.ValidationRouteDescentDepartureObserved = true;
+        if (state.ValidationRouteDescentPhase != Phase::Falling)
+            state.ValidationRouteDescentLastProgressMs = nowMs;
+        state.ValidationRouteDescentPhase = Phase::Falling;
+        state.ValidationRouteDescentGroundedSinceMs = 0;
+        state.ValidationRouteDescentRejectReason.clear();
+        state.LastNoProgressReason = "native_descent_falling_observed";
+        return BotActionArbitration::Outcome::Progressed(
+            "native_descent_falling_observed");
+    }
+
+    float const floorZ = bot->GetMap()->GetHeight(bot->GetPhaseShift(),
+        bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ() + 2.0f,
+        true, 8.0f);
+    bool const grounded = floorZ > INVALID_HEIGHT
+        && std::fabs(floorZ - bot->GetPositionZ()) <= 1.5f;
+    bool const insideLanding = goalDistance <= ArrivalRadius
+        && std::fabs(bot->GetPositionZ() - intent.LandingZ)
+            <= ArrivalVerticalTolerance;
+    if (insideLanding && grounded)
+    {
+        if (!state.ValidationRouteDescentDepartureObserved
+            || !state.ValidationRouteDescentMonotonicProgressObserved)
+            return reject("native_descent_departure_not_observed");
+
+        if (!state.ValidationRouteDescentGroundedSinceMs)
+        {
+            state.ValidationRouteDescentGroundedSinceMs = nowMs;
+            state.ValidationRouteDescentPhase = Phase::Landed;
+            state.ValidationRouteDescentLastProgressMs = nowMs;
+            state.LastNoProgressReason = "native_descent_grounded_stability_pending";
+            return BotActionArbitration::Outcome::Progressed(
+                "native_descent_grounded_observed");
+        }
+        if (nowMs - state.ValidationRouteDescentGroundedSinceMs
+            < GroundedStableMs)
+            return BotActionArbitration::Outcome::Retryable(
+                "native_descent_grounded_stability_pending");
+
+        state.ValidationRouteDescentLandingObserved = true;
+        state.ValidationRouteDescentLandingX = bot->GetPositionX();
+        state.ValidationRouteDescentLandingY = bot->GetPositionY();
+        state.ValidationRouteDescentLandingZ = bot->GetPositionZ();
+        state.ValidationRouteDescentLandingHealthPct = bot->GetMaxHealth()
+            ? float(bot->GetHealth()) / float(bot->GetMaxHealth()) : 0.0f;
+        state.ValidationRouteDescentHealthMarginSatisfied =
+            state.ValidationRouteDescentLandingHealthPct
+                >= MinimumLandingHealthPct;
+        state.ValidationRouteDescentPhase = Phase::Landed;
+        if (!state.ValidationRouteDescentHealthMarginSatisfied)
+        {
+            state.ValidationRouteDescentRejectReason =
+                "native_descent_landing_health_margin_low";
+            state.LastNoProgressReason =
+                state.ValidationRouteDescentRejectReason;
+            return BotActionArbitration::Outcome::Retryable(
+                state.ValidationRouteDescentRejectReason);
+        }
+
+        PathGenerator onwardPath(bot);
+        bool const onwardCalculated = onwardPath.CalculatePath(
+            intent.NextGoalX, intent.NextGoalY, intent.NextGoalZ, false);
+        PathType const onwardType = onwardPath.GetPathType();
+        bool onwardExact = onwardCalculated
+            && (onwardType & PATHFIND_NORMAL)
+            && !(onwardType & PATHFIND_NOPATH)
+            && !(onwardType & PATHFIND_NOT_USING_PATH)
+            && !(onwardType & PATHFIND_INCOMPLETE)
+            && !(onwardType & PATHFIND_SHORTCUT)
+            && !(onwardType & PATHFIND_FARFROMPOLY);
+        if (onwardExact)
+        {
+            G3D::Vector3 const& actualEnd =
+                onwardPath.GetActualEndPosition();
+            float const dx = actualEnd.x - intent.NextGoalX;
+            float const dy = actualEnd.y - intent.NextGoalY;
+            float const dz = actualEnd.z - intent.NextGoalZ;
+            onwardExact = std::sqrt(dx * dx + dy * dy + dz * dz) <= 3.0f;
+        }
+        if (!onwardExact)
+            return reject("native_descent_landing_next_goal_path_unavailable");
+
+        state.ValidationRouteDescentLandingPathProven = true;
+        state.ValidationRouteDescentPhase = Phase::Ready;
+        state.ValidationRouteDescentLastProgressMs = nowMs;
+        state.ValidationRouteDescentRejectReason.clear();
+        state.LastPathRejectReason.clear();
+        state.LastNoProgressReason.clear();
+        state.LastRecoveryMode = "native_walkable_descent";
+        state.LastRecoveryResult = "grounded_landing_and_onward_path_proven";
+        return BotActionArbitration::Outcome::Committed(
+            "native_descent_ready");
+    }
+
+    state.ValidationRouteDescentGroundedSinceMs = 0;
+    float const currentHealthPct = bot->GetMaxHealth()
+        ? float(bot->GetHealth()) / float(bot->GetMaxHealth()) : 0.0f;
+    if (currentHealthPct < MinimumPreDescentHealthPct)
+        return reject("native_descent_pre_step_health_margin_low");
+
+    // The typed descent requires one complete ordinary Detour corridor to the
+    // declared landing. An incomplete corridor or locally improving endpoint
+    // is not authority to step onto a one-way edge. Its height samples must
+    // also describe walk-sized transitions rather than a large implicit drop.
+    PathGenerator descentPreflight(bot);
+    bool const descentPathCalculated = descentPreflight.CalculatePath(
+        intent.LandingX, intent.LandingY, intent.LandingZ, false);
+    PathType const descentPathType = descentPreflight.GetPathType();
+    bool completeNativePath = descentPathCalculated
+        && (descentPathType & PATHFIND_NORMAL)
+        && !(descentPathType & PATHFIND_NOPATH)
+        && !(descentPathType & PATHFIND_NOT_USING_PATH)
+        && !(descentPathType & PATHFIND_INCOMPLETE)
+        && !(descentPathType & PATHFIND_SHORTCUT)
+        && !(descentPathType & PATHFIND_FARFROMPOLY);
+    if (completeNativePath)
+    {
+        G3D::Vector3 const& actualEnd =
+            descentPreflight.GetActualEndPosition();
+        float const dx = actualEnd.x - intent.LandingX;
+        float const dy = actualEnd.y - intent.LandingY;
+        float const dz = actualEnd.z - intent.LandingZ;
+        completeNativePath = std::sqrt(dx * dx + dy * dy + dz * dz)
+            <= 3.0f;
+    }
+    if (!completeNativePath)
+        return reject("native_descent_complete_path_required");
+
+    {
+        Movement::PointsArray const& points = descentPreflight.GetPath();
+        for (size_t index = 1; index < points.size(); ++index)
+            if (points[index - 1].z - points[index].z
+                > MaximumNativeWalkStepDown)
+                return reject("native_descent_drop_policy_rejected");
+    }
+
+    SubmitMeleeAutoAttackIntent(state,
+        BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+        BotMeleeAutoAttack::Owner::Route,
+        BotActionArbitration::Priority::Mechanic,
+        "native_descent_movement");
+    bool const moved = MoveBotToPoint(state, bot, intent.LandingX,
+        intent.LandingY, intent.LandingZ, false,
+        BotMovementArbitration::Owner::Route,
+        BotMovementArbitration::Priority::Route);
+    if (!moved)
+    {
+        state.ValidationRouteDescentPhase = Phase::Blocked;
+        state.ValidationRouteDescentRejectReason =
+            state.LastPathRejectReason.empty()
+                ? "native_descent_safe_segment_unavailable"
+                : state.LastPathRejectReason;
+        state.LastNoProgressReason =
+            state.ValidationRouteDescentRejectReason;
+        return BotActionArbitration::Outcome::Retryable(
+            state.ValidationRouteDescentRejectReason);
+    }
+
+    state.ValidationRouteDescentPhase =
+        state.ValidationRouteDescentDepartureObserved
+            ? Phase::Departed : Phase::Approaching;
+    state.ValidationRouteDescentRejectReason.clear();
+    return BotActionArbitration::Outcome::Submitted(
+        "native_descent_walk_segment_submitted");
+}
+
 BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
     WorldBotState& state, Player* bot, BotNativeAction::Intent const& intent,
     BotMovementArbitration::Owner movementOwner,
@@ -9707,6 +11556,54 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
 {
     if (!bot || !bot->IsInWorld() || !bot->GetSession())
         return BotActionArbitration::Outcome::Retryable("native_intent_bot_unavailable");
+
+    auto resolveCombatResTarget = [&](ObjectGuid targetGuid, uint32 spellId,
+        uint64 reservationAtMs, uint64 reservationUntilMs,
+        WorldBotState*& targetState, Player*& target,
+        std::string& declineReason) -> bool
+    {
+        targetState = nullptr;
+        target = nullptr;
+        for (WorldBotState& candidate : Party().Bots)
+            if (candidate.Guid == targetGuid)
+            {
+                targetState = &candidate;
+                target = GetLoadedBot(candidate);
+                break;
+            }
+        if (!targetState || !target)
+        {
+            declineReason = "declined_target_unloaded";
+            return false;
+        }
+        if (targetState->NativeBattleResOwnerGuid != bot->GetGUID()
+            || targetState->NativeBattleResSpellId != spellId
+            || targetState->NativeBattleResDecisionAtMs != reservationAtMs
+            || targetState->NativeBattleResDecisionUntilMs != reservationUntilMs)
+        {
+            declineReason = "declined_typed_intent_identity_drift";
+            return false;
+        }
+        return CurrentCombatResOwnerUsable(*targetState, target, NowMs(),
+            declineReason);
+    };
+
+    auto declineCombatResIntent = [&](WorldBotState* targetState,
+        Player* target, uint32 spellId, uint64 reservationAtMs,
+        uint64 reservationUntilMs, std::string const& declineReason)
+    {
+        if (!targetState || !target
+            || targetState->NativeBattleResOwnerGuid != bot->GetGUID()
+            || targetState->NativeBattleResSpellId != spellId
+            || targetState->NativeBattleResDecisionAtMs != reservationAtMs
+            || targetState->NativeBattleResDecisionUntilMs
+                != reservationUntilMs)
+            return;
+        uint64 const nowMs = NowMs();
+        PublishNativeBattleResDecision(*targetState, target,
+            declineReason.empty() ? "declined_typed_intent_rejected" : declineReason,
+            bot->GetGUID(), spellId, nowMs, nowMs + 5000);
+    };
 
     return std::visit([&](auto const& action) -> BotActionArbitration::Outcome
     {
@@ -9719,6 +11616,221 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
                 ? BotActionArbitration::Outcome::Submitted("native_move_submitted")
                 : BotActionArbitration::Outcome::Retryable("native_move_retryable");
         }
+        else if constexpr (std::is_same_v<T, BotNativeAction::NativeDescent>)
+        {
+            return ExecuteNativeDescentIntent(state, bot, action);
+        }
+        else if constexpr (std::is_same_v<T, BotNativeAction::CombatResApproach>)
+        {
+            WorldBotState* targetState = nullptr;
+            Player* target = nullptr;
+            std::string declineReason;
+            if (!resolveCombatResTarget(action.Target, action.SpellId,
+                    action.ReservationAtMs, action.ReservationUntilMs,
+                    targetState, target, declineReason))
+            {
+                declineCombatResIntent(targetState, target, action.SpellId,
+                    action.ReservationAtMs, action.ReservationUntilMs,
+                    declineReason);
+                return BotActionArbitration::Outcome::Retryable(
+                    declineReason.empty() ? "combat_res_approach_invalid"
+                        : declineReason);
+            }
+            if (targetState->NativeBattleResDecision != "reserved_approach")
+                return BotActionArbitration::Outcome::Retryable(
+                    "combat_res_approach_phase_changed");
+
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(action.SpellId);
+            float const resurrectionRange = spellInfo
+                ? std::max(5.0f,
+                    bot->GetSpellMaxRangeForTarget(target, spellInfo)) : 5.0f;
+            if (bot->IsWithinLOSInMap(target)
+                && bot->IsWithinDistInMap(target, resurrectionRange))
+                return BotActionArbitration::Outcome::Retryable(
+                    "combat_res_cast_envelope_ready");
+
+            bool const moved = MoveBotToPoint(state, bot,
+                target->GetPositionX(), target->GetPositionY(),
+                target->GetPositionZ(), false,
+                BotMovementArbitration::Owner::Support,
+                BotMovementArbitration::Priority::Support, target);
+            if (!moved)
+                return BotActionArbitration::Outcome::Retryable(
+                    "combat_res_approach_not_submitted");
+
+            uint64 const acceptedAtMs = NowMs();
+            targetState->NativeBattleResApproachIntentDecisionAtMs =
+                targetState->NativeBattleResDecisionAtMs;
+            targetState->NativeBattleResApproachIntentAcceptedUntilMs =
+                std::min(targetState->NativeBattleResDecisionUntilMs,
+                    acceptedAtMs + 1500);
+            std::string raw = BuildRawJson(bot, target);
+            std::string semantic = BuildSemanticJson(bot, target,
+                "validation_route_resurrection");
+            RecordEvent(state, bot, "validation_route_resurrection", target,
+                "typed_approach_intent_submitted", raw.c_str(),
+                semantic.c_str(), bot->GetExactDist(target), 0,
+                action.SpellId);
+            return BotActionArbitration::Outcome::Submitted(
+                "typed_combat_res_approach_submitted");
+        }
+        else if constexpr (std::is_same_v<T, BotNativeAction::CombatResCast>)
+        {
+            WorldBotState* targetState = nullptr;
+            Player* target = nullptr;
+            std::string declineReason;
+            if (!resolveCombatResTarget(action.Target, action.SpellId,
+                    action.ReservationAtMs, action.ReservationUntilMs,
+                    targetState, target, declineReason))
+            {
+                declineCombatResIntent(targetState, target, action.SpellId,
+                    action.ReservationAtMs, action.ReservationUntilMs,
+                    declineReason);
+                return BotActionArbitration::Outcome::Retryable(
+                    declineReason.empty() ? "combat_res_cast_invalid"
+                        : declineReason);
+            }
+            if (targetState->NativeBattleResDecision
+                == "reserved_cast_submitted")
+            {
+                if (bot->FindCurrentSpellBySpellId(action.SpellId))
+                    return BotActionArbitration::Outcome::Started(
+                        "typed_combat_res_cast_in_progress");
+                if (target->IsResurrectRequestedBy(bot->GetGUID()))
+                    return BotActionArbitration::Outcome::Progressed(
+                        "typed_combat_res_request_observed");
+                declineCombatResIntent(targetState, target, action.SpellId,
+                    action.ReservationAtMs, action.ReservationUntilMs,
+                    "declined_submitted_cast_identity_drift");
+                return BotActionArbitration::Outcome::Retryable(
+                    "submitted_combat_res_not_observed");
+            }
+
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(action.SpellId);
+            float const resurrectionRange = spellInfo
+                ? std::max(5.0f,
+                    bot->GetSpellMaxRangeForTarget(target, spellInfo)) : 5.0f;
+            if (!spellInfo || !bot->IsWithinLOSInMap(target)
+                || !bot->IsWithinDistInMap(target, resurrectionRange))
+                return BotActionArbitration::Outcome::Retryable(
+                    "combat_res_cast_envelope_lost");
+
+            if (spellInfo->CalcCastTime(bot->getLevel()) > 0)
+            {
+                bot->StopMoving();
+                bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+                bot->GetMotionMaster()->MoveIdle();
+            }
+            SpellCastResult const castResult = bot->CastSpell(target,
+                action.SpellId, false);
+            if (castResult != SPELL_CAST_OK)
+            {
+                std::string const resultLabel = "spell_cast_result_"
+                    + std::to_string(uint32(castResult));
+                std::string raw = BuildRawJson(bot, target);
+                std::string semantic = BuildSemanticJson(bot, target,
+                    "validation_route_resurrection");
+                RecordEvent(state, bot, "validation_route_resurrection",
+                    target, resultLabel.c_str(), raw.c_str(), semantic.c_str(),
+                    bot->GetExactDist(target), 0, action.SpellId);
+                declineCombatResIntent(targetState, target, action.SpellId,
+                    action.ReservationAtMs, action.ReservationUntilMs,
+                    "declined_native_cast_rejected");
+                return BotActionArbitration::Outcome::Retryable(
+                    "typed_combat_res_cast_rejected");
+            }
+
+            state.NativeResurrectionRejectedTargetGuid.Clear();
+            state.NativeResurrectionRejectedSpellId = 0;
+            state.NativeResurrectionRejectedCastResult = 0;
+            state.NativeResurrectionRetryAfterMs = 0;
+            state.NativeResurrectionConsecutiveFailures = 0;
+            uint64 const submittedAtMs = NowMs();
+            targetState->NativeResurrectionPendingUntilMs = submittedAtMs
+                + uint64(std::max<int32>(5000,
+                    spellInfo->CalcCastTime(bot->getLevel()) + 5000));
+            targetState->NativeResurrectionCasterGuid = bot->GetGUID();
+            targetState->NativeResurrectionSpellId = action.SpellId;
+            PublishNativeBattleResDecision(*targetState, target,
+                "reserved_cast_submitted", bot->GetGUID(), action.SpellId,
+                submittedAtMs,
+                targetState->NativeResurrectionPendingUntilMs);
+            std::string raw = BuildRawJson(bot, target);
+            std::string semantic = BuildSemanticJson(bot, target,
+                "validation_route_resurrection");
+            RecordEvent(state, bot, "validation_route_resurrection", target,
+                "typed_native_cast_submitted", raw.c_str(), semantic.c_str(),
+                bot->GetExactDist(target), 0, action.SpellId);
+            return BotActionArbitration::Outcome::Submitted(
+                "typed_combat_res_cast_submitted");
+        }
+        else if constexpr (std::is_same_v<T, BotNativeAction::CombatResAccept>)
+        {
+            WorldBotState* targetState = nullptr;
+            Player* target = nullptr;
+            std::string declineReason;
+            if (!resolveCombatResTarget(action.Target, action.SpellId,
+                    action.ReservationAtMs, action.ReservationUntilMs,
+                    targetState, target, declineReason))
+            {
+                declineCombatResIntent(targetState, target, action.SpellId,
+                    action.ReservationAtMs, action.ReservationUntilMs,
+                    declineReason);
+                return BotActionArbitration::Outcome::Retryable(
+                    declineReason.empty() ? "combat_res_accept_invalid"
+                        : declineReason);
+            }
+            if (targetState->NativeBattleResDecision
+                    != "reserved_cast_submitted"
+                || !target->IsResurrectRequestedBy(bot->GetGUID())
+                || !target->GetSession()
+                || !target->GetSession()->IsBotSession())
+            {
+                declineCombatResIntent(targetState, target, action.SpellId,
+                    action.ReservationAtMs, action.ReservationUntilMs,
+                    "declined_native_request_unavailable");
+                return BotActionArbitration::Outcome::Retryable(
+                    "typed_combat_res_request_unavailable");
+            }
+
+            WorldPacket response(CMSG_RESURRECT_RESPONSE, 9);
+            response << bot->GetGUID();
+            response << uint8(1);
+            target->GetSession()->HandleResurrectResponseOpcode(response);
+            if (target->IsBeingTeleportedNear())
+            {
+                GameClient* client = target->GetSession()->GetGameClient();
+                if (client)
+                {
+                    client->SetMovedUnit(target, true);
+                    client->SetActivelyMovedUnit(target);
+                    WorldPacket ackPayload(MSG_MOVE_TELEPORT_ACK, 0);
+                    WorldPackets::Movement::MoveTeleportAck ack(
+                        std::move(ackPayload));
+                    ack.MoverGUID = target->GetGUID();
+                    target->GetSession()->HandleMoveTeleportAck(ack);
+                }
+            }
+            if (target->IsAlive())
+            {
+                targetState->NativeResurrectionPendingUntilMs = 0;
+                targetState->NativeResurrectionCasterGuid.Clear();
+                targetState->NativeResurrectionSpellId = 0;
+            }
+            std::string raw = BuildRawJson(bot, target);
+            std::string semantic = BuildSemanticJson(bot, target,
+                "validation_route_resurrection");
+            RecordEvent(state, bot, "validation_route_resurrection", target,
+                target->IsAlive() ? "typed_native_resurrection_completed"
+                    : "typed_native_resurrection_accept_pending",
+                raw.c_str(), semantic.c_str(), bot->GetExactDist(target), 0,
+                action.SpellId);
+            return target->IsAlive()
+                ? BotActionArbitration::Outcome::Committed(
+                    "typed_combat_res_completed")
+                : BotActionArbitration::Outcome::Started(
+                    "typed_combat_res_accept_pending");
+        }
         else if constexpr (std::is_same_v<T, BotNativeAction::CastSpell>)
         {
             Unit* target = action.Target.IsEmpty() ? bot : ObjectAccessor::GetUnit(*bot, action.Target);
@@ -9728,30 +11840,6 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
             return result == SPELL_CAST_OK
                 ? BotActionArbitration::Outcome::Submitted("native_cast_submitted")
                 : BotActionArbitration::Outcome::Retryable("native_cast_rejected");
-        }
-        else if constexpr (std::is_same_v<T, BotNativeAction::StartAttack>)
-        {
-            Unit* target = ObjectAccessor::GetUnit(*bot, action.Target);
-            if (!target || !target->IsAlive() || !bot->IsValidAttackTarget(target))
-                return BotActionArbitration::Outcome::Unsafe("native_attack_target_invalid");
-            bool const inLineOfSight = bot->IsWithinLOSInMap(target);
-            bool const inMeleeRange = !action.Melee || bot->IsWithinMeleeRange(target);
-            bool const attackBound = bot->Attack(target, action.Melee)
-                || bot->GetVictim() == target;
-            if (!attackBound)
-                return BotActionArbitration::Outcome::Retryable("native_attack_retryable");
-            if (!inLineOfSight)
-                return BotActionArbitration::Outcome::Retryable(
-                    "native_attack_no_line_of_sight");
-            if (!inMeleeRange)
-                return BotActionArbitration::Outcome::Retryable(
-                    "native_attack_out_of_range");
-            return BotActionArbitration::Outcome::Started("native_attack_started");
-        }
-        else if constexpr (std::is_same_v<T, BotNativeAction::StopAttack>)
-        {
-            bot->AttackStop();
-            return BotActionArbitration::Outcome::Committed("native_attack_stopped");
         }
         else if constexpr (std::is_same_v<T, BotNativeAction::SpellClick>
             || std::is_same_v<T, BotNativeAction::VehicleEnter>)
@@ -9861,6 +11949,155 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
     }, intent);
 }
 
+void BotWorldPopulationMgr::BeginMeleeAutoAttackDecision(
+    WorldBotState& state, Player* bot)
+{
+    state.MeleeAutoAttackLane.Begin(NowMs());
+    state.LastMeleeAutoAttackCandidateCount = 0;
+
+    // Availability is an observation that produces a typed safety candidate;
+    // it is not a second native stop owner. The scope-exit reconciler handles
+    // early returns through the same deterministic lane.
+    if (!bot || !bot->IsInWorld() || !bot->IsAlive())
+        SubmitMeleeAutoAttackIntent(state, BotMeleeAutoAttack::Kind::Suppress,
+            ObjectGuid::Empty, BotMeleeAutoAttack::Owner::Safety,
+            BotActionArbitration::Priority::Terminal, "player_unavailable");
+}
+
+bool BotWorldPopulationMgr::SubmitMeleeAutoAttackIntent(
+    WorldBotState& state, BotMeleeAutoAttack::Kind kind, ObjectGuid target,
+    BotMeleeAutoAttack::Owner owner,
+    BotActionArbitration::Priority priority, char const* reason)
+{
+    BotMeleeAutoAttack::Intent intent;
+    intent.Toggle = kind;
+    intent.IntentOwner = owner;
+    intent.ActionPriority = priority;
+    intent.Target = target;
+    intent.Reason = reason ? reason : "unspecified";
+    bool const submitted = state.MeleeAutoAttackLane.Submit(std::move(intent));
+    state.LastMeleeAutoAttackCandidateCount = uint32(
+        state.MeleeAutoAttackLane.CandidateCount());
+    return submitted;
+}
+
+void BotWorldPopulationMgr::ResolveAndReconcileMeleeAutoAttack(
+    WorldBotState& state, Player* bot)
+{
+    state.LastMeleeAutoAttackReconcileMs = NowMs();
+
+    // Re-observe hard masks after all producers have run. A route may close
+    // offense authority in the same tick in which a lower-priority profile
+    // proposed a start/switch. Selecting here prevents even one unwanted
+    // white swing while retaining ordinary movement-time autoattack uptime.
+    if (!bot || !bot->IsInWorld() || !bot->IsAlive())
+        SubmitMeleeAutoAttackIntent(state, BotMeleeAutoAttack::Kind::Suppress,
+            ObjectGuid::Empty, BotMeleeAutoAttack::Owner::Safety,
+            BotActionArbitration::Priority::Terminal, "player_unavailable");
+    else if (BotRaidAreaAuthority::IsAllOffenseSuppressed(
+        bot->GetGUID().GetRawValue()))
+        SubmitMeleeAutoAttackIntent(state, BotMeleeAutoAttack::Kind::Suppress,
+            ObjectGuid::Empty, BotMeleeAutoAttack::Owner::Safety,
+            BotActionArbitration::Priority::Terminal,
+            "all_offense_suppressed");
+    else if (!state.TargetGuid.IsEmpty()
+        && !state.DesiredMeleeAttackTargetGuid.IsEmpty()
+        && state.TargetGuid != state.DesiredMeleeAttackTargetGuid)
+        SubmitMeleeAutoAttackIntent(state,
+            BotMeleeAutoAttack::Kind::StartOrSwitch, state.TargetGuid,
+            BotMeleeAutoAttack::Owner::TargetSelection,
+            BotActionArbitration::Priority::TrainedDamage,
+            "observed_target_switch");
+
+    state.LastMeleeAutoAttackCandidateCount = uint32(
+        state.MeleeAutoAttackLane.CandidateCount());
+    std::optional<BotMeleeAutoAttack::Intent> selected =
+        state.MeleeAutoAttackLane.Resolve();
+    if (selected)
+    {
+        state.LastMeleeAutoAttackIntentOwner =
+            BotMeleeAutoAttack::ToString(selected->IntentOwner);
+        state.LastMeleeAutoAttackIntentKind =
+            BotMeleeAutoAttack::ToString(selected->Toggle);
+        state.LastMeleeAutoAttackIntentReason = selected->Reason;
+        state.LastMeleeAutoAttackIntentPriority =
+            uint8(selected->ActionPriority);
+    }
+
+    auto stopNativeToggle = [&](char const* outcome)
+    {
+        // This is the sole player AttackStop owner. Pet and controlled-unit
+        // attack state remains independently reconciled through pet commands.
+        if (bot && bot->GetVictim())
+            bot->AttackStop();
+        state.DesiredMeleeAttackTargetGuid.Clear();
+        state.LastMeleeAutoAttackOutcome = outcome;
+    };
+
+    if (selected && selected->Toggle != BotMeleeAutoAttack::Kind::StartOrSwitch)
+    {
+        bool const suppressed = selected->Toggle
+            == BotMeleeAutoAttack::Kind::Suppress;
+        stopNativeToggle(suppressed
+            ? "native_toggle_suppressed" : "native_toggle_stopped");
+        state.MeleeAutoAttackState = suppressed ? "suppressed" : "inactive";
+        state.MeleeAutoAttackSuppressionReason = selected->Reason;
+        return;
+    }
+
+    if (selected)
+        state.DesiredMeleeAttackTargetGuid = selected->Target;
+    if (state.DesiredMeleeAttackTargetGuid.IsEmpty())
+    {
+        state.MeleeAutoAttackState = "inactive";
+        state.MeleeAutoAttackSuppressionReason.clear();
+        state.LastMeleeAutoAttackOutcome = "no_desired_toggle";
+        return;
+    }
+
+    Unit* target = bot ? ObjectAccessor::GetUnit(*bot,
+        state.DesiredMeleeAttackTargetGuid) : nullptr;
+    bool protectedTarget = false;
+    if (bot)
+        if (Creature const* creature = target ? target->ToCreature() : nullptr)
+            protectedTarget = BotRaidAreaAuthority::IsProtectedEncounterTarget(
+                bot->GetGUID().GetRawValue(), creature->GetEntry(),
+                creature->GetSpawnId(), creature->GetGUID().GetRawValue());
+    if (!bot || !bot->IsInWorld() || !bot->IsAlive() || !target
+        || !target->IsInWorld() || !target->IsAlive()
+        || !bot->IsValidAttackTarget(target) || protectedTarget)
+    {
+        char const* reason = protectedTarget
+            ? "protected_encounter_target" : "target_invalid";
+        stopNativeToggle("native_toggle_rejected");
+        state.MeleeAutoAttackState = "suppressed";
+        state.MeleeAutoAttackSuppressionReason = reason;
+        state.LastMeleeAutoAttackIntentOwner = "safety";
+        state.LastMeleeAutoAttackIntentKind = "suppress";
+        state.LastMeleeAutoAttackIntentReason = reason;
+        state.LastMeleeAutoAttackIntentPriority = uint8(
+            BotActionArbitration::Priority::Terminal);
+        return;
+    }
+
+    if (bot->GetVictim() && bot->GetVictim() != target)
+        bot->AttackStop();
+    // This is the sole player Attack owner. Binding does not require current
+    // reach: native swing legality resumes automatically after movement.
+    bool const attackBound = bot->Attack(target, true)
+        || bot->GetVictim() == target;
+    state.MeleeAutoAttackState = attackBound
+        ? (bot->IsWithinMeleeRange(target) && bot->IsWithinLOSInMap(target)
+            ? "swing_ready" : "toggle_bound_moving_to_range")
+        : "toggle_retryable";
+    state.MeleeAutoAttackSuppressionReason = attackBound
+        ? std::string() : "native_attack_rejected";
+    state.LastMeleeAutoAttackOutcome = attackBound
+        ? (bot->IsWithinMeleeRange(target) && bot->IsWithinLOSInMap(target)
+            ? "native_swing_ready" : "native_toggle_bound_awaiting_range")
+        : "native_toggle_retryable";
+}
+
 bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* bot, Unit* reference,
     ResolvedCombatAction const* action, bool forceRangedReposition)
 {
@@ -9895,10 +12132,11 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
     // Bind it before movement so a melee player chases the same victim and
     // white swings resume immediately whenever native melee reach is legal.
     if (action && action->AutoAttackMode == "melee")
-    {
-        BotActionExecutor executor;
-        executor.SubmitMeleeAutoAttack(bot, reference);
-    }
+        SubmitMeleeAutoAttackIntent(state,
+            BotMeleeAutoAttack::Kind::StartOrSwitch,
+            reference->GetGUID(), BotMeleeAutoAttack::Owner::Profile,
+            BotActionArbitration::Priority::TrainedDamage,
+            "profile_move_to_melee_range");
 
     if (action && action->SpellId == 5221 && directive == "melee_behind")
     {
@@ -10568,7 +12806,14 @@ BotWorldPopulationMgr::DeathRecoveryResult BotWorldPopulationMgr::RecoverDeadBot
             && TryNativeCorpseRun(state, bot, result);
 
         if (!ok)
+        {
+            if (!result.empty())
+            {
+                recovery.Mode = mode;
+                recovery.Result = result;
+            }
             continue;
+        }
 
         recovery.Recovered = bot->IsAlive();
         recovery.InProgress = !recovery.Recovered;
@@ -10578,7 +12823,8 @@ BotWorldPopulationMgr::DeathRecoveryResult BotWorldPopulationMgr::RecoverDeadBot
         return recovery;
     }
 
-    recovery.Result = "no_recovery_mode_succeeded";
+    if (recovery.Result == "failed")
+        recovery.Result = "no_recovery_mode_succeeded";
     return recovery;
 }
 
@@ -10590,43 +12836,278 @@ bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot
         return false;
     }
 
+    constexpr uint64 NativeRecoveryNoProgressMs = 30000;
+    constexpr uint32 MaximumReleaseRejections = 5;
+    constexpr uint32 MaximumEntranceUnavailableObservations = 3;
+    constexpr uint32 MaximumEntranceRejections = 3;
+    constexpr uint32 MaximumMovementRejections = 5;
+    constexpr uint32 MaximumReclaimRejections = 5;
+    constexpr float NativeRecoveryDistanceProgressYards = 0.5f;
+
+    uint64 const nowMs = NowMs();
+    uint64 const routeGeneration = Party().ValidationRouteGeneration;
+    uint64 const wipeGeneration = Cohort().Raid.WipeGeneration;
+    bool const episodeMatches = state.NativeRecoveryEpisodeStartedMs
+        && state.NativeRecoveryEpisodeAttemptId == Cohort().AttemptId
+        && state.NativeRecoveryEpisodeRouteGeneration == routeGeneration
+        && state.NativeRecoveryEpisodeWipeGeneration == wipeGeneration
+        && state.NativeRecoveryEpisodeDeathOrdinal == state.RecentDeathCount;
+    if (!episodeMatches)
+    {
+        state.NativeRecoveryEpisodeAttemptId = Cohort().AttemptId;
+        state.NativeRecoveryEpisodeRouteGeneration = routeGeneration;
+        state.NativeRecoveryEpisodeWipeGeneration = wipeGeneration;
+        state.NativeRecoveryEpisodeDeathOrdinal = state.RecentDeathCount;
+        state.NativeRecoveryEpisodePhase = "release_pending";
+        state.NativeRecoveryEpisodeStartedMs = nowMs;
+        state.NativeRecoveryEpisodeLastProgressMs = nowMs;
+        state.NativeRecoveryEpisodeDistanceTarget = "none";
+        state.NativeRecoveryEpisodeBestDistance =
+            std::numeric_limits<float>::max();
+        state.NativeRecoveryMovementRetryCount = 0;
+        state.NativeRecoveryReleaseRejectionCount = 0;
+        state.NativeRecoveryEntranceUnavailableCount = 0;
+        state.NativeRecoveryEntranceRejectionCount = 0;
+        state.NativeRecoveryReclaimRejectionCount = 0;
+        state.NativeRecoveryEntranceRequired = false;
+        state.NativeRecoveryEntranceObserved = false;
+        state.NativeRecoveryEntranceAvailable = false;
+    }
+
+    auto transition = [&](char const* phase)
+    {
+        if (state.NativeRecoveryEpisodePhase == phase)
+            return;
+        state.NativeRecoveryEpisodePhase = phase;
+        state.NativeRecoveryEpisodeLastProgressMs = nowMs;
+    };
+    auto observeDistance = [&](char const* target, float distance)
+    {
+        if (state.NativeRecoveryEpisodeDistanceTarget != target)
+        {
+            state.NativeRecoveryEpisodeDistanceTarget = target;
+            state.NativeRecoveryEpisodeBestDistance = distance;
+            state.NativeRecoveryEpisodeLastProgressMs = nowMs;
+            return;
+        }
+        if (distance + NativeRecoveryDistanceProgressYards
+            < state.NativeRecoveryEpisodeBestDistance)
+        {
+            state.NativeRecoveryEpisodeBestDistance = distance;
+            state.NativeRecoveryEpisodeLastProgressMs = nowMs;
+        }
+    };
+    auto noProgressExpired = [&]()
+    {
+        return state.NativeRecoveryEpisodeLastProgressMs
+            && nowMs >= state.NativeRecoveryEpisodeLastProgressMs
+            && nowMs - state.NativeRecoveryEpisodeLastProgressMs
+                >= NativeRecoveryNoProgressMs;
+    };
+    auto terminal = [&](char const* reason)
+    {
+        // Preserve the timestamp of the last observed native progress.  A
+        // terminal receipt must show how long the episode was stalled, not
+        // make terminalization itself look like progress.
+        state.NativeRecoveryEpisodePhase = "terminal";
+        result = reason;
+        state.LastRecoveryMode = "native_corpse_run";
+        state.LastRecoveryResult = reason;
+        state.LastRecoveryMs = nowMs;
+        state.LastNoProgressReason = reason;
+        if (Cohort().Config.ValidationRouteEnable
+            && state.ValidationCohortLocked)
+            FailValidationAttemptOnce(state, bot, reason,
+                state.NativeRecoveryEpisodeRouteGeneration);
+        return false;
+    };
+
     if (!bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST))
     {
-        WorldPacket repop(CMSG_REPOP_REQUEST, 1);
-        repop << uint8(0);
-        bot->GetSession()->HandleRepopRequestOpcode(repop);
+        transition("release_submitted");
+        ExecuteNativeActionIntent(state, bot,
+            BotNativeAction::ReleaseSpirit{});
+        if (bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)
+            && Cohort().Config.ValidationRouteEnable && state.ValidationCohortLocked)
+        {
+            state.NativeReleaseRequested = true;
+            state.NativeRunbackAreaTriggerId = 0;
+            state.NativeReleaseLandingObserved = false;
+            state.NativeReleaseLandingMapId = 0;
+            state.NativeReleaseLandingInstanceId = 0;
+            state.NativeReleaseLandingWipeGeneration = 0;
+            state.NativeReleaseLandingX = 0.0f;
+            state.NativeReleaseLandingY = 0.0f;
+            state.NativeReleaseLandingZ = 0.0f;
+        }
+        if (bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST))
+        {
+            transition("released_ghost_observed");
+            result = "native_release_requested";
+            return true;
+        }
+        ++state.NativeRecoveryReleaseRejectionCount;
         result = bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)
             ? "native_release_requested"
             : "native_release_pending";
+        if (state.NativeRecoveryReleaseRejectionCount
+                >= MaximumReleaseRejections
+            || noProgressExpired())
+            return terminal("native_runback_no_progress");
         return true;
     }
 
     Corpse* corpse = bot->GetCorpse();
-    if (!corpse)
+    bool const certifyingCrossMapRecovery =
+        Cohort().Config.ValidationRouteEnable
+        && state.ValidationCohortLocked
+        && HasNativeRaidCorpseAuthority(state, bot)
+        && bot->GetMapId() != state.ValidationCohortMapId;
+    bool const corpseCrossMap = corpse
+        && corpse->GetMapId() != bot->GetMapId();
+    if (!corpse || corpseCrossMap)
     {
-        result = "native_corpse_unavailable";
-        return false;
-    }
-    if (corpse->GetMapId() != bot->GetMapId())
-    {
-        result = "native_corpse_cross_map_unreachable";
+        if (certifyingCrossMapRecovery)
+        {
+            state.NativeRecoveryEntranceRequired = true;
+            AreaTriggerEntry const* entranceEntry = nullptr;
+            AreaTriggerStruct const* entranceDestination = nullptr;
+            if (!ResolveNativeValidationEntrance(state.ValidationCohortMapId,
+                    bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(),
+                    entranceEntry, entranceDestination))
+            {
+                state.NativeRecoveryEntranceObserved = true;
+                state.NativeRecoveryEntranceAvailable = false;
+                ++state.NativeRecoveryEntranceUnavailableCount;
+                transition("entrance_unavailable");
+                result = "native_instance_entrance_unavailable";
+                if (state.NativeRecoveryEntranceUnavailableCount
+                        >= MaximumEntranceUnavailableObservations
+                    || noProgressExpired())
+                    return terminal("native_entrance_unavailable");
+                return true;
+            }
+
+            state.NativeRecoveryEntranceObserved = true;
+            state.NativeRecoveryEntranceAvailable = true;
+            state.NativeRunbackAreaTriggerId = entranceEntry->ID;
+            float const entranceDistance = bot->GetExactDist(
+                entranceEntry->Pos.X, entranceEntry->Pos.Y,
+                entranceEntry->Pos.Z);
+            observeDistance("entrance", entranceDistance);
+            if (!bot->IsInAreaTriggerRadius(entranceEntry))
+            {
+                transition("moving_to_entrance");
+                BotActionArbitration::Outcome const moveOutcome =
+                    ExecuteNativeActionIntent(state, bot,
+                    BotNativeAction::Move{ entranceEntry->Pos.X,
+                        entranceEntry->Pos.Y, entranceEntry->Pos.Z },
+                    BotMovementArbitration::Owner::Recovery,
+                    BotMovementArbitration::Priority::Recovery);
+                bool const moving = moveOutcome.Result
+                    == BotActionArbitration::Disposition::Committed;
+                if (!moving)
+                    ++state.NativeRecoveryMovementRetryCount;
+                result = moving ? "native_instance_runback_moving"
+                    : "native_instance_runback_path_retryable";
+                if (state.NativeRecoveryMovementRetryCount
+                        >= MaximumMovementRejections
+                    || noProgressExpired())
+                    return terminal("native_runback_no_progress");
+                return true;
+            }
+
+            transition("entrance_submitted");
+            ExecuteNativeActionIntent(state, bot,
+                BotNativeAction::AreaTrigger{ entranceEntry->ID },
+                BotMovementArbitration::Owner::Recovery,
+                BotMovementArbitration::Priority::Recovery);
+            if (bot->IsBeingTeleportedFar())
+            {
+                transition("entrance_worldport_pending");
+                result = "native_instance_entrance_submitted";
+                return true;
+            }
+            ++state.NativeRecoveryEntranceRejectionCount;
+            result = "native_instance_entrance_rejected";
+            if (state.NativeRecoveryEntranceRejectionCount
+                    >= MaximumEntranceRejections
+                || noProgressExpired())
+                return terminal("native_runback_no_progress");
+            return true;
+        }
+
+        if (Cohort().Config.ValidationRouteEnable
+            && state.ValidationCohortLocked)
+        {
+            transition("corpse_authority_wait");
+            ++state.NativeRecoveryReclaimRejectionCount;
+            result = corpseCrossMap
+                ? "native_corpse_cross_map_unreachable"
+                : "native_corpse_unavailable";
+            if (state.NativeRecoveryReclaimRejectionCount
+                    >= MaximumReclaimRejections
+                || noProgressExpired())
+                return terminal("native_runback_no_progress");
+            return true;
+        }
+
+        result = corpseCrossMap ? "native_corpse_cross_map_unreachable"
+            : "native_corpse_unavailable";
         return false;
     }
 
+    state.NativeRecoveryEntranceRequired = false;
+    float const corpseDistance = bot->GetExactDist(corpse->GetPositionX(),
+        corpse->GetPositionY(), corpse->GetPositionZ());
+    observeDistance("corpse", corpseDistance);
     if (!corpse->IsWithinDistInMap(bot, CORPSE_RECLAIM_RADIUS, true))
     {
-        bool const moving = MoveBotToPoint(state, bot, corpse->GetPositionX(),
-            corpse->GetPositionY(), corpse->GetPositionZ(), false,
+        transition("moving_to_corpse");
+        BotActionArbitration::Outcome const moveOutcome =
+            ExecuteNativeActionIntent(state, bot,
+            BotNativeAction::Move{ corpse->GetPositionX(),
+                corpse->GetPositionY(), corpse->GetPositionZ() },
             BotMovementArbitration::Owner::Recovery,
             BotMovementArbitration::Priority::Recovery);
+        bool const moving = moveOutcome.Result
+            == BotActionArbitration::Disposition::Committed;
+        if (!moving)
+            ++state.NativeRecoveryMovementRetryCount;
         result = moving ? "native_corpse_run_moving" : "native_corpse_path_retryable";
-        return moving;
+        if (state.NativeRecoveryMovementRetryCount
+                >= MaximumMovementRejections
+            || noProgressExpired())
+            return terminal("native_runback_no_progress");
+        return true;
     }
 
-    WorldPacket reclaim(CMSG_RECLAIM_CORPSE, 8);
-    reclaim << corpse->GetGUID();
-    bot->GetSession()->HandleReclaimCorpseOpcode(reclaim);
-    result = bot->IsAlive() ? "native_corpse_reclaimed" : "native_reclaim_delay_pending";
+    time_t const reclaimReadyAt = corpse->GetGhostTime()
+        + bot->GetCorpseReclaimDelay(
+            corpse->GetType() == CORPSE_RESURRECTABLE_PVP);
+    if (reclaimReadyAt > GameTime::GetGameTime())
+    {
+        transition("reclaim_delay_pending");
+        result = "native_reclaim_delay_pending";
+        return true;
+    }
+
+    transition("reclaim_submitted");
+    ExecuteNativeActionIntent(state, bot,
+        BotNativeAction::ReclaimCorpse{ corpse->GetGUID() });
+    if (bot->IsAlive())
+    {
+        transition("completed");
+        result = "native_corpse_reclaimed";
+        return true;
+    }
+
+    ++state.NativeRecoveryReclaimRejectionCount;
+    result = "native_reclaim_rejected";
+    if (state.NativeRecoveryReclaimRejectionCount
+            >= MaximumReclaimRejections
+        || noProgressExpired())
+        return terminal("native_runback_no_progress");
     return true;
 }
 
@@ -10832,8 +13313,22 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     if (!bot)
         return;
 
+    BeginMeleeAutoAttackDecision(state, bot);
+    ReconcileOnScopeExit meleeAutoAttackReconcile{
+        [this, &state, bot]()
+        {
+            ResolveAndReconcileMeleeAutoAttack(state, bot);
+        }};
+
     if (Cohort().Config.ValidationRouteEnable)
     {
+        if (!Cohort().Raid.BotActionsEnabled)
+        {
+            state.LastDecisionResult = "validation_cohort_action_gate_closed";
+            state.LastDecisionReason = Cohort().LastPopulationFailureReason.empty()
+                ? "server_provisioning_activation_pending" : Cohort().LastPopulationFailureReason;
+            return;
+        }
         if (state.ValidationCohortViolation)
             return;
         if (!state.ValidationCohortLocked)
@@ -10855,6 +13350,13 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     // worldport as if it were the BWD runback.
     if (bot->IsAlive())
     {
+        state.NativeBattleResDecision = "unresolved";
+        state.NativeBattleResOwnerGuid.Clear();
+        state.NativeBattleResSpellId = 0;
+        state.NativeBattleResDecisionAtMs = 0;
+        state.NativeBattleResDecisionUntilMs = 0;
+        state.NativeBattleResApproachIntentDecisionAtMs = 0;
+        state.NativeBattleResApproachIntentAcceptedUntilMs = 0;
         state.NativeReleaseRequested = false;
         state.NativeRunbackAreaTriggerId = 0;
         state.NativeReleaseLandingObserved = false;
@@ -10864,6 +13366,24 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         state.NativeReleaseLandingX = 0.0f;
         state.NativeReleaseLandingY = 0.0f;
         state.NativeReleaseLandingZ = 0.0f;
+        state.NativeRecoveryEpisodeAttemptId = 0;
+        state.NativeRecoveryEpisodeRouteGeneration = 0;
+        state.NativeRecoveryEpisodeWipeGeneration = 0;
+        state.NativeRecoveryEpisodeDeathOrdinal = 0;
+        state.NativeRecoveryEpisodePhase = "none";
+        state.NativeRecoveryEpisodeStartedMs = 0;
+        state.NativeRecoveryEpisodeLastProgressMs = 0;
+        state.NativeRecoveryEpisodeDistanceTarget = "none";
+        state.NativeRecoveryEpisodeBestDistance =
+            std::numeric_limits<float>::max();
+        state.NativeRecoveryMovementRetryCount = 0;
+        state.NativeRecoveryReleaseRejectionCount = 0;
+        state.NativeRecoveryEntranceUnavailableCount = 0;
+        state.NativeRecoveryEntranceRejectionCount = 0;
+        state.NativeRecoveryReclaimRejectionCount = 0;
+        state.NativeRecoveryEntranceRequired = false;
+        state.NativeRecoveryEntranceObserved = false;
+        state.NativeRecoveryEntranceAvailable = false;
     }
 
     Cohort().TelemetryBuffer.Observe(bot, bot->IsInCombat() ? "combat" : "ambient", nullptr, nullptr, nullptr);
@@ -10961,7 +13481,26 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             return;
         }
 
-        if (state.DeadTimer >= 5000)
+        uint64 const deathNowMs = NowMs();
+        bool const typedApproachIntentCurrent =
+            state.NativeBattleResDecision == "reserved_approach"
+            && state.NativeBattleResApproachIntentDecisionAtMs
+                == state.NativeBattleResDecisionAtMs
+            && state.NativeBattleResApproachIntentAcceptedUntilMs
+                > deathNowMs;
+        bool const nativeBattleResDecisionObserved = state.NativeBattleResDecisionUntilMs > deathNowMs
+            && (typedApproachIntentCurrent
+                || state.NativeBattleResDecision == "reserved_cast_submitted"
+                || state.NativeBattleResDecision.rfind("declined_", 0) == 0);
+        // Give the coordinator one short, named observation window to see the
+        // native death and publish a CR reservation/decline. An explicit
+        // decision opens recovery immediately; it is never hidden behind the
+        // legacy five-second free-roam delay.
+        bool const nativeDeathDecisionWindowComplete = state.DeadTimer >= 1500;
+        bool const deathRecoveryReady = Cohort().Config.ValidationRouteEnable
+            ? (nativeBattleResDecisionObserved || nativeDeathDecisionWindowComplete)
+            : state.DeadTimer >= 5000;
+        if (deathRecoveryReady)
         {
             // Phase 1 Magmaw is a native-encounter smoke, not a tactical
             // recovery exercise.  Keep a dead member in place while any
@@ -11065,38 +13604,49 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
                     float(raid.WipeGeneration), raid.ExpectedSize);
             }
 
-            // The Phase 1 contract must observe release/runback/re-entry for
-            // every permanent roster GUID. A class self-resurrection is
-            // legitimate gameplay, but it would bypass that specific smoke
-            // and make the evidence set incomplete, so this one route policy
-            // holds it until the native corpse path below runs.
-            if (Cohort().Config.ValidationRouteBossRecovery != ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly
+            uint64 const recoveryNowMs = NowMs();
+            bool const combatResReservationPresent = state.NativeBattleResDecision == "reserved_approach"
+                || state.NativeBattleResDecision == "reserved_cast_submitted";
+            bool const acceptedCombatResIntentCurrent =
+                state.NativeBattleResDecision == "reserved_cast_submitted"
+                || (state.NativeBattleResDecision == "reserved_approach"
+                    && state.NativeBattleResApproachIntentDecisionAtMs
+                        == state.NativeBattleResDecisionAtMs
+                    && state.NativeBattleResApproachIntentAcceptedUntilMs
+                        > recoveryNowMs);
+            std::string combatResDeclineReason;
+            bool const battleResReserved = combatResReservationPresent
+                && acceptedCombatResIntentCurrent
+                && CurrentCombatResOwnerUsable(state, bot, recoveryNowMs, combatResDeclineReason);
+            if (battleResReserved)
+            {
+                state.LastRecoveryMode = "wait_for_reserved_combat_res";
+                state.LastRecoveryResult = state.NativeBattleResDecision;
+                state.LastRecoveryMs = recoveryNowMs;
+                state.DeadTimer = 0;
+                return;
+            }
+            if (combatResReservationPresent)
+            {
+                ObjectGuid const declinedOwner = state.NativeBattleResOwnerGuid;
+                uint32 const declinedSpell = state.NativeBattleResSpellId;
+                PublishNativeBattleResDecision(state, bot,
+                    !acceptedCombatResIntentCurrent
+                        ? "declined_typed_intent_not_current"
+                        : (combatResDeclineReason.empty()
+                            ? "declined_owner_unusable"
+                            : combatResDeclineReason),
+                    declinedOwner, declinedSpell, recoveryNowMs, recoveryNowMs + 5000);
+            }
+            // Certifying cohorts use one explicit recovery handshake: the
+            // combat-res owner either reserves this corpse or declines it.
+            // A dead bot observes that decision for 1.5 seconds and waits only
+            // while a bounded reservation is current.  Decline, unavailability,
+            // expiry, or a missing decision all continue through the same native
+            // release, ghost runback, and corpse-recovery path as a player.
+            // Non-certifying free-roam bots retain class self-res.
+            if (!Cohort().Config.ValidationRouteEnable
                 && TryNativeSelfResurrection(state, bot))
-            {
-                state.DeadTimer = 0;
-                return;
-            }
-            if (state.NativeResurrectionPendingUntilMs > NowMs())
-            {
-                state.DeadTimer = 0;
-                return;
-            }
-            bool certifiedGroupCombatActive = false;
-            if (Cohort().Config.ValidationRouteEnable)
-            {
-                if (Group* group = bot->GetGroup())
-                    for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
-                        if (Player* member = itr->GetSource(); member && member->IsInWorld()
-                            && (member->IsInCombat() || member->GetVictim() || !member->getAttackers().empty()))
-                        {
-                            certifiedGroupCombatActive = true;
-                            break;
-                        }
-                if (!certifiedGroupCombatActive)
-                    if (InstanceScript* instance = bot->GetInstanceScript())
-                        certifiedGroupCombatActive = instance->IsEncounterInProgress();
-            }
-            if (certifiedGroupCombatActive)
             {
                 state.DeadTimer = 0;
                 return;
@@ -11144,68 +13694,6 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
                     state.DeadTimer = 0;
                     return;
                 }
-            }
-
-            if (Cohort().Config.ValidationRouteEnable && Cohort().Config.AllowRaids)
-            {
-                std::string raw = BuildRawJson(bot, nullptr);
-                std::string semantic = BuildSemanticJson(bot, nullptr, "native_raid_recovery");
-                if (!bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST))
-                {
-                    WorldPacket repop(CMSG_REPOP_REQUEST, 1);
-                    repop << uint8(0);
-                    bot->GetSession()->HandleRepopRequestOpcode(repop);
-                    state.NativeReleaseRequested = true;
-                    state.NativeRunbackAreaTriggerId = 0;
-                    state.NativeReleaseLandingObserved = false;
-                    state.NativeReleaseLandingMapId = 0;
-                    state.NativeReleaseLandingInstanceId = 0;
-                    state.NativeReleaseLandingWipeGeneration = 0;
-                    state.NativeReleaseLandingX = 0.0f;
-                    state.NativeReleaseLandingY = 0.0f;
-                    state.NativeReleaseLandingZ = 0.0f;
-                    state.DeadTimer = 0;
-                    RecordEvent(state, bot, "native_release", nullptr, "release_spirit_opcode_semantics",
-                        raw.c_str(), semantic.c_str());
-                    return;
-                }
-
-                uint32 originalMapId = state.ValidationCohortMapId;
-                AreaTriggerEntry const* entranceEntry = nullptr;
-                AreaTriggerStruct const* entranceDestination = nullptr;
-                bool const corpseAuthorized = HasNativeRaidCorpseAuthority(state, bot);
-                bool const entranceContractProven = originalMapId == BlackwingDescentMapId
-                    && corpseAuthorized
-                    && ResolveNativeBlackwingDescentEntrance(entranceEntry, entranceDestination)
-                    && bot->GetMapId() == entranceEntry->ContinentID;
-
-                if (!entranceContractProven)
-                {
-                    state.DeadTimer = 0;
-                    RecordEvent(state, bot, "native_runback_blocked", nullptr,
-                        corpseAuthorized ? "bwd_entrance_area_trigger_contract_unproven" : "native_corpse_authority_missing",
-                        raw.c_str(), semantic.c_str(), 0.0f, originalMapId);
-                    return;
-                }
-
-                uint32 entranceTriggerId = BlackwingDescentEntranceTriggerId;
-                state.NativeRunbackAreaTriggerId = entranceTriggerId;
-                if (!bot->IsInAreaTriggerRadius(entranceEntry))
-                {
-                    bot->GetMotionMaster()->MovePoint(0, entranceEntry->Pos.X, entranceEntry->Pos.Y, entranceEntry->Pos.Z, true);
-                    state.DeadTimer = 0;
-                    RecordEvent(state, bot, "native_runback", nullptr, "moving_to_raid_entrance",
-                        raw.c_str(), semantic.c_str(), bot->GetExactDist(entranceEntry->Pos.X, entranceEntry->Pos.Y, entranceEntry->Pos.Z), entranceTriggerId);
-                    return;
-                }
-
-                WorldPacket areaTrigger(CMSG_AREATRIGGER, sizeof(uint32));
-                areaTrigger << entranceTriggerId;
-                bot->GetSession()->HandleAreaTriggerOpcode(areaTrigger);
-                state.DeadTimer = 0;
-                RecordEvent(state, bot, "native_runback", nullptr, "raid_entrance_area_trigger",
-                    raw.c_str(), semantic.c_str(), 0.0f, entranceTriggerId);
-                return;
             }
 
             // A critical-role death can make the survivors retreat after combat
@@ -11440,6 +13928,48 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     {
         uint64 const decisionNowMs = NowMs();
         state.DecisionKernel.Begin(decisionNowMs);
+
+        if (std::optional<BotNativeAction::Candidate> combatRes =
+                BuildCombatResNativeActionCandidate(state, bot,
+                    decisionNowMs))
+        {
+            BotActionArbitration::Candidate candidate;
+            candidate.Key = combatRes->Id.Key();
+            candidate.Source = combatRes->Id.Strategy;
+            candidate.ActionPriority = combatRes->ActionPriority;
+            candidate.UtilityScore = combatRes->Utility;
+            candidate.RequiredResources = combatRes->Resources();
+            candidate.ExpiresAtMs = combatRes->ExpiresAtMs;
+            candidate.RetryBaseMs = 100;
+            candidate.RetryMaxMs = 1000;
+            ObjectGuid const combatResTarget = combatRes->Id.Actor;
+            candidate.Attempt = [&, intent = combatRes->Action,
+                                    combatResTarget]()
+            {
+                BotActionArbitration::Outcome outcome =
+                    ExecuteNativeActionIntent(state, bot, intent,
+                        BotMovementArbitration::Owner::Support,
+                        BotMovementArbitration::Priority::Support);
+                if (outcome.Result
+                    == BotActionArbitration::Disposition::Committed)
+                {
+                    situation = "validation_route_resurrection";
+                    if (std::holds_alternative<
+                            BotNativeAction::CombatResApproach>(intent))
+                        action = "typed_combat_res_approach";
+                    else if (std::holds_alternative<
+                            BotNativeAction::CombatResCast>(intent))
+                        action = "typed_combat_res_cast";
+                    else
+                        action = "typed_combat_res_accept";
+                    target = ObjectAccessor::GetUnit(*bot,
+                        combatResTarget);
+                    state.LastDecisionHandler = "typed_combat_res";
+                }
+                return outcome;
+            };
+            state.DecisionKernel.Submit(std::move(candidate));
+        }
 
         bool adaptiveDrudgeOwnsNode = false;
         bool adaptiveAtramedesOwnsNode = false;
@@ -11886,14 +14416,14 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             suppress.ActionPriority = BotActionArbitration::Priority::Mechanic;
             suppress.UtilityScore = 100.0f;
             suppress.RequiredResources = BotActionArbitration::Uses(
-                BotActionArbitration::Resource::Target,
                 BotActionArbitration::Resource::Pet);
             suppress.Attempt = [&]()
             {
-                BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
-                    state, bot, BotNativeAction::StopAttack{},
-                    BotMovementArbitration::Owner::Mechanic,
-                    BotMovementArbitration::Priority::Mechanic);
+                bool const submitted = SubmitMeleeAutoAttackIntent(state,
+                    BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                    BotMeleeAutoAttack::Owner::Mechanic,
+                    BotActionArbitration::Priority::Mechanic,
+                    "adaptive_omnotron_shield_suppress");
                 if (Pet* pet = bot->GetPet(); pet && pet->GetCharmInfo())
                     ExecuteNativeActionIntent(state, bot,
                         BotNativeAction::PetCommand{ pet->GetGUID(),
@@ -11905,7 +14435,11 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
                 situation = "adaptive_omnotron";
                 action = "shield_damage_suppressed";
                 state.LastDecisionHandler = "adaptive_omnotron";
-                return outcome;
+                return submitted
+                    ? BotActionArbitration::Outcome::Committed(
+                        "melee_autoattack_suppression_submitted")
+                    : BotActionArbitration::Outcome::Retryable(
+                        "melee_autoattack_suppression_rejected");
             };
             state.DecisionKernel.Submit(std::move(suppress));
         }
@@ -12813,7 +15347,11 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             std::string raw = BuildRawJson(bot, target);
             std::string semantic = BuildSemanticJson(bot, target, "target_rejected", &power, stage, chosenActivity.Activity);
             RecordEvent(state, bot, "target_rejected", target, state.LastRejectedTargetReason.c_str(), raw.c_str(), semantic.c_str());
-            bot->AttackStop();
+            SubmitMeleeAutoAttackIntent(state,
+                BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                BotMeleeAutoAttack::Owner::Safety,
+                BotActionArbitration::Priority::Terminal,
+                "target_rejected");
             state.TargetGuid.Clear();
             target = nullptr;
             situation = "target_rejected";
@@ -13002,7 +15540,11 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         ++state.LoopGuardrailCount;
         state.TargetGuid.Clear();
         state.QuestWork.SelectedTargetGuid.Clear();
-        bot->AttackStop();
+        SubmitMeleeAutoAttackIntent(state,
+            BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+            BotMeleeAutoAttack::Owner::Recovery,
+            BotActionArbitration::Priority::Survival,
+            "loop_guardrail_repath");
         Position pos = bot->GetFirstCollisionPosition(6.0f, frand(0.0f, 2.0f * float(M_PI)));
         MoveBotToPoint(state, bot, pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ());
         situation = "runtime_recovery";
@@ -13080,8 +15622,27 @@ std::vector<BotWorldPopulationMgr::RaidRosterPlanSlot> BotWorldPopulationMgr::Bu
     for (uint32 index = 0; index < partySize; ++index)
     {
         RaidRosterPlanSlot slot;
-        slot.RosterSlotId = "party_" + std::to_string(index);
         slot.SlotIndex = index;
+        if (Cohort().Config.ValidationRouteEnable && partySize == MAXGROUPSIZE)
+        {
+            if (index == 0)
+            {
+                slot.Role = "tank";
+                slot.RosterSlotId = "party_tank_1";
+            }
+            else if (index == 1)
+            {
+                slot.Role = "healer";
+                slot.RosterSlotId = "party_healer_1";
+            }
+            else
+            {
+                slot.Role = "dps";
+                slot.RosterSlotId = "party_dps_" + std::to_string(index - 1);
+            }
+        }
+        else
+            slot.RosterSlotId = "party_" + std::to_string(index);
         plan.push_back(std::move(slot));
     }
     return plan;
@@ -13779,7 +16340,11 @@ bool BotWorldPopulationMgr::StopDisallowedDummyCombat(WorldBotState& state, Play
     if (allowed)
         return false;
 
-    bot->AttackStop();
+    SubmitMeleeAutoAttackIntent(state,
+        BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+        BotMeleeAutoAttack::Owner::Safety,
+        BotActionArbitration::Priority::Terminal,
+        "training_dummy_without_ability_objective");
     bot->ClearUnitState(UNIT_STATE_CHASE);
     bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
     bot->GetMotionMaster()->MoveIdle();
@@ -15402,10 +17967,21 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
             return result;
         }
 
-        BotActionExecutor executor;
-        BotActionResult pull = executor.Pull(bot, objectiveTarget);
+        BotClassSpecActionProfile const combatProfile =
+            BotClassSpecActionProfileStore::Build(bot, GetDungeonRole(bot));
+        bool actionSubmitted = false;
+        if (combatProfile.AutoAttackMode == "melee")
+            actionSubmitted = SubmitMeleeAutoAttackIntent(state,
+                BotMeleeAutoAttack::Kind::StartOrSwitch,
+                objectiveTarget->GetGUID(),
+                BotMeleeAutoAttack::Owner::Profile,
+                BotActionArbitration::Priority::TrainedDamage,
+                "quest_melee_engagement");
         if (spellId)
-            TryCastCombatSpell(bot, objectiveTarget, spellId);
+            actionSubmitted = TryCastCombatSpell(bot, objectiveTarget, spellId)
+                || actionSubmitted;
+        BotActionResult pull = actionSubmitted
+            ? BotActionResult::Ok : BotActionResult::NoAction;
         if (pull != BotActionResult::Ok)
         {
             result.Failure = true;
@@ -15835,7 +18411,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
     if (Party().ValidationRouteManifestComplete)
     {
-        bot->AttackStop();
+        SubmitMeleeAutoAttackIntent(state,
+            BotMeleeAutoAttack::Kind::Stop, ObjectGuid::Empty,
+            BotMeleeAutoAttack::Owner::Route,
+            BotActionArbitration::Priority::Mechanic,
+            "validation_route_manifest_complete");
         bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
         state.ActivePathValid = false;
         state.IsMoving = false;
@@ -16941,7 +19521,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
         if (bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
             bot->InterruptSpell(CURRENT_AUTOREPEAT_SPELL, false);
-        bot->AttackStop();
+        SubmitMeleeAutoAttackIntent(state,
+            BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+            BotMeleeAutoAttack::Owner::Safety,
+            BotActionArbitration::Priority::Terminal,
+            "future_encounter_contamination");
         if (Pet* pet = bot->GetPet())
             pet->AttackStop();
         for (Unit* controlled : bot->m_Controlled)
@@ -21003,7 +23587,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && Cohort().Config.ValidationRouteChargeNativeIntervalMs
             && Cohort().Config.ValidationRouteVengefulRageSpellId;
 
-        auto holdOffense = [bot]()
+        auto holdOffense = [this, &state, bot]()
         {
             uint64 const ownerGuid = bot->GetGUID().GetRawValue();
             BotRaidAreaAuthority::SetAllOffenseSuppressed(ownerGuid, true);
@@ -21013,7 +23597,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     if (Unit* castTarget = current->m_targets.GetUnitTarget();
                         castTarget && bot->IsValidAttackTarget(castTarget))
                         bot->InterruptSpell(spellType, false);
-            bot->AttackStop();
+            SubmitMeleeAutoAttackIntent(state,
+                BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                BotMeleeAutoAttack::Owner::Safety,
+                BotActionArbitration::Priority::Terminal,
+                "mechanic_all_offense_suppressed");
             if (Pet* pet = bot->GetPet())
             {
                 for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
@@ -23539,7 +26127,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
 
         if (bot->GetVictim() && bot->GetVictim() != laneSource)
-            bot->AttackStop();
+            SubmitMeleeAutoAttackIntent(state,
+                BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                BotMeleeAutoAttack::Owner::Threat,
+                BotActionArbitration::Priority::ThreatControl,
+                "split_lane_target_switch");
         if (Pet* pet = bot->GetPet(); pet && pet->GetVictim() && pet->GetVictim() != laneSource)
             pet->AttackStop();
         for (Unit* controlled : bot->m_Controlled)
@@ -26672,15 +29264,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && bot->IsWithinMeleeRange(passiveSwarmClusterAnchor)
             && bot->IsWithinLOSInMap(passiveSwarmClusterAnchor))
         {
-            ResolvedCombatAction activationAction;
-            activationAction.Valid = true;
-            activationAction.Type = "auto_attack";
-            activationAction.TargetGuid = passiveSwarmClusterAnchor->GetGUID();
-            activationAction.DebugName = "activate_passive_swarm";
-            activationAction.AutoAttackMode = "melee";
-            BotActionExecutor executor;
-            BotActionResult activationResult = executor.ExecuteCombat(
-                bot, bot, activationAction);
+            SubmitMeleeAutoAttackIntent(state,
+                BotMeleeAutoAttack::Kind::StartOrSwitch,
+                passiveSwarmClusterAnchor->GetGUID(),
+                BotMeleeAutoAttack::Owner::Threat,
+                BotActionArbitration::Priority::ThreatControl,
+                "tank_activate_passive_swarm");
+            BotActionResult activationResult =
+                bot->GetVictim() == passiveSwarmClusterAnchor
+                ? BotActionResult::Ok : BotActionResult::NoAction;
             if (activationResult == BotActionResult::Ok)
             {
                 std::string raw = BuildRawJson(bot, passiveSwarmClusterAnchor);
@@ -27286,7 +29878,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && !bot->HasAura(swarmDefensiveSpellId)
             && TryCastFriendlySpell(bot, bot, swarmDefensiveSpellId))
         {
-            bot->AttackStop();
+            SubmitMeleeAutoAttackIntent(state,
+                BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                BotMeleeAutoAttack::Owner::Threat,
+                BotActionArbitration::Priority::ThreatControl,
+                "swarm_pickup_emergency_defensive");
             std::string raw = BuildRawJson(bot, add);
             std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
             RecordEvent(state, bot, "defensive", bot, "swarm_pickup_emergency_defensive",
@@ -27308,7 +29904,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && (!dpsSwarmDamageRelease
                 || (observedListedAttackerCount(bot) && !botInsideTankPickup)))
         {
-            bot->AttackStop();
+            SubmitMeleeAutoAttackIntent(state,
+                BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                BotMeleeAutoAttack::Owner::Threat,
+                BotActionArbitration::Priority::ThreatControl,
+                "dps_wait_for_swarm_tank_ownership");
             if (Pet* pet = bot->GetPet())
                 pet->AttackStop();
 
@@ -27372,7 +29972,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 if (bot->GetExactDist2d(pickup.GetPositionX(), pickup.GetPositionY()) > 2.0f
                     && MoveBotToPoint(state, bot, pickup.GetPositionX(), pickup.GetPositionY(), pickup.GetPositionZ()))
                 {
-                    bot->AttackStop();
+                    SubmitMeleeAutoAttackIntent(state,
+                        BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                        BotMeleeAutoAttack::Owner::Threat,
+                        BotActionArbitration::Priority::ThreatControl,
+                        "dps_stack_for_add_pickup");
                     if (Pet* pet = bot->GetPet())
                         pet->AttackStop();
                     std::string raw = BuildRawJson(bot, nearestAttacker);
@@ -27393,7 +29997,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // was rejected above, stop adding threat until ownership transfers.
         if (role == "dps" && densityTank && !dpsSwarmDamageRelease && observedListedAttackerCount(bot))
         {
-            bot->AttackStop();
+            SubmitMeleeAutoAttackIntent(state,
+                BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                BotMeleeAutoAttack::Owner::Threat,
+                BotActionArbitration::Priority::ThreatControl,
+                "dps_hold_for_nearby_add_pickup");
             if (Pet* pet = bot->GetPet())
                 pet->AttackStop();
             Unit* pickupFocus = densityTank->GetVictim() ? densityTank->GetVictim() : add;
@@ -27635,8 +30243,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         {
             if (role == "tank")
             {
-                BotActionExecutor executor;
-                BotActionResult pull = executor.Pull(bot, add);
+                BotActionResult pull = SubmitMeleeAutoAttackIntent(state,
+                    BotMeleeAutoAttack::Kind::StartOrSwitch,
+                    add->GetGUID(), BotMeleeAutoAttack::Owner::Threat,
+                    BotActionArbitration::Priority::ThreatControl,
+                    "tank_density_autoattack_fallback")
+                        ? BotActionResult::Ok : BotActionResult::NoAction;
                 if (pull == BotActionResult::Ok)
                 {
                     std::string raw = BuildRawJson(bot, add);
@@ -27683,8 +30295,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 result = ExecuteProfileCombatAction(&state, bot, add, &profileAction, addCount, true);
             else
             {
-                BotActionExecutor executor;
-                BotActionResult pull = executor.Pull(bot, add);
+                BotActionResult pull = profileAction.AutoAttackMode == "melee"
+                    && SubmitMeleeAutoAttackIntent(state,
+                        BotMeleeAutoAttack::Kind::StartOrSwitch,
+                        add->GetGUID(), BotMeleeAutoAttack::Owner::Profile,
+                        BotActionArbitration::Priority::TrainedDamage,
+                        "boss_add_melee_engagement")
+                            ? BotActionResult::Ok : BotActionResult::NoAction;
                 result = ExecuteProfileCombatAction(&state, bot, add, &profileAction);
                 if (result == BotActionResult::NoAction)
                     result = pull;
@@ -27746,17 +30363,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         std::string semantic = BuildSemanticJson(bot, nullptr, situation.c_str(), &power, stage, activity);
         RecordEvent(state, bot, "validation_route_recovery", nullptr, state.LastNoProgressReason.c_str(), raw.c_str(), semantic.c_str(), routeDistance, Cohort().Config.ValidationRouteTargetEntry);
     };
-    if (Cohort().Config.ValidationRouteBossRecovery != ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly)
-    {
-        DungeonTrashActionResult resurrectionResult;
-        if (TryNativePartyResurrection(state, bot, power, stage, activity, resurrectionResult))
-        {
-            situation = "validation_route_resurrection";
-            action = resurrectionResult.Action;
-            target = resurrectionResult.Target;
-            return true;
-        }
-    }
     // A current-generation declared trash pack remains authoritative while
     // its native target is alive, attackable, combat-linked, and the living
     // roster still has a tank plus raid members who can continue.  This gate
@@ -28104,9 +30710,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     Player* cohortBot = GetLoadedBot(cohortState);
                     if (!cohortBot || !cohortBot->IsAlive() || cohortBot->GetMap() != bot->GetMap())
                         continue;
-                    cohortBot->AttackStop();
-                    cohortBot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+                    SubmitMeleeAutoAttackIntent(cohortState,
+                        BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                        BotMeleeAutoAttack::Owner::Recovery,
+                        BotActionArbitration::Priority::Survival,
+                        "partial_wipe_retreat_rendezvous");
                     cohortState.TargetGuid.Clear();
+                    cohortBot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
                     cohortState.WasInCombat = cohortBot->IsInCombat();
                     cohortState.ActivePathValid = false;
                     cohortState.IsMoving = false;
@@ -28127,7 +30737,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 return true;
             }
 
-            bot->AttackStop();
+            SubmitMeleeAutoAttackIntent(state,
+                BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                BotMeleeAutoAttack::Owner::Recovery,
+                BotActionArbitration::Priority::Survival,
+                "tactical_retreat_no_combat_res");
             state.TargetGuid.Clear();
             bool moved = MoveBotToPoint(state, bot, retreatX, retreatY, retreatZ);
             if (state.LastRecoveryMode != "tactical_retreat_no_combat_res" || nowMs - state.LastRecoveryMs >= 5000)
@@ -28262,7 +30876,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         && state.ValidationRouteGeneration == Party().ValidationRouteGeneration
         && state.ValidationRouteTerminalGeneration == Party().ValidationRouteGeneration
         && state.ValidationRouteTerminalReason == "arrival"
-        && (canonicalRouteDistance > routeArrivalRadius || arrivalCombatActive);
+        && (canonicalRouteDistance > routeArrivalRadius
+            || std::fabs(bot->GetPositionZ() - Cohort().Config.ValidationRouteZ) > 4.0f
+            || arrivalCombatActive);
     if (invalidArrivalTerminal)
     {
         state.ValidationRouteTerminalState = false;
@@ -28285,7 +30901,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && Cohort().Config.ValidationRouteAdvanceMode == "terminal"
             && routeDistance > terminalCohortRadius)
         {
-            bot->AttackStop();
+            SubmitMeleeAutoAttackIntent(state,
+                BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                BotMeleeAutoAttack::Owner::Safety,
+                BotActionArbitration::Priority::Terminal,
+                "terminal_cohort_catchup");
             target = nullptr;
             state.TargetGuid.Clear();
             if (moveToRouteAnchor())
@@ -28299,7 +30919,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
         }
 
-        bot->AttackStop();
+        SubmitMeleeAutoAttackIntent(state,
+            BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+            BotMeleeAutoAttack::Owner::Safety,
+            BotActionArbitration::Priority::Terminal,
+            "validation_route_terminal_hold");
         state.TargetGuid.Clear();
         state.WasInCombat = false;
         state.LoopRecoveryCooldownUntilMs = NowMs() + 60000;
@@ -28327,12 +30951,121 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         enrollEngagedValidationRoutePackMembers();
     if (arrivalRoute && !arrivalCombatActive)
     {
-        bot->AttackStop();
+        SubmitMeleeAutoAttackIntent(state,
+            BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+            BotMeleeAutoAttack::Owner::Route,
+            BotActionArbitration::Priority::Mechanic,
+            "validation_route_arrival_hold");
         target = nullptr;
         state.TargetGuid.Clear();
         std::string raw = BuildRawJson(bot, nullptr);
         std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_regroup", &power, stage, activity);
-        if (canonicalRouteDistance <= routeArrivalRadius)
+        if (Cohort().Config.ValidationRouteKind == "descent"
+            && !Cohort().Config.ValidationRouteDescentAction.empty())
+        {
+            if (Cohort().Config.ValidationRouteDescentAction
+                != "native_walkable_descent")
+            {
+                // A manifest may name a player input that the server-side bot
+                // cannot safely express (for example a client jump). Keep it
+                // fail-closed instead of substituting a spline or position
+                // mutation.
+                state.ActivePathValid = false;
+                state.ValidationRouteDescentPhase =
+                    WorldBotState::ValidationDescentPhase::Blocked;
+                state.ValidationRouteDescentRejectReason =
+                    "native_descent_semantics_unavailable";
+                state.LastPathRejectReason =
+                    state.ValidationRouteDescentRejectReason;
+                state.LastNoProgressReason =
+                    state.ValidationRouteDescentRejectReason;
+                state.LastDecisionResult = "native_descent_unavailable";
+                FailValidationAttemptOnce(state, bot,
+                    "native_descent_semantics_unavailable",
+                    Party().ValidationRouteGeneration);
+                situation = "validation_route_descent";
+                action = "validation_route_descent_blocked";
+                target = nullptr;
+                return true;
+            }
+
+            size_t const nextIndex = Party().ValidationRouteManifestIndex + 1;
+            bool const hasNextGoal = nextIndex
+                < Party().ValidationRouteManifest.size();
+            ValidationRouteManifestNode const* nextNode = hasNextGoal
+                ? &Party().ValidationRouteManifest[nextIndex] : nullptr;
+            WorldBotState::ValidationDescentPhase const previousPhase =
+                state.ValidationRouteDescentPhase;
+            BotActionArbitration::Outcome const descentOutcome =
+                ExecuteNativeActionIntent(state, bot,
+                    BotNativeAction::NativeDescent{
+                        Cohort().Config.ValidationRouteX,
+                        Cohort().Config.ValidationRouteY,
+                        Cohort().Config.ValidationRouteZ,
+                        nextNode ? nextNode->NavigationAnchorX : 0.0f,
+                        nextNode ? nextNode->NavigationAnchorY : 0.0f,
+                        nextNode ? nextNode->NavigationAnchorZ : 0.0f,
+                        Party().ValidationRouteGeneration,
+                        hasNextGoal },
+                    BotMovementArbitration::Owner::Route,
+                    BotMovementArbitration::Priority::Route);
+
+            char const* const descentPhase = ValidationDescentPhaseName(
+                state.ValidationRouteDescentPhase);
+            bool const phaseChanged = previousPhase
+                != state.ValidationRouteDescentPhase;
+            bool const descentReady = state.ValidationRouteDescentPhase
+                    == WorldBotState::ValidationDescentPhase::Ready
+                && state.ValidationRouteDescentDepartureObserved
+                && state.ValidationRouteDescentLandingObserved
+                && state.ValidationRouteDescentHealthMarginSatisfied
+                && state.ValidationRouteDescentLandingPathProven
+                && state.ValidationRouteDescentMonotonicProgressObserved
+                && !bot->IsFalling();
+            if (phaseChanged || descentReady
+                || descentOutcome.Result
+                    != BotActionArbitration::Disposition::Committed)
+                RecordEvent(state, bot, "validation_route_descent", nullptr,
+                    state.ValidationRouteDescentRejectReason.empty()
+                        ? descentPhase
+                        : state.ValidationRouteDescentRejectReason.c_str(),
+                    raw.c_str(), semantic.c_str(), canonicalRouteDistance,
+                    uint32(std::round(
+                        state.ValidationRouteDescentLandingHealthPct * 100.0f)));
+
+            situation = "validation_route_descent";
+            if (descentReady)
+            {
+                state.ValidationRouteTerminalState = true;
+                state.ValidationRouteTerminalAtMs = NowMs();
+                state.ValidationRouteTerminalGeneration =
+                    Party().ValidationRouteGeneration;
+                state.ValidationRouteTerminalReason =
+                    "native_descent_landed_path_proven";
+                state.LoopRecoveryCooldownUntilMs = NowMs() + 60000;
+                RecordEvent(state, bot, "validation_route_terminal", nullptr,
+                    state.ValidationRouteTerminalReason.c_str(), raw.c_str(),
+                    semantic.c_str(), canonicalRouteDistance,
+                    Cohort().Config.ValidationRouteTargetEntry);
+                action = "validation_route_descent_complete";
+                MaybeAdvanceValidationRouteManifest();
+            }
+            else if (state.ValidationRouteDescentPhase
+                == WorldBotState::ValidationDescentPhase::Falling)
+                action = "validation_route_descent_falling";
+            else if (state.ValidationRouteDescentPhase
+                == WorldBotState::ValidationDescentPhase::Landed)
+                action = "validation_route_descent_landing_pending";
+            else if (descentOutcome.Result
+                == BotActionArbitration::Disposition::Committed)
+                action = "validation_route_descent_walk_segment";
+            else
+                action = "validation_route_descent_blocked";
+            target = nullptr;
+            return true;
+        }
+        if (canonicalRouteDistance <= routeArrivalRadius
+            && std::fabs(bot->GetPositionZ() - Cohort().Config.ValidationRouteZ) <= 4.0f)
         {
             state.ValidationRouteTerminalState = true;
             state.ValidationRouteTerminalAtMs = NowMs();
@@ -28347,26 +31080,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
-        if (Cohort().Config.ValidationRouteKind == "descent"
-            && !Cohort().Config.ValidationRouteDescentAction.empty())
-        {
-            // Some manifests explicitly require a client-like walk, jump, or
-            // fall (currently Nefarian's ledge). Do not synthesize those
-            // inputs. Ordinary walkable dungeon descents leave descent_action
-            // empty and flow through the same native path reconciliation as
-            // any other route anchor below.
-            state.ActivePathValid = false;
-            state.LastPathRejectReason = "native_descent_semantics_unavailable";
-            state.LastNoProgressReason = "native_descent_semantics_unavailable";
-            state.LastDecisionResult = "native_descent_unavailable";
-            RecordEvent(state, bot, "validation_route_descent_blocked", nullptr,
-                "native_descent_semantics_unavailable", raw.c_str(), semantic.c_str(),
-                routeDistance, Cohort().Config.ValidationRouteTargetEntry);
-            situation = "validation_route_descent";
-            action = "validation_route_descent_blocked";
-            target = nullptr;
-            return true;
-        }
         bool const moved = moveToRouteAnchor();
         char const* movementResult = moved
             ? (Cohort().Config.ValidationRouteLabel.empty()
@@ -28540,7 +31253,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     {
         Unit* rejected = trashThreatControl.AreaTarget;
         bot->InterruptNonMeleeSpells(false);
-        bot->AttackStop();
+        SubmitMeleeAutoAttackIntent(state,
+            BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+            BotMeleeAutoAttack::Owner::Threat,
+            BotActionArbitration::Priority::ThreatControl,
+            "trash_threat_hold");
         if (Pet* pet = bot->GetPet())
             pet->AttackStop();
         for (Unit* controlled : bot->m_Controlled)
@@ -28737,7 +31454,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && !bot->HasAura(emergencySpellId)
             && TryCastFriendlySpell(bot, bot, emergencySpellId))
         {
-            bot->AttackStop();
+            SubmitMeleeAutoAttackIntent(state,
+                BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                BotMeleeAutoAttack::Owner::Threat,
+                BotActionArbitration::Priority::ThreatControl,
+                "prerequisite_swarm_emergency_defensive");
             if (Pet* pet = bot->GetPet())
                 pet->AttackStop();
             std::string raw = BuildRawJson(bot, trashThreatControl.AreaTarget);
@@ -28870,7 +31591,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                         - trashThreatControl.Tank->GetOrientation() + spreadOffset);
                 if (MoveBotToPoint(state, bot, safeRange.GetPositionX(), safeRange.GetPositionY(), safeRange.GetPositionZ()))
                 {
-                    bot->AttackStop();
+                    SubmitMeleeAutoAttackIntent(state,
+                        BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                        BotMeleeAutoAttack::Owner::Threat,
+                        BotActionArbitration::Priority::ThreatControl,
+                        "trash_threat_spread_hold");
                     if (Pet* pet = bot->GetPet())
                         pet->AttackStop();
                     std::string raw = BuildRawJson(bot, tankFocus);
@@ -28887,7 +31612,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 }
             }
             if (bot->GetVictim() && bot->GetVictim() != tankFocus)
-                bot->AttackStop();
+                SubmitMeleeAutoAttackIntent(state,
+                    BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                    BotMeleeAutoAttack::Owner::Threat,
+                    BotActionArbitration::Priority::ThreatControl,
+                    "trash_threat_focus_switch");
             if (Pet* pet = bot->GetPet(); pet && pet->GetVictim() && pet->GetVictim() != tankFocus)
                 pet->AttackStop();
             target = tankFocus;
@@ -28912,8 +31641,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 return true;
             }
 
-            BotActionExecutor executor;
-            BotActionResult result = executor.Pull(bot, tankFocus);
+            BotActionResult result = focusedAction.AutoAttackMode == "melee"
+                && SubmitMeleeAutoAttackIntent(state,
+                    BotMeleeAutoAttack::Kind::StartOrSwitch,
+                    tankFocus->GetGUID(), BotMeleeAutoAttack::Owner::Threat,
+                    BotActionArbitration::Priority::ThreatControl,
+                    "trash_focused_melee_engagement")
+                        ? BotActionResult::Ok : BotActionResult::NoAction;
             if (focusedAction.Valid)
             {
                 BotActionResult focusedResult = ExecuteProfileCombatAction(&state, bot, tankFocus, &focusedAction, 1, false);
@@ -28933,7 +31667,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
 
         bot->InterruptNonMeleeSpells(false);
-        bot->AttackStop();
+        SubmitMeleeAutoAttackIntent(state,
+            BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+            BotMeleeAutoAttack::Owner::Threat,
+            BotActionArbitration::Priority::ThreatControl,
+            "trash_threat_pickup_hold");
         if (Pet* pet = bot->GetPet())
             pet->AttackStop();
         bool moved = false;
@@ -29016,7 +31754,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (bot->GetExactDist2d(pickup.GetPositionX(), pickup.GetPositionY()) > 2.0f
                 && MoveBotToPoint(state, bot, pickup.GetPositionX(), pickup.GetPositionY(), pickup.GetPositionZ()))
             {
-                bot->AttackStop();
+                SubmitMeleeAutoAttackIntent(state,
+                    BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                    BotMeleeAutoAttack::Owner::Threat,
+                    BotActionArbitration::Priority::ThreatControl,
+                    "trash_pickup_stack_hold");
                 if (Pet* pet = bot->GetPet())
                     pet->AttackStop();
                 std::string raw = BuildRawJson(bot, nearestAttacker);
@@ -30679,7 +33421,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 // preceding trash node, never by a generic boss prerequisite
                 // assist that bypasses target/area/multidot authority.
                 bot->InterruptNonMeleeSpells(false);
-                bot->AttackStop();
+                SubmitMeleeAutoAttackIntent(state,
+                    BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                    BotMeleeAutoAttack::Owner::Safety,
+                    BotActionArbitration::Priority::Terminal,
+                    "shared_focus_not_declared");
                 if (Pet* pet = bot->GetPet())
                     pet->AttackStop();
                 for (Unit* controlled : bot->m_Controlled)
@@ -30733,7 +33479,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 // cannot establish a boss context. That would reintroduce the
                 // exact pre-engagement bypass this dispatch closes.
                 bot->InterruptNonMeleeSpells(false);
-                bot->AttackStop();
+                SubmitMeleeAutoAttackIntent(state,
+                    BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                    BotMeleeAutoAttack::Owner::Safety,
+                    BotActionArbitration::Priority::Terminal,
+                    "shared_boss_mechanic_fail_closed");
                 if (Pet* pet = bot->GetPet())
                     pet->AttackStop();
                 for (Unit* controlled : bot->m_Controlled)
@@ -30960,7 +33710,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (!isValidationRouteObjectiveTarget(focusCreature))
             {
                 bot->InterruptNonMeleeSpells(false);
-                bot->AttackStop();
+                SubmitMeleeAutoAttackIntent(state,
+                    BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                    BotMeleeAutoAttack::Owner::Safety,
+                    BotActionArbitration::Priority::Terminal,
+                    "shared_boss_target_not_declared");
                 if (Pet* pet = bot->GetPet())
                     pet->AttackStop();
                 for (Unit* controlled : bot->m_Controlled)
@@ -30984,7 +33738,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
 
             bot->InterruptNonMeleeSpells(false);
-            bot->AttackStop();
+            SubmitMeleeAutoAttackIntent(state,
+                BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                BotMeleeAutoAttack::Owner::Safety,
+                BotActionArbitration::Priority::Terminal,
+                "shared_focus_mechanic_fail_closed");
             if (Pet* pet = bot->GetPet())
                 pet->AttackStop();
             for (Unit* controlled : bot->m_Controlled)
@@ -31118,7 +33876,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             std::string raw = BuildRawJson(bot, target);
             std::string semantic = BuildSemanticJson(bot, target, "validation_route_prerequisite_rejected", &power, stage, activity);
             RecordEvent(state, bot, "validation_route_prerequisite_rejected", target, "ineligible_trash_target", raw.c_str(), semantic.c_str(), targetRouteDistance, Cohort().Config.ValidationRouteTargetEntry);
-            bot->AttackStop();
+            SubmitMeleeAutoAttackIntent(state,
+                BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                BotMeleeAutoAttack::Owner::Safety,
+                BotActionArbitration::Priority::Terminal,
+                "ineligible_trash_target");
             state.TargetGuid.Clear();
             target = nullptr;
         }
@@ -31143,7 +33905,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
 
             bot->InterruptNonMeleeSpells(false);
-            bot->AttackStop();
+            SubmitMeleeAutoAttackIntent(state,
+                BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                BotMeleeAutoAttack::Owner::Safety,
+                BotActionArbitration::Priority::Terminal,
+                "raid_mechanic_contract_fail_closed");
             if (Pet* pet = bot->GetPet())
                 pet->AttackStop();
             for (Unit* controlled : bot->m_Controlled)
@@ -31205,7 +33971,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             std::string raw = BuildRawJson(bot, target);
             std::string semantic = BuildSemanticJson(bot, target, "validation_route_regroup", &power, stage, activity);
             RecordEvent(state, bot, "validation_route_prerequisite_rejected", target, "wait_for_tank_threat", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), Cohort().Config.ValidationRouteTargetEntry);
-            bot->AttackStop();
+            SubmitMeleeAutoAttackIntent(state,
+                BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                BotMeleeAutoAttack::Owner::Threat,
+                BotActionArbitration::Priority::ThreatControl,
+                "wait_for_tank_threat");
             if (Pet* pet = bot->GetPet())
                 pet->AttackStop();
             state.TargetGuid.Clear();
@@ -31482,7 +34252,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && !isValidationRouteObjectiveTarget(seenRouteTarget->ToCreature()))
         {
             bot->InterruptNonMeleeSpells(false);
-            bot->AttackStop();
+            SubmitMeleeAutoAttackIntent(state,
+                BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                BotMeleeAutoAttack::Owner::Safety,
+                BotActionArbitration::Priority::Terminal,
+                "seen_boss_target_not_declared");
             if (Pet* pet = bot->GetPet())
                 pet->AttackStop();
             for (Unit* controlled : bot->m_Controlled)
@@ -31523,7 +34297,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (Cohort().Config.ValidationRouteKind == "boss")
         {
             bot->InterruptNonMeleeSpells(false);
-            bot->AttackStop();
+            SubmitMeleeAutoAttackIntent(state,
+                BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                BotMeleeAutoAttack::Owner::Safety,
+                BotActionArbitration::Priority::Terminal,
+                "boss_activation_fail_closed");
             if (Pet* pet = bot->GetPet())
                 pet->AttackStop();
             for (Unit* controlled : bot->m_Controlled)
@@ -31880,7 +34658,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         && !isValidationRouteObjectiveTarget(routeTarget->ToCreature()))
     {
         bot->InterruptNonMeleeSpells(false);
-        bot->AttackStop();
+        SubmitMeleeAutoAttackIntent(state,
+            BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+            BotMeleeAutoAttack::Owner::Safety,
+            BotActionArbitration::Priority::Terminal,
+            "route_target_not_declared");
         if (Pet* pet = bot->GetPet())
             pet->AttackStop();
         for (Unit* controlled : bot->m_Controlled)
@@ -31910,7 +34692,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
 
         bot->InterruptNonMeleeSpells(false);
-        bot->AttackStop();
+        SubmitMeleeAutoAttackIntent(state,
+            BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+            BotMeleeAutoAttack::Owner::Safety,
+            BotActionArbitration::Priority::Terminal,
+            "route_mechanic_fail_closed");
         if (Pet* pet = bot->GetPet())
             pet->AttackStop();
         for (Unit* controlled : bot->m_Controlled)
@@ -31948,8 +34734,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         return true;
     }
 
-    BotActionExecutor executor;
-    BotActionResult pull = executor.Pull(bot, target);
+    BotActionResult pull = profileAction.AutoAttackMode == "melee"
+        && SubmitMeleeAutoAttackIntent(state,
+            BotMeleeAutoAttack::Kind::StartOrSwitch,
+            target->GetGUID(), BotMeleeAutoAttack::Owner::Route,
+            BotActionArbitration::Priority::TrainedDamage,
+            "validation_route_melee_engagement")
+                ? BotActionResult::Ok : BotActionResult::NoAction;
     BotActionResult result = ExecuteProfileCombatAction(&state, bot, target, &profileAction);
     if (result == BotActionResult::NoAction)
         result = pull;
@@ -32276,7 +35067,11 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
     {
         reconcileRaidAreaAutocasts(true);
         bot->InterruptNonMeleeSpells(false);
-        bot->AttackStop();
+        SubmitMeleeAutoAttackIntent(state,
+            BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+            BotMeleeAutoAttack::Owner::Mechanic,
+            BotActionArbitration::Priority::Mechanic,
+            "bound_route_target_without_boss_contract");
         if (Pet* pet = bot->GetPet())
             pet->AttackStop();
         for (Unit* controlled : bot->m_Controlled)
@@ -32335,7 +35130,11 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
     {
         reconcileRaidAreaAutocasts(true);
         bot->InterruptNonMeleeSpells(false);
-        bot->AttackStop();
+        SubmitMeleeAutoAttackIntent(state,
+            BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+            BotMeleeAutoAttack::Owner::Mechanic,
+            BotActionArbitration::Priority::Mechanic,
+            "raid_contract_unresolved");
         if (Pet* pet = bot->GetPet())
             pet->AttackStop();
         for (Unit* controlled : bot->m_Controlled)
@@ -32359,29 +35158,6 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
         bool const suppressAreaDamage = !raidAdapter.AllowAreaDamage
             || raidAdapter.TargetControl == "controlled_aoe";
         reconcileRaidAreaAutocasts(suppressAreaDamage);
-    }
-
-    bool battleResOwner = raidAdapter.BattleResurrectionPolicy != "assigned_only"
-        ? (raidAdapter.BattleResurrectionSlots.empty()
-            || std::find(raidAdapter.BattleResurrectionSlots.begin(), raidAdapter.BattleResurrectionSlots.end(),
-                raidAssignment.RoleIndex) != raidAdapter.BattleResurrectionSlots.end())
-        : std::find(raidAdapter.BattleResurrectionSlots.begin(), raidAdapter.BattleResurrectionSlots.end(),
-            raidAssignment.RoleIndex) != raidAdapter.BattleResurrectionSlots.end();
-    if (result.Features.RaidEncounter && raidAdapter.ContractResolved && battleResOwner
-        && Cohort().Config.ValidationRouteBossRecovery != ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly)
-    {
-        DungeonTrashActionResult resurrectionResult;
-        if (TryNativePartyResurrection(state, bot, power, stage, activity, resurrectionResult,
-                raidAdapter.BattleResurrectionPolicy))
-        {
-            result.Action = resurrectionResult.Action;
-            result.Target = resurrectionResult.Target;
-            result.Rare = true;
-            RecordRaidTelemetry(state, bot, result.Target, "raid_battle_resurrection", "native_observed",
-                result.Features, raidAssignment, raidAnchors, raidAdapter, raidGearPlan, heroicProgression,
-                raw.c_str(), semantic.c_str(), 0.0f, result.Target ? result.Target->GetGUID().GetCounter() : 0);
-            return result;
-        }
     }
 
     if (result.Features.RaidEncounter && raidAdapter.ContractResolved && raidAdapter.DispelAuraId)
@@ -32523,7 +35299,11 @@ raid_cooldown_complete:
             result.Failure = true;
             return result;
         }
-        bot->AttackStop();
+        SubmitMeleeAutoAttackIntent(state,
+            BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+            BotMeleeAutoAttack::Owner::Safety,
+            BotActionArbitration::Priority::Terminal,
+            "raid_area_contamination_fail_closed");
         if (Spell* current = bot->GetCurrentSpell(CURRENT_GENERIC_SPELL))
             if (Unit* castTarget = current->m_targets.GetUnitTarget();
                 castTarget && bot->IsValidAttackTarget(castTarget))
@@ -32574,12 +35354,10 @@ raid_cooldown_complete:
                     focusPriority = priority;
                 }
             }
-        auto stopWrongFocusTarget = [focus](Unit* attacker)
+        auto interruptWrongFocusCasts = [focus](Unit* attacker)
         {
             if (!attacker)
                 return;
-            if (!focus || (attacker->GetVictim() && attacker->GetVictim() != focus))
-                attacker->AttackStop();
             if (Spell* current = attacker->GetCurrentSpell(CURRENT_GENERIC_SPELL))
                 if (!focus || current->m_targets.GetUnitTarget() != focus)
                     attacker->InterruptSpell(CURRENT_GENERIC_SPELL, false);
@@ -32588,6 +35366,24 @@ raid_cooldown_complete:
                     attacker->InterruptSpell(CURRENT_AUTOREPEAT_SPELL, false);
             if (attacker->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
                 attacker->InterruptSpell(CURRENT_CHANNELED_SPELL, false);
+        };
+        auto stopWrongControlledFocusTarget = [focus, &interruptWrongFocusCasts](Unit* attacker)
+        {
+            if (!attacker)
+                return;
+            if (!focus || (attacker->GetVictim() && attacker->GetVictim() != focus))
+                attacker->AttackStop();
+            interruptWrongFocusCasts(attacker);
+        };
+        auto stopWrongPlayerFocusTarget = [&]()
+        {
+            if (!focus || (bot->GetVictim() && bot->GetVictim() != focus))
+                SubmitMeleeAutoAttackIntent(state,
+                    BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                    BotMeleeAutoAttack::Owner::Mechanic,
+                    BotActionArbitration::Priority::Mechanic,
+                    "raid_focus_target_transition");
+            interruptWrongFocusCasts(bot);
         };
         if (!focus)
         {
@@ -32600,11 +35396,11 @@ raid_cooldown_complete:
                 if (fireTotem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == 8190)
                     if (Totem* magma = fireTotem->ToTotem())
                         magma->UnSummon();
-            stopWrongFocusTarget(bot);
+            stopWrongPlayerFocusTarget();
             if (Pet* pet = bot->GetPet())
-                stopWrongFocusTarget(pet);
+                stopWrongControlledFocusTarget(pet);
             for (Unit* controlled : bot->m_Controlled)
-                stopWrongFocusTarget(controlled);
+                stopWrongControlledFocusTarget(controlled);
             result.Action = "raid_focus_fire_target_missing";
             result.Failure = true;
             return result;
@@ -32618,11 +35414,11 @@ raid_cooldown_complete:
             if (fireTotem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == 8190)
                 if (Totem* magma = fireTotem->ToTotem())
                     magma->UnSummon();
-        stopWrongFocusTarget(bot);
+        stopWrongPlayerFocusTarget();
         if (Pet* pet = bot->GetPet())
-            stopWrongFocusTarget(pet);
+            stopWrongControlledFocusTarget(pet);
         for (Unit* controlled : bot->m_Controlled)
-            stopWrongFocusTarget(controlled);
+            stopWrongControlledFocusTarget(controlled);
         result.Target = focus;
         state.TargetGuid = focus->GetGUID();
         RecordRaidTelemetry(state, bot, focus, "raid_focus_fire", "declared_target_selected",
@@ -32946,7 +35742,11 @@ raid_cooldown_complete:
                         ++membersInSoak;
         if (membersInSoak < raidAdapter.SoakMinimumCount)
         {
-            bot->AttackStop();
+            SubmitMeleeAutoAttackIntent(state,
+                BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                BotMeleeAutoAttack::Owner::Mechanic,
+                BotActionArbitration::Priority::Mechanic,
+                "raid_soak_wait_for_assigned_count");
             result.Action = "raid_soak_wait_for_assigned_count";
             RecordRaidTelemetry(state, bot, result.Target, "raid_soak", "assigned_count_pending",
                 result.Features, raidAssignment, raidAnchors, raidAdapter, raidGearPlan, heroicProgression,
@@ -33012,7 +35812,11 @@ raid_cooldown_complete:
             if (botDamagingLow)
             {
                 if (meleeLowTarget)
-                    bot->AttackStop();
+                    SubmitMeleeAutoAttackIntent(state,
+                        BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                        BotMeleeAutoAttack::Owner::Mechanic,
+                        BotActionArbitration::Priority::Mechanic,
+                        "raid_damage_stop_low_target");
                 if (genericLowTarget)
                     bot->InterruptSpell(CURRENT_GENERIC_SPELL, false);
                 if (repeatLowTarget)
@@ -33110,7 +35914,11 @@ raid_cooldown_complete:
             if (std::find(raidAdapter.TargetEntries.begin(), raidAdapter.TargetEntries.end(), add->GetEntry())
                 == raidAdapter.TargetEntries.end())
             {
-                bot->AttackStop();
+                SubmitMeleeAutoAttackIntent(state,
+                    BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                    BotMeleeAutoAttack::Owner::Safety,
+                    BotActionArbitration::Priority::Terminal,
+                    "raid_target_not_declared_hold");
                 result.Action = "raid_target_not_declared_hold";
                 return result;
             }
@@ -34393,254 +37201,6 @@ bool BotWorldPopulationMgr::TryNativeSelfResurrection(WorldBotState& state, Play
     return false;
 }
 
-bool BotWorldPopulationMgr::TryNativePartyResurrection(WorldBotState& state, Player* healer, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, DungeonTrashActionResult& result, std::string const& targetPolicy)
-{
-    if (!healer || !healer->IsAlive() || !healer->GetGroup())
-        return false;
-
-    bool groupCombatActive = healer->IsInCombat();
-    for (WorldBotState const& cohortState : Party().Bots)
-        if (Player* member = GetLoadedBot(cohortState); member && (member->GetVictim() || !member->getAttackers().empty()))
-            groupCombatActive = true;
-
-    uint64 nowMs = NowMs();
-    Player* deadMember = nullptr;
-    uint8 deadMemberPriority = 0;
-    for (GroupReference* itr = healer->GetGroup()->GetFirstMember(); itr != nullptr; itr = itr->next())
-    {
-        Player* member = itr->GetSource();
-        WorldBotState const* memberState = nullptr;
-        if (member)
-            for (WorldBotState const& candidate : Party().Bots)
-                if (candidate.Guid == member->GetGUID())
-                {
-                    memberState = &candidate;
-                    break;
-                }
-        bool managedBot = memberState != nullptr;
-        if (!managedBot || member == healer || member->IsAlive() || !member->IsInWorld()
-            || !member->GetSession() || !member->GetSession()->IsBotSession()
-            || !healer->IsInSameGroupWith(member) || member->GetMap() != healer->GetMap()
-            || member->GetInstanceId() != healer->GetInstanceId()
-            // A raid-validation death is not a valid spell target until the
-            // core has created the exact corpse in the frozen raid instance.
-            // Before that point KillPlayer leaves only a dead Player object;
-            // selecting it makes the native corpse spell fail with
-            // SPELL_FAILED_BAD_TARGETS and can starve the release path.
-            // Non-validation party resurrection deliberately keeps its
-            // existing target-selection behavior.
-            || (Cohort().Config.ValidationRouteEnable && Cohort().Config.AllowRaids
-                && !HasNativeRaidCorpseAuthority(*memberState, member)))
-            continue;
-        bool requestedByHealer = member->IsResurrectRequestedBy(healer->GetGUID());
-        bool pendingByHealer = memberState->NativeResurrectionPendingUntilMs > nowMs
-            && memberState->NativeResurrectionCasterGuid == healer->GetGUID();
-        if ((member->IsResurrectRequested() && !requestedByHealer)
-            || (memberState->NativeResurrectionPendingUntilMs > nowMs && !pendingByHealer))
-            continue;
-        uint8 rolePriority = 0;
-        if (targetPolicy == "tank_then_healer_then_dps")
-        {
-            std::string const deadRole = GetDungeonRole(member);
-            rolePriority = deadRole == "tank" ? 3 : deadRole == "healer" ? 2 : 1;
-        }
-        // A native request already submitted by this caster must be completed
-        // before choosing a fresh target.  Otherwise the declared raid role
-        // order is authoritative, with GUID providing deterministic ties.
-        uint8 priority = requestedByHealer ? 100 : pendingByHealer ? 90 : rolePriority;
-        if (!deadMember || priority > deadMemberPriority
-            || (priority == deadMemberPriority && member->GetGUID() < deadMember->GetGUID()))
-        {
-            deadMember = member;
-            deadMemberPriority = priority;
-        }
-    }
-    if (!deadMember)
-        return false;
-
-    for (auto const& [spellId, playerSpell] : healer->GetSpellMap())
-    {
-        if (playerSpell.state == PLAYERSPELL_REMOVED || playerSpell.disabled || !playerSpell.active)
-            continue;
-        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
-        if (!spellInfo || (!spellInfo->HasEffect(SPELL_EFFECT_RESURRECT)
-            && !spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_NEW)
-            && !spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_WITH_AURA)))
-            continue;
-        if (healer->FindCurrentSpellBySpellId(spellId))
-        {
-            result.Handled = true;
-            result.Action = "validation_route_native_resurrection_casting";
-            result.Target = deadMember;
-            return true;
-        }
-    }
-
-    if (deadMember->IsResurrectRequested())
-    {
-        if (deadMember->IsResurrectRequestedBy(healer->GetGUID()))
-        {
-            WorldPacket response(CMSG_RESURRECT_RESPONSE, 9);
-            response << healer->GetGUID();
-            response << uint8(1);
-            deadMember->GetSession()->HandleResurrectResponseOpcode(response);
-            if (deadMember->IsBeingTeleportedNear())
-            {
-                GameClient* client = deadMember->GetSession()->GetGameClient();
-                client->SetMovedUnit(deadMember, true);
-                client->SetActivelyMovedUnit(deadMember);
-                WorldPacket ackPayload(MSG_MOVE_TELEPORT_ACK, 0);
-                WorldPackets::Movement::MoveTeleportAck ack(std::move(ackPayload));
-                ack.MoverGUID = deadMember->GetGUID();
-                deadMember->GetSession()->HandleMoveTeleportAck(ack);
-            }
-            if (deadMember->IsAlive())
-                for (WorldBotState& cohortState : Party().Bots)
-                    if (cohortState.Guid == deadMember->GetGUID())
-                    {
-                        cohortState.NativeResurrectionPendingUntilMs = 0;
-                        cohortState.NativeResurrectionCasterGuid.Clear();
-                        cohortState.NativeResurrectionSpellId = 0;
-                        break;
-                    }
-            std::string raw = BuildRawJson(healer, deadMember);
-            std::string semantic = BuildSemanticJson(healer, deadMember, "validation_route_resurrection", &power, stage, activity);
-            RecordEvent(state, healer, "validation_route_resurrection", deadMember, deadMember->IsAlive() ? "native_resurrection_completed" : "native_request_accept_failed", raw.c_str(), semantic.c_str(), healer->GetExactDist(deadMember), 0);
-            result.Handled = true;
-            result.Action = deadMember->IsAlive() ? "validation_route_native_resurrection_complete" : "validation_route_native_resurrection_pending";
-            result.Target = deadMember;
-            return true;
-        }
-        return false;
-    }
-
-    struct ResurrectionCandidate
-    {
-        uint32 SpellId = 0;
-        SpellInfo const* Info = nullptr;
-        bool CombatResurrection = false;
-    };
-    std::vector<ResurrectionCandidate> resurrectionCandidates;
-    for (auto const& [spellId, playerSpell] : healer->GetSpellMap())
-    {
-        if (playerSpell.state == PLAYERSPELL_REMOVED || playerSpell.disabled || !playerSpell.active || !healer->HasSpell(spellId))
-            continue;
-        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
-        if (!spellInfo || (!spellInfo->HasEffect(SPELL_EFFECT_RESURRECT)
-            && !spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_NEW)
-            && !spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_WITH_AURA)))
-            continue;
-        bool combatResurrection = spellInfo->HasAttribute(SPELL_ATTR8_ENFORCE_IN_COMBAT_RESSURECTION_LIMIT);
-        if (groupCombatActive && !combatResurrection)
-            continue;
-        resurrectionCandidates.push_back({ spellId, spellInfo, combatResurrection });
-    }
-    std::sort(resurrectionCandidates.begin(), resurrectionCandidates.end(), [](ResurrectionCandidate const& left, ResurrectionCandidate const& right)
-    {
-        if (left.CombatResurrection != right.CombatResurrection)
-            return !left.CombatResurrection;
-        uint32 leftRecovery = std::max(left.Info->RecoveryTime, left.Info->CategoryRecoveryTime);
-        uint32 rightRecovery = std::max(right.Info->RecoveryTime, right.Info->CategoryRecoveryTime);
-        if (leftRecovery != rightRecovery)
-            return leftRecovery < rightRecovery;
-        return left.SpellId > right.SpellId;
-    });
-
-    std::string raw = BuildRawJson(healer, deadMember);
-    std::string semantic = BuildSemanticJson(healer, deadMember, "validation_route_resurrection", &power, stage, activity);
-    bool attemptedCandidate = false;
-    for (ResurrectionCandidate const& candidate : resurrectionCandidates)
-    {
-        SpellInfo const* spellInfo = candidate.Info;
-        bool rejectedCandidate = state.NativeResurrectionRejectedTargetGuid == deadMember->GetGUID()
-            && state.NativeResurrectionRejectedSpellId == candidate.SpellId
-            && state.NativeResurrectionRetryAfterMs > nowMs;
-        if (rejectedCandidate)
-            continue;
-        if (!healer->GetSpellHistory()->IsReady(spellInfo) || !HasPowerForSpell(healer, spellInfo))
-            continue;
-
-        float resurrectionRange = std::max(5.0f, healer->GetSpellMaxRangeForTarget(deadMember, spellInfo));
-        if (!healer->IsWithinLOSInMap(deadMember) || !healer->IsWithinDistInMap(deadMember, resurrectionRange))
-        {
-            bool moved = MoveBotToProfileRange(state, healer, deadMember);
-            RecordEvent(state, healer, "validation_route_resurrection", deadMember, moved ? "approach_dead_member" : "tactical_path_rejected", raw.c_str(), semantic.c_str(), healer->GetExactDist(deadMember), 0, candidate.SpellId);
-            result.Handled = true;
-            result.Action = moved ? "move_to_native_resurrection_range" : "hold_tactical_path_rejected";
-            result.Target = deadMember;
-            return true;
-        }
-
-        if (healer->HasUnitState(UNIT_STATE_CASTING) || healer->GetSpellHistory()->HasGlobalCooldown(spellInfo))
-            return false;
-
-        if (spellInfo->CalcCastTime(healer->getLevel()) > 0)
-        {
-            healer->StopMoving();
-            healer->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
-            healer->GetMotionMaster()->MoveIdle();
-        }
-        SpellCastResult castResult = healer->CastSpell(deadMember, candidate.SpellId, false);
-        attemptedCandidate = true;
-        if (castResult == SPELL_CAST_OK)
-        {
-            state.NativeResurrectionRejectedTargetGuid.Clear();
-            state.NativeResurrectionRejectedSpellId = 0;
-            state.NativeResurrectionRejectedCastResult = 0;
-            state.NativeResurrectionRetryAfterMs = 0;
-            state.NativeResurrectionConsecutiveFailures = 0;
-            for (WorldBotState& cohortState : Party().Bots)
-                if (cohortState.Guid == deadMember->GetGUID())
-                {
-                    cohortState.NativeResurrectionPendingUntilMs = NowMs() + uint64(std::max<int32>(5000, spellInfo->CalcCastTime(healer->getLevel()) + 5000));
-                    cohortState.NativeResurrectionCasterGuid = healer->GetGUID();
-                    cohortState.NativeResurrectionSpellId = candidate.SpellId;
-                    break;
-                }
-            RecordEvent(state, healer, "validation_route_resurrection", deadMember, "native_cast_submitted",
-                raw.c_str(), semantic.c_str(), healer->GetExactDist(deadMember), 0, candidate.SpellId);
-            result.Handled = true;
-            result.Action = "validation_route_native_resurrection";
-            result.Target = deadMember;
-            return true;
-        }
-
-        std::string castResultLabel = "spell_cast_result_" + std::to_string(uint32(castResult));
-        RecordEvent(state, healer, "validation_route_resurrection", deadMember, castResultLabel.c_str(),
-            raw.c_str(), semantic.c_str(), healer->GetExactDist(deadMember), 0, candidate.SpellId);
-
-        bool sameRejection = state.NativeResurrectionRejectedTargetGuid == deadMember->GetGUID()
-            && state.NativeResurrectionRejectedSpellId == candidate.SpellId
-            && state.NativeResurrectionRejectedCastResult == uint32(castResult);
-        state.NativeResurrectionConsecutiveFailures = sameRejection
-            ? uint8(std::min<uint32>(255, uint32(state.NativeResurrectionConsecutiveFailures) + 1)) : 1;
-        state.NativeResurrectionRejectedTargetGuid = deadMember->GetGUID();
-        state.NativeResurrectionRejectedSpellId = candidate.SpellId;
-        state.NativeResurrectionRejectedCastResult = uint32(castResult);
-
-        if (castResult == SPELL_FAILED_NOT_SHAPESHIFT && CancelRemovableShapeshifts(healer))
-        {
-            state.NativeResurrectionRetryAfterMs = nowMs + 1000;
-            RecordEvent(state, healer, "validation_route_resurrection", deadMember, "cancelled_shapeshift_for_retry",
-                raw.c_str(), semantic.c_str(), healer->GetExactDist(deadMember), 0, candidate.SpellId);
-            result.Handled = true;
-            result.Action = "cancel_shapeshift_for_native_resurrection";
-            result.Target = deadMember;
-            return true;
-        }
-
-        uint64 retryDelayMs = state.NativeResurrectionConsecutiveFailures >= 2 ? 60000 : 5000;
-        state.NativeResurrectionRetryAfterMs = nowMs + retryDelayMs;
-    }
-
-    if (resurrectionCandidates.empty())
-        return false;
-    if (attemptedCandidate)
-        RecordEvent(state, healer, "validation_route_resurrection", deadMember, "native_candidates_backed_off",
-            raw.c_str(), semantic.c_str(), healer->GetExactDist(deadMember), 0);
-    return false;
-}
-
 bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Player* bot, Unit* pullTarget, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, DungeonTrashActionResult& result)
 {
     if (!bot)
@@ -35182,8 +37742,45 @@ std::string BotWorldPopulationMgr::BuildRaidRoleAssignmentJson(RaidRoleAssignmen
 std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) const
 {
     RaidRuntime const& raid = Cohort().Raid;
+    std::map<uint32, std::string> currentGearManifestSha256ByGuid;
+    std::map<uint32, bool> currentGearMatchesAdmissionByGuid;
+    bool allCurrentGearMatchesAdmission = !raid.AdmissionReceiptByGuid.empty()
+        && raid.AdmissionReceiptByGuid.size() == raid.ExpectedSize;
+    for (auto const& [guid, receipt] : raid.AdmissionReceiptByGuid)
+    {
+        WorldBotState const* state = nullptr;
+        for (WorldBotState const& candidate : Party().Bots)
+            if (candidate.Guid.GetCounter() == guid)
+            {
+                state = &candidate;
+                break;
+            }
+        std::vector<RaidRosterItemIdentity> currentManifest;
+        std::string currentManifestSha256;
+        std::string expectedGearProfileId;
+        std::string expectedManifestSha256;
+        Player const* member = state ? GetLoadedBot(*state) : nullptr;
+        bool const matches = member
+            && ResolveExpectedBotGearIdentity(receipt.ClassSpec,
+                expectedGearProfileId, expectedManifestSha256)
+            && ObserveEquippedGearIdentity(member,
+                currentManifest, currentManifestSha256)
+            && receipt.GearProfileId == expectedGearProfileId
+            && receipt.GearManifestSha256 == expectedManifestSha256
+            && currentManifestSha256 == receipt.GearManifestSha256
+            && EquippedGearManifestsEqual(currentManifest, receipt.GearManifest);
+        currentGearManifestSha256ByGuid.emplace(guid, currentManifestSha256);
+        currentGearMatchesAdmissionByGuid.emplace(guid, matches);
+        allCurrentGearMatchesAdmission = allCurrentGearMatchesAdmission && matches;
+    }
     std::ostringstream json;
     json << "{\"active\":" << (raid.Active ? "true" : "false")
+         << ",\"instance_kind\":\"" << (raid.RaidInstance ? "raid" : "dungeon") << "\""
+         << ",\"admission_phase\":\"" << (Cohort().ValidationAdmission == ValidationAdmissionPhase::Active
+            ? "active" : (Cohort().ValidationAdmission == ValidationAdmissionPhase::Terminal ? "terminal" : "provisioning")) << "\""
+         << ",\"server_provisioning_complete\":" << (raid.ServerProvisioningComplete ? "true" : "false")
+         << ",\"bot_actions_enabled\":" << (raid.BotActionsEnabled ? "true" : "false")
+         << ",\"provisioned_member_count\":" << raid.ProvisionedMemberCount
          << ",\"group_guid\":" << raid.GroupGuid.GetRawValue()
          << ",\"leader_guid\":" << raid.LeaderGuid.GetRawValue()
          << ",\"expected_size\":" << raid.ExpectedSize
@@ -35193,6 +37790,9 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
          << ",\"expected_difficulty\":" << uint32(raid.ExpectedDifficulty)
          << ",\"group_difficulty\":" << uint32(raid.GroupDifficulty)
          << ",\"map_difficulty\":" << raid.MapDifficulty
+         << ",\"difficulty_member_count\":" << raid.DifficultyMemberCount
+         << ",\"difficulty_matching_member_count\":" << raid.DifficultyMatchingMemberCount
+         << ",\"difficulty_readback_complete\":" << (raid.DifficultyReadbackComplete ? "true" : "false")
          << ",\"difficulty_matches\":" << (raid.DifficultyMatches ? "true" : "false")
          << ",\"map_id\":" << raid.MapId
          << ",\"instance_id\":" << raid.InstanceId
@@ -35203,7 +37803,110 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
          << ",\"profile_content_hash\":\"" << JsonEscape(raid.ProfileContentHash) << "\""
          << ",\"assignment_generation\":" << raid.AssignmentGeneration
          << ",\"evidence_sequence\":" << raid.EvidenceSequence
-         ;
+         << ",\"admission_receipt\":{\"attempt_id\":" << raid.AdmissionAttemptId
+         << ",\"committed_at_ms\":" << raid.AdmissionCommittedAtMs
+         << ",\"bot_actions_enabled_at_commit\":" << (raid.AdmissionActionGateEnabled ? "true" : "false")
+         << ",\"scenario_id\":\"" << JsonEscape(raid.AdmissionScenarioId) << "\""
+         << ",\"runtime_profile\":\"" << JsonEscape(raid.AdmissionRuntimeProfile) << "\""
+         << ",\"identity_catalog_source_sha256\":\""
+         << BotAdmissionIdentityGenerated::SourceContentSha256 << "\""
+         << ",\"route_manifest_sha256\":\"" << JsonEscape(raid.AdmissionRouteManifestSha256) << "\""
+         << ",\"recovery_entrance_area_trigger_id\":" << raid.AdmissionRecoveryEntranceAreaTriggerId
+         << ",\"recovery_entrance_source_map_id\":" << raid.AdmissionRecoveryEntranceSourceMapId
+         << ",\"recovery_entrance_target_map_id\":" << raid.AdmissionRecoveryEntranceTargetMapId
+         << ",\"entrance_map_id\":" << raid.AdmissionEntranceMapId
+         << ",\"entrance_x\":" << raid.AdmissionEntranceX
+         << ",\"entrance_y\":" << raid.AdmissionEntranceY
+         << ",\"entrance_z\":" << raid.AdmissionEntranceZ
+         << ",\"entrance_o\":" << raid.AdmissionEntranceO
+         << ",\"profile_generation\":" << raid.ProfileGeneration
+         << ",\"profile_content_hash\":\"" << JsonEscape(raid.ProfileContentHash) << "\""
+         << ",\"leader_guid\":" << raid.LeaderGuid.GetRawValue()
+         << ",\"all_current_gear_matches_admission\":"
+         << (allCurrentGearMatchesAdmission ? "true" : "false")
+         << ",\"members\":[";
+    bool firstAdmissionMember = true;
+    for (auto const& [guid, member] : raid.AdmissionReceiptByGuid)
+    {
+        if (!firstAdmissionMember)
+            json << ',';
+        firstAdmissionMember = false;
+        json << "{\"guid\":" << guid
+             << ",\"group_guid\":" << member.GroupGuid.GetRawValue()
+             << ",\"leader_guid\":" << member.LeaderGuid.GetRawValue()
+             << ",\"roster_slot_id\":\"" << JsonEscape(member.RosterSlotId) << "\""
+             << ",\"role\":\"" << JsonEscape(member.Role) << "\""
+             << ",\"class_spec\":\"" << JsonEscape(member.ClassSpec) << "\""
+             << ",\"class_id\":" << uint32(member.ClassId)
+             << ",\"active_spec_index\":" << uint32(member.ActiveSpecIndex)
+             << ",\"primary_talent_tree_id\":" << member.PrimaryTalentTreeId
+             << ",\"active_talent_count\":" << member.ActiveTalentCount
+             << ",\"active_talent_spell_ids\":[";
+        for (size_t index = 0; index < member.ActiveTalentSpellIds.size(); ++index)
+        {
+            if (index)
+                json << ',';
+            json << member.ActiveTalentSpellIds[index];
+        }
+        json << ']'
+             << ",\"pet_identity_present\":" << (member.PetIdentityPresent ? "true" : "false")
+             << ",\"pet_id\":" << member.PetId
+             << ",\"pet_entry\":" << member.PetEntry
+             << ",\"pet_spell_count\":" << member.PetSpellCount
+             << ",\"pet_spellbook\":[";
+        for (size_t index = 0; index < member.PetSpellbook.size(); ++index)
+        {
+            if (index)
+                json << ',';
+            json << "{\"spell_id\":" << member.PetSpellbook[index].first
+                 << ",\"active\":" << uint32(member.PetSpellbook[index].second) << '}';
+        }
+        json << ']'
+             << ",\"pet_spellbook_sha256\":\"" << JsonEscape(member.PetSpellbookSha256) << "\""
+             << ",\"gear_profile_id\":\"" << JsonEscape(member.GearProfileId) << "\""
+             << ",\"gear_item_count\":" << member.GearItemCount
+             << ",\"gear_manifest\":[";
+        for (size_t itemIndex = 0; itemIndex < member.GearManifest.size(); ++itemIndex)
+        {
+            if (itemIndex)
+                json << ',';
+            RaidRosterItemIdentity const& item = member.GearManifest[itemIndex];
+            json << "{\"slot\":" << uint32(item.Slot)
+                 << ",\"item_id\":" << item.Entry
+                 << ",\"enchant_id\":" << item.EnchantId
+                 << ",\"reforge_id\":" << item.ReforgeId
+                 << ",\"gem_item_ids\":[";
+            for (size_t gemIndex = 0; gemIndex < item.GemItemIds.size(); ++gemIndex)
+            {
+                if (gemIndex)
+                    json << ',';
+                json << item.GemItemIds[gemIndex];
+            }
+            json << "]}";
+        }
+        json << ']'
+             << ",\"gear_manifest_sha256\":\""
+             << JsonEscape(member.GearManifestSha256) << "\""
+             << ",\"current_gear_manifest_sha256\":\""
+             << JsonEscape(currentGearManifestSha256ByGuid.at(guid)) << "\""
+             << ",\"gear_identity_current_matches_admission\":"
+             << (currentGearMatchesAdmissionByGuid.at(guid) ? "true" : "false")
+             << ",\"map_id\":" << member.MapId
+             << ",\"instance_id\":" << member.InstanceId
+             << ",\"expected_difficulty\":" << uint32(member.ExpectedDifficulty)
+             << ",\"player_difficulty\":" << uint32(member.PlayerDifficulty)
+             << ",\"map_difficulty\":" << member.MapDifficulty
+             << ",\"spawn_x\":" << member.SpawnX
+             << ",\"spawn_y\":" << member.SpawnY
+             << ",\"spawn_z\":" << member.SpawnZ
+             << ",\"spawn_o\":" << member.SpawnO
+             << ",\"server_provisioned\":" << (member.ServerProvisioned ? "true" : "false")
+             << ",\"initial_baseline_normalized\":"
+             << (member.InitialBaselineNormalized ? "true" : "false")
+             << ",\"initial_alive_state_verified\":"
+             << (member.InitialAliveStateVerified ? "true" : "false") << '}';
+    }
+    json << "]}";
 
     if (compactTelemetry)
     {
@@ -37046,6 +39749,21 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
         return BotActionResult::NoAction;
     }
 
+    if (state && bot && target)
+    {
+        BotClassSpecActionProfile const profile =
+            BotClassSpecActionProfileStore::Build(bot, GetDungeonRole(bot));
+        if (profile.AutoAttackMode == "melee"
+            && target->IsAlive() && bot->IsValidAttackTarget(target))
+        {
+            SubmitMeleeAutoAttackIntent(*state,
+                BotMeleeAutoAttack::Kind::StartOrSwitch,
+                target->GetGUID(), BotMeleeAutoAttack::Owner::Profile,
+                BotActionArbitration::Priority::TrainedDamage,
+                "profile_melee_autoattack");
+        }
+    }
+
     if (!hostileTargetOnly && state && TryEnsurePersistentCombatSetup(*state, bot, target))
         return BotActionResult::Casting;
 
@@ -37074,6 +39792,8 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
         bot, target, hostileCount, densityOnly, excludedSpellId, areaOnly,
         selfCenteredOnly, forbidArea, allowMultidot && !forbidArea,
         hostileTargetOnly, movementCompatibleOnly);
+    action.MeleeAutoAttackExternallyReconciled = state
+        && action.AutoAttackMode == "melee";
     if (actionOut)
         *actionOut = action;
     if (!action.Valid)
@@ -40255,6 +42975,54 @@ std::string BotWorldPopulationMgr::BuildEmbeddingFeaturesJson(Player const* bot,
     return json.str();
 }
 
+std::string BotWorldPopulationMgr::BuildNativeRecoveryEpisodeJson(
+    WorldBotState const* state) const
+{
+    std::ostringstream json;
+    json << "{\"attempt_id\":"
+         << (state ? state->NativeRecoveryEpisodeAttemptId : 0)
+         << ",\"route_generation\":"
+         << (state ? state->NativeRecoveryEpisodeRouteGeneration : 0)
+         << ",\"wipe_generation\":"
+         << (state ? state->NativeRecoveryEpisodeWipeGeneration : 0)
+         << ",\"death_ordinal\":"
+         << (state ? state->NativeRecoveryEpisodeDeathOrdinal : 0)
+         << ",\"phase\":\""
+         << JsonEscape(state ? state->NativeRecoveryEpisodePhase : "none")
+         << "\",\"started_ms\":"
+         << (state ? state->NativeRecoveryEpisodeStartedMs : 0)
+         << ",\"last_progress_ms\":"
+         << (state ? state->NativeRecoveryEpisodeLastProgressMs : 0)
+         << ",\"distance_target\":\""
+         << JsonEscape(state ? state->NativeRecoveryEpisodeDistanceTarget
+                             : "none")
+         << "\",\"best_distance\":";
+    if (state && std::isfinite(state->NativeRecoveryEpisodeBestDistance)
+        && state->NativeRecoveryEpisodeBestDistance
+            < std::numeric_limits<float>::max())
+        json << state->NativeRecoveryEpisodeBestDistance;
+    else
+        json << "null";
+    json << ",\"movement_retry_count\":"
+         << (state ? state->NativeRecoveryMovementRetryCount : 0)
+         << ",\"release_rejection_count\":"
+         << (state ? state->NativeRecoveryReleaseRejectionCount : 0)
+         << ",\"entrance_unavailable_count\":"
+         << (state ? state->NativeRecoveryEntranceUnavailableCount : 0)
+         << ",\"entrance_rejection_count\":"
+         << (state ? state->NativeRecoveryEntranceRejectionCount : 0)
+         << ",\"reclaim_rejection_count\":"
+         << (state ? state->NativeRecoveryReclaimRejectionCount : 0)
+         << ",\"entrance_required\":"
+         << (state && state->NativeRecoveryEntranceRequired ? "true" : "false")
+         << ",\"entrance_observed\":"
+         << (state && state->NativeRecoveryEntranceObserved ? "true" : "false")
+         << ",\"entrance_available\":"
+         << (state && state->NativeRecoveryEntranceAvailable ? "true" : "false")
+         << "}";
+    return json.str();
+}
+
 std::string BotWorldPopulationMgr::BuildRawJson(Player* bot, Unit const* target) const
 {
     WorldBotState const* state = nullptr;
@@ -40313,6 +43081,15 @@ std::string BotWorldPopulationMgr::BuildRawJson(Player* bot, Unit const* target)
             && IsTrainingDummyAllowedForQuest(plan, target);
     }
     json << ",\"quest_phase\":\"" << JsonEscape(state ? state->QuestWork.Phase : "idle") << "\""
+         << ",\"desired_melee_attack_target_guid\":" << (state ? state->DesiredMeleeAttackTargetGuid.GetCounter() : 0)
+         << ",\"melee_auto_attack_state\":\"" << JsonEscape(state ? state->MeleeAutoAttackState : "inactive") << "\""
+         << ",\"melee_auto_attack_suppression_reason\":\"" << JsonEscape(state ? state->MeleeAutoAttackSuppressionReason : "") << "\""
+         << ",\"melee_auto_attack_intent_owner\":\"" << JsonEscape(state ? state->LastMeleeAutoAttackIntentOwner : "none") << "\""
+         << ",\"melee_auto_attack_intent_kind\":\"" << JsonEscape(state ? state->LastMeleeAutoAttackIntentKind : "stop") << "\""
+         << ",\"melee_auto_attack_intent_reason\":\"" << JsonEscape(state ? state->LastMeleeAutoAttackIntentReason : "") << "\""
+         << ",\"melee_auto_attack_outcome\":\"" << JsonEscape(state ? state->LastMeleeAutoAttackOutcome : "not_reconciled") << "\""
+         << ",\"melee_auto_attack_intent_priority\":" << (state ? uint32(state->LastMeleeAutoAttackIntentPriority) : 0)
+         << ",\"melee_auto_attack_candidate_count\":" << (state ? state->LastMeleeAutoAttackCandidateCount : 0)
          << ",\"active_quest_id\":" << (state ? state->QuestWork.ActiveQuestId : 0)
          << ",\"objective_index\":" << (state ? state->QuestWork.ObjectiveIndex : 0)
          << ",\"objective_type\":\"" << JsonEscape(state ? state->QuestWork.ObjectiveType : "none") << "\""
@@ -40338,7 +43115,8 @@ std::string BotWorldPopulationMgr::BuildRawJson(Player* bot, Unit const* target)
          << ",\"boss_add_escape_issued_count\":" << Party().ValidationRouteBossAddEscapeIssuedGuids.size()
          << ",\"boss_add_escape_point\":{\"x\":" << Party().ValidationRouteBossAddEscapeX
          << ",\"y\":" << Party().ValidationRouteBossAddEscapeY << ",\"z\":" << Party().ValidationRouteBossAddEscapeZ << "}"
-         << "}";
+         << ",\"native_recovery_episode\":"
+         << BuildNativeRecoveryEpisodeJson(state) << "}";
     return json.str();
 }
 
@@ -40451,6 +43229,8 @@ std::string BotWorldPopulationMgr::BuildSemanticJson(Player* bot, Unit const* ta
          << ",\"no_progress_reason\":\"" << JsonEscape(workState ? workState->LastNoProgressReason : "") << "\""
          << ",\"cooldown_reason\":\"" << JsonEscape(workState ? workState->QuestWork.FailedReason : "") << "\""
          << ",\"dummy_allowed_by_quest\":" << (workState && workState->CurrentDummyAllowedByQuest ? "true" : "false") << "}";
+    json << ",\"native_recovery_episode\":"
+         << BuildNativeRecoveryEpisodeJson(workState);
     if (dungeonTrash)
     {
         DungeonTrashPackFeatures pack = BuildDungeonTrashPackFeatures(bot, target);
@@ -40567,6 +43347,7 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
          << ",\"allow_questing\":" << (Cohort().Config.AllowQuesting ? "true" : "false")
          << ",\"allow_dungeons\":" << (Cohort().Config.AllowDungeons ? "true" : "false")
          << ",\"allow_raids\":" << (Cohort().Config.AllowRaids ? "true" : "false")
+         << ",\"dungeon_difficulty\":" << uint32(Cohort().Config.DungeonDifficulty)
          << ",\"raid_size\":" << uint32(Cohort().Config.RaidSize)
          << ",\"raid_difficulty\":" << uint32(Cohort().Config.RaidDifficulty)
          << ",\"track_heroic_raid_progression\":" << (Cohort().Config.TrackHeroicRaidProgression ? "true" : "false")
@@ -41274,6 +44055,23 @@ BotWorldPopulationMgr::BotDiagnosis BotWorldPopulationMgr::BuildBotDiagnosis(Wor
         diagnosis.NextExpectedAction = "fail_validation_route_segment";
         diagnosis.SuggestedInvestigation = "inspect_mmap_vmap_route_endpoint_and_manifest";
     }
+    else if (Cohort().Config.ValidationRouteKind == "descent"
+        && Cohort().Config.ValidationRouteDescentAction
+            == "native_walkable_descent"
+        && !state.ValidationRouteDescentRejectReason.empty())
+    {
+        diagnosis.DiagnosisCode = "native_descent_blocked";
+        diagnosis.Severity = "warning";
+        diagnosis.Confidence = 0.98f;
+        diagnosis.Blocker = state.ValidationRouteDescentRejectReason;
+        diagnosis.NextExpectedAction =
+            state.ValidationRouteDescentRejectReason
+                    == "native_descent_landing_health_margin_low"
+                ? "ordinary_heal_then_reconcile_landing"
+                : "retry_native_walkable_segment_or_fail_closed";
+        diagnosis.SuggestedInvestigation =
+            "inspect_descent_phase_native_path_floor_and_onward_goal";
+    }
     else if (bot->IsInCombat())
     {
         diagnosis.DiagnosisCode = "normal_combat";
@@ -41629,6 +44427,19 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << "{\"name\":\"recovery_attempt_count\",\"value\":" << state.RecoveryAttemptCount << "},"
          << "{\"name\":\"last_recovery_mode\",\"value\":\"" << JsonEscape(state.LastRecoveryMode) << "\"},"
          << "{\"name\":\"last_recovery_result\",\"value\":\"" << JsonEscape(state.LastRecoveryResult) << "\"},"
+         << "{\"name\":\"validation_descent_phase\",\"value\":\"" << ValidationDescentPhaseName(state.ValidationRouteDescentPhase) << "\"},"
+         << "{\"name\":\"validation_descent_departure_observed\",\"value\":" << (state.ValidationRouteDescentDepartureObserved ? "true" : "false") << "},"
+         << "{\"name\":\"validation_descent_falling_observed\",\"value\":" << (state.ValidationRouteDescentFallingObserved ? "true" : "false") << "},"
+         << "{\"name\":\"validation_descent_landing_observed\",\"value\":" << (state.ValidationRouteDescentLandingObserved ? "true" : "false") << "},"
+         << "{\"name\":\"validation_descent_health_margin_satisfied\",\"value\":" << (state.ValidationRouteDescentHealthMarginSatisfied ? "true" : "false") << "},"
+         << "{\"name\":\"validation_descent_onward_path_proven\",\"value\":" << (state.ValidationRouteDescentLandingPathProven ? "true" : "false") << "},"
+         << "{\"name\":\"validation_descent_monotonic_progress\",\"value\":" << (state.ValidationRouteDescentMonotonicProgressObserved ? "true" : "false") << "},"
+         << "{\"name\":\"validation_descent_reject_reason\",\"value\":\"" << JsonEscape(state.ValidationRouteDescentRejectReason) << "\"},"
+         << "{\"name\":\"server_provisioned\",\"value\":" << (state.ServerProvisioned ? "true" : "false") << "},"
+         << "{\"name\":\"battle_res_decision\",\"value\":\"" << JsonEscape(state.NativeBattleResDecision) << "\"},"
+         << "{\"name\":\"battle_res_owner_guid\",\"value\":" << state.NativeBattleResOwnerGuid.GetCounter() << "},"
+         << "{\"name\":\"battle_res_spell_id\",\"value\":" << state.NativeBattleResSpellId << "},"
+         << "{\"name\":\"battle_res_decision_until_ms\",\"value\":" << state.NativeBattleResDecisionUntilMs << "},"
          << "{\"name\":\"blocked\",\"value\":" << (state.Blocked ? "true" : "false") << "},"
          << "{\"name\":\"blocked_episode_id\",\"value\":" << state.BlockedEpisodeId << "},"
          << "{\"name\":\"blocked_first_reason\",\"value\":\"" << JsonEscape(state.BlockedFirstReason) << "\"},"
@@ -41669,6 +44480,10 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << ",\"mode\":\"" << RuntimeModeName(Cohort().RuntimeMode) << "\""
          << ",\"non_certifying_assistance\":" << (Cohort().NonCertifyingAssistance ? "true" : "false")
          << ",\"spawn_source\":\"" << JsonEscape(state.SpawnSource) << "\""
+         << ",\"server_provisioned\":" << (state.ServerProvisioned ? "true" : "false")
+         << ",\"battle_res_decision\":\"" << JsonEscape(state.NativeBattleResDecision) << "\""
+         << ",\"battle_res_owner_guid\":" << state.NativeBattleResOwnerGuid.GetCounter()
+         << ",\"battle_res_spell_id\":" << state.NativeBattleResSpellId
          << ",\"decision_timer_ms\":" << state.DecisionTimer
          << ",\"last_decision_tick_ms\":" << state.LastDecisionTickMs
          << ",\"time_since_last_decision_ms\":" << (state.LastDecisionTickMs ? nowMs - state.LastDecisionTickMs : 0)
@@ -41709,6 +44524,15 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << ",\"progress_before\":" << state.QuestWork.ProgressBefore
          << ",\"progress_after\":" << state.QuestWork.ProgressAfter << "}"
          << ",\"target\":{\"target_guid\":" << state.LastDecisionTargetGuid.GetCounter()
+         << ",\"desired_melee_attack_target_guid\":" << state.DesiredMeleeAttackTargetGuid.GetCounter()
+         << ",\"melee_auto_attack_state\":\"" << JsonEscape(state.MeleeAutoAttackState) << "\""
+         << ",\"melee_auto_attack_suppression_reason\":\"" << JsonEscape(state.MeleeAutoAttackSuppressionReason) << "\""
+         << ",\"melee_auto_attack_intent_owner\":\"" << JsonEscape(state.LastMeleeAutoAttackIntentOwner) << "\""
+         << ",\"melee_auto_attack_intent_kind\":\"" << JsonEscape(state.LastMeleeAutoAttackIntentKind) << "\""
+         << ",\"melee_auto_attack_intent_reason\":\"" << JsonEscape(state.LastMeleeAutoAttackIntentReason) << "\""
+         << ",\"melee_auto_attack_outcome\":\"" << JsonEscape(state.LastMeleeAutoAttackOutcome) << "\""
+         << ",\"melee_auto_attack_intent_priority\":" << uint32(state.LastMeleeAutoAttackIntentPriority)
+         << ",\"melee_auto_attack_candidate_count\":" << state.LastMeleeAutoAttackCandidateCount
          << ",\"last_rejected_target_reason\":\"" << JsonEscape(state.LastRejectedTargetReason) << "\"}"
          << ",\"policy\":{\"action_category\":\"" << JsonEscape(state.LastActionCategory) << "\""
          << ",\"class_spec_profile\":" << (state.LastClassSpecProfile.empty() ? "{}" : state.LastClassSpecProfile)
@@ -41728,6 +44552,19 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << ",\"segment\":{\"valid\":" << (state.ActivePathValid && state.ActivePathSegmentValid ? "true" : "false")
          << ",\"x\":" << state.ActivePathSegmentToX << ",\"y\":" << state.ActivePathSegmentToY << ",\"z\":" << state.ActivePathSegmentToZ
          << ",\"traversal_mode\":\"" << JsonEscape(state.ActivePathTraversalMode) << "\"}"
+         << ",\"descent\":{\"phase\":\"" << ValidationDescentPhaseName(state.ValidationRouteDescentPhase) << "\""
+         << ",\"generation\":" << state.ValidationRouteDescentGeneration
+         << ",\"departure_observed\":" << (state.ValidationRouteDescentDepartureObserved ? "true" : "false")
+         << ",\"falling_observed\":" << (state.ValidationRouteDescentFallingObserved ? "true" : "false")
+         << ",\"landing_observed\":" << (state.ValidationRouteDescentLandingObserved ? "true" : "false")
+         << ",\"health_margin_satisfied\":" << (state.ValidationRouteDescentHealthMarginSatisfied ? "true" : "false")
+         << ",\"landing_path_proven\":" << (state.ValidationRouteDescentLandingPathProven ? "true" : "false")
+         << ",\"monotonic_progress_observed\":" << (state.ValidationRouteDescentMonotonicProgressObserved ? "true" : "false")
+         << ",\"falling_now\":" << (bot && bot->IsFalling() ? "true" : "false")
+         << ",\"landing_health_pct\":" << state.ValidationRouteDescentLandingHealthPct
+         << ",\"initial_goal_distance\":" << state.ValidationRouteDescentInitialGoalDistance
+         << ",\"best_goal_distance\":" << state.ValidationRouteDescentBestGoalDistance
+         << ",\"reject_reason\":\"" << JsonEscape(state.ValidationRouteDescentRejectReason) << "\"}"
          << ",\"quest_search_destination\":{\"valid\":" << (state.QuestSearchDestination.Valid ? "true" : "false")
          << ",\"map\":" << state.QuestSearchDestination.MapId << ",\"x\":" << state.QuestSearchDestination.X << ",\"y\":" << state.QuestSearchDestination.Y << ",\"z\":" << state.QuestSearchDestination.Z
          << ",\"quest_id\":" << state.QuestSearchDestination.QuestId << ",\"reason\":\"" << JsonEscape(state.QuestSearchDestination.Reason) << "\"}"
