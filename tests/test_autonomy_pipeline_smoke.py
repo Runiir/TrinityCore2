@@ -5817,13 +5817,15 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "inline constexpr uint32_t TargetEntry = 44548;" in generated_fixture
     assert "IsolatedSingleTargetDummyX = -9060.0f" in population
     assert "IsolatedSingleTargetDummyY = 520.0f" in population
-    assert "IsolatedSingleTargetRangedX = -9045.0f" in population
+    assert "IsolatedSingleTargetRangedRadius = 15.0f" in population
     assert "sTerrainMgr.LoadTerrain(0)" in population
     assert "PhasingHandler::GetEmptyPhaseShift()" in population
     assert "calibrationSpawnZ" in population
     assert "calibrationSpawnZ <= INVALID_HEIGHT" in population
     assert '"calibration_isolated_spawn_ground_unavailable"' in population
-    assert "CandidateRadii{ 2.0f, 2.5f, 3.0f }" in population
+    assert "std::array<float, 3>{ 15.0f, 14.8f, 15.2f }" in population
+    assert "std::array<float, 3>{ 2.0f, 2.5f, 3.0f }" in population
+    assert '"calibration_isolated_ranged_ground_unavailable"' in population
     assert "heightDelta > 1.0f" in population
     assert '"calibration_isolated_melee_ground_unavailable"' in population
     assert "bot->IsWithinMeleeRange(" in population

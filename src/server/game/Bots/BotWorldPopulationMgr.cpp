@@ -8651,7 +8651,7 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
     static constexpr float IsolatedSingleTargetDummyX = -9060.0f;
     static constexpr float IsolatedSingleTargetDummyY = 520.0f;
     static constexpr float IsolatedSingleTargetGroundZ = 75.8f;
-    static constexpr float IsolatedSingleTargetRangedX = -9045.0f;
+    static constexpr float IsolatedSingleTargetRangedRadius = 15.0f;
     static constexpr float MinimumIsolatedDummyClearance = 45.0f;
     bool const clusteredDummyMode = Cohort().CalibrationMode == "aoe_300"
         || Cohort().CalibrationMode == "tank_threat_300";
@@ -8681,7 +8681,7 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
     // its known courtyard lane, while Demonology AoE uses the open centroid that
     // keeps the cluster inside Hellfire/Immolation range.
     float calibrationX = isolatedSingleTargetMode
-        ? IsolatedSingleTargetRangedX
+        ? IsolatedSingleTargetDummyX + IsolatedSingleTargetRangedRadius
         : (demonologyAoeMode ? -8967.4f
             : (rangedAoeMode ? -8947.0f : (clusteredDummyMode ? -8965.59f : -8962.05f)));
     float calibrationY = isolatedSingleTargetMode
@@ -8716,57 +8716,51 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
             return;
         }
 
-        if (!rangedSingleTargetMode)
-        {
-            // A fixed point four yards east of the fixture was a different
-            // terrain shelf. Search a small deterministic ring around the
-            // observed target floor instead. The post-summon native
-            // reach/LOS/path gate below remains the final authority.
-            constexpr std::array<float, 3> CandidateRadii{ 2.0f, 2.5f, 3.0f };
-            constexpr uint32 CandidateAngles = 16;
-            float bestHeightDelta = std::numeric_limits<float>::max();
-            bool foundCandidate = false;
-            for (float radius : CandidateRadii)
-                for (uint32 index = 0; index < CandidateAngles; ++index)
-                {
-                    float const angle = 2.0f * float(M_PI)
-                        * float(index) / float(CandidateAngles);
-                    float const candidateX = IsolatedSingleTargetDummyX
-                        + std::cos(angle) * radius;
-                    float const candidateY = IsolatedSingleTargetDummyY
-                        + std::sin(angle) * radius;
-                    float const candidateZ = terrain->GetStaticHeight(
-                        PhasingHandler::GetEmptyPhaseShift(), 0, candidateX,
-                        candidateY, fixtureGroundZ + 4.0f, true, 64.0f);
-                    if (!std::isfinite(candidateZ)
-                        || candidateZ <= INVALID_HEIGHT)
-                        continue;
-                    float const heightDelta = std::fabs(
-                        candidateZ - fixtureGroundZ);
-                    if (heightDelta > 1.0f
-                        || (foundCandidate
-                            && heightDelta >= bestHeightDelta))
-                        continue;
-                    calibrationX = candidateX;
-                    calibrationY = candidateY;
-                    calibrationSpawnZ = candidateZ;
-                    bestHeightDelta = heightDelta;
-                    foundCandidate = true;
-                }
-            if (!foundCandidate)
+        // Both the historical four-yard melee point and the historical
+        // fifteen-yard ranged point can land on a different terrain shelf.
+        // Search deterministic rings around the observed fixture floor for
+        // both lanes. The post-summon native reach/LOS/path gate below remains
+        // the final authority.
+        std::array<float, 3> const candidateRadii = rangedSingleTargetMode
+            ? std::array<float, 3>{ 15.0f, 14.8f, 15.2f }
+            : std::array<float, 3>{ 2.0f, 2.5f, 3.0f };
+        constexpr uint32 CandidateAngles = 16;
+        float bestHeightDelta = std::numeric_limits<float>::max();
+        bool foundCandidate = false;
+        for (float radius : candidateRadii)
+            for (uint32 index = 0; index < CandidateAngles; ++index)
             {
-                Cohort().LastPopulationFailureReason =
-                    "calibration_isolated_melee_ground_unavailable";
-                Cohort().CalibrationFailureReason =
-                    Cohort().LastPopulationFailureReason;
-                Cohort().CalibrationWindowComplete = true;
-                return;
+                float const angle = 2.0f * float(M_PI)
+                    * float(index) / float(CandidateAngles);
+                float const candidateX = IsolatedSingleTargetDummyX
+                    + std::cos(angle) * radius;
+                float const candidateY = IsolatedSingleTargetDummyY
+                    + std::sin(angle) * radius;
+                float const candidateZ = terrain->GetStaticHeight(
+                    PhasingHandler::GetEmptyPhaseShift(), 0, candidateX,
+                    candidateY, fixtureGroundZ + 4.0f, true, 64.0f);
+                if (!std::isfinite(candidateZ)
+                    || candidateZ <= INVALID_HEIGHT)
+                    continue;
+                float const heightDelta = std::fabs(candidateZ - fixtureGroundZ);
+                if (heightDelta > 1.0f
+                    || (foundCandidate && heightDelta >= bestHeightDelta))
+                    continue;
+                calibrationX = candidateX;
+                calibrationY = candidateY;
+                calibrationSpawnZ = candidateZ;
+                bestHeightDelta = heightDelta;
+                foundCandidate = true;
             }
+        if (!foundCandidate)
+        {
+            Cohort().LastPopulationFailureReason = rangedSingleTargetMode
+                ? "calibration_isolated_ranged_ground_unavailable"
+                : "calibration_isolated_melee_ground_unavailable";
+            Cohort().CalibrationFailureReason = Cohort().LastPopulationFailureReason;
+            Cohort().CalibrationWindowComplete = true;
+            return;
         }
-        else
-            calibrationSpawnZ = terrain->GetStaticHeight(
-            PhasingHandler::GetEmptyPhaseShift(), 0, calibrationX,
-            calibrationY, calibrationZ + 4.0f, true, 64.0f);
         if (!std::isfinite(calibrationSpawnZ)
             || calibrationSpawnZ <= INVALID_HEIGHT)
         {
