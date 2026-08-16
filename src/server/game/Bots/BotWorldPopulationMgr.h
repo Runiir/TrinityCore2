@@ -2876,6 +2876,7 @@ private:
         bool CalibrationFixtureNativeLineOfSight = false;
         bool CalibrationFixtureNativePathReachable = false;
         bool CalibrationFixtureNativeMeleeReachable = false;
+        bool CalibrationFixtureNativeDryLand = false;
         bool CalibrationFixtureGeometryValidated = false;
         std::string CalibrationFixtureProfileLane;
         ObjectGuid CalibrationInterruptTargetGuid;

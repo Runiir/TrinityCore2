@@ -1167,6 +1167,7 @@ def test_fixture_target_projection_binds_two_observations_and_passive_window() -
             "geometry_validated": True,
             "native_line_of_sight": True,
             "native_path_reachable": True,
+            "native_dry_land": True,
             "target_attack_observation_sample_count": 601,
             "target_attack_event_count": 0,
             "scored_passive_observation": {

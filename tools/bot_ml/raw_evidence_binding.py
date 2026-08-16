@@ -970,7 +970,7 @@ def _single_target_fixture_evaluation(
         "training_dummy_entry": _integer(fixture.get("entry")) == 44548,
         "runtime_guid_present": runtime_guid > 0,
         "map_zero": _integer(fixture.get("map_id")) == 0,
-        "fixture_x_pinned": abs(_number(fixture.get("x")) - (-9060.0)) <= 0.01,
+        "fixture_x_pinned": abs(_number(fixture.get("x")) - (-9140.0)) <= 0.01,
         "fixture_y_pinned": abs(_number(fixture.get("y")) - 520.0) <= 0.01,
         "fixture_z_bounded": 65.0 <= _number(fixture.get("z")) <= 85.0,
         "hostile_clearance": _number(
@@ -995,6 +995,7 @@ def _single_target_fixture_evaluation(
             fixture, target_spec
         ),
         "native_path_reachable": fixture.get("native_path_reachable") is True,
+        "native_dry_land": fixture.get("native_dry_land") is True,
         "melee_native_reach": (
             expected_lane != "melee"
             or fixture.get("native_melee_reachable") is True

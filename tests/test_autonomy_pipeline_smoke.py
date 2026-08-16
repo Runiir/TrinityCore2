@@ -5824,7 +5824,8 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
         root / "src/server/game/Bots/BotCalibrationFixtureContractGenerated.h"
     ).read_text()
     assert "inline constexpr uint32_t TargetEntry = 44548;" in generated_fixture
-    assert "IsolatedSingleTargetDummyX = -9060.0f" in population
+    assert "IsolatedSingleTargetDummyX = -9140.0f" in population
+    assert "CalibrationFixtureNativeDryLand" in population
     assert "IsolatedSingleTargetDummyY = 520.0f" in population
     assert "IsolatedSingleTargetRangedRadius = 15.0f" in population
     assert "sTerrainMgr.LoadTerrain(0)" in population

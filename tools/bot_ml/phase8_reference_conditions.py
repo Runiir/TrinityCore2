@@ -2070,6 +2070,7 @@ def fixture_target_projections(
         and fixture.get("geometry_validated") is True
         and fixture.get("native_line_of_sight") is True
         and fixture.get("native_path_reachable") is True
+        and fixture.get("native_dry_land") is True
         and _integer(fixture.get("target_attack_observation_sample_count"))
         == _integer(passive.get("sample_count"))
         and _integer(fixture.get("target_attack_event_count")) == 0

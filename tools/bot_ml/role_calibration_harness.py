@@ -85,6 +85,7 @@ def single_target_fixture_geometry_valid(
         and fixture.get("geometry_validated") is True
         and fixture.get("native_line_of_sight") is True
         and fixture.get("native_path_reachable") is True
+        and fixture.get("native_dry_land") is True
         and (
             expected_lane != "melee"
             or fixture.get("native_melee_reachable") is True
@@ -191,7 +192,7 @@ def evaluate_calibration(
                 and int(fixture.get("runtime_guid") or 0)
                     == int(metrics.get("primary_target_guid") or 0)
                 and fixture.get("map_id") == 0
-                and abs(float(fixture.get("x") or 0.0) - (-9060.0)) <= 0.01
+                and abs(float(fixture.get("x") or 0.0) - (-9140.0)) <= 0.01
                 and abs(float(fixture.get("y") or 0.0) - 520.0) <= 0.01
                 and 65.0 <= float(fixture.get("z") or 0.0) <= 85.0
                 and float(fixture.get("nearest_other_hostile_clearance") or 0.0)
