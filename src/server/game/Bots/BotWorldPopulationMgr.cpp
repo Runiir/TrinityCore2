@@ -5223,7 +5223,8 @@ void BotWorldPopulationMgr::Update(uint32 diff)
                 && IsNativePoisonSetupReady(calibrationBot,
                     calibrationState.RogueOffhandPoisonSetup);
         }
-        if (!Cohort().CalibrationScoredStartedMs && populationReady
+        if (!Cohort().CalibrationScoredStartedMs
+            && !Cohort().CalibrationWindowComplete && populationReady
             && NowMs() - Cohort().CalibrationStartedMs >= 15000)
             ResetCalibrationScoredWindow();
         if (Cohort().CalibrationScoredStartedMs && !Cohort().CalibrationWindowComplete)
@@ -8895,11 +8896,19 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
                     fixtureArgs);
             }
 
-            // Set the native physical armor once, immediately after the
-            // server-owned summon and before scoring. No active calibration
-            // tick is permitted to rewrite level, armor, or creature type.
+            // Set the native physical armor basis once, immediately after the
+            // server-owned summon and before scoring. SetArmor alone only
+            // writes the derived field; applying and then clearing reference
+            // armor debuffs would recalculate it from the level-3 template's
+            // base value. Pinning UNIT_MOD_ARMOR preserves the level-88 target
+            // across ordinary aura recalculation without any scored-tick
+            // fixture mutation.
             if (fixtureTarget)
-                fixtureTarget->SetArmor(IsolatedSingleTargetArmor);
+            {
+                fixtureTarget->SetStatFlatModifier(UNIT_MOD_ARMOR, BASE_VALUE,
+                    float(IsolatedSingleTargetArmor));
+                fixtureTarget->UpdateArmor();
+            }
 
             // The scan radius is also the conservative lower bound when no
             // other attackable creature is present. Avoid serializing an
