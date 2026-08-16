@@ -2984,6 +2984,7 @@ def test_validation_route_combat_resurrection_uses_typed_scheduler():
     assert "NativeResurrectionPendingUntilMs" in executor
     assert '"reserved_cast_submitted"' in executor
     assert '"typed_approach_intent_submitted"' in executor
+    assert '"typed_combat_res_waiting_for_active_cast"' in executor
     assert '"typed_combat_res_cast_resources_pending"' in executor
     assert '"typed_native_cast_submitted"' in executor
     assert '"typed_native_resurrection_completed"' in executor
@@ -5679,6 +5680,13 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "std::map<uint32, std::string> LastCombatRejectsByBot" in header
     assert "combat_calibration" in manager
     assert "SelectCalibrationPoolCandidateGuid" in manager
+    population = function_body(manager, "void BotWorldPopulationMgr::EnsureCalibrationPopulation")
+    assert 'Cohort().CalibrationMode == "single_target_300"' in population
+    assert "rangedSingleTargetMode" in population
+    assert "UsesRangedAoeCalibrationLane(Cohort().CalibrationTargetSpec)" in population
+    assert "rangedSingleTargetMode ? -8956.0f" in population
+    assert "rangedSingleTargetMode ? -157.16f" in population
+    assert "shadowPriestSingleTargetMode" not in population
     update = function_body(manager, "void BotWorldPopulationMgr::UpdateCalibrationBot")
     assert "ResolveProfileCombatAction(bot, target, hostileCount, Cohort().CalibrationAoePhase)" in update
     assert "ExecuteProfileCombatAction(&state, bot, target, &action, hostileCount, Cohort().CalibrationAoePhase)" in update

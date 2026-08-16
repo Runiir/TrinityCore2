@@ -554,6 +554,11 @@ def test_combat_res_owner_usability_is_shared_and_live_reconciled() -> None:
     assert "NativeBattleResApproachIntentAcceptedUntilMs = 0" in planner
     assert "bool const castResourcesFree" in builder
     assert "inCastEnvelope && castResourcesFree" in builder
+    hard_cast_hold = executor.index(
+        '"typed_combat_res_waiting_for_active_cast"'
+    )
+    approach_move = executor.index("MoveBotToPoint(state, bot", hard_cast_hold)
+    assert hard_cast_hold < approach_move
     assert "typed_combat_res_cast_resources_pending" in executor
 
     # Declines clear only bot-owned reservation bookkeeping and publish a
@@ -613,6 +618,7 @@ def test_combat_res_scheduler_owns_movement_cast_and_native_acceptance() -> None
     assert "CurrentCombatResOwnerUsable" in builder
     assert "CurrentCombatResOwnerUsable" in executor
     assert "typed_combat_res_cast_resources_pending" in executor
+    assert "typed_combat_res_waiting_for_active_cast" in executor
     assert "targetState->NativeBattleResDecisionAtMs != reservationAtMs" in executor
     assert "targetState->NativeBattleResDecisionUntilMs" in executor
     assert "!= reservationUntilMs" in executor

@@ -7369,8 +7369,8 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
     bool const rangedAoeMode = Cohort().CalibrationMode == "aoe_300"
         && UsesRangedAoeCalibrationLane(Cohort().CalibrationTargetSpec);
     bool const demonologyCloseRangeMode = Cohort().CalibrationTargetSpec == "demonology_warlock";
-    bool const shadowPriestSingleTargetMode = Cohort().CalibrationMode == "single_target_300"
-        && Cohort().CalibrationTargetSpec == "shadow_priest";
+    bool const rangedSingleTargetMode = Cohort().CalibrationMode == "single_target_300"
+        && UsesRangedAoeCalibrationLane(Cohort().CalibrationTargetSpec);
     // The generic single-target point overlaps one dummy. Melee AoE and tank-threat
     // windows start at the center of the nearest dummy cluster so real splash
     // damage engages the cluster before its combat timers end. Ranged AoE
@@ -7380,16 +7380,18 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
     // uses a legal six-yard single-target lane for Shadowflame plus the ranged core,
     // and an open centroid lane in AoE mode that keeps all eight dummies within
     // Hellfire/Immolation range without spawning inside any dummy collision.
-    // Shadow Priest also requires a non-melee firing lane: every offensive action
-    // rejects targets within five yards, so the overlapping generic point cannot
-    // produce an action that would let movement establish normal ranged spacing.
+    // Every ranged single-target profile also needs a non-collision firing lane.
+    // Native range resolution rejects the overlapping dummy before any spell can
+    // establish combat, and an ordinary mmap path cannot start from inside the
+    // dummy collision.  Use the same known walkable six-yard lane for every ranged
+    // spec; melee profiles retain the overlap point and close range natively.
     float const calibrationX = demonologyCloseRangeMode
         ? (Cohort().CalibrationMode == "aoe_300" ? -8967.4f : -8956.0f)
-        : (shadowPriestSingleTargetMode ? -8956.0f
+        : (rangedSingleTargetMode ? -8956.0f
             : (rangedAoeMode ? -8947.0f : (clusteredDummyMode ? -8965.59f : -8962.05f)));
     float const calibrationY = demonologyCloseRangeMode
         ? (Cohort().CalibrationMode == "aoe_300" ? -152.9f : -157.16f)
-        : (shadowPriestSingleTargetMode ? -157.16f
+        : (rangedSingleTargetMode ? -157.16f
             : (rangedAoeMode ? -159.438f : (clusteredDummyMode ? -158.66f : -157.16f)));
     static constexpr float CalibrationZ = 81.5856f;
     uint32 calibrationPopulation = Cohort().CalibrationMode == "healer_controlled_damage_300" ? 5
@@ -11681,6 +11683,16 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
                     std::min(targetState->NativeBattleResDecisionUntilMs,
                         acceptedAtMs + 1500);
             };
+            if (bot->HasUnitState(UNIT_STATE_CASTING))
+            {
+                // A player does not start walking in the middle of an
+                // ordinary hard cast. Keep the exact reservation receipt
+                // bounded and let that cast finish before submitting native
+                // movement. Instant/GCD-only actions still move concurrently.
+                acceptCurrentApproach();
+                return BotActionArbitration::Outcome::Progressed(
+                    "typed_combat_res_waiting_for_active_cast");
+            }
             if (bot->IsWithinLOSInMap(target)
                 && bot->IsWithinDistInMap(target, resurrectionRange))
             {
