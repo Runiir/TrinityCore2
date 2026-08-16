@@ -84,3 +84,12 @@ def test_profile_range_prefilter_preserves_native_combat_reach() -> None:
     assert "maximumRange + bot->GetCombatReach() + target->GetCombatReach()" in profile_source
     assert "effectiveSpellMaxRange" in world_source
     assert "nativeMaxRange += bot->GetCombatReach() + target->GetCombatReach()" in world_source
+
+
+def test_higher_priority_short_range_action_moves_before_long_range_filler() -> None:
+    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+
+    assert "BotActionCandidate* bestRangeRecovery = nullptr;" in source
+    assert 'candidate.RejectReason == "out_of_range"' in source
+    assert "candidatePreferred(candidate, bestRangeRecovery)" in source
+    assert "candidatePreferred(*bestRangeRecovery, best)" in source

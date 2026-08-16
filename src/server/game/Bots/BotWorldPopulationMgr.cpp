@@ -41685,6 +41685,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     BotActionCandidate* bestDensityResourceFallback = nullptr;
     BotActionCandidate* bestDensityGenerator = nullptr;
     BotActionCandidate* bestDensityFallback = nullptr;
+    BotActionCandidate* bestRangeRecovery = nullptr;
     auto candidatePreferred = [](BotActionCandidate const& candidate, BotActionCandidate const* current) -> bool
     {
         return !current || candidate.Profile.PriorityBucket < current->Profile.PriorityBucket
@@ -41808,6 +41809,18 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         }
         if (!candidate.RejectReason.empty())
         {
+            // Preserve the highest-priority ordinary action that is blocked
+            // only by maximum range. Silently falling through to a
+            // lower-priority long-range filler makes a declared short-range
+            // action permanently unreachable (for example Affliction
+            // Shadowflame before Shadow Bolt). Selecting the rejected row
+            // here does not submit it: the caller consumes the resolved
+            // native range envelope as a normal movement intent, then the
+            // profile and core revalidate the spell on a later tick.
+            if (!densityOnly && candidate.RejectReason == "out_of_range"
+                && candidate.Profile.TargetSelector == "enemy"
+                && candidatePreferred(candidate, bestRangeRecovery))
+                bestRangeRecovery = &candidate;
             // A ranged profile can spawn inside its dead zone before any action
             // is valid. Preserve the rejected candidate's minimum range so the
             // caller can move outward instead of waiting forever.
@@ -42119,6 +42132,9 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     // already passed resource, cooldown, range, and all other profile gates.
     if (bestInterrupt)
         best = bestInterrupt;
+    else if (!densityOnly && bestRangeRecovery
+        && candidatePreferred(*bestRangeRecovery, best))
+        best = bestRangeRecovery;
     else if (densityOnly)
     {
         Powers primaryPowerType = bot->GetPowerType();
