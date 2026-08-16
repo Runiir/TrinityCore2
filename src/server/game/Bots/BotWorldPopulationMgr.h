@@ -2240,6 +2240,15 @@ private:
 
         struct OffTargetDamageEvent
         {
+            struct PeriodicHealthAuraCandidate
+            {
+                uint32 SpellId = 0;
+                uint32 HolderGuid = 0;
+                uint32 CasterGuid = 0;
+                uint8 EffectIndex = 0;
+                uint16 AuraType = 0;
+            };
+
             uint64 ElapsedMs = 0;
             uint32 AttackerGuid = 0;
             uint32 VictimGuid = 0;
@@ -2250,6 +2259,7 @@ private:
             uint32 Damage = 0;
             uint8 VictimTypeId = 0;
             bool VictimIsOwner = false;
+            std::vector<PeriodicHealthAuraCandidate> PeriodicHealthAuraCandidates;
         };
 
         uint64 WindowStartedMs = 0;

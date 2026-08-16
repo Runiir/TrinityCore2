@@ -3951,7 +3951,22 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                          << ",\"spell_id\":" << event.SpellId
                          << ",\"current_generic_spell_id\":" << event.CurrentGenericSpellId
                          << ",\"current_channeled_spell_id\":" << event.CurrentChanneledSpellId
-                         << ",\"damage\":" << event.Damage << '}';
+                         << ",\"damage\":" << event.Damage
+                         << ",\"periodic_health_aura_candidates\":[";
+                    bool firstAuraCandidate = true;
+                    for (CalibrationMetrics::OffTargetDamageEvent::PeriodicHealthAuraCandidate const& candidate
+                        : event.PeriodicHealthAuraCandidates)
+                    {
+                        if (!firstAuraCandidate)
+                            json << ',';
+                        firstAuraCandidate = false;
+                        json << "{\"spell_id\":" << candidate.SpellId
+                             << ",\"holder_guid\":" << candidate.HolderGuid
+                             << ",\"caster_guid\":" << candidate.CasterGuid
+                             << ",\"effect_index\":" << uint32(candidate.EffectIndex)
+                             << ",\"aura_type\":" << candidate.AuraType << '}';
+                    }
+                    json << "]}";
                 }
             uint32 botKey = state.Guid.GetCounter();
             auto rejectsItr = Party().LastCombatRejectsByBot.find(botKey);
@@ -46383,6 +46398,34 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
                     event.Damage = measuredDamage;
                     event.VictimTypeId = uint8(victim->GetTypeId());
                     event.VictimIsOwner = victim == owner;
+                    auto appendPeriodicHealthAuras = [&event](Unit* holder)
+                    {
+                        if (!holder)
+                            return;
+                        for (auto const& [_, application] : holder->GetAppliedAuras())
+                        {
+                            Aura const* aura = application ? application->GetBase() : nullptr;
+                            SpellInfo const* spellInfo = aura ? aura->GetSpellInfo() : nullptr;
+                            if (!spellInfo)
+                                continue;
+                            for (uint8 effectIndex = 0; effectIndex < MAX_SPELL_EFFECTS; ++effectIndex)
+                            {
+                                AuraType const auraType = AuraType(spellInfo->Effects[effectIndex].ApplyAuraName);
+                                if (auraType != SPELL_AURA_OBS_MOD_HEALTH
+                                    && auraType != SPELL_AURA_PERIODIC_HEALTH_FUNNEL)
+                                    continue;
+                                CalibrationMetrics::OffTargetDamageEvent::PeriodicHealthAuraCandidate candidate;
+                                candidate.SpellId = aura->GetId();
+                                candidate.HolderGuid = holder->GetGUID().GetCounter();
+                                candidate.CasterGuid = aura->GetCasterGUID().GetCounter();
+                                candidate.EffectIndex = effectIndex;
+                                candidate.AuraType = uint16(auraType);
+                                event.PeriodicHealthAuraCandidates.push_back(candidate);
+                            }
+                        }
+                    };
+                    appendPeriodicHealthAuras(owner);
+                    appendPeriodicHealthAuras(owner->GetPet());
                     calibration->second.OffTargetDamageEvents.push_back(event);
                 }
             }

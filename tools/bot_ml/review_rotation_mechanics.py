@@ -1393,6 +1393,17 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
                     "current_generic_spell_id": int(event.get("current_generic_spell_id") or 0),
                     "current_channeled_spell_id": int(event.get("current_channeled_spell_id") or 0),
                     "damage": int(event.get("damage") or 0),
+                    "periodic_health_aura_candidates": [
+                        {
+                            "spell_id": int(candidate.get("spell_id") or 0),
+                            "holder_guid": int(candidate.get("holder_guid") or 0),
+                            "caster_guid": int(candidate.get("caster_guid") or 0),
+                            "effect_index": int(candidate.get("effect_index") or 0),
+                            "aura_type": int(candidate.get("aura_type") or 0),
+                        }
+                        for candidate in event.get("periodic_health_aura_candidates") or []
+                        if isinstance(candidate, dict)
+                    ],
                 }
             )
 

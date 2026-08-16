@@ -324,6 +324,15 @@ def test_runtime_report_reads_completed_combat_calibration_window():
                                 "current_generic_spell_id": 0,
                                 "current_channeled_spell_id": 755,
                                 "damage": 42,
+                                "periodic_health_aura_candidates": [
+                                    {
+                                        "spell_id": 755,
+                                        "holder_guid": 99,
+                                        "caster_guid": 1306,
+                                        "effect_index": 0,
+                                        "aura_type": 20,
+                                    }
+                                ],
                             }
                         ],
                     }
@@ -360,6 +369,15 @@ def test_runtime_report_reads_completed_combat_calibration_window():
     }
     assert normalized["off_target_damage_events"][0]["victim_entry"] == 123
     assert normalized["off_target_damage_events"][0]["current_channeled_spell_id"] == 755
+    assert normalized["off_target_damage_events"][0]["periodic_health_aura_candidates"] == [
+        {
+            "spell_id": 755,
+            "holder_guid": 99,
+            "caster_guid": 1306,
+            "effect_index": 0,
+            "aura_type": 20,
+        }
+    ]
 
 
 def test_runtime_timeline_is_bounded_and_observation_only_in_native_source():
@@ -374,6 +392,8 @@ def test_runtime_timeline_is_bounded_and_observation_only_in_native_source():
     assert '\\\"off_target_damage_events\\\"' in source
     assert '\\\"current_channeled_spell_id\\\"' in source
     assert '\\\"pet_health\\\"' in source
+    assert '\\\"periodic_health_aura_candidates\\\"' in source
+    assert "SPELL_AURA_PERIODIC_HEALTH_FUNNEL" in source
     assert "victim == owner" in source
 
 
