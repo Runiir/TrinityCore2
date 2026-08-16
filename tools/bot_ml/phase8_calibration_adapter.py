@@ -422,6 +422,7 @@ def normalize_runtime_calibration(
         "runtime_mode": "calibration_fixture",
         "non_certifying_assistance": True,
         "mode": mode,
+        "target_spec": runtime_key,
         "role": role,
         "identity": identity,
         "window": window,

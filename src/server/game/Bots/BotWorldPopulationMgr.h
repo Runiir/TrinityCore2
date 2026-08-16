@@ -2592,6 +2592,15 @@ private:
         float CalibrationFixtureTargetZ = 0.0f;
         float CalibrationFixtureTargetNearestHostileClearance = 0.0f;
         uint64 CalibrationFixtureTargetProvisionedAtMs = 0;
+        float CalibrationFixtureBotSpawnX = 0.0f;
+        float CalibrationFixtureBotSpawnY = 0.0f;
+        float CalibrationFixtureBotSpawnZ = 0.0f;
+        float CalibrationFixtureBotTargetDistance = 0.0f;
+        bool CalibrationFixtureNativeLineOfSight = false;
+        bool CalibrationFixtureNativePathReachable = false;
+        bool CalibrationFixtureNativeMeleeReachable = false;
+        bool CalibrationFixtureGeometryValidated = false;
+        std::string CalibrationFixtureProfileLane;
         ObjectGuid CalibrationInterruptTargetGuid;
         uint64 CalibrationStartedMs = 0;
         uint64 CalibrationScoredStartedMs = 0;

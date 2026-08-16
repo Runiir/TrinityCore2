@@ -49,6 +49,7 @@
 #include "ObjectMgr.h"
 #include "PathGenerator.h"
 #include "Pet.h"
+#include "PhasingHandler.h"
 #include "Player.h"
 #include "Quests/QuestDef.h"
 #include "Random.h"
@@ -59,6 +60,7 @@
 #include "SpellInfo.h"
 #include "SpellMgr.h"
 #include "TemporarySummon.h"
+#include "TerrainMgr.h"
 #include "Totem.h"
 #include "TotemAI.h"
 #include "Unit.h"
@@ -2358,6 +2360,15 @@ std::string BotWorldPopulationMgr::StartCombatCalibration(std::string const& mod
     Cohort().CalibrationFixtureTargetZ = 0.0f;
     Cohort().CalibrationFixtureTargetNearestHostileClearance = 0.0f;
     Cohort().CalibrationFixtureTargetProvisionedAtMs = 0;
+    Cohort().CalibrationFixtureBotSpawnX = 0.0f;
+    Cohort().CalibrationFixtureBotSpawnY = 0.0f;
+    Cohort().CalibrationFixtureBotSpawnZ = 0.0f;
+    Cohort().CalibrationFixtureBotTargetDistance = 0.0f;
+    Cohort().CalibrationFixtureNativeLineOfSight = false;
+    Cohort().CalibrationFixtureNativePathReachable = false;
+    Cohort().CalibrationFixtureNativeMeleeReachable = false;
+    Cohort().CalibrationFixtureGeometryValidated = false;
+    Cohort().CalibrationFixtureProfileLane.clear();
     Cohort().CalibrationInterruptTargetGuid.Clear();
     Cohort().CalibrationStartedMs = NowMs();
     Cohort().CalibrationScoredStartedMs = 0;
@@ -2431,6 +2442,15 @@ std::string BotWorldPopulationMgr::StopCombatCalibration()
     Cohort().CalibrationFixtureTargetZ = 0.0f;
     Cohort().CalibrationFixtureTargetNearestHostileClearance = 0.0f;
     Cohort().CalibrationFixtureTargetProvisionedAtMs = 0;
+    Cohort().CalibrationFixtureBotSpawnX = 0.0f;
+    Cohort().CalibrationFixtureBotSpawnY = 0.0f;
+    Cohort().CalibrationFixtureBotSpawnZ = 0.0f;
+    Cohort().CalibrationFixtureBotTargetDistance = 0.0f;
+    Cohort().CalibrationFixtureNativeLineOfSight = false;
+    Cohort().CalibrationFixtureNativePathReachable = false;
+    Cohort().CalibrationFixtureNativeMeleeReachable = false;
+    Cohort().CalibrationFixtureGeometryValidated = false;
+    Cohort().CalibrationFixtureProfileLane.clear();
     Cohort().CalibrationInterruptTargetGuid.Clear();
     Cohort().CalibrationPreviousWindowValid = false;
     Cohort().CalibrationPreviousAoePhase = false;
@@ -2984,6 +3004,21 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
          << Cohort().CalibrationFixtureTargetNearestHostileClearance
          << ",\"provisioned_at_ms\":"
          << Cohort().CalibrationFixtureTargetProvisionedAtMs
+         << ",\"profile_lane\":\""
+         << JsonEscape(Cohort().CalibrationFixtureProfileLane) << "\""
+         << ",\"bot_spawn_x\":" << Cohort().CalibrationFixtureBotSpawnX
+         << ",\"bot_spawn_y\":" << Cohort().CalibrationFixtureBotSpawnY
+         << ",\"bot_spawn_z\":" << Cohort().CalibrationFixtureBotSpawnZ
+         << ",\"bot_target_distance\":"
+         << Cohort().CalibrationFixtureBotTargetDistance
+         << ",\"native_line_of_sight\":"
+         << (Cohort().CalibrationFixtureNativeLineOfSight ? "true" : "false")
+         << ",\"native_path_reachable\":"
+         << (Cohort().CalibrationFixtureNativePathReachable ? "true" : "false")
+         << ",\"native_melee_reachable\":"
+         << (Cohort().CalibrationFixtureNativeMeleeReachable ? "true" : "false")
+         << ",\"geometry_validated\":"
+         << (Cohort().CalibrationFixtureGeometryValidated ? "true" : "false")
          << ",\"provisioned_before_scoring\":"
          << (Cohort().CalibrationFixtureTargetProvisionedAtMs
                 && (!Cohort().CalibrationScoredStartedMs
@@ -7443,7 +7478,6 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
     static constexpr float IsolatedSingleTargetDummyY = 520.0f;
     static constexpr float IsolatedSingleTargetGroundZ = 75.8f;
     static constexpr float IsolatedSingleTargetRangedX = -9045.0f;
-    static constexpr float IsolatedSingleTargetMeleeX = -9056.0f;
     static constexpr float MinimumIsolatedDummyClearance = 45.0f;
     bool const clusteredDummyMode = Cohort().CalibrationMode == "aoe_300"
         || Cohort().CalibrationMode == "tank_threat_300";
@@ -7461,16 +7495,104 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
     // tank-threat windows retain the permanent training cluster. Ranged AoE uses
     // its known courtyard lane, while Demonology AoE uses the open centroid that
     // keeps the cluster inside Hellfire/Immolation range.
-    float const calibrationX = isolatedSingleTargetMode
-        ? (rangedSingleTargetMode ? IsolatedSingleTargetRangedX : IsolatedSingleTargetMeleeX)
+    float calibrationX = isolatedSingleTargetMode
+        ? IsolatedSingleTargetRangedX
         : (demonologyAoeMode ? -8967.4f
             : (rangedAoeMode ? -8947.0f : (clusteredDummyMode ? -8965.59f : -8962.05f)));
-    float const calibrationY = isolatedSingleTargetMode
+    float calibrationY = isolatedSingleTargetMode
         ? IsolatedSingleTargetDummyY
         : (demonologyAoeMode ? -152.9f
             : (rangedAoeMode ? -159.438f : (clusteredDummyMode ? -158.66f : -157.16f)));
     float const calibrationZ = isolatedSingleTargetMode
         ? IsolatedSingleTargetGroundZ : 81.5856f;
+    float calibrationSpawnZ = calibrationZ;
+    if (isolatedSingleTargetMode)
+    {
+        // The old fixture used the dummy's historical reference Z for both
+        // player placement and terrain lookup.  At the isolated lane the real
+        // floor is several yards lower, leaving melee profiles off-mesh and
+        // able to use only ranged actions/pets.  Resolve the server-owned
+        // pre-activation placement against terrain before loading the bot; no
+        // active player is relocated and normal movement remains authoritative
+        // once the calibration controller starts.
+        std::shared_ptr<TerrainInfo> terrain = sTerrainMgr.LoadTerrain(0);
+        float const fixtureGroundZ = terrain ? terrain->GetStaticHeight(
+            PhasingHandler::GetEmptyPhaseShift(), 0,
+            IsolatedSingleTargetDummyX, IsolatedSingleTargetDummyY,
+            calibrationZ + 4.0f, true, 64.0f) : INVALID_HEIGHT;
+        if (!std::isfinite(fixtureGroundZ)
+            || fixtureGroundZ <= INVALID_HEIGHT)
+        {
+            Cohort().LastPopulationFailureReason =
+                "calibration_isolated_target_ground_unavailable";
+            Cohort().CalibrationFailureReason =
+                Cohort().LastPopulationFailureReason;
+            Cohort().CalibrationWindowComplete = true;
+            return;
+        }
+
+        if (!rangedSingleTargetMode)
+        {
+            // A fixed point four yards east of the fixture was a different
+            // terrain shelf. Search a small deterministic ring around the
+            // observed target floor instead. The post-summon native
+            // reach/LOS/path gate below remains the final authority.
+            constexpr std::array<float, 3> CandidateRadii{ 2.0f, 2.5f, 3.0f };
+            constexpr uint32 CandidateAngles = 16;
+            float bestHeightDelta = std::numeric_limits<float>::max();
+            bool foundCandidate = false;
+            for (float radius : CandidateRadii)
+                for (uint32 index = 0; index < CandidateAngles; ++index)
+                {
+                    float const angle = 2.0f * float(M_PI)
+                        * float(index) / float(CandidateAngles);
+                    float const candidateX = IsolatedSingleTargetDummyX
+                        + std::cos(angle) * radius;
+                    float const candidateY = IsolatedSingleTargetDummyY
+                        + std::sin(angle) * radius;
+                    float const candidateZ = terrain->GetStaticHeight(
+                        PhasingHandler::GetEmptyPhaseShift(), 0, candidateX,
+                        candidateY, fixtureGroundZ + 4.0f, true, 64.0f);
+                    if (!std::isfinite(candidateZ)
+                        || candidateZ <= INVALID_HEIGHT)
+                        continue;
+                    float const heightDelta = std::fabs(
+                        candidateZ - fixtureGroundZ);
+                    if (heightDelta > 1.0f
+                        || (foundCandidate
+                            && heightDelta >= bestHeightDelta))
+                        continue;
+                    calibrationX = candidateX;
+                    calibrationY = candidateY;
+                    calibrationSpawnZ = candidateZ;
+                    bestHeightDelta = heightDelta;
+                    foundCandidate = true;
+                }
+            if (!foundCandidate)
+            {
+                Cohort().LastPopulationFailureReason =
+                    "calibration_isolated_melee_ground_unavailable";
+                Cohort().CalibrationFailureReason =
+                    Cohort().LastPopulationFailureReason;
+                Cohort().CalibrationWindowComplete = true;
+                return;
+            }
+        }
+        else
+            calibrationSpawnZ = terrain->GetStaticHeight(
+            PhasingHandler::GetEmptyPhaseShift(), 0, calibrationX,
+            calibrationY, calibrationZ + 4.0f, true, 64.0f);
+        if (!std::isfinite(calibrationSpawnZ)
+            || calibrationSpawnZ <= INVALID_HEIGHT)
+        {
+            Cohort().LastPopulationFailureReason =
+                "calibration_isolated_spawn_ground_unavailable";
+            Cohort().CalibrationFailureReason =
+                Cohort().LastPopulationFailureReason;
+            Cohort().CalibrationWindowComplete = true;
+            return;
+        }
+    }
     uint32 calibrationPopulation = Cohort().CalibrationMode == "healer_controlled_damage_300" ? 5
         : (Cohort().CalibrationMode == "tank_threat_300" ? 2 : 1);
     auto restoreWarmupBot = [](Player* bot)
@@ -7511,7 +7633,7 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
 
         float x = calibrationX + float(slot % 2) * 2.0f;
         float y = calibrationY + float(slot / 2) * 2.0f;
-        Player* bot = sBotMgr->SpawnWorldBot("any", std::to_string(candidateGuid), 0, x, y, calibrationZ, 0.0f);
+        Player* bot = sBotMgr->SpawnWorldBot("any", std::to_string(candidateGuid), 0, x, y, calibrationSpawnZ, 0.0f);
         if (!bot)
         {
             if (ReleaseBotGuid(candidateGuid))
@@ -7557,9 +7679,41 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
                 }
             }
 
+            bool nativeLineOfSight = fixtureTarget
+                && bot->IsWithinLOSInMap(fixtureTarget);
+            bool nativePathReachable = false;
+            if (fixtureTarget)
+            {
+                PathGenerator nativePath(bot);
+                bool const pathCalculated = nativePath.CalculatePath(
+                    fixtureTarget->GetPositionX(),
+                    fixtureTarget->GetPositionY(),
+                    fixtureTarget->GetPositionZ(), false);
+                PathType const pathType = nativePath.GetPathType();
+                nativePathReachable = pathCalculated
+                    && (pathType & PATHFIND_NORMAL)
+                    && !(pathType & PATHFIND_NOPATH)
+                    && !(pathType & PATHFIND_NOT_USING_PATH)
+                    && !(pathType & PATHFIND_INCOMPLETE)
+                    && !(pathType & PATHFIND_SHORTCUT)
+                    && !(pathType & PATHFIND_FARFROMPOLY);
+            }
+            bool const nativeMeleeReachable = fixtureTarget
+                && bot->IsWithinMeleeRange(fixtureTarget);
+            bool const nativeMeleeFixtureReady = rangedSingleTargetMode
+                || (nativeMeleeReachable && nativeLineOfSight
+                    && nativePathReachable);
+            float const botTargetDistance = fixtureTarget
+                ? bot->GetExactDist(fixtureTarget) : 0.0f;
+            bool const fixtureGeometryValidated = rangedSingleTargetMode
+                ? (nativeLineOfSight && botTargetDistance >= 5.0f
+                    && botTargetDistance <= 40.0f && nativePathReachable)
+                : nativeMeleeFixtureReady;
+
             bool const fixtureValid = fixtureTarget
                 && bot->IsValidAttackTarget(fixtureTarget)
-                && nearestHostileClearance >= MinimumIsolatedDummyClearance;
+                && nearestHostileClearance >= MinimumIsolatedDummyClearance
+                && fixtureGeometryValidated;
             if (!fixtureValid)
             {
                 if (fixtureTarget)
@@ -7570,8 +7724,9 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
                     CharacterDatabase.DirectPExecute(
                         "UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u",
                         candidateGuid);
-                Cohort().LastPopulationFailureReason =
-                    "calibration_isolated_target_provisioning_failed";
+                Cohort().LastPopulationFailureReason = !nativeMeleeFixtureReady
+                    ? "calibration_isolated_melee_fixture_unreachable"
+                    : "calibration_isolated_target_provisioning_failed";
                 Cohort().CalibrationFailureReason =
                     Cohort().LastPopulationFailureReason;
                 Cohort().CalibrationWindowComplete = true;
@@ -7587,6 +7742,19 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
             Cohort().CalibrationFixtureTargetNearestHostileClearance =
                 nearestHostileClearance;
             Cohort().CalibrationFixtureTargetProvisionedAtMs = NowMs();
+            Cohort().CalibrationFixtureBotSpawnX = bot->GetPositionX();
+            Cohort().CalibrationFixtureBotSpawnY = bot->GetPositionY();
+            Cohort().CalibrationFixtureBotSpawnZ = bot->GetPositionZ();
+            Cohort().CalibrationFixtureBotTargetDistance = botTargetDistance;
+            Cohort().CalibrationFixtureNativeLineOfSight = nativeLineOfSight;
+            Cohort().CalibrationFixtureNativePathReachable =
+                nativePathReachable;
+            Cohort().CalibrationFixtureNativeMeleeReachable =
+                nativeMeleeReachable;
+            Cohort().CalibrationFixtureGeometryValidated =
+                fixtureGeometryValidated;
+            Cohort().CalibrationFixtureProfileLane =
+                rangedSingleTargetMode ? "ranged" : "melee";
         }
 
         bool const restoredDeadBot = restoreWarmupBot(bot);

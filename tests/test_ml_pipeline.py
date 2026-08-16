@@ -11240,6 +11240,35 @@ def test_phase7_role_calibration_harness_passes_modes_and_detects_faults():
     assert coordinate_evaluation["passed"] is False
     assert "isolated_single_target_fixture" in coordinate_evaluation["failure_reasons"]
 
+    geometry_fault = json.loads(json.dumps(records["single_target_300"]))
+    geometry_fault["metrics"]["isolated_fixture_target"].update(
+        {
+            "profile_lane": "melee",
+            "native_path_reachable": False,
+            "native_melee_reachable": False,
+            "geometry_validated": False,
+        }
+    )
+    geometry_evaluation = evaluate_calibration(geometry_fault, policy)
+    assert geometry_evaluation["passed"] is False
+    assert "isolated_single_target_fixture" in geometry_evaluation["failure_reasons"]
+
+    lane_flip = json.loads(json.dumps(records["single_target_300"]))
+    lane_flip["metrics"]["isolated_fixture_target"].update(
+        {"profile_lane": "melee", "native_melee_reachable": True}
+    )
+    lane_evaluation = evaluate_calibration(lane_flip, policy)
+    assert lane_evaluation["passed"] is False
+    assert "isolated_single_target_fixture" in lane_evaluation["failure_reasons"]
+
+    distance_mismatch = json.loads(json.dumps(records["single_target_300"]))
+    distance_mismatch["metrics"]["isolated_fixture_target"][
+        "bot_target_distance"
+    ] = 6.63
+    distance_evaluation = evaluate_calibration(distance_mismatch, policy)
+    assert distance_evaluation["passed"] is False
+    assert "isolated_single_target_fixture" in distance_evaluation["failure_reasons"]
+
     fault_sources = {
         "missing_damage_delivery": "healer_controlled_damage_300",
         "duration_mismatch": "single_target_300",

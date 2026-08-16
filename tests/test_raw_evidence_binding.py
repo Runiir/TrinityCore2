@@ -118,6 +118,15 @@ def _calibration_payload() -> dict:
             "nearest_other_hostile_clearance": 46.7,
             "provisioned_at_ms": 500,
             "provisioned_before_scoring": True,
+            "profile_lane": "ranged",
+            "bot_spawn_x": -9045.0,
+            "bot_spawn_y": 520.0,
+            "bot_spawn_z": 68.0,
+            "bot_target_distance": 15.0,
+            "native_line_of_sight": True,
+            "native_path_reachable": True,
+            "native_melee_reachable": False,
+            "geometry_validated": True,
         },
         "previous_window": {
             "mode": "single_target_300",
@@ -651,6 +660,68 @@ def test_unpinned_fixture_coordinates_are_retained_but_fail_evaluation(
         "fixture_y_pinned",
         "fixture_z_bounded",
     }
+
+
+def test_unreachable_fixture_geometry_is_retained_but_fails_evaluation(
+    tmp_path: Path,
+):
+    calibration = _calibration_payload()
+    calibration["target_spec"] = "frost_death_knight"
+    calibration["fixture_target"].update(
+        {
+            "profile_lane": "melee",
+            "bot_target_distance": 6.63,
+            "native_line_of_sight": True,
+            "native_path_reachable": False,
+            "native_melee_reachable": False,
+            "geometry_validated": False,
+        }
+    )
+    report = _calibration_report(calibration)
+    report["requested_calibration"]["target_spec"] = "frost_death_knight"
+
+    _capture_calibration(tmp_path, report, [calibration, *_cleanup_payloads()])
+    projection = json.loads(
+        (tmp_path / "batch/raw/decisive_projection.json").read_text()
+    )
+    evaluation = projection["decisive"]["selected_target_scoring"][
+        "isolated_fixture_evaluation"
+    ]
+    assert evaluation["passed"] is False
+    assert "fixture_geometry_validated" in evaluation["reasons"]
+    assert "native_path_reachable" in evaluation["reasons"]
+    assert "melee_native_reach" in evaluation["reasons"]
+
+
+@pytest.mark.parametrize(
+    "fixture_update,expected_reason",
+    [
+        (
+            {"profile_lane": "melee", "native_melee_reachable": True},
+            "fixture_profile_lane_matches_target_spec",
+        ),
+        (
+            {"bot_target_distance": 6.63},
+            "fixture_distance_recomputed",
+        ),
+    ],
+)
+def test_fixture_lane_and_distance_are_recomputed_from_target_spec_and_positions(
+    tmp_path: Path, fixture_update: dict, expected_reason: str
+):
+    calibration = _calibration_payload()
+    calibration["fixture_target"].update(fixture_update)
+    report = _calibration_report(calibration)
+
+    _capture_calibration(tmp_path, report, [calibration, *_cleanup_payloads()])
+    projection = json.loads(
+        (tmp_path / "batch/raw/decisive_projection.json").read_text()
+    )
+    evaluation = projection["decisive"]["selected_target_scoring"][
+        "isolated_fixture_evaluation"
+    ]
+    assert evaluation["passed"] is False
+    assert expected_reason in evaluation["reasons"]
 
 
 def test_false_fixture_cleanup_receipt_rejects_calibration_capture(

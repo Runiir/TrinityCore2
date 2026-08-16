@@ -7,6 +7,11 @@ from decimal import Decimal, InvalidOperation
 from fractions import Fraction
 from typing import Any, Mapping, Sequence
 
+from .role_calibration_harness import (
+    expected_calibration_profile_lane,
+    single_target_fixture_geometry_valid,
+)
+
 
 class RawEvidenceBindingError(ValueError):
     pass
@@ -839,6 +844,18 @@ def _single_target_fixture_evaluation(
     primary_damage = _integer(target.get("primary_target_damage"))
     off_target_damage = _integer(target.get("off_target_damage"))
     observed_targets = _integer(target.get("observed_distinct_damage_targets"))
+    target_spec = str(calibration.get("target_spec") or "")
+    expected_lane = expected_calibration_profile_lane(target_spec)
+    try:
+        computed_distance = math.dist(
+            tuple(float(fixture[name]) for name in ("x", "y", "z")),
+            tuple(
+                float(fixture[name])
+                for name in ("bot_spawn_x", "bot_spawn_y", "bot_spawn_z")
+            ),
+        )
+    except (KeyError, TypeError, ValueError):
+        computed_distance = -1.0
     checks = {
         "isolated_single_target": fixture.get("isolated_single_target") is True,
         "training_dummy_entry": _integer(fixture.get("entry")) == 44548,
@@ -853,6 +870,25 @@ def _single_target_fixture_evaluation(
         "provisioned_before_scoring": (
             fixture.get("provisioned_before_scoring") is True
             and _integer(fixture.get("provisioned_at_ms")) > 0
+        ),
+        "fixture_profile_lane_matches_target_spec": (
+            bool(expected_lane)
+            and str(fixture.get("profile_lane") or "") == expected_lane
+        ),
+        "fixture_distance_recomputed": (
+            math.isfinite(computed_distance)
+            and computed_distance > 0.0
+            and abs(
+                computed_distance - _number(fixture.get("bot_target_distance"))
+            ) <= 0.01
+        ),
+        "fixture_geometry_validated": single_target_fixture_geometry_valid(
+            fixture, target_spec
+        ),
+        "native_path_reachable": fixture.get("native_path_reachable") is True,
+        "melee_native_reach": (
+            expected_lane != "melee"
+            or fixture.get("native_melee_reachable") is True
         ),
         "primary_guid_bound": runtime_guid == primary_guid,
         "primary_damage_is_scored_damage": primary_damage == damage,

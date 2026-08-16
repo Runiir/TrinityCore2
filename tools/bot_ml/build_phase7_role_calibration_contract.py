@@ -82,6 +82,15 @@ def _damage_metrics(target_count: int) -> dict[str, Any]:
                     "nearest_other_hostile_clearance": 46.7,
                     "provisioned_at_ms": 500,
                     "provisioned_before_scoring": True,
+                    "profile_lane": "ranged",
+                    "bot_spawn_x": -9045.0,
+                    "bot_spawn_y": 520.0,
+                    "bot_spawn_z": 68.0,
+                    "bot_target_distance": 15.0,
+                    "native_line_of_sight": True,
+                    "native_path_reachable": True,
+                    "native_melee_reachable": False,
+                    "geometry_validated": True,
                 },
             }
         )
@@ -143,6 +152,7 @@ def baseline_records(policy: dict[str, Any]) -> dict[str, dict[str, Any]]:
         "single_target_300": {
             "schema": "all_spec_role_calibration_record_v1",
             "mode": "single_target_300",
+            "target_spec": "fire_mage",
             "role": "dps",
             "identity": _identity("single_target_300"),
             "window": _window("single_target_300"),

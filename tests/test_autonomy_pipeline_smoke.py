@@ -5690,7 +5690,33 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "IsolatedSingleTargetDummyX = -9060.0f" in population
     assert "IsolatedSingleTargetDummyY = 520.0f" in population
     assert "IsolatedSingleTargetRangedX = -9045.0f" in population
-    assert "IsolatedSingleTargetMeleeX = -9056.0f" in population
+    assert "sTerrainMgr.LoadTerrain(0)" in population
+    assert "PhasingHandler::GetEmptyPhaseShift()" in population
+    assert "calibrationSpawnZ" in population
+    assert "calibrationSpawnZ <= INVALID_HEIGHT" in population
+    assert '"calibration_isolated_spawn_ground_unavailable"' in population
+    assert "CandidateRadii{ 2.0f, 2.5f, 3.0f }" in population
+    assert "heightDelta > 1.0f" in population
+    assert '"calibration_isolated_melee_ground_unavailable"' in population
+    assert "bot->IsWithinMeleeRange(" in population
+    assert "bot->IsWithinLOSInMap(fixtureTarget)" in population
+    assert "PATHFIND_NORMAL" in population
+    assert "PATHFIND_INCOMPLETE" in population
+    assert '"calibration_isolated_melee_fixture_unreachable"' in population
+    for geometry_field in (
+        "CalibrationFixtureBotSpawnX",
+        "CalibrationFixtureBotSpawnY",
+        "CalibrationFixtureBotSpawnZ",
+        "CalibrationFixtureBotTargetDistance",
+        "CalibrationFixtureNativeLineOfSight",
+        "CalibrationFixtureNativePathReachable",
+        "CalibrationFixtureNativeMeleeReachable",
+        "CalibrationFixtureGeometryValidated",
+        "CalibrationFixtureProfileLane",
+    ):
+        assert geometry_field in header
+        assert geometry_field in population or geometry_field in manager
+    assert "std::to_string(candidateGuid), 0, x, y, calibrationSpawnZ" in population
     assert "MinimumIsolatedDummyClearance = 45.0f" in population
     assert "map->SummonCreature(IsolatedSingleTargetDummyEntry" in population
     assert "SummonCreatureExtraArgs().SetSummonDuration(" in population

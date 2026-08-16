@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -27,6 +28,68 @@ FAULTS = {
     "illegal_actions",
     "cross_window_contamination",
 }
+
+RANGED_CALIBRATION_PROFILE_SPECS = frozenset(
+    {
+        "affliction_warlock",
+        "arcane_mage",
+        "balance_druid",
+        "beast_mastery_hunter",
+        "demonology_warlock",
+        "destruction_warlock",
+        "elemental_shaman",
+        "fire_mage",
+        "frost_mage",
+        "marksmanship_hunter",
+        "shadow_priest",
+        "survival_hunter",
+    }
+)
+
+
+def expected_calibration_profile_lane(target_spec: str) -> str:
+    """Mirror the server's immutable calibration lane classification."""
+    if not target_spec:
+        return ""
+    return (
+        "ranged"
+        if target_spec in RANGED_CALIBRATION_PROFILE_SPECS
+        else "melee"
+    )
+
+
+def single_target_fixture_geometry_valid(
+    fixture: Mapping[str, Any], target_spec: str
+) -> bool:
+    """Recompute geometry facts instead of trusting server summary booleans."""
+    expected_lane = expected_calibration_profile_lane(target_spec)
+    if not expected_lane:
+        return False
+    try:
+        target = tuple(float(fixture[name]) for name in ("x", "y", "z"))
+        spawn = tuple(
+            float(fixture[name])
+            for name in ("bot_spawn_x", "bot_spawn_y", "bot_spawn_z")
+        )
+        reported_distance = float(fixture["bot_target_distance"])
+    except (KeyError, TypeError, ValueError):
+        return False
+    if not all(math.isfinite(value) for value in (*target, *spawn, reported_distance)):
+        return False
+    computed_distance = math.dist(target, spawn)
+    return (
+        str(fixture.get("profile_lane") or "") == expected_lane
+        and abs(computed_distance - reported_distance) <= 0.01
+        and 0.0 < computed_distance <= 40.0
+        and -100_000.0 < spawn[2] < 10_000.0
+        and fixture.get("geometry_validated") is True
+        and fixture.get("native_line_of_sight") is True
+        and fixture.get("native_path_reachable") is True
+        and (
+            expected_lane != "melee"
+            or fixture.get("native_melee_reachable") is True
+        )
+    )
 
 
 def _ratio(numerator: float, denominator: float) -> float:
@@ -95,6 +158,11 @@ def evaluate_calibration(
         if mode == "single_target_300":
             _check(checks, reasons, "single_target_only", target_count == int(mode_policy["target_count"]))
             fixture = metrics.get("isolated_fixture_target") or {}
+            target_spec = str(
+                record.get("target_spec")
+                or (record.get("raw_runtime_status") or {}).get("target_spec")
+                or ""
+            )
             scored_damage = int(metrics.get("scored_damage") or 0)
             _check(
                 checks,
@@ -112,7 +180,8 @@ def evaluate_calibration(
                 and float(fixture.get("nearest_other_hostile_clearance") or 0.0)
                     >= 45.0
                 and int(fixture.get("provisioned_at_ms") or 0) > 0
-                and fixture.get("provisioned_before_scoring") is True,
+                and fixture.get("provisioned_before_scoring") is True
+                and single_target_fixture_geometry_valid(fixture, target_spec),
             )
             _check(
                 checks,
