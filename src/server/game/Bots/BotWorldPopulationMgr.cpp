@@ -7380,18 +7380,18 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
     // uses a legal six-yard single-target lane for Shadowflame plus the ranged core,
     // and an open centroid lane in AoE mode that keeps all eight dummies within
     // Hellfire/Immolation range without spawning inside any dummy collision.
-    // Every ranged single-target profile also needs a non-collision firing lane.
-    // Native range resolution rejects the overlapping dummy before any spell can
-    // establish combat, and an ordinary mmap path cannot start from inside the
-    // dummy collision.  Use the same known walkable six-yard lane for every ranged
-    // spec; melee profiles retain the overlap point and close range natively.
+    // Every ranged single-target profile also needs a legal firing lane.  Their
+    // native hostile minimum range can be twelve yards, so the six-yard lane is
+    // still rejected before any action can establish combat.  Use the existing
+    // known walkable ranged courtyard lane (about fifteen yards from the nearest
+    // eligible dummy); melee profiles retain the overlap point and close natively.
     float const calibrationX = demonologyCloseRangeMode
         ? (Cohort().CalibrationMode == "aoe_300" ? -8967.4f : -8956.0f)
-        : (rangedSingleTargetMode ? -8956.0f
+        : (rangedSingleTargetMode ? -8947.0f
             : (rangedAoeMode ? -8947.0f : (clusteredDummyMode ? -8965.59f : -8962.05f)));
     float const calibrationY = demonologyCloseRangeMode
         ? (Cohort().CalibrationMode == "aoe_300" ? -152.9f : -157.16f)
-        : (rangedSingleTargetMode ? -157.16f
+        : (rangedSingleTargetMode ? -159.438f
             : (rangedAoeMode ? -159.438f : (clusteredDummyMode ? -158.66f : -157.16f)));
     static constexpr float CalibrationZ = 81.5856f;
     uint32 calibrationPopulation = Cohort().CalibrationMode == "healer_controlled_damage_300" ? 5

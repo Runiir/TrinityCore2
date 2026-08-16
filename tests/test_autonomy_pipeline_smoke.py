@@ -5684,8 +5684,24 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert 'Cohort().CalibrationMode == "single_target_300"' in population
     assert "rangedSingleTargetMode" in population
     assert "UsesRangedAoeCalibrationLane(Cohort().CalibrationTargetSpec)" in population
-    assert "rangedSingleTargetMode ? -8956.0f" in population
-    assert "rangedSingleTargetMode ? -157.16f" in population
+    assert "rangedSingleTargetMode ? -8947.0f" in population
+    assert "rangedSingleTargetMode ? -159.438f" in population
+    classifier = function_body(manager, "bool UsesRangedAoeCalibrationLane")
+    for ranged_spec in (
+        "balance_druid",
+        "beast_mastery_hunter",
+        "marksmanship_hunter",
+        "survival_hunter",
+        "shadow_priest",
+        "elemental_shaman",
+        "arcane_mage",
+        "fire_mage",
+        "frost_mage",
+        "affliction_warlock",
+        "demonology_warlock",
+        "destruction_warlock",
+    ):
+        assert f'"{ranged_spec}"' in classifier
     assert "shadowPriestSingleTargetMode" not in population
     update = function_body(manager, "void BotWorldPopulationMgr::UpdateCalibrationBot")
     assert "ResolveProfileCombatAction(bot, target, hostileCount, Cohort().CalibrationAoePhase)" in update
