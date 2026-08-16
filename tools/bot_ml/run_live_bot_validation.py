@@ -3718,7 +3718,12 @@ def live_validation_report(
     return apply_acceptance_evaluation(report)
 
 
-def read_until_console_prompt(process: subprocess.Popen[str], deadline: float, required_text: str = "") -> str:
+def read_until_console_prompt(
+    process: subprocess.Popen[str],
+    deadline: float,
+    required_text: str = "",
+    terminal_marker: bool = False,
+) -> str:
     if process.stdout is None:
         return ""
     output: list[str] = []
@@ -3736,13 +3741,15 @@ def read_until_console_prompt(process: subprocess.Popen[str], deadline: float, r
         joined = "".join(output)
         if required_text:
             marker_index = joined.find(required_text)
-            if marker_index >= 0 and "TC>" in joined[marker_index + len(required_text):]:
+            if marker_index >= 0 and (
+                terminal_marker or "TC>" in joined[marker_index + len(required_text):]
+            ):
                 break
             # A fresh console prompt is also an authoritative command boundary.
             # Return the incomplete response immediately so the evidence parser
             # can reject the missing marker; waiting until the cleanup deadline
             # would turn a fail-closed diagnostic into a false liveness stall.
-            if "TC>" in joined:
+            if not terminal_marker and "TC>" in joined:
                 break
         if not required_text and ("TC>" in text or "TC>" in joined[-16:]):
             break
@@ -3764,9 +3771,18 @@ def expected_command_output_marker(command_text: str) -> str:
         return '"action":"botauto_combatlog_complete"'
     if command_text == ".botexp summary":
         return '"duration_minutes"'
+    if command_text.startswith(".botauto calibrate") and command_text.split()[-1] == "status":
+        return '"action":"botauto_calibrate_status_complete"'
     if command_text.startswith(".botauto calibrate"):
         return '"action":"botauto_calibrate_'
     return ""
+
+
+def command_output_marker_is_terminal(command_text: str) -> bool:
+    return (
+        command_text.startswith(".botauto calibrate")
+        and command_text.split()[-1] == "status"
+    )
 
 
 def run_worldserver(binary: Path, config: Path, timeout_sec: int, script: str, observe_sec: int = 0) -> tuple[str, int, bool, list[str]]:
@@ -3829,7 +3845,12 @@ def run_worldserver(binary: Path, config: Path, timeout_sec: int, script: str, o
                     break
                 elif command_text:
                     command_deadline = bounded_console_deadline(deadline, 10) if command_text.startswith(".botauto calibrate") else deadline
-                    output_prefix += read_until_console_prompt(process, command_deadline, expected_command_output_marker(command_text))
+                    output_prefix += read_until_console_prompt(
+                        process,
+                        command_deadline,
+                        expected_command_output_marker(command_text),
+                        command_output_marker_is_terminal(command_text),
+                    )
             if process.stdin and not process.stdin.closed:
                 process.stdin.close()
                 process.stdin = None
@@ -4101,7 +4122,14 @@ def run_worldserver_completion_watchdog(
             if cleanup
             else bounded_console_deadline(deadline, max(5, heartbeat_sec))
         )
-        output_parts.append(read_until_console_prompt(process, command_deadline, expected_command_output_marker(command_text)))
+        output_parts.append(
+            read_until_console_prompt(
+                process,
+                command_deadline,
+                expected_command_output_marker(command_text),
+                command_output_marker_is_terminal(command_text),
+            )
+        )
 
     try:
         output_parts.append(read_until_console_prompt(process, deadline))

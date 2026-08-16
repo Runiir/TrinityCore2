@@ -8273,6 +8273,39 @@ def test_read_until_console_prompt_returns_missing_marker_at_command_prompt(monk
     assert output == "CMD .botauto combatlog\nTC> "
 
 
+def test_read_until_console_prompt_waits_past_early_prompt_for_terminal_transport_marker(monkeypatch):
+    process = ChunkedConsoleProcess([
+        "TC> ",
+        '{"action":"botauto_calibrate_status_chunk","sequence":0}\n',
+        '{"action":"botauto_calibrate_status_complete","chunk_count":1}\n',
+        "next command output\n",
+    ])
+    module_globals = read_until_console_prompt.__globals__
+    monkeypatch.setattr(module_globals["select"], "select", lambda fds, *_args: (fds if process.chunks else [], [], []))
+    monkeypatch.setattr(module_globals["os"], "read", lambda _fd, _size: process.chunks.pop(0))
+
+    output = read_until_console_prompt(
+        process,
+        time.monotonic() + 1,
+        '"action":"botauto_calibrate_status_complete"',
+        terminal_marker=True,
+    )
+
+    assert "botauto_calibrate_status_chunk" in output
+    assert "botauto_calibrate_status_complete" in output
+    assert "next command output" not in output
+
+
+def test_calibration_status_uses_completion_marker_as_terminal_boundary():
+    module_globals = read_until_console_prompt.__globals__
+
+    assert module_globals["expected_command_output_marker"](".botauto calibrate status") == (
+        '"action":"botauto_calibrate_status_complete"'
+    )
+    assert module_globals["command_output_marker_is_terminal"](".botauto calibrate status") is True
+    assert module_globals["command_output_marker_is_terminal"](".botauto calibrate start single_target_300 affliction_warlock 1") is False
+
+
 def test_live_bot_validation_force_start_overrides_config_autostart(tmp_path, monkeypatch):
     monkeypatch.setattr(
         "sys.argv",
