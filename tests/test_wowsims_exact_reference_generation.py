@@ -995,6 +995,31 @@ def test_native_result_rejects_temporal_external_activity() -> None:
         parse_native_result(result)
 
 
+def test_native_result_allows_registered_zero_activity_temporal_external_metrics() -> None:
+    result = native_result()
+    player = result["raidMetrics"]["parties"][0]["players"][0]
+    player["actions"] = [
+        {
+            "id": {"spellId": 2825},
+            "targets": [{"casts": 0, "hits": 0, "damage": 0, "castTimeMs": 0}],
+        }
+    ]
+    player["auras"] = [
+        {"id": {"spellId": 2825}, "uptimeSecondsAvg": 0, "procsAvg": 0}
+    ]
+    parsed = parse_native_result(result)
+    assert parsed["temporal_external_spell_ids_observed"] == []
+
+
+def test_native_result_rejects_temporal_external_aura_uptime() -> None:
+    result = native_result()
+    result["raidMetrics"]["parties"][0]["players"][0]["auras"] = [
+        {"id": {"spellId": 10060}, "uptimeSecondsAvg": 15, "procsAvg": 1}
+    ]
+    with pytest.raises(WowsimsGenerationError, match="temporal_external_activity"):
+        parse_native_result(result)
+
+
 @pytest.mark.parametrize(
     ("field", "value", "reason"),
     [

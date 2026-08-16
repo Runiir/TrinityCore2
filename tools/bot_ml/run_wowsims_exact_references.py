@@ -3121,22 +3121,85 @@ def parse_native_result(native_result: Mapping[str, Any]) -> dict[str, Any]:
     first_duration = float(native_result.get("firstIterationDuration") or 0.0)
     _require(avg_duration == 300.0 and first_duration == 300.0, "native_result:duration")
 
-    def observed_spell_ids(value: Any) -> set[int]:
+    action_activity_fields = {
+        "casts",
+        "hits",
+        "crits",
+        "ticks",
+        "critTicks",
+        "misses",
+        "dodges",
+        "parries",
+        "blocks",
+        "critBlocks",
+        "glances",
+        "damage",
+        "critDamage",
+        "tickDamage",
+        "critTickDamage",
+        "glanceDamage",
+        "blockDamage",
+        "critBlockDamage",
+        "threat",
+        "healing",
+        "critHealing",
+        "shielding",
+        "castTimeMs",
+    }
+    aura_activity_fields = {"uptimeSecondsAvg", "procsAvg"}
+
+    def contains_positive_number(value: Any) -> bool:
+        if isinstance(value, bool):
+            return False
+        if isinstance(value, (int, float)):
+            return math.isfinite(float(value)) and float(value) > 0.0
+        if isinstance(value, Mapping):
+            return any(contains_positive_number(child) for child in value.values())
+        if isinstance(value, list):
+            return any(contains_positive_number(child) for child in value)
+        return False
+
+    def metric_has_activity(metric: Mapping[str, Any], fields: set[str]) -> bool:
+        for key, value in metric.items():
+            if key in fields and contains_positive_number(value):
+                return True
+            if isinstance(value, Mapping) and metric_has_activity(value, fields):
+                return True
+            if isinstance(value, list):
+                for child in value:
+                    if isinstance(child, Mapping) and metric_has_activity(child, fields):
+                        return True
+        return False
+
+    def observed_active_spell_ids(value: Any, metric_kind: str | None = None) -> set[int]:
         found: set[int] = set()
         if isinstance(value, Mapping):
-            if "spellId" in value:
-                spell_id = int(value.get("spellId") or 0)
-                if spell_id > 0:
+            identity = value.get("id")
+            if metric_kind is not None and isinstance(identity, Mapping):
+                spell_id = int(identity.get("spellId") or 0)
+                fields = (
+                    action_activity_fields
+                    if metric_kind == "action"
+                    else aura_activity_fields
+                )
+                if spell_id > 0 and metric_has_activity(value, fields):
                     found.add(spell_id)
-            for child in value.values():
-                found.update(observed_spell_ids(child))
+            for key, child in value.items():
+                child_kind = (
+                    "action"
+                    if key == "actions"
+                    else "aura"
+                    if key == "auras"
+                    else None
+                )
+                found.update(observed_active_spell_ids(child, child_kind))
         elif isinstance(value, list):
             for child in value:
-                found.update(observed_spell_ids(child))
+                found.update(observed_active_spell_ids(child, metric_kind))
         return found
 
     forbidden_observed = sorted(
-        observed_spell_ids(native_result)
+        observed_active_spell_ids(native_result)
         & FORBIDDEN_TEMPORAL_EXTERNAL_RESULT_SPELL_IDS
     )
     _require(
