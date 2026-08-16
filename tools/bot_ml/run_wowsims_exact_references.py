@@ -5342,7 +5342,7 @@ def promote_generated_references(
     common_dvc_paths = {value.resolve() for value in dvc_paths_by_spec.values()}
     _require(len(common_dvc_paths) == 1, "promotion:common_dvc_reconstruction_receipt")
     common_dvc_path = next(iter(common_dvc_paths))
-    validate_dvc_reconstruction_receipt(
+    verified_dvc_receipt = validate_dvc_reconstruction_receipt(
         common_dvc_path,
         expected_generation_receipt_paths=[
             generation_paths_by_spec[target_spec] for target_spec in sorted(expected_specs)
@@ -5353,6 +5353,16 @@ def promote_generated_references(
         expected_dvc_pointer_path=str(publication["dvc_pointer_path"]),
         expected_bundle_root=str(publication["bundle_root"]),
     )
+    if check:
+        control_plane_root = common_dvc_path.resolve().parent.parent
+        for label, process_row in sorted(
+            (verified_dvc_receipt.get("process_evidence") or {}).items()
+        ):
+            _require_committed_head_file(
+                control_plane_root / str(process_row.get("path") or ""),
+                repository_root=repository_root,
+                label=f"promotion:commit_b_process_log:{label}",
+            )
 
     promoted = copy.deepcopy(pending_manifest)
     cohort_fixture_hashes: set[str] = set()

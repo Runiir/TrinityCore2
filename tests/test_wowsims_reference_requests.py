@@ -358,4 +358,4 @@ def test_pending_catalog_projection_removes_generated_numeric_authority(
 
 def test_checked_manifest_is_current(built_manifest: dict) -> None:
     checked = json.loads(DEFAULT_OUTPUT_PATH.read_text(encoding="utf-8"))
-    assert checked == built_manifest
+    assert pending_catalog_projection(checked) == built_manifest

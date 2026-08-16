@@ -1257,6 +1257,12 @@ def test_promotion_index_cli_is_available_and_validates_reconstruction() -> None
     assert "pending_request_catalog_sha256" in builder
 
 
+def test_promotion_check_requires_every_reconstruction_process_log_at_head() -> None:
+    source = inspect.getsource(exact_runner.promote_generated_references)
+    assert "promotion:commit_b_process_log:" in source
+    assert "verified_dvc_receipt.get(\"process_evidence\")" in source
+
+
 def test_dvc_receipt_rejects_publication_domain_relabel(tmp_path: Path) -> None:
     repository = tmp_path / "repository"
     receipt_path = repository / "control-plane" / "reconstruction.json"
