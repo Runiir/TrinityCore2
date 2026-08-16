@@ -3925,6 +3925,20 @@ def validate_dvc_bundle_pre_pull(
     return {**observation, "observation_sha256": canonical_sha256(observation)}
 
 
+def classify_clean_dvc_cloud_status(output: bytes) -> str:
+    text = output.decode("utf-8").strip()
+    _require(
+        text
+        in {
+            "",
+            "Data and pipelines are up to date.",
+            "Cache and remote 'object' are in sync.",
+        },
+        "dvc:cloud_status_not_clean",
+    )
+    return "clean_no_remote_divergence"
+
+
 def parse_fresh_build_log_identity(
     payload: bytes,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -4256,12 +4270,7 @@ def reconstruct_generation_with_dvc(
             ),
             "transport": cloud_outcome,
         }
-        cloud_status_text = cloud_output.decode("utf-8").strip()
-        _require(
-            cloud_status_text in {"", "Data and pipelines are up to date."},
-            "dvc:cloud_status_not_clean",
-        )
-        cloud_status_classification = "clean_no_remote_divergence"
+        cloud_status_classification = classify_clean_dvc_cloud_status(cloud_output)
         reconstructed_receipts: list[tuple[Path, dict[str, Any]]] = []
         for source_path, source_receipt, source_bytes in original_receipts:
             relative = source_path.relative_to(original_root)

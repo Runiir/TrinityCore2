@@ -1201,6 +1201,27 @@ def test_dvc_cache_read_uses_supported_config_query_syntax() -> None:
     assert '"--get", "cache.dir"' not in source
 
 
+@pytest.mark.parametrize(
+    "output",
+    [
+        b"",
+        b"Data and pipelines are up to date.\n",
+        b"Cache and remote 'object' are in sync.\n",
+    ],
+)
+def test_dvc_cloud_status_accepts_only_known_clean_output(output: bytes) -> None:
+    assert exact_runner.classify_clean_dvc_cloud_status(output) == (
+        "clean_no_remote_divergence"
+    )
+
+
+def test_dvc_cloud_status_rejects_remote_divergence() -> None:
+    with pytest.raises(WowsimsGenerationError, match="cloud_status_not_clean"):
+        exact_runner.classify_clean_dvc_cloud_status(
+            b"new: artifacts/all_spec_program/wowsims_exact_reference_bundle_v1\n"
+        )
+
+
 def test_dvc_receipt_rejects_publication_domain_relabel(tmp_path: Path) -> None:
     repository = tmp_path / "repository"
     receipt_path = repository / "control-plane" / "reconstruction.json"
