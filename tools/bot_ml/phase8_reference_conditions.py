@@ -939,7 +939,9 @@ def pet_setup_projection(
     except (TypeError, ValueError):
         serialized_uptime = -1.0
     projection = {
+        "schema": "phase8_native_summoned_pet_identity_v1",
         "required": True,
+        "runtime_projection_complete": True,
         "required_pet_spell_id": required_spell_id,
         "required_pet_entry": _integer(setup.get("required_pet_entry")),
         "required_pet_family_id": _integer(setup.get("required_pet_family_id")),
@@ -967,8 +969,6 @@ def pet_setup_projection(
         "pet_permanent": setup.get("pet_permanent"),
         "pet_type": _integer(setup.get("pet_type")),
         "pet_power_type": _integer(setup.get("pet_power_type")),
-        "pet_power": _integer(setup.get("pet_power")),
-        "pet_max_power": _integer(setup.get("pet_max_power")),
         "pet_spellbook_sha256": setup.get("pet_spellbook_sha256"),
         "pet_spellbook": spellbook,
         "pet_autocast_spell_ids": autocasts,
@@ -1020,8 +1020,9 @@ def pet_setup_projection(
         and _integer(setup.get("pet_health")) > 0
         and _integer(setup.get("pet_max_health"))
         >= _integer(setup.get("pet_health"))
-        and projection["pet_max_power"] > 0
-        and 0 <= projection["pet_power"] <= projection["pet_max_power"]
+        and _integer(setup.get("pet_max_power")) > 0
+        and 0 <= _integer(setup.get("pet_power"))
+        <= _integer(setup.get("pet_max_power"))
         and _hex_sha256(projection["pet_spellbook_sha256"])
         and projection["pet_spellbook_sha256"] == spellbook_sha256
         and spellbook_valid

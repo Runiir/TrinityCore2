@@ -9,7 +9,7 @@
 namespace BotCalibrationFixtureContractGenerated
 {
 inline constexpr char Schema[] = "phase8_calibration_fixture_contract_v1";
-inline constexpr char ContentSha256[] = "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f";
+inline constexpr char ContentSha256[] = "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430";
 inline constexpr char UpstreamRevision[] = "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6";
 inline constexpr uint32_t TargetEntry = 44548;
 inline constexpr uint8_t TargetLevel = 88;
@@ -99,12 +99,12 @@ inline constexpr std::array<uint32_t, 15> RequiredSetupAuraSpellIds = {{
 }};
 
 inline constexpr std::array<SpecContract, 16> SpecContracts = {{
-    { "affliction_warlock", "ranged", "8f38bcba47d99fbac658ea0dba1ccfd11cd1703e5d66b26fec9f4368384d3d64", 0, 3, 0, 255, false, true, 0, 0, 58086, 79470, 0, 0, false, 14.5f, 15.5f } ,
+    { "affliction_warlock", "ranged", "8f38bcba47d99fbac658ea0dba1ccfd11cd1703e5d66b26fec9f4368384d3d64", 0, 3, 0, 255, false, true, 0, 0, 58086, 79470, 0, 0, true, 14.5f, 15.5f } ,
     { "arms_warrior", "melee", "ab03ac6c2277f834fa6e5e6f5e07499a247ef9d6a4a3d0f510d6bc0282d307de", 3, 1, 0, 255, false, false, 0, 1, 58088, 79472, 0, 0, true, 2.0f, 3.2f } ,
     { "assassination_rogue", "melee", "03a96ae47e8f4548a31b86346ffdf1e0607d50fc1172a78b90112c8d8e12926d", 4, 1, 0, 0, false, false, 1, 0, 58087, 79471, 0, 0, true, 2.0f, 3.2f } ,
     { "balance_druid", "ranged", "b006fd31e0cea891eae20d3c9ce0b1fe8d9a4438f67d59f481c0ed1721c96384", 5, 2, 0, 255, true, false, 1, 1, 58086, 79470, 62671, 87547, true, 14.5f, 15.5f } ,
     { "combat_rogue", "melee", "fbb6d7e9288778f7558d077e5bf0becd342add9c2381af984f9d4d667e367543", 7, 1, 0, 0, false, false, 2, 0, 58087, 79471, 0, 0, true, 2.0f, 3.2f } ,
-    { "demonology_warlock", "ranged", "394f11d9e26564e6a8c305a3544ddb6df883f826fa70e548c7a7ed391bd6ec4e", 8, 3, 0, 255, false, true, 2, 0, 58086, 79470, 0, 0, false, 14.5f, 15.5f } ,
+    { "demonology_warlock", "ranged", "394f11d9e26564e6a8c305a3544ddb6df883f826fa70e548c7a7ed391bd6ec4e", 8, 3, 0, 255, false, true, 2, 0, 58086, 79470, 0, 0, true, 14.5f, 15.5f } ,
     { "elemental_shaman", "ranged", "3307064f29e960f794c608cddc6a08d407b9e1851fced19e8067789d7f3ec13a", 11, 1, 0, 255, false, false, 2, 1, 58086, 79470, 0, 0, true, 14.5f, 15.5f } ,
     { "feral_druid_dps", "melee", "b93511634568697dc949a13f0b22f7efd96526daa58f0ec5992a5b8dcb1b387c", 12, 1, 0, 0, false, false, 3, 1, 58087, 79471, 0, 0, true, 2.0f, 3.2f } ,
     { "fire_mage", "ranged", "71a9228f45b0c57e464971f71a05d8af4588b274efd3d5711645d7012007afc7", 13, 1, 0, 255, false, false, 4, 1, 58086, 79470, 0, 0, true, 14.5f, 15.5f } ,
@@ -114,7 +114,7 @@ inline constexpr std::array<SpecContract, 16> SpecContracts = {{
     { "retribution_paladin", "melee", "b9461e1f452958d4c3c8bc7c512ed206b58df460905b16740489dd51d283c151", 18, 2, 0, 255, false, false, 8, 2, 58088, 79472, 0, 0, true, 2.0f, 3.2f } ,
     { "shadow_priest", "ranged", "528ff74616a6c6a279f5bd3e616fdfbaffc6a7c25c1476664497e42cedb159fb", 20, 1, 0, 255, false, false, 10, 2, 58086, 79470, 62290, 87547, true, 14.5f, 15.5f } ,
     { "survival_hunter", "ranged", "9706d97593a09a44731ceb2fa5216cf328dc1bc1aa5f40e8d581fab0ac403661", 21, 2, 0, 255, false, true, 12, 2, 58087, 79471, 0, 0, true, 14.5f, 15.5f } ,
-    { "unholy_death_knight", "melee", "a23879b3c6e945289f8a635f85101f10834977dd8f138101a7726acf97db7f90", 23, 2, 63, 255, false, true, 14, 1, 58088, 79472, 0, 0, false, 2.0f, 3.2f } ,
+    { "unholy_death_knight", "melee", "a23879b3c6e945289f8a635f85101f10834977dd8f138101a7726acf97db7f90", 23, 2, 63, 255, false, true, 14, 1, 58088, 79472, 0, 0, true, 2.0f, 3.2f } ,
 }};
 
 inline SpecContract const* FindSpec(std::string_view spec)

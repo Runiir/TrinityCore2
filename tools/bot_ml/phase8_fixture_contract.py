@@ -571,6 +571,60 @@ def _hunter_pet_projection(
     }
 
 
+def _native_summoned_pet_projection(
+    pet_setup: Mapping[str, Any], pet_power: Mapping[str, Any]
+) -> dict[str, Any]:
+    spellbook = [dict(row) for row in pet_setup.get("spellbook") or []]
+    spellbook.sort(
+        key=lambda row: (
+            int(row.get("spell_id", 0)),
+            int(row.get("active", 0)),
+            int(row.get("type", 0)),
+        )
+    )
+    canonical = ";".join(
+        f"{int(row['spell_id'])}:{int(row['active'])}:{int(row['type'])}"
+        for row in spellbook
+    )
+    spellbook_sha256 = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    _require(
+        spellbook_sha256 == pet_setup.get("spellbook_sha256"),
+        "native_pet:spellbook_sha256",
+    )
+    autocasts = sorted({int(value) for value in pet_setup["required_autocast_spell_ids"]})
+    return {
+        "schema": "phase8_native_summoned_pet_identity_v1",
+        "required": True,
+        "runtime_projection_complete": True,
+        "required_pet_spell_id": int(pet_setup["summon_spell_id"]),
+        "required_pet_entry": int(pet_setup["creature_entry"]),
+        "required_pet_family_id": int(pet_setup["family_id"]),
+        "required_pet_created_by_spell_id": int(
+            pet_setup["created_by_spell_id"]
+        ),
+        "required_pet_type": int(pet_setup["pet_type"]),
+        "required_pet_power_type": int(pet_power["power_type"]),
+        "pet_spell_known": True,
+        "pet_native_cast_submitted": True,
+        "pet_native_cast_finished": True,
+        "pet_native_cast_observed": True,
+        "pet_entry": int(pet_setup["creature_entry"]),
+        "pet_family_id": int(pet_setup["family_id"]),
+        "pet_created_by_spell_id": int(pet_setup["created_by_spell_id"]),
+        "pet_present": True,
+        "pet_in_world": True,
+        "pet_alive": True,
+        "pet_owned": True,
+        "pet_permanent": True,
+        "pet_type": int(pet_setup["pet_type"]),
+        "pet_power_type": int(pet_power["power_type"]),
+        "pet_spellbook_sha256": spellbook_sha256,
+        "pet_spellbook": spellbook,
+        "pet_autocast_spell_ids": autocasts,
+        "uptime": float(pet_setup["uptime"]),
+    }
+
+
 def _survival_sniper_training_projection(
     provisioning: Mapping[str, Any],
 ) -> dict[str, Any]:
@@ -838,13 +892,9 @@ def materialize_fixture_contract(
         if spec in {"marksmanship_hunter", "survival_hunter"}:
             pet_runtime = _hunter_pet_projection(provisioning, pet_setup)
         elif pet_setup["required"]:
-            pet_runtime = {
-                **copy.deepcopy(pet_setup),
-                "runtime_projection_complete": False,
-                "blockers": [
-                    "native_pet_spellbook_and_autocast_identity_not_yet_content_addressed"
-                ],
-            }
+            pet_runtime = _native_summoned_pet_projection(
+                pet_setup, row["pet_power"]
+            )
         else:
             pet_runtime = {
                 "schema": "phase8_absent_pet_at_scoring_start_v1",

@@ -4,7 +4,7 @@
   "provider_repository": "https://github.com/wowsims/cata",
   "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
   "fixture_contract_path": "experiments/configs/phase8_calibration_fixture_contract_v1.materialized.json",
-  "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+  "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
   "request_count": 16,
   "requests": [
     {
@@ -14,7 +14,7 @@
         "target_spec": "affliction_warlock",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "upstream_test": {
           "path": "sim/warlock/affliction/affliction_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/affliction_warlock.test.go",
@@ -39,12 +39,12 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "6487c3d62f4ad437510acc8f2e76a82560791118a6e91a3967187fcb494e7c2d",
+      "source_contract_sha256": "19c9f391ce7f13590c289dab393f6681f9f6f8eaa404ec361c2b24e4ade5f1e9",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "target_spec": "affliction_warlock",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
-        "source_contract_sha256": "6487c3d62f4ad437510acc8f2e76a82560791118a6e91a3967187fcb494e7c2d",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
+        "source_contract_sha256": "19c9f391ce7f13590c289dab393f6681f9f6f8eaa404ec361c2b24e4ade5f1e9",
         "source_selector": {
           "test_path": "sim/warlock/affliction/affliction_test.go",
           "suite_name": "TestAffliction",
@@ -409,12 +409,84 @@
             "unclassified": []
           },
           "pet_setup": {
+            "created_by_spell_id": 691,
             "creature_entry": 417,
             "family_id": 15,
+            "identity_evidence": {
+              "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695",
+              "dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc"
+            },
             "kind": "felhunter",
             "pet_type": 0,
             "required": true,
-            "required_autocast_spell_ids": [],
+            "required_autocast_spell_ids": [
+              19647,
+              54049,
+              54424
+            ],
+            "spellbook": [
+              {
+                "active": 1,
+                "spell_id": 18730,
+                "type": 1
+              },
+              {
+                "active": 1,
+                "spell_id": 18738,
+                "type": 1
+              },
+              {
+                "active": 1,
+                "spell_id": 18739,
+                "type": 1
+              },
+              {
+                "active": 1,
+                "spell_id": 19007,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 19505,
+                "type": 0
+              },
+              {
+                "active": 193,
+                "spell_id": 19647,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 32233,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 35695,
+                "type": 1
+              },
+              {
+                "active": 1,
+                "spell_id": 35697,
+                "type": 1
+              },
+              {
+                "active": 193,
+                "spell_id": 54049,
+                "type": 0
+              },
+              {
+                "active": 193,
+                "spell_id": 54424,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91702,
+                "type": 1
+              }
+            ],
+            "spellbook_sha256": "a79474903199c668e360560dde291357bfedd88f2369d72a9a0f47be1196b0cc",
             "summon_spell_id": 691,
             "uptime": 1.0
           },
@@ -1077,12 +1149,84 @@
                 "required_aura_spell_ids": []
               },
               "pet_setup": {
+                "created_by_spell_id": 691,
                 "creature_entry": 417,
                 "family_id": 15,
+                "identity_evidence": {
+                  "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695",
+                  "dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc"
+                },
                 "kind": "felhunter",
                 "pet_type": 0,
                 "required": true,
-                "required_autocast_spell_ids": [],
+                "required_autocast_spell_ids": [
+                  19647,
+                  54049,
+                  54424
+                ],
+                "spellbook": [
+                  {
+                    "active": 1,
+                    "spell_id": 18730,
+                    "type": 1
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 18738,
+                    "type": 1
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 18739,
+                    "type": 1
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 19007,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 19505,
+                    "type": 0
+                  },
+                  {
+                    "active": 193,
+                    "spell_id": 19647,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 32233,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 35695,
+                    "type": 1
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 35697,
+                    "type": 1
+                  },
+                  {
+                    "active": 193,
+                    "spell_id": 54049,
+                    "type": 0
+                  },
+                  {
+                    "active": 193,
+                    "spell_id": 54424,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 91702,
+                    "type": 1
+                  }
+                ],
+                "spellbook_sha256": "a79474903199c668e360560dde291357bfedd88f2369d72a9a0f47be1196b0cc",
                 "summon_spell_id": 691,
                 "uptime": 1.0
               }
@@ -1262,12 +1406,84 @@
                 "required_aura_spell_ids": []
               },
               "pet_setup": {
+                "created_by_spell_id": 691,
                 "creature_entry": 417,
                 "family_id": 15,
+                "identity_evidence": {
+                  "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695",
+                  "dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc"
+                },
                 "kind": "felhunter",
                 "pet_type": 0,
                 "required": true,
-                "required_autocast_spell_ids": [],
+                "required_autocast_spell_ids": [
+                  19647,
+                  54049,
+                  54424
+                ],
+                "spellbook": [
+                  {
+                    "active": 1,
+                    "spell_id": 18730,
+                    "type": 1
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 18738,
+                    "type": 1
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 18739,
+                    "type": 1
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 19007,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 19505,
+                    "type": 0
+                  },
+                  {
+                    "active": 193,
+                    "spell_id": 19647,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 32233,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 35695,
+                    "type": 1
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 35697,
+                    "type": 1
+                  },
+                  {
+                    "active": 193,
+                    "spell_id": 54049,
+                    "type": 0
+                  },
+                  {
+                    "active": 193,
+                    "spell_id": 54424,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 91702,
+                    "type": 1
+                  }
+                ],
+                "spellbook_sha256": "a79474903199c668e360560dde291357bfedd88f2369d72a9a0f47be1196b0cc",
                 "summon_spell_id": 691,
                 "uptime": 1.0
               }
@@ -1306,17 +1522,97 @@
             "items": []
           },
           "pet_setup": {
-            "blockers": [
-              "native_pet_spellbook_and_autocast_identity_not_yet_content_addressed"
+            "pet_alive": true,
+            "pet_autocast_spell_ids": [
+              19647,
+              54049,
+              54424
             ],
-            "creature_entry": 417,
-            "family_id": 15,
-            "kind": "felhunter",
+            "pet_created_by_spell_id": 691,
+            "pet_entry": 417,
+            "pet_family_id": 15,
+            "pet_in_world": true,
+            "pet_native_cast_finished": true,
+            "pet_native_cast_observed": true,
+            "pet_native_cast_submitted": true,
+            "pet_owned": true,
+            "pet_permanent": true,
+            "pet_power_type": 0,
+            "pet_present": true,
+            "pet_spell_known": true,
+            "pet_spellbook": [
+              {
+                "active": 1,
+                "spell_id": 18730,
+                "type": 1
+              },
+              {
+                "active": 1,
+                "spell_id": 18738,
+                "type": 1
+              },
+              {
+                "active": 1,
+                "spell_id": 18739,
+                "type": 1
+              },
+              {
+                "active": 1,
+                "spell_id": 19007,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 19505,
+                "type": 0
+              },
+              {
+                "active": 193,
+                "spell_id": 19647,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 32233,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 35695,
+                "type": 1
+              },
+              {
+                "active": 1,
+                "spell_id": 35697,
+                "type": 1
+              },
+              {
+                "active": 193,
+                "spell_id": 54049,
+                "type": 0
+              },
+              {
+                "active": 193,
+                "spell_id": 54424,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91702,
+                "type": 1
+              }
+            ],
+            "pet_spellbook_sha256": "a79474903199c668e360560dde291357bfedd88f2369d72a9a0f47be1196b0cc",
             "pet_type": 0,
             "required": true,
-            "required_autocast_spell_ids": [],
-            "runtime_projection_complete": false,
-            "summon_spell_id": 691,
+            "required_pet_created_by_spell_id": 691,
+            "required_pet_entry": 417,
+            "required_pet_family_id": 15,
+            "required_pet_power_type": 0,
+            "required_pet_spell_id": 691,
+            "required_pet_type": 0,
+            "runtime_projection_complete": true,
+            "schema": "phase8_native_summoned_pet_identity_v1",
             "uptime": 1.0
           },
           "prepot": {
@@ -1447,13 +1743,13 @@
           }
         }
       },
-      "request_sha256": "b853ec98e4c02c395caf49a0d90b869c90d2a84dc51e66e6b050077c36e8eb87",
+      "request_sha256": "61936c8f14b672e1809738d66c8b883c9ed4a97d38b67da2c537efaa18c48e2d",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "b853ec98e4c02c395caf49a0d90b869c90d2a84dc51e66e6b050077c36e8eb87",
+          "request_contract_sha256": "61936c8f14b672e1809738d66c8b883c9ed4a97d38b67da2c537efaa18c48e2d",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -1487,9 +1783,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "6487c3d62f4ad437510acc8f2e76a82560791118a6e91a3967187fcb494e7c2d",
-        "request_sha256": "b853ec98e4c02c395caf49a0d90b869c90d2a84dc51e66e6b050077c36e8eb87",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "source_contract_sha256": "19c9f391ce7f13590c289dab393f6681f9f6f8eaa404ec361c2b24e4ade5f1e9",
+        "request_sha256": "61936c8f14b672e1809738d66c8b883c9ed4a97d38b67da2c537efaa18c48e2d",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "source_setup": {
           "race": 1,
           "gear": {
@@ -1815,12 +2111,84 @@
             "simulator_swing_speed_seconds": 0
           },
           "pet_setup": {
+            "created_by_spell_id": 691,
             "creature_entry": 417,
             "family_id": 15,
+            "identity_evidence": {
+              "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695",
+              "dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc"
+            },
             "kind": "felhunter",
             "pet_type": 0,
             "required": true,
-            "required_autocast_spell_ids": [],
+            "required_autocast_spell_ids": [
+              19647,
+              54049,
+              54424
+            ],
+            "spellbook": [
+              {
+                "active": 1,
+                "spell_id": 18730,
+                "type": 1
+              },
+              {
+                "active": 1,
+                "spell_id": 18738,
+                "type": 1
+              },
+              {
+                "active": 1,
+                "spell_id": 18739,
+                "type": 1
+              },
+              {
+                "active": 1,
+                "spell_id": 19007,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 19505,
+                "type": 0
+              },
+              {
+                "active": 193,
+                "spell_id": 19647,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 32233,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 35695,
+                "type": 1
+              },
+              {
+                "active": 1,
+                "spell_id": 35697,
+                "type": 1
+              },
+              {
+                "active": 193,
+                "spell_id": 54049,
+                "type": 0
+              },
+              {
+                "active": 193,
+                "spell_id": 54424,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91702,
+                "type": 1
+              }
+            ],
+            "spellbook_sha256": "a79474903199c668e360560dde291357bfedd88f2369d72a9a0f47be1196b0cc",
             "summon_spell_id": 691,
             "uptime": 1.0
           },
@@ -2372,12 +2740,84 @@
                   "required_aura_spell_ids": []
                 },
                 "pet_setup": {
+                  "created_by_spell_id": 691,
                   "creature_entry": 417,
                   "family_id": 15,
+                  "identity_evidence": {
+                    "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695",
+                    "dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc"
+                  },
                   "kind": "felhunter",
                   "pet_type": 0,
                   "required": true,
-                  "required_autocast_spell_ids": [],
+                  "required_autocast_spell_ids": [
+                    19647,
+                    54049,
+                    54424
+                  ],
+                  "spellbook": [
+                    {
+                      "active": 1,
+                      "spell_id": 18730,
+                      "type": 1
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 18738,
+                      "type": 1
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 18739,
+                      "type": 1
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 19007,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 19505,
+                      "type": 0
+                    },
+                    {
+                      "active": 193,
+                      "spell_id": 19647,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 32233,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 35695,
+                      "type": 1
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 35697,
+                      "type": 1
+                    },
+                    {
+                      "active": 193,
+                      "spell_id": 54049,
+                      "type": 0
+                    },
+                    {
+                      "active": 193,
+                      "spell_id": 54424,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91702,
+                      "type": 1
+                    }
+                  ],
+                  "spellbook_sha256": "a79474903199c668e360560dde291357bfedd88f2369d72a9a0f47be1196b0cc",
                   "summon_spell_id": 691,
                   "uptime": 1.0
                 }
@@ -2482,8 +2922,8 @@
             }
           }
         },
-        "source_setup_sha256": "e55548f461fede2dc1e8316c6760cb7ee0085ba11603a1af6d6fcd7e540d6bf0",
-        "request_condition_projection_sha256": "0a45fac10f346ffc172a0d8c5365fb1804f83dcf26e086f4000dc911899a1d52",
+        "source_setup_sha256": "16216ec50ed8cd93e52dcb1721c6c93a300a5a6eba5f21d0883d674267a64bd9",
+        "request_condition_projection_sha256": "2d11db3f69e4270d1dddfa92e9ba56ac87d5abc88d849975a535860dcaf17d9f",
         "requirements": [
           {
             "id": "gear_manifest",
@@ -2973,12 +3413,84 @@
                   "required_aura_spell_ids": []
                 },
                 "pet_setup": {
+                  "created_by_spell_id": 691,
                   "creature_entry": 417,
                   "family_id": 15,
+                  "identity_evidence": {
+                    "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695",
+                    "dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc"
+                  },
                   "kind": "felhunter",
                   "pet_type": 0,
                   "required": true,
-                  "required_autocast_spell_ids": [],
+                  "required_autocast_spell_ids": [
+                    19647,
+                    54049,
+                    54424
+                  ],
+                  "spellbook": [
+                    {
+                      "active": 1,
+                      "spell_id": 18730,
+                      "type": 1
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 18738,
+                      "type": 1
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 18739,
+                      "type": 1
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 19007,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 19505,
+                      "type": 0
+                    },
+                    {
+                      "active": 193,
+                      "spell_id": 19647,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 32233,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 35695,
+                      "type": 1
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 35697,
+                      "type": 1
+                    },
+                    {
+                      "active": 193,
+                      "spell_id": 54049,
+                      "type": 0
+                    },
+                    {
+                      "active": 193,
+                      "spell_id": 54424,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91702,
+                      "type": 1
+                    }
+                  ],
+                  "spellbook_sha256": "a79474903199c668e360560dde291357bfedd88f2369d72a9a0f47be1196b0cc",
                   "summon_spell_id": 691,
                   "uptime": 1.0
                 }
@@ -3022,12 +3534,84 @@
                   "required_aura_spell_ids": []
                 },
                 "pet_setup": {
+                  "created_by_spell_id": 691,
                   "creature_entry": 417,
                   "family_id": 15,
+                  "identity_evidence": {
+                    "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695",
+                    "dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc"
+                  },
                   "kind": "felhunter",
                   "pet_type": 0,
                   "required": true,
-                  "required_autocast_spell_ids": [],
+                  "required_autocast_spell_ids": [
+                    19647,
+                    54049,
+                    54424
+                  ],
+                  "spellbook": [
+                    {
+                      "active": 1,
+                      "spell_id": 18730,
+                      "type": 1
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 18738,
+                      "type": 1
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 18739,
+                      "type": 1
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 19007,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 19505,
+                      "type": 0
+                    },
+                    {
+                      "active": 193,
+                      "spell_id": 19647,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 32233,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 35695,
+                      "type": 1
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 35697,
+                      "type": 1
+                    },
+                    {
+                      "active": 193,
+                      "spell_id": 54049,
+                      "type": 0
+                    },
+                    {
+                      "active": 193,
+                      "spell_id": 54424,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91702,
+                      "type": 1
+                    }
+                  ],
+                  "spellbook_sha256": "a79474903199c668e360560dde291357bfedd88f2369d72a9a0f47be1196b0cc",
                   "summon_spell_id": 691,
                   "uptime": 1.0
                 }
@@ -3081,32 +3665,192 @@
             "static_verifiability": "fixture_contract_exact",
             "planned_path": "fixture.runtime_expected.pet_setup",
             "planned_equals": {
-              "blockers": [
-                "native_pet_spellbook_and_autocast_identity_not_yet_content_addressed"
+              "pet_alive": true,
+              "pet_autocast_spell_ids": [
+                19647,
+                54049,
+                54424
               ],
-              "creature_entry": 417,
-              "family_id": 15,
-              "kind": "felhunter",
+              "pet_created_by_spell_id": 691,
+              "pet_entry": 417,
+              "pet_family_id": 15,
+              "pet_in_world": true,
+              "pet_native_cast_finished": true,
+              "pet_native_cast_observed": true,
+              "pet_native_cast_submitted": true,
+              "pet_owned": true,
+              "pet_permanent": true,
+              "pet_power_type": 0,
+              "pet_present": true,
+              "pet_spell_known": true,
+              "pet_spellbook": [
+                {
+                  "active": 1,
+                  "spell_id": 18730,
+                  "type": 1
+                },
+                {
+                  "active": 1,
+                  "spell_id": 18738,
+                  "type": 1
+                },
+                {
+                  "active": 1,
+                  "spell_id": 18739,
+                  "type": 1
+                },
+                {
+                  "active": 1,
+                  "spell_id": 19007,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 19505,
+                  "type": 0
+                },
+                {
+                  "active": 193,
+                  "spell_id": 19647,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 32233,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 35695,
+                  "type": 1
+                },
+                {
+                  "active": 1,
+                  "spell_id": 35697,
+                  "type": 1
+                },
+                {
+                  "active": 193,
+                  "spell_id": 54049,
+                  "type": 0
+                },
+                {
+                  "active": 193,
+                  "spell_id": 54424,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 91702,
+                  "type": 1
+                }
+              ],
+              "pet_spellbook_sha256": "a79474903199c668e360560dde291357bfedd88f2369d72a9a0f47be1196b0cc",
               "pet_type": 0,
               "required": true,
-              "required_autocast_spell_ids": [],
-              "runtime_projection_complete": false,
-              "summon_spell_id": 691,
+              "required_pet_created_by_spell_id": 691,
+              "required_pet_entry": 417,
+              "required_pet_family_id": 15,
+              "required_pet_power_type": 0,
+              "required_pet_spell_id": 691,
+              "required_pet_type": 0,
+              "runtime_projection_complete": true,
+              "schema": "phase8_native_summoned_pet_identity_v1",
               "uptime": 1.0
             },
             "path": "runtime.pet_setup_projection",
             "equals": {
-              "blockers": [
-                "native_pet_spellbook_and_autocast_identity_not_yet_content_addressed"
+              "pet_alive": true,
+              "pet_autocast_spell_ids": [
+                19647,
+                54049,
+                54424
               ],
-              "creature_entry": 417,
-              "family_id": 15,
-              "kind": "felhunter",
+              "pet_created_by_spell_id": 691,
+              "pet_entry": 417,
+              "pet_family_id": 15,
+              "pet_in_world": true,
+              "pet_native_cast_finished": true,
+              "pet_native_cast_observed": true,
+              "pet_native_cast_submitted": true,
+              "pet_owned": true,
+              "pet_permanent": true,
+              "pet_power_type": 0,
+              "pet_present": true,
+              "pet_spell_known": true,
+              "pet_spellbook": [
+                {
+                  "active": 1,
+                  "spell_id": 18730,
+                  "type": 1
+                },
+                {
+                  "active": 1,
+                  "spell_id": 18738,
+                  "type": 1
+                },
+                {
+                  "active": 1,
+                  "spell_id": 18739,
+                  "type": 1
+                },
+                {
+                  "active": 1,
+                  "spell_id": 19007,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 19505,
+                  "type": 0
+                },
+                {
+                  "active": 193,
+                  "spell_id": 19647,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 32233,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 35695,
+                  "type": 1
+                },
+                {
+                  "active": 1,
+                  "spell_id": 35697,
+                  "type": 1
+                },
+                {
+                  "active": 193,
+                  "spell_id": 54049,
+                  "type": 0
+                },
+                {
+                  "active": 193,
+                  "spell_id": 54424,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 91702,
+                  "type": 1
+                }
+              ],
+              "pet_spellbook_sha256": "a79474903199c668e360560dde291357bfedd88f2369d72a9a0f47be1196b0cc",
               "pet_type": 0,
               "required": true,
-              "required_autocast_spell_ids": [],
-              "runtime_projection_complete": false,
-              "summon_spell_id": 691,
+              "required_pet_created_by_spell_id": 691,
+              "required_pet_entry": 417,
+              "required_pet_family_id": 15,
+              "required_pet_power_type": 0,
+              "required_pet_spell_id": 691,
+              "required_pet_type": 0,
+              "runtime_projection_complete": true,
+              "schema": "phase8_native_summoned_pet_identity_v1",
               "uptime": 1.0
             }
           },
@@ -3253,7 +3997,7 @@
         "target_spec": "arms_warrior",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "upstream_test": {
           "path": "sim/warrior/arms/arms_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/arms_warrior.test.go",
@@ -3278,12 +4022,12 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "c4c2b051a6694b881a70cd9c42a7bfa6a8ea69f073892467361004c474ed5666",
+      "source_contract_sha256": "cc06d48dee24a12709e562ace60e22247694b8ded2dcf429a0295367eab090aa",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "target_spec": "arms_warrior",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
-        "source_contract_sha256": "c4c2b051a6694b881a70cd9c42a7bfa6a8ea69f073892467361004c474ed5666",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
+        "source_contract_sha256": "cc06d48dee24a12709e562ace60e22247694b8ded2dcf429a0295367eab090aa",
         "source_selector": {
           "test_path": "sim/warrior/arms/arms_test.go",
           "suite_name": "TestArms",
@@ -4661,13 +5405,13 @@
           }
         }
       },
-      "request_sha256": "76030648c1a8df3800f1dec26bab055589b733368aa94cda5b82edd3cfc8635d",
+      "request_sha256": "ba6cae4e0f68b18afccbbd809f95265a02d45376a8c234228853ed434ced80ce",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "76030648c1a8df3800f1dec26bab055589b733368aa94cda5b82edd3cfc8635d",
+          "request_contract_sha256": "ba6cae4e0f68b18afccbbd809f95265a02d45376a8c234228853ed434ced80ce",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -4701,9 +5445,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "c4c2b051a6694b881a70cd9c42a7bfa6a8ea69f073892467361004c474ed5666",
-        "request_sha256": "76030648c1a8df3800f1dec26bab055589b733368aa94cda5b82edd3cfc8635d",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "source_contract_sha256": "cc06d48dee24a12709e562ace60e22247694b8ded2dcf429a0295367eab090aa",
+        "request_sha256": "ba6cae4e0f68b18afccbbd809f95265a02d45376a8c234228853ed434ced80ce",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "source_setup": {
           "race": 1,
           "gear": {
@@ -6448,7 +7192,7 @@
         "target_spec": "assassination_rogue",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "upstream_test": {
           "path": "sim/rogue/assassination/assassination_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/assassination_rogue.test.go",
@@ -6473,12 +7217,12 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "b486d5883b2a970f2c6963974aee11feaecc9a84e10ff851db294c72ceaaa924",
+      "source_contract_sha256": "91ea3c78a2b3698cc2a878558181cc33cf7af7338029922b6ef6e7a74cf0b2fc",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "target_spec": "assassination_rogue",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
-        "source_contract_sha256": "b486d5883b2a970f2c6963974aee11feaecc9a84e10ff851db294c72ceaaa924",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
+        "source_contract_sha256": "91ea3c78a2b3698cc2a878558181cc33cf7af7338029922b6ef6e7a74cf0b2fc",
         "source_selector": {
           "test_path": "sim/rogue/assassination/assassination_test.go",
           "suite_name": "TestAssassination",
@@ -7859,13 +8603,13 @@
           }
         }
       },
-      "request_sha256": "3ed3bf8ea9b0c76862e36a1dc29227f822ce2f0afec36480b4a8b1b47db4bb30",
+      "request_sha256": "1a0a8220b9e2ea56f522f55274d3c86353f966ddad80381dd34b168681d0a84d",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "3ed3bf8ea9b0c76862e36a1dc29227f822ce2f0afec36480b4a8b1b47db4bb30",
+          "request_contract_sha256": "1a0a8220b9e2ea56f522f55274d3c86353f966ddad80381dd34b168681d0a84d",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -7899,9 +8643,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "b486d5883b2a970f2c6963974aee11feaecc9a84e10ff851db294c72ceaaa924",
-        "request_sha256": "3ed3bf8ea9b0c76862e36a1dc29227f822ce2f0afec36480b4a8b1b47db4bb30",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "source_contract_sha256": "91ea3c78a2b3698cc2a878558181cc33cf7af7338029922b6ef6e7a74cf0b2fc",
+        "request_sha256": "1a0a8220b9e2ea56f522f55274d3c86353f966ddad80381dd34b168681d0a84d",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "source_setup": {
           "race": 1,
           "gear": {
@@ -9629,7 +10373,7 @@
         "target_spec": "balance_druid",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "upstream_test": {
           "path": "sim/druid/balance/balance_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_balance_druid.test.go",
@@ -9654,12 +10398,12 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "e212d23578f72e3eda5845490e0058464581573d8f8ff9aedd6b9d53cfb8b2d5",
+      "source_contract_sha256": "2b2c5d6649b33c9088b5614387c2785e79dbcbbdd95ad3c83f7daf7822cd2f3a",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "target_spec": "balance_druid",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
-        "source_contract_sha256": "e212d23578f72e3eda5845490e0058464581573d8f8ff9aedd6b9d53cfb8b2d5",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
+        "source_contract_sha256": "2b2c5d6649b33c9088b5614387c2785e79dbcbbdd95ad3c83f7daf7822cd2f3a",
         "source_selector": {
           "test_path": "sim/druid/balance/balance_test.go",
           "suite_name": "TestBalance",
@@ -11059,13 +11803,13 @@
           }
         }
       },
-      "request_sha256": "a2bf987164c49f66065259d56b0b71345d213df27004110fdfd67f095ee15646",
+      "request_sha256": "b283207682abbcc2d2770f06e4af6905f42b53cdb1da7e98ee6b1a4727585808",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "a2bf987164c49f66065259d56b0b71345d213df27004110fdfd67f095ee15646",
+          "request_contract_sha256": "b283207682abbcc2d2770f06e4af6905f42b53cdb1da7e98ee6b1a4727585808",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -11099,9 +11843,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "e212d23578f72e3eda5845490e0058464581573d8f8ff9aedd6b9d53cfb8b2d5",
-        "request_sha256": "a2bf987164c49f66065259d56b0b71345d213df27004110fdfd67f095ee15646",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "source_contract_sha256": "2b2c5d6649b33c9088b5614387c2785e79dbcbbdd95ad3c83f7daf7822cd2f3a",
+        "request_sha256": "b283207682abbcc2d2770f06e4af6905f42b53cdb1da7e98ee6b1a4727585808",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "source_setup": {
           "race": 4,
           "gear": {
@@ -12879,7 +13623,7 @@
         "target_spec": "combat_rogue",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "upstream_test": {
           "path": "sim/rogue/combat/combat_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/combat_rogue.test.go",
@@ -12904,12 +13648,12 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "cf43388200161b6649c2e830def868c50f782060a1ff0d1fe491bcfecdbc2e0e",
+      "source_contract_sha256": "ea6bba80dd05e4737094cac41919534d541390a22548d624a0fb9a45ba55c4c7",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "target_spec": "combat_rogue",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
-        "source_contract_sha256": "cf43388200161b6649c2e830def868c50f782060a1ff0d1fe491bcfecdbc2e0e",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
+        "source_contract_sha256": "ea6bba80dd05e4737094cac41919534d541390a22548d624a0fb9a45ba55c4c7",
         "source_selector": {
           "test_path": "sim/rogue/combat/combat_test.go",
           "suite_name": "TestCombat",
@@ -14283,13 +15027,13 @@
           }
         }
       },
-      "request_sha256": "ad520dc04c6f51147b930623f896a992602a0afa456ef48f83457585f0a8c728",
+      "request_sha256": "2a4a1812222ed122debc34725dbd5448f31d1ffb0df62763a1bf8b20eb2a957e",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "ad520dc04c6f51147b930623f896a992602a0afa456ef48f83457585f0a8c728",
+          "request_contract_sha256": "2a4a1812222ed122debc34725dbd5448f31d1ffb0df62763a1bf8b20eb2a957e",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -14323,9 +15067,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "cf43388200161b6649c2e830def868c50f782060a1ff0d1fe491bcfecdbc2e0e",
-        "request_sha256": "ad520dc04c6f51147b930623f896a992602a0afa456ef48f83457585f0a8c728",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "source_contract_sha256": "ea6bba80dd05e4737094cac41919534d541390a22548d624a0fb9a45ba55c4c7",
+        "request_sha256": "2a4a1812222ed122debc34725dbd5448f31d1ffb0df62763a1bf8b20eb2a957e",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "source_setup": {
           "race": 1,
           "gear": {
@@ -16042,7 +16786,7 @@
         "target_spec": "demonology_warlock",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "upstream_test": {
           "path": "sim/warlock/demonology/demonology_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/demonology_warlock.test.go",
@@ -16067,12 +16811,12 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "eb15db788c3fdf6e554a1d3d4939a2d9a2d50d65db061cd5b57d3b2095f98107",
+      "source_contract_sha256": "f9c585e904f071f13897a7dcfefdf07262532592a70f49bb83590522b8abce30",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "target_spec": "demonology_warlock",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
-        "source_contract_sha256": "eb15db788c3fdf6e554a1d3d4939a2d9a2d50d65db061cd5b57d3b2095f98107",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
+        "source_contract_sha256": "f9c585e904f071f13897a7dcfefdf07262532592a70f49bb83590522b8abce30",
         "source_selector": {
           "test_path": "sim/warlock/demonology/demonology_test.go",
           "suite_name": "TestDemonology",
@@ -16449,12 +17193,78 @@
             "unclassified": []
           },
           "pet_setup": {
+            "created_by_spell_id": 30146,
             "creature_entry": 17252,
             "family_id": 29,
+            "identity_evidence": {
+              "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695",
+              "dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc"
+            },
             "kind": "felguard",
             "pet_type": 0,
             "required": true,
-            "required_autocast_spell_ids": [],
+            "required_autocast_spell_ids": [
+              30151,
+              30213
+            ],
+            "spellbook": [
+              {
+                "active": 1,
+                "spell_id": 30147,
+                "type": 1
+              },
+              {
+                "active": 1,
+                "spell_id": 30148,
+                "type": 1
+              },
+              {
+                "active": 1,
+                "spell_id": 30149,
+                "type": 1
+              },
+              {
+                "active": 193,
+                "spell_id": 30151,
+                "type": 0
+              },
+              {
+                "active": 193,
+                "spell_id": 30213,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 32233,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 35695,
+                "type": 1
+              },
+              {
+                "active": 1,
+                "spell_id": 35697,
+                "type": 1
+              },
+              {
+                "active": 1,
+                "spell_id": 89751,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 89766,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91702,
+                "type": 1
+              }
+            ],
+            "spellbook_sha256": "1d412525118a6ef2ec72aa75977f9139e355d4998a902c42748e671c9d763005",
             "summon_spell_id": 30146,
             "uptime": 1.0
           },
@@ -17117,12 +17927,78 @@
                 "required_aura_spell_ids": []
               },
               "pet_setup": {
+                "created_by_spell_id": 30146,
                 "creature_entry": 17252,
                 "family_id": 29,
+                "identity_evidence": {
+                  "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695",
+                  "dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc"
+                },
                 "kind": "felguard",
                 "pet_type": 0,
                 "required": true,
-                "required_autocast_spell_ids": [],
+                "required_autocast_spell_ids": [
+                  30151,
+                  30213
+                ],
+                "spellbook": [
+                  {
+                    "active": 1,
+                    "spell_id": 30147,
+                    "type": 1
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 30148,
+                    "type": 1
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 30149,
+                    "type": 1
+                  },
+                  {
+                    "active": 193,
+                    "spell_id": 30151,
+                    "type": 0
+                  },
+                  {
+                    "active": 193,
+                    "spell_id": 30213,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 32233,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 35695,
+                    "type": 1
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 35697,
+                    "type": 1
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 89751,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 89766,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 91702,
+                    "type": 1
+                  }
+                ],
+                "spellbook_sha256": "1d412525118a6ef2ec72aa75977f9139e355d4998a902c42748e671c9d763005",
                 "summon_spell_id": 30146,
                 "uptime": 1.0
               }
@@ -17302,12 +18178,78 @@
                 "required_aura_spell_ids": []
               },
               "pet_setup": {
+                "created_by_spell_id": 30146,
                 "creature_entry": 17252,
                 "family_id": 29,
+                "identity_evidence": {
+                  "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695",
+                  "dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc"
+                },
                 "kind": "felguard",
                 "pet_type": 0,
                 "required": true,
-                "required_autocast_spell_ids": [],
+                "required_autocast_spell_ids": [
+                  30151,
+                  30213
+                ],
+                "spellbook": [
+                  {
+                    "active": 1,
+                    "spell_id": 30147,
+                    "type": 1
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 30148,
+                    "type": 1
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 30149,
+                    "type": 1
+                  },
+                  {
+                    "active": 193,
+                    "spell_id": 30151,
+                    "type": 0
+                  },
+                  {
+                    "active": 193,
+                    "spell_id": 30213,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 32233,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 35695,
+                    "type": 1
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 35697,
+                    "type": 1
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 89751,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 89766,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 91702,
+                    "type": 1
+                  }
+                ],
+                "spellbook_sha256": "1d412525118a6ef2ec72aa75977f9139e355d4998a902c42748e671c9d763005",
                 "summon_spell_id": 30146,
                 "uptime": 1.0
               }
@@ -17346,17 +18288,91 @@
             "items": []
           },
           "pet_setup": {
-            "blockers": [
-              "native_pet_spellbook_and_autocast_identity_not_yet_content_addressed"
+            "pet_alive": true,
+            "pet_autocast_spell_ids": [
+              30151,
+              30213
             ],
-            "creature_entry": 17252,
-            "family_id": 29,
-            "kind": "felguard",
+            "pet_created_by_spell_id": 30146,
+            "pet_entry": 17252,
+            "pet_family_id": 29,
+            "pet_in_world": true,
+            "pet_native_cast_finished": true,
+            "pet_native_cast_observed": true,
+            "pet_native_cast_submitted": true,
+            "pet_owned": true,
+            "pet_permanent": true,
+            "pet_power_type": 0,
+            "pet_present": true,
+            "pet_spell_known": true,
+            "pet_spellbook": [
+              {
+                "active": 1,
+                "spell_id": 30147,
+                "type": 1
+              },
+              {
+                "active": 1,
+                "spell_id": 30148,
+                "type": 1
+              },
+              {
+                "active": 1,
+                "spell_id": 30149,
+                "type": 1
+              },
+              {
+                "active": 193,
+                "spell_id": 30151,
+                "type": 0
+              },
+              {
+                "active": 193,
+                "spell_id": 30213,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 32233,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 35695,
+                "type": 1
+              },
+              {
+                "active": 1,
+                "spell_id": 35697,
+                "type": 1
+              },
+              {
+                "active": 1,
+                "spell_id": 89751,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 89766,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91702,
+                "type": 1
+              }
+            ],
+            "pet_spellbook_sha256": "1d412525118a6ef2ec72aa75977f9139e355d4998a902c42748e671c9d763005",
             "pet_type": 0,
             "required": true,
-            "required_autocast_spell_ids": [],
-            "runtime_projection_complete": false,
-            "summon_spell_id": 30146,
+            "required_pet_created_by_spell_id": 30146,
+            "required_pet_entry": 17252,
+            "required_pet_family_id": 29,
+            "required_pet_power_type": 0,
+            "required_pet_spell_id": 30146,
+            "required_pet_type": 0,
+            "runtime_projection_complete": true,
+            "schema": "phase8_native_summoned_pet_identity_v1",
             "uptime": 1.0
           },
           "prepot": {
@@ -17487,13 +18503,13 @@
           }
         }
       },
-      "request_sha256": "7b0322fad641b4e0344ee45f5dce4725feed28cc461d4ecc33bc30956bc6b8b1",
+      "request_sha256": "1e48a3c13bf9628c30713ee3efcda5a3db27f0ce3fe561994897f1e1e395573b",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "7b0322fad641b4e0344ee45f5dce4725feed28cc461d4ecc33bc30956bc6b8b1",
+          "request_contract_sha256": "1e48a3c13bf9628c30713ee3efcda5a3db27f0ce3fe561994897f1e1e395573b",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -17527,9 +18543,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "eb15db788c3fdf6e554a1d3d4939a2d9a2d50d65db061cd5b57d3b2095f98107",
-        "request_sha256": "7b0322fad641b4e0344ee45f5dce4725feed28cc461d4ecc33bc30956bc6b8b1",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "source_contract_sha256": "f9c585e904f071f13897a7dcfefdf07262532592a70f49bb83590522b8abce30",
+        "request_sha256": "1e48a3c13bf9628c30713ee3efcda5a3db27f0ce3fe561994897f1e1e395573b",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "source_setup": {
           "race": 2,
           "gear": {
@@ -17867,12 +18883,78 @@
             "simulator_swing_speed_seconds": 0
           },
           "pet_setup": {
+            "created_by_spell_id": 30146,
             "creature_entry": 17252,
             "family_id": 29,
+            "identity_evidence": {
+              "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695",
+              "dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc"
+            },
             "kind": "felguard",
             "pet_type": 0,
             "required": true,
-            "required_autocast_spell_ids": [],
+            "required_autocast_spell_ids": [
+              30151,
+              30213
+            ],
+            "spellbook": [
+              {
+                "active": 1,
+                "spell_id": 30147,
+                "type": 1
+              },
+              {
+                "active": 1,
+                "spell_id": 30148,
+                "type": 1
+              },
+              {
+                "active": 1,
+                "spell_id": 30149,
+                "type": 1
+              },
+              {
+                "active": 193,
+                "spell_id": 30151,
+                "type": 0
+              },
+              {
+                "active": 193,
+                "spell_id": 30213,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 32233,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 35695,
+                "type": 1
+              },
+              {
+                "active": 1,
+                "spell_id": 35697,
+                "type": 1
+              },
+              {
+                "active": 1,
+                "spell_id": 89751,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 89766,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91702,
+                "type": 1
+              }
+            ],
+            "spellbook_sha256": "1d412525118a6ef2ec72aa75977f9139e355d4998a902c42748e671c9d763005",
             "summon_spell_id": 30146,
             "uptime": 1.0
           },
@@ -18424,12 +19506,78 @@
                   "required_aura_spell_ids": []
                 },
                 "pet_setup": {
+                  "created_by_spell_id": 30146,
                   "creature_entry": 17252,
                   "family_id": 29,
+                  "identity_evidence": {
+                    "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695",
+                    "dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc"
+                  },
                   "kind": "felguard",
                   "pet_type": 0,
                   "required": true,
-                  "required_autocast_spell_ids": [],
+                  "required_autocast_spell_ids": [
+                    30151,
+                    30213
+                  ],
+                  "spellbook": [
+                    {
+                      "active": 1,
+                      "spell_id": 30147,
+                      "type": 1
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 30148,
+                      "type": 1
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 30149,
+                      "type": 1
+                    },
+                    {
+                      "active": 193,
+                      "spell_id": 30151,
+                      "type": 0
+                    },
+                    {
+                      "active": 193,
+                      "spell_id": 30213,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 32233,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 35695,
+                      "type": 1
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 35697,
+                      "type": 1
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 89751,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 89766,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91702,
+                      "type": 1
+                    }
+                  ],
+                  "spellbook_sha256": "1d412525118a6ef2ec72aa75977f9139e355d4998a902c42748e671c9d763005",
                   "summon_spell_id": 30146,
                   "uptime": 1.0
                 }
@@ -18534,8 +19682,8 @@
             }
           }
         },
-        "source_setup_sha256": "6557edf7284dd1b569173d3343cbec1e20381ea207ebba1d309258f8838d5b89",
-        "request_condition_projection_sha256": "10eef47e95ecb786352e657a89c37347217ecfddccb616c907e889c3704525b8",
+        "source_setup_sha256": "bdcb1595d505a8610dad41e26a2c11394ba5547a82f9330475a882fdac79eedc",
+        "request_condition_projection_sha256": "08bcf7fe0ec2e5ccc5f3679a243b4221065bca21f707e1856865bce7f9d96c95",
         "requirements": [
           {
             "id": "gear_manifest",
@@ -19035,12 +20183,78 @@
                   "required_aura_spell_ids": []
                 },
                 "pet_setup": {
+                  "created_by_spell_id": 30146,
                   "creature_entry": 17252,
                   "family_id": 29,
+                  "identity_evidence": {
+                    "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695",
+                    "dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc"
+                  },
                   "kind": "felguard",
                   "pet_type": 0,
                   "required": true,
-                  "required_autocast_spell_ids": [],
+                  "required_autocast_spell_ids": [
+                    30151,
+                    30213
+                  ],
+                  "spellbook": [
+                    {
+                      "active": 1,
+                      "spell_id": 30147,
+                      "type": 1
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 30148,
+                      "type": 1
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 30149,
+                      "type": 1
+                    },
+                    {
+                      "active": 193,
+                      "spell_id": 30151,
+                      "type": 0
+                    },
+                    {
+                      "active": 193,
+                      "spell_id": 30213,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 32233,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 35695,
+                      "type": 1
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 35697,
+                      "type": 1
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 89751,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 89766,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91702,
+                      "type": 1
+                    }
+                  ],
+                  "spellbook_sha256": "1d412525118a6ef2ec72aa75977f9139e355d4998a902c42748e671c9d763005",
                   "summon_spell_id": 30146,
                   "uptime": 1.0
                 }
@@ -19084,12 +20298,78 @@
                   "required_aura_spell_ids": []
                 },
                 "pet_setup": {
+                  "created_by_spell_id": 30146,
                   "creature_entry": 17252,
                   "family_id": 29,
+                  "identity_evidence": {
+                    "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695",
+                    "dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc"
+                  },
                   "kind": "felguard",
                   "pet_type": 0,
                   "required": true,
-                  "required_autocast_spell_ids": [],
+                  "required_autocast_spell_ids": [
+                    30151,
+                    30213
+                  ],
+                  "spellbook": [
+                    {
+                      "active": 1,
+                      "spell_id": 30147,
+                      "type": 1
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 30148,
+                      "type": 1
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 30149,
+                      "type": 1
+                    },
+                    {
+                      "active": 193,
+                      "spell_id": 30151,
+                      "type": 0
+                    },
+                    {
+                      "active": 193,
+                      "spell_id": 30213,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 32233,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 35695,
+                      "type": 1
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 35697,
+                      "type": 1
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 89751,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 89766,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91702,
+                      "type": 1
+                    }
+                  ],
+                  "spellbook_sha256": "1d412525118a6ef2ec72aa75977f9139e355d4998a902c42748e671c9d763005",
                   "summon_spell_id": 30146,
                   "uptime": 1.0
                 }
@@ -19143,32 +20423,180 @@
             "static_verifiability": "fixture_contract_exact",
             "planned_path": "fixture.runtime_expected.pet_setup",
             "planned_equals": {
-              "blockers": [
-                "native_pet_spellbook_and_autocast_identity_not_yet_content_addressed"
+              "pet_alive": true,
+              "pet_autocast_spell_ids": [
+                30151,
+                30213
               ],
-              "creature_entry": 17252,
-              "family_id": 29,
-              "kind": "felguard",
+              "pet_created_by_spell_id": 30146,
+              "pet_entry": 17252,
+              "pet_family_id": 29,
+              "pet_in_world": true,
+              "pet_native_cast_finished": true,
+              "pet_native_cast_observed": true,
+              "pet_native_cast_submitted": true,
+              "pet_owned": true,
+              "pet_permanent": true,
+              "pet_power_type": 0,
+              "pet_present": true,
+              "pet_spell_known": true,
+              "pet_spellbook": [
+                {
+                  "active": 1,
+                  "spell_id": 30147,
+                  "type": 1
+                },
+                {
+                  "active": 1,
+                  "spell_id": 30148,
+                  "type": 1
+                },
+                {
+                  "active": 1,
+                  "spell_id": 30149,
+                  "type": 1
+                },
+                {
+                  "active": 193,
+                  "spell_id": 30151,
+                  "type": 0
+                },
+                {
+                  "active": 193,
+                  "spell_id": 30213,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 32233,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 35695,
+                  "type": 1
+                },
+                {
+                  "active": 1,
+                  "spell_id": 35697,
+                  "type": 1
+                },
+                {
+                  "active": 1,
+                  "spell_id": 89751,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 89766,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 91702,
+                  "type": 1
+                }
+              ],
+              "pet_spellbook_sha256": "1d412525118a6ef2ec72aa75977f9139e355d4998a902c42748e671c9d763005",
               "pet_type": 0,
               "required": true,
-              "required_autocast_spell_ids": [],
-              "runtime_projection_complete": false,
-              "summon_spell_id": 30146,
+              "required_pet_created_by_spell_id": 30146,
+              "required_pet_entry": 17252,
+              "required_pet_family_id": 29,
+              "required_pet_power_type": 0,
+              "required_pet_spell_id": 30146,
+              "required_pet_type": 0,
+              "runtime_projection_complete": true,
+              "schema": "phase8_native_summoned_pet_identity_v1",
               "uptime": 1.0
             },
             "path": "runtime.pet_setup_projection",
             "equals": {
-              "blockers": [
-                "native_pet_spellbook_and_autocast_identity_not_yet_content_addressed"
+              "pet_alive": true,
+              "pet_autocast_spell_ids": [
+                30151,
+                30213
               ],
-              "creature_entry": 17252,
-              "family_id": 29,
-              "kind": "felguard",
+              "pet_created_by_spell_id": 30146,
+              "pet_entry": 17252,
+              "pet_family_id": 29,
+              "pet_in_world": true,
+              "pet_native_cast_finished": true,
+              "pet_native_cast_observed": true,
+              "pet_native_cast_submitted": true,
+              "pet_owned": true,
+              "pet_permanent": true,
+              "pet_power_type": 0,
+              "pet_present": true,
+              "pet_spell_known": true,
+              "pet_spellbook": [
+                {
+                  "active": 1,
+                  "spell_id": 30147,
+                  "type": 1
+                },
+                {
+                  "active": 1,
+                  "spell_id": 30148,
+                  "type": 1
+                },
+                {
+                  "active": 1,
+                  "spell_id": 30149,
+                  "type": 1
+                },
+                {
+                  "active": 193,
+                  "spell_id": 30151,
+                  "type": 0
+                },
+                {
+                  "active": 193,
+                  "spell_id": 30213,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 32233,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 35695,
+                  "type": 1
+                },
+                {
+                  "active": 1,
+                  "spell_id": 35697,
+                  "type": 1
+                },
+                {
+                  "active": 1,
+                  "spell_id": 89751,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 89766,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 91702,
+                  "type": 1
+                }
+              ],
+              "pet_spellbook_sha256": "1d412525118a6ef2ec72aa75977f9139e355d4998a902c42748e671c9d763005",
               "pet_type": 0,
               "required": true,
-              "required_autocast_spell_ids": [],
-              "runtime_projection_complete": false,
-              "summon_spell_id": 30146,
+              "required_pet_created_by_spell_id": 30146,
+              "required_pet_entry": 17252,
+              "required_pet_family_id": 29,
+              "required_pet_power_type": 0,
+              "required_pet_spell_id": 30146,
+              "required_pet_type": 0,
+              "runtime_projection_complete": true,
+              "schema": "phase8_native_summoned_pet_identity_v1",
               "uptime": 1.0
             }
           },
@@ -19315,7 +20743,7 @@
         "target_spec": "elemental_shaman",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "upstream_test": {
           "path": "sim/shaman/elemental/elemental_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/elemental_shaman.test.go",
@@ -19340,12 +20768,12 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "cdbfe4234b843b8c27ca8e4dccd3a4ada8256011508c18317bc389a366d37df0",
+      "source_contract_sha256": "6eae3320b447447336461c4abb5588d788947278a8b49116b05a41486c55c18b",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "target_spec": "elemental_shaman",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
-        "source_contract_sha256": "cdbfe4234b843b8c27ca8e4dccd3a4ada8256011508c18317bc389a366d37df0",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
+        "source_contract_sha256": "6eae3320b447447336461c4abb5588d788947278a8b49116b05a41486c55c18b",
         "source_selector": {
           "test_path": "sim/shaman/elemental/elemental_test.go",
           "suite_name": "TestElemental",
@@ -20819,13 +22247,13 @@
           }
         }
       },
-      "request_sha256": "e443177008de74d7d47b72b35e4b88d3d29a4f2265ba7885b2266374ab18c537",
+      "request_sha256": "f24e8496fd5b218c50ceea46c49156c49a2488aeaadd010ab177a7cb67a45bfe",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "e443177008de74d7d47b72b35e4b88d3d29a4f2265ba7885b2266374ab18c537",
+          "request_contract_sha256": "f24e8496fd5b218c50ceea46c49156c49a2488aeaadd010ab177a7cb67a45bfe",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -20859,9 +22287,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "cdbfe4234b843b8c27ca8e4dccd3a4ada8256011508c18317bc389a366d37df0",
-        "request_sha256": "e443177008de74d7d47b72b35e4b88d3d29a4f2265ba7885b2266374ab18c537",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "source_contract_sha256": "6eae3320b447447336461c4abb5588d788947278a8b49116b05a41486c55c18b",
+        "request_sha256": "f24e8496fd5b218c50ceea46c49156c49a2488aeaadd010ab177a7cb67a45bfe",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "source_setup": {
           "race": 11,
           "gear": {
@@ -22731,7 +24159,7 @@
         "target_spec": "feral_druid_dps",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "upstream_test": {
           "path": "sim/druid/feral/feral_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/feral_druid_dps.test.go",
@@ -22756,12 +24184,12 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "8810a5eda61fef65f192510ec3b7e4b9a0e460702012921b227e9df570c914c7",
+      "source_contract_sha256": "7a6f89a1c6b744a52fc1404c0cf169a47cd5c04262d77ed4712e9cd668d991de",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "target_spec": "feral_druid_dps",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
-        "source_contract_sha256": "8810a5eda61fef65f192510ec3b7e4b9a0e460702012921b227e9df570c914c7",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
+        "source_contract_sha256": "7a6f89a1c6b744a52fc1404c0cf169a47cd5c04262d77ed4712e9cd668d991de",
         "source_selector": {
           "test_path": "sim/druid/feral/feral_test.go",
           "suite_name": "TestFeral",
@@ -24145,13 +25573,13 @@
           }
         }
       },
-      "request_sha256": "c83de75859f48263b4f15630b79ebd812a96ec157af47bf8d3985dc3a36f486a",
+      "request_sha256": "d6273db188d71afb8f9d9be12acb4862d86f18c202f249c591405e9a3643ce88",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "c83de75859f48263b4f15630b79ebd812a96ec157af47bf8d3985dc3a36f486a",
+          "request_contract_sha256": "d6273db188d71afb8f9d9be12acb4862d86f18c202f249c591405e9a3643ce88",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -24185,9 +25613,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "8810a5eda61fef65f192510ec3b7e4b9a0e460702012921b227e9df570c914c7",
-        "request_sha256": "c83de75859f48263b4f15630b79ebd812a96ec157af47bf8d3985dc3a36f486a",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "source_contract_sha256": "7a6f89a1c6b744a52fc1404c0cf169a47cd5c04262d77ed4712e9cd668d991de",
+        "request_sha256": "d6273db188d71afb8f9d9be12acb4862d86f18c202f249c591405e9a3643ce88",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "source_setup": {
           "race": 4,
           "gear": {
@@ -25936,7 +27364,7 @@
         "target_spec": "fire_mage",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "upstream_test": {
           "path": "sim/mage/fire/fire_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_fire_mage.test.go",
@@ -25961,12 +27389,12 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "6333fd34c8b8387d923efd7f309382722675e80194557b8509540486d5878d0a",
+      "source_contract_sha256": "f78e731dc0e2b6e6deb225a2e3c39dae2a5d6edc907031ee46ef3641fa54e25f",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "target_spec": "fire_mage",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
-        "source_contract_sha256": "6333fd34c8b8387d923efd7f309382722675e80194557b8509540486d5878d0a",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
+        "source_contract_sha256": "f78e731dc0e2b6e6deb225a2e3c39dae2a5d6edc907031ee46ef3641fa54e25f",
         "source_selector": {
           "test_path": "sim/mage/fire/fire_test.go",
           "suite_name": "TestFire",
@@ -27344,13 +28772,13 @@
           }
         }
       },
-      "request_sha256": "27d9a67d05dac3fccfd7675d381fd62a5e67e92844488c6808c6e8867ec40e9e",
+      "request_sha256": "56fe33876cfe786539c76c59d388fce403b1eef130166cee84623a275c3dcbda",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "27d9a67d05dac3fccfd7675d381fd62a5e67e92844488c6808c6e8867ec40e9e",
+          "request_contract_sha256": "56fe33876cfe786539c76c59d388fce403b1eef130166cee84623a275c3dcbda",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -27384,9 +28812,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "6333fd34c8b8387d923efd7f309382722675e80194557b8509540486d5878d0a",
-        "request_sha256": "27d9a67d05dac3fccfd7675d381fd62a5e67e92844488c6808c6e8867ec40e9e",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "source_contract_sha256": "f78e731dc0e2b6e6deb225a2e3c39dae2a5d6edc907031ee46ef3641fa54e25f",
+        "request_sha256": "56fe33876cfe786539c76c59d388fce403b1eef130166cee84623a275c3dcbda",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "source_setup": {
           "race": 1,
           "gear": {
@@ -29118,7 +30546,7 @@
         "target_spec": "frost_death_knight",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "upstream_test": {
           "path": "sim/death_knight/frost/frost_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/frost_death_knight.test.go",
@@ -29143,12 +30571,12 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "5222fbd4d85a5a5ddd10924f42b762f5c4c450ce721e246abb031fbf0c2e93ee",
+      "source_contract_sha256": "eb83e712efc265c559453a1f31bdc60b3865e1f44f93e42991e7bb9deac7a9d5",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "target_spec": "frost_death_knight",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
-        "source_contract_sha256": "5222fbd4d85a5a5ddd10924f42b762f5c4c450ce721e246abb031fbf0c2e93ee",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
+        "source_contract_sha256": "eb83e712efc265c559453a1f31bdc60b3865e1f44f93e42991e7bb9deac7a9d5",
         "source_selector": {
           "test_path": "sim/death_knight/frost/frost_test.go",
           "suite_name": "TestFrost",
@@ -30529,13 +31957,13 @@
           }
         }
       },
-      "request_sha256": "ab6088210513cdf0b30366e68615234fe5f07b9afccfa0ab75e7eb547358c11e",
+      "request_sha256": "5b60ec91415b147bba7c6ab818a49fcfcdb3da7adb42119854e02bbadb987324",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "ab6088210513cdf0b30366e68615234fe5f07b9afccfa0ab75e7eb547358c11e",
+          "request_contract_sha256": "5b60ec91415b147bba7c6ab818a49fcfcdb3da7adb42119854e02bbadb987324",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -30569,9 +31997,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "5222fbd4d85a5a5ddd10924f42b762f5c4c450ce721e246abb031fbf0c2e93ee",
-        "request_sha256": "ab6088210513cdf0b30366e68615234fe5f07b9afccfa0ab75e7eb547358c11e",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "source_contract_sha256": "eb83e712efc265c559453a1f31bdc60b3865e1f44f93e42991e7bb9deac7a9d5",
+        "request_sha256": "5b60ec91415b147bba7c6ab818a49fcfcdb3da7adb42119854e02bbadb987324",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "source_setup": {
           "race": 1,
           "gear": {
@@ -32305,7 +33733,7 @@
         "target_spec": "fury_warrior",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "upstream_test": {
           "path": "sim/warrior/fury/fury_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/fury_warrior.test.go",
@@ -32330,12 +33758,12 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "5a378dbb0c730e7d45e44f714fe0727bb56ac7ad28edad58c52441f96b38e5d1",
+      "source_contract_sha256": "04725451e3ba7aeada72fd86a0948efa379382e4b8e9c1e3b37d576da07635c6",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "target_spec": "fury_warrior",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
-        "source_contract_sha256": "5a378dbb0c730e7d45e44f714fe0727bb56ac7ad28edad58c52441f96b38e5d1",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
+        "source_contract_sha256": "04725451e3ba7aeada72fd86a0948efa379382e4b8e9c1e3b37d576da07635c6",
         "source_selector": {
           "test_path": "sim/warrior/fury/fury_test.go",
           "suite_name": "TestFury",
@@ -33717,13 +35145,13 @@
           }
         }
       },
-      "request_sha256": "da81e3ecaa14d34a48e584251f392a4ff676a9022df1421241d6a77cd7c8eba2",
+      "request_sha256": "818746f179665cf2ea44d5a240dcc2c5bdd59bd0bbf1a41575ab61f4db2cd7f4",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "da81e3ecaa14d34a48e584251f392a4ff676a9022df1421241d6a77cd7c8eba2",
+          "request_contract_sha256": "818746f179665cf2ea44d5a240dcc2c5bdd59bd0bbf1a41575ab61f4db2cd7f4",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -33757,9 +35185,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "5a378dbb0c730e7d45e44f714fe0727bb56ac7ad28edad58c52441f96b38e5d1",
-        "request_sha256": "da81e3ecaa14d34a48e584251f392a4ff676a9022df1421241d6a77cd7c8eba2",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "source_contract_sha256": "04725451e3ba7aeada72fd86a0948efa379382e4b8e9c1e3b37d576da07635c6",
+        "request_sha256": "818746f179665cf2ea44d5a240dcc2c5bdd59bd0bbf1a41575ab61f4db2cd7f4",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "source_setup": {
           "race": 1,
           "gear": {
@@ -35504,7 +36932,7 @@
         "target_spec": "marksmanship_hunter",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "upstream_test": {
           "path": "sim/hunter/marksmanship/marksmanship_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/marksmanship_hunter.test.go",
@@ -35529,12 +36957,12 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "c46adc99d125433e354d4e881557c63cd2b2f20fdc0bac96bdb1b61f6e829524",
+      "source_contract_sha256": "ca2f1e5c92ec62958875455047896e789a901ac60365bde2a1af65358701a216",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "target_spec": "marksmanship_hunter",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
-        "source_contract_sha256": "c46adc99d125433e354d4e881557c63cd2b2f20fdc0bac96bdb1b61f6e829524",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
+        "source_contract_sha256": "ca2f1e5c92ec62958875455047896e789a901ac60365bde2a1af65358701a216",
         "source_selector": {
           "test_path": "sim/hunter/marksmanship/marksmanship_test.go",
           "suite_name": "TestMM",
@@ -37057,13 +38485,13 @@
           }
         }
       },
-      "request_sha256": "19841dd874d0b451aa25eba7b424a38d47ee8eb44dc3e7df0cddef0fc322d268",
+      "request_sha256": "7b4d860cbd1d8401b17dbcda8ffc8767fe71bd22cc3dccb3282843b0315d62f9",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "19841dd874d0b451aa25eba7b424a38d47ee8eb44dc3e7df0cddef0fc322d268",
+          "request_contract_sha256": "7b4d860cbd1d8401b17dbcda8ffc8767fe71bd22cc3dccb3282843b0315d62f9",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -37097,9 +38525,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "c46adc99d125433e354d4e881557c63cd2b2f20fdc0bac96bdb1b61f6e829524",
-        "request_sha256": "19841dd874d0b451aa25eba7b424a38d47ee8eb44dc3e7df0cddef0fc322d268",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "source_contract_sha256": "ca2f1e5c92ec62958875455047896e789a901ac60365bde2a1af65358701a216",
+        "request_sha256": "7b4d860cbd1d8401b17dbcda8ffc8767fe71bd22cc3dccb3282843b0315d62f9",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "source_setup": {
           "race": 3,
           "gear": {
@@ -39093,7 +40521,7 @@
         "target_spec": "retribution_paladin",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "upstream_test": {
           "path": "sim/paladin/retribution/retribution_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/retribution_paladin.test.go",
@@ -39118,12 +40546,12 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "c8801176ca338b99c360204929d8fe29343f821194ba4c85ddba485a1e57ddfe",
+      "source_contract_sha256": "29a7abc969034e0a1b486d0fdf22b065ff89adeb1125db5a18ace1953c99b87b",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "target_spec": "retribution_paladin",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
-        "source_contract_sha256": "c8801176ca338b99c360204929d8fe29343f821194ba4c85ddba485a1e57ddfe",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
+        "source_contract_sha256": "29a7abc969034e0a1b486d0fdf22b065ff89adeb1125db5a18ace1953c99b87b",
         "source_selector": {
           "test_path": "sim/paladin/retribution/retribution_test.go",
           "suite_name": "TestRetribution",
@@ -40525,13 +41953,13 @@
           }
         }
       },
-      "request_sha256": "96d564df76f2b914c6cbc6b7897d28b0575a1e077ed9e213a85f1a1e3683100a",
+      "request_sha256": "4c70b7270247c014722ab46090e1f7398e8f93cc53d67106b2d30b4bd3cb0a9b",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "96d564df76f2b914c6cbc6b7897d28b0575a1e077ed9e213a85f1a1e3683100a",
+          "request_contract_sha256": "4c70b7270247c014722ab46090e1f7398e8f93cc53d67106b2d30b4bd3cb0a9b",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -40565,9 +41993,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "c8801176ca338b99c360204929d8fe29343f821194ba4c85ddba485a1e57ddfe",
-        "request_sha256": "96d564df76f2b914c6cbc6b7897d28b0575a1e077ed9e213a85f1a1e3683100a",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "source_contract_sha256": "29a7abc969034e0a1b486d0fdf22b065ff89adeb1125db5a18ace1953c99b87b",
+        "request_sha256": "4c70b7270247c014722ab46090e1f7398e8f93cc53d67106b2d30b4bd3cb0a9b",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "source_setup": {
           "race": 1,
           "gear": {
@@ -42348,7 +43776,7 @@
         "target_spec": "shadow_priest",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "upstream_test": {
           "path": "sim/priest/shadow/shadow_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_shadow_priest.test.go",
@@ -42373,12 +43801,12 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "948a0ea562de0ff0492b7e5d759f60e295287b573326f479cf2d4f6196384b46",
+      "source_contract_sha256": "e7903f80b538566734ede32b3a1ef1e1f70ed46816535de522f47c2a2c37fe59",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "target_spec": "shadow_priest",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
-        "source_contract_sha256": "948a0ea562de0ff0492b7e5d759f60e295287b573326f479cf2d4f6196384b46",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
+        "source_contract_sha256": "e7903f80b538566734ede32b3a1ef1e1f70ed46816535de522f47c2a2c37fe59",
         "source_selector": {
           "test_path": "sim/priest/shadow/shadow_test.go",
           "suite_name": "TestShadow",
@@ -43762,13 +45190,13 @@
           }
         }
       },
-      "request_sha256": "f2edc6a7304e546e1fa5c729195d2370eac57be620f1ef1701fd498d9d3b761d",
+      "request_sha256": "558592742c4597d944a43610f4938bbc13f9e4fb592f7628cbb191bc7c6062b9",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "f2edc6a7304e546e1fa5c729195d2370eac57be620f1ef1701fd498d9d3b761d",
+          "request_contract_sha256": "558592742c4597d944a43610f4938bbc13f9e4fb592f7628cbb191bc7c6062b9",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -43802,9 +45230,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "948a0ea562de0ff0492b7e5d759f60e295287b573326f479cf2d4f6196384b46",
-        "request_sha256": "f2edc6a7304e546e1fa5c729195d2370eac57be620f1ef1701fd498d9d3b761d",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "source_contract_sha256": "e7903f80b538566734ede32b3a1ef1e1f70ed46816535de522f47c2a2c37fe59",
+        "request_sha256": "558592742c4597d944a43610f4938bbc13f9e4fb592f7628cbb191bc7c6062b9",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "source_setup": {
           "race": 8,
           "gear": {
@@ -45553,7 +46981,7 @@
         "target_spec": "survival_hunter",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "upstream_test": {
           "path": "sim/hunter/survival/survival_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_survival_hunter.test.go",
@@ -45578,12 +47006,12 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "9eb4e025b189200acf3b289b9cdf160b7c4b82ef732fdcf367ec5b0227450c52",
+      "source_contract_sha256": "dbb683313bee8ee476723c379f3824c507dcd1e779340158f0affb98eb10a19b",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "target_spec": "survival_hunter",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
-        "source_contract_sha256": "9eb4e025b189200acf3b289b9cdf160b7c4b82ef732fdcf367ec5b0227450c52",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
+        "source_contract_sha256": "dbb683313bee8ee476723c379f3824c507dcd1e779340158f0affb98eb10a19b",
         "source_selector": {
           "test_path": "sim/hunter/survival/survival_test.go",
           "suite_name": "TestSV",
@@ -47144,13 +48572,13 @@
           }
         }
       },
-      "request_sha256": "8d7a0f3364a84e47ec40baf3d54aca33e9f751319f41f461167cd647551beba2",
+      "request_sha256": "81c204569a014d0d043ab891ae2fb7a4a91b35cb35ee19e3022c9b8b8c3b2dcf",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "8d7a0f3364a84e47ec40baf3d54aca33e9f751319f41f461167cd647551beba2",
+          "request_contract_sha256": "81c204569a014d0d043ab891ae2fb7a4a91b35cb35ee19e3022c9b8b8c3b2dcf",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -47184,9 +48612,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "9eb4e025b189200acf3b289b9cdf160b7c4b82ef732fdcf367ec5b0227450c52",
-        "request_sha256": "8d7a0f3364a84e47ec40baf3d54aca33e9f751319f41f461167cd647551beba2",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "source_contract_sha256": "dbb683313bee8ee476723c379f3824c507dcd1e779340158f0affb98eb10a19b",
+        "request_sha256": "81c204569a014d0d043ab891ae2fb7a4a91b35cb35ee19e3022c9b8b8c3b2dcf",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "source_setup": {
           "race": 2,
           "gear": {
@@ -49221,7 +50649,7 @@
         "target_spec": "unholy_death_knight",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "upstream_test": {
           "path": "sim/death_knight/unholy/unholy_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/unholy_death_knight.test.go",
@@ -49246,12 +50674,12 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "cf19a8e6edde6765caf5f38397a425b2f7410a3e82f5169f81d0cccdd3ff52f3",
+      "source_contract_sha256": "a3bd85cecbbb1b8c07b5683cf8da801bc2af6843da1bddb4e7d77d517bab822a",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "target_spec": "unholy_death_knight",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
-        "source_contract_sha256": "cf19a8e6edde6765caf5f38397a425b2f7410a3e82f5169f81d0cccdd3ff52f3",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
+        "source_contract_sha256": "a3bd85cecbbb1b8c07b5683cf8da801bc2af6843da1bddb4e7d77d517bab822a",
         "source_selector": {
           "test_path": "sim/death_knight/unholy/unholy_test.go",
           "suite_name": "TestUnholy",
@@ -49624,10 +51052,84 @@
             "unclassified": []
           },
           "pet_setup": {
+            "created_by_spell_id": 52150,
             "creature_entry": 26125,
+            "family_id": 40,
+            "identity_evidence": {
+              "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695",
+              "dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc"
+            },
             "kind": "ghoul",
+            "pet_type": 0,
             "required": true,
-            "required_autocast_spell_ids": [],
+            "required_autocast_spell_ids": [
+              47468,
+              47481,
+              47482
+            ],
+            "spellbook": [
+              {
+                "active": 193,
+                "spell_id": 47468,
+                "type": 0
+              },
+              {
+                "active": 193,
+                "spell_id": 47481,
+                "type": 0
+              },
+              {
+                "active": 193,
+                "spell_id": 47482,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 47484,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91776,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91778,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91797,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91800,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91802,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91809,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91837,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91838,
+                "type": 0
+              }
+            ],
+            "spellbook_sha256": "a1d3751417bb084fee0205478cd3bbf3eded507a4247c91a2f67f839808694d2",
             "summon_spell_id": 46584,
             "uptime": 1.0
           },
@@ -50289,10 +51791,84 @@
                 ]
               },
               "pet_setup": {
+                "created_by_spell_id": 52150,
                 "creature_entry": 26125,
+                "family_id": 40,
+                "identity_evidence": {
+                  "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695",
+                  "dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc"
+                },
                 "kind": "ghoul",
+                "pet_type": 0,
                 "required": true,
-                "required_autocast_spell_ids": [],
+                "required_autocast_spell_ids": [
+                  47468,
+                  47481,
+                  47482
+                ],
+                "spellbook": [
+                  {
+                    "active": 193,
+                    "spell_id": 47468,
+                    "type": 0
+                  },
+                  {
+                    "active": 193,
+                    "spell_id": 47481,
+                    "type": 0
+                  },
+                  {
+                    "active": 193,
+                    "spell_id": 47482,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 47484,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 91776,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 91778,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 91797,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 91800,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 91802,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 91809,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 91837,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 91838,
+                    "type": 0
+                  }
+                ],
+                "spellbook_sha256": "a1d3751417bb084fee0205478cd3bbf3eded507a4247c91a2f67f839808694d2",
                 "summon_spell_id": 46584,
                 "uptime": 1.0
               }
@@ -50488,10 +52064,84 @@
                 ]
               },
               "pet_setup": {
+                "created_by_spell_id": 52150,
                 "creature_entry": 26125,
+                "family_id": 40,
+                "identity_evidence": {
+                  "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695",
+                  "dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc"
+                },
                 "kind": "ghoul",
+                "pet_type": 0,
                 "required": true,
-                "required_autocast_spell_ids": [],
+                "required_autocast_spell_ids": [
+                  47468,
+                  47481,
+                  47482
+                ],
+                "spellbook": [
+                  {
+                    "active": 193,
+                    "spell_id": 47468,
+                    "type": 0
+                  },
+                  {
+                    "active": 193,
+                    "spell_id": 47481,
+                    "type": 0
+                  },
+                  {
+                    "active": 193,
+                    "spell_id": 47482,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 47484,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 91776,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 91778,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 91797,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 91800,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 91802,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 91809,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 91837,
+                    "type": 0
+                  },
+                  {
+                    "active": 1,
+                    "spell_id": 91838,
+                    "type": 0
+                  }
+                ],
+                "spellbook_sha256": "a1d3751417bb084fee0205478cd3bbf3eded507a4247c91a2f67f839808694d2",
                 "summon_spell_id": 46584,
                 "uptime": 1.0
               }
@@ -50527,15 +52177,97 @@
             "items": []
           },
           "pet_setup": {
-            "blockers": [
-              "native_pet_spellbook_and_autocast_identity_not_yet_content_addressed"
+            "pet_alive": true,
+            "pet_autocast_spell_ids": [
+              47468,
+              47481,
+              47482
             ],
-            "creature_entry": 26125,
-            "kind": "ghoul",
+            "pet_created_by_spell_id": 52150,
+            "pet_entry": 26125,
+            "pet_family_id": 40,
+            "pet_in_world": true,
+            "pet_native_cast_finished": true,
+            "pet_native_cast_observed": true,
+            "pet_native_cast_submitted": true,
+            "pet_owned": true,
+            "pet_permanent": true,
+            "pet_power_type": 3,
+            "pet_present": true,
+            "pet_spell_known": true,
+            "pet_spellbook": [
+              {
+                "active": 193,
+                "spell_id": 47468,
+                "type": 0
+              },
+              {
+                "active": 193,
+                "spell_id": 47481,
+                "type": 0
+              },
+              {
+                "active": 193,
+                "spell_id": 47482,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 47484,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91776,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91778,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91797,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91800,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91802,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91809,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91837,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91838,
+                "type": 0
+              }
+            ],
+            "pet_spellbook_sha256": "a1d3751417bb084fee0205478cd3bbf3eded507a4247c91a2f67f839808694d2",
+            "pet_type": 0,
             "required": true,
-            "required_autocast_spell_ids": [],
-            "runtime_projection_complete": false,
-            "summon_spell_id": 46584,
+            "required_pet_created_by_spell_id": 52150,
+            "required_pet_entry": 26125,
+            "required_pet_family_id": 40,
+            "required_pet_power_type": 3,
+            "required_pet_spell_id": 46584,
+            "required_pet_type": 0,
+            "runtime_projection_complete": true,
+            "schema": "phase8_native_summoned_pet_identity_v1",
             "uptime": 1.0
           },
           "prepot": {
@@ -50666,13 +52398,13 @@
           }
         }
       },
-      "request_sha256": "18856f85618d46d9bc0bb8c07b0d3140ae0ab84a45e4009feb1bbf99daad0c5f",
+      "request_sha256": "95cb0c4e82065a2d0cba7b05f033e72f78f7fad3cb3e5498cfc56e90619ba538",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "18856f85618d46d9bc0bb8c07b0d3140ae0ab84a45e4009feb1bbf99daad0c5f",
+          "request_contract_sha256": "95cb0c4e82065a2d0cba7b05f033e72f78f7fad3cb3e5498cfc56e90619ba538",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -50706,9 +52438,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "cf19a8e6edde6765caf5f38397a425b2f7410a3e82f5169f81d0cccdd3ff52f3",
-        "request_sha256": "18856f85618d46d9bc0bb8c07b0d3140ae0ab84a45e4009feb1bbf99daad0c5f",
-        "fixture_contract_sha256": "389be6f2478f08e52601af81608a13ac98ae647a9100bd1c0b3963e07582197f",
+        "source_contract_sha256": "a3bd85cecbbb1b8c07b5683cf8da801bc2af6843da1bddb4e7d77d517bab822a",
+        "request_sha256": "95cb0c4e82065a2d0cba7b05f033e72f78f7fad3cb3e5498cfc56e90619ba538",
+        "fixture_contract_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
         "source_setup": {
           "race": 1,
           "gear": {
@@ -51045,10 +52777,84 @@
             "simulator_swing_speed_seconds": 0
           },
           "pet_setup": {
+            "created_by_spell_id": 52150,
             "creature_entry": 26125,
+            "family_id": 40,
+            "identity_evidence": {
+              "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695",
+              "dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc"
+            },
             "kind": "ghoul",
+            "pet_type": 0,
             "required": true,
-            "required_autocast_spell_ids": [],
+            "required_autocast_spell_ids": [
+              47468,
+              47481,
+              47482
+            ],
+            "spellbook": [
+              {
+                "active": 193,
+                "spell_id": 47468,
+                "type": 0
+              },
+              {
+                "active": 193,
+                "spell_id": 47481,
+                "type": 0
+              },
+              {
+                "active": 193,
+                "spell_id": 47482,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 47484,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91776,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91778,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91797,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91800,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91802,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91809,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91837,
+                "type": 0
+              },
+              {
+                "active": 1,
+                "spell_id": 91838,
+                "type": 0
+              }
+            ],
+            "spellbook_sha256": "a1d3751417bb084fee0205478cd3bbf3eded507a4247c91a2f67f839808694d2",
             "summon_spell_id": 46584,
             "uptime": 1.0
           },
@@ -51601,10 +53407,84 @@
                   ]
                 },
                 "pet_setup": {
+                  "created_by_spell_id": 52150,
                   "creature_entry": 26125,
+                  "family_id": 40,
+                  "identity_evidence": {
+                    "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695",
+                    "dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc"
+                  },
                   "kind": "ghoul",
+                  "pet_type": 0,
                   "required": true,
-                  "required_autocast_spell_ids": [],
+                  "required_autocast_spell_ids": [
+                    47468,
+                    47481,
+                    47482
+                  ],
+                  "spellbook": [
+                    {
+                      "active": 193,
+                      "spell_id": 47468,
+                      "type": 0
+                    },
+                    {
+                      "active": 193,
+                      "spell_id": 47481,
+                      "type": 0
+                    },
+                    {
+                      "active": 193,
+                      "spell_id": 47482,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 47484,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91776,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91778,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91797,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91800,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91802,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91809,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91837,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91838,
+                      "type": 0
+                    }
+                  ],
+                  "spellbook_sha256": "a1d3751417bb084fee0205478cd3bbf3eded507a4247c91a2f67f839808694d2",
                   "summon_spell_id": 46584,
                   "uptime": 1.0
                 }
@@ -51721,8 +53601,8 @@
             }
           }
         },
-        "source_setup_sha256": "7263010e9991651004cdec52717aa18a13df65be63e0b2120d614cdfd83f87a8",
-        "request_condition_projection_sha256": "3709d7005af68917b92f6ee9171780eb1b2910201cf5eead30ccd3cae41a815e",
+        "source_setup_sha256": "af66fba23dda6eb1edec31ddf3f0f94882ca40d32f0fa95d69a4274e164d0f48",
+        "request_condition_projection_sha256": "99becc7ae062c6e6b205ec8912c4ca8b048dfcc34b9a2f2c0a439c82c6fc99f7",
         "requirements": [
           {
             "id": "gear_manifest",
@@ -52220,10 +54100,84 @@
                   ]
                 },
                 "pet_setup": {
+                  "created_by_spell_id": 52150,
                   "creature_entry": 26125,
+                  "family_id": 40,
+                  "identity_evidence": {
+                    "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695",
+                    "dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc"
+                  },
                   "kind": "ghoul",
+                  "pet_type": 0,
                   "required": true,
-                  "required_autocast_spell_ids": [],
+                  "required_autocast_spell_ids": [
+                    47468,
+                    47481,
+                    47482
+                  ],
+                  "spellbook": [
+                    {
+                      "active": 193,
+                      "spell_id": 47468,
+                      "type": 0
+                    },
+                    {
+                      "active": 193,
+                      "spell_id": 47481,
+                      "type": 0
+                    },
+                    {
+                      "active": 193,
+                      "spell_id": 47482,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 47484,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91776,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91778,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91797,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91800,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91802,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91809,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91837,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91838,
+                      "type": 0
+                    }
+                  ],
+                  "spellbook_sha256": "a1d3751417bb084fee0205478cd3bbf3eded507a4247c91a2f67f839808694d2",
                   "summon_spell_id": 46584,
                   "uptime": 1.0
                 }
@@ -52266,10 +54220,84 @@
                   ]
                 },
                 "pet_setup": {
+                  "created_by_spell_id": 52150,
                   "creature_entry": 26125,
+                  "family_id": 40,
+                  "identity_evidence": {
+                    "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695",
+                    "dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc"
+                  },
                   "kind": "ghoul",
+                  "pet_type": 0,
                   "required": true,
-                  "required_autocast_spell_ids": [],
+                  "required_autocast_spell_ids": [
+                    47468,
+                    47481,
+                    47482
+                  ],
+                  "spellbook": [
+                    {
+                      "active": 193,
+                      "spell_id": 47468,
+                      "type": 0
+                    },
+                    {
+                      "active": 193,
+                      "spell_id": 47481,
+                      "type": 0
+                    },
+                    {
+                      "active": 193,
+                      "spell_id": 47482,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 47484,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91776,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91778,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91797,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91800,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91802,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91809,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91837,
+                      "type": 0
+                    },
+                    {
+                      "active": 1,
+                      "spell_id": 91838,
+                      "type": 0
+                    }
+                  ],
+                  "spellbook_sha256": "a1d3751417bb084fee0205478cd3bbf3eded507a4247c91a2f67f839808694d2",
                   "summon_spell_id": 46584,
                   "uptime": 1.0
                 }
@@ -52324,28 +54352,192 @@
             "static_verifiability": "fixture_contract_exact",
             "planned_path": "fixture.runtime_expected.pet_setup",
             "planned_equals": {
-              "blockers": [
-                "native_pet_spellbook_and_autocast_identity_not_yet_content_addressed"
+              "pet_alive": true,
+              "pet_autocast_spell_ids": [
+                47468,
+                47481,
+                47482
               ],
-              "creature_entry": 26125,
-              "kind": "ghoul",
+              "pet_created_by_spell_id": 52150,
+              "pet_entry": 26125,
+              "pet_family_id": 40,
+              "pet_in_world": true,
+              "pet_native_cast_finished": true,
+              "pet_native_cast_observed": true,
+              "pet_native_cast_submitted": true,
+              "pet_owned": true,
+              "pet_permanent": true,
+              "pet_power_type": 3,
+              "pet_present": true,
+              "pet_spell_known": true,
+              "pet_spellbook": [
+                {
+                  "active": 193,
+                  "spell_id": 47468,
+                  "type": 0
+                },
+                {
+                  "active": 193,
+                  "spell_id": 47481,
+                  "type": 0
+                },
+                {
+                  "active": 193,
+                  "spell_id": 47482,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 47484,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 91776,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 91778,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 91797,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 91800,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 91802,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 91809,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 91837,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 91838,
+                  "type": 0
+                }
+              ],
+              "pet_spellbook_sha256": "a1d3751417bb084fee0205478cd3bbf3eded507a4247c91a2f67f839808694d2",
+              "pet_type": 0,
               "required": true,
-              "required_autocast_spell_ids": [],
-              "runtime_projection_complete": false,
-              "summon_spell_id": 46584,
+              "required_pet_created_by_spell_id": 52150,
+              "required_pet_entry": 26125,
+              "required_pet_family_id": 40,
+              "required_pet_power_type": 3,
+              "required_pet_spell_id": 46584,
+              "required_pet_type": 0,
+              "runtime_projection_complete": true,
+              "schema": "phase8_native_summoned_pet_identity_v1",
               "uptime": 1.0
             },
             "path": "runtime.pet_setup_projection",
             "equals": {
-              "blockers": [
-                "native_pet_spellbook_and_autocast_identity_not_yet_content_addressed"
+              "pet_alive": true,
+              "pet_autocast_spell_ids": [
+                47468,
+                47481,
+                47482
               ],
-              "creature_entry": 26125,
-              "kind": "ghoul",
+              "pet_created_by_spell_id": 52150,
+              "pet_entry": 26125,
+              "pet_family_id": 40,
+              "pet_in_world": true,
+              "pet_native_cast_finished": true,
+              "pet_native_cast_observed": true,
+              "pet_native_cast_submitted": true,
+              "pet_owned": true,
+              "pet_permanent": true,
+              "pet_power_type": 3,
+              "pet_present": true,
+              "pet_spell_known": true,
+              "pet_spellbook": [
+                {
+                  "active": 193,
+                  "spell_id": 47468,
+                  "type": 0
+                },
+                {
+                  "active": 193,
+                  "spell_id": 47481,
+                  "type": 0
+                },
+                {
+                  "active": 193,
+                  "spell_id": 47482,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 47484,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 91776,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 91778,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 91797,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 91800,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 91802,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 91809,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 91837,
+                  "type": 0
+                },
+                {
+                  "active": 1,
+                  "spell_id": 91838,
+                  "type": 0
+                }
+              ],
+              "pet_spellbook_sha256": "a1d3751417bb084fee0205478cd3bbf3eded507a4247c91a2f67f839808694d2",
+              "pet_type": 0,
               "required": true,
-              "required_autocast_spell_ids": [],
-              "runtime_projection_complete": false,
-              "summon_spell_id": 46584,
+              "required_pet_created_by_spell_id": 52150,
+              "required_pet_entry": 26125,
+              "required_pet_family_id": 40,
+              "required_pet_power_type": 3,
+              "required_pet_spell_id": 46584,
+              "required_pet_type": 0,
+              "runtime_projection_complete": true,
+              "schema": "phase8_native_summoned_pet_identity_v1",
               "uptime": 1.0
             }
           },

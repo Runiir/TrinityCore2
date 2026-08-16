@@ -155,6 +155,56 @@ def test_every_spec_has_exact_native_start_and_disabled_dynamic_actions() -> Non
         assert row["prepull_setup"]["racial"]["spell_id"] == 0, spec
 
 
+def test_native_summoned_pet_identities_are_content_addressed_and_complete() -> None:
+    contract, _digest = load_fixture_contract()
+    expected = {
+        "affliction_warlock": {
+            "spell": 691,
+            "entry": 417,
+            "family": 15,
+            "created_by": 691,
+            "power_type": 0,
+            "spellbook_sha256": "a79474903199c668e360560dde291357bfedd88f2369d72a9a0f47be1196b0cc",
+            "autocasts": [19647, 54049, 54424],
+        },
+        "demonology_warlock": {
+            "spell": 30146,
+            "entry": 17252,
+            "family": 29,
+            "created_by": 30146,
+            "power_type": 0,
+            "spellbook_sha256": "1d412525118a6ef2ec72aa75977f9139e355d4998a902c42748e671c9d763005",
+            "autocasts": [30151, 30213],
+        },
+        "unholy_death_knight": {
+            "spell": 46584,
+            "entry": 26125,
+            "family": 40,
+            "created_by": 52150,
+            "power_type": 3,
+            "spellbook_sha256": "a1d3751417bb084fee0205478cd3bbf3eded507a4247c91a2f67f839808694d2",
+            "autocasts": [47468, 47481, 47482],
+        },
+    }
+    for spec, identity in expected.items():
+        authored = contract["specs"][spec]["pet_setup"]
+        runtime = contract["specs"][spec]["runtime_expected"]["pet_setup"]
+        assert authored["identity_evidence"] == {
+            "dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc",
+            "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695",
+        }
+        assert runtime["schema"] == "phase8_native_summoned_pet_identity_v1"
+        assert runtime["runtime_projection_complete"] is True
+        assert runtime["required_pet_spell_id"] == identity["spell"]
+        assert runtime["required_pet_entry"] == identity["entry"]
+        assert runtime["required_pet_family_id"] == identity["family"]
+        assert runtime["required_pet_created_by_spell_id"] == identity["created_by"]
+        assert runtime["required_pet_power_type"] == identity["power_type"]
+        assert runtime["pet_spellbook_sha256"] == identity["spellbook_sha256"]
+        assert runtime["pet_autocast_spell_ids"] == identity["autocasts"]
+        assert runtime["pet_spellbook"]
+
+
 def test_shadow_external_windows_are_exact_and_non_stochastic() -> None:
     contract, _digest = load_fixture_contract()
     external = contract["reference_environment"][
