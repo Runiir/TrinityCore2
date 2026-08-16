@@ -2221,6 +2221,31 @@ private:
             uint32 MaximumDamageEvent = 0;
         };
 
+        struct DecisionTimelineEntry
+        {
+            uint64 ElapsedMs = 0;
+            uint32 SpellId = 0;
+            std::string Result;
+            uint64 Health = 0;
+            uint64 MaxHealth = 0;
+            uint32 Mana = 0;
+            uint32 MaxMana = 0;
+            float TargetDistance = 0.0f;
+            bool Alive = false;
+        };
+
+        struct OffTargetDamageEvent
+        {
+            uint64 ElapsedMs = 0;
+            uint32 AttackerGuid = 0;
+            uint32 VictimGuid = 0;
+            uint32 VictimEntry = 0;
+            uint32 SpellId = 0;
+            uint32 Damage = 0;
+            uint8 VictimTypeId = 0;
+            bool VictimIsOwner = false;
+        };
+
         uint64 WindowStartedMs = 0;
         uint64 WindowEndedMs = 0;
         uint64 Damage = 0;
@@ -2384,6 +2409,13 @@ private:
         std::set<std::string> ScheduledDamagePhases;
         std::set<std::string> DeliveredDamagePhases;
         std::map<std::string, uint32> ResultCounts;
+        // Bounded, observation-only timeline used by the rotation review tool
+        // to distinguish selection, movement, native submission, resource
+        // state, and death. It never participates in arbitration or scoring.
+        std::vector<DecisionTimelineEntry> DecisionTimeline;
+        // Attribute every non-primary damage event instead of exposing only an
+        // unauditable aggregate collateral counter.
+        std::vector<OffTargetDamageEvent> OffTargetDamageEvents;
         // Raw server observations for the isolated single-target fixture's
         // five WoWSims execute-threshold bands. Evidence reconstructs the
         // schedule from these integers; it does not trust an aggregate flag.

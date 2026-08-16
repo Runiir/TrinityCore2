@@ -3911,6 +3911,42 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                          << ",\"event_count\":" << metrics->SpellDamageEvents.at(spellId) << '}';
                 }
             }
+            json << "],\"decision_timeline\":[";
+            bool firstTimeline = true;
+            if (metrics)
+                for (CalibrationMetrics::DecisionTimelineEntry const& entry : metrics->DecisionTimeline)
+                {
+                    if (!firstTimeline)
+                        json << ',';
+                    firstTimeline = false;
+                    json << "{\"elapsed_ms\":" << entry.ElapsedMs
+                         << ",\"spell_id\":" << entry.SpellId
+                         << ",\"result\":\"" << JsonEscape(entry.Result) << "\""
+                         << ",\"health\":" << entry.Health
+                         << ",\"max_health\":" << entry.MaxHealth
+                         << ",\"mana\":" << entry.Mana
+                         << ",\"max_mana\":" << entry.MaxMana
+                         << ",\"target_distance\":" << std::fixed << std::setprecision(3)
+                         << entry.TargetDistance
+                         << ",\"alive\":" << (entry.Alive ? "true" : "false") << '}';
+                }
+            json << "],\"off_target_damage_events\":[";
+            bool firstOffTarget = true;
+            if (metrics)
+                for (CalibrationMetrics::OffTargetDamageEvent const& event : metrics->OffTargetDamageEvents)
+                {
+                    if (!firstOffTarget)
+                        json << ',';
+                    firstOffTarget = false;
+                    json << "{\"elapsed_ms\":" << event.ElapsedMs
+                         << ",\"attacker_guid\":" << event.AttackerGuid
+                         << ",\"victim_guid\":" << event.VictimGuid
+                         << ",\"victim_entry\":" << event.VictimEntry
+                         << ",\"victim_type_id\":" << uint32(event.VictimTypeId)
+                         << ",\"victim_is_owner\":" << (event.VictimIsOwner ? "true" : "false")
+                         << ",\"spell_id\":" << event.SpellId
+                         << ",\"damage\":" << event.Damage << '}';
+                }
             uint32 botKey = state.Guid.GetCounter();
             auto rejectsItr = Party().LastCombatRejectsByBot.find(botKey);
             auto chosenItr = Party().LastChosenCombatByBot.find(botKey);
@@ -11023,6 +11059,18 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
         {
             ++metrics.DeathCount;
             metrics.DeathRecorded = true;
+            if (metrics.DecisionTimeline.size() < 4096)
+            {
+                CalibrationMetrics::DecisionTimelineEntry entry;
+                entry.ElapsedMs = NowMs() - Cohort().CalibrationScoredStartedMs;
+                entry.Result = "dead";
+                entry.Health = bot->GetHealth();
+                entry.MaxHealth = bot->GetMaxHealth();
+                entry.Mana = bot->GetPower(POWER_MANA);
+                entry.MaxMana = bot->GetMaxPower(POWER_MANA);
+                entry.Alive = false;
+                metrics.DecisionTimeline.push_back(std::move(entry));
+            }
         }
         return;
     }
@@ -11481,7 +11529,23 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
         || !bot->IsWithinLOSInMap(target))
     {
         if (scored)
+        {
             ++metrics.MovementRangeLossTicks;
+            if (metrics.DecisionTimeline.size() < 4096)
+            {
+                CalibrationMetrics::DecisionTimelineEntry entry;
+                entry.ElapsedMs = NowMs() - Cohort().CalibrationScoredStartedMs;
+                entry.SpellId = action.SpellId;
+                entry.Result = "movement_range";
+                entry.Health = bot->GetHealth();
+                entry.MaxHealth = bot->GetMaxHealth();
+                entry.Mana = bot->GetPower(POWER_MANA);
+                entry.MaxMana = bot->GetMaxPower(POWER_MANA);
+                entry.TargetDistance = distance;
+                entry.Alive = true;
+                metrics.DecisionTimeline.push_back(std::move(entry));
+            }
+        }
         MoveBotToProfileRange(state, bot, target, &action);
         return;
     }
@@ -11512,6 +11576,20 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
             ++metrics.Attempts;
             if (result == BotActionResult::Ok)
                 ++metrics.Successes;
+        }
+        if (metrics.DecisionTimeline.size() < 4096)
+        {
+            CalibrationMetrics::DecisionTimelineEntry entry;
+            entry.ElapsedMs = NowMs() - Cohort().CalibrationScoredStartedMs;
+            entry.SpellId = action.SpellId;
+            entry.Result = ToString(result);
+            entry.Health = bot->GetHealth();
+            entry.MaxHealth = bot->GetMaxHealth();
+            entry.Mana = bot->GetPower(POWER_MANA);
+            entry.MaxMana = bot->GetMaxPower(POWER_MANA);
+            entry.TargetDistance = bot->GetExactDist(target);
+            entry.Alive = bot->IsAlive();
+            metrics.DecisionTimeline.push_back(std::move(entry));
         }
     }
 
@@ -46255,7 +46333,22 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
                 }
             }
             if (isolatedSingleTarget && !primaryTargetDamage)
+            {
                 calibration->second.OffTargetDamage += measuredDamage;
+                if (calibration->second.OffTargetDamageEvents.size() < 128)
+                {
+                    CalibrationMetrics::OffTargetDamageEvent event;
+                    event.ElapsedMs = windowElapsedMs;
+                    event.AttackerGuid = attacker->GetGUID().GetCounter();
+                    event.VictimGuid = victim->GetGUID().GetCounter();
+                    event.VictimEntry = victim->GetEntry();
+                    event.SpellId = spellId;
+                    event.Damage = measuredDamage;
+                    event.VictimTypeId = uint8(victim->GetTypeId());
+                    event.VictimIsOwner = victim == owner;
+                    calibration->second.OffTargetDamageEvents.push_back(event);
+                }
+            }
             else
             {
                 calibration->second.Damage += measuredDamage;

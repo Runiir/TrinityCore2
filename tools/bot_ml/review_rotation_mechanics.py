@@ -1254,6 +1254,8 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
     movement_distance_total = 0.0
     movement_distance_max = 0.0
     calibration_windows: list[dict[str, Any]] = []
+    decision_timeline: list[dict[str, Any]] = []
+    off_target_damage_events: list[dict[str, Any]] = []
 
     trace_entries = ((document.get("trace") or {}).get("entries") or [])
     unique_attempts: set[tuple[int, int]] = set()
@@ -1292,6 +1294,7 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
             rejection_reasons[reason] += 1
 
     for bot in _iter_runtime_bots(document):
+        bot_guid = int(bot.get("guid") or 0)
         snapshot = bot.get("snapshot") if isinstance(bot.get("snapshot"), dict) else {}
         decision = snapshot.get("decision") if isinstance(snapshot.get("decision"), dict) else {}
         movement = snapshot.get("movement") if isinstance(snapshot.get("movement"), dict) else {}
@@ -1352,6 +1355,54 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
             for reject in rejects:
                 if isinstance(reject, dict) and reject.get("reason"):
                     rejection_reasons[str(reject["reason"])] += 1
+        for event in bot.get("decision_timeline") or []:
+            if not isinstance(event, dict):
+                continue
+            normalized_event = {
+                "bot_guid": bot_guid,
+                "elapsed_ms": int(event.get("elapsed_ms") or 0),
+                "spell_id": int(event.get("spell_id") or 0),
+                "result": str(event.get("result") or ""),
+                "health": int(event.get("health") or 0),
+                "max_health": int(event.get("max_health") or 0),
+                "mana": int(event.get("mana") or 0),
+                "max_mana": int(event.get("max_mana") or 0),
+                "target_distance": float(event.get("target_distance") or 0.0),
+                # Older reports do not carry this observation. Treat absence
+                # as unknown/non-death rather than fabricating a dead sample.
+                "alive": bool(event.get("alive", True)),
+            }
+            decision_timeline.append(normalized_event)
+        for event in bot.get("off_target_damage_events") or []:
+            if not isinstance(event, dict):
+                continue
+            off_target_damage_events.append(
+                {
+                    "bot_guid": bot_guid,
+                    "elapsed_ms": int(event.get("elapsed_ms") or 0),
+                    "attacker_guid": int(event.get("attacker_guid") or 0),
+                    "victim_guid": int(event.get("victim_guid") or 0),
+                    "victim_entry": int(event.get("victim_entry") or 0),
+                    "victim_type_id": int(event.get("victim_type_id") or 0),
+                    "victim_is_owner": bool(event.get("victim_is_owner")),
+                    "spell_id": int(event.get("spell_id") or 0),
+                    "damage": int(event.get("damage") or 0),
+                }
+            )
+
+    decision_timeline.sort(key=lambda event: (event["bot_guid"], event["elapsed_ms"]))
+    off_target_damage_events.sort(
+        key=lambda event: (event["bot_guid"], event["elapsed_ms"], event["victim_guid"])
+    )
+    health_ratios = [
+        event["health"] / event["max_health"]
+        for event in decision_timeline
+        if event["max_health"] > 0
+    ]
+    first_death = next(
+        (event for event in decision_timeline if event["result"] == "dead" or not event["alive"]),
+        None,
+    )
 
     return {
         "schema": "rotation_review_runtime_observation_v1",
@@ -1362,6 +1413,18 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
         "rejection_reason_counts": dict(sorted(rejection_reasons.items())),
         "pipeline_edges": dict(sorted(pipeline_edges.items())),
         "calibration_windows": calibration_windows,
+        "decision_timeline": decision_timeline,
+        "off_target_damage_events": off_target_damage_events,
+        "timeline_summary": {
+            "sample_count": len(decision_timeline),
+            "first_death_elapsed_ms": first_death["elapsed_ms"] if first_death else None,
+            "minimum_observed_health_ratio": min(health_ratios) if health_ratios else None,
+            "movement_range_events": sum(
+                event["result"] == "movement_range" for event in decision_timeline
+            ),
+            "off_target_event_count": len(off_target_damage_events),
+            "off_target_damage": sum(event["damage"] for event in off_target_damage_events),
+        },
         "decision_observation": {
             "action_counts": dict(sorted(decision_actions.items())),
             "result_counts": dict(sorted(decision_results.items())),

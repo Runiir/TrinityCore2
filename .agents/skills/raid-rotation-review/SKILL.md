@@ -82,6 +82,10 @@ Pass only the available inputs. The tool hashes every supplied file and emits:
   gaps, and explicitly unmapped expressions;
 - runtime attempts, selections, native results, landed damage, and rejection
   reasons as distinct facts;
+- the bounded calibration `decision_timeline`, including health, mana, target
+  distance, movement/range waits, native outcomes, and the first observed death;
+- attributed `off_target_damage_events`, including attacker, victim entry/GUID,
+  spell, damage, and whether the victim was the acting player;
 - route-node mechanic obligations, target identities, and completion policy.
 
 Treat its comparisons as review leads, never semantic-equivalence or DPS
