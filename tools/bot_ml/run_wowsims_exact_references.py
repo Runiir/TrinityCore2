@@ -4754,13 +4754,11 @@ def validate_dvc_reconstruction_receipt(
             artifact_root=receipt_path.resolve().parent.parent,
             label=f"dvc_receipt:{label}",
         )
-    cloud_status_text = verified_process_logs["dvc_status_cloud"].read_text(
-        encoding="utf-8"
-    ).strip()
     _require(
-        cloud_status_text in {"", "Data and pipelines are up to date."}
-        and receipt.get("cloud_status_classification")
-        == "clean_no_remote_divergence",
+        classify_clean_dvc_cloud_status(
+            verified_process_logs["dvc_status_cloud"].read_bytes()
+        )
+        == receipt.get("cloud_status_classification"),
         "dvc_receipt:cloud_status_output",
     )
     _, parsed_fresh_rebuild_identity = parse_fresh_build_log_identity(
@@ -5138,6 +5136,85 @@ def _repo_artifact_record(path: Path, *, repository_root: Path) -> dict[str, Any
         "sha256": sha256_file(resolved),
         "byte_count": resolved.stat().st_size,
     }
+
+
+def build_promotion_index(
+    *,
+    catalog_path: Path,
+    generation_receipt_paths: Sequence[Path],
+    dvc_reconstruction_receipt_path: Path,
+    repository_revision: str,
+    dvc_pointer_path: str,
+    bundle_root: str,
+    output_path: Path,
+    repository_root: Path = REPO_ROOT,
+) -> dict[str, Any]:
+    manifest = load_request_manifest(catalog_path)
+    validate_request_manifest(
+        manifest, root=repository_root, verify_generated_artifacts=True
+    )
+    pending = pending_catalog_projection(manifest)
+    generation_paths = [path.resolve() for path in generation_receipt_paths]
+    _require(len(generation_paths) == 16, "promotion_builder:generation_count")
+    generations: dict[str, Path] = {}
+    for path in generation_paths:
+        receipt = validate_generation_receipt(
+            path, require_dvc_reconstruction=False
+        )
+        target_spec = str(receipt.get("target_spec") or "")
+        _require(
+            target_spec and target_spec not in generations,
+            "promotion_builder:generation_spec",
+        )
+        generations[target_spec] = path
+    expected_specs = {str(row["target_spec"]) for row in pending["requests"]}
+    _require(set(generations) == expected_specs, "promotion_builder:spec_set")
+    repository_url = _git_output(repository_root, ["remote", "get-url", "origin"])
+    validate_dvc_reconstruction_receipt(
+        dvc_reconstruction_receipt_path,
+        expected_generation_receipt_paths=[
+            generations[target_spec] for target_spec in sorted(expected_specs)
+        ],
+        expected_repository_root=repository_root,
+        expected_repository_url=repository_url,
+        expected_repository_revision=repository_revision,
+        expected_dvc_pointer_path=dvc_pointer_path,
+        expected_bundle_root=bundle_root,
+    )
+    dvc_record = _repo_artifact_record(
+        dvc_reconstruction_receipt_path, repository_root=repository_root
+    )
+    publication = {
+        "repository_url": repository_url,
+        "repository_revision": repository_revision,
+        "dvc_pointer_path": dvc_pointer_path,
+        "bundle_root": bundle_root,
+        "pending_request_catalog_sha256": canonical_sha256(pending),
+        "control_plane_policy": (
+            "commit_a_pointer_then_commit_b_reconstruction_receipt_and_promotion"
+        ),
+    }
+    entries = [
+        {
+            "target_spec": target_spec,
+            "generation_receipt": _repo_artifact_record(
+                generations[target_spec], repository_root=repository_root
+            ),
+            "dvc_reconstruction_receipt": dvc_record,
+        }
+        for target_spec in sorted(expected_specs)
+    ]
+    identity = {
+        "schema": PROMOTION_INDEX_SCHEMA,
+        "publication_domain": publication,
+        "entries": entries,
+    }
+    index = {**identity, "index_sha256": canonical_sha256(identity)}
+    _write_exact(
+        output_path,
+        (json.dumps(index, indent=2, ensure_ascii=False) + "\n").encode("utf-8"),
+    )
+    return index
 
 
 def _require_committed_head_file(
@@ -5531,6 +5608,19 @@ def main() -> int:
     verify_dvc.add_argument("--dvc-pointer-path", required=True)
     verify_dvc.add_argument("--bundle-root", required=True)
 
+    promotion_index = subparsers.add_parser("build-promotion-index")
+    promotion_index.add_argument("--catalog", type=Path, default=DEFAULT_REQUEST_CATALOG)
+    promotion_index.add_argument(
+        "--generation-receipt", type=Path, action="append", required=True
+    )
+    promotion_index.add_argument(
+        "--dvc-reconstruction-receipt", type=Path, required=True
+    )
+    promotion_index.add_argument("--repository-revision", required=True)
+    promotion_index.add_argument("--dvc-pointer-path", required=True)
+    promotion_index.add_argument("--bundle-root", required=True)
+    promotion_index.add_argument("--output", type=Path, required=True)
+
     promote = subparsers.add_parser("promote-all")
     promote.add_argument("--catalog", type=Path, default=DEFAULT_REQUEST_CATALOG)
     promote.add_argument("--promotion-index", type=Path, required=True)
@@ -5722,6 +5812,18 @@ def main() -> int:
             expected_bundle_root=args.bundle_root,
         )
         print(json.dumps({"ok": True, "receipt_sha256": receipt["receipt_sha256"]}))
+        return 0
+    if args.command == "build-promotion-index":
+        index = build_promotion_index(
+            catalog_path=args.catalog,
+            generation_receipt_paths=args.generation_receipt,
+            dvc_reconstruction_receipt_path=args.dvc_reconstruction_receipt,
+            repository_revision=args.repository_revision,
+            dvc_pointer_path=args.dvc_pointer_path,
+            bundle_root=args.bundle_root,
+            output_path=args.output,
+        )
+        print(json.dumps({"ok": True, "index_sha256": index["index_sha256"]}))
         return 0
     if args.command == "promote-all":
         promoted = promote_generated_references(

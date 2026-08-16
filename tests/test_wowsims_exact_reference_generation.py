@@ -1249,6 +1249,14 @@ def test_dvc_cloud_status_rejects_remote_divergence() -> None:
         )
 
 
+def test_promotion_index_cli_is_available_and_validates_reconstruction() -> None:
+    source = inspect.getsource(exact_runner.main)
+    builder = inspect.getsource(exact_runner.build_promotion_index)
+    assert 'subparsers.add_parser("build-promotion-index")' in source
+    assert "validate_dvc_reconstruction_receipt(" in builder
+    assert "pending_request_catalog_sha256" in builder
+
+
 def test_dvc_receipt_rejects_publication_domain_relabel(tmp_path: Path) -> None:
     repository = tmp_path / "repository"
     receipt_path = repository / "control-plane" / "reconstruction.json"
