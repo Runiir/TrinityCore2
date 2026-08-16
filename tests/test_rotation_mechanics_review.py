@@ -259,6 +259,57 @@ def test_runtime_report_keeps_selection_submission_landing_and_rejection_separat
     }
 
 
+def test_runtime_report_reads_completed_combat_calibration_window():
+    runtime = {
+        "combat_calibration": {
+            "phase": "complete",
+            "previous_window": {
+                "bots": [
+                    {
+                        "guid": 1306,
+                        "elapsed_seconds": 300.0,
+                        "damage": 6339687,
+                        "dps": 21132.29,
+                        "pet_damage": 404927,
+                        "action_attempts": [
+                            {"spell_id": 686, "count": 85},
+                            {"spell_id": 1120, "count": 4},
+                        ],
+                        "spell_damage": [
+                            {"spell_id": 686, "damage": 1857836},
+                            {"spell_id": 1120, "damage": 603362},
+                        ],
+                        "result_counts": {"ok": 148, "no_action": 389},
+                        "quality_metrics": {
+                            "active_uptime_ratio": 1.0,
+                            "movement_range_loss_ratio": 0.0,
+                        },
+                    }
+                ]
+            },
+        }
+    }
+
+    normalized = normalize_runtime_report(runtime)
+
+    assert normalized["attempt_counts_by_spell"] == {"1120": 4, "686": 85}
+    assert normalized["damage_by_spell"] == {"1120": 603362, "686": 1857836}
+    assert normalized["result_counts"] == {"no_action": 389, "ok": 148}
+    assert normalized["calibration_windows"] == [
+        {
+            "guid": 1306,
+            "elapsed_seconds": 300.0,
+            "damage": 6339687,
+            "dps": 21132.29,
+            "pet_damage": 404927,
+            "quality_metrics": {
+                "active_uptime_ratio": 1.0,
+                "movement_range_loss_ratio": 0.0,
+            },
+        }
+    ]
+
+
 def test_route_mechanic_obligations_are_normalized_without_execution():
     route = {
         "scenario_id": "stonecore_5n",
