@@ -5856,6 +5856,16 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "CalibrationFixtureTargetNearestHostileClearance" in population
     assert "CalibrationFailureReason" in header
     assert "calibration_isolated_target_provisioning_failed" in population
+    assert "BotWorld calibration isolated target rejected" in population
+    for rejection in (
+        "calibration_isolated_target_summon_failed",
+        "calibration_isolated_target_not_attackable",
+        "calibration_isolated_target_hostile_clearance_failed",
+        "calibration_isolated_target_line_of_sight_failed",
+        "calibration_isolated_target_distance_failed",
+        "calibration_isolated_target_path_failed",
+    ):
+        assert rejection in population
     assert "Cohort().CalibrationWindowComplete = true" in population
     stop = manager.split(
         "std::string BotWorldPopulationMgr::StopCombatCalibration()", 1

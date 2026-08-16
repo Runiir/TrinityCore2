@@ -8906,14 +8906,32 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
                     == IsolatedSingleTargetCreatureType
                 && fixtureTarget->GetMaxHealth()
                     == IsolatedSingleTargetMaxHealth;
+            bool const fixtureTargetAttackable = fixtureTarget
+                && bot->IsValidAttackTarget(fixtureTarget);
+            bool const fixtureClearanceValidated = fixtureTarget
+                && nearestHostileClearance >= MinimumIsolatedDummyClearance;
+            bool const rangedDistanceValidated = !rangedSingleTargetMode
+                || (botTargetDistance >= 5.0f && botTargetDistance <= 40.0f);
 
             bool const fixtureValid = fixtureTarget
-                && bot->IsValidAttackTarget(fixtureTarget)
-                && nearestHostileClearance >= MinimumIsolatedDummyClearance
+                && fixtureTargetAttackable
+                && fixtureClearanceValidated
                 && fixtureGeometryValidated
                 && fixtureTargetFidelityValidated;
             if (!fixtureValid)
             {
+                TC_LOG_INFO("server",
+                    "BotWorld calibration isolated target rejected bot=%s target=%s "
+                    "attackable=%u clearance=%.3f clearance_ok=%u los=%u path=%u "
+                    "melee=%u distance=%.3f distance_ok=%u geometry=%u fidelity=%u",
+                    bot->GetGUID().ToString().c_str(),
+                    fixtureTarget ? fixtureTarget->GetGUID().ToString().c_str() : "none",
+                    uint32(fixtureTargetAttackable), nearestHostileClearance,
+                    uint32(fixtureClearanceValidated), uint32(nativeLineOfSight),
+                    uint32(nativePathReachable), uint32(nativeMeleeReachable),
+                    botTargetDistance, uint32(rangedDistanceValidated),
+                    uint32(fixtureGeometryValidated),
+                    uint32(fixtureTargetFidelityValidated));
                 if (fixtureTarget)
                     fixtureTarget->UnSummon();
                 ObjectGuid const failedGuid = bot->GetGUID();
@@ -8922,11 +8940,23 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
                     CharacterDatabase.DirectPExecute(
                         "UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u",
                         candidateGuid);
-                Cohort().LastPopulationFailureReason = !fixtureTargetFidelityValidated
-                    ? "calibration_isolated_target_fidelity_mismatch"
-                    : (!nativeMeleeFixtureReady
-                        ? "calibration_isolated_melee_fixture_unreachable"
-                        : "calibration_isolated_target_provisioning_failed");
+                Cohort().LastPopulationFailureReason = !fixtureTarget
+                    ? "calibration_isolated_target_summon_failed"
+                    : (!fixtureTargetFidelityValidated
+                        ? "calibration_isolated_target_fidelity_mismatch"
+                        : (!fixtureTargetAttackable
+                            ? "calibration_isolated_target_not_attackable"
+                            : (!fixtureClearanceValidated
+                                ? "calibration_isolated_target_hostile_clearance_failed"
+                                : (!nativeLineOfSight
+                                    ? "calibration_isolated_target_line_of_sight_failed"
+                                    : (!rangedDistanceValidated
+                                        ? "calibration_isolated_target_distance_failed"
+                                        : (!nativePathReachable
+                                            ? "calibration_isolated_target_path_failed"
+                                            : (!nativeMeleeFixtureReady
+                                                ? "calibration_isolated_melee_fixture_unreachable"
+                                                : "calibration_isolated_target_provisioning_failed"))))));
                 Cohort().CalibrationFailureReason =
                     Cohort().LastPopulationFailureReason;
                 Cohort().CalibrationWindowComplete = true;
