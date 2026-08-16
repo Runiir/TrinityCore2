@@ -35,6 +35,8 @@
 #include "SpellHistory.h"
 #include "SpellScript.h"
 
+#include <unordered_set>
+
 namespace Spells::Warlock
 {
 enum WarlockSpells
@@ -87,6 +89,7 @@ enum WarlockSpells
     SPELL_WARLOCK_JINX_TRIGGERED_ENERGY             = 85540,
     SPELL_WARLOCK_JINX_TRIGGERED_RUNIC_POWER        = 85541,
     SPELL_WARLOCK_JINX_TRIGGERED_FOCUS              = 85542,
+    SPELL_WARLOCK_SHADOW_BITE                       = 54049,
     SPELL_WARLOCK_JINX_R1                           = 18179,
     SPELL_WARLOCK_LIFE_TAP_ENERGIZE                 = 31818,
     SPELL_WARLOCK_LIFE_TAP_ENERGIZE_2               = 32553,
@@ -585,6 +588,37 @@ class spell_warl_haunt_AuraScript : public AuraScript
     void Register() override
     {
         OnEffectRemove.Register(&spell_warl_haunt_AuraScript::HandleRemove, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL_OR_REAPPLY_MASK);
+    }
+};
+
+// 54049 - Shadow Bite
+// The Felhunter deals 30% additional damage for each of its owner's active
+// warlock damage-over-time effects on the victim.  The coefficient itself is
+// supplied through SpellInfoCorrections; this script preserves the native
+// damage pipeline and applies only the spell's target-state mechanic.
+class spell_warl_shadow_bite : public SpellScript
+{
+    void CalculateDamage(Unit* victim, int32& /*damage*/, int32& /*flatMod*/, float& pctMod)
+    {
+        Unit* caster = GetCaster();
+        Unit* owner = caster ? caster->GetOwner() : nullptr;
+        if (!owner || !victim)
+            return;
+
+        std::unordered_set<uint32> activeDots;
+        for (AuraEffect const* effect : victim->GetAuraEffectsByType(SPELL_AURA_PERIODIC_DAMAGE))
+        {
+            SpellInfo const* spellInfo = effect->GetSpellInfo();
+            if (effect->GetCasterGUID() == owner->GetGUID() && spellInfo->SpellFamilyName == SPELLFAMILY_WARLOCK)
+                activeDots.insert(spellInfo->Id);
+        }
+
+        AddPct(pctMod, int32(30 * activeDots.size()));
+    }
+
+    void Register() override
+    {
+        CalcDamage.Register(&spell_warl_shadow_bite::CalculateDamage);
     }
 };
 
@@ -1882,6 +1916,7 @@ void AddSC_warlock_spell_scripts()
     RegisterSpellScript(spell_warl_seed_of_corruption);
     RegisterSpellScript(spell_warl_seed_of_corruption_aoe);
     RegisterSpellScript(spell_warl_shadow_trance_proc);
+    RegisterSpellScript(spell_warl_shadow_bite);
     RegisterSpellScript(spell_warl_shadow_ward);
     RegisterSpellScript(spell_warl_shadowflame);
     RegisterSpellScript(spell_warl_soulburn);

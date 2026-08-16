@@ -3005,6 +3005,28 @@ void SpellMgr::LoadSpellInfoCorrections()
         spellInfo->Effects[EFFECT_0].BonusMultiplier = spellInfo->Effects[EFFECT_1].BonusMultiplier;
     });
 
+    // These Cataclysm warlock spells have a zero EffectBonusCoefficient in the
+    // client SpellEffect data.  Their retail coefficients were formerly
+    // supplied by spell_bonus_data before that legacy override table was
+    // removed in favour of DBC coefficients.  Keep the exceptional values as
+    // SpellInfo corrections so the normal native damage pipeline (owner spell
+    // power inheritance, spell mods, crit, target mitigation) remains the
+    // authority.
+    ApplySpellFix({ 6353 }, [](SpellInfo* spellInfo) // Soul Fire
+    {
+        spellInfo->Effects[EFFECT_0].BonusMultiplier = 0.726f;
+    });
+
+    ApplySpellFix({ 48181 }, [](SpellInfo* spellInfo) // Haunt
+    {
+        spellInfo->Effects[EFFECT_0].BonusMultiplier = 0.5577f;
+    });
+
+    ApplySpellFix({ 54049 }, [](SpellInfo* spellInfo) // Shadow Bite
+    {
+        spellInfo->Effects[EFFECT_0].BonusMultiplier = 1.228f;
+    });
+
     ApplySpellFix({
         82690, // Flame Orb
         84717  // Frostfire Orb
