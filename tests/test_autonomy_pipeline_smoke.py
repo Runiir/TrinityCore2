@@ -5889,6 +5889,9 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "sMapMgr->FindMap(" in stop
     assert "CalibrationFixtureTargetMapId, 0" in stop
     assert "fixture_cleanup_submitted_or_absent" in stop
+    assert r'\"cohort_id\":\"' in stop
+    assert r'\"server_epoch\":' in stop
+    assert r'\"attempt_id\":' in stop
     assert "for (WorldBotState const& state : Party().CalibrationBots)" not in stop.split(
         "bool fixtureTargetFound", 1
     )[1].split("uint32 removed", 1)[0]

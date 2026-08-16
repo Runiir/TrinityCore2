@@ -1243,10 +1243,10 @@ def enrich_combat_calibration_reference(
             }
         )
 
-    normalization = calibration.setdefault("normalization", {})
-    normalization["external_bis_target_configured"] = True
-    normalization["external_reference_id"] = str(reference.get("reference_id") or "")
-    normalization["external_reference_mode"] = "informational_only_conditions_mismatched"
+    # This older reference is retained only as descriptive provenance. Exact
+    # calibration scoring is independently reconstructed from the generated
+    # per-spec request/result binding; mutating native normalization here made
+    # the report disagree with the immutable raw calibration payload.
     calibration["external_reference"] = {
         "reference_id": reference.get("reference_id"),
         "source": reference.get("source"),

@@ -2635,8 +2635,19 @@ std::string BotWorldPopulationMgr::StartCombatCalibration(std::string const& mod
 
 std::string BotWorldPopulationMgr::StopCombatCalibration()
 {
+    std::string const cohortId = Cohort().Id;
+    uint64 const serverEpoch = _serverEpoch;
+    uint64 const attemptId = Cohort().AttemptId;
     if (Cohort().CalibrationStopping)
-        return "{\"ok\":true,\"action\":\"botauto_calibrate_stop\",\"removed\":0,\"failure_reason\":null}";
+    {
+        std::ostringstream stoppingJson;
+        stoppingJson << "{\"ok\":true,\"action\":\"botauto_calibrate_stop\""
+                     << ",\"cohort_id\":\"" << JsonEscape(cohortId) << "\""
+                     << ",\"server_epoch\":" << serverEpoch
+                     << ",\"attempt_id\":" << attemptId
+                     << ",\"removed\":0,\"failure_reason\":null}";
+        return stoppingJson.str();
+    }
 
     Cohort().CalibrationStopping = true;
     std::vector<ObjectGuid> calibrationBotGuids;
@@ -2754,7 +2765,11 @@ std::string BotWorldPopulationMgr::StopCombatCalibration()
     }
 
     std::ostringstream json;
-    json << "{\"ok\":true,\"action\":\"botauto_calibrate_stop\",\"removed\":" << removed
+    json << "{\"ok\":true,\"action\":\"botauto_calibrate_stop\""
+         << ",\"cohort_id\":\"" << JsonEscape(cohortId) << "\""
+         << ",\"server_epoch\":" << serverEpoch
+         << ",\"attempt_id\":" << attemptId
+         << ",\"removed\":" << removed
          << ",\"fixture_target_found\":" << (fixtureTargetFound ? "true" : "false")
          << ",\"fixture_cleanup_submitted_or_absent\":"
          << (fixtureCleanupSubmittedOrAbsent ? "true" : "false")

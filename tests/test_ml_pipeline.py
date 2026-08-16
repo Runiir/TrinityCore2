@@ -3556,8 +3556,7 @@ TC> {"ok":true,"action":"botauto_calibrate_status","active":true,"normalization"
     report = live_validation_report(output)
     calibration = report["combat_calibration"]
 
-    assert calibration["normalization"]["external_bis_target_configured"] is True
-    assert calibration["normalization"]["external_reference_mode"] == "informational_only_conditions_mismatched"
+    assert calibration["normalization"] == {"external_bis_target_configured": False}
     assert calibration["external_reference"]["source"]["name"] == "WoWSims Cataclysm"
     assert calibration["external_reference_comparisons"] == [
         {
