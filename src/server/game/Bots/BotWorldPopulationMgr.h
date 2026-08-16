@@ -2122,6 +2122,8 @@ private:
         uint64 WindowEndedMs = 0;
         uint64 Damage = 0;
         uint64 PetDamage = 0;
+        uint64 PrimaryTargetDamage = 0;
+        uint64 OffTargetDamage = 0;
         uint64 AttemptedHealing = 0;
         uint64 EffectiveHealing = 0;
         uint64 AbsorbedHealing = 0;
@@ -2577,10 +2579,19 @@ private:
         bool CalibrationStopping = false;
         bool CalibrationAoePhase = false;
         bool CalibrationWindowComplete = false;
+        std::string CalibrationFailureReason;
         std::string CalibrationMode = "single_target_300";
         std::string CalibrationTargetSpec;
         uint32 CalibrationSeed = 1;
         ObjectGuid CalibrationTargetGuid;
+        ObjectGuid CalibrationFixtureTargetGuid;
+        uint32 CalibrationFixtureTargetEntry = 0;
+        uint32 CalibrationFixtureTargetMapId = 0;
+        float CalibrationFixtureTargetX = 0.0f;
+        float CalibrationFixtureTargetY = 0.0f;
+        float CalibrationFixtureTargetZ = 0.0f;
+        float CalibrationFixtureTargetNearestHostileClearance = 0.0f;
+        uint64 CalibrationFixtureTargetProvisionedAtMs = 0;
         ObjectGuid CalibrationInterruptTargetGuid;
         uint64 CalibrationStartedMs = 0;
         uint64 CalibrationScoredStartedMs = 0;

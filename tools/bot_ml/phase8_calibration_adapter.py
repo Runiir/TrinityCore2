@@ -299,6 +299,9 @@ def normalize_runtime_calibration(
 
     if mode in {"single_target_300", "aoe_300"}:
         active_uptime = float(_required(quality, "active_uptime_ratio", "target_bot.quality_metrics") or 0.0)
+        fixture_target = _mapping(
+            calibration.get("fixture_target"), "combat_calibration.fixture_target"
+        ) if mode == "single_target_300" else {}
         metrics = {
             **common,
             "reference_value": _simulator_dps(reference_row),
@@ -307,6 +310,35 @@ def normalize_runtime_calibration(
             "active_dps": elapsed_dps / active_uptime if active_uptime > 0 else 0.0,
             "elapsed_dps": elapsed_dps,
             "target_count": int(_required(target_bot, "target_count", "target_bot") or 0),
+            "scored_damage": int(_required(target_bot, "damage", "target_bot") or 0),
+            "primary_target_guid": int(
+                (_required(target_bot, "primary_target_guid", "target_bot")
+                    if mode == "single_target_300"
+                    else target_bot.get("primary_target_guid"))
+                or 0
+            ),
+            "primary_target_damage": int(
+                (_required(target_bot, "primary_target_damage", "target_bot")
+                    if mode == "single_target_300"
+                    else target_bot.get("primary_target_damage"))
+                or 0
+            ),
+            "off_target_damage": int(
+                (_required(target_bot, "off_target_damage", "target_bot")
+                    if mode == "single_target_300"
+                    else target_bot.get("off_target_damage"))
+                or 0
+            ),
+            "observed_distinct_damage_targets": int(
+                (_required(
+                    target_bot,
+                    "observed_distinct_damage_targets",
+                    "target_bot",
+                ) if mode == "single_target_300"
+                    else target_bot.get("observed_distinct_damage_targets"))
+                or 0
+            ),
+            "isolated_fixture_target": dict(fixture_target),
             "ability_mix": _ability_mix(target_bot),
             "rotation_group_coverage": float(_required(quality, "rotation_group_coverage", "target_bot.quality_metrics") or 0.0),
             "observed_action_groups": list(target_bot.get("action_groups") or []),

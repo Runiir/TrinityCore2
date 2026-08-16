@@ -101,6 +101,18 @@ def _calibration_payload() -> dict:
         "scored_ended_at_ms": 301_000,
         "profile_generation": 8,
         "profile_content_hash": "a" * 64,
+        "fixture_target": {
+            "isolated_single_target": True,
+            "entry": 44548,
+            "runtime_guid": 9001,
+            "map_id": 0,
+            "x": -9060.0,
+            "y": 520.0,
+            "z": 75.8,
+            "nearest_other_hostile_clearance": 46.7,
+            "provisioned_at_ms": 500,
+            "provisioned_before_scoring": True,
+        },
         "previous_window": {
             "mode": "single_target_300",
             "bots": [
@@ -112,6 +124,10 @@ def _calibration_payload() -> dict:
                     "elapsed_seconds": 300.0,
                     "damage": 13_500_000,
                     "pet_damage": 0,
+                    "primary_target_guid": 9001,
+                    "primary_target_damage": 13_500_000,
+                    "off_target_damage": 0,
+                    "observed_distinct_damage_targets": 1,
                     "dps": 45_000.0,
                     "target_count": 1,
                     "attempts": 100,
@@ -357,7 +373,14 @@ def test_inconsistent_server_dps_is_rejected_before_ratio_scoring(tmp_path: Path
 def test_two_decimal_server_dps_rounding_contract_is_deterministic(tmp_path: Path):
     calibration = _calibration_payload()
     target = calibration["previous_window"]["bots"][0]
-    target.update({"damage": 10, "elapsed_seconds": 3.0, "dps": 3.33})
+    target.update(
+        {
+            "damage": 10,
+            "primary_target_damage": 10,
+            "elapsed_seconds": 3.0,
+            "dps": 3.33,
+        }
+    )
     report = _report_base()
     report.update(
         {
@@ -405,6 +428,7 @@ def test_serialized_dps_rounding_cannot_promote_exact_ratio_over_85_percent(
     target.update(
         {
             "damage": 13_799_675,
+            "primary_target_damage": 13_799_675,
             "elapsed_seconds": 300.0,
             "dps": 45_998.92,
         }
@@ -534,6 +558,87 @@ def test_failed_dps_normalization_still_retains_the_raw_measurement(tmp_path: Pa
     assert scoring["reference_value"] == 0.0
     assert scoring["hard_floor_passed"] is False
     assert manifest["semantic_binding"]["evidence_kind"] == "dps_calibration"
+
+
+def test_off_target_damage_is_retained_as_failed_fixture_evidence(tmp_path: Path):
+    calibration = _calibration_payload()
+    target = calibration["previous_window"]["bots"][0]
+    target["off_target_damage"] = 250
+    target["observed_distinct_damage_targets"] = 2
+    target["target_count"] = 2
+    report = _report_base()
+    report.update(
+        {
+            "calibration_only": True,
+            "requested_calibration": {
+                "mode": "single_target_300",
+                "target_spec": "fire_mage",
+                "seed": 3,
+            },
+            "combat_calibration": calibration,
+            "role_calibration_record": None,
+            "role_calibration_evaluation": {
+                "reference_ratio": 0.0,
+                "hard_floor_passed": False,
+                "optimization_target_met": False,
+                "record_sha256": None,
+                "policy_sha256": None,
+            },
+        }
+    )
+
+    _capture_calibration(tmp_path, report, [calibration, *_cleanup_payloads()])
+    projection = json.loads(
+        (tmp_path / "batch/raw/decisive_projection.json").read_text()
+    )
+    evaluation = projection["decisive"]["selected_target_scoring"][
+        "isolated_fixture_evaluation"
+    ]
+    assert evaluation["passed"] is False
+    assert "zero_off_target_damage" in evaluation["reasons"]
+    assert "one_observed_damage_target" in evaluation["reasons"]
+    assert "one_scored_target" in evaluation["reasons"]
+
+
+def test_unpinned_fixture_coordinates_are_retained_but_fail_evaluation(
+    tmp_path: Path,
+):
+    calibration = _calibration_payload()
+    calibration["fixture_target"].update({"x": 123.0, "y": 456.0, "z": -100.0})
+    report = _report_base()
+    report.update(
+        {
+            "calibration_only": True,
+            "requested_calibration": {
+                "mode": "single_target_300",
+                "target_spec": "fire_mage",
+                "seed": 3,
+            },
+            "combat_calibration": calibration,
+            "role_calibration_record": None,
+            "role_calibration_evaluation": {
+                "reference_ratio": 0.0,
+                "hard_floor_passed": False,
+                "optimization_target_met": False,
+                "record_sha256": None,
+                "policy_sha256": None,
+            },
+        }
+    )
+
+    _capture_calibration(tmp_path, report, [calibration, *_cleanup_payloads()])
+    projection = json.loads(
+        (tmp_path / "batch/raw/decisive_projection.json").read_text()
+    )
+    evaluation = projection["decisive"]["selected_target_scoring"][
+        "isolated_fixture_evaluation"
+    ]
+    assert evaluation["passed"] is False
+    assert set(evaluation["reasons"]) >= {
+        "fixture_x_pinned",
+        "fixture_y_pinned",
+        "fixture_z_bounded",
+    }
 
 
 def test_reusable_session_returns_output_only_after_cleanup_telemetry_is_appended():

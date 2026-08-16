@@ -2345,10 +2345,19 @@ std::string BotWorldPopulationMgr::StartCombatCalibration(std::string const& mod
     Cohort().CalibrationActive = true;
     Cohort().CalibrationAoePhase = mode == "aoe_300" || mode == "tank_threat_300";
     Cohort().CalibrationWindowComplete = false;
+    Cohort().CalibrationFailureReason.clear();
     Cohort().CalibrationMode = mode;
     Cohort().CalibrationTargetSpec = targetSpec;
     Cohort().CalibrationSeed = seed ? seed : 1;
     Cohort().CalibrationTargetGuid.Clear();
+    Cohort().CalibrationFixtureTargetGuid.Clear();
+    Cohort().CalibrationFixtureTargetEntry = 0;
+    Cohort().CalibrationFixtureTargetMapId = 0;
+    Cohort().CalibrationFixtureTargetX = 0.0f;
+    Cohort().CalibrationFixtureTargetY = 0.0f;
+    Cohort().CalibrationFixtureTargetZ = 0.0f;
+    Cohort().CalibrationFixtureTargetNearestHostileClearance = 0.0f;
+    Cohort().CalibrationFixtureTargetProvisionedAtMs = 0;
     Cohort().CalibrationInterruptTargetGuid.Clear();
     Cohort().CalibrationStartedMs = NowMs();
     Cohort().CalibrationScoredStartedMs = 0;
@@ -2366,6 +2375,9 @@ std::string BotWorldPopulationMgr::StartCombatCalibration(std::string const& mod
     Cohort().CalibrationCompletedAoeWindows = 0;
     Cohort().CalibrationPreviousWindowValid = false;
     EnsureCalibrationPopulation();
+    if (!Cohort().CalibrationFailureReason.empty())
+        return "{\"ok\":false,\"action\":\"botauto_calibrate_start\",\"failure_reason\":\""
+            + JsonEscape(Cohort().CalibrationFailureReason) + "\"}";
     EnsureCalibrationCohortGroup();
     return GetCombatCalibrationJson();
 }
@@ -2382,6 +2394,21 @@ std::string BotWorldPopulationMgr::StopCombatCalibration()
         if (!state.Guid.IsEmpty())
             calibrationBotGuids.push_back(state.Guid);
 
+    bool fixtureTargetFound = false;
+    bool fixtureCleanupSubmittedOrAbsent = true;
+    if (!Cohort().CalibrationFixtureTargetGuid.IsEmpty())
+        if (Map* fixtureMap = sMapMgr->FindMap(
+            Cohort().CalibrationFixtureTargetMapId, 0))
+            if (Creature* target = fixtureMap->GetCreature(
+                Cohort().CalibrationFixtureTargetGuid))
+            {
+                fixtureTargetFound = true;
+                if (TempSummon* summon = target->ToTempSummon())
+                    summon->UnSummon();
+                else
+                    fixtureCleanupSubmittedOrAbsent = false;
+            }
+
     uint32 removed = uint32(calibrationBotGuids.size());
     Party().CalibrationBots.clear();
     Cohort().CalibrationMetricsByGuid.clear();
@@ -2391,10 +2418,19 @@ std::string BotWorldPopulationMgr::StopCombatCalibration()
     Cohort().CalibrationActive = false;
     Cohort().CalibrationAoePhase = false;
     Cohort().CalibrationWindowComplete = false;
+    Cohort().CalibrationFailureReason.clear();
     Cohort().CalibrationMode = "single_target_300";
     Cohort().CalibrationTargetSpec.clear();
     Cohort().CalibrationSeed = 1;
     Cohort().CalibrationTargetGuid.Clear();
+    Cohort().CalibrationFixtureTargetGuid.Clear();
+    Cohort().CalibrationFixtureTargetEntry = 0;
+    Cohort().CalibrationFixtureTargetMapId = 0;
+    Cohort().CalibrationFixtureTargetX = 0.0f;
+    Cohort().CalibrationFixtureTargetY = 0.0f;
+    Cohort().CalibrationFixtureTargetZ = 0.0f;
+    Cohort().CalibrationFixtureTargetNearestHostileClearance = 0.0f;
+    Cohort().CalibrationFixtureTargetProvisionedAtMs = 0;
     Cohort().CalibrationInterruptTargetGuid.Clear();
     Cohort().CalibrationPreviousWindowValid = false;
     Cohort().CalibrationPreviousAoePhase = false;
@@ -2430,6 +2466,9 @@ std::string BotWorldPopulationMgr::StopCombatCalibration()
 
     std::ostringstream json;
     json << "{\"ok\":true,\"action\":\"botauto_calibrate_stop\",\"removed\":" << removed
+         << ",\"fixture_target_found\":" << (fixtureTargetFound ? "true" : "false")
+         << ",\"fixture_cleanup_submitted_or_absent\":"
+         << (fixtureCleanupSubmittedOrAbsent ? "true" : "false")
          << ",\"failure_reason\":null}";
     return json.str();
 }
@@ -2727,6 +2766,14 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                  << ",\"elapsed_seconds\":" << std::fixed << std::setprecision(3) << elapsedSec
                  << ",\"damage\":" << (metrics ? metrics->Damage : 0)
                  << ",\"pet_damage\":" << (metrics ? metrics->PetDamage : 0)
+                 << ",\"primary_target_guid\":"
+                 << Cohort().CalibrationFixtureTargetGuid.GetCounter()
+                 << ",\"primary_target_damage\":"
+                 << (metrics ? metrics->PrimaryTargetDamage : 0)
+                 << ",\"off_target_damage\":"
+                 << (metrics ? metrics->OffTargetDamage : 0)
+                 << ",\"observed_distinct_damage_targets\":"
+                 << (metrics ? metrics->LastDamageMsByTarget.size() : 0)
                  << ",\"dps\":" << std::fixed << std::setprecision(2) << dps
                  << ",\"threat_per_second\":" << std::fixed << std::setprecision(2) << tps
                  << ",\"threat_observable\":" << (metrics && metrics->ThreatBaseline >= 0.0f && metrics->ThreatCurrent > metrics->ThreatBaseline ? "true" : "false")
@@ -2904,8 +2951,13 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
             || metrics.ActionAttempts.find(26297) != metrics.ActionAttempts.end()
             || metrics.ActionAttempts.find(33697) != metrics.ActionAttempts.end();
     }
-    json << "{\"ok\":true,\"action\":\"botauto_calibrate_status\",\"cohort_id\":\"" << JsonEscape(Cohort().Id)
+    json << "{\"ok\":" << (Cohort().CalibrationFailureReason.empty() ? "true" : "false")
+         << ",\"action\":\"botauto_calibrate_status\",\"cohort_id\":\"" << JsonEscape(Cohort().Id)
          << "\",\"active\":" << (Cohort().CalibrationActive ? "true" : "false")
+         << ",\"failure_reason\":"
+         << (Cohort().CalibrationFailureReason.empty()
+                ? "null"
+                : "\"" + JsonEscape(Cohort().CalibrationFailureReason) + "\"")
          << ",\"runtime_mode\":\"" << RuntimeModeName(Cohort().RuntimeMode) << "\""
          << ",\"non_certifying_assistance\":" << (Cohort().NonCertifyingAssistance ? "true" : "false")
          << ",\"window_complete\":" << (Cohort().CalibrationWindowComplete ? "true" : "false")
@@ -2919,6 +2971,25 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
          << ",\"generic_ml_runtime_authority\":false"
          << ",\"isolated_from_route_telemetry\":true"
          << ",\"damage_basis\":\"effective_or_unmitigated\""
+         << ",\"fixture_target\":{\"isolated_single_target\":"
+         << (Cohort().CalibrationMode == "single_target_300" ? "true" : "false")
+         << ",\"entry\":" << Cohort().CalibrationFixtureTargetEntry
+         << ",\"runtime_guid\":"
+         << Cohort().CalibrationFixtureTargetGuid.GetCounter()
+         << ",\"map_id\":" << Cohort().CalibrationFixtureTargetMapId
+         << ",\"x\":" << Cohort().CalibrationFixtureTargetX
+         << ",\"y\":" << Cohort().CalibrationFixtureTargetY
+         << ",\"z\":" << Cohort().CalibrationFixtureTargetZ
+         << ",\"nearest_other_hostile_clearance\":"
+         << Cohort().CalibrationFixtureTargetNearestHostileClearance
+         << ",\"provisioned_at_ms\":"
+         << Cohort().CalibrationFixtureTargetProvisionedAtMs
+         << ",\"provisioned_before_scoring\":"
+         << (Cohort().CalibrationFixtureTargetProvisionedAtMs
+                && (!Cohort().CalibrationScoredStartedMs
+                    || Cohort().CalibrationFixtureTargetProvisionedAtMs
+                        <= Cohort().CalibrationScoredStartedMs)
+                ? "true" : "false") << '}'
          << ",\"phase\":\"" << (Cohort().CalibrationScoredStartedMs ? (Cohort().CalibrationWindowComplete ? "complete" : "scored") : "warmup") << "\""
          << ",\"window_seconds\":300"
          << ",\"warmup_seconds\":" << std::fixed << std::setprecision(3) << warmupSeconds
@@ -7364,36 +7435,42 @@ void BotWorldPopulationMgr::EnsurePopulation()
 
 void BotWorldPopulationMgr::EnsureCalibrationPopulation()
 {
+    if (!Cohort().CalibrationFailureReason.empty())
+        return;
+
+    static constexpr uint32 IsolatedSingleTargetDummyEntry = 44548;
+    static constexpr float IsolatedSingleTargetDummyX = -9060.0f;
+    static constexpr float IsolatedSingleTargetDummyY = 520.0f;
+    static constexpr float IsolatedSingleTargetGroundZ = 75.8f;
+    static constexpr float IsolatedSingleTargetRangedX = -9045.0f;
+    static constexpr float IsolatedSingleTargetMeleeX = -9056.0f;
+    static constexpr float MinimumIsolatedDummyClearance = 45.0f;
     bool const clusteredDummyMode = Cohort().CalibrationMode == "aoe_300"
         || Cohort().CalibrationMode == "tank_threat_300";
     bool const rangedAoeMode = Cohort().CalibrationMode == "aoe_300"
         && UsesRangedAoeCalibrationLane(Cohort().CalibrationTargetSpec);
-    bool const demonologyCloseRangeMode = Cohort().CalibrationTargetSpec == "demonology_warlock";
+    bool const demonologyAoeMode = Cohort().CalibrationMode == "aoe_300"
+        && Cohort().CalibrationTargetSpec == "demonology_warlock";
     bool const rangedSingleTargetMode = Cohort().CalibrationMode == "single_target_300"
         && UsesRangedAoeCalibrationLane(Cohort().CalibrationTargetSpec);
-    // The generic single-target point overlaps one dummy. Melee AoE and tank-threat
-    // windows start at the center of the nearest dummy cluster so real splash
-    // damage engages the cluster before its combat timers end. Ranged AoE
-    // profiles instead spawn in a known legal courtyard firing lane; spawning
-    // inside the center dummy collision leaves every ranged spell below its
-    // hostile minimum range before movement can establish an mmap path. Demonology
-    // uses a legal six-yard single-target lane for Shadowflame plus the ranged core,
-    // and an open centroid lane in AoE mode that keeps all eight dummies within
-    // Hellfire/Immolation range without spawning inside any dummy collision.
-    // Every ranged single-target profile also needs a legal firing lane.  Their
-    // native hostile minimum range can be twelve yards, so the six-yard lane is
-    // still rejected before any action can establish combat.  Use the existing
-    // known walkable ranged courtyard lane (about fifteen yards from the nearest
-    // eligible dummy); melee profiles retain the overlap point and close natively.
-    float const calibrationX = demonologyCloseRangeMode
-        ? (Cohort().CalibrationMode == "aoe_300" ? -8967.4f : -8956.0f)
-        : (rangedSingleTargetMode ? -8947.0f
+    bool const isolatedSingleTargetMode = Cohort().CalibrationMode == "single_target_300";
+    // Single-target comparison uses one temporary server-owned dummy in an open
+    // fixture lane, at least 45 yards from every other hostile visible to the bot.
+    // This preserves legitimate single-target spells with area-capable semantics
+    // without allowing collateral damage or procs to inflate the score. AoE and
+    // tank-threat windows retain the permanent training cluster. Ranged AoE uses
+    // its known courtyard lane, while Demonology AoE uses the open centroid that
+    // keeps the cluster inside Hellfire/Immolation range.
+    float const calibrationX = isolatedSingleTargetMode
+        ? (rangedSingleTargetMode ? IsolatedSingleTargetRangedX : IsolatedSingleTargetMeleeX)
+        : (demonologyAoeMode ? -8967.4f
             : (rangedAoeMode ? -8947.0f : (clusteredDummyMode ? -8965.59f : -8962.05f)));
-    float const calibrationY = demonologyCloseRangeMode
-        ? (Cohort().CalibrationMode == "aoe_300" ? -152.9f : -157.16f)
-        : (rangedSingleTargetMode ? -159.438f
+    float const calibrationY = isolatedSingleTargetMode
+        ? IsolatedSingleTargetDummyY
+        : (demonologyAoeMode ? -152.9f
             : (rangedAoeMode ? -159.438f : (clusteredDummyMode ? -158.66f : -157.16f)));
-    static constexpr float CalibrationZ = 81.5856f;
+    float const calibrationZ = isolatedSingleTargetMode
+        ? IsolatedSingleTargetGroundZ : 81.5856f;
     uint32 calibrationPopulation = Cohort().CalibrationMode == "healer_controlled_damage_300" ? 5
         : (Cohort().CalibrationMode == "tank_threat_300" ? 2 : 1);
     auto restoreWarmupBot = [](Player* bot)
@@ -7434,12 +7511,82 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
 
         float x = calibrationX + float(slot % 2) * 2.0f;
         float y = calibrationY + float(slot / 2) * 2.0f;
-        Player* bot = sBotMgr->SpawnWorldBot("any", std::to_string(candidateGuid), 0, x, y, CalibrationZ, 0.0f);
+        Player* bot = sBotMgr->SpawnWorldBot("any", std::to_string(candidateGuid), 0, x, y, calibrationZ, 0.0f);
         if (!bot)
         {
             if (ReleaseBotGuid(candidateGuid))
                 CharacterDatabase.DirectPExecute("UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", candidateGuid);
             continue;
+        }
+
+        if (isolatedSingleTargetMode
+            && Cohort().CalibrationFixtureTargetGuid.IsEmpty())
+        {
+            Map* map = bot->GetMap();
+            float fixtureZ = map ? map->GetHeight(bot->GetPhaseShift(),
+                IsolatedSingleTargetDummyX, IsolatedSingleTargetDummyY,
+                IsolatedSingleTargetGroundZ + 4.0f, true, 64.0f) : INVALID_HEIGHT;
+            TempSummon* fixtureTarget = nullptr;
+            if (map && fixtureZ != INVALID_HEIGHT)
+                fixtureTarget = map->SummonCreature(IsolatedSingleTargetDummyEntry,
+                    Position{ IsolatedSingleTargetDummyX,
+                        IsolatedSingleTargetDummyY, fixtureZ, 0.0f },
+                    SummonCreatureExtraArgs().SetSummonDuration(
+                        20 * 60 * IN_MILLISECONDS));
+
+            // The scan radius is also the conservative lower bound when no
+            // other attackable creature is present. Avoid serializing an
+            // implementation-specific floating-point infinity/max value.
+            float nearestHostileClearance = 120.0f;
+            if (fixtureTarget)
+            {
+                std::vector<WorldObject*> nearbyObjects;
+                Trinity::AllWorldObjectsInRange fixtureCheck(fixtureTarget, 120.0f);
+                Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange>
+                    fixtureSearcher(fixtureTarget, nearbyObjects, fixtureCheck);
+                Cell::VisitAllObjects(fixtureTarget, fixtureSearcher, 120.0f);
+                for (WorldObject* object : nearbyObjects)
+                {
+                    Creature* other = object ? object->ToCreature() : nullptr;
+                    if (!other || other == fixtureTarget || !other->IsAlive()
+                        || !bot->IsValidAttackTarget(other))
+                        continue;
+                    nearestHostileClearance = std::min(nearestHostileClearance,
+                        std::min(fixtureTarget->GetExactDist(other),
+                            bot->GetExactDist(other)));
+                }
+            }
+
+            bool const fixtureValid = fixtureTarget
+                && bot->IsValidAttackTarget(fixtureTarget)
+                && nearestHostileClearance >= MinimumIsolatedDummyClearance;
+            if (!fixtureValid)
+            {
+                if (fixtureTarget)
+                    fixtureTarget->UnSummon();
+                ObjectGuid const failedGuid = bot->GetGUID();
+                sBotMgr->RemoveWorldBot(failedGuid);
+                if (ReleaseBotGuid(candidateGuid))
+                    CharacterDatabase.DirectPExecute(
+                        "UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u",
+                        candidateGuid);
+                Cohort().LastPopulationFailureReason =
+                    "calibration_isolated_target_provisioning_failed";
+                Cohort().CalibrationFailureReason =
+                    Cohort().LastPopulationFailureReason;
+                Cohort().CalibrationWindowComplete = true;
+                break;
+            }
+
+            Cohort().CalibrationFixtureTargetGuid = fixtureTarget->GetGUID();
+            Cohort().CalibrationFixtureTargetEntry = fixtureTarget->GetEntry();
+            Cohort().CalibrationFixtureTargetMapId = fixtureTarget->GetMapId();
+            Cohort().CalibrationFixtureTargetX = fixtureTarget->GetPositionX();
+            Cohort().CalibrationFixtureTargetY = fixtureTarget->GetPositionY();
+            Cohort().CalibrationFixtureTargetZ = fixtureTarget->GetPositionZ();
+            Cohort().CalibrationFixtureTargetNearestHostileClearance =
+                nearestHostileClearance;
+            Cohort().CalibrationFixtureTargetProvisionedAtMs = NowMs();
         }
 
         bool const restoredDeadBot = restoreWarmupBot(bot);
@@ -8569,15 +8716,29 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
         return;
 
     std::vector<Creature*> dummies;
-    std::vector<WorldObject*> objects;
-    Trinity::AllWorldObjectsInRange check(bot, 80.0f);
-    Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
-    Cell::VisitAllObjects(bot, searcher, 80.0f);
-    for (WorldObject* object : objects)
+    bool const isolatedSingleTarget = Cohort().CalibrationMode == "single_target_300";
+    if (isolatedSingleTarget)
     {
-        Creature* creature = object ? object->ToCreature() : nullptr;
-        if (creature && creature->IsAlive() && IsTrainingDummy(creature) && bot->IsValidAttackTarget(creature))
-            dummies.push_back(creature);
+        Creature* fixtureTarget = bot->GetMap() ? bot->GetMap()->GetCreature(
+            Cohort().CalibrationFixtureTargetGuid) : nullptr;
+        if (fixtureTarget && fixtureTarget->IsAlive()
+            && IsTrainingDummy(fixtureTarget)
+            && bot->IsValidAttackTarget(fixtureTarget))
+            dummies.push_back(fixtureTarget);
+    }
+    else
+    {
+        std::vector<WorldObject*> objects;
+        Trinity::AllWorldObjectsInRange check(bot, 80.0f);
+        Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
+        Cell::VisitAllObjects(bot, searcher, 80.0f);
+        for (WorldObject* object : objects)
+        {
+            Creature* creature = object ? object->ToCreature() : nullptr;
+            if (creature && creature->IsAlive() && IsTrainingDummy(creature)
+                && bot->IsValidAttackTarget(creature))
+                dummies.push_back(creature);
+        }
     }
     std::sort(dummies.begin(), dummies.end(), [bot](Creature const* left, Creature const* right)
     {
@@ -8588,7 +8749,20 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
         return left->GetGUID() < right->GetGUID();
     });
     if (dummies.empty())
+    {
+        if (isolatedSingleTarget)
+        {
+            Cohort().LastPopulationFailureReason =
+                "calibration_isolated_target_lost";
+            Cohort().CalibrationFailureReason =
+                Cohort().LastPopulationFailureReason;
+            if (Cohort().CalibrationScoredStartedMs)
+                CompleteCalibrationScoredWindow();
+            else
+                Cohort().CalibrationWindowComplete = true;
+        }
         return;
+    }
 
     // Melee profiles always use the nearest dummy. Ranged AoE profiles instead
     // anchor target-centered effects on the densest stable part of the cluster;
@@ -8662,7 +8836,6 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
 
     if (scored)
     {
-        metrics.TargetCount = std::max(metrics.TargetCount, hostileCount);
         BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
         std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile);
         for (BotActionCandidate const& candidate : candidates)
@@ -8790,7 +8963,8 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     }
 
     bool const interruptOpportunity = target->IsNonMeleeSpellCast(false);
-    ResolvedCombatAction action = ResolveProfileCombatAction(bot, target, hostileCount, Cohort().CalibrationAoePhase);
+    ResolvedCombatAction action = ResolveProfileCombatAction(
+        bot, target, hostileCount, Cohort().CalibrationAoePhase);
     auto actionCategory = Party().LastActionCategoryByBot.find(bot->GetGUID().GetCounter());
     std::string const actionGroup = actionCategory != Party().LastActionCategoryByBot.end()
         ? actionCategory->second : action.DebugName;
@@ -8805,7 +8979,9 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
         return;
     }
 
-    BotActionResult result = ExecuteProfileCombatAction(&state, bot, target, &action, hostileCount, Cohort().CalibrationAoePhase);
+    BotActionResult result = ExecuteProfileCombatAction(
+        &state, bot, target, &action, hostileCount,
+        Cohort().CalibrationAoePhase);
     if (scored)
     {
         ++metrics.ActiveTicks;
@@ -42651,13 +42827,29 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
                 return;
             }
             uint32 measuredDamage = damage ? damage : unmitigatedDamage;
-            calibration->second.Damage += measuredDamage;
-            if (attacker != owner)
-                calibration->second.PetDamage += measuredDamage;
-            calibration->second.SpellDamage[spellId] += measuredDamage;
-            ++calibration->second.SpellDamageEvents[spellId];
+            bool const isolatedSingleTarget =
+                Cohort().CalibrationMode == "single_target_300";
+            bool const primaryTargetDamage = isolatedSingleTarget
+                && !Cohort().CalibrationFixtureTargetGuid.IsEmpty()
+                && victim->GetGUID() == Cohort().CalibrationFixtureTargetGuid;
+            if (isolatedSingleTarget && !primaryTargetDamage)
+                calibration->second.OffTargetDamage += measuredDamage;
+            else
+            {
+                calibration->second.Damage += measuredDamage;
+                if (primaryTargetDamage)
+                    calibration->second.PrimaryTargetDamage += measuredDamage;
+                if (attacker != owner)
+                    calibration->second.PetDamage += measuredDamage;
+                calibration->second.SpellDamage[spellId] += measuredDamage;
+                ++calibration->second.SpellDamageEvents[spellId];
+            }
             if (Creature* dummy = victim->ToCreature(); dummy && IsTrainingDummy(dummy))
+            {
                 calibration->second.LastDamageMsByTarget[dummy->GetGUID().GetCounter()] = NowMs();
+                calibration->second.TargetCount = uint32(
+                    calibration->second.LastDamageMsByTarget.size());
+            }
             return;
         }
     }

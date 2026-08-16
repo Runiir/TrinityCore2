@@ -94,6 +94,35 @@ def evaluate_calibration(
         target_count = int(metrics.get("target_count") or 0)
         if mode == "single_target_300":
             _check(checks, reasons, "single_target_only", target_count == int(mode_policy["target_count"]))
+            fixture = metrics.get("isolated_fixture_target") or {}
+            scored_damage = int(metrics.get("scored_damage") or 0)
+            _check(
+                checks,
+                reasons,
+                "isolated_single_target_fixture",
+                isinstance(fixture, dict)
+                and fixture.get("isolated_single_target") is True
+                and int(fixture.get("entry") or 0) == 44548
+                and int(fixture.get("runtime_guid") or 0)
+                    == int(metrics.get("primary_target_guid") or 0)
+                and fixture.get("map_id") == 0
+                and abs(float(fixture.get("x") or 0.0) - (-9060.0)) <= 0.01
+                and abs(float(fixture.get("y") or 0.0) - 520.0) <= 0.01
+                and 70.0 <= float(fixture.get("z") or 0.0) <= 85.0
+                and float(fixture.get("nearest_other_hostile_clearance") or 0.0)
+                    >= 45.0
+                and int(fixture.get("provisioned_at_ms") or 0) > 0
+                and fixture.get("provisioned_before_scoring") is True,
+            )
+            _check(
+                checks,
+                reasons,
+                "single_target_damage_isolated",
+                scored_damage > 0
+                and int(metrics.get("primary_target_damage") or 0) == scored_damage
+                and int(metrics.get("off_target_damage") or 0) == 0
+                and int(metrics.get("observed_distinct_damage_targets") or 0) == 1,
+            )
         else:
             _check(checks, reasons, "aoe_target_count", target_count >= int(mode_policy["minimum_target_count"]))
         _check(checks, reasons, "active_dps_recorded", float(metrics.get("active_dps") or 0.0) > 0)

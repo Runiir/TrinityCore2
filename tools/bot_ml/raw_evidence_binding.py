@@ -760,6 +760,7 @@ _CALIBRATION_FIELDS = (
     "phase",
     "mode",
     "target_spec",
+    "failure_reason",
     "runtime_authority",
     "runtime_mode",
     "profile_content_hash",
@@ -791,6 +792,48 @@ def _calibration_scoring_contract(
 ) -> Mapping[str, Any]:
     contract = exact_manifests.get("calibration_scoring_contract")
     return contract if isinstance(contract, Mapping) else {}
+
+
+def _single_target_fixture_evaluation(
+    calibration: Mapping[str, Any], target: Mapping[str, Any]
+) -> dict[str, Any]:
+    if str(calibration.get("mode") or "") != "single_target_300":
+        return {}
+    fixture = calibration.get("fixture_target")
+    fixture = fixture if isinstance(fixture, Mapping) else {}
+    runtime_guid = _integer(fixture.get("runtime_guid"))
+    primary_guid = _integer(target.get("primary_target_guid"))
+    damage = _integer(target.get("damage"))
+    primary_damage = _integer(target.get("primary_target_damage"))
+    off_target_damage = _integer(target.get("off_target_damage"))
+    observed_targets = _integer(target.get("observed_distinct_damage_targets"))
+    checks = {
+        "isolated_single_target": fixture.get("isolated_single_target") is True,
+        "training_dummy_entry": _integer(fixture.get("entry")) == 44548,
+        "runtime_guid_present": runtime_guid > 0,
+        "map_zero": _integer(fixture.get("map_id")) == 0,
+        "fixture_x_pinned": abs(_number(fixture.get("x")) - (-9060.0)) <= 0.01,
+        "fixture_y_pinned": abs(_number(fixture.get("y")) - 520.0) <= 0.01,
+        "fixture_z_bounded": 70.0 <= _number(fixture.get("z")) <= 85.0,
+        "hostile_clearance": _number(
+            fixture.get("nearest_other_hostile_clearance")
+        ) >= 45.0,
+        "provisioned_before_scoring": (
+            fixture.get("provisioned_before_scoring") is True
+            and _integer(fixture.get("provisioned_at_ms")) > 0
+        ),
+        "primary_guid_bound": runtime_guid == primary_guid,
+        "primary_damage_is_scored_damage": primary_damage == damage,
+        "zero_off_target_damage": off_target_damage == 0,
+        "one_observed_damage_target": observed_targets == 1,
+        "one_scored_target": _integer(target.get("target_count")) == 1,
+    }
+    return {
+        "fixture_target": _canonical_value(dict(fixture)),
+        "checks": checks,
+        "reasons": [name for name, passed in checks.items() if not passed],
+        "passed": all(checks.values()),
+    }
 
 
 def _raw_target_scoring(
@@ -838,6 +881,7 @@ def _raw_target_scoring(
     optimization_ratio_fraction = _exact_fraction(
         optimization_ratio, field="optimization_reference_ratio"
     )
+    fixture = _single_target_fixture_evaluation(calibration, target)
     return {
         "target_guid": _integer(target.get("guid")),
         "elapsed_seconds": elapsed_seconds,
@@ -846,6 +890,13 @@ def _raw_target_scoring(
         "active_uptime_ratio": active_uptime,
         "damage": damage,
         "pet_damage": pet_damage,
+        "primary_target_guid": _integer(target.get("primary_target_guid")),
+        "primary_target_damage": _integer(target.get("primary_target_damage")),
+        "off_target_damage": _integer(target.get("off_target_damage")),
+        "observed_distinct_damage_targets": _integer(
+            target.get("observed_distinct_damage_targets")
+        ),
+        "isolated_fixture_evaluation": fixture,
         "elapsed_dps": float(exact_elapsed_dps),
         "serialized_elapsed_dps": serialized_elapsed_dps,
         "exact_elapsed_dps": _fraction_projection(exact_elapsed_dps),
@@ -975,6 +1026,7 @@ def _reported_target_scoring(
             raise RawEvidenceBindingError(
                 "role calibration optimization_target_met does not match exact DPS ratio"
             )
+    fixture = _single_target_fixture_evaluation(calibration, target)
     return {
         "target_guid": _integer(target.get("guid")),
         "elapsed_seconds": elapsed_seconds,
@@ -983,6 +1035,13 @@ def _reported_target_scoring(
         "active_uptime_ratio": active_uptime,
         "damage": _integer(target.get("damage")),
         "pet_damage": _integer(target.get("pet_damage")),
+        "primary_target_guid": _integer(target.get("primary_target_guid")),
+        "primary_target_damage": _integer(target.get("primary_target_damage")),
+        "off_target_damage": _integer(target.get("off_target_damage")),
+        "observed_distinct_damage_targets": _integer(
+            target.get("observed_distinct_damage_targets")
+        ),
+        "isolated_fixture_evaluation": fixture,
         "elapsed_dps": float(exact_elapsed_dps),
         "serialized_elapsed_dps": serialized_elapsed_dps,
         "exact_elapsed_dps": _fraction_projection(exact_elapsed_dps),
@@ -1055,6 +1114,9 @@ def _calibration_projection(calibration: Mapping[str, Any]) -> dict[str, Any]:
             "scored_ended_at_ms": _integer(calibration.get("scored_ended_at_ms")),
             "profile_generation": _integer(calibration.get("profile_generation")),
             "target_attempts": _integer(target.get("attempts")),
+            "fixture_target": _canonical_value(
+                calibration.get("fixture_target") or {}
+            ),
         }
     )
     return projection

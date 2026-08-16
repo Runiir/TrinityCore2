@@ -5684,8 +5684,31 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert 'Cohort().CalibrationMode == "single_target_300"' in population
     assert "rangedSingleTargetMode" in population
     assert "UsesRangedAoeCalibrationLane(Cohort().CalibrationTargetSpec)" in population
-    assert "rangedSingleTargetMode ? -8947.0f" in population
-    assert "rangedSingleTargetMode ? -159.438f" in population
+    assert "demonologyAoeMode" in population
+    assert "demonologyCloseRangeMode" not in population
+    assert "IsolatedSingleTargetDummyEntry = 44548" in population
+    assert "IsolatedSingleTargetDummyX = -9060.0f" in population
+    assert "IsolatedSingleTargetDummyY = 520.0f" in population
+    assert "IsolatedSingleTargetRangedX = -9045.0f" in population
+    assert "IsolatedSingleTargetMeleeX = -9056.0f" in population
+    assert "MinimumIsolatedDummyClearance = 45.0f" in population
+    assert "map->SummonCreature(IsolatedSingleTargetDummyEntry" in population
+    assert "SummonCreatureExtraArgs().SetSummonDuration(" in population
+    assert "20 * 60 * IN_MILLISECONDS" in population
+    assert "bot->IsValidAttackTarget(other)" in population
+    assert "CalibrationFixtureTargetNearestHostileClearance" in population
+    assert "CalibrationFailureReason" in header
+    assert "calibration_isolated_target_provisioning_failed" in population
+    assert "Cohort().CalibrationWindowComplete = true" in population
+    stop = manager.split(
+        "std::string BotWorldPopulationMgr::StopCombatCalibration()", 1
+    )[1].split("std::string BotWorldPopulationMgr::GetCombatCalibrationJson()", 1)[0]
+    assert "sMapMgr->FindMap(" in stop
+    assert "CalibrationFixtureTargetMapId, 0" in stop
+    assert "fixture_cleanup_submitted_or_absent" in stop
+    assert "for (WorldBotState const& state : Party().CalibrationBots)" not in stop.split(
+        "bool fixtureTargetFound", 1
+    )[1].split("uint32 removed", 1)[0]
     classifier = function_body(manager, "bool UsesRangedAoeCalibrationLane")
     for ranged_spec in (
         "balance_druid",
@@ -5704,9 +5727,18 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
         assert f'"{ranged_spec}"' in classifier
     assert "shadowPriestSingleTargetMode" not in population
     update = function_body(manager, "void BotWorldPopulationMgr::UpdateCalibrationBot")
-    assert "ResolveProfileCombatAction(bot, target, hostileCount, Cohort().CalibrationAoePhase)" in update
-    assert "ExecuteProfileCombatAction(&state, bot, target, &action, hostileCount, Cohort().CalibrationAoePhase)" in update
+    assert 'Cohort().CalibrationMode == "single_target_300"' in update
+    assert "CalibrationFixtureTargetGuid" in update
+    assert "dummies.push_back(fixtureTarget)" in update
+    assert "calibration_isolated_target_lost" in update
+    assert "CompleteCalibrationScoredWindow()" in update
+    assert "metrics.TargetCount = std::max(metrics.TargetCount, hostileCount)" not in update
     assert "uint32 hostileCount = Cohort().CalibrationAoePhase ? uint32(dummies.size()) : 1;" in update
+
+    notify_damage = function_body(manager, "void BotWorldPopulationMgr::NotifyCombatDamage")
+    assert "calibration->second.LastDamageMsByTarget.size()" in notify_damage
+    assert "calibration->second.OffTargetDamage += measuredDamage" in notify_damage
+    assert "calibration->second.PrimaryTargetDamage += measuredDamage" in notify_damage
 
     damage = function_body(manager, "void BotWorldPopulationMgr::NotifyCombatDamage")
     assert damage.index("CalibrationMetricsByGuid.find") < damage.index("FindCombatLogCohortPlayer(attacker)")
