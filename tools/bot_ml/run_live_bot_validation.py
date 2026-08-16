@@ -1163,6 +1163,137 @@ def strip_combat_log_chunks(output: str) -> str:
     ) + ("\n" if output.endswith(("\n", "\r")) else "")
 
 
+def strip_calibration_status_chunks(output: str) -> str:
+    """Drop transport-only calibration chunks after the report retains the decoded status."""
+    return "\n".join(
+        line for line in output.splitlines()
+        if "botauto_calibrate_status_chunk" not in line
+        and "botauto_calibrate_status_complete" not in line
+    ) + ("\n" if output.endswith(("\n", "\r")) else "")
+
+
+def combined_calibration_status(
+    payloads: list[dict[str, Any]],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    latest: dict[str, Any] = {}
+    transport: dict[str, Any] = {
+        "direct": False,
+        "complete_marker": False,
+        "expected_chunks": 0,
+        "received_chunks": 0,
+        "total_bytes": 0,
+        "reassembled": False,
+    }
+    chunks: dict[int, dict[str, Any]] = {}
+    expected = 0
+    cohort_id = ""
+
+    for row in payloads:
+        action = str(row.get("action") or "")
+        if action == "botauto_calibrate_status":
+            latest = row
+            chunks = {}
+            expected = 0
+            cohort_id = str(row.get("cohort_id") or "")
+            transport = {
+                "direct": True,
+                "complete_marker": False,
+                "expected_chunks": 0,
+                "received_chunks": 0,
+                "total_bytes": 0,
+                "reassembled": False,
+            }
+            continue
+        if action == "botauto_calibrate_status_chunk":
+            try:
+                sequence = int(row.get("sequence"))
+                chunk_count = int(row.get("chunk_count"))
+            except (TypeError, ValueError):
+                latest = {}
+                transport["reassembled"] = False
+                continue
+            row_cohort = str(row.get("cohort_id") or "")
+            if sequence == 0:
+                chunks = {}
+                expected = chunk_count
+                cohort_id = row_cohort
+                latest = {}
+            if (
+                chunk_count <= 0
+                or chunk_count != expected
+                or sequence < 0
+                or sequence >= expected
+                or row_cohort != cohort_id
+                or row.get("encoding") != "base64"
+                or int(row.get("calibration_status_chunk_schema_version") or 0) != 1
+            ):
+                latest = {}
+                transport = {
+                    "direct": False,
+                    "complete_marker": False,
+                    "expected_chunks": expected,
+                    "received_chunks": len(chunks),
+                    "total_bytes": 0,
+                    "reassembled": False,
+                }
+                continue
+            chunks[sequence] = row
+            transport = {
+                "direct": False,
+                "complete_marker": False,
+                "expected_chunks": expected,
+                "received_chunks": len(chunks),
+                "total_bytes": 0,
+                "reassembled": False,
+            }
+            continue
+        if action != "botauto_calibrate_status_complete":
+            continue
+
+        try:
+            completion_expected = int(row.get("chunk_count"))
+            total_bytes = int(row.get("total_bytes"))
+        except (TypeError, ValueError):
+            completion_expected = 0
+            total_bytes = 0
+        complete = (
+            int(row.get("calibration_status_chunk_schema_version") or 0) == 1
+            and str(row.get("cohort_id") or "") == cohort_id
+            and completion_expected == expected
+            and expected > 0
+            and set(chunks) == set(range(expected))
+        )
+        decoded: dict[str, Any] = {}
+        if complete:
+            try:
+                raw = b"".join(
+                    base64.b64decode(chunks[index]["data"], validate=True)
+                    for index in range(expected)
+                )
+                candidate = json.loads(raw)
+                complete = (
+                    len(raw) == total_bytes
+                    and isinstance(candidate, dict)
+                    and candidate.get("action") == "botauto_calibrate_status"
+                    and bool(candidate.get("ok")) == bool(row.get("payload_ok"))
+                )
+                if complete:
+                    decoded = candidate
+            except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+                complete = False
+        latest = decoded
+        transport = {
+            "direct": False,
+            "complete_marker": True,
+            "expected_chunks": completion_expected,
+            "received_chunks": len(chunks),
+            "total_bytes": total_bytes,
+            "reassembled": complete,
+        }
+
+    return latest, transport
+
+
 def classify_payloads(payloads: list[dict[str, Any]]) -> dict[str, Any]:
     status = next(
         (
@@ -1179,10 +1310,7 @@ def classify_payloads(payloads: list[dict[str, Any]]) -> dict[str, Any]:
     trace = combined_trace_payload(trace_payloads)
     summary = next((row for row in reversed(payloads) if row.get("summary_schema_version") or "duration_minutes" in row or "total_kills" in row or "bot_learning" in row), {})
     combat_log = combined_combat_log(payloads)
-    combat_calibration = next(
-        (row for row in reversed(payloads) if row.get("action") == "botauto_calibrate_status" and row.get("active")),
-        {},
-    )
+    combat_calibration, combat_calibration_transport = combined_calibration_status(payloads)
     return {
         "status": status,
         "diagnosis": diagnosis,
@@ -1191,6 +1319,7 @@ def classify_payloads(payloads: list[dict[str, Any]]) -> dict[str, Any]:
         "combat_log": combat_log,
         "combat_log_transport": combat_log_transport_status(payloads),
         "combat_calibration": combat_calibration,
+        "combat_calibration_transport": combat_calibration_transport,
     }
 
 
@@ -3457,6 +3586,7 @@ def live_validation_report(
     summary = classified["summary"]
     combat_log = classified["combat_log"]
     combat_log_transport = classified["combat_log_transport"]
+    combat_calibration_transport = classified["combat_calibration_transport"]
     combat_calibration = enrich_combat_calibration_reference(classified["combat_calibration"])
     combat_analysis = analyze_combat_log(combat_log) if combat_log else {}
 
@@ -3563,6 +3693,7 @@ def live_validation_report(
         "combat_log": combat_log,
         "combat_log_transport": combat_log_transport,
         "combat_calibration": combat_calibration,
+        "combat_calibration_transport": combat_calibration_transport,
         "combat_analysis": combat_analysis,
         "scenario_reports": scenario_reports,
         "validation_context": validation_context or {},
@@ -5468,7 +5599,13 @@ def main() -> int:
         else:
             output, returncode, timed_out, command = run_worldserver(args.worldserver, effective_config, args.timeout_sec, script, args.observe_sec)
 
-    (args.output_dir / "worldserver_output.log").write_text(strip_combat_log_chunks(output), encoding="utf-8")
+    retained_console_output = strip_calibration_status_chunks(
+        strip_combat_log_chunks(output)
+    )
+    (args.output_dir / "worldserver_output.log").write_text(
+        retained_console_output,
+        encoding="utf-8",
+    )
     if watchdog_report:
         report = watchdog_report
         report["returncode"] = returncode
@@ -5476,8 +5613,15 @@ def main() -> int:
         report["command"] = command
         final_payloads = classify_payloads(parse_json_objects(output))
         report["combat_log_transport"] = final_payloads["combat_log_transport"]
+        report["combat_calibration_transport"] = final_payloads[
+            "combat_calibration_transport"
+        ]
         if final_payloads.get("combat_log"):
             report["combat_log"] = final_payloads["combat_log"]
+        if final_payloads.get("combat_calibration"):
+            report["combat_calibration"] = enrich_combat_calibration_reference(
+                final_payloads["combat_calibration"]
+            )
     else:
         report = live_validation_report(
             output,

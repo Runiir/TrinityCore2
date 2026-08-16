@@ -876,6 +876,37 @@ private:
         return ok;
     }
 
+    static bool SendCalibrationStatusResult(ChatHandler* handler, std::string const& cohortId,
+        std::string const& result)
+    {
+        static constexpr size_t RawChunkSize = 24 * 1024;
+        if (!handler || result.size() <= RawChunkSize)
+            return SendAutoResult(handler, result);
+
+        bool ok = result.find("\"ok\":true") != std::string::npos;
+        size_t chunkCount = (result.size() + RawChunkSize - 1) / RawChunkSize;
+        for (size_t sequence = 0; sequence < chunkCount; ++sequence)
+        {
+            size_t offset = sequence * RawChunkSize;
+            size_t length = std::min(RawChunkSize, result.size() - offset);
+            std::vector<uint8> raw(result.begin() + offset, result.begin() + offset + length);
+            std::string encoded = Trinity::Encoding::Base64::Encode(raw);
+            handler->PSendSysMessage(
+                "{\"ok\":true,\"action\":\"botauto_calibrate_status_chunk\",\"cohort_id\":\"%s\","
+                "\"calibration_status_chunk_schema_version\":1,\"sequence\":%zu,\"chunk_count\":%zu,"
+                "\"encoding\":\"base64\",\"data\":\"%s\"}",
+                cohortId.c_str(), sequence, chunkCount, encoded.c_str());
+        }
+        handler->PSendSysMessage(
+            "{\"ok\":true,\"action\":\"botauto_calibrate_status_complete\",\"cohort_id\":\"%s\","
+            "\"calibration_status_chunk_schema_version\":1,\"chunk_count\":%zu,\"total_bytes\":%zu,"
+            "\"payload_ok\":%s}",
+            cohortId.c_str(), chunkCount, result.size(), ok ? "true" : "false");
+        if (!ok)
+            handler->SetSentErrorMessage(true);
+        return ok;
+    }
+
     static std::string ResolveGlobalAutoCohort(ChatHandler* handler, char const* action)
     {
         std::string cohortId = sBotWorldPopulationMgr->ResolveGlobalCohortId();
@@ -1248,6 +1279,8 @@ private:
             result = sBotWorldPopulationMgr->GetCombatCalibrationJsonForCohort(cohortId);
         else
             result = "{\"ok\":false,\"action\":\"botauto_calibrate\",\"failure_reason\":\"usage: .botauto calibrate [cohort_id] start <mode> <target_spec> [seed]|stop|status\"}";
+        if (operation == "status")
+            return SendCalibrationStatusResult(handler, cohortId, result);
         return SendAutoResult(handler, result);
     }
 

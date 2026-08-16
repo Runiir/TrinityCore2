@@ -2,7 +2,12 @@ import base64
 import json
 
 from tools.bot_ml.analyze_combat_log import analyze_combat_log
-from tools.bot_ml.run_live_bot_validation import heartbeat_commands_from_script, live_validation_report, strip_combat_log_chunks
+from tools.bot_ml.run_live_bot_validation import (
+    heartbeat_commands_from_script,
+    live_validation_report,
+    strip_calibration_status_chunks,
+    strip_combat_log_chunks,
+)
 
 
 def combat_log_fixture() -> dict:
@@ -181,3 +186,64 @@ def test_live_validation_reassembles_bounded_combat_log_chunks():
     stripped = strip_combat_log_chunks("prefix\n" + output + "\nsuffix\n")
     assert "botauto_combatlog_chunk" not in stripped
     assert stripped == "prefix\nsuffix\n"
+
+
+def test_live_validation_reassembles_bounded_calibration_status_chunks():
+    status = {
+        "ok": True,
+        "action": "botauto_calibrate_status",
+        "cohort_id": "phase8-affliction",
+        "active": True,
+        "phase": "complete",
+        "window_complete": True,
+        "bots": [{"name": "Affliction", "damage": 5_382_659, "dps": 17_942.2}],
+    }
+    raw = json.dumps(status, separators=(",", ":")).encode()
+    parts = [raw[index : index + 31] for index in range(0, len(raw), 31)]
+    rows = [
+        {
+            "ok": True,
+            "action": "botauto_calibrate_status_chunk",
+            "cohort_id": "phase8-affliction",
+            "calibration_status_chunk_schema_version": 1,
+            "sequence": sequence,
+            "chunk_count": len(parts),
+            "encoding": "base64",
+            "data": base64.b64encode(part).decode(),
+        }
+        for sequence, part in enumerate(parts)
+    ]
+    rows.append(
+        {
+            "ok": True,
+            "action": "botauto_calibrate_status_complete",
+            "cohort_id": "phase8-affliction",
+            "calibration_status_chunk_schema_version": 1,
+            "chunk_count": len(parts),
+            "total_bytes": len(raw),
+            "payload_ok": True,
+        }
+    )
+    output = "\n".join(json.dumps(row) for row in rows)
+
+    report = live_validation_report(output)
+
+    assert report["combat_calibration"]["window_complete"] is True
+    assert report["combat_calibration"]["bots"][0]["damage"] == 5_382_659
+    assert report["combat_calibration_transport"] == {
+        "direct": False,
+        "complete_marker": True,
+        "expected_chunks": len(parts),
+        "received_chunks": len(parts),
+        "total_bytes": len(raw),
+        "reassembled": True,
+    }
+    stripped = strip_calibration_status_chunks("prefix\n" + output + "\nsuffix\n")
+    assert "botauto_calibrate_status_chunk" not in stripped
+    assert "botauto_calibrate_status_complete" not in stripped
+    assert stripped == "prefix\nsuffix\n"
+
+    rows[-1]["total_bytes"] = len(raw) + 1
+    corrupt = live_validation_report("\n".join(json.dumps(row) for row in rows))
+    assert corrupt["combat_calibration"] == {}
+    assert corrupt["combat_calibration_transport"]["reassembled"] is False
