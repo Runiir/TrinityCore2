@@ -14,6 +14,9 @@ from tools.bot_ml.review_rotation_mechanics import (
 )
 
 
+ROOT = Path(__file__).resolve().parents[1]
+
+
 def _apl() -> dict:
     return {
         "type": "TypeAPL",
@@ -131,6 +134,42 @@ def test_condition_families_are_review_leads_not_equivalence_claims():
     assert gaps[49020]["unrepresented_in_trinity"] == ["proc_state"]
     assert 49143 not in gaps
     assert "not semantic-equivalence" in review["comparison"]["interpretation"]
+
+
+def test_affliction_runtime_profile_covers_the_pinned_apl_player_spells():
+    request_catalog = json.loads(
+        (ROOT / "experiments/configs/wowsims_cata_dps_reference_requests_v1.json").read_text()
+    )
+    request = next(
+        row for row in request_catalog["requests"]
+        if row["target_spec"] == "affliction_warlock"
+    )
+    native_path = ROOT / request["result"]["artifacts"]["native_request"]["path"]
+    apl = find_wowsims_apl(json.loads(native_path.read_text()), player_index=0)
+    normalized = normalize_wowsims_apl(apl)
+    apl_spells = {
+        int(action["identity"]["id"])
+        for action in normalized["actions"]
+        if action.get("identity", {}).get("kind") == "spell"
+    }
+
+    target_catalog = json.loads(
+        (ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.json").read_text()
+    )
+    target = next(
+        row for row in target_catalog["targets"]
+        if row["spec_target_id"] == "affliction_warlock"
+    )
+    assert apl_spells <= set(target["action_profile_spell_ids"])
+
+    migration = (
+        ROOT
+        / "sql/custom/world/2026_08_16_01_affliction_warlock_apl_rotation.sql"
+    ).read_text()
+    for spell_id in apl_spells:
+        assert f", {spell_id}," in migration
+    assert "  348," not in migration
+    assert "  17962," not in migration
 
 
 def test_runtime_report_keeps_selection_submission_landing_and_rejection_separate():

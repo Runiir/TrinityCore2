@@ -667,10 +667,13 @@ def test_runtime_calibration_uses_only_generated_verified_reference_dps(
                 "guid": 101,
                 "role": "dps",
                 "class_id": 8,
+                # The server serializes DPS to two decimals.  Derived metrics
+                # must retain the exact damage/time value for raw binding.
                 "dps": 90.0,
-                "damage": 27_000,
+                "damage": 27_001,
+                "elapsed_seconds": 300.0,
                 "primary_target_guid": 9001,
-                "primary_target_damage": 27_000,
+                "primary_target_damage": 27_001,
                 "off_target_damage": 0,
                 "observed_distinct_damage_targets": 1,
                 "target_count": 1,
@@ -713,6 +716,9 @@ def test_runtime_calibration_uses_only_generated_verified_reference_dps(
     assert len(record["identity"]["gear_manifest_sha256"]) == 64
     assert record["identity"]["target_sha256"] == canonical_sha256(target)
     assert record["metrics"]["reference_value"] == 100.0
+    assert record["metrics"]["elapsed_dps"] == pytest.approx(27_001 / 300)
+    assert record["metrics"]["measured_value"] == pytest.approx(27_001 / 300)
+    assert record["metrics"]["active_dps"] == pytest.approx(27_001 / 300)
     assert (
         record["metrics"]["reference_basis"]
         == "generated_verified_live_compatible_wowsims_dps"
@@ -1303,6 +1309,15 @@ def test_static_reference_mismatch_does_not_reserve_a_physical_try(
             "passed": True,
             "verification_sha256": "a" * 64,
             "input_hashes": {},
+        },
+    )
+    monkeypatch.setattr(
+        dps_runner,
+        "preflight_reference_condition_compatibility",
+        lambda **kwargs: {
+            "target_spec": kwargs["target_spec"],
+            "conditions_compatible": False,
+            "reasons": ["synthetic_static_reference_mismatch"],
         },
     )
 

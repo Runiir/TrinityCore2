@@ -30,8 +30,8 @@ struct Identity
     char const* PetSpellbookSha256;
 };
 
-inline constexpr char SourceContentSha256[] = "87ee76e6e2aef0fe71185e4d93df6f1551a839670bba9bb800a647b9952594f5";
-inline constexpr char TargetsSourceSha256[] = "a1ef701d42d3aab9f9d63889bbb10e17302f3bc4a21e36c17b60e72a14446b39";
+inline constexpr char SourceContentSha256[] = "4d0ff9b4d7e228c141cefa45041f12790288fdaaaba48e7bd29b7a5e0effbbd5";
+inline constexpr char TargetsSourceSha256[] = "4476a9ba1a8f95bac4b587e883ab7932028e76485b485294436b9b40914eaaa9";
 inline constexpr char GearProfilesSourceSha256[] = "584b8358ed150ae49a08c51ed704146bce6100010ecab146950282c07867d449";
 inline constexpr char WowsimsGearProfilesSourceSha256[] = "1cdefc5e103381dc169b53ec9e225d2aa4a5f7cfd0f5a6772852d38ff88505cb";
 
