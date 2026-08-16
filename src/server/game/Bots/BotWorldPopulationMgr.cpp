@@ -5251,6 +5251,44 @@ void BotWorldPopulationMgr::Update(uint32 diff)
                         petSetup.RequiredPetType, petSetup.RequiredPowerType,
                         petSetup.RequiredCreatedBySpellId);
             }
+            if (populationReady && calibrationBot
+                && Cohort().CalibrationMode == "single_target_300")
+            {
+                using namespace BotCalibrationFixtureContractGenerated;
+                SpecContract const* fixtureContract = FindSpec(
+                    Cohort().CalibrationTargetSpec);
+                if (fixtureContract && fixtureContract->PetResourceRequired)
+                {
+                    Pet* pet = calibrationBot->GetPet();
+                    bool petResourceReady = pet
+                        && fixtureContract->PowerOffset
+                            + fixtureContract->PowerCount
+                                <= PowerContracts.size();
+                    for (uint32 index = 0;
+                        petResourceReady && index < fixtureContract->PowerCount;
+                        ++index)
+                    {
+                        PowerContract const& power = PowerContracts[
+                            fixtureContract->PowerOffset + index];
+                        if (std::string_view(power.UnitKind) != "pet")
+                            continue;
+                        Powers const powerType = Powers(power.PowerType);
+                        uint32 const maximum = std::max<int32>(0,
+                            pet->GetMaxPower(powerType));
+                        uint32 const required = power.Maximum
+                            ? maximum : power.ExactNativeValue;
+                        petResourceReady = maximum
+                            && pet->GetPowerType() == powerType
+                            && uint32(std::max<int32>(0,
+                                pet->GetPower(powerType))) == required;
+                    }
+                    // Pet resources are ordinary live actor state. Keep the
+                    // warmup unpublished while normal out-of-combat regen
+                    // reaches the exact simulator start contract; never refill
+                    // the pet through fixture-only SetPower assistance.
+                    populationReady = petResourceReady;
+                }
+            }
             bool const calibrationRoguePoisonRequired =
                 Cohort().CalibrationTargetSpec == "assassination_rogue"
                 || Cohort().CalibrationTargetSpec == "combat_rogue";

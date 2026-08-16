@@ -52,3 +52,14 @@ def test_affliction_modifier_diagnostics_observe_native_auras_without_applying_t
     assert '\\"affliction_modifier_observation\\"' in source
     assert "CastSpell(32389" not in source
     assert "AddAura(32389" not in source
+
+
+def test_pet_resource_contract_waits_for_native_regeneration_without_refilling() -> None:
+    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+
+    assert "fixtureContract->PetResourceRequired" in source
+    assert 'std::string_view(power.UnitKind) != "pet"' in source
+    assert "pet->GetPower(powerType)" in source
+    assert "populationReady = petResourceReady" in source
+    assert 'std::string_view(unitKind) != "pet"' in source
+    assert "unit->SetPower(power, int32(expectedNative))" in source
