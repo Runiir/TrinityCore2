@@ -72,3 +72,15 @@ def test_isolated_single_target_allows_one_target_shadowflame_without_multidot()
     assert "bool const forbidArea = false;" in source
     assert "bool const allowMultidot = !strictSingleTarget;" in source
     assert "false, forbidArea, allowMultidot" in source
+
+
+def test_profile_range_prefilter_preserves_native_combat_reach() -> None:
+    profile_source = (
+        ROOT / "src/server/game/Bots/BotClassSpecActionProfile.cpp"
+    ).read_text()
+    world_source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+
+    assert "ProfileSpellMaximumRange" in profile_source
+    assert "maximumRange + bot->GetCombatReach() + target->GetCombatReach()" in profile_source
+    assert "effectiveSpellMaxRange" in world_source
+    assert "nativeMaxRange += bot->GetCombatReach() + target->GetCombatReach()" in world_source

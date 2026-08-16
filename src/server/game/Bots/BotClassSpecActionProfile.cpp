@@ -7,6 +7,7 @@
 #include "Pet.h"
 #include "Player.h"
 #include "SpellAuras.h"
+#include "Spell.h"
 #include "SpellHistory.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
@@ -318,6 +319,23 @@ uint32 ProfileSpellCastTimeMs(Player const* bot, SpellInfo const* spellInfo)
     if (!bot || !spellInfo)
         return 0;
     return uint32(std::max<int32>(0, spellInfo->CalcCastTime(bot->getLevel())));
+}
+
+float ProfileSpellMaximumRange(Player const* bot, Unit const* target,
+    SpellInfo const* spellInfo)
+{
+    if (!bot || !target || !spellInfo)
+        return 0.0f;
+
+    float maximumRange = bot->GetSpellMaxRangeForTarget(target, spellInfo);
+    if (spellInfo->RangeEntry
+        && (spellInfo->RangeEntry->Flags & SPELL_RANGE_MELEE))
+        return std::max(maximumRange, bot->GetMeleeRange(target));
+
+    // Spell::GetMinMaxRange adds both units' combat reach for a hostile unit
+    // target. Mirror that native envelope here so a legal edge-range spell is
+    // not discarded before BotActionExecutor can ask the core to cast it.
+    return maximumRange + bot->GetCombatReach() + target->GetCombatReach();
 }
 
 struct ReadyRuneObservation
@@ -1031,7 +1049,9 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
         else if (spellInfo && spell.MaxCastTimeMs && ProfileSpellCastTimeMs(bot, spellInfo) > spell.MaxCastTimeMs)
             candidate.RejectReason = "cast_time_too_long";
         else if (spellInfo && actionTarget
-            && !bot->IsWithinDistInMap(actionTarget, std::max(5.0f, spellInfo->GetMaxRange(false))))
+            && !bot->IsWithinDistInMap(actionTarget,
+                std::max(5.0f, ProfileSpellMaximumRange(
+                    bot, actionTarget, spellInfo))))
             candidate.RejectReason = "out_of_range";
         else if (spellInfo && !HasEnoughPowerForProfileSpell(bot, spellInfo))
             candidate.RejectReason = "insufficient_resource";

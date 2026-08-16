@@ -41576,6 +41576,22 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             spellMinRange += bot->GetMeleeRange(target);
         return std::max(configuredMinRange, spellMinRange);
     };
+    auto effectiveSpellMaxRange = [bot, target](BotActionCandidate const& candidate,
+        float configuredMaxRange) -> float
+    {
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
+        if (!spellInfo)
+            return configuredMaxRange;
+
+        float nativeMaxRange = bot->GetSpellMaxRangeForTarget(target, spellInfo);
+        if (spellInfo->RangeEntry
+            && (spellInfo->RangeEntry->Flags & SPELL_RANGE_MELEE))
+            nativeMaxRange = std::max(nativeMaxRange,
+                bot->GetMeleeRange(target));
+        else
+            nativeMaxRange += bot->GetCombatReach() + target->GetCombatReach();
+        return std::max(configuredMaxRange, nativeMaxRange);
+    };
 
     if (!hostileCount)
     {
@@ -42012,6 +42028,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         if (candidate.Profile.MaxRange <= 0.0f)
             if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId))
                 maxRange = std::max(5.0f, spellInfo->GetMaxRange(false));
+        if (!selfTarget)
+            maxRange = effectiveSpellMaxRange(candidate, maxRange);
         if (candidate.Profile.RequiresMeleeRange && !bot->IsWithinMeleeRange(actionTarget))
         {
             candidate.RejectReason = "melee_range_required";
@@ -42191,6 +42209,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     if (!selfTarget && best->Profile.MaxRange <= 0.0f)
         if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(best->SpellId))
             action.MaxRange = std::max(5.0f, spellInfo->GetMaxRange(false));
+    if (!selfTarget)
+        action.MaxRange = effectiveSpellMaxRange(*best, action.MaxRange);
     return action;
 }
 
