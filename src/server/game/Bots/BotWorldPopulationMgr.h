@@ -2252,6 +2252,12 @@ private:
         uint32 ShadowOrbActiveTicks = 0;
         uint32 EmpoweredShadowActiveTicks = 0;
         uint8 MaximumShadowOrbStacks = 0;
+        uint32 AfflictionModifierObservationTicks = 0;
+        uint32 AfflictionShadowMasteryActiveTicks = 0;
+        uint32 AfflictionPotentAfflictionsActiveTicks = 0;
+        uint32 AfflictionHauntDebuffActiveTicks = 0;
+        uint32 AfflictionShadowEmbraceActiveTicks = 0;
+        uint8 AfflictionMaximumShadowEmbraceStacks = 0;
         uint32 StanceFormActiveTicks = 0;
         uint32 MitigationCoveredTicks = 0;
         uint32 ThreatSampleCount = 0;

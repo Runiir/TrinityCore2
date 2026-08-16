@@ -8904,7 +8904,7 @@ def test_holy_priest_manifest_is_legal_and_drives_talents_and_glyph_slots():
     assert {251: 0, 264: 2, 709: 2}.items() <= glyph_property_type_map().items()
 
 
-def test_validation_provisioning_learns_selected_tree_mastery_from_dbc():
+def test_validation_provisioning_leaves_selected_tree_mastery_to_native_learn_relations():
     config = load_validation_provisioning_config(Path("experiments/configs/validation_provisioning_cata_001.json"))
     affliction = next(
         bot
@@ -8915,7 +8915,8 @@ def test_validation_provisioning_learns_selected_tree_mastery_from_dbc():
 
     assert affliction["primary_talent_tree_id"] == 871
     assert bot_mastery_spell_ids(affliction) == [77215]
-    assert 77215 in bot_known_spell_ids(affliction)
+    assert 77215 not in bot_known_spell_ids(affliction)
+    assert 87498 in bot_known_spell_ids(affliction)
 
     sql = build_character_insert_sql({
         "scenarios": [{
@@ -8924,7 +8925,8 @@ def test_validation_provisioning_learns_selected_tree_mastery_from_dbc():
             "bots": [affliction],
         }]
     })
-    assert "SELECT c.`guid`, 77215, 1, 0" in sql
+    assert "SELECT c.`guid`, 87498, 1, 0" in sql
+    assert "SELECT c.`guid`, 77215, 1, 0" not in sql
 
 
 def test_stonecore_role_specs_inherit_complete_dbc_legal_talent_and_action_profiles():

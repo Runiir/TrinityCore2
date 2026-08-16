@@ -3755,6 +3755,19 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                  << ",\"shadow_orb_uptime_ratio\":" << shadowOrbUptimeRatio
                  << ",\"empowered_shadow_uptime_ratio\":" << empoweredShadowUptimeRatio
                  << ",\"maximum_shadow_orb_stacks\":" << (metrics ? uint32(metrics->MaximumShadowOrbStacks) : 0) << '}'
+                 << ",\"affliction_modifier_observation\":{\"sample_count\":"
+                 << (metrics ? metrics->AfflictionModifierObservationTicks : 0)
+                 << ",\"shadow_mastery_active_samples\":"
+                 << (metrics ? metrics->AfflictionShadowMasteryActiveTicks : 0)
+                 << ",\"potent_afflictions_active_samples\":"
+                 << (metrics ? metrics->AfflictionPotentAfflictionsActiveTicks : 0)
+                 << ",\"haunt_debuff_active_samples\":"
+                 << (metrics ? metrics->AfflictionHauntDebuffActiveTicks : 0)
+                 << ",\"shadow_embrace_active_samples\":"
+                 << (metrics ? metrics->AfflictionShadowEmbraceActiveTicks : 0)
+                 << ",\"maximum_shadow_embrace_stacks\":"
+                 << (metrics ? uint32(metrics->AfflictionMaximumShadowEmbraceStacks) : 0)
+                 << '}'
                  << ",\"tank_metrics\":{\"stance_form_uptime_ratio\":"
                  << (metrics && metrics->TickCount ? double(metrics->StanceFormActiveTicks) / double(metrics->TickCount) : 0.0)
                  << ",\"mitigation_uptime_ratio\":"
@@ -11094,7 +11107,27 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
         if (fixtureTarget && fixtureTarget->IsAlive()
             && IsTrainingDummy(fixtureTarget)
             && bot->IsValidAttackTarget(fixtureTarget))
+        {
             dummies.push_back(fixtureTarget);
+            if (scored && Cohort().CalibrationTargetSpec == "affliction_warlock")
+            {
+                ++metrics.AfflictionModifierObservationTicks;
+                if (bot->HasAura(87339))
+                    ++metrics.AfflictionShadowMasteryActiveTicks;
+                if (bot->HasAura(77215))
+                    ++metrics.AfflictionPotentAfflictionsActiveTicks;
+                if (fixtureTarget->HasAura(48181, bot->GetGUID()))
+                    ++metrics.AfflictionHauntDebuffActiveTicks;
+                if (Aura const* shadowEmbrace = fixtureTarget->GetAura(32389,
+                    bot->GetGUID()))
+                {
+                    ++metrics.AfflictionShadowEmbraceActiveTicks;
+                    metrics.AfflictionMaximumShadowEmbraceStacks =
+                        std::max<uint8>(metrics.AfflictionMaximumShadowEmbraceStacks,
+                            shadowEmbrace->GetStackAmount());
+                }
+            }
+        }
     }
     else
     {
@@ -45815,8 +45848,13 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
                     CalibrationMetrics::TargetHealthPhaseObservation& observation =
                         calibration->second.TargetHealthPhaseObservations[phaseIndex];
                     uint64 const preDamageHealth = victim->GetHealth();
-                    uint64 const projectedPostDamageHealth = preDamageHealth > damage
-                        ? preDamageHealth - damage : 0;
+                    // Training dummies can suppress landed health loss while
+                    // retaining the authoritative pre-suppression damage. The
+                    // scored numerator already uses this same measuredDamage
+                    // fallback, so the execute-band event proof must bind that
+                    // amount rather than recording a zero-sized hit.
+                    uint64 const projectedPostDamageHealth = preDamageHealth > measuredDamage
+                        ? preDamageHealth - measuredDamage : 0;
                     uint64 const maximumHealth = victim->GetMaxHealth();
                     if (!observation.DamageEventSampleCount)
                         observation.FirstDamageEventElapsedMs = windowElapsedMs;
@@ -45837,7 +45875,7 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
                     observation.MaximumDamageEventMaxHealth = std::max(
                         observation.MaximumDamageEventMaxHealth, maximumHealth);
                     observation.MaximumDamageEvent = std::max(
-                        observation.MaximumDamageEvent, damage);
+                        observation.MaximumDamageEvent, measuredDamage);
                 }
             }
             if (isolatedSingleTarget && !primaryTargetDamage)

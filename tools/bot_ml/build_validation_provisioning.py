@@ -207,11 +207,11 @@ def talent_data(dbc_dir: Path = DEFAULT_DBC_DIR) -> tuple[dict[int, list[Any]], 
 
 
 def mastery_spells_by_tree(dbc_dir: Path = DEFAULT_DBC_DIR) -> dict[int, list[int]]:
-    """Return the passive mastery spells granted by each selected talent tree.
+    """Return the dependent mastery auras associated with each talent tree.
 
-    Ordinary clients receive these through Player::LearnPrimaryTalentSpecialization.
-    Validation characters are provisioned directly in the character database, so
-    their equivalent native login path must contain the same TalentTab.dbc spells.
+    This is an inspection helper.  The validation provisioner persists the
+    class mastery controller spell and selected primary tree; Trinity's native
+    learn-spell relation grants these child auras at login.
     """
     dbc_dir = dbc_dir.resolve()
     cached = _MASTERY_SPELLS_BY_TREE_CACHE.get(dbc_dir)
@@ -683,11 +683,15 @@ def bot_mastery_spell_ids(bot: dict[str, Any], dbc_dir: Path = DEFAULT_DBC_DIR) 
 
 
 def bot_known_spell_ids(bot: dict[str, Any], action_profiles: dict[str, Any] | None = None) -> list[int]:
+    # Do not persist mastery child auras directly. Trinity learns the selected
+    # tree's primary mastery spell and SpellMgr supplies its dependent mastery
+    # aura through the normal learn-spell relationship after the primary talent
+    # tree is loaded. Persisting that dependent child in character_spell is both
+    # redundant and unstable: Player::_SaveSpells removes it again on logout.
     return sorted({
         *bot_spell_ids(bot, action_profiles),
         *bot_talent_spell_ids(bot),
         *bot_primary_tree_spell_ids(bot),
-        *bot_mastery_spell_ids(bot),
     })
 
 

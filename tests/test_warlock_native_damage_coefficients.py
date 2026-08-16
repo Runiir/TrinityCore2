@@ -33,3 +33,18 @@ def test_shadow_bite_script_binding_is_idempotent() -> None:
 
     assert "VALUES (54049, 'spell_warl_shadow_bite')" in migration
     assert "ON DUPLICATE KEY UPDATE" in migration
+
+
+def test_affliction_modifier_diagnostics_observe_native_auras_without_applying_them() -> None:
+    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    header = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text()
+
+    assert "AfflictionModifierObservationTicks" in header
+    assert 'Cohort().CalibrationTargetSpec == "affliction_warlock"' in source
+    assert "bot->HasAura(87339)" in source
+    assert "bot->HasAura(77215)" in source
+    assert "fixtureTarget->HasAura(48181, bot->GetGUID())" in source
+    assert "fixtureTarget->GetAura(32389," in source
+    assert '\\"affliction_modifier_observation\\"' in source
+    assert "CastSpell(32389" not in source
+    assert "AddAura(32389" not in source

@@ -2893,8 +2893,36 @@ def derive_reference_condition_compatibility(
     # Heroism is independently reconstructed by the temporal-external absence
     # receipt above. No expected manifest values are copied into runtime facts.
     runtime.setdefault("heroism_projection", {})
-    auras = setup.get("buff_auras")
-    auras = auras if isinstance(auras, Mapping) else {}
+    raid_buffs_projection = condition_projections.get("raid_buffs")
+    raid_buffs_projection = (
+        raid_buffs_projection
+        if isinstance(raid_buffs_projection, Mapping)
+        else {}
+    )
+    required_player_auras = {
+        _integer(spell_id)
+        for spell_id in (
+            raid_buffs_projection.get("required_player_aura_spell_ids") or []
+        )
+    }
+    mana_player_auras = {
+        _integer(spell_id)
+        for spell_id in (
+            raid_buffs_projection.get("mana_player_aura_spell_ids") or []
+        )
+    }
+    non_paladin_player_auras = {
+        _integer(spell_id)
+        for spell_id in (
+            raid_buffs_projection.get("non_paladin_player_aura_spell_ids") or []
+        )
+    }
+    primary_stat_aura_any_of = tuple(
+        _integer(spell_id)
+        for spell_id in (
+            raid_buffs_projection.get("primary_stat_aura_any_of_spell_ids") or []
+        )
+    )
     checks: dict[str, bool] = {}
 
     checks["supported_target_spec"] = target_spec in SUPPORTED_REFERENCE_SPECS
@@ -2905,7 +2933,18 @@ def derive_reference_condition_compatibility(
     for key, expected in EXPECTED_REFERENCE_CONDITIONS.items():
         checks[f"reference_{key}_matches"] = conditions.get(key) == expected
     for aura in required_buff_auras(target_spec):
-        checks[f"required_buff_aura_{aura}"] = auras.get(aura) is True
+        if aura == "kings_or_mark":
+            observed = primary_stat_aura_any_of == PRIMARY_STAT_AURA_IDS
+        else:
+            spell_id = int(aura)
+            observed = spell_id in required_player_auras
+            if spell_id == REPLENISHMENT_AURA_ID:
+                observed = spell_id in mana_player_auras
+            elif spell_id == NON_PALADIN_MIGHT_AURA_ID:
+                observed = spell_id in non_paladin_player_auras
+        checks[f"required_buff_aura_{aura}"] = bool(
+            reference_condition_observation_valid and observed
+        )
     # The individual raw aura observations above are authoritative. The
     # server's aggregate buffs_ready bit is retained elsewhere as a diagnostic
     # and is deliberately not accepted as a substitute for those facts.

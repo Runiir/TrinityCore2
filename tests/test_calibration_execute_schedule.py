@@ -119,7 +119,8 @@ def test_damage_between_schedule_updates_is_observed_before_health_mutation() ->
     )
     assert "CalibrationExecuteHealthWindowIndex(windowElapsedMs)" in notify
     assert "uint64 const preDamageHealth = victim->GetHealth()" in notify
-    assert "preDamageHealth - damage" in notify
+    assert "preDamageHealth - measuredDamage" in notify
+    assert "observation.MaximumDamageEvent, measuredDamage" in notify
     assert "DamageEventSampleCount" in notify
     assert "MinimumProjectedPostDamageHealth" in notify
     assert "MinimumDamageEventMaxHealth" in notify
