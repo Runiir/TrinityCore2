@@ -293,6 +293,10 @@ def test_runtime_report_reads_completed_combat_calibration_window():
                                 "max_health": 1000,
                                 "mana": 700,
                                 "max_mana": 1000,
+                                "current_generic_spell_id": 686,
+                                "current_channeled_spell_id": 0,
+                                "pet_health": 800,
+                                "pet_max_health": 1000,
                                 "target_distance": 15.0,
                                 "alive": True,
                             },
@@ -317,6 +321,8 @@ def test_runtime_report_reads_completed_combat_calibration_window():
                                 "victim_type_id": 3,
                                 "victim_is_owner": False,
                                 "spell_id": 109800,
+                                "current_generic_spell_id": 0,
+                                "current_channeled_spell_id": 755,
                                 "damage": 42,
                             }
                         ],
@@ -353,6 +359,7 @@ def test_runtime_report_reads_completed_combat_calibration_window():
         "off_target_damage": 42,
     }
     assert normalized["off_target_damage_events"][0]["victim_entry"] == 123
+    assert normalized["off_target_damage_events"][0]["current_channeled_spell_id"] == 755
 
 
 def test_runtime_timeline_is_bounded_and_observation_only_in_native_source():
@@ -365,6 +372,8 @@ def test_runtime_timeline_is_bounded_and_observation_only_in_native_source():
     assert "calibration->second.OffTargetDamageEvents.size() < 128" in source
     assert '\\\"decision_timeline\\\"' in source
     assert '\\\"off_target_damage_events\\\"' in source
+    assert '\\\"current_channeled_spell_id\\\"' in source
+    assert '\\\"pet_health\\\"' in source
     assert "victim == owner" in source
 
 

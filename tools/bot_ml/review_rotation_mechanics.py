@@ -1367,6 +1367,10 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
                 "max_health": int(event.get("max_health") or 0),
                 "mana": int(event.get("mana") or 0),
                 "max_mana": int(event.get("max_mana") or 0),
+                "current_generic_spell_id": int(event.get("current_generic_spell_id") or 0),
+                "current_channeled_spell_id": int(event.get("current_channeled_spell_id") or 0),
+                "pet_health": int(event.get("pet_health") or 0),
+                "pet_max_health": int(event.get("pet_max_health") or 0),
                 "target_distance": float(event.get("target_distance") or 0.0),
                 # Older reports do not carry this observation. Treat absence
                 # as unknown/non-death rather than fabricating a dead sample.
@@ -1386,6 +1390,8 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
                     "victim_type_id": int(event.get("victim_type_id") or 0),
                     "victim_is_owner": bool(event.get("victim_is_owner")),
                     "spell_id": int(event.get("spell_id") or 0),
+                    "current_generic_spell_id": int(event.get("current_generic_spell_id") or 0),
+                    "current_channeled_spell_id": int(event.get("current_channeled_spell_id") or 0),
                     "damage": int(event.get("damage") or 0),
                 }
             )

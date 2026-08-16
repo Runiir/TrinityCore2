@@ -2230,6 +2230,10 @@ private:
             uint64 MaxHealth = 0;
             uint32 Mana = 0;
             uint32 MaxMana = 0;
+            uint32 CurrentGenericSpellId = 0;
+            uint32 CurrentChanneledSpellId = 0;
+            uint64 PetHealth = 0;
+            uint64 PetMaxHealth = 0;
             float TargetDistance = 0.0f;
             bool Alive = false;
         };
@@ -2241,6 +2245,8 @@ private:
             uint32 VictimGuid = 0;
             uint32 VictimEntry = 0;
             uint32 SpellId = 0;
+            uint32 CurrentGenericSpellId = 0;
+            uint32 CurrentChanneledSpellId = 0;
             uint32 Damage = 0;
             uint8 VictimTypeId = 0;
             bool VictimIsOwner = false;

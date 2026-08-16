@@ -3926,6 +3926,10 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                          << ",\"max_health\":" << entry.MaxHealth
                          << ",\"mana\":" << entry.Mana
                          << ",\"max_mana\":" << entry.MaxMana
+                         << ",\"current_generic_spell_id\":" << entry.CurrentGenericSpellId
+                         << ",\"current_channeled_spell_id\":" << entry.CurrentChanneledSpellId
+                         << ",\"pet_health\":" << entry.PetHealth
+                         << ",\"pet_max_health\":" << entry.PetMaxHealth
                          << ",\"target_distance\":" << std::fixed << std::setprecision(3)
                          << entry.TargetDistance
                          << ",\"alive\":" << (entry.Alive ? "true" : "false") << '}';
@@ -3945,6 +3949,8 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                          << ",\"victim_type_id\":" << uint32(event.VictimTypeId)
                          << ",\"victim_is_owner\":" << (event.VictimIsOwner ? "true" : "false")
                          << ",\"spell_id\":" << event.SpellId
+                         << ",\"current_generic_spell_id\":" << event.CurrentGenericSpellId
+                         << ",\"current_channeled_spell_id\":" << event.CurrentChanneledSpellId
                          << ",\"damage\":" << event.Damage << '}';
                 }
             uint32 botKey = state.Guid.GetCounter();
@@ -11068,6 +11074,15 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
                 entry.MaxHealth = bot->GetMaxHealth();
                 entry.Mana = bot->GetPower(POWER_MANA);
                 entry.MaxMana = bot->GetMaxPower(POWER_MANA);
+                if (Spell* current = bot->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+                    entry.CurrentGenericSpellId = current->GetSpellInfo()->Id;
+                if (Spell* current = bot->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+                    entry.CurrentChanneledSpellId = current->GetSpellInfo()->Id;
+                if (Pet* pet = bot->GetPet())
+                {
+                    entry.PetHealth = pet->GetHealth();
+                    entry.PetMaxHealth = pet->GetMaxHealth();
+                }
                 entry.Alive = false;
                 metrics.DecisionTimeline.push_back(std::move(entry));
             }
@@ -11541,6 +11556,15 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
                 entry.MaxHealth = bot->GetMaxHealth();
                 entry.Mana = bot->GetPower(POWER_MANA);
                 entry.MaxMana = bot->GetMaxPower(POWER_MANA);
+                if (Spell* current = bot->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+                    entry.CurrentGenericSpellId = current->GetSpellInfo()->Id;
+                if (Spell* current = bot->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+                    entry.CurrentChanneledSpellId = current->GetSpellInfo()->Id;
+                if (Pet* pet = bot->GetPet())
+                {
+                    entry.PetHealth = pet->GetHealth();
+                    entry.PetMaxHealth = pet->GetMaxHealth();
+                }
                 entry.TargetDistance = distance;
                 entry.Alive = true;
                 metrics.DecisionTimeline.push_back(std::move(entry));
@@ -11587,6 +11611,15 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
             entry.MaxHealth = bot->GetMaxHealth();
             entry.Mana = bot->GetPower(POWER_MANA);
             entry.MaxMana = bot->GetMaxPower(POWER_MANA);
+            if (Spell* current = bot->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+                entry.CurrentGenericSpellId = current->GetSpellInfo()->Id;
+            if (Spell* current = bot->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+                entry.CurrentChanneledSpellId = current->GetSpellInfo()->Id;
+            if (Pet* pet = bot->GetPet())
+            {
+                entry.PetHealth = pet->GetHealth();
+                entry.PetMaxHealth = pet->GetMaxHealth();
+            }
             entry.TargetDistance = bot->GetExactDist(target);
             entry.Alive = bot->IsAlive();
             metrics.DecisionTimeline.push_back(std::move(entry));
@@ -46343,6 +46376,10 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
                     event.VictimGuid = victim->GetGUID().GetCounter();
                     event.VictimEntry = victim->GetEntry();
                     event.SpellId = spellId;
+                    if (Spell* current = attacker->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+                        event.CurrentGenericSpellId = current->GetSpellInfo()->Id;
+                    if (Spell* current = attacker->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+                        event.CurrentChanneledSpellId = current->GetSpellInfo()->Id;
                     event.Damage = measuredDamage;
                     event.VictimTypeId = uint8(victim->GetTypeId());
                     event.VictimIsOwner = victim == owner;
