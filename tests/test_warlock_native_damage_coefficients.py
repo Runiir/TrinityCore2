@@ -45,6 +45,10 @@ def test_affliction_modifier_diagnostics_observe_native_auras_without_applying_t
     assert "bot->HasAura(77215)" in source
     assert "fixtureTarget->HasAura(48181, bot->GetGUID())" in source
     assert "fixtureTarget->GetAura(32389," in source
+    assert "hauntModifier->IsAffectingSpell(corruption)" in source
+    assert "shadowEmbraceModifier->IsAffectingSpell(corruption)" in source
+    assert "fixtureTarget->SpellDamageBonusTaken(bot, corruption," in source
+    assert "minimum_corruption_taken_multiplier_ppm" in source
     assert '\\"affliction_modifier_observation\\"' in source
     assert "CastSpell(32389" not in source
     assert "AddAura(32389" not in source

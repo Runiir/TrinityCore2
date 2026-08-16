@@ -3767,6 +3767,18 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                  << (metrics ? metrics->AfflictionShadowEmbraceActiveTicks : 0)
                  << ",\"maximum_shadow_embrace_stacks\":"
                  << (metrics ? uint32(metrics->AfflictionMaximumShadowEmbraceStacks) : 0)
+                 << ",\"haunt_affects_corruption_samples\":"
+                 << (metrics ? metrics->AfflictionHauntAffectsCorruptionTicks : 0)
+                 << ",\"shadow_embrace_affects_corruption_samples\":"
+                 << (metrics ? metrics->AfflictionShadowEmbraceAffectsCorruptionTicks : 0)
+                 << ",\"maximum_haunt_damage_modifier_pct\":"
+                 << (metrics ? metrics->AfflictionMaximumHauntDamageModifierPct : 0)
+                 << ",\"maximum_shadow_embrace_damage_modifier_pct\":"
+                 << (metrics ? metrics->AfflictionMaximumShadowEmbraceDamageModifierPct : 0)
+                 << ",\"minimum_corruption_taken_multiplier_ppm\":"
+                 << (metrics ? metrics->AfflictionMinimumCorruptionTakenMultiplierPpm : 0)
+                 << ",\"maximum_corruption_taken_multiplier_ppm\":"
+                 << (metrics ? metrics->AfflictionMaximumCorruptionTakenMultiplierPpm : 0)
                  << '}'
                  << ",\"tank_metrics\":{\"stance_form_uptime_ratio\":"
                  << (metrics && metrics->TickCount ? double(metrics->StanceFormActiveTicks) / double(metrics->TickCount) : 0.0)
@@ -11125,6 +11137,42 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
                     metrics.AfflictionMaximumShadowEmbraceStacks =
                         std::max<uint8>(metrics.AfflictionMaximumShadowEmbraceStacks,
                             shadowEmbrace->GetStackAmount());
+                }
+                SpellInfo const* corruption = sSpellMgr->GetSpellInfo(172);
+                AuraEffect const* hauntModifier = fixtureTarget->GetAuraEffect(
+                    48181, EFFECT_2, bot->GetGUID());
+                AuraEffect const* shadowEmbraceModifier = fixtureTarget->GetAuraEffect(
+                    32389, EFFECT_0, bot->GetGUID());
+                if (corruption && hauntModifier
+                    && hauntModifier->IsAffectingSpell(corruption))
+                {
+                    ++metrics.AfflictionHauntAffectsCorruptionTicks;
+                    metrics.AfflictionMaximumHauntDamageModifierPct = std::max(
+                        metrics.AfflictionMaximumHauntDamageModifierPct,
+                        hauntModifier->GetAmount());
+                }
+                if (corruption && shadowEmbraceModifier
+                    && shadowEmbraceModifier->IsAffectingSpell(corruption))
+                {
+                    ++metrics.AfflictionShadowEmbraceAffectsCorruptionTicks;
+                    metrics.AfflictionMaximumShadowEmbraceDamageModifierPct = std::max(
+                        metrics.AfflictionMaximumShadowEmbraceDamageModifierPct,
+                        shadowEmbraceModifier->GetAmount());
+                }
+                if (corruption && hauntModifier && shadowEmbraceModifier)
+                {
+                    uint32 const multiplierPpm = uint32(std::max<int32>(0,
+                        fixtureTarget->SpellDamageBonusTaken(bot, corruption,
+                            1000000, DOT)));
+                    if (!metrics.AfflictionMinimumCorruptionTakenMultiplierPpm)
+                        metrics.AfflictionMinimumCorruptionTakenMultiplierPpm = multiplierPpm;
+                    else
+                        metrics.AfflictionMinimumCorruptionTakenMultiplierPpm = std::min(
+                            metrics.AfflictionMinimumCorruptionTakenMultiplierPpm,
+                            multiplierPpm);
+                    metrics.AfflictionMaximumCorruptionTakenMultiplierPpm = std::max(
+                        metrics.AfflictionMaximumCorruptionTakenMultiplierPpm,
+                        multiplierPpm);
                 }
             }
         }

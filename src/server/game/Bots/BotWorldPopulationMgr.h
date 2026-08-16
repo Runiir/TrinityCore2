@@ -2258,6 +2258,12 @@ private:
         uint32 AfflictionHauntDebuffActiveTicks = 0;
         uint32 AfflictionShadowEmbraceActiveTicks = 0;
         uint8 AfflictionMaximumShadowEmbraceStacks = 0;
+        uint32 AfflictionHauntAffectsCorruptionTicks = 0;
+        uint32 AfflictionShadowEmbraceAffectsCorruptionTicks = 0;
+        int32 AfflictionMaximumHauntDamageModifierPct = 0;
+        int32 AfflictionMaximumShadowEmbraceDamageModifierPct = 0;
+        uint32 AfflictionMinimumCorruptionTakenMultiplierPpm = 0;
+        uint32 AfflictionMaximumCorruptionTakenMultiplierPpm = 0;
         uint32 StanceFormActiveTicks = 0;
         uint32 MitigationCoveredTicks = 0;
         uint32 ThreatSampleCount = 0;
