@@ -33,6 +33,9 @@ DEFAULT_FIXTURE_PATH = (
 )
 DEFAULT_OUTPUT_PATH = ROOT / "experiments/configs/wowsims_cata_dps_reference_requests_v1.json"
 DEFAULT_GEAR_PATH = ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json"
+TALENT_DBC_SNAPSHOT_DIR = (
+    ROOT / "experiments/configs/wowsims_cata_p4_talent_sources"
+)
 
 CATALOG_SCHEMA = "wowsims_cata_dps_reference_requests_v1"
 REQUEST_SCHEMA = "wowsims_live_compatible_request_contract_v1"
@@ -408,9 +411,7 @@ def _glyph_identity(glyph_item_ids: list[int]) -> tuple[dict[str, Any], dict[str
 
 @lru_cache(maxsize=1)
 def talent_translation_authority() -> dict[str, Any]:
-    from tools.bot_ml.build_validation_provisioning import DEFAULT_DBC_DIR
-
-    dbc_dir = (ROOT / DEFAULT_DBC_DIR).resolve()
+    dbc_dir = TALENT_DBC_SNAPSHOT_DIR.resolve()
     sources = {
         name: file_sha256(dbc_dir / name)
         for name in (
@@ -429,12 +430,11 @@ def talent_translation_authority() -> dict[str, Any]:
 def decode_talent_string(talent_string: str, class_id: int) -> dict[str, Any]:
     """Decode and round-trip a WoWSims talent string through pinned DBC rows."""
     from tools.bot_ml.build_validation_provisioning import (
-        DEFAULT_DBC_DIR,
         load_wdbc_values,
         talent_data,
     )
 
-    dbc_dir = (ROOT / DEFAULT_DBC_DIR).resolve()
+    dbc_dir = TALENT_DBC_SNAPSHOT_DIR.resolve()
     _require(bool(re.fullmatch(r"[0-5]*-[0-5]*-[0-5]*", talent_string)), "talent_string_shape")
     talent_tabs = [
         row

@@ -11,6 +11,7 @@ from tools.bot_ml.build_wowsims_reference_requests import (
     REQUIRED_REQUIREMENTS,
     RESULT_ACCEPTED,
     RESULT_PENDING,
+    TALENT_DBC_SNAPSHOT_DIR,
     ReferenceRequestError,
     _read_hashed_json,
     build_manifest,
@@ -107,6 +108,17 @@ def test_talent_strings_roundtrip_to_exact_target_spell_ids(
             comparison["request_condition_projection_sha256"]
             == projection["projection_sha256"]
         )
+
+
+def test_talent_translation_uses_checked_in_snapshot_bytes() -> None:
+    assert TALENT_DBC_SNAPSHOT_DIR.relative_to(ROOT).as_posix() == (
+        "experiments/configs/wowsims_cata_p4_talent_sources"
+    )
+    assert {path.name for path in TALENT_DBC_SNAPSHOT_DIR.iterdir()} == {
+        "Talent.dbc",
+        "TalentTab.dbc",
+        "TalentTreePrimarySpells.dbc",
+    }
 
 
 def test_requirements_cover_exact_static_and_runtime_facts(
