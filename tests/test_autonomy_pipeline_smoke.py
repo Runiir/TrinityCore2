@@ -5921,7 +5921,10 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "metrics.TargetCount = std::max(metrics.TargetCount, hostileCount)" not in update
     assert "uint32 hostileCount = Cohort().CalibrationAoePhase ? uint32(dummies.size()) : 1;" in update
     assert 'bool const strictSingleTarget = Cohort().CalibrationMode == "single_target_300";' in update
-    assert "false, strictSingleTarget, !strictSingleTarget" in update
+    assert "bool const forbidArea = false;" in update
+    assert "bool const allowMultidot = !strictSingleTarget;" in update
+    assert "false, forbidArea, allowMultidot" in update
+    assert "forbidArea, allowMultidot);" in update
 
     resolver = function_body(
         manager, "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction"

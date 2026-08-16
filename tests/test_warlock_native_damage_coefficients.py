@@ -63,3 +63,12 @@ def test_pet_resource_contract_waits_for_native_regeneration_without_refilling()
     assert "populationReady = petResourceReady" in source
     assert 'std::string_view(unitKind) != "pet"' in source
     assert "unit->SetPower(power, int32(expectedNative))" in source
+
+
+def test_isolated_single_target_allows_one_target_shadowflame_without_multidot() -> None:
+    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+
+    assert "independently requires one damaged target plus zero off-target damage" in source
+    assert "bool const forbidArea = false;" in source
+    assert "bool const allowMultidot = !strictSingleTarget;" in source
+    assert "false, forbidArea, allowMultidot" in source

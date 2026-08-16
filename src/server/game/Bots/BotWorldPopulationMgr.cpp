@@ -11454,9 +11454,16 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
 
     bool const interruptOpportunity = target->IsNonMeleeSpellCast(false);
     bool const strictSingleTarget = Cohort().CalibrationMode == "single_target_300";
+    // The single-target fixture is an isolated primary target and acceptance
+    // independently requires one damaged target plus zero off-target damage.
+    // Preserve player rotations that legally use an area-capable spell on one
+    // target (for example Shadowflame or Howling Blast); only multidot target
+    // selection remains disabled in this mode.
+    bool const forbidArea = false;
+    bool const allowMultidot = !strictSingleTarget;
     ResolvedCombatAction action = ResolveProfileCombatAction(
         bot, target, hostileCount, Cohort().CalibrationAoePhase, 0, false,
-        false, strictSingleTarget, !strictSingleTarget, false, false,
+        false, forbidArea, allowMultidot, false, false,
         Cohort().CalibrationTargetSpec.c_str());
     auto actionCategory = Party().LastActionCategoryByBot.find(bot->GetGUID().GetCounter());
     std::string const actionGroup = actionCategory != Party().LastActionCategoryByBot.end()
@@ -11475,7 +11482,7 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     BotActionResult result = ExecuteProfileCombatAction(
         &state, bot, target, &action, hostileCount,
         Cohort().CalibrationAoePhase, 0, false, false,
-        strictSingleTarget, !strictSingleTarget);
+        forbidArea, allowMultidot);
     if (scored)
     {
         ++metrics.ActiveTicks;
