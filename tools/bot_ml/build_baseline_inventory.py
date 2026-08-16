@@ -15,8 +15,10 @@ from typing import Any
 import yaml
 
 try:
+    from .build_validation_provisioning import load_config as load_validation_provisioning_config
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 except ImportError:
+    from build_validation_provisioning import load_config as load_validation_provisioning_config
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 
 
@@ -939,7 +941,9 @@ def build_inventory(repo_root: Path, policy_path: Path, provisioning_path: Path,
     effective_rotations = rotation_paths if rotation_paths is not None else ([rotation_path] if rotation_path else declared_rotations)
     if len(effective_rotations) != len(declared_rotations) or any(path.resolve() != declared.resolve() for path, declared in zip(effective_rotations, declared_rotations)):
         raise ValueError("effective rotation inputs must exactly match policy-declared rotation SQL artifacts in declaration order")
-    provisioning = load_json(provisioning_path)
+    # Use the canonical loader so the content-addressed all-spec candidate pool is
+    # part of both provisioning and baseline-inventory reconciliation.
+    provisioning = load_validation_provisioning_config(provisioning_path)
     gear_profiles = load_json(gear_path)
     rows = reconcile_targets(policy, provisioning, gear_profiles, load_json(action_path), rotation_tuples(effective_rotations, repo_root))
     configured_rows = [row for row in rows if row["status"] in {"configured", "incomplete"}]

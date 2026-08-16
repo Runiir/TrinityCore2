@@ -75,6 +75,12 @@ bool HasEnoughPowerForSpell(Player const* bot, SpellInfo const* spellInfo)
         if (runeCost && !runeCost->NoRuneCost())
         {
             std::array<int32, 3> required = { int32(runeCost->RuneCost[0]), int32(runeCost->RuneCost[1]), int32(runeCost->RuneCost[2]) };
+            // Match Spell::CheckRuneCost: player-observed spell modifiers can
+            // reduce an individual rune cost to zero.  Do not reject a native
+            // cast merely because the unmodified DBC row still has a cost.
+            if (Player* modOwner = bot->GetSpellModOwner())
+                for (int32& runeRequirement : required)
+                    modOwner->ApplySpellMod(spellInfo, SpellModOp::PowerCost0, runeRequirement);
             uint8 deathRunes = 0;
             for (uint8 i = 0; i < MAX_RUNES; ++i)
             {
@@ -242,13 +248,19 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
         return Loot(bot, target);
     if (action.Type == "auto_attack")
     {
-        if (!target || !target->IsAlive() || !bot->IsValidAttackTarget(target))
-            return BotActionResult::InvalidTarget;
-        Face(bot, target);
         if (action.AutoAttackMode == "melee")
         {
-            bot->Attack(target, true);
-            return BotActionResult::Ok;
+            if (action.MeleeAutoAttackExternallyReconciled)
+            {
+                if (!target || bot->GetVictim() != target)
+                    return BotActionResult::NoAction;
+                if (!bot->IsWithinLOSInMap(target))
+                    return BotActionResult::NoLineOfSight;
+                if (!bot->IsWithinMeleeRange(target))
+                    return BotActionResult::OutOfRange;
+                return BotActionResult::Ok;
+            }
+            return SubmitMeleeAutoAttack(bot, target);
         }
         return BotActionResult::NoAction;
     }
@@ -269,8 +281,9 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     // cooldown does not leave a tank, melee DPS, hunter, or pet class idle.
     if (target != bot && bot->IsValidAttackTarget(target))
     {
-        if (action.AutoAttackMode == "melee")
-            bot->Attack(target, true);
+        if (action.AutoAttackMode == "melee"
+            && !action.MeleeAutoAttackExternallyReconciled)
+            SubmitMeleeAutoAttack(bot, target);
         else if (action.AutoAttackMode == "ranged" && bot->getClass() == CLASS_HUNTER
             && !bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
             bot->CastSpell(target, 75, false); // Auto Shot
@@ -381,6 +394,39 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     }
 
     RecordSuccess(bot->GetGUID());
+    return BotActionResult::Ok;
+}
+
+BotActionResult BotActionExecutor::SubmitMeleeAutoAttack(Player* bot, Unit* target)
+{
+    if (!bot || !bot->IsAlive())
+        return BotActionResult::NoBot;
+    if (!target || !target->IsAlive() || !bot->IsValidAttackTarget(target))
+        return BotActionResult::InvalidTarget;
+
+    uint64 const ownerGuid = bot->GetGUID().GetRawValue();
+    if (BotRaidAreaAuthority::IsAllOffenseSuppressed(ownerGuid))
+        return BotActionResult::NoAction;
+    if (Creature const* creature = target->ToCreature();
+        creature && BotRaidAreaAuthority::IsProtectedEncounterTarget(
+            ownerGuid, creature->GetEntry(), creature->GetSpawnId(),
+            creature->GetGUID().GetRawValue()))
+        return BotActionResult::NoAction;
+
+    Face(bot, target);
+    bool const inLineOfSight = bot->IsWithinLOSInMap(target);
+    bool const inMeleeRange = bot->IsWithinMeleeRange(target);
+    // The client auto-attack toggle binds a victim even before the first swing
+    // is legal. Keep that native state across chase/hazard movement; the core
+    // will produce white swings automatically on every in-range swing timer.
+    bool const attackBound = bot->Attack(target, true)
+        || bot->GetVictim() == target;
+    if (!attackBound)
+        return BotActionResult::NoAction;
+    if (!inLineOfSight)
+        return BotActionResult::NoLineOfSight;
+    if (!inMeleeRange)
+        return BotActionResult::OutOfRange;
     return BotActionResult::Ok;
 }
 
@@ -705,7 +751,11 @@ BotActionResult BotActionExecutor::CheckHostileSpell(Player* owner, Player* bot,
         return BotActionResult::InvalidTarget;
     if (!bot->IsWithinLOSInMap(target))
         return BotActionResult::NoLineOfSight;
-    if (!bot->IsWithinDistInMap(target, std::max(5.0f, spellInfo->GetMaxRange(false))))
+    float const targetDistance = bot->GetExactDist(target);
+    float const minRange = spellInfo->GetMinRange(false);
+    float const maxRange = std::max(5.0f, spellInfo->GetMaxRange(false));
+    if ((minRange > 0.0f && targetDistance < minRange)
+        || !bot->IsWithinDistInMap(target, maxRange))
         return BotActionResult::OutOfRange;
     // Rerun157 captured eight spell_cast_result_150 submissions when scripted
     // control landed between profile resolution and CastSpell. Repeat the

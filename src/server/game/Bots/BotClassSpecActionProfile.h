@@ -94,6 +94,10 @@ struct BotActionCandidate
     float PredictedOverheal = 0.0f;
     uint32 ManaCost = 0;
     uint32 CastTimeMs = 0;
+    // Player-visible resource, proc, and aura facts captured when this typed
+    // candidate was built.  Selection remains data-driven by the profile; the
+    // observation makes the priority decision attributable to live state.
+    std::string ObservationJson = "{}";
     BotActionProfileSpell Profile;
 };
 

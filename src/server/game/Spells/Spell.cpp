@@ -4242,7 +4242,15 @@ void Spell::finish(bool ok)
         return;
 
     if (Player* playerCaster = unitCaster->ToPlayer())
+    {
         sBotWorldPopulationMgr->NotifyBotSpellFinished(playerCaster, m_spellInfo->Id, ok);
+        if (m_castItemGUID)
+            sBotWorldPopulationMgr->NotifyBotItemSpellFinished(playerCaster,
+                m_spellInfo->Id, ok, m_castItemGUID,
+                m_targets.GetItemTargetGUID(),
+                m_CastItem ? m_CastItem->GetEntry() : 0,
+                m_CastItem && m_CastItem->IsPotion());
+    }
 
     // successful cast of the initial autorepeat spell is moved to idle state so that it is not deleted as long as autorepeat is active
     if (IsAutoRepeat() && unitCaster->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL) == this)

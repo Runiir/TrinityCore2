@@ -14,6 +14,7 @@ PLAYER_BOT_CONTROLLER = ROOT / "src/server/game/Bots/BotController.cpp"
 PLAYER_BOT_TYPES = ROOT / "src/server/game/Bots/BotTypes.cpp"
 PLAYER_BOT_ACTION_PROFILE = ROOT / "src/server/game/Bots/BotClassSpecActionProfile.cpp"
 PLAYER_BOT_EXECUTOR = ROOT / "src/server/game/Bots/BotActionExecutor.cpp"
+MELEE_AUTO_ATTACK_INTENT = ROOT / "src/server/game/Bots/BotMeleeAutoAttackIntent.h"
 BOT_MGR_HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
 PET_CPP = ROOT / "src/server/game/Entities/Pet/Pet.cpp"
 STONECORE_ROTATION_SQL = ROOT / "sql/custom/world/2026_06_21_00_bot_rotation_profiles.sql"
@@ -23,6 +24,7 @@ MARKSMAN_STATIONARY_SQL = ROOT / "sql/custom/world/2026_07_14_04_marksmanship_ca
 EMERGENCY_ADD_THREAT_SQL = ROOT / "sql/custom/world/2026_07_15_01_stonecore_emergency_add_threat.sql"
 WOWHEAD_GUIDE_ROTATION_SQL = ROOT / "sql/custom/world/2026_07_16_00_stonecore_wowhead_guide_rotations.sql"
 PROTECTION_HOLY_WRATH_SELF_SQL = ROOT / "sql/custom/world/2026_08_09_00_phase9_protection_holy_wrath_self_center.sql"
+FROST_PLAYER_OBSERVED_SQL = ROOT / "sql/custom/world/2026_08_16_00_frost_death_knight_player_observed_priority.sql"
 BOT_POLICY = ROOT / "src/server/game/Bots/BotTelemetryPolicy.cpp"
 BOT_BUFFER = ROOT / "src/server/game/Bots/BotTelemetryBuffer.cpp"
 BOT_SEGMENTS = ROOT / "src/server/game/Bots/BotExperimentCoordinator.cpp"
@@ -80,6 +82,124 @@ def test_marksmanship_cast_time_shots_require_stationary_execution() -> None:
 
     assert "`action`.`spell_id` IN (19434, 56641)" in migration
     assert "`action`.`requires_stationary` = 1" in migration
+
+
+def test_frost_death_knight_uses_typed_player_observed_masterfrost_candidates() -> None:
+    migration = read(FROST_PLAYER_OBSERVED_SQL)
+
+    assert "`action`.`spell_id` = 48265" in migration
+    assert "`action`.`maintain_aura_id` = 48265" in migration
+    assert "player_observed_priority_v1" in migration
+    assert "51124, 55078" in migration
+    assert "1, 0, 59052" in migration
+    assert "0.70, 1, 0" in migration
+    assert "`action`.`maintain_aura_id` = 55078" in migration
+    assert "`action`.`refresh_aura_below_ms` = 3000" in migration
+    assert "maintain_owned_aura" in migration
+    assert "`action`.`category` = 'resource_generator'" in migration
+    assert "runic_power_filler,lowest_priority" in migration
+    assert "`action`.`maintain_aura_id` = 0" in migration
+    assert "EQUIPMENT_SLOT" not in migration
+    assert "item_swap" not in migration
+
+
+def test_frost_observations_change_the_winning_typed_alternate() -> None:
+    migration = read(FROST_PLAYER_OBSERVED_SQL)
+    profile = read(PLAYER_BOT_ACTION_PROFILE)
+    manager = read(BOT_MGR)
+
+    def authored_priority(spell_id: int, marker: str) -> tuple[float, int]:
+        match = re.search(
+            rf"SELECT `profile`\.`id`, \d+, {spell_id}, .*?"
+            rf"'[^']*{marker}[^']*',\s*([0-9.]+),\s*(\d+),",
+            migration,
+            flags=re.S,
+        )
+        assert match, (spell_id, marker)
+        return float(match.group(1)), int(match.group(2))
+
+    authored = {
+        "frost_strike_cap": (*authored_priority(49143, "cap_protection"), 49143),
+        "killing_machine_obliterate": (*authored_priority(49020, "killing_machine"), 49020),
+        "rime_howling_blast": (*authored_priority(49184, "rime"), 49184),
+    }
+
+    # These are the same typed gates consumed by EvaluateCompiledConditions;
+    # mechanic tags remain descriptive and never manufacture a proc/resource.
+    assert 'return "missing_required_self_aura"' in profile
+    assert 'return "ready_rune_gate"' in profile
+    assert 'return "primary_power_gate"' in profile
+    assert "candidate.Profile.PriorityBucket < current->Profile.PriorityBucket" in manager
+    assert "candidate.Score > current->Score" in manager
+
+    def choose(runic_power_ratio: float, killing_machine: bool, rime: bool) -> int | None:
+        valid: list[tuple[int, float, int]] = []
+        if runic_power_ratio >= 0.70:
+            score, bucket, spell = authored["frost_strike_cap"]
+            valid.append((bucket, -score, spell))
+        if killing_machine and runic_power_ratio <= 0.70:
+            score, bucket, spell = authored["killing_machine_obliterate"]
+            valid.append((bucket, -score, spell))
+        if rime and runic_power_ratio <= 0.90:
+            score, bucket, spell = authored["rime_howling_blast"]
+            valid.append((bucket, -score, spell))
+        return min(valid)[2] if valid else None
+
+    assert choose(0.85, killing_machine=True, rime=True) == 49143
+    assert choose(0.50, killing_machine=True, rime=True) == 49020
+    assert choose(0.50, killing_machine=False, rime=True) == 49184
+    assert choose(0.50, killing_machine=False, rime=False) is None
+
+
+def test_frost_candidate_telemetry_observes_resources_procs_and_owned_diseases() -> None:
+    profile = read(PLAYER_BOT_ACTION_PROFILE)
+
+    assert 'profile.SpecTag == "frost_death_knight"' in profile
+    assert '\\"bot_action_observation_v1\\"' in profile
+    assert '\\"ready_runes\\"' in profile
+    assert 'bot->HasAura(51124)' in profile
+    assert 'bot->HasAura(59052)' in profile
+    assert 'target->GetAura(55078, bot->GetGUID())' in profile
+    assert 'target->GetAura(55095, bot->GetGUID())' in profile
+    assert '\\"owned_55078_remaining_ms\\"' in profile
+    assert '\\"owned_55095_remaining_ms\\"' in profile
+    assert '\\"observation\\"' in profile
+    assert '\\"priority_bucket\\"' in profile
+    assert '\\"mechanic_tags\\"' in profile
+
+
+def test_frost_free_rune_proc_uses_the_same_cost_modifiers_as_native_spell_checks() -> None:
+    profile = read(PLAYER_BOT_ACTION_PROFILE)
+    executor = read(PLAYER_BOT_EXECUTOR)
+
+    for source in (profile, executor):
+        assert "GetSpellModOwner()" in source
+        assert "SpellModOp::PowerCost0" in source
+        assert "ApplySpellMod(spellInfo" in source
+
+
+def test_frost_unholy_presence_is_bound_through_normal_provisioning_catalogs() -> None:
+    actions = json.loads(read(ROOT / "experiments/configs/cata_434_action_profiles.json"))
+    targets = json.loads(read(ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.json"))
+    frost = next(
+        row for row in targets["targets"]
+        if row["spec_target_id"] == "frost_death_knight"
+    )
+    catalog_builder = read(ROOT / "tools/bot_ml/build_all_spec_phase1_catalogs.py")
+    provisioner = read(ROOT / "tools/bot_ml/build_validation_provisioning.py")
+
+    action_spells = actions["action_profile_spells_by_spec"]["frost_death_knight"]
+    assert 48265 in action_spells
+    assert 48266 not in action_spells
+    assert 48265 in frost["action_profile_spell_ids"]
+    assert 48266 not in frost["action_profile_spell_ids"]
+    assert "unholy_presence" in frost["pet_form_stance_presence"]
+    assert "frost_presence" not in frost["pet_form_stance_presence"]
+    assert '"frost_death_knight": [48265]' in catalog_builder
+    assert '"frost_death_knight": [45462, 47528, 48265' in catalog_builder
+    assert "spec_profile_spells" in provisioner
+    assert "profile_spells + spec_profile_spells + proficiency_spells" in provisioner
+    assert "INSERT INTO `characters`.`character_spell`" in provisioner
 
 
 def function_body(source: str, signature: str) -> str:
@@ -142,7 +262,7 @@ def test_validation_route_group_focus_reaches_profile_action_without_threat_rewa
     group_focus_start = route_objective.index("if (Unit* focusTarget = routeGroupFocusTarget())")
     group_focus_end = route_objective.index('if (std::string(GetDungeonRole(bot)) != "tank"\n        && (', group_focus_start)
     group_focus = route_objective[group_focus_start:group_focus_end]
-    later_threat_gate = 'if (routeBossTarget && _config.ValidationRouteKind != "boss" && !botIsTank\n            && validationRouteHasLivingTank() && !routeFocusTankOwned(target))'
+    later_threat_gate = 'if (routeTrashPackTarget && !botIsTank\n            && validationRouteHasLivingTank() && !routeFocusTankOwned(target))'
 
     assert_ordered(
         group_focus,
@@ -160,9 +280,9 @@ def test_decision_tick_caps_combat_and_validation_before_minimum_floor():
     assert_ordered(
         update_bot,
         'uint32 decisionTickMs = sConfigMgr->GetIntDefault("BotWorld.DecisionTickMs", 3000);',
-        "if (bot->IsInCombat() || _config.ValidationRouteEnable)",
-        "decisionTickMs = std::min<uint32>(decisionTickMs, 1000);",
-        "state.DecisionTimer = std::max<uint32>(500, decisionTickMs);",
+        "if (bot->IsInCombat() || Cohort().Config.ValidationRouteEnable)",
+        "decisionTickMs = std::min<uint32>(decisionTickMs, responsiveShadowCombat ? 100 : 1000);",
+        "state.DecisionTimer = std::max<uint32>(responsiveShadowCombat ? 100 : 500, decisionTickMs);",
     )
 
 
@@ -179,7 +299,7 @@ def test_validation_route_has_no_forced_teacher_damage_or_expected_empty_termina
     assert "JUST_DIED" not in route_objective
     assert "validation_route_teacher_assist" not in route_objective
     assert "trash_cluster_expected_empty" not in route_objective
-    assert "&& !_config.ValidationRouteExpectedAliveCount" not in route_objective
+    assert "&& !Cohort().Config.ValidationRouteExpectedAliveCount" not in route_objective
 
 
 def test_validation_route_prerequisite_switch_resets_pack_progress_budget():
@@ -210,8 +330,8 @@ def test_unengaged_boss_prerequisite_cannot_latch_trash_failure_terminal():
     assert_ordered(
         no_progress,
         "if (unengagedBossPrerequisite)",
-        "state.ValidationRouteCombatNoProgressCount = 0;",
-        "state.ValidationRoutePackNoProgressCount = 0;",
+        "resetCombatNoProgress();",
+        "resetPackNoProgress();",
         'refreshRouteProgress("unengaged_boss_prerequisite_observed", 0);',
         "return false;",
     )
@@ -231,7 +351,7 @@ def test_boss_prerequisites_use_trash_swarm_threat_security_without_intercepting
     assert 'if (std::string(GetDungeonRole(bot)) == "dps"' in threat_security
     assert '"prerequisite_swarm_emergency_defensive"' in threat_security
     assert '"spread_after_secure_prerequisite_threat"' in threat_security
-    assert 'if (_config.ValidationRouteKind != "boss"' not in threat_security
+    assert 'if (Cohort().Config.ValidationRouteKind != "boss"' not in threat_security
 
 
 def test_server_start_autonomy_enabled_by_default_contract():
@@ -258,6 +378,7 @@ def test_server_start_autonomy_enabled_by_default_contract():
     assert re.search(r"^BotWorld\.ValidationRoute\.TargetEntry\s*=\s*0$", conf, re.MULTILINE)
     assert re.search(r'^BotWorld\.ValidationRoute\.AlternateTargetEntries\s*=\s*""$', conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.ValidationRoute\.ActivationDataId\s*=\s*0$", conf, re.MULTILINE)
+    assert re.search(r"^BotWorld\.ValidationRoute\.ActivationAreaTriggerId\s*=\s*0$", conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.ValidationRoute\.ActivationDataValue\s*=\s*0$", conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.ValidationRoute\.ActivationSummonEntry\s*=\s*0$", conf, re.MULTILINE)
     assert re.search(r'^BotWorld\.SpawnMode\s*=\s*"resume_or_race_start"$', conf, re.MULTILINE)
@@ -308,7 +429,8 @@ def test_playerbot_runtime_roles_drive_universal_profile_combat():
     assert_ordered(
         update,
         "BotCombatState combatState = BuildCombatState(owner, bot, recentEvents);",
-        "_runtimeRole == \"healer\" && TryResolveHealerAction",
+        'if (_runtimeRole == "healer")',
+        "healerCommitted = TryResolveHealerAction",
         "ResolveProfileCombat(combatDecision, combatState, bot, target)",
     )
 
@@ -334,16 +456,19 @@ def test_playerbot_runtime_roles_drive_universal_profile_combat():
     assert 'candidate.RejectReason = "target_health_gate";' in world_mgr
     assert 'candidate.RejectReason = "self_health_gate";' in world_mgr
     assert "SELECT class_spec FROM character_bot_pool WHERE guid" in profiles
-    assert 'classSpec == "protection_paladin"' in profiles
-    assert 'classSpec == "fire_mage"' in profiles
-    assert 'classSpec == "marksmanship_hunter"' in profiles
-    assert 'classSpec == "survival_hunter"' in profiles
-    assert 'classSpec == "enhancement_shaman"' in profiles
+    for alias in (
+        '{ "protection_paladin", "protection" }',
+        '{ "fire_mage", "fire" }',
+        '{ "marksmanship_hunter", "marksmanship" }',
+        '{ "survival_hunter", "survival" }',
+        '{ "enhancement_shaman", "enhancement" }',
+    ):
+        assert alias in profiles
     assert "spellInfo->PowerType == POWER_RUNE && spellInfo->RuneCostID" in profiles
     assert "sSpellRuneCostStore.LookupEntry(spellInfo->RuneCostID)" in profiles
     assert "bot->GetRuneCooldown(i)" in profiles
     assert "spellInfo->NeedsComboPoints()" in profiles
-    assert "bot->GetComboTarget() != actionTarget->GetGUID()" in profiles
+    assert "bot->GetComboTarget() != comboTarget->GetGUID()" in profiles
     assert "proc_or_opener" in profiles
     for spell_id in ["53595", "31935", "26573", "53600", "56641", "2643", "8042", "17364", "60103", "421", "2120", "1449"]:
         assert spell_id in profiles
@@ -360,7 +485,7 @@ def test_playerbot_runtime_roles_drive_universal_profile_combat():
     assert_ordered(
         execute_combat,
         'action.AutoAttackMode == "melee"',
-        "bot->Attack(target, true);",
+        "SubmitMeleeAutoAttack(bot, target)",
         "action.SpellId == 75",
         "CURRENT_AUTOREPEAT_SPELL",
         "BotActionResult check = CheckHostileSpell(owner, bot, target, action.SpellId);",
@@ -527,7 +652,7 @@ def test_validation_route_readiness_buffs_party_and_hunter_pet_without_fallbacks
     assert "hunterHasStoredPet" in readiness
     assert "(!bot->GetPet() || !bot->GetPet()->IsAlive())" in readiness
     assert "if (!urgentHunterPetRecovery)\n        for (ActiveBuffRequirement const& requirement" in readiness
-    assert "_config.ValidationRouteEnable || !bot" not in readiness
+    assert "Cohort().Config.ValidationRouteEnable || !bot" not in readiness
     assert "ActiveBuffRequirement" in readiness
     assert "blessing_of_kings_ready" in readiness
     assert "strength_of_earth_totem_ready" not in readiness
@@ -671,7 +796,7 @@ def test_persistent_spec_setup_precedes_dummy_and_profile_rotations():
     calibration = function_body(mgr, "void BotWorldPopulationMgr::UpdateCalibrationBot")
     execute_profile = function_body(
         mgr,
-        "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly)",
+        "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target",
     )
 
     for spell_id in ["25780", "31801", "465", "20217", "1459", "30482", "13165", "324", "8232", "8024", "1130"]:
@@ -681,12 +806,12 @@ def test_persistent_spec_setup_precedes_dummy_and_profile_rotations():
     assert "TEMP_ENCHANTMENT_SLOT" in setup
     assert "EQUIPMENT_SLOT_MAINHAND" in setup
     assert "EQUIPMENT_SLOT_OFFHAND" in setup
-    assert "targets.SetItemTarget(weapon)" in setup
+    assert "TEMP_ENCHANTMENT_SLOT" in setup
     assert "TryEnsurePersistentCombatSetup(state, bot, target)" in calibration
-    assert_ordered(calibration, "TryEnsurePersistentCombatSetup(state, bot, target)", "metrics.WindowStartedMs = NowMs()")
+    assert_ordered(calibration, "TryEnsurePersistentCombatSetup(state, bot, target)", "metrics.WindowStartedMs = Cohort().CalibrationScoredStartedMs")
     assert "TryEnsurePersistentCombatSetup(*state, bot, target)" in execute_profile
 
-    calibration_json = function_body(mgr, "std::string BotWorldPopulationMgr::GetCombatCalibrationJson")
+    calibration_json = function_body(mgr, "std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const")
     assert '\\"persistent_setup\\"' in calibration_json
     assert '\\"mainhand_temp_enchant\\"' in calibration_json
     assert '\\"offhand_temp_enchant\\"' in calibration_json
@@ -701,13 +826,19 @@ def test_persistent_spec_setup_precedes_dummy_and_profile_rotations():
 
 def test_reference_calibration_reports_only_conditions_it_applies():
     mgr = read(BOT_MGR)
-    calibration_json = function_body(mgr, "std::string BotWorldPopulationMgr::GetCombatCalibrationJson")
+    calibration_json = function_body(mgr, "std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const")
 
     assert '\\"flask\\"' in calibration_json
+    assert '\\"potions\\":' in calibration_json
+    assert '\\"engineering_cooldowns\\":' in calibration_json
+    assert '\\"racial_cooldowns\\":' in calibration_json
+    assert '\\"consumables\\":' in calibration_json
     assert '\\"potions\\":false' in calibration_json
     assert '\\"engineering_cooldowns\\":false' in calibration_json
     assert '\\"racial_cooldowns\\":false' in calibration_json
-    assert '\\"consumables\\":false' in calibration_json
+    assert '\\"dynamic_action_observation\\"' in calibration_json
+    assert "actionAttemptCount(79476)" in calibration_json
+    assert "actionAttemptCount(82174)" in calibration_json
 
 
 def test_requested_wowhead_profiles_and_target_count_aware_misdirection_are_explicit():
@@ -768,7 +899,12 @@ def test_enhancement_uses_and_preserves_fire_elemental_before_searing_fallback()
     provisioning = (root / "experiments/configs/validation_provisioning_cata_001.json").read_text()
 
     assert "2894,'offensive_cooldown','fire_elemental_totem" in sql
-    assert provisioning.count('"spells": [2894]') == 2
+    provisioning_payload = json.loads(provisioning)
+    assert sum(
+        2894 in bot.get("spells", [])
+        for scenario in provisioning_payload["scenarios"]
+        for bot in scenario.get("bots", [])
+    ) == 2
 
     elemental_ai = (root / "src/server/scripts/Pet/pet_shaman.cpp").read_text()
     assert "AcquireShamanOwnerVictim" in elemental_ai
@@ -826,29 +962,32 @@ def test_stonecore_rotation_sql_declares_buffs_hunter_builder_and_aoe_gate():
 def test_action_profile_hard_masks_enforce_aura_prerequisites():
     profile = read(PLAYER_BOT_ACTION_PROFILE)
 
-    assert 'spell.RequiredSelfAura && !bot->HasAura(spell.RequiredSelfAura)' in profile
+    assert 'spell.RequiredSelfAura && !selfAura' in profile
     assert 'spell.ForbiddenSelfAura && bot->HasAura(spell.ForbiddenSelfAura)' in profile
-    assert 'spell.RequiredTargetAura && actionTarget && !actionTarget->HasAura(spell.RequiredTargetAura)' in profile
-    assert 'spell.ForbiddenTargetAura && actionTarget && actionTarget->HasAura(spell.ForbiddenTargetAura)' in profile
-    assert 'candidate.RejectReason = "missing_required_self_aura"' in profile
+    assert 'spell.RequiredTargetAura && (!target || !target->HasAura(spell.RequiredTargetAura))' in profile
+    assert 'spell.ForbiddenTargetAura && target && target->HasAura(spell.ForbiddenTargetAura)' in profile
+    assert 'return "missing_required_self_aura"' in profile
 
 
 def test_server_start_autonomy_enabled_spawns_from_pool_without_center_requirement():
     mgr = read(BOT_MGR)
-    start_autonomy = function_body(mgr, "bool BotWorldPopulationMgr::StartAutonomy")
+    start_autonomy = function_body(
+        mgr,
+        "bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overrideConfig)",
+    )
     shutdown = function_body(mgr, "void BotWorldPopulationMgr::Shutdown")
     update = function_body(mgr, "void BotWorldPopulationMgr::Update")
     ensure_population = function_body(mgr, "void BotWorldPopulationMgr::EnsurePopulation")
-    select_candidate = function_body(mgr, "uint32 BotWorldPopulationMgr::SelectPoolCandidateGuid() const")
+    select_candidate = function_body(mgr, "uint32 BotWorldPopulationMgr::SelectPoolCandidateGuid(std::string const& rosterSlotId")
     resolve_placement = function_body(mgr, "bool BotWorldPopulationMgr::ResolveSpawnPlacement")
 
     assert 'LoadConfig("always_on_autonomy", overrideConfig);' in start_autonomy
-    assert "if (_runtimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy && !overrideConfig && !_runtimeProfileDirty)" in start_autonomy
+    assert "if (Cohort().RuntimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy && !overrideConfig && !Cohort().RuntimeProfileDirty)" in start_autonomy
     assert "return true;" in start_autonomy
-    assert "_runtimeMode = BotWorldRuntimeMode::AlwaysOnAutonomy;" in start_autonomy
-    assert "_runId = 0;" in start_autonomy
-    assert "_experimentId = 0;" in start_autonomy
-    assert_ordered(start_autonomy, "_active = true;", "EnsurePopulation();", "return _active;")
+    assert "Cohort().RuntimeMode = BotWorldRuntimeMode::AlwaysOnAutonomy;" in start_autonomy
+    assert "Cohort().RunId = 0;" in start_autonomy
+    assert "Cohort().ExperimentId = 0;" in start_autonomy
+    assert_ordered(start_autonomy, "Cohort().Active = true;", "EnsurePopulation();", "return Cohort().Active;")
     assert "RecordRunStop();" in shutdown
     assert "UPDATE character_bot_pool SET in_use = 0 WHERE guid" in shutdown
     assert "RemoveWorldBot" not in shutdown
@@ -861,17 +1000,17 @@ def test_server_start_autonomy_enabled_spawns_from_pool_without_center_requireme
     assert "session->HandleMoveWorldportAck();" in function_body(mgr, "bool BotWorldPopulationMgr::TryReattachValidationBot")
     assert "validationBotStillDeciding" in update
     assert "nowMs - itr->LastDecisionTickMs < 15000" in update
-    assert "_config.ValidationRouteEnable && itr->SpawnedMs && nowMs - itr->SpawnedMs >= 30000" in update
-    assert "BotWorld active bot respawn requested" in update
-    assert "_failedSpawnGuids.erase(prunedGuid.GetCounter())" in update
-    assert "_validationRouteActivationApplied = false" in update
+    assert "Cohort().Config.ValidationRouteEnable && itr->SpawnedMs && nowMs - itr->SpawnedMs >= 30000" in update
+    assert "BotWorld active bot respawn deferred" in update
+    assert "Cohort().FailedSpawnGuids.erase(prunedGuid.GetCounter())" in update
+    assert "Party().ValidationRouteActivationApplied = false" in update
 
-    assert "uint32 candidateGuid = SelectPoolCandidateGuid();" in ensure_population
+    assert "uint32 candidateGuid = SelectPoolCandidateGuid(rosterSlotId);" in ensure_population
     assert 'sBotMgr->SpawnWorldBotAtSavedPosition("any", std::to_string(candidateGuid))' in ensure_population
     assert 'sBotMgr->SpawnWorldBot("any", std::to_string(candidateGuid)' in ensure_population
-    assert 'RecordEvent(_bots.back(), bot, "bot_spawned"' in ensure_population
-    assert "_config.PoolTagFilter" in select_candidate
-    assert "cbp.experiment_tags LIKE" in select_candidate
+    assert 'RecordEvent(Party().Bots.back(), bot, "bot_spawned"' in ensure_population
+    assert "Cohort().Config.PoolTagFilter" in select_candidate
+    assert "cbp.experiment_tags = '" in select_candidate
     assert_ordered(
         resolve_placement,
         "ResolveSavedSpawnPlacement(candidateGuid, placement)",
@@ -879,8 +1018,8 @@ def test_server_start_autonomy_enabled_spawns_from_pool_without_center_requireme
         "ResolveNearPlayerSpawnPlacement(placement)",
         "ResolveConfiguredCenterSpawnPlacement(placement)",
     )
-    assert "_config.UseSavedPosition" in resolve_placement
-    assert "_config.AllowConfiguredCenterFallback" in resolve_placement
+    assert "Cohort().Config.UseSavedPosition" in resolve_placement
+    assert "Cohort().Config.AllowConfiguredCenterFallback" in resolve_placement
     assert "resume_or_race_start" in resolve_placement
     assert "race_start_only" in resolve_placement
 
@@ -902,20 +1041,27 @@ def test_stonecore_bot_instance_bind_does_not_wait_for_client_lock_prompt():
     )
 
 
-def test_validation_bot_reattach_clears_stale_far_teleport():
+def test_validation_bot_reattach_only_acks_typed_native_recovery_worldports():
     mgr = read(BOT_MGR)
     reattach = function_body(mgr, "bool BotWorldPopulationMgr::TryReattachValidationBot")
     update = function_body(mgr, "void BotWorldPopulationMgr::Update")
 
     assert "validation_artificial_reattach_blocked" not in mgr
+    assert "IsNativeReleasedGhostWorldport(state, bot)" in reattach
+    assert "IsNativeValidationRunbackWorldport(state, bot)" in reattach
+    assert "nativeReleasedGhostWorldport || nativeValidationRunbackWorldport" in reattach
     assert "bot->IsBeingTeleportedFar()" in reattach
-    assert "destination.GetMapId() == state.ValidationCohortMapId" in reattach
-    assert "!destinationInstance || *destinationInstance == state.ValidationCohortInstanceId" in reattach
     assert "session->HandleMoveWorldportAck();" in reattach
-    assert "validation same-instance worldport complete" in reattach
-    assert "bot->CancelDelayedTeleport();" in reattach
-    assert "bot->SetSemaphoreTeleportFar(false);" in reattach
-    assert "bot->GetMap()->AddPlayerToMap(bot)" in reattach
+    ack_gate = reattach.index("if (nativeRecoveryWorldport)")
+    ack = reattach.index("session->HandleMoveWorldportAck();", ack_gate)
+    untyped_reject = reattach.index(
+        "An active validation bot may acknowledge only a typed native", ack
+    )
+    assert ack_gate < ack < untyped_reject
+    assert "return false;" in reattach[untyped_reject:]
+    assert "bot->CancelDelayedTeleport();" not in reattach
+    assert "bot->SetSemaphoreTeleportFar(false);" not in reattach
+    assert "AddPlayerToMap(" not in reattach
     assert "validation_same_instance_reattach_failed" in update
 
 
@@ -1029,9 +1175,9 @@ def test_quest_first_portfolio_routing_surface():
         "QuestRouteDestination",
         "LastNoQuestReason",
         "LastQuestBucketReason",
-        "_validationRouteFocusGuid",
-        "_validationRouteFocusEntry",
-        "_validationRouteFocusSeenMs",
+        "ValidationRouteFocusGuid",
+        "ValidationRouteFocusEntry",
+        "ValidationRouteFocusSeenMs",
         "ValidationRouteAlternateTargetEntries",
     ]:
         assert symbol in mgr_header
@@ -1052,12 +1198,12 @@ def test_quest_first_portfolio_routing_surface():
     assert "bot->GetMap()->IsDungeon() || bot->GetMap()->IsRaid()" in mgr
     validation_route_objective = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     assert "auto isValidationRouteEntry" in validation_route_objective
-    assert "_config.ValidationRouteAlternateTargetEntries.begin()" in validation_route_objective
+    assert "Cohort().Config.ValidationRouteAlternateTargetEntries.begin()" in validation_route_objective
     assert "isValidationRouteScriptTarget(creature)" in validation_route_objective
     script_target_block = validation_route_objective.split("auto isValidationRouteScriptTarget", 1)[1].split("auto isValidationRouteCombatTarget", 1)[0]
-    assert 'if (_config.ValidationRouteKind == "boss")' in script_target_block
+    assert 'if (Cohort().Config.ValidationRouteKind == "boss")' in script_target_block
     assert "isValidationRoutePackEntry(creature->GetEntry())" in script_target_block
-    assert "creature->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) <= radius" in script_target_block
+    assert "creature->GetExactDist(Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY, Cohort().Config.ValidationRouteZ) <= radius" in script_target_block
 
     assert "creature_loot_template" in select_objective
     assert "creature_loot_template" in route_objective
@@ -1082,7 +1228,7 @@ def test_quest_first_portfolio_routing_surface():
         "objective_area_selected",
         "chain_step_accepted",
         "chain_step_turnin",
-        "complete_quest_db_fallback",
+        "await_visible_quest_giver",
         "target_not_visible_travel_to_spawn",
     ]:
         assert event_type in questing
@@ -1091,7 +1237,7 @@ def test_quest_first_portfolio_routing_surface():
         questing,
         "bot->CanCompleteQuest(state.QuestWork.ActiveQuestId)",
         "completed_counter_reconciled",
-        "_metrics.Kills += delta;",
+        "Cohort().Metrics.Kills += delta;",
         "RecordEvent(state, bot, \"mob_killed\", completedTarget, \"quest_counter_reconciled\"",
         "SetQuestWorkPhase(state, \"move_to_turnin\");",
     )
@@ -1114,11 +1260,12 @@ def test_quest_first_portfolio_routing_surface():
         "state.TargetGuid = objectiveTarget->GetGUID();",
         "BotClassSpecActionProfileStore::Build(bot, role.c_str())",
         "result.Action = \"move_to_quest_mob\";",
-        "BotActionResult pull = executor.Pull(bot, objectiveTarget);",
-        "teacher_quest_mob_assist",
-        "RecordEvent(state, bot, \"teacher_kill_assist\"",
-        "Unit::DealDamage(bot, objectiveTarget, objectiveTarget->GetHealth(), 0, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);",
+        '"quest_melee_engagement"',
+        "BotActionResult pull = actionSubmitted",
     )
+    assert "teacher_quest_mob_assist" not in questing
+    assert "teacher_kill_assist" not in questing
+    assert "Unit::DealDamage(bot, objectiveTarget" not in questing
 
     assert "TrySmartGearDecision(state, bot, power, stage, chosenActivity.Activity, situation, action)" in update_bot
     assert "TryValidationRouteObjective(state, bot, power, stage, chosenActivity.Activity, situation, action, target)" in update_bot
@@ -1128,7 +1275,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "approach_target" in mgr
     assert "tryRouteGroupHeal" in mgr
     assert "validation_route_group_heal" in mgr
-    assert "float maxApproachRange = _config.ValidationRouteEnable && healer->GetMap() && healer->GetMap()->IsRaid() ? 35.0f : 18.0f;" in mgr
+    assert "float maxApproachRange = Cohort().Config.ValidationRouteEnable && healer->GetMap() && healer->GetMap()->IsRaid() ? 35.0f : 18.0f;" in mgr
     assert "float approachRange = std::max(3.0f, std::min(healRange - 2.0f, maxApproachRange));" in mgr
     assert "healBlockedByCastState = true;" in mgr
     assert "heal_cast_state_pending" in mgr
@@ -1138,10 +1285,11 @@ def test_quest_first_portfolio_routing_surface():
     assert '\\"heal_target_guid\\"' in mgr
     assert '\\"heal_target_health_pct\\"' in mgr
     assert '\\"cast_failure_reason\\"' in mgr
-    assert "bool cast = TryCastFriendlySpell(healer, healTarget, bestHeal->SpellId, &castFailureReason);" in mgr
+    assert "bool cast = tryRouteFriendlySpell(" in mgr
+    assert "healTarget, bestHeal->SpellId, &castFailureReason);" in mgr
     assert 'RecordEvent(state, healer, "validation_route_group_heal", healTarget, cast ? "ok" : castFailureReason.c_str(), raw.c_str(), semantic.c_str(), healTargetHealthPct, 0, bestHeal->SpellId);' in mgr
     assert "action = cast ? \"validation_route_group_heal\" : \"validation_route_group_heal_failed\";" in mgr
-    assert "return cast;" in mgr
+    assert "return cast || (allowMovement && feralTankApproachesHealerSwarm);" in mgr
     assert "return fail(\"line_of_sight\");" in mgr
     assert "return fail(\"global_cooldown\");" in mgr
     assert "if (spellInfo->CalcCastTime(bot->getLevel()) > 0)" in mgr
@@ -1154,7 +1302,7 @@ def test_quest_first_portfolio_routing_surface():
         "state.TargetGuid = target->GetGUID();",
         "rememberValidationRouteFocus(target);",
         "if (tryRouteGroupHeal(bot, target))",
-        "if (_config.ValidationRouteKind == \"boss\" && tryValidationRouteInterrupt(target, \"route_target_interrupt\"))",
+        "if (Cohort().Config.ValidationRouteKind == \"boss\" && tryValidationRouteInterrupt(target, \"route_target_interrupt\"))",
         "ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, target);",
     )
     assert "requires_ally_target" in mgr
@@ -1165,8 +1313,8 @@ def test_quest_first_portfolio_routing_surface():
     assert 'std::string(GetDungeonRole(member)) == "tank"' in mgr
     assert "auto activeTankFocus" in mgr
     assert "auto tankOwnsFocus" in validation_route_objective
-    assert 'if (_config.ValidationRouteKind != "boss" && !tankOwnsFocus(member, focus))' in validation_route_objective
-    assert 'if (_config.ValidationRouteKind == "boss" || activeTankFocus(focus))\n                    return focus;' in validation_route_objective
+    assert 'if (Cohort().Config.ValidationRouteKind != "boss" && !tankOwnsFocus(member, focus))' in validation_route_objective
+    assert 'if (Cohort().Config.ValidationRouteKind == "boss" || activeTankFocus(focus))\n                    return focus;' in validation_route_objective
     assert "if (!ownedByTank)" in validation_route_objective
     assert "routeFocusTankOwned" in validation_route_objective
     assert "wait_for_tank_threat" in validation_route_objective
@@ -1176,7 +1324,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "if (botIsTank && victim && !victimIsTank)" in validation_route_objective
     assert "score += 20000.0f;" in validation_route_objective
     assert "bool livingTankAvailable = false;" in validation_route_objective
-    assert 'if (_config.ValidationRouteKind != "boss" && !memberIsTank && livingTankAvailable)' in validation_route_objective
+    assert 'if (Cohort().Config.ValidationRouteKind != "boss" && !memberIsTank && livingTankAvailable)' in validation_route_objective
     assert '"tank_positioning", target, "route_trash_tank_focus"' in validation_route_objective
     rotation_profiles_sql = read(ROOT / "sql/custom/world/2026_06_21_00_bot_rotation_profiles.sql")
     assert "blood_presence,self,tank_stance,mitigation" in rotation_profiles_sql
@@ -1186,17 +1334,17 @@ def test_quest_first_portfolio_routing_surface():
     for spell_id in (19434, 56641, 53209):
         row = next(line for line in rotation_profiles_sql.splitlines() if f", {spell_id}," in line and "marksmanship" in line)
         assert row.rstrip().endswith(", 0),") or row.rstrip().endswith(", 0);")
-    assert 'if (_config.ValidationRouteKind == "boss" || activeTankFocus(focus))' in mgr
-    assert 'if (_config.ValidationRouteKind != "boss" && !memberIsTank && livingTankAvailable)' in mgr
+    assert 'if (Cohort().Config.ValidationRouteKind == "boss" || activeTankFocus(focus))' in mgr
+    assert 'if (Cohort().Config.ValidationRouteKind != "boss" && !memberIsTank && livingTankAvailable)' in mgr
     assert "move_to_validation_route_assist_target" in mgr
     assert "validation_route_prerequisite_assist" in mgr
     assert "assist_focus" in mgr
-    assert 'bool routeTrashFocus = _config.ValidationRouteKind != "boss";' in validation_route_objective
+    assert 'bool routeTrashFocus = Cohort().Config.ValidationRouteKind != "boss";' in validation_route_objective
     assert 'action = routeTrashFocus ? "validation_route_trash_action" : "validation_route_prerequisite_assist";' in validation_route_objective
     assert 'RecordEvent(state, bot, routeTrashFocus ? "trash_action" : "validation_route_prerequisite"' in validation_route_objective
-    assert "for (WorldBotState const& cohortState : _bots)" in mgr
+    assert "for (WorldBotState const& cohortState : Party().Bots)" in mgr
     assert "findCohortAnchor" in function_body(mgr, "Player* BotWorldPopulationMgr::FindDungeonAnchor")
-    assert "for (WorldBotState const& state : _bots)" in function_body(mgr, "Player* BotWorldPopulationMgr::FindDungeonAnchor")
+    assert "for (WorldBotState const& state : Party().Bots)" in function_body(mgr, "Player* BotWorldPopulationMgr::FindDungeonAnchor")
     assert "std::string(GetDungeonRole(member)) != \"tank\"" in mgr
     assert "cohort_threat_established" in mgr
     assert "validation_route_regroup" in mgr
@@ -1206,9 +1354,9 @@ def test_quest_first_portfolio_routing_surface():
     assert "validation_route_hold_anchor" in mgr
     assert "follow_anchor_before_prerequisite" in mgr
     assert "hold_anchor_before_prerequisite" in mgr
-    assert 'if (_config.ValidationRouteKind == "boss" && std::string(GetDungeonRole(bot)) != "tank")' in validation_route_objective
+    assert 'if (Cohort().Config.ValidationRouteKind == "boss" && std::string(GetDungeonRole(bot)) != "tank")' in validation_route_objective
     assert (
-        'if (_config.ValidationRouteKind == "boss")\n'
+        'if (Cohort().Config.ValidationRouteKind == "boss")\n'
         '                {\n'
         '                    RecordEvent(state, bot, "validation_route_regroup", anchor, "hold_anchor_before_prerequisite"'
     ) in validation_route_objective
@@ -1230,8 +1378,8 @@ def test_quest_first_portfolio_routing_surface():
     assert "member->IsInCombat() || focus->IsInCombat() || focus->GetVictim()" in mgr
     assert "authoritative_focus_state_target_inactive" in mgr
     assert "routeUsableCombatTarget(member->GetVictim())" in mgr
-    assert "if (Unit* victim = routeUsableCombatTarget(member->GetVictim()))" in mgr
-    assert "routeUsableCombatTarget(ObjectAccessor::GetUnit(*member, cohortState.TargetGuid))" in mgr
+    assert "if (Unit* focus = routeUsableCombatTarget(member->GetVictim()))" in mgr
+    assert "routeUsableValidationFocus(ObjectAccessor::GetUnit(*member, cohortState.TargetGuid))" in mgr
     assert "Player* loadedBot = GetLoadedBot(*itr)" in mgr
     assert "loaded_bot_not_in_world" in mgr
     assert "return bot && bot->IsInWorld() ? bot : nullptr;" in function_body(mgr, "Player* BotWorldPopulationMgr::GetBot")
@@ -1240,17 +1388,17 @@ def test_quest_first_portfolio_routing_surface():
     assert "force_last_known_tank_focus" in mgr
     assert "findLastKnownFocusTarget" in mgr
     assert "return nullptr;" in function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
-    assert "creature->GetEntry() != _validationRouteFocusEntry" in mgr
+    assert "creature->GetEntry() != Party().ValidationRouteFocusEntry" in mgr
     assert "auto routeFocusMemoryFresh" in validation_route_objective
     assert "routeFocusMemoryFresh()" in validation_route_objective
-    assert "ObjectAccessor::GetUnit(*bot, _validationRouteFocusGuid)" in validation_route_objective
+    assert "ObjectAccessor::GetUnit(*bot, Party().ValidationRouteFocusGuid)" in validation_route_objective
     assert "auto authoritativeRouteFocusActive" in validation_route_objective
     assert "return routeFocusMemoryActive();" in validation_route_objective
-    assert "if (_config.ValidationRouteKind != \"boss\")\n                continue;" in validation_route_objective
-    assert 'return _config.ValidationRouteKind == "boss" ? nearestMatchingEntry : nullptr;' in validation_route_objective
-    assert 'if (_config.ValidationRouteKind != "boss" && !_validationRouteFocusGuid.IsEmpty())' in validation_route_objective
-    assert "Unit* rememberedFocus = findLastKnownFocusTarget();" in validation_route_objective
-    assert "rememberedFocus = findTrashClusterThreatTarget();" in validation_route_objective
+    assert "if (Cohort().Config.ValidationRouteKind != \"boss\")\n                continue;" in validation_route_objective
+    assert 'return Cohort().Config.ValidationRouteKind == "boss" ? nearestMatchingEntry : nullptr;' in validation_route_objective
+    assert 'if (Cohort().Config.ValidationRouteKind != "boss" && !Party().ValidationRouteFocusGuid.IsEmpty())' in validation_route_objective
+    assert "Unit* rememberedFocus = loosePartyThreat ? threatFocus : findLastKnownFocusTarget();" in validation_route_objective
+    assert "rememberedFocus = threatFocus;" in validation_route_objective
     assert "reject_non_authoritative_focus" in mgr
     assert "follow_anchor_non_authoritative_focus" in mgr
     assert "hold_unresolved_authoritative_focus" in mgr
@@ -1259,11 +1407,11 @@ def test_quest_first_portfolio_routing_surface():
     assert "follow_anchor_last_known_tank_focus" not in authoritative_memory
     assert "follow_last_known_tank_focus" not in authoritative_memory
     assert "FindDungeonAnchor(bot)" not in authoritative_memory
-    assert "MoveBotToPoint(state, bot, _validationRouteFocusX" not in authoritative_memory
+    assert "MoveBotToPoint(state, bot, Party().ValidationRouteFocusX" not in authoritative_memory
     assert_ordered(
         authoritative_memory,
         "if (tryRouteGroupHeal(bot, nullptr))",
-        "float focusDistance = bot->GetExactDist(_validationRouteFocusX, _validationRouteFocusY, _validationRouteFocusZ);",
+        "float focusDistance = bot->GetExactDist(Party().ValidationRouteFocusX, Party().ValidationRouteFocusY, Party().ValidationRouteFocusZ);",
         "unresolved_authoritative_focus_recovery",
         "hold_unresolved_authoritative_focus",
         "hold_last_known_tank_focus",
@@ -1272,13 +1420,12 @@ def test_quest_first_portfolio_routing_surface():
     assert "ValidationRouteUnresolvedFocusHoldCount" in mgr_header
     assert "ValidationRouteCombatNoProgressCount" in mgr_header
     assert "ValidationRouteBossSlowProgressCount" in mgr_header
-    assert "_validationRouteBossProgressTargetGuid" in mgr_header
-    assert "_validationRouteBossSlowProgressCount" in mgr_header
-    assert "bool mechanicProfileRequiresMovement = _config.ValidationRouteMechanicProfile.find(\"movement_check\") != std::string::npos" in validation_route_objective
-    assert "bool profileAllowsCastMovement = mechanicProfileRequiresMovement" in validation_route_objective
-    assert "&& _config.ValidationRouteMechanicProfile.find(\"movement_check\") != std::string::npos" in validation_route_objective
-    assert "&& _config.ValidationRouteMechanicProfile.find(\"ground_danger\") == std::string::npos;" in validation_route_objective
-    assert "if (!SpellLooksLikeGroundDanger(castSpell) && !profileAllowsCastMovement)" in validation_route_objective
+    assert "ValidationRouteBossProgressTargetGuid" in mgr_header
+    assert "ValidationRouteBossSlowProgressCount" in mgr_header
+    assert "bool profileAllowsGenericCastMovement = Cohort().Config.ValidationRouteMechanicProfile.find(\"movement_check\") != std::string::npos" in validation_route_objective
+    assert '|| Cohort().Config.ValidationRouteMechanicProfile.find("ground_danger") != std::string::npos;' in validation_route_objective
+    assert "bool mechanicProfileRequiresMovement = profileAllowsGenericCastMovement || !hazardDefinitions.empty();" in validation_route_objective
+    assert "if (!SpellLooksLikeGroundDanger(castSpell))" in validation_route_objective
     assert "for (auto const& [_, application] : bot->GetAppliedAuras())" in validation_route_objective
     assert "effect.Effect == SPELL_EFFECT_PERSISTENT_AREA_AURA" in validation_route_objective
     assert "effect.ApplyAuraName == SPELL_AURA_PERIODIC_DAMAGE" in validation_route_objective
@@ -1289,18 +1436,19 @@ def test_quest_first_portfolio_routing_surface():
     assert "bot->GetRelativeAngle(dodgeOrigin) + float(M_PI)" in validation_route_objective
     assert 'ValidationRouteMechanicProfile.find("adds")' in validation_route_objective
     assert "ValidationRouteAddTargetEntries.empty()" in validation_route_objective
-    assert "creature->IsInCombat() || creature->GetVictim()" in validation_route_objective
+    assert "observer->IsValidAttackTarget(creature)" in validation_route_objective
     assert "ValidationRouteAddTargetEntries.end(), creature->GetEntry()" in validation_route_objective
     assert "BuildBossMechanicFeatures(bot, bossTarget)" not in validation_route_objective
-    assert "BotActionResult pull = executor.Pull(bot, add);" in validation_route_objective
+    assert '"tank_density_autoattack_fallback"' in validation_route_objective
+    assert '"boss_add_melee_engagement"' in validation_route_objective
     assert "if (result == BotActionResult::NoAction)\n                    result = pull;" in validation_route_objective
     assert 'priority = victimRole == "healer" ? 3 : (victimRole == "tank" ? 2 : 1);' in validation_route_objective
     assert "priority == bestPriority && healthPct < bestHealthPct" in validation_route_objective
     assert "healthPct == bestHealthPct && guid < bestGuid" in validation_route_objective
-    assert "_validationRouteAddFocusGeneration != _validationRouteGeneration" in validation_route_objective
+    assert "Party().ValidationRouteAddFocusGeneration != Party().ValidationRouteGeneration" in validation_route_objective
     assert "else if (!isUsableListedAdd(bot, add))" in validation_route_objective
-    assert "add = ObjectAccessor::GetUnit(*bot, _validationRouteAddFocusGuid);" in validation_route_objective
-    assert "_validationRouteAddFocusGuid = add->GetGUID();" in validation_route_objective
+    assert "add = ObjectAccessor::GetUnit(*bot, Party().ValidationRouteAddFocusGuid);" in validation_route_objective
+    assert "Party().ValidationRouteAddFocusGuid = add->GetGUID();" in validation_route_objective
     assert "if (!add)" in validation_route_objective
     assert 'action = "hold_boss_add_focus";' in validation_route_objective
     assert "if (!add->IsAlive() || !add->GetHealth())" in validation_route_objective
@@ -1310,28 +1458,30 @@ def test_quest_first_portfolio_routing_surface():
     assert_ordered(
         validation_route_objective,
         "if (!add->IsAlive() || !add->GetHealth())",
-        "_validationRouteAddFocusGuid.Clear();",
-        "_validationRouteAddFocusGuid = add->GetGUID();",
+        "Party().ValidationRouteAddFocusGuid.Clear();",
+        "Party().ValidationRouteAddFocusGuid = add->GetGUID();",
     )
     assert 'RecordEvent(state, bot, "boss_adds", add' in validation_route_objective
     assert_ordered(
         validation_route_objective,
         "inspectCaster(preferredTarget);",
         "if (!caster && mechanicProfileRequiresMovement)",
-        "if (!caster)\n        {",
-        "Position dodge = bot->GetFirstCollisionPosition(8.0f, angle);",
+        "if (!caster || !castSpell)",
+        "for (float angleOffset : { 0.0f, float(M_PI_4), -float(M_PI_4), float(M_PI_2), -float(M_PI_2) })",
+        "bot->GetFirstCollisionPosition(dodgeDistance, angle + angleOffset)",
         "if (tryValidationRouteMovementCheck(target))",
         "if (tryValidationRouteAdds())",
         "if (tryRouteGroupHeal(bot, target))",
     )
-    assert "bot->GetFirstCollisionPosition(8.0f, angle)" in validation_route_objective
-    assert "bool moved = MoveBotToPoint(state, bot, dodge.GetPositionX(), dodge.GetPositionY(), dodge.GetPositionZ())" in validation_route_objective
-    assert 'moved ? "movement_check_jump" : "tactical_path_rejected"' in validation_route_objective
-    assert 'action = moved ? "movement_check_jump" : "hold_tactical_path_rejected";' in validation_route_objective
+    assert "bot->GetFirstCollisionPosition(dodgeDistance, angle + angleOffset)" in validation_route_objective
+    assert "if (MoveBotToPoint(state, bot, dodge.GetPositionX(), dodge.GetPositionY(), dodge.GetPositionZ()))" in validation_route_objective
+    assert ': "movement_check_jump")' in validation_route_objective
+    assert ': (configuredHazard ? "hazard_exit_failed" : "tactical_path_rejected");' in validation_route_objective
+    assert 'action = moved ? (configuredHazard ? "move_out_of_hazard" : "movement_check_jump")' in validation_route_objective
     assert "routeHasActiveCombatIntent" in mgr
     assert "state.ValidationRouteAnchorOverrideValid && routeHasActiveCombatIntent" in mgr
     assert "else if (!routeHasActiveCombatIntent && repeatedDeathNearRoute" in mgr
-    assert '_config.ValidationRouteKind == "boss" ? 60000 : 20000' in mgr
+    assert 'Cohort().Config.ValidationRouteKind == "boss" ? 60000 : 20000' in mgr
     assert "stale_focus_expired" in mgr
     assert "validation_route_recover_stale_focus" in mgr
     assert "findAuthoritativeRouteFocusTarget" in mgr
@@ -1347,20 +1497,20 @@ def test_quest_first_portfolio_routing_surface():
     assert "validation_route_prerequisite_no_progress" in mgr
     assert "boss_route_no_health_progress" in mgr
     assert "boss_route_slow_progress_teacher_assist" not in validation_route_objective
-    assert "_validationRouteBossSlowProgressCount = 0;" in mgr
-    assert "++_validationRouteBossSlowProgressCount;" in validation_route_objective
+    assert "Party().ValidationRouteBossSlowProgressCount = 0;" in mgr
+    assert "++Party().ValidationRouteBossSlowProgressCount;" in validation_route_objective
     assert "++state.ValidationRouteBossSlowProgressCount;" in validation_route_objective
     assert_ordered(
         validation_route_objective,
-        'RecordEvent(state, bot, routeBossTarget ? (_config.ValidationRouteKind == "boss" ? "boss_action" : "trash_action") : "validation_route_prerequisite"',
+        'RecordEvent(state, bot, routeBossTarget ? (Cohort().Config.ValidationRouteKind == "boss" ? "boss_action" : "trash_action") : "validation_route_prerequisite"',
         'if (!routeBossTarget)\n            maybeValidationPrerequisiteNoProgressAssist(target, "current_combat_no_health_progress");',
-        'if (routeBossTarget && _config.ValidationRouteKind == "boss")\n        {\n            RecordEvent(state, bot, "boss_started"',
+        'if (routeBossTarget && Cohort().Config.ValidationRouteKind == "boss")\n        {\n            RecordEvent(state, bot, "boss_started"',
         'maybeValidationPrerequisiteNoProgressAssist(target, "boss_route_no_health_progress");\n        }\n        state.WasInCombat = true;',
     )
     assert 'contextText.rfind("route_target_", 0) == 0' in mgr
     assert "recordValidationRouteBossKill" in mgr
     assert "boss_death_unconfirmed" in validation_route_objective
-    assert "_validationRouteConfirmedBossDeathGuid == killedTarget->GetGUID()" in validation_route_objective
+    assert "Party().ValidationRouteConfirmedBossDeathGuid == killedTarget->GetGUID()" in validation_route_objective
     assert "isValidationRouteCombatEntry" in validation_route_objective
     assert "recordDefeatedValidationRouteTarget" in validation_route_objective
     assert 'recordDefeatedValidationRouteTarget(target, "stale_target_seen_dead")' in validation_route_objective
@@ -1374,7 +1524,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "target_seen_not_attackable" in mgr
     assert "boss_killed" in mgr
     assert "raid_boss_killed" in mgr
-    assert 'uint32 noProgressThreshold = bossRouteNoProgress ? 2 : (_config.ValidationRouteKind == "boss" ? 4 : 12)' in mgr
+    assert 'uint32 noProgressThreshold = bossRouteNoProgress ? 2 : (Cohort().Config.ValidationRouteKind == "boss" ? 4 : 12)' in mgr
     assert "validation_route_activation" in mgr
     assert "boss_route_early_activation" in mgr
     assert "boss_route_no_focus_activation_already_applied" in mgr
@@ -1385,7 +1535,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "routeDistance <= 220.0f" not in validation_route_objective
     assert_ordered(
         validation_route_objective,
-        "&& routeDistance <= routeArrivalRadius",
+        "|| routeDistance <= routeArrivalRadius",
         "&& tryValidationRouteActivation(nullptr, \"boss_route_early_activation\"))",
         "Unit* preAnchorTrashTarget = nullptr;",
         "preAnchorTrashTarget = findTrashClusterThreatTarget();",
@@ -1395,15 +1545,15 @@ def test_quest_first_portfolio_routing_surface():
     assert "ValidationRouteTargetSearchMissCount" in mgr_header
     assert "reset_stale_boss_activation" not in mgr
     assert "MarkBotBlocked(state, bot, \"boss_route_activation_no_visible_target\")" in mgr
-    assert "_validationRouteActivationApplied" in mgr_header
-    assert "_validationRouteActivationAttempts" in mgr_header
-    assert "_validationRouteActivationApplied = false;" not in function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
-    assert "if (_validationRouteActivationApplied)" in mgr
-    assert "state.ValidationRouteActivationAttempts = _validationRouteActivationAttempts;" in mgr
-    assert "_validationRouteActivationApplied = true;" in mgr
-    assert "activationTarget->IsAlive() && bot->IsValidAttackTarget(activationTarget)" in mgr
-    assert "rememberValidationRouteFocus(activationTarget);" in mgr
-    assert "state.TargetGuid = activationTarget->GetGUID();" in mgr
+    assert "ValidationRouteActivationApplied" in mgr_header
+    assert "ValidationRouteActivationAttempts" in mgr_header
+    assert "Party().ValidationRouteActivationApplied = false;" not in function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    assert "if (Party().ValidationRouteActivationApplied)" in mgr
+    assert "state.ValidationRouteActivationAttempts = Party().ValidationRouteActivationAttempts;" in mgr
+    assert "Party().ValidationRouteActivationApplied = true;" in mgr
+    assert "!creature || !creature->IsAlive()" in mgr
+    assert "!isValidationRouteCombatTarget(creature) || !bot->IsValidAttackTarget(creature)" in mgr
+    assert "rememberValidationRouteFocus(creature);" in mgr
     assert "isValidationRouteScriptTarget(creature)" in mgr
     assert "validation_route_stuck_no_fallback" in mgr
     assert "ValidationRouteOpenerTargetEntry" in mgr_header
@@ -1411,10 +1561,9 @@ def test_quest_first_portfolio_routing_surface():
     assert "ValidationRouteActivationSpawnGroupId" in mgr_header
     assert "ValidationRouteActivationActionEntry" in mgr_header
     assert "ValidationRouteActivationActionId" in mgr_header
-    assert "fallback_disabled" in mgr
     assert "markValidationRouteTerminalAfterProgress" in mgr
     assert "RecordEvent(state, bot, \"dungeon_trash_cleared\"" in mgr
-    assert "RecordDecision(state, bot, \"validation_route_recovery\", \"validation_route_stuck\"" in mgr
+    assert "RecordRouteProgress(state, bot, target, stuckReason" in mgr
     assert "BotWorld.ValidationRoute.OpenerTargetEntry" in mgr
     assert "BotWorld.ValidationRoute.OpenerSummonEntry" in mgr
     assert "BotWorld.ValidationRoute.ActivationSpawnGroupId" in mgr
@@ -1432,24 +1581,28 @@ def test_quest_first_portfolio_routing_surface():
     assert "BotWorld.ValidationRoute.ActivationActionId" in mgr
     assert "isValidationRouteScriptTarget" in mgr
     assert "candidateOpener && !currentOpener" in mgr
-    assert "SpawnGroupSpawn(_config.ValidationRouteActivationSpawnGroupId" in mgr
-    assert "creature->AI()->DoAction(_config.ValidationRouteActivationActionId)" in mgr
-    assert "bot->SummonCreature(_config.ValidationRouteOpenerSummonEntry" in mgr
-    assert "bot->SummonCreature(_config.ValidationRouteTargetEntry, targetPos" not in mgr
+    assert "SpawnGroupSpawn(Cohort().Config.ValidationRouteActivationSpawnGroupId" not in mgr
+    assert "creature->AI()->DoAction(Cohort().Config.ValidationRouteActivationActionId)" not in mgr
+    assert "bot->SummonCreature(Cohort().Config.ValidationRouteOpenerSummonEntry" not in mgr
+    assert "SetData, SpawnGroupSpawn, AI::DoAction, or SummonCreature" in mgr
+    assert "bot->SummonCreature(Cohort().Config.ValidationRouteTargetEntry, targetPos" not in mgr
     assert "routeTargetActivationFallback" not in mgr
-    assert 'if (_config.ValidationRouteKind == "boss" && std::string(GetDungeonRole(bot)) != "tank")' in mgr
+    assert 'if (Cohort().Config.ValidationRouteKind == "boss" && std::string(GetDungeonRole(bot)) != "tank")' in mgr
     existing_activation = validation_route_objective.split("auto makeExistingValidationRouteCombatReady", 1)[1].split("auto tryValidationRouteActivation", 1)[0]
     assert "SetFaction" not in existing_activation
     assert "RemoveFlag" not in existing_activation
     assert "SetInCombatWith" not in existing_activation
     assert "AttackStart" not in existing_activation
     assert "float routeArrivalRadius =" in mgr
-    assert 'float routeArrivalRadius = _config.ValidationRouteKind == "boss" ? 8.0f : 18.0f;' in validation_route_objective
-    assert validation_route_objective.count("AttackStop") == 4
-    assert validation_route_objective.count("CombatStop") == 4
+    assert "float routeArrivalRadius = 18.0f;" in validation_route_objective
+    assert 'routeArrivalRadius = routeProfile.MovementDirective == "melee" ? 8.0f : 30.0f;' in validation_route_objective
+    assert "bot->AttackStop();" not in validation_route_objective
+    assert "SubmitMeleeAutoAttackIntent" in validation_route_objective
+    assert "BotMeleeAutoAttack::Kind::Suppress" in validation_route_objective
     assert "ValidationRouteClusterRadiusYards > routeArrivalRadius" not in validation_route_objective
-    assert "if (!preAnchorTrashTarget && (discoveryLeg || routeDistance <= routeArrivalRadius))" in validation_route_objective
-    assert "_config.ValidationRouteActivationSpawnGroupId" in mgr
+    assert "if (!preAnchorTrashTarget)\n            preAnchorTrashTarget = findNearestTrashClusterMob();" in validation_route_objective
+    assert "if (routeDistance > routeArrivalRadius && !preAnchorTrashTarget)" in validation_route_objective
+    assert "Cohort().Config.ValidationRouteActivationSpawnGroupId" in mgr
     assert "BotWorld.ValidationRoute.ActivationDataId" in mgr
     assert "BotWorld.ValidationRoute.ActivationSummonEntry" in mgr
     assert "activation_applied_no_visible_target" in mgr
@@ -1459,51 +1612,44 @@ def test_quest_first_portfolio_routing_surface():
     assert "creature->IsInEvadeMode() || creature->HasUnitState(UNIT_STATE_EVADE)" in mgr
     assert "hasStrictPathToValidationRouteTarget(creature)" in mgr
     assert "isValidationRouteObjectiveTarget" in mgr
-    assert 'return _config.ValidationRouteKind == "boss"' in mgr
+    assert 'return Cohort().Config.ValidationRouteKind == "boss"' in mgr
     assert "isEligibleTrashClusterMob(creature)" in mgr
     assert "markValidationRouteTrashFailed" in mgr
     assert "validation_trash_no_progress" in mgr
     assert "validation_trash_requires_damage_progress" in mgr
-    assert "lastCombatAttemptIsSchedulingWait" in mgr
-    assert "lastCombatAttemptIsNormalCombatTick" in mgr
-    assert "contextIsCombatProgressProbe" in mgr
     assert "lastCombatAttemptTargetsDifferentPackMob" in mgr
     assert 'if (std::string(GetDungeonRole(bot)) != "tank")\n                return false;' in mgr
     assert "isValidationRoutePackEntry(state.LastCombatAttempt.TargetEntry)" in mgr
-    assert 'state.LastCombatAttempt.Result == "ok" || lastCombatAttemptIsSchedulingWait()' in mgr
-    assert 'contextText.find("path_no_progress") != std::string::npos' in mgr
-    assert 'state.LastCombatAttempt.Reason == "global_cooldown"' in mgr
-    assert 'state.LastCombatAttempt.Result == "global_cooldown"' in mgr
-    assert 'contextIsCombatProgressProbe() && lastCombatAttemptIsNormalCombatTick()' in mgr
+    assert "elapsedNoProgressSamples" in mgr
+    assert "noProgressSampleIntervalMs = 5000" in mgr
     assert 'bot->GetMap() && bot->GetMap()->IsRaid() ? 2' not in mgr
     assert 'RecordCombatAttempt(*state, bot, target, "executor_check", &action, BotActionResult::Ok);' not in mgr
     assert "findTrashClusterThreatTarget" in mgr
     assert "validation_route_stuck_no_fallback" in mgr
-    assert "fallback_disabled" in mgr
     assert "state.ValidationRouteAnchorOverrideValid && routeHasActiveCombatIntent" in validation_route_objective
     assert "&& !routeHasCurrentGenerationLivePackAuthority)" in validation_route_objective
-    assert 'uint32 routeTargetNoProgressThreshold = _config.ValidationRouteKind == "boss" ? 5 : 20;' in mgr
-    assert "_validationRouteFocusGuid.Clear();" in mgr
+    assert 'uint32 routeTargetNoProgressThreshold = Cohort().Config.ValidationRouteKind == "boss" ? 5 : 20;' in mgr
+    assert "Party().ValidationRouteFocusGuid.Clear();" in mgr
     assert "state.QuestWork.SelectedTargetGuid.Clear();" in mgr
     assert "regroup_tank_focus_mismatch" in mgr
     assert "follow_anchor_tank_focus_mismatch" in mgr
     assert "hold_anchor_tank_focus_mismatch" in mgr
     assert "nearestMatchingEntry" in mgr
-    assert 'return _config.ValidationRouteKind == "boss" ? nearestMatchingEntry : nullptr;' in mgr
+    assert 'return Cohort().Config.ValidationRouteKind == "boss" ? nearestMatchingEntry : nullptr;' in mgr
     assert "Player* member = GetBot(cohortState)" in function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     assert "SELECT role FROM character_bot_pool WHERE guid" in mgr
     assert 'poolRole.find("tank")' in mgr
     assert "if (routeProximity > 120.0f)" in mgr
-    assert 'if (std::string(GetDungeonRole(bot)) != "tank"\n        && (_config.ValidationRouteKind != "boss" || routeDistance <= routeArrivalRadius))' in mgr
+    assert 'if (std::string(GetDungeonRole(bot)) != "tank"\n        && (Cohort().Config.ValidationRouteKind != "boss" || routeDistance <= routeArrivalRadius))' in mgr
     assert_ordered(
         validation_route_objective,
-        'if (std::string(GetDungeonRole(bot)) != "tank"\n        && (_config.ValidationRouteKind != "boss" || routeDistance <= routeArrivalRadius))',
+        'if (std::string(GetDungeonRole(bot)) != "tank"\n        && (Cohort().Config.ValidationRouteKind != "boss" || routeDistance <= routeArrivalRadius))',
         "Unit* preAnchorTrashTarget = nullptr;",
         "moveToRouteAnchor();",
     )
     assert_ordered(
         function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective"),
-        '&& !(_config.ValidationRouteKind == "boss" && _validationRouteActivationApplied)',
+        '&& !(Cohort().Config.ValidationRouteKind == "boss" && Party().ValidationRouteActivationApplied)',
         "MoveBotToPoint(state, bot, anchor->GetPositionX(), anchor->GetPositionY(), anchor->GetPositionZ());",
         'RecordEvent(state, bot, "validation_route_regroup", anchor, "follow_anchor_no_focus"',
         "boss_route_wait_for_tank_activation",
@@ -1514,10 +1660,11 @@ def test_quest_first_portfolio_routing_surface():
         function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective"),
         "target = routeTarget;",
         "float engageRange = routeEngageRange(bot, target, spellId);",
-        "action = \"move_to_validation_route_target\";",
-        "RecordEvent(state, bot, \"validation_route_target_search\", target, \"approach_target\"",
-        "BotActionResult pull = executor.Pull(bot, target);",
-        "RecordEvent(state, bot, _config.ValidationRouteKind == \"boss\" ? \"boss_action\"",
+        'action = moved ? "move_to_validation_route_target" : "hold_tactical_path_rejected";',
+        'RecordEvent(state, bot, "validation_route_target_search", target, moved ? "approach_target" : "tactical_path_rejected"',
+        "BotActionResult pull = profileAction.AutoAttackMode == \"melee\"",
+        '"validation_route_melee_engagement"',
+        "RecordEvent(state, bot, Cohort().Config.ValidationRouteKind == \"boss\" ? \"boss_action\"",
     )
     assert 'eventName.rfind("validation_route", 0) == 0' in mgr
     assert "state.LastDecisionHandler = \"smart_loot\";" in update_bot
@@ -1529,12 +1676,12 @@ def test_quest_first_portfolio_routing_surface():
     )
     assert_ordered(
         update_bot,
-        "bool hasNearbyQuestGiver = _config.AllowQuesting && HasNearbySupportedQuestGiver(bot, state);",
+        "bool hasNearbyQuestGiver = Cohort().Config.AllowQuesting && HasNearbySupportedQuestGiver(bot, state);",
         "bool canInterleaveHubProfession = !bot->IsInCombat()",
         "TryValidationRouteObjective(state, bot, power, stage, chosenActivity.Activity, situation, action, target)",
         "else if (canInterleaveHubProfession && TryProfessionMemoryAction(state, bot, power, stage, chosenActivity.Activity, situation, action))",
         "&& !(target && !target->IsAlive())",
-        "&& (chosenActivity.Activity == BotProgressionActivity::Questing || hasActiveQuestObjective || _config.QuestFirst || state.NewlyAcceptedQuestId || hasNearbyQuestGiver)",
+        "&& (chosenActivity.Activity == BotProgressionActivity::Questing || hasActiveQuestObjective || Cohort().Config.QuestFirst || state.NewlyAcceptedQuestId || hasNearbyQuestGiver)",
         "TryQuesting(state, bot, power, stage, chosenActivity.Activity)",
         "TrySmartGearDecision(state, bot, power, stage, chosenActivity.Activity, situation, action)",
         "TryProfessionMemoryAction(state, bot, power, stage, chosenActivity.Activity, situation, action)",
@@ -1596,7 +1743,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "bool BotWorldPopulationMgr::MoveBotToPoint" in mgr
     move_bot_to_point = function_body(mgr, "bool BotWorldPopulationMgr::MoveBotToPoint")
     assert "return rejectPath(\"route_destination_recently_failed\");" in move_bot_to_point
-    assert "recentFailureMemory && !_config.ValidationRouteEnable" in move_bot_to_point
+    assert "recentFailureMemory && !Cohort().Config.ValidationRouteEnable" in move_bot_to_point
     assert 'state.LastNoProgressReason = "route_destination_recently_failed_memory";' in move_bot_to_point
     assert "RecordEvent(state, bot, \"material_farming_source\"" in mgr
     assert "state.PreferMaterialMemoryAction = false;" in mgr
@@ -1616,7 +1763,7 @@ def test_quest_first_portfolio_routing_surface():
         "SelectQuestGiver(bot, true, &questId, &state)",
         "turnin_counter_reconciled",
         "RecordEvent(state, bot, \"mob_killed\", nullptr, \"turnin_counter_reconciled\"",
-        "bot->RewardQuest(quest, rewardChoice, turnIn, true);",
+        "SubmitNativeQuestReward(bot, turnIn, questId, rewardChoice)",
     )
 
     assert_ordered(
@@ -1655,7 +1802,7 @@ def test_move_bot_to_point_only_terminalizes_strategic_route_failures():
     assert "bool terminalOnFailure" in mgr
     assert_ordered(
         move_bot_to_point,
-        "if (_config.ValidationRouteEnable)",
+        "if (Cohort().Config.ValidationRouteEnable)",
         "if (terminalOnFailure)",
         "state.ValidationRouteTerminalState = true;",
         'RecordEvent(state, bot, "validation_route_recovery"',
@@ -1672,7 +1819,7 @@ def test_move_bot_to_point_only_terminalizes_strategic_route_failures():
     assert "GetFirstCollisionPosition(profileAction.MinRange" not in route_objective
 
 
-def test_rerun195_descent_path_probe_cannot_terminalize_before_native_jump():
+def test_walkable_descent_uses_native_paths_while_unresolved_falls_stay_fail_closed():
     route_objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     anchor_move = route_objective.split("auto moveToRouteAnchor = [&]() -> bool", 1)[1].split("auto routeFocusTankOwned", 1)[0]
     arrival = route_objective.split("if (arrivalRoute && !arrivalCombatActive)", 1)[1].split(
@@ -1683,30 +1830,59 @@ def test_rerun195_descent_path_probe_cannot_terminalize_before_native_jump():
     assert "MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ, terminalOnFailure)" in anchor_move
     assert_ordered(
         arrival,
-        'if (Cohort().Config.ValidationRouteKind == "descent")',
-        "state.ActivePathFromX = bot->GetPositionX();",
-        "bot->GetMotionMaster()->MoveJump(routeAnchorX, routeAnchorY, routeAnchorZ",
-        'action = "move_to_validation_route_anchor";',
+        'if (Cohort().Config.ValidationRouteKind == "descent"',
+        "&& !Cohort().Config.ValidationRouteDescentAction.empty()",
+        'action = "validation_route_descent_blocked";',
+        "bool const moved = moveToRouteAnchor();",
+        'action = moved ? "move_to_validation_route_anchor" : "validation_route_hold_anchor";',
     )
+    assert "MoveJump(" not in arrival
+    assert "TeleportTo(" not in arrival
     assert "state.ValidationRouteTerminalState = true;" not in anchor_move
+
+    move_bot_to_point = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::MoveBotToPoint")
+    for traversal_mode in (
+        '"native_partial_path"',
+        '"native_walkable_step"',
+    ):
+        assert traversal_mode in move_bot_to_point
+    assert 'Cohort().Config.ValidationRouteDescentAction\n            == "native_walkable_descent"' in move_bot_to_point
+    assert "else if (!strictNativeDescent && progressiveStaticRoute" in move_bot_to_point
+    assert "if (!segmentSelected && progressiveStaticRoute && !strictNativeDescent)" in move_bot_to_point
+    assert 'descentRejectReason = "native_descent_complete_path_required";' in move_bot_to_point
+    assert 'return rejectPath(descentRejectReason);' in move_bot_to_point
+    assert '"native_bounded_descent_jump"' not in move_bot_to_point
+    assert "MoveJump(" not in move_bot_to_point
+    assert "MoveFall(" not in move_bot_to_point
+    assert "HandleFall(" not in move_bot_to_point
+    assert "SetFallInformation(" not in move_bot_to_point
+    assert "TeleportTo(" not in move_bot_to_point
+    assert "NearTeleportTo(" not in move_bot_to_point
 
 
 def test_move_bot_to_point_keeps_matching_active_motion():
     move_bot_to_point = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::MoveBotToPoint")
     assert "constexpr float activeDestinationEpsilon = 0.1f;" in move_bot_to_point
-    assert "bool const nativePointPathActive = bot->GetMotionMaster()" in move_bot_to_point
-    assert "GetCurrentMovementGeneratorType()\n            == POINT_MOTION_TYPE" in move_bot_to_point
-    assert "state.ActivePathValid && (state.IsMoving || nativePointPathActive)" in move_bot_to_point
-    assert "if (nativePointPathActive)\n            state.IsMoving = true;" in move_bot_to_point
+    assert "GetMotionSlotType(MOTION_SLOT_ACTIVE)" in move_bot_to_point
+    assert "bool const nativePointPathActive = nativeActiveMotionType == POINT_MOTION_TYPE;" in move_bot_to_point
+    assert "nativeActiveMotionType == CHASE_MOTION_TYPE" in move_bot_to_point
+    assert "static_cast<ChaseMovementGenerator*>(active)->GetTarget()" in move_bot_to_point
+    assert "state.ActivePathTargetGuid == dynamicTarget->GetGUID()" in move_bot_to_point
+    assert "state.IsMoving || nativePointPathActive || nativeTargetChaseActive" in move_bot_to_point
+    assert "if (nativePointPathActive || nativeTargetChaseActive)\n            state.IsMoving = true;" in move_bot_to_point
     assert_ordered(
         move_bot_to_point,
         "bool const nativePointPathActive",
-        "state.ActivePathValid && (state.IsMoving || nativePointPathActive)",
+        "bool nativeTargetChaseActive",
+        "state.IsMoving || nativePointPathActive || nativeTargetChaseActive",
         "return true;",
         "state.ActivePathFromX = bot->GetPositionX();",
         "bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);",
+        "bot->GetMotionMaster()->MoveChase(dynamicTarget);",
         "bot->GetMotionMaster()->MovePoint(0, x, y, z, true);",
     )
+    assert "state.ActivePathSegmentToX = segmentX;" in move_bot_to_point
+    assert "state.ActivePathTraversalMode = traversalMode;" in move_bot_to_point
 
 
 def test_move_bot_to_profile_range_projects_approaches_to_terrain():
@@ -1715,8 +1891,8 @@ def test_move_bot_to_profile_range_projects_approaches_to_terrain():
     assert "Map* map = bot->GetMap();" in profile_range
     assert "map->GetHeight(bot->GetPhaseShift(), x, y, z + 2.0f, true, 64.0f)" in profile_range
     assert "if (floorZ == INVALID_HEIGHT)\n            return false;" in profile_range
-    assert "return MoveBotToPoint(state, bot, x, y, floorZ, false);" in profile_range
-    assert "return moveToTerrainProjectedPoint(reference->GetPositionX(), reference->GetPositionY(), reference->GetPositionZ());" in profile_range
+    assert "return MoveBotToPoint(state, bot, x, y, floorZ, false," in profile_range
+    assert "BotMovementArbitration::Priority::Combat, reference);" in profile_range
     assert "Player* partyRangedAnchor = nullptr;" in profile_range
     assert 'std::string(GetDungeonRole(member)) == "healer"' in profile_range
     assert "member->IsWithinLOSInMap(reference)" not in profile_range
@@ -1743,13 +1919,13 @@ def test_move_bot_to_profile_range_projects_approaches_to_terrain():
 
 def test_confirmed_direct_boss_death_emits_route_terminal_without_manifest():
     confirmed_death = function_body(read(BOT_MGR), "void BotWorldPopulationMgr::NotifyCreatureDeath")
-    terminal_block = confirmed_death.split('if (_config.ValidationRouteKind == "boss")', 1)[1]
+    terminal_block = confirmed_death.split('if (Cohort().Config.ValidationRouteKind == "boss")', 1)[1]
     assert 'state.ValidationRouteTerminalReason = "boss_killed";' in terminal_block
     assert 'RecordEvent(*reporterState, reporter, "validation_route_terminal"' in terminal_block
     assert_ordered(
         terminal_block,
         'state.ValidationRouteTerminalReason = "boss_killed";',
-        'if (!_validationRouteManifest.empty() && _config.ValidationRouteAdvanceMode == "terminal")',
+        'if (!Party().ValidationRouteManifest.empty() && Cohort().Config.ValidationRouteAdvanceMode == "terminal")',
         'RecordEvent(*reporterState, reporter, "validation_route_terminal"',
     )
 
@@ -1802,7 +1978,8 @@ def test_trash_swarm_waits_for_secure_tank_threat_before_dps_release():
     assert '"hold_for_secure_trash_threat"' in route
     assert '"focused_damage_during_trash_threat_build"' in route
     assert "ResolveProfileCombatAction(bot, tankFocus, 1, false)" in route
-    assert "BotActionResult result = executor.Pull(bot, tankFocus);" in route
+    assert '"trash_focused_melee_engagement"' in route
+    assert "BotActionResult result = focusedAction.AutoAttackMode == \"melee\"" in route
     assert 'action = moved ? "move_to_focused_trash_target"' in route
     assert "bot->InterruptNonMeleeSpells(false);" in route
     assert "pet->AttackStop();" in route
@@ -1821,8 +1998,7 @@ def test_validation_route_exact_hazards_scope_secondary_generic_cast_dodges_to_c
     assert "bool currentNodeHasConfiguredHazard = Cohort().Config.ValidationRouteHazardSourceEntry != 0;" in movement
     assert "bool profileAllowsGenericCastMovement" in movement
     assert "profileAllowsGenericCastMovement || !hazardDefinitions.empty()" in movement
-    assert "for (ValidationRouteManifestNode const& node : _validationRouteManifest)" not in movement
-    assert 'previousDefinition->Shape == "radial"\n                    && previousHazard->IsAlive()\n                    && !bot->IsValidAttackTarget(previousHazard)' in movement
+    assert "for (ValidationRouteManifestNode const& node : Party().ValidationRouteManifest)" not in movement
     assert 'definition->Shape == "radial"\n                    && !bot->IsValidAttackTarget(hazard)' in movement
     scoped_candidate = movement[
         movement.index("auto isScopedGenericCastCandidate"):
@@ -1868,7 +2044,7 @@ def test_holy_priest_primes_chakra_and_gates_friendly_holy_word_on_serenity():
     assert "healer->HasSpell(14751)" in healer
     assert "!healer->HasAura(14751)" in healer
     assert "!healer->HasAura(81208)" in healer
-    assert "TryCastFriendlySpell(healer, healer, 14751)" in healer
+    assert "tryRouteFriendlySpell(healer, 14751)" in healer
     assert '"chakra_serenity_primed"' in healer
     assert "88625,'heal_fast','holy_word_serenity,spot_heal'" in profile_sql
     assert "`action`.`required_self_aura` = 81208" in serenity_sql
@@ -1914,6 +2090,7 @@ def test_botauto_diagnosis_and_trace_surface():
     update_outcome_stats = function_body(mgr, "void BotWorldPopulationMgr::UpdateSemanticOutcomeStats")
     record_trace = function_body(mgr, "void BotWorldPopulationMgr::RecordDecisionTrace")
     fingerprint = function_body(mgr, "void BotWorldPopulationMgr::RecordDecisionFingerprintMemory")
+    persist_fingerprint = function_body(mgr, "void BotWorldPopulationMgr::PersistDecisionFingerprintDelta")
     debug = function_body(mgr, "std::string BotWorldPopulationMgr::GetBotDebugJson")
 
     assert '{ "diagnose", rbac::RBAC_PERM_COMMAND_HEALERBOT' in commands
@@ -1931,9 +2108,9 @@ def test_botauto_diagnosis_and_trace_surface():
         "Unit* target = state.TargetGuid.IsEmpty()",
         "bool combatOrCasting",
         "bool movementProgress",
-        "bool validationRouteComplete = _config.ValidationRouteEnable && _validationRouteManifestComplete;",
-        "if (!combatOrCasting && moving && !movementProgress && !validationRouteComplete)",
-        "if (state.StuckTimer >= 6000)",
+        "bool validationRouteComplete = Cohort().Config.ValidationRouteEnable && Party().ValidationRouteManifestComplete;",
+        "if (!combatOrCasting && moving && !movementProgress && !validationRouteComplete && !terminalRouteAction)",
+        "if (!validationRouteComplete && !terminalRouteAction && state.StuckTimer >= 6000)",
     )
 
     for symbol in [
@@ -1957,13 +2134,15 @@ def test_botauto_diagnosis_and_trace_surface():
     ]:
         assert symbol in mgr_header
 
-    assert "diagnosis_schema_version" in diagnose
-    assert "BuildBotDecisionSnapshotJson(state, bot)" in diagnose
-    assert "BuildBotDiagnosisObjectJson(state, bot)" in diagnose
-    assert "trace_schema_version" in trace
-    assert '\\"bots\\":[' in trace
-    assert "BuildBotTraceEntriesJson(state, normalizedLimit)" in trace
-    assert "BuildBotTraceEntriesJson(*selected, normalizedLimit)" in trace
+    base_diagnose = function_body(mgr, "std::string BotWorldPopulationMgr::GetBotDiagnosisJson(std::string const& selector)")
+    assert "diagnosis_schema_version" in base_diagnose
+    assert "BuildBotDecisionSnapshotJson(state, bot)" in base_diagnose
+    assert "BuildBotDiagnosisObjectJson(state, bot)" in base_diagnose
+    base_trace = function_body(mgr, "std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector")
+    assert "trace_schema_version" in base_trace
+    assert '\\"bots\\":[' in base_trace
+    assert "BuildBotTraceEntriesJson(state, normalizedLimit)" in base_trace
+    assert "BuildBotTraceEntriesJson(*selected, normalizedLimit)" in base_trace
 
     for code in [
         "moving_but_not_progressing",
@@ -2064,15 +2243,15 @@ def test_botauto_diagnosis_and_trace_surface():
     ]:
         assert field in diagnosis_json
     assert "bot && bot->IsInWorld() && bot->GetMap()" in diagnosis_json
-    assert '<< ",\\\"entry\\\":" << guid.GetEntry()' in diagnosis_json
+    assert '<< ",\\\"entry\\\":" << (creature ? creature->GetEntry() : guid.GetEntry())' in diagnosis_json
     assert "std::sort(attackerGuids.begin(), attackerGuids.end());" in diagnosis_json
     for mapping in [
-        '<< ",\\"pack_generation\\":" << _validationRoutePackGeneration',
-        '<< ",\\"pack_member_count\\":" << _validationRoutePackMemberGuids.size()',
-        '<< ",\\"pack_engaged_count\\":" << _validationRoutePackEngagedGuids.size()',
-        '<< ",\\"pack_death_count\\":" << _validationRoutePackDeathGuids.size()',
-        '<< ",\\"pack_transition_count\\":" << _validationRoutePackTransitionGuids.size()',
-        '<< ",\\"pack_observed_engagement\\":" << (_validationRoutePackObservedEngagement ? "true" : "false")',
+        '<< ",\\"pack_generation\\":" << Party().ValidationRoutePackGeneration',
+        '<< ",\\"pack_member_count\\":" << Party().ValidationRoutePackMemberGuids.size()',
+        '<< ",\\"pack_engaged_count\\":" << Party().ValidationRoutePackEngagedGuids.size()',
+        '<< ",\\"pack_death_count\\":" << Party().ValidationRoutePackDeathGuids.size()',
+        '<< ",\\"pack_transition_count\\":" << Party().ValidationRoutePackTransitionGuids.size()',
+        '<< ",\\"pack_observed_engagement\\":" << (Party().ValidationRoutePackObservedEngagement ? "true" : "false")',
     ]:
         assert mapping in config_json
 
@@ -2120,7 +2299,7 @@ def test_botauto_diagnosis_and_trace_surface():
     assert "state.LoopRecoveryCooldownUntilMs = nowMs + 15000;" in update_bot
     assert "RecordDecisionFingerprintMemory(state, bot, situation, action, chosenActivity, failure);" in record_decision
     assert_ordered(
-        fingerprint,
+        persist_fingerprint,
         "last_recovery_result",
         'JsonEscape(state.LastRecoveryResult) << "\\""',
         "fingerprint_source",
@@ -2136,7 +2315,7 @@ def test_botauto_diagnosis_and_trace_surface():
     assert "reward = clampMetric(reward, -25.0f, 25.0f);" in update_outcome_stats
     assert "powerDelta = clampMetric(powerDelta, -25.0f, 25.0f);" in update_outcome_stats
     assert "state.DecisionTrace.push_back(entry)" in record_trace
-    assert "state.DecisionTrace.size() > 64" in record_trace
+    assert "state.DecisionTrace.size() > 128" in record_trace
     assert "debug_schema_version" in debug
     assert "diagnosis" in debug
 
@@ -2171,12 +2350,12 @@ def test_botauto_runtime_profiles_surface():
     assert '{ "profile", rbac::RBAC_PERM_COMMAND_HEALERBOT' in commands
     assert "HandleAutoProfilesCommand" in commands
     assert "HandleAutoProfileCommand" in commands
-    assert "SelectRuntimeProfile(profileName)" in commands
+    assert "SelectRuntimeProfileForCohort(cohortId, profileName)" in commands
     assert "JsonFieldIsBool" in mgr
     assert "profile_missing_name" in mgr
     assert "profile_bad_type_" in mgr
     assert "ExtractJsonLineObjects(manifestJson)" in mgr
-    assert "node.ScenarioId != _config.ValidationRouteScenarioId" in mgr
+    assert "node.ScenarioId != Cohort().Config.ValidationRouteScenarioId" in mgr
     assert_ordered(
         function_body(mgr, "void BotWorldPopulationMgr::LoadConfig"),
         'sConfigMgr->GetStringDefault("BotWorld.ProfileManifest"',
@@ -2184,7 +2363,7 @@ def test_botauto_runtime_profiles_surface():
         "ApplyRuntimeProfile(profileItr->second)",
         "LoadValidationRouteManifest();",
     )
-    status = function_body(mgr, "std::string BotWorldPopulationMgr::GetStatusJson")
+    status = function_body(mgr, "std::string BotWorldPopulationMgr::GetStatusJson() const")
     assert '\\"active_profile\\"' in status
     assert '\\"loaded_profile_count\\"' in status
     assert '\\"validation_route\\"' in status
@@ -2198,7 +2377,8 @@ def test_validation_route_movement_check_requires_classified_ground_danger():
     assert "if (!castSpell || !castSpell->CalcCastTime(candidate->getLevel()))" in route
     assert "WorldObject const* dodgeOrigin = movementOrigin && movementOrigin != bot ? movementOrigin : caster;" in route
     assert "bot->GetRelativeAngle(dodgeOrigin) + float(M_PI)" in route
-    assert 'configuredHazard ? "hazard_exit_started" : "movement_check_jump"' in route
+    assert 'configuredHazard\n                ? (feralHazardHandoffBiased' in route
+    assert ': "movement_check_jump")' in route
     assert 'configuredHazard ? "hazard_exit_failed" : "tactical_path_rejected"' in route
     assert 'configuredHazard ? "move_out_of_hazard" : "movement_check_jump"' in route
     assert 'configuredHazard ? "hold_hazard_exit_failed" : "hold_tactical_path_rejected"' in route
@@ -2209,12 +2389,12 @@ def test_validation_route_cleared_trash_regroups_to_terminal_endpoint():
     route = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     readiness_call = route.index("TryValidationRouteReadiness(state, bot, target, power, stage, activity, readinessResult)")
     endpoint_move = route.index('moved ? "move_to_terminal_route_endpoint" : "terminal_route_endpoint_path_rejected"')
-    regroup_block = route[route.rfind('if (_config.ValidationRouteKind != "boss"', 0, endpoint_move):readiness_call]
+    regroup_block = route[route.rfind('if (Cohort().Config.ValidationRouteKind != "boss"', 0, endpoint_move):readiness_call]
 
     assert endpoint_move < readiness_call
     assert 'std::string(GetDungeonRole(bot)) != "tank"' in regroup_block
     assert "routeDistance > routeArrivalRadius" in regroup_block
-    assert "(_validationRoutePackObservedEngagement || _validationRouteCompletedPackCount > 0)" in regroup_block
+    assert "(Party().ValidationRoutePackObservedEngagement || Party().ValidationRouteCompletedPackCount > 0)" in regroup_block
     assert "!routeFocusMemoryFresh()" in regroup_block
     assert "routeTankFocusGuid().IsEmpty()" in regroup_block
     assert "!trashClusterHasLiveMobs()" in regroup_block
@@ -2223,7 +2403,7 @@ def test_validation_route_cleared_trash_regroups_to_terminal_endpoint():
         regroup_block,
         "if (tryValidationRouteMovementCheck(target))",
         "return true;",
-        "MoveBotToPoint(state, bot, _config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ, true)",
+        "MoveBotToPoint(state, bot, Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY, Cohort().Config.ValidationRouteZ, true)",
     )
     assert "move_to_terminal_route_endpoint" in regroup_block
 
@@ -2233,14 +2413,14 @@ def test_validation_route_status_persists_terminal_and_boss_death_evidence():
     header = read(BOT_MGR_HEADER)
     notify_death = function_body(mgr, "void BotWorldPopulationMgr::NotifyCreatureDeath")
     advance = function_body(mgr, "bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest")
-    status = function_body(mgr, "std::string BotWorldPopulationMgr::GetStatusJson")
+    status = function_body(mgr, "std::string BotWorldPopulationMgr::GetStatusJson() const")
 
-    assert "std::vector<ValidationRouteEvidence> _validationRouteTerminalEvidence;" in header
-    assert "std::vector<ValidationRouteEvidence> _validationRouteBossDeathEvidence;" in header
-    assert "_validationRouteBossDeathEvidence.push_back" in notify_death
-    assert "_validationRouteTerminalEvidence.push_back" in advance
-    assert '"terminal_evidence"' in status
-    assert '"boss_death_evidence"' in status
+    assert "std::vector<ValidationRouteEvidence> ValidationRouteTerminalEvidence;" in header
+    assert "std::vector<ValidationRouteEvidence> ValidationRouteBossDeathEvidence;" in header
+    assert "Party().ValidationRouteBossDeathEvidence.push_back" in notify_death
+    assert "Party().ValidationRouteTerminalEvidence.push_back" in advance
+    assert '\\"terminal_evidence\\"' in mgr
+    assert '\\"boss_death_evidence\\"' in mgr
 
 
 def test_validation_route_boss_terminal_requires_unit_kill_provenance():
@@ -2258,14 +2438,14 @@ def test_validation_route_boss_terminal_requires_unit_kill_provenance():
         "ai->JustDied(attacker);",
         "sBotWorldPopulationMgr->NotifyCreatureDeath(creature);",
     )
-    assert "killed->GetEntry() != _config.ValidationRouteTargetEntry" in notify_death
-    assert "_validationRouteEngagedBossGuid != killed->GetGUID()" in notify_death
-    assert "_validationRouteEngagedBossGeneration != _validationRouteGeneration" in notify_death
-    assert "_validationRouteEngagedBossMapId != killed->GetMapId()" in notify_death
-    assert "_validationRouteEngagedBossInstanceId != killed->GetInstanceId()" in notify_death
-    assert "_validationRouteConfirmedBossDeathGuid = killed->GetGUID();" in notify_death
+    assert "killed->GetEntry() != Cohort().Config.ValidationRouteTargetEntry" in notify_death
+    assert "Party().ValidationRouteEngagedBossGuid != killed->GetGUID()" in notify_death
+    assert "Party().ValidationRouteEngagedBossGeneration != Party().ValidationRouteGeneration" in notify_death
+    assert "Party().ValidationRouteEngagedBossMapId != killed->GetMapId()" in notify_death
+    assert "Party().ValidationRouteEngagedBossInstanceId != killed->GetInstanceId()" in notify_death
+    assert "Party().ValidationRouteConfirmedBossDeathGuid = killed->GetGUID();" in notify_death
     assert 'RecordEvent(*reporterState, reporter, "boss_killed", killed, "confirmed_unit_death"' in notify_death
-    assert '_validationRouteManifestAdvanceReason = "boss_killed";' in notify_death
+    assert 'Party().ValidationRouteManifestAdvanceReason = "boss_killed";' in notify_death
     assert "boss_death_unconfirmed" in route_objective
     assert "&& confirmedBossDeath" in advance_manifest
 
@@ -2278,14 +2458,8 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     advance_manifest = function_body(mgr, "bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest")
     record_decision = function_body(mgr, "void BotWorldPopulationMgr::RecordDecision")
 
-    assert_ordered(
-        update_bot,
-        'std::string recoveryReason = "validation_route_stuck_no_fallback";',
-        'RecordEvent(state, bot, "stuck_detected"',
-        'RecordDecision(state, bot, "validation_route_recovery", "validation_route_stuck"',
-        "return;",
-    )
-    assert "state.LastRecoveryResult = \"fallback_disabled\";" in update_bot
+    assert 'std::string recoveryReason = "validation_route_stuck_no_fallback";' not in update_bot
+    assert 'RecordDecision(state, bot, "validation_route_recovery", "validation_route_stuck"' not in update_bot
     assert 'state.ValidationRouteTerminalReason == "validation_trash_no_progress"' in route_objective
     assert "!persistedValidationRoutePackHasLiveMembers()" in route_objective
     assert "activeValidationRoutePackTarget()" in route_objective
@@ -2294,9 +2468,9 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert "!validationPartyHasActiveCombat()" in route_objective
     assert '"failed_terminal_reopened_after_pack_death"' in route_objective
     assert '"failed_terminal_reopened_for_live_pack_reapproach"' in route_objective
-    assert 'cohortState.ValidationRouteAnchorOverrideReason = "validation_route_disengaged_pack_reapproach";' in route_objective
+    assert 'cohortState.ValidationRouteAnchorOverrideReason = "validation_route_live_pack_reapproach";' in route_objective
     assert "cohortState.LoopRecoveryCooldownUntilMs = retryNowMs + 1000;" in route_objective
-    assert 'bool routeTrashPackTarget = _config.ValidationRouteKind != "boss"' in route_objective
+    assert 'bool routeTrashPackTarget = Cohort().Config.ValidationRouteKind != "boss"' in route_objective
     assert "creature && isEligibleTrashClusterMob(creature);" in route_objective
     assert "if (routeTrashPackTarget && !botIsTank" in route_objective
     assert_ordered(
@@ -2307,7 +2481,7 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     )
     assert_ordered(
         route_objective,
-        '_validationRouteManifestAdvanceReason = "boss_killed";',
+        'Party().ValidationRouteManifestAdvanceReason = "boss_killed";',
         "MaybeAdvanceValidationRouteManifest();",
         "return true;",
     )
@@ -2317,7 +2491,6 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "bool pullable = bot->IsWithinLOSInMap(creature)",
         "&& bot->GetExactDist(creature) <= routeEngageRange(bot, creature, 0);",
         "&& (hasStrictPathToValidationRouteTarget(creature) || pullable);",
-        "auto isLiveTrashClusterMob",
         "auto isValidationRouteObjectiveTarget",
     )
     assert "&& bot->IsWithinLOSInMap(creature)\n            && hasStrictPathToValidationRouteTarget(creature);" not in route_objective
@@ -2328,21 +2501,21 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "if (routeDistance > routeArrivalRadius && !preAnchorTrashTarget)",
         "Unit* routeTarget = preAnchorTrashTarget;",
     )
-    live_cluster_block = route_objective.split("auto isLiveTrashClusterMob", 1)[1].split(
+    live_cluster_block = route_objective.split("auto isEligibleTrashClusterMob", 1)[1].split(
         "auto forEachActiveValidationCohortCombatCreature", 1
     )[0]
-    assert "if (!bot || !creature || !creature->IsAlive() || !creature->GetHealth())" in live_cluster_block
-    assert "_validationRouteFinalTransitionGuids.find(creature->GetGUID())" in live_cluster_block
+    assert "if (!bot || !creature || !creature->IsAlive() || !creature->GetHealth() || !bot->IsValidAttackTarget(creature))" in live_cluster_block
+    assert "Party().ValidationRouteFinalTransitionGuids.find(creature->GetGUID())" in live_cluster_block
     assert "isValidationRoutePackEntry(creature->GetEntry())" in live_cluster_block
-    assert "creature->IsInEvadeMode()" not in live_cluster_block
-    assert "IsValidAttackTarget" not in live_cluster_block
-    assert "hasStrictPathToValidationRouteTarget" not in live_cluster_block
-    assert "bot->IsWithinLOSInMap(creature)" not in live_cluster_block
-    assert "bot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) + radius + 40.0f" in route_objective
+    assert "creature->IsInEvadeMode()" in live_cluster_block
+    assert "IsValidAttackTarget" in live_cluster_block
+    assert "hasStrictPathToValidationRouteTarget" in live_cluster_block
+    assert "bot->IsWithinLOSInMap(creature)" in live_cluster_block
+    assert "bot->GetExactDist(Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY, Cohort().Config.ValidationRouteZ) + radius + 40.0f" in route_objective
     assert 'node.ExpectedAliveCount = uint32(std::max(0, readInt(routeJson, "expected_alive_count")));' in mgr
-    assert "_config.ValidationRouteExpectedAliveCount = node.ExpectedAliveCount;" in mgr
+    assert "Cohort().Config.ValidationRouteExpectedAliveCount = node.ExpectedAliveCount;" in mgr
     trash_liveness_block = route_objective.split("auto trashClusterHasLiveMobs", 1)[1].split("auto markTrashClusterCleared", 1)[0]
-    assert "_config.ValidationRouteExpectedAliveCount && _metrics.Kills - _validationRouteProgressBaselineKills < _config.ValidationRouteExpectedAliveCount" not in trash_liveness_block
+    assert "Cohort().Config.ValidationRouteExpectedAliveCount && Cohort().Metrics.Kills - Party().ValidationRouteProgressBaselineKills < Cohort().Config.ValidationRouteExpectedAliveCount" not in trash_liveness_block
     assert "cohortState.LastCombatAttempt = WorldBotState::CombatAttemptDiagnostic();" in route_objective
     assert "cohortState.LastRouteProgress = WorldBotState::RouteProgressDiagnostic();" in route_objective
     assert 'std::string(GetDungeonRole(bot)) != "tank"' in route_objective
@@ -2350,63 +2523,66 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert 'RecordEvent(state, bot, "validation_route_recovery", prerequisiteTarget, "unengaged_trash_target_repath"' in route_objective
     assert_ordered(
         route_objective,
+        "bool routePartyCombatActive = validationPartyHasActiveCombat();",
+        "bool arrivalCombatActive = arrivalRoute && routePartyCombatActive;",
         "Regroup and descent nodes must not suppress a natural pull",
-        "bool arrivalCombatActive = arrivalRoute && validationPartyHasActiveCombat();",
         "if (arrivalCombatActive)",
         "enrollEngagedValidationRoutePackMembers();",
         "if (arrivalRoute && !arrivalCombatActive)",
-        "bot->CombatStop(true);",
+        'SubmitMeleeAutoAttackIntent(state,',
+        'BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,',
+        '"validation_route_arrival_hold");',
     )
     assert_ordered(
         route_objective,
         "A trash route can expose the next target",
-        'if (_config.ValidationRouteKind != "boss"',
+        'if (Cohort().Config.ValidationRouteKind != "boss"',
         "&& !prerequisiteTarget->IsInCombat()",
         "&& !prerequisiteTarget->GetVictim())",
         'RecordEvent(state, bot, "validation_route_recovery", prerequisiteTarget, "unengaged_trash_target_repath"',
         'markValidationRouteTrashFailed(prerequisiteTarget, "validation_trash_no_progress"',
     )
     assert 'markTrashClusterCleared("trash_cluster_expected_empty");' not in route_objective
-    assert "&& !_config.ValidationRouteExpectedAliveCount" not in route_objective
+    assert "&& !Cohort().Config.ValidationRouteExpectedAliveCount" not in route_objective
     assert_ordered(
         route_objective,
         "auto recordValidationRouteTrashKill",
-        "if (_validationRouteRecordedKillGuids.find(killedTarget->GetGUID()) != _validationRouteRecordedKillGuids.end())",
+        "if (Party().ValidationRouteRecordedKillGuids.find(killedTarget->GetGUID()) != Party().ValidationRouteRecordedKillGuids.end())",
         "return false;",
-        "_validationRouteRecordedKillGuids.insert(killedTarget->GetGUID());",
-        "++_metrics.Kills;",
+        "Party().ValidationRouteRecordedKillGuids.insert(killedTarget->GetGUID());",
+        "++Cohort().Metrics.Kills;",
         "state.LastKilledTargetGuid = killedTarget->GetGUID();",
         "if (isValidationRouteScriptTarget(creature)",
         "if (!trashClusterHasLiveMobs())",
         '"trash_cluster_empty_pending_anchor_verification"',
     )
-    assert "GuidSet _validationRouteRecordedKillGuids;" in mgr_header
-    assert "_validationRouteRecordedKillGuids.clear();" in mgr
+    assert "GuidSet ValidationRouteRecordedKillGuids;" in mgr_header
+    assert "Party().ValidationRouteRecordedKillGuids.clear();" in mgr
     for symbol in [
         "std::string ValidationRouteNodeKind;",
-        "GuidSet _validationRoutePackMemberGuids;",
-        "GuidSet _validationRoutePackEngagedGuids;",
-        "GuidSet _validationRoutePackDeathGuids;",
-        "GuidSet _validationRoutePackTransitionGuids;",
-        "GuidSet _validationRoutePendingFinalTransitionGuids;",
-        "GuidSet _validationRouteFinalTransitionGuids;",
-        "uint64 _validationRoutePackGeneration",
-        "bool _validationRoutePackObservedEngagement",
+        "GuidSet ValidationRoutePackMemberGuids;",
+        "GuidSet ValidationRoutePackEngagedGuids;",
+        "GuidSet ValidationRoutePackDeathGuids;",
+        "GuidSet ValidationRoutePackTransitionGuids;",
+        "GuidSet ValidationRoutePendingFinalTransitionGuids;",
+        "GuidSet ValidationRouteFinalTransitionGuids;",
+        "uint64 ValidationRoutePackGeneration",
+        "bool ValidationRoutePackObservedEngagement",
     ]:
         assert symbol in mgr_header
     assert 'node.NodeKind = ExtractJsonStringField(routeJson, "node_kind");' in mgr
     assert 'node.ScriptedEventEntries = ExtractJsonUIntArrayField(routeJson, "scripted_event_entries");' in mgr
     assert 'node.ScriptedEventTransitionAuraIds = ExtractJsonUIntArrayField(routeJson, "scripted_event_transition_aura_ids");' in mgr
     assert 'ExtractJsonBoolField(routeJson, "scripted_event_require_passive", node.ScriptedEventRequirePassive);' in mgr
-    assert '_config.ValidationRouteNodeKind = node.NodeKind;' in mgr
-    assert '_config.ValidationRouteScriptedEventEntries = node.ScriptedEventEntries;' in mgr
-    assert '_config.ValidationRouteScriptedEventTransitionAuraIds = node.ScriptedEventTransitionAuraIds;' in mgr
+    assert 'Cohort().Config.ValidationRouteNodeKind = node.NodeKind;' in mgr
+    assert 'Cohort().Config.ValidationRouteScriptedEventEntries = node.ScriptedEventEntries;' in mgr
+    assert 'Cohort().Config.ValidationRouteScriptedEventTransitionAuraIds = node.ScriptedEventTransitionAuraIds;' in mgr
     route_progress_json = function_body(mgr, "std::string BotWorldPopulationMgr::BuildRouteProgressJson")
     record_route_progress = function_body(mgr, "void BotWorldPopulationMgr::RecordRouteProgress")
     assert '<< ",\\"generation\\":" << diagnostic.Generation' in route_progress_json
-    assert "diagnostic.Generation = _validationRouteGeneration;" in record_route_progress
-    assert '_config.ValidationRouteTargetEntry = node.NodeKind == "discovery_leg" ? 0 : node.TargetEntry;' in mgr
-    assert 'bool discoveryLeg = _config.ValidationRouteNodeKind == "discovery_leg";' in route_objective
+    assert "diagnostic.Generation = Party().ValidationRouteGeneration;" in record_route_progress
+    assert 'Cohort().Config.ValidationRouteTargetEntry = node.NodeKind == "discovery_leg" ? 0 : node.TargetEntry;' in mgr
+    assert 'bool discoveryLeg = Cohort().Config.ValidationRouteNodeKind == "discovery_leg";' in route_objective
     assert_ordered(
         route_objective,
         "auto isNaturalForwardHostile",
@@ -2437,7 +2613,7 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "if (!isEligibleTrashClusterMob(creature))",
         "Unit* victim = creature->GetVictim();",
     )
-    assert "_validationRoutePackMemberGuids.find(creature->GetGUID())" not in threat_target_block
+    assert "Party().ValidationRoutePackMemberGuids.find(creature->GetGUID())" not in threat_target_block
     assert_ordered(
         route_objective,
         "auto forEachActiveValidationCohortCombatCreature",
@@ -2445,47 +2621,47 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "auto isNaturalValidationRoutePackMember",
         "auto enrollValidationRoutePackMember",
         "!engaged",
-        "_validationRoutePackMemberGuids.insert(creature->GetGUID()).second;",
-        "_validationRoutePackEngagedGuids.insert(creature->GetGUID()).second;",
+        "Party().ValidationRoutePackMemberGuids.insert(creature->GetGUID()).second;",
+        "Party().ValidationRoutePackEngagedGuids.insert(creature->GetGUID()).second;",
         'RecordEvent(state, bot, "validation_route_pack_enrolled"',
         "auto enrollEngagedValidationRoutePackMembers",
         "enrollValidationRoutePackMember(creature, true);",
         "auto persistedValidationRoutePackHasLiveMembers",
-        "_validationRoutePackDeathGuids.find(guid) == _validationRoutePackDeathGuids.end()",
+        "Party().ValidationRoutePackDeathGuids.find(guid) == Party().ValidationRoutePackDeathGuids.end()",
         "auto trashClusterHasLiveMobs",
         "enrollEngagedValidationRoutePackMembers();",
         "persistedValidationRoutePackHasLiveMembers()",
     )
     defeated_pack_block = route_objective.split("auto recordDefeatedValidationRoutePackMembers", 1)[1].split("auto routeUsableCombatTarget", 1)[0]
-    assert "_validationRoutePackEngagedGuids.find(guid) == _validationRoutePackEngagedGuids.end()" in defeated_pack_block
-    assert "_validationRoutePackDeathGuids.find(guid) != _validationRoutePackDeathGuids.end()" in defeated_pack_block
-    assert "_validationRoutePackTransitionGuids.find(guid) != _validationRoutePackTransitionGuids.end()" in defeated_pack_block
-    assert "std::vector<ObjectGuid> memberGuids(_validationRoutePackMemberGuids.begin(), _validationRoutePackMemberGuids.end());" in defeated_pack_block
+    assert "Party().ValidationRoutePackEngagedGuids.find(guid) == Party().ValidationRoutePackEngagedGuids.end()" in defeated_pack_block
+    assert "Party().ValidationRoutePackDeathGuids.find(guid) != Party().ValidationRoutePackDeathGuids.end()" in defeated_pack_block
+    assert "Party().ValidationRoutePackTransitionGuids.find(guid) != Party().ValidationRoutePackTransitionGuids.end()" in defeated_pack_block
+    assert "std::vector<ObjectGuid> memberGuids(Party().ValidationRoutePackMemberGuids.begin(), Party().ValidationRoutePackMemberGuids.end());" in defeated_pack_block
     assert "for (ObjectGuid const& guid : memberGuids)" in defeated_pack_block
     assert "bot->GetMap()->GetCreature(guid); creature && !creature->IsAlive() && !creature->GetHealth()" in defeated_pack_block
     assert 'recordValidationRouteTrashKill(creature, "enrolled_member_seen_dead")' in defeated_pack_block
     assert "if (!creature)" not in defeated_pack_block
     usable_target_block = route_objective.split("auto routeUsableCombatTarget", 1)[1].split("auto maybeValidationPrerequisiteNoProgressAssist", 1)[0]
-    assert "_validationRouteFinalTransitionGuids.find(creature->GetGUID())" in usable_target_block
+    assert "Party().ValidationRouteFinalTransitionGuids.find(creature->GetGUID())" in usable_target_block
     assert_ordered(
         route_objective,
         'targetSearchResult = "target_seen_dead";',
         "if (!isValidationRouteCombatTarget(creature))",
         'targetSearchResult = "target_seen_activation_target";',
     )
-    transition_block = route_objective.split("auto recordValidationRouteScriptedTransition", 1)[1].split("auto enrollEngagedValidationRoutePackMembers", 1)[0]
+    transition_block = route_objective.split("auto recordValidationRouteScriptedTransition", 1)[1].split("auto retireStaleValidationRoutePackMembers", 1)[0]
     for required in [
-        "_validationRoutePackEngagedGuids.find(creature->GetGUID())",
+        "Party().ValidationRoutePackEngagedGuids.find(creature->GetGUID())",
         "resolvedScriptedTransitionAuraId(creature)",
-        "_validationRoutePackTransitionGuids.insert(creature->GetGUID())",
-        "_validationRouteManifestIndex + 1",
+        "Party().ValidationRoutePackTransitionGuids.insert(creature->GetGUID())",
+        "Party().ValidationRouteManifestIndex + 1",
         "ScriptedEventEntries.begin()",
         "if (!declaredByFutureNode)",
         "if (discoveryLeg)",
-        "_validationRoutePendingFinalTransitionGuids.insert(transitionedGuid)",
+        "Party().ValidationRoutePendingFinalTransitionGuids.insert(transitionedGuid)",
         "else",
-        "_validationRouteFinalTransitionGuids.insert(transitionedGuid)",
-        "_validationRouteFocusGuid == transitionedGuid",
+        "Party().ValidationRouteFinalTransitionGuids.insert(transitionedGuid)",
+        "Party().ValidationRouteFocusGuid == transitionedGuid",
         "cohortState.TargetGuid == transitionedGuid",
         "cohortState.LastDecisionTargetGuid == transitionedGuid",
         "member->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE)",
@@ -2497,8 +2673,8 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         assert required in transition_block
     resolved_transition_block = route_objective.split("auto resolvedScriptedTransitionAuraId", 1)[1].split("auto isEligibleTrashClusterMob", 1)[0]
     for required in [
-        "_config.ValidationRouteScriptedEventEntries.end()",
-        "_config.ValidationRouteScriptedEventTransitionAuraIds[index]",
+        "Cohort().Config.ValidationRouteScriptedEventEntries.end()",
+        "Cohort().Config.ValidationRouteScriptedEventTransitionAuraIds[index]",
         "creature->HasAura(auraId)",
         "creature->GetVictim()",
         "creature->HasReactState(REACT_PASSIVE)",
@@ -2509,14 +2685,14 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     natural_pack_member_block = route_objective.split("auto isNaturalValidationRoutePackMember", 1)[1].split(
         "auto enrollValidationRoutePackMember", 1
     )[0]
-    assert "_validationRoutePendingFinalTransitionGuids.find(creature->GetGUID())" in natural_pack_member_block
-    assert "_validationRouteFinalTransitionGuids.find(creature->GetGUID())" in natural_pack_member_block
-    assert "_validationRoutePackTransitionGuids.find(guid) == _validationRoutePackTransitionGuids.end()" in route_objective
+    assert "Party().ValidationRoutePendingFinalTransitionGuids.find(creature->GetGUID())" in natural_pack_member_block
+    assert "Party().ValidationRouteFinalTransitionGuids.find(creature->GetGUID())" in natural_pack_member_block
+    assert "Party().ValidationRoutePackTransitionGuids.find(guid) == Party().ValidationRoutePackTransitionGuids.end()" in route_objective
     assert_ordered(
         mgr,
         "void BotWorldPopulationMgr::LoadValidationRouteManifest()",
-        "_validationRoutePendingFinalTransitionGuids.clear();",
-        "_validationRouteFinalTransitionGuids.clear();",
+        "Party().ValidationRoutePendingFinalTransitionGuids.clear();",
+        "Party().ValidationRouteFinalTransitionGuids.clear();",
     )
     apply_node = function_body(mgr, "bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode")
     load_manifest = function_body(mgr, "void BotWorldPopulationMgr::LoadValidationRouteManifest")
@@ -2531,16 +2707,16 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         'ExtractJsonNumberField(routeJson, "navigation_anchor_o", node.NavigationAnchorO)',
     ]:
         assert required in load_manifest
-    assert "_config.ValidationRouteX = node.NavigationAnchorX;" in apply_node
-    assert "_config.ValidationRouteY = node.NavigationAnchorY;" in apply_node
-    assert "_config.ValidationRouteZ = node.NavigationAnchorZ;" in apply_node
-    assert "_config.ValidationRouteO = node.NavigationAnchorO;" in apply_node
-    assert "_config.ValidationRouteTargetEntry = node.NodeKind == \"discovery_leg\" ? 0 : node.TargetEntry;" in apply_node
+    assert "Cohort().Config.ValidationRouteX = node.NavigationAnchorX;" in apply_node
+    assert "Cohort().Config.ValidationRouteY = node.NavigationAnchorY;" in apply_node
+    assert "Cohort().Config.ValidationRouteZ = node.NavigationAnchorZ;" in apply_node
+    assert "Cohort().Config.ValidationRouteO = node.NavigationAnchorO;" in apply_node
+    assert "Cohort().Config.ValidationRouteTargetEntry = node.NodeKind == \"discovery_leg\" ? 0 : node.TargetEntry;" in apply_node
     reset_route = function_body(mgr, "void BotWorldPopulationMgr::ResetValidationRouteRuntimeState")
     assert "state.LastCombatAttempt = WorldBotState::CombatAttemptDiagnostic();" in reset_route
     assert "state.LastRouteProgress = WorldBotState::RouteProgressDiagnostic();" in reset_route
-    assert "_validationRoutePendingFinalTransitionGuids.clear();" in apply_node
-    assert "_validationRouteFinalTransitionGuids.clear();" in mgr
+    assert "Party().ValidationRoutePendingFinalTransitionGuids.clear();" in apply_node
+    assert "Party().ValidationRouteFinalTransitionGuids.clear();" in mgr
     enrollment_scan = route_objective.split("auto enrollEngagedValidationRoutePackMembers", 1)[1].split("auto persistedValidationRoutePackHasLiveMembers", 1)[0]
     active_combat_scan = route_objective.split("auto forEachActiveValidationCohortCombatCreature", 1)[1].split(
         "auto enrollValidationRoutePackMember", 1
@@ -2554,8 +2730,8 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert "std::unordered_set<ObjectGuid> visited" in active_combat_scan
     assert "GetThreatManager().IsThreatenedBy" not in route_objective
     assert "combatReferences.find(creature->GetGUID())" in active_combat_scan
-    assert "_validationRoutePendingFinalTransitionGuids.find(creature->GetGUID())" in active_combat_scan
-    assert "_validationRouteFinalTransitionGuids.find(creature->GetGUID())" in active_combat_scan
+    assert "Party().ValidationRoutePendingFinalTransitionGuids.find(creature->GetGUID())" in active_combat_scan
+    assert "Party().ValidationRouteFinalTransitionGuids.find(creature->GetGUID())" in active_combat_scan
     assert "AllWorldObjectsInRange" not in enrollment_scan
     assert "Cell::VisitAllObjects" not in enrollment_scan
     assert "forEachActiveValidationCohortCombatCreature" in enrollment_scan
@@ -2568,17 +2744,19 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert 'RecordEvent(state, bot, "validation_route_pack_enrolled", creature, "cohort_combat_reference"' in route_objective
     assert '"route_selection"' not in route_objective
     eligible_block = route_objective.split("auto isEligibleTrashClusterMob", 1)[1].split("auto isLiveTrashClusterMob", 1)[0]
-    assert "_validationRoutePackTransitionGuids.find(creature->GetGUID())" in eligible_block
-    assert "_validationRouteFinalTransitionGuids.find(creature->GetGUID())" in eligible_block
+    assert "Party().ValidationRoutePackTransitionGuids.find(creature->GetGUID())" in eligible_block
+    assert "Party().ValidationRouteFinalTransitionGuids.find(creature->GetGUID())" in eligible_block
     assert "focusedDiscoveryCandidate" in eligible_block
-    assert "_validationRouteFocusGuid == creature->GetGUID()" in eligible_block
+    assert "Party().ValidationRouteFocusGuid == creature->GetGUID()" in eligible_block
     assert "AttackStop" not in transition_block
     assert "CombatStop" not in transition_block
     ineligible_target_block = route_objective.split("else if (ineligibleTrashTarget)", 1)[1].split(
         "if (bot->IsInCombat() && target", 1
     )[0]
     assert '"ineligible_trash_target"' in ineligible_target_block
-    assert "bot->AttackStop();" in ineligible_target_block
+    assert "SubmitMeleeAutoAttackIntent(state," in ineligible_target_block
+    assert "BotMeleeAutoAttack::Kind::Suppress" in ineligible_target_block
+    assert '"ineligible_trash_target");' in ineligible_target_block
     assert "state.TargetGuid.Clear();" in ineligible_target_block
     assert "target = nullptr;" in ineligible_target_block
     profile_action = function_body(mgr, "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction")
@@ -2596,15 +2774,15 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         assert required in profile_action
     assert_ordered(
         route_objective,
-        "_validationRoutePackMemberGuids.insert(killedTarget->GetGUID());",
-        "_validationRoutePackDeathGuids.insert(killedTarget->GetGUID());",
+        "Party().ValidationRoutePackMemberGuids.insert(killedTarget->GetGUID());",
+        "Party().ValidationRoutePackDeathGuids.insert(killedTarget->GetGUID());",
         'RecordEvent(state, bot, "mob_killed"',
     )
-    assert "!_validationRoutePackObservedEngagement" in route_objective
+    assert "!Party().ValidationRoutePackObservedEngagement" in route_objective
     assert "member->GetVictim() || !member->getAttackers().empty()" in route_objective
     assert "&& !partyHasActiveCombatUnit" in route_objective
-    assert "nowMs - _validationRoutePackClearCandidateSinceMs < 2000" in route_objective
-    assert "_validationRoutePackEngagedGuids.find(killedTarget->GetGUID())" in route_objective
+    assert "nowMs - Party().ValidationRoutePackClearCandidateSinceMs < 2000" in route_objective
+    assert "Party().ValidationRoutePackEngagedGuids.find(killedTarget->GetGUID())" in route_objective
     assert "bestAnchorTargetScore" not in route_objective
     assert '"dynamic_pack_members_live_or_unobserved"' in route_objective
     config_json = function_body(mgr, "std::string BotWorldPopulationMgr::BuildConfigJson")
@@ -2632,9 +2810,10 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         route_objective,
         "routeDistance <= routeArrivalRadius && std::string(GetDungeonRole(bot)) == \"tank\"",
         "++state.ValidationRouteTargetSearchMissCount >= 2",
-        "uint64& clearCandidateSinceMs = discoveryLeg ? _validationRouteNodeClearCandidateSinceMs : _validationRoutePackClearCandidateSinceMs;",
-        "if (_config.ValidationRouteAdvanceMode == \"terminal\"",
-        "(discoveryLeg ? _validationRouteCompletedPackCount > 0 : _validationRoutePackObservedEngagement)",
+        "uint64& clearCandidateSinceMs = discoveryLeg ? Party().ValidationRouteNodeClearCandidateSinceMs : Party().ValidationRoutePackClearCandidateSinceMs;",
+        "if (Cohort().Config.ValidationRouteAdvanceMode == \"terminal\"",
+        "(discoveryLeg ? (Party().ValidationRouteCompletedPackCount > 0 || Party().ValidationRouteObservedDeadScriptTarget)",
+        ": (Party().ValidationRoutePackObservedEngagement || Party().ValidationRouteObservedDeadScriptTarget))",
         "&& !packHasLiveMobs",
         "&& !partyHasActiveCombatUnit",
         "&& fullCohortAtEndpoint",
@@ -2647,59 +2826,60 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "ledgerComplete = false;",
         "validationPartyHasActiveCombat()",
         'RecordEvent(state, bot, "validation_route_pack_terminal"',
-        "++_validationRouteCompletedPackCount;",
-        "++_validationRoutePackSequence;",
-        "_validationRoutePackMemberGuids.clear();",
+        "++Party().ValidationRouteCompletedPackCount;",
+        "++Party().ValidationRoutePackSequence;",
+        "Party().ValidationRoutePackMemberGuids.clear();",
         "if (completeDiscoveredPackIfReady())",
     )
     discovered_pack_terminal = route_objective.split("auto completeDiscoveredPackIfReady", 1)[1].split("auto routeUsableCombatTarget", 1)[0]
-    assert "_validationRoutePendingFinalTransitionGuids.clear()" not in discovered_pack_terminal
+    assert "Party().ValidationRoutePendingFinalTransitionGuids.clear()" not in discovered_pack_terminal
     assert_ordered(
         route_objective,
         "if (discoveryLeg)",
-        "_validationRouteFinalTransitionGuids.insert(_validationRoutePendingFinalTransitionGuids.begin(), _validationRoutePendingFinalTransitionGuids.end());",
-        "_validationRoutePendingFinalTransitionGuids.clear();",
+        "Party().ValidationRouteFinalTransitionGuids.insert(Party().ValidationRoutePendingFinalTransitionGuids.begin(), Party().ValidationRoutePendingFinalTransitionGuids.end());",
+        "Party().ValidationRoutePendingFinalTransitionGuids.clear();",
         'markTrashClusterCleared("trash_cluster_cleared");',
         "MaybeAdvanceValidationRouteManifest();",
     )
-    assert 'uint32 routeTargetNoProgressThreshold = _config.ValidationRouteKind == "boss" ? 5 : 20;' in route_objective
-    assert "bool _validationRouteManifestComplete = false;" in mgr_header
+    assert 'uint32 routeTargetNoProgressThreshold = Cohort().Config.ValidationRouteKind == "boss" ? 5 : 20;' in route_objective
+    assert "bool ValidationRouteManifestComplete = false;" in mgr_header
     assert_ordered(
         advance_manifest,
-        "if (_validationRouteManifestComplete)",
-        "_validationRouteManifestAdvancePending = false;",
+        "if (Party().ValidationRouteManifestComplete)",
+        "Party().ValidationRouteManifestAdvancePending = false;",
         "return true;",
-        'bool arrivalRoute = _config.ValidationRouteKind == "travel" || _config.ValidationRouteKind == "regroup" || _config.ValidationRouteKind == "descent";',
-        'bool confirmedBossDeath = _config.ValidationRouteKind != "boss"',
+        'bool arrivalRoute = Cohort().Config.ValidationRouteKind == "travel" || Cohort().Config.ValidationRouteKind == "regroup" || Cohort().Config.ValidationRouteKind == "descent";',
+        'bool confirmedBossDeath = Cohort().Config.ValidationRouteKind != "boss"',
         "bool terminal = !arrivalRoute",
         "&& confirmedBossDeath",
-        "&& _validationRouteManifestAdvanceGeneration == _validationRouteGeneration;",
+        "&& Party().ValidationRouteManifestAdvanceGeneration == Party().ValidationRouteGeneration;",
     )
     assert "uint32 loadedParticipants = 0;" in advance_manifest
     assert "if (!loadedBot)\n                continue;" in advance_manifest
     assert "++loadedParticipants;" in advance_manifest
     assert "!IsValidationCohortMemberInOriginalInstance(state, loadedBot)" in advance_manifest
-    assert "_config.TargetPopulation && loadedParticipants < _config.TargetPopulation" in advance_manifest
+    assert "Cohort().Config.TargetPopulation && loadedParticipants < Cohort().Config.TargetPopulation" in advance_manifest
     assert "if (loadedParticipants && allLoadedArrived)" in advance_manifest
     assert "cohortReadyForAdvance" in advance_manifest
     assert "terminalCohortRadius" in advance_manifest
-    assert "loadedBot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) > terminalCohortRadius" in advance_manifest
+    assert "loadedBot->GetExactDist(Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY, Cohort().Config.ValidationRouteZ) > terminalCohortRadius" in advance_manifest
     assert "if (!cohortReadyForAdvance)\n            return false;" in advance_manifest
-    assert 'state.ValidationRouteTerminalReason != "arrival"' in advance_manifest
-    assert "bool successfulTerminal = state.ValidationRouteGeneration == _validationRouteGeneration" in advance_manifest
-    assert "&& state.ValidationRouteTerminalGeneration == _validationRouteGeneration" in advance_manifest
+    assert 'terminalReason = typedNativeDescent' in advance_manifest
+    assert '? "native_descent_landed_path_proven" : "arrival";' in advance_manifest
+    assert "bool successfulTerminal = state.ValidationRouteGeneration == Party().ValidationRouteGeneration" in advance_manifest
+    assert "&& state.ValidationRouteTerminalGeneration == Party().ValidationRouteGeneration" in advance_manifest
     assert 'state.ValidationRouteTerminalReason == "all_routes_complete"' in advance_manifest
-    assert '_config.ValidationRouteKind == "boss"' in advance_manifest
+    assert 'Cohort().Config.ValidationRouteKind == "boss"' in advance_manifest
     assert 'state.ValidationRouteTerminalReason == "boss_killed"' in advance_manifest
-    assert '_config.ValidationRouteKind != "boss"' in advance_manifest
+    assert 'Cohort().Config.ValidationRouteKind != "boss"' in advance_manifest
     assert "state.LastDecisionAction" not in advance_manifest
     assert 'state.ValidationRouteTerminalReason == "trash_cluster_cleared"' in advance_manifest
     assert 'state.ValidationRouteTerminalReason == "trash_cluster_expected_empty"' not in advance_manifest
     assert "ValidationRouteTerminalState" not in record_decision
     assert_ordered(
         advance_manifest,
-        "if (nextIndex >= _validationRouteManifest.size())",
-        "_validationRouteManifestComplete = true;",
+        "if (nextIndex >= Party().ValidationRouteManifest.size())",
+        "Party().ValidationRouteManifestComplete = true;",
         'RecordEvent(*reporterState, reporter, "validation_route_manifest_complete"',
         "state.ValidationRouteTerminalState = true;",
         "return true;",
@@ -2707,32 +2887,33 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert_ordered(
         route_objective,
         "if (state.ValidationRouteTerminalState",
-        "&& state.ValidationRouteTerminalGeneration == _validationRouteGeneration)",
+        "&& state.ValidationRouteTerminalGeneration == Party().ValidationRouteGeneration)",
         "moveToRouteAnchor()",
         "terminal_cohort_catchup",
         'action = "move_to_validation_route_anchor";',
     )
     assert_ordered(
         route_objective,
-        "if (_validationRouteManifestComplete)",
+        "if (Party().ValidationRouteManifestComplete)",
         'action = "validation_route_complete";',
         "return true;",
     )
-    assert "_validationRouteManifestComplete" not in record_decision
+    assert "Party().ValidationRouteManifestComplete" not in record_decision
 
 
 def test_trash_terminal_uses_current_generation_truth_after_metric_restart():
     route_objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     terminal_block = route_objective.split(
-        'if (!routeTarget && _config.ValidationRouteKind != "boss" && routeDistance <= routeArrivalRadius', 1
-    )[1].split('if (!routeTarget && _config.ValidationRouteKind == "boss")', 1)[0]
-    direct_scan = route_objective.split("if (_config.ValidationRouteTargetEntry && !routeTarget)", 1)[1].split(
+        'if (!routeTarget && Cohort().Config.ValidationRouteKind != "boss" && routeDistance <= routeArrivalRadius', 1
+    )[1].split('if (!routeTarget && Cohort().Config.ValidationRouteKind == "boss")', 1)[0]
+    direct_scan = route_objective.split("if (Cohort().Config.ValidationRouteTargetEntry && !routeTarget)", 1)[1].split(
         'if (!routeTarget\n        && seenRouteTarget', 1
     )[0]
     live_scan = route_objective.split("auto trashClusterHasLiveMobs", 1)[1].split("auto markTrashClusterCleared", 1)[0]
 
     assert "ValidationRouteHasProgressSinceApply()" not in terminal_block
-    assert "_validationRoutePackGeneration == _validationRouteGeneration && _validationRoutePackObservedEngagement" in terminal_block
+    assert "Party().ValidationRoutePackGeneration == Party().ValidationRouteGeneration" in terminal_block
+    assert "Party().ValidationRoutePackObservedEngagement" in terminal_block
     assert "++state.ValidationRouteTargetSearchMissCount >= 2" in terminal_block
     assert "!packHasLiveMobs" in terminal_block
     assert "!partyHasActiveCombatUnit" in terminal_block
@@ -2741,9 +2922,9 @@ def test_trash_terminal_uses_current_generation_truth_after_metric_restart():
 
     assert_ordered(
         direct_scan,
-        "bool recordedCurrentDead = _validationRoutePackGeneration == _validationRouteGeneration",
-        "_validationRoutePackDeathGuids.find(creature->GetGUID())",
-        "_validationRouteRecordedKillGuids.find(creature->GetGUID())",
+        "bool recordedCurrentDead = Party().ValidationRoutePackGeneration == Party().ValidationRouteGeneration",
+        "Party().ValidationRoutePackDeathGuids.find(creature->GetGUID())",
+        "Party().ValidationRouteRecordedKillGuids.find(creature->GetGUID())",
         "if (recordedCurrentDead)",
         "continue;",
         "float distance = bot->GetExactDist(creature);",
@@ -2752,7 +2933,7 @@ def test_trash_terminal_uses_current_generation_truth_after_metric_restart():
     readiness_call = route_objective.index("TryValidationRouteReadiness(state, bot, target, power, stage, activity, readinessResult)")
     early_terminal_regroup = route_objective.index('moved ? "move_to_terminal_route_endpoint" : "terminal_route_endpoint_path_rejected"')
     assert early_terminal_regroup < readiness_call
-    early_regroup_block = route_objective[route_objective.rfind('if (_config.ValidationRouteKind != "boss"', 0, early_terminal_regroup):readiness_call]
+    early_regroup_block = route_objective[route_objective.rfind('if (Cohort().Config.ValidationRouteKind != "boss"', 0, early_terminal_regroup):readiness_call]
     assert 'std::string(GetDungeonRole(bot)) != "tank"' in early_regroup_block
     assert "routeDistance > routeArrivalRadius" in early_regroup_block
     assert "!routeFocusMemoryFresh()" in early_regroup_block
@@ -2763,7 +2944,7 @@ def test_trash_terminal_uses_current_generation_truth_after_metric_restart():
         early_regroup_block,
         "if (tryValidationRouteMovementCheck(target))",
         "return true;",
-        "MoveBotToPoint(state, bot, _config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ, true)",
+        "MoveBotToPoint(state, bot, Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY, Cohort().Config.ValidationRouteZ, true)",
     )
 
     for forbidden_filter in [
@@ -2845,26 +3026,28 @@ def test_recovery_smoke_records_death_recovery_without_center_fallback_unless_en
     mgr = read(BOT_MGR)
     conf = read(WORLDSERVER_CONF)
     recover = function_body(mgr, "BotWorldPopulationMgr::DeathRecoveryResult BotWorldPopulationMgr::RecoverDeadBot")
-    last_safe_recover = function_body(mgr, "bool BotWorldPopulationMgr::TryLastSafePositionResurrect")
+    native = function_body(mgr, "bool BotWorldPopulationMgr::TryNativeCorpseRun")
+    native_executor = function_body(mgr, "BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent")
     update_bot = function_body(mgr, "void BotWorldPopulationMgr::UpdateBot")
     build_policy = function_body(mgr, "BotWorldPopulationMgr::BotDeathRecoveryPolicy BotWorldPopulationMgr::BuildDeathRecoveryPolicy")
 
     assert re.search(r"^BotWorld\.TeleportToCenterOnDeath\s*=\s*0$", conf, re.MULTILINE)
-    assert "policy.CenterFallbackEnabled = _config.TeleportToCenterOnDeath;" in build_policy
-    assert "policy.MaxDeathsBeforeFallback = _config.MaxDeathsBeforeFallback;" in build_policy
+    assert 'policy.Modes = { "native_corpse_run" };' in build_policy
+    assert "policy.MaxDeathsBeforeFallback = Cohort().Config.MaxDeathsBeforeFallback;" in build_policy
     assert "recovery.RepeatedDeath = state.RecentDeathCount >= policy.MaxDeathsBeforeFallback;" in recover
-    assert 'mode == "configured_center_fallback" && (!policy.CenterFallbackEnabled || !recovery.RepeatedDeath)' in recover
-    assert "void BotWorldPopulationMgr::RememberSafePosition" in mgr
-    assert "if (_config.ValidationRouteEnable)" in function_body(mgr, "void BotWorldPopulationMgr::RememberSafePosition")
-    assert "Distance2d(state.LastDeathX, state.LastDeathY, bot->GetPositionX(), bot->GetPositionY()) <= 70.0f" in mgr
-    assert 'result = "safe_local_dangerous";' in mgr
-    assert "unsafeValidationSafePosition(itr->MapId, itr->X, itr->Y, itr->Z)" in last_safe_recover
-    assert "ORDER BY last_seen_at DESC LIMIT 16" in last_safe_recover
-    assert "Distance2d(state.LastDeathX, state.LastDeathY, safe.X, safe.Y) <= 70.0f" in mgr
-    assert 'result = "safe_position_dangerous";' in mgr
+    assert 'mode == "native_corpse_run"' in recover
+    assert "TryNativeCorpseRun(state, bot, result)" in recover
+    assert "BotNativeAction::ReleaseSpirit" in native
+    assert "BotNativeAction::AreaTrigger" in native
+    assert "BotNativeAction::ReclaimCorpse" in native
+    assert "HandleRepopRequestOpcode(repop)" in native_executor
+    assert "HandleAreaTriggerOpcode(areaTrigger)" in native_executor
+    assert "HandleReclaimCorpseOpcode(reclaim)" in native_executor
+    assert "ResurrectPlayer" not in native
+    assert "TeleportTo(" not in native
     assert 'RecordEvent(state, bot, "death_recovery_started"' in update_bot
     assert 'RecordEvent(state, bot, "resurrected"' in update_bot
-    assert 'RecordEvent(state, bot, "teleport_fallback_used"' in update_bot
+    assert 'RecordEvent(state, bot, "death_recovery_progress"' in update_bot
     assert 'RecordEvent(state, bot, "death_recovery_failed"' in update_bot
     mark_death = function_body(mgr, "void BotWorldPopulationMgr::MarkDeathDangerZone")
     assert 'sourceEntry, state.RecentDeathCount, 0u, metadataJson.c_str()' in mark_death
@@ -2877,77 +3060,62 @@ def test_recovery_smoke_records_death_recovery_without_center_fallback_unless_en
     assert "if (state.DeadTimer == diff)" not in update_bot
 
 
-def test_validation_route_healer_uses_native_party_resurrection():
+def test_validation_route_combat_resurrection_uses_typed_scheduler():
     mgr = read(BOT_MGR)
     header = read(BOT_MGR_HEADER)
-    route = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
-    native = function_body(mgr, "bool BotWorldPopulationMgr::TryNativePartyResurrection")
+    native_intents = read(ROOT / "src/server/game/Bots/BotNativeActionIntent.h")
+    builder = function_body(
+        mgr, "BotWorldPopulationMgr::BuildCombatResNativeActionCandidate"
+    )
+    executor = function_body(
+        mgr, "BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent"
+    )
     update_bot = function_body(mgr, "void BotWorldPopulationMgr::UpdateBot")
 
-    assert "bool TryNativePartyResurrection" in header
-    terminal_state = route.index("if (state.ValidationRouteTerminalState")
-    native_call = route.index("TryNativePartyResurrection(state, bot")
-    readiness_call = route.index("TryValidationRouteReadiness(state, bot")
-    assert native_call < terminal_state < readiness_call
-    for gate in [
-        "!healer->IsAlive()",
-        "healer->IsInCombat()",
-        "member->GetVictim() || !member->getAttackers().empty()",
-        "!healer->IsInSameGroupWith(member)",
-        "member->GetMap() != healer->GetMap()",
-        "member->GetInstanceId() != healer->GetInstanceId()",
-        "member->IsResurrectRequested() && !requestedByHealer",
-        "memberState->NativeResurrectionPendingUntilMs > nowMs && !pendingByHealer",
-    ]:
-        assert gate in native
-    for effect in [
-        "SPELL_EFFECT_RESURRECT",
-        "SPELL_EFFECT_RESURRECT_NEW",
-        "SPELL_EFFECT_RESURRECT_WITH_AURA",
-    ]:
-        assert effect in native
-    assert "healer->HasSpell(spellId)" in native
-    assert "healer->IsWithinLOSInMap(deadMember)" in native
-    assert "healer->IsWithinDistInMap(deadMember, resurrectionRange)" in native
-    assert "healer->CastSpell(deadMember, candidate.SpellId, false)" in native
-    assert "deadMember->GetSession()" in native
-    assert "member->GetSession()->IsBotSession()" in native
-    assert "candidate.Guid == member->GetGUID()" in native
-    assert "deadMemberPriority" in native
-    assert "requestedByHealer ? 100" in native
-    assert "memberState->NativeResurrectionPendingUntilMs > nowMs" in native
-    assert "deadMember->IsResurrectRequestedBy(healer->GetGUID())" in native
-    assert "HandleResurrectResponseOpcode(response)" in native
-    assert "HandleMoveTeleportAck(ack)" in native
-    assert '"native_resurrection_completed"' in native
-    assert "NativeResurrectionPendingUntilMs" in native
-    assert "NativeResurrectionCasterGuid" in native
-    assert "NativeResurrectionSpellId" in native
-    assert "healer->FindCurrentSpellBySpellId(spellId)" in native
-    assert 'result.Action = "validation_route_native_resurrection_casting"' in native
-    assert "SPELL_ATTR8_ENFORCE_IN_COMBAT_RESSURECTION_LIMIT" in native
-    assert "state.NativeResurrectionPendingUntilMs > NowMs()" in update_bot
-    assert_ordered(update_bot, "state.NativeResurrectionPendingUntilMs > NowMs()", "RecoverDeadBot(state, bot)")
-    assert "std::sort(resurrectionCandidates.begin(), resurrectionCandidates.end()" in native
-    assert "return !left.CombatResurrection;" in native
-    assert "for (ResurrectionCandidate const& candidate : resurrectionCandidates)" in native
-    assert '"spell_cast_result_" + std::to_string(uint32(castResult))' in native
-    assert "healer->GetSpellMaxRangeForTarget(deadMember, spellInfo)" in native
-    assert "NativeResurrectionRejectedTargetGuid" in header
-    assert "NativeResurrectionRejectedSpellId" in header
-    assert "NativeResurrectionRejectedCastResult" in header
-    assert "NativeResurrectionRetryAfterMs" in header
-    assert "NativeResurrectionConsecutiveFailures" in header
-    assert "rejectedCandidate" in native
-    assert "CancelRemovableShapeshifts(healer)" in native
-    assert 'result.Action = "cancel_shapeshift_for_native_resurrection"' in native
-    assert '"native_candidates_backed_off"' in native
-    assert "state.NativeResurrectionConsecutiveFailures >= 2 ? 60000 : 5000" in native
-    assert 'result.Action = "validation_route_native_resurrection_failed"' not in native
-    assert "ResurrectUsingRequestData" not in native
-    assert "ResurrectPlayer" not in native
-    assert "NearTeleportTo" not in native
-    assert "TeleportTo(" not in native
+    assert "BuildCombatResNativeActionCandidate" in header
+    for intent in ("CombatResApproach", "CombatResCast", "CombatResAccept"):
+        assert f"struct {intent}" in native_intents
+        assert f"BotNativeAction::{intent}" in executor
+    approach_resources = native_intents.split(
+        "if constexpr (std::is_same_v<T, CombatResApproach>)", 1
+    )[1].split("if constexpr", 1)[0]
+    assert "return Uses(Resource::Movement);" in approach_resources
+    for forbidden_resource in (
+        "Resource::GlobalCooldown",
+        "Resource::Cast",
+        "Resource::Target",
+    ):
+        assert forbidden_resource not in approach_resources
+    assert native_intents.count("Resource::Movement, Resource::GlobalCooldown") >= 1
+    assert "Resource::Interaction, Resource::Target" in native_intents
+
+    assert "CurrentCombatResOwnerUsable" in builder
+    assert 'candidate.Id.Strategy = "typed_combat_res"' in builder
+    assert 'candidate.ActionPriority = BotActionArbitration::Priority::Mechanic' in builder
+    assert "candidate.ExpiresAtMs = targetState->NativeBattleResDecisionUntilMs" in builder
+    assert "BuildCombatResNativeActionCandidate(state, bot" in update_bot
+    assert "candidate.RequiredResources = combatRes->Resources()" in update_bot
+    assert "state.DecisionKernel.Submit(std::move(candidate))" in update_bot
+
+    for native_boundary in (
+        "MoveBotToPoint(state, bot",
+        "bot->CastSpell(target",
+        "HandleResurrectResponseOpcode(response)",
+        "HandleMoveTeleportAck(ack)",
+    ):
+        assert native_boundary in executor
+    assert "NativeResurrectionPendingUntilMs" in executor
+    assert '"reserved_cast_submitted"' in executor
+    assert '"typed_approach_intent_submitted"' in executor
+    assert '"typed_combat_res_waiting_for_active_cast"' in executor
+    assert '"typed_combat_res_cast_resources_pending"' in executor
+    assert '"typed_native_cast_submitted"' in executor
+    assert '"typed_native_resurrection_completed"' in executor
+    assert "CurrentCombatResOwnerUsable" in executor
+
+    assert "TryNativePartyResurrection" not in mgr
+    for forbidden in ("ResurrectPlayer", "NearTeleportTo", "TeleportTo("):
+        assert forbidden not in builder
 
 
 def test_certified_recovery_waits_for_group_combat_and_rebuffs_after_stability():
@@ -2957,9 +3125,14 @@ def test_certified_recovery_waits_for_group_combat_and_rebuffs_after_stability()
     readiness = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteReadiness")
 
     assert "uint64 GroupReadinessStableSinceMs = 0;" in header
-    assert "certifiedGroupCombatActive" in update_bot
-    assert "instance->IsEncounterInProgress()" in update_bot
-    assert_ordered(update_bot, "if (certifiedGroupCombatActive)", "RecoverDeadBot(state, bot)")
+    assert 'state.NativeBattleResDecision == "reserved_cast_submitted"' in update_bot
+    assert 'state.NativeBattleResDecision == "reserved_approach"' in update_bot
+    assert "acceptedCombatResIntentCurrent" in update_bot
+    assert "NativeBattleResApproachIntentAcceptedUntilMs" in update_bot
+    assert '"declined_typed_intent_not_current"' in update_bot
+    assert "nativeDeathDecisionWindowComplete = state.DeadTimer >= 1500" in update_bot
+    assert_ordered(update_bot, "if (battleResReserved)", "RecoverDeadBot(state, bot)")
+    assert "certifiedGroupCombatActive" not in update_bot
     assert "member->IsInCombat()" in readiness
     assert "member->GetVictim()" in readiness
     assert "!member->getAttackers().empty()" in readiness
@@ -3093,20 +3266,20 @@ def test_policy_model_shadow_assist_uses_registered_artifact_and_safe_gate():
         assert symbol in mgr_header
 
     assert "accepted, artifact_path, model_type" in validate
-    assert "LoadPolicyModelArtifact(_policyModelConfig.ArtifactPath)" in validate
-    assert "_policyModelConfig.Mode == \"shadow\"" in validate
-    assert "_policyModelConfig.Mode == \"control\"" in validate
+    assert "LoadPolicyModelArtifact(Cohort().PolicyModelConfig.ArtifactPath)" in validate
+    assert "Cohort().PolicyModelConfig.Mode == \"shadow\"" in validate
+    assert "Cohort().PolicyModelConfig.Mode == \"control\"" in validate
     assert "control_mode_disabled" in validate
-    assert "_policyModelConfig.AssistAllowed = true;" in validate
+    assert "Cohort().PolicyModelConfig.AssistAllowed = true;" in validate
     assert "artifact_load_failed" in validate
 
     assert "ReadSmallTextFile(artifactPath)" in load_artifact
     assert "ExtractJsonObjectField(json, \"means\")" in load_artifact
     assert "ExtractJsonObjectField(json, \"weights\")" in load_artifact
-    assert "_policyModelConfig.ArtifactLoaded = true;" in load_artifact
+    assert "Cohort().PolicyModelConfig.ArtifactLoaded = true;" in load_artifact
 
     assert "MaxDecisionLatencyMs" in apply_scores
-    assert "latencyMs > _policyModelConfig.MaxDecisionLatencyMs" in apply_scores
+    assert "latencyMs > Cohort().PolicyModelConfig.MaxDecisionLatencyMs" in apply_scores
     assert "PredictPolicyModelLabel(\"expected_reward\", features)" in score
     assert "PredictPolicyModelLabel(\"death_risk\", features)" in score
     assert "artifact_loaded" in trace
@@ -3183,7 +3356,7 @@ def test_profile_combat_resolver_prioritizes_density_actions_then_uses_rotation_
     )
     executor = function_body(
         mgr,
-        "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly)",
+        "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target",
     )
 
     assert "candidate.Category == BotCombatActionCategory::Aoe" in resolver
@@ -3197,8 +3370,11 @@ def test_profile_combat_resolver_prioritizes_density_actions_then_uses_rotation_
     assert "auto engagedWithBotParty = [bot](Unit* unit) -> bool" in resolver
     assert "player->GetGroup() == bot->GetGroup()" in resolver
     assert "&& engagedWithBotParty(unit)" in resolver
-    assert "best = bestDensityArea ? bestDensityArea : (bestDensityGenerator ? bestDensityGenerator : bestDensityFallback);" in resolver
-    assert "ResolveProfileCombatAction(bot, target, hostileCount, densityOnly)" in executor
+    assert "best = bestDensityRecovery" in resolver
+    assert "bestDensityResourceFallback" in resolver
+    assert "bestDensityFallback ? bestDensityFallback : bestDensityGenerator" in resolver
+    assert "ResolvedCombatAction action = ResolveProfileCombatAction(" in executor
+    assert "bot, target, hostileCount, densityOnly" in executor
 
 
 def test_hostile_profile_execution_rejects_buffs_and_defers_moving_cast_time_spells():
@@ -3650,7 +3826,7 @@ def test_rerun174_large_passive_swarm_stages_party_before_native_activation():
         '"stage_for_large_passive_swarm_activation"',
         'role == "tank" && largePassiveSwarm',
         '"hold_large_passive_swarm_for_party_staging"',
-        'activationAction.DebugName = "activate_passive_swarm"',
+        "BotMeleeAutoAttack::Kind::StartOrSwitch",
         '"tank_activate_passive_swarm"',
     )
 
@@ -3677,7 +3853,7 @@ def test_rerun176_remote_party_uses_tank_visible_passive_swarm_gate():
         "stagingReference",
         '"stage_for_large_passive_swarm_activation"',
         'role == "tank" && pendingSwarmActivation',
-        'activationAction.DebugName = "activate_passive_swarm"',
+        "BotMeleeAutoAttack::Kind::StartOrSwitch",
     )
 
 
@@ -3760,7 +3936,7 @@ def test_rerun178_tank_proof_drives_remote_passive_swarm_staging():
         "MoveFollow(",
         '"stage_for_large_passive_swarm_activation"',
         'role == "tank" && pendingSwarmActivation',
-        'activationAction.DebugName = "activate_passive_swarm"',
+        "BotMeleeAutoAttack::Kind::StartOrSwitch",
     )
     reset = function_body(
         manager,
@@ -4064,7 +4240,7 @@ def test_rerun182_shared_passive_swarm_proof_keeps_native_tank_follow():
     assert "MoveBotToPoint" not in staging
     assert "largePassiveSwarmPartyStaged" in branch
     assert 'role == "tank" && pendingSwarmActivation' in branch
-    assert 'activationAction.DebugName = "activate_passive_swarm"' in branch
+    assert "BotMeleeAutoAttack::Kind::StartOrSwitch" in branch
 
 
 def test_rerun196_shared_passive_swarm_proof_resolves_remote_staging_tank():
@@ -4093,7 +4269,7 @@ def test_rerun196_shared_passive_swarm_proof_resolves_remote_staging_tank():
         "&& sharedLargePassiveSwarmStaging",
         'if (largePassiveSwarm && role != "tank"',
         "MoveFollow(",
-        'activationAction.DebugName = "activate_passive_swarm"',
+        "BotMeleeAutoAttack::Kind::StartOrSwitch",
     )
     assert "member->GetExactDist2d(densityTank) <= 18.0f" in branch
     assert "SetVictim" not in branch
@@ -4148,7 +4324,7 @@ def test_rerun184_feral_prepares_form_before_native_swarm_activation():
         '"feral_prepare_bear_form_before_passive_swarm_activation"',
         '"feral_hold_bear_form_gcd_before_passive_swarm_activation"',
         'if (role == "tank" && largePassiveSwarm',
-        'activationAction.DebugName = "activate_passive_swarm"',
+        "BotMeleeAutoAttack::Kind::StartOrSwitch",
     )
     assert "state.DecisionTimer, 250" in branch
     assert "SetVictim" not in branch
@@ -4653,6 +4829,100 @@ def test_profile_los_failure_is_recorded_before_existing_range_recovery():
     )
 
 
+def test_profile_combat_reconciles_native_position_feedback_before_retrying():
+    manager = read(BOT_MGR)
+    executor = read(ROOT / "src/server/game/Bots/BotActionExecutor.cpp")
+    execute_combat = function_body(
+        executor, "BotActionResult BotActionExecutor::ExecuteCombat"
+    )
+    execute_profile = function_body(
+        manager,
+        "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state",
+    )
+    boss = function_body(
+        manager,
+        "BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMechanics",
+    )
+
+    auto_attack = execute_combat.split('if (action.Type == "auto_attack")', 1)[1].split(
+        'if (!action.SpellId)', 1
+    )[0]
+    submit_auto_attack = function_body(
+        executor, "BotActionResult BotActionExecutor::SubmitMeleeAutoAttack"
+    )
+    move_to_range = function_body(
+        manager, "bool BotWorldPopulationMgr::MoveBotToProfileRange"
+    )
+    assert "SubmitMeleeAutoAttack(bot, target)" in auto_attack
+    assert "IsWithinLOSInMap(target)" in submit_auto_attack
+    assert "IsWithinMeleeRange(target)" in submit_auto_attack
+    assert_ordered(
+        submit_auto_attack,
+        "IsWithinLOSInMap(target)",
+        "IsWithinMeleeRange(target)",
+        "bot->Attack(target, true)",
+        "if (!inLineOfSight)",
+        "if (!inMeleeRange)",
+    )
+    assert "bot->GetVictim() == target" in submit_auto_attack
+    assert "if (!attackBound)" in submit_auto_attack
+    assert "return BotActionResult::NoLineOfSight" in submit_auto_attack
+    assert "return BotActionResult::OutOfRange" in submit_auto_attack
+    assert 'action->AutoAttackMode == "melee"' in move_to_range
+    assert "SubmitMeleeAutoAttackIntent(state," in move_to_range
+    assert "BotMeleeAutoAttack::Kind::StartOrSwitch" in move_to_range
+    assert '"profile_move_to_melee_range"' in move_to_range
+    assert "AttackStop" not in move_to_range
+
+    assert "result == BotActionResult::OutOfRange" in execute_profile
+    assert "result == BotActionResult::NoLineOfSight" in execute_profile
+    assert "MoveBotToProfileRange(*state, bot, target, &action" in execute_profile
+    assert '"native_position_reconciled"' in execute_profile
+    assert '"position_reconcile"' in execute_profile
+    assert '"native_out_of_range"' in execute_profile
+    assert_ordered(
+        execute_profile,
+        "executor.ExecuteCombat(bot, bot, action)",
+        "result == BotActionResult::OutOfRange",
+        "MoveBotToProfileRange(*state, bot, target, &action",
+        '"native_position_reconciled"',
+    )
+
+    assert 'result.Action = "move_to_boss_action_range"' in boss
+    assert "nativeCombatObserved" in boss
+    assert "if (!state.WasInCombat && nativeCombatObserved)" in boss
+    assert "state.WasInCombat = nativeCombatObserved;" in boss
+
+    assert 'Outcome::Started(\n                    "route_movement_submitted")' in manager
+    assert '"route_native_combat_observed"' in manager
+    assert '"route_combat_submitted"' in manager
+
+
+def test_combat_keeps_high_priority_movement_and_selects_instant_dps():
+    manager = read(BOT_MGR)
+    resolver = function_body(
+        manager, "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction"
+    )
+    execute_profile = function_body(
+        manager,
+        "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state",
+    )
+
+    assert "movementCompatibleOnly" in resolver
+    assert "candidateSpellInfo->CalcCastTime(bot->getLevel()) > 0" in resolver
+    assert "candidateSpellInfo->IsChanneled()" in resolver
+    assert 'candidate.RejectReason = "movement_requires_instant_action";' in resolver
+    assert "state->MovementLease.ExpiresAtMs > nowMs" in execute_profile
+    assert "BotMovementArbitration::Priority::Combat" in execute_profile
+    assert_ordered(
+        execute_profile,
+        "bool const movementCompatibleOnly",
+        "ResolveProfileCombatAction(",
+        "hostileTargetOnly, movementCompatibleOnly",
+    )
+    assert 'Outcome::Selected("profile_action_valid")' in execute_profile
+
+
 def test_native_self_resurrection_uses_only_the_player_spell_cast_path():
     mgr = read(BOT_MGR)
     update = function_body(mgr, "void BotWorldPopulationMgr::UpdateBot")
@@ -4677,18 +4947,18 @@ def test_validation_route_high_density_adds_pull_the_tank_into_the_swarm_and_fai
 
     assert "addX += creature->GetPositionX();" in adds
     assert "addY += creature->GetPositionY();" in adds
-    assert 'observedBossEngagement = _config.ValidationRouteKind == "boss"' in adds
-    assert "!_validationRouteBossProgressTargetGuid.IsEmpty()" in adds
-    assert "ObjectAccessor::GetUnit(*bot, _validationRouteBossProgressTargetGuid)" in adds
+    assert 'observedBossEngagement = Cohort().Config.ValidationRouteKind == "boss"' in adds
+    assert "!Party().ValidationRouteBossProgressTargetGuid.IsEmpty()" in adds
+    assert "ObjectAccessor::GetUnit(*bot, Party().ValidationRouteBossProgressTargetGuid)" in adds
     assert "bool routeBossUnavailable = !routeBoss" in adds
-    assert "_validationRouteBossAddDensityGeneration = _validationRouteGeneration;" in adds
-    assert "_validationRouteBossAddDensityGeneration != _validationRouteGeneration || !cohortSwarmActive" in adds
-    assert "_validationRouteBossAddDensityPhase && routeBossAttackable" in adds
+    assert "Party().ValidationRouteBossAddDensityGeneration = Party().ValidationRouteGeneration;" in adds
+    assert "Party().ValidationRouteBossAddDensityGeneration != Party().ValidationRouteGeneration" in adds
+    assert "Party().ValidationRouteBossAddDensityPhase && routeBossAttackable" in adds
     assert "ResetValidationRouteBossAddDensityState();" in reset
-    assert "_validationRouteBossAddDensityPhase = false;" in density_reset
-    assert "_validationRouteBossAddDensityGeneration = 0;" in density_reset
+    assert "Party().ValidationRouteBossAddDensityPhase = false;" in density_reset
+    assert "Party().ValidationRouteBossAddDensityGeneration = 0;" in density_reset
     killed_focus = objective[objective.index("auto clearValidationRouteKilledFocus"):start]
-    assert "if (_validationRouteBossProgressTargetGuid == killedGuid)" in killed_focus
+    assert "if (Party().ValidationRouteBossProgressTargetGuid == killedGuid)" in killed_focus
     assert "ResetValidationRouteBossAddDensityState();" in killed_focus
     assert '\\"boss_add_density_phase\\"' in mgr
     assert '\\"boss_add_density_generation\\"' in mgr
@@ -4703,13 +4973,13 @@ def test_validation_route_high_density_adds_pull_the_tank_into_the_swarm_and_fai
     assert "densityTankOwnedAddCount * 10 >= addCount * 8" in adds
     assert "bool urgentSwarmDamageRelease = cohortSwarmActive && addCount >= 24" in adds
     assert "bool dpsSwarmDamageRelease = densityTankOwnsSecureMajority || urgentSwarmDamageRelease;" in adds
-    assert "!dpsSwarmDamageRelease && !bot->getAttackers().empty()" in adds
+    assert "!dpsSwarmDamageRelease && observedListedAttackerCount(bot)" in adds
     assert '"tank_swarm_defensive"' in adds
     assert "std::array<uint32, 3>{ 86150, 31850, 498 }" in adds
     assert 'RecordEvent(state, bot, "boss_add_density", add, "no_legal_density_action"' in adds
     assert_ordered(
         adds,
-        "bool densitySingleTargetFallback = densityAreaPhase && !profileAction.Valid;",
+        "bool densitySingleTargetFallback = densityAreaPhase && !profileAction.Valid",
         "profileAction = ResolveProfileCombatAction(bot, add);",
         '"single_target_fallback_selected"',
         '"focused_attack_boss_add_density"',
@@ -4804,8 +5074,8 @@ def test_density_tank_centroid_control_prioritizes_loose_healer_targets():
     assert 'action = moved ? "tank_move_to_add_centroid" : "hold_tank_add_centroid";' in adds
     assert '"dps_stack_for_add_pickup"' in adds
     assert "densityDefenseTarget == bot && densityTank" not in adds
-    assert 'role == "dps" && densityTank && !dpsSwarmDamageRelease && !bot->getAttackers().empty()' in adds
-    assert 'if (memberRole == "tank" || member->getAttackers().empty())' in adds
+    assert 'role == "dps" && densityTank && !dpsSwarmDamageRelease && observedListedAttackerCount(bot)' in adds
+    assert 'if (memberRole == "tank" || !attackerCount)' in adds
     assert "nearestAttacker->GetAngle(densityTank) - densityTank->GetOrientation()" in adds
     assert "densityTank->GetFirstCollisionPosition(4.0f" in adds
     assert "bool swarmDefenseActive = highDensityPhase || cohortSwarmActive\n            || sharedLargePassiveSwarmStaging;" in adds
@@ -4816,13 +5086,13 @@ def test_density_tank_centroid_control_prioritizes_loose_healer_targets():
     assert "uint32 densityTankSecureAddCount = 0;" in adds
     assert "densityTankSecureAddCount * 10 >= addCount * 9" in adds
     assert "tankThreat >= 2000.0f && tankThreat >= highestPartyThreat * 2.5f" in adds
-    assert '"ice_block_swarm_pickup_emergency"' in adds
+    assert '"swarm_pickup_emergency_defensive"' in adds
     assert 'bool tankSwarmAreaPhase = role == "tank" && cohortSwarmActive;' in adds
     assert 'bool secureSwarmAreaPhase = role == "dps" && cohortSwarmActive' in adds
     assert "dpsSwarmDamageRelease || hunterMisdirectionActive" in adds
     assert "bool densityAreaPhase = highDensityPhase || tankSwarmAreaPhase || secureSwarmAreaPhase;" in adds
     assert "bot->GetExactDist2d(densityTank) <= 8.0f" in adds
-    assert "(!bot->getAttackers().empty() && !botInsideTankPickup)" in adds
+    assert "(observedListedAttackerCount(bot) && !botInsideTankPickup)" in adds
     assert "bot->GetExactDist2d(densityTank) > 8.0f" not in adds
     assert '"consecration_party_pickup"' in adds
     assert "if (highDensityPhase && role == \"healer\" && tryRouteGroupHeal(bot, add))" in adds
@@ -4836,14 +5106,14 @@ def test_shared_density_latch_uses_cohort_observation_before_swarm_end_clear():
     adds = objective[start:end]
 
     assert "GuidSet cohortAddGuids;" in adds
-    assert "if (_validationRouteBossAddDensityPhase && addCount < 3)" in adds
-    assert "for (WorldBotState const& cohortState : _bots)" in adds
+    assert "if (Party().ValidationRouteBossAddDensityPhase && addCount < 3)" in adds
+    assert "for (WorldBotState const& cohortState : Party().Bots)" in adds
     assert "Player* observer = GetLoadedBot(cohortState);" in adds
     assert "cohortAddGuids.insert(creature->GetGUID());" in adds
     assert "bool cohortSwarmActive = cohortAddGuids.size() >= 3;" in adds
     assert "|| !cohortSwarmActive" in adds
     assert "|| addCount < 3" not in adds
-    assert_ordered(adds, "if (_validationRouteBossAddDensityPhase && addCount < 3)", "bool cohortSwarmActive", "|| !cohortSwarmActive")
+    assert_ordered(adds, "if (Party().ValidationRouteBossAddDensityPhase && addCount < 3)", "bool cohortSwarmActive", "|| !cohortSwarmActive")
 
 
 def test_density_action_taxonomy_and_stonecore_roster_profile_paths_are_explicit():
@@ -4879,7 +5149,8 @@ def test_healer_lifecycle_telemetry_is_cast_scoped_and_uses_actual_heal_info():
                   "affected_ally_count", "attackers_before", "attackers_after",
                   "threat_before", "threat_after", "candidate_mask", "chosen_action"):
         assert field in manager
-    assert "NotifyBotHeal(healer, victim, healInfo.GetSpellInfo()->Id, addhealth + healInfo.GetAbsorb()" in unit
+    assert "NotifyBotHeal(healer, victim, healInfo.GetSpellInfo()->Id," in unit
+    assert "addhealth + healInfo.GetAbsorb(), effectiveHeal, healInfo.GetAbsorb())" in unit
     assert "NotifyBotSpellFinished(playerCaster, m_spellInfo->Id, ok)" in spell
     assert "NotifyBotSpellStarted(bot, lifecycleTarget, attempt.Spell->SpellId, candidateMaskJson, chosenActionJson)" in controller
     assert "CancelBotSpellStart(pendingCastId, bot, ToString(result))" in controller
@@ -4902,7 +5173,7 @@ def test_healer_candidate_mask_is_db_driven_and_records_rejections():
     manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
 
     assert '\\"valid\\":" << (candidate.RejectReason.empty() ? "true" : "false")' in profile
-    assert 'candidate.RejectReason = "missing_party_target"' in profile
+    assert 'candidate.RejectReason = allyTarget ? "missing_ally_target" : "missing_enemy_target"' in profile
     assert "BotClassSpecActionProfileStore::Build(bot, role.c_str())" in manager
     assert "candidate.Profile.InjuredHealthPct" in manager
     assert 'candidate.RejectReason = "not_healing_action"' in manager
@@ -4927,8 +5198,8 @@ def test_rerun145_protection_pickup_and_passive_swarm_repairs_are_bounded():
     ]
 
     assert "engagedAddCount == 0 && passiveSwarmClusterAnchor" in manager
-    assert 'activationAction.Type = "auto_attack";' in manager
-    assert 'activationAction.AutoAttackMode = "melee";' in manager
+    assert "BotMeleeAutoAttack::Kind::StartOrSwitch" in manager
+    assert "ResolveAndReconcileMeleeAutoAttack(state, bot);" in manager
     assert '"tank_activate_passive_swarm"' in manager
 
 
@@ -5167,7 +5438,6 @@ def test_rerun165_density_resolver_rejects_buff_without_removing_recovery_fallba
     assert "BotCombatActionCategory::ResourceGenerator" not in branch
     assert_ordered(
         branch,
-        "if (areaOnly",
         "if (densityOnly && candidate.Category == BotCombatActionCategory::Buff)",
         "SpellInfo const* candidateSpellInfo",
     )
@@ -5367,7 +5637,10 @@ def test_rerun157_closes_control_race_and_retains_protection_threat_gates():
 
 def test_rerun158_passive_swarm_activation_uses_native_melee_reach():
     manager = read(BOT_MGR)
-    activation = manager.index('activationAction.DebugName = "activate_passive_swarm";')
+    activation = manager.index(
+        "BotMeleeAutoAttack::Kind::StartOrSwitch",
+        manager.index("bool pendingSwarmActivation"),
+    )
     branch = manager[activation - 2600 : activation + 3600]
 
     assert "!bot->IsWithinMeleeRange(passiveSwarmClusterAnchor)" in branch
@@ -5420,9 +5693,9 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
         assert field in manager
     assert 'HasInArc(float(M_PI), bot)' in manager
     movement = manager[manager.index("auto tryValidationRouteMovementCheck"):manager.index("auto tryValidationRouteAdds")]
-    assert "addHazardDefinition(_config.ValidationRouteHazardSourceEntry" in movement
-    assert "for (ValidationRouteManifestNode const& node : _validationRouteManifest)" not in movement
-    assert "hazardDefinitionFor(hazard->GetEntry(), 0)" in manager
+    assert "addHazardDefinition(Cohort().Config.ValidationRouteHazardSourceEntry" in movement
+    assert "for (ValidationRouteManifestNode const& node : Party().ValidationRouteManifest)" not in movement
+    assert "hazardDefinitionFor(creature->GetEntry(), 0)" in manager
     assert '"hazard_exit_started"' in manager
     assert '"hazard_exit_completed"' in manager
     assert '"hold_hazard_exit_failed"' in manager
@@ -5452,7 +5725,8 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert '"hand_of_reckoning_add_pickup"' in manager
     assert '"fade_threat_drop"' in manager
     assert '"fade_preemptive_add_wave_threat_drop"' in manager
-    assert 'role == "healer" && cohortSwarmActive && !densityTankOwnsSecureMajority' in manager
+    assert 'bool healerWaveFadeReady = role == "healer" && cohortSwarmActive' in manager
+    assert '&& !densityTankOwnsSecureMajority' in manager
     assert '"healer_stack_for_add_pickup"' in manager
     assert '"guardian_spirit_self_emergency"' in manager
     assert '"desperate_prayer_self_emergency"' in manager
@@ -5468,18 +5742,18 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert '"dps_stack_for_trash_pickup"' in manager
     assert "bot->GetExactDist2d(densityTank) > 8.0f" not in manager
     assert "densityTankSecureAddCount * 10 >= addCount * 9" in manager
-    assert "bool listedBossAdd = _config.ValidationRouteKind == \"boss\"" in manager
+    assert "bool listedBossAdd = Cohort().Config.ValidationRouteKind == \"boss\"" in manager
     assert 'candidate.RejectReason = "major_tank_defensive_already_active";' in manager
     assert "bot->GetExactDist2d(densityTank) <= 8.0f" in manager
-    assert "(!bot->getAttackers().empty() && !botInsideTankPickup)" in manager
+    assert "(observedListedAttackerCount(bot) && !botInsideTankPickup)" in manager
     assert "bot->GetExactDist2d(tank) > 8.0f" in manager
     assert "Unit* pickupFocus = tank->GetVictim() ? tank->GetVictim() : nearestAttacker;" in manager
     assert '"hand_of_salvation_healer_threat_drop"' in manager
     assert '"hand_of_protection_healer_emergency"' in manager
-    assert "densityHealer->getAttackers().size() >= 5" in manager
+    assert "densityHealer && observedListedAttackerCount(densityHealer) >= 3" in manager
     assert "defenseScore += 1000;" in manager
     assert "olderHealerTarget" not in manager
-    assert "nearestDefenseAttacker" in manager
+    assert "Player* densityDefenseTarget = nullptr;" in manager
     assert '"dps_hold_for_nearby_add_pickup"' in manager
     assert '"tank_auto_attack_density_fallback"' in manager
     assert "urgentHunterPetRecovery" in manager
@@ -5499,11 +5773,11 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert "MoveChase(reference, desiredRange)" not in manager
     assert 'state.LastDecisionAction == "validation_route_complete"' in manager
     assert 'state.LastDecisionSituation == "validation_route_manifest"' in manager
-    assert "bool _validationRouteObservedDeadScriptTarget = false;" in header
-    assert "_validationRouteObservedDeadScriptTarget = true;" in manager
-    assert "_validationRouteCompletedPackCount > 0 || _validationRouteObservedDeadScriptTarget" in manager
+    assert "bool ValidationRouteObservedDeadScriptTarget = false;" in header
+    assert "Party().ValidationRouteObservedDeadScriptTarget = true;" in manager
+    assert "Party().ValidationRouteCompletedPackCount > 0 || Party().ValidationRouteObservedDeadScriptTarget" in manager
     assert 'routeArrivalRadius = routeProfile.MovementDirective == "melee" ? 8.0f : 30.0f;' in manager
-    assert "_validationRoutePackObservedEngagement || _validationRouteObservedDeadScriptTarget" in manager
+    assert "Party().ValidationRoutePackObservedEngagement || Party().ValidationRouteObservedDeadScriptTarget" in manager
     assert '\\"validation_route_observed_dead_script_target\\"' in manager
     assert "float minRange = selfTarget ? 0.0f" in manager
     assert 'candidate.RejectReason = "caster_controlled"' in manager
@@ -5522,20 +5796,132 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     commands = (root / "src/server/scripts/Commands/cs_healerbot.cpp").read_text()
     unit = (root / "src/server/game/Entities/Unit/Unit.cpp").read_text()
 
-    assert "std::vector<WorldBotState> _calibrationBots" in header
-    assert "std::map<uint32, CalibrationMetrics> _calibrationMetrics" in header
-    assert "std::map<uint32, CalibrationMetrics> _calibrationBestSingleMetrics" in header
-    assert "std::map<uint32, CalibrationMetrics> _calibrationBestAoeMetrics" in header
-    assert "std::map<uint32, std::string> _lastCombatRejectsByBot" in header
+    assert "std::vector<WorldBotState> CalibrationBots" in header
+    assert "std::map<uint32, CalibrationMetrics> CalibrationMetricsByGuid" in header
+    assert "std::map<uint32, CalibrationMetrics> CalibrationBestSingleMetrics" in header
+    assert "std::map<uint32, CalibrationMetrics> CalibrationBestAoeMetrics" in header
+    assert "std::map<uint32, std::string> LastCombatRejectsByBot" in header
     assert "combat_calibration" in manager
     assert "SelectCalibrationPoolCandidateGuid" in manager
+    population = function_body(manager, "void BotWorldPopulationMgr::EnsureCalibrationPopulation")
+    assert 'Cohort().CalibrationMode == "single_target_300"' in population
+    assert "rangedSingleTargetMode" in population
+    assert "UsesRangedAoeCalibrationLane(Cohort().CalibrationTargetSpec)" in population
+    assert "demonologyAoeMode" in population
+    assert "demonologyCloseRangeMode" not in population
+    assert "IsolatedSingleTargetDummyEntry =" in manager
+    assert "BotCalibrationFixtureContractGenerated::TargetEntry" in manager
+    generated_fixture = (
+        root / "src/server/game/Bots/BotCalibrationFixtureContractGenerated.h"
+    ).read_text()
+    assert "inline constexpr uint32_t TargetEntry = 44548;" in generated_fixture
+    assert "IsolatedSingleTargetDummyX = -9060.0f" in population
+    assert "IsolatedSingleTargetDummyY = 520.0f" in population
+    assert "IsolatedSingleTargetRangedRadius = 15.0f" in population
+    assert "sTerrainMgr.LoadTerrain(0)" in population
+    assert "PhasingHandler::GetEmptyPhaseShift()" in population
+    assert "calibrationSpawnZ" in population
+    assert "calibrationSpawnZ <= INVALID_HEIGHT" in population
+    assert '"calibration_isolated_spawn_ground_unavailable"' in population
+    assert "std::array<float, 3>{ 15.0f, 14.8f, 15.2f }" in population
+    assert "std::array<float, 3>{ 2.0f, 2.5f, 3.0f }" in population
+    assert '"calibration_isolated_ranged_ground_unavailable"' in population
+    assert "heightDelta > 1.0f" in population
+    assert '"calibration_isolated_melee_ground_unavailable"' in population
+    assert "bot->IsWithinMeleeRange(" in population
+    assert "bot->IsWithinLOSInMap(fixtureTarget)" in population
+    assert "PATHFIND_NORMAL" in population
+    assert "PATHFIND_INCOMPLETE" in population
+    assert '"calibration_isolated_melee_fixture_unreachable"' in population
+    for geometry_field in (
+        "CalibrationFixtureBotSpawnX",
+        "CalibrationFixtureBotSpawnY",
+        "CalibrationFixtureBotSpawnZ",
+        "CalibrationFixtureBotTargetDistance",
+        "CalibrationFixtureNativeLineOfSight",
+        "CalibrationFixtureNativePathReachable",
+        "CalibrationFixtureNativeMeleeReachable",
+        "CalibrationFixtureGeometryValidated",
+        "CalibrationFixtureProfileLane",
+    ):
+        assert geometry_field in header
+        assert geometry_field in population or geometry_field in manager
+    assert "std::vector<CalibrationSpawnCandidate> calibrationSpawnCandidates" in population
+    assert "std::stable_sort(calibrationSpawnCandidates.begin()" in population
+    assert "maximumPopulationAttempts" in population
+    assert "&calibrationSpawnCandidates[attempts - 1]" in population
+    assert "std::to_string(candidateGuid), 0, x, y, z" in population
+    assert "retryAlternateSpawn" in population
+    assert "MinimumIsolatedDummyClearance = 45.0f" in population
+    assert "map->SummonCreature(IsolatedSingleTargetDummyEntry" in population
+    assert "fixtureArgs.SetSummonDuration(" in population
+    assert "fixtureArgs.SummonHealth = IsolatedSingleTargetMaxHealth" in population
+    assert "20 * 60 * IN_MILLISECONDS" in population
+    assert "bot->IsValidAttackTarget(other)" in population
+    assert "CalibrationFixtureTargetNearestHostileClearance" in population
+    assert "CalibrationFailureReason" in header
+    assert "calibration_isolated_target_provisioning_failed" in population
+    assert "BotWorld calibration isolated target rejected" in population
+    for rejection in (
+        "calibration_isolated_target_summon_failed",
+        "calibration_isolated_target_not_attackable",
+        "calibration_isolated_target_hostile_clearance_failed",
+        "calibration_isolated_target_line_of_sight_failed",
+        "calibration_isolated_target_distance_failed",
+        "calibration_isolated_target_path_failed",
+    ):
+        assert rejection in population
+    assert "Cohort().CalibrationWindowComplete = true" in population
+    stop = manager.split(
+        "std::string BotWorldPopulationMgr::StopCombatCalibration()", 1
+    )[1].split("std::string BotWorldPopulationMgr::GetCombatCalibrationJson()", 1)[0]
+    assert "sMapMgr->FindMap(" in stop
+    assert "CalibrationFixtureTargetMapId, 0" in stop
+    assert "fixture_cleanup_submitted_or_absent" in stop
+    assert "for (WorldBotState const& state : Party().CalibrationBots)" not in stop.split(
+        "bool fixtureTargetFound", 1
+    )[1].split("uint32 removed", 1)[0]
+    classifier = function_body(manager, "bool UsesRangedAoeCalibrationLane")
+    for ranged_spec in (
+        "balance_druid",
+        "beast_mastery_hunter",
+        "marksmanship_hunter",
+        "survival_hunter",
+        "shadow_priest",
+        "elemental_shaman",
+        "arcane_mage",
+        "fire_mage",
+        "frost_mage",
+        "affliction_warlock",
+        "demonology_warlock",
+        "destruction_warlock",
+    ):
+        assert f'"{ranged_spec}"' in classifier
+    assert "shadowPriestSingleTargetMode" not in population
     update = function_body(manager, "void BotWorldPopulationMgr::UpdateCalibrationBot")
-    assert "ResolveProfileCombatAction(bot, target, hostileCount, _calibrationAoePhase)" in update
-    assert "ExecuteProfileCombatAction(&state, bot, target, &action, hostileCount, _calibrationAoePhase)" in update
-    assert "std::max<uint32>(3, uint32(dummies.size()))" in update
+    assert 'Cohort().CalibrationMode == "single_target_300"' in update
+    assert "CalibrationFixtureTargetGuid" in update
+    assert "dummies.push_back(fixtureTarget)" in update
+    assert "calibration_isolated_target_lost" in update
+    assert "CompleteCalibrationScoredWindow()" in update
+    assert "metrics.TargetCount = std::max(metrics.TargetCount, hostileCount)" not in update
+    assert "uint32 hostileCount = Cohort().CalibrationAoePhase ? uint32(dummies.size()) : 1;" in update
+    assert 'bool const strictSingleTarget = Cohort().CalibrationMode == "single_target_300";' in update
+    assert "false, strictSingleTarget, !strictSingleTarget" in update
+
+    resolver = function_body(
+        manager, "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction"
+    )
+    assert "exactSingleTargetCalibration && candidate.SpellId == 42650" in resolver
+    assert 'candidate.RejectReason = "reference_prepull_action_excluded"' in resolver
+
+    notify_damage = function_body(manager, "void BotWorldPopulationMgr::NotifyCombatDamage")
+    assert "calibration->second.LastDamageMsByTarget.size()" in notify_damage
+    assert "calibration->second.OffTargetDamage += measuredDamage" in notify_damage
+    assert "calibration->second.PrimaryTargetDamage += measuredDamage" in notify_damage
 
     damage = function_body(manager, "void BotWorldPopulationMgr::NotifyCombatDamage")
-    assert damage.index("_calibrationMetrics.find") < damage.index("FindCombatLogCohortPlayer(attacker)")
+    assert damage.index("CalibrationMetricsByGuid.find") < damage.index("FindCombatLogCohortPlayer(attacker)")
     assert "uint32 measuredDamage = damage ? damage : unmitigatedDamage" in damage
     assert "calibration->second.SpellDamage[spellId] += measuredDamage" in damage
     assert "damageBeforeScriptAdjustment" in unit
@@ -5544,19 +5930,25 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "external_bis_target_configured" in manager
     assert "EnsureCalibrationCohortGroup();" in manager
     assert "stonecore_party_owned_buffs" in manager
-    assert "full_raid_reference_auras" in manager
+    assert "phase8_external_windows_observation_v1" in manager
+    assert "temporal_external_auras_absent" in manager
     assert "ApplyCalibrationReferenceConditions(bot, target)" in update
     reference_conditions = function_body(manager, "std::pair<bool, bool> BotWorldPopulationMgr::ApplyCalibrationReferenceConditions")
-    for spell_id in ["79102", "53646", "17007", "2895", "8515", "8076", "82930", "79470", "79471", "79472", "2825", "1490", "22959", "81326", "58567"]:
+    for spell_id in ["79102", "53646", "79058", "24932", "2895", "8515", "8076", "82930", "57669", "79470", "79471", "79472", "1490", "22959", "81326", "58567"]:
         assert spell_id in reference_conditions
+    assert "2825" not in reference_conditions
     assert "bot->getClass() != CLASS_PALADIN" in reference_conditions
     assert "reference debuffs on that primary target" in reference_conditions
     assert "sunder->SetStackAmount(3)" in reference_conditions
-    assert "target->HasAura(spellId)" in reference_conditions
+    assert "target->GetAura(spellId, bot->GetGUID())" in reference_conditions
+    assert "phase8_reference_condition_observation_v1" in manager
+    assert "ObserveCalibrationReferenceConditions" in manager
+    assert "ReferenceTargetAuraOwnerMismatchSamples" in manager
+    assert "UnexpectedExternalBleedActiveSamples" in manager
     assert "ReferenceTargetDebuffsReady" in manager
     assert "ReferenceHeroismWindowObserved" in manager
     assert '\\"reference_setup\\"' in manager
-    assert "calibrationGroup->Disband();" in manager
+    assert "EnsureCalibrationCohortGroup();" in manager
     assert "group->AddMember(bot)" in manager
     assert '\\"grouped\\"' in manager
     reference = json.loads((root / "dataset/combat_calibration/wowsims_cata_p4.json").read_text())
@@ -5564,8 +5956,8 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert {profile["spec"] for profile in reference["profiles"]} == {
         "fire_mage", "survival_hunter", "enhancement_shaman"
     }
-    assert "dummy->RemoveOwnedAuras([casterGuid](Aura const* aura)" in manager
-    assert "metrics.WindowEndedMs = windowEndedMs;" in manager
+    assert "dummy->RemoveOwnedAuras([&ownedCasterGuids](Aura const* aura)" in manager
+    assert "metrics.WindowEndedMs = endedMs;" in manager
     assert "last_action_rejections" in manager
     assert "last_chosen_action" in manager
     assert "Unit* target = dummies.front();" in update

@@ -47,7 +47,7 @@ def _window(mode: str) -> dict[str, Any]:
 
 
 def _damage_metrics(target_count: int) -> dict[str, Any]:
-    return {
+    metrics = {
         "reference_value": 10_000,
         "measured_value": 8_200,
         "active_dps": 8_400,
@@ -63,6 +63,38 @@ def _damage_metrics(target_count: int) -> dict[str, Any]:
         "pet_damage_ratio": 0.0,
         "illegal_action_count": 0,
     }
+    if target_count == 1:
+        metrics.update(
+            {
+                "scored_damage": 2_460_000,
+                "primary_target_guid": 9001,
+                "primary_target_damage": 2_460_000,
+                "off_target_damage": 0,
+                "observed_distinct_damage_targets": 1,
+                "isolated_fixture_target": {
+                    "isolated_single_target": True,
+                    "entry": 44548,
+                    "runtime_guid": 9001,
+                    "map_id": 0,
+                    "x": -9060.0,
+                    "y": 520.0,
+                    "z": 68.3695,
+                    "nearest_other_hostile_clearance": 46.7,
+                    "provisioned_at_ms": 500,
+                    "provisioned_before_scoring": True,
+                    "profile_lane": "ranged",
+                    "bot_spawn_x": -9045.0,
+                    "bot_spawn_y": 520.0,
+                    "bot_spawn_z": 68.0,
+                    "bot_target_distance": 15.0,
+                    "native_line_of_sight": True,
+                    "native_path_reachable": True,
+                    "native_melee_reachable": False,
+                    "geometry_validated": True,
+                },
+            }
+        )
+    return metrics
 
 
 def _tank_metrics() -> dict[str, Any]:
@@ -120,6 +152,7 @@ def baseline_records(policy: dict[str, Any]) -> dict[str, dict[str, Any]]:
         "single_target_300": {
             "schema": "all_spec_role_calibration_record_v1",
             "mode": "single_target_300",
+            "target_spec": "fire_mage",
             "role": "dps",
             "identity": _identity("single_target_300"),
             "window": _window("single_target_300"),

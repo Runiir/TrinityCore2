@@ -44,6 +44,9 @@ __pycache__/
 !/dataset/bot_runtime_profiles/
 /dataset/bot_runtime_profiles/*
 !/dataset/bot_runtime_profiles/profiles.json
+!/dataset/validation_run_plan/
+!/dataset/validation_run_plan/manifest.json
+!/dataset/validation_run_plan/run_validation_scenarios.sh
 !/dataset/bot_ml/
 /dataset/bot_ml/*
 !/dataset/bot_ml/raw.dvc

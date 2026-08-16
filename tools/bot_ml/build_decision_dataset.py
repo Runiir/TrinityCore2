@@ -40,6 +40,23 @@ DEFAULT_LOOP_REPEAT_THRESHOLD = 3
 RUN_TERMINAL_EVENT_BOT_GUID = -1
 ROUTE_TERMINAL_EVENTS = {"validation_route_manifest_complete"}
 ROUTE_TERMINAL_ACTIONS = {"validation_route_complete"}
+CERTIFYING_RUNTIME_MODES = {"always_on_autonomy", "manual_experiment"}
+
+
+def player_like_training_run_ids(runs: list[dict[str, Any]]) -> set[int]:
+    """Select only ordinary, non-fixture runs for the training flywheel."""
+    accepted: set[int] = set()
+    for run in runs:
+        run_id = int(run.get("id") or 0)
+        config = load_json(run.get("config_json"), {})
+        if not run_id or not isinstance(config, dict):
+            continue
+        if str(config.get("runtime_mode") or "") not in CERTIFYING_RUNTIME_MODES:
+            continue
+        if config.get("non_certifying_assistance") is not False:
+            continue
+        accepted.add(run_id)
+    return accepted
 
 
 def parse_ts(value: Any) -> float:
@@ -575,10 +592,18 @@ def main() -> int:
     args = parser.parse_args()
     windows = {"outcome": args.outcome_window_sec, "death": args.death_window_sec, "stuck": args.stuck_window_sec, "quest": args.quest_window_sec, "reward": args.reward_window_sec}
     include_map_ids = set(args.include_map_id)
+    all_runs = read_jsonl(table_path(args.input_dir, "experiment_bot_runs"))
+    eligible_run_ids = player_like_training_run_ids(all_runs)
     all_decisions = read_jsonl(table_path(args.input_dir, "experiment_bot_decisions"))
     all_events = read_jsonl(table_path(args.input_dir, "experiment_bot_events"))
-    decisions = filter_rows_by_map(all_decisions, include_map_ids)
-    events = filter_rows_by_map(all_events, include_map_ids)
+    decisions = filter_rows_by_map(
+        [row for row in all_decisions if int(row.get("run_id") or 0) in eligible_run_ids],
+        include_map_ids,
+    )
+    events = filter_rows_by_map(
+        [row for row in all_events if int(row.get("run_id") or 0) in eligible_run_ids],
+        include_map_ids,
+    )
     semantic_stats = index_semantic_stats(read_jsonl(table_path(args.input_dir, "bot_semantic_outcome_stats")))
     decision_fingerprints = index_decision_fingerprints(read_jsonl(table_path(args.input_dir, "bot_memory_decision_fingerprints")))
     indexed_events = index_future_events(events)
@@ -598,7 +623,12 @@ def main() -> int:
         "decision_rows": len(decisions),
         "source_decision_rows": len(all_decisions),
         "source_event_rows": len(all_events),
-        "source_filter": {"include_map_ids": sorted(include_map_ids)},
+        "source_filter": {
+            "include_map_ids": sorted(include_map_ids),
+            "evidence_class": "player_like_non_fixture",
+            "eligible_run_ids": sorted(eligible_run_ids),
+            "excluded_non_certifying_run_count": len(all_runs) - len(eligible_run_ids),
+        },
         "candidate_rows": count,
         "observed_label_rows": sum(1 for row in rows if row.get("label_observed")),
         "jsonl": str(args.output),

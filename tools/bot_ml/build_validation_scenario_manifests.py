@@ -446,7 +446,7 @@ def pack_target_entries(scenario_id: str, step: dict[str, Any]) -> list[int]:
     if step.get("kind") != "trash":
         return []
     label = str(step.get("label") or "")
-    entries = list(STONECORE_TRASH_PACKS.get(label, [])) if scenario_id == "stonecore_5n" else []
+    entries = list(STONECORE_TRASH_PACKS.get(label, [])) if scenario_id in {"stonecore_5n", "stonecore_5h"} else []
     scripted_entries = set(scripted_event_entries(scenario_id, step))
     entries = [entry for entry in entries if entry not in scripted_entries]
     source_entry = int(step.get("source_entry") or 0)
@@ -459,7 +459,7 @@ def scripted_event_entries(scenario_id: str, step: dict[str, Any]) -> list[int]:
     explicit = [int(entry) for entry in (step.get("scripted_event_entries") or []) if int(entry)]
     if explicit:
         return sorted(set(explicit))
-    if step.get("kind") != "trash" or scenario_id != "stonecore_5n":
+    if step.get("kind") != "trash" or scenario_id not in {"stonecore_5n", "stonecore_5h"}:
         return []
     return list(STONECORE_SCRIPTED_EVENT_ACTORS.get(str(step.get("label") or ""), []))
 
@@ -743,6 +743,7 @@ def build_manifests(
             "difficulty": scenario.get("difficulty") or "",
             "group_kind": scenario_group_kind,
             "provisioning_scenario_id": provision_id,
+            "recovery_entrance": scenario.get("recovery_entrance") or {},
             "runtime_profile_id": str(scenario.get("runtime_profile_id") or scenario_id),
             "diagnostic_only": diagnostic_metadata["diagnostic_only"],
             "diagnostic_parent_scenario_id": diagnostic_metadata["parent_scenario_id"],
@@ -787,18 +788,18 @@ def build_manifests(
                 "upper_ledge_preparation": bool(step.get("upper_ledge_preparation")),
                 "descent_action": str(step.get("descent_action") or ""),
                 "map_id": int(scenario.get("map_id") or 0),
+                "recovery_entrance_area_trigger_id": int((scenario.get("recovery_entrance") or {}).get("area_trigger_id") or 0),
+                "recovery_entrance_source_map_id": int((scenario.get("recovery_entrance") or {}).get("source_map_id") or 0),
+                "recovery_entrance_target_map_id": int((scenario.get("recovery_entrance") or {}).get("target_map_id") or 0),
                 "step": int(step.get("step") or 0),
                 "kind": step.get("kind") or "unknown",
                 "node_kind": node_kind,
                 "label": step.get("label") or "",
                 "mechanic_profile": step.get("mechanic_profile") or "",
-                "mechanic_contract": step.get("mechanic_contract") or {},
                 # Native prerequisite nodes are declarative.  Runtime strategy
                 # candidates consume these closed contracts and may only use
                 # the listed player-facing interaction; completion is an
                 # observed native postcondition, never a controller mutation.
-                "interaction_contract": step.get("interaction_contract") or {},
-                "completion_contract": step.get("completion_contract") or {},
                 # Boss recovery authority is a route contract, not a bot
                 # tuning knob.  Omit it for ordinary nodes; the runtime
                 # defaults to native encounter recovery.  Phase 1 Magmaw is
@@ -947,6 +948,18 @@ def build_manifests(
                     "actions": EVIDENCE_ACTIONS["instance_reset"],
                 },
             }
+            # Optional contracts are fail-closed when declared.  Omitting an
+            # undeclared contract keeps ordinary route nodes outside that
+            # validation path; serializing `{}` would incorrectly declare an
+            # incomplete native interaction/completion contract.
+            for contract_name in (
+                "mechanic_contract",
+                "interaction_contract",
+                "completion_contract",
+            ):
+                contract = step.get(contract_name)
+                if contract:
+                    route[contract_name] = contract
             if node_kind != "discovery_leg":
                 route["expected_alive_count"] = expected_alive_count(step, cluster_entries)
             declared_node_id = str(step.get("node_id") or "")
@@ -971,6 +984,7 @@ def build_manifests(
             route["bot_start_z"] = float(bot_start.get("z") or step.get("bot_start_z") or 0.0)
             route["bot_start_o"] = float(bot_start.get("o") or step.get("bot_start_o") or 0.0)
             route["opener_target_entry"] = int(step.get("opener_target_entry") or 0)
+            route["activation_area_trigger_id"] = int(step.get("activation_area_trigger_id") or 0)
             route["activation_data_id"] = int(step.get("activation_data_id") or 0)
             route["activation_data_value"] = int(step.get("activation_data_value") or 0)
             route["activation_spawn_group_id"] = int(step.get("activation_spawn_group_id") or 0)

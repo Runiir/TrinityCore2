@@ -1,0 +1,4 @@
+interface:
+  display_name: "Raid Rotation Review"
+  short_description: "Compare bot actions with WoWSims logs and mechanics"
+  default_prompt: "Use $raid-rotation-review to trace this Trinity rotation or mechanic through WoWSims actions, logs, and timeline evidence."

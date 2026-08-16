@@ -260,6 +260,13 @@ bool HasEnoughPowerForProfileSpell(Player const* bot, SpellInfo const* spellInfo
         if (runeCost && !runeCost->NoRuneCost())
         {
             std::array<int32, 3> required = { int32(runeCost->RuneCost[0]), int32(runeCost->RuneCost[1]), int32(runeCost->RuneCost[2]) };
+            // Native rune validation applies the player's current spell-cost
+            // modifiers (for example a free-rune proc) before examining ready
+            // runes.  Candidate preflight must observe the same player-visible
+            // state or it can reject a cast that Spell::CheckRuneCost accepts.
+            if (Player* modOwner = bot->GetSpellModOwner())
+                for (int32& runeRequirement : required)
+                    modOwner->ApplySpellMod(spellInfo, SpellModOp::PowerCost0, runeRequirement);
             uint8 deathRunes = 0;
             for (uint8 i = 0; i < MAX_RUNES; ++i)
             {
@@ -313,15 +320,39 @@ uint32 ProfileSpellCastTimeMs(Player const* bot, SpellInfo const* spellInfo)
     return uint32(std::max<int32>(0, spellInfo->CalcCastTime(bot->getLevel())));
 }
 
-uint8 ReadyRuneCount(Player const* bot)
+struct ReadyRuneObservation
 {
+    uint8 Total = 0;
+    uint8 Blood = 0;
+    uint8 Unholy = 0;
+    uint8 Frost = 0;
+    uint8 Death = 0;
+};
+
+ReadyRuneObservation ObserveReadyRunes(Player const* bot)
+{
+    ReadyRuneObservation observation;
     if (!bot || bot->getClass() != CLASS_DEATH_KNIGHT)
-        return 0;
-    uint8 ready = 0;
+        return observation;
     for (uint8 rune = 0; rune < MAX_RUNES; ++rune)
         if (std::abs(bot->GetRuneCooldown(rune)) <= 0.0001f)
-            ++ready;
-    return ready;
+        {
+            ++observation.Total;
+            switch (bot->GetCurrentRune(rune))
+            {
+                case RuneType::Blood: ++observation.Blood; break;
+                case RuneType::Unholy: ++observation.Unholy; break;
+                case RuneType::Frost: ++observation.Frost; break;
+                case RuneType::Death: ++observation.Death; break;
+                default: break;
+            }
+        }
+    return observation;
+}
+
+uint8 ReadyRuneCount(Player const* bot)
+{
+    return ObserveReadyRunes(bot).Total;
 }
 
 uint32 EquippedTemporaryEnchant(Player const* bot, uint8 slot)
@@ -370,9 +401,25 @@ std::string EvaluateCompiledConditions(Player const* bot, Unit const* target, Un
         return "forbidden_owned_target_aura_active";
     if (HasMechanicTag(spell.MechanicTags, "holy_power_3") && bot->GetPower(POWER_HOLY_POWER) < 3)
         return "insufficient_holy_power";
-    if (spell.MaintainAuraId && !spell.RequiredOwnedTargetAura && !spell.ForbiddenOwnedTargetAura
-        && MaintainedAuraBlocksRefresh(target, spell.MaintainAuraId, spell.RefreshAuraBelowMs))
-        return "maintain_aura_active";
+    if (spell.MaintainAuraId && !spell.RequiredOwnedTargetAura
+        && !spell.ForbiddenOwnedTargetAura)
+    {
+        if (HasMechanicTag(spell.MechanicTags, "maintain_owned_aura"))
+        {
+            Aura const* ownedAura = target
+                ? target->GetAura(spell.MaintainAuraId, bot->GetGUID()) : nullptr;
+            if (ownedAura)
+            {
+                int32 const remainingMs = ownedAura->GetDuration();
+                if (!spell.RefreshAuraBelowMs || remainingMs < 0
+                    || uint32(remainingMs) > spell.RefreshAuraBelowMs)
+                    return "maintain_owned_aura_active";
+            }
+        }
+        else if (MaintainedAuraBlocksRefresh(target, spell.MaintainAuraId,
+                spell.RefreshAuraBelowMs))
+            return "maintain_aura_active";
+    }
 
     uint8 comboPoints = bot->GetComboTarget() == (comboTarget ? comboTarget->GetGUID() : ObjectGuid::Empty)
         ? bot->GetComboPoints() : 0;
@@ -849,7 +896,71 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
         candidate.Score = spell.DamageWeight + spell.HealingWeight + spell.ThreatWeight
             + spell.MitigationWeight + spell.SurvivalWeight + spell.ProgressionWeight
             - float(spell.PriorityBucket) * 0.03f;
-        candidate.Reason = "deterministic_profile_priority";
+        candidate.Reason = "observed_profile_priority";
+
+        // The detailed observation is currently consumed by the Frost
+        // compatibility fixture. Keep it scoped to that spec so the shared
+        // decision stream does not repeat irrelevant proc/rune payloads for
+        // every other class.
+        if (profile.SpecTag == "frost_death_knight")
+        {
+            ReadyRuneObservation const runes = ObserveReadyRunes(bot);
+            Powers const primaryPowerType = bot->GetPowerType();
+            uint32 const currentPrimaryPower = bot->GetPower(primaryPowerType);
+            uint32 const maximumPrimaryPower = bot->GetMaxPower(primaryPowerType);
+            Aura const* maintainedAura = actionTarget && spell.MaintainAuraId
+                ? actionTarget->GetAura(spell.MaintainAuraId) : nullptr;
+            Aura const* ownedMaintainedAura = actionTarget && spell.MaintainAuraId
+                ? actionTarget->GetAura(spell.MaintainAuraId, bot->GetGUID()) : nullptr;
+            Aura const* ownedBloodPlague = target
+                ? target->GetAura(55078, bot->GetGUID()) : nullptr;
+            Aura const* ownedFrostFever = target
+                ? target->GetAura(55095, bot->GetGUID()) : nullptr;
+            std::ostringstream observation;
+            observation << "{\"schema\":\"bot_action_observation_v1\""
+                        << ",\"primary_power_type\":\"" << PowerName(primaryPowerType) << "\""
+                        << ",\"current_primary_power\":" << currentPrimaryPower
+                        << ",\"maximum_primary_power\":" << maximumPrimaryPower
+                        << ",\"primary_power_ratio\":"
+                        << (maximumPrimaryPower
+                                ? float(currentPrimaryPower) / float(maximumPrimaryPower)
+                                : 0.0f)
+                        << ",\"ready_runes\":{\"total\":" << uint32(runes.Total)
+                        << ",\"blood\":" << uint32(runes.Blood)
+                        << ",\"unholy\":" << uint32(runes.Unholy)
+                        << ",\"frost\":" << uint32(runes.Frost)
+                        << ",\"death\":" << uint32(runes.Death) << '}'
+                        << ",\"required_self_aura\":{\"spell_id\":"
+                        << spell.RequiredSelfAura << ",\"active\":"
+                        << (spell.RequiredSelfAura && bot->HasAura(spell.RequiredSelfAura)
+                                ? "true" : "false") << '}'
+                        << ",\"forbidden_self_aura\":{\"spell_id\":"
+                        << spell.ForbiddenSelfAura << ",\"active\":"
+                        << (spell.ForbiddenSelfAura && bot->HasAura(spell.ForbiddenSelfAura)
+                                ? "true" : "false") << '}'
+                        << ",\"maintained_aura\":{\"spell_id\":"
+                        << spell.MaintainAuraId << ",\"active\":"
+                        << (maintainedAura ? "true" : "false")
+                        << ",\"remaining_ms\":"
+                        << (maintainedAura ? maintainedAura->GetDuration() : 0)
+                        << ",\"owned_active\":"
+                        << (ownedMaintainedAura ? "true" : "false")
+                        << ",\"owned_remaining_ms\":"
+                        << (ownedMaintainedAura ? ownedMaintainedAura->GetDuration() : 0)
+                        << ",\"refresh_below_ms\":" << spell.RefreshAuraBelowMs << '}'
+                        << ",\"observed_aura_flags\":{\"48265\":"
+                        << (bot->HasAura(48265) ? "true" : "false")
+                        << ",\"51124\":" << (bot->HasAura(51124) ? "true" : "false")
+                        << ",\"59052\":" << (bot->HasAura(59052) ? "true" : "false")
+                        << ",\"owned_55078\":" << (ownedBloodPlague ? "true" : "false")
+                        << ",\"owned_55078_remaining_ms\":"
+                        << (ownedBloodPlague ? ownedBloodPlague->GetDuration() : 0)
+                        << ",\"owned_55095\":" << (ownedFrostFever ? "true" : "false")
+                        << ",\"owned_55095_remaining_ms\":"
+                        << (ownedFrostFever ? ownedFrostFever->GetDuration() : 0)
+                        << "}}";
+            candidate.ObservationJson = observation.str();
+        }
 
         SpellInfo const* spellInfo = spell.SpellId ? sSpellMgr->GetSpellInfo(spell.SpellId) : nullptr;
         Unit const* comboTarget = selfTarget ? target : actionTarget;
@@ -931,6 +1042,9 @@ std::string BotClassSpecActionProfileStore::CandidateMaskJson(std::vector<BotAct
          << ",\"profile_source\":\"" << ClassSpecProfileEscape(profileSourceOverride ? profileSourceOverride : profile.ProfileSource) << "\""
          << ",\"role_goal\":\"" << ClassSpecProfileEscape(roleGoal ? roleGoal : profile.Role) << "\""
          << ",\"role_saturation_state\":" << (saturationJson && *saturationJson ? saturationJson : "{}")
+         << ",\"observation\":"
+         << (candidates.empty() || candidates.front().ObservationJson.empty()
+                ? "{}" : candidates.front().ObservationJson)
          << ",\"actions\":[";
     bool first = true;
     for (BotActionCandidate const& candidate : candidates)
@@ -944,6 +1058,8 @@ std::string BotClassSpecActionProfileStore::CandidateMaskJson(std::vector<BotAct
              << ",\"target_guid\":" << candidate.TargetGuid
              << ",\"target_entry\":" << candidate.TargetEntry
              << ",\"score\":" << candidate.Score
+             << ",\"sort_order\":" << candidate.Profile.SortOrder
+             << ",\"priority_bucket\":" << uint32(candidate.Profile.PriorityBucket)
              << ",\"score_inputs\":{\"damage_weight\":" << candidate.Profile.DamageWeight
              << ",\"healing_weight\":" << candidate.Profile.HealingWeight
              << ",\"threat_weight\":" << candidate.Profile.ThreatWeight
@@ -983,10 +1099,17 @@ std::string BotClassSpecActionProfileStore::ChosenActionJson(BotActionCandidate 
          << ",\"adaptive_balance_mode\":\"" << ClassSpecProfileEscape(balanceMode ? balanceMode : "role_first") << "\""
          << ",\"experiment_confidence\":" << confidence
          << ",\"reason\":\"" << ClassSpecProfileEscape(candidate ? candidate->Reason : "no_valid_action") << "\""
+         << ",\"sort_order\":" << (candidate ? candidate->Profile.SortOrder : 0)
+         << ",\"priority_bucket\":" << (candidate ? uint32(candidate->Profile.PriorityBucket) : 0)
+         << ",\"mechanic_tags\":\""
+         << ClassSpecProfileEscape(candidate ? candidate->Profile.MechanicTags : "") << "\""
          << ",\"expected_damage\":" << (candidate ? candidate->Profile.DamageWeight : 0.0f)
          << ",\"expected_heal\":" << (candidate ? candidate->Profile.HealingWeight : 0.0f)
          << ",\"expected_threat\":" << (candidate ? candidate->Profile.ThreatWeight : 0.0f)
          << ",\"expected_mitigation\":" << (candidate ? candidate->Profile.MitigationWeight : 0.0f)
+         << ",\"observation\":"
+         << (candidate && !candidate->ObservationJson.empty()
+                ? candidate->ObservationJson : "{}")
          << ",\"reject_reason\":\"" << ClassSpecProfileEscape(candidate ? candidate->RejectReason : "no_valid_action") << "\"}";
     return json.str();
 }
@@ -1168,6 +1291,7 @@ std::string BotClassSpecActionProfileStore::DbProfileDumpJson(uint8 classId, std
     BotClassSpecActionProfile const& profile = itr->second;
     std::ostringstream json;
     json << "{\"ok\":true,\"action\":\"botauto_rotations_dump\""
+         << ",\"dump_schema\":\"bot_db_rotation_profile_dump_v2\""
          << ",\"snapshot_generation\":" << snapshot->Generation
          << ",\"snapshot_content_hash\":\"" << ClassSpecProfileEscape(snapshot->ContentHash) << "\""
          << ",\"profile\":" << profile.EmbeddingJson()
@@ -1190,7 +1314,10 @@ std::string BotClassSpecActionProfileStore::DbProfileDumpJson(uint8 classId, std
              << ",\"healing\":" << spell.HealingWeight
              << ",\"threat\":" << spell.ThreatWeight
              << ",\"mitigation\":" << spell.MitigationWeight
-             << ",\"survival\":" << spell.SurvivalWeight << "}"
+             << ",\"survival\":" << spell.SurvivalWeight
+             << ",\"movement\":" << spell.MovementWeight
+             << ",\"progression\":" << spell.ProgressionWeight
+             << ",\"profession\":" << spell.ProfessionWeight << "}"
              << ",\"gates\":{\"min_enemies\":" << uint32(spell.MinEnemies)
              << ",\"max_enemies\":" << uint32(spell.MaxEnemies)
              << ",\"min_target_health_pct\":" << spell.MinTargetHealthPct
@@ -1201,6 +1328,28 @@ std::string BotClassSpecActionProfileStore::DbProfileDumpJson(uint8 classId, std
              << ",\"forbidden_self_aura\":" << spell.ForbiddenSelfAura
              << ",\"required_target_aura\":" << spell.RequiredTargetAura
              << ",\"forbidden_target_aura\":" << spell.ForbiddenTargetAura
+             << ",\"requires_interruptible_target\":" << (spell.RequiresInterruptibleTarget ? "true" : "false")
+             << ",\"requires_target_not_victim\":" << (spell.RequiresTargetNotVictim ? "true" : "false")
+             << ",\"requires_target_victim\":" << (spell.RequiresTargetVictim ? "true" : "false")
+             << ",\"requires_melee_range\":" << (spell.RequiresMeleeRange ? "true" : "false")
+             << ",\"requires_ranged_range\":" << (spell.RequiresRangedRange ? "true" : "false")
+             << ",\"min_range\":" << spell.MinRange
+             << ",\"max_range\":" << spell.MaxRange
+             << ",\"requires_instant_cast\":" << (spell.RequiresInstantCast ? "true" : "false")
+             << ",\"max_cast_time_ms\":" << spell.MaxCastTimeMs
+             << ",\"maintain_aura_id\":" << spell.MaintainAuraId
+             << ",\"refresh_aura_below_ms\":" << spell.RefreshAuraBelowMs
+             << ",\"min_injured_players\":" << uint32(spell.MinInjuredPlayers)
+             << ",\"max_injured_players\":" << uint32(spell.MaxInjuredPlayers)
+             << ",\"injured_health_pct\":" << spell.InjuredHealthPct
+             << ",\"min_mana_pct\":" << spell.MinManaPct
+             << ",\"max_mana_pct\":" << spell.MaxManaPct
+             << ",\"min_primary_power_pct\":" << spell.MinPrimaryPowerPct
+             << ",\"max_primary_power_pct\":" << spell.MaxPrimaryPowerPct
+             << ",\"min_attackers\":" << uint32(spell.MinAttackers)
+             << ",\"max_attackers\":" << uint32(spell.MaxAttackers)
+             << ",\"requires_stationary\":" << (spell.RequiresStationary ? "true" : "false")
+             << ",\"requires_moving\":" << (spell.RequiresMoving ? "true" : "false")
              << ",\"required_owned_target_aura\":" << spell.RequiredOwnedTargetAura
              << ",\"forbidden_owned_target_aura\":" << spell.ForbiddenOwnedTargetAura
              << ",\"required_self_aura_stacks\":" << uint32(spell.RequiredSelfAuraStacks)

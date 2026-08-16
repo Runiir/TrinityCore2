@@ -23,6 +23,7 @@ public:
 
     BotActionResult Execute(Player* owner, Player* bot, ResolvedBotAction const& action);
     BotActionResult ExecuteCombat(Player* owner, Player* bot, ResolvedCombatAction const& action);
+    BotActionResult SubmitMeleeAutoAttack(Player* bot, Unit* target);
     BotActionResult CraftRecipe(Player* owner, Player* bot, uint32 recipeSpellId, uint32 count);
     BotEconomyActionResult VendorTrash(Player* owner, Player* bot);
     BotEconomyActionResult Repair(Player* owner, Player* bot);

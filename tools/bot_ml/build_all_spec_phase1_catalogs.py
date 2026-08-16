@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import re
+import tempfile
 import urllib.request
 from collections import Counter
 from pathlib import Path
@@ -11,8 +12,22 @@ from typing import Any
 
 try:
     from .build_validation_provisioning import talent_data, validate_talent_manifest
+    from .wowsims_gear_binding import (
+        ENCHANT_APPLICABILITY_AUTHORITY,
+        TRANSFORM_SCHEMA,
+        selected_numeric_fixture_gear_label,
+        validate_profile_local_legality,
+        validate_profile_source_binding,
+    )
 except ImportError:
     from build_validation_provisioning import talent_data, validate_talent_manifest
+    from wowsims_gear_binding import (
+        ENCHANT_APPLICABILITY_AUTHORITY,
+        TRANSFORM_SCHEMA,
+        selected_numeric_fixture_gear_label,
+        validate_profile_local_legality,
+        validate_profile_source_binding,
+    )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 WOWSIMS_REPOSITORY = "https://github.com/wowsims/cata"
@@ -27,6 +42,20 @@ PAIRWISE_CATALOG_PATH = REPO_ROOT / "experiments/configs/stonecore_pairwise_cons
 PROVISIONING_PATH = REPO_ROOT / "experiments/configs/validation_provisioning_cata_001.json"
 ACTION_PROFILES_PATH = REPO_ROOT / "experiments/configs/cata_434_action_profiles.json"
 COMBAT_LOOT_PATH = REPO_ROOT / "experiments/configs/cata_434_combat_loot_profiles.json"
+WOWSIMS_GEAR_PROFILES_PATH = REPO_ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json"
+DPS_ACCEPTANCE_PATH = REPO_ROOT / "experiments/configs/cata_raid_dps_acceptance_v1.json"
+DBC_DIR = REPO_ROOT / "data/dbc/enUS"
+
+ROGUE_POISON_OWNERS = {"assassination_rogue", "combat_rogue"}
+ROGUE_POISON_CONSUMABLES = (
+    {"item_id": 43233, "slot": 23, "count": 20},
+    {"item_id": 43231, "slot": 24, "count": 20},
+)
+DEFAULT_PLAYER_CONSUMABLES = (
+    {"item_id": 58085, "slot": 40, "count": 20},
+    {"item_id": 58086, "slot": 41, "count": 20},
+    {"item_id": 58257, "slot": 42, "count": 20},
+)
 
 CLASS_META = {
     "warrior": {"class_id": 1, "race": 1, "archetype": "strength"},
@@ -103,6 +132,31 @@ RESULT_TALENT_OVERRIDE = {
     "survival_hunter": "03-2302-23203003023022121311",
 }
 
+# Gear identity is deliberately separate from the specialization join key.
+# Most generated validation profiles use the specialization id, while these
+# checked-in WoWSims overlays reproduce the exact preset used by the pinned
+# numeric reference.  Every catalog/provisioning consumer must carry this id
+# verbatim; it is not an alias that may be substituted at runtime.
+CANONICAL_GEAR_PROFILE_IDS = {
+    "balance_druid": "wowsims_cata_p4_balance_druid",
+    "enhancement_shaman": "wowsims_cata_p4_enhancement_shaman",
+    "fire_mage": "wowsims_cata_p4_fire_mage",
+    "shadow_priest": "wowsims_cata_p4_shadow_priest",
+    "survival_hunter": "wowsims_cata_p4_survival_hunter",
+}
+
+def canonical_gear_profile_id(target_id: str) -> str:
+    return CANONICAL_GEAR_PROFILE_IDS.get(target_id, target_id)
+
+
+def gear_profile_runtime_manifest(target_id: str) -> str:
+    profiles = json.loads(
+        WOWSIMS_GEAR_PROFILES_PATH.read_text(encoding="utf-8")
+    ).get("profiles", {})
+    if canonical_gear_profile_id(target_id) in profiles:
+        return "experiments/configs/wowsims_cata_p4_gear_profiles.json"
+    return "experiments/configs/cata_434_combat_loot_profiles.json"
+
 GEAR_PATH = {
     "protection_warrior": "ui/warrior/protection/gear_sets/p4_bis.gear.json",
     "protection_paladin": "ui/paladin/protection/gear_sets/T12.gear.json",
@@ -117,7 +171,7 @@ GEAR_PATH = {
     "fury_warrior": "ui/warrior/fury/gear_sets/p4_fury_tg.gear.json",
     "retribution_paladin": "ui/paladin/retribution/gear_sets/p4_bis.gear.json",
     "beast_mastery_hunter": "ui/hunter/beast_mastery/gear_sets/p3_bm.gear.json",
-    "marksmanship_hunter": "ui/hunter/marksmanship/gear_sets/p3_mm.gear.json",
+    "marksmanship_hunter": "ui/hunter/marksmanship/gear_sets/preraid_mm.gear.json",
     "survival_hunter": "ui/hunter/survival/gear_sets/p4_sv.gear.json",
     "assassination_rogue": "ui/rogue/assassination/gear_sets/p4_assassination.gear.json",
     "combat_rogue": "ui/rogue/combat/gear_sets/p4_combat.gear.json",
@@ -194,6 +248,21 @@ RESULT_META = {
     "feral_druid_dps": ("sim/druid/feral/feral_test.go", "sim/druid/feral/TestFeral.results"),
 }
 
+# Average-Default selects the first test matrix configuration. These two
+# numeric references intentionally use the exact Phase-4 gear preset instead,
+# so pin the complete Settings row which names that preset. Keeping the key
+# here makes a source refresh reproduce the catalog without a hand edit.
+RESULT_KEY_OVERRIDE = {
+    "assassination_rogue": (
+        "TestAssassination-Settings-Human-p4_assassination-Assassination-"
+        "mutilate-FullBuffs-0.0yards-LongSingleTarget"
+    ),
+    "combat_rogue": (
+        "TestCombat-Settings-Human-p4_combat-Combat-combat-FullBuffs-"
+        "0.0yards-LongSingleTarget"
+    ),
+}
+
 ICY_BUILD = {
     "holy_paladin": ("paladin", "#tc-111222433378899abcccdeeefgghhhjGGFFFmmkkk|0i1v2r3z5k4e6E7a8u", "https://www.icy-veins.com/cataclysm-classic/holy-paladin-pve-spec-builds-talents-glyphs"),
     "discipline_priest": ("priest", "#tc-22211100566a877bbbcceefffghhjjkmmmnnnGGGo|0h1i2G3D4a5H6e7C8u", "https://www.icy-veins.com/cataclysm-classic/discipline-priest-pve-spec-builds-talents-glyphs"),
@@ -232,7 +301,7 @@ SPEC_BEHAVIOR = {
     "marksmanship_hunter": ["permanent_pet", "steady_focus", "careful_aim_execute_inverse"],
     "survival_hunter": ["permanent_pet", "explosive_shot_lock_and_load", "focus_management"],
     "unholy_death_knight": ["unholy_presence", "permanent_ghoul", "dark_transformation"],
-    "frost_death_knight": ["frost_presence", "dual_wield_masterfrost", "runic_power"],
+    "frost_death_knight": ["unholy_presence", "dual_wield_masterfrost", "runic_power"],
     "affliction_warlock": ["felhunter_pet", "dot_refresh", "drain_soul_execute"],
     "demonology_warlock": ["felguard_pet", "metamorphosis", "decimation_execute"],
     "destruction_warlock": ["imp_pet", "improved_soul_fire", "shadowburn_execute"],
@@ -322,7 +391,7 @@ QUALIFICATION_TUNED_ACTION_SPELL_IDS = {
     "arms_warrior": [845, 1719, 6343],
     "fury_warrior": [845, 1134, 1719, 18499],
     "blood_death_knight": [48721, 56815],
-    "frost_death_knight": [42650, 45529, 46584, 47568, 77575],
+    "frost_death_knight": [42650, 45529, 46584, 47568, 48265, 77575],
     "unholy_death_knight": [42650, 43265, 45529, 46584, 47568, 48265, 49016, 49206, 77575],
     "feral_druid_tank": [99, 6807, 80964],
     "holy_paladin": [4987],
@@ -345,6 +414,11 @@ PERSISTENT_SETUP_SPELL_IDS = {
     "holy_paladin": [20217],
     "retribution_paladin": [20217],
     "blood_death_knight": [48263],
+    "frost_death_knight": [48265],
+    # Raise Dead is an ordinary learned Unholy action. Runtime requires the
+    # Master of Ghouls talent aura and reconciles the resulting permanent pet;
+    # provisioning only guarantees that the player knows these setup spells.
+    "unholy_death_knight": [46584, 48265],
     "feral_druid_tank": [5487],
     "feral_druid_dps": [768],
     "arcane_mage": [1459, 30482],
@@ -353,6 +427,8 @@ PERSISTENT_SETUP_SPELL_IDS = {
     "beast_mastery_hunter": [13165],
     "marksmanship_hunter": [13165],
     "survival_hunter": [13165],
+    "affliction_warlock": [691],
+    "demonology_warlock": [30146],
     "elemental_shaman": [324],
     "enhancement_shaman": [324],
     "restoration_shaman": [324],
@@ -371,11 +447,11 @@ RUNTIME_ACTION_SPELL_IDS = {
     "assassination_rogue": [53, 1329, 1766, 1943, 5171, 14177, 32645, 51723, 57934, 79140],
     "combat_rogue": [1752, 1766, 1943, 2098, 5171, 13750, 51690, 84617],
     "subtlety_rogue": [53, 1752, 1766, 1943, 2098, 5171, 16511, 51713, 51723],
-    "frost_death_knight": [45462, 47528, 48266, 49020, 49143, 49184, 51271, 57330],
+    "frost_death_knight": [45462, 47528, 48265, 49020, 49143, 49184, 51271, 57330],
     "unholy_death_knight": [45462, 46584, 47528, 47541, 55090, 57330, 63560, 77575, 85948],
     "arcane_mage": [1449, 2139, 5143, 12042, 12051, 30451, 44425],
     "frost_mage": [10, 116, 2139, 12472, 30455, 31687, 44572, 44614],
-    "demonology_warlock": [172, 348, 686, 1949, 6353, 47241, 71521, 77801],
+    "demonology_warlock": [172, 348, 686, 689, 1454, 1949, 6353, 47241, 71521, 77801],
     "destruction_warlock": [348, 5740, 6353, 17877, 17962, 29722, 50796, 77801],
     "shadow_priest": [588, 589, 2944, 8092, 8122, 15407, 15473, 26297, 32379, 34433, 34914, 47585, 48045, 87151, 87153],
     "balance_druid": [5570, 8921, 16914, 2912, 5176, 33831, 48505, 50516, 78674],
@@ -399,6 +475,91 @@ def fetch_bytes(url: str) -> bytes:
 
 def source_record(url: str, content: bytes) -> dict[str, Any]:
     return {"url": url, "sha256": hashlib.sha256(content).hexdigest(), "byte_count": len(content)}
+
+
+def reconcile_rogue_poison_provisioning(targets: list[dict[str, Any]]) -> None:
+    """Reconcile exact ordinary poison stacks without rebuilding references."""
+    poison_ids = {int(row["item_id"]) for row in ROGUE_POISON_CONSUMABLES}
+    for target in targets:
+        target_id = str(target.get("spec_target_id") or "")
+        bot = target.get("provisioning_bot")
+        if not isinstance(bot, dict):
+            raise ValueError(f"{target_id or '<unknown>'}: missing provisioning bot")
+
+        item_ids = [
+            int(item_id)
+            for item_id in bot.get("consumable_item_ids", [])
+            if int(item_id) not in poison_ids
+        ]
+        explicit = [
+            dict(row)
+            for row in bot.get("consumables", [])
+            if int(row.get("item_id") or 0) not in poison_ids
+        ]
+        if target_id in ROGUE_POISON_OWNERS:
+            for item_id in sorted(poison_ids, reverse=True):
+                if item_id not in item_ids:
+                    item_ids.append(item_id)
+            if not explicit:
+                explicit = [dict(row) for row in DEFAULT_PLAYER_CONSUMABLES]
+            explicit.extend(dict(row) for row in ROGUE_POISON_CONSUMABLES)
+        bot["consumable_item_ids"] = item_ids
+        top_level_ids = [
+            int(item_id)
+            for item_id in target.get("consumable_item_ids", [])
+            if int(item_id) not in poison_ids
+        ]
+        if target_id in ROGUE_POISON_OWNERS:
+            top_level_ids = list(item_ids)
+        if "consumable_item_ids" in target:
+            target["consumable_item_ids"] = top_level_ids
+        if explicit:
+            bot["consumables"] = explicit
+        else:
+            bot.pop("consumables", None)
+
+
+def validate_rogue_poison_provisioning(targets: list[dict[str, Any]]) -> None:
+    poison_contract = {
+        int(row["item_id"]): (int(row["slot"]), int(row["count"]))
+        for row in ROGUE_POISON_CONSUMABLES
+    }
+    owners_by_item = {item_id: set() for item_id in poison_contract}
+    targets_by_id = {str(row.get("spec_target_id") or ""): row for row in targets}
+    for target_id, target in targets_by_id.items():
+        bot = target.get("provisioning_bot") or {}
+        top_level_ids = [int(value) for value in target.get("consumable_item_ids", [])]
+        declared_ids = {int(value) for value in bot.get("consumable_item_ids", [])}
+        explicit = {
+            int(row.get("item_id") or 0): (
+                int(row.get("slot") or 0), int(row.get("count") or 0)
+            )
+            for row in bot.get("consumables", [])
+        }
+        for item_id in poison_contract:
+            if item_id in top_level_ids or item_id in declared_ids or item_id in explicit:
+                owners_by_item[item_id].add(target_id)
+        if target_id in ROGUE_POISON_OWNERS:
+            bot_ids = [int(value) for value in bot.get("consumable_item_ids", [])]
+            if (
+                top_level_ids != bot_ids
+                or len(top_level_ids) != len(set(top_level_ids))
+            ):
+                raise ValueError(
+                    f"{target_id}: top-level/provisioning consumable identity drift"
+                )
+            for item_id, exact_row in poison_contract.items():
+                if item_id not in declared_ids or explicit.get(item_id) != exact_row:
+                    raise ValueError(
+                        f"{target_id}: rogue poison {item_id} missing exact slot/count"
+                    )
+
+    for item_id, owners in owners_by_item.items():
+        if owners != ROGUE_POISON_OWNERS:
+            raise ValueError(
+                f"rogue poison {item_id} owners must be exactly "
+                f"{sorted(ROGUE_POISON_OWNERS)}, got {sorted(owners)}"
+            )
 
 
 def parse_wowsims_talents(
@@ -510,15 +671,26 @@ def parse_icy_build(class_name: str, encoded: str, class_payload: dict[str, Any]
     return build, glyphs
 
 
-def result_reference(result_text: str) -> dict[str, Any] | None:
+def result_reference(
+    result_text: str, *, preferred_key: str | None = None
+) -> dict[str, Any] | None:
     matches = re.findall(
-        r'key:\s*"([^"]+-Average-[^"]+)"\s*value:\s*\{([^}]+)\}',
+        r'key:\s*"([^"]+)"\s*value:\s*\{([^}]+)\}',
         result_text,
         flags=re.DOTALL,
     )
     if not matches:
         return None
-    preferred = next((row for row in matches if row[0].endswith("-Average-Default")), matches[0])
+    if preferred_key:
+        candidates = [row for row in matches if row[0] == preferred_key]
+        if len(candidates) != 1:
+            raise ValueError(f"pinned simulator result row missing: {preferred_key}")
+        preferred = candidates[0]
+    else:
+        preferred = next(
+            (row for row in matches if row[0].endswith("-Average-Default")),
+            matches[0],
+        )
     metrics = {name: float(value) for name, value in re.findall(r"\b(dps|tps|hps):\s*([0-9.]+)", preferred[1])}
     return {"result_key": preferred[0], "metrics": metrics}
 
@@ -616,6 +788,10 @@ def build_catalogs(refresh_sources: bool) -> dict[str, dict[str, Any]]:
     targets: list[dict[str, Any]] = []
     references: list[dict[str, Any]] = []
     calibration_rows: list[dict[str, Any]] = []
+    wowsims_gear_document = json.loads(
+        WOWSIMS_GEAR_PROFILES_PATH.read_text(encoding="utf-8")
+    )
+    wowsims_gear_profiles = wowsims_gear_document.get("profiles", {})
 
     for index, (target_id, class_name, spec_name, role, bot_name, feral_variant) in enumerate(TARGETS, start=1):
         class_id = CLASS_META[class_name]["class_id"]
@@ -668,6 +844,7 @@ def build_catalogs(refresh_sources: bool) -> dict[str, dict[str, Any]]:
         result = None
         test_path = None
         result_path = None
+        test_bytes = None
         if target_id in RESULT_META:
             test_path, result_path = RESULT_META[target_id]
             test_bytes = fetch_bytes(f"{WOWSIMS_RAW}/{test_path}")
@@ -675,7 +852,10 @@ def build_catalogs(refresh_sources: bool) -> dict[str, dict[str, Any]]:
             source_assets.extend(
                 [source_record(f"{WOWSIMS_RAW}/{test_path}", test_bytes), source_record(f"{WOWSIMS_RAW}/{result_path}", result_bytes)]
             )
-            result = result_reference(result_bytes.decode())
+            result = result_reference(
+                result_bytes.decode(),
+                preferred_key=RESULT_KEY_OVERRIDE.get(target_id),
+            )
             if target_id in RESULT_TALENT_OVERRIDE:
                 talent_source = {
                     "provider": "WoWSims",
@@ -690,11 +870,8 @@ def build_catalogs(refresh_sources: bool) -> dict[str, dict[str, Any]]:
             consumables.append(58091)
         if target_id == "demonology_warlock":
             consumables.append(70142)
-        runtime_gear_profile = {
-            "enhancement_shaman": "wowsims_cata_p4_enhancement_shaman",
-            "shadow_priest": "wowsims_cata_p4_shadow_priest",
-            "survival_hunter": "wowsims_cata_p4_survival_hunter",
-        }.get(target_id, target_id)
+        runtime_gear_profile = canonical_gear_profile_id(target_id)
+        exact_gear_profile = wowsims_gear_profiles.get(runtime_gear_profile)
         runtime_race = {
             "demonology_warlock": 2,
             "shadow_priest": 8,
@@ -709,6 +886,7 @@ def build_catalogs(refresh_sources: bool) -> dict[str, dict[str, Any]]:
             "class": class_id,
             "level": 85,
             "gear_profile": runtime_gear_profile,
+            "gear_profile_id": runtime_gear_profile,
             "glyphs": glyphs,
             "consumable_item_ids": consumables,
             **build,
@@ -728,6 +906,9 @@ def build_catalogs(refresh_sources: bool) -> dict[str, dict[str, Any]]:
                 {"item_id": 58257, "slot": 25, "count": 20},
                 {"item_id": 58091, "slot": 26, "count": 20},
             ]
+        reconcile_rogue_poison_provisioning(
+            [{"spec_target_id": target_id, "provisioning_bot": provisioning_bot}]
+        )
         if pet:
             provisioning_bot["pet"] = pet
         spell_ids = action_spell_ids(target_id, class_id, build)
@@ -748,7 +929,7 @@ def build_catalogs(refresh_sources: bool) -> dict[str, dict[str, Any]]:
                 "talent_build": build,
                 "glyph_item_ids": glyphs,
                 "gear_profile_id": runtime_gear_profile,
-                "consumable_item_ids": consumables,
+                "consumable_item_ids": list(provisioning_bot["consumable_item_ids"]),
                 "pet_form_stance_presence": SPEC_BEHAVIOR.get(target_id, []),
                 "action_profile_identity": f"cata_434:{class_id}:{target_id}",
                 "action_profile_spell_ids": spell_ids,
@@ -787,6 +968,54 @@ def build_catalogs(refresh_sources: bool) -> dict[str, dict[str, Any]]:
             expected_output = {"type": "simulator_metrics", **result}
         else:
             expected_output = {"type": "phase4_guide_priority_reference", "numeric_floor": None}
+        gear_reference = {
+            "phase": "phase_4",
+            "gear_profile_id": runtime_gear_profile,
+            "runtime_profile_id": runtime_gear_profile,
+            "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+            "runtime_manifest": gear_profile_runtime_manifest(target_id),
+            "simulator_preset": {
+                "path": gear_path,
+                "phase": "phase_4" if any(token in gear_path.lower() for token in ("p4", "t13")) else "best_executable_legacy_preset",
+            },
+        }
+        if isinstance(exact_gear_profile, dict):
+            exact_source = exact_gear_profile.get("source") or {}
+            gear_reference.update(
+                {
+                    "source_sha256": exact_source.get("sha256"),
+                    "source_snapshot": exact_source.get("snapshot"),
+                    "transform_schema": TRANSFORM_SCHEMA,
+                    "transformed_manifest_sha256": exact_gear_profile.get(
+                        "transformed_manifest_sha256"
+                    ),
+                    "permanent_enchant_applicability_authority": (
+                        ENCHANT_APPLICABILITY_AUTHORITY
+                    ),
+                }
+            )
+            if test_path and test_bytes:
+                test_snapshot = (
+                    "experiments/configs/wowsims_cata_p4_gear_sources/"
+                    f"{runtime_gear_profile}.test.go"
+                )
+                gear_reference.update(
+                    {
+                        "numeric_fixture_test_source_sha256": hashlib.sha256(
+                            test_bytes
+                        ).hexdigest(),
+                        "numeric_fixture_test_snapshot": test_snapshot,
+                        "numeric_fixture_gear_label": (
+                            selected_numeric_fixture_gear_label(
+                                {
+                                    "expected_output": expected_output,
+                                    "gear": gear_reference,
+                                },
+                                test_bytes.decode("utf-8"),
+                            )
+                        ),
+                    }
+                )
         references.append(
             {
                 "reference_id": f"cata_p4:{target_id}",
@@ -798,16 +1027,7 @@ def build_catalogs(refresh_sources: bool) -> dict[str, dict[str, Any]]:
                 "provider_revision": WOWSIMS_REVISION,
                 "repository": WOWSIMS_REPOSITORY,
                 "guide_url": GUIDE_URL[target_id],
-                "gear": {
-                    "phase": "phase_4",
-                    "runtime_profile_id": target_id,
-                    "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
-                    "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
-                    "simulator_preset": {
-                        "path": gear_path,
-                        "phase": "phase_4" if any(token in gear_path.lower() for token in ("p4", "t13")) else "best_executable_legacy_preset",
-                    },
-                },
+                "gear": gear_reference,
                 "apl": {"path": apl_path, "available": bool(apl_path)},
                 "talents": talent_source,
                 "test": test_path,
@@ -935,6 +1155,7 @@ def validate_catalogs(payloads: dict[str, dict[str, Any]], *, check_linked: bool
     ids = [row["spec_target_id"] for row in targets]
     if len(targets) != 31 or len(set(ids)) != 31:
         raise ValueError("Phase 1 requires exactly 31 unique target rows")
+    validate_rogue_poison_provisioning(targets)
     roles = Counter(row["role"] for row in targets)
     if dict(roles) != {"tank": 4, "healer": 5, "dps": 22}:
         raise ValueError("Phase 1 role counts must be 4 tanks, 5 healers, and 22 DPS")
@@ -944,6 +1165,16 @@ def validate_catalogs(payloads: dict[str, dict[str, Any]], *, check_linked: bool
         validate_talent_manifest({"name": row["spec_target_id"], **row["talent_build"]})
         if not 3 <= len(row["glyph_item_ids"]) <= 9 or not row["action_profile_spell_ids"]:
             raise ValueError(f"{row['spec_target_id']}: incomplete provisioning/profile link")
+        expected_gear_profile_id = canonical_gear_profile_id(row["spec_target_id"])
+        provisioning = row.get("provisioning_bot") or {}
+        if (
+            row.get("gear_profile_id") != expected_gear_profile_id
+            or provisioning.get("gear_profile_id") != expected_gear_profile_id
+            or provisioning.get("gear_profile") != expected_gear_profile_id
+        ):
+            raise ValueError(
+                f"{row['spec_target_id']}: canonical gear profile identity mismatch"
+            )
         runtime_profile = row.get("runtime_rotation_profile") or {}
         expected_runtime_identity = (
             f"{row['class_id']}:{RUNTIME_PROFILE_SPEC_TAG.get(row['spec_target_id'], row['spec_target_id'])}:{row['role']}"
@@ -966,6 +1197,17 @@ def validate_catalogs(payloads: dict[str, dict[str, Any]], *, check_linked: bool
             if previous != row["spec_target_id"]:
                 raise ValueError(f"alias {alias!r} conflicts between {previous} and {row['spec_target_id']}")
     references = reference_catalog["references"]
+    targets_by_id = {row["spec_target_id"]: row for row in targets}
+    wowsims_gear_document = json.loads(
+        WOWSIMS_GEAR_PROFILES_PATH.read_text(encoding="utf-8")
+    )
+    wowsims_gear_profiles = wowsims_gear_document.get("profiles", {})
+    wowsims_slot_map = [int(value) for value in wowsims_gear_document.get("slot_map", [])]
+    selected_numeric_dps = set(
+        json.loads(DPS_ACCEPTANCE_PATH.read_text(encoding="utf-8")).get(
+            "dps_targets", []
+        )
+    )
     if {row["spec_target_id"] for row in references} != set(ids) or any(row["review_status"] != "reviewed" for row in references):
         raise ValueError("every target requires reviewed reference provenance")
     for row in references:
@@ -978,8 +1220,43 @@ def validate_catalogs(payloads: dict[str, dict[str, Any]], *, check_linked: bool
         ):
             raise ValueError(f"{row['spec_target_id']}: incomplete source hash provenance")
         gear = row.get("gear") or {}
-        if gear.get("phase") != "phase_4" or gear.get("runtime_profile_id") != row["spec_target_id"]:
-            raise ValueError(f"{row['spec_target_id']}: incomplete Phase 4 gear record")
+        expected_gear_profile_id = canonical_gear_profile_id(row["spec_target_id"])
+        if (
+            gear.get("phase") != "phase_4"
+            or gear.get("gear_profile_id") != expected_gear_profile_id
+            or gear.get("runtime_profile_id") != expected_gear_profile_id
+            or gear.get("runtime_manifest")
+            != gear_profile_runtime_manifest(row["spec_target_id"])
+        ):
+            raise ValueError(
+                f"{row['spec_target_id']}: canonical gear profile identity mismatch"
+            )
+        if expected_gear_profile_id in wowsims_gear_profiles:
+            profile = wowsims_gear_profiles.get(expected_gear_profile_id) or {}
+            binding = validate_profile_source_binding(
+                profile=profile, reference=row, slot_map=wowsims_slot_map
+            )
+            if not binding["passed"]:
+                raise ValueError(
+                    f"{row['spec_target_id']}: WoWSims gear source identity mismatch: "
+                    f"{[key for key, value in binding['checks'].items() if not value]}"
+                )
+            if row["spec_target_id"] in selected_numeric_dps:
+                legality = validate_profile_local_legality(
+                    profile=profile,
+                    target=targets_by_id[row["spec_target_id"]],
+                    slot_map=wowsims_slot_map,
+                    dbc_dir=DBC_DIR,
+                )
+                if not legality["passed"]:
+                    raise ValueError(
+                        f"{row['spec_target_id']}: numeric DPS target gear is not "
+                        f"locally player-legal: {legality['failure_reasons']}"
+                    )
+        elif row["spec_target_id"] in selected_numeric_dps:
+            raise ValueError(
+                f"{row['spec_target_id']}: numeric DPS target requires exact pinned WoWSims gear"
+            )
     if {row["spec_target_id"] for row in calibration_catalog["scenarios"]} != set(ids):
         raise ValueError("every target requires calibration scenarios")
     parties = pairwise_catalog["parties"]
@@ -1057,6 +1334,31 @@ def write_configs(payloads: dict[str, dict[str, Any]]) -> None:
     update_linked_configs(payloads[TARGET_CATALOG_PATH.name])
 
 
+def reconcile_checked_in_rogue_poison_catalog() -> dict[str, dict[str, Any]]:
+    paths = [
+        TARGET_CATALOG_PATH,
+        REFERENCE_CATALOG_PATH,
+        CALIBRATION_CATALOG_PATH,
+        PAIRWISE_CATALOG_PATH,
+    ]
+    payloads = {
+        path.name: json.loads(path.read_text(encoding="utf-8"))
+        for path in paths
+    }
+    target_catalog = payloads[TARGET_CATALOG_PATH.name]
+    reconcile_rogue_poison_provisioning(target_catalog["targets"])
+    validate_catalogs(payloads, check_linked=True)
+    rendered = json.dumps(target_catalog, indent=2) + "\n"
+    with tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", dir=TARGET_CATALOG_PATH.parent,
+        prefix=f".{TARGET_CATALOG_PATH.name}.", suffix=".tmp", delete=False,
+    ) as temporary:
+        temporary.write(rendered)
+        temporary_path = Path(temporary.name)
+    temporary_path.replace(TARGET_CATALOG_PATH)
+    return payloads
+
+
 def write_bundle(output_dir: Path, payloads: dict[str, dict[str, Any]]) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     for stale in output_dir.glob("*.json"):
@@ -1081,7 +1383,18 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Build and validate Phase 1 all-spec catalogs")
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--refresh-sources", action="store_true")
+    parser.add_argument("--reconcile-rogue-poisons", action="store_true")
     args = parser.parse_args()
+    if args.reconcile_rogue_poisons:
+        if args.refresh_sources:
+            parser.error("--reconcile-rogue-poisons and --refresh-sources are exclusive")
+        payloads = reconcile_checked_in_rogue_poison_catalog()
+        print(json.dumps({
+            "gate_passed": True,
+            "target_count": len(payloads[TARGET_CATALOG_PATH.name]["targets"]),
+            "reconciled": str(TARGET_CATALOG_PATH),
+        }, sort_keys=True))
+        return 0
     payloads = build_catalogs(args.refresh_sources)
     if args.refresh_sources:
         write_configs(payloads)

@@ -3,6 +3,7 @@
 
 #include "ObjectGuid.h"
 #include "Bots/BotActionArbiter.h"
+#include "Bots/BotMeleeAutoAttackIntent.h"
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotExperimentCoordinator.h"
 #include "Bots/BotLongTermProgressionBrain.h"
@@ -12,6 +13,7 @@
 #include "Bots/BotTelemetryBuffer.h"
 #include "Bots/BotTelemetryPolicy.h"
 #include "Bots/BotTypes.h"
+#include <array>
 #include <deque>
 #include <map>
 #include <memory>
@@ -20,6 +22,7 @@
 #include <set>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 class Creature;
@@ -49,6 +52,16 @@ enum class ValidationRouteBossRecoveryPolicy : uint8
     NativeFullWipeOnly = 1
 };
 
+// Validation admission is a monotonic server-owned transaction. Provisioning
+// may end only by opening the player-action gate or by failing the attempt;
+// an active or terminal cohort can never return to population/refill code.
+enum class ValidationAdmissionPhase : uint8
+{
+    Provisioning = 0,
+    Active = 1,
+    Terminal = 2
+};
+
 struct ValidationRouteMemberAnchor
 {
     uint32 RosterSlot = 0;
@@ -76,6 +89,7 @@ struct BotWorldExperimentConfig
     bool AllowQuesting = true;
     bool AllowDungeons = false;
     bool AllowRaids = false;
+    uint8 DungeonDifficulty = 0;
     uint8 RaidSize = 10;
     uint8 RaidDifficulty = 0;
     bool TrackHeroicRaidProgression = true;
@@ -105,9 +119,13 @@ struct BotWorldExperimentConfig
     std::string ValidationRouteLabel;
     std::string ValidationRouteKind;
     std::string ValidationRouteNodeKind;
+    std::string ValidationRouteDescentAction;
     std::string ValidationRouteMechanicProfile;
     ValidationRouteBossRecoveryPolicy ValidationRouteBossRecovery = ValidationRouteBossRecoveryPolicy::NativeEncounter;
     uint32 ValidationRouteMapId = 0;
+    uint32 ValidationRecoveryEntranceAreaTriggerId = 0;
+    uint32 ValidationRecoveryEntranceSourceMapId = 0;
+    uint32 ValidationRecoveryEntranceTargetMapId = 0;
     float ValidationRouteX = 0.0f;
     float ValidationRouteY = 0.0f;
     float ValidationRouteZ = 0.0f;
@@ -161,6 +179,7 @@ struct BotWorldExperimentConfig
     float ValidationRoutePatrolFutureGuardMarginYards = 0.0f;
     uint32 ValidationRoutePatrolPullOwnerRosterSlot = 0;
     uint32 ValidationRouteExpectedAliveCount = 0;
+    uint32 ValidationRouteActivationAreaTriggerId = 0;
     uint32 ValidationRouteActivationDataId = 0;
     uint32 ValidationRouteActivationDataValue = 0;
     uint32 ValidationRouteActivationSpawnGroupId = 0;
@@ -328,7 +347,11 @@ public:
     uint64 NotifyBotSpellStarted(Player* caster, Unit* target, uint32 spellId, std::string const& candidateMaskJson = {}, std::string const& chosenActionJson = {});
     void CancelBotSpellStart(uint64 castId, Player* caster, char const* reason);
     void NotifyBotSpellFinished(Player* caster, uint32 spellId, bool success);
+    void NotifyBotItemSpellFinished(Player* caster, uint32 spellId,
+        bool success, ObjectGuid castItemGuid, ObjectGuid itemTargetGuid,
+        uint32 castItemEntry, bool castItemIsPotion);
     void NotifyBotHeal(Unit* healer, Unit* target, uint32 spellId, uint32 attemptedHeal, uint32 effectiveHeal, uint32 absorbedHeal);
+    void NotifyCombatAttackAttempt(Unit* attacker, Unit* victim);
     void NotifyCombatDamage(Unit* attacker, Unit* victim, uint32 spellId, uint32 damage, uint32 unmitigatedDamage,
         uint32 damageType, uint32 schoolMask);
     uint64 NotifyNativeCreatureSpellStarted(Creature* caster, Unit* target, uint32 spellId);
@@ -377,6 +400,7 @@ private:
         bool HasAllowQuesting = false;
         bool HasAllowDungeons = false;
         bool HasAllowRaids = false;
+        bool HasDungeonDifficulty = false;
         bool HasRaidSize = false;
         bool HasRaidDifficulty = false;
         bool HasTrackHeroicRaidProgression = false;
@@ -419,6 +443,7 @@ private:
         std::string Label;
         std::string Kind;
         std::string NodeKind;
+        std::string DescentAction;
         std::string MechanicProfile;
         std::string MechanicContractId;
         ValidationRouteBossRecoveryPolicy BossRecoveryPolicy = ValidationRouteBossRecoveryPolicy::NativeEncounter;
@@ -492,6 +517,9 @@ private:
         float PlatformMaximumZ = 0.0f;
         bool MechanicContractResolved = false;
         uint32 MapId = 0;
+        uint32 RecoveryEntranceAreaTriggerId = 0;
+        uint32 RecoveryEntranceSourceMapId = 0;
+        uint32 RecoveryEntranceTargetMapId = 0;
         float X = 0.0f;
         float Y = 0.0f;
         float Z = 0.0f;
@@ -555,6 +583,7 @@ private:
         float PatrolFutureGuardMarginYards = 0.0f;
         uint32 PatrolPullOwnerRosterSlot = 0;
         uint32 ExpectedAliveCount = 0;
+        uint32 ActivationAreaTriggerId = 0;
         uint32 ActivationDataId = 0;
         uint32 ActivationDataValue = 0;
         uint32 ActivationSpawnGroupId = 0;
@@ -743,6 +772,17 @@ private:
 
     struct WorldBotState
     {
+        enum class ValidationDescentPhase : uint8
+        {
+            Unobserved = 0,
+            Approaching,
+            Departed,
+            Falling,
+            Landed,
+            Ready,
+            Blocked
+        };
+
         struct CombatAttemptDiagnostic
         {
             uint64 RecordedAtMs = 0;
@@ -804,6 +844,8 @@ private:
         };
 
         ObjectGuid Guid;
+        bool ServerProvisioned = false;
+        bool ServerBaselineNormalized = false;
         // Raid identity is assigned once at admission and survives any
         // replacement of the loaded Player object.  It is deliberately not
         // derived from Party().Bots.size(), which changes when a failed spawn
@@ -812,16 +854,102 @@ private:
         std::string RosterRole;
         std::string RosterClassSpec;
         float RosterAverageItemLevel = 0.0f;
+        // Player-like persistent-presence setup receipt. A successful native
+        // cast submission and a later observed aura are recorded separately;
+        // neither field manufactures the spell or aura.
+        uint32 RequiredPresenceSetupSpellId = 0;
+        uint32 RequiredPresenceSetupAuraId = 0;
+        bool RequiredPresenceSetupSpellKnown = false;
+        uint64 PresenceSetupNativeCastSubmittedAtMs = 0;
+        uint64 PresenceSetupAuraObservedAtMs = 0;
+        struct NativePersistentPetSetupReceipt
+        {
+            uint32 RequiredSummonSpellId = 0;
+            uint32 RequiredCreatedBySpellId = 0;
+            uint32 RequiredEntry = 0;
+            uint32 RequiredFamilyId = 0;
+            uint32 RequiredPetType = 0;
+            uint32 RequiredPowerType = 0;
+            bool SummonSpellKnown = false;
+            uint64 NativeCastSubmittedAtMs = 0;
+            uint64 NativeCastFinishedAtMs = 0;
+            bool NativeCastFinishedSuccessfully = false;
+            uint64 NativeCastObservedAtMs = 0;
+        };
+        // Pet classes use the ordinary learned summon and later reconcile the
+        // resulting owned permanent pet. Submission, native spell finish, and
+        // the subsequent complete pet observation are independent receipts;
+        // none of them creates, teaches, heals, or refills the pet.
+        NativePersistentPetSetupReceipt PersistentPetSetup;
+        struct NativePoisonSetupReceipt
+        {
+            uint8 EquipmentSlot = 0;
+            uint32 RequiredItemEntry = 0;
+            uint32 RequiredSpellId = 0;
+            uint32 RequiredEnchantId = 0;
+            bool ItemAvailable = false;
+            bool SpellAvailable = false;
+            ObjectGuid SubmittedItemGuid;
+            ObjectGuid SubmittedWeaponGuid;
+            uint64 NativeUseSubmittedAtMs = 0;
+            uint64 NativeUseFinishedAtMs = 0;
+            bool NativeUseFinishedSuccessfully = false;
+            ObjectGuid NativeUseFinishedItemGuid;
+            ObjectGuid NativeUseFinishedWeaponGuid;
+            uint64 NextNativeUseRetryAtMs = 0;
+            uint64 EnchantObservedAtMs = 0;
+            ObjectGuid ObservedWeaponGuid;
+            uint32 ObservedWeaponItemEntry = 0;
+            uint32 ObservedEnchantId = 0;
+            uint32 ObservedEnchantDurationMs = 0;
+        };
+        // Rogue poisons are ordinary consumable item uses. The active bot
+        // must submit each live inventory request and later observe its exact
+        // weapon enchant; provisioning never writes temporary enchants.
+        bool RoguePoisonSetupRequired = false;
+        NativePoisonSetupReceipt RogueMainhandPoisonSetup;
+        NativePoisonSetupReceipt RogueOffhandPoisonSetup;
         uint32 DecisionTimer = 0;
         uint32 StuckTimer = 0;
         uint8 StuckRecoveryStage = 0;
         uint64 StuckRecoveryStartedMs = 0;
         uint32 DeadTimer = 0;
         bool DeathEpisodeRecorded = false;
+        // One receipt-bound recovery episode owns every native action from
+        // Release Spirit through entrance traversal and corpse reclaim.  The
+        // identity fields prevent a later death/route/wipe from inheriting
+        // progress or retry authority from an earlier corpse.
+        uint64 NativeRecoveryEpisodeAttemptId = 0;
+        uint64 NativeRecoveryEpisodeRouteGeneration = 0;
+        uint64 NativeRecoveryEpisodeWipeGeneration = 0;
+        uint32 NativeRecoveryEpisodeDeathOrdinal = 0;
+        std::string NativeRecoveryEpisodePhase = "none";
+        uint64 NativeRecoveryEpisodeStartedMs = 0;
+        uint64 NativeRecoveryEpisodeLastProgressMs = 0;
+        std::string NativeRecoveryEpisodeDistanceTarget = "none";
+        float NativeRecoveryEpisodeBestDistance = std::numeric_limits<float>::max();
+        uint32 NativeRecoveryMovementRetryCount = 0;
+        uint32 NativeRecoveryReleaseRejectionCount = 0;
+        uint32 NativeRecoveryEntranceUnavailableCount = 0;
+        uint32 NativeRecoveryEntranceRejectionCount = 0;
+        uint32 NativeRecoveryReclaimRejectionCount = 0;
+        bool NativeRecoveryEntranceRequired = false;
+        bool NativeRecoveryEntranceObserved = false;
+        bool NativeRecoveryEntranceAvailable = false;
         uint64 NativeReadyCheckRequestGenerationResponded = 0;
         uint64 NativeReadyCheckStableGeneration = 0;
         uint64 NativeReadyCheckStableSinceMs = 0;
         uint64 NativeResurrectionPendingUntilMs = 0;
+        std::string NativeBattleResDecision = "unresolved";
+        ObjectGuid NativeBattleResOwnerGuid;
+        uint32 NativeBattleResSpellId = 0;
+        uint64 NativeBattleResDecisionAtMs = 0;
+        uint64 NativeBattleResDecisionUntilMs = 0;
+        // A planned approach reservation is not enough to hold a corpse. The
+        // owner kernel must have accepted a matching typed movement intent
+        // recently; otherwise the dead member releases like a player.
+        uint64 NativeBattleResApproachIntentDecisionAtMs = 0;
+        uint64 NativeBattleResApproachIntentAcceptedUntilMs = 0;
         bool NativeReleaseRequested = false;
         uint32 NativeRunbackAreaTriggerId = 0;
         bool NativeReleaseLandingObserved = false;
@@ -903,7 +1031,13 @@ private:
         float ActivePathToX = 0.0f;
         float ActivePathToY = 0.0f;
         float ActivePathToZ = 0.0f;
+        float ActivePathSegmentToX = 0.0f;
+        float ActivePathSegmentToY = 0.0f;
+        float ActivePathSegmentToZ = 0.0f;
+        bool ActivePathSegmentValid = false;
+        std::string ActivePathTraversalMode;
         bool ActivePathValid = false;
+        ObjectGuid ActivePathTargetGuid;
         uint64 ActivePathAttemptId = 0;
         uint32 ActivePathWipeGeneration = 0;
         uint64 ActivePathRouteGeneration = 0;
@@ -915,6 +1049,20 @@ private:
         float LastDeathY = 0.0f;
         uint32 RecentDeathCount = 0;
         ObjectGuid TargetGuid;
+        // A melee player's autoattack is a persistent toggle independent of
+        // movement and GCD spell scheduling. Keep the desired target explicit
+        // so native feedback can be reconciled every world tick.
+        ObjectGuid DesiredMeleeAttackTargetGuid;
+        BotMeleeAutoAttack::Lane MeleeAutoAttackLane;
+        std::string MeleeAutoAttackState = "inactive";
+        std::string MeleeAutoAttackSuppressionReason;
+        std::string LastMeleeAutoAttackIntentOwner = "none";
+        std::string LastMeleeAutoAttackIntentKind = "stop";
+        std::string LastMeleeAutoAttackIntentReason;
+        std::string LastMeleeAutoAttackOutcome = "not_reconciled";
+        uint8 LastMeleeAutoAttackIntentPriority = 0;
+        uint32 LastMeleeAutoAttackCandidateCount = 0;
+        uint64 LastMeleeAutoAttackReconcileMs = 0;
         bool WasInCombat = false;
         ObjectGuid FeralChargePickupTargetGuid;
         uint64 FeralChargePickupUntilMs = 0;
@@ -947,6 +1095,29 @@ private:
         uint64 ValidationRouteGeneration = 0;
         uint64 ValidationRouteTerminalGeneration = 0;
         std::string ValidationRouteTerminalReason;
+        // Per-player observations for typed, ordinary-movement descents. A
+        // cohort may advance only after every member independently departs,
+        // lands alive and grounded, and proves a native path onward.
+        ValidationDescentPhase ValidationRouteDescentPhase = ValidationDescentPhase::Unobserved;
+        uint64 ValidationRouteDescentGeneration = 0;
+        float ValidationRouteDescentStartX = 0.0f;
+        float ValidationRouteDescentStartY = 0.0f;
+        float ValidationRouteDescentStartZ = 0.0f;
+        float ValidationRouteDescentInitialGoalDistance = 0.0f;
+        float ValidationRouteDescentBestGoalDistance = 0.0f;
+        float ValidationRouteDescentLandingX = 0.0f;
+        float ValidationRouteDescentLandingY = 0.0f;
+        float ValidationRouteDescentLandingZ = 0.0f;
+        float ValidationRouteDescentLandingHealthPct = 0.0f;
+        uint64 ValidationRouteDescentLastProgressMs = 0;
+        uint64 ValidationRouteDescentGroundedSinceMs = 0;
+        bool ValidationRouteDescentDepartureObserved = false;
+        bool ValidationRouteDescentFallingObserved = false;
+        bool ValidationRouteDescentLandingObserved = false;
+        bool ValidationRouteDescentHealthMarginSatisfied = false;
+        bool ValidationRouteDescentLandingPathProven = false;
+        bool ValidationRouteDescentMonotonicProgressObserved = false;
+        std::string ValidationRouteDescentRejectReason;
         bool ValidationCohortLocked = false;
         bool ValidationCohortViolation = false;
         std::string ValidationCohortViolationReason;
@@ -1745,11 +1916,15 @@ private:
     void EnsurePopulation();
     void EnsureCalibrationPopulation();
     void ResetCalibrationScoredWindow();
+    void UpdateCalibrationTargetHealthSchedule(uint64 nowMs);
     void UpdateCalibrationControlledDamage();
     void CompleteCalibrationScoredWindow();
     void DrainCalibrationPostWindowEffects();
     bool UpdateCalibrationHealer(WorldBotState& state, Player* healer);
+    struct CalibrationMetrics;
     std::pair<bool, bool> ApplyCalibrationReferenceConditions(Player* bot, Unit* target) const;
+    void ObserveCalibrationReferenceConditions(CalibrationMetrics& metrics,
+        Player* bot, Unit* target, uint64 observedAtMs) const;
     void UpdateCalibrationBot(WorldBotState& state, uint32 diff);
     bool ResolveSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
     bool ResolveSavedSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
@@ -1761,6 +1936,14 @@ private:
     void PersistBotPosition(Player* bot) const;
     void RecordSpawnResolved(WorldBotState& state, Player* bot, SpawnPlacement const& placement, char const* result);
     void PublishEncounterBlackboard(uint64 nowMs);
+    bool CurrentCombatResOwnerUsable(WorldBotState const& targetState, Player const* target,
+        uint64 nowMs, std::string& declineReason) const;
+    std::optional<BotNativeAction::Candidate> BuildCombatResNativeActionCandidate(
+        WorldBotState& ownerState, Player* owner, uint64 nowMs);
+    void PublishNativeBattleResDecision(WorldBotState& targetState, Player* target,
+        std::string const& decision, ObjectGuid ownerGuid, uint32 spellId,
+        uint64 nowMs, uint64 decisionUntilMs);
+    void ReconcileNativeBattleResDecisions(uint64 nowMs);
     void UpdateBot(WorldBotState& state, uint32 diff);
     void TryRespondNativeRaidReadyCheck(WorldBotState& state, Player* bot);
     bool IsNativeRaidRecoveryEvidencePending() const;
@@ -1768,12 +1951,14 @@ private:
     bool TryRestoreNativeRaidRecoveryPet(WorldBotState& state, Player* bot);
     void SuppressNativeRaidRecovery(WorldBotState& state, Player* bot);
     bool TryReattachValidationBot(WorldBotState& state, Player* bot, char const* context);
+    bool IsNativeCombatResTarget(WorldBotState const& state, Player const* bot) const;
     bool HasNativeRaidCorpseAuthority(WorldBotState const& state, Player const* bot) const;
     bool ObserveNativeRaidHostileActivity(Map* raidMap, WorldObject const* observer,
         bool& active, std::string& reason, uint32& entry, ObjectGuid& guid) const;
-    bool ResolveNativeBlackwingDescentEntrance(AreaTriggerEntry const*& entry, AreaTriggerStruct const*& destination) const;
+    bool ResolveNativeValidationEntrance(uint32 targetMapId, uint32 sourceMapId, float sourceX, float sourceY,
+        AreaTriggerEntry const*& entry, AreaTriggerStruct const*& destination) const;
     bool IsNativeReleasedGhostWorldport(WorldBotState const& state, Player* bot) const;
-    bool IsNativeBlackwingDescentRunbackWorldport(WorldBotState const& state, Player* bot) const;
+    bool IsNativeValidationRunbackWorldport(WorldBotState const& state, Player* bot) const;
     void RememberSafePosition(WorldBotState& state, Player* bot, uint32 diff);
     void PruneSafePositions(WorldBotState& state, uint64 nowMs) const;
     void RememberVisiblePois(WorldBotState& state, Player* bot, uint32 diff);
@@ -1787,11 +1972,22 @@ private:
     bool MoveBotToPoint(WorldBotState& state, Player* bot, float x, float y, float z,
         bool terminalOnFailure = false,
         BotMovementArbitration::Owner movementOwner = BotMovementArbitration::Owner::None,
-        BotMovementArbitration::Priority movementPriority = BotMovementArbitration::Priority::Idle);
+        BotMovementArbitration::Priority movementPriority = BotMovementArbitration::Priority::Idle,
+        Unit* dynamicTarget = nullptr);
     BotActionArbitration::Outcome ExecuteNativeActionIntent(WorldBotState& state, Player* bot,
         BotNativeAction::Intent const& intent,
         BotMovementArbitration::Owner movementOwner = BotMovementArbitration::Owner::None,
         BotMovementArbitration::Priority movementPriority = BotMovementArbitration::Priority::Idle);
+    BotActionArbitration::Outcome ExecuteNativeDescentIntent(WorldBotState& state,
+        Player* bot, BotNativeAction::NativeDescent const& intent);
+    static char const* ValidationDescentPhaseName(
+        WorldBotState::ValidationDescentPhase phase);
+    void BeginMeleeAutoAttackDecision(WorldBotState& state, Player* bot);
+    bool SubmitMeleeAutoAttackIntent(WorldBotState& state,
+        BotMeleeAutoAttack::Kind kind, ObjectGuid target,
+        BotMeleeAutoAttack::Owner owner,
+        BotActionArbitration::Priority priority, char const* reason);
+    void ResolveAndReconcileMeleeAutoAttack(WorldBotState& state, Player* bot);
     BotDeathRecoveryPolicy BuildDeathRecoveryPolicy() const;
     DeathRecoveryResult RecoverDeadBot(WorldBotState& state, Player* bot);
     bool TryNativeCorpseRun(WorldBotState& state, Player* bot, std::string& result);
@@ -1862,17 +2058,18 @@ private:
     DungeonTrashActionResult TryDungeonTrash(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity);
     bool TryValidationRouteReadiness(WorldBotState& state, Player* bot, Unit* pullTarget, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, DungeonTrashActionResult& result);
     bool TryEnsureCombatTotems(WorldBotState& state, Player* bot, Unit* target, uint32 hostileCount) const;
-    bool TryEnsurePersistentCombatSetup(WorldBotState& state, Player* bot, Unit* target) const;
+    bool IsNativePoisonSetupReady(Player const* bot,
+        WorldBotState::NativePoisonSetupReceipt const& receipt) const;
+    bool TryEnsurePersistentCombatSetup(WorldBotState& state, Player* bot, Unit* target);
     char const* GetDungeonRole(Player* bot) const;
     uint32 SelectInterruptSpell(Player* bot) const;
     uint32 SelectHealSpell(Player* bot, Unit* target, bool instantOnly = false) const;
     bool TryCastFriendlySpell(Player* bot, Unit* target, uint32 spellId, std::string* failureReason = nullptr);
-    bool TryNativePartyResurrection(WorldBotState& state, Player* healer, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, DungeonTrashActionResult& result, std::string const& targetPolicy = {});
     bool TryNativeSelfResurrection(WorldBotState& state, Player* bot);
     std::string BuildDungeonTrashPackJson(DungeonTrashPackFeatures const& pack) const;
     std::string BuildBossMechanicsJson(BossMechanicFeatures const& features) const;
     uint32 SelectCombatSpell(Player* bot, Unit* target) const;
-    ResolvedCombatAction ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true, bool hostileTargetOnly = false) const;
+    ResolvedCombatAction ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true, bool hostileTargetOnly = false, bool movementCompatibleOnly = false) const;
     BotActionResult ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true, bool hostileTargetOnly = false);
     BotActionResult ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true, bool hostileTargetOnly = false);
     bool MoveBotToProfileRange(WorldBotState& state, Player* bot, Unit* reference,
@@ -1903,14 +2100,23 @@ private:
     void RecordReplayEvent(WorldBotState const& state, Player* bot, char const* eventType, ReplayRecord const& record, char const* result, char const* contextJson = nullptr);
     void RecordActivityStart(WorldBotState& state, Player* bot);
     void RecordActivityStop(WorldBotState const& state, Player* bot = nullptr);
+    struct RaidRosterItemIdentity;
     void EnsureValidationCohortGroup();
     void EnsureCalibrationCohortGroup();
+    bool ObserveEquippedGearIdentity(Player const* bot,
+        std::vector<RaidRosterItemIdentity>& manifest,
+        std::string& manifestSha256) const;
+    bool EquippedGearManifestsEqual(
+        std::vector<RaidRosterItemIdentity> const& left,
+        std::vector<RaidRosterItemIdentity> const& right) const;
     bool IsValidationProfileName(std::string const& name) const;
     bool PrepareCurrentValidationProfile(char const* reason);
     bool ApplyValidationProvisioningSql(char const* reason);
     bool ResetValidationBotPool(char const* reason);
     bool IsValidationCohortMemberInOriginalInstance(WorldBotState const& state, Player const* bot) const;
     void MarkValidationCohortViolation(WorldBotState& state, Player const* bot, char const* reason);
+    bool FailValidationAttemptOnce(WorldBotState& reporterState, Player* reporter,
+        std::string const& reason, uint64 routeGeneration);
     bool TrySmartGearDecision(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action);
     bool TryProfessionMemoryAction(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action);
     void RecordGearEvaluation(WorldBotState& state, Player* bot, BotGearUpgradeEvaluation const& evaluation, char const* rawJson, char const* semanticJson);
@@ -1956,6 +2162,7 @@ private:
     SemanticOutcomeStats GetSemanticOutcomeStats(char const* entityType, uint32 entityKey) const;
     std::string BuildOutcomeStatsJson(SemanticOutcomeStats const& stats) const;
     std::string BuildEmbeddingFeaturesJson(Player const* bot, Unit const* target, char const* entityType, uint32 entityKey, char const* semanticFamily) const;
+    std::string BuildNativeRecoveryEpisodeJson(WorldBotState const* state) const;
     std::string BuildRawJson(Player* bot, Unit const* target) const;
     std::string BuildSemanticJson(Player* bot, Unit const* target, char const* situation, BotRolePowerBreakdown const* power = nullptr, BotProgressionStage stage = BotProgressionStage::Leveling, BotProgressionActivity activity = BotProgressionActivity::ExperimentExploration) const;
     RoleSaturationState BuildRoleSaturationState(Player const* bot, Unit const* target, char const* role, float encounterDanger = 0.0f, float interruptPressure = 0.0f, bool tankBuster = false, bool adds = false, bool noValidActions = false) const;
@@ -1977,16 +2184,64 @@ private:
 
     struct CalibrationMetrics
     {
+        struct InitialPowerObservation
+        {
+            uint8 PowerType = 0;
+            uint32 ExpectedNativeValue = 0;
+            uint32 ExpectedDisplayValue = 0;
+            uint32 ObservedNativeValue = 0;
+            uint32 ObservedDisplayValue = 0;
+            uint32 ObservedMaximumNativeValue = 0;
+            bool ExpectedMaximum = false;
+            bool MatchesContract = false;
+            uint32 UnitGuid = 0;
+            std::string UnitKind;
+            std::string PowerName;
+        };
+
+        struct TargetHealthPhaseObservation
+        {
+            uint32 SampleCount = 0;
+            uint64 FirstObservedElapsedMs = 0;
+            uint64 LastObservedElapsedMs = 0;
+            uint64 MinimumObservedHealth = std::numeric_limits<uint64>::max();
+            uint64 MaximumObservedHealth = 0;
+            uint64 MinimumObservedMaxHealth = std::numeric_limits<uint64>::max();
+            uint64 MaximumObservedMaxHealth = 0;
+            uint32 DamageEventSampleCount = 0;
+            uint64 FirstDamageEventElapsedMs = 0;
+            uint64 LastDamageEventElapsedMs = 0;
+            uint64 MinimumPreDamageHealth = std::numeric_limits<uint64>::max();
+            uint64 MaximumPreDamageHealth = 0;
+            uint64 MinimumProjectedPostDamageHealth = std::numeric_limits<uint64>::max();
+            uint64 MaximumProjectedPostDamageHealth = 0;
+            uint64 MinimumDamageEventMaxHealth = std::numeric_limits<uint64>::max();
+            uint64 MaximumDamageEventMaxHealth = 0;
+            uint32 MaximumDamageEvent = 0;
+        };
+
         uint64 WindowStartedMs = 0;
         uint64 WindowEndedMs = 0;
         uint64 Damage = 0;
         uint64 PetDamage = 0;
+        uint64 PrimaryTargetDamage = 0;
+        uint64 OffTargetDamage = 0;
         uint64 AttemptedHealing = 0;
         uint64 EffectiveHealing = 0;
         uint64 AbsorbedHealing = 0;
         uint32 Attempts = 0;
         uint32 Successes = 0;
         uint32 TickCount = 0;
+        uint32 RequiredPetReadyTicks = 0;
+        uint32 PetSetupObservationSampleCount = 0;
+        uint32 PetSetupReadySampleCount = 0;
+        uint64 FirstPetSetupObservedAtMs = 0;
+        uint64 LastPetSetupObservedAtMs = 0;
+        uint64 MaximumPetSetupObservationGapMs = 0;
+        uint32 FirstPetSetupObservedGuid = 0;
+        uint32 LastPetSetupObservedGuid = 0;
+        uint32 PetSetupGuidMismatchSampleCount = 0;
+        uint32 PetSetupIdentityMismatchSampleCount = 0;
         uint32 ActiveTicks = 0;
         uint32 MovementRangeLossTicks = 0;
         uint32 ResourceCappedTicks = 0;
@@ -2034,6 +2289,76 @@ private:
         bool BalanceMushroomsPreplanted = false;
         uint8 BalanceMushroomPreplantCount = 0;
         bool DeathRecorded = false;
+        bool InitialResourcesApplied = false;
+        bool InitialResourcesMatchContract = false;
+        uint64 InitialResourcesObservedAtMs = 0;
+        std::string InitialResourceSourceContract;
+        std::vector<InitialPowerObservation> InitialPowerObservations;
+        bool InitialRunesRequired = false;
+        uint8 InitialExpectedRuneReadyMask = 0;
+        uint8 InitialObservedRuneReadyMask = 0;
+        bool InitialComboPointsRequired = false;
+        uint8 InitialExpectedComboPoints = 0;
+        uint8 InitialObservedComboPoints = 0;
+        bool InitialNeutralEclipseRequired = false;
+        bool InitialNeutralEclipseObserved = false;
+        bool InitialPetResourceRequired = false;
+        bool InitialPetResourceObserved = false;
+        bool PreScorePersistentSetupReady = false;
+        bool PreScoreReferenceBuffsReady = false;
+        bool PreScoreReferenceTargetDebuffsReady = false;
+        bool PreScoreHeroismReady = false;
+        bool PreScoreNoActiveCast = false;
+        bool PreScoreNoCombat = false;
+        bool PreScoreGlobalCooldownClear = false;
+        bool PreScoreCooldownResetApplied = false;
+        bool WarmupProfileActionsSuppressed = false;
+        bool PreScoreTemporalExternalsAbsent = false;
+        bool PreScoreExternalBleedAbsent = false;
+        uint64 PreScoreStateObservedAtMs = 0;
+        uint32 ExternalWindowSampleCount = 0;
+        uint64 FirstExternalWindowObservedAtMs = 0;
+        uint64 LastExternalWindowObservedAtMs = 0;
+        uint64 MaximumExternalWindowObservationGapMs = 0;
+        uint32 HeroismExpectedActiveSamples = 0;
+        uint32 HeroismObservedActiveSamples = 0;
+        uint32 HeroismMismatchSamples = 0;
+        uint32 PowerInfusionExpectedActiveSamples = 0;
+        uint32 PowerInfusionObservedActiveSamples = 0;
+        uint32 PowerInfusionMismatchSamples = 0;
+        uint32 UnexpectedDarkIntentBaseSamples = 0;
+        uint32 UnexpectedDarkIntentProcSamples = 0;
+        uint32 UnexpectedSynapseSpringsSamples = 0;
+        uint32 ReferenceConditionSampleCount = 0;
+        uint64 FirstReferenceConditionObservedAtMs = 0;
+        uint64 LastReferenceConditionObservedAtMs = 0;
+        uint64 MaximumReferenceConditionObservationGapMs = 0;
+        uint32 PreScoreLastPotionItemId = 0;
+        uint32 LastPotionIdNonzeroSampleCount = 0;
+        uint32 ScoredPotionUseCount = 0;
+        uint32 ScoredTinkerOrOtherItemUseCount = 0;
+        uint32 ScoredRacialUseCount = 0;
+        uint32 ScoredTinkerSpellUseCount = 0;
+        uint32 UnexpectedDynamicAuraActiveSamples = 0;
+        uint32 UnexpectedExternalBleedActiveSamples = 0;
+        std::map<uint32, uint32> ReferencePlayerAuraActiveSamples;
+        std::map<uint32, uint32> ReferencePlayerAuraInactiveSamples;
+        std::map<uint32, uint32> ReferenceTargetAuraActiveSamples;
+        std::map<uint32, uint32> ReferenceTargetAuraInactiveSamples;
+        std::map<uint32, uint32> ReferenceTargetAuraOwnerMatchSamples;
+        std::map<uint32, uint32> ReferenceTargetAuraOwnerMismatchSamples;
+        uint32 ReferenceSunderMatchingStackSamples = 0;
+        uint32 ReferenceSunderMismatchStackSamples = 0;
+        uint8 ReferenceSunderMinimumObservedStacks =
+            std::numeric_limits<uint8>::max();
+        uint8 ReferenceSunderMaximumObservedStacks = 0;
+        std::string InitialGearManifestSha256;
+        std::string LastObservedGearManifestSha256;
+        uint32 GearIdentitySampleCount = 0;
+        uint32 GearIdentityMismatchSampleCount = 0;
+        uint64 FirstGearIdentityObservedAtMs = 0;
+        uint64 LastGearIdentityObservedAtMs = 0;
+        uint64 MaximumGearIdentityObservationGapMs = 0;
         std::map<uint32, uint64> SpellDamage;
         std::map<uint32, uint32> SpellDamageEvents;
         std::map<uint32, uint32> ActionAttempts;
@@ -2046,6 +2371,10 @@ private:
         std::set<std::string> ScheduledDamagePhases;
         std::set<std::string> DeliveredDamagePhases;
         std::map<std::string, uint32> ResultCounts;
+        // Raw server observations for the isolated single-target fixture's
+        // five WoWSims execute-threshold bands. Evidence reconstructs the
+        // schedule from these integers; it does not trust an aggregate flag.
+        std::array<TargetHealthPhaseObservation, 5> TargetHealthPhaseObservations;
     };
 
     struct PartyRuntime
@@ -2162,6 +2491,7 @@ private:
         uint32 ValidationRouteCanonicalBossRecoveryAttempts = 0;
         uint64 ValidationRouteCanonicalBossRecoveryLastMs = 0;
         std::vector<ValidationRouteManifestNode> ValidationRouteManifest;
+        std::string ValidationRouteManifestSha256;
         std::vector<ValidationRouteEvidence> ValidationRouteTerminalEvidence;
         std::vector<ValidationRouteEvidence> ValidationRouteBossDeathEvidence;
         size_t ValidationRouteManifestIndex = 0;
@@ -2252,11 +2582,52 @@ private:
         uint64 ResurrectionSequence = 0;
     };
 
+    struct CohortAdmissionMemberReceipt
+    {
+        ObjectGuid Guid;
+        ObjectGuid GroupGuid;
+        ObjectGuid LeaderGuid;
+        std::string RosterSlotId;
+        std::string Role;
+        std::string ClassSpec;
+        uint8 ClassId = 0;
+        uint8 ActiveSpecIndex = 0;
+        uint32 PrimaryTalentTreeId = 0;
+        uint32 ActiveTalentCount = 0;
+        std::vector<uint32> ActiveTalentSpellIds;
+        bool PetIdentityPresent = false;
+        uint32 PetId = 0;
+        uint32 PetEntry = 0;
+        uint32 PetSpellCount = 0;
+        std::vector<std::pair<uint32, uint8>> PetSpellbook;
+        std::string PetSpellbookSha256;
+        std::string GearProfileId;
+        uint32 GearItemCount = 0;
+        std::vector<RaidRosterItemIdentity> GearManifest;
+        std::string GearManifestSha256;
+        uint32 MapId = 0;
+        uint32 InstanceId = 0;
+        uint8 ExpectedDifficulty = 0;
+        uint8 PlayerDifficulty = 0;
+        int16 MapDifficulty = -1;
+        float SpawnX = 0.0f;
+        float SpawnY = 0.0f;
+        float SpawnZ = 0.0f;
+        float SpawnO = 0.0f;
+        bool ServerProvisioned = false;
+        bool InitialBaselineNormalized = false;
+        bool InitialAliveStateVerified = false;
+    };
+
     struct RaidRuntime
     {
         bool Active = false;
+        bool RaidInstance = false;
+        bool ServerProvisioningComplete = false;
+        bool BotActionsEnabled = false;
         bool RosterComplete = false;
         bool DifficultyMatches = false;
+        bool DifficultyReadbackComplete = false;
         bool UniqueLeases = false;
         ObjectGuid GroupGuid;
         ObjectGuid LeaderGuid;
@@ -2266,6 +2637,9 @@ private:
         uint8 ExpectedDifficulty = 0;
         uint8 GroupDifficulty = 0;
         int16 MapDifficulty = -1;
+        uint32 DifficultyMemberCount = 0;
+        uint32 DifficultyMatchingMemberCount = 0;
+        uint32 ProvisionedMemberCount = 0;
         uint32 MapId = 0;
         uint32 InstanceId = 0;
         uint32 LockoutSaveId = 0;
@@ -2273,6 +2647,21 @@ private:
         uint64 AttemptId = 0;
         uint64 ProfileGeneration = 0;
         std::string ProfileContentHash;
+        uint64 AdmissionCommittedAtMs = 0;
+        uint64 AdmissionAttemptId = 0;
+        bool AdmissionActionGateEnabled = false;
+        std::string AdmissionScenarioId;
+        std::string AdmissionRuntimeProfile;
+        std::string AdmissionRouteManifestSha256;
+        uint32 AdmissionRecoveryEntranceAreaTriggerId = 0;
+        uint32 AdmissionRecoveryEntranceSourceMapId = 0;
+        uint32 AdmissionRecoveryEntranceTargetMapId = 0;
+        uint32 AdmissionEntranceMapId = 0;
+        float AdmissionEntranceX = 0.0f;
+        float AdmissionEntranceY = 0.0f;
+        float AdmissionEntranceZ = 0.0f;
+        float AdmissionEntranceO = 0.0f;
+        std::map<uint32, CohortAdmissionMemberReceipt> AdmissionReceiptByGuid;
         uint64 AssignmentGeneration = 0;
         uint64 EvidenceSequence = 0;
         uint64 WipeGeneration = 0;
@@ -2376,10 +2765,58 @@ private:
         bool CalibrationStopping = false;
         bool CalibrationAoePhase = false;
         bool CalibrationWindowComplete = false;
+        std::string CalibrationFailureReason;
         std::string CalibrationMode = "single_target_300";
         std::string CalibrationTargetSpec;
         uint32 CalibrationSeed = 1;
         ObjectGuid CalibrationTargetGuid;
+        ObjectGuid CalibrationFixtureTargetGuid;
+        uint32 CalibrationFixtureTargetEntry = 0;
+        uint32 CalibrationFixtureExpectedTargetLevel = 0;
+        uint32 CalibrationFixtureExpectedTargetArmor = 0;
+        uint32 CalibrationFixtureExpectedTargetCreatureType = 0;
+        uint32 CalibrationFixtureExpectedTargetMaxHealth = 0;
+        uint32 CalibrationFixtureObservedTargetLevel = 0;
+        uint32 CalibrationFixtureObservedTargetArmor = 0;
+        uint32 CalibrationFixtureObservedTargetCreatureType = 0;
+        uint32 CalibrationFixtureObservedTargetCreatureTypeMask = 0;
+        uint32 CalibrationFixtureObservedTargetMaxHealth = 0;
+        uint32 CalibrationFixtureTargetMapId = 0;
+        float CalibrationFixtureTargetX = 0.0f;
+        float CalibrationFixtureTargetY = 0.0f;
+        float CalibrationFixtureTargetZ = 0.0f;
+        float CalibrationFixtureTargetNearestHostileClearance = 0.0f;
+        uint64 CalibrationFixtureTargetProvisionedAtMs = 0;
+        uint64 CalibrationFixtureTargetObservedBeforeScoringAtMs = 0;
+        uint32 CalibrationFixtureBeforeScoringTargetLevel = 0;
+        uint32 CalibrationFixtureBeforeScoringTargetArmor = 0;
+        uint32 CalibrationFixtureBeforeScoringTargetCreatureType = 0;
+        uint32 CalibrationFixtureBeforeScoringTargetCreatureTypeMask = 0;
+        uint32 CalibrationFixtureBeforeScoringTargetMaxHealth = 0;
+        uint32 CalibrationFixtureBeforeScoringTargetMapId = 0;
+        ObjectGuid CalibrationFixtureBeforeScoringTargetGuid;
+        float CalibrationFixtureBeforeScoringTargetX = 0.0f;
+        float CalibrationFixtureBeforeScoringTargetY = 0.0f;
+        float CalibrationFixtureBeforeScoringTargetZ = 0.0f;
+        float CalibrationFixtureBeforeScoringBotTargetDistance = 0.0f;
+        bool CalibrationFixtureBeforeScoringTargetInCombat = false;
+        bool CalibrationFixtureBeforeScoringTargetHasVictim = false;
+        uint32 CalibrationFixtureTargetPassiveObservationSampleCount = 0;
+        uint32 CalibrationFixtureTargetVictimObservationSampleCount = 0;
+        uint32 CalibrationFixtureTargetAttackEventCount = 0;
+        uint32 CalibrationFixtureTargetOriginatedDamageEventCount = 0;
+        uint64 CalibrationFixtureTargetFirstPassiveObservedAtMs = 0;
+        uint64 CalibrationFixtureTargetLastPassiveObservedAtMs = 0;
+        uint64 CalibrationFixtureTargetMaximumPassiveObservationGapMs = 0;
+        float CalibrationFixtureBotSpawnX = 0.0f;
+        float CalibrationFixtureBotSpawnY = 0.0f;
+        float CalibrationFixtureBotSpawnZ = 0.0f;
+        float CalibrationFixtureBotTargetDistance = 0.0f;
+        bool CalibrationFixtureNativeLineOfSight = false;
+        bool CalibrationFixtureNativePathReachable = false;
+        bool CalibrationFixtureNativeMeleeReachable = false;
+        bool CalibrationFixtureGeometryValidated = false;
+        std::string CalibrationFixtureProfileLane;
         ObjectGuid CalibrationInterruptTargetGuid;
         uint64 CalibrationStartedMs = 0;
         uint64 CalibrationScoredStartedMs = 0;
@@ -2387,6 +2824,7 @@ private:
         uint64 CalibrationLastPostWindowDrainMs = 0;
         uint64 CalibrationLastControlledEventSecond = std::numeric_limits<uint64>::max();
         uint32 CalibrationCrossWindowEventCount = 0;
+        uint32 CalibrationExcludedBoundaryDamageEventCount = 0;
         std::string CalibrationResetId;
         std::string CalibrationCurrentDamagePhase;
         std::map<uint32, CalibrationMetrics> CalibrationMetricsByGuid;
@@ -2406,6 +2844,9 @@ private:
         std::string ValidationAttemptFailureReason;
         uint64 ValidationAttemptFailureAttemptId = 0;
         uint64 ValidationAttemptFailureRouteGeneration = 0;
+        ValidationAdmissionPhase ValidationAdmission = ValidationAdmissionPhase::Provisioning;
+        bool ValidationAdmissionStarted = false;
+        bool ValidationAdmissionBatchSealed = false;
         bool ValidationRaidAdmissionComplete = false;
         bool ValidationRaidAdmissionFailed = false;
         uint64 LastNativeWorldportDeferredLogMs = 0;

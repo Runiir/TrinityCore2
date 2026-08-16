@@ -826,7 +826,7 @@ def evaluate_acceptance(facts: Mapping[str, Any]) -> dict[str, Any]:
     boss_scopes = _scope_set(evidence.get("real_boss_kill_evidence"))
     manifest_complete = bool(evidence.get("manifest_completion_evidence"))
     authoritative_stonecore_boss_clear = (
-        context.get("scenario_id") == "stonecore_5n"
+        context.get("scenario_id") in {"stonecore_5n", "stonecore_5h"}
         and not context.get("segment_id")
         and not context.get("route_node_id")
         and len(routes) == 14

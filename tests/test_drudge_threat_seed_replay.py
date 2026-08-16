@@ -216,7 +216,9 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
         "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(Player*", executor_start
     )
     executor = implementation[executor_start:executor_end]
-    assert "allowMultidot && !forbidArea, hostileTargetOnly" in executor
+    assert "allowMultidot && !forbidArea, hostileTargetOnly" in " ".join(
+        executor.split()
+    )
     assert "!hostileTargetOnly && state && TryEnsurePersistentCombatSetup" in executor
     assert "!hostileTargetOnly && state" in executor
     assert "&& TryEnsureCombatTotems" in executor

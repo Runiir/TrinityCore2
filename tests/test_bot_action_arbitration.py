@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 
@@ -23,6 +24,7 @@ def test_action_and_movement_arbiters_compile_and_replay(tmp_path: Path) -> None
 #include "Bots/BotAdaptiveRaidTrashStrategy.h"
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotMovementArbiter.h"
+#include "Bots/BotMeleeAutoAttackIntent.h"
 #include "Bots/BotNativeActionIntent.h"
 #include <cassert>
 #include <string>
@@ -89,8 +91,46 @@ int main()
     assert(Evaluate(lease, refreshSameDestination, 1002)
         == Decision::Refresh);
 
+    Request targetAwareUpgrade{ Owner::CombatRange,
+        BotMovementArbitration::Priority::Combat, 1300, scope,
+        4.0f, 5.0f, 6.0f, 7001 };
+    assert(Evaluate(lease, targetAwareUpgrade, 1002) == Decision::Preempt);
+    Apply(lease, targetAwareUpgrade);
+    Request movingSameTarget{ Owner::CombatRange,
+        BotMovementArbitration::Priority::Combat, 1400, scope,
+        40.0f, 50.0f, 60.0f, 7001 };
+    assert(Evaluate(lease, movingSameTarget, 1003) == Decision::Refresh);
+    Request differentLiveTarget{ Owner::CombatRange,
+        BotMovementArbitration::Priority::Combat, 1400, scope,
+        40.0f, 50.0f, 60.0f, 7002 };
+    assert(Evaluate(lease, differentLiveTarget, 1003)
+        == Decision::PreserveExisting);
+
+    assert(FromBotActionResult(BotActionResult::Ok).LifecyclePhase
+        == Phase::Submitted);
     assert(FromBotActionResult(BotActionResult::GlobalCooldown).Result
         == Disposition::Retryable);
+
+    BotNativeAction::Intent descent = BotNativeAction::NativeDescent{
+        10.0f, 20.0f, 30.0f, 15.0f, 25.0f, 30.0f, 9, true };
+    assert(BotNativeAction::RequiredResources(descent)
+        == Uses(Resource::Movement));
+    BotNativeAction::Intent combatResApproach =
+        BotNativeAction::CombatResApproach{ ObjectGuid{}, 20484,
+            1000, 9000 };
+    assert(BotNativeAction::RequiredResources(combatResApproach)
+        == Uses(Resource::Movement));
+    BotNativeAction::Intent combatResCast =
+        BotNativeAction::CombatResCast{ ObjectGuid{}, 20484,
+            1000, 9000 };
+    assert(BotNativeAction::RequiredResources(combatResCast)
+        == Uses(Resource::Movement, Resource::GlobalCooldown,
+            Resource::Cast, Resource::Target));
+    BotNativeAction::Intent combatResAccept =
+        BotNativeAction::CombatResAccept{ ObjectGuid{}, 20484,
+            1000, 9000 };
+    assert(BotNativeAction::RequiredResources(combatResAccept)
+        == Uses(Resource::Interaction, Resource::Target));
 
     Scope newInstance = scope;
     newInstance.InstanceId = 42;
@@ -165,6 +205,78 @@ int main()
     assert(resolution.CommittedCandidates.back() == "route");
     assert(kernel.LastResolutionJson().find("hard_masked") != std::string::npos);
 
+    // Combat-res approach owns only movement: the owner can keep performing
+    // normal stationary damage while closing range. A committed survival
+    // movement still preempts the approach without blocking that damage lane.
+    Kernel combatResConcurrency;
+    combatResConcurrency.Begin(2010);
+    bool approachRan = false;
+    bool approachDamageRan = false;
+    combatResConcurrency.Submit(Candidate{
+        "combat_res_approach", "typed_combat_res",
+        BotActionArbitration::Priority::Mechanic, 9.0f, 0.0f, 0.0f,
+        BotNativeAction::RequiredResources(combatResApproach),
+        0, 100, 3000, 5, true, "", [&]
+        {
+            approachRan = true;
+            return Outcome::Progressed("approaching");
+        }
+    });
+    combatResConcurrency.Submit(Candidate{
+        "approach_damage", "profile",
+        BotActionArbitration::Priority::TrainedDamage, 5.0f, 0.0f, 0.0f,
+        Uses(Resource::GlobalCooldown, Resource::Cast, Resource::Target),
+        0, 100, 3000, 5, true, "", [&]
+        {
+            approachDamageRan = true;
+            return Outcome::Submitted("damage_cast_submitted");
+        }
+    });
+    Resolution const& combatResResolution = combatResConcurrency.Resolve();
+    assert(approachRan);
+    assert(approachDamageRan);
+    assert(combatResResolution.CommittedCandidates.size() == 2);
+
+    Kernel hazardOverApproach;
+    hazardOverApproach.Begin(2020);
+    bool survivalMoveRan = false;
+    bool blockedApproachRan = false;
+    bool hazardDamageRan = false;
+    hazardOverApproach.Submit(Candidate{
+        "combat_res_approach_hazard", "typed_combat_res",
+        BotActionArbitration::Priority::Mechanic, 9.0f, 0.0f, 0.0f,
+        BotNativeAction::RequiredResources(combatResApproach),
+        0, 100, 3000, 5, true, "", [&]
+        {
+            blockedApproachRan = true;
+            return Outcome::Progressed("must_not_preempt_hazard");
+        }
+    });
+    hazardOverApproach.Submit(Candidate{
+        "survival_move", "hazard",
+        BotActionArbitration::Priority::Survival, 2.0f, 0.0f, 0.0f,
+        Uses(Resource::Movement), 0, 100, 3000, 5, true, "", [&]
+        {
+            survivalMoveRan = true;
+            return Outcome::Submitted("hazard_move_submitted");
+        }
+    });
+    hazardOverApproach.Submit(Candidate{
+        "hazard_damage", "profile",
+        BotActionArbitration::Priority::TrainedDamage, 5.0f, 0.0f, 0.0f,
+        Uses(Resource::GlobalCooldown, Resource::Cast, Resource::Target),
+        0, 100, 3000, 5, true, "", [&]
+        {
+            hazardDamageRan = true;
+            return Outcome::Submitted("damage_during_hazard_move");
+        }
+    });
+    Resolution const& hazardResolution = hazardOverApproach.Resolve();
+    assert(survivalMoveRan);
+    assert(!blockedApproachRan);
+    assert(hazardDamageRan);
+    assert(hazardResolution.CommittedCandidates.size() == 2);
+
     // Retry backoff belongs to the failing candidate, not the bot. The
     // alternative remains eligible and progress clears escalation state.
     kernel.Begin(2050);
@@ -193,6 +305,27 @@ int main()
     assert(kernel.ShouldEscalate("hazard", 7100, 5000));
     kernel.MarkProgress("hazard", 7101, "movement_progress");
     assert(!kernel.ShouldEscalate("hazard", 7101, 0));
+
+    // Native submission owns its resource lane but is not semantic progress.
+    // Only an observed game-state postcondition advances LastProgressAtMs.
+    kernel.Begin(7200);
+    kernel.Submit(Candidate{
+        "native_submission", "player_signal", BotActionArbitration::Priority::TrainedDamage,
+        1.0f, 0.0f, 0.0f, Uses(Resource::Cast), 0, 100, 3000, 5, true, "", []
+        {
+            return Outcome::Submitted("native_cast_submitted");
+        }
+    });
+    kernel.Resolve();
+    Lifecycle const* submittedLifecycle = kernel.FindLifecycle("native_submission");
+    assert(submittedLifecycle);
+    assert(submittedLifecycle->CurrentPhase == Phase::Submitted);
+    assert(submittedLifecycle->LastProgressAtMs == 0);
+    kernel.MarkProgress("native_submission", 7201, "native_combat_observed");
+    assert(kernel.FindLifecycle("native_submission")->LastProgressAtMs == 7201);
+    kernel.Observe("native_selection", Outcome::Selected("profile_action_valid"), 7202);
+    assert(kernel.FindLifecycle("native_selection")->CurrentPhase == Phase::Selected);
+    assert(kernel.FindLifecycle("native_selection")->LastProgressAtMs == 0);
 
     // Resolution must own callback-local reason text for later replay/export.
     kernel.Begin(8000);
@@ -236,6 +369,46 @@ int main()
     assert(RequiredResources(click) == Uses(Resource::Interaction));
     Intent pet = PetCommand{ ObjectGuid(HighGuid::Pet, uint32(1), uint32(5)), channels.DamageTarget, 2 };
     assert((RequiredResources(pet) & Uses(Resource::Pet)) != 0);
+
+    // Melee autoattack is a separate persistent resource lane. It resolves
+    // independently from movement/GCD work, ignores producer order, and lets
+    // a higher-priority suppression prevent a lower-priority start in the
+    // same tick.
+    BotMeleeAutoAttack::Lane meleeLane;
+    meleeLane.Begin(8500);
+    BotMeleeAutoAttack::Intent profileStart;
+    profileStart.Toggle = BotMeleeAutoAttack::Kind::StartOrSwitch;
+    profileStart.IntentOwner = BotMeleeAutoAttack::Owner::Profile;
+    profileStart.ActionPriority = BotActionArbitration::Priority::TrainedDamage;
+    profileStart.Target = channels.MechanicTarget;
+    profileStart.Reason = "profile_melee_autoattack";
+    assert(profileStart.Resources() == Uses(Resource::AutoAttackToggle));
+    assert(!Conflicts(profileStart.Resources(), Uses(Resource::Movement)));
+    assert(!Conflicts(profileStart.Resources(), Uses(Resource::GlobalCooldown)));
+    assert(meleeLane.Submit(profileStart));
+    BotMeleeAutoAttack::Intent mechanicSuppress;
+    mechanicSuppress.Toggle = BotMeleeAutoAttack::Kind::Suppress;
+    mechanicSuppress.IntentOwner = BotMeleeAutoAttack::Owner::Mechanic;
+    mechanicSuppress.ActionPriority = BotActionArbitration::Priority::Mechanic;
+    mechanicSuppress.Reason = "mechanic_hold";
+    assert(meleeLane.Submit(mechanicSuppress));
+    auto selectedToggle = meleeLane.Resolve();
+    assert(selectedToggle);
+    assert(selectedToggle->Toggle == BotMeleeAutoAttack::Kind::Suppress);
+
+    // Cross-bot safety work submitted after a peer's scope remains queued
+    // across Begin and is consumed by that peer's sole next resolution.
+    BotMeleeAutoAttack::Intent queuedStop;
+    queuedStop.Toggle = BotMeleeAutoAttack::Kind::Stop;
+    queuedStop.IntentOwner = BotMeleeAutoAttack::Owner::Recovery;
+    queuedStop.ActionPriority = BotActionArbitration::Priority::Survival;
+    queuedStop.Reason = "peer_recovery_hold";
+    assert(meleeLane.Submit(queuedStop));
+    meleeLane.Begin(8600);
+    selectedToggle = meleeLane.Resolve();
+    assert(selectedToggle);
+    assert(selectedToggle->Toggle == BotMeleeAutoAttack::Kind::Stop);
+    assert(!meleeLane.Resolve());
 
     // A raid hazard is proposed independently from trained damage. The
     // endpoint is derived from the observed source, not a fixed route point.
@@ -533,10 +706,15 @@ def test_route_adapter_yields_retryable_holds_and_declared_boss_adds() -> None:
         assert retryable_fragment in route_adapter
     assert "targetBeforeRoute" in route_adapter
     assert "stateTargetBeforeRoute" in route_adapter
-    assert "Resource::GlobalCooldown" not in route_adapter.split(
-        "route.Attempt", 1
-    )[0]
-    assert "Resource::Cast" not in route_adapter.split("route.Attempt", 1)[0]
+    resources = route_adapter.split("route.Attempt", 1)[0]
+    for resource in (
+        "Resource::Movement",
+        "Resource::GlobalCooldown",
+        "Resource::Cast",
+        "Resource::Target",
+        "Resource::Interaction",
+    ):
+        assert resource in resources
 
 
 def test_boss_adapter_requires_observable_work_and_rejects_stale_focus() -> None:
@@ -550,6 +728,9 @@ def test_boss_adapter_requires_observable_work_and_rejects_stale_focus() -> None
     assert "previousCombatAttemptMs" in boss_adapter
     assert "boss_no_observable_effect" in boss_adapter
     assert "boss_action_committed" not in boss_adapter
+    resources = boss_adapter.split("boss.Attempt", 1)[0]
+    assert "Resource::Movement" in resources
+    assert "Resource::Cast" in resources
 
     route_start = source.index("bool BotWorldPopulationMgr::TryValidationRouteObjective(")
     focus_start = source.index("auto routeUsableValidationFocus", route_start)
@@ -557,6 +738,26 @@ def test_boss_adapter_requires_observable_work_and_rejects_stale_focus() -> None
     focus_filter = source[focus_start:focus_end]
     assert "isValidationRouteObjectiveTarget" in focus_filter
     assert "isValidationRouteScriptTarget" not in focus_filter
+
+
+def test_trash_adapter_requires_observable_work_and_yields_passive_waits() -> None:
+    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
+        encoding="utf-8"
+    )
+    start = source.index('trash.Key = "world.dungeon_trash"')
+    end = source.index('combat.Key = "world.profile_combat"', start)
+    adapter = source[start:end]
+
+    assert "previousPathChangeMs" in adapter
+    assert "previousCombatAttemptMs" in adapter
+    assert 'state.LastCombatAttempt.Reason == "no_line_of_sight"' in adapter
+    assert "nativeFollowActive" in adapter
+    assert 'action.find("wait")' in adapter
+    assert 'action.find("readiness")' in adapter
+    assert "trash_no_observable_effect" in adapter
+    assert "trash_action_committed" not in adapter
+    resources = adapter.split("trash.Attempt", 1)[0]
+    assert "Resource::Movement" in resources
 
 
 def test_raid_healing_is_independent_and_does_not_cancel_hazard_movement() -> None:
@@ -630,3 +831,71 @@ def test_native_route_interactions_use_player_handlers_and_observed_postconditio
     ]
     assert "adaptiveNativeRouteOwnsNode" in route_adapter
     assert '"native_route_contract_owns_node"' in route_adapter
+
+
+def test_dungeon_intro_activation_uses_native_area_trigger_opcode() -> None:
+    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
+        encoding="utf-8"
+    )
+    header = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text(
+        encoding="utf-8"
+    )
+    config = (ROOT / "src/server/worldserver/worldserver.conf.dist").read_text(
+        encoding="utf-8"
+    )
+    live_runner = (ROOT / "tools/bot_ml/run_live_bot_validation.py").read_text(
+        encoding="utf-8"
+    )
+
+    activation = source[
+        source.index("auto tryValidationRouteActivation"):
+        source.index("auto routeTankFocusTarget")
+    ]
+    assert "ValidationRouteActivationAreaTriggerId" in header
+    assert "BotWorld.ValidationRoute.ActivationAreaTriggerId = 0" in config
+    assert 'readInt(routeJson, "activation_area_trigger_id")' in source
+    assert '"activation_area_trigger_id"' in live_runner
+    assert "sAreaTriggerStore.LookupEntry(triggerId)" in activation
+    assert "bot->IsInAreaTriggerRadius(trigger)" in activation
+    assert "BotNativeAction::Move" in activation
+    assert "BotNativeAction::AreaTrigger" in activation
+    assert "struct AreaTrigger" in (ROOT / "src/server/game/Bots/BotNativeActionIntent.h").read_text(
+        encoding="utf-8"
+    )
+    assert "HandleAreaTriggerOpcode(areaTrigger)" in source
+    assert '"native_area_trigger_submitted"' in activation
+    assert "InstanceScript::SetData" in activation
+    assert "->SetData(" not in activation
+    assert "SpawnGroupSpawn(" not in activation
+    assert "AI()->DoAction(" not in activation
+    assert "SummonCreature(" not in activation
+
+    scenario_config = json.loads((
+        ROOT / "experiments/configs/validation_scenarios_cata_001.json"
+    ).read_text(encoding="utf-8"))
+    stonecore_steps = {
+        step["label"]: step
+        for scenario in scenario_config["scenarios"]
+        if scenario["id"] == "stonecore_5n"
+        for step in scenario["route"]
+    }
+    assert stonecore_steps["Corborus"]["activation_area_trigger_id"] == 6076
+    assert stonecore_steps["Slabhide"]["activation_area_trigger_id"] == 6070
+
+    generated_routes = [
+        json.loads(line)
+        for line in (
+            ROOT / "dataset/validation_scenarios/validation_routes.jsonl"
+        ).read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    stonecore_routes = {
+        route["label"]: route
+        for route in generated_routes
+        if route["scenario_id"] == "stonecore_5n"
+    }
+    assert stonecore_routes["Corborus"]["activation_area_trigger_id"] == 6076
+    assert stonecore_routes["Slabhide"]["activation_area_trigger_id"] == 6070
+    assert "interaction_contract" not in stonecore_routes["Corborus"]
+    assert "completion_contract" not in stonecore_routes["Corborus"]
+    assert "mechanic_contract" not in stonecore_routes["Corborus"]

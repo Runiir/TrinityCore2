@@ -3,14 +3,31 @@
 from __future__ import annotations
 
 import json
+import functools
 from pathlib import Path
 from typing import Any, Mapping
 
 try:
+    from .build_validation_provisioning import load_gear_profiles
     from .live_validation_session import canonical_sha256
+    from .phase8_reference_conditions import (
+        EXPECTED_REFERENCE_CONDITIONS,
+        derive_reference_condition_compatibility,
+        load_fixture_contract_binding,
+        load_reference_request_binding,
+        verified_reference_request_runtime_facts,
+    )
     from .role_calibration_harness import evaluate_calibration, load_policy
 except ImportError:
+    from build_validation_provisioning import load_gear_profiles
     from live_validation_session import canonical_sha256
+    from phase8_reference_conditions import (
+        EXPECTED_REFERENCE_CONDITIONS,
+        derive_reference_condition_compatibility,
+        load_fixture_contract_binding,
+        load_reference_request_binding,
+        verified_reference_request_runtime_facts,
+    )
     from role_calibration_harness import evaluate_calibration, load_policy
 
 
@@ -19,6 +36,7 @@ DEFAULT_TARGETS = REPO_ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.j
 DEFAULT_REFERENCES = REPO_ROOT / "experiments/configs/all_spec_references_cata_p4_v1.json"
 DEFAULT_SCENARIOS = REPO_ROOT / "experiments/configs/all_spec_calibration_scenarios_v1.json"
 DEFAULT_POLICY = REPO_ROOT / "experiments/configs/all_spec_role_calibration_policy_v1.json"
+DEFAULT_GEAR_PROFILES = REPO_ROOT / "dataset/validation_gear_profiles/profiles.json"
 
 
 class Phase8CalibrationNormalizationError(ValueError):
@@ -117,6 +135,79 @@ def _simulator_dps(reference: Mapping[str, Any]) -> float:
     return value
 
 
+def canonical_gear_profile_id(
+    target: Mapping[str, Any], reference: Mapping[str, Any]
+) -> str:
+    """Return the one catalog gear id, rejecting every cross-layer mismatch."""
+    target_id = str(target.get("spec_target_id") or "")
+    gear_profile_id = str(target.get("gear_profile_id") or "")
+    provisioning = _mapping(target.get("provisioning_bot"), "target.provisioning_bot")
+    reference_gear = _mapping(reference.get("gear"), "reference.gear")
+    if (
+        not target_id
+        or not gear_profile_id
+        or str(provisioning.get("gear_profile_id") or "") != gear_profile_id
+        or str(provisioning.get("gear_profile") or "") != gear_profile_id
+        or str(reference_gear.get("gear_profile_id") or "") != gear_profile_id
+        or str(reference_gear.get("runtime_profile_id") or "") != gear_profile_id
+    ):
+        raise Phase8CalibrationNormalizationError(
+            f"gear_profile_identity_mismatch:{target_id or '<unknown>'}"
+        )
+    return gear_profile_id
+
+
+def canonical_gear_manifest(items: Any, *, label: str) -> list[dict[str, Any]]:
+    if not isinstance(items, list):
+        raise Phase8CalibrationNormalizationError(f"invalid_field:{label}.items")
+    result: list[dict[str, Any]] = []
+    slots: set[int] = set()
+    for raw in items:
+        if not isinstance(raw, Mapping):
+            raise Phase8CalibrationNormalizationError(f"invalid_field:{label}.items")
+        slot = int(raw.get("slot", -1))
+        item_id = int(raw.get("item_id") or 0)
+        if slot < 0 or slot > 18 or slot in slots or item_id <= 0:
+            raise Phase8CalibrationNormalizationError(f"invalid_field:{label}.items")
+        slots.add(slot)
+        gem_item_ids = [int(value or 0) for value in raw.get("gem_item_ids") or []]
+        while gem_item_ids and gem_item_ids[-1] == 0:
+            gem_item_ids.pop()
+        result.append(
+            {
+                "slot": slot,
+                "item_id": item_id,
+                "enchant_id": int(raw.get("enchant_id") or 0),
+                "reforge_id": int(raw.get("reforge_id") or 0),
+                "gem_item_ids": gem_item_ids,
+            }
+        )
+    return sorted(result, key=lambda row: row["slot"])
+
+
+@functools.lru_cache(maxsize=64)
+def _expected_gear_manifest_json(gear_profile_id: str) -> str:
+    profiles = load_gear_profiles(DEFAULT_GEAR_PROFILES)
+    profile = profiles.get(gear_profile_id)
+    if not isinstance(profile, Mapping):
+        raise Phase8CalibrationNormalizationError(
+            f"unknown_gear_profile_id:{gear_profile_id}"
+        )
+    rows = canonical_gear_manifest(
+        profile.get("equipment"), label=f"gear_profile:{gear_profile_id}"
+    )
+    if len(rows) < 16:
+        raise Phase8CalibrationNormalizationError(
+            f"incomplete_gear_profile:{gear_profile_id}"
+        )
+    return json.dumps(rows, sort_keys=True, separators=(",", ":"))
+
+
+def expected_gear_manifest(gear_profile_id: str) -> list[dict[str, Any]]:
+    """Return an isolated copy of the canonical provisioned item manifest."""
+    return json.loads(_expected_gear_manifest_json(gear_profile_id))
+
+
 def normalize_runtime_calibration(
     calibration: Mapping[str, Any],
     *,
@@ -133,6 +224,11 @@ def normalize_runtime_calibration(
     runtime_key = str(target_row.get("runtime_join_key") or "")
     if str(calibration.get("target_spec") or "") != runtime_key:
         raise Phase8CalibrationNormalizationError("calibration_target_mismatch")
+    if str(calibration.get("runtime_mode") or "") != "calibration_fixture":
+        raise Phase8CalibrationNormalizationError("calibration_runtime_mode_mismatch")
+    if calibration.get("non_certifying_assistance") is not True:
+        raise Phase8CalibrationNormalizationError("calibration_non_certifying_assistance_missing")
+    gear_profile_id = canonical_gear_profile_id(target_row, reference_row)
 
     previous = _mapping(calibration.get("previous_window"), "calibration.previous_window")
     if str(previous.get("mode") or "") != mode:
@@ -152,6 +248,19 @@ def normalize_runtime_calibration(
         raise Phase8CalibrationNormalizationError("target_role_mismatch")
     if int(target_bot.get("class_id") or 0) != int(target_row.get("class_id") or 0):
         raise Phase8CalibrationNormalizationError("target_class_mismatch")
+    gear_observation = _mapping(
+        target_bot.get("gear_profile_observation"),
+        "target_bot.gear_profile_observation",
+    )
+    observed_gear_manifest = canonical_gear_manifest(
+        gear_observation.get("items"), label="target_bot.gear_profile_observation"
+    )
+    expected_manifest = expected_gear_manifest(gear_profile_id)
+    if observed_gear_manifest != expected_manifest:
+        raise Phase8CalibrationNormalizationError(
+            f"runtime_gear_manifest_mismatch:{gear_profile_id}"
+        )
+    gear_manifest_sha256 = canonical_sha256(expected_manifest)
 
     quality = _mapping(target_bot.get("quality_metrics"), "target_bot.quality_metrics")
     scored_seconds = float(_required(calibration, "scored_seconds", "calibration") or 0.0)
@@ -159,11 +268,56 @@ def normalize_runtime_calibration(
     scored_started_at_ms = int(_required(calibration, "scored_started_at_ms", "calibration") or 0)
     scored_ended_at_ms = int(_required(calibration, "scored_ended_at_ms", "calibration") or 0)
     normalization = _mapping(calibration.get("normalization"), "calibration.normalization")
-    reference_setup = _mapping(target_bot.get("reference_setup"), "target_bot.reference_setup")
+    raw_reference_setup = target_bot.get("reference_setup")
+    reference_setup = (
+        raw_reference_setup if isinstance(raw_reference_setup, Mapping) else {}
+    )
+    reference_request_binding = load_reference_request_binding(runtime_key)
+    fixture_contract_binding = load_fixture_contract_binding(runtime_key)
+    expected_comparison_manifest = reference_request_binding.get(
+        "comparison_manifest"
+    )
+    expected_comparison_manifest = (
+        expected_comparison_manifest
+        if isinstance(expected_comparison_manifest, Mapping)
+        else {}
+    )
+    verified_request_facts = verified_reference_request_runtime_facts(
+        reference_request_binding
+    )
+    try:
+        generated_reference_dps = (
+            float(expected_comparison_manifest.get("reference_dps"))
+            if reference_request_binding.get("valid") is True
+            else 0.0
+        )
+    except (TypeError, ValueError):
+        generated_reference_dps = 0.0
+    reference_condition_compatibility = derive_reference_condition_compatibility(
+        target_spec=runtime_key,
+        reference_setup=reference_setup,
+        reference_conditions=EXPECTED_REFERENCE_CONDITIONS,
+        calibration=calibration,
+        runtime_normalization=normalization,
+        target_observation=target_bot,
+        runtime_facts={
+            **verified_request_facts,
+            "observed_gear_manifest_sha256": gear_manifest_sha256,
+            "fixture_contract_sha256": fixture_contract_binding.get(
+                "content_sha256"
+            ),
+            "fixture_contract_binding_valid": fixture_contract_binding.get(
+                "valid"
+            ),
+        },
+        expected_manifest=expected_comparison_manifest,
+    )
 
     identity = {
         "spec_target_id": str(target_row.get("spec_target_id") or ""),
         "runtime_join_key": runtime_key,
+        "gear_profile_id": gear_profile_id,
+        "gear_manifest_sha256": gear_manifest_sha256,
         "reference_id": str(reference_row.get("reference_id") or ""),
         "scenario_id": str((_mapping(scenario_row.get("primary"), "scenario.primary")).get("scenario_id") or ""),
         "seed": int(calibration.get("seed") or 0),
@@ -171,12 +325,19 @@ def normalize_runtime_calibration(
         "target_sha256": canonical_sha256(target_row),
         "conditions_sha256": canonical_sha256(
             {
-                "reference_conditions": reference_row.get("reference_conditions") or {},
+                "reference_conditions": EXPECTED_REFERENCE_CONDITIONS,
                 "runtime_normalization": dict(normalization),
                 "runtime_reference_setup": dict(reference_setup),
                 "consumable_item_ids": target_row.get("consumable_item_ids") or [],
+                "gear_profile_id": gear_profile_id,
                 "scenario": scenario_row,
                 "mode": mode,
+                "reference_request_catalog_sha256": (
+                    reference_request_binding.get("catalog_sha256")
+                ),
+                "comparison_manifest_sha256": canonical_sha256(
+                    expected_comparison_manifest
+                ) if expected_comparison_manifest else "",
             }
         ),
         "profile_generation": int(calibration.get("profile_generation") or 0),
@@ -201,14 +362,56 @@ def normalize_runtime_calibration(
 
     if mode in {"single_target_300", "aoe_300"}:
         active_uptime = float(_required(quality, "active_uptime_ratio", "target_bot.quality_metrics") or 0.0)
+        fixture_target = _mapping(
+            calibration.get("fixture_target"), "combat_calibration.fixture_target"
+        ) if mode == "single_target_300" else {}
+        reference_value = (
+            generated_reference_dps
+            if mode == "single_target_300"
+            else _simulator_dps(reference_row)
+        )
+        reference_basis = (
+            "generated_verified_live_compatible_wowsims_dps"
+            if mode == "single_target_300"
+            else "legacy_catalog_aoe_provenance_only"
+        )
         metrics = {
             **common,
-            "reference_value": _simulator_dps(reference_row),
-            "reference_basis": "pinned_cata_phase4_simulator_dps",
+            "reference_value": reference_value,
+            "reference_basis": reference_basis,
             "measured_value": elapsed_dps,
             "active_dps": elapsed_dps / active_uptime if active_uptime > 0 else 0.0,
             "elapsed_dps": elapsed_dps,
             "target_count": int(_required(target_bot, "target_count", "target_bot") or 0),
+            "scored_damage": int(_required(target_bot, "damage", "target_bot") or 0),
+            "primary_target_guid": int(
+                (_required(target_bot, "primary_target_guid", "target_bot")
+                    if mode == "single_target_300"
+                    else target_bot.get("primary_target_guid"))
+                or 0
+            ),
+            "primary_target_damage": int(
+                (_required(target_bot, "primary_target_damage", "target_bot")
+                    if mode == "single_target_300"
+                    else target_bot.get("primary_target_damage"))
+                or 0
+            ),
+            "off_target_damage": int(
+                (_required(target_bot, "off_target_damage", "target_bot")
+                    if mode == "single_target_300"
+                    else target_bot.get("off_target_damage"))
+                or 0
+            ),
+            "observed_distinct_damage_targets": int(
+                (_required(
+                    target_bot,
+                    "observed_distinct_damage_targets",
+                    "target_bot",
+                ) if mode == "single_target_300"
+                    else target_bot.get("observed_distinct_damage_targets"))
+                or 0
+            ),
+            "isolated_fixture_target": dict(fixture_target),
             "ability_mix": _ability_mix(target_bot),
             "rotation_group_coverage": float(_required(quality, "rotation_group_coverage", "target_bot.quality_metrics") or 0.0),
             "observed_action_groups": list(target_bot.get("action_groups") or []),
@@ -287,11 +490,17 @@ def normalize_runtime_calibration(
 
     return {
         "schema": "all_spec_role_calibration_record_v1",
+        "evidence_class": "non_certifying_calibration_fixture",
+        "excluded_from_training_corpus": True,
+        "runtime_mode": "calibration_fixture",
+        "non_certifying_assistance": True,
         "mode": mode,
+        "target_spec": runtime_key,
         "role": role,
         "identity": identity,
         "window": window,
         "metrics": metrics,
+        "reference_condition_compatibility": reference_condition_compatibility,
         "raw_runtime_status": dict(calibration),
     }
 

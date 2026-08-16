@@ -82,6 +82,16 @@ struct Outcome
         return { Disposition::Committed, std::string(reason), Phase::Completed };
     }
 
+    static Outcome Submitted(std::string_view reason)
+    {
+        return { Disposition::Committed, std::string(reason), Phase::Submitted };
+    }
+
+    static Outcome Selected(std::string_view reason)
+    {
+        return { Disposition::NotApplicable, std::string(reason), Phase::Selected };
+    }
+
     static Outcome Started(std::string_view reason)
     {
         return { Disposition::Committed, std::string(reason), Phase::Started };
@@ -103,7 +113,7 @@ inline Outcome FromBotActionResult(BotActionResult result)
     switch (result)
     {
         case BotActionResult::Ok:
-            return Outcome::Committed("ok");
+            return Outcome::Submitted("native_action_submitted");
         case BotActionResult::Casting:
             return Outcome::Started("casting");
         case BotActionResult::GlobalCooldown:
@@ -151,7 +161,11 @@ enum class Resource : uint16
     Movement = 1 << 2,
     Target = 1 << 3,
     Interaction = 1 << 4,
-    Pet = 1 << 5
+    Pet = 1 << 5,
+    // A player's melee autoattack is a persistent toggle, not a one-shot
+    // target/GCD action. It owns a dedicated continuous resource lane so a
+    // movement or spell candidate can commit in the same decision tick.
+    AutoAttackToggle = 1 << 6
 };
 
 using ResourceMask = uint16;
@@ -379,7 +393,9 @@ public:
             lifecycle.ConsecutiveFailures = 0;
             lifecycle.FirstFailureAtMs = 0;
             lifecycle.RetryAfterMs = 0;
-            lifecycle.LastProgressAtMs = nowMs;
+            if (outcome.LifecyclePhase == Phase::Progressed
+                || outcome.LifecyclePhase == Phase::Completed)
+                lifecycle.LastProgressAtMs = nowMs;
             return;
         }
         if (outcome.Result == Disposition::NotApplicable)

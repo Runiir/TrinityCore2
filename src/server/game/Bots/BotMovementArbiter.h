@@ -48,6 +48,10 @@ struct Lease
     float X = 0.0f;
     float Y = 0.0f;
     float Z = 0.0f;
+    // A non-zero identity makes the destination target-aware. Coordinates are
+    // still retained for evidence and path preflight, but a moving unit does
+    // not become a new destination every decision tick.
+    uint64 DynamicTargetGuid = 0;
 };
 
 struct Request
@@ -59,6 +63,7 @@ struct Request
     float X = 0.0f;
     float Y = 0.0f;
     float Z = 0.0f;
+    uint64 DynamicTargetGuid = 0;
 };
 
 enum class Decision : uint8
@@ -88,6 +93,10 @@ constexpr bool SameScope(Scope const& left, Scope const& right)
 
 inline bool SameDestination(Lease const& lease, Request const& request, float epsilon = 0.1f)
 {
+    if (lease.DynamicTargetGuid || request.DynamicTargetGuid)
+        return lease.DynamicTargetGuid != 0
+            && lease.DynamicTargetGuid == request.DynamicTargetGuid;
+
     return std::fabs(lease.X - request.X) <= epsilon
         && std::fabs(lease.Y - request.Y) <= epsilon
         && std::fabs(lease.Z - request.Z) <= epsilon;
@@ -111,6 +120,13 @@ inline Decision Evaluate(Lease const& lease, Request const& request, uint64 nowM
     if (lease.MovementOwner == request.MovementOwner
         && SameDestination(lease, request))
         return Decision::Refresh;
+    // A validated point approach may be submitted before native combat has a
+    // victim. Once combat binds that same owner's live target, upgrade the
+    // point lease immediately instead of waiting for its expiry. Retargeting
+    // one live unit to another remains protected by the normal priority rule.
+    if (lease.MovementOwner == request.MovementOwner
+        && !lease.DynamicTargetGuid && request.DynamicTargetGuid)
+        return Decision::Preempt;
     if (uint8(request.MovementPriority) > uint8(lease.MovementPriority))
         return Decision::Preempt;
     return Decision::PreserveExisting;
@@ -125,6 +141,7 @@ inline void Apply(Lease& lease, Request const& request)
     lease.X = request.X;
     lease.Y = request.Y;
     lease.Z = request.Z;
+    lease.DynamicTargetGuid = request.DynamicTargetGuid;
 }
 
 inline void Clear(Lease& lease)

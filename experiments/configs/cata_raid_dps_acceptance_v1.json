@@ -27,8 +27,14 @@
     "survival_hunter",
     "unholy_death_knight"
   ],
-  "modes": ["single_target_300", "aoe_300"],
-  "seeds": [1, 2, 3],
+  "qualification_mode": "single_target_300",
+  "qualification_seed": 1,
+  "max_tries_per_dps_spec": 2,
+  "evidence_role": "non_certifying_controller_benchmark",
+  "expected_runtime_mode": "calibration_fixture",
+  "non_certifying_assistance_expected": true,
+  "excluded_from_training_corpus": true,
+  "requires_player_like_clear_gate": true,
   "acceptance": {
     "hard_reference_ratio": 0.75,
     "optimization_reference_ratio": 0.85,
@@ -40,7 +46,8 @@
   },
   "notes": [
     "The authoritative current roster contains 24 supported specialization targets and 16 unique DPS specs; 18 is an encounter DPS-slot shape, not the checked-in unique-spec count.",
-    "Every listed DPS spec is evaluated against its pinned compatible WoWSims reference under the Phase 4 reference-condition contract.",
+    "Every listed unique DPS spec needs one remotely reconstructed passing qualification; one retry is allowed, so each spec consumes one or two physical tries.",
+    "The qualification is an explicitly non-certifying controller benchmark because it uses a reset/reference-condition fixture. It is excluded from the training corpus and cannot promote autonomy without the separate player-like Stonecore clear gate.",
     "Warcraft Logs snapshots may corroborate encounter realism but cannot replace the simulator ratio unless their build, gear, buffs, duration, target count, and percentile identity are pinned.",
     "Raw and compact per-attempt batches are DVC-pushed, remotely verified, and target-evicted by default. Only compact reports, manifests, receipts, and DVC pointers remain local."
   ]

@@ -7,12 +7,15 @@ from typing import Any, Mapping
 from .live_validation_session import canonical_sha256
 
 
-SCHEMA = "all_spec_phase9_evidence_identity_manifest_v1"
+SCHEMA = "all_spec_phase9_evidence_identity_manifest_v2"
 REQUIRED_COMPONENTS = (
+    "source_identity_sha256",
+    "worldserver_binary_sha256",
     "database_snapshot_sha256",
     "database_schema_sha256",
     "server_epoch_sha256",
     "profile_generation_sha256",
+    "build_projection_sha256",
 )
 REQUIRED_ARTIFACTS = (
     "target_catalog_sha256",
@@ -53,6 +56,48 @@ def _valid_sha256(value: Any) -> bool:
     return len(text) == 64 and all(character in "0123456789abcdef" for character in text)
 
 
+def build_projection(payload: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the cross-campaign identity, excluding per-process runtime state."""
+    bound_build = payload.get("build_identity")
+    if not isinstance(bound_build, Mapping):
+        raise ValueError("Phase 9 evidence identity manifest is missing build identity")
+    projection = {
+        "git_commit": str(bound_build.get("git_commit") or "").lower(),
+        "source_tree_clean": bound_build.get("source_tree_clean"),
+        "worldserver_binary_sha256": str(
+            bound_build.get("worldserver_binary_sha256") or ""
+        ).lower(),
+        "database_snapshot_sha256": str(
+            bound_build.get("database_snapshot_sha256") or ""
+        ).lower(),
+        "database_schema_sha256": str(
+            bound_build.get("database_schema_sha256") or ""
+        ).lower(),
+        "profile_content_hash": str(
+            bound_build.get("profile_content_hash") or ""
+        ).lower(),
+    }
+    if (
+        len(projection["git_commit"]) not in (40, 64)
+        or any(character not in "0123456789abcdef" for character in projection["git_commit"])
+        or projection["source_tree_clean"] is not True
+        or any(
+            not _valid_sha256(projection[name])
+            for name in (
+                "worldserver_binary_sha256",
+                "database_snapshot_sha256",
+                "database_schema_sha256",
+                "profile_content_hash",
+            )
+        )
+    ):
+        raise ValueError("Phase 9 evidence identity build projection is invalid")
+    return projection
+
+
+build_compatibility_projection = build_projection
+
+
 def validate_manifest(
     payload: Mapping[str, Any],
     *,
@@ -75,6 +120,20 @@ def validate_manifest(
     if any(not _valid_sha256(bound_artifacts.get(name)) for name in REQUIRED_ARTIFACTS):
         raise ValueError("Phase 9 evidence identity manifest has invalid artifact hashes")
 
+    projection = build_projection(manifest)
+    source_identity = {
+        "git_commit": projection["git_commit"],
+        "source_tree_clean": True,
+    }
+    if (
+        canonical_sha256(source_identity) != components["source_identity_sha256"]
+        or projection["worldserver_binary_sha256"] != components["worldserver_binary_sha256"]
+        or projection["database_snapshot_sha256"] != components["database_snapshot_sha256"]
+        or projection["database_schema_sha256"] != components["database_schema_sha256"]
+        or canonical_sha256(projection) != components["build_projection_sha256"]
+    ):
+        raise ValueError("Phase 9 evidence identity build binding is invalid")
+
     expected_server = server_epoch_identity(
         server_epoch=int(bound_runtime.get("server_epoch") or 0),
         server_process_id=int(bound_runtime.get("server_process_id") or 0),
@@ -92,6 +151,7 @@ def validate_manifest(
         or expected_server["max_active_cohorts"] != 1
         or expected_profile["profile_generation"] <= 0
         or not _valid_sha256(expected_profile["profile_content_hash"])
+        or projection["profile_content_hash"] != expected_profile["profile_content_hash"]
         or canonical_sha256(expected_server) != components["server_epoch_sha256"]
         or canonical_sha256(expected_profile) != components["profile_generation_sha256"]
     ):

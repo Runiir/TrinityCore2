@@ -1,0 +1,285 @@
+{
+  "schema": "phase8_calibration_fixture_contract_v1",
+  "authority": {
+    "repository": "https://github.com/wowsims/cata",
+    "revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+    "default_target_source_path": "sim/core/test_utils.go",
+    "default_target_source_sha256": "1b5cf978630ca1ad608b567ea052f52265d1a42075b3843397edc4dbf657fbc8",
+    "fixture_scope": "non_certifying_single_target_dps_only",
+    "lifecycle_status": "final_for_offline_reference_generation",
+    "promotion_requires_live_clean_state_receipt": true,
+    "promotion_receipt_contract": {
+      "owner": "phase8_raw_evidence_binding",
+      "raw_path": "previous_window.bots[].pre_score_state",
+      "projection_path": "runtime.pre_score_state_projection",
+      "required": true
+    }
+  },
+  "target": {
+    "entry": 44548,
+    "level": 88,
+    "armor": 11977,
+    "creature_type": 9,
+    "creature_type_name": "mechanical",
+    "simulator_mob_type": 7,
+    "live_max_health": 1000000000,
+    "simulator_attack_power": 0,
+    "simulator_swing_speed_seconds": 0,
+    "simulator_min_base_damage": 0,
+    "simulator_damage_spread": 0,
+    "simulator_parry_haste": false,
+    "live_target_attacks": false
+  },
+  "encounter": {
+    "duration_seconds": 300,
+    "duration_variation_seconds": 0,
+    "execute_proportions": {
+      "90": 0.9,
+      "35": 0.35,
+      "25": 0.25,
+      "20": 0.2
+    },
+    "health_windows": [
+      {"phase": "above_90", "start_ms": 0, "end_ms": 30000, "target_health_pct": 95, "lower_pct": 90, "upper_pct": 100},
+      {"phase": "between_35_90", "start_ms": 30000, "end_ms": 195000, "target_health_pct": 50, "lower_pct": 35, "upper_pct": 90},
+      {"phase": "between_25_35", "start_ms": 195000, "end_ms": 225000, "target_health_pct": 30, "lower_pct": 25, "upper_pct": 35},
+      {"phase": "between_20_25", "start_ms": 225000, "end_ms": 240000, "target_health_pct": 22, "lower_pct": 20, "upper_pct": 25},
+      {"phase": "below_20", "start_ms": 240000, "end_ms": 300000, "target_health_pct": 19, "lower_pct": 0, "upper_pct": 20}
+    ]
+  },
+  "distance_contracts": {
+    "melee": {"simulator_yards": 2.0, "runtime_min_yards": 2.0, "runtime_max_yards": 3.2},
+    "ranged": {"simulator_yards": 15.0, "runtime_min_yards": 14.5, "runtime_max_yards": 15.5}
+  },
+  "reference_environment": {
+    "simulator_request_projection": {
+      "inherit_full_raid_buffs": false,
+      "inherit_full_party_buffs": false,
+      "inherit_full_individual_buffs": false,
+      "inherit_full_target_debuffs": false,
+      "raid_buffs": {
+        "blessing_of_kings": true,
+        "strength_of_earth_totem": true,
+        "windfury_totem": true,
+        "arcane_brilliance": true,
+        "demonic_pact": true,
+        "wrath_of_air_totem": true,
+        "arcane_tactics": true,
+        "leader_of_the_pack": true,
+        "bloodlust": false
+      },
+      "conditional_raid_buffs": {
+        "blessing_of_might": {"enabled": true, "excluded_specs": ["retribution_paladin"]}
+      },
+      "party_buffs": {},
+      "individual_buffs": {},
+      "individual_buffs_by_spec": {
+        "affliction_warlock": {"vampiric_touch": true},
+        "balance_druid": {"vampiric_touch": true},
+        "demonology_warlock": {"vampiric_touch": true},
+        "elemental_shaman": {"vampiric_touch": true},
+        "fire_mage": {"vampiric_touch": true},
+        "retribution_paladin": {"vampiric_touch": true},
+        "shadow_priest": {"vampiric_touch": true, "dark_intent": false, "power_infusion_count": 0}
+      },
+      "target_debuffs": {
+        "curse_of_elements": true,
+        "critical_mass": true,
+        "brittle_bones": true,
+        "sunder_armor": true
+      }
+    },
+    "common_player_aura_spell_ids": [53646, 79058, 24932, 2895, 8515, 8076, 82930],
+    "mana_player_aura_spell_ids": [57669],
+    "primary_stat_aura_any_of_spell_ids": [20217, 79063, 1126, 79061],
+    "non_paladin_player_aura_spell_ids": [79102],
+    "target_aura_spell_ids": [1490, 22959, 81326],
+    "target_stacked_auras": [{"spell_id": 58567, "stacks": 3}],
+    "heroism_windows_ms": [],
+    "disabled_external_observation_spell_ids": {
+      "dark_intent_proc": 85759,
+      "synapse_springs": 96230
+    },
+    "shadow_priest_external_windows": {
+      "dark_intent_base_spell_id": 85767,
+      "dark_intent_base_enabled": false,
+      "dark_intent_proc_uptime_pct": 0,
+      "power_infusion_source_count": 0,
+      "power_infusion_spell_id": 10060,
+      "power_infusion_windows_ms": []
+    }
+  },
+  "specs": {
+    "affliction_warlock": {
+      "lane": "ranged",
+      "source_test_path": "experiments/configs/wowsims_cata_p4_gear_sources/affliction_warlock.test.go",
+      "source_test_sha256": "8f38bcba47d99fbac658ea0dba1ccfd11cd1703e5d66b26fec9f4368384d3d64",
+      "simulator_options": {"target_auto_attacks": false, "starting_distance_yards": 15.0, "class_options": {"summon": "felhunter", "detonate_seed": false}},
+      "pet_setup": {"required": true, "kind": "felhunter", "summon_spell_id": 691, "creature_entry": 417, "family_id": 15, "created_by_spell_id": 691, "pet_type": 0, "uptime": 1.0, "required_autocast_spell_ids": [19647, 54049, 54424], "spellbook_sha256": "a79474903199c668e360560dde291357bfedd88f2369d72a9a0f47be1196b0cc", "spellbook": [{"spell_id": 18730, "active": 1, "type": 1}, {"spell_id": 18738, "active": 1, "type": 1}, {"spell_id": 18739, "active": 1, "type": 1}, {"spell_id": 19007, "active": 1, "type": 0}, {"spell_id": 19505, "active": 1, "type": 0}, {"spell_id": 19647, "active": 193, "type": 0}, {"spell_id": 32233, "active": 1, "type": 0}, {"spell_id": 35695, "active": 1, "type": 1}, {"spell_id": 35697, "active": 1, "type": 1}, {"spell_id": 54049, "active": 193, "type": 0}, {"spell_id": 54424, "active": 193, "type": 0}, {"spell_id": 91702, "active": 1, "type": 1}], "identity_evidence": {"dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc", "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695"}},
+      "prepull_setup": {"flask": {"item_id": 58086, "observed_aura_spell_id": 79470}, "food": {"item_id": 0, "observed_aura_spell_id": 0}, "prepot": {"item_id": 0}, "combat_potion": {"item_id": 0}, "tinker": {"item_id": 0}, "racial": {"race_id": 1, "race": "human", "spell_id": 0}, "raid_buffs": {"authority": "reference_environment"}, "target_debuffs": {"authority": "reference_environment"}, "heroism": {"authority": "reference_environment"}, "form_presence": {"required_aura_spell_ids": []}, "item_swap": {"enabled": false, "items": []}},
+      "item_swap": {"enabled": false, "items": []},
+      "player_powers": [{"name": "mana", "power_type": 0, "mode": "maximum"}, {"name": "soul_shards", "power_type": 7, "mode": "maximum"}],
+      "pet_power": {"name": "mana", "power_type": 0, "mode": "maximum"}
+    },
+    "arms_warrior": {
+      "lane": "melee",
+      "source_test_path": "experiments/configs/wowsims_cata_p4_gear_sources/arms_warrior.test.go",
+      "source_test_sha256": "ab03ac6c2277f834fa6e5e6f5e07499a247ef9d6a4a3d0f510d6bc0282d307de",
+      "simulator_options": {"target_auto_attacks": false, "starting_distance_yards": 2.0, "class_options": {"starting_rage": 0}},
+      "pet_setup": {"required": false, "kind": "none", "uptime": 0.0, "required_autocast_spell_ids": []},
+      "prepull_setup": {"flask": {"item_id": 58088, "observed_aura_spell_id": 79472}, "food": {"item_id": 0, "observed_aura_spell_id": 0}, "prepot": {"item_id": 0}, "combat_potion": {"item_id": 0}, "tinker": {"item_id": 0}, "racial": {"race_id": 1, "race": "human", "spell_id": 0}, "raid_buffs": {"authority": "reference_environment"}, "target_debuffs": {"authority": "reference_environment"}, "heroism": {"authority": "reference_environment"}, "form_presence": {"required_aura_spell_ids": [2457]}, "item_swap": {"enabled": false, "items": []}},
+      "item_swap": {"enabled": false, "items": []},
+      "player_powers": [{"name": "rage", "power_type": 1, "mode": "exact", "display_value": 0, "native_value": 0}]
+    },
+    "assassination_rogue": {
+      "lane": "melee",
+      "source_test_path": "experiments/configs/wowsims_cata_p4_gear_sources/assassination_rogue.test.go",
+      "source_test_sha256": "03a96ae47e8f4548a31b86346ffdf1e0607d50fc1172a78b90112c8d8e12926d",
+      "simulator_options": {"target_auto_attacks": false, "starting_distance_yards": 2.0, "class_options": {"mainhand_poison": "deadly", "offhand_poison": "instant", "thrown_poison": "deadly"}},
+      "pet_setup": {"required": false, "kind": "none", "uptime": 0.0, "required_autocast_spell_ids": []},
+      "prepull_setup": {"flask": {"item_id": 58087, "observed_aura_spell_id": 79471}, "food": {"item_id": 0, "observed_aura_spell_id": 0}, "prepot": {"item_id": 0}, "combat_potion": {"item_id": 0}, "tinker": {"item_id": 0}, "racial": {"race_id": 1, "race": "human", "spell_id": 0}, "raid_buffs": {"authority": "reference_environment"}, "target_debuffs": {"authority": "reference_environment"}, "heroism": {"authority": "reference_environment"}, "form_presence": {"required_aura_spell_ids": []}, "weapon_imbues": [{"slot": "mainhand", "item_id": 43233, "use_spell_id": 2823, "temp_enchant_id": 7}, {"slot": "offhand", "item_id": 43231, "use_spell_id": 8679, "temp_enchant_id": 323}], "item_swap": {"enabled": false, "items": []}},
+      "item_swap": {"enabled": false, "items": []},
+      "player_powers": [{"name": "energy", "power_type": 3, "mode": "maximum"}],
+      "combo_points": 0
+    },
+    "balance_druid": {
+      "lane": "ranged",
+      "source_test_path": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_balance_druid.test.go",
+      "source_test_sha256": "b006fd31e0cea891eae20d3c9ce0b1fe8d9a4438f67d59f481c0ed1721c96384",
+      "simulator_options": {"target_auto_attacks": false, "starting_distance_yards": 15.0, "class_options": {}},
+      "pet_setup": {"required": false, "kind": "none", "uptime": 0.0, "required_autocast_spell_ids": []},
+      "prepull_setup": {"flask": {"item_id": 58086, "observed_aura_spell_id": 79470}, "food": {"item_id": 62671, "observed_aura_spell_id": 87547}, "prepot": {"item_id": 0}, "combat_potion": {"item_id": 0}, "tinker": {"item_id": 0}, "racial": {"race_id": 4, "race": "night_elf", "spell_id": 0}, "raid_buffs": {"authority": "reference_environment"}, "target_debuffs": {"authority": "reference_environment"}, "heroism": {"authority": "reference_environment"}, "form_presence": {"required_aura_spell_ids": [24858]}, "item_swap": {"enabled": false, "items": []}},
+      "item_swap": {"enabled": false, "items": []},
+      "player_powers": [{"name": "mana", "power_type": 0, "mode": "maximum"}, {"name": "eclipse", "power_type": 8, "mode": "exact", "display_value": 0, "native_value": 0}],
+      "required_absent_auras": [48517, 48518]
+    },
+    "combat_rogue": {
+      "lane": "melee",
+      "source_test_path": "experiments/configs/wowsims_cata_p4_gear_sources/combat_rogue.test.go",
+      "source_test_sha256": "fbb6d7e9288778f7558d077e5bf0becd342add9c2381af984f9d4d667e367543",
+      "simulator_options": {"target_auto_attacks": false, "starting_distance_yards": 2.0, "class_options": {"mainhand_poison": "deadly", "offhand_poison": "instant", "thrown_poison": "deadly"}},
+      "pet_setup": {"required": false, "kind": "none", "uptime": 0.0, "required_autocast_spell_ids": []},
+      "prepull_setup": {"flask": {"item_id": 58087, "observed_aura_spell_id": 79471}, "food": {"item_id": 0, "observed_aura_spell_id": 0}, "prepot": {"item_id": 0}, "combat_potion": {"item_id": 0}, "tinker": {"item_id": 0}, "racial": {"race_id": 1, "race": "human", "spell_id": 0}, "raid_buffs": {"authority": "reference_environment"}, "target_debuffs": {"authority": "reference_environment"}, "heroism": {"authority": "reference_environment"}, "form_presence": {"required_aura_spell_ids": []}, "weapon_imbues": [{"slot": "mainhand", "item_id": 43233, "use_spell_id": 2823, "temp_enchant_id": 7}, {"slot": "offhand", "item_id": 43231, "use_spell_id": 8679, "temp_enchant_id": 323}], "item_swap": {"enabled": false, "items": []}},
+      "item_swap": {"enabled": false, "items": []},
+      "player_powers": [{"name": "energy", "power_type": 3, "mode": "maximum"}],
+      "combo_points": 0
+    },
+    "demonology_warlock": {
+      "lane": "ranged",
+      "source_test_path": "experiments/configs/wowsims_cata_p4_gear_sources/demonology_warlock.test.go",
+      "source_test_sha256": "394f11d9e26564e6a8c305a3544ddb6df883f826fa70e548c7a7ed391bd6ec4e",
+      "simulator_options": {"target_auto_attacks": false, "starting_distance_yards": 15.0, "class_options": {"summon": "felguard", "detonate_seed": false}},
+      "pet_setup": {"required": true, "kind": "felguard", "summon_spell_id": 30146, "creature_entry": 17252, "family_id": 29, "created_by_spell_id": 30146, "pet_type": 0, "uptime": 1.0, "required_autocast_spell_ids": [30151, 30213], "spellbook_sha256": "1d412525118a6ef2ec72aa75977f9139e355d4998a902c42748e671c9d763005", "spellbook": [{"spell_id": 30147, "active": 1, "type": 1}, {"spell_id": 30148, "active": 1, "type": 1}, {"spell_id": 30149, "active": 1, "type": 1}, {"spell_id": 30151, "active": 193, "type": 0}, {"spell_id": 30213, "active": 193, "type": 0}, {"spell_id": 32233, "active": 1, "type": 0}, {"spell_id": 35695, "active": 1, "type": 1}, {"spell_id": 35697, "active": 1, "type": 1}, {"spell_id": 89751, "active": 1, "type": 0}, {"spell_id": 89766, "active": 1, "type": 0}, {"spell_id": 91702, "active": 1, "type": 1}], "identity_evidence": {"dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc", "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695"}},
+      "prepull_setup": {"flask": {"item_id": 58086, "observed_aura_spell_id": 79470}, "food": {"item_id": 0, "observed_aura_spell_id": 0}, "prepot": {"item_id": 0}, "combat_potion": {"item_id": 0}, "tinker": {"item_id": 0}, "racial": {"race_id": 2, "race": "orc", "spell_id": 0}, "raid_buffs": {"authority": "reference_environment"}, "target_debuffs": {"authority": "reference_environment"}, "heroism": {"authority": "reference_environment"}, "form_presence": {"required_aura_spell_ids": []}, "item_swap": {"enabled": false, "items": []}},
+      "item_swap": {"enabled": false, "items": []},
+      "player_powers": [{"name": "mana", "power_type": 0, "mode": "maximum"}, {"name": "soul_shards", "power_type": 7, "mode": "maximum"}],
+      "pet_power": {"name": "mana", "power_type": 0, "mode": "maximum"}
+    },
+    "elemental_shaman": {
+      "lane": "ranged",
+      "source_test_path": "experiments/configs/wowsims_cata_p4_gear_sources/elemental_shaman.test.go",
+      "source_test_sha256": "3307064f29e960f794c608cddc6a08d407b9e1851fced19e8067789d7f3ec13a",
+      "simulator_options": {"target_auto_attacks": false, "starting_distance_yards": 15.0, "class_options": {"shield": "lightning_shield", "totems": {"earth": "tremor", "air": "wrath_of_air", "water": "mana_spring", "fire": "searing", "fire_elemental": true}}},
+      "pet_setup": {"required": false, "kind": "none", "uptime": 0.0, "required_autocast_spell_ids": []},
+      "prepull_setup": {"flask": {"item_id": 58086, "observed_aura_spell_id": 79470}, "food": {"item_id": 0, "observed_aura_spell_id": 0}, "prepot": {"item_id": 0}, "combat_potion": {"item_id": 0}, "tinker": {"item_id": 0}, "racial": {"race_id": 11, "race": "draenei", "spell_id": 0}, "raid_buffs": {"authority": "reference_environment"}, "target_debuffs": {"authority": "reference_environment"}, "heroism": {"authority": "reference_environment"}, "form_presence": {"required_aura_spell_ids": [324]}, "weapon_imbues": [{"slot": "mainhand", "cast_spell_id": 8024, "temp_enchant_id": 5}], "item_swap": {"enabled": false, "items": []}},
+      "item_swap": {"enabled": false, "items": []},
+      "player_powers": [{"name": "mana", "power_type": 0, "mode": "maximum"}]
+    },
+    "feral_druid_dps": {
+      "lane": "melee",
+      "source_test_path": "experiments/configs/wowsims_cata_p4_gear_sources/feral_druid_dps.test.go",
+      "source_test_sha256": "b93511634568697dc949a13f0b22f7efd96526daa58f0ec5992a5b8dcb1b387c",
+      "simulator_options": {"target_auto_attacks": false, "starting_distance_yards": 2.0, "class_options": {"assume_external_bleed_active": false}},
+      "pet_setup": {"required": false, "kind": "none", "uptime": 0.0, "required_autocast_spell_ids": []},
+      "prepull_setup": {"flask": {"item_id": 58087, "observed_aura_spell_id": 79471}, "food": {"item_id": 0, "observed_aura_spell_id": 0}, "prepot": {"item_id": 0}, "combat_potion": {"item_id": 0}, "tinker": {"item_id": 0}, "racial": {"race_id": 4, "race": "night_elf", "spell_id": 0}, "raid_buffs": {"authority": "reference_environment"}, "target_debuffs": {"authority": "reference_environment", "external_bleed_active": false}, "heroism": {"authority": "reference_environment"}, "form_presence": {"required_aura_spell_ids": [768]}, "item_swap": {"enabled": false, "items": []}},
+      "item_swap": {"enabled": false, "items": []},
+      "player_powers": [{"name": "energy", "power_type": 3, "mode": "maximum"}],
+      "combo_points": 0
+    },
+    "fire_mage": {
+      "lane": "ranged",
+      "source_test_path": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_fire_mage.test.go",
+      "source_test_sha256": "71a9228f45b0c57e464971f71a05d8af4588b274efd3d5711645d7012007afc7",
+      "simulator_options": {"target_auto_attacks": false, "starting_distance_yards": 15.0, "class_options": {"armor": "molten"}},
+      "pet_setup": {"required": false, "kind": "none", "uptime": 0.0, "required_autocast_spell_ids": []},
+      "prepull_setup": {"flask": {"item_id": 58086, "observed_aura_spell_id": 79470}, "food": {"item_id": 0, "observed_aura_spell_id": 0}, "prepot": {"item_id": 0}, "combat_potion": {"item_id": 0}, "tinker": {"item_id": 0}, "racial": {"race_id": 1, "race": "human", "spell_id": 0}, "raid_buffs": {"authority": "reference_environment"}, "target_debuffs": {"authority": "reference_environment"}, "heroism": {"authority": "reference_environment"}, "form_presence": {"required_aura_spell_ids": [30482]}, "item_swap": {"enabled": false, "items": []}},
+      "item_swap": {"enabled": false, "items": []},
+      "player_powers": [{"name": "mana", "power_type": 0, "mode": "maximum"}]
+    },
+    "frost_death_knight": {
+      "lane": "melee",
+      "source_test_path": "experiments/configs/wowsims_cata_p4_gear_sources/frost_death_knight.test.go",
+      "source_test_sha256": "c43b8ea88f9654729c25425fcd3bf62dba5320e22983815b761214e3719d88dd",
+      "simulator_options": {"target_auto_attacks": false, "starting_distance_yards": 2.0, "class_options": {"starting_runic_power": 0}},
+      "pet_setup": {"required": false, "kind": "none", "uptime": 0.0, "required_autocast_spell_ids": []},
+      "prepull_setup": {"flask": {"item_id": 58088, "observed_aura_spell_id": 79472}, "food": {"item_id": 0, "observed_aura_spell_id": 0}, "prepot": {"item_id": 0}, "combat_potion": {"item_id": 0}, "tinker": {"item_id": 0}, "racial": {"race_id": 1, "race": "human", "spell_id": 0}, "raid_buffs": {"authority": "reference_environment"}, "target_debuffs": {"authority": "reference_environment"}, "heroism": {"authority": "reference_environment"}, "form_presence": {"required_aura_spell_ids": [48265]}, "item_swap": {"enabled": false, "items": []}},
+      "item_swap": {"enabled": false, "items": []},
+      "player_powers": [{"name": "runic_power", "power_type": 6, "mode": "exact", "display_value": 0, "native_value": 0}],
+      "runes_ready_mask": 63
+    },
+    "fury_warrior": {
+      "lane": "melee",
+      "source_test_path": "experiments/configs/wowsims_cata_p4_gear_sources/fury_warrior.test.go",
+      "source_test_sha256": "f77b34d99140388b71333886a1ed8c3e04869a77dd9052fcc1101d0b88f6fab7",
+      "simulator_options": {"target_auto_attacks": false, "starting_distance_yards": 2.0, "class_options": {"starting_rage": 0}},
+      "pet_setup": {"required": false, "kind": "none", "uptime": 0.0, "required_autocast_spell_ids": []},
+      "prepull_setup": {"flask": {"item_id": 58088, "observed_aura_spell_id": 79472}, "food": {"item_id": 0, "observed_aura_spell_id": 0}, "prepot": {"item_id": 0}, "combat_potion": {"item_id": 0}, "tinker": {"item_id": 0}, "racial": {"race_id": 1, "race": "human", "spell_id": 0}, "raid_buffs": {"authority": "reference_environment"}, "target_debuffs": {"authority": "reference_environment"}, "heroism": {"authority": "reference_environment"}, "form_presence": {"required_aura_spell_ids": [2458]}, "item_swap": {"enabled": false, "items": []}},
+      "item_swap": {"enabled": false, "items": []},
+      "player_powers": [{"name": "rage", "power_type": 1, "mode": "exact", "display_value": 0, "native_value": 0}]
+    },
+    "marksmanship_hunter": {
+      "lane": "ranged",
+      "source_test_path": "experiments/configs/wowsims_cata_p4_gear_sources/marksmanship_hunter.test.go",
+      "source_test_sha256": "e07dd1ec1662cadad96084a8720e935a2bc825259ac696a5d0c319b1767b432a",
+      "simulator_options": {"target_auto_attacks": false, "starting_distance_yards": 15.0, "class_options": {"pet_type": "wolf", "pet_uptime": 1.0, "time_to_trap_weave_ms": 0}},
+      "pet_setup": {"required": true, "kind": "wolf", "creature_entry": 8959, "uptime": 1.0, "talents": {"serpent_swiftness": 2, "dive": true, "spiked_collar": 3, "bloodthirsty": 1, "culling_the_herd": 3, "spiders_bite": 3, "rabid": true, "call_of_the_wild": true, "shark_attack": 2}, "required_autocast_spell_ids": [23145, 53401, 53434]},
+      "prepull_setup": {"flask": {"item_id": 58087, "observed_aura_spell_id": 79471}, "food": {"item_id": 0, "observed_aura_spell_id": 0}, "prepot": {"item_id": 0}, "combat_potion": {"item_id": 0}, "tinker": {"item_id": 0}, "racial": {"race_id": 3, "race": "dwarf", "spell_id": 0}, "raid_buffs": {"authority": "reference_environment"}, "target_debuffs": {"authority": "reference_environment"}, "heroism": {"authority": "reference_environment"}, "form_presence": {"required_aura_spell_ids": [13165]}, "item_swap": {"enabled": false, "items": []}},
+      "item_swap": {"enabled": false, "items": []},
+      "player_powers": [{"name": "focus", "power_type": 2, "mode": "maximum"}],
+      "pet_power": {"name": "focus", "power_type": 2, "mode": "maximum"}
+    },
+    "retribution_paladin": {
+      "lane": "melee",
+      "source_test_path": "experiments/configs/wowsims_cata_p4_gear_sources/retribution_paladin.test.go",
+      "source_test_sha256": "b9461e1f452958d4c3c8bc7c512ed206b58df460905b16740489dd51d283c151",
+      "simulator_options": {"target_auto_attacks": false, "starting_distance_yards": 2.0, "class_options": {"seal": "truth", "aura": "retribution"}},
+      "pet_setup": {"required": false, "kind": "none", "uptime": 0.0, "required_autocast_spell_ids": []},
+      "prepull_setup": {"flask": {"item_id": 58088, "observed_aura_spell_id": 79472}, "food": {"item_id": 0, "observed_aura_spell_id": 0}, "prepot": {"item_id": 0}, "combat_potion": {"item_id": 0}, "tinker": {"item_id": 0}, "racial": {"race_id": 1, "race": "human", "spell_id": 0}, "raid_buffs": {"authority": "reference_environment"}, "target_debuffs": {"authority": "reference_environment"}, "heroism": {"authority": "reference_environment"}, "form_presence": {"required_aura_spell_ids": [31801, 7294]}, "item_swap": {"enabled": false, "items": []}},
+      "item_swap": {"enabled": false, "items": []},
+      "player_powers": [{"name": "mana", "power_type": 0, "mode": "maximum"}, {"name": "holy_power", "power_type": 9, "mode": "exact", "display_value": 0, "native_value": 0}]
+    },
+    "shadow_priest": {
+      "lane": "ranged",
+      "source_test_path": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_shadow_priest.test.go",
+      "source_test_sha256": "528ff74616a6c6a279f5bd3e616fdfbaffc6a7c25c1476664497e42cedb159fb",
+      "simulator_options": {"target_auto_attacks": false, "starting_distance_yards": 15.0, "class_options": {"armor": "inner_fire"}},
+      "pet_setup": {"required": false, "kind": "none", "uptime": 0.0, "required_autocast_spell_ids": []},
+      "prepull_setup": {"flask": {"item_id": 58086, "observed_aura_spell_id": 79470}, "food": {"item_id": 62290, "observed_aura_spell_id": 87547}, "prepot": {"item_id": 0}, "combat_potion": {"item_id": 0}, "tinker": {"item_id": 0}, "racial": {"race_id": 8, "race": "troll", "spell_id": 0}, "raid_buffs": {"authority": "reference_environment"}, "target_debuffs": {"authority": "reference_environment"}, "heroism": {"authority": "reference_environment"}, "form_presence": {"required_aura_spell_ids": [588, 15473]}, "external_windows": {"authority": "reference_environment.shadow_priest_external_windows"}, "item_swap": {"enabled": false, "items": []}},
+      "item_swap": {"enabled": false, "items": []},
+      "player_powers": [{"name": "mana", "power_type": 0, "mode": "maximum"}]
+    },
+    "survival_hunter": {
+      "lane": "ranged",
+      "source_test_path": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_survival_hunter.test.go",
+      "source_test_sha256": "9706d97593a09a44731ceb2fa5216cf328dc1bc1aa5f40e8d581fab0ac403661",
+      "simulator_options": {"target_auto_attacks": false, "starting_distance_yards": 15.0, "class_options": {"pet_type": "wolf", "pet_uptime": 1.0, "time_to_trap_weave_ms": 0, "sniper_training_uptime": 1.0}},
+      "pet_setup": {"required": true, "kind": "wolf", "creature_entry": 8959, "uptime": 1.0, "talents": {"serpent_swiftness": 2, "dive": true, "spiked_collar": 3, "bloodthirsty": 1, "culling_the_herd": 3, "spiders_bite": 3, "rabid": true, "call_of_the_wild": true, "shark_attack": 2}, "required_autocast_spell_ids": [23145, 53401, 53434]},
+      "prepull_setup": {"flask": {"item_id": 58087, "observed_aura_spell_id": 79471}, "food": {"item_id": 0, "observed_aura_spell_id": 0}, "prepot": {"item_id": 0}, "combat_potion": {"item_id": 0}, "tinker": {"item_id": 0}, "racial": {"race_id": 2, "race": "orc", "spell_id": 0}, "raid_buffs": {"authority": "reference_environment"}, "target_debuffs": {"authority": "reference_environment"}, "heroism": {"authority": "reference_environment"}, "form_presence": {"required_aura_spell_ids": [13165]}, "item_swap": {"enabled": false, "items": []}},
+      "item_swap": {"enabled": false, "items": []},
+      "player_powers": [{"name": "focus", "power_type": 2, "mode": "maximum"}],
+      "pet_power": {"name": "focus", "power_type": 2, "mode": "maximum"}
+    },
+    "unholy_death_knight": {
+      "lane": "melee",
+      "source_test_path": "experiments/configs/wowsims_cata_p4_gear_sources/unholy_death_knight.test.go",
+      "source_test_sha256": "a23879b3c6e945289f8a635f85101f10834977dd8f138101a7726acf97db7f90",
+      "simulator_options": {"target_auto_attacks": false, "starting_distance_yards": 2.0, "class_options": {"pet_uptime": 1.0, "starting_runic_power": 100}},
+      "pet_setup": {"required": true, "kind": "ghoul", "summon_spell_id": 46584, "creature_entry": 26125, "family_id": 40, "created_by_spell_id": 52150, "pet_type": 0, "uptime": 1.0, "required_autocast_spell_ids": [47468, 47481, 47482], "spellbook_sha256": "a1d3751417bb084fee0205478cd3bbf3eded507a4247c91a2f67f839808694d2", "spellbook": [{"spell_id": 47468, "active": 193, "type": 0}, {"spell_id": 47481, "active": 193, "type": 0}, {"spell_id": 47482, "active": 193, "type": 0}, {"spell_id": 47484, "active": 1, "type": 0}, {"spell_id": 91776, "active": 1, "type": 0}, {"spell_id": 91778, "active": 1, "type": 0}, {"spell_id": 91797, "active": 1, "type": 0}, {"spell_id": 91800, "active": 1, "type": 0}, {"spell_id": 91802, "active": 1, "type": 0}, {"spell_id": 91809, "active": 1, "type": 0}, {"spell_id": 91837, "active": 1, "type": 0}, {"spell_id": 91838, "active": 1, "type": 0}], "identity_evidence": {"dvc_pointer": "artifacts/all_spec_program/phase8_native_pet_identity_smoke_20260816.json.dvc", "artifact_sha256": "d81f32b74f68cdc3dd7de61b53446f12a087bf758dcabf78262f5878e533e695"}},
+      "prepull_setup": {"flask": {"item_id": 58088, "observed_aura_spell_id": 79472}, "food": {"item_id": 0, "observed_aura_spell_id": 0}, "prepot": {"item_id": 0}, "combat_potion": {"item_id": 0}, "tinker": {"item_id": 0}, "racial": {"race_id": 1, "race": "human", "spell_id": 0}, "raid_buffs": {"authority": "reference_environment"}, "target_debuffs": {"authority": "reference_environment"}, "heroism": {"authority": "reference_environment"}, "form_presence": {"required_aura_spell_ids": [48265]}, "item_swap": {"enabled": false, "items": []}},
+      "item_swap": {"enabled": false, "items": []},
+      "player_powers": [{"name": "runic_power", "power_type": 6, "mode": "exact", "display_value": 100, "native_value": 1000}],
+      "runes_ready_mask": 63,
+      "pet_power": {"name": "energy", "power_type": 3, "mode": "maximum"}
+    }
+  }
+}

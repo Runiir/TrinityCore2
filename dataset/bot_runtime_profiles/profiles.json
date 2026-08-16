@@ -29,6 +29,7 @@
       "allow_questing": false,
       "allow_dungeons": true,
       "allow_raids": false,
+      "dungeon_difficulty": 0,
       "enable_progression": true,
       "auto_start_recording": false,
       "validation_route": {
@@ -36,6 +37,27 @@
         "manifest_path": "dataset/validation_scenarios/validation_routes.jsonl",
         "advance_mode": "terminal",
         "scenario_id": "stonecore_5n"
+      }
+    },
+    {
+      "name": "stonecore_5h",
+      "description": "Five server-provisioned validation bots running the Stonecore heroic route; bot decisions remain disabled until exact cohort and difficulty readback.",
+      "target_population": 5,
+      "pool_tag_filter": "stonecore_5n",
+      "spawn_mode": "resume_or_race_start",
+      "allow_configured_center_fallback": false,
+      "use_saved_position": true,
+      "allow_questing": false,
+      "allow_dungeons": true,
+      "allow_raids": false,
+      "dungeon_difficulty": 1,
+      "enable_progression": true,
+      "auto_start_recording": false,
+      "validation_route": {
+        "enable": true,
+        "manifest_path": "dataset/validation_scenarios/validation_routes.jsonl",
+        "advance_mode": "terminal",
+        "scenario_id": "stonecore_5h"
       }
     },
     {

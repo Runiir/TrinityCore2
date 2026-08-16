@@ -32,6 +32,7 @@
         "class": 1,
         "level": 85,
         "gear_profile": "protection_warrior",
+        "gear_profile_id": "protection_warrior",
         "glyphs": [
           43424,
           43425,
@@ -357,6 +358,7 @@
         "class": 2,
         "level": 85,
         "gear_profile": "protection_paladin",
+        "gear_profile_id": "protection_paladin",
         "glyphs": [
           45744,
           41098,
@@ -694,6 +696,7 @@
         "class": 6,
         "level": 85,
         "gear_profile": "blood_death_knight",
+        "gear_profile_id": "blood_death_knight",
         "glyphs": [
           43827,
           43534,
@@ -1012,6 +1015,7 @@
         "class": 11,
         "level": 85,
         "gear_profile": "feral_druid_tank",
+        "gear_profile_id": "feral_druid_tank",
         "glyphs": [
           40900,
           67484,
@@ -1333,6 +1337,7 @@
         "class": 2,
         "level": 85,
         "gear_profile": "holy_paladin",
+        "gear_profile_id": "holy_paladin",
         "glyphs": [
           45746,
           41110,
@@ -1657,6 +1662,7 @@
         "class": 5,
         "level": 85,
         "gear_profile": "discipline_priest",
+        "gear_profile_id": "discipline_priest",
         "glyphs": [
           45756,
           42408,
@@ -1980,6 +1986,7 @@
         "class": 5,
         "level": 85,
         "gear_profile": "holy_priest",
+        "gear_profile_id": "holy_priest",
         "glyphs": [
           42411,
           42409,
@@ -2313,6 +2320,7 @@
         "class": 7,
         "level": 85,
         "gear_profile": "restoration_shaman",
+        "gear_profile_id": "restoration_shaman",
         "glyphs": [
           41527,
           45772,
@@ -2640,6 +2648,7 @@
         "class": 11,
         "level": 85,
         "gear_profile": "restoration_druid",
+        "gear_profile_id": "restoration_druid",
         "glyphs": [
           40906,
           40915,
@@ -2970,6 +2979,7 @@
         "class": 1,
         "level": 85,
         "gear_profile": "arms_warrior",
+        "gear_profile_id": "arms_warrior",
         "glyphs": [
           43421,
           43422,
@@ -3286,6 +3296,7 @@
         "class": 1,
         "level": 85,
         "gear_profile": "fury_warrior",
+        "gear_profile_id": "fury_warrior",
         "glyphs": [
           43416,
           43432,
@@ -3602,6 +3613,7 @@
         "class": 2,
         "level": 85,
         "gear_profile": "retribution_paladin",
+        "gear_profile_id": "retribution_paladin",
         "glyphs": [
           43869,
           41103,
@@ -3939,6 +3951,7 @@
         "class": 3,
         "level": 85,
         "gear_profile": "beast_mastery_hunter",
+        "gear_profile_id": "beast_mastery_hunter",
         "glyphs": [
           42898,
           42915,
@@ -4284,6 +4297,7 @@
         "class": 3,
         "level": 85,
         "gear_profile": "marksmanship_hunter",
+        "gear_profile_id": "marksmanship_hunter",
         "glyphs": [
           42898,
           42911,
@@ -4618,6 +4632,7 @@
         "class": 3,
         "level": 85,
         "gear_profile": "wowsims_cata_p4_survival_hunter",
+        "gear_profile_id": "wowsims_cata_p4_survival_hunter",
         "glyphs": [
           45731,
           45732,
@@ -4951,6 +4966,7 @@
         "class": 4,
         "level": 85,
         "gear_profile": "assassination_rogue",
+        "gear_profile_id": "assassination_rogue",
         "glyphs": [
           45768,
           42956,
@@ -4962,7 +4978,9 @@
         "consumable_item_ids": [
           58085,
           58086,
-          58257
+          58257,
+          43233,
+          43231
         ],
         "primary_talent_tree_id": 182,
         "talents": [
@@ -5047,6 +5065,33 @@
           1329,
           14117,
           84601
+        ],
+        "consumables": [
+          {
+            "item_id": 58085,
+            "slot": 40,
+            "count": 20
+          },
+          {
+            "item_id": 58086,
+            "slot": 41,
+            "count": 20
+          },
+          {
+            "item_id": 58257,
+            "slot": 42,
+            "count": 20
+          },
+          {
+            "item_id": 43233,
+            "slot": 23,
+            "count": 20
+          },
+          {
+            "item_id": 43231,
+            "slot": 24,
+            "count": 20
+          }
         ]
       },
       "talent_build": {
@@ -5147,7 +5192,9 @@
       "consumable_item_ids": [
         58085,
         58086,
-        58257
+        58257,
+        43233,
+        43231
       ],
       "pet_form_stance_presence": [
         "poisons",
@@ -5246,6 +5293,7 @@
         "class": 4,
         "level": 85,
         "gear_profile": "combat_rogue",
+        "gear_profile_id": "combat_rogue",
         "glyphs": [
           42954,
           42972,
@@ -5257,7 +5305,9 @@
         "consumable_item_ids": [
           58085,
           58086,
-          58257
+          58257,
+          43233,
+          43231
         ],
         "primary_talent_tree_id": 181,
         "talents": [
@@ -5338,6 +5388,33 @@
           13852,
           13877,
           61329
+        ],
+        "consumables": [
+          {
+            "item_id": 58085,
+            "slot": 40,
+            "count": 20
+          },
+          {
+            "item_id": 58086,
+            "slot": 41,
+            "count": 20
+          },
+          {
+            "item_id": 58257,
+            "slot": 42,
+            "count": 20
+          },
+          {
+            "item_id": 43233,
+            "slot": 23,
+            "count": 20
+          },
+          {
+            "item_id": 43231,
+            "slot": 24,
+            "count": 20
+          }
         ]
       },
       "talent_build": {
@@ -5434,7 +5511,9 @@
       "consumable_item_ids": [
         58085,
         58086,
-        58257
+        58257,
+        43233,
+        43231
       ],
       "pet_form_stance_presence": [
         "poisons",
@@ -5528,6 +5607,7 @@
         "class": 4,
         "level": 85,
         "gear_profile": "subtlety_rogue",
+        "gear_profile_id": "subtlety_rogue",
         "glyphs": [
           42956,
           42967,
@@ -5822,6 +5902,7 @@
         "class": 6,
         "level": 85,
         "gear_profile": "frost_death_knight",
+        "gear_profile_id": "frost_death_knight",
         "glyphs": [
           43543,
           43547,
@@ -6027,7 +6108,7 @@
         58257
       ],
       "pet_form_stance_presence": [
-        "frost_presence",
+        "unholy_presence",
         "dual_wield_masterfrost",
         "runic_power"
       ],
@@ -6042,7 +6123,7 @@
         47541,
         47568,
         48263,
-        48266,
+        48265,
         48792,
         49020,
         49137,
@@ -6088,7 +6169,7 @@
         "anti_magic_shell",
         "death_grip",
         "dual_wield_masterfrost",
-        "frost_presence",
+        "unholy_presence",
         "hazard_movement",
         "interrupt_or_control",
         "mind_freeze",
@@ -6132,6 +6213,7 @@
         "class": 6,
         "level": 85,
         "gear_profile": "unholy_death_knight",
+        "gear_profile_id": "unholy_death_knight",
         "glyphs": [
           45804,
           43551,
@@ -6454,6 +6536,7 @@
         "class": 7,
         "level": 85,
         "gear_profile": "elemental_shaman",
+        "gear_profile_id": "elemental_shaman",
         "glyphs": [
           41531,
           41524,
@@ -6777,6 +6860,7 @@
         "class": 7,
         "level": 85,
         "gear_profile": "wowsims_cata_p4_enhancement_shaman",
+        "gear_profile_id": "wowsims_cata_p4_enhancement_shaman",
         "glyphs": [
           41540,
           41539,
@@ -7082,6 +7166,7 @@
         "class": 8,
         "level": 85,
         "gear_profile": "arcane_mage",
+        "gear_profile_id": "arcane_mage",
         "glyphs": [
           42735,
           44955,
@@ -7389,7 +7474,8 @@
         "race": 1,
         "class": 8,
         "level": 85,
-        "gear_profile": "fire_mage",
+        "gear_profile": "wowsims_cata_p4_fire_mage",
+        "gear_profile_id": "wowsims_cata_p4_fire_mage",
         "glyphs": [
           42739,
           42743,
@@ -7594,7 +7680,7 @@
         63416,
         43360
       ],
-      "gear_profile_id": "fire_mage",
+      "gear_profile_id": "wowsims_cata_p4_fire_mage",
       "consumable_item_ids": [
         58085,
         58086,
@@ -7705,6 +7791,7 @@
         "class": 8,
         "level": 85,
         "gear_profile": "frost_mage",
+        "gear_profile_id": "frost_mage",
         "glyphs": [
           42742,
           45736,
@@ -8010,6 +8097,7 @@
         "class": 9,
         "level": 85,
         "gear_profile": "affliction_warlock",
+        "gear_profile_id": "affliction_warlock",
         "glyphs": [
           45779,
           42472,
@@ -8214,6 +8302,7 @@
         172,
         348,
         686,
+        691,
         17790,
         17801,
         17805,
@@ -8294,6 +8383,7 @@
         "class": 9,
         "level": 85,
         "gear_profile": "demonology_warlock",
+        "gear_profile_id": "demonology_warlock",
         "glyphs": [
           42464,
           42453,
@@ -8546,6 +8636,8 @@
         348,
         603,
         686,
+        689,
+        1454,
         1949,
         6353,
         17801,
@@ -8638,6 +8730,7 @@
         "class": 9,
         "level": 85,
         "gear_profile": "destruction_warlock",
+        "gear_profile_id": "destruction_warlock",
         "glyphs": [
           42454,
           42464,
@@ -8943,6 +9036,7 @@
         "class": 5,
         "level": 85,
         "gear_profile": "wowsims_cata_p4_shadow_priest",
+        "gear_profile_id": "wowsims_cata_p4_shadow_priest",
         "glyphs": [
           42406,
           42415,
@@ -9305,6 +9399,7 @@
         "class": 11,
         "level": 85,
         "gear_profile": "wowsims_cata_p4_balance_druid",
+        "gear_profile_id": "wowsims_cata_p4_balance_druid",
         "glyphs": [
           40919,
           40923,
@@ -9659,6 +9754,7 @@
         "class": 11,
         "level": 85,
         "gear_profile": "feral_druid_dps",
+        "gear_profile_id": "feral_druid_dps",
         "glyphs": [
           40902,
           40901,

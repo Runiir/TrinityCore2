@@ -1,0 +1,264 @@
+{
+  "artifact": {
+    "byte_count": 8546,
+    "path": "build_receipts/b105204a7fc6ffd24331924192188645d368b41b7bf1bceb44af5e5b4dd059b1.json",
+    "sha256": "b105204a7fc6ffd24331924192188645d368b41b7bf1bceb44af5e5b4dd059b1"
+  },
+  "binary": {
+    "byte_count": 30667012,
+    "path": "binaries/585139d63132d74f9ce0d90a362a6d7a83cd3cadfee7fab149b27becb3a4bd9f.wowsimcli",
+    "sha256": "585139d63132d74f9ce0d90a362a6d7a83cd3cadfee7fab149b27becb3a4bd9f"
+  },
+  "binary_sha256": "585139d63132d74f9ce0d90a362a6d7a83cd3cadfee7fab149b27becb3a4bd9f",
+  "builds": [
+    {
+      "command": [
+        "/tmp/wowsims-toolchain/go/bin/go",
+        "build",
+        "-trimpath",
+        "--tags=with_db",
+        "-ldflags=-X main.Version=70d87383a9b92f30fb9e370c4676d3ce33b6e6b6 -s -w",
+        "-o",
+        "/tmp/wowsims-clean-build-913_kuh7/wowsimcli.first",
+        "./cmd/wowsimcli/cli_main.go"
+      ],
+      "command_sha256": "bb0f193a09a849a561adb46630128e0a3348ed2c797f9786ea27d8ab85d0e3c6",
+      "controller_interrupted": false,
+      "finished_unix_ns": 1786870127459728246,
+      "outer_timed_out": false,
+      "output_byte_count": 0,
+      "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "process_group_gone": true,
+      "process_group_id": 1974415,
+      "process_group_kill_sent": false,
+      "process_group_terminate_sent": false,
+      "process_log": {
+        "byte_count": 0,
+        "path": "process_logs/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "returncode": 0,
+      "returncode_observed": true,
+      "started_unix_ns": 1786870126845036792,
+      "transport_classification": "child_exited",
+      "wall_duration_ns": 614691454,
+      "working_directory": "/tmp/wowsims-dvc-reconstruct-6nfa0e0c/wowsims-provider"
+    },
+    {
+      "command": [
+        "/tmp/wowsims-toolchain/go/bin/go",
+        "build",
+        "-trimpath",
+        "--tags=with_db",
+        "-ldflags=-X main.Version=70d87383a9b92f30fb9e370c4676d3ce33b6e6b6 -s -w",
+        "-o",
+        "/tmp/wowsims-clean-build-913_kuh7/wowsimcli.second",
+        "./cmd/wowsimcli/cli_main.go"
+      ],
+      "command_sha256": "328690868b2814ab29aca4881ecb64ef31f7bd5cb662fa8949bfcd9172498e20",
+      "controller_interrupted": false,
+      "finished_unix_ns": 1786870128074861330,
+      "outer_timed_out": false,
+      "output_byte_count": 0,
+      "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "process_group_gone": true,
+      "process_group_id": 1974551,
+      "process_group_kill_sent": false,
+      "process_group_terminate_sent": false,
+      "process_log": {
+        "byte_count": 0,
+        "path": "process_logs/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "returncode": 0,
+      "returncode_observed": true,
+      "started_unix_ns": 1786870127460127215,
+      "transport_classification": "child_exited",
+      "wall_duration_ns": 614734115,
+      "working_directory": "/tmp/wowsims-dvc-reconstruct-6nfa0e0c/wowsims-provider"
+    }
+  ],
+  "byte_identical_clean_rebuild": true,
+  "fixture_contract": {
+    "byte_count": 312386,
+    "canonical_sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430",
+    "path": "fixture_contracts/a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430.json",
+    "sha256": "a190517b48642ddbb8da9768b99343bfa89dfd2532cf38a29984f310d47bb430"
+  },
+  "protobuf_generation": {
+    "command": [
+      "/tmp/wowsims-toolchain/protoc/bin/protoc",
+      "-I=./proto",
+      "--go_out=./sim/core",
+      "proto/api.proto",
+      "proto/apl.proto",
+      "proto/common.proto",
+      "proto/db.proto",
+      "proto/death_knight.proto",
+      "proto/druid.proto",
+      "proto/hunter.proto",
+      "proto/mage.proto",
+      "proto/paladin.proto",
+      "proto/priest.proto",
+      "proto/rogue.proto",
+      "proto/shaman.proto",
+      "proto/spell.proto",
+      "proto/test.proto",
+      "proto/ui.proto",
+      "proto/warlock.proto",
+      "proto/warrior.proto"
+    ],
+    "command_sha256": "12ef525c47fab44f467f293f676efc5a30ba62ab8c9be7a48cf541dd839f2fe9",
+    "controller_interrupted": false,
+    "finished_unix_ns": 1786870126844682698,
+    "outer_timed_out": false,
+    "output_byte_count": 0,
+    "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "process_group_gone": true,
+    "process_group_id": 1974400,
+    "process_group_kill_sent": false,
+    "process_group_terminate_sent": false,
+    "process_log": {
+      "byte_count": 0,
+      "path": "process_logs/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "returncode": 0,
+    "returncode_observed": true,
+    "started_unix_ns": 1786870126530511072,
+    "transport_classification": "child_exited",
+    "wall_duration_ns": 314171626,
+    "working_directory": "/tmp/wowsims-dvc-reconstruct-6nfa0e0c/wowsims-provider"
+  },
+  "protobuf_generation_output": {
+    "byte_count": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+  "receipt_sha256": "3f439aeb2cf3c32ee508f592a2f56c46431d94fd7da5c4eb62e3cfb601dcd887",
+  "request_validator": {
+    "builds": [
+      {
+        "command": [
+          "/tmp/wowsims-toolchain/go/bin/go",
+          "build",
+          "-trimpath",
+          "--tags=with_db",
+          "-ldflags=-s -w",
+          "-o",
+          "/tmp/wowsims-clean-build-913_kuh7/wowsimrequestvalidate.first",
+          "/tmp/wowsims-clean-build-913_kuh7/wowsimrequestvalidate.go"
+        ],
+        "command_sha256": "0f44eb019e667f84018eed9818116abc46b011f7a37ce9f91c457a3de7a97806",
+        "controller_interrupted": false,
+        "finished_unix_ns": 1786870128542584288,
+        "outer_timed_out": false,
+        "output_byte_count": 0,
+        "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "process_group_gone": true,
+        "process_group_id": 1974667,
+        "process_group_kill_sent": false,
+        "process_group_terminate_sent": false,
+        "process_log": {
+          "byte_count": 0,
+          "path": "process_logs/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "returncode": 0,
+        "returncode_observed": true,
+        "started_unix_ns": 1786870128127872983,
+        "transport_classification": "child_exited",
+        "wall_duration_ns": 414711305,
+        "working_directory": "/tmp/wowsims-dvc-reconstruct-6nfa0e0c/wowsims-provider"
+      },
+      {
+        "command": [
+          "/tmp/wowsims-toolchain/go/bin/go",
+          "build",
+          "-trimpath",
+          "--tags=with_db",
+          "-ldflags=-s -w",
+          "-o",
+          "/tmp/wowsims-clean-build-913_kuh7/wowsimrequestvalidate.second",
+          "/tmp/wowsims-clean-build-913_kuh7/wowsimrequestvalidate.go"
+        ],
+        "command_sha256": "ffe57162808d05fe15be99d50799964036f1b2170c04ca3befa13061f0c9ba22",
+        "controller_interrupted": false,
+        "finished_unix_ns": 1786870128957221704,
+        "outer_timed_out": false,
+        "output_byte_count": 0,
+        "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "process_group_gone": true,
+        "process_group_id": 1974790,
+        "process_group_kill_sent": false,
+        "process_group_terminate_sent": false,
+        "process_log": {
+          "byte_count": 0,
+          "path": "process_logs/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "returncode": 0,
+        "returncode_observed": true,
+        "started_unix_ns": 1786870128542885862,
+        "transport_classification": "child_exited",
+        "wall_duration_ns": 414335842,
+        "working_directory": "/tmp/wowsims-dvc-reconstruct-6nfa0e0c/wowsims-provider"
+      }
+    ],
+    "byte_count": 15069336,
+    "path": "binaries/590d9d361ecc77e5a77fe23085f601a873623415c4cef84c42676e012d3ba27e.wowsimrequestvalidate",
+    "sha256": "590d9d361ecc77e5a77fe23085f601a873623415c4cef84c42676e012d3ba27e",
+    "source_sha256": "32d44c64563a56b0eafa099d76e7aeed83ca810565a18c8b57d5d1d1f905d7bf"
+  },
+  "schema": "wowsims_cata_cli_build_receipt_v1",
+  "source": {
+    "porcelain_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "repository": "https://github.com/wowsims/cata.git",
+    "revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+    "source_tree_clean": true
+  },
+  "tools": {
+    "go": {
+      "executable_name": "go",
+      "sha256": "c4859c0d97fe48a45d348c8ceba892a5c2ca1d7f3e429cf3ea4f2c0dae5cc406",
+      "version": "go version go1.23.4 linux/amd64"
+    },
+    "protoc": {
+      "executable_name": "protoc",
+      "sha256": "5ae94ad986e83f0b52bd8139e036cbf94ddbba3ad348be8e4baf44447d7e19a4",
+      "version": "libprotoc 29.3"
+    },
+    "protoc_gen_go": {
+      "executable_name": "protoc-gen-go",
+      "sha256": "305568d6df0330c02fb5471448946c0e68b0b39c88738bcd31e4c822e3129e64",
+      "version": "protoc-gen-go v1.34.2"
+    }
+  },
+  "version_probe": {
+    "command": [
+      "/tmp/wowsims-dvc-reconstruct-6nfa0e0c/fresh-rebuilt-cli/binaries/585139d63132d74f9ce0d90a362a6d7a83cd3cadfee7fab149b27becb3a4bd9f.wowsimcli",
+      "version"
+    ],
+    "command_sha256": "351249e07aa74b59927e48c9837b0f64c3e552d89a0907013ad591b1106e211d",
+    "controller_interrupted": false,
+    "finished_unix_ns": 1786870129066041852,
+    "outer_timed_out": false,
+    "output_byte_count": 41,
+    "output_sha256": "1b161600db72cc715e315b1eafcad8bcc8f9278899de9f9bc59a2a0eb500993a",
+    "process_group_gone": true,
+    "process_group_id": 1974923,
+    "process_group_kill_sent": false,
+    "process_group_terminate_sent": false,
+    "process_log": {
+      "byte_count": 41,
+      "path": "process_logs/1b161600db72cc715e315b1eafcad8bcc8f9278899de9f9bc59a2a0eb500993a.log",
+      "sha256": "1b161600db72cc715e315b1eafcad8bcc8f9278899de9f9bc59a2a0eb500993a"
+    },
+    "returncode": 0,
+    "returncode_observed": true,
+    "started_unix_ns": 1786870129002335687,
+    "transport_classification": "child_exited",
+    "wall_duration_ns": 63706165,
+    "working_directory": "/tmp/wowsims-dvc-reconstruct-6nfa0e0c/wowsims-provider"
+  }
+}

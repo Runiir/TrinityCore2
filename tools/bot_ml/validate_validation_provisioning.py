@@ -370,6 +370,32 @@ def fetch_runtime_gear(database_url: str, names: set[str]) -> dict[str, dict[str
                     }
 
             cursor.execute(
+                "SELECT c.guid, c.name, ci.bag, ci.slot, ii.itemEntry, "
+                "ii.owner_guid, ii.count "
+                "FROM characters c "
+                "LEFT JOIN character_inventory ci ON ci.guid = c.guid "
+                "AND ci.bag = 0 AND ci.slot >= %s "
+                "LEFT JOIN item_instance ii ON ii.guid = ci.item "
+                f"WHERE c.name IN ({placeholders})",
+                (EQUIPMENT_SLOT_END, *tuple(names)),
+            )
+            for row in cursor.fetchall():
+                entry = payload.setdefault(
+                    str(row["name"]),
+                    {"guid": int(row["guid"]), "talentTree": "",
+                     "equipmentCache": "", "items": {}},
+                )
+                if row.get("slot") is not None:
+                    slot = int(row["slot"])
+                    entry.setdefault("inventory", {})[slot] = {
+                        "bag": int(row.get("bag") or 0),
+                        "slot": slot,
+                        "item_id": int(row.get("itemEntry") or 0),
+                        "owner_guid": int(row.get("owner_guid") or 0),
+                        "count": int(row.get("count") or 0),
+                    }
+
+            cursor.execute(
                 "SELECT c.name, cg.glyph1, cg.glyph2, cg.glyph3, cg.glyph4, cg.glyph5, cg.glyph6, cg.glyph7, cg.glyph8, cg.glyph9 "
                 "FROM characters c LEFT JOIN character_glyphs cg ON cg.guid = c.guid AND cg.talentGroup = 0 "
                 f"WHERE c.name IN ({placeholders})",
@@ -397,6 +423,40 @@ def fetch_runtime_gear(database_url: str, names: set[str]) -> dict[str, dict[str
             return payload
     finally:
         conn.close()
+
+
+def runtime_consumable_inventory_mismatches(
+    character_guid: int,
+    expected_consumables: list[dict[str, Any]],
+    actual_inventory: dict[int, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    mismatches: list[dict[str, Any]] = []
+    for expected in expected_consumables:
+        slot = int(expected.get("slot") or 0)
+        expected_identity = {
+            "bag": 0,
+            "slot": slot,
+            "item_id": int(expected.get("item_id") or 0),
+            "owner_guid": int(character_guid),
+            "count": int(expected.get("count", 20)),
+        }
+        actual = actual_inventory.get(slot, {})
+        actual_identity = {
+            key: int(actual.get(key) or 0)
+            for key in expected_identity
+        }
+        wrong_fields = [
+            key for key, value in expected_identity.items()
+            if actual_identity[key] != value
+        ]
+        if wrong_fields:
+            mismatches.append({
+                "slot": slot,
+                "wrong_fields": wrong_fields,
+                "expected": expected_identity,
+                "actual": actual_identity,
+            })
+    return mismatches
 
 
 def fetch_runtime_rotation_profiles(
@@ -513,6 +573,15 @@ def validate_database(
             expected_durability_by_slot = {int(item.get("slot", -1)): int(item.get("durability") or 0) for item in equipment}
             actual = runtime.get(name, {"items": {}, "talentTree": "", "equipmentCache": "", "glyphs": [], "talent_spells": set(), "known_spells": set()})
             actual_items = actual.get("items", {})
+            expected_consumables = list(
+                bot.get("consumables", config.get("default_consumables", []))
+            )
+            actual_inventory = actual.get("inventory", {})
+            consumable_mismatches = runtime_consumable_inventory_mismatches(
+                int(actual.get("guid") or 0),
+                expected_consumables,
+                actual_inventory,
+            )
             expected_talent_tree = int(bot.get("primary_talent_tree_id") or 0)
             talent_tree_tokens = [int(token) for token in str(actual.get("talentTree") or "").split() if token.lstrip("-").isdigit()]
             actual_talent_tree = talent_tree_tokens[0] if talent_tree_tokens else None
@@ -576,6 +645,14 @@ def validate_database(
                 "average_item_level": avg_item_level,
                 "glyphs_missing": glyphs_missing,
                 "invalid_actual_glyphs": invalid_actual_glyphs,
+                "consumable_inventory": {
+                    "expected_slots": sorted(
+                        int(row.get("slot") or 0)
+                        for row in expected_consumables
+                    ),
+                    "observed_slots": sorted(int(slot) for slot in actual_inventory),
+                    "mismatches": consumable_mismatches,
+                },
             }
             if actual_talent_tree != expected_talent_tree:
                 failures.append({"check": "runtime_talent_tree", "bot": name, "expected_talent_tree": expected_talent_tree, "actual_talent_tree": actual_talent_tree})
@@ -595,6 +672,12 @@ def validate_database(
                 failures.append({"check": "runtime_equipment_cache", "bot": name, "visible_missing_slots": visible_missing, "expected_cache": expected_cache})
             if invalid_actual_glyphs or glyphs_missing:
                 failures.append({"check": "runtime_glyphs", "bot": name, "missing_glyphs": glyphs_missing, "invalid_glyphs": invalid_actual_glyphs})
+            if consumable_mismatches:
+                failures.append({
+                    "check": "runtime_consumable_inventory",
+                    "bot": name,
+                    "mismatches": consumable_mismatches,
+                })
 
     expected_profiles = {
         (
