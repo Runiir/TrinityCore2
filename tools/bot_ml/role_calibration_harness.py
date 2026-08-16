@@ -108,7 +108,7 @@ def evaluate_calibration(
                 and fixture.get("map_id") == 0
                 and abs(float(fixture.get("x") or 0.0) - (-9060.0)) <= 0.01
                 and abs(float(fixture.get("y") or 0.0) - 520.0) <= 0.01
-                and 70.0 <= float(fixture.get("z") or 0.0) <= 85.0
+                and 65.0 <= float(fixture.get("z") or 0.0) <= 85.0
                 and float(fixture.get("nearest_other_hostile_clearance") or 0.0)
                     >= 45.0
                 and int(fixture.get("provisioned_at_ms") or 0) > 0

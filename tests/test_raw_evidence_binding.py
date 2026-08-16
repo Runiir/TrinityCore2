@@ -114,7 +114,7 @@ def _calibration_payload() -> dict:
             "map_id": 0,
             "x": -9060.0,
             "y": 520.0,
-            "z": 75.8,
+            "z": 68.3695,
             "nearest_other_hostile_clearance": 46.7,
             "provisioned_at_ms": 500,
             "provisioned_before_scoring": True,
