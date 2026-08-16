@@ -215,12 +215,12 @@ stages:
       nfiles: 3
     - path: experiments/configs/all_spec_targets_cata_p4_v1.json
       hash: md5
-      md5: 521f728339e3873f3400d1740fa662d9
-      size: 221966
+      md5: 1bbf0576ecb85597b8e4f8f434872830
+      size: 222081
     - path: experiments/configs/cata_434_action_profiles.json
       hash: md5
-      md5: bb871d6de8b205ce117c8f4f06d83266
-      size: 20147
+      md5: 189cef572ac350df2e1ae572b35b10e2
+      size: 20246
     - path: experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json
       hash: md5
       md5: 0d54984b39f27dded3e636ebe46af2b0
@@ -248,8 +248,8 @@ stages:
     outs:
     - path: dataset/validation_provisioning
       hash: md5
-      md5: 9540e3b331267ec92d417fe7619cdeba.dir
-      size: 3531828
+      md5: 346d57d15e9d268008246f9ae2ac4368.dir
+      size: 3548300
       nfiles: 5
   validation_gear:
     cmd: python -m tools.bot_ml.build_validation_gear_profiles --config
@@ -278,8 +278,8 @@ stages:
       size: 337263
     - path: experiments/configs/all_spec_targets_cata_p4_v1.json
       hash: md5
-      md5: 521f728339e3873f3400d1740fa662d9
-      size: 221966
+      md5: 1bbf0576ecb85597b8e4f8f434872830
+      size: 222081
     - path: experiments/configs/cata_434_combat_loot_profiles.json
       hash: md5
       md5: 012afbc3288c3ec227a26114fd2fb962

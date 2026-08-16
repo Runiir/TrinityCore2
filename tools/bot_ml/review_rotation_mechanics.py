@@ -1219,6 +1219,10 @@ def compare_rotations(wowsims: dict[str, Any], trinity: dict[str, Any]) -> dict[
 def _iter_runtime_bots(document: dict[str, Any]) -> Iterator[dict[str, Any]]:
     seen: set[int] = set()
     roots: list[Any] = [document]
+    calibration = document.get("combat_calibration")
+    if isinstance(calibration, dict):
+        completed = calibration.get("previous_window")
+        roots.append(completed if isinstance(completed, dict) else calibration)
     for key in ("previous_window", "current_window", "calibration", "report"):
         value = document.get(key)
         if isinstance(value, dict):
@@ -1249,6 +1253,7 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
     moving_samples = 0
     movement_distance_total = 0.0
     movement_distance_max = 0.0
+    calibration_windows: list[dict[str, Any]] = []
 
     trace_entries = ((document.get("trace") or {}).get("entries") or [])
     unique_attempts: set[tuple[int, int]] = set()
@@ -1320,6 +1325,22 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
                 spell_id = int(spell.get("spell_id") or 0)
                 if spell_id:
                     damage[spell_id] += int(spell.get("damage") or 0)
+        aggregate_results = bot.get("result_counts")
+        if isinstance(aggregate_results, dict):
+            for result, count in aggregate_results.items():
+                results[str(result)] += int(count or 0)
+        if bot.get("elapsed_seconds") is not None:
+            quality = bot.get("quality_metrics")
+            calibration_windows.append(
+                {
+                    "guid": int(bot.get("guid") or 0),
+                    "elapsed_seconds": float(bot.get("elapsed_seconds") or 0.0),
+                    "damage": int(bot.get("damage") or 0),
+                    "dps": float(bot.get("dps") or 0.0),
+                    "pet_damage": int(bot.get("pet_damage") or 0),
+                    "quality_metrics": quality if isinstance(quality, dict) else {},
+                }
+            )
         last = bot.get("last_chosen_action")
         if isinstance(last, dict):
             spell_id = int(last.get("spell_id") or 0)
@@ -1340,6 +1361,7 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
         "result_counts": dict(sorted(results.items())),
         "rejection_reason_counts": dict(sorted(rejection_reasons.items())),
         "pipeline_edges": dict(sorted(pipeline_edges.items())),
+        "calibration_windows": calibration_windows,
         "decision_observation": {
             "action_counts": dict(sorted(decision_actions.items())),
             "result_counts": dict(sorted(decision_results.items())),

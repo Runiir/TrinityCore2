@@ -804,6 +804,12 @@ std::string BotClassSpecActionProfile::QualityFlagsJson() const
 
 BotClassSpecActionProfile BotClassSpecActionProfileStore::Build(Player const* bot, char const* roleHint)
 {
+    return BuildForSpec(bot, roleHint, nullptr);
+}
+
+BotClassSpecActionProfile BotClassSpecActionProfileStore::BuildForSpec(
+    Player const* bot, char const* roleHint, char const* specTag)
+{
     BotClassSpecActionProfile profile;
     if (!bot)
         return profile;
@@ -811,7 +817,8 @@ BotClassSpecActionProfile BotClassSpecActionProfileStore::Build(Player const* bo
     profile.ClassId = bot->getClass();
     profile.ResourceType = PowerName(bot->GetPowerType());
     profile.Role = roleHint && *roleHint ? roleHint : "dps";
-    profile.SpecTag = InferSpecTag(bot, profile.Role);
+    profile.SpecTag = specTag && *specTag
+        ? CanonicalSpecTag(specTag) : InferSpecTag(bot, profile.Role);
     profile.RangeBand = "mixed";
     profile.ProfileSource = "missing_db_rotation_profile";
     profile.MissingProfile = true;

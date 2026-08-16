@@ -14,6 +14,9 @@ from tools.bot_ml.review_rotation_mechanics import (
 )
 
 
+ROOT = Path(__file__).resolve().parents[1]
+
+
 def _apl() -> dict:
     return {
         "type": "TypeAPL",
@@ -133,6 +136,42 @@ def test_condition_families_are_review_leads_not_equivalence_claims():
     assert "not semantic-equivalence" in review["comparison"]["interpretation"]
 
 
+def test_affliction_runtime_profile_covers_the_pinned_apl_player_spells():
+    request_catalog = json.loads(
+        (ROOT / "experiments/configs/wowsims_cata_dps_reference_requests_v1.json").read_text()
+    )
+    request = next(
+        row for row in request_catalog["requests"]
+        if row["target_spec"] == "affliction_warlock"
+    )
+    native_path = ROOT / request["result"]["artifacts"]["native_request"]["path"]
+    apl = find_wowsims_apl(json.loads(native_path.read_text()), player_index=0)
+    normalized = normalize_wowsims_apl(apl)
+    apl_spells = {
+        int(action["identity"]["id"])
+        for action in normalized["actions"]
+        if action.get("identity", {}).get("kind") == "spell"
+    }
+
+    target_catalog = json.loads(
+        (ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.json").read_text()
+    )
+    target = next(
+        row for row in target_catalog["targets"]
+        if row["spec_target_id"] == "affliction_warlock"
+    )
+    assert apl_spells <= set(target["action_profile_spell_ids"])
+
+    migration = (
+        ROOT
+        / "sql/custom/world/2026_08_16_01_affliction_warlock_apl_rotation.sql"
+    ).read_text()
+    for spell_id in apl_spells:
+        assert f", {spell_id}," in migration
+    assert "  348," not in migration
+    assert "  17962," not in migration
+
+
 def test_runtime_report_keeps_selection_submission_landing_and_rejection_separate():
     runtime = {
         "trace": {
@@ -218,6 +257,57 @@ def test_runtime_report_keeps_selection_submission_landing_and_rejection_separat
         "distance_moved_since_last_decision_total": 7.5,
         "distance_moved_since_last_decision_max": 7.5,
     }
+
+
+def test_runtime_report_reads_completed_combat_calibration_window():
+    runtime = {
+        "combat_calibration": {
+            "phase": "complete",
+            "previous_window": {
+                "bots": [
+                    {
+                        "guid": 1306,
+                        "elapsed_seconds": 300.0,
+                        "damage": 6339687,
+                        "dps": 21132.29,
+                        "pet_damage": 404927,
+                        "action_attempts": [
+                            {"spell_id": 686, "count": 85},
+                            {"spell_id": 1120, "count": 4},
+                        ],
+                        "spell_damage": [
+                            {"spell_id": 686, "damage": 1857836},
+                            {"spell_id": 1120, "damage": 603362},
+                        ],
+                        "result_counts": {"ok": 148, "no_action": 389},
+                        "quality_metrics": {
+                            "active_uptime_ratio": 1.0,
+                            "movement_range_loss_ratio": 0.0,
+                        },
+                    }
+                ]
+            },
+        }
+    }
+
+    normalized = normalize_runtime_report(runtime)
+
+    assert normalized["attempt_counts_by_spell"] == {"1120": 4, "686": 85}
+    assert normalized["damage_by_spell"] == {"1120": 603362, "686": 1857836}
+    assert normalized["result_counts"] == {"no_action": 389, "ok": 148}
+    assert normalized["calibration_windows"] == [
+        {
+            "guid": 1306,
+            "elapsed_seconds": 300.0,
+            "damage": 6339687,
+            "dps": 21132.29,
+            "pet_damage": 404927,
+            "quality_metrics": {
+                "active_uptime_ratio": 1.0,
+                "movement_range_loss_ratio": 0.0,
+            },
+        }
+    ]
 
 
 def test_route_mechanic_obligations_are_normalized_without_execution():

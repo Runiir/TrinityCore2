@@ -2945,8 +2945,8 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                     }
                     case CLASS_MAGE:
                     {
-                        BotClassSpecActionProfile const profile = BotClassSpecActionProfileStore::Build(
-                            bot, GetDungeonRole(bot));
+                        BotClassSpecActionProfile const profile = BotClassSpecActionProfileStore::BuildForSpec(
+                            bot, GetDungeonRole(bot), Cohort().CalibrationTargetSpec.c_str());
                         bool const manaGemEnabled = std::any_of(
                             profile.Spells.begin(), profile.Spells.end(), [](BotActionProfileSpell const& spell)
                             {
@@ -2962,8 +2962,8 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                         break;
                     case CLASS_DEATH_KNIGHT:
                     {
-                        BotClassSpecActionProfile const profile = BotClassSpecActionProfileStore::Build(
-                            bot, GetDungeonRole(bot));
+                        BotClassSpecActionProfile const profile = BotClassSpecActionProfileStore::BuildForSpec(
+                            bot, GetDungeonRole(bot), Cohort().CalibrationTargetSpec.c_str());
                         bool const presenceRequired =
                             profile.SpecTag == "frost_death_knight"
                             || profile.SpecTag == "unholy_death_knight";
@@ -2987,8 +2987,8 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                     case CLASS_WARLOCK:
                     {
                         BotClassSpecActionProfile const profile =
-                            BotClassSpecActionProfileStore::Build(
-                                bot, GetDungeonRole(bot));
+                            BotClassSpecActionProfileStore::BuildForSpec(
+                                bot, GetDungeonRole(bot), Cohort().CalibrationTargetSpec.c_str());
                         bool const petRequired =
                             profile.SpecTag == "affliction_warlock"
                             || profile.SpecTag == "demonology_warlock";
@@ -2999,8 +2999,8 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                     case CLASS_ROGUE:
                     {
                         BotClassSpecActionProfile const profile =
-                            BotClassSpecActionProfileStore::Build(
-                                bot, GetDungeonRole(bot));
+                            BotClassSpecActionProfileStore::BuildForSpec(
+                                bot, GetDungeonRole(bot), Cohort().CalibrationTargetSpec.c_str());
                         bool const poisonRequired =
                             profile.SpecTag == "assassination_rogue"
                             || profile.SpecTag == "combat_rogue";
@@ -3014,8 +3014,8 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                     }
                     case CLASS_SHAMAN:
                     {
-                        BotClassSpecActionProfile const profile = BotClassSpecActionProfileStore::Build(
-                            bot, GetDungeonRole(bot));
+                        BotClassSpecActionProfile const profile = BotClassSpecActionProfileStore::BuildForSpec(
+                            bot, GetDungeonRole(bot), Cohort().CalibrationTargetSpec.c_str());
                         bool const enhancement = profile.SpecTag == "enhancement"
                             || profile.SpecTag == "enhancement_shaman";
                         auto weaponEnchantReady = [bot](uint8 slot, uint32 enchantId, bool weaponRequired)
@@ -9253,7 +9253,8 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
                 ApplyCalibrationReferenceConditions(
                     bot, preScoreFixtureTarget);
                 if (TryEnsurePersistentCombatSetup(
-                    state, bot, preScoreFixtureTarget))
+                    state, bot, preScoreFixtureTarget,
+                    Cohort().CalibrationTargetSpec.c_str()))
                     return;
             }
 
@@ -11163,7 +11164,8 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
 
     if (scored)
     {
-        BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
+        BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::BuildForSpec(
+            bot, role.c_str(), Cohort().CalibrationTargetSpec.c_str());
         std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile);
         for (BotActionCandidate const& candidate : candidates)
         {
@@ -11230,7 +11232,8 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
             metrics, bot, target, externalObservedAtMs);
     }
 
-    if (TryEnsurePersistentCombatSetup(state, bot, target))
+    if (TryEnsurePersistentCombatSetup(state, bot, target,
+        Cohort().CalibrationTargetSpec.c_str()))
         return;
 
     // Warmup exists only to let ordinary player setup casts, item uses, and
@@ -11319,7 +11322,8 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     bool const strictSingleTarget = Cohort().CalibrationMode == "single_target_300";
     ResolvedCombatAction action = ResolveProfileCombatAction(
         bot, target, hostileCount, Cohort().CalibrationAoePhase, 0, false,
-        false, strictSingleTarget, !strictSingleTarget);
+        false, strictSingleTarget, !strictSingleTarget, false, false,
+        Cohort().CalibrationTargetSpec.c_str());
     auto actionCategory = Party().LastActionCategoryByBot.find(bot->GetGUID().GetCounter());
     std::string const actionGroup = actionCategory != Party().LastActionCategoryByBot.end()
         ? actionCategory->second : action.DebugName;
@@ -41375,7 +41379,7 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
     return best ? best->SpellId : 0;
 }
 
-ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly, bool forbidArea, bool allowMultidot, bool hostileTargetOnly, bool movementCompatibleOnly) const
+ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly, bool forbidArea, bool allowMultidot, bool hostileTargetOnly, bool movementCompatibleOnly, char const* specTagOverride) const
 {
     ResolvedCombatAction action;
     action.Valid = false;
@@ -41392,7 +41396,10 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     }
 
     std::string role = GetDungeonRole(bot);
-    BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
+    BotClassSpecActionProfile profile = specTagOverride && *specTagOverride
+        ? BotClassSpecActionProfileStore::BuildForSpec(
+            bot, role.c_str(), specTagOverride)
+        : BotClassSpecActionProfileStore::Build(bot, role.c_str());
     action.MovementDirective = profile.MovementDirective;
     action.AutoAttackMode = profile.AutoAttackMode;
     action.MinRange = profile.MinRange;
@@ -42072,13 +42079,17 @@ bool BotWorldPopulationMgr::IsNativePoisonSetupReady(Player const* bot,
             >= PoisonRefreshThresholdMs;
 }
 
-bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state, Player* bot, Unit* target)
+bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state, Player* bot, Unit* target,
+    char const* specTagOverride)
 {
     if (!bot || !bot->IsAlive())
         return false;
 
     std::string const role = GetDungeonRole(bot);
-    BotClassSpecActionProfile const profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
+    BotClassSpecActionProfile const profile = specTagOverride && *specTagOverride
+        ? BotClassSpecActionProfileStore::BuildForSpec(
+            bot, role.c_str(), specTagOverride)
+        : BotClassSpecActionProfileStore::Build(bot, role.c_str());
     bool const unholyPresenceSetup = role == "dps"
         && (profile.SpecTag == "frost_death_knight"
             || profile.SpecTag == "unholy_death_knight");

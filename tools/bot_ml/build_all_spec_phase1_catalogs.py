@@ -400,6 +400,7 @@ QUALIFICATION_TUNED_ACTION_SPELL_IDS = {
     "fire_mage": [5405, 6117, 12051],
     "marksmanship_hunter": [34490],
     "protection_paladin": [24275],
+    "affliction_warlock": [603, 1120, 1454, 6353, 47897, 74434, 77799, 77801],
     "demonology_warlock": [603, 6353, 18540, 29722, 33697, 47897, 50589, 74434],
 }
 

@@ -358,9 +358,22 @@ def normalize_runtime_calibration(
     common = {
         "illegal_action_count": int(quality.get("illegal_action_count") or 0),
     }
-    elapsed_dps = float(_required(target_bot, "dps", "target_bot") or 0.0)
+    serialized_elapsed_dps = float(
+        _required(target_bot, "dps", "target_bot") or 0.0
+    )
+    elapsed_dps = serialized_elapsed_dps
+    scored_damage = int(target_bot.get("damage") or 0)
 
     if mode in {"single_target_300", "aoe_300"}:
+        scored_damage = int(_required(target_bot, "damage", "target_bot") or 0)
+        target_elapsed_seconds = float(
+            _required(target_bot, "elapsed_seconds", "target_bot") or 0.0
+        )
+        elapsed_dps = (
+            scored_damage / target_elapsed_seconds
+            if target_elapsed_seconds > 0.0
+            else serialized_elapsed_dps
+        )
         active_uptime = float(_required(quality, "active_uptime_ratio", "target_bot.quality_metrics") or 0.0)
         fixture_target = _mapping(
             calibration.get("fixture_target"), "combat_calibration.fixture_target"
@@ -383,7 +396,7 @@ def normalize_runtime_calibration(
             "active_dps": elapsed_dps / active_uptime if active_uptime > 0 else 0.0,
             "elapsed_dps": elapsed_dps,
             "target_count": int(_required(target_bot, "target_count", "target_bot") or 0),
-            "scored_damage": int(_required(target_bot, "damage", "target_bot") or 0),
+            "scored_damage": scored_damage,
             "primary_target_guid": int(
                 (_required(target_bot, "primary_target_guid", "target_bot")
                     if mode == "single_target_300"
