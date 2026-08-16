@@ -5823,8 +5823,11 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "calibrationSpawnZ" in population
     assert "calibrationSpawnZ <= INVALID_HEIGHT" in population
     assert '"calibration_isolated_spawn_ground_unavailable"' in population
-    assert "std::array<float, 3>{ 15.0f, 14.8f, 15.2f }" in population
-    assert "std::array<float, 3>{ 2.0f, 2.5f, 3.0f }" in population
+    assert "std::vector<float>{ 13.5f, 14.0f, 14.5f, 15.0f, 15.5f }" in population
+    assert "std::vector<float>{ 2.0f, 2.5f, 3.0f }" in population
+    assert "RuntimeMinimumDistanceYards" in population
+    assert "RuntimeMaximumDistanceYards" in population
+    assert "approximateDistance" in population
     assert '"calibration_isolated_ranged_ground_unavailable"' in population
     assert "heightDelta > 1.0f" in population
     assert '"calibration_isolated_melee_ground_unavailable"' in population
@@ -5832,6 +5835,7 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "bot->IsWithinLOSInMap(fixtureTarget)" in population
     assert "PATHFIND_NORMAL" in population
     assert "PATHFIND_INCOMPLETE" in population
+    assert "path_calculated=%u path_type=%u" in population
     assert '"calibration_isolated_melee_fixture_unreachable"' in population
     for geometry_field in (
         "CalibrationFixtureBotSpawnX",
@@ -5856,12 +5860,17 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "map->SummonCreature(IsolatedSingleTargetDummyEntry" in population
     assert "fixtureArgs.SetSummonDuration(" in population
     assert "fixtureArgs.SummonHealth = IsolatedSingleTargetMaxHealth" in population
+    assert "SetStatFlatModifier(UNIT_MOD_ARMOR, BASE_VALUE" in population
+    assert "fixtureTarget->UpdateArmor()" in population
     assert "20 * 60 * IN_MILLISECONDS" in population
     assert "bot->IsValidAttackTarget(other)" in population
     assert "CalibrationFixtureTargetNearestHostileClearance" in population
     assert "CalibrationFailureReason" in header
     assert "calibration_isolated_target_provisioning_failed" in population
     assert "BotWorld calibration isolated target rejected" in population
+    assert "BotWorld calibration target fidelity drift before scoring" in manager
+    assert 'distance=%.3f range=[%.3f,%.3f]' in manager
+    assert "!Cohort().CalibrationWindowComplete && populationReady" in manager
     for rejection in (
         "calibration_isolated_target_summon_failed",
         "calibration_isolated_target_not_attackable",
