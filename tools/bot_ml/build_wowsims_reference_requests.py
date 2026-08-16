@@ -1020,13 +1020,24 @@ def _validate_generated_result(
         (artifacts.get("dvc_reconstruction_receipt") or {}).get("path"),
         "dvc_reconstruction_receipt",
     )
-    def artifact_identity(value: Any) -> dict[str, Any]:
-        value = value if isinstance(value, Mapping) else {}
-        return {
-            "path": value.get("path"),
-            "sha256": value.get("sha256"),
-            "byte_count": value.get("byte_count"),
-        }
+    generation_root = generation_receipt_path.resolve().parent.parent
+
+    def nested_artifact_matches(name: str) -> bool:
+        receipt_artifact = verified_receipt.get(name) or {}
+        promoted_artifact = artifacts.get(name) or {}
+        receipt_path = generation_root / str(receipt_artifact.get("path") or "")
+        promoted_path = _repo_file(
+            root, promoted_artifact.get("path"), f"generated_{name}"
+        )
+        return (
+            receipt_path.resolve() == promoted_path.resolve()
+            and file_sha256(promoted_path)
+            == receipt_artifact.get("sha256")
+            == promoted_artifact.get("sha256")
+            and promoted_path.stat().st_size
+            == receipt_artifact.get("byte_count")
+            == promoted_artifact.get("byte_count")
+        )
 
     _require(
         verified_receipt == generation_receipt
@@ -1034,12 +1045,9 @@ def _validate_generated_result(
         == row.get("request_sha256")
         and verified_receipt.get("source_revision")
         == row["source_contract"].get("provider_revision")
-        and artifact_identity(verified_receipt.get("native_request"))
-        == artifact_identity(artifacts.get("native_request"))
-        and artifact_identity(verified_receipt.get("native_result"))
-        == artifact_identity(artifacts.get("native_result"))
-        and artifact_identity(verified_receipt.get("build_receipt"))
-        == artifact_identity(artifacts.get("build_receipt")),
+        and nested_artifact_matches("native_request")
+        and nested_artifact_matches("native_result")
+        and nested_artifact_matches("build_receipt"),
         "generated_receipt_identity",
     )
     observation = verified_receipt.get("result_observation") or {}

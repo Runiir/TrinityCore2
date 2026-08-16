@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import inspect
 import json
 from pathlib import Path
 
@@ -119,6 +120,17 @@ def test_talent_translation_uses_checked_in_snapshot_bytes() -> None:
         "TalentTab.dbc",
         "TalentTreePrimarySpells.dbc",
     }
+
+
+def test_generated_result_validation_joins_nested_artifacts_by_resolved_path() -> None:
+    source = inspect.getsource(
+        __import__(
+            "tools.bot_ml.build_wowsims_reference_requests",
+            fromlist=["_validate_generated_result"],
+        )._validate_generated_result
+    )
+    assert "receipt_path.resolve() == promoted_path.resolve()" in source
+    assert 'nested_artifact_matches("native_result")' in source
 
 
 def test_requirements_cover_exact_static_and_runtime_facts(
