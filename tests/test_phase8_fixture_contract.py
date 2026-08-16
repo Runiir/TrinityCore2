@@ -333,6 +333,31 @@ def test_live_reference_observation_covers_every_configured_setup_aura() -> None
     assert required_setup_auras <= observed_aura_universe
 
 
+def test_warlock_reference_requires_native_fel_armor() -> None:
+    contract, _digest = load_fixture_contract()
+
+    for spec in ("affliction_warlock", "demonology_warlock"):
+        row = contract["specs"][spec]
+        assert row["prepull_setup"]["form_presence"] == {
+            "required_aura_spell_ids": [28176]
+        }
+        assert row["runtime_expected"]["form_presence"] == {
+            "required_aura_spell_ids": [28176]
+        }
+        # WoWSims applies Fel Armor as a permanent class aura, so it must not
+        # be represented by an extra simulator prepull cast.
+        assert all(
+            int(
+                action.get("action", {})
+                .get("cast_spell", {})
+                .get("spell_id", {})
+                .get("spell_id", 0)
+            )
+            != 28176
+            for action in row["native_request"]["rotation_prepull_actions"]
+        )
+
+
 def test_disabled_racial_actions_are_counted_and_observed_if_they_leak() -> None:
     contract, _digest = load_fixture_contract()
     transform = next(iter(contract["specs"].values()))["native_request"][

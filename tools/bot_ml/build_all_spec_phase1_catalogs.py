@@ -428,8 +428,12 @@ PERSISTENT_SETUP_SPELL_IDS = {
     "beast_mastery_hunter": [13165],
     "marksmanship_hunter": [13165],
     "survival_hunter": [13165],
-    "affliction_warlock": [691],
-    "demonology_warlock": [30146],
+    # WoWSims applies Fel Armor permanently for every Cataclysm warlock and
+    # includes its spell-power bonus in the generated reference. Provision the
+    # ordinary learned spell so runtime can establish the same aura with a
+    # native self-cast before the scored-window reset.
+    "affliction_warlock": [691, 28176],
+    "demonology_warlock": [28176, 30146],
     "elemental_shaman": [324],
     "enhancement_shaman": [324],
     "restoration_shaman": [324],

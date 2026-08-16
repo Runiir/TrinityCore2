@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 
@@ -49,8 +50,21 @@ def test_warlock_summons_are_canonical_persistent_setup_spells() -> None:
             "RUNTIME_ACTION_SPELL_IDS = {"
         )
     ]
-    assert '"affliction_warlock": [691]' in setup_spells
-    assert '"demonology_warlock": [30146]' in setup_spells
+    assert '"affliction_warlock": [691, 28176]' in setup_spells
+    assert '"demonology_warlock": [28176, 30146]' in setup_spells
+
+
+def test_warlock_fel_armor_is_native_persistent_setup_and_observed() -> None:
+    source = WORLD.read_text()
+    setup = _function_body(
+        source, "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup"
+    )
+
+    assert '{ CLASS_WARLOCK, nullptr, nullptr, 28176, 28176, 0, "fel_armor" }' in setup
+    assert "bot->HasSpell(buff.SpellId)" in setup
+    assert "executor.ExecuteCombat(bot, bot, action)" in setup
+    assert "44> PlayerAuraUniverse" in source
+    assert re.search(r"PlayerAuraUniverse\s*=\s*\{.*?\b28176\b", source, re.DOTALL)
 
 
 def test_warlock_pet_setup_is_learned_native_cast_not_manufacture() -> None:
@@ -184,7 +198,7 @@ def test_setup_precedes_calibration_scoring_and_normal_combat_resolution() -> No
         "WorldBotState* state"
     )
 
-    assert calibration.index("TryEnsurePersistentCombatSetup(state, bot, target)") < (
+    assert calibration.index("TryEnsurePersistentCombatSetup(state, bot, target,") < (
         calibration.index("metrics.WindowStartedMs = Cohort().CalibrationScoredStartedMs")
     )
     assert combat.index("TryEnsurePersistentCombatSetup(*state, bot, target)") < (
