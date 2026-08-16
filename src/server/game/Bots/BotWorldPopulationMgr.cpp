@@ -4147,19 +4147,9 @@ bool BotWorldPopulationMgr::CurrentCombatResOwnerUsable(WorldBotState const& tar
         return true;
     }
 
-    if (owner->HasUnitState(UNIT_STATE_CASTING))
-    {
-        declineReason = "declined_owner_casting";
-        return false;
-    }
     if (!owner->GetSpellHistory()->IsReady(spellInfo))
     {
         declineReason = "declined_combat_res_cooldown";
-        return false;
-    }
-    if (owner->GetSpellHistory()->HasGlobalCooldown(spellInfo))
-    {
-        declineReason = "declined_owner_global_cooldown";
         return false;
     }
     if (!HasPowerForSpell(owner, spellInfo))
@@ -4171,6 +4161,29 @@ bool BotWorldPopulationMgr::CurrentCombatResOwnerUsable(WorldBotState const& tar
         || targetState.NativeResurrectionPendingUntilMs > nowMs)
     {
         declineReason = "declined_approach_reservation_state_drift";
+        return false;
+    }
+
+    // The planner still requires an idle owner before it creates a promise.
+    // Once the typed movement-only approach has actually been selected, a
+    // short, matching acceptance receipt permits normal damage casts/GCDs to
+    // coexist with that movement.  It cannot hold a dead target indefinitely:
+    // the receipt is refreshed only when arbitration accepts the exact current
+    // approach, and both it and the reservation remain bounded.
+    bool const acceptedApproachIntentCurrent =
+        targetState.NativeBattleResApproachIntentDecisionAtMs
+            == targetState.NativeBattleResDecisionAtMs
+        && targetState.NativeBattleResApproachIntentAcceptedUntilMs > nowMs;
+    if (owner->HasUnitState(UNIT_STATE_CASTING)
+        && !acceptedApproachIntentCurrent)
+    {
+        declineReason = "declined_owner_casting";
+        return false;
+    }
+    if (owner->GetSpellHistory()->HasGlobalCooldown(spellInfo)
+        && !acceptedApproachIntentCurrent)
+    {
+        declineReason = "declined_owner_global_cooldown";
         return false;
     }
     return true;
@@ -4385,11 +4398,19 @@ void BotWorldPopulationMgr::ReconcileNativeBattleResDecisions(uint64 nowMs)
         uint32 const previousSpell = selected->State->NativeBattleResSpellId;
         uint64 const previousAt = selected->State->NativeBattleResDecisionAtMs;
         uint64 const previousUntil = selected->State->NativeBattleResDecisionUntilMs;
+        uint64 const previousApproachDecisionAt =
+            selected->State->NativeBattleResApproachIntentDecisionAtMs;
+        uint64 const previousApproachAcceptedUntil =
+            selected->State->NativeBattleResApproachIntentAcceptedUntilMs;
         selected->State->NativeBattleResDecision = "reserved_approach";
         selected->State->NativeBattleResOwnerGuid = candidate.Owner.Bot->GetGUID();
         selected->State->NativeBattleResSpellId = candidate.SpellId;
         selected->State->NativeBattleResDecisionAtMs = nowMs;
         selected->State->NativeBattleResDecisionUntilMs = nowMs + CombatResReservationLifetimeMs;
+        // A staged planner proposal has not passed typed arbitration yet and
+        // must never inherit a prior approach's transient cast/GCD tolerance.
+        selected->State->NativeBattleResApproachIntentDecisionAtMs = 0;
+        selected->State->NativeBattleResApproachIntentAcceptedUntilMs = 0;
         std::string declineReason;
         bool const usable = CurrentCombatResOwnerUsable(*selected->State,
             selected->Bot, nowMs, declineReason);
@@ -4398,6 +4419,10 @@ void BotWorldPopulationMgr::ReconcileNativeBattleResDecisions(uint64 nowMs)
         selected->State->NativeBattleResSpellId = previousSpell;
         selected->State->NativeBattleResDecisionAtMs = previousAt;
         selected->State->NativeBattleResDecisionUntilMs = previousUntil;
+        selected->State->NativeBattleResApproachIntentDecisionAtMs =
+            previousApproachDecisionAt;
+        selected->State->NativeBattleResApproachIntentAcceptedUntilMs =
+            previousApproachAcceptedUntil;
         if (usable)
         {
             owner = &candidate;
@@ -4505,7 +4530,10 @@ BotWorldPopulationMgr::BuildCombatResNativeActionCandidate(
         : 5.0f;
     bool const inCastEnvelope = owner->IsWithinLOSInMap(target)
         && owner->IsWithinDistInMap(target, resurrectionRange);
-    if (inCastEnvelope)
+    bool const castResourcesFree = spellInfo
+        && !owner->HasUnitState(UNIT_STATE_CASTING)
+        && !owner->GetSpellHistory()->HasGlobalCooldown(spellInfo);
+    if (inCastEnvelope && castResourcesFree)
     {
         candidate.Id.Mechanic = "submit_combat_res_cast";
         candidate.Action = BotNativeAction::CombatResCast{
@@ -11644,10 +11672,25 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
             float const resurrectionRange = spellInfo
                 ? std::max(5.0f,
                     bot->GetSpellMaxRangeForTarget(target, spellInfo)) : 5.0f;
+            auto acceptCurrentApproach = [&]
+            {
+                uint64 const acceptedAtMs = NowMs();
+                targetState->NativeBattleResApproachIntentDecisionAtMs =
+                    targetState->NativeBattleResDecisionAtMs;
+                targetState->NativeBattleResApproachIntentAcceptedUntilMs =
+                    std::min(targetState->NativeBattleResDecisionUntilMs,
+                        acceptedAtMs + 1500);
+            };
             if (bot->IsWithinLOSInMap(target)
                 && bot->IsWithinDistInMap(target, resurrectionRange))
-                return BotActionArbitration::Outcome::Retryable(
-                    "combat_res_cast_envelope_ready");
+            {
+                // The approach intent owns movement only.  Holding inside the
+                // cast envelope while an independent damage cast/GCD finishes
+                // is accepted progress; a later idle tick emits CombatResCast.
+                acceptCurrentApproach();
+                return BotActionArbitration::Outcome::Progressed(
+                    "typed_combat_res_cast_resources_pending");
+            }
 
             bool const moved = MoveBotToPoint(state, bot,
                 target->GetPositionX(), target->GetPositionY(),
@@ -11658,12 +11701,7 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
                 return BotActionArbitration::Outcome::Retryable(
                     "combat_res_approach_not_submitted");
 
-            uint64 const acceptedAtMs = NowMs();
-            targetState->NativeBattleResApproachIntentDecisionAtMs =
-                targetState->NativeBattleResDecisionAtMs;
-            targetState->NativeBattleResApproachIntentAcceptedUntilMs =
-                std::min(targetState->NativeBattleResDecisionUntilMs,
-                    acceptedAtMs + 1500);
+            acceptCurrentApproach();
             std::string raw = BuildRawJson(bot, target);
             std::string semantic = BuildSemanticJson(bot, target,
                 "validation_route_resurrection");

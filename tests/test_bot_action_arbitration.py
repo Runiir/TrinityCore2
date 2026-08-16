@@ -119,8 +119,7 @@ int main()
         BotNativeAction::CombatResApproach{ ObjectGuid{}, 20484,
             1000, 9000 };
     assert(BotNativeAction::RequiredResources(combatResApproach)
-        == Uses(Resource::Movement, Resource::GlobalCooldown,
-            Resource::Cast, Resource::Target));
+        == Uses(Resource::Movement));
     BotNativeAction::Intent combatResCast =
         BotNativeAction::CombatResCast{ ObjectGuid{}, 20484,
             1000, 9000 };
@@ -205,6 +204,78 @@ int main()
     assert(resolution.CommittedCandidates.front() == "damage");
     assert(resolution.CommittedCandidates.back() == "route");
     assert(kernel.LastResolutionJson().find("hard_masked") != std::string::npos);
+
+    // Combat-res approach owns only movement: the owner can keep performing
+    // normal stationary damage while closing range. A committed survival
+    // movement still preempts the approach without blocking that damage lane.
+    Kernel combatResConcurrency;
+    combatResConcurrency.Begin(2010);
+    bool approachRan = false;
+    bool approachDamageRan = false;
+    combatResConcurrency.Submit(Candidate{
+        "combat_res_approach", "typed_combat_res",
+        BotActionArbitration::Priority::Mechanic, 9.0f, 0.0f, 0.0f,
+        BotNativeAction::RequiredResources(combatResApproach),
+        0, 100, 3000, 5, true, "", [&]
+        {
+            approachRan = true;
+            return Outcome::Progressed("approaching");
+        }
+    });
+    combatResConcurrency.Submit(Candidate{
+        "approach_damage", "profile",
+        BotActionArbitration::Priority::TrainedDamage, 5.0f, 0.0f, 0.0f,
+        Uses(Resource::GlobalCooldown, Resource::Cast, Resource::Target),
+        0, 100, 3000, 5, true, "", [&]
+        {
+            approachDamageRan = true;
+            return Outcome::Submitted("damage_cast_submitted");
+        }
+    });
+    Resolution const& combatResResolution = combatResConcurrency.Resolve();
+    assert(approachRan);
+    assert(approachDamageRan);
+    assert(combatResResolution.CommittedCandidates.size() == 2);
+
+    Kernel hazardOverApproach;
+    hazardOverApproach.Begin(2020);
+    bool survivalMoveRan = false;
+    bool blockedApproachRan = false;
+    bool hazardDamageRan = false;
+    hazardOverApproach.Submit(Candidate{
+        "combat_res_approach_hazard", "typed_combat_res",
+        BotActionArbitration::Priority::Mechanic, 9.0f, 0.0f, 0.0f,
+        BotNativeAction::RequiredResources(combatResApproach),
+        0, 100, 3000, 5, true, "", [&]
+        {
+            blockedApproachRan = true;
+            return Outcome::Progressed("must_not_preempt_hazard");
+        }
+    });
+    hazardOverApproach.Submit(Candidate{
+        "survival_move", "hazard",
+        BotActionArbitration::Priority::Survival, 2.0f, 0.0f, 0.0f,
+        Uses(Resource::Movement), 0, 100, 3000, 5, true, "", [&]
+        {
+            survivalMoveRan = true;
+            return Outcome::Submitted("hazard_move_submitted");
+        }
+    });
+    hazardOverApproach.Submit(Candidate{
+        "hazard_damage", "profile",
+        BotActionArbitration::Priority::TrainedDamage, 5.0f, 0.0f, 0.0f,
+        Uses(Resource::GlobalCooldown, Resource::Cast, Resource::Target),
+        0, 100, 3000, 5, true, "", [&]
+        {
+            hazardDamageRan = true;
+            return Outcome::Submitted("damage_during_hazard_move");
+        }
+    });
+    Resolution const& hazardResolution = hazardOverApproach.Resolve();
+    assert(survivalMoveRan);
+    assert(!blockedApproachRan);
+    assert(hazardDamageRan);
+    assert(hazardResolution.CommittedCandidates.size() == 2);
 
     // Retry backoff belongs to the failing candidate, not the bot. The
     // alternative remains eligible and progress clears escalation state.

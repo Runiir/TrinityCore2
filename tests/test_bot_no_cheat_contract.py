@@ -534,6 +534,10 @@ def test_combat_res_owner_usability_is_shared_and_live_reconciled() -> None:
     assert 'declineReason = "declined_owner_dead"' in predicate
     assert 'declineReason = "declined_owner_wrong_map"' in predicate
     assert 'declineReason = "declined_owner_wrong_instance"' in predicate
+    assert "acceptedApproachIntentCurrent" in predicate
+    assert "NativeBattleResApproachIntentDecisionAtMs" in predicate
+    assert "NativeBattleResApproachIntentAcceptedUntilMs > nowMs" in predicate
+    assert "&& !acceptedApproachIntentCurrent" in predicate
     assert planner.count("CurrentCombatResOwnerUsable(") >= 2
     assert update_bot.count("CurrentCombatResOwnerUsable(") >= 1
     assert builder.count("CurrentCombatResOwnerUsable(") >= 1
@@ -544,6 +548,13 @@ def test_combat_res_owner_usability_is_shared_and_live_reconciled() -> None:
     assert "acceptedCombatResIntentCurrent" in update_bot
     assert "NativeBattleResApproachIntentAcceptedUntilMs" in update_bot
     assert '"declined_typed_intent_not_current"' in update_bot
+    # A planner proposal has no acceptance receipt. Only the exact approach
+    # selected by the typed arbiter may briefly coexist with damage GCD/cast.
+    assert "NativeBattleResApproachIntentDecisionAtMs = 0" in planner
+    assert "NativeBattleResApproachIntentAcceptedUntilMs = 0" in planner
+    assert "bool const castResourcesFree" in builder
+    assert "inCastEnvelope && castResourcesFree" in builder
+    assert "typed_combat_res_cast_resources_pending" in executor
 
     # Declines clear only bot-owned reservation bookkeeping and publish a
     # typed observation; no resurrection or release state is manufactured.
@@ -584,13 +595,24 @@ def test_combat_res_scheduler_owns_movement_cast_and_native_acceptance() -> None
         assert f"struct {intent}" in intents
         assert f"BotNativeAction::{intent}" in builder
         assert f"BotNativeAction::{intent}" in executor
-    assert intents.count("Resource::Movement, Resource::GlobalCooldown") >= 2
+    approach_resources = intents.split(
+        "if constexpr (std::is_same_v<T, CombatResApproach>)", 1
+    )[1].split("if constexpr", 1)[0]
+    assert "return Uses(Resource::Movement);" in approach_resources
+    for forbidden_resource in (
+        "Resource::GlobalCooldown",
+        "Resource::Cast",
+        "Resource::Target",
+    ):
+        assert forbidden_resource not in approach_resources
+    assert intents.count("Resource::Movement, Resource::GlobalCooldown") >= 1
     assert "Resource::Cast, Resource::Target" in intents
     assert "Resource::Interaction, Resource::Target" in intents
     assert "candidate.RequiredResources = combatRes->Resources()" in update
     assert "state.DecisionKernel.Submit(std::move(candidate))" in update
     assert "CurrentCombatResOwnerUsable" in builder
     assert "CurrentCombatResOwnerUsable" in executor
+    assert "typed_combat_res_cast_resources_pending" in executor
     assert "targetState->NativeBattleResDecisionAtMs != reservationAtMs" in executor
     assert "targetState->NativeBattleResDecisionUntilMs" in executor
     assert "!= reservationUntilMs" in executor

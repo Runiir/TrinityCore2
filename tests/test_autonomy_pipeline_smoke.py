@@ -2953,7 +2953,17 @@ def test_validation_route_combat_resurrection_uses_typed_scheduler():
     for intent in ("CombatResApproach", "CombatResCast", "CombatResAccept"):
         assert f"struct {intent}" in native_intents
         assert f"BotNativeAction::{intent}" in executor
-    assert native_intents.count("Resource::Movement, Resource::GlobalCooldown") >= 2
+    approach_resources = native_intents.split(
+        "if constexpr (std::is_same_v<T, CombatResApproach>)", 1
+    )[1].split("if constexpr", 1)[0]
+    assert "return Uses(Resource::Movement);" in approach_resources
+    for forbidden_resource in (
+        "Resource::GlobalCooldown",
+        "Resource::Cast",
+        "Resource::Target",
+    ):
+        assert forbidden_resource not in approach_resources
+    assert native_intents.count("Resource::Movement, Resource::GlobalCooldown") >= 1
     assert "Resource::Interaction, Resource::Target" in native_intents
 
     assert "CurrentCombatResOwnerUsable" in builder
@@ -2974,6 +2984,7 @@ def test_validation_route_combat_resurrection_uses_typed_scheduler():
     assert "NativeResurrectionPendingUntilMs" in executor
     assert '"reserved_cast_submitted"' in executor
     assert '"typed_approach_intent_submitted"' in executor
+    assert '"typed_combat_res_cast_resources_pending"' in executor
     assert '"typed_native_cast_submitted"' in executor
     assert '"typed_native_resurrection_completed"' in executor
     assert "CurrentCombatResOwnerUsable" in executor

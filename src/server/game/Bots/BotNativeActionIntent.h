@@ -78,8 +78,10 @@ inline BotActionArbitration::ResourceMask RequiredResources(Intent const& intent
             || std::is_same_v<T, NativeDescent>)
             return Uses(Resource::Movement);
         if constexpr (std::is_same_v<T, CombatResApproach>)
-            return Uses(Resource::Movement, Resource::GlobalCooldown,
-                Resource::Cast, Resource::Target);
+            // Approaching only submits native movement.  It observes the
+            // reserved target but does not retarget or consume spell/GCD
+            // state, so ordinary damage may continue during the approach.
+            return Uses(Resource::Movement);
         if constexpr (std::is_same_v<T, CombatResCast>)
             return Uses(Resource::Movement, Resource::GlobalCooldown,
                 Resource::Cast, Resource::Target);

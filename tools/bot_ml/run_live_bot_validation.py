@@ -59,6 +59,10 @@ DEFAULT_MAX_WORLDSERVER_OUTPUT_BYTES = 64 * 1024 * 1024
 WORLDSERVER_OUTPUT_TRUNCATED_MARKER = "\n[worldserver_output_truncated]\n"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_COMBAT_CALIBRATION_REFERENCE = REPO_ROOT / "dataset/combat_calibration/wowsims_cata_p4.json"
+SESSION_CONTROLLER_PRELAUNCH_LAYOUTS = (
+    frozenset({"runner.log", "physical_try_started.json"}),
+    frozenset({"phase9_runner.log", "phase9_physical_try_started.json"}),
+)
 
 
 DEFAULT_STAGES = [
@@ -107,6 +111,25 @@ class BoundedOutputParts(list[str]):
 
 
 CommandTransport = Callable[[str, int], tuple[str, int, bool]]
+
+
+def session_output_dir_available(path: Path) -> bool:
+    """Allow only the controller's immutable prelaunch files in a new run dir.
+
+    The outer campaign controller reserves a physical try and opens its bounded
+    log before launching this process.  Those files are not child output and
+    are never overwritten here.  Any result receipt or previous child artifact
+    still makes the directory unavailable, preserving the no-overwrite gate.
+    """
+    if not path.exists():
+        return True
+    children = list(path.iterdir())
+    if any(not child.is_file() or child.is_symlink() for child in children):
+        return False
+    if not children:
+        return True
+    names = {child.name for child in children}
+    return names in SESSION_CONTROLLER_PRELAUNCH_LAYOUTS
 
 
 @dataclass(frozen=True)
@@ -5107,10 +5130,8 @@ def main() -> int:
         args.timeout_sec = args.timeout_sec if args.timeout_sec is not None else DEFAULT_LIVE_VALIDATION_TIMEOUT_SEC
         args.observe_sec = args.observe_sec if args.observe_sec is not None else 0
 
-    output_dir_was_nonempty = args.output_dir.exists() and any(
-        path.name != "runner.log" for path in args.output_dir.iterdir()
-    )
-    if args.transport == "session" and output_dir_was_nonempty and not args.dry_run and not args.input_log:
+    output_dir_is_available = session_output_dir_available(args.output_dir)
+    if args.transport == "session" and not output_dir_is_available and not args.dry_run and not args.input_log:
         raise SystemExit("--transport session requires a new or empty --output-dir")
     args.output_dir.mkdir(parents=True, exist_ok=True)
     bot_pool_tags = [args.party_pool_tag] if exact_party_specs else (args.bot_pool_tag or ["test_account"])

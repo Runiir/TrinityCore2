@@ -51,11 +51,74 @@ from tools.bot_ml.run_cata_raid_dps_acceptance import (
     write_recovered_physical_try_reservation,
     write_campaign_state,
 )
+from tools.bot_ml.run_live_bot_validation import session_output_dir_available
 from tools.bot_ml.verify_cata_raid_dps_acceptance import gear_profile_binding, verify
 
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "experiments/configs/cata_raid_dps_acceptance_v1.json"
+
+
+def test_session_child_accepts_only_controller_prelaunch_files(tmp_path: Path) -> None:
+    attempt_dir = tmp_path / "attempt"
+    assert session_output_dir_available(attempt_dir) is True
+
+    attempt_dir.mkdir()
+    (attempt_dir / "runner.log").write_text("", encoding="utf-8")
+    assert session_output_dir_available(attempt_dir) is False
+    (attempt_dir / "physical_try_started.json").write_text(
+        "{}\n", encoding="utf-8"
+    )
+    assert session_output_dir_available(attempt_dir) is True
+
+    (attempt_dir / "runner.log").unlink()
+    (attempt_dir / "physical_try_started.json").unlink()
+    (attempt_dir / "phase9_runner.log").write_text("", encoding="utf-8")
+    (attempt_dir / "phase9_physical_try_started.json").write_text(
+        "{}\n", encoding="utf-8"
+    )
+    assert session_output_dir_available(attempt_dir) is True
+
+    (attempt_dir / "runner.log").write_text("", encoding="utf-8")
+    assert session_output_dir_available(attempt_dir) is False
+    (attempt_dir / "runner.log").unlink()
+
+    (attempt_dir / "physical_try_result.json").write_text(
+        "{}\n", encoding="utf-8"
+    )
+    assert session_output_dir_available(attempt_dir) is False
+
+
+def test_session_child_preflight_accepts_dps_controller_reservation(
+    tmp_path: Path,
+) -> None:
+    attempt_dir = tmp_path / "attempt"
+    attempt_dir.mkdir()
+    (attempt_dir / "runner.log").write_text("", encoding="utf-8")
+    (attempt_dir / "physical_try_started.json").write_text(
+        "{}\n", encoding="utf-8"
+    )
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "tools.bot_ml.run_live_bot_validation",
+            "--transport",
+            "session",
+            "--output-dir",
+            str(attempt_dir),
+            "--validation-route-sequence",
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode != 0
+    assert "--validation-route-sequence requires --validation-scenario-id" in completed.stderr
+    assert "requires a new or empty --output-dir" not in completed.stderr
 
 
 def _phase8_v2_manifest(
