@@ -1021,6 +1021,33 @@ def test_native_result_rejects_temporal_external_aura_uptime() -> None:
         parse_native_result(result)
 
 
+def test_native_result_semantics_normalize_only_unordered_metric_collections() -> None:
+    first = {
+        "actions": [
+            {"id": {"spellId": 2}, "targets": [{"unitIndex": 0, "casts": 1}]},
+            {"id": {"spellId": 1}, "targets": [{"unitIndex": 0, "casts": 2}]},
+        ],
+        "ordered": [2, 1],
+    }
+    second = copy.deepcopy(first)
+    second["actions"].reverse()
+    assert exact_runner.canonical_native_result_semantics(first) == (
+        exact_runner.canonical_native_result_semantics(second)
+    )
+    second["ordered"].reverse()
+    assert exact_runner.canonical_native_result_semantics(first) != (
+        exact_runner.canonical_native_result_semantics(second)
+    )
+
+
+def test_native_result_semantics_reject_metric_value_changes() -> None:
+    first = {"auras": [{"id": {"spellId": 2825}, "uptimeSecondsAvg": 0}]}
+    second = {"auras": [{"id": {"spellId": 2825}, "uptimeSecondsAvg": 1}]}
+    assert exact_runner.canonical_native_result_semantics(first) != (
+        exact_runner.canonical_native_result_semantics(second)
+    )
+
+
 @pytest.mark.parametrize(
     ("field", "value", "reason"),
     [

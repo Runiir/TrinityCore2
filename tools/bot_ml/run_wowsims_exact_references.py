@@ -3789,14 +3789,18 @@ def audit_generation_reexecution(
         _require(result_path.is_file(), "audit:result_missing")
         rerun_bytes = result_path.read_bytes()
     expected_bytes = expected_result_path.read_bytes()
+    rerun_result = _json_object_from_bytes(
+        rerun_bytes, label="audit:rerun_result"
+    )
+    expected_result = _json_object_from_bytes(
+        expected_bytes, label="audit:expected_result"
+    )
+    rerun_semantics = canonical_native_result_semantics(rerun_result)
+    expected_semantics = canonical_native_result_semantics(expected_result)
     if rerun_bytes != expected_bytes:
         _require(
-            canonical_json_bytes(
-                _json_object_from_bytes(rerun_bytes, label="audit:rerun_result")
-            )
-            == canonical_json_bytes(
-                _json_object_from_bytes(expected_bytes, label="audit:expected_result")
-            ),
+            canonical_json_bytes(rerun_semantics)
+            == canonical_json_bytes(expected_semantics),
             "audit:result_bytes",
         )
     observation = {
@@ -3806,9 +3810,7 @@ def audit_generation_reexecution(
         "rebuilt_binary_sha256": sha256_file(rebuilt_binary),
         "native_request_sha256": sha256_file(request_path),
         "native_result_sha256": hashlib.sha256(rerun_bytes).hexdigest(),
-        "canonical_result_sha256": canonical_sha256(
-            _json_object_from_bytes(rerun_bytes, label="audit:rerun_result")
-        ),
+        "canonical_result_sha256": canonical_sha256(rerun_semantics),
         "compute_stats_sha256": sha256_file(expected_compute_path),
         "validator_transport": validator_outcome,
         "validator_output_sha256": hashlib.sha256(validator_output).hexdigest(),
@@ -3823,6 +3825,24 @@ def audit_generation_reexecution(
         "canonical_result_identical": True,
     }
     return {**observation, "observation_sha256": canonical_sha256(observation)}
+
+
+def canonical_native_result_semantics(value: Any, *, parent_key: str = "") -> Any:
+    """Normalize only WoWSims metric collections whose Go map order is unstable."""
+    if isinstance(value, Mapping):
+        return {
+            key: canonical_native_result_semantics(child, parent_key=str(key))
+            for key, child in value.items()
+        }
+    if isinstance(value, list):
+        normalized = [
+            canonical_native_result_semantics(child, parent_key=parent_key)
+            for child in value
+        ]
+        if parent_key in {"actions", "auras", "resources", "pets"}:
+            normalized.sort(key=canonical_json_bytes)
+        return normalized
+    return value
 
 
 def parse_dvc_pointer(
