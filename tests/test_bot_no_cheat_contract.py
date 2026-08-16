@@ -12,6 +12,7 @@ ACTION_ARBITER = ROOT / "src/server/game/Bots/BotActionArbiter.h"
 EXECUTOR = ROOT / "src/server/game/Bots/BotActionExecutor.cpp"
 BOT_MGR = ROOT / "src/server/game/Bots/BotMgr.cpp"
 BOT_CONTROLLER = ROOT / "src/server/game/Bots/BotController.cpp"
+BOT_PROFILE = ROOT / "src/server/game/Bots/BotClassSpecActionProfile.cpp"
 
 
 def function_body(source: str, signature: str) -> str:
@@ -98,6 +99,25 @@ def test_live_autonomy_functions_do_not_mutate_native_game_state() -> None:
             "HandleCommand(",
         ):
             assert forbidden_command_path not in body, forbidden_command_path
+
+
+def test_frost_presence_setup_is_a_receipted_native_player_cast() -> None:
+    world = WORLD.read_text(encoding="utf-8")
+    setup = function_body(world, "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup")
+    self_buff_setup = setup[: setup.index("if (bot->getClass() == CLASS_MAGE)")]
+
+    assert '{ CLASS_DEATH_KNIGHT, "dps", "frost_death_knight", 48265, 48265' in self_buff_setup
+    assert "bot->HasSpell(48265)" in self_buff_setup
+    assert "BotActionExecutor executor" in self_buff_setup
+    assert "executor.ExecuteCombat(bot, bot, action)" in self_buff_setup
+    assert "PresenceSetupNativeCastSubmittedAtMs = NowMs()" in self_buff_setup
+    assert "PresenceSetupAuraObservedAtMs = NowMs()" in self_buff_setup
+    assert "AddAura(" not in code_only(setup)
+    assert "LearnSpell(" not in code_only(setup)
+
+    assert '\\"required_presence_spell_id\\"' in world
+    assert '\\"presence_native_cast_submitted\\"' in world
+    assert '\\"presence_native_cast_observed\\"' in world
 
 
 def test_native_player_handlers_are_the_only_progression_boundaries() -> None:

@@ -13,6 +13,7 @@
 #include "Bots/BotTelemetryBuffer.h"
 #include "Bots/BotTelemetryPolicy.h"
 #include "Bots/BotTypes.h"
+#include <array>
 #include <deque>
 #include <map>
 #include <memory>
@@ -346,7 +347,11 @@ public:
     uint64 NotifyBotSpellStarted(Player* caster, Unit* target, uint32 spellId, std::string const& candidateMaskJson = {}, std::string const& chosenActionJson = {});
     void CancelBotSpellStart(uint64 castId, Player* caster, char const* reason);
     void NotifyBotSpellFinished(Player* caster, uint32 spellId, bool success);
+    void NotifyBotItemSpellFinished(Player* caster, uint32 spellId,
+        bool success, ObjectGuid castItemGuid, ObjectGuid itemTargetGuid,
+        uint32 castItemEntry, bool castItemIsPotion);
     void NotifyBotHeal(Unit* healer, Unit* target, uint32 spellId, uint32 attemptedHeal, uint32 effectiveHeal, uint32 absorbedHeal);
+    void NotifyCombatAttackAttempt(Unit* attacker, Unit* victim);
     void NotifyCombatDamage(Unit* attacker, Unit* victim, uint32 spellId, uint32 damage, uint32 unmitigatedDamage,
         uint32 damageType, uint32 schoolMask);
     uint64 NotifyNativeCreatureSpellStarted(Creature* caster, Unit* target, uint32 spellId);
@@ -849,6 +854,61 @@ private:
         std::string RosterRole;
         std::string RosterClassSpec;
         float RosterAverageItemLevel = 0.0f;
+        // Player-like persistent-presence setup receipt. A successful native
+        // cast submission and a later observed aura are recorded separately;
+        // neither field manufactures the spell or aura.
+        uint32 RequiredPresenceSetupSpellId = 0;
+        uint32 RequiredPresenceSetupAuraId = 0;
+        bool RequiredPresenceSetupSpellKnown = false;
+        uint64 PresenceSetupNativeCastSubmittedAtMs = 0;
+        uint64 PresenceSetupAuraObservedAtMs = 0;
+        struct NativePersistentPetSetupReceipt
+        {
+            uint32 RequiredSummonSpellId = 0;
+            uint32 RequiredCreatedBySpellId = 0;
+            uint32 RequiredEntry = 0;
+            uint32 RequiredFamilyId = 0;
+            uint32 RequiredPetType = 0;
+            uint32 RequiredPowerType = 0;
+            bool SummonSpellKnown = false;
+            uint64 NativeCastSubmittedAtMs = 0;
+            uint64 NativeCastFinishedAtMs = 0;
+            bool NativeCastFinishedSuccessfully = false;
+            uint64 NativeCastObservedAtMs = 0;
+        };
+        // Pet classes use the ordinary learned summon and later reconcile the
+        // resulting owned permanent pet. Submission, native spell finish, and
+        // the subsequent complete pet observation are independent receipts;
+        // none of them creates, teaches, heals, or refills the pet.
+        NativePersistentPetSetupReceipt PersistentPetSetup;
+        struct NativePoisonSetupReceipt
+        {
+            uint8 EquipmentSlot = 0;
+            uint32 RequiredItemEntry = 0;
+            uint32 RequiredSpellId = 0;
+            uint32 RequiredEnchantId = 0;
+            bool ItemAvailable = false;
+            bool SpellAvailable = false;
+            ObjectGuid SubmittedItemGuid;
+            ObjectGuid SubmittedWeaponGuid;
+            uint64 NativeUseSubmittedAtMs = 0;
+            uint64 NativeUseFinishedAtMs = 0;
+            bool NativeUseFinishedSuccessfully = false;
+            ObjectGuid NativeUseFinishedItemGuid;
+            ObjectGuid NativeUseFinishedWeaponGuid;
+            uint64 NextNativeUseRetryAtMs = 0;
+            uint64 EnchantObservedAtMs = 0;
+            ObjectGuid ObservedWeaponGuid;
+            uint32 ObservedWeaponItemEntry = 0;
+            uint32 ObservedEnchantId = 0;
+            uint32 ObservedEnchantDurationMs = 0;
+        };
+        // Rogue poisons are ordinary consumable item uses. The active bot
+        // must submit each live inventory request and later observe its exact
+        // weapon enchant; provisioning never writes temporary enchants.
+        bool RoguePoisonSetupRequired = false;
+        NativePoisonSetupReceipt RogueMainhandPoisonSetup;
+        NativePoisonSetupReceipt RogueOffhandPoisonSetup;
         uint32 DecisionTimer = 0;
         uint32 StuckTimer = 0;
         uint8 StuckRecoveryStage = 0;
@@ -1856,11 +1916,15 @@ private:
     void EnsurePopulation();
     void EnsureCalibrationPopulation();
     void ResetCalibrationScoredWindow();
+    void UpdateCalibrationTargetHealthSchedule(uint64 nowMs);
     void UpdateCalibrationControlledDamage();
     void CompleteCalibrationScoredWindow();
     void DrainCalibrationPostWindowEffects();
     bool UpdateCalibrationHealer(WorldBotState& state, Player* healer);
+    struct CalibrationMetrics;
     std::pair<bool, bool> ApplyCalibrationReferenceConditions(Player* bot, Unit* target) const;
+    void ObserveCalibrationReferenceConditions(CalibrationMetrics& metrics,
+        Player* bot, Unit* target, uint64 observedAtMs) const;
     void UpdateCalibrationBot(WorldBotState& state, uint32 diff);
     bool ResolveSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
     bool ResolveSavedSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
@@ -1994,7 +2058,9 @@ private:
     DungeonTrashActionResult TryDungeonTrash(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity);
     bool TryValidationRouteReadiness(WorldBotState& state, Player* bot, Unit* pullTarget, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, DungeonTrashActionResult& result);
     bool TryEnsureCombatTotems(WorldBotState& state, Player* bot, Unit* target, uint32 hostileCount) const;
-    bool TryEnsurePersistentCombatSetup(WorldBotState& state, Player* bot, Unit* target) const;
+    bool IsNativePoisonSetupReady(Player const* bot,
+        WorldBotState::NativePoisonSetupReceipt const& receipt) const;
+    bool TryEnsurePersistentCombatSetup(WorldBotState& state, Player* bot, Unit* target);
     char const* GetDungeonRole(Player* bot) const;
     uint32 SelectInterruptSpell(Player* bot) const;
     uint32 SelectHealSpell(Player* bot, Unit* target, bool instantOnly = false) const;
@@ -2118,6 +2184,42 @@ private:
 
     struct CalibrationMetrics
     {
+        struct InitialPowerObservation
+        {
+            uint8 PowerType = 0;
+            uint32 ExpectedNativeValue = 0;
+            uint32 ExpectedDisplayValue = 0;
+            uint32 ObservedNativeValue = 0;
+            uint32 ObservedDisplayValue = 0;
+            uint32 ObservedMaximumNativeValue = 0;
+            bool ExpectedMaximum = false;
+            bool MatchesContract = false;
+            uint32 UnitGuid = 0;
+            std::string UnitKind;
+            std::string PowerName;
+        };
+
+        struct TargetHealthPhaseObservation
+        {
+            uint32 SampleCount = 0;
+            uint64 FirstObservedElapsedMs = 0;
+            uint64 LastObservedElapsedMs = 0;
+            uint64 MinimumObservedHealth = std::numeric_limits<uint64>::max();
+            uint64 MaximumObservedHealth = 0;
+            uint64 MinimumObservedMaxHealth = std::numeric_limits<uint64>::max();
+            uint64 MaximumObservedMaxHealth = 0;
+            uint32 DamageEventSampleCount = 0;
+            uint64 FirstDamageEventElapsedMs = 0;
+            uint64 LastDamageEventElapsedMs = 0;
+            uint64 MinimumPreDamageHealth = std::numeric_limits<uint64>::max();
+            uint64 MaximumPreDamageHealth = 0;
+            uint64 MinimumProjectedPostDamageHealth = std::numeric_limits<uint64>::max();
+            uint64 MaximumProjectedPostDamageHealth = 0;
+            uint64 MinimumDamageEventMaxHealth = std::numeric_limits<uint64>::max();
+            uint64 MaximumDamageEventMaxHealth = 0;
+            uint32 MaximumDamageEvent = 0;
+        };
+
         uint64 WindowStartedMs = 0;
         uint64 WindowEndedMs = 0;
         uint64 Damage = 0;
@@ -2130,6 +2232,16 @@ private:
         uint32 Attempts = 0;
         uint32 Successes = 0;
         uint32 TickCount = 0;
+        uint32 RequiredPetReadyTicks = 0;
+        uint32 PetSetupObservationSampleCount = 0;
+        uint32 PetSetupReadySampleCount = 0;
+        uint64 FirstPetSetupObservedAtMs = 0;
+        uint64 LastPetSetupObservedAtMs = 0;
+        uint64 MaximumPetSetupObservationGapMs = 0;
+        uint32 FirstPetSetupObservedGuid = 0;
+        uint32 LastPetSetupObservedGuid = 0;
+        uint32 PetSetupGuidMismatchSampleCount = 0;
+        uint32 PetSetupIdentityMismatchSampleCount = 0;
         uint32 ActiveTicks = 0;
         uint32 MovementRangeLossTicks = 0;
         uint32 ResourceCappedTicks = 0;
@@ -2177,6 +2289,76 @@ private:
         bool BalanceMushroomsPreplanted = false;
         uint8 BalanceMushroomPreplantCount = 0;
         bool DeathRecorded = false;
+        bool InitialResourcesApplied = false;
+        bool InitialResourcesMatchContract = false;
+        uint64 InitialResourcesObservedAtMs = 0;
+        std::string InitialResourceSourceContract;
+        std::vector<InitialPowerObservation> InitialPowerObservations;
+        bool InitialRunesRequired = false;
+        uint8 InitialExpectedRuneReadyMask = 0;
+        uint8 InitialObservedRuneReadyMask = 0;
+        bool InitialComboPointsRequired = false;
+        uint8 InitialExpectedComboPoints = 0;
+        uint8 InitialObservedComboPoints = 0;
+        bool InitialNeutralEclipseRequired = false;
+        bool InitialNeutralEclipseObserved = false;
+        bool InitialPetResourceRequired = false;
+        bool InitialPetResourceObserved = false;
+        bool PreScorePersistentSetupReady = false;
+        bool PreScoreReferenceBuffsReady = false;
+        bool PreScoreReferenceTargetDebuffsReady = false;
+        bool PreScoreHeroismReady = false;
+        bool PreScoreNoActiveCast = false;
+        bool PreScoreNoCombat = false;
+        bool PreScoreGlobalCooldownClear = false;
+        bool PreScoreCooldownResetApplied = false;
+        bool WarmupProfileActionsSuppressed = false;
+        bool PreScoreTemporalExternalsAbsent = false;
+        bool PreScoreExternalBleedAbsent = false;
+        uint64 PreScoreStateObservedAtMs = 0;
+        uint32 ExternalWindowSampleCount = 0;
+        uint64 FirstExternalWindowObservedAtMs = 0;
+        uint64 LastExternalWindowObservedAtMs = 0;
+        uint64 MaximumExternalWindowObservationGapMs = 0;
+        uint32 HeroismExpectedActiveSamples = 0;
+        uint32 HeroismObservedActiveSamples = 0;
+        uint32 HeroismMismatchSamples = 0;
+        uint32 PowerInfusionExpectedActiveSamples = 0;
+        uint32 PowerInfusionObservedActiveSamples = 0;
+        uint32 PowerInfusionMismatchSamples = 0;
+        uint32 UnexpectedDarkIntentBaseSamples = 0;
+        uint32 UnexpectedDarkIntentProcSamples = 0;
+        uint32 UnexpectedSynapseSpringsSamples = 0;
+        uint32 ReferenceConditionSampleCount = 0;
+        uint64 FirstReferenceConditionObservedAtMs = 0;
+        uint64 LastReferenceConditionObservedAtMs = 0;
+        uint64 MaximumReferenceConditionObservationGapMs = 0;
+        uint32 PreScoreLastPotionItemId = 0;
+        uint32 LastPotionIdNonzeroSampleCount = 0;
+        uint32 ScoredPotionUseCount = 0;
+        uint32 ScoredTinkerOrOtherItemUseCount = 0;
+        uint32 ScoredRacialUseCount = 0;
+        uint32 ScoredTinkerSpellUseCount = 0;
+        uint32 UnexpectedDynamicAuraActiveSamples = 0;
+        uint32 UnexpectedExternalBleedActiveSamples = 0;
+        std::map<uint32, uint32> ReferencePlayerAuraActiveSamples;
+        std::map<uint32, uint32> ReferencePlayerAuraInactiveSamples;
+        std::map<uint32, uint32> ReferenceTargetAuraActiveSamples;
+        std::map<uint32, uint32> ReferenceTargetAuraInactiveSamples;
+        std::map<uint32, uint32> ReferenceTargetAuraOwnerMatchSamples;
+        std::map<uint32, uint32> ReferenceTargetAuraOwnerMismatchSamples;
+        uint32 ReferenceSunderMatchingStackSamples = 0;
+        uint32 ReferenceSunderMismatchStackSamples = 0;
+        uint8 ReferenceSunderMinimumObservedStacks =
+            std::numeric_limits<uint8>::max();
+        uint8 ReferenceSunderMaximumObservedStacks = 0;
+        std::string InitialGearManifestSha256;
+        std::string LastObservedGearManifestSha256;
+        uint32 GearIdentitySampleCount = 0;
+        uint32 GearIdentityMismatchSampleCount = 0;
+        uint64 FirstGearIdentityObservedAtMs = 0;
+        uint64 LastGearIdentityObservedAtMs = 0;
+        uint64 MaximumGearIdentityObservationGapMs = 0;
         std::map<uint32, uint64> SpellDamage;
         std::map<uint32, uint32> SpellDamageEvents;
         std::map<uint32, uint32> ActionAttempts;
@@ -2189,6 +2371,10 @@ private:
         std::set<std::string> ScheduledDamagePhases;
         std::set<std::string> DeliveredDamagePhases;
         std::map<std::string, uint32> ResultCounts;
+        // Raw server observations for the isolated single-target fixture's
+        // five WoWSims execute-threshold bands. Evidence reconstructs the
+        // schedule from these integers; it does not trust an aggregate flag.
+        std::array<TargetHealthPhaseObservation, 5> TargetHealthPhaseObservations;
     };
 
     struct PartyRuntime
@@ -2586,12 +2772,42 @@ private:
         ObjectGuid CalibrationTargetGuid;
         ObjectGuid CalibrationFixtureTargetGuid;
         uint32 CalibrationFixtureTargetEntry = 0;
+        uint32 CalibrationFixtureExpectedTargetLevel = 0;
+        uint32 CalibrationFixtureExpectedTargetArmor = 0;
+        uint32 CalibrationFixtureExpectedTargetCreatureType = 0;
+        uint32 CalibrationFixtureExpectedTargetMaxHealth = 0;
+        uint32 CalibrationFixtureObservedTargetLevel = 0;
+        uint32 CalibrationFixtureObservedTargetArmor = 0;
+        uint32 CalibrationFixtureObservedTargetCreatureType = 0;
+        uint32 CalibrationFixtureObservedTargetCreatureTypeMask = 0;
+        uint32 CalibrationFixtureObservedTargetMaxHealth = 0;
         uint32 CalibrationFixtureTargetMapId = 0;
         float CalibrationFixtureTargetX = 0.0f;
         float CalibrationFixtureTargetY = 0.0f;
         float CalibrationFixtureTargetZ = 0.0f;
         float CalibrationFixtureTargetNearestHostileClearance = 0.0f;
         uint64 CalibrationFixtureTargetProvisionedAtMs = 0;
+        uint64 CalibrationFixtureTargetObservedBeforeScoringAtMs = 0;
+        uint32 CalibrationFixtureBeforeScoringTargetLevel = 0;
+        uint32 CalibrationFixtureBeforeScoringTargetArmor = 0;
+        uint32 CalibrationFixtureBeforeScoringTargetCreatureType = 0;
+        uint32 CalibrationFixtureBeforeScoringTargetCreatureTypeMask = 0;
+        uint32 CalibrationFixtureBeforeScoringTargetMaxHealth = 0;
+        uint32 CalibrationFixtureBeforeScoringTargetMapId = 0;
+        ObjectGuid CalibrationFixtureBeforeScoringTargetGuid;
+        float CalibrationFixtureBeforeScoringTargetX = 0.0f;
+        float CalibrationFixtureBeforeScoringTargetY = 0.0f;
+        float CalibrationFixtureBeforeScoringTargetZ = 0.0f;
+        float CalibrationFixtureBeforeScoringBotTargetDistance = 0.0f;
+        bool CalibrationFixtureBeforeScoringTargetInCombat = false;
+        bool CalibrationFixtureBeforeScoringTargetHasVictim = false;
+        uint32 CalibrationFixtureTargetPassiveObservationSampleCount = 0;
+        uint32 CalibrationFixtureTargetVictimObservationSampleCount = 0;
+        uint32 CalibrationFixtureTargetAttackEventCount = 0;
+        uint32 CalibrationFixtureTargetOriginatedDamageEventCount = 0;
+        uint64 CalibrationFixtureTargetFirstPassiveObservedAtMs = 0;
+        uint64 CalibrationFixtureTargetLastPassiveObservedAtMs = 0;
+        uint64 CalibrationFixtureTargetMaximumPassiveObservationGapMs = 0;
         float CalibrationFixtureBotSpawnX = 0.0f;
         float CalibrationFixtureBotSpawnY = 0.0f;
         float CalibrationFixtureBotSpawnZ = 0.0f;
@@ -2608,6 +2824,7 @@ private:
         uint64 CalibrationLastPostWindowDrainMs = 0;
         uint64 CalibrationLastControlledEventSecond = std::numeric_limits<uint64>::max();
         uint32 CalibrationCrossWindowEventCount = 0;
+        uint32 CalibrationExcludedBoundaryDamageEventCount = 0;
         std::string CalibrationResetId;
         std::string CalibrationCurrentDamagePhase;
         std::map<uint32, CalibrationMetrics> CalibrationMetricsByGuid;

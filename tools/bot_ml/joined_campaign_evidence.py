@@ -26,6 +26,15 @@ from .phase9_evidence_identity import validate_manifest as validate_phase9_manif
 CLOSURE_SCHEMA = "joined_16_dps_14_stonecore_evidence_closure_v1"
 BOOTSTRAP_SCHEMA = "joined_campaign_dvc_bootstrap_v1"
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+PHASE9_TERMINAL_CONDITIONS = (
+    "strict_route_clear",
+    "server_attributed_machine_failure",
+    "semantic_progress_plateau_watchdog",
+    "no_progress_watchdog",
+    "repeated_decision_watchdog",
+    "death_loop_watchdog",
+    "controller_interruption",
+)
 
 
 class JoinedEvidenceError(ValueError):
@@ -507,6 +516,8 @@ def _verify_leaf_domain(
             remote.get("schema") == "phase9_remote_full_clear_verification_v1"
             and remote.get("verified") is True
             and remote.get("attempt_id") == physical.get("attempt_id")
+            and remote.get("execution_policy") == "run_to_completion"
+            and remote.get("overall_wall_clock_timeout_sec") is None
             and remote.get("source_transport_verified") is True
             and remote.get("runtime_identity_valid") is True
             and remote.get("attempt_identity_valid") is True
@@ -709,6 +720,8 @@ def _phase9_accepted(row: Mapping[str, Any]) -> bool:
         and row.get("child_returncode_observed") is True
         and row.get("returncode") == 0
         and row.get("transport_classification") == "child_exited"
+        and row.get("execution_policy") == "run_to_completion"
+        and row.get("overall_wall_clock_timeout_sec") is None
         and row.get("outer_timed_out") is False
         and row.get("controller_interrupted") is False
         and row.get("process_group_gone") is True
@@ -998,6 +1011,31 @@ def verify_joined_campaign_closure(closure: Mapping[str, Any]) -> dict[str, Any]
             != documents["dps_campaign_state"].get("sha256")
         ):
             raise JoinedEvidenceError("campaign inputs do not match embedded exact bytes")
+        if not (
+            phase9_plan.get("execution_policy") == "run_to_completion"
+            and phase9_plan.get("overall_wall_clock_timeout_sec") is None
+            and phase9_plan.get("retry_policy")
+            == "unlimited_physical_tries_until_terminal_success"
+            and tuple(phase9_plan.get("terminal_conditions") or ())
+            == PHASE9_TERMINAL_CONDITIONS
+            and all(
+                attempt.get("execution_policy") == "run_to_completion"
+                and attempt.get("overall_wall_clock_timeout_sec") is None
+                and "--run-to-completion" in (attempt.get("command") or [])
+                and "--timeout-sec" not in (attempt.get("command") or [])
+                for attempt in phase9_plan.get("attempts") or []
+                if isinstance(attempt, Mapping)
+            )
+            and phase9_state.get("execution_policy") == "run_to_completion"
+            and phase9_state.get("overall_wall_clock_timeout_sec") is None
+            and phase9_state.get("retry_policy")
+            == "unlimited_physical_tries_until_terminal_success"
+            and tuple(phase9_state.get("terminal_conditions") or ())
+            == PHASE9_TERMINAL_CONDITIONS
+        ):
+            raise JoinedEvidenceError(
+                "Phase 9 evidence is not bound to run-to-completion execution"
+            )
         phase9_artifacts = phase9_identity.get("artifact_hashes") or {}
         artifact_records = {
             "target_catalog_sha256": "phase8_config_target_catalog",

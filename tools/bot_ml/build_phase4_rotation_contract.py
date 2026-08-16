@@ -130,12 +130,18 @@ def static_contract(repository: Path = REPO_ROOT) -> dict[str, Any]:
         "MechanicTags" not in candidate_scoring
         and "spell.MechanicTags = fields[14].GetString();" in source
         and "spell.MechanicTags << '|'" in source
-        and source.count("HasMechanicTag(spell.MechanicTags,") == 4
+        and source.count("HasMechanicTag(spell.MechanicTags,") == 5
         and all(
             f'HasMechanicTag(spell.MechanicTags, "{tag}")' in compiled_conditions
-            for tag in ("lacerate_spender", "lacerate", "holy_power_3")
+            for tag in (
+                "lacerate_spender",
+                "lacerate",
+                "holy_power_3",
+                "maintain_owned_aura",
+            )
         )
-        and world_mgr.count("hasMechanicTag(candidate.Profile.MechanicTags") == 2
+        and world_mgr.count("hasMechanicTag(candidate.Profile.MechanicTags") == 3
+        and 'hasMechanicTag(candidate.Profile.MechanicTags, "prepull")' in world_mgr
         and 'hasMechanicTag(candidate.Profile.MechanicTags, "mana_recovery")' in world_mgr
         and 'hasMechanicTag(candidate.Profile.MechanicTags, "resource_fallback")' in world_mgr
     )

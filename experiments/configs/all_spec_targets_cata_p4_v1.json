@@ -4978,7 +4978,9 @@
         "consumable_item_ids": [
           58085,
           58086,
-          58257
+          58257,
+          43233,
+          43231
         ],
         "primary_talent_tree_id": 182,
         "talents": [
@@ -5063,6 +5065,33 @@
           1329,
           14117,
           84601
+        ],
+        "consumables": [
+          {
+            "item_id": 58085,
+            "slot": 40,
+            "count": 20
+          },
+          {
+            "item_id": 58086,
+            "slot": 41,
+            "count": 20
+          },
+          {
+            "item_id": 58257,
+            "slot": 42,
+            "count": 20
+          },
+          {
+            "item_id": 43233,
+            "slot": 23,
+            "count": 20
+          },
+          {
+            "item_id": 43231,
+            "slot": 24,
+            "count": 20
+          }
         ]
       },
       "talent_build": {
@@ -5163,7 +5192,9 @@
       "consumable_item_ids": [
         58085,
         58086,
-        58257
+        58257,
+        43233,
+        43231
       ],
       "pet_form_stance_presence": [
         "poisons",
@@ -5274,7 +5305,9 @@
         "consumable_item_ids": [
           58085,
           58086,
-          58257
+          58257,
+          43233,
+          43231
         ],
         "primary_talent_tree_id": 181,
         "talents": [
@@ -5355,6 +5388,33 @@
           13852,
           13877,
           61329
+        ],
+        "consumables": [
+          {
+            "item_id": 58085,
+            "slot": 40,
+            "count": 20
+          },
+          {
+            "item_id": 58086,
+            "slot": 41,
+            "count": 20
+          },
+          {
+            "item_id": 58257,
+            "slot": 42,
+            "count": 20
+          },
+          {
+            "item_id": 43233,
+            "slot": 23,
+            "count": 20
+          },
+          {
+            "item_id": 43231,
+            "slot": 24,
+            "count": 20
+          }
         ]
       },
       "talent_build": {
@@ -5451,7 +5511,9 @@
       "consumable_item_ids": [
         58085,
         58086,
-        58257
+        58257,
+        43233,
+        43231
       ],
       "pet_form_stance_presence": [
         "poisons",
@@ -6046,7 +6108,7 @@
         58257
       ],
       "pet_form_stance_presence": [
-        "frost_presence",
+        "unholy_presence",
         "dual_wield_masterfrost",
         "runic_power"
       ],
@@ -6061,7 +6123,7 @@
         47541,
         47568,
         48263,
-        48266,
+        48265,
         48792,
         49020,
         49137,
@@ -6107,7 +6169,7 @@
         "anti_magic_shell",
         "death_grip",
         "dual_wield_masterfrost",
-        "frost_presence",
+        "unholy_presence",
         "hazard_movement",
         "interrupt_or_control",
         "mind_freeze",
@@ -8240,6 +8302,7 @@
         172,
         348,
         686,
+        691,
         17790,
         17801,
         17805,

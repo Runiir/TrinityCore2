@@ -1042,11 +1042,19 @@
         "gear_profile_id": "arms_warrior",
         "runtime_profile_id": "arms_warrior",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
-        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "runtime_manifest": "experiments/configs/wowsims_cata_p4_gear_profiles.json",
         "simulator_preset": {
           "path": "ui/warrior/arms/gear_sets/p4_arms_bis.gear.json",
           "phase": "phase_4"
-        }
+        },
+        "source_sha256": "44ff0adc0ab9b5fc60e1731509777230babd1859a42cd61c260f6ae67ee16914",
+        "transform_schema": "wowsims_cata_equipment_manifest_v1",
+        "transformed_manifest_sha256": "4ef8b400c246059c6d2291c3317646f8f7e17f9caa6ead35097ba89b526eb11c",
+        "permanent_enchant_applicability_authority": "pinned_wowsims_preset_exact",
+        "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/arms_warrior.gear.json",
+        "numeric_fixture_test_source_sha256": "ab03ac6c2277f834fa6e5e6f5e07499a247ef9d6a4a3d0f510d6bc0282d307de",
+        "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/arms_warrior.test.go",
+        "numeric_fixture_gear_label": "p4_arms_bis"
       },
       "apl": {
         "path": "ui/warrior/arms/apls/arms.apl.json",
@@ -1155,11 +1163,19 @@
         "gear_profile_id": "fury_warrior",
         "runtime_profile_id": "fury_warrior",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
-        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "runtime_manifest": "experiments/configs/wowsims_cata_p4_gear_profiles.json",
         "simulator_preset": {
           "path": "ui/warrior/fury/gear_sets/p4_fury_tg.gear.json",
           "phase": "phase_4"
-        }
+        },
+        "source_sha256": "507d7667ca7108175316bdf7e82f05c745b038e9922141de8953f927ef3f6f7e",
+        "transform_schema": "wowsims_cata_equipment_manifest_v1",
+        "transformed_manifest_sha256": "3789e7708f5126774158660b6bee55a81744d4ab38cc16f9fa5ec801076514c9",
+        "permanent_enchant_applicability_authority": "pinned_wowsims_preset_exact",
+        "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/fury_warrior.gear.json",
+        "numeric_fixture_test_source_sha256": "f77b34d99140388b71333886a1ed8c3e04869a77dd9052fcc1101d0b88f6fab7",
+        "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/fury_warrior.test.go",
+        "numeric_fixture_gear_label": "p4_fury_tg"
       },
       "apl": {
         "path": "ui/warrior/fury/apls/tg.apl.json",
@@ -1268,11 +1284,19 @@
         "gear_profile_id": "retribution_paladin",
         "runtime_profile_id": "retribution_paladin",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
-        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "runtime_manifest": "experiments/configs/wowsims_cata_p4_gear_profiles.json",
         "simulator_preset": {
           "path": "ui/paladin/retribution/gear_sets/p4_bis.gear.json",
           "phase": "phase_4"
-        }
+        },
+        "source_sha256": "0b38ee7880450e785293a4cba816285fffa3e337f2698e2557758f35891d6510",
+        "transform_schema": "wowsims_cata_equipment_manifest_v1",
+        "transformed_manifest_sha256": "953b280ec76c3154fa2dbd528fe43e6f770d99a4e436d1e88850960d407b6971",
+        "permanent_enchant_applicability_authority": "pinned_wowsims_preset_exact",
+        "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/retribution_paladin.gear.json",
+        "numeric_fixture_test_source_sha256": "b9461e1f452958d4c3c8bc7c512ed206b58df460905b16740489dd51d283c151",
+        "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/retribution_paladin.test.go",
+        "numeric_fixture_gear_label": "p4_bis"
       },
       "apl": {
         "path": "ui/paladin/retribution/apls/default.apl.json",
@@ -1495,11 +1519,19 @@
         "gear_profile_id": "marksmanship_hunter",
         "runtime_profile_id": "marksmanship_hunter",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
-        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "runtime_manifest": "experiments/configs/wowsims_cata_p4_gear_profiles.json",
         "simulator_preset": {
-          "path": "ui/hunter/marksmanship/gear_sets/p3_mm.gear.json",
+          "path": "ui/hunter/marksmanship/gear_sets/preraid_mm.gear.json",
           "phase": "best_executable_legacy_preset"
-        }
+        },
+        "source_sha256": "f9f4d473b591c6d37493b089b636eb2669977cc45caec7ffc766079ba664aadd",
+        "transform_schema": "wowsims_cata_equipment_manifest_v1",
+        "transformed_manifest_sha256": "4fa6b70730a55d4dd2ee8220a5277e5c2db884febbd8e127db77db48d383d7d6",
+        "permanent_enchant_applicability_authority": "pinned_wowsims_preset_exact",
+        "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/marksmanship_hunter.gear.json",
+        "numeric_fixture_test_source_sha256": "e07dd1ec1662cadad96084a8720e935a2bc825259ac696a5d0c319b1767b432a",
+        "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/marksmanship_hunter.test.go",
+        "numeric_fixture_gear_label": "preraid_mm"
       },
       "apl": {
         "path": "ui/hunter/marksmanship/apls/mm.apl.json",
@@ -1534,9 +1566,9 @@
           "byte_count": 134671
         },
         {
-          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/hunter/marksmanship/gear_sets/p3_mm.gear.json",
-          "sha256": "947891bd310dcf254509722b7a6c1544b3c3ad44008b8c3fb9caba2d379eddae",
-          "byte_count": 915
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/hunter/marksmanship/gear_sets/preraid_mm.gear.json",
+          "sha256": "f9f4d473b591c6d37493b089b636eb2669977cc45caec7ffc766079ba664aadd",
+          "byte_count": 911
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/hunter/marksmanship/apls/mm.apl.json",
@@ -1613,7 +1645,15 @@
         "simulator_preset": {
           "path": "ui/hunter/survival/gear_sets/p4_sv.gear.json",
           "phase": "phase_4"
-        }
+        },
+        "source_sha256": "67a4682a2c8213028ee05979205f972daca4082fd71f19313712151e5a680691",
+        "transform_schema": "wowsims_cata_equipment_manifest_v1",
+        "transformed_manifest_sha256": "ee445820a89cd272bbe71674e1b2f535277400d90fd220ac8734f780a20b16f1",
+        "permanent_enchant_applicability_authority": "pinned_wowsims_preset_exact",
+        "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_survival_hunter.gear.json",
+        "numeric_fixture_test_source_sha256": "9706d97593a09a44731ceb2fa5216cf328dc1bc1aa5f40e8d581fab0ac403661",
+        "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_survival_hunter.test.go",
+        "numeric_fixture_gear_label": "p4_sv"
       },
       "apl": {
         "path": "ui/hunter/survival/apls/sv.apl.json",
@@ -1727,7 +1767,15 @@
         "simulator_preset": {
           "path": "ui/rogue/assassination/gear_sets/p4_assassination.gear.json",
           "phase": "phase_4"
-        }
+        },
+        "source_sha256": "ffc5cc44ecf0fbd972a70e6639c9af9a113f26eb21d261aa91e7666d0853c05b",
+        "transform_schema": "wowsims_cata_equipment_manifest_v1",
+        "transformed_manifest_sha256": "8de275d63f7462fe5b32353a9492577a9af822679138b2a22dd72201a9938835",
+        "permanent_enchant_applicability_authority": "pinned_wowsims_preset_exact",
+        "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/assassination_rogue.gear.json",
+        "numeric_fixture_test_source_sha256": "03a96ae47e8f4548a31b86346ffdf1e0607d50fc1172a78b90112c8d8e12926d",
+        "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/assassination_rogue.test.go",
+        "numeric_fixture_gear_label": "p4_assassination"
       },
       "apl": {
         "path": "ui/rogue/assassination/apls/mutilate.apl.json",
@@ -1809,10 +1857,10 @@
       },
       "expected_output": {
         "type": "simulator_metrics",
-        "result_key": "TestAssassination-Average-Default",
+        "result_key": "TestAssassination-Settings-Human-p4_assassination-Assassination-mutilate-FullBuffs-0.0yards-LongSingleTarget",
         "metrics": {
-          "dps": 29729.69041,
-          "tps": 21108.08019
+          "dps": 55506.41385,
+          "tps": 39409.55383
         }
       },
       "known_trinitycore_deviations": [
@@ -1836,11 +1884,19 @@
         "gear_profile_id": "combat_rogue",
         "runtime_profile_id": "combat_rogue",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
-        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "runtime_manifest": "experiments/configs/wowsims_cata_p4_gear_profiles.json",
         "simulator_preset": {
           "path": "ui/rogue/combat/gear_sets/p4_combat.gear.json",
           "phase": "phase_4"
-        }
+        },
+        "source_sha256": "320dce47a2d4bc3ac5e42bcebaf210a6a46d425cb37579857e65493674740e14",
+        "transform_schema": "wowsims_cata_equipment_manifest_v1",
+        "transformed_manifest_sha256": "2cfe2b75162a5489d13a307c188ecf0140f17f97797161e4c33d687d2d87a37e",
+        "permanent_enchant_applicability_authority": "pinned_wowsims_preset_exact",
+        "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/combat_rogue.gear.json",
+        "numeric_fixture_test_source_sha256": "fbb6d7e9288778f7558d077e5bf0becd342add9c2381af984f9d4d667e367543",
+        "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/combat_rogue.test.go",
+        "numeric_fixture_gear_label": "p4_combat"
       },
       "apl": {
         "path": "ui/rogue/combat/apls/combat.apl.json",
@@ -1922,10 +1978,10 @@
       },
       "expected_output": {
         "type": "simulator_metrics",
-        "result_key": "TestCombat-Average-Default",
+        "result_key": "TestCombat-Settings-Human-p4_combat-Combat-combat-FullBuffs-0.0yards-LongSingleTarget",
         "metrics": {
-          "dps": 29711.31179,
-          "tps": 21095.03137
+          "dps": 53730.05621,
+          "tps": 38148.33991
         }
       },
       "known_trinitycore_deviations": [
@@ -2062,11 +2118,19 @@
         "gear_profile_id": "frost_death_knight",
         "runtime_profile_id": "frost_death_knight",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
-        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "runtime_manifest": "experiments/configs/wowsims_cata_p4_gear_profiles.json",
         "simulator_preset": {
           "path": "ui/death_knight/frost/gear_sets/p4.masterfrost.gear.json",
           "phase": "phase_4"
-        }
+        },
+        "source_sha256": "4c2472448827cdb2abd3006ef575b76aaaa1f648088582cc613cbcbbcc82bb43",
+        "transform_schema": "wowsims_cata_equipment_manifest_v1",
+        "transformed_manifest_sha256": "20269815a2b49d81eb3d58062df6c6f6531df530f5bf55e8bed8324c3660af43",
+        "permanent_enchant_applicability_authority": "pinned_wowsims_preset_exact",
+        "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/frost_death_knight.gear.json",
+        "numeric_fixture_test_source_sha256": "c43b8ea88f9654729c25425fcd3bf62dba5320e22983815b761214e3719d88dd",
+        "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/frost_death_knight.test.go",
+        "numeric_fixture_gear_label": "p4.masterfrost"
       },
       "apl": {
         "path": "ui/death_knight/frost/apls/masterfrost.apl.json",
@@ -2176,11 +2240,19 @@
         "gear_profile_id": "unholy_death_knight",
         "runtime_profile_id": "unholy_death_knight",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
-        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "runtime_manifest": "experiments/configs/wowsims_cata_p4_gear_profiles.json",
         "simulator_preset": {
           "path": "ui/death_knight/unholy/gear_sets/p4.bis.gear.json",
           "phase": "phase_4"
-        }
+        },
+        "source_sha256": "b781689d7e2ab4493715001637934dc85387ae2ad569ac26599ff045b5292e43",
+        "transform_schema": "wowsims_cata_equipment_manifest_v1",
+        "transformed_manifest_sha256": "bb1c583ed1c4db7cbd939e757948589dcb0d477e3f345683288dc7da3de48a40",
+        "permanent_enchant_applicability_authority": "pinned_wowsims_preset_exact",
+        "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/unholy_death_knight.gear.json",
+        "numeric_fixture_test_source_sha256": "a23879b3c6e945289f8a635f85101f10834977dd8f138101a7726acf97db7f90",
+        "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/unholy_death_knight.test.go",
+        "numeric_fixture_gear_label": "p4.bis"
       },
       "apl": {
         "path": "ui/death_knight/unholy/apls/default.apl.json",
@@ -2290,11 +2362,19 @@
         "gear_profile_id": "elemental_shaman",
         "runtime_profile_id": "elemental_shaman",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
-        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "runtime_manifest": "experiments/configs/wowsims_cata_p4_gear_profiles.json",
         "simulator_preset": {
           "path": "ui/shaman/elemental/gear_sets/p4.default.gear.json",
           "phase": "phase_4"
-        }
+        },
+        "source_sha256": "f4c9237aa6334fb89433b7cd9b0f1bf8bc0e3784fc527eae5f6e05cc63821706",
+        "transform_schema": "wowsims_cata_equipment_manifest_v1",
+        "transformed_manifest_sha256": "7c5fcab9268defa7bc6b5185a3df24ab3122c322141a16445d3cbbaf63c94d00",
+        "permanent_enchant_applicability_authority": "pinned_wowsims_preset_exact",
+        "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/elemental_shaman.gear.json",
+        "numeric_fixture_test_source_sha256": "3307064f29e960f794c608cddc6a08d407b9e1851fced19e8067789d7f3ec13a",
+        "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/elemental_shaman.test.go",
+        "numeric_fixture_gear_label": "p4.default"
       },
       "apl": {
         "path": "ui/shaman/elemental/apls/default.apl.json",
@@ -2407,7 +2487,15 @@
         "simulator_preset": {
           "path": "ui/shaman/enhancement/gear_sets/p4.orc.gear.json",
           "phase": "phase_4"
-        }
+        },
+        "source_sha256": "d91bfe3c74be493697ae99778184c7f1ec83057ffffd7e44c2369b1f3cb72971",
+        "transform_schema": "wowsims_cata_equipment_manifest_v1",
+        "transformed_manifest_sha256": "b49a5127993c2eee7250dddc49f694a1319dc1f17b232e1951ff57e938778983",
+        "permanent_enchant_applicability_authority": "pinned_wowsims_preset_exact",
+        "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_enhancement_shaman.gear.json",
+        "numeric_fixture_test_source_sha256": "3f57ac327bf93e56e0f95221f7fa40758a806140db05e20af4ba070fabed95a0",
+        "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_enhancement_shaman.test.go",
+        "numeric_fixture_gear_label": "p4.orc"
       },
       "apl": {
         "path": "ui/shaman/enhancement/apls/default.apl.json",
@@ -2633,7 +2721,15 @@
         "simulator_preset": {
           "path": "ui/mage/fire/gear_sets/p4_fire.gear.json",
           "phase": "phase_4"
-        }
+        },
+        "source_sha256": "d01e11b235682de67d30fb672344d652aaadebeba9cb197d5958dc3284bc5349",
+        "transform_schema": "wowsims_cata_equipment_manifest_v1",
+        "transformed_manifest_sha256": "9e694c50d03d8609751267a140c044b4a47a1369f3b18f774c95a5a81a41acac",
+        "permanent_enchant_applicability_authority": "pinned_wowsims_preset_exact",
+        "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_fire_mage.gear.json",
+        "numeric_fixture_test_source_sha256": "71a9228f45b0c57e464971f71a05d8af4588b274efd3d5711645d7012007afc7",
+        "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_fire_mage.test.go",
+        "numeric_fixture_gear_label": "p4_fire"
       },
       "apl": {
         "path": "ui/mage/fire/apls/fire.apl.json",
@@ -2853,11 +2949,19 @@
         "gear_profile_id": "affliction_warlock",
         "runtime_profile_id": "affliction_warlock",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
-        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "runtime_manifest": "experiments/configs/wowsims_cata_p4_gear_profiles.json",
         "simulator_preset": {
           "path": "ui/warlock/affliction/gear_sets/p4.gear.json",
           "phase": "phase_4"
-        }
+        },
+        "source_sha256": "375047d1f478795ebf4394e1154ce43eb45655fc7f6f4b1e85a6e5a6c6d5c49d",
+        "transform_schema": "wowsims_cata_equipment_manifest_v1",
+        "transformed_manifest_sha256": "b5391d35287eb5c28babc0a5b11760147607ef46fc2a5890fba26a46dea2c2f4",
+        "permanent_enchant_applicability_authority": "pinned_wowsims_preset_exact",
+        "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/affliction_warlock.gear.json",
+        "numeric_fixture_test_source_sha256": "8f38bcba47d99fbac658ea0dba1ccfd11cd1703e5d66b26fec9f4368384d3d64",
+        "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/affliction_warlock.test.go",
+        "numeric_fixture_gear_label": "p4"
       },
       "apl": {
         "path": "ui/warlock/affliction/apls/default.apl.json",
@@ -2970,7 +3074,15 @@
         "simulator_preset": {
           "path": "ui/warlock/demonology/gear_sets/p4.gear.json",
           "phase": "phase_4"
-        }
+        },
+        "source_sha256": "bdaa671c8cd5adc6af8ec50ee4a2149bc57f3adf0cfdff46c7dfa15a85dde106",
+        "transform_schema": "wowsims_cata_equipment_manifest_v1",
+        "transformed_manifest_sha256": "62d760e37ae84585685a8563a086add16bfa38a6b98790d8cc575b29249a7e53",
+        "permanent_enchant_applicability_authority": "pinned_wowsims_preset_exact",
+        "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/demonology_warlock.gear.json",
+        "numeric_fixture_test_source_sha256": "394f11d9e26564e6a8c305a3544ddb6df883f826fa70e548c7a7ed391bd6ec4e",
+        "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/demonology_warlock.test.go",
+        "numeric_fixture_gear_label": "p4"
       },
       "apl": {
         "path": "ui/warlock/demonology/apls/incinerate.apl.json",
@@ -3196,7 +3308,15 @@
         "simulator_preset": {
           "path": "ui/priest/shadow/gear_sets/p4.gear.json",
           "phase": "phase_4"
-        }
+        },
+        "source_sha256": "c9b399880d5a195fbd0f3058988b89e044ac948c5038bb6754d04c299480409f",
+        "transform_schema": "wowsims_cata_equipment_manifest_v1",
+        "transformed_manifest_sha256": "bd3a31288d0f01526bc8f798afd2a4973cbe9d29d1854afc52e8cf26262edb51",
+        "permanent_enchant_applicability_authority": "pinned_wowsims_preset_exact",
+        "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_shadow_priest.gear.json",
+        "numeric_fixture_test_source_sha256": "528ff74616a6c6a279f5bd3e616fdfbaffc6a7c25c1476664497e42cedb159fb",
+        "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_shadow_priest.test.go",
+        "numeric_fixture_gear_label": "p4"
       },
       "apl": {
         "path": "ui/priest/shadow/apls/p4.apl.json",
@@ -3309,7 +3429,15 @@
         "simulator_preset": {
           "path": "ui/druid/balance/gear_sets/t13.gear.json",
           "phase": "phase_4"
-        }
+        },
+        "source_sha256": "3371edc4ddf335d091274b3eaec6f037cb49fb3a6ea8eda324e60312cdb40572",
+        "transform_schema": "wowsims_cata_equipment_manifest_v1",
+        "transformed_manifest_sha256": "67bc86c55fc10ee87228dd5aa6a4076b45fbd1009a82650712cee686fb4ea55a",
+        "permanent_enchant_applicability_authority": "pinned_wowsims_preset_exact",
+        "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_balance_druid.gear.json",
+        "numeric_fixture_test_source_sha256": "b006fd31e0cea891eae20d3c9ce0b1fe8d9a4438f67d59f481c0ed1721c96384",
+        "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_balance_druid.test.go",
+        "numeric_fixture_gear_label": "t13"
       },
       "apl": {
         "path": "ui/druid/balance/apls/t13.apl.json",
@@ -3418,11 +3546,19 @@
         "gear_profile_id": "feral_druid_dps",
         "runtime_profile_id": "feral_druid_dps",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
-        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "runtime_manifest": "experiments/configs/wowsims_cata_p4_gear_profiles.json",
         "simulator_preset": {
           "path": "ui/druid/feral/gear_sets/p4.gear.json",
           "phase": "phase_4"
-        }
+        },
+        "source_sha256": "b6e5bbc3ab57cd9173de55e7a8465880aef078d1048a4e017f8de0d2726cbc9a",
+        "transform_schema": "wowsims_cata_equipment_manifest_v1",
+        "transformed_manifest_sha256": "286c802722ae374a36b8938a8538b5021fbaa7a0bba8e10e6464fcc717a406a9",
+        "permanent_enchant_applicability_authority": "pinned_wowsims_preset_exact",
+        "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/feral_druid_dps.gear.json",
+        "numeric_fixture_test_source_sha256": "b93511634568697dc949a13f0b22f7efd96526daa58f0ec5992a5b8dcb1b387c",
+        "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/feral_druid_dps.test.go",
+        "numeric_fixture_gear_label": "p4"
       },
       "apl": {
         "path": "ui/druid/feral/apls/default.apl.json",

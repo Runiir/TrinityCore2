@@ -272,7 +272,7 @@ def test_phase9_append_ledger_fails_closed_on_torn_final_record(
     assert b'"event": "physical_try_started"' in torn
 
 
-def test_phase9_outer_timeout_kills_group_and_is_immutable(
+def test_phase9_child_runs_without_overall_wall_clock_timeout(
     tmp_path: Path, monkeypatch
 ) -> None:
     monkeypatch.setattr(phase9_runner, "REPO_ROOT", tmp_path)
@@ -288,23 +288,17 @@ def test_phase9_outer_timeout_kills_group_and_is_immutable(
     )
     log_path = output / "phase9_runner.log"
     execution, interruption = phase9_runner.run_phase9_child(
-        [
-            sys.executable,
-            "-c",
-            (
-                "import signal,time; "
-                "signal.signal(signal.SIGTERM, signal.SIG_IGN); "
-                "time.sleep(30)"
-            ),
-        ],
+        [sys.executable, "-c", "pass"],
         log_path,
-        outer_timeout_sec=0.2,
         termination_grace_sec=0.05,
     )
     assert interruption is None
-    assert execution["outer_timed_out"] is True
-    assert execution["process_group_terminate_sent"] is True
-    assert execution["process_group_kill_sent"] is True
+    assert execution["execution_policy"] == "run_to_completion"
+    assert execution["overall_wall_clock_timeout_sec"] is None
+    assert execution["outer_timed_out"] is False
+    assert execution["process_group_terminate_sent"] is False
+    assert execution["process_group_kill_sent"] is False
+    assert execution["process_group_gone"] is True
     assert execution["process_exit_observed"] is True
     result = phase9_runner.phase9_physical_result(
         logical_attempt=logical,
@@ -315,20 +309,21 @@ def test_phase9_outer_timeout_kills_group_and_is_immutable(
         receipt={},
         reconstruction_valid=False,
         reconstruction={},
-        reconstruction_error="outer_timeout",
+        reconstruction_error="missing_publication",
         child_execution=execution,
     )
-    assert result["timed_out"] is True
-    assert result["classification"] == "timeout"
+    assert result["timed_out"] is None
+    assert result["classification"] == "publication_failure"
     receipt = phase9_runner.write_phase9_physical_try_result(
         output, started, result
     )
     loaded, _ = phase9_runner.load_phase9_physical_try_result(
         output, started, physical
     )
-    assert loaded["classification"] == "timeout"
-    assert loaded["outer_timed_out"] is True
-    assert receipt["classification"] == "timeout"
+    assert loaded["classification"] == "publication_failure"
+    assert loaded["outer_timed_out"] is False
+    assert loaded["overall_wall_clock_timeout_sec"] is None
+    assert receipt["classification"] == "publication_failure"
 
 
 def test_phase9_normal_leader_exit_cleans_lingering_descendant(
@@ -347,7 +342,6 @@ def test_phase9_normal_leader_exit_cleans_lingering_descendant(
     outcome, interruption = phase9_runner.run_phase9_child(
         [sys.executable, str(script), str(descendant_pid_path)],
         tmp_path / "leader.log",
-        outer_timeout_sec=5,
         termination_grace_sec=0.2,
         kill_grace_sec=0.5,
     )
@@ -379,7 +373,6 @@ def test_phase9_controller_signal_cleans_group_before_propagation(
         outcome, pending = phase9_runner.run_phase9_child(
             [sys.executable, "-c", "import time; time.sleep(60)"],
             tmp_path / "interrupted.log",
-            outer_timeout_sec=5,
             termination_grace_sec=0.2,
             kill_grace_sec=0.5,
         )
@@ -689,6 +682,8 @@ def accepted_phase9_row(index: int, physical_try_ordinal: int = 1) -> dict:
         "child_returncode_observed": True,
         "returncode": 0,
         "transport_classification": "child_exited",
+        "execution_policy": "run_to_completion",
+        "overall_wall_clock_timeout_sec": None,
         "outer_timed_out": False,
         "controller_interrupted": False,
         "process_group_gone": True,
@@ -723,6 +718,8 @@ def logical_phase9_attempt(tmp_path: Path, serial_index: int = 1) -> dict:
         "composition_sha256": "a" * 64,
         "ordered_party": ["tank", "healer", "dps1", "dps2", "dps3"],
         "party_sha256": "b" * 64,
+        "execution_policy": "run_to_completion",
+        "overall_wall_clock_timeout_sec": None,
         "output_dir": str(Path("runs") / "logical-01"),
         "command": [
             "pixi",
@@ -745,6 +742,8 @@ def normal_phase9_child_execution(returncode: int = 0) -> dict:
         "returncode": returncode,
         "returncode_observed": True,
         "transport_classification": "child_exited",
+        "execution_policy": "run_to_completion",
+        "overall_wall_clock_timeout_sec": None,
         "outer_timed_out": False,
         "controller_interrupted": False,
         "process_group_id": 123,
@@ -753,7 +752,7 @@ def normal_phase9_child_execution(returncode: int = 0) -> dict:
         "process_group_gone": True,
         "process_group_isolated": True,
         "process_exit_observed": True,
-        "outer_timeout_sec": 2100,
+        "outer_timeout_sec": None,
     }
 
 
@@ -802,6 +801,26 @@ def test_phase9_serial_plan_covers_targeted_specs_and_protection_regression(tmp_
     assert plan["remote_verify_before_evict"] is True
     assert plan["retain_published_batch"] is False
     assert plan["promotion_requires_dps_acceptance"] is True
+    assert plan["execution_policy"] == "run_to_completion"
+    assert plan["overall_wall_clock_timeout_sec"] is None
+    assert plan["retry_policy"] == "unlimited_physical_tries_until_terminal_success"
+    assert tuple(plan["terminal_conditions"]) == (
+        "strict_route_clear",
+        "server_attributed_machine_failure",
+        "semantic_progress_plateau_watchdog",
+        "no_progress_watchdog",
+        "repeated_decision_watchdog",
+        "death_loop_watchdog",
+        "controller_interruption",
+    )
+    assert "timeout_sec" not in plan
+    assert all(
+        "--run-to-completion" in attempt["command"]
+        and "--timeout-sec" not in attempt["command"]
+        and attempt["execution_policy"] == "run_to_completion"
+        and attempt["overall_wall_clock_timeout_sec"] is None
+        for attempt in plan["attempts"]
+    )
     assert plan["dps_acceptance_state_sha256"]
     assert not (set(TARGETED_EXCLUSIONS) & set(plan["target_union"]))
     assert all(
@@ -880,6 +899,43 @@ def test_phase9_sequence_keeps_failures_and_rejects_any_try_after_success() -> N
     assert phase9_physical_sequence_findings(
         [accepted_first, second], materialized_count=2
     ) == ["multiple_successful_physical_tries", "physical_try_after_success"]
+
+
+def test_phase9_retry_sequence_has_no_retry_ceiling_and_keeps_watchdog_failures() -> None:
+    failures = []
+    for ordinal in range(1, 51):
+        row = accepted_phase9_row(1, physical_try_ordinal=ordinal)
+        row.update(
+            {
+                "classification": "terminal_liveness_failure",
+                "passed": False,
+                "timed_out": True,
+            }
+        )
+        failures.append(row)
+    success = accepted_phase9_row(1, physical_try_ordinal=51)
+    rows = [*failures, success]
+    assert phase9_physical_sequence_findings(
+        rows, materialized_count=len(rows)
+    ) == []
+
+    logical = logical_phase9_attempt(Path("/tmp"), serial_index=1)
+    physical = phase9_physical_attempt(logical, 10_000)
+    assert physical["physical_try_ordinal"] == 10_000
+    assert physical["attempt_index"] == (9_999 * 14) + 1
+
+    semantic_stall = accepted_phase9_row(1)
+    semantic_stall.update(
+        {
+            "returncode": 1,
+            "report_completion_reason": "semantic_progress_plateau_watchdog",
+            "classification": "terminal_liveness_failure",
+            "passed": False,
+        }
+    )
+    assert classify_phase9_physical_try(semantic_stall) == (
+        "terminal_liveness_failure"
+    )
 
 
 def test_phase9_source_transport_fails_closed_on_missing_or_spoofed_outcome() -> None:

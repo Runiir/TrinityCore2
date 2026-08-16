@@ -138,7 +138,7 @@ class ValidationAttempt:
     attempt_index: int
     profile: str
     output_dir: Path
-    timeout_sec: int
+    timeout_sec: int | None
     observe_sec: int
 
     def __post_init__(self) -> None:
@@ -146,7 +146,7 @@ class ValidationAttempt:
             raise ValueError("invalid cohort_id")
         if self.attempt_index < 1:
             raise ValueError("attempt_index must be positive")
-        if self.timeout_sec < 1 or self.observe_sec < 0:
+        if (self.timeout_sec is not None and self.timeout_sec < 1) or self.observe_sec < 0:
             raise ValueError("attempt timing must be non-negative")
 
 
@@ -388,6 +388,8 @@ def compact_published_report(report: Mapping[str, Any]) -> dict[str, Any]:
         "generated_at_unix",
         "returncode",
         "timed_out",
+        "execution_policy",
+        "overall_wall_clock_timeout_sec",
         "completion_reason",
         "failure_reason",
         "failure_labels",
@@ -3605,6 +3607,12 @@ def read_until_console_prompt(process: subprocess.Popen[str], deadline: float, r
             marker_index = joined.find(required_text)
             if marker_index >= 0 and "TC>" in joined[marker_index + len(required_text):]:
                 break
+            # A fresh console prompt is also an authoritative command boundary.
+            # Return the incomplete response immediately so the evidence parser
+            # can reject the missing marker; waiting until the cleanup deadline
+            # would turn a fail-closed diagnostic into a false liveness stall.
+            if "TC>" in joined:
+                break
         if not required_text and ("TC>" in text or "TC>" in joined[-16:]):
             break
     return "".join(output)
@@ -3779,7 +3787,7 @@ def rolling_heartbeat_report(
 def run_transport_completion_watchdog(
     execute_command: Callable[[str, int], tuple[str, int, bool]],
     command: list[str],
-    timeout_sec: int,
+    timeout_sec: int | None,
     script: str,
     output_dir: Path,
     scenario_reports: dict[str, dict[str, Any]],
@@ -3799,7 +3807,9 @@ def run_transport_completion_watchdog(
     The callback owns connection and lifecycle details; this function never sends a
     server shutdown command, making it safe for attached sessions and SOAP.
     """
-    deadline = time.monotonic() + timeout_sec
+    deadline = (
+        None if timeout_sec is None else time.monotonic() + timeout_sec
+    )
     startup_commands, heartbeat_commands, cleanup_commands = heartbeat_commands_from_script(script)
     output_parts = BoundedOutputParts()
     heartbeat_index = 0
@@ -3807,7 +3817,11 @@ def run_transport_completion_watchdog(
     last_progress_at = time.monotonic()
 
     def send(command_text: str) -> tuple[int, bool]:
-        remaining = max(1, int(deadline - time.monotonic()))
+        remaining = (
+            max(30, int(no_progress_window_sec))
+            if deadline is None
+            else max(1, int(deadline - time.monotonic()))
+        )
         output, returncode, timed_out = execute_command(command_text, remaining)
         output_parts.extend((f"$ {command_text}\n", output))
         if returncode == 0 and is_calibration_start_command(command_text):
@@ -3837,9 +3851,14 @@ def run_transport_completion_watchdog(
         for command_text in startup_commands
     )
     if startup_commands and not calibration_startup:
+        startup_deadline = (
+            time.monotonic() + max(30, int(no_progress_window_sec))
+            if deadline is None
+            else deadline
+        )
         status_output, _status, returncode, timed_out = poll_bot_status(
             execute_command,
-            deadline,
+            startup_deadline,
             status_command=status_command,
             sleep=sleep,
         )
@@ -3847,11 +3866,18 @@ def run_transport_completion_watchdog(
         if returncode != 0 or timed_out:
             return finish(returncode, timed_out)
 
-    while time.monotonic() < deadline:
-        sleep(min(max(1, heartbeat_sec), max(0.0, deadline - time.monotonic())))
+    while deadline is None or time.monotonic() < deadline:
+        sleep(
+            max(1, heartbeat_sec)
+            if deadline is None
+            else min(
+                max(1, heartbeat_sec),
+                max(0.0, deadline - time.monotonic()),
+            )
+        )
         heartbeat_index += 1
         for command_text in heartbeat_commands:
-            if time.monotonic() >= deadline:
+            if deadline is not None and time.monotonic() >= deadline:
                 break
             returncode, timed_out = send(command_text)
             if returncode != 0 or timed_out:
@@ -5047,6 +5073,7 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path, default=Path("dataset/live_validation"))
     parser.add_argument("--duration-policy", choices=["completion-watchdog", "fixed-window"], default="completion-watchdog")
     parser.add_argument("--timeout-sec", type=int, default=None, help="Emergency wall-clock cap. Defaults to 90 seconds for fixed smoke checks and 900 seconds for boss-route or watchdog validations.")
+    parser.add_argument("--run-to-completion", action="store_true", help="Stonecore session mode: no overall wall-clock deadline; terminate only on clear, attributable watchdog failure, or controller interruption.")
     parser.add_argument("--heartbeat-sec", type=int, default=DEFAULT_COMPLETION_HEARTBEAT_SEC)
     parser.add_argument("--no-progress-window-sec", type=int, default=DEFAULT_NO_PROGRESS_WINDOW_SEC)
     parser.add_argument("--max-repeated-decision-count", type=int, default=DEFAULT_MAX_REPEATED_DECISIONS)
@@ -5127,6 +5154,17 @@ def main() -> int:
         raise SystemExit("scenario-scoped validation cannot use SOAP because the server config identity is not owned")
     if args.transport == "session" and args.validation_scenario_id and args.session_profile and args.session_profile != args.validation_scenario_id:
         raise SystemExit("--session-profile must equal --validation-scenario-id for validation sessions")
+    if args.run_to_completion and not (
+        args.transport == "session"
+        and args.duration_policy == "completion-watchdog"
+        and args.validation_scenario_id == "stonecore_5h"
+        and args.party_spec_target
+        and args.timeout_sec is None
+    ):
+        raise SystemExit(
+            "--run-to-completion requires an exact-party Stonecore session "
+            "without --timeout-sec"
+        )
 
     exact_party_specs = [str(value) for value in args.party_spec_target]
     if exact_party_specs:
@@ -5153,7 +5191,10 @@ def main() -> int:
         if exact_party_specs[2:] != sorted(exact_party_specs[2:]):
             raise SystemExit("--party-spec-target DPS targets must be canonically sorted")
 
-    if args.duration_policy == "completion-watchdog":
+    if args.run_to_completion:
+        args.timeout_sec = None
+        args.observe_sec = args.observe_sec if args.observe_sec is not None else args.heartbeat_sec
+    elif args.duration_policy == "completion-watchdog":
         args.timeout_sec = args.timeout_sec if args.timeout_sec is not None else DEFAULT_BOSS_ROUTE_TIMEOUT_SEC
         args.observe_sec = args.observe_sec if args.observe_sec is not None else args.heartbeat_sec
     elif str(args.validation_route_kind or "").lower() == "boss":
@@ -5319,6 +5360,12 @@ def main() -> int:
             "transport": args.transport,
             "soap_url": args.soap_url if args.transport == "soap" else "",
             "duration_policy": args.duration_policy,
+            "execution_policy": (
+                "run_to_completion"
+                if args.run_to_completion
+                else "bounded_wall_clock"
+            ),
+            "overall_wall_clock_timeout_sec": args.timeout_sec,
             "timeout_sec": args.timeout_sec,
             "observe_sec": args.observe_sec,
             "heartbeat_sec": args.heartbeat_sec,
@@ -5460,6 +5507,10 @@ def main() -> int:
     report["start_command"] = send_start_command
     report["calibration_only"] = args.calibration_only
     report["calibration_reference_conditions"] = args.calibration_reference_conditions
+    report["execution_policy"] = (
+        "run_to_completion" if args.run_to_completion else "bounded_wall_clock"
+    )
+    report["overall_wall_clock_timeout_sec"] = args.timeout_sec
     report["requested_calibration"] = {
         "mode": args.calibration_mode,
         "target_spec": args.calibration_target_spec,

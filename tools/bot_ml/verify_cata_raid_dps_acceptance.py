@@ -10,10 +10,24 @@ from typing import Any, Mapping
 from .common import write_json
 from .live_validation_session import canonical_sha256, sha256_file
 from .phase8_calibration_adapter import expected_gear_manifest
+from .phase8_reference_conditions import (
+    DEFAULT_REFERENCE_REQUESTS,
+    load_reference_request_binding,
+    verified_reference_request_runtime_facts,
+)
+from .wowsims_gear_binding import (
+    HOTFIX_ITEM_TEMPLATE_SOURCE,
+    validate_profile_local_legality,
+    validate_profile_source_binding,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG = REPO_ROOT / "experiments/configs/cata_raid_dps_acceptance_v1.json"
+DEFAULT_WOWSIMS_GEAR_PROFILES = (
+    REPO_ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json"
+)
+DEFAULT_DBC_DIR = REPO_ROOT / "data/dbc/enUS"
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -78,6 +92,11 @@ def verify(config_path: Path = DEFAULT_CONFIG) -> dict[str, Any]:
     calibration_policy = _load(calibration_policy_path)
     targets = _load(targets_path)
     references = _load(references_path)
+    wowsims_gear_document = _load(DEFAULT_WOWSIMS_GEAR_PROFILES)
+    wowsims_gear_profiles = wowsims_gear_document.get("profiles") or {}
+    wowsims_slot_map = [
+        int(value) for value in wowsims_gear_document.get("slot_map") or []
+    ]
 
     configured = [str(value) for value in config.get("dps_targets") or []]
     supported = [
@@ -120,25 +139,93 @@ def verify(config_path: Path = DEFAULT_CONFIG) -> dict[str, Any]:
         target = target_by_id.get(target_id) or {}
         reference = reference_by_id.get(target_id) or {}
         gear_binding = gear_profile_binding(target, reference)
+        gear_profile_id = str(gear_binding["gear_profile_id"])
+        exact_profile = wowsims_gear_profiles.get(gear_profile_id)
+        if isinstance(exact_profile, Mapping):
+            try:
+                source_binding = validate_profile_source_binding(
+                    profile=exact_profile,
+                    reference=reference,
+                    slot_map=wowsims_slot_map,
+                )
+                legality = validate_profile_local_legality(
+                    profile=exact_profile,
+                    target=target,
+                    slot_map=wowsims_slot_map,
+                    dbc_dir=DEFAULT_DBC_DIR,
+                )
+            except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
+                source_binding = {
+                    "passed": False,
+                    "checks": {},
+                    "source_sha256": "",
+                    "transformed_manifest_sha256": "",
+                    "manifest": [],
+                    "error": str(exc),
+                }
+                legality = {
+                    "passed": False,
+                    "checks": {},
+                    "failure_reasons": ["local_gear_legality_validation_error"],
+                }
+        else:
+            source_binding = {
+                "passed": False,
+                "checks": {},
+                "source_sha256": "",
+                "transformed_manifest_sha256": "",
+                "manifest": [],
+                "error": "exact_pinned_wowsims_profile_missing",
+            }
+            legality = {
+                "passed": False,
+                "checks": {},
+                "failure_reasons": [
+                    "generic_or_unverified_gear_disallowed_for_numeric_qualification"
+                ],
+            }
         try:
             gear_manifest = expected_gear_manifest(
-                str(gear_binding["gear_profile_id"])
+                gear_profile_id
             )
         except (OSError, ValueError):
             gear_manifest = []
         gear_binding["gear_manifest_sha256"] = (
             canonical_sha256(gear_manifest) if gear_manifest else ""
         )
-        gear_binding["gear_profile_binding_verified"] = bool(
-            gear_binding["gear_profile_binding_verified"] and gear_manifest
+        gear_binding["source_sha256"] = source_binding.get("source_sha256")
+        gear_binding["transformed_manifest_sha256"] = source_binding.get(
+            "transformed_manifest_sha256"
         )
-        metrics = ((reference.get("expected_output") or {}).get("metrics") or {})
-        reference_dps = float(metrics.get("dps") or 0.0)
+        gear_binding["source_binding_checks"] = source_binding.get("checks") or {}
+        gear_binding["local_legality_checks"] = legality.get("checks") or {}
+        gear_binding["local_legality_failure_reasons"] = (
+            legality.get("failure_reasons") or []
+        )
+        gear_binding["exact_pinned_wowsims_source_verified"] = bool(
+            source_binding.get("passed")
+        )
+        gear_binding["local_player_gear_legality_verified"] = bool(
+            legality.get("passed")
+        )
+        gear_binding["gear_profile_binding_verified"] = bool(
+            gear_binding["gear_profile_binding_verified"]
+            and gear_manifest
+            and source_binding.get("passed")
+            and legality.get("passed")
+            and gear_manifest == source_binding.get("manifest")
+        )
+        request_binding = load_reference_request_binding(target_id)
+        request_facts = verified_reference_request_runtime_facts(
+            request_binding
+        )
+        reference_dps = float(request_facts.get("reference_value") or 0.0)
         target_valid = bool(target and target.get("role") == "dps")
         reference_valid = bool(
             reference_dps > 0
-            and reference.get("provider_revision")
-            and reference.get("reference_conditions")
+            and request_binding.get("valid") is True
+            and request_facts.get("result_status") == "generated_verified"
+            and request_facts.get("reference_result_key")
         )
         target_identity_complete = target_identity_complete and target_valid
         reference_complete = reference_complete and reference_valid
@@ -151,9 +238,22 @@ def verify(config_path: Path = DEFAULT_CONFIG) -> dict[str, Any]:
                 "spec_target_id": target_id,
                 "runtime_join_key": target.get("runtime_join_key"),
                 "class_name": target.get("class_name"),
-                "reference_id": reference.get("reference_id"),
-                "provider": reference.get("provider"),
-                "provider_revision": reference.get("provider_revision"),
+                "reference_id": request_facts.get("reference_result_key"),
+                "provider": "wowsims_generated_live_compatible_request",
+                "provider_revision": request_binding.get("provider_revision"),
+                "reference_basis": (
+                    "generated_verified_live_compatible_wowsims_dps"
+                    if reference_valid
+                    else "generated_reference_unavailable"
+                ),
+                "reference_request_binding_valid": request_binding.get("valid")
+                is True,
+                "reference_request_binding_reasons": list(
+                    request_binding.get("reasons") or []
+                ),
+                "reference_request_catalog_sha256": request_binding.get(
+                    "catalog_sha256"
+                ),
                 "reference_dps": reference_dps,
                 "hard_floor_dps": round(reference_dps * hard_ratio, 3),
                 "optimization_target_dps": round(
@@ -176,8 +276,17 @@ def verify(config_path: Path = DEFAULT_CONFIG) -> dict[str, Any]:
         == 16,
         "all_targets_are_canonical_dps_specs": target_identity_complete,
         "all_targets_have_positive_pinned_references": reference_complete,
+        "all_targets_have_generated_verified_reference_artifacts": (
+            reference_complete
+        ),
         "all_targets_have_one_canonical_gear_profile_id": (
             gear_profile_identity_complete
+        ),
+        "all_numeric_targets_use_exact_pinned_wowsims_gear": all(
+            row["exact_pinned_wowsims_source_verified"] for row in rows
+        ),
+        "all_numeric_target_gear_is_locally_player_legal": all(
+            row["local_player_gear_legality_verified"] for row in rows
         ),
         "hard_floor_is_75_percent": hard_ratio
         == float(acceptance.get("hard_reference_ratio") or 0.0)
@@ -247,6 +356,27 @@ def verify(config_path: Path = DEFAULT_CONFIG) -> dict[str, Any]:
             "role_calibration_policy": sha256_file(calibration_policy_path),
             "target_catalog": sha256_file(targets_path),
             "reference_catalog": sha256_file(references_path),
+            "generated_reference_requests": sha256_file(
+                DEFAULT_REFERENCE_REQUESTS
+            ),
+            "wowsims_gear_profiles": sha256_file(DEFAULT_WOWSIMS_GEAR_PROFILES),
+            "local_gear_legality_oracles": {
+                name: sha256_file(DEFAULT_DBC_DIR / name)
+                if (DEFAULT_DBC_DIR / name).is_file()
+                else ""
+                for name in (
+                    "Item.db2",
+                    "Item-sparse.db2",
+                    "SpellItemEnchantment.dbc",
+                    "GemProperties.dbc",
+                    "ItemReforge.dbc",
+                )
+            },
+            "local_hotfix_item_catalog": (
+                sha256_file(HOTFIX_ITEM_TEMPLATE_SOURCE)
+                if HOTFIX_ITEM_TEMPLATE_SOURCE.is_file()
+                else ""
+            ),
         },
     }
     report["verification_sha256"] = canonical_sha256(report)

@@ -27,10 +27,14 @@ from .phase8_calibration_adapter import (
     DEFAULT_SCENARIOS,
     DEFAULT_TARGETS,
     evaluate_runtime_calibration,
+    load_phase8_catalog_entry,
 )
 from .phase8_evidence_identity import (
     build_projection as phase8_build_projection,
     validate_manifest as validate_evidence_manifest,
+)
+from .phase8_reference_conditions import (
+    preflight_reference_condition_compatibility,
 )
 from .run_phase8_all_spec_calibration import (
     attempt_directory_candidates,
@@ -250,12 +254,12 @@ def run_child_process_group(
     cwd: Path,
     env: Mapping[str, str],
     output_stream: Any,
-    timeout_sec: float,
+    timeout_sec: float | None,
     terminate_grace_sec: float = CHILD_TERMINATE_GRACE_SEC,
     kill_grace_sec: float = CHILD_KILL_GRACE_SEC,
 ) -> tuple[dict[str, Any], BaseException | None]:
-    """Run one child with a bounded lifetime and no surviving descendants."""
-    if float(timeout_sec) <= 0:
+    """Run one isolated child, optionally deadline-bound, and reap descendants."""
+    if timeout_sec is not None and float(timeout_sec) <= 0:
         raise ValueError("child outer timeout must be positive")
     process = subprocess.Popen(
         [str(value) for value in command],
@@ -281,7 +285,9 @@ def run_child_process_group(
             previous_signal_handlers.clear()
             break
     try:
-        returncode = process.wait(timeout=float(timeout_sec))
+        returncode = process.wait(
+            timeout=None if timeout_sec is None else float(timeout_sec)
+        )
         group_gone = not _process_group_exists(process.pid)
         if not group_gone:
             cleanup = _terminate_child_process_group(
@@ -472,6 +478,8 @@ def attempt_accepted(result: Mapping[str, Any]) -> bool:
         and result.get("remote_excluded_from_training_corpus") is True
         and result.get("remote_runtime_mode") == FIXTURE_RUNTIME_MODE
         and result.get("remote_non_certifying_assistance") is True
+        and result.get("conditions_compatible") is True
+        and result.get("remote_conditions_compatible") is True
         and result.get("published")
         and result.get("remote_reconstruction_verified")
         and result.get("passed")
@@ -764,6 +772,7 @@ def verify_hydrated_calibration(
     stored_record = source.get("role_calibration_record") or {}
     stored_evaluation = source.get("role_calibration_evaluation") or {}
     role_identity = record.get("identity") or {}
+    compatibility = record.get("reference_condition_compatibility") or {}
     session = source.get("session") or {}
     envelope = source.get("evidence_envelope") or {}
     calibration = source.get("combat_calibration") or {}
@@ -839,6 +848,8 @@ def verify_hydrated_calibration(
         and int(requested.get("seed") or 0) == int(attempt.get("seed") or 0)
         and canonical_sha256(stored_record) == canonical_sha256(record)
         and canonical_sha256(stored_evaluation) == canonical_sha256(evaluation)
+        and compatibility.get("conditions_compatible") is True
+        and not compatibility.get("reasons")
         and provenance_verified
         and transport_verified
         and runtime_identity_valid
@@ -864,6 +875,8 @@ def verify_hydrated_calibration(
         "source_transport_verified": transport_verified,
         "requested_calibration": dict(requested),
         "role_calibration_identity": dict(role_identity),
+        "reference_condition_compatibility": dict(compatibility),
+        "conditions_compatible": compatibility.get("conditions_compatible") is True,
         "session_identity": {
             key: session.get(key)
             for key in (
@@ -945,6 +958,12 @@ def compact_acceptance_result(
     role_identity = report.get("role_calibration_identity") or {}
     session = report.get("session") or {}
     calibration_acceptance = report.get("calibration_acceptance") or {}
+    compatibility = (
+        (report.get("role_calibration_record") or {}).get(
+            "reference_condition_compatibility"
+        )
+        or {}
+    )
     result["child_returncode_observed"] = isinstance(returncode, int)
     result["returncode"] = returncode
     result["report_returncode"] = (
@@ -962,6 +981,13 @@ def compact_acceptance_result(
         report.get("acceptable_final_evidence") is True
     )
     result["all_passed"] = report.get("all_passed") is True
+    result["conditions_compatible"] = (
+        compatibility.get("conditions_compatible") is True
+        and not compatibility.get("reasons")
+    )
+    result["reference_condition_reasons"] = list(
+        compatibility.get("reasons") or []
+    )
     result["remote_reconstruction_verified"] = reconstruction_valid
     result["reconstruction_receipt_sha256"] = reconstruction.get("receipt_sha256")
     domain_verification = reconstruction.get("domain_verification") or {}
@@ -987,6 +1013,9 @@ def compact_acceptance_result(
     result["remote_runtime_mode"] = domain_verification.get("runtime_mode")
     result["remote_non_certifying_assistance"] = domain_verification.get(
         "non_certifying_assistance"
+    )
+    result["remote_conditions_compatible"] = (
+        domain_verification.get("conditions_compatible") is True
     )
     result["identity_manifest_sha256"] = envelope.get("identity_manifest_sha256")
     result["git_commit_sha256"] = (envelope.get("component_hashes") or {}).get(
@@ -1241,6 +1270,12 @@ def write_campaign_state(
         "hard_reference_ratio": 0.75,
         "optimization_reference_ratio": 0.85,
         **fixture_provenance(),
+        "reference_condition_preflight_compatible": (
+            plan.get("reference_condition_preflight_compatible") is True
+        ),
+        "reference_condition_preflight_sha256": plan.get(
+            "reference_condition_preflight_sha256"
+        ),
         "max_tries_per_dps_spec": int(plan.get("max_tries_per_dps_spec") or 0),
         "child_outer_timeout_sec": int(plan.get("child_outer_timeout_sec") or 0),
         "physical_try_count": materialized_count,
@@ -1311,6 +1346,7 @@ def write_campaign_state(
             if attempt_accepted(row)
         )
         and all(state.get(key) == value for key, value in fixture_provenance().items())
+        and state["reference_condition_preflight_compatible"] is True
         and not state["unexpected_try_paths"]
         and not state["sequence_findings"]
         and not state["duplicate_physical_attempt_ids"]
@@ -1404,6 +1440,15 @@ def verify_campaign_state(
         for key, value in fixture_provenance().items()
     ):
         reasons.append("campaign_fixture_provenance_mismatch")
+    if (
+        plan.get("reference_condition_preflight_compatible") is not True
+        or state.get("reference_condition_preflight_compatible") is not True
+        or state.get("reference_condition_preflight_sha256")
+        != plan.get("reference_condition_preflight_sha256")
+        or canonical_sha256(plan.get("reference_condition_preflight") or [])
+        != plan.get("reference_condition_preflight_sha256")
+    ):
+        reasons.append("campaign_reference_condition_preflight_invalid")
 
     expected_git_head = str(required_git_head or git_head(REPO_ROOT))
     expected_git_sha256 = sha256_text(expected_git_head) if expected_git_head else ""
@@ -1507,11 +1552,20 @@ def verify_campaign_state(
             )
             remote_verification = reconstruction.get("domain_verification") or {}
             remote_evaluation = remote_verification.get("evaluation") or {}
+            remote_compatibility = remote_verification.get(
+                "reference_condition_compatibility"
+            ) or {}
             remote_requested = remote_verification.get("requested_calibration") or {}
             remote_identity = remote_verification.get("role_calibration_identity") or {}
             remote_session = remote_verification.get("session_identity") or {}
             remote_components = remote_verification.get("evidence_component_hashes") or {}
             evaluation = report.get("role_calibration_evaluation") or {}
+            compatibility = (
+                (report.get("role_calibration_record") or {}).get(
+                    "reference_condition_compatibility"
+                )
+                or {}
+            )
             envelope = report.get("evidence_envelope") or {}
             components = envelope.get("component_hashes") or {}
             identity = report.get("role_calibration_identity") or {}
@@ -1573,6 +1627,11 @@ def verify_campaign_state(
                 and evaluation.get("hard_floor_passed") is True
                 and evaluation.get("optimization_target_met") is True
                 and float(evaluation.get("reference_ratio") or 0.0) >= 0.85
+                and compatibility.get("conditions_compatible") is True
+                and not compatibility.get("reasons")
+                and canonical_sha256(compatibility)
+                == canonical_sha256(remote_compatibility)
+                and remote_verification.get("conditions_compatible") is True
                 and not evaluation.get("failure_reasons")
                 and attempt_accepted(result)
             )
@@ -1752,6 +1811,23 @@ def run_campaign(args: argparse.Namespace) -> int:
     if int(args.child_outer_timeout_sec) <= 0:
         raise SystemExit("--child-outer-timeout-sec must be positive")
     attempts = campaign_attempts(targets, qualification_mode, qualification_seed)
+    reference_condition_preflight: list[dict[str, Any]] = []
+    for target in targets:
+        target_spec = str(target.get("spec_target_id") or "")
+        catalog_target, catalog_reference, _scenario = load_phase8_catalog_entry(
+            target_spec
+        )
+        reference_condition_preflight.append(
+            preflight_reference_condition_compatibility(
+                target_spec=target_spec,
+                target_row=catalog_target,
+                reference_row=catalog_reference,
+            )
+        )
+    preflight_compatible = all(
+        row.get("conditions_compatible") is True
+        for row in reference_condition_preflight
+    )
     output_root = args.output_root.resolve()
     plan = {
         "schema": "cata_raid_dps_acceptance_campaign_plan_v1",
@@ -1769,12 +1845,31 @@ def run_campaign(args: argparse.Namespace) -> int:
         **fixture_provenance(),
         "publish_batch": True,
         "retain_published_batch": False,
+        "reference_condition_preflight_compatible": preflight_compatible,
+        "reference_condition_preflight": reference_condition_preflight,
+        "reference_condition_preflight_sha256": canonical_sha256(
+            reference_condition_preflight
+        ),
         "attempts": attempts,
     }
     if args.dry_run:
         plan["plan_sha256"] = canonical_sha256(plan)
         print(json.dumps(plan, indent=2, sort_keys=True))
         return 0
+
+    if not preflight_compatible:
+        blocked = [
+            {
+                "target_spec": row.get("target_spec"),
+                "reasons": row.get("reasons"),
+            }
+            for row in reference_condition_preflight
+            if row.get("conditions_compatible") is not True
+        ]
+        raise SystemExit(
+            "DPS reference-condition preflight failed before physical try "
+            f"reservation: {json.dumps(blocked, sort_keys=True)}"
+        )
 
     if not args.evidence_identity_manifest:
         raise SystemExit("--evidence-identity-manifest is required for live DPS acceptance")

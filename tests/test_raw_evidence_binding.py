@@ -9,8 +9,38 @@ import pyarrow.parquet as pq
 import pytest
 
 from tools.bot_ml import batch_evidence_lifecycle as lifecycle
+from tools.bot_ml import raw_evidence_binding as raw_binding
 from tools.bot_ml.generate_bot_admission_identities import source_content_sha256
+from tools.bot_ml.raw_evidence_binding import (
+    _derive_raw_reference_compatibility,
+)
 from tools.bot_ml.run_live_bot_validation import run_reusable_validation_session
+
+
+_REAL_GENERATED_REFERENCE_SCORING_AUTHORITY = (
+    raw_binding._generated_reference_scoring_authority
+)
+
+
+def _test_generated_reference_authority(
+    reference_value: float = 50_000.0,
+) -> dict:
+    return {
+        "valid": True,
+        "reference_value": reference_value,
+        "reference_result_key": "generated:fire_mage:live-compatible",
+        "reference_basis": "generated_verified_live_compatible_wowsims_dps",
+        "reference_request_catalog_sha256": "e" * 64,
+    }
+
+
+@pytest.fixture(autouse=True)
+def _pin_generated_reference_authority(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        raw_binding,
+        "_generated_reference_scoring_authority",
+        lambda _target_spec: _test_generated_reference_authority(),
+    )
 
 
 def _report_base() -> dict:
@@ -25,6 +55,10 @@ def _report_base() -> dict:
         "validation_route_manifest": {},
         "watchdog_state": {},
         "session": {
+            "cohort_id": "cohort-a",
+            "attempt_index": 1,
+            "server_epoch": 77,
+            "runtime_attempt_id": 9,
             "inactive_after_attempt": True,
             "cleanup": {
                 "active": False,
@@ -48,6 +82,8 @@ def _cleanup_payloads(cohort_id: str = "cohort-a") -> list[dict]:
         {
             "action": "botauto_status",
             "cohort_id": cohort_id,
+            "server_epoch": 77,
+            "attempt_id": 9,
             "active": False,
             "active_bots": 0,
             "target_bots": 0,
@@ -88,6 +124,9 @@ def _raw_rows(batch_id: str, payloads: list[dict]) -> list[dict]:
 def _calibration_payload() -> dict:
     return {
         "action": "botauto_calibrate_status",
+        "cohort_id": "cohort-a",
+        "server_epoch": 77,
+        "attempt_id": 9,
         "active": True,
         "phase": "complete",
         "mode": "single_target_300",
@@ -183,6 +222,7 @@ def _calibration_payload() -> dict:
 
 
 def _attach_role_scoring(report: dict, calibration: dict) -> None:
+    target = calibration["previous_window"]["bots"][0]
     record = {
         "schema": "all_spec_role_calibration_record_v1",
         "mode": "single_target_300",
@@ -191,11 +231,14 @@ def _attach_role_scoring(report: dict, calibration: dict) -> None:
         "window": {"scored_duration_seconds": 300.0},
         "metrics": {
             "reference_value": 50_000.0,
-            "reference_basis": "pinned_cata_phase4_simulator_dps",
+            "reference_basis": "generated_verified_live_compatible_wowsims_dps",
             "measured_value": 45_000.0,
             "elapsed_dps": 45_000.0,
             "active_dps": 50_000.0,
         },
+        "reference_condition_compatibility": (
+            _derive_raw_reference_compatibility(calibration, target, {})
+        ),
         "raw_runtime_status": copy.deepcopy(calibration),
     }
     report["role_calibration_record"] = record
@@ -346,6 +389,62 @@ def test_claimed_cleanup_requires_raw_stop_status_and_registry_receipt(tmp_path:
         _capture_calibration(tmp_path, report, [calibration])
 
 
+def test_calibration_status_cannot_be_joined_across_cohorts_or_attempts(
+    tmp_path: Path,
+):
+    calibration = _calibration_payload()
+    calibration["cohort_id"] = "cohort-b"
+    report = _calibration_report(calibration)
+    report["session"]["cohort_id"] = "cohort-b"
+
+    with pytest.raises(
+        lifecycle.BatchLifecycleError,
+        match="calibration/admission, cleanup, and event envelope identities differ",
+    ):
+        _capture_calibration(
+            tmp_path, report, [calibration, *_cleanup_payloads("cohort-b")]
+        )
+
+    calibration = _calibration_payload()
+    report = _calibration_report(calibration)
+    report["session"]["attempt_index"] = 2
+    with pytest.raises(
+        lifecycle.BatchLifecycleError,
+        match="report calibration/admission, cleanup, and session identities differ|acceptance source report decisive facts",
+    ):
+        _capture_calibration(
+            tmp_path / "attempt", report, [calibration, *_cleanup_payloads()]
+        )
+
+
+def test_calibration_status_cannot_cross_server_restart_or_server_attempt(
+    tmp_path: Path,
+):
+    calibration = _calibration_payload()
+    calibration["server_epoch"] = 76
+    report = _calibration_report(calibration)
+    report["session"]["server_epoch"] = 76
+    with pytest.raises(
+        lifecycle.BatchLifecycleError,
+        match="calibration/admission, cleanup, and event envelope identities differ",
+    ):
+        _capture_calibration(
+            tmp_path / "restart", report, [calibration, *_cleanup_payloads()]
+        )
+
+    calibration = _calibration_payload()
+    cleanup = _cleanup_payloads()
+    cleanup[1]["attempt_id"] = 10
+    report = _calibration_report(calibration)
+    with pytest.raises(
+        lifecycle.BatchLifecycleError,
+        match="calibration/admission, cleanup, and event envelope identities differ",
+    ):
+        _capture_calibration(
+            tmp_path / "server-attempt", report, [calibration, *cleanup]
+        )
+
+
 @pytest.mark.parametrize(
     ("field", "tampered_value"),
     [
@@ -442,8 +541,13 @@ def test_two_decimal_server_dps_rounding_contract_is_deterministic(tmp_path: Pat
 
 
 def test_serialized_dps_rounding_cannot_promote_exact_ratio_over_85_percent(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ):
+    monkeypatch.setattr(
+        raw_binding,
+        "_generated_reference_scoring_authority",
+        lambda _target_spec: _test_generated_reference_authority(54_116.37374),
+    )
     calibration = _calibration_payload()
     target = calibration["previous_window"]["bots"][0]
     target.update(
@@ -544,6 +648,71 @@ def test_report_cannot_mutate_active_uptime_or_reference_scoring(tmp_path: Path)
         )
 
 
+def test_report_cannot_replace_verified_generated_reference_value(
+    tmp_path: Path,
+):
+    calibration = _calibration_payload()
+    report = _calibration_report(calibration)
+    report["role_calibration_record"]["metrics"]["reference_value"] = 1.0
+    report["role_calibration_evaluation"]["record_sha256"] = (
+        lifecycle.canonical_sha256(report["role_calibration_record"])
+    )
+
+    with pytest.raises(
+        lifecycle.BatchLifecycleError,
+        match="reference_value does not match verified generated result",
+    ):
+        _capture_calibration(
+            tmp_path, report, [calibration, *_cleanup_payloads()]
+        )
+
+
+def test_invalid_generated_reference_binding_cannot_supply_a_denominator(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.setattr(
+        raw_binding,
+        "load_reference_request_binding",
+        lambda _target_spec: {"valid": False, "reasons": ["tampered_artifact"]},
+    )
+
+    authority = _REAL_GENERATED_REFERENCE_SCORING_AUTHORITY("fire_mage")
+
+    assert authority == {
+        "valid": False,
+        "reference_value": 0.0,
+        "reference_result_key": "",
+        "reference_basis": "generated_reference_unavailable",
+        "reference_request_catalog_sha256": "",
+    }
+
+
+@pytest.mark.parametrize("mutation", ["missing", "spoofed"])
+def test_report_cannot_missing_or_spoof_raw_reference_compatibility(
+    tmp_path: Path, mutation: str
+):
+    calibration = _calibration_payload()
+    report = _calibration_report(calibration)
+    record = report["role_calibration_record"]
+    if mutation == "missing":
+        record.pop("reference_condition_compatibility")
+    else:
+        compatibility = record["reference_condition_compatibility"]
+        compatibility["conditions_compatible"] = True
+        compatibility["reasons"] = []
+    report["role_calibration_evaluation"]["record_sha256"] = (
+        lifecycle.canonical_sha256(record)
+    )
+
+    with pytest.raises(
+        lifecycle.BatchLifecycleError,
+        match="reference conditions do not match raw server facts",
+    ):
+        _capture_calibration(
+            tmp_path, report, [calibration, *_cleanup_payloads()]
+        )
+
+
 def test_failed_dps_normalization_still_retains_the_raw_measurement(tmp_path: Path):
     calibration = _calibration_payload()
     report = _report_base()
@@ -576,8 +745,12 @@ def test_failed_dps_normalization_still_retains_the_raw_measurement(tmp_path: Pa
     scoring = projection["decisive"]["selected_target_scoring"]
     assert scoring["damage"] == 13_500_000
     assert scoring["elapsed_dps"] == 45_000.0
-    assert scoring["reference_value"] == 0.0
-    assert scoring["hard_floor_passed"] is False
+    assert scoring["reference_value"] == 50_000.0
+    assert scoring["reference_authority_valid"] is True
+    # The role adapter failed, but raw damage/time is still scored against the
+    # independently verified generated denominator rather than report fields.
+    assert scoring["hard_floor_passed"] is True
+    assert scoring["optimization_target_met"] is True
     assert manifest["semantic_binding"]["evidence_kind"] == "dps_calibration"
 
 
@@ -835,6 +1008,7 @@ def _admission_status() -> dict:
     return {
         "action": "botauto_status",
         "cohort_id": "cohort-a",
+        "server_epoch": 77,
         "active": True,
         "active_bots": 5,
         "target_bots": 5,
@@ -858,6 +1032,7 @@ def _admission_status() -> dict:
             "leader_guid": 1001,
             "instance_id": 902,
             "admission_receipt": {
+                "server_epoch": 77,
                 "attempt_id": 9,
                 "scenario_id": "stonecore_5h",
                 "runtime_profile": "stonecore_5h",
@@ -997,6 +1172,33 @@ def test_stonecore_report_cannot_invent_a_boss_death(tmp_path: Path):
             tmp_path / "stonecore",
             batch_id="stonecore-1",
             raw_rows=_raw_rows("stonecore-1", payloads),
+            compact_rows=[{"all_passed": True}],
+            exact_manifests={"validation_route_manifest": manifest},
+            summary={"closed": True},
+            acceptance_report=report,
+            raw_transport_output=_raw_output(payloads),
+            transport_outcome={"returncode": 0, "timed_out": False},
+            semantic_evidence_kind="stonecore_5h",
+        )
+
+
+def test_stonecore_admission_cannot_cross_server_restart(tmp_path: Path) -> None:
+    manifest = _stonecore_manifest()
+    admission = _admission_status()
+    admission["server_epoch"] = 76
+    admission["raid_runtime"]["admission_receipt"]["server_epoch"] = 76
+    report = _stonecore_report(admission, manifest)
+    report["session"]["server_epoch"] = 76
+    payloads = [admission, *_cleanup_payloads()]
+
+    with pytest.raises(
+        lifecycle.BatchLifecycleError,
+        match="calibration/admission, cleanup, and event envelope identities differ",
+    ):
+        lifecycle.capture_batch(
+            tmp_path / "stonecore-restart",
+            batch_id="stonecore-restart-1",
+            raw_rows=_raw_rows("stonecore-restart-1", payloads),
             compact_rows=[{"all_passed": True}],
             exact_manifests={"validation_route_manifest": manifest},
             summary={"closed": True},

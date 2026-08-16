@@ -14,6 +14,8 @@ from pathlib import Path
 import pytest
 
 import tools.bot_ml.run_cata_raid_dps_acceptance as dps_runner
+import tools.bot_ml.verify_cata_raid_dps_acceptance as dps_verifier
+import tools.bot_ml.wowsims_gear_binding as wowsims_gear_binding
 from tools.bot_ml.live_validation_session import (
     EVIDENCE_ARTIFACT_HASHES,
     EVIDENCE_HASH_COMPONENTS,
@@ -53,10 +55,43 @@ from tools.bot_ml.run_cata_raid_dps_acceptance import (
 )
 from tools.bot_ml.run_live_bot_validation import session_output_dir_available
 from tools.bot_ml.verify_cata_raid_dps_acceptance import gear_profile_binding, verify
+from tools.bot_ml.wowsims_gear_binding import (
+    canonical_sha256 as canonical_gear_sha256,
+    canonical_wowsims_manifest,
+    validated_hotfix_item_rows,
+    validate_profile_source_binding,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "experiments/configs/cata_raid_dps_acceptance_v1.json"
+
+
+def _patch_verified_generated_references(
+    monkeypatch: pytest.MonkeyPatch, *, reference_dps: float = 50_000.0
+) -> None:
+    monkeypatch.setattr(
+        dps_verifier,
+        "load_reference_request_binding",
+        lambda target_spec: {
+            "valid": True,
+            "reasons": [],
+            "provider_revision": "a" * 40,
+            "catalog_sha256": "b" * 64,
+            "target_spec": target_spec,
+        },
+    )
+    monkeypatch.setattr(
+        dps_verifier,
+        "verified_reference_request_runtime_facts",
+        lambda binding: {
+            "reference_value": reference_dps,
+            "result_status": "generated_verified",
+            "reference_result_key": (
+                f"generated:{binding['target_spec']}:live-compatible"
+            ),
+        },
+    )
 
 
 def test_session_child_accepts_only_controller_prelaunch_files(tmp_path: Path) -> None:
@@ -206,6 +241,8 @@ def _accepted_result(physical: dict[str, object]) -> dict[str, object]:
         "remote_excluded_from_training_corpus": True,
         "remote_runtime_mode": "calibration_fixture",
         "remote_non_certifying_assistance": True,
+        "conditions_compatible": True,
+        "remote_conditions_compatible": True,
         "published": True,
         "remote_reconstruction_verified": True,
         "passed": True,
@@ -234,7 +271,10 @@ def _qualification_failure(physical: dict[str, object]) -> dict[str, object]:
     return row
 
 
-def test_current_25h_dps_contract_has_exact_75_85_gates() -> None:
+def test_current_25h_dps_contract_has_exact_75_85_gates(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_verified_generated_references(monkeypatch)
     report = verify(CONFIG)
 
     assert report["passed"] is True
@@ -279,7 +319,278 @@ def test_dps_gate_rejects_gear_profile_identity_mismatch() -> None:
     assert binding["provisioning_gear_profile"] == "fire_mage"
 
 
-def test_runtime_calibration_identity_carries_canonical_gear_profile_id() -> None:
+def test_all_numeric_dps_gear_is_exact_content_addressed_wowsims(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_verified_generated_references(monkeypatch)
+    report = verify(CONFIG)
+
+    assert report["checks"]["all_numeric_targets_use_exact_pinned_wowsims_gear"]
+    assert report["checks"]["all_numeric_target_gear_is_locally_player_legal"]
+    assert all(
+        row["source_binding_checks"]["source_payload_transform"]
+        and row["source_binding_checks"]["source_sha256"]
+        and row["gear_manifest_sha256"] == row["transformed_manifest_sha256"]
+        for row in report["targets"]
+    )
+
+
+def test_static_verifier_ignores_legacy_reference_dps(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_verified_generated_references(monkeypatch, reference_dps=123.0)
+    original_load = dps_verifier._load
+
+    def mutated_load(path: Path) -> dict:
+        payload = original_load(path)
+        if path.name == "all_spec_references_cata_p4_v1.json":
+            for row in payload.get("references") or []:
+                row.setdefault("expected_output", {}).setdefault(
+                    "metrics", {}
+                )["dps"] = 9_999_999.0
+        return payload
+
+    monkeypatch.setattr(dps_verifier, "_load", mutated_load)
+
+    report = dps_verifier.verify(CONFIG)
+
+    assert report["passed"] is True
+    assert {row["reference_dps"] for row in report["targets"]} == {123.0}
+    assert all(
+        row["reference_basis"]
+        == "generated_verified_live_compatible_wowsims_dps"
+        for row in report["targets"]
+    )
+
+
+def test_local_gear_legality_hotfix_rows_are_parsed_from_checked_in_sql() -> None:
+    rows = validated_hotfix_item_rows()
+
+    assert set(rows) == {71086, 77949, 77950, 78369}
+    assert rows[71086]["Display"] == "Dragonwrath, Tarecgosa's Rest"
+    assert rows[77949]["InventoryType"] == 21
+    assert rows[77950]["InventoryType"] == 22
+
+
+def test_wowsims_source_binding_rejects_self_rehashed_dropped_frost_offhand() -> None:
+    profiles = json.loads(
+        (ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    references = json.loads(
+        (ROOT / "experiments/configs/all_spec_references_cata_p4_v1.json").read_text(
+            encoding="utf-8"
+        )
+    )["references"]
+    profile = json.loads(json.dumps(profiles["profiles"]["frost_death_knight"]))
+    reference = next(
+        row for row in references if row["spec_target_id"] == "frost_death_knight"
+    )
+    # Source index 15 is equipment slot 16 (offhand). Rehashing the altered
+    # overlay must not make it equivalent to the immutable source snapshot.
+    profile["items"][15] = {}
+    profile["transformed_manifest_sha256"] = canonical_gear_sha256(
+        canonical_wowsims_manifest(profile, profiles["slot_map"])
+    )
+
+    binding = validate_profile_source_binding(
+        profile=profile, reference=reference, slot_map=profiles["slot_map"]
+    )
+
+    assert binding["passed"] is False
+    assert binding["checks"]["source_payload_transform"] is False
+    assert len(binding["manifest"]) == 16
+
+
+def test_wowsims_source_binding_hashes_snapshot_bytes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    profiles = json.loads(
+        (ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    references = json.loads(
+        (ROOT / "experiments/configs/all_spec_references_cata_p4_v1.json").read_text(
+            encoding="utf-8"
+        )
+    )["references"]
+    profile = json.loads(json.dumps(profiles["profiles"]["frost_death_knight"]))
+    reference = json.loads(
+        json.dumps(
+            next(
+                row
+                for row in references
+                if row["spec_target_id"] == "frost_death_knight"
+            )
+        )
+    )
+    snapshot = tmp_path / "tampered.gear.json"
+    snapshot.write_text('{"items": []}\n', encoding="utf-8")
+    profile["source"]["snapshot"] = snapshot.name
+    reference["gear"]["source_snapshot"] = snapshot.name
+    monkeypatch.setattr(wowsims_gear_binding, "REPO_ROOT", tmp_path)
+
+    binding = validate_profile_source_binding(
+        profile=profile, reference=reference, slot_map=profiles["slot_map"]
+    )
+
+    assert binding["passed"] is False
+    assert binding["checks"]["source_sha256"] is False
+    assert binding["checks"]["source_payload_transform"] is False
+
+
+def test_legacy_numeric_fixture_gear_label_is_informational() -> None:
+    profiles = json.loads(
+        (ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    references = json.loads(
+        (ROOT / "experiments/configs/all_spec_references_cata_p4_v1.json").read_text(
+            encoding="utf-8"
+        )
+    )["references"]
+    profile = profiles["profiles"]["assassination_rogue"]
+    reference = json.loads(
+        json.dumps(
+            next(
+                row
+                for row in references
+                if row["spec_target_id"] == "assassination_rogue"
+            )
+        )
+    )
+    # Average-Default is the test's p1_assassination primary configuration,
+    # so it cannot qualify the exact p4_assassination equipment profile.
+    reference["expected_output"]["result_key"] = (
+        "TestAssassination-Average-Default"
+    )
+
+    binding = validate_profile_source_binding(
+        profile=profile, reference=reference, slot_map=profiles["slot_map"]
+    )
+
+    assert binding["passed"] is True
+    assert (
+        binding["informational_checks"][
+            "numeric_fixture_result_selects_preset"
+        ]
+        is False
+    )
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "requirement",
+        "planned_requirement",
+        "gear_profile_id",
+        "source_sha256",
+        "transform_schema",
+        "transformed_manifest_sha256",
+        "applicability_authority",
+    ],
+)
+def test_generated_request_gear_binding_rejects_identity_drift(
+    mutation: str,
+) -> None:
+    profiles = json.loads(
+        (ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    references = json.loads(
+        (ROOT / "experiments/configs/all_spec_references_cata_p4_v1.json").read_text(
+            encoding="utf-8"
+        )
+    )["references"]
+    profile = profiles["profiles"]["frost_death_knight"]
+    reference = json.loads(
+        json.dumps(
+            next(
+                row
+                for row in references
+                if row["spec_target_id"] == "frost_death_knight"
+            )
+        )
+    )
+    gear = reference["gear"]
+    request_gear = {
+        "gear_profile_id": gear["gear_profile_id"],
+        "source_sha256": gear["source_sha256"],
+        "transform_schema": gear["transform_schema"],
+        "transformed_manifest_sha256": gear["transformed_manifest_sha256"],
+        "applicability_authority": gear[
+            "permanent_enchant_applicability_authority"
+        ],
+    }
+    reference["reference_conditions"]["comparison_manifest"] = {
+        "result_status": "generated_verified",
+        "source_setup": {"gear": request_gear},
+        "requirements": [
+            {
+                "id": "gear_manifest",
+                "equals": gear["transformed_manifest_sha256"],
+                "planned_equals": gear["transformed_manifest_sha256"],
+            }
+        ],
+    }
+    valid = validate_profile_source_binding(
+        profile=profile, reference=reference, slot_map=profiles["slot_map"]
+    )
+    assert valid["passed"] is True
+    assert valid["generated_request_gear_binding_required"] is True
+
+    if mutation in {"requirement", "planned_requirement"}:
+        reference["reference_conditions"]["comparison_manifest"]["requirements"][
+            0
+        ]["equals" if mutation == "requirement" else "planned_equals"] = "0" * 64
+    else:
+        request_gear[mutation] = "0" * 64
+
+    binding = validate_profile_source_binding(
+        profile=profile, reference=reference, slot_map=profiles["slot_map"]
+    )
+
+    assert binding["passed"] is False
+    assert any(
+        not passed
+        for name, passed in binding["checks"].items()
+        if name.startswith("generated_request_gear_")
+    )
+
+
+def test_numeric_gate_rejects_generic_or_unverified_overlay(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _patch_verified_generated_references(monkeypatch)
+    document = json.loads(
+        (ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    document["profiles"]["affliction_warlock"][
+        "permanent_enchant_applicability_authority"
+    ] = "dbc_stat_score_unverified_slot_applicability"
+    path = tmp_path / "gear.json"
+    path.write_text(json.dumps(document), encoding="utf-8")
+    monkeypatch.setattr(dps_verifier, "DEFAULT_WOWSIMS_GEAR_PROFILES", path)
+
+    report = dps_verifier.verify(CONFIG)
+
+    affliction = next(
+        row for row in report["targets"] if row["spec_target_id"] == "affliction_warlock"
+    )
+    assert report["passed"] is False
+    assert affliction["gear_profile_binding_verified"] is False
+    assert affliction["local_player_gear_legality_verified"] is False
+
+
+def test_runtime_calibration_uses_only_generated_verified_reference_dps(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     gear_profile_id = "wowsims_cata_p4_fire_mage"
     target = {
         "spec_target_id": "fire_mage",
@@ -300,7 +611,9 @@ def test_runtime_calibration_identity_carries_canonical_gear_profile_id() -> Non
             "gear_profile_id": gear_profile_id,
             "runtime_profile_id": gear_profile_id,
         },
-        "expected_output": {"metrics": {"dps": 100.0}},
+        # Legacy values are retained as provenance only and must not affect the
+        # generated live-compatible denominator.
+        "expected_output": {"metrics": {"dps": 9_999_999.0}},
     }
     scenario = {"primary": {"scenario_id": "calibration:fire_mage:primary"}}
     quality = {
@@ -371,6 +684,23 @@ def test_runtime_calibration_identity_carries_canonical_gear_profile_id() -> Non
         },
     }
 
+    generated_manifest = {
+        "reference_result_key": "generated:fire_mage:live-compatible",
+        "reference_dps": 100.0,
+        "source_contract_sha256": "1" * 64,
+        "request_sha256": "2" * 64,
+        "fixture_contract_sha256": "3" * 64,
+        "result_status": "generated_verified",
+    }
+    monkeypatch.setattr(
+        "tools.bot_ml.phase8_calibration_adapter.load_reference_request_binding",
+        lambda _target_spec: {
+            "valid": True,
+            "catalog_sha256": "4" * 64,
+            "comparison_manifest": generated_manifest,
+        },
+    )
+
     record = normalize_runtime_calibration(
         calibration,
         target_row=target,
@@ -382,6 +712,11 @@ def test_runtime_calibration_identity_carries_canonical_gear_profile_id() -> Non
     assert record["identity"]["gear_profile_id"] == gear_profile_id
     assert len(record["identity"]["gear_manifest_sha256"]) == 64
     assert record["identity"]["target_sha256"] == canonical_sha256(target)
+    assert record["metrics"]["reference_value"] == 100.0
+    assert (
+        record["metrics"]["reference_basis"]
+        == "generated_verified_live_compatible_wowsims_dps"
+    )
 
     calibration["previous_window"]["bots"][0]["gear_profile_observation"][
         "items"
@@ -740,6 +1075,8 @@ def test_campaign_state_retains_failure_and_counts_logical_success_separately(
         "git_head": git_commit,
         "max_tries_per_dps_spec": 2,
         "child_outer_timeout_sec": 1800,
+        "reference_condition_preflight_compatible": True,
+        "reference_condition_preflight_sha256": "f" * 64,
     }
     verification = {"verification_sha256": "e" * 64, "input_hashes": {}}
     state = write_campaign_state(
@@ -927,6 +1264,57 @@ def test_attempt_acceptance_rejects_missing_or_false_remote_fixture_provenance(
     assert attempt_accepted(row) is False
 
 
+@pytest.mark.parametrize(
+    "field", ["conditions_compatible", "remote_conditions_compatible"]
+)
+def test_attempt_acceptance_requires_local_and_hydrated_reference_compatibility(
+    field: str,
+) -> None:
+    physical = physical_attempt(
+        {
+            "attempt_index": 1,
+            "attempt_id": "qualification/demo",
+            "cohort_id": "dps85-demo",
+        },
+        1,
+    )
+    row = _accepted_result(physical)
+    row[field] = False
+
+    assert attempt_accepted(row) is False
+
+
+def test_static_reference_mismatch_does_not_reserve_a_physical_try(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output_root = tmp_path / "campaign"
+    args = dps_runner.parse_args(
+        [
+            "--acceptance-config",
+            str(CONFIG),
+            "--output-root",
+            str(output_root),
+        ]
+    )
+    monkeypatch.setattr(
+        dps_runner,
+        "verify_acceptance",
+        lambda _path: {
+            "passed": True,
+            "verification_sha256": "a" * 64,
+            "input_hashes": {},
+        },
+    )
+
+    with pytest.raises(
+        SystemExit,
+        match="preflight failed before physical try reservation",
+    ):
+        dps_runner.run_campaign(args)
+
+    assert not output_root.exists()
+
+
 def test_attempt_acceptance_rejects_failed_remote_transport() -> None:
     physical = physical_attempt(
         {
@@ -951,6 +1339,11 @@ def _remote_fixture_source(attempt: dict[str, object]) -> tuple[dict[str, object
         "runtime_mode": "calibration_fixture",
         "non_certifying_assistance": True,
         "identity": identity,
+        "reference_condition_compatibility": {
+            "target_spec": attempt["runtime_join_key"],
+            "conditions_compatible": True,
+            "reasons": [],
+        },
     }
     evaluation: dict[str, object] = {
         "schema": "all_spec_role_calibration_evaluation_v1",

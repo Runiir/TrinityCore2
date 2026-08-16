@@ -24,6 +24,7 @@ MARKSMAN_STATIONARY_SQL = ROOT / "sql/custom/world/2026_07_14_04_marksmanship_ca
 EMERGENCY_ADD_THREAT_SQL = ROOT / "sql/custom/world/2026_07_15_01_stonecore_emergency_add_threat.sql"
 WOWHEAD_GUIDE_ROTATION_SQL = ROOT / "sql/custom/world/2026_07_16_00_stonecore_wowhead_guide_rotations.sql"
 PROTECTION_HOLY_WRATH_SELF_SQL = ROOT / "sql/custom/world/2026_08_09_00_phase9_protection_holy_wrath_self_center.sql"
+FROST_PLAYER_OBSERVED_SQL = ROOT / "sql/custom/world/2026_08_16_00_frost_death_knight_player_observed_priority.sql"
 BOT_POLICY = ROOT / "src/server/game/Bots/BotTelemetryPolicy.cpp"
 BOT_BUFFER = ROOT / "src/server/game/Bots/BotTelemetryBuffer.cpp"
 BOT_SEGMENTS = ROOT / "src/server/game/Bots/BotExperimentCoordinator.cpp"
@@ -81,6 +82,124 @@ def test_marksmanship_cast_time_shots_require_stationary_execution() -> None:
 
     assert "`action`.`spell_id` IN (19434, 56641)" in migration
     assert "`action`.`requires_stationary` = 1" in migration
+
+
+def test_frost_death_knight_uses_typed_player_observed_masterfrost_candidates() -> None:
+    migration = read(FROST_PLAYER_OBSERVED_SQL)
+
+    assert "`action`.`spell_id` = 48265" in migration
+    assert "`action`.`maintain_aura_id` = 48265" in migration
+    assert "player_observed_priority_v1" in migration
+    assert "51124, 55078" in migration
+    assert "1, 0, 59052" in migration
+    assert "0.70, 1, 0" in migration
+    assert "`action`.`maintain_aura_id` = 55078" in migration
+    assert "`action`.`refresh_aura_below_ms` = 3000" in migration
+    assert "maintain_owned_aura" in migration
+    assert "`action`.`category` = 'resource_generator'" in migration
+    assert "runic_power_filler,lowest_priority" in migration
+    assert "`action`.`maintain_aura_id` = 0" in migration
+    assert "EQUIPMENT_SLOT" not in migration
+    assert "item_swap" not in migration
+
+
+def test_frost_observations_change_the_winning_typed_alternate() -> None:
+    migration = read(FROST_PLAYER_OBSERVED_SQL)
+    profile = read(PLAYER_BOT_ACTION_PROFILE)
+    manager = read(BOT_MGR)
+
+    def authored_priority(spell_id: int, marker: str) -> tuple[float, int]:
+        match = re.search(
+            rf"SELECT `profile`\.`id`, \d+, {spell_id}, .*?"
+            rf"'[^']*{marker}[^']*',\s*([0-9.]+),\s*(\d+),",
+            migration,
+            flags=re.S,
+        )
+        assert match, (spell_id, marker)
+        return float(match.group(1)), int(match.group(2))
+
+    authored = {
+        "frost_strike_cap": (*authored_priority(49143, "cap_protection"), 49143),
+        "killing_machine_obliterate": (*authored_priority(49020, "killing_machine"), 49020),
+        "rime_howling_blast": (*authored_priority(49184, "rime"), 49184),
+    }
+
+    # These are the same typed gates consumed by EvaluateCompiledConditions;
+    # mechanic tags remain descriptive and never manufacture a proc/resource.
+    assert 'return "missing_required_self_aura"' in profile
+    assert 'return "ready_rune_gate"' in profile
+    assert 'return "primary_power_gate"' in profile
+    assert "candidate.Profile.PriorityBucket < current->Profile.PriorityBucket" in manager
+    assert "candidate.Score > current->Score" in manager
+
+    def choose(runic_power_ratio: float, killing_machine: bool, rime: bool) -> int | None:
+        valid: list[tuple[int, float, int]] = []
+        if runic_power_ratio >= 0.70:
+            score, bucket, spell = authored["frost_strike_cap"]
+            valid.append((bucket, -score, spell))
+        if killing_machine and runic_power_ratio <= 0.70:
+            score, bucket, spell = authored["killing_machine_obliterate"]
+            valid.append((bucket, -score, spell))
+        if rime and runic_power_ratio <= 0.90:
+            score, bucket, spell = authored["rime_howling_blast"]
+            valid.append((bucket, -score, spell))
+        return min(valid)[2] if valid else None
+
+    assert choose(0.85, killing_machine=True, rime=True) == 49143
+    assert choose(0.50, killing_machine=True, rime=True) == 49020
+    assert choose(0.50, killing_machine=False, rime=True) == 49184
+    assert choose(0.50, killing_machine=False, rime=False) is None
+
+
+def test_frost_candidate_telemetry_observes_resources_procs_and_owned_diseases() -> None:
+    profile = read(PLAYER_BOT_ACTION_PROFILE)
+
+    assert 'profile.SpecTag == "frost_death_knight"' in profile
+    assert '\\"bot_action_observation_v1\\"' in profile
+    assert '\\"ready_runes\\"' in profile
+    assert 'bot->HasAura(51124)' in profile
+    assert 'bot->HasAura(59052)' in profile
+    assert 'target->GetAura(55078, bot->GetGUID())' in profile
+    assert 'target->GetAura(55095, bot->GetGUID())' in profile
+    assert '\\"owned_55078_remaining_ms\\"' in profile
+    assert '\\"owned_55095_remaining_ms\\"' in profile
+    assert '\\"observation\\"' in profile
+    assert '\\"priority_bucket\\"' in profile
+    assert '\\"mechanic_tags\\"' in profile
+
+
+def test_frost_free_rune_proc_uses_the_same_cost_modifiers_as_native_spell_checks() -> None:
+    profile = read(PLAYER_BOT_ACTION_PROFILE)
+    executor = read(PLAYER_BOT_EXECUTOR)
+
+    for source in (profile, executor):
+        assert "GetSpellModOwner()" in source
+        assert "SpellModOp::PowerCost0" in source
+        assert "ApplySpellMod(spellInfo" in source
+
+
+def test_frost_unholy_presence_is_bound_through_normal_provisioning_catalogs() -> None:
+    actions = json.loads(read(ROOT / "experiments/configs/cata_434_action_profiles.json"))
+    targets = json.loads(read(ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.json"))
+    frost = next(
+        row for row in targets["targets"]
+        if row["spec_target_id"] == "frost_death_knight"
+    )
+    catalog_builder = read(ROOT / "tools/bot_ml/build_all_spec_phase1_catalogs.py")
+    provisioner = read(ROOT / "tools/bot_ml/build_validation_provisioning.py")
+
+    action_spells = actions["action_profile_spells_by_spec"]["frost_death_knight"]
+    assert 48265 in action_spells
+    assert 48266 not in action_spells
+    assert 48265 in frost["action_profile_spell_ids"]
+    assert 48266 not in frost["action_profile_spell_ids"]
+    assert "unholy_presence" in frost["pet_form_stance_presence"]
+    assert "frost_presence" not in frost["pet_form_stance_presence"]
+    assert '"frost_death_knight": [48265]' in catalog_builder
+    assert '"frost_death_knight": [45462, 47528, 48265' in catalog_builder
+    assert "spec_profile_spells" in provisioner
+    assert "profile_spells + spec_profile_spells + proficiency_spells" in provisioner
+    assert "INSERT INTO `characters`.`character_spell`" in provisioner
 
 
 def function_body(source: str, signature: str) -> str:
@@ -714,8 +833,12 @@ def test_reference_calibration_reports_only_conditions_it_applies():
     assert '\\"engineering_cooldowns\\":' in calibration_json
     assert '\\"racial_cooldowns\\":' in calibration_json
     assert '\\"consumables\\":' in calibration_json
-    assert "potionObserved" in calibration_json
-    assert "racialCooldownObserved" in calibration_json
+    assert '\\"potions\\":false' in calibration_json
+    assert '\\"engineering_cooldowns\\":false' in calibration_json
+    assert '\\"racial_cooldowns\\":false' in calibration_json
+    assert '\\"dynamic_action_observation\\"' in calibration_json
+    assert "actionAttemptCount(79476)" in calibration_json
+    assert "actionAttemptCount(82174)" in calibration_json
 
 
 def test_requested_wowhead_profiles_and_target_count_aware_misdirection_are_explicit():
@@ -5686,7 +5809,12 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "UsesRangedAoeCalibrationLane(Cohort().CalibrationTargetSpec)" in population
     assert "demonologyAoeMode" in population
     assert "demonologyCloseRangeMode" not in population
-    assert "IsolatedSingleTargetDummyEntry = 44548" in population
+    assert "IsolatedSingleTargetDummyEntry =" in manager
+    assert "BotCalibrationFixtureContractGenerated::TargetEntry" in manager
+    generated_fixture = (
+        root / "src/server/game/Bots/BotCalibrationFixtureContractGenerated.h"
+    ).read_text()
+    assert "inline constexpr uint32_t TargetEntry = 44548;" in generated_fixture
     assert "IsolatedSingleTargetDummyX = -9060.0f" in population
     assert "IsolatedSingleTargetDummyY = 520.0f" in population
     assert "IsolatedSingleTargetRangedX = -9045.0f" in population
@@ -5719,7 +5847,8 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "std::to_string(candidateGuid), 0, x, y, calibrationSpawnZ" in population
     assert "MinimumIsolatedDummyClearance = 45.0f" in population
     assert "map->SummonCreature(IsolatedSingleTargetDummyEntry" in population
-    assert "SummonCreatureExtraArgs().SetSummonDuration(" in population
+    assert "fixtureArgs.SetSummonDuration(" in population
+    assert "fixtureArgs.SummonHealth = IsolatedSingleTargetMaxHealth" in population
     assert "20 * 60 * IN_MILLISECONDS" in population
     assert "bot->IsValidAttackTarget(other)" in population
     assert "CalibrationFixtureTargetNearestHostileClearance" in population
@@ -5760,6 +5889,14 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "CompleteCalibrationScoredWindow()" in update
     assert "metrics.TargetCount = std::max(metrics.TargetCount, hostileCount)" not in update
     assert "uint32 hostileCount = Cohort().CalibrationAoePhase ? uint32(dummies.size()) : 1;" in update
+    assert 'bool const strictSingleTarget = Cohort().CalibrationMode == "single_target_300";' in update
+    assert "false, strictSingleTarget, !strictSingleTarget" in update
+
+    resolver = function_body(
+        manager, "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction"
+    )
+    assert "exactSingleTargetCalibration && candidate.SpellId == 42650" in resolver
+    assert 'candidate.RejectReason = "reference_prepull_action_excluded"' in resolver
 
     notify_damage = function_body(manager, "void BotWorldPopulationMgr::NotifyCombatDamage")
     assert "calibration->second.LastDamageMsByTarget.size()" in notify_damage
@@ -5776,15 +5913,21 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "external_bis_target_configured" in manager
     assert "EnsureCalibrationCohortGroup();" in manager
     assert "stonecore_party_owned_buffs" in manager
-    assert "full_raid_reference_auras" in manager
+    assert "phase8_external_windows_observation_v1" in manager
+    assert "temporal_external_auras_absent" in manager
     assert "ApplyCalibrationReferenceConditions(bot, target)" in update
     reference_conditions = function_body(manager, "std::pair<bool, bool> BotWorldPopulationMgr::ApplyCalibrationReferenceConditions")
-    for spell_id in ["79102", "53646", "79058", "24932", "2895", "8515", "8076", "82930", "57669", "79470", "79471", "79472", "2825", "1490", "22959", "81326", "58567"]:
+    for spell_id in ["79102", "53646", "79058", "24932", "2895", "8515", "8076", "82930", "57669", "79470", "79471", "79472", "1490", "22959", "81326", "58567"]:
         assert spell_id in reference_conditions
+    assert "2825" not in reference_conditions
     assert "bot->getClass() != CLASS_PALADIN" in reference_conditions
     assert "reference debuffs on that primary target" in reference_conditions
     assert "sunder->SetStackAmount(3)" in reference_conditions
-    assert "target->HasAura(spellId)" in reference_conditions
+    assert "target->GetAura(spellId, bot->GetGUID())" in reference_conditions
+    assert "phase8_reference_condition_observation_v1" in manager
+    assert "ObserveCalibrationReferenceConditions" in manager
+    assert "ReferenceTargetAuraOwnerMismatchSamples" in manager
+    assert "UnexpectedExternalBleedActiveSamples" in manager
     assert "ReferenceTargetDebuffsReady" in manager
     assert "ReferenceHeroismWindowObserved" in manager
     assert '\\"reference_setup\\"' in manager

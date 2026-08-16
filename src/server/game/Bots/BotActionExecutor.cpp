@@ -75,6 +75,12 @@ bool HasEnoughPowerForSpell(Player const* bot, SpellInfo const* spellInfo)
         if (runeCost && !runeCost->NoRuneCost())
         {
             std::array<int32, 3> required = { int32(runeCost->RuneCost[0]), int32(runeCost->RuneCost[1]), int32(runeCost->RuneCost[2]) };
+            // Match Spell::CheckRuneCost: player-observed spell modifiers can
+            // reduce an individual rune cost to zero.  Do not reject a native
+            // cast merely because the unmodified DBC row still has a cost.
+            if (Player* modOwner = bot->GetSpellModOwner())
+                for (int32& runeRequirement : required)
+                    modOwner->ApplySpellMod(spellInfo, SpellModOp::PowerCost0, runeRequirement);
             uint8 deathRunes = 0;
             for (uint8 i = 0; i < MAX_RUNES; ++i)
             {

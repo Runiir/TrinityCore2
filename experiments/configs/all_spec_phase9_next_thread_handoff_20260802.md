@@ -4,6 +4,10 @@
 
 This document is the continuation contract for the approved program in `.codex/plans/all_class_sc_plan.md`. It is not a replacement design exercise and is not a request to enter Plan mode. Execute from `master`, which now contains the completed Stonecore branch; the current top section records the authoritative Phase 9 completion checkpoint.
 
+## Authoritative run-to-completion correction (2026-08-16)
+
+New Phase 9 Stonecore qualification runs have no overall wall-clock deadline. Each physical try remains active until the strict route clears, the server/watchdog emits an attributable terminal liveness or gameplay failure, or the controller is interrupted. Heartbeat command bounds, semantic-progress plateau, no-progress, repeated-decision, death-loop, machine-failure, signal handling, and process-group cleanup remain fail-closed. A terminal failed try retains its immutable evidence and consumes its ordinal; the next invocation may allocate another physical try without a retry-count ceiling. Historical references below to 2100-second budgets describe old runs and are not the current execution contract. This correction does not change the isolated 300-second DPS benchmark.
+
 Phases 0-9 are complete. Phase 10, `adaptive_concurrency_discovery`, is the next phase and has not started. Phases 11-12 remain pending on their predecessor gates.
 
 ## Master integration checkpoint

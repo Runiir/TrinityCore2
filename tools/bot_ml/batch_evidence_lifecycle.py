@@ -257,6 +257,14 @@ def _calibration_scoring_contract(report: Mapping[str, Any]) -> dict[str, Any]:
     metrics = metrics if isinstance(metrics, Mapping) else {}
     identity = record.get("identity")
     identity = identity if isinstance(identity, Mapping) else {}
+    compatibility = record.get("reference_condition_compatibility")
+    compatibility = compatibility if isinstance(compatibility, Mapping) else {}
+    runtime_reference_facts = compatibility.get("runtime_reference_facts")
+    runtime_reference_facts = (
+        runtime_reference_facts
+        if isinstance(runtime_reference_facts, Mapping)
+        else {}
+    )
     record_sha256 = canonical_sha256(record) if record else ""
     reported_record_sha256 = str(evaluation.get("record_sha256") or "")
     if record and reported_record_sha256 != record_sha256:
@@ -281,6 +289,80 @@ def _calibration_scoring_contract(report: Mapping[str, Any]) -> dict[str, Any]:
         "optimization_reference_ratio": DPS_OPTIMIZATION_REFERENCE_RATIO,
         "record_sha256": record_sha256,
         "policy_sha256": policy_sha256,
+        "reference_condition_contract": {
+            "reference_conditions": compatibility.get("reference_conditions") or {},
+            "expected_manifest": compatibility.get("expected_manifest") or {},
+            "gear_source_sha256": runtime_reference_facts.get(
+                "gear_source_sha256"
+            ),
+            "reference_gear_manifest_sha256": runtime_reference_facts.get(
+                "reference_gear_manifest_sha256"
+            ),
+            "gear_transform_schema": runtime_reference_facts.get(
+                "gear_transform_schema"
+            ),
+            "gear_transform_authority": runtime_reference_facts.get(
+                "gear_transform_authority"
+            ),
+            "reference_result_key": runtime_reference_facts.get(
+                "reference_result_key"
+            ),
+            "reference_value": runtime_reference_facts.get("reference_value"),
+            "source_contract_sha256": runtime_reference_facts.get(
+                "source_contract_sha256"
+            ),
+            "request_sha256": runtime_reference_facts.get("request_sha256"),
+            "fixture_contract_sha256": runtime_reference_facts.get(
+                "fixture_contract_sha256"
+            ),
+            "fixture_contract_binding_valid": runtime_reference_facts.get(
+                "fixture_contract_binding_valid"
+            ),
+            "result_status": runtime_reference_facts.get("result_status"),
+            "reference_request_binding_valid": runtime_reference_facts.get(
+                "reference_request_binding_valid"
+            ),
+            "reference_request_catalog_sha256": runtime_reference_facts.get(
+                "reference_request_catalog_sha256"
+            ),
+        },
+    }
+
+
+def _raw_event_envelope_identity(
+    raw_rows: Sequence[Mapping[str, Any]], *, batch_id: str
+) -> dict[str, Any]:
+    cohort_ids = {
+        str(row.get("cohort_id") or "")
+        for row in raw_rows
+        if isinstance(row, Mapping)
+    }
+    attempt_indices = {
+        row.get("attempt_index")
+        for row in raw_rows
+        if isinstance(row, Mapping)
+    }
+    if (
+        cohort_ids == {""}
+        or len(cohort_ids) != 1
+        or len(attempt_indices) != 1
+    ):
+        raise BatchLifecycleError(
+            "raw event envelopes do not have one cohort/attempt identity"
+        )
+    attempt_index = next(iter(attempt_indices))
+    if (
+        isinstance(attempt_index, bool)
+        or not isinstance(attempt_index, int)
+        or attempt_index <= 0
+    ):
+        raise BatchLifecycleError("raw event envelope attempt index is invalid")
+    return {
+        "schema": "bot_raw_event_envelope_identity_v1",
+        "batch_id": batch_id,
+        "cohort_id": next(iter(cohort_ids)),
+        "attempt_index": attempt_index,
+        "row_count": len(raw_rows),
     }
 
 
@@ -353,6 +435,9 @@ def capture_batch(
             raise BatchLifecycleError(
                 "parsed raw event envelopes do not match retained console bytes"
             )
+        materialized_exact_manifests["raw_event_envelope_identity"] = (
+            _raw_event_envelope_identity(raw_rows, batch_id=batch_id)
+        )
         if semantic_evidence_kind == "dps_calibration":
             materialized_exact_manifests["calibration_scoring_contract"] = (
                 _calibration_scoring_contract(acceptance_report)
@@ -550,6 +635,15 @@ def validate_capture(batch_root: Path) -> dict[str, Any]:
                     encoding="utf-8"
                 )
             )
+            recomputed_envelope_identity = _raw_event_envelope_identity(
+                retained_rows, batch_id=str(manifest.get("batch_id") or "")
+            )
+            if exact_manifests.get("raw_event_envelope_identity") != (
+                recomputed_envelope_identity
+            ):
+                raise RawEvidenceBindingError(
+                    "raw event envelope identity does not match retained rows"
+                )
             raw_projection = projection_from_raw(
                 evidence_kind=str(semantic_contract.get("evidence_kind") or ""),
                 payloads=parsed_payloads,

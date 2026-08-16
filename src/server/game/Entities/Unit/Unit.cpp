@@ -1984,6 +1984,8 @@ static float GetArmorReduction(float armor, uint8 attackerLevel)
 
 void Unit::AttackerStateUpdate(Unit* victim, WeaponAttackType attType, bool extra)
 {
+    sBotWorldPopulationMgr->NotifyCombatAttackAttempt(this, victim);
+
     if (HasUnitState(UNIT_STATE_CANNOT_AUTOATTACK) || HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED))
         return;
 

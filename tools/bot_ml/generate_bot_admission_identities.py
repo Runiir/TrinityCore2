@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import re
+import tempfile
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -420,7 +421,13 @@ def main() -> int:
             raise SystemExit("generated bot admission identity header is stale")
         return 0
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(rendered, encoding="utf-8")
+    with tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", dir=args.output.parent,
+        prefix=f".{args.output.name}.", suffix=".tmp", delete=False,
+    ) as temporary:
+        temporary.write(rendered)
+        temporary_path = Path(temporary.name)
+    temporary_path.replace(args.output)
     return 0
 
 

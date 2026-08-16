@@ -30,10 +30,10 @@ struct Identity
     char const* PetSpellbookSha256;
 };
 
-inline constexpr char SourceContentSha256[] = "04cd26c5ce9885d6ce2cae8d048651b642448fb2671101355a1a653f2a24ed3f";
-inline constexpr char TargetsSourceSha256[] = "527306d721bd3daaf782e2bc06e0f2dda4ed6fe2fa0d0334a9ea0aa19f47ea25";
+inline constexpr char SourceContentSha256[] = "87ee76e6e2aef0fe71185e4d93df6f1551a839670bba9bb800a647b9952594f5";
+inline constexpr char TargetsSourceSha256[] = "a1ef701d42d3aab9f9d63889bbb10e17302f3bc4a21e36c17b60e72a14446b39";
 inline constexpr char GearProfilesSourceSha256[] = "584b8358ed150ae49a08c51ed704146bce6100010ecab146950282c07867d449";
-inline constexpr char WowsimsGearProfilesSourceSha256[] = "f3a9707d4814f1c0507899a0183597010350dfccf751c16a6a500c602cd59740";
+inline constexpr char WowsimsGearProfilesSourceSha256[] = "1cdefc5e103381dc169b53ec9e225d2aa4a5f7cfd0f5a6772852d38ff88505cb";
 
 inline constexpr std::array<std::uint32_t, 618> TalentSpellIds =
 {{
@@ -112,28 +112,28 @@ inline constexpr std::array<Identity, 31> Identities =
         { "holy_priest", 5, 813, 122, 21, "holy_priest", "dab8eb92a5c475bf26b291c4b0a115deb100888077e6b8175f131451afa19ff7", 0, 0, 0, 0, "" },
         { "restoration_shaman", 7, 262, 143, 20, "restoration_shaman", "9fde4c142eab3541b5e15e7e62052de14f071070c3b7ac377a4a7c3ff97a34e8", 0, 0, 0, 0, "" },
         { "restoration_druid", 11, 748, 163, 22, "restoration_druid", "d79f7395dc7c6b12db1eb04ca47ffd8e06ce2d4a14ed8382d2d7cde5957361c2", 0, 0, 0, 0, "" },
-        { "arms_warrior", 1, 746, 185, 20, "arms_warrior", "0b7e80c9972e4ff665f687c546a1c0653a0619a383ac6df318b9ebd288b78b07", 0, 0, 0, 0, "" },
-        { "fury_warrior", 1, 815, 205, 20, "fury_warrior", "fa8b5427904b9818fab553477b629412b5a4665e2ecbb743e8cccba4f1119ad0", 0, 0, 0, 0, "" },
-        { "retribution_paladin", 2, 855, 225, 21, "retribution_paladin", "537418f6f917c8fb79b75d52f7742d95100bb1026cb756ab10c1873c9f417856", 0, 0, 0, 0, "" },
+        { "arms_warrior", 1, 746, 185, 20, "arms_warrior", "4ef8b400c246059c6d2291c3317646f8f7e17f9caa6ead35097ba89b526eb11c", 0, 0, 0, 0, "" },
+        { "fury_warrior", 1, 815, 205, 20, "fury_warrior", "3789e7708f5126774158660b6bee55a81744d4ab38cc16f9fa5ec801076514c9", 0, 0, 0, 0, "" },
+        { "retribution_paladin", 2, 855, 225, 21, "retribution_paladin", "953b280ec76c3154fa2dbd528fe43e6f770d99a4e436d1e88850960d407b6971", 0, 0, 0, 0, "" },
         { "beast_mastery_hunter", 3, 811, 246, 20, "beast_mastery_hunter", "067120e0b1f19f326daa03642ca5a99de19b096ebfe3ee2fdbb9f1bf3e28ed9f", 8700113, 8959, 0, 11, "be83c8a872bfb2b7fca6d9fb26d6aa1a0ebb1e9b00eb93d36d1f2ffa36254b74" },
-        { "marksmanship_hunter", 3, 807, 266, 19, "marksmanship_hunter", "cc46342f8d4dc8fdf672a4489febb29b2ad020d8e44b349d9e7dbcaf78b84709", 8700114, 8959, 11, 11, "be83c8a872bfb2b7fca6d9fb26d6aa1a0ebb1e9b00eb93d36d1f2ffa36254b74" },
+        { "marksmanship_hunter", 3, 807, 266, 19, "marksmanship_hunter", "4fa6b70730a55d4dd2ee8220a5277e5c2db884febbd8e127db77db48d383d7d6", 8700114, 8959, 11, 11, "be83c8a872bfb2b7fca6d9fb26d6aa1a0ebb1e9b00eb93d36d1f2ffa36254b74" },
         { "survival_hunter", 3, 809, 285, 19, "wowsims_cata_p4_survival_hunter", "ee445820a89cd272bbe71674e1b2f535277400d90fd220ac8734f780a20b16f1", 8700115, 8959, 22, 11, "be83c8a872bfb2b7fca6d9fb26d6aa1a0ebb1e9b00eb93d36d1f2ffa36254b74" },
         { "assassination_rogue", 4, 182, 304, 19, "assassination_rogue", "8de275d63f7462fe5b32353a9492577a9af822679138b2a22dd72201a9938835", 0, 0, 33, 0, "" },
-        { "combat_rogue", 4, 181, 323, 18, "combat_rogue", "2dd7359b8b6837691d666c651a44d8b4ced1059df2bc6d37fe71321a593673cc", 0, 0, 33, 0, "" },
+        { "combat_rogue", 4, 181, 323, 18, "combat_rogue", "2cfe2b75162a5489d13a307c188ecf0140f17f97797161e4c33d687d2d87a37e", 0, 0, 33, 0, "" },
         { "subtlety_rogue", 4, 183, 341, 19, "subtlety_rogue", "2dd7359b8b6837691d666c651a44d8b4ced1059df2bc6d37fe71321a593673cc", 0, 0, 33, 0, "" },
-        { "frost_death_knight", 6, 399, 360, 19, "frost_death_knight", "f61542c5e09882c143d2391d85a2745e766cf23bf002d5f8f9d66429d4343288", 0, 0, 33, 0, "" },
-        { "unholy_death_knight", 6, 400, 379, 20, "unholy_death_knight", "f61542c5e09882c143d2391d85a2745e766cf23bf002d5f8f9d66429d4343288", 0, 0, 33, 0, "" },
-        { "elemental_shaman", 7, 261, 399, 20, "elemental_shaman", "b430a91db0062340180dcdcceacf6614747c6fb58781507a47c2507e93994e7d", 0, 0, 33, 0, "" },
+        { "frost_death_knight", 6, 399, 360, 19, "frost_death_knight", "20269815a2b49d81eb3d58062df6c6f6531df530f5bf55e8bed8324c3660af43", 0, 0, 33, 0, "" },
+        { "unholy_death_knight", 6, 400, 379, 20, "unholy_death_knight", "bb1c583ed1c4db7cbd939e757948589dcb0d477e3f345683288dc7da3de48a40", 0, 0, 33, 0, "" },
+        { "elemental_shaman", 7, 261, 399, 20, "elemental_shaman", "7c5fcab9268defa7bc6b5185a3df24ab3122c322141a16445d3cbbaf63c94d00", 0, 0, 33, 0, "" },
         { "enhancement_shaman", 7, 263, 419, 18, "wowsims_cata_p4_enhancement_shaman", "b49a5127993c2eee7250dddc49f694a1319dc1f17b232e1951ff57e938778983", 0, 0, 33, 0, "" },
         { "arcane_mage", 8, 799, 437, 20, "arcane_mage", "f59e94735b22d4b2fabf9cec084a0063118f025e6086c410f1be18ccfca05cfc", 0, 0, 33, 0, "" },
         { "fire_mage", 8, 851, 457, 20, "wowsims_cata_p4_fire_mage", "9e694c50d03d8609751267a140c044b4a47a1369f3b18f774c95a5a81a41acac", 0, 0, 33, 0, "" },
         { "frost_mage", 8, 823, 477, 19, "frost_mage", "f59e94735b22d4b2fabf9cec084a0063118f025e6086c410f1be18ccfca05cfc", 0, 0, 33, 0, "" },
-        { "affliction_warlock", 9, 871, 496, 18, "affliction_warlock", "0dde46f56f055e3370cdf707b70726d29f2b041bfd336484d81db91573e82897", 0, 0, 33, 0, "" },
+        { "affliction_warlock", 9, 871, 496, 18, "affliction_warlock", "b5391d35287eb5c28babc0a5b11760147607ef46fc2a5890fba26a46dea2c2f4", 0, 0, 33, 0, "" },
         { "demonology_warlock", 9, 867, 514, 20, "demonology_warlock", "62d760e37ae84585685a8563a086add16bfa38a6b98790d8cc575b29249a7e53", 0, 0, 33, 0, "" },
         { "destruction_warlock", 9, 865, 534, 20, "destruction_warlock", "0dde46f56f055e3370cdf707b70726d29f2b041bfd336484d81db91573e82897", 0, 0, 33, 0, "" },
         { "shadow_priest", 5, 795, 554, 21, "wowsims_cata_p4_shadow_priest", "bd3a31288d0f01526bc8f798afd2a4973cbe9d29d1854afc52e8cf26262edb51", 0, 0, 33, 0, "" },
         { "balance_druid", 11, 752, 575, 22, "wowsims_cata_p4_balance_druid", "67bc86c55fc10ee87228dd5aa6a4076b45fbd1009a82650712cee686fb4ea55a", 0, 0, 33, 0, "" },
-        { "feral_druid_dps", 11, 750, 597, 21, "feral_druid_dps", "d97b28c7f836d38d36f232437f81a857f4f606ec7ff61dc8eaa8063ae77206c4", 0, 0, 33, 0, "" },
+        { "feral_druid_dps", 11, 750, 597, 21, "feral_druid_dps", "286c802722ae374a36b8938a8538b5021fbaa7a0bba8e10e6464fcc717a406a9", 0, 0, 33, 0, "" },
 }};
 }
 

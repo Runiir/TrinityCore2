@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotAdmissionIdentityGenerated.h"
+#include "Bots/BotCalibrationFixtureContractGenerated.h"
 #include "Bots/BotActionExecutor.h"
 #include "Bots/BotAdaptiveDrudgeStrategy.h"
 #include "Bots/BotAdaptiveAtramedesStrategy.h"
@@ -72,6 +73,7 @@
 #include "WorldPacket.h"
 #include "Server/Packets/QuestPackets.h"
 #include "Server/Packets/NPCPackets.h"
+#include "Server/Packets/SpellPackets.h"
 #include "Util.h"
 
 #include <array>
@@ -121,13 +123,207 @@ char const* RuntimeModeName(BotWorldRuntimeMode mode)
     return "unknown";
 }
 
+bool CalibrationSpecUsesMana(std::string const& targetSpec)
+{
+    static std::unordered_set<std::string> const ManaSpecs = {
+        "affliction_warlock", "arcane_mage", "balance_druid",
+        "demonology_warlock", "destruction_warlock", "discipline_priest",
+        "elemental_shaman", "enhancement_shaman", "fire_mage", "frost_mage",
+        "holy_paladin", "holy_priest", "protection_paladin",
+        "restoration_druid", "restoration_shaman", "retribution_paladin",
+        "shadow_priest",
+    };
+    return ManaSpecs.find(targetSpec) != ManaSpecs.end();
+}
+
+// WoWSims' MakeSingleTargetEncounter expresses each execute proportion as the
+// fraction of the exact 300-second Settings encounter spent below that health
+// threshold: 90%, 35%, 25%, and 20%. These deterministic, non-boundary health
+// values preserve every threshold band without adding damage or teaching a bot
+// fixture timing. This schedule is used only by the isolated non-certifying
+// calibration target.
+struct CalibrationExecuteHealthWindow
+{
+    char const* Phase;
+    uint32 StartMs;
+    uint32 EndMs;
+    uint8 TargetHealthPct;
+    uint8 LowerBoundPct;
+    bool LowerBoundInclusive;
+    uint8 UpperBoundPct;
+    bool UpperBoundInclusive;
+};
+
+static constexpr uint32 CalibrationSingleTargetDurationMs = 300000;
+static constexpr std::array<CalibrationExecuteHealthWindow, 5> CalibrationExecuteHealthWindows = {{
+    { "above_90",       0,  30000, 95, 90, false, 100, true  },
+    { "between_35_90", 30000, 195000, 50, 35, false,  90, true  },
+    { "between_25_35",195000, 225000, 30, 25, false,  35, true  },
+    { "between_20_25",225000, 240000, 22, 20, false,  25, true  },
+    { "below_20",     240000, 300000, 19,  0, true,   20, false },
+}};
+
+static_assert(CalibrationExecuteHealthWindows.front().StartMs == 0);
+static_assert(CalibrationExecuteHealthWindows.back().EndMs == CalibrationSingleTargetDurationMs);
+static_assert(CalibrationExecuteHealthWindows[0].EndMs == CalibrationExecuteHealthWindows[1].StartMs);
+static_assert(CalibrationExecuteHealthWindows[1].EndMs == CalibrationExecuteHealthWindows[2].StartMs);
+static_assert(CalibrationExecuteHealthWindows[2].EndMs == CalibrationExecuteHealthWindows[3].StartMs);
+static_assert(CalibrationExecuteHealthWindows[3].EndMs == CalibrationExecuteHealthWindows[4].StartMs);
+
+size_t CalibrationExecuteHealthWindowIndex(uint64 elapsedMs)
+{
+    for (size_t index = 0; index < CalibrationExecuteHealthWindows.size(); ++index)
+        if (elapsedMs < CalibrationExecuteHealthWindows[index].EndMs)
+            return index;
+    return CalibrationExecuteHealthWindows.size() - 1;
+}
+
 struct HunterPetIdentitySnapshot
 {
     uint32 PetId = 0;
     uint32 PetEntry = 0;
     std::vector<std::pair<uint32, uint8>> Spellbook;
     std::string SpellbookSha256;
+    std::vector<uint32> AutocastSpellIds;
 };
+
+struct OrdinaryPetSpellIdentity
+{
+    uint32 SpellId = 0;
+    uint8 Active = 0;
+    uint8 Type = 0;
+};
+
+struct OrdinaryPetSetupSnapshot
+{
+    bool Present = false;
+    bool InWorld = false;
+    bool Alive = false;
+    bool Owned = false;
+    bool Permanent = false;
+    ObjectGuid Guid;
+    uint32 Entry = 0;
+    uint32 FamilyId = 0;
+    uint32 PetType = uint32(MAX_PET_TYPE);
+    uint32 CreatedBySpellId = 0;
+    uint32 Health = 0;
+    uint32 MaxHealth = 0;
+    uint32 PowerType = 0;
+    uint32 Power = 0;
+    uint32 MaxPower = 0;
+    std::vector<OrdinaryPetSpellIdentity> Spellbook;
+    std::string SpellbookSha256;
+    std::vector<uint32> AutocastSpellIds;
+};
+
+std::string OrdinaryPetSpellbookSha256(
+    std::vector<OrdinaryPetSpellIdentity> const& spellbook)
+{
+    std::ostringstream canonical;
+    for (size_t index = 0; index < spellbook.size(); ++index)
+    {
+        if (index)
+            canonical << ';';
+        OrdinaryPetSpellIdentity const& spell = spellbook[index];
+        canonical << spell.SpellId << ':' << uint32(spell.Active)
+                  << ':' << uint32(spell.Type);
+    }
+    std::string digest = ByteArrayToHexStr(
+        Trinity::Crypto::SHA256::GetDigestOf(canonical.str()));
+    std::transform(digest.begin(), digest.end(), digest.begin(),
+        [](unsigned char c) { return char(std::tolower(c)); });
+    return digest;
+}
+
+OrdinaryPetSetupSnapshot ObserveOrdinaryPetSetup(Player const* bot)
+{
+    OrdinaryPetSetupSnapshot snapshot;
+    if (!bot)
+        return snapshot;
+
+    Pet* pet = bot->GetPet();
+    if (!pet)
+        return snapshot;
+
+    snapshot.Present = true;
+    snapshot.InWorld = pet->IsInWorld();
+    snapshot.Alive = pet->IsAlive();
+    snapshot.Owned = pet->GetOwner() == bot;
+    snapshot.Permanent = pet->IsPermanentPetFor(const_cast<Player*>(bot))
+        && !pet->isTemporarySummoned()
+        && (pet->getPetType() == SUMMON_PET
+            || pet->getPetType() == HUNTER_PET);
+    snapshot.Guid = pet->GetGUID();
+    snapshot.Entry = pet->GetEntry();
+    snapshot.FamilyId = pet->GetCreatureTemplate()
+        ? uint32(pet->GetCreatureTemplate()->family) : 0;
+    snapshot.PetType = uint32(pet->getPetType());
+    snapshot.CreatedBySpellId = pet->GetUInt32Value(UNIT_CREATED_BY_SPELL);
+    snapshot.Health = pet->GetHealth();
+    snapshot.MaxHealth = pet->GetMaxHealth();
+    Powers const powerType = pet->GetPowerType();
+    snapshot.PowerType = uint32(powerType);
+    snapshot.Power = pet->GetPower(powerType);
+    snapshot.MaxPower = pet->GetMaxPower(powerType);
+    for (auto const& [spellId, petSpell] : pet->m_spells)
+        if (petSpell.state != PETSPELL_REMOVED)
+            snapshot.Spellbook.push_back({ spellId, uint8(petSpell.active),
+                uint8(petSpell.type) });
+    std::sort(snapshot.Spellbook.begin(), snapshot.Spellbook.end(),
+        [](OrdinaryPetSpellIdentity const& left,
+            OrdinaryPetSpellIdentity const& right)
+        {
+            if (left.SpellId != right.SpellId)
+                return left.SpellId < right.SpellId;
+            if (left.Active != right.Active)
+                return left.Active < right.Active;
+            return left.Type < right.Type;
+        });
+    snapshot.SpellbookSha256 = OrdinaryPetSpellbookSha256(
+        snapshot.Spellbook);
+    snapshot.AutocastSpellIds.assign(
+        pet->m_autospells.begin(), pet->m_autospells.end());
+    std::sort(snapshot.AutocastSpellIds.begin(),
+        snapshot.AutocastSpellIds.end());
+    snapshot.AutocastSpellIds.erase(std::unique(
+        snapshot.AutocastSpellIds.begin(), snapshot.AutocastSpellIds.end()),
+        snapshot.AutocastSpellIds.end());
+    return snapshot;
+}
+
+bool OrdinaryPersistentPetMatches(OrdinaryPetSetupSnapshot const& snapshot,
+    uint32 expectedEntry, uint32 expectedFamilyId, uint32 expectedPetType,
+    uint32 expectedPowerType, uint32 expectedCreatedBySpellId)
+{
+    return snapshot.Present && snapshot.InWorld && snapshot.Alive
+        && snapshot.Owned && snapshot.Permanent
+        && snapshot.Entry == expectedEntry
+        && snapshot.FamilyId == expectedFamilyId
+        && snapshot.PetType == expectedPetType
+        && snapshot.PowerType == expectedPowerType
+        && snapshot.CreatedBySpellId == expectedCreatedBySpellId
+        && snapshot.Health > 0 && snapshot.MaxHealth > 0
+        && snapshot.MaxPower > 0 && !snapshot.Spellbook.empty()
+        && snapshot.SpellbookSha256.size() == 64;
+}
+
+bool CalibrationPetObservationReady(
+    OrdinaryPetSetupSnapshot const& snapshot, bool hunterPetRequired,
+    uint32 expectedEntry, uint32 expectedFamilyId, uint32 expectedPetType,
+    uint32 expectedPowerType, uint32 expectedCreatedBySpellId)
+{
+    if (expectedEntry)
+        return OrdinaryPersistentPetMatches(snapshot, expectedEntry,
+            expectedFamilyId, expectedPetType, expectedPowerType,
+            expectedCreatedBySpellId);
+    if (hunterPetRequired)
+        return snapshot.Present && snapshot.InWorld && snapshot.Alive
+            && snapshot.Owned && snapshot.Permanent && snapshot.Health > 0
+            && snapshot.MaxHealth > 0 && snapshot.MaxPower > 0
+            && !snapshot.Spellbook.empty()
+            && snapshot.SpellbookSha256.size() == 64;
+    return !snapshot.Present;
+}
 
 BotAdmissionIdentityGenerated::Identity const* FindExpectedBotAdmissionIdentity(
     std::string const& classSpec)
@@ -209,6 +405,13 @@ bool ObserveActiveOrdinaryHunterPet(Player const* bot, HunterPetIdentitySnapshot
             snapshot.Spellbook.emplace_back(spellId, uint8(petSpell.active));
     std::sort(snapshot.Spellbook.begin(), snapshot.Spellbook.end());
     snapshot.SpellbookSha256 = HunterPetSpellbookSha256(snapshot.Spellbook);
+    snapshot.AutocastSpellIds.assign(
+        pet->m_autospells.begin(), pet->m_autospells.end());
+    std::sort(snapshot.AutocastSpellIds.begin(),
+        snapshot.AutocastSpellIds.end());
+    snapshot.AutocastSpellIds.erase(std::unique(
+        snapshot.AutocastSpellIds.begin(), snapshot.AutocastSpellIds.end()),
+        snapshot.AutocastSpellIds.end());
     return true;
 }
 
@@ -220,14 +423,22 @@ bool LoadedBotMatchesPinnedHunterPet(Player const* bot, std::string const& class
     uint32 expectedPetId = 0;
     uint32 expectedPetEntry = 0;
     std::vector<std::pair<uint32, uint8>> expectedSpellbook;
+    std::vector<uint32> expectedAutocastSpellIds;
     HunterPetIdentitySnapshot observed;
-    return ResolveExpectedHunterPetIdentity(classSpec, expectedPetId,
-            expectedPetEntry, expectedSpellbook)
-        && ObserveActiveOrdinaryHunterPet(bot, observed)
+    if (!ResolveExpectedHunterPetIdentity(classSpec, expectedPetId,
+            expectedPetEntry, expectedSpellbook))
+        return false;
+    for (auto const& [spellId, active] : expectedSpellbook)
+        if (active == ACT_ENABLED)
+            expectedAutocastSpellIds.push_back(spellId);
+    std::sort(expectedAutocastSpellIds.begin(),
+        expectedAutocastSpellIds.end());
+    return ObserveActiveOrdinaryHunterPet(bot, observed)
         && observed.PetId == expectedPetId
         && observed.PetEntry == expectedPetEntry
         && observed.Spellbook == expectedSpellbook
-        && observed.SpellbookSha256 == HunterPetSpellbookSha256(expectedSpellbook);
+        && observed.SpellbookSha256 == HunterPetSpellbookSha256(expectedSpellbook)
+        && observed.AutocastSpellIds == expectedAutocastSpellIds;
 }
 
 bool ResolveExpectedBotSpecIdentity(std::string const& classSpec, uint8& classId, uint32& talentTreeId)
@@ -2354,12 +2565,33 @@ std::string BotWorldPopulationMgr::StartCombatCalibration(std::string const& mod
     Cohort().CalibrationTargetGuid.Clear();
     Cohort().CalibrationFixtureTargetGuid.Clear();
     Cohort().CalibrationFixtureTargetEntry = 0;
+    Cohort().CalibrationFixtureExpectedTargetLevel = 0;
+    Cohort().CalibrationFixtureExpectedTargetArmor = 0;
+    Cohort().CalibrationFixtureExpectedTargetCreatureType = 0;
+    Cohort().CalibrationFixtureExpectedTargetMaxHealth = 0;
+    Cohort().CalibrationFixtureObservedTargetLevel = 0;
+    Cohort().CalibrationFixtureObservedTargetArmor = 0;
+    Cohort().CalibrationFixtureObservedTargetCreatureType = 0;
+    Cohort().CalibrationFixtureObservedTargetCreatureTypeMask = 0;
+    Cohort().CalibrationFixtureObservedTargetMaxHealth = 0;
     Cohort().CalibrationFixtureTargetMapId = 0;
     Cohort().CalibrationFixtureTargetX = 0.0f;
     Cohort().CalibrationFixtureTargetY = 0.0f;
     Cohort().CalibrationFixtureTargetZ = 0.0f;
     Cohort().CalibrationFixtureTargetNearestHostileClearance = 0.0f;
     Cohort().CalibrationFixtureTargetProvisionedAtMs = 0;
+    Cohort().CalibrationFixtureTargetObservedBeforeScoringAtMs = 0;
+    Cohort().CalibrationFixtureBeforeScoringTargetLevel = 0;
+    Cohort().CalibrationFixtureBeforeScoringTargetArmor = 0;
+    Cohort().CalibrationFixtureBeforeScoringTargetCreatureType = 0;
+    Cohort().CalibrationFixtureBeforeScoringTargetCreatureTypeMask = 0;
+    Cohort().CalibrationFixtureBeforeScoringTargetMaxHealth = 0;
+    Cohort().CalibrationFixtureBeforeScoringTargetMapId = 0;
+    Cohort().CalibrationFixtureBeforeScoringTargetGuid.Clear();
+    Cohort().CalibrationFixtureBeforeScoringTargetX = 0.0f;
+    Cohort().CalibrationFixtureBeforeScoringTargetY = 0.0f;
+    Cohort().CalibrationFixtureBeforeScoringTargetZ = 0.0f;
+    Cohort().CalibrationFixtureBeforeScoringBotTargetDistance = 0.0f;
     Cohort().CalibrationFixtureBotSpawnX = 0.0f;
     Cohort().CalibrationFixtureBotSpawnY = 0.0f;
     Cohort().CalibrationFixtureBotSpawnZ = 0.0f;
@@ -2376,6 +2608,14 @@ std::string BotWorldPopulationMgr::StartCombatCalibration(std::string const& mod
     Cohort().CalibrationLastPostWindowDrainMs = 0;
     Cohort().CalibrationLastControlledEventSecond = std::numeric_limits<uint64>::max();
     Cohort().CalibrationCrossWindowEventCount = 0;
+    Cohort().CalibrationExcludedBoundaryDamageEventCount = 0;
+    Cohort().CalibrationFixtureTargetPassiveObservationSampleCount = 0;
+    Cohort().CalibrationFixtureTargetVictimObservationSampleCount = 0;
+    Cohort().CalibrationFixtureTargetAttackEventCount = 0;
+    Cohort().CalibrationFixtureTargetOriginatedDamageEventCount = 0;
+    Cohort().CalibrationFixtureTargetFirstPassiveObservedAtMs = 0;
+    Cohort().CalibrationFixtureTargetLastPassiveObservedAtMs = 0;
+    Cohort().CalibrationFixtureTargetMaximumPassiveObservationGapMs = 0;
     Cohort().CalibrationResetId.clear();
     Cohort().CalibrationCurrentDamagePhase.clear();
     Cohort().CalibrationMetricsByGuid.clear();
@@ -2436,12 +2676,33 @@ std::string BotWorldPopulationMgr::StopCombatCalibration()
     Cohort().CalibrationTargetGuid.Clear();
     Cohort().CalibrationFixtureTargetGuid.Clear();
     Cohort().CalibrationFixtureTargetEntry = 0;
+    Cohort().CalibrationFixtureExpectedTargetLevel = 0;
+    Cohort().CalibrationFixtureExpectedTargetArmor = 0;
+    Cohort().CalibrationFixtureExpectedTargetCreatureType = 0;
+    Cohort().CalibrationFixtureExpectedTargetMaxHealth = 0;
+    Cohort().CalibrationFixtureObservedTargetLevel = 0;
+    Cohort().CalibrationFixtureObservedTargetArmor = 0;
+    Cohort().CalibrationFixtureObservedTargetCreatureType = 0;
+    Cohort().CalibrationFixtureObservedTargetCreatureTypeMask = 0;
+    Cohort().CalibrationFixtureObservedTargetMaxHealth = 0;
     Cohort().CalibrationFixtureTargetMapId = 0;
     Cohort().CalibrationFixtureTargetX = 0.0f;
     Cohort().CalibrationFixtureTargetY = 0.0f;
     Cohort().CalibrationFixtureTargetZ = 0.0f;
     Cohort().CalibrationFixtureTargetNearestHostileClearance = 0.0f;
     Cohort().CalibrationFixtureTargetProvisionedAtMs = 0;
+    Cohort().CalibrationFixtureTargetObservedBeforeScoringAtMs = 0;
+    Cohort().CalibrationFixtureBeforeScoringTargetLevel = 0;
+    Cohort().CalibrationFixtureBeforeScoringTargetArmor = 0;
+    Cohort().CalibrationFixtureBeforeScoringTargetCreatureType = 0;
+    Cohort().CalibrationFixtureBeforeScoringTargetCreatureTypeMask = 0;
+    Cohort().CalibrationFixtureBeforeScoringTargetMaxHealth = 0;
+    Cohort().CalibrationFixtureBeforeScoringTargetMapId = 0;
+    Cohort().CalibrationFixtureBeforeScoringTargetGuid.Clear();
+    Cohort().CalibrationFixtureBeforeScoringTargetX = 0.0f;
+    Cohort().CalibrationFixtureBeforeScoringTargetY = 0.0f;
+    Cohort().CalibrationFixtureBeforeScoringTargetZ = 0.0f;
+    Cohort().CalibrationFixtureBeforeScoringBotTargetDistance = 0.0f;
     Cohort().CalibrationFixtureBotSpawnX = 0.0f;
     Cohort().CalibrationFixtureBotSpawnY = 0.0f;
     Cohort().CalibrationFixtureBotSpawnZ = 0.0f;
@@ -2462,6 +2723,14 @@ std::string BotWorldPopulationMgr::StopCombatCalibration()
     Cohort().CalibrationLastPostWindowDrainMs = 0;
     Cohort().CalibrationLastControlledEventSecond = std::numeric_limits<uint64>::max();
     Cohort().CalibrationCrossWindowEventCount = 0;
+    Cohort().CalibrationExcludedBoundaryDamageEventCount = 0;
+    Cohort().CalibrationFixtureTargetPassiveObservationSampleCount = 0;
+    Cohort().CalibrationFixtureTargetVictimObservationSampleCount = 0;
+    Cohort().CalibrationFixtureTargetAttackEventCount = 0;
+    Cohort().CalibrationFixtureTargetOriginatedDamageEventCount = 0;
+    Cohort().CalibrationFixtureTargetFirstPassiveObservedAtMs = 0;
+    Cohort().CalibrationFixtureTargetLastPassiveObservedAtMs = 0;
+    Cohort().CalibrationFixtureTargetMaximumPassiveObservationGapMs = 0;
     Cohort().CalibrationResetId.clear();
     Cohort().CalibrationCurrentDamagePhase.clear();
 
@@ -2496,6 +2765,10 @@ std::string BotWorldPopulationMgr::StopCombatCalibration()
 std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
 {
     uint64 nowMs = NowMs();
+    BotCalibrationFixtureContractGenerated::SpecContract const*
+        fixtureSpecContract =
+            BotCalibrationFixtureContractGenerated::FindSpec(
+                Cohort().CalibrationTargetSpec);
     std::ostringstream json;
     auto writeBots = [&](std::map<uint32, CalibrationMetrics> const& metricsByGuid, bool completedWindow)
     {
@@ -2509,6 +2782,14 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
             Player* bot = GetLoadedBot(state);
             auto itr = metricsByGuid.find(state.Guid.GetCounter());
             CalibrationMetrics const* metrics = itr == metricsByGuid.end() ? nullptr : &itr->second;
+            auto actionAttemptCount = [metrics](uint32 spellId)
+            {
+                if (!metrics)
+                    return uint32(0);
+                auto const attempt = metrics->ActionAttempts.find(spellId);
+                return attempt == metrics->ActionAttempts.end()
+                    ? uint32(0) : attempt->second;
+            };
             uint64 startedMs = metrics && metrics->WindowStartedMs ? metrics->WindowStartedMs : Cohort().CalibrationStartedMs;
             uint64 endedMs = metrics && metrics->WindowEndedMs ? metrics->WindowEndedMs : nowMs;
             double elapsedSec = startedMs && endedMs > startedMs
@@ -2539,6 +2820,10 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                 ? double(metrics->MovementRangeLossTicks) / double(metrics->TickCount) : 0.0;
             double petDamageRatio = metrics && metrics->Damage
                 ? double(metrics->PetDamage) / double(metrics->Damage) : 0.0;
+            double requiredPetUptimeRatio = metrics
+                    && metrics->PetSetupObservationSampleCount
+                ? double(metrics->PetSetupReadySampleCount)
+                    / double(metrics->PetSetupObservationSampleCount) : 0.0;
             uint32 observedExpectedGroups = 0;
             if (metrics)
                 for (std::string const& group : metrics->ExpectedActionGroups)
@@ -2583,6 +2868,29 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
             uint64 fireTotemCastingSkips = 0;
             uint64 fireTotemMissingSpellSkips = 0;
             uint64 fireTotemNoTargetSkips = 0;
+            OrdinaryPetSetupSnapshot const ordinaryPet =
+                ObserveOrdinaryPetSetup(bot);
+            HunterPetIdentitySnapshot hunterPetIdentity;
+            bool const hunterPetIdentityObserved =
+                ObserveActiveOrdinaryHunterPet(bot, hunterPetIdentity);
+            WorldBotState::NativePersistentPetSetupReceipt const& petSetup =
+                state.PersistentPetSetup;
+            bool const nativePersistentPetReady = bot
+                && petSetup.RequiredSummonSpellId
+                && petSetup.RequiredCreatedBySpellId
+                && petSetup.RequiredEntry
+                && petSetup.SummonSpellKnown
+                && bot->HasSpell(petSetup.RequiredSummonSpellId)
+                && petSetup.NativeCastSubmittedAtMs
+                && petSetup.NativeCastFinishedSuccessfully
+                && petSetup.NativeCastFinishedAtMs
+                    >= petSetup.NativeCastSubmittedAtMs
+                && petSetup.NativeCastObservedAtMs
+                    >= petSetup.NativeCastFinishedAtMs
+                && OrdinaryPersistentPetMatches(ordinaryPet,
+                    petSetup.RequiredEntry, petSetup.RequiredFamilyId,
+                    petSetup.RequiredPetType, petSetup.RequiredPowerType,
+                    petSetup.RequiredCreatedBySpellId);
             if (bot)
             {
                 if (Item* item = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND))
@@ -2652,6 +2960,58 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                     case CLASS_HUNTER:
                         persistentSetupReady = bot->HasAura(13165) && bot->GetPet() && bot->GetPet()->IsAlive();
                         break;
+                    case CLASS_DEATH_KNIGHT:
+                    {
+                        BotClassSpecActionProfile const profile = BotClassSpecActionProfileStore::Build(
+                            bot, GetDungeonRole(bot));
+                        bool const presenceRequired =
+                            profile.SpecTag == "frost_death_knight"
+                            || profile.SpecTag == "unholy_death_knight";
+                        if (!presenceRequired)
+                        {
+                            persistentSetupReady = true;
+                            break;
+                        }
+                        bool const presenceReady = state.RequiredPresenceSetupSpellId == 48265
+                            && state.RequiredPresenceSetupAuraId == 48265
+                            && state.RequiredPresenceSetupSpellKnown
+                            && bot->HasSpell(48265) && bot->HasAura(48265)
+                            && state.PresenceSetupNativeCastSubmittedAtMs
+                            && state.PresenceSetupAuraObservedAtMs
+                                >= state.PresenceSetupNativeCastSubmittedAtMs;
+                        persistentSetupReady = presenceReady
+                            && (profile.SpecTag != "unholy_death_knight"
+                                || nativePersistentPetReady);
+                        break;
+                    }
+                    case CLASS_WARLOCK:
+                    {
+                        BotClassSpecActionProfile const profile =
+                            BotClassSpecActionProfileStore::Build(
+                                bot, GetDungeonRole(bot));
+                        bool const petRequired =
+                            profile.SpecTag == "affliction_warlock"
+                            || profile.SpecTag == "demonology_warlock";
+                        persistentSetupReady = !petRequired
+                            || nativePersistentPetReady;
+                        break;
+                    }
+                    case CLASS_ROGUE:
+                    {
+                        BotClassSpecActionProfile const profile =
+                            BotClassSpecActionProfileStore::Build(
+                                bot, GetDungeonRole(bot));
+                        bool const poisonRequired =
+                            profile.SpecTag == "assassination_rogue"
+                            || profile.SpecTag == "combat_rogue";
+                        persistentSetupReady = !poisonRequired
+                            || (state.RoguePoisonSetupRequired
+                                && IsNativePoisonSetupReady(bot,
+                                    state.RogueMainhandPoisonSetup)
+                                && IsNativePoisonSetupReady(bot,
+                                    state.RogueOffhandPoisonSetup));
+                        break;
+                    }
                     case CLASS_SHAMAN:
                     {
                         BotClassSpecActionProfile const profile = BotClassSpecActionProfileStore::Build(
@@ -2677,16 +3037,69 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                         break;
                 }
             }
+            bool const presenceSpellKnown = bot && state.RequiredPresenceSetupSpellId
+                && state.RequiredPresenceSetupSpellKnown
+                && bot->HasSpell(state.RequiredPresenceSetupSpellId);
+            bool const presenceAuraActive = bot && state.RequiredPresenceSetupAuraId
+                && bot->HasAura(state.RequiredPresenceSetupAuraId);
+            bool const presenceNativeCastSubmitted = state.PresenceSetupNativeCastSubmittedAtMs != 0;
+            bool const presenceNativeCastObserved = presenceNativeCastSubmitted
+                && state.PresenceSetupAuraObservedAtMs >= state.PresenceSetupNativeCastSubmittedAtMs;
+            std::vector<uint32> activeTalentSpellIds;
+            std::vector<uint32> glyphPropertyIds;
+            std::vector<uint32> glyphAuraSpellIds;
+            if (bot)
+            {
+                for (auto const& [spellId, talent] :
+                    bot->GetTalentMap(bot->GetActiveSpec()))
+                    if (talent.State != PLAYERSPELL_REMOVED)
+                        activeTalentSpellIds.push_back(spellId);
+                std::sort(activeTalentSpellIds.begin(), activeTalentSpellIds.end());
+                for (uint8 glyphSlot = 0; glyphSlot < MAX_GLYPH_SLOT_INDEX;
+                    ++glyphSlot)
+                    if (uint32 const glyphPropertyId =
+                        bot->GetGlyph(bot->GetActiveSpec(), glyphSlot))
+                    {
+                        glyphPropertyIds.push_back(glyphPropertyId);
+                        if (GlyphPropertiesEntry const* glyph =
+                            sGlyphPropertiesStore.LookupEntry(glyphPropertyId))
+                            glyphAuraSpellIds.push_back(glyph->SpellID);
+                    }
+                std::sort(glyphPropertyIds.begin(), glyphPropertyIds.end());
+                std::sort(glyphAuraSpellIds.begin(), glyphAuraSpellIds.end());
+            }
             json << "{\"guid\":" << state.Guid.GetCounter()
                  << ",\"name\":\"" << JsonEscape(bot ? bot->GetName() : "loading") << "\""
                  << ",\"class_id\":" << (bot ? uint32(bot->getClass()) : 0)
+                 << ",\"race_id\":" << (bot ? uint32(bot->getRace()) : 0)
                  << ",\"role\":\"" << (bot ? JsonEscape(GetDungeonRole(bot)) : "unknown") << "\""
                  << ",\"level\":" << (bot ? uint32(bot->getLevel()) : 0)
                  << ",\"average_item_level\":" << std::fixed << std::setprecision(3)
                  << (bot ? bot->GetAverageItemLevel() : 0.0f)
                  << ",\"grouped\":" << (bot && bot->GetGroup() ? "true" : "false")
                  << ",\"group_size\":" << (bot && bot->GetGroup() ? bot->GetGroup()->GetMembersCount() : 0)
-                 << ",\"gear_profile_observation\":{\"items\":[";
+                 << ",\"active_talent_spell_ids\":[";
+            for (size_t index = 0; index < activeTalentSpellIds.size(); ++index)
+            {
+                if (index)
+                    json << ',';
+                json << activeTalentSpellIds[index];
+            }
+            json << "],\"glyph_property_ids\":[";
+            for (size_t index = 0; index < glyphPropertyIds.size(); ++index)
+            {
+                if (index)
+                    json << ',';
+                json << glyphPropertyIds[index];
+            }
+            json << "],\"glyph_aura_spell_ids\":[";
+            for (size_t index = 0; index < glyphAuraSpellIds.size(); ++index)
+            {
+                if (index)
+                    json << ',';
+                json << glyphAuraSpellIds[index];
+            }
+            json << "],\"gear_profile_observation\":{\"items\":[";
             bool firstGearItem = true;
             if (bot)
                 for (uint8 equipmentSlot = EQUIPMENT_SLOT_START;
@@ -2721,7 +3134,448 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                         json << "]}";
                     }
             json << "]}"
+                 << ",\"fixture_contract\":{\"schema\":\""
+                 << BotCalibrationFixtureContractGenerated::Schema
+                 << "\",\"content_sha256\":\""
+                 << BotCalibrationFixtureContractGenerated::ContentSha256
+                 << "\",\"upstream_revision\":\""
+                 << BotCalibrationFixtureContractGenerated::UpstreamRevision
+                 << "\"}"
+                 << ",\"dynamic_action_observation\":{\"schema\":\"phase8_disabled_dynamic_actions_v1\""
+                 << ",\"expected_disabled\":true,\"attempt_counts\":{\"79476\":"
+                 << actionAttemptCount(79476)
+                 << ",\"82174\":" << actionAttemptCount(82174)
+                 << ",\"20572\":" << actionAttemptCount(20572)
+                 << ",\"26297\":" << actionAttemptCount(26297)
+                 << ",\"28730\":" << actionAttemptCount(28730)
+                 << ",\"33697\":" << actionAttemptCount(33697)
+                 << ",\"33702\":" << actionAttemptCount(33702)
+                 << ",\"69041\":" << actionAttemptCount(69041) << "}"
+                 << ",\"all_zero\":"
+                 << (actionAttemptCount(79476) + actionAttemptCount(82174)
+                        + actionAttemptCount(20572) + actionAttemptCount(26297)
+                        + actionAttemptCount(28730) + actionAttemptCount(33697)
+                        + actionAttemptCount(33702) + actionAttemptCount(69041)
+                        == 0 ? "true" : "false") << '}'
+                 << ",\"initial_resources\":{\"schema\":\"phase8_initial_resources_observation_v1\""
+                 << ",\"source_contract_sha256\":\""
+                 << JsonEscape(metrics ? metrics->InitialResourceSourceContract : "") << "\""
+                 << ",\"reset_applied\":"
+                 << (metrics && metrics->InitialResourcesApplied ? "true" : "false")
+                 << ",\"matches_contract\":"
+                 << (metrics && metrics->InitialResourcesMatchContract ? "true" : "false")
+                 << ",\"observed_at_ms\":"
+                 << (metrics ? metrics->InitialResourcesObservedAtMs : 0)
+                 << ",\"observed_before_scoring\":"
+                 << (metrics && metrics->InitialResourcesObservedAtMs
+                        && metrics->WindowStartedMs
+                        && metrics->InitialResourcesObservedAtMs
+                            <= metrics->WindowStartedMs ? "true" : "false")
+                 << ",\"powers\":[";
+            bool firstInitialPower = true;
+            if (metrics)
+                for (CalibrationMetrics::InitialPowerObservation const& power :
+                    metrics->InitialPowerObservations)
+                {
+                    if (!firstInitialPower)
+                        json << ',';
+                    firstInitialPower = false;
+                    json << "{\"unit_kind\":\"" << JsonEscape(power.UnitKind)
+                         << "\",\"unit_guid\":" << power.UnitGuid
+                         << ",\"name\":\"" << JsonEscape(power.PowerName)
+                         << "\",\"power_type\":" << uint32(power.PowerType)
+                         << ",\"expected_mode\":\""
+                         << (power.ExpectedMaximum ? "maximum" : "exact")
+                         << "\",\"expected_native_value\":"
+                         << power.ExpectedNativeValue
+                         << ",\"expected_display_value\":"
+                         << power.ExpectedDisplayValue
+                         << ",\"observed_native_value\":"
+                         << power.ObservedNativeValue
+                         << ",\"observed_display_value\":"
+                         << power.ObservedDisplayValue
+                         << ",\"observed_maximum_native_value\":"
+                         << power.ObservedMaximumNativeValue
+                         << ",\"matches_contract\":"
+                         << (power.MatchesContract ? "true" : "false") << '}';
+                }
+            json << "],\"runes\":{\"required\":"
+                 << (metrics && metrics->InitialRunesRequired ? "true" : "false")
+                 << ",\"expected_ready_mask\":"
+                 << (metrics ? uint32(metrics->InitialExpectedRuneReadyMask) : 0)
+                 << ",\"observed_ready_mask\":"
+                 << (metrics ? uint32(metrics->InitialObservedRuneReadyMask) : 0) << '}'
+                 << ",\"combo_points\":{\"required\":"
+                 << (metrics && metrics->InitialComboPointsRequired ? "true" : "false")
+                 << ",\"expected\":"
+                 << (metrics ? uint32(metrics->InitialExpectedComboPoints) : 0)
+                 << ",\"observed\":"
+                 << (metrics ? uint32(metrics->InitialObservedComboPoints) : 0) << '}'
+                 << ",\"neutral_eclipse\":{\"required\":"
+                 << (metrics && metrics->InitialNeutralEclipseRequired ? "true" : "false")
+                 << ",\"observed\":"
+                 << (metrics && metrics->InitialNeutralEclipseObserved ? "true" : "false") << '}'
+                 << ",\"pet_resource\":{\"required\":"
+                 << (metrics && metrics->InitialPetResourceRequired ? "true" : "false")
+                 << ",\"observed\":"
+                 << (metrics && metrics->InitialPetResourceObserved ? "true" : "false") << "}}"
+                 << ",\"item_swap_observation\":{\"schema\":\"phase8_no_item_swap_observation_v1\""
+                 << ",\"enabled\":false,\"initial_gear_manifest_sha256\":\""
+                 << JsonEscape(metrics ? metrics->InitialGearManifestSha256 : "")
+                 << "\",\"target_guid\":" << state.Guid.GetCounter()
+                 << ",\"window_started_at_ms\":"
+                 << (metrics ? metrics->WindowStartedMs : 0)
+                 << ",\"window_ended_at_ms\":"
+                 << (metrics ? metrics->WindowEndedMs : 0)
+                 << ",\"first_sample_at_ms\":"
+                 << (metrics ? metrics->FirstGearIdentityObservedAtMs : 0)
+                 << ",\"last_sample_at_ms\":"
+                 << (metrics ? metrics->LastGearIdentityObservedAtMs : 0)
+                 << ",\"maximum_sample_gap_ms\":"
+                 << (metrics ? metrics->MaximumGearIdentityObservationGapMs : 0)
+                 << ",\"current_gear_manifest_sha256\":\""
+                 << JsonEscape(metrics ? metrics->LastObservedGearManifestSha256 : "")
+                 << "\",\"sample_count\":"
+                 << (metrics ? metrics->GearIdentitySampleCount : 0)
+                 << ",\"mismatch_sample_count\":"
+                 << (metrics ? metrics->GearIdentityMismatchSampleCount : 0)
+                 << ",\"no_drift\":"
+                 << (metrics && metrics->GearIdentitySampleCount
+                        && !metrics->InitialGearManifestSha256.empty()
+                        && metrics->InitialGearManifestSha256
+                            == metrics->LastObservedGearManifestSha256
+                        && !metrics->GearIdentityMismatchSampleCount
+                        ? "true" : "false") << '}'
+                 << ",\"pre_score_state\":{\"schema\":\"phase8_pre_score_state_observation_v1\""
+                 << ",\"observed_at_ms\":"
+                 << (metrics ? metrics->PreScoreStateObservedAtMs : 0)
+                 << ",\"observed_before_scoring\":"
+                 << (metrics && metrics->PreScoreStateObservedAtMs
+                        && metrics->WindowStartedMs
+                        && metrics->PreScoreStateObservedAtMs
+                            <= metrics->WindowStartedMs ? "true" : "false")
+                 << ",\"persistent_setup_ready\":"
+                 << (metrics && metrics->PreScorePersistentSetupReady ? "true" : "false")
+                 << ",\"reference_buffs_ready\":"
+                 << (metrics && metrics->PreScoreReferenceBuffsReady ? "true" : "false")
+                 << ",\"reference_target_debuffs_ready\":"
+                 << (metrics && metrics->PreScoreReferenceTargetDebuffsReady ? "true" : "false")
+                 << ",\"heroism_ready\":"
+                 << (metrics && metrics->PreScoreHeroismReady ? "true" : "false")
+                 << ",\"temporal_external_auras_absent\":"
+                 << (metrics && metrics->PreScoreTemporalExternalsAbsent ? "true" : "false")
+                 << ",\"external_bleed_auras_absent\":"
+                 << (metrics && metrics->PreScoreExternalBleedAbsent ? "true" : "false")
+                 << ",\"last_potion_item_id\":"
+                 << (metrics ? metrics->PreScoreLastPotionItemId : 0)
+                 << ",\"no_active_cast\":"
+                 << (metrics && metrics->PreScoreNoActiveCast ? "true" : "false")
+                 << ",\"no_combat\":"
+                 << (metrics && metrics->PreScoreNoCombat ? "true" : "false")
+                 << ",\"global_cooldown_clear\":"
+                 << (metrics && metrics->PreScoreGlobalCooldownClear ? "true" : "false")
+                 << ",\"cooldown_reset_applied\":"
+                 << (metrics && metrics->PreScoreCooldownResetApplied ? "true" : "false")
+                 << ",\"warmup_profile_actions_suppressed\":"
+                 << (metrics && metrics->WarmupProfileActionsSuppressed ? "true" : "false") << '}'
+                 << ",\"external_window_observation\":{\"schema\":\"phase8_external_windows_observation_v1\""
+                 << ",\"target_guid\":" << state.Guid.GetCounter()
+                 << ",\"window_started_at_ms\":"
+                 << (metrics ? metrics->WindowStartedMs : 0)
+                 << ",\"window_ended_at_ms\":"
+                 << (metrics ? metrics->WindowEndedMs : 0)
+                 << ",\"first_sample_at_ms\":"
+                 << (metrics ? metrics->FirstExternalWindowObservedAtMs : 0)
+                 << ",\"last_sample_at_ms\":"
+                 << (metrics ? metrics->LastExternalWindowObservedAtMs : 0)
+                 << ",\"maximum_sample_gap_ms\":"
+                 << (metrics ? metrics->MaximumExternalWindowObservationGapMs : 0)
+                 << ",\"sample_count\":"
+                 << (metrics ? metrics->ExternalWindowSampleCount : 0)
+                 << ",\"heroism\":{\"source_count\":0,\"spell_id\":2825,\"windows_ms\":[],\"expected_active_samples\":"
+                 << (metrics ? metrics->HeroismExpectedActiveSamples : 0)
+                 << ",\"observed_active_samples\":"
+                 << (metrics ? metrics->HeroismObservedActiveSamples : 0)
+                 << ",\"mismatch_samples\":"
+                 << (metrics ? metrics->HeroismMismatchSamples : 0) << '}'
+                 << ",\"power_infusion\":{\"source_count\":"
+                 << 0
+                 << ",\"spell_id\":10060,\"windows_ms\":[]"
+                 << ",\"expected_active_samples\":"
+                 << (metrics ? metrics->PowerInfusionExpectedActiveSamples : 0)
+                 << ",\"observed_active_samples\":"
+                 << (metrics ? metrics->PowerInfusionObservedActiveSamples : 0)
+                 << ",\"mismatch_samples\":"
+                 << (metrics ? metrics->PowerInfusionMismatchSamples : 0) << '}'
+                 << ",\"dark_intent_proc\":{\"base_spell_id\":85767,\"base_enabled\":false,\"unexpected_base_active_samples\":"
+                 << (metrics ? metrics->UnexpectedDarkIntentBaseSamples : 0)
+                 << ",\"proc_spell_id\":85759,\"uptime_pct\":0,\"expected_uptime_pct\":0,\"unexpected_active_samples\":"
+                 << (metrics ? metrics->UnexpectedDarkIntentProcSamples : 0) << '}'
+                 << ",\"synapse_springs\":{\"spell_id\":96230,\"windows_ms\":[],\"expected_windows_ms\":[],\"unexpected_active_samples\":"
+                 << (metrics ? metrics->UnexpectedSynapseSpringsSamples : 0) << "}}"
+                 << ",\"reference_condition_observation\":{\"schema\":\"phase8_reference_condition_observation_v1\""
+                 << ",\"fixture_contract_sha256\":\""
+                 << BotCalibrationFixtureContractGenerated::ContentSha256
+                 << "\",\"player_guid\":" << state.Guid.GetCounter()
+                 << ",\"fixture_target_guid\":"
+                 << Cohort().CalibrationFixtureTargetGuid.GetCounter()
+                 << ",\"window_started_at_ms\":"
+                 << (metrics ? metrics->WindowStartedMs : 0)
+                 << ",\"window_ended_at_ms\":"
+                 << (metrics ? metrics->WindowEndedMs : 0)
+                 << ",\"first_sample_at_ms\":"
+                 << (metrics ? metrics->FirstReferenceConditionObservedAtMs : 0)
+                 << ",\"last_sample_at_ms\":"
+                 << (metrics ? metrics->LastReferenceConditionObservedAtMs : 0)
+                 << ",\"maximum_sample_gap_ms\":"
+                 << (metrics ? metrics->MaximumReferenceConditionObservationGapMs : 0)
+                 << ",\"sample_count\":"
+                 << (metrics ? metrics->ReferenceConditionSampleCount : 0)
+                 << ",\"configured\":{\"flask_item_id\":"
+                 << (fixtureSpecContract ? fixtureSpecContract->FlaskItemId : 0)
+                 << ",\"flask_aura_spell_id\":"
+                 << (fixtureSpecContract ? fixtureSpecContract->FlaskAuraSpellId : 0)
+                 << ",\"food_item_id\":"
+                 << (fixtureSpecContract ? fixtureSpecContract->FoodItemId : 0)
+                 << ",\"food_aura_spell_id\":"
+                 << (fixtureSpecContract ? fixtureSpecContract->FoodAuraSpellId : 0)
+                 << ",\"required_setup_aura_spell_ids\":[";
+            std::vector<uint32> configuredSetupAuraSpellIds;
+            if (fixtureSpecContract
+                && fixtureSpecContract->SetupAuraOffset
+                        + fixtureSpecContract->SetupAuraCount
+                    <= BotCalibrationFixtureContractGenerated::RequiredSetupAuraSpellIds.size())
+                for (uint32 index = 0;
+                    index < fixtureSpecContract->SetupAuraCount; ++index)
+                    configuredSetupAuraSpellIds.push_back(
+                        BotCalibrationFixtureContractGenerated::RequiredSetupAuraSpellIds[
+                            fixtureSpecContract->SetupAuraOffset + index]);
+            std::sort(configuredSetupAuraSpellIds.begin(),
+                configuredSetupAuraSpellIds.end());
+            for (size_t index = 0;
+                index < configuredSetupAuraSpellIds.size(); ++index)
+            {
+                if (index)
+                    json << ',';
+                json << configuredSetupAuraSpellIds[index];
+            }
+            json << "]},\"player_auras\":[";
+            std::set<uint32> observedPlayerAuraSpellIds;
+            if (metrics)
+            {
+                for (auto const& [spellId, _] :
+                    metrics->ReferencePlayerAuraActiveSamples)
+                    observedPlayerAuraSpellIds.insert(spellId);
+                for (auto const& [spellId, _] :
+                    metrics->ReferencePlayerAuraInactiveSamples)
+                    observedPlayerAuraSpellIds.insert(spellId);
+            }
+            bool firstReferenceAura = true;
+            for (uint32 spellId : observedPlayerAuraSpellIds)
+            {
+                if (!firstReferenceAura)
+                    json << ',';
+                firstReferenceAura = false;
+                auto sampleCount = [metrics, spellId](auto member)
+                {
+                    if (!metrics)
+                        return uint32(0);
+                    auto const& rows = metrics->*member;
+                    auto const itr = rows.find(spellId);
+                    return itr == rows.end() ? uint32(0) : itr->second;
+                };
+                json << "{\"spell_id\":" << spellId
+                     << ",\"active_samples\":"
+                     << sampleCount(&CalibrationMetrics::ReferencePlayerAuraActiveSamples)
+                     << ",\"inactive_samples\":"
+                     << sampleCount(&CalibrationMetrics::ReferencePlayerAuraInactiveSamples)
+                     << '}';
+            }
+            json << "],\"target_auras\":[";
+            std::set<uint32> observedTargetAuraSpellIds;
+            if (metrics)
+            {
+                for (auto const& [spellId, _] :
+                    metrics->ReferenceTargetAuraActiveSamples)
+                    observedTargetAuraSpellIds.insert(spellId);
+                for (auto const& [spellId, _] :
+                    metrics->ReferenceTargetAuraInactiveSamples)
+                    observedTargetAuraSpellIds.insert(spellId);
+            }
+            firstReferenceAura = true;
+            for (uint32 spellId : observedTargetAuraSpellIds)
+            {
+                if (!firstReferenceAura)
+                    json << ',';
+                firstReferenceAura = false;
+                auto sampleCount = [metrics, spellId](auto member)
+                {
+                    if (!metrics)
+                        return uint32(0);
+                    auto const& rows = metrics->*member;
+                    auto const itr = rows.find(spellId);
+                    return itr == rows.end() ? uint32(0) : itr->second;
+                };
+                uint32 const ownerMatch = sampleCount(
+                    &CalibrationMetrics::ReferenceTargetAuraOwnerMatchSamples);
+                json << "{\"spell_id\":" << spellId
+                     << ",\"caster_guid\":"
+                     << (ownerMatch ? state.Guid.GetCounter() : 0)
+                     << ",\"active_samples\":"
+                     << sampleCount(&CalibrationMetrics::ReferenceTargetAuraActiveSamples)
+                     << ",\"inactive_samples\":"
+                     << sampleCount(&CalibrationMetrics::ReferenceTargetAuraInactiveSamples)
+                     << ",\"owner_match_samples\":" << ownerMatch
+                     << ",\"owner_mismatch_samples\":"
+                     << sampleCount(&CalibrationMetrics::ReferenceTargetAuraOwnerMismatchSamples)
+                     << '}';
+            }
+            json << "],\"target_stacked_auras\":[{\"spell_id\":58567"
+                 << ",\"caster_guid\":"
+                 << (metrics && metrics->ReferenceSunderMatchingStackSamples
+                        ? state.Guid.GetCounter() : 0)
+                 << ",\"required_stacks\":3,\"matching_samples\":"
+                 << (metrics ? metrics->ReferenceSunderMatchingStackSamples : 0)
+                 << ",\"mismatch_samples\":"
+                 << (metrics ? metrics->ReferenceSunderMismatchStackSamples : 0)
+                 << ",\"owner_match_samples\":";
+            auto referenceTargetCount = [metrics](auto member,
+                uint32 spellId)
+            {
+                if (!metrics)
+                    return uint32(0);
+                auto const& rows = metrics->*member;
+                auto const itr = rows.find(spellId);
+                return itr == rows.end() ? uint32(0) : itr->second;
+            };
+            json << referenceTargetCount(
+                        &CalibrationMetrics::ReferenceTargetAuraOwnerMatchSamples,
+                        58567)
+                 << ",\"owner_mismatch_samples\":"
+                 << referenceTargetCount(
+                        &CalibrationMetrics::ReferenceTargetAuraOwnerMismatchSamples,
+                        58567)
+                 << ",\"minimum_observed_stacks\":"
+                 << (metrics && metrics->ReferenceConditionSampleCount
+                        ? uint32(metrics->ReferenceSunderMinimumObservedStacks) : 0)
+                 << ",\"maximum_observed_stacks\":"
+                 << (metrics ? uint32(metrics->ReferenceSunderMaximumObservedStacks) : 0)
+                 << "}],\"external_bleed_aura_spell_ids\":[16511,33876,46857]"
+                 << ",\"unexpected_external_bleed_active_samples\":"
+                 << (metrics ? metrics->UnexpectedExternalBleedActiveSamples : 0)
+                 << ",\"dynamic_disabled\":{\"prepot_item_id\":0,\"prepot_use_count\":"
+                 << (metrics && metrics->PreScoreLastPotionItemId ? 1 : 0)
+                 << ",\"combat_potion_item_id\":0,\"combat_potion_use_count\":"
+                 << (metrics ? metrics->ScoredPotionUseCount : 0)
+                 << ",\"tinker_item_id\":0,\"tinker_spell_id\":0,\"tinker_use_count\":"
+                 << (metrics ? metrics->ScoredTinkerOrOtherItemUseCount
+                        + metrics->ScoredTinkerSpellUseCount : 0)
+                 << ",\"racial_spell_id\":0,\"racial_use_count\":"
+                 << (metrics ? metrics->ScoredRacialUseCount : 0)
+                 << ",\"last_potion_id_nonzero_samples\":"
+                 << (metrics ? metrics->LastPotionIdNonzeroSampleCount : 0)
+                 << ",\"unexpected_dynamic_aura_active_samples\":"
+                 << (metrics ? metrics->UnexpectedDynamicAuraActiveSamples : 0)
+                 << "}}"
                  << ",\"persistent_setup\":{\"ready\":" << (persistentSetupReady ? "true" : "false")
+                 << ",\"required_presence_spell_id\":" << state.RequiredPresenceSetupSpellId
+                 << ",\"required_presence_aura_id\":" << state.RequiredPresenceSetupAuraId
+                 << ",\"presence_spell_known\":" << (presenceSpellKnown ? "true" : "false")
+                 << ",\"presence_aura_active\":" << (presenceAuraActive ? "true" : "false")
+                 << ",\"presence_native_cast_submitted\":" << (presenceNativeCastSubmitted ? "true" : "false")
+                 << ",\"presence_native_cast_observed\":" << (presenceNativeCastObserved ? "true" : "false")
+                 << ",\"presence_native_cast_submitted_at_ms\":" << state.PresenceSetupNativeCastSubmittedAtMs
+                 << ",\"presence_native_cast_observed_at_ms\":" << state.PresenceSetupAuraObservedAtMs
+                 << ",\"required_pet_spell_id\":" << petSetup.RequiredSummonSpellId
+                 << ",\"required_pet_created_by_spell_id\":" << petSetup.RequiredCreatedBySpellId
+                 << ",\"required_pet_entry\":" << petSetup.RequiredEntry
+                 << ",\"required_pet_family_id\":" << petSetup.RequiredFamilyId
+                 << ",\"required_pet_type\":" << petSetup.RequiredPetType
+                 << ",\"required_pet_power_type\":" << petSetup.RequiredPowerType
+                 << ",\"pet_spell_known\":" << (petSetup.SummonSpellKnown ? "true" : "false")
+                 << ",\"pet_native_cast_submitted\":" << (petSetup.NativeCastSubmittedAtMs ? "true" : "false")
+                 << ",\"pet_native_cast_finished\":" << (petSetup.NativeCastFinishedSuccessfully ? "true" : "false")
+                 << ",\"pet_native_cast_observed\":" << (petSetup.NativeCastObservedAtMs ? "true" : "false")
+                 << ",\"pet_native_cast_submitted_at_ms\":" << petSetup.NativeCastSubmittedAtMs
+                 << ",\"pet_native_cast_finished_at_ms\":" << petSetup.NativeCastFinishedAtMs
+                 << ",\"pet_native_cast_observed_at_ms\":" << petSetup.NativeCastObservedAtMs
+                 << ",\"pet_guid\":" << ordinaryPet.Guid.GetCounter()
+                 << ",\"pet_id\":"
+                 << (hunterPetIdentityObserved
+                        ? hunterPetIdentity.PetId : 0)
+                 << ",\"pet_entry\":" << ordinaryPet.Entry
+                 << ",\"pet_family_id\":" << ordinaryPet.FamilyId
+                 << ",\"pet_type\":" << ordinaryPet.PetType
+                 << ",\"pet_created_by_spell_id\":" << ordinaryPet.CreatedBySpellId
+                 << ",\"pet_present\":" << (ordinaryPet.Present ? "true" : "false")
+                 << ",\"pet_in_world\":" << (ordinaryPet.InWorld ? "true" : "false")
+                 << ",\"pet_alive\":" << (ordinaryPet.Alive ? "true" : "false")
+                 << ",\"pet_owned\":" << (ordinaryPet.Owned ? "true" : "false")
+                 << ",\"pet_permanent\":" << (ordinaryPet.Permanent ? "true" : "false")
+                 << ",\"pet_health\":" << ordinaryPet.Health
+                 << ",\"pet_max_health\":" << ordinaryPet.MaxHealth
+                 << ",\"pet_power_type\":" << ordinaryPet.PowerType
+                 << ",\"pet_power\":" << ordinaryPet.Power
+                 << ",\"pet_max_power\":" << ordinaryPet.MaxPower
+                 << ",\"pet_observed_owner_guid\":" << state.Guid.GetCounter()
+                 << ",\"pet_observation_window_started_at_ms\":"
+                 << (metrics ? metrics->WindowStartedMs : 0)
+                 << ",\"pet_observation_window_ended_at_ms\":"
+                 << (metrics ? metrics->WindowEndedMs : 0)
+                 << ",\"pet_first_observation_at_ms\":"
+                 << (metrics ? metrics->FirstPetSetupObservedAtMs : 0)
+                 << ",\"pet_last_observation_at_ms\":"
+                 << (metrics ? metrics->LastPetSetupObservedAtMs : 0)
+                 << ",\"pet_maximum_observation_gap_ms\":"
+                 << (metrics ? metrics->MaximumPetSetupObservationGapMs : 0)
+                 << ",\"pet_first_observed_guid\":"
+                 << (metrics ? metrics->FirstPetSetupObservedGuid : 0)
+                 << ",\"pet_last_observed_guid\":"
+                 << (metrics ? metrics->LastPetSetupObservedGuid : 0)
+                 << ",\"pet_guid_mismatch_sample_count\":"
+                 << (metrics ? metrics->PetSetupGuidMismatchSampleCount : 0)
+                 << ",\"pet_identity_mismatch_sample_count\":"
+                 << (metrics ? metrics->PetSetupIdentityMismatchSampleCount : 0)
+                 << ",\"pet_ready_ticks\":"
+                 << (metrics ? metrics->PetSetupReadySampleCount : 0)
+                 << ",\"pet_observation_ticks\":"
+                 << (metrics ? metrics->PetSetupObservationSampleCount : 0)
+                 << ",\"pet_uptime_ratio\":" << requiredPetUptimeRatio
+                 << ",\"pet_spellbook_sha256\":\"" << JsonEscape(ordinaryPet.SpellbookSha256) << "\""
+                 << ",\"pet_spellbook\":[";
+            for (size_t index = 0; index < ordinaryPet.Spellbook.size(); ++index)
+            {
+                if (index)
+                    json << ',';
+                OrdinaryPetSpellIdentity const& spell = ordinaryPet.Spellbook[index];
+                json << "{\"spell_id\":" << spell.SpellId
+                     << ",\"active\":" << uint32(spell.Active)
+                     << ",\"type\":" << uint32(spell.Type) << '}';
+            }
+            json << "],\"pet_admission_spellbook_sha256\":\""
+                 << JsonEscape(hunterPetIdentityObserved
+                        ? hunterPetIdentity.SpellbookSha256 : "") << "\""
+                 << ",\"pet_admission_spellbook\":[";
+            if (hunterPetIdentityObserved)
+                for (size_t index = 0;
+                    index < hunterPetIdentity.Spellbook.size(); ++index)
+                {
+                    if (index)
+                        json << ',';
+                    json << "{\"spell_id\":"
+                         << hunterPetIdentity.Spellbook[index].first
+                         << ",\"active\":"
+                         << uint32(hunterPetIdentity.Spellbook[index].second)
+                         << '}';
+                }
+            json << "],\"pet_autocast_spell_ids\":[";
+            for (size_t index = 0; index < ordinaryPet.AutocastSpellIds.size(); ++index)
+            {
+                if (index)
+                    json << ',';
+                json << ordinaryPet.AutocastSpellIds[index];
+            }
+            json << ']'
                  << ",\"arcane_brilliance\":" << (bot && (bot->HasAura(1459) || bot->HasAura(79058)) ? "true" : "false")
                  << ",\"molten_armor\":" << (bot && bot->HasAura(30482) ? "true" : "false")
                  << ",\"mage_armor\":" << (bot && bot->HasAura(6117) ? "true" : "false")
@@ -2733,6 +3587,74 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                  << ",\"dragonwrath_proc_aura\":" << (bot && bot->HasAura(101056) ? "true" : "false")
                  << ",\"mainhand_temp_enchant\":" << mainhandTempEnchant
                  << ",\"offhand_temp_enchant\":" << offhandTempEnchant
+                 << ",\"poison_setup_required\":"
+                 << (state.RoguePoisonSetupRequired ? "true" : "false")
+                 << ",\"poisons\":{\"mainhand\":";
+            auto writePoisonReceipt = [&json](
+                WorldBotState::NativePoisonSetupReceipt const& receipt)
+            {
+                bool const submitted = receipt.NativeUseSubmittedAtMs != 0;
+                bool const observed = submitted
+                    && receipt.NativeUseFinishedSuccessfully
+                    && receipt.NativeUseFinishedAtMs
+                        >= receipt.NativeUseSubmittedAtMs
+                    && receipt.NativeUseFinishedItemGuid
+                        == receipt.SubmittedItemGuid
+                    && receipt.NativeUseFinishedWeaponGuid
+                        == receipt.SubmittedWeaponGuid
+                    && receipt.ObservedWeaponGuid
+                        == receipt.SubmittedWeaponGuid
+                    && receipt.EnchantObservedAtMs
+                        >= receipt.NativeUseFinishedAtMs
+                    && receipt.ObservedEnchantId
+                        == receipt.RequiredEnchantId
+                    && receipt.ObservedEnchantDurationMs >= 900000;
+                json << "{\"equipment_slot\":"
+                     << uint32(receipt.EquipmentSlot)
+                     << ",\"required_item_entry\":"
+                     << receipt.RequiredItemEntry
+                     << ",\"required_spell_id\":"
+                     << receipt.RequiredSpellId
+                     << ",\"required_enchant_id\":"
+                     << receipt.RequiredEnchantId
+                     << ",\"item_available\":"
+                     << (receipt.ItemAvailable ? "true" : "false")
+                     << ",\"spell_available\":"
+                     << (receipt.SpellAvailable ? "true" : "false")
+                     << ",\"native_use_submitted\":"
+                     << (submitted ? "true" : "false")
+                     << ",\"native_use_submitted_at_ms\":"
+                     << receipt.NativeUseSubmittedAtMs
+                     << ",\"native_use_finished\":"
+                     << (receipt.NativeUseFinishedSuccessfully
+                            ? "true" : "false")
+                     << ",\"native_use_finished_at_ms\":"
+                     << receipt.NativeUseFinishedAtMs
+                     << ",\"native_use_finished_item_guid\":"
+                     << receipt.NativeUseFinishedItemGuid.GetCounter()
+                     << ",\"native_use_finished_weapon_guid\":"
+                     << receipt.NativeUseFinishedWeaponGuid.GetCounter()
+                     << ",\"submitted_item_guid\":"
+                     << receipt.SubmittedItemGuid.GetCounter()
+                     << ",\"submitted_weapon_guid\":"
+                     << receipt.SubmittedWeaponGuid.GetCounter()
+                     << ",\"observed_weapon_guid\":"
+                     << receipt.ObservedWeaponGuid.GetCounter()
+                     << ",\"enchant_observed\":"
+                     << (observed ? "true" : "false")
+                     << ",\"enchant_observed_at_ms\":"
+                     << receipt.EnchantObservedAtMs
+                     << ",\"observed_weapon_item_entry\":"
+                     << receipt.ObservedWeaponItemEntry
+                     << ",\"observed_enchant_id\":"
+                     << receipt.ObservedEnchantId
+                     << ",\"observed_enchant_duration_ms\":"
+                     << receipt.ObservedEnchantDurationMs << '}';
+            };
+            writePoisonReceipt(state.RogueMainhandPoisonSetup);
+            json << ",\"offhand\":";
+            writePoisonReceipt(state.RogueOffhandPoisonSetup);
+            json << "}"
                  << ",\"fire_totem\":{\"entry\":" << fireTotemEntry
                  << ",\"created_by_spell\":" << fireTotemCreatedBySpell
                  << ",\"attack_spell\":" << fireTotemSpell
@@ -2766,6 +3688,7 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                  << ",\"lunar_eclipse_active\":" << (bot && bot->HasAura(48518) ? "true" : "false") << '}'
                  << ",\"reference_setup\":{\"enabled\":" << (Cohort().Config.CombatCalibrationReferenceConditions ? "true" : "false")
                  << ",\"buffs_ready\":" << (metrics && metrics->ReferenceBuffsReady ? "true" : "false")
+                 << ",\"replenishment_required\":" << (CalibrationSpecUsesMana(Cohort().CalibrationTargetSpec) ? "true" : "false")
                  << ",\"buff_auras\":{\"53646\":" << (bot && bot->HasAura(53646) ? "true" : "false")
                  << ",\"79058\":" << (bot && bot->HasAura(79058) ? "true" : "false")
                  << ",\"24932\":" << (bot && bot->HasAura(24932) ? "true" : "false")
@@ -2778,6 +3701,9 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                     || bot->HasAura(1126) || bot->HasAura(79061)) ? "true" : "false")
                  << ",\"79102\":" << (bot && bot->HasAura(79102) ? "true" : "false")
                  << ",\"79470\":" << (bot && bot->HasAura(79470) ? "true" : "false")
+                 << ",\"79471\":" << (bot && bot->HasAura(79471) ? "true" : "false")
+                 << ",\"79472\":" << (bot && bot->HasAura(79472) ? "true" : "false")
+                 << ",\"85767\":" << (bot && bot->HasAura(85767) ? "true" : "false")
                  << ",\"87547\":" << (bot && bot->HasAura(87547) ? "true" : "false") << '}'
                  << ",\"balance_mushrooms_preplanted\":" << (metrics && metrics->BalanceMushroomsPreplanted ? "true" : "false")
                  << ",\"balance_mushroom_preplant_count\":" << (metrics ? uint32(metrics->BalanceMushroomPreplantCount) : 0)
@@ -2961,19 +3887,19 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
         ? double((Cohort().CalibrationScoredStartedMs ? Cohort().CalibrationScoredStartedMs : nowMs) - Cohort().CalibrationStartedMs) / 1000.0 : 0.0;
     double scoredSeconds = Cohort().CalibrationScoredStartedMs
         ? double((Cohort().CalibrationScoredEndedMs ? Cohort().CalibrationScoredEndedMs : nowMs) - Cohort().CalibrationScoredStartedMs) / 1000.0 : 0.0;
-    bool potionObserved = false;
-    bool racialCooldownObserved = false;
-    for (auto const& entry : Cohort().CalibrationMetricsByGuid)
-    {
-        CalibrationMetrics const& metrics = entry.second;
-        potionObserved = potionObserved || metrics.ActionAttempts.find(79476) != metrics.ActionAttempts.end();
-        racialCooldownObserved = racialCooldownObserved
-            || metrics.ActionAttempts.find(26297) != metrics.ActionAttempts.end()
-            || metrics.ActionAttempts.find(33697) != metrics.ActionAttempts.end();
-    }
+    std::map<uint32, CalibrationMetrics> const& executeMetricsByGuid =
+        Cohort().CalibrationWindowComplete && Cohort().CalibrationPreviousWindowValid
+            ? Cohort().CalibrationPreviousMetrics
+            : Cohort().CalibrationMetricsByGuid;
+    auto const executeMetricsItr = executeMetricsByGuid.find(
+        Cohort().CalibrationTargetGuid.GetCounter());
+    CalibrationMetrics const* executeMetrics = executeMetricsItr == executeMetricsByGuid.end()
+        ? nullptr : &executeMetricsItr->second;
     json << "{\"ok\":" << (Cohort().CalibrationFailureReason.empty() ? "true" : "false")
          << ",\"action\":\"botauto_calibrate_status\",\"cohort_id\":\"" << JsonEscape(Cohort().Id)
-         << "\",\"active\":" << (Cohort().CalibrationActive ? "true" : "false")
+         << "\",\"server_epoch\":" << _serverEpoch
+         << ",\"attempt_id\":" << Cohort().AttemptId
+         << ",\"active\":" << (Cohort().CalibrationActive ? "true" : "false")
          << ",\"failure_reason\":"
          << (Cohort().CalibrationFailureReason.empty()
                 ? "null"
@@ -2991,9 +3917,117 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
          << ",\"generic_ml_runtime_authority\":false"
          << ",\"isolated_from_route_telemetry\":true"
          << ",\"damage_basis\":\"effective_or_unmitigated\""
+         << ",\"fixture_contract\":{\"schema\":\""
+         << BotCalibrationFixtureContractGenerated::Schema
+         << "\",\"content_sha256\":\""
+         << BotCalibrationFixtureContractGenerated::ContentSha256
+         << "\",\"upstream_revision\":\""
+         << BotCalibrationFixtureContractGenerated::UpstreamRevision
+         << "\"}"
          << ",\"fixture_target\":{\"isolated_single_target\":"
          << (Cohort().CalibrationMode == "single_target_300" ? "true" : "false")
          << ",\"entry\":" << Cohort().CalibrationFixtureTargetEntry
+         << ",\"expected\":{\"entry\":"
+         << BotCalibrationFixtureContractGenerated::TargetEntry
+         << ",\"level\":"
+         << Cohort().CalibrationFixtureExpectedTargetLevel
+         << ",\"armor\":"
+         << Cohort().CalibrationFixtureExpectedTargetArmor
+         << ",\"creature_type\":"
+         << Cohort().CalibrationFixtureExpectedTargetCreatureType
+         << ",\"max_health\":"
+         << Cohort().CalibrationFixtureExpectedTargetMaxHealth
+         << ",\"passive\":true,\"runtime_min_distance_yards\":"
+         << (fixtureSpecContract
+                ? fixtureSpecContract->RuntimeMinimumDistanceYards : 0.0f)
+         << ",\"runtime_max_distance_yards\":"
+         << (fixtureSpecContract
+                ? fixtureSpecContract->RuntimeMaximumDistanceYards : 0.0f)
+         << '}'
+         << ",\"observed_at_provisioning\":{\"observed_at_ms\":"
+         << Cohort().CalibrationFixtureTargetProvisionedAtMs
+         << ",\"entry\":" << Cohort().CalibrationFixtureTargetEntry
+         << ",\"guid\":"
+         << Cohort().CalibrationFixtureTargetGuid.GetCounter()
+         << ",\"level\":"
+         << Cohort().CalibrationFixtureObservedTargetLevel
+         << ",\"armor\":"
+         << Cohort().CalibrationFixtureObservedTargetArmor
+         << ",\"creature_type\":"
+         << Cohort().CalibrationFixtureObservedTargetCreatureType
+         << ",\"creature_type_mask\":"
+         << Cohort().CalibrationFixtureObservedTargetCreatureTypeMask
+         << ",\"max_health\":"
+         << Cohort().CalibrationFixtureObservedTargetMaxHealth
+         << ",\"map_id\":" << Cohort().CalibrationFixtureTargetMapId
+         << ",\"x\":" << Cohort().CalibrationFixtureTargetX
+         << ",\"y\":" << Cohort().CalibrationFixtureTargetY
+         << ",\"z\":" << Cohort().CalibrationFixtureTargetZ << '}'
+         << ",\"observed_before_scoring\":{\"observed_at_ms\":"
+         << Cohort().CalibrationFixtureTargetObservedBeforeScoringAtMs
+         << ",\"before_scoring\":"
+         << (Cohort().CalibrationFixtureTargetObservedBeforeScoringAtMs
+                && Cohort().CalibrationScoredStartedMs
+                && Cohort().CalibrationFixtureTargetObservedBeforeScoringAtMs
+                    <= Cohort().CalibrationScoredStartedMs ? "true" : "false")
+         << ",\"entry\":" << Cohort().CalibrationFixtureTargetEntry
+         << ",\"guid\":"
+         << Cohort().CalibrationFixtureBeforeScoringTargetGuid.GetCounter()
+         << ",\"level\":"
+         << Cohort().CalibrationFixtureBeforeScoringTargetLevel
+         << ",\"armor\":"
+         << Cohort().CalibrationFixtureBeforeScoringTargetArmor
+         << ",\"creature_type\":"
+         << Cohort().CalibrationFixtureBeforeScoringTargetCreatureType
+         << ",\"creature_type_mask\":"
+         << Cohort().CalibrationFixtureBeforeScoringTargetCreatureTypeMask
+         << ",\"max_health\":"
+         << Cohort().CalibrationFixtureBeforeScoringTargetMaxHealth
+         << ",\"map_id\":"
+         << Cohort().CalibrationFixtureBeforeScoringTargetMapId
+         << ",\"x\":" << Cohort().CalibrationFixtureBeforeScoringTargetX
+         << ",\"y\":" << Cohort().CalibrationFixtureBeforeScoringTargetY
+         << ",\"z\":" << Cohort().CalibrationFixtureBeforeScoringTargetZ
+         << ",\"bot_target_distance\":"
+         << Cohort().CalibrationFixtureBeforeScoringBotTargetDistance
+         << ",\"in_combat\":"
+         << (Cohort().CalibrationFixtureBeforeScoringTargetInCombat ? "true" : "false")
+         << ",\"has_victim\":"
+         << (Cohort().CalibrationFixtureBeforeScoringTargetHasVictim ? "true" : "false") << '}'
+         << ",\"scored_passive_observation\":{\"sample_count\":"
+         << Cohort().CalibrationFixtureTargetPassiveObservationSampleCount
+         << ",\"target_guid\":"
+         << Cohort().CalibrationFixtureTargetGuid.GetCounter()
+         << ",\"window_started_at_ms\":"
+         << Cohort().CalibrationScoredStartedMs
+         << ",\"window_ended_at_ms\":"
+         << Cohort().CalibrationScoredEndedMs
+         << ",\"first_sample_at_ms\":"
+         << Cohort().CalibrationFixtureTargetFirstPassiveObservedAtMs
+         << ",\"last_sample_at_ms\":"
+         << Cohort().CalibrationFixtureTargetLastPassiveObservedAtMs
+         << ",\"maximum_sample_gap_ms\":"
+         << Cohort().CalibrationFixtureTargetMaximumPassiveObservationGapMs
+         << ",\"victim_observation_sample_count\":"
+         << Cohort().CalibrationFixtureTargetVictimObservationSampleCount
+         << ",\"target_attack_attempt_event_count\":"
+         << Cohort().CalibrationFixtureTargetAttackEventCount
+         << ",\"target_originated_damage_event_count\":"
+         << Cohort().CalibrationFixtureTargetOriginatedDamageEventCount
+         << ",\"target_attack_event_count\":"
+         << Cohort().CalibrationFixtureTargetAttackEventCount
+                + Cohort().CalibrationFixtureTargetOriginatedDamageEventCount
+         << ",\"passive\":"
+         << (Cohort().CalibrationFixtureTargetPassiveObservationSampleCount
+                && !Cohort().CalibrationFixtureTargetVictimObservationSampleCount
+                && !Cohort().CalibrationFixtureTargetAttackEventCount
+                && !Cohort().CalibrationFixtureTargetOriginatedDamageEventCount
+                ? "true" : "false") << '}'
+         << ",\"target_attack_observation_sample_count\":"
+         << Cohort().CalibrationFixtureTargetPassiveObservationSampleCount
+         << ",\"target_attack_event_count\":"
+         << Cohort().CalibrationFixtureTargetAttackEventCount
+                + Cohort().CalibrationFixtureTargetOriginatedDamageEventCount
          << ",\"runtime_guid\":"
          << Cohort().CalibrationFixtureTargetGuid.GetCounter()
          << ",\"map_id\":" << Cohort().CalibrationFixtureTargetMapId
@@ -3034,34 +4068,108 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
          << ",\"reset_applied\":" << (!Cohort().CalibrationResetId.empty() ? "true" : "false")
          << ",\"reset_id\":\"" << JsonEscape(Cohort().CalibrationResetId) << "\""
          << ",\"cross_window_event_count\":" << Cohort().CalibrationCrossWindowEventCount
+         << ",\"excluded_boundary_damage_event_count\":"
+         << Cohort().CalibrationExcludedBoundaryDamageEventCount
          << ",\"current_damage_phase\":\"" << JsonEscape(Cohort().CalibrationCurrentDamagePhase) << "\""
          << ",\"normalization\":{\"gear_basis\":\"equipped_clone_average_item_level\""
          << ",\"buff_basis\":\"" << (Cohort().Config.CombatCalibrationReferenceConditions
-            ? "full_raid_reference_auras" : "stonecore_party_owned_buffs") << "\""
+            ? "exact_static_fixture_auras" : "stonecore_party_owned_buffs") << "\""
          << ",\"flask\":" << (Cohort().Config.CombatCalibrationReferenceConditions ? "true" : "false")
-         << ",\"heroism_window_seconds\":" << (Cohort().Config.CombatCalibrationReferenceConditions ? 40 : 0)
-         << ",\"external_power_infusion_windows_seconds\":"
-         << (Cohort().Config.CombatCalibrationReferenceConditions && Cohort().CalibrationTargetSpec == "shadow_priest"
-            ? "[[40,55],[160,175],[280,295]]" : "[]")
-         << ",\"dark_intent_proc_uptime_pct\":"
-         << (Cohort().Config.CombatCalibrationReferenceConditions && Cohort().CalibrationTargetSpec == "shadow_priest" ? 90 : 0)
+         << ",\"heroism_window_seconds\":0"
+         << ",\"external_power_infusion_windows_seconds\":[]"
+         << ",\"external_power_infusion_source_count\":0"
+         << ",\"dark_intent_base\":false"
+         << ",\"dark_intent_proc_uptime_pct\":0"
          << ",\"food_buff_spell_id\":"
          << (Cohort().Config.CombatCalibrationReferenceConditions
              && (Cohort().CalibrationTargetSpec == "shadow_priest" || Cohort().CalibrationTargetSpec == "balance_druid")
             ? 87547 : 0)
-         << ",\"synapse_springs_windows_seconds\":"
-         << (Cohort().Config.CombatCalibrationReferenceConditions && Cohort().CalibrationTargetSpec == "shadow_priest"
-            ? "[[0,10],[60,70],[120,130],[180,190],[240,250]]" : "[]")
+         << ",\"synapse_springs_windows_seconds\":[]"
          << ",\"dispersion_cast_cap\":0"
-         << ",\"potions\":" << (potionObserved ? "true" : "false")
-         << ",\"engineering_cooldowns\":"
-         << (Cohort().Config.CombatCalibrationReferenceConditions && Cohort().CalibrationTargetSpec == "shadow_priest" ? "true" : "false")
-         << ",\"racial_cooldowns\":" << (racialCooldownObserved ? "true" : "false")
-         << ",\"consumables\":" << (Cohort().Config.CombatCalibrationReferenceConditions ? "true" : "false")
+         << ",\"potions\":false"
+         << ",\"engineering_cooldowns\":false"
+         << ",\"racial_cooldowns\":false"
+         << ",\"dynamic_consumable_actions\":false"
+         << ",\"consumables\":false"
          << ",\"target_debuffs\":" << (Cohort().Config.CombatCalibrationReferenceConditions ? "true" : "false")
          << ",\"reference_conditions\":" << (Cohort().Config.CombatCalibrationReferenceConditions ? "true" : "false")
          << ",\"external_bis_target_configured\":false"
-         << ",\"comparison_policy\":\"sustained_completed_windows_only\"}"
+         << ",\"execute_threshold_windows\":";
+    if (Cohort().CalibrationMode != "single_target_300")
+        json << "null";
+    else
+    {
+        json << "{\"schema\":\"wowsims_cata_single_target_health_schedule_v1\""
+             << ",\"source_authority\":\"pinned_wowsims_cata_core_test_utils_make_single_target_encounter\""
+             << ",\"source_duration_ms\":" << CalibrationSingleTargetDurationMs
+             << ",\"source_duration_variation_ms\":0"
+             << ",\"source_execute_proportions\":{\"90\":0.9,\"35\":0.35,\"25\":0.25,\"20\":0.2}"
+             << ",\"interval_semantics\":\"start_inclusive_end_exclusive\""
+             << ",\"fixture_only\":true,\"non_certifying\":true,\"windows\":[";
+        for (size_t index = 0; index < CalibrationExecuteHealthWindows.size(); ++index)
+        {
+            if (index)
+                json << ',';
+            CalibrationExecuteHealthWindow const& phase = CalibrationExecuteHealthWindows[index];
+            CalibrationMetrics::TargetHealthPhaseObservation const* observation = executeMetrics
+                ? &executeMetrics->TargetHealthPhaseObservations[index] : nullptr;
+            uint64 const minimumHealth = observation && observation->SampleCount
+                ? observation->MinimumObservedHealth : 0;
+            uint64 const minimumMaxHealth = observation && observation->SampleCount
+                ? observation->MinimumObservedMaxHealth : 0;
+            uint64 const minimumPreDamageHealth = observation
+                && observation->DamageEventSampleCount
+                    ? observation->MinimumPreDamageHealth : 0;
+            uint64 const minimumProjectedPostDamageHealth = observation
+                && observation->DamageEventSampleCount
+                    ? observation->MinimumProjectedPostDamageHealth : 0;
+            uint64 const minimumDamageEventMaxHealth = observation
+                && observation->DamageEventSampleCount
+                    ? observation->MinimumDamageEventMaxHealth : 0;
+            json << "{\"phase\":\"" << phase.Phase << "\""
+                 << ",\"start_ms\":" << phase.StartMs
+                 << ",\"end_ms\":" << phase.EndMs
+                 << ",\"configured_target_health_pct\":" << uint32(phase.TargetHealthPct)
+                 << ",\"health_pct_lower_bound\":" << uint32(phase.LowerBoundPct)
+                 << ",\"lower_bound_inclusive\":" << (phase.LowerBoundInclusive ? "true" : "false")
+                 << ",\"health_pct_upper_bound\":" << uint32(phase.UpperBoundPct)
+                 << ",\"upper_bound_inclusive\":" << (phase.UpperBoundInclusive ? "true" : "false")
+                 << ",\"observation\":{\"sample_count\":"
+                 << (observation ? observation->SampleCount : 0)
+                 << ",\"first_elapsed_ms\":"
+                 << (observation ? observation->FirstObservedElapsedMs : 0)
+                 << ",\"last_elapsed_ms\":"
+                 << (observation ? observation->LastObservedElapsedMs : 0)
+                 << ",\"minimum_observed_health\":" << minimumHealth
+                 << ",\"maximum_observed_health\":"
+                 << (observation ? observation->MaximumObservedHealth : 0)
+                 << ",\"minimum_observed_max_health\":" << minimumMaxHealth
+                 << ",\"maximum_observed_max_health\":"
+                 << (observation ? observation->MaximumObservedMaxHealth : 0)
+                 << ",\"damage_event_sample_count\":"
+                 << (observation ? observation->DamageEventSampleCount : 0)
+                 << ",\"first_damage_event_elapsed_ms\":"
+                 << (observation ? observation->FirstDamageEventElapsedMs : 0)
+                 << ",\"last_damage_event_elapsed_ms\":"
+                 << (observation ? observation->LastDamageEventElapsedMs : 0)
+                 << ",\"minimum_pre_damage_health\":" << minimumPreDamageHealth
+                 << ",\"maximum_pre_damage_health\":"
+                 << (observation ? observation->MaximumPreDamageHealth : 0)
+                 << ",\"minimum_projected_post_damage_health\":"
+                 << minimumProjectedPostDamageHealth
+                 << ",\"maximum_projected_post_damage_health\":"
+                 << (observation ? observation->MaximumProjectedPostDamageHealth : 0)
+                 << ",\"minimum_damage_event_max_health\":"
+                 << minimumDamageEventMaxHealth
+                 << ",\"maximum_damage_event_max_health\":"
+                 << (observation ? observation->MaximumDamageEventMaxHealth : 0)
+                 << ",\"maximum_damage_event\":"
+                 << (observation ? observation->MaximumDamageEvent : 0)
+                 << "}}";
+        }
+        json << "]}";
+    }
+    json << ",\"comparison_policy\":\"sustained_completed_windows_only\"}"
          << ",\"completed_windows\":{\"single_target\":" << Cohort().CalibrationCompletedSingleWindows
          << ",\"aoe\":" << Cohort().CalibrationCompletedAoeWindows << "}"
          << ",\"bots\":";
@@ -4066,12 +5174,61 @@ void BotWorldPopulationMgr::Update(uint32 diff)
             populationReady = populationReady && calibrationBot && calibrationBot->IsInWorld()
                 && calibrationBot->IsAlive() && calibrationBot->GetGroup()
                 && calibrationBot->GetGroup()->GetMembersCount() == expectedPopulation;
+            bool const calibrationUnholyPresenceRequired =
+                Cohort().CalibrationTargetSpec == "frost_death_knight"
+                || Cohort().CalibrationTargetSpec == "unholy_death_knight";
+            if (populationReady && calibrationBot
+                && calibrationUnholyPresenceRequired)
+                populationReady = calibrationState.RequiredPresenceSetupSpellId == 48265
+                    && calibrationState.RequiredPresenceSetupAuraId == 48265
+                    && calibrationState.RequiredPresenceSetupSpellKnown
+                    && calibrationBot->HasSpell(48265)
+                    && calibrationBot->HasAura(48265)
+                    && calibrationState.PresenceSetupNativeCastSubmittedAtMs
+                    && calibrationState.PresenceSetupAuraObservedAtMs
+                        >= calibrationState.PresenceSetupNativeCastSubmittedAtMs;
+            bool const calibrationPetRequired =
+                Cohort().CalibrationTargetSpec == "affliction_warlock"
+                || Cohort().CalibrationTargetSpec == "demonology_warlock"
+                || Cohort().CalibrationTargetSpec == "unholy_death_knight";
+            if (populationReady && calibrationBot && calibrationPetRequired)
+            {
+                WorldBotState::NativePersistentPetSetupReceipt const& petSetup =
+                    calibrationState.PersistentPetSetup;
+                populationReady = petSetup.RequiredSummonSpellId
+                    && petSetup.RequiredCreatedBySpellId
+                    && petSetup.RequiredEntry && petSetup.SummonSpellKnown
+                    && calibrationBot->HasSpell(petSetup.RequiredSummonSpellId)
+                    && petSetup.NativeCastSubmittedAtMs
+                    && petSetup.NativeCastFinishedSuccessfully
+                    && petSetup.NativeCastFinishedAtMs
+                        >= petSetup.NativeCastSubmittedAtMs
+                    && petSetup.NativeCastObservedAtMs
+                        >= petSetup.NativeCastFinishedAtMs
+                    && OrdinaryPersistentPetMatches(
+                        ObserveOrdinaryPetSetup(calibrationBot),
+                        petSetup.RequiredEntry, petSetup.RequiredFamilyId,
+                        petSetup.RequiredPetType, petSetup.RequiredPowerType,
+                        petSetup.RequiredCreatedBySpellId);
+            }
+            bool const calibrationRoguePoisonRequired =
+                Cohort().CalibrationTargetSpec == "assassination_rogue"
+                || Cohort().CalibrationTargetSpec == "combat_rogue";
+            if (!populationReady || !calibrationBot
+                || !calibrationRoguePoisonRequired)
+                continue;
+            populationReady = calibrationState.RoguePoisonSetupRequired
+                && IsNativePoisonSetupReady(calibrationBot,
+                    calibrationState.RogueMainhandPoisonSetup)
+                && IsNativePoisonSetupReady(calibrationBot,
+                    calibrationState.RogueOffhandPoisonSetup);
         }
         if (!Cohort().CalibrationScoredStartedMs && populationReady
             && NowMs() - Cohort().CalibrationStartedMs >= 15000)
             ResetCalibrationScoredWindow();
         if (Cohort().CalibrationScoredStartedMs && !Cohort().CalibrationWindowComplete)
         {
+            UpdateCalibrationTargetHealthSchedule(NowMs());
             UpdateCalibrationControlledDamage();
             if (NowMs() - Cohort().CalibrationScoredStartedMs >= 300000)
                 CompleteCalibrationScoredWindow();
@@ -7473,7 +8630,24 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
     if (!Cohort().CalibrationFailureReason.empty())
         return;
 
-    static constexpr uint32 IsolatedSingleTargetDummyEntry = 44548;
+    static constexpr uint32 IsolatedSingleTargetDummyEntry =
+        BotCalibrationFixtureContractGenerated::TargetEntry;
+    // WoWSims FreshDefaultTargetConfig at the campaign's pinned revision uses
+    // CharacterLevel + 3, 11,977 armor, and MobTypeMechanical. The fixture is
+    // explicitly non-certifying, but its comparison target must still expose
+    // those exact native inputs before any scored action is allowed.
+    static constexpr uint8 IsolatedSingleTargetLevel =
+        BotCalibrationFixtureContractGenerated::TargetLevel;
+    static constexpr uint32 IsolatedSingleTargetArmor =
+        BotCalibrationFixtureContractGenerated::TargetArmor;
+    static constexpr uint32 IsolatedSingleTargetCreatureType =
+        BotCalibrationFixtureContractGenerated::TargetCreatureType;
+    // The narrowest configured-to-boundary margin is the 22% fixture value to
+    // the 20% execute gate. One billion health therefore gives that interval a
+    // 20M native-damage safety margin; per-damage-event observations
+    // independently prove that no interval consumes the margin.
+    static constexpr uint32 IsolatedSingleTargetMaxHealth =
+        BotCalibrationFixtureContractGenerated::TargetMaxHealth;
     static constexpr float IsolatedSingleTargetDummyX = -9060.0f;
     static constexpr float IsolatedSingleTargetDummyY = 520.0f;
     static constexpr float IsolatedSingleTargetGroundZ = 75.8f;
@@ -7488,6 +8662,17 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
     bool const rangedSingleTargetMode = Cohort().CalibrationMode == "single_target_300"
         && UsesRangedAoeCalibrationLane(Cohort().CalibrationTargetSpec);
     bool const isolatedSingleTargetMode = Cohort().CalibrationMode == "single_target_300";
+    if (isolatedSingleTargetMode)
+    {
+        Cohort().CalibrationFixtureExpectedTargetLevel =
+            IsolatedSingleTargetLevel;
+        Cohort().CalibrationFixtureExpectedTargetArmor =
+            IsolatedSingleTargetArmor;
+        Cohort().CalibrationFixtureExpectedTargetCreatureType =
+            IsolatedSingleTargetCreatureType;
+        Cohort().CalibrationFixtureExpectedTargetMaxHealth =
+            IsolatedSingleTargetMaxHealth;
+    }
     // Single-target comparison uses one temporary server-owned dummy in an open
     // fixture lane, at least 45 yards from every other hostile visible to the bot.
     // This preserves legitimate single-target spells with area-capable semantics
@@ -7650,11 +8835,22 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
                 IsolatedSingleTargetGroundZ + 4.0f, true, 64.0f) : INVALID_HEIGHT;
             TempSummon* fixtureTarget = nullptr;
             if (map && fixtureZ != INVALID_HEIGHT)
+            {
+                SummonCreatureExtraArgs fixtureArgs;
+                fixtureArgs.SetSummonDuration(20 * 60 * IN_MILLISECONDS);
+                fixtureArgs.CreatureLevel = IsolatedSingleTargetLevel;
+                fixtureArgs.SummonHealth = IsolatedSingleTargetMaxHealth;
                 fixtureTarget = map->SummonCreature(IsolatedSingleTargetDummyEntry,
                     Position{ IsolatedSingleTargetDummyX,
                         IsolatedSingleTargetDummyY, fixtureZ, 0.0f },
-                    SummonCreatureExtraArgs().SetSummonDuration(
-                        20 * 60 * IN_MILLISECONDS));
+                    fixtureArgs);
+            }
+
+            // Set the native physical armor once, immediately after the
+            // server-owned summon and before scoring. No active calibration
+            // tick is permitted to rewrite level, armor, or creature type.
+            if (fixtureTarget)
+                fixtureTarget->SetArmor(IsolatedSingleTargetArmor);
 
             // The scan radius is also the conservative lower bound when no
             // other attackable creature is present. Avoid serializing an
@@ -7709,11 +8905,19 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
                 ? (nativeLineOfSight && botTargetDistance >= 5.0f
                     && botTargetDistance <= 40.0f && nativePathReachable)
                 : nativeMeleeFixtureReady;
+            bool const fixtureTargetFidelityValidated = fixtureTarget
+                && fixtureTarget->getLevel() == IsolatedSingleTargetLevel
+                && fixtureTarget->GetArmor() == IsolatedSingleTargetArmor
+                && fixtureTarget->GetCreatureType()
+                    == IsolatedSingleTargetCreatureType
+                && fixtureTarget->GetMaxHealth()
+                    == IsolatedSingleTargetMaxHealth;
 
             bool const fixtureValid = fixtureTarget
                 && bot->IsValidAttackTarget(fixtureTarget)
                 && nearestHostileClearance >= MinimumIsolatedDummyClearance
-                && fixtureGeometryValidated;
+                && fixtureGeometryValidated
+                && fixtureTargetFidelityValidated;
             if (!fixtureValid)
             {
                 if (fixtureTarget)
@@ -7724,9 +8928,11 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
                     CharacterDatabase.DirectPExecute(
                         "UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u",
                         candidateGuid);
-                Cohort().LastPopulationFailureReason = !nativeMeleeFixtureReady
-                    ? "calibration_isolated_melee_fixture_unreachable"
-                    : "calibration_isolated_target_provisioning_failed";
+                Cohort().LastPopulationFailureReason = !fixtureTargetFidelityValidated
+                    ? "calibration_isolated_target_fidelity_mismatch"
+                    : (!nativeMeleeFixtureReady
+                        ? "calibration_isolated_melee_fixture_unreachable"
+                        : "calibration_isolated_target_provisioning_failed");
                 Cohort().CalibrationFailureReason =
                     Cohort().LastPopulationFailureReason;
                 Cohort().CalibrationWindowComplete = true;
@@ -7735,6 +8941,16 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
 
             Cohort().CalibrationFixtureTargetGuid = fixtureTarget->GetGUID();
             Cohort().CalibrationFixtureTargetEntry = fixtureTarget->GetEntry();
+            Cohort().CalibrationFixtureObservedTargetLevel =
+                fixtureTarget->getLevel();
+            Cohort().CalibrationFixtureObservedTargetArmor =
+                fixtureTarget->GetArmor();
+            Cohort().CalibrationFixtureObservedTargetCreatureType =
+                fixtureTarget->GetCreatureType();
+            Cohort().CalibrationFixtureObservedTargetCreatureTypeMask =
+                fixtureTarget->GetCreatureTypeMask();
+            Cohort().CalibrationFixtureObservedTargetMaxHealth =
+                fixtureTarget->GetMaxHealth();
             Cohort().CalibrationFixtureTargetMapId = fixtureTarget->GetMapId();
             Cohort().CalibrationFixtureTargetX = fixtureTarget->GetPositionX();
             Cohort().CalibrationFixtureTargetY = fixtureTarget->GetPositionY();
@@ -7864,23 +9080,71 @@ void BotWorldPopulationMgr::EnsureCalibrationCohortGroup()
 
 void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
 {
-    uint64 const startedMs = NowMs();
-    Cohort().CalibrationScoredStartedMs = startedMs;
+    // This function is the calibration controller's final provisioning
+    // boundary. Publish the scored start timestamp only after every resource,
+    // target, and gear observation below has been read back successfully.
+    Cohort().CalibrationScoredStartedMs = 0;
     Cohort().CalibrationScoredEndedMs = 0;
     Cohort().CalibrationLastPostWindowDrainMs = 0;
     Cohort().CalibrationLastControlledEventSecond = std::numeric_limits<uint64>::max();
     Cohort().CalibrationCrossWindowEventCount = 0;
+    Cohort().CalibrationExcludedBoundaryDamageEventCount = 0;
+    Cohort().CalibrationFixtureTargetPassiveObservationSampleCount = 0;
+    Cohort().CalibrationFixtureTargetVictimObservationSampleCount = 0;
+    Cohort().CalibrationFixtureTargetAttackEventCount = 0;
+    Cohort().CalibrationFixtureTargetOriginatedDamageEventCount = 0;
+    Cohort().CalibrationFixtureTargetFirstPassiveObservedAtMs = 0;
+    Cohort().CalibrationFixtureTargetLastPassiveObservedAtMs = 0;
+    Cohort().CalibrationFixtureTargetMaximumPassiveObservationGapMs = 0;
     Cohort().CalibrationInterruptTargetGuid.Clear();
     Cohort().CalibrationCurrentDamagePhase.clear();
     Cohort().CalibrationResetId = Cohort().CalibrationTargetSpec + ":" + Cohort().CalibrationMode
         + ":seed-" + std::to_string(Cohort().CalibrationSeed);
+
+    using namespace BotCalibrationFixtureContractGenerated;
+    SpecContract const* fixtureContract = Cohort().CalibrationMode
+            == "single_target_300"
+        ? FindSpec(Cohort().CalibrationTargetSpec) : nullptr;
+    if (Cohort().CalibrationMode == "single_target_300"
+        && (!fixtureContract
+            || !fixtureContract->PetRuntimeProjectionComplete))
+    {
+        Cohort().LastPopulationFailureReason = fixtureContract
+            ? "calibration_pet_runtime_projection_incomplete"
+            : "calibration_fixture_spec_contract_missing";
+        Cohort().CalibrationFailureReason =
+            Cohort().LastPopulationFailureReason;
+        Cohort().CalibrationWindowComplete = true;
+        return;
+    }
+
+    Creature* preScoreFixtureTarget = nullptr;
+    if (Cohort().CalibrationMode == "single_target_300")
+        for (WorldBotState const& state : Party().CalibrationBots)
+            if (state.Guid == Cohort().CalibrationTargetGuid)
+                if (Player* targetBot = GetLoadedBot(state);
+                    targetBot && targetBot->GetMap())
+                    preScoreFixtureTarget = targetBot->GetMap()->GetCreature(
+                        Cohort().CalibrationFixtureTargetGuid);
+
+    // Warmup is setup-only. Keep t=0 unpublished while any normal native
+    // setup cast, item use, or pet summon is still pending.
+    if (Cohort().CalibrationMode == "single_target_300")
+        for (WorldBotState& state : Party().CalibrationBots)
+            if (Player* bot = GetLoadedBot(state))
+            {
+                ApplyCalibrationReferenceConditions(
+                    bot, preScoreFixtureTarget);
+                if (TryEnsurePersistentCombatSetup(
+                    state, bot, preScoreFixtureTarget))
+                    return;
+            }
 
     for (WorldBotState& state : Party().CalibrationBots)
     {
         Player* bot = GetLoadedBot(state);
         CalibrationMetrics& metrics = Cohort().CalibrationMetricsByGuid[state.Guid.GetCounter()];
         metrics = CalibrationMetrics();
-        metrics.WindowStartedMs = startedMs;
         state.DecisionTimer = 0;
         if (!bot)
             continue;
@@ -7902,17 +9166,152 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
         bot->RemoveAllGameObjects();
         bot->CombatStopWithPets(true);
         bot->SetFullHealth();
-        if (bot->GetMaxPower(POWER_MANA))
-            bot->SetPower(POWER_MANA, bot->GetMaxPower(POWER_MANA));
-        if (bot->getClass() == CLASS_WARLOCK && bot->GetMaxPower(POWER_SOUL_SHARDS))
-            bot->SetPower(POWER_SOUL_SHARDS, bot->GetMaxPower(POWER_SOUL_SHARDS));
-        // Protection Warrior snap threat must not depend on the arbitrary rage
-        // remaining after the discarded warmup. Begin the declared tank-threat
-        // opener from the same full pre-pull resource state for every seed.
-        if (Cohort().CalibrationMode == "tank_threat_300"
-            && Cohort().CalibrationTargetSpec == "protection_warrior"
-            && bot->GetMaxPower(POWER_RAGE))
-            bot->SetPower(POWER_RAGE, bot->GetMaxPower(POWER_RAGE));
+        if (Cohort().CalibrationMode == "single_target_300")
+        {
+            std::string const& spec = Cohort().CalibrationTargetSpec;
+            using namespace BotCalibrationFixtureContractGenerated;
+            SpecContract const* contract = FindSpec(spec);
+            metrics.InitialResourceSourceContract = ContentSha256;
+            auto addPower = [&metrics](Unit* unit, char const* unitKind,
+                Powers power, char const* name, uint32 exactNativeValue,
+                bool maximum)
+            {
+                uint32 const maxNative = unit
+                    ? std::max<int32>(0, unit->GetMaxPower(power)) : 0;
+                uint32 const expectedNative = maximum ? maxNative : exactNativeValue;
+                // Player fixture resource initialization is server-owned and
+                // non-certifying. A pet is already an active player-owned
+                // actor, however, so its native post-summon resource must only
+                // be observed here and must never be refilled by the fixture.
+                if (unit && std::string_view(unitKind) != "pet")
+                    unit->SetPower(power, int32(expectedNative));
+                uint32 const observedNative = unit ? unit->GetPower(power) : 0;
+                auto displayValue = [power](uint32 value)
+                {
+                    return power == POWER_RAGE || power == POWER_RUNIC_POWER
+                        ? value / 10 : value;
+                };
+                CalibrationMetrics::InitialPowerObservation observation;
+                observation.PowerType = uint8(power);
+                observation.UnitKind = unitKind;
+                observation.UnitGuid = unit
+                    ? unit->GetGUID().GetCounter() : 0;
+                observation.PowerName = name;
+                observation.ExpectedNativeValue = expectedNative;
+                observation.ExpectedDisplayValue = displayValue(expectedNative);
+                observation.ObservedNativeValue = observedNative;
+                observation.ObservedDisplayValue = displayValue(observedNative);
+                observation.ObservedMaximumNativeValue = maxNative;
+                observation.ExpectedMaximum = maximum;
+                observation.MatchesContract = unit && maxNative
+                    && observedNative == expectedNative
+                    && (std::string_view(unitKind) != "pet"
+                        || unit->GetPowerType() == power);
+                metrics.InitialPowerObservations.push_back(std::move(observation));
+            };
+
+            if (contract && contract->PowerOffset + contract->PowerCount
+                    <= PowerContracts.size())
+            {
+                for (uint32 index = 0; index < contract->PowerCount; ++index)
+                {
+                    PowerContract const& power =
+                        PowerContracts[contract->PowerOffset + index];
+                    Unit* unit = std::string_view(power.UnitKind) == "pet"
+                        ? static_cast<Unit*>(bot->GetPet())
+                        : static_cast<Unit*>(bot);
+                    addPower(unit, power.UnitKind, Powers(power.PowerType),
+                        power.Name, power.ExactNativeValue, power.Maximum);
+                }
+            }
+
+            if (contract && contract->RunesReadyMask)
+            {
+                bot->InitRunes();
+                metrics.InitialRunesRequired = true;
+                metrics.InitialExpectedRuneReadyMask =
+                    contract->RunesReadyMask;
+                metrics.InitialObservedRuneReadyMask = bot->GetRunesState();
+            }
+
+            if (contract && contract->ComboPoints != 255)
+            {
+                bot->ClearComboPoints();
+                metrics.InitialComboPointsRequired = true;
+                metrics.InitialExpectedComboPoints = contract->ComboPoints;
+                metrics.InitialObservedComboPoints = bot->GetComboPoints();
+            }
+
+            if (contract && contract->NeutralEclipse)
+            {
+                bot->RemoveAurasDueToSpell(48517);
+                bot->RemoveAurasDueToSpell(48518);
+                metrics.InitialNeutralEclipseRequired = true;
+                metrics.InitialNeutralEclipseObserved =
+                    !bot->HasAura(48517) && !bot->HasAura(48518)
+                    && bot->GetPower(POWER_ECLIPSE) == 0;
+            }
+
+            bool const petResourceRequired = contract
+                && contract->PetResourceRequired;
+            metrics.InitialPetResourceRequired = petResourceRequired;
+            metrics.InitialPetResourceObserved = !petResourceRequired
+                || std::any_of(metrics.InitialPowerObservations.begin(),
+                    metrics.InitialPowerObservations.end(),
+                    [](CalibrationMetrics::InitialPowerObservation const& row)
+                    {
+                        return row.UnitKind == "pet"
+                            && row.MatchesContract;
+                    });
+
+            metrics.InitialResourcesObservedAtMs = NowMs();
+            metrics.InitialResourcesApplied = contract
+                && !metrics.InitialPowerObservations.empty();
+            metrics.InitialResourcesMatchContract = metrics.InitialResourcesApplied
+                && std::all_of(metrics.InitialPowerObservations.begin(),
+                    metrics.InitialPowerObservations.end(),
+                    [](CalibrationMetrics::InitialPowerObservation const& row)
+                    {
+                        return row.MatchesContract;
+                    })
+                && (!metrics.InitialRunesRequired
+                    || metrics.InitialObservedRuneReadyMask
+                        == metrics.InitialExpectedRuneReadyMask)
+                && (!metrics.InitialComboPointsRequired
+                    || metrics.InitialObservedComboPoints
+                        == metrics.InitialExpectedComboPoints)
+                && (!metrics.InitialNeutralEclipseRequired
+                    || metrics.InitialNeutralEclipseObserved)
+                && (!metrics.InitialPetResourceRequired
+                    || metrics.InitialPetResourceObserved);
+
+            std::vector<RaidRosterItemIdentity> initialGear;
+            if (!ObserveEquippedGearIdentity(bot, initialGear,
+                metrics.InitialGearManifestSha256))
+                metrics.InitialResourcesMatchContract = false;
+            metrics.LastObservedGearManifestSha256 =
+                metrics.InitialGearManifestSha256;
+            // The provisioning identity is the comparison baseline. Scored
+            // continuity sampling begins exactly at the published t=0 edge.
+            metrics.GearIdentitySampleCount = 0;
+            metrics.FirstGearIdentityObservedAtMs = 0;
+            metrics.LastGearIdentityObservedAtMs = 0;
+        }
+        else
+        {
+            if (bot->GetMaxPower(POWER_MANA))
+                bot->SetPower(POWER_MANA, bot->GetMaxPower(POWER_MANA));
+            if (bot->getClass() == CLASS_WARLOCK
+                && bot->GetMaxPower(POWER_SOUL_SHARDS))
+                bot->SetPower(POWER_SOUL_SHARDS,
+                    bot->GetMaxPower(POWER_SOUL_SHARDS));
+            // Protection Warrior snap threat must not depend on the arbitrary
+            // rage remaining after the discarded warmup.
+            if (Cohort().CalibrationMode == "tank_threat_300"
+                && Cohort().CalibrationTargetSpec == "protection_warrior"
+                && bot->GetMaxPower(POWER_RAGE))
+                bot->SetPower(POWER_RAGE, bot->GetMaxPower(POWER_RAGE));
+        }
 
         std::vector<ObjectGuid> ownedCasterGuids = { bot->GetGUID() };
         std::vector<TempSummon*> temporarySummons;
@@ -7922,7 +9321,6 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
             ownedCasterGuids.push_back(pet->GetGUID());
             pet->CombatStop(true);
             pet->GetSpellHistory()->ResetAllCooldowns();
-            pet->SetFullHealth();
         }
         std::vector<Unit*> controlledUnits(bot->m_Controlled.begin(), bot->m_Controlled.end());
         for (Unit* controlled : controlledUnits)
@@ -7959,14 +9357,435 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
             if (summon && summon->IsInWorld())
                 summon->UnSummon();
     }
+
+    if (Cohort().CalibrationMode == "single_target_300")
+    {
+        Player* targetBot = nullptr;
+        for (WorldBotState const& state : Party().CalibrationBots)
+            if (state.Guid == Cohort().CalibrationTargetGuid)
+            {
+                targetBot = GetLoadedBot(state);
+                break;
+            }
+        Creature* fixtureTarget = targetBot && targetBot->GetMap()
+            ? targetBot->GetMap()->GetCreature(
+                Cohort().CalibrationFixtureTargetGuid) : nullptr;
+        float const observedTargetDistance = fixtureTarget && targetBot
+            ? targetBot->GetExactDist(fixtureTarget) : 0.0f;
+        bool const targetReady = fixtureTarget && targetBot
+            && fixtureContract
+            && fixtureTarget->getLevel()
+                == Cohort().CalibrationFixtureExpectedTargetLevel
+            && fixtureTarget->GetArmor()
+                == Cohort().CalibrationFixtureExpectedTargetArmor
+            && fixtureTarget->GetCreatureType()
+                == Cohort().CalibrationFixtureExpectedTargetCreatureType
+            && fixtureTarget->GetMaxHealth()
+                == Cohort().CalibrationFixtureExpectedTargetMaxHealth
+            && !fixtureTarget->IsInCombat()
+            && !fixtureTarget->GetVictim()
+            && observedTargetDistance
+                >= fixtureContract->RuntimeMinimumDistanceYards
+            && observedTargetDistance
+                <= fixtureContract->RuntimeMaximumDistanceYards;
+        if (!targetReady)
+        {
+            Cohort().LastPopulationFailureReason =
+                "calibration_target_fidelity_drift_before_scoring";
+            Cohort().CalibrationFailureReason =
+                Cohort().LastPopulationFailureReason;
+            Cohort().CalibrationWindowComplete = true;
+            return;
+        }
+
+        Cohort().CalibrationFixtureTargetObservedBeforeScoringAtMs = NowMs();
+        Cohort().CalibrationFixtureBeforeScoringTargetLevel =
+            fixtureTarget->getLevel();
+        Cohort().CalibrationFixtureBeforeScoringTargetArmor =
+            fixtureTarget->GetArmor();
+        Cohort().CalibrationFixtureBeforeScoringTargetCreatureType =
+            fixtureTarget->GetCreatureType();
+        Cohort().CalibrationFixtureBeforeScoringTargetCreatureTypeMask =
+            fixtureTarget->GetCreatureTypeMask();
+        Cohort().CalibrationFixtureBeforeScoringTargetMaxHealth =
+            fixtureTarget->GetMaxHealth();
+        Cohort().CalibrationFixtureBeforeScoringTargetMapId =
+            fixtureTarget->GetMapId();
+        Cohort().CalibrationFixtureBeforeScoringTargetGuid =
+            fixtureTarget->GetGUID();
+        Cohort().CalibrationFixtureBeforeScoringTargetX =
+            fixtureTarget->GetPositionX();
+        Cohort().CalibrationFixtureBeforeScoringTargetY =
+            fixtureTarget->GetPositionY();
+        Cohort().CalibrationFixtureBeforeScoringTargetZ =
+            fixtureTarget->GetPositionZ();
+        Cohort().CalibrationFixtureBeforeScoringBotTargetDistance =
+            observedTargetDistance;
+        Cohort().CalibrationFixtureBeforeScoringTargetInCombat =
+            fixtureTarget->IsInCombat();
+        Cohort().CalibrationFixtureBeforeScoringTargetHasVictim =
+            fixtureTarget->GetVictim() != nullptr;
+
+        bool allPreScoreStateReady = fixtureContract
+            && fixtureContract->SetupAuraOffset
+                    + fixtureContract->SetupAuraCount
+                <= RequiredSetupAuraSpellIds.size();
+        for (WorldBotState& state : Party().CalibrationBots)
+        {
+            Player* bot = GetLoadedBot(state);
+            CalibrationMetrics& metrics =
+                Cohort().CalibrationMetricsByGuid[state.Guid.GetCounter()];
+            if (!bot || !fixtureContract)
+            {
+                allPreScoreStateReady = false;
+                continue;
+            }
+
+            auto [referenceBuffsReady, referenceTargetDebuffsReady] =
+                ApplyCalibrationReferenceConditions(bot, fixtureTarget);
+
+            // The base v1 denominator has no temporal external cooldowns.
+            // Observe their absence; never manufacture or strip them in the
+            // fixture controller. A stale aura therefore fails closed.
+            bool const temporalExternalsAbsent = !bot->HasAura(2825)
+                && !bot->HasAura(10060) && !bot->HasAura(85767)
+                && !bot->HasAura(85759) && !bot->HasAura(96230);
+            static constexpr std::array<uint32, 3>
+                ExternalBleedAuraSpellIds = { 16511, 33876, 46857 };
+            bool const externalBleedAbsent = std::none_of(
+                ExternalBleedAuraSpellIds.begin(),
+                ExternalBleedAuraSpellIds.end(),
+                [fixtureTarget](uint32 spellId)
+                {
+                    return fixtureTarget->HasAura(spellId);
+                });
+
+            bool setupAurasReady = true;
+            for (uint32 index = 0;
+                index < fixtureContract->SetupAuraCount; ++index)
+                setupAurasReady = setupAurasReady && bot->HasAura(
+                    RequiredSetupAuraSpellIds[
+                        fixtureContract->SetupAuraOffset + index]);
+
+            // Reset ordinary spell cooldowns after setup, then explicitly
+            // clear every profile/global-cooldown category. ResetAllCooldowns
+            // intentionally does not own SpellHistory::_globalCooldowns.
+            bot->GetSpellHistory()->ResetAllCooldowns();
+            BotClassSpecActionProfile const profile =
+                BotClassSpecActionProfileStore::Build(
+                    bot, GetDungeonRole(bot));
+            for (BotActionProfileSpell const& action : profile.Spells)
+                if (SpellInfo const* spellInfo =
+                    sSpellMgr->GetSpellInfo(action.SpellId))
+                    bot->GetSpellHistory()->CancelGlobalCooldown(spellInfo);
+            bool playerGlobalCooldownClear = std::none_of(
+                profile.Spells.begin(), profile.Spells.end(),
+                [bot](BotActionProfileSpell const& action)
+                {
+                    SpellInfo const* spellInfo =
+                        sSpellMgr->GetSpellInfo(action.SpellId);
+                    return spellInfo && bot->GetSpellHistory()
+                        ->HasGlobalCooldown(spellInfo);
+                });
+
+            bool petGlobalCooldownClear = true;
+            if (Pet* pet = bot->GetPet())
+            {
+                pet->GetSpellHistory()->ResetAllCooldowns();
+                for (auto const& [spellId, petSpell] : pet->m_spells)
+                    if (petSpell.state != PETSPELL_REMOVED)
+                        if (SpellInfo const* spellInfo =
+                            sSpellMgr->GetSpellInfo(spellId))
+                            pet->GetSpellHistory()->CancelGlobalCooldown(
+                                spellInfo);
+                for (auto const& [spellId, petSpell] : pet->m_spells)
+                    if (petSpell.state != PETSPELL_REMOVED)
+                        if (SpellInfo const* spellInfo =
+                            sSpellMgr->GetSpellInfo(spellId);
+                            spellInfo && pet->GetSpellHistory()
+                                ->HasGlobalCooldown(spellInfo))
+                            petGlobalCooldownClear = false;
+            }
+
+            metrics.PreScorePersistentSetupReady = setupAurasReady;
+            metrics.PreScoreReferenceBuffsReady = referenceBuffsReady
+                && (!fixtureContract->FlaskAuraSpellId
+                    || bot->HasAura(fixtureContract->FlaskAuraSpellId))
+                && (!fixtureContract->FoodAuraSpellId
+                    || bot->HasAura(fixtureContract->FoodAuraSpellId));
+            metrics.PreScoreReferenceTargetDebuffsReady =
+                referenceTargetDebuffsReady;
+            metrics.PreScoreHeroismReady = false;
+            metrics.PreScoreTemporalExternalsAbsent =
+                temporalExternalsAbsent;
+            metrics.PreScoreExternalBleedAbsent = externalBleedAbsent;
+            metrics.PreScoreLastPotionItemId = bot->GetLastPotionId();
+            metrics.PreScoreNoActiveCast =
+                !bot->HasUnitState(UNIT_STATE_CASTING);
+            metrics.PreScoreNoCombat = !bot->IsInCombat()
+                && (!bot->GetPet() || !bot->GetPet()->IsInCombat());
+            metrics.PreScoreGlobalCooldownClear =
+                playerGlobalCooldownClear && petGlobalCooldownClear;
+            metrics.PreScoreCooldownResetApplied = true;
+            metrics.WarmupProfileActionsSuppressed = true;
+            metrics.PreScoreStateObservedAtMs = NowMs();
+            allPreScoreStateReady = allPreScoreStateReady
+                && metrics.PreScorePersistentSetupReady
+                && metrics.PreScoreReferenceBuffsReady
+                && metrics.PreScoreReferenceTargetDebuffsReady
+                && metrics.PreScoreTemporalExternalsAbsent
+                && metrics.PreScoreExternalBleedAbsent
+                && !metrics.PreScoreLastPotionItemId
+                && metrics.PreScoreNoActiveCast
+                && metrics.PreScoreNoCombat
+                && metrics.PreScoreGlobalCooldownClear;
+        }
+
+        bool const resourcesReady = std::all_of(
+            Cohort().CalibrationMetricsByGuid.begin(),
+            Cohort().CalibrationMetricsByGuid.end(), [](auto const& entry)
+            {
+                return entry.second.InitialResourcesMatchContract;
+            });
+        if (!resourcesReady)
+        {
+            Cohort().LastPopulationFailureReason =
+                "calibration_initial_resource_contract_mismatch";
+            Cohort().CalibrationFailureReason =
+                Cohort().LastPopulationFailureReason;
+            Cohort().CalibrationWindowComplete = true;
+            return;
+        }
+        if (!allPreScoreStateReady)
+        {
+            Cohort().LastPopulationFailureReason =
+                "calibration_pre_score_state_contract_mismatch";
+            Cohort().CalibrationFailureReason =
+                Cohort().LastPopulationFailureReason;
+            Cohort().CalibrationWindowComplete = true;
+            return;
+        }
+    }
+
+    uint64 const startedMs = NowMs();
+    Cohort().CalibrationScoredStartedMs = startedMs;
+    for (auto& [guid, metrics] : Cohort().CalibrationMetricsByGuid)
+        metrics.WindowStartedMs = startedMs;
+
+    // Read both the passive target and any required permanent pet at the exact
+    // published scoring edge. Periodic observations and the final close sample
+    // prove that neither contract was satisfied only during provisioning.
+    Creature* scoredTarget = nullptr;
+    for (WorldBotState const& state : Party().CalibrationBots)
+        if (state.Guid == Cohort().CalibrationTargetGuid)
+            if (Player* targetBot = GetLoadedBot(state);
+                targetBot && targetBot->GetMap())
+                scoredTarget = targetBot->GetMap()->GetCreature(
+                    Cohort().CalibrationFixtureTargetGuid);
+    if (scoredTarget)
+    {
+        ++Cohort().CalibrationFixtureTargetPassiveObservationSampleCount;
+        if (scoredTarget->GetVictim())
+            ++Cohort().CalibrationFixtureTargetVictimObservationSampleCount;
+        Cohort().CalibrationFixtureTargetFirstPassiveObservedAtMs = startedMs;
+        Cohort().CalibrationFixtureTargetLastPassiveObservedAtMs = startedMs;
+    }
+    for (WorldBotState const& state : Party().CalibrationBots)
+    {
+        auto metricsItr = Cohort().CalibrationMetricsByGuid.find(
+            state.Guid.GetCounter());
+        Player* bot = GetLoadedBot(state);
+        if (!bot || metricsItr == Cohort().CalibrationMetricsByGuid.end())
+            continue;
+        CalibrationMetrics& metrics = metricsItr->second;
+        if (!metrics.InitialGearManifestSha256.empty())
+        {
+            std::vector<RaidRosterItemIdentity> observedGear;
+            std::string observedGearSha256;
+            ++metrics.GearIdentitySampleCount;
+            if (!ObserveEquippedGearIdentity(bot, observedGear,
+                    observedGearSha256)
+                || observedGearSha256
+                    != metrics.InitialGearManifestSha256)
+                ++metrics.GearIdentityMismatchSampleCount;
+            metrics.LastObservedGearManifestSha256 = observedGearSha256;
+            metrics.FirstGearIdentityObservedAtMs = startedMs;
+            metrics.LastGearIdentityObservedAtMs = startedMs;
+        }
+        OrdinaryPetSetupSnapshot const petObservation =
+            ObserveOrdinaryPetSetup(bot);
+        uint32 const observedPetGuid = petObservation.Guid.GetCounter();
+        metrics.FirstPetSetupObservedGuid = observedPetGuid;
+        metrics.LastPetSetupObservedGuid = observedPetGuid;
+        ++metrics.PetSetupObservationSampleCount;
+        bool const hunterPetRequired =
+            Cohort().CalibrationTargetSpec == "marksmanship_hunter"
+            || Cohort().CalibrationTargetSpec == "survival_hunter";
+        bool const hunterPetIdentityReady = !hunterPetRequired
+            || LoadedBotMatchesPinnedHunterPet(bot,
+                Cohort().CalibrationTargetSpec);
+        if (!hunterPetIdentityReady)
+            ++metrics.PetSetupIdentityMismatchSampleCount;
+        bool const petReady = CalibrationPetObservationReady(
+            petObservation, hunterPetRequired,
+            state.PersistentPetSetup.RequiredEntry,
+            state.PersistentPetSetup.RequiredFamilyId,
+            state.PersistentPetSetup.RequiredPetType,
+            state.PersistentPetSetup.RequiredPowerType,
+            state.PersistentPetSetup.RequiredCreatedBySpellId);
+        bool const petExpected = hunterPetRequired
+            || state.PersistentPetSetup.RequiredEntry;
+        bool const petGuidReady = petExpected
+            ? observedPetGuid != 0 : observedPetGuid == 0;
+        if (petReady && petGuidReady && hunterPetIdentityReady)
+            ++metrics.PetSetupReadySampleCount;
+        metrics.FirstPetSetupObservedAtMs = startedMs;
+        metrics.LastPetSetupObservedAtMs = startedMs;
+
+        ++metrics.ExternalWindowSampleCount;
+        if (bot->HasAura(2825))
+        {
+            ++metrics.HeroismObservedActiveSamples;
+            ++metrics.HeroismMismatchSamples;
+        }
+        if (bot->HasAura(10060))
+        {
+            ++metrics.PowerInfusionObservedActiveSamples;
+            ++metrics.PowerInfusionMismatchSamples;
+        }
+        if (bot->HasAura(85767))
+            ++metrics.UnexpectedDarkIntentBaseSamples;
+        if (bot->HasAura(85759))
+            ++metrics.UnexpectedDarkIntentProcSamples;
+        if (bot->HasAura(96230))
+            ++metrics.UnexpectedSynapseSpringsSamples;
+        metrics.FirstExternalWindowObservedAtMs = startedMs;
+        metrics.LastExternalWindowObservedAtMs = startedMs;
+        ObserveCalibrationReferenceConditions(
+            metrics, bot, scoredTarget, startedMs);
+    }
 }
 
 void BotWorldPopulationMgr::CompleteCalibrationScoredWindow()
 {
     if (Cohort().CalibrationWindowComplete || !Cohort().CalibrationScoredStartedMs)
         return;
-    uint64 const endedMs = NowMs();
+    // The acceptance interval is the exact half-open [t0,t0+300000) fixture
+    // contract. Manager scheduling jitter may deliver this close call a few
+    // milliseconds later, but must not silently lengthen the denominator or
+    // any continuity-observation window.
+    uint64 const scheduledEndedMs = Cohort().CalibrationScoredStartedMs
+        + CalibrationSingleTargetDurationMs;
+    uint64 const endedMs = std::min(NowMs(), scheduledEndedMs);
     Cohort().CalibrationScoredEndedMs = endedMs;
+    Creature* scoredTarget = nullptr;
+    for (WorldBotState const& state : Party().CalibrationBots)
+        if (state.Guid == Cohort().CalibrationTargetGuid)
+            if (Player* targetBot = GetLoadedBot(state);
+                targetBot && targetBot->GetMap())
+                scoredTarget = targetBot->GetMap()->GetCreature(
+                    Cohort().CalibrationFixtureTargetGuid);
+    if (scoredTarget)
+    {
+        ++Cohort().CalibrationFixtureTargetPassiveObservationSampleCount;
+        if (scoredTarget->GetVictim())
+            ++Cohort().CalibrationFixtureTargetVictimObservationSampleCount;
+        if (!Cohort().CalibrationFixtureTargetFirstPassiveObservedAtMs)
+            Cohort().CalibrationFixtureTargetFirstPassiveObservedAtMs = endedMs;
+        if (Cohort().CalibrationFixtureTargetLastPassiveObservedAtMs)
+            Cohort().CalibrationFixtureTargetMaximumPassiveObservationGapMs =
+                std::max(Cohort().CalibrationFixtureTargetMaximumPassiveObservationGapMs,
+                    endedMs
+                        - Cohort().CalibrationFixtureTargetLastPassiveObservedAtMs);
+        Cohort().CalibrationFixtureTargetLastPassiveObservedAtMs = endedMs;
+    }
+    for (WorldBotState const& state : Party().CalibrationBots)
+    {
+        Player* bot = GetLoadedBot(state);
+        auto metricsItr = Cohort().CalibrationMetricsByGuid.find(
+            state.Guid.GetCounter());
+        if (!bot || metricsItr == Cohort().CalibrationMetricsByGuid.end()
+            || metricsItr->second.InitialGearManifestSha256.empty())
+            continue;
+        CalibrationMetrics& metrics = metricsItr->second;
+        WorldBotState::NativePersistentPetSetupReceipt const& petSetup =
+            state.PersistentPetSetup;
+        OrdinaryPetSetupSnapshot const petObservation =
+            ObserveOrdinaryPetSetup(bot);
+        uint32 const observedPetGuid = petObservation.Guid.GetCounter();
+        if (!metrics.PetSetupObservationSampleCount)
+            metrics.FirstPetSetupObservedGuid = observedPetGuid;
+        else if (observedPetGuid != metrics.FirstPetSetupObservedGuid)
+            ++metrics.PetSetupGuidMismatchSampleCount;
+        metrics.LastPetSetupObservedGuid = observedPetGuid;
+        ++metrics.PetSetupObservationSampleCount;
+        bool const hunterPetRequired =
+            Cohort().CalibrationTargetSpec == "marksmanship_hunter"
+            || Cohort().CalibrationTargetSpec == "survival_hunter";
+        bool const hunterPetIdentityReady = !hunterPetRequired
+            || LoadedBotMatchesPinnedHunterPet(bot,
+                Cohort().CalibrationTargetSpec);
+        if (!hunterPetIdentityReady)
+            ++metrics.PetSetupIdentityMismatchSampleCount;
+        bool const petReady = CalibrationPetObservationReady(petObservation,
+            hunterPetRequired, petSetup.RequiredEntry,
+            petSetup.RequiredFamilyId, petSetup.RequiredPetType,
+            petSetup.RequiredPowerType, petSetup.RequiredCreatedBySpellId);
+        bool const petExpected = hunterPetRequired || petSetup.RequiredEntry;
+        bool const petGuidReady = observedPetGuid
+                == metrics.FirstPetSetupObservedGuid
+            && (petExpected ? observedPetGuid != 0 : observedPetGuid == 0);
+        if (petReady && petGuidReady && hunterPetIdentityReady)
+            ++metrics.PetSetupReadySampleCount;
+        if (!metrics.FirstPetSetupObservedAtMs)
+            metrics.FirstPetSetupObservedAtMs = endedMs;
+        if (metrics.LastPetSetupObservedAtMs)
+            metrics.MaximumPetSetupObservationGapMs = std::max(
+                metrics.MaximumPetSetupObservationGapMs,
+                endedMs - metrics.LastPetSetupObservedAtMs);
+        metrics.LastPetSetupObservedAtMs = endedMs;
+
+        ++metrics.ExternalWindowSampleCount;
+        if (bot->HasAura(2825))
+        {
+            ++metrics.HeroismObservedActiveSamples;
+            ++metrics.HeroismMismatchSamples;
+        }
+        if (bot->HasAura(10060))
+        {
+            ++metrics.PowerInfusionObservedActiveSamples;
+            ++metrics.PowerInfusionMismatchSamples;
+        }
+        if (bot->HasAura(85767))
+            ++metrics.UnexpectedDarkIntentBaseSamples;
+        if (bot->HasAura(85759))
+            ++metrics.UnexpectedDarkIntentProcSamples;
+        if (bot->HasAura(96230))
+            ++metrics.UnexpectedSynapseSpringsSamples;
+        if (!metrics.FirstExternalWindowObservedAtMs)
+            metrics.FirstExternalWindowObservedAtMs = endedMs;
+        if (metrics.LastExternalWindowObservedAtMs)
+            metrics.MaximumExternalWindowObservationGapMs = std::max(
+                metrics.MaximumExternalWindowObservationGapMs,
+                endedMs - metrics.LastExternalWindowObservedAtMs);
+        metrics.LastExternalWindowObservedAtMs = endedMs;
+        ObserveCalibrationReferenceConditions(
+            metrics, bot, scoredTarget, endedMs);
+        std::vector<RaidRosterItemIdentity> observedGear;
+        std::string observedGearSha256;
+        ++metrics.GearIdentitySampleCount;
+        if (!ObserveEquippedGearIdentity(bot, observedGear,
+                observedGearSha256)
+            || observedGearSha256
+                != metrics.InitialGearManifestSha256)
+            ++metrics.GearIdentityMismatchSampleCount;
+        metrics.LastObservedGearManifestSha256 = observedGearSha256;
+        if (metrics.LastGearIdentityObservedAtMs)
+            metrics.MaximumGearIdentityObservationGapMs = std::max(
+                metrics.MaximumGearIdentityObservationGapMs,
+                endedMs - metrics.LastGearIdentityObservedAtMs);
+        metrics.LastGearIdentityObservedAtMs = endedMs;
+    }
     Cohort().CalibrationWindowComplete = true;
     for (auto& [guid, metrics] : Cohort().CalibrationMetricsByGuid)
         metrics.WindowEndedMs = endedMs;
@@ -8595,6 +10414,7 @@ std::pair<bool, bool> BotWorldPopulationMgr::ApplyCalibrationReferenceConditions
 {
     if (!Cohort().Config.CombatCalibrationReferenceConditions || !bot || !target)
         return { false, false };
+    bool const provisioning = !Cohort().CalibrationScoredStartedMs;
 
     // One real Cataclysm aura from each non-overlapping raid-buff category.
     // This mode is calibration-only: it makes the live dummy conditions closer
@@ -8609,8 +10429,12 @@ std::pair<bool, bool> BotWorldPopulationMgr::ApplyCalibrationReferenceConditions
         82930, // Arcane Tactics: 3% damage
         57669, // Replenishment: raid mana regeneration
     };
+    bool const replenishmentRequired = CalibrationSpecUsesMana(Cohort().CalibrationTargetSpec);
     for (uint32 spellId : RaidBuffAuras)
-        if (!bot->HasAura(spellId))
+    {
+        if (spellId == 57669 && !replenishmentRequired)
+            continue;
+        if (provisioning && !bot->HasAura(spellId))
         {
             // Arcane Brilliance and Replenishment are raid-area spells rather
             // than direct target auras. Execute their real triggered spell path
@@ -8620,18 +10444,20 @@ std::pair<bool, bool> BotWorldPopulationMgr::ApplyCalibrationReferenceConditions
             else
                 bot->AddAura(spellId, bot);
         }
+    }
 
     // Kings and Mark of the Wild are the same 5% primary-stat category. Preserve
     // a candidate's own Kings and provide the level-85 raid-area Mark only when
     // neither base nor current-rank aura is active.
-    if (!bot->HasAura(20217) && !bot->HasAura(79063)
+    if (provisioning && !bot->HasAura(20217) && !bot->HasAura(79063)
         && !bot->HasAura(1126) && !bot->HasAura(79061))
         bot->CastSpell(nullptr, 79061, true);
 
     // A paladin cannot own Kings and Might on itself simultaneously. The
     // calibration tank must retain Kings for its production setup contract;
     // the three DPS clones can still receive the separate reference Might aura.
-    if (bot->getClass() != CLASS_PALADIN && !bot->HasAura(79102))
+    if (provisioning && bot->getClass() != CLASS_PALADIN
+        && !bot->HasAura(79102))
         bot->AddAura(79102, bot);
 
     uint32 flaskSpellId = 0;
@@ -8663,80 +10489,49 @@ std::pair<bool, bool> BotWorldPopulationMgr::ApplyCalibrationReferenceConditions
         default:
             break;
     }
-    if (flaskSpellId && !bot->HasAura(flaskSpellId))
+    if (provisioning && flaskSpellId && !bot->HasAura(flaskSpellId))
         bot->AddAura(flaskSpellId, bot);
 
-    uint64 calibrationElapsedMs = Cohort().CalibrationScoredStartedMs ? NowMs() - Cohort().CalibrationScoredStartedMs : 0;
-
-    // The pinned Shadow Priest preset has Dark Intent assigned with 90% proc
-    // uptime. Its base 3% haste aura is permanent; model the proc as a
-    // deterministic nine seconds active per ten-second scored interval and keep
-    // its three periodic-damage stacks explicit while active.
-    if (targetSpec == "balance_druid" && !bot->HasAura(87547))
+    if (provisioning && targetSpec == "balance_druid"
+        && !bot->HasAura(87547))
         bot->AddAura(87547, bot); // Well Fed: 90 Intellect and Stamina
 
-    if (targetSpec == "shadow_priest")
+    if (provisioning && targetSpec == "shadow_priest"
+        && !bot->HasAura(87547))
+        bot->AddAura(87547, bot); // Well Fed: 90 Intellect and Stamina
+
+    // Static external fixture auras are installed only before scoring. Pin
+    // finite native durations beyond the half-open 300-second window rather
+    // than refreshing or mutating them during the scored interval.
+    if (provisioning)
     {
-        if (!bot->HasAura(87547)) // Well Fed: 90 Intellect and Stamina
-            bot->AddAura(87547, bot);
-        if (!bot->HasAura(85767))
-            bot->AddAura(85767, bot);
-
-        bool const darkIntentProcActive = Cohort().CalibrationScoredStartedMs
-            && calibrationElapsedMs % 10000 < 9000;
-        if (darkIntentProcActive)
-        {
-            Aura* darkIntentProc = bot->GetAura(85759);
-            if (!darkIntentProc)
-                darkIntentProc = bot->AddAura(85759, bot);
-            if (darkIntentProc && darkIntentProc->GetStackAmount() < 3)
-                darkIntentProc->SetStackAmount(3);
-        }
-        else if (bot->HasAura(85759))
-            bot->RemoveAurasDueToSpell(85759);
-
-        // FullConsumesSpec invokes Synapse Springs directly. Model its real
-        // 480-Intellect aura for ten seconds on each one-minute cooldown.
-        bool const synapseSpringsActive = Cohort().CalibrationScoredStartedMs
-            && calibrationElapsedMs % 60000 < 10000;
-        if (synapseSpringsActive && !bot->HasAura(96230))
-            bot->AddAura(96230, bot);
-        else if (!synapseSpringsActive && bot->HasAura(96230))
-            bot->RemoveAurasDueToSpell(96230);
+        std::array<uint32, 15> const staticPlayerAuras = {
+            53646, 79058, 24932, 2895, 8515, 8076, 82930, 57669,
+            20217, 79063, 1126, 79061, 79102, flaskSpellId, 87547,
+        };
+        for (uint32 spellId : staticPlayerAuras)
+            if (spellId)
+                if (Aura* aura = bot->GetAura(spellId))
+                    if (aura->GetMaxDuration() > 0)
+                    {
+                        aura->SetMaxDuration(CalibrationSingleTargetDurationMs
+                            + 1000);
+                        aura->SetDuration(CalibrationSingleTargetDurationMs
+                            + 1000);
+                    }
     }
 
-    // Full raid WoWSims configurations include one 40-second Bloodlust window.
-    // Apply it once at the opening of the explicit 300-second scored window.
-    bool heroismActive = Cohort().CalibrationScoredStartedMs && calibrationElapsedMs < 40000;
-    if (heroismActive && !bot->HasAura(2825))
-        bot->AddAura(2825, bot);
-    else if (!heroismActive && bot->HasAura(2825))
-        bot->RemoveAurasDueToSpell(2825);
-
-    // The pinned Shadow Priest APL requests an external Power Infusion after
-    // Bloodlust expires and again on its two-minute cooldown. Reproduce those
-    // real 15-second aura windows without teaching the clone another spec's spell.
-    if (targetSpec == "shadow_priest" && Cohort().CalibrationScoredStartedMs)
+    bool buffsReady = std::all_of(RaidBuffAuras.begin(), RaidBuffAuras.end(), [bot, replenishmentRequired](uint32 spellId)
     {
-        bool const powerInfusionActive = (calibrationElapsedMs >= 40000 && calibrationElapsedMs < 55000)
-            || (calibrationElapsedMs >= 160000 && calibrationElapsedMs < 175000)
-            || (calibrationElapsedMs >= 280000 && calibrationElapsedMs < 295000);
-        if (powerInfusionActive && !bot->HasAura(10060))
-            bot->AddAura(10060, bot);
-        else if (!powerInfusionActive && bot->HasAura(10060))
-            bot->RemoveAurasDueToSpell(10060);
-    }
-
-    bool buffsReady = std::all_of(RaidBuffAuras.begin(), RaidBuffAuras.end(), [bot](uint32 spellId)
-    {
-        return bot->HasAura(spellId);
+        return (spellId == 57669 && !replenishmentRequired) || bot->HasAura(spellId);
     });
     buffsReady = buffsReady && (bot->HasAura(20217) || bot->HasAura(79063)
         || bot->HasAura(1126) || bot->HasAura(79061));
     buffsReady = buffsReady && (bot->getClass() == CLASS_PALADIN || bot->HasAura(79102));
     buffsReady = buffsReady && (!flaskSpellId || bot->HasAura(flaskSpellId));
     buffsReady = buffsReady && (targetSpec != "balance_druid" || bot->HasAura(87547));
-    buffsReady = buffsReady && (targetSpec != "shadow_priest" || (bot->HasAura(87547) && bot->HasAura(85767)));
+    buffsReady = buffsReady
+        && (targetSpec != "shadow_priest" || bot->HasAura(87547));
 
     // Each clone uses its own nearest dummy, so each clone must own the
     // reference debuffs on that primary target. Keeping caster ownership local
@@ -8748,21 +10543,200 @@ std::pair<bool, bool> BotWorldPopulationMgr::ApplyCalibrationReferenceConditions
         81326, // Brittle Bones: physical damage taken
     };
     for (uint32 spellId : TargetDebuffAuras)
-        if (!target->HasAura(spellId))
+        if (provisioning && !target->GetAura(spellId, bot->GetGUID()))
             bot->AddAura(spellId, target);
 
     Aura* sunder = target->GetAura(58567, bot->GetGUID());
-    if (!sunder)
+    if (provisioning && !sunder)
         sunder = bot->AddAura(58567, target);
-    if (sunder && sunder->GetStackAmount() < 3)
+    if (provisioning && sunder && sunder->GetStackAmount() < 3)
         sunder->SetStackAmount(3);
-
-    bool targetDebuffsReady = std::all_of(TargetDebuffAuras.begin(), TargetDebuffAuras.end(), [target](uint32 spellId)
+    if (provisioning)
     {
-        return target->HasAura(spellId);
+        for (uint32 spellId : TargetDebuffAuras)
+            if (Aura* aura = target->GetAura(spellId))
+            {
+                aura->SetMaxDuration(CalibrationSingleTargetDurationMs
+                    + 1000);
+                aura->SetDuration(CalibrationSingleTargetDurationMs + 1000);
+            }
+        if (sunder)
+        {
+            sunder->SetMaxDuration(CalibrationSingleTargetDurationMs + 1000);
+            sunder->SetDuration(CalibrationSingleTargetDurationMs + 1000);
+        }
+    }
+
+    bool targetDebuffsReady = std::all_of(TargetDebuffAuras.begin(), TargetDebuffAuras.end(), [target, bot](uint32 spellId)
+    {
+        return target->GetAura(spellId, bot->GetGUID()) != nullptr;
     });
     targetDebuffsReady = targetDebuffsReady && sunder && sunder->GetStackAmount() >= 3;
     return { buffsReady, targetDebuffsReady };
+}
+
+void BotWorldPopulationMgr::ObserveCalibrationReferenceConditions(
+    CalibrationMetrics& metrics, Player* bot, Unit* target,
+    uint64 observedAtMs) const
+{
+    if (!bot || !target || !observedAtMs)
+        return;
+
+    static constexpr std::array<uint32, 43> PlayerAuraUniverse = {
+        // Static raid/stat categories, flasks, food, and native setup.
+        53646, 79058, 24932, 2895, 8515, 8076, 82930, 57669,
+        20217, 79063, 1126, 79061, 79102, 79470, 79471, 79472,
+        87547, 2457, 2458, 768, 24858, 30482, 48265, 13165, 31801, 7294,
+        588, 15473, 324, 64420,
+        // Temporal externals and every v1 disabled racial/tinker spell.
+        2825, 10060, 85767, 85759, 96230, 20572, 26297, 28730,
+        33697, 33702, 58984, 69041, 82174,
+    };
+    static constexpr std::array<uint32, 7> TargetAuraUniverse = {
+        1490, 22959, 81326, 58567, 16511, 33876, 46857,
+    };
+    static constexpr std::array<uint32, 13> DisabledDynamicAuraUniverse = {
+        2825, 10060, 85767, 85759, 96230, 20572, 26297, 28730,
+        33697, 33702, 58984, 69041, 82174,
+    };
+    static constexpr std::array<uint32, 3> ExternalBleedAuraUniverse = {
+        16511, 33876, 46857,
+    };
+
+    ++metrics.ReferenceConditionSampleCount;
+    if (!metrics.FirstReferenceConditionObservedAtMs)
+        metrics.FirstReferenceConditionObservedAtMs = observedAtMs;
+    if (metrics.LastReferenceConditionObservedAtMs)
+        metrics.MaximumReferenceConditionObservationGapMs = std::max(
+            metrics.MaximumReferenceConditionObservationGapMs,
+            observedAtMs - metrics.LastReferenceConditionObservedAtMs);
+    metrics.LastReferenceConditionObservedAtMs = observedAtMs;
+
+    for (uint32 spellId : PlayerAuraUniverse)
+        if (bot->HasAura(spellId))
+            ++metrics.ReferencePlayerAuraActiveSamples[spellId];
+        else
+            ++metrics.ReferencePlayerAuraInactiveSamples[spellId];
+
+    auto hasAuraFromAnotherCaster = [target, bot](uint32 spellId)
+    {
+        auto const range = target->GetAppliedAuras().equal_range(spellId);
+        for (auto itr = range.first; itr != range.second; ++itr)
+            if (AuraApplication const* application = itr->second)
+                if (Aura const* aura = application->GetBase())
+                    if (aura->GetCasterGUID() != bot->GetGUID())
+                        return true;
+        return false;
+    };
+    for (uint32 spellId : TargetAuraUniverse)
+    {
+        bool const active = target->HasAura(spellId);
+        Aura const* owned = target->GetAura(spellId, bot->GetGUID());
+        if (active)
+            ++metrics.ReferenceTargetAuraActiveSamples[spellId];
+        else
+            ++metrics.ReferenceTargetAuraInactiveSamples[spellId];
+        if (owned)
+            ++metrics.ReferenceTargetAuraOwnerMatchSamples[spellId];
+        if (hasAuraFromAnotherCaster(spellId))
+            ++metrics.ReferenceTargetAuraOwnerMismatchSamples[spellId];
+    }
+
+    uint8 const sunderStacks = target->GetAura(58567, bot->GetGUID())
+        ? target->GetAura(58567, bot->GetGUID())->GetStackAmount() : 0;
+    metrics.ReferenceSunderMinimumObservedStacks = std::min(
+        metrics.ReferenceSunderMinimumObservedStacks, sunderStacks);
+    metrics.ReferenceSunderMaximumObservedStacks = std::max(
+        metrics.ReferenceSunderMaximumObservedStacks, sunderStacks);
+    if (sunderStacks == 3)
+        ++metrics.ReferenceSunderMatchingStackSamples;
+    else
+        ++metrics.ReferenceSunderMismatchStackSamples;
+
+    if (bot->GetLastPotionId())
+        ++metrics.LastPotionIdNonzeroSampleCount;
+    if (std::any_of(DisabledDynamicAuraUniverse.begin(),
+            DisabledDynamicAuraUniverse.end(),
+            [bot](uint32 spellId) { return bot->HasAura(spellId); }))
+        ++metrics.UnexpectedDynamicAuraActiveSamples;
+    if (std::any_of(ExternalBleedAuraUniverse.begin(),
+            ExternalBleedAuraUniverse.end(), hasAuraFromAnotherCaster))
+        ++metrics.UnexpectedExternalBleedActiveSamples;
+}
+
+void BotWorldPopulationMgr::UpdateCalibrationTargetHealthSchedule(uint64 nowMs)
+{
+    if (Cohort().CalibrationMode != "single_target_300"
+        || Cohort().CalibrationAoePhase
+        || Cohort().RuntimeMode != BotWorldRuntimeMode::CalibrationFixture
+        || !Cohort().NonCertifyingAssistance
+        || !Cohort().CalibrationScoredStartedMs
+        || Cohort().CalibrationWindowComplete)
+        return;
+
+    if (nowMs < Cohort().CalibrationScoredStartedMs)
+        return;
+    uint64 const windowElapsedMs = nowMs - Cohort().CalibrationScoredStartedMs;
+    if (windowElapsedMs >= CalibrationSingleTargetDurationMs)
+        return;
+
+    Player* targetBot = nullptr;
+    for (WorldBotState const& state : Party().CalibrationBots)
+        if (state.Guid == Cohort().CalibrationTargetGuid)
+        {
+            targetBot = GetLoadedBot(state);
+            break;
+        }
+    Creature* target = targetBot && targetBot->GetMap()
+        ? targetBot->GetMap()->GetCreature(Cohort().CalibrationFixtureTargetGuid)
+        : nullptr;
+    if (!target || !target->IsAlive() || !target->GetMaxHealth()
+        || target->GetMaxHealth() != Cohort().CalibrationFixtureExpectedTargetMaxHealth)
+        return;
+
+    auto metricsItr = Cohort().CalibrationMetricsByGuid.find(
+        Cohort().CalibrationTargetGuid.GetCounter());
+    if (metricsItr == Cohort().CalibrationMetricsByGuid.end())
+        return;
+
+    ++Cohort().CalibrationFixtureTargetPassiveObservationSampleCount;
+    if (!Cohort().CalibrationFixtureTargetFirstPassiveObservedAtMs)
+        Cohort().CalibrationFixtureTargetFirstPassiveObservedAtMs = nowMs;
+    if (Cohort().CalibrationFixtureTargetLastPassiveObservedAtMs)
+        Cohort().CalibrationFixtureTargetMaximumPassiveObservationGapMs =
+            std::max(Cohort().CalibrationFixtureTargetMaximumPassiveObservationGapMs,
+                nowMs - Cohort().CalibrationFixtureTargetLastPassiveObservedAtMs);
+    Cohort().CalibrationFixtureTargetLastPassiveObservedAtMs = nowMs;
+    if (target->GetVictim())
+        ++Cohort().CalibrationFixtureTargetVictimObservationSampleCount;
+
+    size_t const phaseIndex = CalibrationExecuteHealthWindowIndex(windowElapsedMs);
+    CalibrationExecuteHealthWindow const& phase =
+        CalibrationExecuteHealthWindows[phaseIndex];
+    uint64 const desiredHealth = std::max<uint64>(1,
+        uint64(target->GetMaxHealth()) * phase.TargetHealthPct / 100);
+    if (target->GetHealth() != desiredHealth)
+        target->SetHealth(desiredHealth);
+
+    // Capture an actual target read after every server-update reset. Damage
+    // callbacks separately capture the pre-event and projected post-event
+    // health, so this observation cannot hide between-update threshold drift.
+    CalibrationMetrics::TargetHealthPhaseObservation& observation =
+        metricsItr->second.TargetHealthPhaseObservations[phaseIndex];
+    uint64 const observedHealth = target->GetHealth();
+    uint64 const observedMaxHealth = target->GetMaxHealth();
+    if (!observation.SampleCount)
+        observation.FirstObservedElapsedMs = windowElapsedMs;
+    observation.LastObservedElapsedMs = windowElapsedMs;
+    ++observation.SampleCount;
+    observation.MinimumObservedHealth = std::min(
+        observation.MinimumObservedHealth, observedHealth);
+    observation.MaximumObservedHealth = std::max(
+        observation.MaximumObservedHealth, observedHealth);
+    observation.MinimumObservedMaxHealth = std::min(
+        observation.MinimumObservedMaxHealth, observedMaxHealth);
+    observation.MaximumObservedMaxHealth = std::max(
+        observation.MaximumObservedMaxHealth, observedMaxHealth);
 }
 
 void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 diff)
@@ -8801,8 +10775,18 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
 
     bool const scored = Cohort().CalibrationScoredStartedMs
         && NowMs() >= Cohort().CalibrationScoredStartedMs
-        && NowMs() - Cohort().CalibrationScoredStartedMs <= 300000;
+        && NowMs() - Cohort().CalibrationScoredStartedMs
+            < CalibrationSingleTargetDurationMs;
     CalibrationMetrics& metrics = Cohort().CalibrationMetricsByGuid[state.Guid.GetCounter()];
+    if (!scored)
+    {
+        metrics.WarmupProfileActionsSuppressed = true;
+        SubmitMeleeAutoAttackIntent(state,
+            BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+            BotMeleeAutoAttack::Owner::Safety,
+            BotActionArbitration::Priority::Terminal,
+            "calibration_setup_only_warmup");
+    }
     if (scored)
         ++metrics.TickCount;
     if (!bot->IsAlive())
@@ -8816,6 +10800,66 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     }
     if (scored)
     {
+        if (Cohort().CalibrationMode == "single_target_300"
+            && !metrics.InitialGearManifestSha256.empty())
+        {
+            uint64 const gearObservedAtMs = NowMs();
+            std::vector<RaidRosterItemIdentity> observedGear;
+            std::string observedGearSha256;
+            ++metrics.GearIdentitySampleCount;
+            if (!ObserveEquippedGearIdentity(bot, observedGear,
+                    observedGearSha256)
+                || observedGearSha256
+                    != metrics.InitialGearManifestSha256)
+                ++metrics.GearIdentityMismatchSampleCount;
+            metrics.LastObservedGearManifestSha256 =
+                observedGearSha256;
+            if (metrics.LastGearIdentityObservedAtMs)
+                metrics.MaximumGearIdentityObservationGapMs = std::max(
+                    metrics.MaximumGearIdentityObservationGapMs,
+                    gearObservedAtMs - metrics.LastGearIdentityObservedAtMs);
+            metrics.LastGearIdentityObservedAtMs = gearObservedAtMs;
+        }
+        WorldBotState::NativePersistentPetSetupReceipt const& petSetup =
+            state.PersistentPetSetup;
+        OrdinaryPetSetupSnapshot const petObservation =
+            ObserveOrdinaryPetSetup(bot);
+        uint32 const observedPetGuid = petObservation.Guid.GetCounter();
+        if (!metrics.PetSetupObservationSampleCount)
+            metrics.FirstPetSetupObservedGuid = observedPetGuid;
+        else if (observedPetGuid != metrics.FirstPetSetupObservedGuid)
+            ++metrics.PetSetupGuidMismatchSampleCount;
+        metrics.LastPetSetupObservedGuid = observedPetGuid;
+        ++metrics.PetSetupObservationSampleCount;
+        bool const hunterPetRequired =
+            Cohort().CalibrationTargetSpec == "marksmanship_hunter"
+            || Cohort().CalibrationTargetSpec == "survival_hunter";
+        bool const hunterPetIdentityReady = !hunterPetRequired
+            || LoadedBotMatchesPinnedHunterPet(bot,
+                Cohort().CalibrationTargetSpec);
+        if (!hunterPetIdentityReady)
+            ++metrics.PetSetupIdentityMismatchSampleCount;
+        bool const petReady = CalibrationPetObservationReady(petObservation,
+            hunterPetRequired, petSetup.RequiredEntry,
+            petSetup.RequiredFamilyId, petSetup.RequiredPetType,
+            petSetup.RequiredPowerType, petSetup.RequiredCreatedBySpellId);
+        bool const petExpected = hunterPetRequired || petSetup.RequiredEntry;
+        bool const petGuidReady = observedPetGuid
+                == metrics.FirstPetSetupObservedGuid
+            && (petExpected ? observedPetGuid != 0 : observedPetGuid == 0);
+        if (petReady && petGuidReady && hunterPetIdentityReady)
+        {
+            ++metrics.RequiredPetReadyTicks;
+            ++metrics.PetSetupReadySampleCount;
+        }
+        uint64 const petObservedAtMs = NowMs();
+        if (!metrics.FirstPetSetupObservedAtMs)
+            metrics.FirstPetSetupObservedAtMs = petObservedAtMs;
+        if (metrics.LastPetSetupObservedAtMs)
+            metrics.MaximumPetSetupObservationGapMs = std::max(
+                metrics.MaximumPetSetupObservationGapMs,
+                petObservedAtMs - metrics.LastPetSetupObservedAtMs);
+        metrics.LastPetSetupObservedAtMs = petObservedAtMs;
         metrics.MinimumHealthRatio = std::min(metrics.MinimumHealthRatio, UnitHealthPct(bot));
         if (bot->GetPowerType() != POWER_MANA && bot->GetMaxPower(bot->GetPowerType()))
         {
@@ -8975,33 +11019,6 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     }
     uint32 hostileCount = Cohort().CalibrationAoePhase ? uint32(dummies.size()) : 1;
 
-    // The pinned Balance fixture plants three Wild Mushrooms before the pull and
-    // detonates that one set during Solar Eclipse. The scored-window reset removes
-    // warmup summons, so reproduce the pre-pull placement once, immediately after
-    // the reset, without consuming scored GCDs or replanting after detonation.
-    if (scored && Cohort().CalibrationTargetSpec == "balance_druid"
-        && !metrics.BalanceMushroomsPreplanted && bot->HasSpell(88747))
-    {
-        BotClassSpecActionProfile const profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
-        bool const preplantDeclared = std::any_of(profile.Spells.begin(), profile.Spells.end(), [](BotActionProfileSpell const& spell)
-        {
-            return spell.SpellId == 88747;
-        });
-        SpellInfo const* mushroomSpell = sSpellMgr->GetSpellInfo(88747);
-        if (preplantDeclared && mushroomSpell)
-        {
-            std::list<Creature*> mushrooms;
-            uint32 const mushroomEntry = uint32(mushroomSpell->Effects[EFFECT_0].MiscValue);
-            bot->GetAllMinionsByEntry(mushrooms, mushroomEntry);
-            for (size_t count = mushrooms.size(); count < 3; ++count)
-                bot->CastSpell(Position{ target->GetPositionX(), target->GetPositionY(), target->GetPositionZ() }, 88747, true);
-            mushrooms.clear();
-            bot->GetAllMinionsByEntry(mushrooms, mushroomEntry);
-            metrics.BalanceMushroomPreplantCount = uint8(std::min<size_t>(mushrooms.size(), 255));
-            metrics.BalanceMushroomsPreplanted = mushrooms.size() >= 3;
-        }
-    }
-
     if (scored)
     {
         BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
@@ -9039,22 +11056,48 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     metrics.ReferenceTargetDebuffsReady = referenceTargetDebuffsReady;
     metrics.ReferenceHeroismWindowObserved = metrics.ReferenceHeroismWindowObserved || bot->HasAura(2825);
 
-    // A permanent training dummy never reaches the execute phase represented
-    // in a full-fight simulator. Use the real target-health gate for the final
-    // 20% of a scored single-target window, then restore the dummy outside that
-    // interval. This changes only target health, never spell coefficients.
-    if (Cohort().CalibrationMode == "single_target_300" && target->GetMaxHealth())
+    if (scored && Cohort().CalibrationMode == "single_target_300")
     {
-        uint64 windowElapsedMs = metrics.WindowStartedMs ? NowMs() - metrics.WindowStartedMs : 0;
-        bool executeWindow = !Cohort().CalibrationAoePhase && windowElapsedMs >= 240000;
-        uint64 desiredHealth = executeWindow
-            ? std::max<uint64>(1, target->GetMaxHealth() * 19 / 100) : target->GetMaxHealth();
-        if (target->GetHealth() != desiredHealth)
-            target->SetHealth(desiredHealth);
+        uint64 const externalObservedAtMs = NowMs();
+        bool const heroismObserved = bot->HasAura(2825);
+        bool const powerInfusionObserved = bot->HasAura(10060);
+        ++metrics.ExternalWindowSampleCount;
+        if (!metrics.FirstExternalWindowObservedAtMs)
+            metrics.FirstExternalWindowObservedAtMs = externalObservedAtMs;
+        if (metrics.LastExternalWindowObservedAtMs)
+            metrics.MaximumExternalWindowObservationGapMs = std::max(
+                metrics.MaximumExternalWindowObservationGapMs,
+                externalObservedAtMs
+                    - metrics.LastExternalWindowObservedAtMs);
+        metrics.LastExternalWindowObservedAtMs = externalObservedAtMs;
+        if (heroismObserved)
+            ++metrics.HeroismObservedActiveSamples;
+        if (heroismObserved)
+            ++metrics.HeroismMismatchSamples;
+        if (powerInfusionObserved)
+            ++metrics.PowerInfusionObservedActiveSamples;
+        if (powerInfusionObserved)
+            ++metrics.PowerInfusionMismatchSamples;
+        if (bot->HasAura(85767))
+            ++metrics.UnexpectedDarkIntentBaseSamples;
+        if (bot->HasAura(85759))
+            ++metrics.UnexpectedDarkIntentProcSamples;
+        if (bot->HasAura(96230))
+            ++metrics.UnexpectedSynapseSpringsSamples;
+        ObserveCalibrationReferenceConditions(
+            metrics, bot, target, externalObservedAtMs);
     }
 
     if (TryEnsurePersistentCombatSetup(state, bot, target))
         return;
+
+    // Warmup exists only to let ordinary player setup casts, item uses, and
+    // permanent pets settle. Profile combat actions, auto attacks, and damage
+    // are suppressed until the controller publishes the scored timestamp.
+    if (!scored)
+    {
+        return;
+    }
 
     // Hunter pet autocast target selection does not reliably choose self-only
     // offensive cooldowns. Drive the two exact ferocity-pet cooldowns used by
@@ -9131,8 +11174,10 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     }
 
     bool const interruptOpportunity = target->IsNonMeleeSpellCast(false);
+    bool const strictSingleTarget = Cohort().CalibrationMode == "single_target_300";
     ResolvedCombatAction action = ResolveProfileCombatAction(
-        bot, target, hostileCount, Cohort().CalibrationAoePhase);
+        bot, target, hostileCount, Cohort().CalibrationAoePhase, 0, false,
+        false, strictSingleTarget, !strictSingleTarget);
     auto actionCategory = Party().LastActionCategoryByBot.find(bot->GetGUID().GetCounter());
     std::string const actionGroup = actionCategory != Party().LastActionCategoryByBot.end()
         ? actionCategory->second : action.DebugName;
@@ -9149,7 +11194,8 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
 
     BotActionResult result = ExecuteProfileCombatAction(
         &state, bot, target, &action, hostileCount,
-        Cohort().CalibrationAoePhase);
+        Cohort().CalibrationAoePhase, 0, false, false,
+        strictSingleTarget, !strictSingleTarget);
     if (scored)
     {
         ++metrics.ActiveTicks;
@@ -12323,6 +14369,59 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
                 ACT_COMMAND, target->GetGUID(), target->GetPositionX(),
                 target->GetPositionY(), target->GetPositionZ());
             return BotActionArbitration::Outcome::Submitted("native_pet_command_submitted");
+        }
+        else if constexpr (std::is_same_v<T, BotNativeAction::UseItem>)
+        {
+            // Follow the same request boundary as CMSG_USE_ITEM. In
+            // particular, item-on-item casts such as rogue poisons must pass
+            // live inventory ownership, item usability, the declared on-use
+            // spell, and the session's pending-cast checks. This path never
+            // writes an enchantment or consumes an item itself.
+            Item* item = bot->GetItemByGuid(action.Item);
+            if (!item || !item->GetTemplate())
+                return BotActionArbitration::Outcome::Retryable(
+                    "native_use_item_unavailable");
+            Item* itemTarget = action.Target.IsItem()
+                ? bot->GetItemByGuid(action.Target) : nullptr;
+            if (!itemTarget || !itemTarget->GetTemplate())
+                return BotActionArbitration::Outcome::Unsafe(
+                    "native_use_item_owned_item_target_required");
+
+            ItemTemplate const* itemTemplate = item->GetTemplate();
+            ItemEffect const* selectedEffect = nullptr;
+            for (ItemEffect const& effect : itemTemplate->Effects)
+                if (effect.SpellID == int32(action.SpellId)
+                    && effect.Trigger == ITEM_SPELLTRIGGER_ON_USE)
+                {
+                    selectedEffect = &effect;
+                    break;
+                }
+            SpellInfo const* spellInfo = selectedEffect
+                ? sSpellMgr->GetSpellInfo(action.SpellId) : nullptr;
+            if (!spellInfo)
+                return BotActionArbitration::Outcome::Unsafe(
+                    "native_use_item_spell_contract_mismatch");
+            if (bot->CanUseItem(item) != EQUIP_ERR_OK)
+                return BotActionArbitration::Outcome::Retryable(
+                    "native_use_item_not_usable");
+            if (bot->IsInCombat() && !spellInfo->CanBeUsedInCombat())
+                return BotActionArbitration::Outcome::Retryable(
+                    "native_use_item_not_usable_in_combat");
+            if (!bot->CanRequestSpellCast(spellInfo))
+                return BotActionArbitration::Outcome::Retryable(
+                    "native_use_item_cast_resources_pending");
+
+            WorldPackets::Spells::UseItem request(
+                WorldPacket(CMSG_USE_ITEM, 0));
+            request.PackSlot = item->GetBagSlot();
+            request.Slot = item->GetSlot();
+            request.CastItem = item->GetGUID();
+            request.Cast.SpellID = int32(action.SpellId);
+            request.Cast.Target.Flags = TARGET_FLAG_ITEM;
+            request.Cast.Target.Item = itemTarget->GetGUID();
+            bot->GetSession()->HandleUseItemOpcode(request);
+            return BotActionArbitration::Outcome::Submitted(
+                "native_use_item_session_request_submitted");
         }
         else if constexpr (std::is_same_v<T, BotNativeAction::ReleaseSpirit>)
         {
@@ -37687,6 +39786,17 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
         return true;
     }
 
+    // Persistent combat setup is a pre-pull player action. In particular,
+    // rogue poisons cannot be retrofitted after a native pull has entered
+    // combat. Hold the ordinary readiness barrier until native item-use casts
+    // and their later exact weapon-enchant observations have completed.
+    if (TryEnsurePersistentCombatSetup(state, bot, pullTarget))
+    {
+        result.Action = "validation_route_readiness_persistent_setup";
+        result.Target = bot;
+        return true;
+    }
+
     struct ActiveBuffRequirement
     {
         uint8 ClassId;
@@ -39292,6 +41402,9 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         }
         return false;
     };
+    bool const exactSingleTargetCalibration =
+        Cohort().CalibrationMode == "single_target_300"
+        && bot->GetGUID() == Cohort().CalibrationTargetGuid;
     for (BotActionCandidate& candidate : candidates)
     {
         if (hostileTargetOnly && candidate.Profile.TargetSelector != "enemy")
@@ -39302,6 +41415,16 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         if (excludedSpellId && candidate.SpellId == excludedSpellId)
         {
             candidate.RejectReason = "temporarily_suppressed";
+            continue;
+        }
+        if (exactSingleTargetCalibration && candidate.SpellId == 42650
+            && hasMechanicTag(candidate.Profile.MechanicTags, "prepull"))
+        {
+            // The exact v1 reference replaces the upstream prepull list with
+            // fixture-owned setup and therefore contains no Army cast. Keep
+            // this ordinary learned cooldown available in dungeons, but do
+            // not let a combat-time cast inflate the calibration numerator.
+            candidate.RejectReason = "reference_prepull_action_excluded";
             continue;
         }
         if (areaOnly && candidate.Category != BotCombatActionCategory::Aoe
@@ -39414,8 +41537,9 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             bool const solarMarker = bot->HasAura(67483);
             if (candidate.SpellId == 88747)
             {
-                // Wild Mushroom placement is a pinned pre-pull action owned by
-                // the calibration setup above, never an in-combat filler.
+                // The base v1 exact fixture owns no Balance mushroom prepull.
+                // Placement therefore cannot leak into the scored priority as
+                // an unbound simulator-only start-state manufacture.
                 candidate.RejectReason = "prepull_only";
                 continue;
             }
@@ -39429,7 +41553,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             {
                 // Sustained Balance AoE enters Solar Eclipse before channeling
                 // Hurricane, preserving Eclipse damage and allowing the pinned
-                // pre-pull mushroom set to detonate.
+                // an ordinary player-planted mushroom set to detonate when one
+                // exists outside the exact base fixture.
                 candidate.RejectReason = "solar_aoe_required";
                 continue;
             }
@@ -39779,13 +41904,148 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     return action;
 }
 
-bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state, Player* bot, Unit* target) const
+bool BotWorldPopulationMgr::IsNativePoisonSetupReady(Player const* bot,
+    WorldBotState::NativePoisonSetupReceipt const& receipt) const
+{
+    constexpr uint32 PoisonRefreshThresholdMs = 900000;
+    Item const* weapon = bot ? bot->GetItemByPos(INVENTORY_SLOT_BAG_0,
+        receipt.EquipmentSlot) : nullptr;
+    ItemTemplate const* weaponTemplate = weapon
+        ? weapon->GetTemplate() : nullptr;
+    return weaponTemplate
+        && weaponTemplate->GetClass() == ITEM_CLASS_WEAPON
+        && receipt.ItemAvailable && receipt.SpellAvailable
+        && receipt.NativeUseSubmittedAtMs
+        && receipt.NativeUseFinishedSuccessfully
+        && receipt.NativeUseFinishedAtMs >= receipt.NativeUseSubmittedAtMs
+        && receipt.NativeUseFinishedItemGuid == receipt.SubmittedItemGuid
+        && receipt.NativeUseFinishedWeaponGuid == receipt.SubmittedWeaponGuid
+        && receipt.SubmittedWeaponGuid == weapon->GetGUID()
+        && receipt.ObservedWeaponGuid == weapon->GetGUID()
+        && receipt.ObservedWeaponGuid == receipt.SubmittedWeaponGuid
+        && receipt.EnchantObservedAtMs >= receipt.NativeUseFinishedAtMs
+        && weapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT)
+            == receipt.RequiredEnchantId
+        && weapon->GetEnchantmentDuration(TEMP_ENCHANTMENT_SLOT)
+            >= PoisonRefreshThresholdMs;
+}
+
+bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state, Player* bot, Unit* target)
 {
     if (!bot || !bot->IsAlive())
         return false;
 
     std::string const role = GetDungeonRole(bot);
     BotClassSpecActionProfile const profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
+    bool const unholyPresenceSetup = role == "dps"
+        && (profile.SpecTag == "frost_death_knight"
+            || profile.SpecTag == "unholy_death_knight");
+    state.RequiredPresenceSetupSpellId = unholyPresenceSetup ? 48265 : 0;
+    state.RequiredPresenceSetupAuraId = unholyPresenceSetup ? 48265 : 0;
+    state.RequiredPresenceSetupSpellKnown = unholyPresenceSetup
+        && bot->HasSpell(48265);
+    if (!unholyPresenceSetup)
+    {
+        state.PresenceSetupNativeCastSubmittedAtMs = 0;
+        state.PresenceSetupAuraObservedAtMs = 0;
+    }
+
+    // The pinned source setup uses ordinary permanent pets: Felhunter for
+    // Affliction, Felguard for Demonology, and the Master-of-Ghouls Raise Dead
+    // pet for Unholy. Submit the learned player spell and wait for native
+    // finish plus a later complete live-pet observation. Never manufacture,
+    // teach, replace, heal, or refill the pet here.
+    WorldBotState::NativePersistentPetSetupReceipt requiredPet;
+    char const* requiredPetName = nullptr;
+    if (role == "dps" && profile.SpecTag == "affliction_warlock")
+    {
+        requiredPet.RequiredSummonSpellId = 691; // Summon Felhunter
+        requiredPet.RequiredCreatedBySpellId = 691;
+        requiredPet.RequiredEntry = ENTRY_FELHUNTER;
+        requiredPet.RequiredFamilyId = CREATURE_FAMILY_FELHUNTER;
+        requiredPet.RequiredPetType = uint32(SUMMON_PET);
+        requiredPet.RequiredPowerType = uint32(POWER_MANA);
+        requiredPetName = "summon_felhunter";
+    }
+    else if (role == "dps" && profile.SpecTag == "demonology_warlock")
+    {
+        requiredPet.RequiredSummonSpellId = 30146; // Summon Felguard
+        requiredPet.RequiredCreatedBySpellId = 30146;
+        requiredPet.RequiredEntry = ENTRY_FELGUARD;
+        requiredPet.RequiredFamilyId = CREATURE_FAMILY_FELGUARD;
+        requiredPet.RequiredPetType = uint32(SUMMON_PET);
+        requiredPet.RequiredPowerType = uint32(POWER_MANA);
+        requiredPetName = "summon_felguard";
+    }
+    else if (role == "dps" && profile.SpecTag == "unholy_death_knight")
+    {
+        requiredPet.RequiredSummonSpellId = 46584; // Raise Dead
+        requiredPet.RequiredEntry = ENTRY_GHOUL;
+        requiredPet.RequiredFamilyId = sObjectMgr->GetCreatureTemplate(
+            ENTRY_GHOUL) ? uint32(sObjectMgr->GetCreatureTemplate(
+                ENTRY_GHOUL)->family) : uint32(CREATURE_FAMILY_NONE);
+        requiredPet.RequiredPetType = uint32(SUMMON_PET);
+        requiredPet.RequiredPowerType = uint32(POWER_ENERGY);
+        if (SpellInfo const* raiseDead = sSpellMgr->GetSpellInfo(46584))
+            requiredPet.RequiredCreatedBySpellId = uint32(std::max<int32>(
+                0, raiseDead->Effects[EFFECT_1].CalcValue(bot)));
+        requiredPetName = "raise_dead_permanent_ghoul";
+    }
+    WorldBotState::NativePersistentPetSetupReceipt& petSetup =
+        state.PersistentPetSetup;
+    bool const petRequirementChanged =
+        petSetup.RequiredSummonSpellId != requiredPet.RequiredSummonSpellId
+        || petSetup.RequiredCreatedBySpellId
+            != requiredPet.RequiredCreatedBySpellId
+        || petSetup.RequiredEntry != requiredPet.RequiredEntry
+        || petSetup.RequiredFamilyId != requiredPet.RequiredFamilyId
+        || petSetup.RequiredPetType != requiredPet.RequiredPetType
+        || petSetup.RequiredPowerType != requiredPet.RequiredPowerType;
+    if (petRequirementChanged)
+        petSetup = {};
+    petSetup.RequiredSummonSpellId = requiredPet.RequiredSummonSpellId;
+    petSetup.RequiredCreatedBySpellId = requiredPet.RequiredCreatedBySpellId;
+    petSetup.RequiredEntry = requiredPet.RequiredEntry;
+    petSetup.RequiredFamilyId = requiredPet.RequiredFamilyId;
+    petSetup.RequiredPetType = requiredPet.RequiredPetType;
+    petSetup.RequiredPowerType = requiredPet.RequiredPowerType;
+    petSetup.SummonSpellKnown = petSetup.RequiredSummonSpellId
+        && bot->HasSpell(petSetup.RequiredSummonSpellId);
+
+    bool const roguePoisonSetup = role == "dps"
+        && (profile.SpecTag == "assassination_rogue"
+            || profile.SpecTag == "combat_rogue");
+    state.RoguePoisonSetupRequired = roguePoisonSetup;
+    auto configurePoisonRequirement = [](WorldBotState::NativePoisonSetupReceipt& receipt,
+        uint8 equipmentSlot, uint32 itemEntry, uint32 spellId,
+        uint32 enchantId)
+    {
+        bool const changed = receipt.EquipmentSlot != equipmentSlot
+            || receipt.RequiredItemEntry != itemEntry
+            || receipt.RequiredSpellId != spellId
+            || receipt.RequiredEnchantId != enchantId;
+        if (changed)
+            receipt = {};
+        receipt.EquipmentSlot = equipmentSlot;
+        receipt.RequiredItemEntry = itemEntry;
+        receipt.RequiredSpellId = spellId;
+        receipt.RequiredEnchantId = enchantId;
+    };
+    if (roguePoisonSetup)
+    {
+        // Both pinned WoWSims Assassination and Combat primary fixtures use
+        // Deadly on main hand and Instant on off hand. Item, spell, and
+        // resulting enchant identities come from the Cataclysm DBCs.
+        configurePoisonRequirement(state.RogueMainhandPoisonSetup,
+            EQUIPMENT_SLOT_MAINHAND, 43233, 2823, 7);
+        configurePoisonRequirement(state.RogueOffhandPoisonSetup,
+            EQUIPMENT_SLOT_OFFHAND, 43231, 8679, 323);
+    }
+    else
+    {
+        state.RogueMainhandPoisonSetup = {};
+        state.RogueOffhandPoisonSetup = {};
+    }
     struct SelfBuff
     {
         uint8 ClassId;
@@ -39805,6 +42065,8 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
         { CLASS_PALADIN, "tank", nullptr, 31801, 31801, 0, "seal_of_truth" },
         { CLASS_PALADIN, "tank", nullptr, 465, 465, 0, "devotion_aura" },
         { CLASS_DEATH_KNIGHT, "tank", "blood_death_knight", 48263, 48263, 0, "blood_presence" },
+        { CLASS_DEATH_KNIGHT, "dps", "frost_death_knight", 48265, 48265, 0, "unholy_presence" },
+        { CLASS_DEATH_KNIGHT, "dps", "unholy_death_knight", 48265, 48265, 0, "unholy_presence" },
         { CLASS_DRUID, "tank", "feral_druid_tank", 5487, 5487, 0, "bear_form" },
         { CLASS_DRUID, "dps", "feral_druid_dps", 768, 768, 0, "cat_form" },
         { CLASS_DRUID, "dps", "balance_druid", 24858, 24858, 0, "moonkin_form" },
@@ -39819,9 +42081,21 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
     for (SelfBuff const& buff : buffs)
     {
         if (buff.ClassId != bot->getClass() || (buff.Role && role != buff.Role)
-            || (buff.SpecTag && profile.SpecTag != buff.SpecTag)
-            || bot->HasAura(buff.AuraId) || (buff.AlternateAuraId && bot->HasAura(buff.AlternateAuraId)))
+            || (buff.SpecTag && profile.SpecTag != buff.SpecTag))
             continue;
+
+        bool const trackedPresence = unholyPresenceSetup && buff.SpellId == 48265;
+        bool const auraActive = bot->HasAura(buff.AuraId)
+            || (buff.AlternateAuraId && bot->HasAura(buff.AlternateAuraId));
+        if (auraActive && (!trackedPresence || state.PresenceSetupNativeCastSubmittedAtMs))
+        {
+            // A submitted receipt and the later native aura observation are
+            // separate facts.  This never creates or refreshes the aura.
+            if (trackedPresence
+                && state.PresenceSetupAuraObservedAtMs < state.PresenceSetupNativeCastSubmittedAtMs)
+                state.PresenceSetupAuraObservedAtMs = NowMs();
+            continue;
+        }
         if (!bot->HasSpell(buff.SpellId))
         {
             std::string blocker = std::string("persistent_setup_spell_missing:") + std::to_string(buff.SpellId);
@@ -39841,12 +42115,174 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
         action.SpellId = buff.SpellId;
         action.TargetGuid = bot->GetGUID();
         action.DebugName = buff.Name;
-        if (bot->CastSpell(bot, buff.SpellId, false) == SPELL_CAST_OK)
+        BotActionExecutor executor;
+        BotActionResult const result = executor.ExecuteCombat(bot, bot, action);
+        if (result == BotActionResult::Ok)
         {
-            RecordCombatAttempt(state, bot, bot, "persistent_setup", &action, BotActionResult::Ok, buff.Name);
+            if (trackedPresence)
+            {
+                state.PresenceSetupNativeCastSubmittedAtMs = NowMs();
+                state.PresenceSetupAuraObservedAtMs = 0;
+            }
+            RecordCombatAttempt(state, bot, bot, "persistent_setup", &action, result, buff.Name);
             return true;
         }
-        RecordCombatAttempt(state, bot, bot, "persistent_setup", &action, BotActionResult::CastFailed, "self_buff_cast_failed");
+        RecordCombatAttempt(state, bot, bot, "persistent_setup", &action, result,
+            "self_buff_native_submission_pending_or_rejected");
+        return true;
+    }
+
+    if (petSetup.RequiredSummonSpellId)
+    {
+        uint64 const nowMs = NowMs();
+        OrdinaryPetSetupSnapshot const observedPet =
+            ObserveOrdinaryPetSetup(bot);
+        bool const exactPetObserved = OrdinaryPersistentPetMatches(
+            observedPet, petSetup.RequiredEntry,
+            petSetup.RequiredFamilyId, petSetup.RequiredPetType,
+            petSetup.RequiredPowerType,
+            petSetup.RequiredCreatedBySpellId);
+        bool const nativeCastFinished =
+            petSetup.NativeCastSubmittedAtMs
+            && petSetup.NativeCastFinishedSuccessfully
+            && petSetup.NativeCastFinishedAtMs
+                >= petSetup.NativeCastSubmittedAtMs;
+        if (nativeCastFinished && exactPetObserved)
+        {
+            if (petSetup.NativeCastObservedAtMs
+                < petSetup.NativeCastFinishedAtMs)
+                petSetup.NativeCastObservedAtMs = nowMs;
+            TryResolveBotBlocker(state, bot,
+                "persistent_native_pet_setup_ready");
+            return false;
+        }
+
+        // Do not cast a summon onto the same already-live permanent pet merely
+        // to fabricate this run's receipt. Core summon handling can heal and
+        // refill an existing summon; a fixture must begin without that pet or
+        // retain the real receipt from the cast that created it.
+        if (exactPetObserved && !petSetup.NativeCastSubmittedAtMs)
+        {
+            ObserveBotCandidateFailure(state, bot,
+                "world.setup.native_pet:" + std::to_string(
+                    petSetup.RequiredSummonSpellId),
+                "persistent_setup_preexisting_pet_without_native_receipt",
+                1000, 15000, 3, 15000);
+            return true;
+        }
+
+        // A submitted cast owns setup until the native finish callback. A
+        // successful finish gets a short observation window for the pet to
+        // enter the map; after that, retry the same legal spell rather than
+        // inventing a replacement.
+        if (petSetup.NativeCastSubmittedAtMs
+            && !petSetup.NativeCastFinishedAtMs)
+            return true;
+        if (nativeCastFinished && !exactPetObserved
+            && nowMs - petSetup.NativeCastFinishedAtMs < 3000)
+            return true;
+
+        std::string const attemptKey =
+            "persistent_setup:native_pet:"
+            + std::to_string(petSetup.RequiredSummonSpellId);
+        auto retryItr = state.ReadinessRetryUntilMs.find(attemptKey);
+        if (retryItr != state.ReadinessRetryUntilMs.end())
+        {
+            if (retryItr->second > nowMs)
+                return true;
+            state.ReadinessRetryUntilMs.erase(retryItr);
+        }
+        if (profile.SpecTag == "unholy_death_knight"
+            && !bot->HasAura(52143))
+        {
+            ObserveBotCandidateFailure(state, bot,
+                "world.setup.native_pet:46584",
+                "persistent_setup_unholy_master_of_ghouls_missing:52143",
+                1000, 15000, 3, 15000);
+            return true;
+        }
+        if (!petSetup.RequiredCreatedBySpellId)
+        {
+            ObserveBotCandidateFailure(state, bot,
+                "world.setup.native_pet:" + std::to_string(
+                    petSetup.RequiredSummonSpellId),
+                "persistent_setup_native_pet_created_by_spell_missing",
+                1000, 15000, 3, 15000);
+            return true;
+        }
+        if (!petSetup.SummonSpellKnown)
+        {
+            std::string const blocker =
+                "persistent_setup_spell_missing:"
+                + std::to_string(petSetup.RequiredSummonSpellId);
+            ObserveBotCandidateFailure(state, bot,
+                "world.setup.native_pet:" + std::to_string(
+                    petSetup.RequiredSummonSpellId), blocker,
+                1000, 15000, 3, 15000);
+            return true;
+        }
+
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(
+            petSetup.RequiredSummonSpellId);
+        if (!spellInfo)
+        {
+            std::string const blocker =
+                "persistent_setup_spell_info_missing:"
+                + std::to_string(petSetup.RequiredSummonSpellId);
+            ObserveBotCandidateFailure(state, bot,
+                "world.setup.native_pet:" + std::to_string(
+                    petSetup.RequiredSummonSpellId), blocker,
+                1000, 15000, 3, 15000);
+            return true;
+        }
+        if (bot->HasUnitState(UNIT_STATE_CASTING)
+            || bot->GetSpellHistory()->HasGlobalCooldown(spellInfo)
+            || !bot->GetSpellHistory()->IsReady(spellInfo))
+            return true;
+
+        ResolvedBotAction nativeAction;
+        nativeAction.TargetGuid = bot->GetGUID();
+        nativeAction.SpellId = petSetup.RequiredSummonSpellId;
+        nativeAction.DebugName = requiredPetName;
+        BotActionExecutor executor;
+        // Publish the pending identity before CastSpell: an instant cast-time
+        // modifier can make Spell::finish run synchronously inside the native
+        // executor. A rejected submission clears these provisional fields
+        // immediately below and is never reported as submitted evidence.
+        petSetup.NativeCastSubmittedAtMs = nowMs;
+        petSetup.NativeCastFinishedAtMs = 0;
+        petSetup.NativeCastFinishedSuccessfully = false;
+        petSetup.NativeCastObservedAtMs = 0;
+        BotActionResult const result = executor.Execute(
+            bot, bot, nativeAction);
+
+        ResolvedCombatAction telemetryAction;
+        telemetryAction.Valid = true;
+        telemetryAction.Type = "cast";
+        telemetryAction.SpellId = petSetup.RequiredSummonSpellId;
+        telemetryAction.TargetGuid = bot->GetGUID();
+        telemetryAction.DebugName = requiredPetName;
+        if (result == BotActionResult::Ok)
+        {
+            state.ReadinessRetryUntilMs.erase(attemptKey);
+            RecordCombatAttempt(state, bot, bot, "persistent_setup",
+                &telemetryAction, result, requiredPetName);
+            return true;
+        }
+
+        petSetup.NativeCastSubmittedAtMs = 0;
+        petSetup.NativeCastFinishedAtMs = 0;
+        petSetup.NativeCastFinishedSuccessfully = false;
+        petSetup.NativeCastObservedAtMs = 0;
+        state.ReadinessRetryUntilMs[attemptKey] = nowMs + 1500;
+        std::string const reason = "persistent_pet_native_submission_"
+            + std::string(ToString(result));
+        ObserveBotCandidateFailure(state, bot,
+            "world.setup.native_pet:" + std::to_string(
+                petSetup.RequiredSummonSpellId), reason,
+            1000, 15000, 3, 15000);
+        RecordCombatAttempt(state, bot, bot, "persistent_setup",
+            &telemetryAction, result, reason.c_str());
         return true;
     }
 
@@ -39956,38 +42392,186 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
             return true;
     }
 
-    if (bot->getClass() == CLASS_ROGUE)
+    if (state.RoguePoisonSetupRequired)
     {
         constexpr uint32 PoisonRefreshThresholdMs = 900000;
-        auto ensureWeaponPoison = [&](uint8 equipmentSlot, uint32 enchantId, char const* name) -> bool
+        auto ensureWeaponPoison = [&](WorldBotState::NativePoisonSetupReceipt& receipt,
+            char const* name) -> bool
         {
-            Item* weapon = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, equipmentSlot);
-            if (!weapon)
+            uint64 const nowMs = NowMs();
+            Item* weapon = bot->GetItemByPos(INVENTORY_SLOT_BAG_0,
+                receipt.EquipmentSlot);
+            ItemTemplate const* weaponTemplate = weapon
+                ? weapon->GetTemplate() : nullptr;
+            receipt.ObservedWeaponItemEntry = weapon ? weapon->GetEntry() : 0;
+            receipt.ObservedWeaponGuid = weapon
+                ? weapon->GetGUID() : ObjectGuid::Empty;
+            receipt.ObservedEnchantId = weapon
+                ? weapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) : 0;
+            receipt.ObservedEnchantDurationMs = weapon
+                ? weapon->GetEnchantmentDuration(TEMP_ENCHANTMENT_SLOT) : 0;
+
+            Item* poisonItem = bot->GetItemByEntry(
+                receipt.RequiredItemEntry);
+            bool const itemCurrentlyAvailable = poisonItem
+                && poisonItem->GetCount();
+            // Availability is a submission receipt, not a requirement that a
+            // consumable remain afterward. A one-count stack is ordinarily
+            // destroyed by the native spell. If this enchant later needs a
+            // refresh, the live check below still fails closed without a new
+            // source item.
+            receipt.ItemAvailable = receipt.ItemAvailable
+                || itemCurrentlyAvailable;
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(
+                receipt.RequiredSpellId);
+            ItemTemplate const* poisonItemTemplate = poisonItem
+                ? poisonItem->GetTemplate()
+                : sObjectMgr->GetItemTemplate(receipt.RequiredItemEntry);
+            bool itemDeclaresExactSpell = false;
+            if (poisonItemTemplate)
+                for (ItemEffect const& effect :
+                    poisonItemTemplate->Effects)
+                    if (effect.SpellID == int32(receipt.RequiredSpellId)
+                        && effect.Trigger == ITEM_SPELLTRIGGER_ON_USE)
+                    {
+                        itemDeclaresExactSpell = true;
+                        break;
+                    }
+            bool spellDeclaresExactEnchant = false;
+            if (spellInfo)
+                for (SpellEffectInfo const& effect : spellInfo->Effects)
+                    if (effect.Effect
+                            == SPELL_EFFECT_ENCHANT_ITEM_TEMPORARY
+                        && uint32(effect.MiscValue)
+                            == receipt.RequiredEnchantId)
+                    {
+                        spellDeclaresExactEnchant = true;
+                        break;
+                    }
+            receipt.SpellAvailable = itemDeclaresExactSpell
+                && spellDeclaresExactEnchant;
+
+            bool const receiptOwnsCurrentWeapon = weapon
+                && receipt.NativeUseSubmittedAtMs
+                && receipt.SubmittedWeaponGuid == weapon->GetGUID();
+            bool const exactEnchantObserved = receiptOwnsCurrentWeapon
+                && receipt.ObservedWeaponGuid
+                    == receipt.SubmittedWeaponGuid
+                && receipt.NativeUseFinishedSuccessfully
+                && receipt.NativeUseFinishedAtMs
+                    >= receipt.NativeUseSubmittedAtMs
+                && receipt.NativeUseFinishedItemGuid
+                    == receipt.SubmittedItemGuid
+                && receipt.NativeUseFinishedWeaponGuid
+                    == receipt.SubmittedWeaponGuid
+                && receipt.ObservedEnchantId == receipt.RequiredEnchantId
+                && receipt.ObservedEnchantDurationMs
+                    >= PoisonRefreshThresholdMs;
+            if (exactEnchantObserved)
+            {
+                if (receipt.EnchantObservedAtMs
+                    < receipt.NativeUseFinishedAtMs)
+                    receipt.EnchantObservedAtMs = nowMs;
+                return false;
+            }
+            receipt.EnchantObservedAtMs = 0;
+
+            if (!weaponTemplate
+                || weaponTemplate->GetClass() != ITEM_CLASS_WEAPON)
             {
                 std::string blocker = std::string("persistent_setup_weapon_missing:") + name;
                 ObserveBotCandidateFailure(state, bot,
-                    "world.setup.weapon_poison:" + std::string(name), blocker);
+                    "world.setup.weapon_poison:" + std::string(name),
+                    blocker, 1000, 15000, 3, 15000);
+                return true;
+            }
+            if (!itemCurrentlyAvailable)
+            {
+                std::string const blocker =
+                    "persistent_setup_poison_item_missing:"
+                    + std::to_string(receipt.RequiredItemEntry);
+                ObserveBotCandidateFailure(state, bot,
+                    "world.setup.weapon_poison:" + std::string(name),
+                    blocker, 1000, 15000, 3, 15000);
+                return true;
+            }
+            if (!receipt.SpellAvailable)
+            {
+                std::string const blocker =
+                    "persistent_setup_poison_spell_contract_missing:"
+                    + std::to_string(receipt.RequiredSpellId);
+                ObserveBotCandidateFailure(state, bot,
+                    "world.setup.weapon_poison:" + std::string(name),
+                    blocker, 1000, 15000, 3, 15000);
+                return true;
+            }
+            if (receipt.NextNativeUseRetryAtMs > nowMs
+                || bot->HasUnitState(UNIT_STATE_CASTING))
+                return true;
+
+            BotNativeAction::UseItem useItem;
+            useItem.Item = poisonItem->GetGUID();
+            useItem.Target = weapon->GetGUID();
+            useItem.SpellId = receipt.RequiredSpellId;
+            // Publish pending identity before entering WorldSession. A future
+            // cast-time modifier may finish the native item spell
+            // synchronously; the finish callback must still be able to bind
+            // that exact request. Rejected submissions clear these fields.
+            receipt.SubmittedItemGuid = useItem.Item;
+            receipt.SubmittedWeaponGuid = useItem.Target;
+            receipt.NativeUseSubmittedAtMs = nowMs;
+            receipt.NativeUseFinishedAtMs = 0;
+            receipt.NativeUseFinishedSuccessfully = false;
+            receipt.NativeUseFinishedItemGuid.Clear();
+            receipt.NativeUseFinishedWeaponGuid.Clear();
+            receipt.EnchantObservedAtMs = 0;
+            BotActionArbitration::Outcome const outcome =
+                ExecuteNativeActionIntent(state, bot, useItem,
+                    BotMovementArbitration::Owner::Support,
+                    BotMovementArbitration::Priority::Support);
+
+            ResolvedCombatAction telemetryAction;
+            telemetryAction.Valid = true;
+            telemetryAction.Type = "use_item";
+            telemetryAction.SpellId = receipt.RequiredSpellId;
+            telemetryAction.TargetGuid = bot->GetGUID();
+            telemetryAction.DebugName = name;
+            bool const submitted = outcome.Result
+                    == BotActionArbitration::Disposition::Committed
+                && outcome.LifecyclePhase
+                    == BotActionArbitration::Phase::Submitted;
+            if (submitted)
+            {
+                receipt.NextNativeUseRetryAtMs = nowMs + 5000;
+                RecordCombatAttempt(state, bot, bot,
+                    "persistent_setup", &telemetryAction,
+                    BotActionResult::Ok, outcome.Reason.c_str());
                 return true;
             }
 
-            uint32 const currentEnchantId = weapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT);
-            uint32 const currentDurationMs = weapon->GetEnchantmentDuration(TEMP_ENCHANTMENT_SLOT);
-            if (currentEnchantId == enchantId && currentDurationMs >= PoisonRefreshThresholdMs)
-                return false;
-
-            // Poisons are consumable item uses in the client.  Provision the
-            // real poison item and submit it through the item-use path; never
-            // manufacture its temporary enchant from the autonomy runtime.
-            std::string const blocker = std::string("persistent_setup_native_poison_item_required:") + name;
+            receipt.SubmittedItemGuid.Clear();
+            receipt.SubmittedWeaponGuid.Clear();
+            receipt.NativeUseSubmittedAtMs = 0;
+            receipt.NativeUseFinishedAtMs = 0;
+            receipt.NativeUseFinishedSuccessfully = false;
+            receipt.NativeUseFinishedItemGuid.Clear();
+            receipt.NativeUseFinishedWeaponGuid.Clear();
+            receipt.EnchantObservedAtMs = 0;
+            receipt.NextNativeUseRetryAtMs = nowMs + 1000;
             ObserveBotCandidateFailure(state, bot,
-                "world.setup.weapon_poison:" + std::string(name), blocker,
-                1000, 15000, 3, 15000);
-            return false;
+                "world.setup.weapon_poison:" + std::string(name),
+                outcome.Reason, 1000, 15000, 3, 15000);
+            RecordCombatAttempt(state, bot, bot, "persistent_setup",
+                &telemetryAction, BotActionResult::CastFailed,
+                outcome.Reason.c_str());
+            return true;
         };
 
-        if (ensureWeaponPoison(EQUIPMENT_SLOT_MAINHAND, 7, "deadly_poison_mainhand"))
+        if (ensureWeaponPoison(state.RogueMainhandPoisonSetup,
+                "deadly_poison_mainhand"))
             return true;
-        if (ensureWeaponPoison(EQUIPMENT_SLOT_OFFHAND, 323, "instant_poison_offhand"))
+        if (ensureWeaponPoison(state.RogueOffhandPoisonSetup,
+                "instant_poison_offhand"))
             return true;
     }
 
@@ -42963,11 +45547,37 @@ void BotWorldPopulationMgr::NotifyNativeCreatureSpellLanded(
         ++Party().ValidationRouteDrudgeValidIntervalsBySpawn[observation->SourceSpawnId];
 }
 
+void BotWorldPopulationMgr::NotifyCombatAttackAttempt(Unit* attacker,
+    Unit* victim)
+{
+    if (!Cohort().Active || !attacker || !victim
+        || !Cohort().CalibrationScoredStartedMs
+        || Cohort().CalibrationWindowComplete
+        || attacker->GetGUID()
+            != Cohort().CalibrationFixtureTargetGuid)
+        return;
+
+    uint64 const nowMs = NowMs();
+    if (nowMs >= Cohort().CalibrationScoredStartedMs
+        && nowMs - Cohort().CalibrationScoredStartedMs
+            < CalibrationSingleTargetDurationMs)
+        ++Cohort().CalibrationFixtureTargetAttackEventCount;
+}
+
 void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uint32 spellId, uint32 damage,
     uint32 unmitigatedDamage, uint32 damageType, uint32 schoolMask)
 {
     if (!Cohort().Active || !attacker || !victim || (!damage && !unmitigatedDamage))
         return;
+
+    if (Cohort().CalibrationScoredStartedMs
+        && !Cohort().CalibrationWindowComplete
+        && attacker->GetGUID()
+            == Cohort().CalibrationFixtureTargetGuid
+        && NowMs() >= Cohort().CalibrationScoredStartedMs
+        && NowMs() - Cohort().CalibrationScoredStartedMs
+            < CalibrationSingleTargetDurationMs)
+        ++Cohort().CalibrationFixtureTargetOriginatedDamageEventCount;
 
     Player* owner = CombatOwnerPlayer(attacker);
     if (owner)
@@ -42975,17 +45585,38 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
         auto calibration = Cohort().CalibrationMetricsByGuid.find(owner->GetGUID().GetCounter());
         if (calibration != Cohort().CalibrationMetricsByGuid.end())
         {
+            uint64 const nowMs = NowMs();
+            uint64 const windowElapsedMs = Cohort().CalibrationScoredStartedMs
+                && nowMs >= Cohort().CalibrationScoredStartedMs
+                    ? nowMs - Cohort().CalibrationScoredStartedMs : 0;
             bool const scored = Cohort().CalibrationScoredStartedMs && !Cohort().CalibrationWindowComplete
-                && NowMs() >= Cohort().CalibrationScoredStartedMs
-                && NowMs() - Cohort().CalibrationScoredStartedMs <= 300000;
+                && nowMs >= Cohort().CalibrationScoredStartedMs
+                && windowElapsedMs < CalibrationSingleTargetDurationMs;
             if (!scored)
             {
+                // The exact request is half-open [0, 300000). A map damage
+                // callback can race the manager's completion tick at exactly
+                // 300000 ms. Diagnose that normal update-order boundary
+                // exclusion separately: it is neither numerator damage nor
+                // acceptance-gated cross-window contamination.
+                if (Cohort().CalibrationScoredStartedMs
+                    && !Cohort().CalibrationWindowComplete
+                    && nowMs >= Cohort().CalibrationScoredStartedMs
+                    && windowElapsedMs >= CalibrationSingleTargetDurationMs)
+                {
+                    ++Cohort().CalibrationExcludedBoundaryDamageEventCount;
+                    TC_LOG_WARN("server", "BotWorld calibration boundary damage excluded owner=%s attacker=%s victim=%s spell=%u elapsed_ms=%llu damage=%u raw=%u",
+                        owner->GetGUID().ToString().c_str(), attacker->GetGUID().ToString().c_str(),
+                        victim->GetGUID().ToString().c_str(), spellId,
+                        static_cast<unsigned long long>(windowElapsedMs), damage,
+                        unmitigatedDamage);
+                }
                 // A final channel tick can already be queued when the exact
                 // 300-second boundary interrupts the cast. Give that in-flight
                 // delivery one normal three-second periodic interval to drain;
                 // anything later is genuine cross-window contamination.
                 if (Cohort().CalibrationWindowComplete && Cohort().CalibrationScoredEndedMs
-                    && NowMs() > Cohort().CalibrationScoredEndedMs + 3000)
+                    && nowMs > Cohort().CalibrationScoredEndedMs + 3000)
                 {
                     ++Cohort().CalibrationCrossWindowEventCount;
                     TC_LOG_WARN("server", "BotWorld calibration post-window damage owner=%s attacker=%s victim=%s spell=%u damage=%u raw=%u",
@@ -43000,6 +45631,47 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
             bool const primaryTargetDamage = isolatedSingleTarget
                 && !Cohort().CalibrationFixtureTargetGuid.IsEmpty()
                 && victim->GetGUID() == Cohort().CalibrationFixtureTargetGuid;
+            if (primaryTargetDamage
+                && Cohort().RuntimeMode == BotWorldRuntimeMode::CalibrationFixture
+                && Cohort().NonCertifyingAssistance)
+            {
+                // Damage can land between population-manager updates, including
+                // on the first millisecond of a new execute band. Apply that
+                // exact wall-clock band before reading pre-damage health so a
+                // stale prior-band value cannot be attributed to the new band.
+                UpdateCalibrationTargetHealthSchedule(nowMs);
+                if (windowElapsedMs < CalibrationSingleTargetDurationMs)
+                {
+                    size_t const phaseIndex =
+                        CalibrationExecuteHealthWindowIndex(windowElapsedMs);
+                    CalibrationMetrics::TargetHealthPhaseObservation& observation =
+                        calibration->second.TargetHealthPhaseObservations[phaseIndex];
+                    uint64 const preDamageHealth = victim->GetHealth();
+                    uint64 const projectedPostDamageHealth = preDamageHealth > damage
+                        ? preDamageHealth - damage : 0;
+                    uint64 const maximumHealth = victim->GetMaxHealth();
+                    if (!observation.DamageEventSampleCount)
+                        observation.FirstDamageEventElapsedMs = windowElapsedMs;
+                    observation.LastDamageEventElapsedMs = windowElapsedMs;
+                    ++observation.DamageEventSampleCount;
+                    observation.MinimumPreDamageHealth = std::min(
+                        observation.MinimumPreDamageHealth, preDamageHealth);
+                    observation.MaximumPreDamageHealth = std::max(
+                        observation.MaximumPreDamageHealth, preDamageHealth);
+                    observation.MinimumProjectedPostDamageHealth = std::min(
+                        observation.MinimumProjectedPostDamageHealth,
+                        projectedPostDamageHealth);
+                    observation.MaximumProjectedPostDamageHealth = std::max(
+                        observation.MaximumProjectedPostDamageHealth,
+                        projectedPostDamageHealth);
+                    observation.MinimumDamageEventMaxHealth = std::min(
+                        observation.MinimumDamageEventMaxHealth, maximumHealth);
+                    observation.MaximumDamageEventMaxHealth = std::max(
+                        observation.MaximumDamageEventMaxHealth, maximumHealth);
+                    observation.MaximumDamageEvent = std::max(
+                        observation.MaximumDamageEvent, damage);
+                }
+            }
             if (isolatedSingleTarget && !primaryTargetDamage)
                 calibration->second.OffTargetDamage += measuredDamage;
             else
@@ -43014,7 +45686,7 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
             }
             if (Creature* dummy = victim->ToCreature(); dummy && IsTrainingDummy(dummy))
             {
-                calibration->second.LastDamageMsByTarget[dummy->GetGUID().GetCounter()] = NowMs();
+                calibration->second.LastDamageMsByTarget[dummy->GetGUID().GetCounter()] = nowMs;
                 calibration->second.TargetCount = uint32(
                     calibration->second.LastDamageMsByTarget.size());
             }
@@ -43100,6 +45772,52 @@ void BotWorldPopulationMgr::NotifyBotSpellFinished(Player* caster, uint32 spellI
 {
     if (!caster || !spellId)
         return;
+
+    if (success && Cohort().CalibrationActive
+        && Cohort().CalibrationScoredStartedMs
+        && !Cohort().CalibrationWindowComplete)
+        if (auto metricsItr = Cohort().CalibrationMetricsByGuid.find(
+                caster->GetGUID().GetCounter());
+            metricsItr != Cohort().CalibrationMetricsByGuid.end())
+        {
+            static constexpr std::array<uint32, 7> DisabledRacialSpells = {
+                20572, 26297, 28730, 33697, 33702, 58984, 69041,
+            };
+            if (std::find(DisabledRacialSpells.begin(),
+                    DisabledRacialSpells.end(), spellId)
+                != DisabledRacialSpells.end())
+                ++metricsItr->second.ScoredRacialUseCount;
+            if (spellId == 82174)
+                ++metricsItr->second.ScoredTinkerSpellUseCount;
+        }
+
+    // Spell::finish is the native completion authority for the ordinary pet
+    // summon submitted by TryEnsurePersistentCombatSetup. Bind it to the exact
+    // pending spell/bot receipt; a later update still has to observe the
+    // complete live permanent-pet identity before setup is ready.
+    bool petSetupReceiptRecorded = false;
+    auto recordPetSetupFinish = [&](std::vector<WorldBotState>& states)
+    {
+        if (petSetupReceiptRecorded)
+            return;
+        for (WorldBotState& state : states)
+        {
+            WorldBotState::NativePersistentPetSetupReceipt& petSetup =
+                state.PersistentPetSetup;
+            if (state.Guid != caster->GetGUID()
+                || petSetup.RequiredSummonSpellId != spellId
+                || !petSetup.NativeCastSubmittedAtMs)
+                continue;
+            petSetup.NativeCastFinishedAtMs = NowMs();
+            petSetup.NativeCastFinishedSuccessfully = success;
+            petSetup.NativeCastObservedAtMs = 0;
+            petSetupReceiptRecorded = true;
+            break;
+        }
+    };
+    recordPetSetupFinish(Party().CalibrationBots);
+    recordPetSetupFinish(Party().Bots);
+
     auto found = Party().PendingHealCasts.end();
     for (auto itr = Party().PendingHealCasts.begin(); itr != Party().PendingHealCasts.end(); ++itr)
         if (itr->second.BotGuid == caster->GetGUID() && itr->second.SpellId == spellId && (found == Party().PendingHealCasts.end() || itr->second.StartedAtMs > found->second.StartedAtMs))
@@ -43121,6 +45839,78 @@ void BotWorldPopulationMgr::NotifyBotSpellFinished(Player* caster, uint32 spellI
         if (ref)
             found->second.ThreatAfterCast += ref->GetThreat();
     found->second.DeadlineMs = found->second.FinishedAtMs + 2500; // collection only; outcome snapshots are fixed above
+}
+
+void BotWorldPopulationMgr::NotifyBotItemSpellFinished(Player* caster,
+    uint32 spellId, bool success, ObjectGuid castItemGuid,
+    ObjectGuid itemTargetGuid, uint32 castItemEntry,
+    bool castItemIsPotion)
+{
+    if (!caster || !spellId || !castItemGuid)
+        return;
+
+    // A completed native item spell is the only accepted dynamic-item-use
+    // receipt.  The base DPS fixture authorizes no scored potions, tinkers,
+    // trinkets, or other item activations; rogue poison setup finishes before
+    // the scored timestamp and therefore cannot satisfy or contaminate these
+    // counters.
+    if (success && Cohort().CalibrationActive
+        && Cohort().CalibrationScoredStartedMs
+        && !Cohort().CalibrationWindowComplete)
+        if (auto metricsItr = Cohort().CalibrationMetricsByGuid.find(
+                caster->GetGUID().GetCounter());
+            metricsItr != Cohort().CalibrationMetricsByGuid.end())
+        {
+            CalibrationMetrics& metrics = metricsItr->second;
+            if (castItemIsPotion)
+                ++metrics.ScoredPotionUseCount;
+            else if (castItemEntry != 43231 && castItemEntry != 43233)
+                ++metrics.ScoredTinkerOrOtherItemUseCount;
+        }
+
+    if (!itemTargetGuid)
+        return;
+
+    // Item-use submission is not completion. Spell owns the immutable cast
+    // item and explicit item-target GUIDs even if ordinary resource
+    // consumption removes the source item before finish. Bind both exact
+    // identities before a later autonomy tick observes the live enchant.
+    bool poisonSetupReceiptRecorded = false;
+    auto recordPoisonSetupFinish = [&](std::vector<WorldBotState>& states)
+    {
+        if (poisonSetupReceiptRecorded)
+            return;
+        for (WorldBotState& state : states)
+        {
+            if (state.Guid != caster->GetGUID()
+                || !state.RoguePoisonSetupRequired)
+                continue;
+            std::array<WorldBotState::NativePoisonSetupReceipt*, 2>
+                receipts = {{ &state.RogueMainhandPoisonSetup,
+                    &state.RogueOffhandPoisonSetup }};
+            for (WorldBotState::NativePoisonSetupReceipt* receipt : receipts)
+            {
+                if (!receipt || receipt->RequiredSpellId != spellId
+                    || !receipt->NativeUseSubmittedAtMs
+                    || receipt->SubmittedItemGuid != castItemGuid
+                    || receipt->SubmittedWeaponGuid != itemTargetGuid
+                    || (receipt->NativeUseFinishedAtMs
+                        >= receipt->NativeUseSubmittedAtMs))
+                    continue;
+                receipt->NativeUseFinishedAtMs = NowMs();
+                receipt->NativeUseFinishedSuccessfully = success;
+                receipt->NativeUseFinishedItemGuid = castItemGuid;
+                receipt->NativeUseFinishedWeaponGuid = itemTargetGuid;
+                receipt->EnchantObservedAtMs = 0;
+                poisonSetupReceiptRecorded = true;
+                break;
+            }
+            if (poisonSetupReceiptRecorded)
+                break;
+        }
+    };
+    recordPoisonSetupFinish(Party().CalibrationBots);
+    recordPoisonSetupFinish(Party().Bots);
 }
 
 void BotWorldPopulationMgr::FlushPendingHealCast(PendingHealCast const& cast, Player* bot, char const* outcome, char const* reason)

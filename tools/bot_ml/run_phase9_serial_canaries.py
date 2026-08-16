@@ -62,8 +62,28 @@ CONTROLLER_LOCK = ".phase9_serial_controller.lock"
 JOINED_BATCH_IDENTITY = "joined_campaign_batch_identity.json"
 JOINED_PENDING_PROMOTION = "joined_campaign_promotion_pending.json"
 JOINED_PROMOTION = "joined_campaign_promotion.json"
-CHILD_TIMEOUT_GRACE_SECONDS = 30
+CHILD_TERMINATE_GRACE_SECONDS = 30
 CHILD_KILL_GRACE_SECONDS = 5
+PHASE9_EXECUTION_POLICY = "run_to_completion"
+PHASE9_RETRY_POLICY = "unlimited_physical_tries_until_terminal_success"
+PHASE9_TERMINAL_CONDITIONS = (
+    "strict_route_clear",
+    "server_attributed_machine_failure",
+    "semantic_progress_plateau_watchdog",
+    "no_progress_watchdog",
+    "repeated_decision_watchdog",
+    "death_loop_watchdog",
+    "controller_interruption",
+)
+PHASE9_TERMINAL_REPORT_REASONS = frozenset(
+    {
+        "semantic_progress_plateau_watchdog",
+        "no_progress_watchdog",
+        "repeated_decision_watchdog",
+        "death_loop_watchdog",
+        "machine_failure_predicate",
+    }
+)
 
 
 def campaign_identities_compatible(
@@ -159,13 +179,12 @@ def run_phase9_child(
     command: Sequence[str],
     log_path: Path,
     *,
-    outer_timeout_sec: float,
-    termination_grace_sec: float = CHILD_TIMEOUT_GRACE_SECONDS,
+    termination_grace_sec: float = CHILD_TERMINATE_GRACE_SECONDS,
     kill_grace_sec: float = CHILD_KILL_GRACE_SECONDS,
 ) -> tuple[dict[str, Any], BaseException | None]:
-    """Run one isolated child and reap its process group on outer timeout."""
-    if outer_timeout_sec <= 0 or termination_grace_sec <= 0 or kill_grace_sec <= 0:
-        raise ValueError("Phase 9 child timeout bounds must be positive")
+    """Run to a child terminal result, with bounded signal/group cleanup."""
+    if termination_grace_sec <= 0 or kill_grace_sec <= 0:
+        raise ValueError("Phase 9 child cleanup bounds must be positive")
     log_path.parent.mkdir(parents=True, exist_ok=True)
     with log_path.open("w", encoding="utf-8", errors="replace") as log:
         outcome, pending_interruption = run_child_process_group(
@@ -173,14 +192,16 @@ def run_phase9_child(
             cwd=REPO_ROOT,
             env=os.environ.copy(),
             output_stream=log,
-            timeout_sec=outer_timeout_sec,
+            timeout_sec=None,
             terminate_grace_sec=termination_grace_sec,
             kill_grace_sec=kill_grace_sec,
         )
     return (
         {
             **outcome,
-            "outer_timeout_sec": outer_timeout_sec,
+            "execution_policy": "run_to_completion",
+            "overall_wall_clock_timeout_sec": None,
+            "outer_timeout_sec": None,
             "process_group_isolated": True,
             "process_exit_observed": outcome.get("returncode_observed") is True,
         },
@@ -234,6 +255,8 @@ def phase9_physical_attempt(
         or not logical_cohort_id
         or not composition_id
         or success_ordinal not in {1, 2}
+        or logical_attempt.get("execution_policy") != "run_to_completion"
+        or logical_attempt.get("overall_wall_clock_timeout_sec") is not None
     ):
         raise ValueError("Phase 9 physical try identity is incomplete")
     physical = {
@@ -331,6 +354,8 @@ def write_phase9_physical_try_started(
         "composition_id": logical_attempt.get("composition_id"),
         "success_ordinal": int(logical_attempt.get("clear_ordinal") or 0),
         "physical_try_ordinal": int(physical.get("physical_try_ordinal") or 0),
+        "execution_policy": "run_to_completion",
+        "overall_wall_clock_timeout_sec": None,
         "physical_attempt": dict(physical),
         "attempt_directory": str(attempt_dir.resolve().relative_to(REPO_ROOT)),
         "command": [str(value) for value in command],
@@ -360,6 +385,8 @@ def write_phase9_recovered_reservation(
         "composition_id": logical_attempt.get("composition_id"),
         "success_ordinal": int(logical_attempt.get("clear_ordinal") or 0),
         "physical_try_ordinal": int(physical.get("physical_try_ordinal") or 0),
+        "execution_policy": "run_to_completion",
+        "overall_wall_clock_timeout_sec": None,
         "physical_attempt": dict(physical),
         "attempt_directory": str(attempt_dir.resolve().relative_to(REPO_ROOT)),
         "command": command,
@@ -404,6 +431,8 @@ def load_phase9_physical_try_started(
         == int(logical_attempt.get("clear_ordinal") or 0)
         and int(receipt.get("physical_try_ordinal") or 0)
         == int(physical.get("physical_try_ordinal") or 0)
+        and receipt.get("execution_policy") == "run_to_completion"
+        and receipt.get("overall_wall_clock_timeout_sec") is None
         and receipt.get("physical_attempt") == dict(physical)
         and receipt.get("attempt_directory")
         == str(attempt_dir.resolve().relative_to(REPO_ROOT))
@@ -533,6 +562,8 @@ def verify_hydrated_phase9_attempt(
         and verification.get("accepted") is True
         and str((report.get("validation_context") or {}).get("scenario_id") or "")
         == "stonecore_5h"
+        and report.get("execution_policy") == "run_to_completion"
+        and report.get("overall_wall_clock_timeout_sec") is None
         and len(routes) == 14
         and envelope.get("identity_complete") is True
         and envelope.get("identity_manifest_sha256") == identity.get("manifest_sha256")
@@ -547,6 +578,10 @@ def verify_hydrated_phase9_attempt(
         "schema": "phase9_remote_full_clear_verification_v1",
         "verified": verified,
         "attempt_id": attempt.get("attempt_id"),
+        "execution_policy": report.get("execution_policy"),
+        "overall_wall_clock_timeout_sec": report.get(
+            "overall_wall_clock_timeout_sec"
+        ),
         "source_report_sha256": sha256_file(source_path),
         "acceptance_verification_sha256": canonical_sha256(verification),
         "heroic_admission_receipt_sha256": heroic.get("receipt_sha256"),
@@ -704,6 +739,8 @@ def phase9_attempt_accepted(result: Mapping[str, Any]) -> bool:
         and type(result.get("returncode")) is int
         and result.get("returncode") == 0
         and result.get("transport_classification") == "child_exited"
+        and result.get("execution_policy") == "run_to_completion"
+        and result.get("overall_wall_clock_timeout_sec") is None
         and result.get("outer_timed_out") is False
         and result.get("controller_interrupted") is False
         and result.get("process_group_gone") is True
@@ -729,14 +766,18 @@ def classify_phase9_physical_try(result: Mapping[str, Any]) -> str:
         return "accepted"
     if result.get("child_returncode_observed") is not True:
         return "infrastructure_failure"
-    if result.get("outer_timed_out") is True or result.get("timed_out") is True:
+    if result.get("outer_timed_out") is True:
         return "timeout"
+    if result.get("timed_out") is True:
+        return "terminal_liveness_failure"
     if (
         result.get("controller_interrupted") is True
         or result.get("transport_classification") != "child_exited"
         or result.get("process_group_gone") is not True
     ):
         return "infrastructure_failure"
+    if result.get("report_completion_reason") in PHASE9_TERMINAL_REPORT_REASONS:
+        return "terminal_liveness_failure"
     if result.get("returncode") != 0 or result.get("report_returncode") not in {
         0,
         None,
@@ -749,7 +790,9 @@ def classify_phase9_physical_try(result: Mapping[str, Any]) -> str:
     return "qualification_failure"
 
 
-def _phase9_report_transport(attempt_dir: Path) -> tuple[int | None, bool | None]:
+def _phase9_report_transport(
+    attempt_dir: Path,
+) -> tuple[int | None, bool | None, str, list[str]]:
     report_path = attempt_dir / "report.json"
     try:
         report = read_json(report_path) if report_path.is_file() else {}
@@ -762,6 +805,8 @@ def _phase9_report_transport(attempt_dir: Path) -> tuple[int | None, bool | None
         report.get("timed_out")
         if isinstance(report.get("timed_out"), bool)
         else None,
+        str(report.get("completion_reason") or ""),
+        [str(value) for value in report.get("failure_labels") or []],
     )
 
 
@@ -779,7 +824,12 @@ def phase9_physical_result(
     child_execution: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     remote = reconstruction.get("domain_verification") or {}
-    report_returncode, report_timed_out = _phase9_report_transport(output_dir)
+    (
+        report_returncode,
+        report_timed_out,
+        report_completion_reason,
+        report_failure_labels,
+    ) = _phase9_report_transport(output_dir)
     child_execution = child_execution or {}
     outer_timed_out = child_execution.get("outer_timed_out") is True
     timed_out = True if outer_timed_out else report_timed_out
@@ -806,7 +856,14 @@ def phase9_physical_result(
         "child_returncode_observed": type(child_returncode) is int,
         "returncode": child_returncode,
         "report_returncode": report_returncode,
+        "report_completion_reason": report_completion_reason,
+        "report_failure_labels": report_failure_labels,
         "timed_out": timed_out,
+        "execution_policy": child_execution.get("execution_policy")
+        or "run_to_completion",
+        "overall_wall_clock_timeout_sec": child_execution.get(
+            "overall_wall_clock_timeout_sec"
+        ),
         "outer_timed_out": outer_timed_out,
         "outer_timeout_sec": child_execution.get("outer_timeout_sec"),
         "transport_classification": child_execution.get(
@@ -894,6 +951,10 @@ def write_phase9_physical_try_result(
         ),
         "child_returncode_observed": row.get("child_returncode_observed") is True,
         "child_returncode": row.get("returncode"),
+        "execution_policy": row.get("execution_policy"),
+        "overall_wall_clock_timeout_sec": row.get(
+            "overall_wall_clock_timeout_sec"
+        ),
         "classification": row["classification"],
         "result": row,
     }
@@ -944,6 +1005,11 @@ def load_phase9_physical_try_result(
         and result.get("output_dir")
         == str(attempt_dir.resolve().relative_to(REPO_ROOT))
         and receipt.get("classification") == result.get("classification")
+        and receipt.get("execution_policy") == PHASE9_EXECUTION_POLICY
+        and receipt.get("execution_policy") == result.get("execution_policy")
+        and receipt.get("overall_wall_clock_timeout_sec") is None
+        and receipt.get("overall_wall_clock_timeout_sec")
+        == result.get("overall_wall_clock_timeout_sec")
         and result.get("classification") == classify_phase9_physical_try(result)
         and (result.get("passed") is True) == phase9_attempt_accepted(result)
     ):
@@ -967,6 +1033,7 @@ def phase9_physical_sequence_findings(
         "infrastructure_failure",
         "timeout",
         "process_failure",
+        "terminal_liveness_failure",
         "publication_failure",
         "reconstruction_failure",
         "qualification_failure",
@@ -1335,6 +1402,27 @@ def verify_operator_state(state_path: Path) -> dict[str, Any]:
         or state.get("run_plan_sha256") != plan_sha256
     ):
         reasons.append("phase9_operator_state_identity_invalid")
+    if not (
+        plan.get("execution_policy") == PHASE9_EXECUTION_POLICY
+        and plan.get("overall_wall_clock_timeout_sec") is None
+        and plan.get("retry_policy") == PHASE9_RETRY_POLICY
+        and tuple(plan.get("terminal_conditions") or ())
+        == PHASE9_TERMINAL_CONDITIONS
+        and all(
+            attempt.get("execution_policy") == PHASE9_EXECUTION_POLICY
+            and attempt.get("overall_wall_clock_timeout_sec") is None
+            and "--run-to-completion" in (attempt.get("command") or [])
+            and "--timeout-sec" not in (attempt.get("command") or [])
+            for attempt in plan.get("attempts") or []
+            if isinstance(attempt, Mapping)
+        )
+        and state.get("execution_policy") == PHASE9_EXECUTION_POLICY
+        and state.get("overall_wall_clock_timeout_sec") is None
+        and state.get("retry_policy") == PHASE9_RETRY_POLICY
+        and tuple(state.get("terminal_conditions") or ())
+        == PHASE9_TERMINAL_CONDITIONS
+    ):
+        reasons.append("phase9_run_to_completion_contract_invalid")
     ledger, ledger_findings = scan_phase9_physical_ledger(
         [row for row in plan.get("attempts") or [] if isinstance(row, dict)]
     )
@@ -1926,6 +2014,10 @@ def build_phase9_operator_state(
                 "passed": row.get("passed") is True,
                 "returncode": row.get("returncode"),
                 "timed_out": row.get("timed_out"),
+                "execution_policy": row.get("execution_policy"),
+                "overall_wall_clock_timeout_sec": row.get(
+                    "overall_wall_clock_timeout_sec"
+                ),
                 "receipt_sha256": row.get("receipt_sha256"),
                 "reconstruction_receipt_sha256": row.get(
                     "reconstruction_receipt_sha256"
@@ -1956,6 +2048,10 @@ def build_phase9_operator_state(
             runtime.get("profile_content_hash") or ""
         ).lower(),
         "logical_success_slot_count": PHASE9_LOGICAL_SUCCESS_SLOTS,
+        "execution_policy": PHASE9_EXECUTION_POLICY,
+        "overall_wall_clock_timeout_sec": None,
+        "terminal_conditions": list(PHASE9_TERMINAL_CONDITIONS),
+        "retry_policy": PHASE9_RETRY_POLICY,
         "physical_try_count": len(ordered_ledger),
         "classified_physical_try_count": len(ordered_ledger),
         "physical_success_count": len(successes),
@@ -2083,7 +2179,18 @@ def main() -> int:
         and "" not in composition_ids
         and all(len(attempt.get("ordered_party") or []) == 5 for attempt in attempts)
         and int(plan.get("target_union_count") or 0) == 24
-        and float(plan.get("timeout_sec") or 0) > 0
+        and plan.get("execution_policy") == PHASE9_EXECUTION_POLICY
+        and plan.get("overall_wall_clock_timeout_sec") is None
+        and plan.get("retry_policy") == PHASE9_RETRY_POLICY
+        and tuple(plan.get("terminal_conditions") or ())
+        == PHASE9_TERMINAL_CONDITIONS
+        and all(
+            "--run-to-completion" in (attempt.get("command") or [])
+            and "--timeout-sec" not in (attempt.get("command") or [])
+            and attempt.get("execution_policy") == PHASE9_EXECUTION_POLICY
+            and attempt.get("overall_wall_clock_timeout_sec") is None
+            for attempt in attempts
+        )
         and plan.get("promotion_requires_dps_acceptance") is True
     ):
         raise SystemExit("Phase 9 plan must contain seven pinned combinations with two clears each")
@@ -2282,10 +2389,6 @@ def main() -> int:
         child_execution, pending_interruption = run_phase9_child(
             command,
             log_path,
-            outer_timeout_sec=(
-                float(plan.get("timeout_sec") or 0)
-                + CHILD_TIMEOUT_GRACE_SECONDS
-            ),
         )
 
         receipt_path = output_dir / "batch/retained/publication_receipt.json"

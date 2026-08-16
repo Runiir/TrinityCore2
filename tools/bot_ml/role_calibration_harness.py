@@ -150,6 +150,23 @@ def evaluate_calibration(
     _check(checks, reasons, "explicit_rule_runtime_authority", str(identity.get("runtime_authority") or "") == "explicit_sql_rule_profiles")
     _check(checks, reasons, "generic_ml_shadow_only", identity.get("generic_ml_runtime_authority") is False)
     _check(checks, reasons, "reference_value_positive", reference_value > 0)
+    if (
+        record.get("runtime_mode") == "calibration_fixture"
+        or record.get("evidence_class") == "non_certifying_calibration_fixture"
+    ) and record.get("role") == "dps" and record.get("mode") == "single_target_300":
+        compatibility = record.get("reference_condition_compatibility")
+        compatibility = (
+            compatibility if isinstance(compatibility, Mapping) else {}
+        )
+        _check(
+            checks,
+            reasons,
+            "reference_conditions_compatible",
+            compatibility.get("conditions_compatible") is True
+            and compatibility.get("target_spec")
+            == str(record.get("target_spec") or "")
+            and not compatibility.get("reasons"),
+        )
     _check(checks, reasons, "reference_hard_floor", reference_ratio >= float(policy["hard_reference_ratio"]))
     _check(checks, reasons, "no_illegal_actions", int(metrics.get("illegal_action_count") or 0) == 0)
 

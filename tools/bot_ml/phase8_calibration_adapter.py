@@ -10,10 +10,24 @@ from typing import Any, Mapping
 try:
     from .build_validation_provisioning import load_gear_profiles
     from .live_validation_session import canonical_sha256
+    from .phase8_reference_conditions import (
+        EXPECTED_REFERENCE_CONDITIONS,
+        derive_reference_condition_compatibility,
+        load_fixture_contract_binding,
+        load_reference_request_binding,
+        verified_reference_request_runtime_facts,
+    )
     from .role_calibration_harness import evaluate_calibration, load_policy
 except ImportError:
     from build_validation_provisioning import load_gear_profiles
     from live_validation_session import canonical_sha256
+    from phase8_reference_conditions import (
+        EXPECTED_REFERENCE_CONDITIONS,
+        derive_reference_condition_compatibility,
+        load_fixture_contract_binding,
+        load_reference_request_binding,
+        verified_reference_request_runtime_facts,
+    )
     from role_calibration_harness import evaluate_calibration, load_policy
 
 
@@ -254,7 +268,50 @@ def normalize_runtime_calibration(
     scored_started_at_ms = int(_required(calibration, "scored_started_at_ms", "calibration") or 0)
     scored_ended_at_ms = int(_required(calibration, "scored_ended_at_ms", "calibration") or 0)
     normalization = _mapping(calibration.get("normalization"), "calibration.normalization")
-    reference_setup = _mapping(target_bot.get("reference_setup"), "target_bot.reference_setup")
+    raw_reference_setup = target_bot.get("reference_setup")
+    reference_setup = (
+        raw_reference_setup if isinstance(raw_reference_setup, Mapping) else {}
+    )
+    reference_request_binding = load_reference_request_binding(runtime_key)
+    fixture_contract_binding = load_fixture_contract_binding(runtime_key)
+    expected_comparison_manifest = reference_request_binding.get(
+        "comparison_manifest"
+    )
+    expected_comparison_manifest = (
+        expected_comparison_manifest
+        if isinstance(expected_comparison_manifest, Mapping)
+        else {}
+    )
+    verified_request_facts = verified_reference_request_runtime_facts(
+        reference_request_binding
+    )
+    try:
+        generated_reference_dps = (
+            float(expected_comparison_manifest.get("reference_dps"))
+            if reference_request_binding.get("valid") is True
+            else 0.0
+        )
+    except (TypeError, ValueError):
+        generated_reference_dps = 0.0
+    reference_condition_compatibility = derive_reference_condition_compatibility(
+        target_spec=runtime_key,
+        reference_setup=reference_setup,
+        reference_conditions=EXPECTED_REFERENCE_CONDITIONS,
+        calibration=calibration,
+        runtime_normalization=normalization,
+        target_observation=target_bot,
+        runtime_facts={
+            **verified_request_facts,
+            "observed_gear_manifest_sha256": gear_manifest_sha256,
+            "fixture_contract_sha256": fixture_contract_binding.get(
+                "content_sha256"
+            ),
+            "fixture_contract_binding_valid": fixture_contract_binding.get(
+                "valid"
+            ),
+        },
+        expected_manifest=expected_comparison_manifest,
+    )
 
     identity = {
         "spec_target_id": str(target_row.get("spec_target_id") or ""),
@@ -268,13 +325,19 @@ def normalize_runtime_calibration(
         "target_sha256": canonical_sha256(target_row),
         "conditions_sha256": canonical_sha256(
             {
-                "reference_conditions": reference_row.get("reference_conditions") or {},
+                "reference_conditions": EXPECTED_REFERENCE_CONDITIONS,
                 "runtime_normalization": dict(normalization),
                 "runtime_reference_setup": dict(reference_setup),
                 "consumable_item_ids": target_row.get("consumable_item_ids") or [],
                 "gear_profile_id": gear_profile_id,
                 "scenario": scenario_row,
                 "mode": mode,
+                "reference_request_catalog_sha256": (
+                    reference_request_binding.get("catalog_sha256")
+                ),
+                "comparison_manifest_sha256": canonical_sha256(
+                    expected_comparison_manifest
+                ) if expected_comparison_manifest else "",
             }
         ),
         "profile_generation": int(calibration.get("profile_generation") or 0),
@@ -302,10 +365,20 @@ def normalize_runtime_calibration(
         fixture_target = _mapping(
             calibration.get("fixture_target"), "combat_calibration.fixture_target"
         ) if mode == "single_target_300" else {}
+        reference_value = (
+            generated_reference_dps
+            if mode == "single_target_300"
+            else _simulator_dps(reference_row)
+        )
+        reference_basis = (
+            "generated_verified_live_compatible_wowsims_dps"
+            if mode == "single_target_300"
+            else "legacy_catalog_aoe_provenance_only"
+        )
         metrics = {
             **common,
-            "reference_value": _simulator_dps(reference_row),
-            "reference_basis": "pinned_cata_phase4_simulator_dps",
+            "reference_value": reference_value,
+            "reference_basis": reference_basis,
             "measured_value": elapsed_dps,
             "active_dps": elapsed_dps / active_uptime if active_uptime > 0 else 0.0,
             "elapsed_dps": elapsed_dps,
@@ -427,6 +500,7 @@ def normalize_runtime_calibration(
         "identity": identity,
         "window": window,
         "metrics": metrics,
+        "reference_condition_compatibility": reference_condition_compatibility,
         "raw_runtime_status": dict(calibration),
     }
 

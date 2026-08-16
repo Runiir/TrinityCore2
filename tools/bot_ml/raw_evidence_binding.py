@@ -7,6 +7,14 @@ from decimal import Decimal, InvalidOperation
 from fractions import Fraction
 from typing import Any, Mapping, Sequence
 
+from .phase8_reference_conditions import (
+    EXPECTED_REFERENCE_CONDITIONS,
+    derive_reference_condition_compatibility,
+    load_fixture_contract_binding,
+    load_reference_request_binding,
+    observed_gear_manifest_sha256,
+    verified_reference_request_runtime_facts,
+)
 from .role_calibration_harness import (
     expected_calibration_profile_lane,
     single_target_fixture_geometry_valid,
@@ -131,6 +139,15 @@ def _number(value: Any) -> float:
         return float(value or 0.0)
     except (TypeError, ValueError):
         return 0.0
+
+
+def _positive_numbers_equal(left: Any, right: Any) -> bool:
+    try:
+        left_fraction = _exact_fraction(left, field="left numeric value")
+        right_fraction = _exact_fraction(right, field="right numeric value")
+    except RawEvidenceBindingError:
+        return False
+    return left_fraction > 0 and left_fraction == right_fraction
 
 
 def _exact_fraction(value: Any, *, field: str) -> Fraction:
@@ -317,12 +334,14 @@ def _raw_cleanup_projection(
             "botauto_calibrate_start",
             "botauto_calibrate_status",
         }
+        and str(payload.get("cohort_id") or "") == cohort_id
         for payload in payloads
     )
     calibration_stops = [
         payload
         for payload in payloads
         if payload.get("action") == "botauto_calibrate_stop"
+        and str(payload.get("cohort_id") or "") == cohort_id
     ]
     calibration_stop = calibration_stops[-1] if calibration_stops else {}
     fixture_cleanup_submitted_or_absent = bool(
@@ -344,6 +363,8 @@ def _raw_cleanup_projection(
         "lease_count": _integer(status.get("lease_count")),
         "party_bot_count": _integer(cohort_row.get("party_bot_count")),
         "server_epoch": _integer(registry.get("server_epoch")),
+        "status_server_epoch": _integer(status.get("server_epoch")),
+        "status_attempt_id": _integer(status.get("attempt_id")),
         "fixture_cleanup_required": calibration_attempt,
         "fixture_cleanup_submitted_or_absent": (
             fixture_cleanup_submitted_or_absent
@@ -357,12 +378,16 @@ def _raw_cleanup_projection(
         and _integer(cohort_row.get("party_bot_count")) == 0
     )
     return {
+        "cohort_id": cohort_id,
         "facts": facts,
         "inactive_after_attempt": (
             facts["active"] is False
             and facts["active_bots"] == 0
             and facts["lease_count"] == 0
             and facts["party_bot_count"] == 0
+            and facts["server_epoch"] > 0
+            and facts["status_server_epoch"] == facts["server_epoch"]
+            and facts["status_attempt_id"] > 0
             and fixture_cleanup_submitted_or_absent
             and registry_verified
         ),
@@ -380,12 +405,15 @@ def _report_cleanup_projection(session: Mapping[str, Any]) -> dict[str, Any]:
         or cleanup.get("fixture_cleanup_submitted_or_absent") is True
     )
     return {
+        "cohort_id": str(session.get("cohort_id") or ""),
         "facts": {
             "active": cleanup.get("active") is True,
             "active_bots": _integer(cleanup.get("active_bots")),
             "lease_count": _integer(cleanup.get("lease_count")),
             "party_bot_count": _integer(cleanup.get("party_bot_count")),
             "server_epoch": _integer(cleanup.get("server_epoch")),
+            "status_server_epoch": _integer(session.get("server_epoch")),
+            "status_attempt_id": _integer(session.get("runtime_attempt_id")),
             "fixture_cleanup_required": fixture_cleanup_required,
             "fixture_cleanup_submitted_or_absent": (
                 fixture_cleanup_submitted_or_absent
@@ -534,8 +562,12 @@ def _admission_projection(status: Mapping[str, Any]) -> dict[str, Any]:
     leader_guid = _integer(runtime.get("leader_guid"))
     instance_id = _integer(runtime.get("instance_id"))
     entrance_map_id = _integer(receipt.get("entrance_map_id"))
+    server_epoch = _integer(status.get("server_epoch"))
+    receipt_server_epoch = _integer(receipt.get("server_epoch"))
     receipt_identity_ready = (
         _integer(receipt.get("attempt_id")) == _integer(status.get("attempt_id"))
+        and server_epoch > 0
+        and receipt_server_epoch == server_epoch
         and _integer(receipt.get("profile_generation"))
         == _integer(status.get("profile_generation"))
         and str(receipt.get("profile_content_hash") or "")
@@ -589,6 +621,8 @@ def _admission_projection(status: Mapping[str, Any]) -> dict[str, Any]:
         and exact_party_matches
     )
     return {
+        "cohort_id": str(status.get("cohort_id") or ""),
+        "server_epoch": server_epoch,
         "attempt_id": _integer(status.get("attempt_id")),
         "profile_generation": _integer(status.get("profile_generation")),
         "profile_content_hash": str(status.get("profile_content_hash") or ""),
@@ -615,6 +649,7 @@ def _admission_projection(status: Mapping[str, Any]) -> dict[str, Any]:
             receipt.get("identity_catalog_source_sha256") or ""
         ),
         "receipt_attempt_id": _integer(receipt.get("attempt_id")),
+        "receipt_server_epoch": receipt_server_epoch,
         "receipt_profile_generation": _integer(receipt.get("profile_generation")),
         "receipt_profile_content_hash": str(
             receipt.get("profile_content_hash") or ""
@@ -794,6 +829,7 @@ def _report_scope_rows(value: Any) -> list[dict[str, Any]]:
 
 
 _CALIBRATION_FIELDS = (
+    "cohort_id",
     "phase",
     "mode",
     "target_spec",
@@ -829,6 +865,79 @@ def _calibration_scoring_contract(
 ) -> Mapping[str, Any]:
     contract = exact_manifests.get("calibration_scoring_contract")
     return contract if isinstance(contract, Mapping) else {}
+
+
+def _generated_reference_scoring_authority(target_spec: str) -> dict[str, Any]:
+    """Resolve the sole numeric DPS authority from verified generated artifacts."""
+    binding = load_reference_request_binding(target_spec)
+    facts = verified_reference_request_runtime_facts(binding)
+    valid = bool(binding.get("valid") is True)
+    reference_value = _number(facts.get("reference_value")) if valid else 0.0
+    result_key = str(facts.get("reference_result_key") or "") if valid else ""
+    catalog_sha256 = (
+        str(facts.get("reference_request_catalog_sha256") or "")
+        if valid
+        else ""
+    )
+    valid = bool(
+        valid
+        and reference_value > 0.0
+        and result_key
+        and len(catalog_sha256) == 64
+    )
+    return {
+        "valid": valid,
+        "reference_value": reference_value if valid else 0.0,
+        "reference_result_key": result_key if valid else "",
+        "reference_basis": (
+            "generated_verified_live_compatible_wowsims_dps"
+            if valid
+            else "generated_reference_unavailable"
+        ),
+        "reference_request_catalog_sha256": (
+            catalog_sha256 if valid else ""
+        ),
+    }
+
+
+def _derive_raw_reference_compatibility(
+    calibration: Mapping[str, Any],
+    target: Mapping[str, Any],
+    _contract: Mapping[str, Any],
+) -> dict[str, Any]:
+    normalization = calibration.get("normalization")
+    normalization = normalization if isinstance(normalization, Mapping) else {}
+    setup = target.get("reference_setup")
+    setup = setup if isinstance(setup, Mapping) else {}
+    target_spec = str(calibration.get("target_spec") or "")
+    request_binding = load_reference_request_binding(target_spec)
+    fixture_binding = load_fixture_contract_binding(target_spec)
+    request_facts = verified_reference_request_runtime_facts(request_binding)
+    expected_manifest = request_binding.get("comparison_manifest")
+    expected_manifest = (
+        expected_manifest if isinstance(expected_manifest, Mapping) else {}
+    )
+    request_facts["fixture_contract_sha256"] = fixture_binding.get(
+        "content_sha256"
+    )
+    request_facts["fixture_contract_binding_valid"] = fixture_binding.get(
+        "valid"
+    )
+    return derive_reference_condition_compatibility(
+        target_spec=target_spec,
+        reference_setup=setup,
+        reference_conditions=EXPECTED_REFERENCE_CONDITIONS,
+        calibration=calibration,
+        runtime_normalization=normalization,
+        target_observation=target,
+        runtime_facts={
+            **request_facts,
+            "observed_gear_manifest_sha256": observed_gear_manifest_sha256(
+                target
+            ),
+        },
+        expected_manifest=expected_manifest,
+    )
 
 
 def _single_target_fixture_evaluation(
@@ -928,7 +1037,10 @@ def _raw_target_scoring(
         if active_uptime_fraction > 0
         else Fraction(0)
     )
-    reference_value = _number(contract.get("reference_value"))
+    reference_authority = _generated_reference_scoring_authority(
+        str(calibration.get("target_spec") or "")
+    )
+    reference_value = _number(reference_authority.get("reference_value"))
     hard_ratio = _number(contract.get("hard_reference_ratio"))
     optimization_ratio = _number(contract.get("optimization_reference_ratio"))
     if hard_ratio != DPS_HARD_REFERENCE_RATIO or optimization_ratio != DPS_OPTIMIZATION_REFERENCE_RATIO:
@@ -950,6 +1062,9 @@ def _raw_target_scoring(
         optimization_ratio, field="optimization_reference_ratio"
     )
     fixture = _single_target_fixture_evaluation(calibration, target)
+    reference_compatibility = _derive_raw_reference_compatibility(
+        calibration, target, contract
+    )
     return {
         "target_guid": _integer(target.get("guid")),
         "elapsed_seconds": elapsed_seconds,
@@ -965,6 +1080,7 @@ def _raw_target_scoring(
             target.get("observed_distinct_damage_targets")
         ),
         "isolated_fixture_evaluation": fixture,
+        "reference_condition_compatibility": reference_compatibility,
         "elapsed_dps": float(exact_elapsed_dps),
         "serialized_elapsed_dps": serialized_elapsed_dps,
         "exact_elapsed_dps": _fraction_projection(exact_elapsed_dps),
@@ -984,8 +1100,12 @@ def _raw_target_scoring(
             "validated": True,
         },
         "reference_value": reference_value,
-        "reference_basis": str(contract.get("reference_basis") or ""),
-        "reference_id": str(contract.get("reference_id") or ""),
+        "reference_basis": str(reference_authority["reference_basis"]),
+        "reference_id": str(reference_authority["reference_result_key"]),
+        "reference_authority_valid": reference_authority["valid"],
+        "reference_request_catalog_sha256": str(
+            reference_authority["reference_request_catalog_sha256"]
+        ),
         "hard_reference_ratio": hard_ratio,
         "optimization_reference_ratio": optimization_ratio,
         "reference_ratio": round(float(exact_reference_ratio), 6),
@@ -1030,8 +1150,6 @@ def _reported_target_scoring(
     quality = quality if isinstance(quality, Mapping) else {}
     elapsed_seconds = _number(target.get("elapsed_seconds"))
     active_uptime = _number(quality.get("active_uptime_ratio"))
-    identity = record.get("identity")
-    identity = identity if isinstance(identity, Mapping) else {}
     serialized_elapsed_dps, exact_elapsed_dps, dps_absolute_error = (
         _validated_elapsed_dps(target)
     )
@@ -1063,7 +1181,27 @@ def _reported_target_scoring(
             exact_elapsed_dps=exact_elapsed_dps,
             active_uptime=active_uptime,
         )
-    reference_value = _number(metrics.get("reference_value"))
+    reference_authority = _generated_reference_scoring_authority(
+        str(calibration.get("target_spec") or "")
+    )
+    reference_value = _number(reference_authority.get("reference_value"))
+    if record:
+        if reference_authority.get("valid") is not True:
+            raise RawEvidenceBindingError(
+                "role calibration record has no verified generated DPS reference"
+            )
+        if not _positive_numbers_equal(
+            metrics.get("reference_value"), reference_value
+        ):
+            raise RawEvidenceBindingError(
+                "role calibration reference_value does not match verified generated result"
+            )
+        if metrics.get("reference_basis") != reference_authority.get(
+            "reference_basis"
+        ):
+            raise RawEvidenceBindingError(
+                "role calibration reference_basis does not identify the verified generated result"
+            )
     reference_fraction = _exact_fraction(
         reference_value, field="role calibration reference_value"
     )
@@ -1095,6 +1233,19 @@ def _reported_target_scoring(
                 "role calibration optimization_target_met does not match exact DPS ratio"
             )
     fixture = _single_target_fixture_evaluation(calibration, target)
+    stored_compatibility = record.get("reference_condition_compatibility")
+    stored_compatibility = (
+        stored_compatibility if isinstance(stored_compatibility, Mapping) else {}
+    )
+    reference_compatibility = _derive_raw_reference_compatibility(
+        calibration,
+        target,
+        _calibration_scoring_contract(report),
+    )
+    if record and dict(stored_compatibility) != reference_compatibility:
+        raise RawEvidenceBindingError(
+            "role calibration reference conditions do not match raw server facts"
+        )
     return {
         "target_guid": _integer(target.get("guid")),
         "elapsed_seconds": elapsed_seconds,
@@ -1110,6 +1261,7 @@ def _reported_target_scoring(
             target.get("observed_distinct_damage_targets")
         ),
         "isolated_fixture_evaluation": fixture,
+        "reference_condition_compatibility": reference_compatibility,
         "elapsed_dps": float(exact_elapsed_dps),
         "serialized_elapsed_dps": serialized_elapsed_dps,
         "exact_elapsed_dps": _fraction_projection(exact_elapsed_dps),
@@ -1129,8 +1281,12 @@ def _reported_target_scoring(
             "validated": True,
         },
         "reference_value": reference_value,
-        "reference_basis": str(metrics.get("reference_basis") or ""),
-        "reference_id": str(identity.get("reference_id") or ""),
+        "reference_basis": str(reference_authority["reference_basis"]),
+        "reference_id": str(reference_authority["reference_result_key"]),
+        "reference_authority_valid": reference_authority["valid"],
+        "reference_request_catalog_sha256": str(
+            reference_authority["reference_request_catalog_sha256"]
+        ),
         "hard_reference_ratio": DPS_HARD_REFERENCE_RATIO,
         "optimization_reference_ratio": DPS_OPTIMIZATION_REFERENCE_RATIO,
         "reference_ratio": serialized_reference_ratio,
@@ -1162,6 +1318,8 @@ def _calibration_projection(calibration: Mapping[str, Any]) -> dict[str, Any]:
     projection = {field: str(calibration.get(field) or "") for field in _CALIBRATION_FIELDS}
     projection.update(
         {
+            "server_epoch": _integer(calibration.get("server_epoch")),
+            "attempt_id": _integer(calibration.get("attempt_id")),
             "seed": _integer(calibration.get("seed")),
             "target_guid": target_guid,
             "window_complete": calibration.get("window_complete") is True,
@@ -1251,7 +1409,56 @@ def projection_from_raw(
         )
     else:
         decisive = {}
-    decisive["cleanup"] = _raw_cleanup_projection(payloads, admission_status)
+    cleanup = _raw_cleanup_projection(payloads, admission_status)
+    decisive["cleanup"] = cleanup
+    capture_identity = exact_manifests.get("raw_event_envelope_identity")
+    capture_identity = (
+        capture_identity if isinstance(capture_identity, Mapping) else {}
+    )
+    if evidence_kind == "dps_calibration":
+        observed_identity = decisive.get("combat_calibration") or {}
+    elif evidence_kind == "stonecore_5h":
+        observed_identity = decisive.get("admission") or {}
+    else:
+        observed_identity = {}
+    observed_identity = (
+        observed_identity if isinstance(observed_identity, Mapping) else {}
+    )
+    observed_cohort_id = str(
+        observed_identity.get("cohort_id") or cleanup.get("cohort_id") or ""
+    )
+    observed_server_epoch = _integer(observed_identity.get("server_epoch"))
+    observed_attempt_id = _integer(observed_identity.get("attempt_id"))
+    cohort_id = str(capture_identity.get("cohort_id") or "")
+    attempt_index = capture_identity.get("attempt_index")
+    cleanup_facts = cleanup.get("facts") or {}
+    cleanup_facts = cleanup_facts if isinstance(cleanup_facts, Mapping) else {}
+    cleanup_server_epoch = _integer(cleanup_facts.get("server_epoch"))
+    cleanup_status_epoch = _integer(cleanup_facts.get("status_server_epoch"))
+    cleanup_attempt_id = _integer(cleanup_facts.get("status_attempt_id"))
+    if (
+        capture_identity.get("schema") != "bot_raw_event_envelope_identity_v1"
+        or not cohort_id
+        or observed_cohort_id != cohort_id
+        or cleanup.get("cohort_id") != cohort_id
+        or isinstance(attempt_index, bool)
+        or not isinstance(attempt_index, int)
+        or attempt_index <= 0
+        or observed_server_epoch <= 0
+        or observed_server_epoch != cleanup_server_epoch
+        or cleanup_status_epoch != observed_server_epoch
+        or observed_attempt_id <= 0
+        or cleanup_attempt_id != observed_attempt_id
+    ):
+        raise RawEvidenceBindingError(
+            "raw calibration/admission, cleanup, and event envelope identities differ"
+        )
+    decisive["attempt_identity"] = {
+        "cohort_id": cohort_id,
+        "controller_attempt_index": attempt_index,
+        "server_attempt_id": observed_attempt_id,
+        "server_epoch": observed_server_epoch,
+    }
     return {
         "schema": "bot_raw_decisive_projection_v1",
         "evidence_kind": evidence_kind,
@@ -1359,7 +1566,51 @@ def projection_from_report(
         }
     else:
         decisive = {}
-    decisive["cleanup"] = _report_cleanup_projection(session)
+    cleanup = _report_cleanup_projection(session)
+    decisive["cleanup"] = cleanup
+    if evidence_kind == "dps_calibration":
+        observed_identity = decisive.get("combat_calibration") or {}
+    elif evidence_kind == "stonecore_5h":
+        observed_identity = decisive.get("admission") or {}
+    else:
+        observed_identity = {}
+    observed_identity = (
+        observed_identity if isinstance(observed_identity, Mapping) else {}
+    )
+    observed_cohort_id = str(
+        observed_identity.get("cohort_id") or cleanup.get("cohort_id") or ""
+    )
+    observed_server_epoch = _integer(observed_identity.get("server_epoch"))
+    observed_attempt_id = _integer(observed_identity.get("attempt_id"))
+    cohort_id = str(session.get("cohort_id") or "")
+    attempt_index = session.get("attempt_index")
+    cleanup_facts = cleanup.get("facts") or {}
+    cleanup_facts = cleanup_facts if isinstance(cleanup_facts, Mapping) else {}
+    cleanup_server_epoch = _integer(cleanup_facts.get("server_epoch"))
+    session_server_epoch = _integer(session.get("server_epoch"))
+    session_attempt_id = _integer(session.get("runtime_attempt_id"))
+    if (
+        not cohort_id
+        or observed_cohort_id != cohort_id
+        or cleanup.get("cohort_id") != cohort_id
+        or isinstance(attempt_index, bool)
+        or not isinstance(attempt_index, int)
+        or attempt_index <= 0
+        or observed_server_epoch <= 0
+        or observed_server_epoch != cleanup_server_epoch
+        or session_server_epoch != observed_server_epoch
+        or observed_attempt_id <= 0
+        or session_attempt_id != observed_attempt_id
+    ):
+        raise RawEvidenceBindingError(
+            "report calibration/admission, cleanup, and session identities differ"
+        )
+    decisive["attempt_identity"] = {
+        "cohort_id": cohort_id,
+        "controller_attempt_index": attempt_index,
+        "server_attempt_id": observed_attempt_id,
+        "server_epoch": observed_server_epoch,
+    }
     return {
         "schema": "bot_acceptance_source_decisive_projection_v1",
         "evidence_kind": evidence_kind,

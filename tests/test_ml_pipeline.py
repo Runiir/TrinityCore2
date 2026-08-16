@@ -3426,7 +3426,7 @@ def test_rejected_calibration_start_returns_promptly_and_runs_cleanup(tmp_path):
     ]
 
 
-def test_transport_completion_watchdog_stops_manifest_semantic_plateau(tmp_path, monkeypatch):
+def test_run_to_completion_watchdog_stops_only_on_semantic_plateau(tmp_path, monkeypatch):
     commands: list[str] = []
     output = "\n".join(
         [
@@ -3446,7 +3446,7 @@ def test_transport_completion_watchdog_stops_manifest_semantic_plateau(tmp_path,
     _result, returncode, timed_out, _command = run_transport_completion_watchdog(
         execute,
         ["session"],
-        10,
+        None,
         command_script(start=False, exit_server=False),
         tmp_path,
         {},
@@ -3463,7 +3463,7 @@ def test_transport_completion_watchdog_stops_manifest_semantic_plateau(tmp_path,
     assert report["completion_reason"] == "semantic_progress_plateau_watchdog"
     assert report["watchdog_state"]["semantic_progress_plateau"] is True
     assert "semantic_progress_plateau" in report["failure_labels"]
-    assert len([command for command in commands if command == ".botauto status"]) == 2
+    assert len([command for command in commands if command == ".botauto status"]) >= 2
 
 
 def test_live_bot_validation_command_script_and_output_parser():
@@ -6564,8 +6564,8 @@ def test_live_bot_validation_completion_watchdog_writes_heartbeats(tmp_path):
     )
     report = json.loads((tmp_path / "validation" / "report.json").read_text(encoding="utf-8"))
 
-    assert returncode == 124
-    assert timed_out is True
+    assert returncode == 0
+    assert timed_out is False
     assert command == [str(fake_worldserver), "--config", str(config)]
     assert "CMD .botauto status" in output
     assert (tmp_path / "validation" / "heartbeat_events.jsonl").exists()
@@ -6816,7 +6816,9 @@ def test_live_bot_validation_main_preserves_watchdog_report(tmp_path, monkeypatc
     assert report["validation_context"]["route_node_id"] == "stonecore_entry"
     assert report["validation_route"]["source_entry"] == 42696
     assert report["acceptable_final_evidence"] is False
-    assert report["returncode"] == 124
+    assert report["completion_reason"] == "no_progress_watchdog"
+    assert report["returncode"] == 0
+    assert report["timed_out"] is False
 
 
 def test_route_segment_complete_accepts_terminal_trash_evidence():
@@ -8257,6 +8259,21 @@ def test_read_until_console_prompt_completes_at_later_prompt(monkeypatch):
     assert output == '{"target_bots": 1}\nTC> '
 
 
+def test_read_until_console_prompt_returns_missing_marker_at_command_prompt(monkeypatch):
+    process = ChunkedConsoleProcess(["CMD .botauto combatlog\n", "TC> "])
+    module_globals = read_until_console_prompt.__globals__
+    monkeypatch.setattr(module_globals["select"], "select", lambda fds, *_args: (fds if process.chunks else [], [], []))
+    monkeypatch.setattr(module_globals["os"], "read", lambda _fd, _size: process.chunks.pop(0))
+
+    output = read_until_console_prompt(
+        process,
+        time.monotonic() + 120,
+        '"action":"botauto_combatlog_complete"',
+    )
+
+    assert output == "CMD .botauto combatlog\nTC> "
+
+
 def test_live_bot_validation_force_start_overrides_config_autostart(tmp_path, monkeypatch):
     monkeypatch.setattr(
         "sys.argv",
@@ -9169,10 +9186,12 @@ def test_validation_provisioning_loads_exact_wowsims_calibration_overlays():
     assert [item["item_id"] for item in shaman["equipment"] if item["slot"] in {15, 16}] == [78472, 78472]
     rogue_weapons = [item for item in rogue["equipment"] if item["slot"] in {15, 16}]
     assert [item["item_id"] for item in rogue_weapons] == [77949, 77950]
-    assert [item["source_temp_enchant_id"] for item in rogue_weapons] == [3771, 3769]
-    assert [item["temp_enchant_id"] for item in rogue_weapons] == [7, 323]
-    assert [item["temp_enchant_duration_ms"] for item in rogue_weapons] == [3600000, 3600000]
-    assert [item["enchantments"].split()[3:5] for item in rogue_weapons] == [["7", "3600000"], ["323", "3600000"]]
+    # Poisons are active player setup, not part of a WoWSims equipment source
+    # transform and must never be manufactured in item_instance at provision.
+    assert [item["source_temp_enchant_id"] for item in rogue_weapons] == [0, 0]
+    assert [item["temp_enchant_id"] for item in rogue_weapons] == [0, 0]
+    assert [item["temp_enchant_duration_ms"] for item in rogue_weapons] == [0, 0]
+    assert [item["enchantments"].split()[3:5] for item in rogue_weapons] == [["0", "0"], ["0", "0"]]
 
     expected_hunter = [
         (0, 78698, 4209, [68778, 71840], [4251, 4295], 165),
@@ -9369,6 +9388,87 @@ def test_validation_provisioning_runtime_verifies_talent_tree_talents_and_known_
     assert evidence["runtime_gear"]["Holy"]["talent_tree"] == {"expected": 813, "actual": 0}
     assert evidence["runtime_gear"]["Holy"]["missing_talent_spells"] == [34861]
     assert {34861, 88625, 87336, 95861, 33167}.issubset(evidence["runtime_gear"]["Holy"]["missing_known_spells"])
+
+
+def test_validation_provisioning_runtime_rejects_stale_poison_inventory(
+    monkeypatch, tmp_path
+):
+    conf = tmp_path / "worldserver.conf"
+    conf.write_text(
+        'LoginDatabaseInfo = "db.example;3306;trinity;secret;auth"\n'
+        'CharacterDatabaseInfo = "db.example;3306;trinity;secret;characters"\n',
+        encoding="utf-8",
+    )
+    config = {
+        "scenarios": [{
+            "id": "all_spec_candidate_pool",
+            "bots": [{
+                "account": "A",
+                "name": "Combatrog",
+                "class": 4,
+                "consumables": [
+                    {"item_id": 43233, "slot": 23, "count": 20},
+                    {"item_id": 43231, "slot": 24, "count": 20},
+                ],
+            }],
+        }],
+    }
+
+    monkeypatch.setattr(
+        "tools.bot_ml.validate_validation_provisioning.fetch_columns",
+        lambda _url, _table: set(),
+    )
+    monkeypatch.setattr(
+        "tools.bot_ml.validate_validation_provisioning.fetch_existing_values",
+        lambda _url, _table, _column, values: set(values),
+    )
+    monkeypatch.setattr(
+        "tools.bot_ml.validate_validation_provisioning.fetch_runtime_gear",
+        lambda _url, _names: {
+            "Combatrog": {
+                "guid": 10,
+                "talentTree": "0 0",
+                "equipmentCache": "",
+                "items": {},
+                "inventory": {
+                    23: {
+                        "bag": 0,
+                        "slot": 23,
+                        "item_id": 43233,
+                        "owner_guid": 10,
+                        "count": 19,
+                    },
+                    24: {
+                        "bag": 0,
+                        "slot": 24,
+                        "item_id": 99999,
+                        "owner_guid": 11,
+                        "count": 20,
+                    },
+                },
+                "glyphs": [],
+                "talent_spells": set(),
+                "known_spells": set(),
+            }
+        },
+    )
+
+    failures, evidence = validate_provisioning_database(
+        config, conf, require_applied=True
+    )
+
+    failure = next(
+        row for row in failures
+        if row["check"] == "runtime_consumable_inventory"
+    )
+    mismatches = failure["mismatches"]
+    assert mismatches[0]["slot"] == 23
+    assert mismatches[0]["wrong_fields"] == ["count"]
+    assert mismatches[1]["slot"] == 24
+    assert mismatches[1]["wrong_fields"] == ["item_id", "owner_guid"]
+    assert evidence["runtime_gear"]["Combatrog"][
+        "consumable_inventory"
+    ]["mismatches"] == mismatches
 
 
 def test_validation_provisioning_verifier_accepts_generated_payloads(tmp_path, monkeypatch):

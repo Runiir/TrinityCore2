@@ -367,6 +367,9 @@ def joined_closure() -> dict:
                 "composition_id": composition["composition_id"],
                 "clear_ordinal": ordinal,
                 "ordered_party": composition["ordered_party"],
+                "execution_policy": "run_to_completion",
+                "overall_wall_clock_timeout_sec": None,
+                "command": ["phase9-child", "--run-to-completion"],
             }
             phase9_attempts.append(logical)
             attempt_id = f"{logical_id}/try-01"
@@ -395,6 +398,8 @@ def joined_closure() -> dict:
                 "child_returncode_observed": True,
                 "returncode": 0,
                 "transport_classification": "child_exited",
+                "execution_policy": "run_to_completion",
+                "overall_wall_clock_timeout_sec": None,
                 "outer_timed_out": False,
                 "controller_interrupted": False,
                 "process_group_gone": True,
@@ -421,6 +426,12 @@ def joined_closure() -> dict:
             "schema": "all_spec_phase9_serial_run_plan_v1",
             "matrix_file_sha256": matrix_doc["sha256"],
             "dps_acceptance_state_sha256": "pending",
+            "execution_policy": "run_to_completion",
+            "overall_wall_clock_timeout_sec": None,
+            "retry_policy": "unlimited_physical_tries_until_terminal_success",
+            "terminal_conditions": list(
+                joined_campaign_evidence.PHASE9_TERMINAL_CONDITIONS
+            ),
             "attempts": phase9_attempts,
         },
         "plan_sha256",
@@ -523,6 +534,8 @@ def joined_closure() -> dict:
             "schema": "phase9_remote_full_clear_verification_v1",
             "verified": True,
             "attempt_id": row["attempt_id"],
+            "execution_policy": "run_to_completion",
+            "overall_wall_clock_timeout_sec": None,
             "source_report_sha256": row["remote_source_report_sha256"],
             "compact_binding_sha256": row["remote_compact_binding_sha256"],
             "acceptance_verification_sha256": row[
@@ -591,6 +604,12 @@ def joined_closure() -> dict:
     phase9_state = self_hashed(
         {
             "schema": "phase9_serial_canary_operator_state_v3",
+            "execution_policy": "run_to_completion",
+            "overall_wall_clock_timeout_sec": None,
+            "retry_policy": "unlimited_physical_tries_until_terminal_success",
+            "terminal_conditions": list(
+                joined_campaign_evidence.PHASE9_TERMINAL_CONDITIONS
+            ),
             "physical_try_ledger": phase9_rows,
             "append_ledger": {
                 "event_count": len(encoded_events),

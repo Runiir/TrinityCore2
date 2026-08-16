@@ -59,7 +59,12 @@ struct VehicleEnter { ObjectGuid Target; int8 Seat = -1; };
 struct VehicleAction { uint32 SpellId = 0; ObjectGuid Target; };
 struct VehicleExit { };
 struct PetCommand { ObjectGuid Pet; ObjectGuid Target; uint32 Command = 0; };
-struct UseItem { ObjectGuid Item; ObjectGuid Target; };
+// Inventory item use is a native player request. SpellId names the exact
+// on-use effect selected by the player, while Target may name an owned item
+// (weapon poisons/oils) or another ordinary explicit target. The executor
+// revalidates both GUIDs against the player's live inventory before handing
+// the request to WorldSession.
+struct UseItem { ObjectGuid Item; ObjectGuid Target; uint32 SpellId = 0; };
 struct ReleaseSpirit { };
 struct ReclaimCorpse { ObjectGuid Corpse; };
 
