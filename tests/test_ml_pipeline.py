@@ -76,7 +76,7 @@ from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, h
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
 from tools.bot_ml.build_validation_gear_profiles import SHIELD_CLASSES, build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_item_limit_categories, load_spell_item_enchantments, select_gem
-from tools.bot_ml.build_validation_provisioning import VALIDATION_FULL_STAT_SEED, apply_gear_profiles, bot_known_spell_ids, bot_primary_tree_spell_ids, bot_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, equipment_cache, glyph_item_to_property_map, glyph_property_type_map, load_config as load_validation_provisioning_config, load_config_with_bwd_diagnostic_shards, load_gear_profiles, main as provisioning_main, normalized_glyph_slots, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, srp6_registration_data, talent_point_count, validate_talent_manifest
+from tools.bot_ml.build_validation_provisioning import VALIDATION_FULL_STAT_SEED, apply_gear_profiles, bot_known_spell_ids, bot_mastery_spell_ids, bot_primary_tree_spell_ids, bot_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, equipment_cache, glyph_item_to_property_map, glyph_property_type_map, load_config as load_validation_provisioning_config, load_config_with_bwd_diagnostic_shards, load_gear_profiles, main as provisioning_main, normalized_glyph_slots, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, srp6_registration_data, talent_point_count, validate_talent_manifest
 from tools.bot_ml.validate_validation_provisioning import REQUIRED_COLUMNS as PROVISIONING_REQUIRED_COLUMNS
 from tools.bot_ml.validate_validation_provisioning import build_report as provisioning_verify_report
 from tools.bot_ml.validate_validation_provisioning import main as provisioning_verify_main
@@ -8903,6 +8903,29 @@ def test_holy_priest_manifest_is_legal_and_drives_talents_and_glyph_slots():
     assert {14751, 34861, 47788, 88625, 88684, 87336, 95861, 33167}.issubset(set(bot_known_spell_ids(priest)))
     assert normalized_glyph_slots(priest) == [251, 0, 0, 0, 0, 0, 264, 709, 0]
     assert {251: 0, 264: 2, 709: 2}.items() <= glyph_property_type_map().items()
+
+
+def test_validation_provisioning_learns_selected_tree_mastery_from_dbc():
+    config = load_validation_provisioning_config(Path("experiments/configs/validation_provisioning_cata_001.json"))
+    affliction = next(
+        bot
+        for scenario in config["scenarios"]
+        for bot in scenario["bots"]
+        if bot["class_spec"] == "affliction_warlock"
+    )
+
+    assert affliction["primary_talent_tree_id"] == 871
+    assert bot_mastery_spell_ids(affliction) == [77215]
+    assert 77215 in bot_known_spell_ids(affliction)
+
+    sql = build_character_insert_sql({
+        "scenarios": [{
+            "id": "combat_calibration",
+            "start_position": {"map_id": 0, "x": 1, "y": 2, "z": 3},
+            "bots": [affliction],
+        }]
+    })
+    assert "SELECT c.`guid`, 77215, 1, 0" in sql
 
 
 def test_stonecore_role_specs_inherit_complete_dbc_legal_talent_and_action_profiles():

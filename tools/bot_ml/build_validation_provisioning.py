@@ -45,6 +45,7 @@ SPELL_ITEM_ENCHANTMENT_FMT = "nxiiiiiixxxiiisiiiiiiix"
 _GLYPH_ITEM_TO_PROPERTY_CACHE: dict[Path, dict[int, int]] = {}
 _GLYPH_PROPERTY_TYPE_CACHE: dict[Path, dict[int, int]] = {}
 _TALENT_DATA_CACHE: dict[Path, tuple[dict[int, list[Any]], dict[int, list[int]]]] = {}
+_MASTERY_SPELLS_BY_TREE_CACHE: dict[Path, dict[int, list[int]]] = {}
 _GEM_ITEM_ENCHANT_CACHE: dict[Path, dict[int, int]] = {}
 _ENCHANTMENT_SOURCE_ITEM_CACHE: dict[Path, dict[int, int]] = {}
 _ITEM_LIMIT_CATEGORY_BY_ITEM_CACHE: dict[Path, dict[int, int]] = {}
@@ -203,6 +204,25 @@ def talent_data(dbc_dir: Path = DEFAULT_DBC_DIR) -> tuple[dict[int, list[Any]], 
     result = talents, primary_spells
     _TALENT_DATA_CACHE[dbc_dir] = result
     return result
+
+
+def mastery_spells_by_tree(dbc_dir: Path = DEFAULT_DBC_DIR) -> dict[int, list[int]]:
+    """Return the passive mastery spells granted by each selected talent tree.
+
+    Ordinary clients receive these through Player::LearnPrimaryTalentSpecialization.
+    Validation characters are provisioned directly in the character database, so
+    their equivalent native login path must contain the same TalentTab.dbc spells.
+    """
+    dbc_dir = dbc_dir.resolve()
+    cached = _MASTERY_SPELLS_BY_TREE_CACHE.get(dbc_dir)
+    if cached is not None:
+        return cached
+    mapping = {
+        int(row[0]): sorted({int(spell_id) for spell_id in row[9:11] if int(spell_id) > 0})
+        for row in load_wdbc_values(dbc_dir / "TalentTab.dbc", "nxxiiixxxii")
+    }
+    _MASTERY_SPELLS_BY_TREE_CACHE[dbc_dir] = mapping
+    return mapping
 
 
 def validate_talent_manifest(bot: dict[str, Any], dbc_dir: Path = DEFAULT_DBC_DIR) -> None:
@@ -655,11 +675,19 @@ def bot_primary_tree_spell_ids(bot: dict[str, Any], dbc_dir: Path = DEFAULT_DBC_
     return primary_spells.get(primary_tree, [])
 
 
+def bot_mastery_spell_ids(bot: dict[str, Any], dbc_dir: Path = DEFAULT_DBC_DIR) -> list[int]:
+    primary_tree = int(bot.get("primary_talent_tree_id") or 0)
+    if primary_tree <= 0:
+        return []
+    return mastery_spells_by_tree(dbc_dir).get(primary_tree, [])
+
+
 def bot_known_spell_ids(bot: dict[str, Any], action_profiles: dict[str, Any] | None = None) -> list[int]:
     return sorted({
         *bot_spell_ids(bot, action_profiles),
         *bot_talent_spell_ids(bot),
         *bot_primary_tree_spell_ids(bot),
+        *bot_mastery_spell_ids(bot),
     })
 
 
