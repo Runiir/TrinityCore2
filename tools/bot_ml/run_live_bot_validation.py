@@ -1780,6 +1780,58 @@ def wait_for_bot_status_state(
     raise RuntimeError(f"timed out waiting for BotWorld to become {expected}")
 
 
+def wait_for_heroic_admission_status(
+    execute_command: Callable[[str, int], tuple[str, int, bool]],
+    deadline: float,
+    *,
+    status_command: str = ".botauto status",
+    poll_sec: float = 2.0,
+    sleep: Callable[[float], None] = time.sleep,
+) -> tuple[str, dict[str, Any]]:
+    """Wait for server-side five-player admission to finish provisioning.
+
+    BotWorld reports the leased roster as active before it has finished the
+    route-instance readback and admission receipt commit.  A single status
+    sample at that edge is an activation-pending state, not a failed heroic
+    run.  Keep polling until the native receipt and action gate are committed.
+    """
+    output_parts = BoundedOutputParts()
+    last_status: dict[str, Any] | None = None
+    while time.monotonic() < deadline:
+        remaining = max(1, int(deadline - time.monotonic()))
+        output, returncode, timed_out = execute_command(status_command, remaining)
+        output_parts.extend((f"$ {status_command}\n", output))
+        status = bot_status_snapshot(output)
+        if status is not None:
+            last_status = status
+            payload = status["payload"]
+            runtime = payload.get("raid_runtime") if isinstance(payload, dict) else None
+            runtime = runtime if isinstance(runtime, dict) else {}
+            receipt = runtime.get("admission_receipt")
+            receipt = receipt if isinstance(receipt, dict) else {}
+            committed = (
+                status["active"]
+                and returncode == 0
+                and not timed_out
+                and runtime.get("server_provisioning_complete") is True
+                and runtime.get("roster_composition_valid") is True
+                and runtime.get("bot_actions_enabled") is True
+                and int(receipt.get("committed_at_ms") or 0) > 0
+                and bool(receipt.get("runtime_profile"))
+                and bool(receipt.get("scenario_id"))
+                and bool(receipt.get("members"))
+            )
+            if committed:
+                return "".join(output_parts), payload
+            if not status["active"] and status["active_bots"] == 0:
+                break
+        sleep(min(poll_sec, max(0.0, deadline - time.monotonic())))
+    raise RuntimeError(
+        "timed out waiting for Stonecore 5H admission provisioning/receipt commit"
+        + (f"; last_status={last_status!r}" if last_status is not None else "")
+    )
+
+
 def wait_for_bot_status_ready(process: subprocess.Popen[str], deadline: float, max_wait_sec: int = 180) -> str:
     if process.stdin is None:
         return ""
@@ -5050,6 +5102,22 @@ def run_reusable_validation_session(
             output_parts.append(ready_output)
             if ready_status is None:
                 raise RuntimeError("cohort status unavailable after start")
+            if args.validation_scenario_id == "stonecore_5h":
+                # Active leases are published before the route-instance
+                # readback/receipt commit.  Do not classify that short
+                # activation window as a failed heroic admission.
+                admission_output, admission_payload = wait_for_heroic_admission_status(
+                    executor.run,
+                    time.monotonic() + args.session_transition_timeout_sec,
+                    status_command=executor.status_command,
+                )
+                output_parts.append(admission_output)
+                ready_status = {
+                    "active": True,
+                    "active_bots": int(admission_payload.get("bots") or 0),
+                    "target_bots": int(admission_payload.get("target_bots") or 0),
+                    "payload": admission_payload,
+                }
             ready_payload = ready_status["payload"]
             lifecycle["active_after_start"] = True
             lifecycle["runtime_attempt_id"] = int(ready_payload.get("attempt_id") or 0)

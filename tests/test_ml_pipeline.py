@@ -71,7 +71,7 @@ from tools.bot_ml.live_validation_session import (
     sha256_file,
     systemd_transient_command,
 )
-from tools.bot_ml.run_live_bot_validation import BoundedOutputParts, apply_calibration_only_acceptance, attempt_evidence_envelope, boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, command_script, heartbeat_commands_from_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, split_sql_statements, strict_manifest_evidence, supersede_transient_route_failures, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, watchdog_state, write_validation_config
+from tools.bot_ml.run_live_bot_validation import BoundedOutputParts, apply_calibration_only_acceptance, attempt_evidence_envelope, boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, command_script, heartbeat_commands_from_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, split_sql_statements, strict_manifest_evidence, supersede_transient_route_failures, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, wait_for_heroic_admission_status, watchdog_state, write_validation_config
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -3335,6 +3335,53 @@ def test_wait_for_bot_status_state_requires_explicit_zero_bot_inactive_state():
     output, status = wait_for_bot_status_state(execute, False, time.monotonic() + 2, poll_sec=0, sleep=lambda _value: None)
     assert output.count("$ .botauto status") == 3
     assert status == {"active": False, "active_bots": 0, "target_bots": 5, "payload": {"active": False, "active_bots": 0, "target_bots": 5}}
+
+
+def test_wait_for_heroic_admission_status_waits_through_activation_pending():
+    pending = {
+        "action": "botauto_status",
+        "active": True,
+        "active_bots": 5,
+        "target_bots": 5,
+        "raid_runtime": {
+            "server_provisioning_complete": False,
+            "roster_composition_valid": False,
+            "bot_actions_enabled": False,
+            "admission_receipt": {},
+        },
+    }
+    committed = {
+        "action": "botauto_status",
+        "active": True,
+        "active_bots": 5,
+        "target_bots": 5,
+        "bots": 5,
+        "exact_party_class_specs": ["blood_death_knight"] * 5,
+        "raid_runtime": {
+            "server_provisioning_complete": True,
+            "roster_composition_valid": True,
+            "bot_actions_enabled": True,
+            "admission_receipt": {
+                "committed_at_ms": 123,
+                "runtime_profile": "stonecore_5h",
+                "scenario_id": "stonecore_5h",
+                "members": [{"guid": 1283}],
+            },
+        },
+    }
+    outputs = iter([json.dumps(pending), json.dumps(committed)])
+
+    def execute(_command, _remaining):
+        return next(outputs), 0, False
+
+    output, payload = wait_for_heroic_admission_status(
+        execute,
+        time.monotonic() + 2,
+        poll_sec=0,
+        sleep=lambda _value: None,
+    )
+    assert output.count("$ .botauto status") == 2
+    assert payload["raid_runtime"]["server_provisioning_complete"] is True
 
 
 def test_transport_completion_watchdog_never_sends_server_shutdown(tmp_path):
