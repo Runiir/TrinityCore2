@@ -43042,7 +43042,12 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
         return true;
     }
 
-    if (bot->getClass() == CLASS_MAGE)
+    // Mana Gem creation is optional consumable preparation, not a combat
+    // prerequisite.  Once a pull has started, a missing/consumed gem must not
+    // re-enter persistent setup and suppress the mage's ordinary rotation on
+    // every decision tick.  The profile's normal use-item action remains
+    // authoritative when a real gem is present.
+    if (bot->getClass() == CLASS_MAGE && !bot->IsInCombat())
     {
         bool manaGemEnabled = std::any_of(profile.Spells.begin(), profile.Spells.end(), [](BotActionProfileSpell const& spell)
         {

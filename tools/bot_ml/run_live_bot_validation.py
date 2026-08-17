@@ -4845,6 +4845,11 @@ def run_reusable_validation_session(
     profile = args.session_profile or str(validation_context.get("scenario_id") or "")
     if not profile:
         raise SystemExit("--transport session requires --session-profile or --validation-scenario-id")
+    # The controller writes a descriptive JSON manifest for evidence, but the
+    # server loads and hashes the executable route file named by the selected
+    # runtime profile.  Admission identity must bind to that same executable
+    # bytes; hashing the controller's summary would reject a valid receipt.
+    route_manifest_identity_path = validation_route_manifest_path
     if validation_route_manifest_path and profile_manifest.is_file():
         profiles = json.loads(profile_manifest.read_text(encoding="utf-8"))
         selected = next((row for row in profiles.get("profiles", []) if str(row.get("name") or "") == profile), None)
@@ -4852,6 +4857,9 @@ def run_reusable_validation_session(
         expected_manifest = args.validation_scenario_dir / "validation_routes.jsonl"
         if not configured_manifest or Path(configured_manifest).resolve() != expected_manifest.resolve():
             raise SystemExit("session runtime profile route manifest does not match --validation-scenario-dir")
+        route_manifest_identity_path = Path(configured_manifest)
+        if not route_manifest_identity_path.is_absolute():
+            route_manifest_identity_path = REPO_ROOT / route_manifest_identity_path
 
     restart_components: dict[str, str] = {}
     identity_payload: dict[str, Any] = {}
@@ -4861,7 +4869,7 @@ def run_reusable_validation_session(
             "target_catalog_sha256": sha256_file(args.all_spec_target_catalog.resolve()),
             "pair_policy_sha256": sha256_file(phase9_pair_policy),
             "pairwise_matrix_sha256": sha256_file(phase9_matrix),
-            "route_manifest_sha256": sha256_file(validation_route_manifest_path),
+            "route_manifest_sha256": sha256_file(route_manifest_identity_path),
         }
     if args.evidence_identity_manifest:
         try:

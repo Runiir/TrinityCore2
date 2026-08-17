@@ -3,6 +3,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATION = ROOT / "sql/custom/world/2026_08_17_03_fire_mage_apl_alignment.sql"
+BOT_WORLD = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 
 
 def test_fire_mage_apl_alignment_is_scoped_and_preserves_evidence_identity():
@@ -33,3 +34,12 @@ def test_fire_mage_apl_alignment_covers_priority_gates_and_single_target_fallbac
     assert "61, 2136, 'spender'" in sql
     assert "6, 1, 'enemy'" in sql
     assert "NOT EXISTS" in sql
+
+
+def test_mana_gem_setup_cannot_gate_an_active_fire_rotation():
+    source = BOT_WORLD.read_text()
+    marker = "if (bot->getClass() == CLASS_MAGE && !bot->IsInCombat())"
+    assert marker in source
+    block = source[source.index(marker) : source.index("    if (bot->getClass() == CLASS_SHAMAN)", source.index(marker))]
+    assert "ConjureManaGemSpellId = 759" in block
+    assert "!bot->IsInCombat()" in block
