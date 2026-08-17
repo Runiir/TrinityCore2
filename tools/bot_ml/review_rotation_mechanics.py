@@ -920,7 +920,13 @@ def trinity_profile_document_from_database_rows(
                 "target_selector": row.get("target_selector"),
                 "movement_directive": row.get("movement_directive"),
                 "auto_attack_mode": row.get("auto_attack_mode"),
-                "priority_bucket": int(row.get("priority_bucket") or 255),
+                # Zero is a valid highest-priority bucket; do not coerce it
+                # to the missing-value sentinel.
+                "priority_bucket": int(
+                    row["priority_bucket"]
+                    if row.get("priority_bucket") is not None
+                    else 255
+                ),
                 "weights": {
                     key.removesuffix("_weight"): _json_scalar(row.get(key))
                     for key in _TRINITY_WEIGHT_COLUMNS
@@ -1026,6 +1032,16 @@ def _first_spell_rows(rows: Iterable[dict[str, Any]]) -> dict[int, dict[str, Any
         if isinstance(spell_id, int) and spell_id > 0:
             result.setdefault(spell_id, row)
     return result
+
+
+def _spec_identity(trinity: dict[str, Any] | None) -> dict[str, Any]:
+    """Return the review scope without treating a profile as live evidence."""
+    profile = (trinity or {}).get("profile") or {}
+    return {
+        "class_id": profile.get("class_id"),
+        "spec_tag": profile.get("spec_tag"),
+        "role": profile.get("role"),
+    }
 
 
 def _trinity_priority_relation(
@@ -1152,6 +1168,7 @@ def compare_rotations(wowsims: dict[str, Any], trinity: dict[str, Any]) -> dict[
         )
 
     return {
+        "spec_identity": _spec_identity(trinity),
         "shared_spell_ids": shared,
         "wowsims_only_spell_ids": sorted(wow_set - trinity_set),
         "trinity_only_spell_ids": sorted(trinity_set - wow_set),
@@ -1207,6 +1224,20 @@ def compare_rotations(wowsims: dict[str, Any], trinity: dict[str, Any]) -> dict[
             "shared_spells": len(shared),
             "wowsims_spell_coverage_ratio": (
                 len(shared) / len(wow_set) if wow_set else None
+            ),
+        },
+        "mismatch_summary": {
+            "spec_identity": _spec_identity(trinity),
+            "priority_inversion_count": len(inversions),
+            "priority_uncertain_pair_count": len(uncertain_pairs),
+            "condition_family_gap_count": len(condition_gaps),
+            "wowsims_only_spell_count": len(wow_set - trinity_set),
+            "trinity_only_spell_count": len(trinity_set - wow_set),
+            "phase_mismatch_count": len(
+                (set(wow_prepull_spells) - wow_set) & trinity_set
+            ),
+            "unmapped_nonspell_action_count": sum(
+                row["identity"]["kind"] != "spell" for row in wowsims["actions"]
             ),
         },
         "interpretation": (
@@ -1661,9 +1692,93 @@ def compare_apl_to_simulated_actions(
     }
 
 
+def _metric_per_iteration(rows: Iterable[dict[str, Any]], key: str) -> float:
+    return sum(
+        float(row.get("per_iteration_target_metric_sums", {}).get(key) or 0.0)
+        for row in rows
+    )
+
+
+def _positive_duration(value: Any) -> float | None:
+    try:
+        duration = float(value)
+    except (TypeError, ValueError):
+        return None
+    return duration if duration > 0 else None
+
+
+def _timeline_spell_evidence(
+    timeline: dict[str, Any] | None,
+) -> dict[int, dict[str, Any]]:
+    """Aggregate first-iteration timeline facts by spell, preserving line order."""
+    evidence: dict[int, dict[str, Any]] = {}
+    for event in (timeline or {}).get("events") or []:
+        if not isinstance(event, dict):
+            continue
+        identity = event.get("identity") or {}
+        spell_id = identity.get("id") if identity.get("kind") == "spell" else None
+        if not isinstance(spell_id, int):
+            continue
+        row = evidence.setdefault(
+            spell_id,
+            {
+                "event_kind_counts": Counter(),
+                "line_indices": [],
+                "timestamps_seconds": [],
+            },
+        )
+        row["event_kind_counts"][str(event.get("kind") or "other")] += 1
+        if isinstance(event.get("line_index"), int):
+            row["line_indices"].append(event["line_index"])
+        timestamp = event.get("timestamp_seconds")
+        if isinstance(timestamp, (int, float)):
+            row["timestamps_seconds"].append(float(timestamp))
+    normalized: dict[int, dict[str, Any]] = {}
+    for spell_id, row in evidence.items():
+        timestamps = row["timestamps_seconds"]
+        normalized[spell_id] = {
+            "event_kind_counts": dict(sorted(row["event_kind_counts"].items())),
+            "first_line_index": min(row["line_indices"]) if row["line_indices"] else None,
+            "last_line_index": max(row["line_indices"]) if row["line_indices"] else None,
+            "first_at_seconds": min(timestamps) if timestamps else None,
+            "last_at_seconds": max(timestamps) if timestamps else None,
+        }
+    return normalized
+
+
+def _runtime_window_duration(runtime: dict[str, Any]) -> float | None:
+    """Return one calibration-window duration for the supplied spec review.
+
+    ``normalize_runtime_report`` intentionally keeps one aggregate action map;
+    using the longest window prevents duplicate bot rows from multiplying the
+    denominator.  Multi-bot scope is still reported to the reviewer.
+    """
+    durations = [
+        duration
+        for duration in (
+            _positive_duration(window.get("elapsed_seconds"))
+            for window in runtime.get("calibration_windows") or []
+            if isinstance(window, dict)
+        )
+        if duration is not None
+    ]
+    return max(durations) if durations else None
+
+
 def compare_simulated_to_trinity_runtime(
-    wowsims_result: dict[str, Any], runtime: dict[str, Any]
+    wowsims_result: dict[str, Any],
+    runtime: dict[str, Any],
+    *,
+    wowsims: dict[str, Any] | None = None,
+    trinity: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    """Link sim aggregates and first-iteration events to native runtime facts.
+
+    The ``rough_dps_impact`` block is intentionally an attribution aid.  It
+    estimates action-level throughput using WoWSims damage-per-cast and the
+    observed native cadence; it is not a semantic-equivalence claim or a
+    denominator-derived tuning instruction.
+    """
     sim_rows: dict[int, list[dict[str, Any]]] = {}
     for row in wowsims_result["action_metrics"]:
         identity = row["identity"]
@@ -1681,8 +1796,155 @@ def compare_simulated_to_trinity_runtime(
     }
     sim_spells = set(sim_rows)
     trinity_spells = set(trinity_attempts) | set(trinity_damage)
+    apl_rows_by_spell: dict[int, list[dict[str, Any]]] = {}
+    for row in (wowsims or {}).get("actions") or []:
+        identity = row.get("identity") or {}
+        spell_id = identity.get("id") if identity.get("kind") == "spell" else None
+        if isinstance(spell_id, int):
+            apl_rows_by_spell.setdefault(spell_id, []).append(row)
+    trinity_rows_by_spell: dict[int, list[dict[str, Any]]] = {}
+    for row in (trinity or {}).get("actions") or []:
+        identity = row.get("identity") or {}
+        spell_id = identity.get("id") if identity.get("kind") == "spell" else None
+        if isinstance(spell_id, int):
+            trinity_rows_by_spell.setdefault(spell_id, []).append(row)
+
+    sim_duration = next(
+        (
+            duration
+            for duration in (
+                _positive_duration(wowsims_result.get("first_iteration_duration_seconds")),
+                _positive_duration(wowsims_result.get("avg_iteration_duration_seconds")),
+            )
+            if duration is not None
+        ),
+        None,
+    )
+    runtime_duration = _runtime_window_duration(runtime)
+    timeline_evidence = _timeline_spell_evidence(wowsims_result.get("timeline"))
+    rough_impacts: list[dict[str, Any]] = []
+    mismatch_counts: Counter[str] = Counter()
     links = []
-    for spell_id in sorted(sim_spells | trinity_spells):
+    for spell_id in sorted(
+        sim_spells
+        | trinity_spells
+        | set(apl_rows_by_spell)
+        | set(trinity_attempts)
+        | set(trinity_damage)
+    ):
+        apl_rows = apl_rows_by_spell.get(spell_id, [])
+        profile_rows = trinity_rows_by_spell.get(spell_id, [])
+        sim_action_rows = sim_rows.get(spell_id, [])
+        sim_casts = _metric_per_iteration(sim_action_rows, "casts")
+        sim_damage = _metric_per_iteration(sim_action_rows, "damage")
+        runtime_attempt_count = int(trinity_attempts.get(spell_id, 0) or 0)
+        runtime_landed_damage = int(trinity_damage.get(spell_id, 0) or 0)
+        sim_damage_per_cast = sim_damage / sim_casts if sim_casts > 0 else None
+        sim_dps = sim_damage / sim_duration if sim_duration else None
+        runtime_dps = (
+            runtime_landed_damage / runtime_duration if runtime_duration else None
+        )
+        expected_runtime_damage = (
+            sim_damage_per_cast * runtime_attempt_count
+            if sim_damage_per_cast is not None
+            else None
+        )
+        projected_runtime_cadence_dps = (
+            expected_runtime_damage / runtime_duration
+            if expected_runtime_damage is not None and runtime_duration
+            else None
+        )
+        sim_rate = sim_casts / sim_duration if sim_duration else None
+        runtime_rate = (
+            runtime_attempt_count / runtime_duration if runtime_duration else None
+        )
+        cadence_dps_loss = (
+            (sim_rate - runtime_rate) * sim_damage_per_cast
+            if sim_rate is not None and runtime_rate is not None and sim_damage_per_cast is not None
+            else None
+        )
+        damage_model_dps_delta = (
+            projected_runtime_cadence_dps - runtime_dps
+            if projected_runtime_cadence_dps is not None and runtime_dps is not None
+            else None
+        )
+        sim_minus_runtime_dps = (
+            sim_dps - runtime_dps
+            if sim_dps is not None and runtime_dps is not None
+            else None
+        )
+        reasons: list[str] = []
+        sim_observed = sim_casts > 0 or abs(sim_damage) > 0
+        runtime_observed = runtime_attempt_count > 0 or runtime_landed_damage > 0
+        if apl_rows and not sim_observed:
+            reasons.append("apl_action_not_observed_in_wowsims_result")
+        if sim_observed and not apl_rows:
+            reasons.append("simulated_action_absent_from_apl")
+        if profile_rows and not runtime_observed:
+            reasons.append("profile_action_not_observed_in_runtime")
+        if runtime_observed and not profile_rows:
+            reasons.append("runtime_action_absent_from_profile")
+        if sim_casts > 0 and runtime_attempt_count == 0:
+            reasons.append("sim_action_missing_at_runtime")
+        elif sim_casts == 0 and runtime_attempt_count > 0:
+            reasons.append("runtime_action_not_observed_in_wowsims")
+        if cadence_dps_loss is not None:
+            if cadence_dps_loss > 1e-9:
+                reasons.append("runtime_cadence_below_wowsims")
+            elif cadence_dps_loss < -1e-9:
+                reasons.append("runtime_cadence_above_wowsims")
+        if damage_model_dps_delta is not None and damage_model_dps_delta > 1e-9:
+            reasons.append("runtime_damage_below_wowsims_per_cast_model")
+        for reason in reasons:
+            mismatch_counts[reason] += 1
+        timeline = timeline_evidence.get(
+            spell_id,
+            {
+                "event_kind_counts": {},
+                "first_line_index": None,
+                "last_line_index": None,
+                "first_at_seconds": None,
+                "last_at_seconds": None,
+            },
+        )
+        rough_impacts.append(
+            {
+                "spell_id": spell_id,
+                "apl_paths": sorted({str(row["path"]) for row in apl_rows}),
+                "apl_condition_families": sorted(
+                    {
+                        family
+                        for row in apl_rows
+                        for family in row.get("condition_families") or []
+                    }
+                ),
+                "trinity_profile_actions": [
+                    {
+                        "priority_bucket": row.get("priority_bucket"),
+                        "sort_order": row.get("sort_order"),
+                        "category": row.get("category"),
+                        "gate_families": row.get("gate_families") or [],
+                        "movement_directive": row.get("movement_directive"),
+                        "gates": row.get("gates") or {},
+                    }
+                    for row in profile_rows
+                ],
+                "wowsims_timeline": timeline,
+                "wowsims_per_iteration_casts": sim_casts,
+                "wowsims_per_iteration_damage": sim_damage,
+                "wowsims_damage_per_cast": sim_damage_per_cast,
+                "wowsims_dps_contribution": sim_dps,
+                "trinity_attempt_count": runtime_attempt_count,
+                "trinity_landed_damage": runtime_landed_damage,
+                "trinity_dps_contribution": runtime_dps,
+                "expected_damage_at_trinity_cadence": expected_runtime_damage,
+                "projected_dps_at_trinity_cadence": projected_runtime_cadence_dps,
+                "rough_cadence_dps_loss": cadence_dps_loss,
+                "rough_damage_model_dps_delta": damage_model_dps_delta,
+                "rough_dps_delta_sim_minus_runtime": sim_minus_runtime_dps,
+                "mismatch_reasons": reasons,
+            }
+        )
         links.append(
             {
                 "spell_id": spell_id,
@@ -1691,11 +1953,68 @@ def compare_simulated_to_trinity_runtime(
                 "trinity_landed_damage": trinity_damage.get(spell_id, 0),
             }
         )
+    sim_action_dps = [
+        row["wowsims_dps_contribution"]
+        for row in rough_impacts
+        if isinstance(row["wowsims_dps_contribution"], (int, float))
+    ]
+    runtime_action_dps = [
+        row["trinity_dps_contribution"]
+        for row in rough_impacts
+        if isinstance(row["trinity_dps_contribution"], (int, float))
+    ]
+    action_dps_deltas = [
+        row["rough_dps_delta_sim_minus_runtime"]
+        for row in rough_impacts
+        if isinstance(row["rough_dps_delta_sim_minus_runtime"], (int, float))
+    ]
+    cadence_dps_losses = [
+        row["rough_cadence_dps_loss"]
+        for row in rough_impacts
+        if isinstance(row["rough_cadence_dps_loss"], (int, float))
+    ]
     return {
+        "spec_identity": _spec_identity(trinity),
         "shared_observed_spell_ids": sorted(sim_spells & trinity_spells),
         "wowsims_only_observed_spell_ids": sorted(sim_spells - trinity_spells),
         "trinity_only_observed_spell_ids": sorted(trinity_spells - sim_spells),
         "action_links": links,
+        "rough_dps_impact": {
+            "status": (
+                "estimated"
+                if sim_duration is not None and runtime_duration is not None
+                else "insufficient_duration_data"
+            ),
+            "spec_identity": _spec_identity(trinity),
+            "wowsims_duration_seconds": sim_duration,
+            "trinity_runtime_duration_seconds": runtime_duration,
+            "trinity_runtime_window_count": len(runtime.get("calibration_windows") or []),
+            "wowsims_total_action_dps": sum(sim_action_dps) if sim_action_dps else None,
+            "trinity_total_action_dps": sum(runtime_action_dps) if runtime_action_dps else None,
+            "rough_total_dps_delta_sim_minus_runtime": (
+                sum(sim_action_dps) - sum(runtime_action_dps)
+                if sim_action_dps and runtime_action_dps
+                else None
+            ),
+            "rough_positive_action_shortfall_dps": (
+                sum(delta for delta in action_dps_deltas if delta > 0)
+                if action_dps_deltas
+                else None
+            ),
+            "rough_positive_cadence_loss_dps": (
+                sum(loss for loss in cadence_dps_losses if loss > 0)
+                if cadence_dps_losses
+                else None
+            ),
+            "mismatch_counts": dict(sorted(mismatch_counts.items())),
+            "action_impacts": rough_impacts,
+            "interpretation": (
+                "Action-level arithmetic only: WoWSims damage-per-cast is applied to the "
+                "observed Trinity attempt cadence. Buff, target, proc, periodic, pet, and "
+                "setup differences can overlap, so these are review leads rather than a "
+                "tuning denominator or semantic-equivalence claim."
+            ),
+        },
         "interpretation": (
             "WoWSims values are per-iteration aggregates while Trinity values describe the "
             "supplied native run. Compare action presence, cadence, resource/aura timing, and "
@@ -1739,7 +2058,12 @@ def build_review(
             else None
         ),
         "wowsims_result_to_trinity_runtime": (
-            compare_simulated_to_trinity_runtime(review["wowsims_result"], review["runtime"])
+            compare_simulated_to_trinity_runtime(
+                review["wowsims_result"],
+                review["runtime"],
+                wowsims=review["wowsims"],
+                trinity=review["trinity"],
+            )
             if review["wowsims_result"] and review["runtime"]
             else None
         ),

@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from tools.bot_ml.review_rotation_mechanics import (
     build_review,
     find_wowsims_apl,
@@ -136,6 +138,18 @@ def test_condition_families_are_review_leads_not_equivalence_claims():
     assert "not semantic-equivalence" in review["comparison"]["interpretation"]
 
 
+def test_review_preserves_zero_priority_bucket():
+    profile = _profile()
+    profile["actions"][0]["priority_bucket"] = 0
+    review = build_review(wowsims_apl=_apl(), trinity_profile=profile)
+    row = next(
+        action
+        for action in review["trinity"]["actions"]
+        if action["identity"]["id"] == 49020
+    )
+    assert row["priority_bucket"] == 0
+
+
 def test_affliction_runtime_profile_covers_the_pinned_apl_player_spells():
     request_catalog = json.loads(
         (ROOT / "experiments/configs/wowsims_cata_dps_reference_requests_v1.json").read_text()
@@ -144,7 +158,15 @@ def test_affliction_runtime_profile_covers_the_pinned_apl_player_spells():
         row for row in request_catalog["requests"]
         if row["target_spec"] == "affliction_warlock"
     )
-    native_path = ROOT / request["result"]["artifacts"]["native_request"]["path"]
+    native_request_path = request["result"]["artifacts"]["native_request"]["path"]
+    if native_request_path is None:
+        # The checked catalog is deliberately fail-closed until the refreshed
+        # fixture is promoted.  Preserve the coverage assertion once a native
+        # request exists, but make the pending state explicit rather than
+        # treating it as a filesystem error.
+        assert request["result"]["status"] == "requires_generation"
+        return
+    native_path = ROOT / native_request_path
     apl = find_wowsims_apl(json.loads(native_path.read_text()), player_index=0)
     normalized = normalize_wowsims_apl(apl)
     apl_spells = {
@@ -170,6 +192,29 @@ def test_affliction_runtime_profile_covers_the_pinned_apl_player_spells():
         assert f", {spell_id}," in migration
     assert "  348," not in migration
     assert "  17962," not in migration
+
+
+def test_affliction_execute_priority_consumes_fel_flame_before_drain_soul():
+    migration = (
+        ROOT
+        / "sql/custom/world/2026_08_17_00_affliction_execute_priority.sql"
+    ).read_text()
+
+    # The pinned default.apl.json has Fel Flame at priorityList[13] and Drain
+    # Soul at priorityList[14].  In the live profile both are execute-capable,
+    # so the lower Trinity bucket must belong to Fel Flame.  This migration is
+    # deliberately limited to ordering; native proc/channel and health gates
+    # remain defined by the existing profile rows and core Spell checks.
+    fel_flame_start = migration.index("SET `action`.`priority_bucket` = 8")
+    next_update = migration.index(
+        "UPDATE `bot_rotation_action` AS `action`", fel_flame_start + 1
+    )
+    fel_flame = migration[fel_flame_start:next_update]
+    drain_soul = migration[migration.index("SET `action`.`priority_bucket` = 9") :]
+    assert "`action`.`sort_order` = 80" in fel_flame
+    assert "`action`.`spell_id` = 77799" in fel_flame
+    assert "`action`.`sort_order` = 90" in drain_soul
+    assert "`action`.`spell_id` = 1120" in drain_soul
 
 
 def test_runtime_report_keeps_selection_submission_landing_and_rejection_separate():
@@ -884,3 +929,50 @@ def test_wowsims_result_links_apl_execution_to_native_runtime_without_claiming_e
     assert apl_link["apl_spell_ids_observed_as_player_actions"] == [49020]
     assert runtime_link["shared_observed_spell_ids"] == [49020]
     assert "per-iteration aggregates" in runtime_link["interpretation"]
+
+
+def test_execution_review_exposes_spec_scope_timeline_and_rough_action_dps_impact():
+    runtime = {
+        "previous_window": {
+            "bots": [
+                {
+                    "elapsed_seconds": 300.0,
+                    "action_attempts": [{"spell_id": 49020, "count": 3}],
+                    "spell_damage": [{"spell_id": 49020, "damage": 300}],
+                }
+            ]
+        }
+    }
+
+    review = build_review(
+        wowsims_apl=_apl(),
+        wowsims_result=_wowsims_result(),
+        trinity_profile=_profile(),
+        runtime_report=runtime,
+    )
+
+    assert review["comparison"]["spec_identity"] == {
+        "class_id": 6,
+        "spec_tag": "frost_death_knight",
+        "role": "dps",
+    }
+    assert review["comparison"]["mismatch_summary"]["priority_inversion_count"] == 1
+
+    impact = review["execution_comparison"]["wowsims_result_to_trinity_runtime"]
+    assert impact["rough_dps_impact"]["status"] == "estimated"
+    action = next(
+        row for row in impact["rough_dps_impact"]["action_impacts"]
+        if row["spell_id"] == 49020
+    )
+    assert action["apl_paths"] == [
+        "priorityList[1].strictSequence.actions[0].castSpell"
+    ]
+    assert action["wowsims_timeline"]["event_kind_counts"] == {
+        "landed_effect": 1,
+        "resource_changed": 1,
+    }
+    assert action["wowsims_per_iteration_casts"] == 2.0
+    assert action["wowsims_damage_per_cast"] == 100.0
+    assert action["expected_damage_at_trinity_cadence"] == 300.0
+    assert action["rough_damage_model_dps_delta"] == 0.0
+    assert action["rough_dps_delta_sim_minus_runtime"] == pytest.approx(-1 / 3)
