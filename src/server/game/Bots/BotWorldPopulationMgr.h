@@ -1962,6 +1962,7 @@ private:
         uint64 nowMs, uint64 decisionUntilMs);
     void ReconcileNativeBattleResDecisions(uint64 nowMs);
     void UpdateBot(WorldBotState& state, uint32 diff);
+    void HandleBotDeath(WorldBotState& state, Player* bot, uint32 diff);
     void TryRespondNativeRaidReadyCheck(WorldBotState& state, Player* bot);
     bool IsNativeRaidRecoveryEvidencePending() const;
     bool AreNativeRaidRecoveryControlledUnitsReady(Player* bot) const;
