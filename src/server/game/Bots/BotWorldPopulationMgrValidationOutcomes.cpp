@@ -1,10 +1,12 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
+#include "Creature.h"
 #include "GameTime.h"
 #include "Player.h"
 #include "Unit.h"
 
 #include <chrono>
+#include <functional>
 #include <string>
 
 namespace
@@ -156,3 +158,144 @@ void BotWorldPopulationMgr::ClearValidationRouteKilledFocus(
     state.ValidationRouteUnresolvedFocusHoldCount = 0;
 }
 
+
+bool BotWorldPopulationMgr::RecordValidationRouteBossKill(
+    WorldBotState& state, Player* bot,
+    BotRolePowerBreakdown const& power, BotProgressionStage stage,
+    BotProgressionActivity activity, Unit* killedTarget,
+    char const* assistResult)
+{
+    if (!killedTarget)
+        return false;
+
+    bool confirmedDeath = Party().ValidationRouteConfirmedBossDeathGuid == killedTarget->GetGUID()
+        && Party().ValidationRouteConfirmedBossDeathGeneration == Party().ValidationRouteGeneration
+        && Party().ValidationRouteConfirmedBossDeathMapId == killedTarget->GetMapId()
+        && Party().ValidationRouteConfirmedBossDeathInstanceId == killedTarget->GetInstanceId();
+    if (!confirmedDeath)
+    {
+        std::string raw = BuildRawJson(bot, killedTarget);
+        std::string semantic = BuildSemanticJson(bot, killedTarget, "validation_route_boss_outcome", &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_recovery", killedTarget, "boss_death_unconfirmed", raw.c_str(), semantic.c_str(), UnitHealthPct(killedTarget), Cohort().Config.ValidationRouteTargetEntry, killedTarget->GetHealth());
+        return false;
+    }
+    if (Party().ValidationRouteRecordedKillGuids.find(killedTarget->GetGUID()) != Party().ValidationRouteRecordedKillGuids.end())
+        return false;
+
+    Party().ValidationRouteRecordedKillGuids.insert(killedTarget->GetGUID());
+    std::string raw = BuildRawJson(bot, killedTarget);
+    std::string semantic = BuildSemanticJson(bot, killedTarget, "validation_route_boss_outcome", &power, stage, activity);
+    if (killedTarget->IsAlive() || killedTarget->GetHealth())
+    {
+        RecordEvent(state, bot, "validation_route_recovery", killedTarget, assistResult ? assistResult : "boss_route_target_unresolved", raw.c_str(), semantic.c_str(), UnitHealthPct(killedTarget), Cohort().Config.ValidationRouteTargetEntry, killedTarget->GetHealth());
+        return false;
+    }
+
+    if (state.LastKilledTargetGuid != killedTarget->GetGUID())
+    {
+        ++Cohort().Metrics.Kills;
+        state.LastKilledTargetGuid = killedTarget->GetGUID();
+    }
+
+    ClearValidationRouteKilledFocus(state, killedTarget->GetGUID());
+
+    RecordEvent(state, bot, "boss_killed", killedTarget, "ok", raw.c_str(), semantic.c_str(), 0.0f, Cohort().Metrics.Kills);
+    if (Cohort().Config.ValidationRouteKind == "boss")
+    {
+        uint64 nowMs = NowMs();
+        for (WorldBotState& cohortState : Party().Bots)
+        {
+            cohortState.TargetGuid.Clear();
+            cohortState.ValidationRouteCombatProgressTargetGuid.Clear();
+            cohortState.ValidationRoutePackProgressTargetGuid.Clear();
+            cohortState.ValidationRouteCombatNoProgressCount = 0;
+            cohortState.ValidationRouteCombatNoProgressSinceMs = 0;
+            cohortState.ValidationRoutePackNoProgressCount = 0;
+            cohortState.ValidationRoutePackNoProgressSinceMs = 0;
+            cohortState.ValidationRouteUnresolvedFocusHoldCount = 0;
+            cohortState.ValidationRouteTerminalState = true;
+            cohortState.ValidationRouteTerminalAtMs = nowMs;
+            cohortState.ValidationRouteTerminalGeneration = Party().ValidationRouteGeneration;
+            cohortState.ValidationRouteTerminalReason = "boss_killed";
+            cohortState.LoopRecoveryCooldownUntilMs = nowMs + 60000;
+        }
+
+        if (!Party().ValidationRouteManifest.empty() && Cohort().Config.ValidationRouteAdvanceMode == "terminal")
+        {
+            Party().ValidationRouteManifestAdvancePending = true;
+            Party().ValidationRouteManifestAdvanceGeneration = Party().ValidationRouteGeneration;
+            Party().ValidationRouteManifestAdvanceReason = "boss_killed";
+        }
+
+        RecordEvent(state, bot, "validation_route_terminal", killedTarget, "boss_killed", raw.c_str(), semantic.c_str(), 0.0f, Cohort().Config.ValidationRouteTargetEntry);
+    }
+    if (bot->GetMap() && bot->GetMap()->IsRaid())
+    {
+        ++state.RaidBossKills;
+        ++Cohort().Metrics.RaidBossKills;
+        if (stage == BotProgressionStage::HeroicRaid)
+        {
+            ++state.HeroicRaidBossKills;
+            ++Cohort().Metrics.HeroicRaidBossKills;
+        }
+
+        BossMechanicFeatures features = BuildBossMechanicFeatures(bot, killedTarget);
+        RaidRoleAssignment assignment = BuildRaidRoleAssignment(bot);
+        RaidPositioningAnchors anchors = BuildRaidPositioningAnchors(bot, killedTarget, assignment, features);
+        RaidMechanicAdapter adapter = BuildRaidMechanicAdapter(bot, killedTarget, assignment, features);
+        RaidGearTargetPlan gearPlan = BuildRaidGearTargetPlan(bot, power, stage);
+        HeroicRaidProgression progression = BuildHeroicRaidProgression(state, bot, power, stage);
+        RecordRaidTelemetry(state, bot, killedTarget, "raid_boss_killed", "ok", features, assignment, anchors, adapter, gearPlan, progression, raw.c_str(), semantic.c_str(), power.Total, Cohort().Metrics.RaidBossKills);
+    }
+
+    MaybeAdvanceValidationRouteManifest();
+    return true;
+}
+
+bool BotWorldPopulationMgr::RecordValidationRouteTrashKill(
+    WorldBotState& state, Player* bot,
+    BotRolePowerBreakdown const& power, BotProgressionStage stage,
+    BotProgressionActivity activity, Unit* killedTarget, char const* reason,
+    std::function<bool(Creature const*)> const& isValidationRouteScriptTarget,
+    std::function<bool()> const& trashClusterHasLiveMobs)
+{
+    if (!killedTarget || killedTarget->IsAlive() || killedTarget->GetHealth())
+        return false;
+
+    Creature* creature = killedTarget->ToCreature();
+    if (!creature)
+        return false;
+
+    if (Party().ValidationRouteRecordedKillGuids.find(killedTarget->GetGUID()) != Party().ValidationRouteRecordedKillGuids.end())
+        return false;
+
+    if (Party().ValidationRoutePackGeneration != Party().ValidationRouteGeneration
+        || Party().ValidationRoutePackEngagedGuids.find(killedTarget->GetGUID()) == Party().ValidationRoutePackEngagedGuids.end())
+        return false;
+
+    Party().ValidationRouteRecordedKillGuids.insert(killedTarget->GetGUID());
+    if (Party().ValidationRoutePackGeneration == Party().ValidationRouteGeneration)
+    {
+        Party().ValidationRoutePackMemberGuids.insert(killedTarget->GetGUID());
+        Party().ValidationRoutePackDeathGuids.insert(killedTarget->GetGUID());
+    }
+    ++Cohort().Metrics.Kills;
+    state.LastKilledTargetGuid = killedTarget->GetGUID();
+
+    ClearValidationRouteKilledFocus(state, killedTarget->GetGUID());
+    Party().ValidationRouteObservedEngagement = true;
+    std::string raw = BuildRawJson(bot, killedTarget);
+    std::string semantic = BuildSemanticJson(bot, killedTarget, "validation_route_trash_outcome", &power, stage, activity);
+    RecordEvent(state, bot, "mob_killed", killedTarget, reason ? reason : "validation_route_recovery", raw.c_str(), semantic.c_str(), 0.0f, Cohort().Metrics.Kills);
+    if (isValidationRouteScriptTarget(creature)
+        && !Party().ValidationRouteManifest.empty()
+        && Cohort().Config.ValidationRouteAdvanceMode == "terminal"
+        && Cohort().Config.ValidationRouteKind != "boss")
+    {
+        if (!trashClusterHasLiveMobs())
+            RecordEvent(state, bot, "validation_route_target_search", nullptr, "trash_cluster_empty_pending_anchor_verification", raw.c_str(), semantic.c_str(), float(Cohort().Metrics.Kills), Cohort().Config.ValidationRouteTargetEntry);
+        else
+            RecordEvent(state, bot, "validation_route_target_search", nullptr, "trash_route_target_killed_cluster_still_alive", raw.c_str(), semantic.c_str(), float(Cohort().Metrics.Kills), Cohort().Config.ValidationRouteTargetEntry);
+    }
+    return true;
+}

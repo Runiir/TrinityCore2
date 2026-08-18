@@ -2094,6 +2094,15 @@ private:
         uint32 noProgressThreshold = 0);
     void ClearValidationRouteKilledFocus(WorldBotState& state,
         ObjectGuid killedGuid);
+    bool RecordValidationRouteBossKill(WorldBotState& state, Player* bot,
+        BotRolePowerBreakdown const& power, BotProgressionStage stage,
+        BotProgressionActivity activity, Unit* killedTarget,
+        char const* assistResult);
+    bool RecordValidationRouteTrashKill(WorldBotState& state, Player* bot,
+        BotRolePowerBreakdown const& power, BotProgressionStage stage,
+        BotProgressionActivity activity, Unit* killedTarget, char const* reason,
+        std::function<bool(Creature const*)> const& isValidationRouteScriptTarget,
+        std::function<bool()> const& trashClusterHasLiveMobs);
     bool CurrentLiveValidationRoutePackCanContinue(
         std::function<bool()> const& persistedValidationRoutePackHasLiveMembers,
         std::function<bool(uint32)> const& isValidationRoutePackEntry,

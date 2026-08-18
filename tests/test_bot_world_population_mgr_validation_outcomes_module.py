@@ -17,6 +17,8 @@ def test_validation_outcomes_module_is_bounded_and_registered():
         "BotWorldPopulationMgr::MarkTrashClusterCleared",
         "BotWorldPopulationMgr::MarkValidationRouteTrashFailed",
         "BotWorldPopulationMgr::ClearValidationRouteKilledFocus",
+        "BotWorldPopulationMgr::RecordValidationRouteBossKill",
+        "BotWorldPopulationMgr::RecordValidationRouteTrashKill",
     ):
         assert method in text
     assert "MarkTrashClusterCleared" in HEADER.read_text()
@@ -42,4 +44,3 @@ def test_validation_outcomes_preserve_terminal_and_focus_state():
         "ValidationRouteUnresolvedFocusHoldCount",
     ):
         assert marker in text
-
