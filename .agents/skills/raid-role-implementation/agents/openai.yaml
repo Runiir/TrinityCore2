@@ -1,0 +1,4 @@
+interface:
+  display_name: "Role Implementation"
+  short_description: "Implement one class or role behavior unit"
+  default_prompt: "Use $raid-role-implementation to fix one evidence-backed DPS, tank, or healer behavior gap."
