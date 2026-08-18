@@ -18,13 +18,11 @@ def test_validation_admission_module_is_bounded_and_registered():
 
 
 def test_population_controller_is_bounded_after_admission_split():
-    lines = SOURCE.read_text().splitlines()
-    start = next(i for i, line in enumerate(lines)
-                 if line.startswith("void BotWorldPopulationMgr::EnsurePopulation("))
-    end = next(i for i, line in enumerate(lines[start:], start)
-               if line.startswith("void BotWorldPopulationMgr::UpdateCalibrationBot("))
-    assert end - start <= 1000
-    assert "EnsureValidationRaidAdmission(rosterPlan, expectedPopulation)" in "\n".join(lines[start:end])
+    text = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrPopulation.cpp").read_text()
+    assert len(text.splitlines()) <= 1000
+    assert "void BotWorldPopulationMgr::EnsurePopulation(" in text
+    assert "EnsureValidationRaidAdmission(rosterPlan, expectedPopulation)" in text
+    assert "BotWorldPopulationMgr::EnsurePopulation(" not in SOURCE.read_text()
 
 
 def test_validation_admission_keeps_transaction_and_identity_contract():
