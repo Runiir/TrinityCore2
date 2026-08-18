@@ -2083,6 +2083,10 @@ private:
         BotRolePowerBreakdown const& power, BotProgressionStage stage,
         BotProgressionActivity activity, std::string& situation,
         std::string& action, Unit*& target, float routeDistance);
+    bool CurrentLiveValidationRoutePackCanContinue(
+        std::function<bool()> const& persistedValidationRoutePackHasLiveMembers,
+        std::function<bool(uint32)> const& isValidationRoutePackEntry,
+        std::function<uint32(Creature const*)> const& resolvedScriptedTransitionAuraId);
     void ConfigureValidationRouteCombatAuthority(Player* bot) const;
     bool IsImmediateNextValidationRouteBossTarget(Creature const* creature) const;
     bool IsImmediateNextValidationRouteEncounterMember(Creature const* creature) const;
