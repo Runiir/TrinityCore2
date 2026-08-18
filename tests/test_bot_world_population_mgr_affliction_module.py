@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WORLD = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
 MODULE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrAffliction.cpp"
+PERSISTENT_SETUP = ROOT / "src/server/game/Bots/BotWorldPopulationMgrPersistentSetup.cpp"
 CMAKE = ROOT / "src/server/game/CMakeLists.txt"
 
 
@@ -46,7 +47,8 @@ def test_affliction_module_is_narrow_and_registered() -> None:
 def test_affliction_pet_setup_keeps_native_profile_authority() -> None:
     source = WORLD.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
-    assert "ConfigureAfflictionPetRequirements(requiredPet" in source
+    persistent_setup = PERSISTENT_SETUP.read_text(encoding="utf-8")
+    assert "ConfigureAfflictionPetRequirements(requiredPet" in source or "ConfigureAfflictionPetRequirements(requiredPet" in persistent_setup
     assert "requiredPet.RequiredSummonSpellId = 691" in module
     assert "requiredPet.RequiredCreatedBySpellId = 691" in module
     assert "requiredPet.RequiredEntry = ENTRY_FELHUNTER" in module
