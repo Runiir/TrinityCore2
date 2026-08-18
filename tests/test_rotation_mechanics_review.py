@@ -7,6 +7,7 @@ import pytest
 
 from tools.bot_ml.review_rotation_mechanics import (
     build_review,
+    compare_cast_mix,
     find_wowsims_apl,
     load_route_document,
     normalize_wowsims_apl,
@@ -976,3 +977,222 @@ def test_execution_review_exposes_spec_scope_timeline_and_rough_action_dps_impac
     assert action["expected_damage_at_trinity_cadence"] == 300.0
     assert action["rough_damage_model_dps_delta"] == 0.0
     assert action["rough_dps_delta_sim_minus_runtime"] == pytest.approx(-1 / 3)
+
+
+def _cast_mix_apl() -> dict:
+    return {
+        "priorityList": [
+            {"action": {"castSpell": {"spellId": {"spellId": 100}}}},
+            {"action": {"castSpell": {"spellId": {"spellId": 200}}}},
+        ]
+    }
+
+
+def _cast_mix_result(
+    *, casts_100: int = 3, casts_200: int = 1, duration_seconds: float | None = None
+) -> dict:
+    def action(spell_id: int, casts: int, *, tag: int = 0, passive: bool = False) -> dict:
+        return {
+            "id": {"spellId": spell_id, "tag": tag},
+            "isPassive": passive,
+            "targets": [{"unitIndex": 0, "casts": casts}],
+        }
+
+    result = {
+        "iterationsDone": 1,
+        "raidMetrics": {
+            "parties": [
+                {
+                    "players": [
+                        {
+                            "name": "CastMix",
+                            "actions": [
+                                action(100, casts_100),
+                                action(200, casts_200),
+                                action(100, 99, tag=9),
+                                action(200, 88, passive=True),
+                                action(300, 77),
+                            ],
+                            "pets": [{"actions": [action(100, 66)]}],
+                        }
+                    ]
+                }
+            ]
+        },
+        "logs": "\n".join(
+            [
+                "[0.00] [CastMix (#1)] Casting {SpellID: 100}",
+                "[0.01] [CastMix (#1)] Casting {SpellID: 100, Tag: 9}",
+                "[0.02] [CastMix (#1) - Pet (#2)] Casting {SpellID: 100}",
+                "[0.03] [CastMix (#1)] Casting {SpellID: 200}",
+            ]
+        ),
+    }
+    if duration_seconds is not None:
+        result["firstIterationDuration"] = duration_seconds
+    return result
+
+
+def _cast_mix_runtime(successes: list[tuple[int, str]]) -> dict:
+    return {
+        "combat_calibration": {
+            "phase": "complete",
+            "bots": [
+                {
+                    "guid": 7,
+                    "action_attempts": [
+                        {"spell_id": 100, "count": 999},
+                        {"spell_id": 200, "count": 999},
+                    ],
+                    "decision_timeline": [
+                        {"elapsed_ms": index * 500, "spell_id": spell_id, "result": result}
+                        for index, (spell_id, result) in enumerate(successes)
+                    ],
+                }
+            ],
+        }
+    }
+
+
+def _cast_mix_runtime_with_duration(
+    successes: list[tuple[int, str]], duration_seconds: float | None
+) -> dict:
+    runtime = _cast_mix_runtime(successes)
+    if duration_seconds is not None:
+        runtime["combat_calibration"]["bots"][0]["elapsed_seconds"] = duration_seconds
+    return runtime
+
+
+def test_cast_mix_exact_matching_distribution_uses_root_aggregate_metrics():
+    review = build_review(
+        wowsims_apl=_cast_mix_apl(),
+        wowsims_result=_cast_mix_result(),
+        runtime_report=_cast_mix_runtime([(100, "ok")] * 3 + [(200, "ok")]),
+    )
+
+    comparison = review["execution_comparison"]["cast_mix"]
+    assert comparison["status"] == "ok"
+    assert comparison["cast_mix_overlap"] == 1.0
+    assert comparison["total_variation_distance"] == 0.0
+    assert comparison["maximum_absolute_share_delta"] == 0.0
+    assert [row["spell_id"] for row in comparison["per_spell"]] == [100, 200]
+    assert comparison["per_spell"][0]["wowsims_identities"] == [
+        {"kind": "spell", "id": 100, "tag": 0}
+    ]
+
+
+def test_cast_mix_mismatch_emits_exact_overlap_tv_and_max_delta():
+    comparison = build_review(
+        wowsims_apl=_cast_mix_apl(),
+        wowsims_result=_cast_mix_result(),
+        runtime_report=_cast_mix_runtime(
+            [(100, "ok"), (200, "ok"), (200, "ok"), (300, "ok")]
+        ),
+    )["execution_comparison"]["cast_mix"]
+
+    assert comparison["cast_mix_overlap"] == 0.5
+    assert comparison["total_variation_distance"] == 0.5
+    assert comparison["maximum_absolute_share_delta"] == 0.5
+    assert comparison["maximum_absolute_share_delta_spell_ids"] == [100]
+    assert comparison["shared_spell_ids"] == [100, 200]
+    assert comparison["trinity_only_spell_ids"] == [300]
+
+
+def test_cast_mix_excludes_tagged_children_pets_passives_and_failed_decisions():
+    comparison = build_review(
+        wowsims_apl=_cast_mix_apl(),
+        wowsims_result=_cast_mix_result(),
+        runtime_report=_cast_mix_runtime(
+            [
+                (100, "ok"),
+                (100, "global_cooldown"),
+                (100, "failed"),
+                (200, "ok"),
+                (0, "ok"),
+            ]
+        ),
+    )["execution_comparison"]["cast_mix"]
+
+    rows = {row["spell_id"]: row for row in comparison["per_spell"]}
+    assert rows[100]["wowsims_count"] == 3.0
+    assert rows[100]["trinity_count"] == 1
+    assert rows[200]["wowsims_count"] == 1.0
+    assert rows[200]["trinity_count"] == 1
+    assert 300 not in rows
+    assert comparison["wowsims_total_casts"] == 4.0
+    assert comparison["trinity_total_casts"] == 2
+    assert comparison["timeline_reconciliation"]["cast_started_count"] == 2
+    assert comparison["timeline_reconciliation"]["counts_by_spell"] == {
+        "100": 1,
+        "200": 1,
+    }
+
+
+def test_cast_mix_fails_closed_without_successful_completed_timeline():
+    comparison = build_review(
+        wowsims_apl=_cast_mix_apl(),
+        wowsims_result=_cast_mix_result(),
+        runtime_report=_cast_mix_runtime(
+            [(100, "global_cooldown"), (0, "ok"), (200, "failed")]
+        ),
+    )["execution_comparison"]["cast_mix"]
+
+    assert comparison["status"] == "insufficient_data"
+    assert comparison["reason"] == "missing_successful_trinity_timeline"
+    assert comparison["trinity_total_casts"] == 0
+
+
+def test_cast_mix_reports_cadence_even_when_distributions_match():
+    comparison = build_review(
+        wowsims_apl=_cast_mix_apl(),
+        wowsims_result=_cast_mix_result(duration_seconds=100.0),
+        runtime_report=_cast_mix_runtime_with_duration(
+            [(100, "ok")] * 3 + [(200, "ok")], 200.0
+        ),
+    )["execution_comparison"]["cast_mix"]
+
+    assert comparison["cast_mix_overlap"] == 1.0
+    assert comparison["cast_cadence"] == {
+        "status": "available",
+        "wowsims_duration_seconds": 100.0,
+        "trinity_duration_seconds": 200.0,
+        "wowsims_casts_per_second": 0.04,
+        "trinity_casts_per_second": 0.02,
+        "trinity_to_wowsims_cadence_ratio": 0.5,
+        "trinity_minus_wowsims_casts_per_second": -0.02,
+    }
+
+
+def test_cast_mix_keeps_share_comparison_usable_without_durations():
+    comparison = build_review(
+        wowsims_apl=_cast_mix_apl(),
+        wowsims_result=_cast_mix_result(),
+        runtime_report=_cast_mix_runtime([(100, "ok")] * 3 + [(200, "ok")]),
+    )["execution_comparison"]["cast_mix"]
+
+    assert comparison["status"] == "ok"
+    assert comparison["cast_cadence"]["status"] == "insufficient_duration_data"
+    assert comparison["cast_cadence"]["wowsims_casts_per_second"] is None
+    assert comparison["cast_cadence"]["trinity_casts_per_second"] is None
+
+
+def test_cast_mix_direct_helper_requires_normalized_completed_calibration():
+    result = compare_cast_mix(
+        {"actions": [{"phase": "combat", "identity": {"kind": "spell", "id": 100, "tag": None}}]},
+        {
+            "action_metrics": [
+                {
+                    "source": {"kind": "player"},
+                    "identity": {"kind": "spell", "id": 100, "tag": 0},
+                    "is_passive": False,
+                    "per_iteration_target_metric_sums": {"casts": 1.0},
+                }
+            ],
+            "timeline": {"events": []},
+        },
+        {
+            "calibration_complete": True,
+            "decision_timeline": [{"spell_id": 100, "result": "ok"}],
+        },
+    )
+    assert result["status"] == "ok"

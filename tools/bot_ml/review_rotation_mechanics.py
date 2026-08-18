@@ -1269,6 +1269,14 @@ def _iter_runtime_bots(document: dict[str, Any]) -> Iterator[dict[str, Any]]:
 def normalize_runtime_report(document: Any) -> dict[str, Any]:
     if not isinstance(document, dict):
         raise ValueError("runtime report must be a JSON object")
+    calibration = document.get("combat_calibration")
+    calibration_complete = bool(
+        isinstance(calibration, dict)
+        and (
+            str(calibration.get("phase") or "").lower() == "complete"
+            or bool(calibration.get("window_complete"))
+        )
+    )
     attempts: Counter[int] = Counter()
     damage: Counter[int] = Counter()
     results: Counter[str] = Counter()
@@ -1454,6 +1462,12 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
 
     return {
         "schema": "rotation_review_runtime_observation_v1",
+        "calibration_complete": calibration_complete,
+        "decision_timeline_basis": (
+            "completed_combat_calibration"
+            if calibration_complete
+            else "completed_combat_calibration_not_observed"
+        ),
         "attempt_counts_by_spell": {str(key): value for key, value in sorted(attempts.items())},
         "damage_by_spell": {str(key): value for key, value in sorted(damage.items())},
         "chosen_counts_by_spell": {str(key): value for key, value in sorted(chosen.items())},
@@ -1765,6 +1779,357 @@ def _runtime_window_duration(runtime: dict[str, Any]) -> float | None:
     return max(durations) if durations else None
 
 
+def _cast_mix_identity_matches_apl(
+    identity: dict[str, Any], apl_identities: Iterable[dict[str, Any]]
+) -> bool:
+    """Match a result ActionID to an APL root while retaining result tags.
+
+    WoWSims emits an omitted APL tag as ``0`` in aggregate metrics/logs, while
+    an exported APL commonly represents it as ``None``.  Only that untagged
+    equivalence is allowed; nonzero tags must match exactly so generated child
+    actions cannot be folded into their parent spell.
+    """
+    if identity.get("kind") != "spell" or not isinstance(identity.get("id"), int):
+        return False
+    for apl_identity in apl_identities:
+        if (
+            apl_identity.get("kind") != identity.get("kind")
+            or apl_identity.get("id") != identity.get("id")
+        ):
+            continue
+        apl_tag = apl_identity.get("tag")
+        result_tag = identity.get("tag")
+        if apl_tag == result_tag or (apl_tag is None and result_tag in (None, 0)):
+            return True
+    return False
+
+
+def _stable_cast_mix_float(value: float) -> float:
+    """Keep emitted share arithmetic stable across equivalent JSON inputs."""
+    return round(float(value), 12)
+
+
+def _insufficient_cast_mix(
+    *, reason: str, basis: dict[str, str], detail: str | None = None
+) -> dict[str, Any]:
+    result: dict[str, Any] = {
+        "status": "insufficient_data",
+        "reason": reason,
+        "basis": basis,
+        "share_delta_direction": "trinity_share_minus_wowsims_share",
+        "wowsims_total_casts": 0.0,
+        "trinity_total_casts": 0,
+        "per_spell": [],
+        "shared_spell_ids": [],
+        "wowsims_only_spell_ids": [],
+        "trinity_only_spell_ids": [],
+        "cast_mix_overlap": None,
+        "total_variation_distance": None,
+        "maximum_absolute_share_delta": None,
+        "maximum_absolute_share_delta_spell_ids": [],
+        "cast_cadence": {
+            "status": "insufficient_duration_data",
+            "wowsims_duration_seconds": None,
+            "trinity_duration_seconds": None,
+            "wowsims_casts_per_second": None,
+            "trinity_casts_per_second": None,
+            "trinity_to_wowsims_cadence_ratio": None,
+            "trinity_minus_wowsims_casts_per_second": None,
+        },
+        "timeline_reconciliation": {
+            "status": "not_evaluated",
+            "cast_started_count": 0,
+            "counts_by_spell": {},
+        },
+        "interpretation": (
+            "Cast-mix comparison requires APL-matched WoWSims player root spell casts "
+            "and successful native actions from a completed calibration decision_timeline."
+        ),
+    }
+    if detail:
+        result["detail"] = detail
+    return result
+
+
+def _cast_cadence(
+    *,
+    wowsims_result: dict[str, Any],
+    runtime: dict[str, Any],
+    wowsims_casts: float,
+    trinity_casts: int,
+) -> dict[str, Any]:
+    """Report cast throughput without substituting timeline timestamps for durations."""
+    wowsims_duration = next(
+        (
+            duration
+            for duration in (
+                _positive_duration(wowsims_result.get("first_iteration_duration_seconds")),
+                _positive_duration(wowsims_result.get("avg_iteration_duration_seconds")),
+            )
+            if duration is not None
+        ),
+        None,
+    )
+    trinity_duration = _runtime_window_duration(runtime)
+    wowsims_rate = (
+        _stable_cast_mix_float(wowsims_casts / wowsims_duration)
+        if wowsims_duration is not None
+        else None
+    )
+    trinity_rate = (
+        _stable_cast_mix_float(trinity_casts / trinity_duration)
+        if trinity_duration is not None
+        else None
+    )
+    return {
+        "status": (
+            "available"
+            if wowsims_duration is not None and trinity_duration is not None
+            else "insufficient_duration_data"
+        ),
+        "wowsims_duration_seconds": wowsims_duration,
+        "trinity_duration_seconds": trinity_duration,
+        "wowsims_casts_per_second": wowsims_rate,
+        "trinity_casts_per_second": trinity_rate,
+        "trinity_to_wowsims_cadence_ratio": (
+            _stable_cast_mix_float(trinity_rate / wowsims_rate)
+            if wowsims_rate is not None and trinity_rate is not None and wowsims_rate > 0
+            else None
+        ),
+        "trinity_minus_wowsims_casts_per_second": (
+            _stable_cast_mix_float(trinity_rate - wowsims_rate)
+            if wowsims_rate is not None and trinity_rate is not None
+            else None
+        ),
+    }
+
+
+def compare_cast_mix(
+    wowsims: dict[str, Any] | None,
+    wowsims_result: dict[str, Any] | None,
+    runtime: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Compare WoWSims player-root cast shares with Trinity native successes.
+
+    WoWSims counts come only from aggregate per-iteration action metrics.  The
+    first-iteration ``cast_started`` log is retained as reconciliation evidence
+    and never contributes to either share vector.  Trinity counts come only
+    from successful, nonzero-spell entries in a completed calibration timeline;
+    action-attempt aggregates are intentionally not a fallback.
+    """
+    basis = {
+        "wowsims_counts": "aggregate_per_iteration_player_root_spell_casts_matching_combat_apl",
+        "wowsims_timeline": "first_iteration_cast_started_reconciliation_only",
+        "trinity_counts": "completed_calibration_decision_timeline_result_ok_nonzero_spell_id",
+        "action_attempts": "excluded_from_cast_mix",
+    }
+    if not wowsims:
+        return _insufficient_cast_mix(
+            reason="missing_combat_apl", basis=basis, detail="normalized WoWSims APL is absent"
+        )
+    if not wowsims_result:
+        return _insufficient_cast_mix(
+            reason="missing_wowsims_result",
+            basis=basis,
+            detail="normalized WoWSims result is absent",
+        )
+    if not runtime:
+        return _insufficient_cast_mix(
+            reason="missing_runtime_report",
+            basis=basis,
+            detail="normalized Trinity runtime report is absent",
+        )
+
+    apl_identities = [
+        row["identity"]
+        for row in wowsims.get("actions") or []
+        if row.get("phase") == "combat"
+        and (row.get("identity") or {}).get("kind") == "spell"
+        and isinstance((row.get("identity") or {}).get("id"), int)
+    ]
+    if not apl_identities:
+        return _insufficient_cast_mix(
+            reason="missing_combat_apl_spell_identities",
+            basis=basis,
+            detail="combat APL contains no spell identities",
+        )
+
+    # Aggregate by spell ID for the comparison while retaining every exact
+    # WoWSims identity (including tag) in the emitted row metadata.
+    wowsims_counts: Counter[int] = Counter()
+    wowsims_identities: dict[int, list[dict[str, Any]]] = {}
+    for row in wowsims_result.get("action_metrics") or []:
+        if not isinstance(row, dict):
+            continue
+        identity = row.get("identity") or {}
+        source = row.get("source") or {}
+        if source.get("kind") != "player":
+            continue
+        if bool(row.get("is_passive")):
+            continue
+        if not _cast_mix_identity_matches_apl(identity, apl_identities):
+            continue
+        casts = float((row.get("per_iteration_target_metric_sums") or {}).get("casts") or 0.0)
+        if casts <= 0:
+            continue
+        spell_id = int(identity["id"])
+        wowsims_counts[spell_id] += casts
+        wowsims_identities.setdefault(spell_id, []).append(
+            {
+                "kind": identity.get("kind"),
+                "id": spell_id,
+                "tag": identity.get("tag"),
+            }
+        )
+
+    wowsims_total = sum(wowsims_counts.values())
+    if wowsims_total <= 0:
+        return _insufficient_cast_mix(
+            reason="missing_apl_matched_wowsims_casts",
+            basis=basis,
+            detail="no positive aggregate player-root casts matched combat APL identities",
+        )
+
+    if not bool(runtime.get("calibration_complete")):
+        return _insufficient_cast_mix(
+            reason="completed_calibration_missing",
+            basis=basis,
+            detail="runtime decision_timeline is not bound to a completed calibration window",
+        )
+
+    trinity_counts: Counter[int] = Counter()
+    for event in runtime.get("decision_timeline") or []:
+        if not isinstance(event, dict):
+            continue
+        spell_id = int(event.get("spell_id") or 0)
+        if str(event.get("result") or "") == "ok" and spell_id:
+            trinity_counts[spell_id] += 1
+    trinity_total = sum(trinity_counts.values())
+    if trinity_total <= 0:
+        return _insufficient_cast_mix(
+            reason="missing_successful_trinity_timeline",
+            basis=basis,
+            detail="completed calibration has no successful nonzero-spell decision_timeline entries",
+        )
+
+    spell_ids = sorted(set(wowsims_counts) | set(trinity_counts))
+    rows: list[dict[str, Any]] = []
+    wowsims_shares: dict[int, float] = {}
+    trinity_shares: dict[int, float] = {}
+    for spell_id in spell_ids:
+        wowsims_count = _stable_cast_mix_float(wowsims_counts.get(spell_id, 0.0))
+        trinity_count = int(trinity_counts.get(spell_id, 0))
+        wowsims_share = _stable_cast_mix_float(wowsims_count / wowsims_total)
+        trinity_share = _stable_cast_mix_float(trinity_count / trinity_total)
+        delta = _stable_cast_mix_float(trinity_share - wowsims_share)
+        absolute_delta = _stable_cast_mix_float(abs(delta))
+        wowsims_shares[spell_id] = wowsims_share
+        trinity_shares[spell_id] = trinity_share
+        identities = sorted(
+            wowsims_identities.get(spell_id, []),
+            key=lambda identity: (
+                identity.get("kind") or "",
+                int(identity.get("id") or 0),
+                -1 if identity.get("tag") is None else int(identity["tag"]),
+            ),
+        )
+        rows.append(
+            {
+                "spell_id": spell_id,
+                "identity": identities[0]
+                if len(identities) == 1
+                else {"kind": "spell", "id": spell_id, "tag": None},
+                "wowsims_identities": identities,
+                "trinity_identity": {"kind": "spell", "id": spell_id, "tag": None},
+                "wowsims_count": wowsims_count,
+                "wowsims_share": wowsims_share,
+                "trinity_count": trinity_count,
+                "trinity_share": trinity_share,
+                "share_delta_direction": "trinity_share_minus_wowsims_share",
+                "share_delta_percentage_points": _stable_cast_mix_float(delta * 100.0),
+                "absolute_delta": absolute_delta,
+                "absolute_delta_percentage_points": _stable_cast_mix_float(
+                    absolute_delta * 100.0
+                ),
+            }
+        )
+
+    timeline_counts: Counter[int] = Counter()
+    timeline_line_indices: dict[int, list[int]] = {}
+    timeline = wowsims_result.get("timeline") or {}
+    for event in timeline.get("events") or []:
+        if not isinstance(event, dict) or event.get("kind") != "cast_started":
+            continue
+        source_entity = event.get("source_entity")
+        if isinstance(source_entity, str) and " - " in source_entity:
+            continue
+        identity = event.get("identity") or {}
+        if not _cast_mix_identity_matches_apl(identity, apl_identities):
+            continue
+        spell_id = int(identity["id"])
+        timeline_counts[spell_id] += 1
+        line_index = event.get("line_index")
+        if isinstance(line_index, int):
+            timeline_line_indices.setdefault(spell_id, []).append(line_index)
+    timeline_reconciliation = {
+        "status": "available" if timeline_counts else "absent_or_no_matching_cast_started",
+        "cast_started_count": sum(timeline_counts.values()),
+        "counts_by_spell": {
+            str(spell_id): int(count) for spell_id, count in sorted(timeline_counts.items())
+        },
+        "line_indices_by_spell": {
+            str(spell_id): sorted(indices)
+            for spell_id, indices in sorted(timeline_line_indices.items())
+        },
+        "used_for_share_vectors": False,
+    }
+
+    shared = sorted(set(wowsims_counts) & set(trinity_counts))
+    wowsims_only = sorted(set(wowsims_counts) - set(trinity_counts))
+    trinity_only = sorted(set(trinity_counts) - set(wowsims_counts))
+    deltas = {
+        spell_id: _stable_cast_mix_float(trinity_shares.get(spell_id, 0.0) - wowsims_shares.get(spell_id, 0.0))
+        for spell_id in spell_ids
+    }
+    overlap = _stable_cast_mix_float(
+        sum(
+            min(wowsims_shares.get(spell_id, 0.0), trinity_shares.get(spell_id, 0.0))
+            for spell_id in spell_ids
+        )
+    )
+    total_variation = _stable_cast_mix_float(0.5 * sum(abs(delta) for delta in deltas.values()))
+    maximum_delta = _stable_cast_mix_float(max((abs(delta) for delta in deltas.values()), default=0.0))
+    maximum_delta_spell_ids = sorted(
+        spell_id for spell_id, delta in deltas.items() if abs(delta) == maximum_delta
+    )
+    return {
+        "status": "ok",
+        "basis": basis,
+        "share_delta_direction": "trinity_share_minus_wowsims_share",
+        "wowsims_total_casts": _stable_cast_mix_float(wowsims_total),
+        "trinity_total_casts": int(trinity_total),
+        "per_spell": rows,
+        "shared_spell_ids": shared,
+        "wowsims_only_spell_ids": wowsims_only,
+        "trinity_only_spell_ids": trinity_only,
+        "cast_mix_overlap": overlap,
+        "total_variation_distance": total_variation,
+        "maximum_absolute_share_delta": maximum_delta,
+        "maximum_absolute_share_delta_spell_ids": maximum_delta_spell_ids,
+        "cast_cadence": _cast_cadence(
+            wowsims_result=wowsims_result,
+            runtime=runtime,
+            wowsims_casts=wowsims_total,
+            trinity_casts=trinity_total,
+        ),
+        "timeline_reconciliation": timeline_reconciliation,
+        "interpretation": (
+            "This measures action-mix alignment from attributable cast counts; it is not "
+            "damage equivalence or semantic equivalence."
+        ),
+    }
+
+
 def compare_simulated_to_trinity_runtime(
     wowsims_result: dict[str, Any],
     runtime: dict[str, Any],
@@ -1975,6 +2340,7 @@ def compare_simulated_to_trinity_runtime(
     ]
     return {
         "spec_identity": _spec_identity(trinity),
+        "cast_mix": compare_cast_mix(wowsims, wowsims_result, runtime),
         "shared_observed_spell_ids": sorted(sim_spells & trinity_spells),
         "wowsims_only_observed_spell_ids": sorted(sim_spells - trinity_spells),
         "trinity_only_observed_spell_ids": sorted(trinity_spells - sim_spells),
@@ -2051,21 +2417,27 @@ def build_review(
         if review["wowsims"] and review["trinity"]
         else None
     )
+    runtime_comparison = (
+        compare_simulated_to_trinity_runtime(
+            review["wowsims_result"],
+            review["runtime"],
+            wowsims=review["wowsims"],
+            trinity=review["trinity"],
+        )
+        if review["wowsims_result"] and review["runtime"]
+        else None
+    )
     review["execution_comparison"] = {
         "apl_to_wowsims_result": (
             compare_apl_to_simulated_actions(review["wowsims"], review["wowsims_result"])
             if review["wowsims"] and review["wowsims_result"]
             else None
         ),
-        "wowsims_result_to_trinity_runtime": (
-            compare_simulated_to_trinity_runtime(
-                review["wowsims_result"],
-                review["runtime"],
-                wowsims=review["wowsims"],
-                trinity=review["trinity"],
-            )
-            if review["wowsims_result"] and review["runtime"]
-            else None
+        "wowsims_result_to_trinity_runtime": runtime_comparison,
+        "cast_mix": (
+            runtime_comparison["cast_mix"]
+            if runtime_comparison is not None
+            else compare_cast_mix(review["wowsims"], review["wowsims_result"], review["runtime"])
         ),
     }
     review["review_sha256"] = canonical_sha256(review)
