@@ -2146,6 +2146,11 @@ private:
         BotRolePowerBreakdown const& power, BotProgressionStage stage,
         BotProgressionActivity activity, Unit* seenTarget,
         char const* reason);
+    bool TryValidationRouteInterrupt(
+        WorldBotState& state, Player* bot,
+        BotRolePowerBreakdown const& power, BotProgressionStage stage,
+        BotProgressionActivity activity, std::string& situation,
+        std::string& action, Unit* interruptTarget, char const* context);
    Unit* FindValidationRouteTankFocusTarget(
        Player* bot, std::function<Unit*(Unit*)> const& routeUsableCombatTarget,
        ObjectGuid expectedGuid);
