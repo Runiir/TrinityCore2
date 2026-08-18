@@ -1932,6 +1932,8 @@ private:
     static void ObserveAfflictionCalibrationModifiers(CalibrationMetrics& metrics,
         Player* bot, Creature* fixtureTarget);
     static std::string AppendAfflictionCalibrationJson(CalibrationMetrics const* metrics);
+    void AppendCalibrationBotActionJson(std::ostringstream& json,
+        CalibrationMetrics const* metrics) const;
     void UpdateCalibrationBot(WorldBotState& state, uint32 diff);
     bool ResolveSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
     bool ResolveSavedSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
