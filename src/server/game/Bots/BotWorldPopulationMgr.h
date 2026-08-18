@@ -2122,6 +2122,13 @@ private:
         std::function<bool(uint32)> const& isValidationRoutePackEntry,
         std::function<bool(Unit*, char const*)> const& recordValidationRouteTrashKill,
         Unit* prerequisiteTarget, char const* context);
+    Unit* ResolveUsableValidationRouteCombatTarget(
+        Player* bot, bool discoveryLeg, Unit* candidate,
+        std::function<bool(Creature const*)> const& isValidationRouteCombatTarget,
+        std::function<bool(Creature const*)> const& isEligibleTrashClusterMob,
+        std::function<bool(Unit const*)> const& hasStrictPathToValidationRouteTarget,
+        std::function<bool(Creature const*)> const& isBoundedTerminalPartyCombatTarget,
+        std::function<bool(Creature const*)> const& isCurrentDiscoveryScriptedEventTarget);
     bool CurrentLiveValidationRoutePackCanContinue(
         std::function<bool()> const& persistedValidationRoutePackHasLiveMembers,
         std::function<bool(uint32)> const& isValidationRoutePackEntry,
