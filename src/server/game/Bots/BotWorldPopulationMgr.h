@@ -1925,6 +1925,9 @@ private:
     std::pair<bool, bool> ApplyCalibrationReferenceConditions(Player* bot, Unit* target) const;
     void ObserveCalibrationReferenceConditions(CalibrationMetrics& metrics,
         Player* bot, Unit* target, uint64 observedAtMs) const;
+    static void ObserveAfflictionCalibrationModifiers(CalibrationMetrics& metrics,
+        Player* bot, Creature* fixtureTarget);
+    static std::string AppendAfflictionCalibrationJson(CalibrationMetrics const* metrics);
     void UpdateCalibrationBot(WorldBotState& state, uint32 diff);
     bool ResolveSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
     bool ResolveSavedSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
@@ -2060,6 +2063,10 @@ private:
     bool TryEnsureCombatTotems(WorldBotState& state, Player* bot, Unit* target, uint32 hostileCount) const;
     bool IsNativePoisonSetupReady(Player const* bot,
         WorldBotState::NativePoisonSetupReceipt const& receipt) const;
+    static bool ConfigureAfflictionPetRequirements(
+        WorldBotState::NativePersistentPetSetupReceipt& requiredPet,
+        char const*& requiredPetName, std::string const& role,
+        std::string const& specTag);
     bool TryEnsurePersistentCombatSetup(WorldBotState& state, Player* bot, Unit* target,
         char const* specTagOverride = nullptr);
     char const* GetDungeonRole(Player* bot) const;

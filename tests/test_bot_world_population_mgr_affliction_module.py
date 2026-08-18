@@ -1,0 +1,76 @@
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+WORLD = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
+HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
+MODULE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrAffliction.cpp"
+CMAKE = ROOT / "src/server/game/CMakeLists.txt"
+
+
+FIELDS = (
+    "sample_count",
+    "shadow_mastery_active_samples",
+    "potent_afflictions_active_samples",
+    "haunt_debuff_active_samples",
+    "shadow_embrace_active_samples",
+    "maximum_shadow_embrace_stacks",
+    "haunt_affects_corruption_samples",
+    "shadow_embrace_affects_corruption_samples",
+    "maximum_haunt_damage_modifier_pct",
+    "maximum_shadow_embrace_damage_modifier_pct",
+    "minimum_corruption_taken_multiplier_ppm",
+    "maximum_corruption_taken_multiplier_ppm",
+)
+
+
+def test_affliction_module_is_narrow_and_registered() -> None:
+    assert len(MODULE.read_text(encoding="utf-8").splitlines()) <= 1000
+    assert "Bots/BotWorldPopulationMgrAffliction.cpp" in CMAKE.read_text(
+        encoding="utf-8"
+    )
+    header = HEADER.read_text(encoding="utf-8")
+    module = MODULE.read_text(encoding="utf-8")
+    for name in (
+        "ConfigureAfflictionPetRequirements",
+        "ObserveAfflictionCalibrationModifiers",
+        "AppendAfflictionCalibrationJson",
+    ):
+        assert header.count(name) == 1
+        assert module.count(f"BotWorldPopulationMgr::{name}") == 1
+
+
+def test_affliction_pet_setup_keeps_native_profile_authority() -> None:
+    source = WORLD.read_text(encoding="utf-8")
+    module = MODULE.read_text(encoding="utf-8")
+    assert "ConfigureAfflictionPetRequirements(requiredPet" in source
+    assert "requiredPet.RequiredSummonSpellId = 691" in module
+    assert "requiredPet.RequiredCreatedBySpellId = 691" in module
+    assert "requiredPet.RequiredEntry = ENTRY_FELHUNTER" in module
+    assert "requiredPet.RequiredFamilyId = CREATURE_FAMILY_FELHUNTER" in module
+    assert "requiredPet.RequiredPetType = uint32(SUMMON_PET)" in module
+    assert "requiredPet.RequiredPowerType = uint32(POWER_MANA)" in module
+    assert 'requiredPetName = "summon_felhunter"' in module
+    assert "sObjectMgr->GetCreatureTemplate" not in module
+
+
+def test_affliction_calibration_json_schema_is_byte_ordered() -> None:
+    source = WORLD.read_text(encoding="utf-8")
+    module = MODULE.read_text(encoding="utf-8")
+    assert "AppendAfflictionCalibrationJson(metrics)" in source
+    assert "affliction_modifier_observation" in module
+    positions = [module.index(f'\\"{field}\\"') for field in FIELDS]
+    assert positions == sorted(positions)
+    assert module.count("Affliction") >= len(FIELDS)
+    assert "ObserveAfflictionCalibrationModifiers(metrics, bot, fixtureTarget)" in source
+
+
+def test_affliction_inline_implementation_is_not_duplicated() -> None:
+    source = WORLD.read_text(encoding="utf-8")
+    assert not re.search(
+        r"Affliction(?:ModifierObservation|ShadowMastery|PotentAfflictions|HauntDebuff|ShadowEmbrace)ActiveTicks",
+        source,
+    )
