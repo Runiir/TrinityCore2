@@ -716,14 +716,16 @@ def test_live_route_function_does_not_reintroduce_direct_cheat_actions() -> None
 
 
 def test_route_adapter_yields_retryable_holds_and_declared_boss_adds() -> None:
-    main = bot_source("BotWorldPopulationMgr.cpp")
-    route = function_body(
-        main, "bool BotWorldPopulationMgr::TryValidationRouteObjective("
+    targeting = function_body(
+        bot_source("BotWorldPopulationMgrValidationTargeting.cpp"),
+        "BotWorldPopulationMgr::BuildValidationRouteTargetingContext("
     )
 
-    objective_start = route.index("auto isValidationRouteObjectiveTarget")
-    objective_end = route.index("\n    auto findNearestTrashClusterMob", objective_start)
-    objective = route[objective_start:objective_end]
+    objective_start = targeting.index("auto isValidationRouteObjectiveTarget")
+    objective_end = targeting.index(
+        "\n    auto findCurrentDiscoveryScriptedEventTarget", objective_start
+    )
+    objective = targeting[objective_start:objective_end]
     assert "ValidationRouteAddTargetEntries.begin()" in objective
     assert "creature->GetEntry()" in objective
 
@@ -787,15 +789,15 @@ def test_boss_adapter_requires_observable_work_and_rejects_stale_focus() -> None
     assert "Resource::Movement" in resources
     assert "Resource::Cast" in resources
 
-    main = bot_source("BotWorldPopulationMgr.cpp")
-    route = function_body(
-        main, "bool BotWorldPopulationMgr::TryValidationRouteObjective("
+    focus = function_body(
+        bot_source("BotWorldPopulationMgrValidationFocus.cpp"),
+        "BotWorldPopulationMgr::BuildValidationRouteFocusContext("
     )
-    focus_start = route.index("auto routeUsableValidationFocus")
-    focus_end = route.index("\n    auto routeGroupFocusTarget", focus_start)
-    focus_filter = route[focus_start:focus_end]
-    assert "isValidationRouteObjectiveTarget" in focus_filter
-    assert "isValidationRouteScriptTarget" not in focus_filter
+    focus_start = focus.index("auto routeUsableValidationFocus")
+    focus_end = focus.index("\n    auto routeGroupFocusTarget", focus_start)
+    focus_filter = focus[focus_start:focus_end]
+    assert "targeting.IsObjectiveTarget" in focus_filter
+    assert "targeting.IsScriptTarget" not in focus_filter
 
 
 def test_trash_adapter_requires_observable_work_and_yields_passive_waits() -> None:

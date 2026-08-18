@@ -19,7 +19,7 @@ def test_validation_activation_module_is_bounded_and_registered():
 
 def test_validation_activation_lambda_is_not_left_in_monolith():
     text = SOURCE.read_text()
-    assert "TryValidationRouteActivation(state, bot, power, stage" in text
+    assert "focus.TryActivation" in text
     assert "native_area_trigger_unavailable" not in text
 
 
@@ -33,4 +33,3 @@ def test_validation_activation_preserves_native_interaction_contract():
         "ExecuteNativeActionIntent",
     ):
         assert marker in text
-

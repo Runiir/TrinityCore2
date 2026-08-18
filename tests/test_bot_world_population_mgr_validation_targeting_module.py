@@ -19,7 +19,8 @@ def test_validation_targeting_module_is_bounded_and_registered():
 
 def test_validation_targeting_lambda_is_not_left_in_monolith():
     text = SOURCE.read_text()
-    assert "ResolveUsableValidationRouteCombatTarget(bot, discoveryLeg" in text
+    assert "BuildValidationRouteTargetingContext(state, bot" in text
+    assert "targeting.RouteEngageRange" in text
     assert "unengagedListedBossAdd" not in text
 
 
@@ -34,4 +35,3 @@ def test_validation_targeting_preserves_admission_contract():
         "IsDungeonBoss",
     ):
         assert marker in text
-

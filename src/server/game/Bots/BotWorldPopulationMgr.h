@@ -16,6 +16,7 @@
 #include "Bots/BotRoleSaturationPolicy.h"
 #include "Bots/BotTelemetryBuffer.h"
 #include "Bots/BotTelemetryPolicy.h"
+#include "Bots/BotWorldPopulationMgrValidationRouteContexts.h"
 #include "Bots/BotTypes.h"
 #include <array>
 #include <deque>
@@ -140,6 +141,14 @@ private:
     using ValidationRouteDrudgeThreatCandidateEvidence = BotWorldPopulationMgrRouteState::ValidationRouteDrudgeThreatCandidateEvidence;
     using ValidationRouteDrudgeChargeObservation = BotWorldPopulationMgrRouteState::ValidationRouteDrudgeChargeObservation;
     using ValidationRouteDrudgeThreatSeedEvidence = BotWorldPopulationMgrRouteState::ValidationRouteDrudgeThreatSeedEvidence;
+    using ValidationRouteTargetingContext =
+        BotWorldPopulationMgrValidationRoute::TargetingContext;
+    using ValidationRoutePackContext =
+        BotWorldPopulationMgrValidationRoute::PackContext;
+    using ValidationRouteFocusContext =
+        BotWorldPopulationMgrValidationRoute::FocusContext;
+    using ValidationRouteAnchorContext =
+        BotWorldPopulationMgrValidationRoute::AnchorContext;
 
 #include "Bots/BotWorldPopulationMgrPlanningContracts.h"
 
@@ -321,6 +330,30 @@ private:
         BotRolePowerBreakdown const& power, BotProgressionStage stage,
         BotProgressionActivity activity, std::string& situation,
         std::string& action, Unit*& target, bool& arrivalRoute);
+    ValidationRouteTargetingContext BuildValidationRouteTargetingContext(
+        WorldBotState& state, Player* bot,
+        BotRolePowerBreakdown const& power, BotProgressionStage stage,
+        BotProgressionActivity activity, bool discoveryLeg);
+    ValidationRoutePackContext BuildValidationRoutePackContext(
+        WorldBotState& state, Player* bot,
+        BotRolePowerBreakdown const& power, BotProgressionStage stage,
+        BotProgressionActivity activity, bool discoveryLeg,
+        ValidationRouteTargetingContext const& targeting);
+    ValidationRouteFocusContext BuildValidationRouteFocusContext(
+        WorldBotState& state, Player* bot,
+        BotRolePowerBreakdown const& power, BotProgressionStage stage,
+        BotProgressionActivity activity, bool discoveryLeg,
+        ValidationRouteTargetingContext const& targeting,
+        ValidationRoutePackContext const& pack,
+        std::string& authoritativeFocusFailure);
+    ValidationRouteAnchorContext ResolveValidationRouteAnchor(
+        WorldBotState& state, Player* bot,
+        BotRolePowerBreakdown const& power, BotProgressionStage stage,
+        BotProgressionActivity activity,
+        Unit* currentTarget,
+        std::function<Unit*(Unit*)> const& routeUsableCombatTarget,
+        std::function<ObjectGuid()> const& routeTankFocusGuid,
+        std::function<bool()> const& persistedPackHasLiveMembers);
     bool TryValidationRouteObjective(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action, Unit*& target);
     bool TryValidationRouteGroupHeal(WorldBotState& state, Player* bot,
         Player* healer, Unit* combatTarget,

@@ -19,7 +19,7 @@ def test_validation_authority_module_is_bounded_and_registered():
 
 def test_validation_authority_setup_is_not_left_in_monolith():
     text = SOURCE.read_text()
-    assert "ConfigureValidationRouteCombatAuthority(bot);" in text
+    assert "TryValidationRouteObjectiveGate" in text
     assert "SetProtectedEncounterEntries" not in text
 
 

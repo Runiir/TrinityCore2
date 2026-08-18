@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 
 #include "Creature.h"
 #include "GameTime.h"
@@ -9,8 +10,12 @@
 #include "Unit.h"
 #include "CellImpl.h"
 #include "GridNotifiersImpl.h"
+#include "Map.h"
 
 #include <chrono>
+#include <cmath>
+#include <limits>
+#include <memory>
 
 namespace
 {
@@ -19,6 +24,136 @@ uint64 NowMs()
     return uint64(std::chrono::duration_cast<std::chrono::milliseconds>(
         GameTime::GetGameTimeSystemPoint().time_since_epoch()).count());
 }
+
+using BotWorldPopulationMgrNativeHelpers::Distance2d;
+}
+
+BotWorldPopulationMgr::ValidationRouteFocusContext
+BotWorldPopulationMgr::BuildValidationRouteFocusContext(
+    WorldBotState& state, Player* bot,
+    BotRolePowerBreakdown const& power, BotProgressionStage stage,
+    BotProgressionActivity activity, bool discoveryLeg,
+    ValidationRouteTargetingContext const& targeting,
+    ValidationRoutePackContext const& pack,
+    std::string& authoritativeFocusFailure)
+{
+    ValidationRouteFocusContext result;
+    auto routeUsableCombatTarget = [=, this, &state, &power,
+        &authoritativeFocusFailure](Unit* candidate) -> Unit*
+    {
+        return ResolveUsableValidationRouteCombatTarget(bot, discoveryLeg,
+            candidate, targeting.IsCombatTarget, targeting.IsEligibleTrash,
+            targeting.HasStrictPath, targeting.IsBoundedTerminalCombat,
+            targeting.IsCurrentDiscoveryScripted);
+    };
+    auto routeFocusMemoryFresh = [=, this, &state, &power,
+        &authoritativeFocusFailure]() -> bool
+    {
+        return !Party().ValidationRouteFocusGuid.IsEmpty()
+            && Party().ValidationRouteFocusMapId == bot->GetMapId()
+            && Party().ValidationRouteFocusSeenMs
+            && NowMs() - Party().ValidationRouteFocusSeenMs
+                <= (Cohort().Config.ValidationRouteKind == "boss" ? 60000 : 20000);
+    };
+    auto routeUsableValidationFocus = [=, this, &state, &power,
+        &authoritativeFocusFailure](Unit* focus) -> Unit*
+    {
+        focus = routeUsableCombatTarget(focus);
+        if (!focus)
+            return nullptr;
+
+        if (Cohort().Config.ValidationRouteKind != "boss"
+            || !Party().ValidationRouteActivationApplied
+            || targeting.IsObjectiveTarget(focus->ToCreature())
+            || focus->IsInCombat() || focus->GetVictim())
+            return focus;
+
+        Creature* creature = focus->ToCreature();
+        return creature && targeting.IsCombatLinked(creature) ? focus : nullptr;
+    };
+    auto routeGroupFocusTarget = [=, this, &state, &power,
+        &authoritativeFocusFailure]() -> Unit*
+    {
+        return FindValidationRouteGroupFocusTarget(bot,
+            routeUsableValidationFocus, routeFocusMemoryFresh);
+    };
+    auto routeTankFocusGuid = [=, this, &state, &power,
+        &authoritativeFocusFailure]() -> ObjectGuid
+    {
+        return FindValidationRouteTankFocusGuid(bot,
+            routeUsableValidationFocus, routeFocusMemoryFresh);
+    };
+    auto rememberValidationRouteFocus = [=, this, &state, &power,
+        &authoritativeFocusFailure](Unit* focus)
+    {
+        RememberValidationRouteFocus(focus);
+    };
+    auto makeExistingValidationRouteCombatReady = [=, this, &state, &power,
+        &authoritativeFocusFailure](Creature* creature) -> Unit*
+    {
+        return MakeExistingValidationRouteCombatReady(bot, creature,
+            targeting.IsCombatTarget);
+    };
+    auto tryValidationRouteActivation = [=, this, &state, &power,
+        &authoritativeFocusFailure](Unit* seenTarget, char const* reason) -> bool
+    {
+        return TryValidationRouteActivation(state, bot, power, stage,
+            activity, seenTarget, reason);
+    };
+    auto routeTankFocusTarget = [=, this, &state, &power,
+        &authoritativeFocusFailure](ObjectGuid expectedGuid) -> Unit*
+    {
+        return FindValidationRouteTankFocusTarget(bot,
+            routeUsableCombatTarget, expectedGuid);
+    };
+    auto authoritativeRouteFocusActive = [=, this, &state, &power,
+        &authoritativeFocusFailure]() -> bool
+    {
+        return routeFocusMemoryFresh();
+    };
+    auto findLastKnownFocusTarget = [=, this, &state, &power,
+        &authoritativeFocusFailure]() -> Unit*
+    {
+        return FindLastKnownValidationRouteFocusTarget(bot,
+            routeUsableCombatTarget, routeFocusMemoryFresh);
+    };
+    auto findAuthoritativeRouteFocusTarget = [=, this, &state, &power,
+        &authoritativeFocusFailure]() -> Unit*
+    {
+        return FindAuthoritativeValidationRouteFocusTarget(bot,
+            routeUsableCombatTarget, targeting.IsScriptTarget,
+            authoritativeFocusFailure);
+    };
+    auto recoverAuthoritativeFocus = [=, this, &state, &power,
+        &authoritativeFocusFailure](char const* reason) -> bool
+    {
+        return RecoverAuthoritativeValidationRouteFocus(state, bot, power,
+            stage, activity, findAuthoritativeRouteFocusTarget,
+            authoritativeFocusFailure, reason);
+    };
+    auto teacherAssistAuthoritativeFocus = [=, this, &state, &power,
+        &authoritativeFocusFailure](Unit* proposedFocus) -> Unit*
+    {
+        return TeacherAssistAuthoritativeValidationFocus(state, proposedFocus,
+            authoritativeRouteFocusActive, findAuthoritativeRouteFocusTarget,
+            authoritativeFocusFailure);
+    };
+    (void)pack;
+    result.UsableCombatTarget = routeUsableCombatTarget;
+    result.FocusMemoryFresh = routeFocusMemoryFresh;
+    result.UsableValidationFocus = routeUsableValidationFocus;
+    result.GroupFocusTarget = routeGroupFocusTarget;
+    result.TankFocusGuid = routeTankFocusGuid;
+    result.RememberFocus = rememberValidationRouteFocus;
+    result.MakeExistingCombatReady = makeExistingValidationRouteCombatReady;
+    result.TryActivation = tryValidationRouteActivation;
+    result.TankFocusTarget = routeTankFocusTarget;
+    result.AuthoritativeFocusActive = authoritativeRouteFocusActive;
+    result.LastKnownFocusTarget = findLastKnownFocusTarget;
+    result.AuthoritativeFocusTarget = findAuthoritativeRouteFocusTarget;
+    result.RecoverAuthoritativeFocus = recoverAuthoritativeFocus;
+    result.TeacherAssistFocus = teacherAssistAuthoritativeFocus;
+    return result;
 }
 
 Unit* BotWorldPopulationMgr::FindLastKnownValidationRouteFocusTarget(
@@ -545,4 +680,165 @@ Unit* BotWorldPopulationMgr::TeacherAssistAuthoritativeValidationFocus(
     ++state.ValidationRouteUnresolvedFocusHoldCount;
     authoritativeFocusFailure = authoritativeFocusFailure.empty() ? "assist_target_search_authoritative_focus" : authoritativeFocusFailure;
     return nullptr;
+}
+
+BotWorldPopulationMgr::ValidationRouteAnchorContext
+BotWorldPopulationMgr::ResolveValidationRouteAnchor(
+    WorldBotState& state, Player* bot,
+    BotRolePowerBreakdown const& power, BotProgressionStage stage,
+    BotProgressionActivity activity, Unit* currentTarget,
+    std::function<Unit*(Unit*)> const& routeUsableCombatTarget,
+    std::function<ObjectGuid()> const& routeTankFocusGuid,
+    std::function<bool()> const& persistedPackHasLiveMembers)
+{
+    ValidationRouteAnchorContext anchor;
+    uint32& routeAnchorMapId = anchor.MapId;
+    routeAnchorMapId = Cohort().Config.ValidationRouteMapId
+        ? Cohort().Config.ValidationRouteMapId : bot->GetMapId();
+    float& routeAnchorX = anchor.X;
+    routeAnchorX = Cohort().Config.ValidationRouteX;
+    float& routeAnchorY = anchor.Y;
+    routeAnchorY = Cohort().Config.ValidationRouteY;
+    float& routeAnchorZ = anchor.Z;
+    routeAnchorZ = Cohort().Config.ValidationRouteZ;
+    std::string& routeAnchorReason = anchor.Reason;
+    routeAnchorReason = "validation_route";
+    uint64 routeNowMs = NowMs();
+    if (state.ValidationRouteAnchorOverrideValid && state.ValidationRouteAnchorOverrideUntilMs <= routeNowMs)
+    {
+        state.ValidationRouteAnchorOverrideValid = false;
+        state.ValidationRouteAnchorOverrideReason.clear();
+    }
+    bool routeHasActiveCombatIntent = routeUsableCombatTarget(currentTarget)
+        || routeUsableCombatTarget(bot->GetVictim())
+        || !routeTankFocusGuid().IsEmpty();
+    bool routeHasCurrentGenerationLivePackAuthority =
+        Cohort().Config.ValidationRouteKind != "boss"
+        && persistedPackHasLiveMembers();
+    bool repeatedDeathNearRoute = state.LastDeathMapId == routeAnchorMapId
+        && Distance2d(state.LastDeathX, state.LastDeathY, Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY) <= 70.0f
+        && state.RecentDeathCount >= 2;
+    bool partialWipeRetreatRendezvous =
+        state.ValidationRouteAnchorOverrideValid
+        && state.ValidationRouteAnchorOverrideReason
+            == "validation_route_partial_wipe_retreat_rendezvous";
+    // A current-generation live pack is stronger route authority than the
+    // generic safe-memory fallback.  Clear only that fallback here; the
+    // partial-wipe rendezvous and live-pack reapproach overrides retain their
+    // existing recovery semantics.
+    if (state.ValidationRouteAnchorOverrideValid
+        && state.ValidationRouteAnchorOverrideReason
+            == "validation_route_safe_memory_after_death_loop"
+        && routeHasCurrentGenerationLivePackAuthority)
+    {
+        state.ValidationRouteAnchorOverrideValid = false;
+        state.ValidationRouteAnchorOverrideUntilMs = 0;
+        state.ValidationRouteAnchorOverrideReason.clear();
+    }
+    if (state.ValidationRouteAnchorOverrideValid && routeHasActiveCombatIntent
+        && !repeatedDeathNearRoute && !partialWipeRetreatRendezvous)
+    {
+        state.ValidationRouteAnchorOverrideValid = false;
+        state.ValidationRouteAnchorOverrideUntilMs = 0;
+        state.ValidationRouteAnchorOverrideReason.clear();
+    }
+    float routeAnchorDanger = GetLocalDangerScore(state.Guid.GetCounter(), routeAnchorMapId, routeAnchorX, routeAnchorY, routeAnchorZ);
+    if (state.ValidationRouteAnchorOverrideValid)
+    {
+        routeAnchorX = state.ValidationRouteAnchorOverrideX;
+        routeAnchorY = state.ValidationRouteAnchorOverrideY;
+        routeAnchorZ = state.ValidationRouteAnchorOverrideZ;
+        routeAnchorReason = state.ValidationRouteAnchorOverrideReason.empty() ? "validation_route_safe_memory_override" : state.ValidationRouteAnchorOverrideReason;
+    }
+    else if (!routeHasActiveCombatIntent && repeatedDeathNearRoute
+        && !routeHasCurrentGenerationLivePackAuthority)
+    {
+        PruneSafePositions(state, routeNowMs);
+
+        WorldBotState::SafePosition const* bestSafe = nullptr;
+        float bestSafeScore = std::numeric_limits<float>::max();
+        for (WorldBotState::SafePosition const& safe : state.SafePositions)
+        {
+            if (safe.MapId != routeAnchorMapId || safe.HpPct < 0.35f)
+                continue;
+
+            float safeRouteDistance = Distance2d(safe.X, safe.Y, Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY);
+            if (safeRouteDistance > 260.0f)
+                continue;
+            if (state.RecentDeathCount >= 2
+                && state.LastDeathMapId == routeAnchorMapId
+                && Distance2d(state.LastDeathX, state.LastDeathY, safe.X, safe.Y) <= 70.0f)
+                continue;
+
+            // Rerun162 selected a remembered post-death anchor whose stored Z
+            // could not satisfy MoveBotToPoint's floor contract. Installing it
+            // as the long-lived override made the final Azil generation
+            // terminal while the canonical manifest anchor remained valid.
+            // Apply the exact movement gate before ranking remembered anchors;
+            // an invalid memory simply leaves the canonical anchor available.
+            Map* safeMap = bot->GetMap();
+            float safeFloorZ = safeMap
+                ? safeMap->GetHeight(bot->GetPhaseShift(), safe.X, safe.Y,
+                    safe.Z + 2.0f, true, 8.0f)
+                : INVALID_HEIGHT;
+            if (safeFloorZ <= INVALID_HEIGHT
+                || std::fabs(safeFloorZ - safe.Z) > 4.0f)
+                continue;
+
+            float safeDanger = GetLocalDangerScore(state.Guid.GetCounter(), routeAnchorMapId, safe.X, safe.Y, safe.Z);
+            if (safeDanger >= routeAnchorDanger && safeDanger >= 3.0f)
+                continue;
+
+            float botDistance = bot->GetExactDist(safe.X, safe.Y, safe.Z);
+            float score = safeDanger * 100.0f + safeRouteDistance * 0.20f + botDistance * 0.02f - safe.HpPct * 10.0f;
+            if (safeRouteDistance > 135.0f)
+                score += 80.0f;
+            if (!bestSafe || score < bestSafeScore)
+            {
+                bestSafe = &safe;
+                bestSafeScore = score;
+            }
+        }
+
+        if (bestSafe)
+        {
+            routeAnchorX = bestSafe->X;
+            routeAnchorY = bestSafe->Y;
+            routeAnchorZ = bestSafe->Z;
+            routeAnchorReason = "validation_route_safe_memory_after_death_loop";
+            state.ValidationRouteAnchorOverrideValid = true;
+            state.ValidationRouteAnchorOverrideUntilMs = routeNowMs + 120000;
+            state.ValidationRouteAnchorOverrideX = routeAnchorX;
+            state.ValidationRouteAnchorOverrideY = routeAnchorY;
+            state.ValidationRouteAnchorOverrideZ = routeAnchorZ;
+            state.ValidationRouteAnchorOverrideReason = routeAnchorReason;
+
+            std::string raw = BuildRawJson(bot, nullptr);
+            std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_recovery", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_recovery", nullptr, routeAnchorReason.c_str(), raw.c_str(), semantic.c_str(), routeAnchorDanger, Cohort().Config.ValidationRouteTargetEntry);
+        }
+    }
+
+    Map* routeMap = bot->GetMap();
+    if (routeMap)
+    {
+        float floorZ = routeMap->GetHeight(bot->GetPhaseShift(), routeAnchorX, routeAnchorY, routeAnchorZ + 2.0f, true, 8.0f);
+        if (floorZ > INVALID_HEIGHT && std::fabs(floorZ - routeAnchorZ) <= 8.0f)
+            routeAnchorZ = floorZ;
+    }
+
+    state.QuestRouteDestination.Valid = true;
+    state.QuestRouteDestination.MapId = routeAnchorMapId;
+    state.QuestRouteDestination.X = routeAnchorX;
+    state.QuestRouteDestination.Y = routeAnchorY;
+    state.QuestRouteDestination.Z = routeAnchorZ;
+    state.QuestRouteDestination.QuestId = 0;
+    state.QuestRouteDestination.Reason = routeAnchorReason;
+
+    float routeDistance = bot->GetExactDist(routeAnchorX, routeAnchorY, routeAnchorZ);
+    anchor.Distance = routeDistance;
+    anchor.CanonicalDistance = bot->GetExactDist(
+        Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY, Cohort().Config.ValidationRouteZ);
+    return anchor;
+
 }
