@@ -2,7 +2,10 @@
 
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Creature.h"
+#include "GameTime.h"
+#include "Map.h"
 #include "ObjectAccessor.h"
+#include "Pet.h"
 #include "Player.h"
 #include "Spell.h"
 #include "SpellInfo.h"
@@ -10,7 +13,46 @@
 #include "Unit.h"
 
 #include <algorithm>
+#include <chrono>
 #include <vector>
+
+namespace
+{
+bool SpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth = 0)
+{
+    if (!spellInfo || depth > 4)
+        return false;
+    if (spellInfo->Id == 48505 || spellInfo->Id == 89751)
+        return true;
+    for (uint8 effectIndex = 0; effectIndex < MAX_SPELL_EFFECTS; ++effectIndex)
+    {
+        SpellEffectInfo const& effect = spellInfo->Effects[effectIndex];
+        if (!effect.IsEffect())
+            continue;
+        if (!spellInfo->IsPositiveEffect(effectIndex)
+            && (effect.ChainTarget > 1 || effect.IsTargetingArea()
+                || effect.IsEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA)
+                || effect.IsAreaAuraEffect()))
+            return true;
+        if (effect.TriggerSpell
+            && SpellHasHostileMultiTargetSemantics(
+                sSpellMgr->GetSpellInfo(effect.TriggerSpell), depth + 1))
+            return true;
+    }
+    return false;
+}
+
+bool IsNativeCombatObserved(Player const* bot, Unit const* target)
+{
+    return bot && target && (bot->IsInCombat() || target->IsInCombat());
+}
+
+uint64 NowMs()
+{
+    return uint64(std::chrono::duration_cast<std::chrono::milliseconds>(
+        GameTime::GetGameTimeSystemPoint().time_since_epoch()).count());
+}
+}
 
 void BotWorldPopulationMgr::ReconcileRaidAreaAutocasts(Player* bot, bool suppress) const
 {
