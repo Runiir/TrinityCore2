@@ -3,6 +3,7 @@
 #include "Bots/BotCalibrationFixtureContractGenerated.h"
 #include "Bots/BotClassSpecActionProfile.h"
 
+#include "CharmInfo.h"
 #include "CellImpl.h"
 #include "Creature.h"
 #include "Cryptography/CryptoHash.h"

@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
+#include "CharmInfo.h"
 #include "Corpse.h"
 #include "Creature.h"
 #include "DataStores/DBCStores.h"
@@ -565,5 +566,4 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
             return BotActionArbitration::Outcome::Unsafe("native_intent_not_implemented");
     }, intent);
 }
-
 

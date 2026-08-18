@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotAdmissionIdentityGenerated.h"
 
+#include "CharmInfo.h"
 #include "Creature.h"
 #include "Cryptography/CryptoHash.h"
 #include "DatabaseEnv.h"
