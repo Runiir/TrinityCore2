@@ -35,6 +35,7 @@ list(APPEND PRIVATE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrQuestSelection.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrQuestRouting.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrQuestActions.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrSpawnMemory.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgr.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/HealerBotPolicy.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/HolyPaladinResolver.cpp)
