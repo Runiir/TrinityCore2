@@ -4987,7 +4987,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         return MoveBotToProfileRange(state, rangeBot, rangeTarget, &rangeAction);
     };
-    auto tryRouteGroupHeal = [this, &state, &power, &stage, &activity, &situation, &action](
+    auto tryRouteGroupHeal = [this, &state, &bot, &power, &stage, &activity, &situation, &action](
         Player* healer, Unit* combatTarget, bool allowMovement = true,
         bool allowStationaryCastTime = false) -> bool
     {
