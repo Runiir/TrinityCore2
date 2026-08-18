@@ -5,6 +5,7 @@
 #include "Bots/BotMeleeAutoAttackIntent.h"
 #include "CellImpl.h"
 #include "Creature.h"
+#include "DataStores/DBCStores.h"
 #include "GridNotifiersImpl.h"
 #include "Group.h"
 #include "GroupReference.h"
@@ -13,9 +14,11 @@
 #include "Player.h"
 #include "Spell.h"
 #include "SpellInfo.h"
+#include "SpellHistory.h"
 #include "SpellMgr.h"
 #include "Totem.h"
 #include "Unit.h"
+#include "VehicleDefines.h"
 #include "WorldPacket.h"
 
 #include <algorithm>
