@@ -1,6 +1,9 @@
 #ifndef TRINITY_BOT_WORLD_POPULATION_MGR_CALIBRATION_IDENTITY_H
 #define TRINITY_BOT_WORLD_POPULATION_MGR_CALIBRATION_IDENTITY_H
 
+#include <cmath>
+
+#include "PetDefines.h"
 #include "Define.h"
 #include "ObjectGuid.h"
 
