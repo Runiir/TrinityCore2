@@ -26,6 +26,7 @@
 #include <vector>
 
 class Creature;
+class Group;
 class Map;
 class Player;
 class Quest;
