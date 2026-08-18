@@ -10,6 +10,7 @@ CMAKE = ROOT / "src/server/game/CMakeLists.txt"
 
 MOVED_METHODS = (
     "NotifyCombatAttackAttempt",
+    "NotifyCombatDamage",
     "NotifyCombatHeal",
 )
 
@@ -41,6 +42,12 @@ def test_combat_notifications_keep_calibration_and_party_log_contract():
         "CombatOwnerPlayer",
         "FindCombatLogCohortPlayer",
         "CalibrationSingleTargetDurationMs",
+        "CalibrationExecuteHealthWindowIndex",
+        "UpdateCalibrationTargetHealthSchedule",
+        "CalibrationExcludedBoundaryDamageEventCount",
+        "PrimaryTargetDamage",
+        "OffTargetDamageEvents",
+        "DamageEventSampleCount",
         "AddCombatLogEvent",
     ):
         assert marker in text
