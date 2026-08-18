@@ -5748,7 +5748,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             stage, activity, findAuthoritativeRouteFocusTarget,
             authoritativeFocusFailure, context);
     };
-    auto teacherAssistAuthoritativeFocus = [&state, &authoritativeRouteFocusActive, &findAuthoritativeRouteFocusTarget, &authoritativeFocusFailure](Unit* proposedFocus) -> Unit*
+    auto teacherAssistAuthoritativeFocus = [this, &state, &authoritativeRouteFocusActive, &findAuthoritativeRouteFocusTarget, &authoritativeFocusFailure](Unit* proposedFocus) -> Unit*
     {
         return this->TeacherAssistAuthoritativeValidationFocus(state, proposedFocus,
             authoritativeRouteFocusActive, findAuthoritativeRouteFocusTarget,
