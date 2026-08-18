@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
 #include "Creature.h"
+#include "GameTime.h"
 #include "Group.h"
 #include "GroupReference.h"
 #include "ObjectAccessor.h"
@@ -9,6 +10,16 @@
 #include "CellImpl.h"
 #include "GridNotifiersImpl.h"
 
+#include <chrono>
+
+namespace
+{
+uint64 NowMs()
+{
+    return uint64(std::chrono::duration_cast<std::chrono::milliseconds>(
+        GameTime::GetGameTimeSystemPoint().time_since_epoch()).count());
+}
+}
 
 Unit* BotWorldPopulationMgr::FindLastKnownValidationRouteFocusTarget(
     Player* bot, std::function<Unit*(Unit*)> const& routeUsableCombatTarget,
