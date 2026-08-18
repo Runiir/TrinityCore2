@@ -2110,10 +2110,18 @@ private:
         std::function<bool(Unit*, char const*)> const& recordValidationRouteTrashKill);
     bool RecordDefeatedValidationRoutePackMembers(Player* bot,
         std::function<bool(Unit*, char const*)> const& recordValidationRouteTrashKill);
-    bool CompleteDiscoveredPackIfReady(bool discoveryLeg, Player* bot,
-        WorldBotState& state, BotRolePowerBreakdown const& power,
-        BotProgressionStage stage, BotProgressionActivity activity,
-        std::function<bool()> const& validationPartyHasActiveCombat);
+   bool CompleteDiscoveredPackIfReady(bool discoveryLeg, Player* bot,
+       WorldBotState& state, BotRolePowerBreakdown const& power,
+       BotProgressionStage stage, BotProgressionActivity activity,
+       std::function<bool()> const& validationPartyHasActiveCombat);
+    bool MaybeValidationPrerequisiteNoProgressAssist(
+        WorldBotState& state, Player* bot,
+        BotRolePowerBreakdown const& power, BotProgressionStage stage,
+        BotProgressionActivity activity,
+        std::function<bool(Creature const*)> const& isValidationRouteScriptTarget,
+        std::function<bool(uint32)> const& isValidationRoutePackEntry,
+        std::function<bool(Unit*, char const*)> const& recordValidationRouteTrashKill,
+        Unit* prerequisiteTarget, char const* context);
     bool CurrentLiveValidationRoutePackCanContinue(
         std::function<bool()> const& persistedValidationRoutePackHasLiveMembers,
         std::function<bool(uint32)> const& isValidationRoutePackEntry,
