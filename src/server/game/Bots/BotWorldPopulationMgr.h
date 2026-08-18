@@ -2141,6 +2141,11 @@ private:
     Unit* MakeExistingValidationRouteCombatReady(
         Player* bot, Creature* creature,
         std::function<bool(Creature const*)> const& isValidationRouteCombatTarget);
+    bool TryValidationRouteActivation(
+        WorldBotState& state, Player* bot,
+        BotRolePowerBreakdown const& power, BotProgressionStage stage,
+        BotProgressionActivity activity, Unit* seenTarget,
+        char const* reason);
    Unit* FindValidationRouteTankFocusTarget(
        Player* bot, std::function<Unit*(Unit*)> const& routeUsableCombatTarget,
        ObjectGuid expectedGuid);
