@@ -290,6 +290,7 @@ class TC_GAME_API SpellCastTargets
 
         ObjectGuid GetCorpseTargetGUID() const;
         Corpse* GetCorpseTarget() const;
+        void SetCorpseTarget(Corpse* target);
 
         WorldObject* GetObjectTarget() const;
         ObjectGuid GetObjectTargetGUID() const;

@@ -396,7 +396,7 @@ QUALIFICATION_TUNED_ACTION_SPELL_IDS = {
     "feral_druid_tank": [99, 6807, 80964],
     "holy_paladin": [4987],
     "holy_priest": [34433, 64843, 64901, 88684],
-    "restoration_druid": [774, 2782],
+    "restoration_druid": [774, 2782, 20484],
     "fire_mage": [5405, 6117, 12051],
     "marksmanship_hunter": [34490],
     "protection_paladin": [24275],
@@ -421,7 +421,7 @@ PERSISTENT_SETUP_SPELL_IDS = {
     # provisioning only guarantees that the player knows these setup spells.
     "unholy_death_knight": [46584, 48265],
     "feral_druid_tank": [5487],
-    "feral_druid_dps": [768],
+    "feral_druid_dps": [768, 20484],
     "arcane_mage": [1459, 30482],
     "fire_mage": [759, 1459, 30482],
     "frost_mage": [1459, 30482],

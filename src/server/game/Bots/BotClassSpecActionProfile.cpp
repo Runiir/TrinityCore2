@@ -14,6 +14,7 @@
 #include "Unit.h"
 #include "Util.h"
 #include "Creature.h"
+#include "Group.h"
 #include "DataStores/DBCEnums.h"
 #include <algorithm>
 #include <array>
@@ -888,6 +889,27 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
     if (!bot)
         return candidates;
 
+    // Route-directed dungeon combat also consumes this low-level candidate
+    // builder, bypassing BotController's richer healer frame. Keep the same
+    // live triage contract here: a healer must not spend a GCD on damage while
+    // an ally is below the normal healing threshold, and profile-declared
+    // Min/MaxInjuredPlayers gates must apply to utility cooldowns as well.
+    uint8 healerTriageInjuredPlayers = 0;
+    if (profile.Role == "healer")
+    {
+        auto countTriageInjury = [&healerTriageInjuredPlayers](Player const* member)
+        {
+            if (member && member->IsAlive() && member->GetMaxHealth()
+                && float(member->GetHealth()) / float(member->GetMaxHealth()) <= 0.94f)
+                ++healerTriageInjuredPlayers;
+        };
+        if (Group const* group = bot->GetGroup())
+            for (GroupReference const* itr = group->GetFirstMember(); itr; itr = itr->next())
+                countTriageInjury(itr->GetSource());
+        else
+            countTriageInjury(bot);
+    }
+
     std::map<std::string, bool> cooldownGroupsReady;
     for (BotActionProfileSpell const& spell : profile.Spells)
     {
@@ -999,6 +1021,23 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
             candidate.RejectReason = "missing_or_depleted_item";
         else if (!conditionRejection.empty())
             candidate.RejectReason = conditionRejection;
+        else if (profile.Role == "healer"
+            && healerTriageInjuredPlayers
+            && spell.DamageWeight > 0.0f
+            && spell.Category != BotCombatActionCategory::HealFast
+            && spell.Category != BotCombatActionCategory::HealEfficient
+            && spell.Category != BotCombatActionCategory::HealAoe
+            && spell.Category != BotCombatActionCategory::DispelCleanse
+            && spell.Category != BotCombatActionCategory::Defensive
+            && spell.Category != BotCombatActionCategory::ExternalDefensive
+            && spell.Category != BotCombatActionCategory::Mitigation)
+            candidate.RejectReason = "healer_triage_required";
+        else if (profile.Role == "healer" && spell.MinInjuredPlayers
+            && healerTriageInjuredPlayers < spell.MinInjuredPlayers)
+            candidate.RejectReason = "injured_player_count_too_low";
+        else if (profile.Role == "healer" && spell.MaxInjuredPlayers
+            && healerTriageInjuredPlayers > spell.MaxInjuredPlayers)
+            candidate.RejectReason = "injured_player_count_too_high";
         else if (bot->HasUnitState(UNIT_STATE_CASTING))
             candidate.RejectReason = "already_casting";
         else if (spellInfo && bot->GetSpellHistory()->HasGlobalCooldown(spellInfo))

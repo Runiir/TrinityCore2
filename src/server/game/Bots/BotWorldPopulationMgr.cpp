@@ -136,6 +136,31 @@ bool CalibrationSpecUsesMana(std::string const& targetSpec)
     return ManaSpecs.find(targetSpec) != ManaSpecs.end();
 }
 
+// Rebirth is a real native combat-resurrection spell, but the Cata spell data
+// used by this validation world does not carry the generic combat-res attribute
+// that the other resurrection spells expose.  Keep the eligibility decision
+// native (learned spell, resurrection effect, range/LOS/path, cooldown and
+// power are still checked by the caller) while recognizing the max-rank player
+// spell by its immutable ID.
+bool IsNativeCombatResSpell(SpellInfo const* spellInfo)
+{
+    if (!spellInfo)
+        return false;
+
+    // The Cataclysm DBC exposes Rebirth as learned base spell 20484, but its
+    // effect row is not tagged with the generic combat-resurrection attribute.
+    // The caller still requires this exact spell to be present in the owner's
+    // native spell map and applies the normal range/LOS/path/cooldown/power
+    // gates; this branch only preserves the immutable DBC identity.
+    if (spellInfo->Id == 20484)
+        return true;
+
+    bool const isResurrect = spellInfo->HasEffect(SPELL_EFFECT_RESURRECT)
+        || spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_NEW)
+        || spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_WITH_AURA);
+    return isResurrect && spellInfo->HasAttribute(SPELL_ATTR8_ENFORCE_IN_COMBAT_RESSURECTION_LIMIT);
+}
+
 // WoWSims' MakeSingleTargetEncounter expresses each execute proportion as the
 // fraction of the exact 300-second Settings encounter spent below that health
 // threshold: 90%, 35%, 25%, and 20%. These deterministic, non-boundary health
@@ -1592,6 +1617,33 @@ bool SpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth
             return true;
         if (effect.TriggerSpell
             && SpellHasHostileMultiTargetSemantics(sSpellMgr->GetSpellInfo(effect.TriggerSpell), depth + 1))
+            return true;
+    }
+    return false;
+}
+
+// Future encounter protection must be geometry-aware.  Keeping the global
+// entry set is useful for route bookkeeping, but it must not suppress AoE on
+// a current trash pack that is nowhere near the protected encounter.
+bool HasNearbyProtectedEncounterTarget(Player* owner, Unit const* target)
+{
+    if (!owner || !target || !BotRaidAreaAuthority::HasProtectedEncounterEntries(owner->GetGUID().GetRawValue()))
+        return false;
+
+    std::vector<WorldObject*> nearbyObjects;
+    Trinity::AllWorldObjectsInRange check(target, 45.0f);
+    Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(
+        target, nearbyObjects, check);
+    Cell::VisitAllObjects(target, searcher, 45.0f);
+    for (WorldObject* object : nearbyObjects)
+    {
+        Creature* creature = object ? object->ToCreature() : nullptr;
+        if (!creature || creature == target || !creature->IsAlive()
+            || !owner->IsValidAttackTarget(creature))
+            continue;
+        if (BotRaidAreaAuthority::IsProtectedEncounterTarget(
+                owner->GetGUID().GetRawValue(), creature->GetEntry(),
+                creature->GetSpawnId(), creature->GetGUID().GetRawValue()))
             return true;
     }
     return false;
@@ -5501,10 +5553,7 @@ bool BotWorldPopulationMgr::CurrentCombatResOwnerUsable(WorldBotState const& tar
         return false;
     }
     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
-    if (!spellInfo || !spellInfo->HasAttribute(SPELL_ATTR8_ENFORCE_IN_COMBAT_RESSURECTION_LIMIT)
-        || (!spellInfo->HasEffect(SPELL_EFFECT_RESURRECT)
-            && !spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_NEW)
-            && !spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_WITH_AURA)))
+    if (!IsNativeCombatResSpell(spellInfo))
     {
         declineReason = "declined_spell_not_combat_res";
         return false;
@@ -5754,8 +5803,11 @@ void BotWorldPopulationMgr::ReconcileNativeBattleResDecisions(uint64 nowMs)
             return leftUtility < rightUtility;
         return left.Bot->GetGUID() > right.Bot->GetGUID();
     });
-    uint32 const selectedUtility = selected == eligibleDead.end() ? 0 : utility(*selected);
-    if (selected == eligibleDead.end() || selectedUtility < 140)
+    // Utility is a priority ordering, not an eligibility floor.  A DPS corpse
+    // still has a valid native combat-res target in a five-player group; the
+    // old 140 cutoff made every DPS death permanently unrecoverable (DPS
+    // scores 100) even when a live druid owner and a valid native cast existed.
+    if (selected == eligibleDead.end())
     {
         for (Member const& member : eligibleDead)
             applyDecision(member, "declined_low_recovery_utility");
@@ -5773,10 +5825,7 @@ void BotWorldPopulationMgr::ReconcileNativeBattleResDecisions(uint64 nowMs)
         for (auto const& [spellId, playerSpell] : member.Bot->GetSpellMap())
         {
             SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
-            if (!spellInfo || !spellInfo->HasAttribute(SPELL_ATTR8_ENFORCE_IN_COMBAT_RESSURECTION_LIMIT)
-                || (!spellInfo->HasEffect(SPELL_EFFECT_RESURRECT)
-                    && !spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_NEW)
-                    && !spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_WITH_AURA)))
+            if (!IsNativeCombatResSpell(spellInfo))
                 continue;
             owners.push_back({ member, spellId,
                 std::max(spellInfo->RecoveryTime, spellInfo->CategoryRecoveryTime) });
@@ -7509,8 +7558,16 @@ bool BotWorldPopulationMgr::TryReattachValidationBot(WorldBotState& state, Playe
 
 bool BotWorldPopulationMgr::IsNativeCombatResTarget(WorldBotState const& state, Player const* bot) const
 {
+    // Native combat resurrection is legal during the short JUST_DIED window,
+    // before Trinity creates a Corpse on release.  Waiting for CORPSE here
+    // makes the coordinator publish a target-ineligible decline on the first
+    // death tick; the ordinary corpse-run path then releases the player before
+    // a real owner can submit the resurrection spell.  Keep the target bound
+    // to the original map/instance and reject DEAD/ghost/released players.
+    bool const nativeDeathWindow = bot
+        && (bot->getDeathState() == JUST_DIED || bot->getDeathState() == CORPSE);
     if (!Cohort().Config.ValidationRouteEnable || !state.ValidationCohortLocked || !bot
-        || !bot->IsInWorld() || bot->IsAlive() || bot->getDeathState() != CORPSE
+        || !bot->IsInWorld() || bot->IsAlive() || !nativeDeathWindow
         || bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST) || state.NativeReleaseRequested
         || bot->GetMapId() != state.ValidationCohortMapId
         || bot->GetInstanceId() != state.ValidationCohortInstanceId)
@@ -14689,14 +14746,40 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
                 return BotActionArbitration::Outcome::Retryable(
                     "combat_res_cast_envelope_lost");
 
+            // Rebirth is a normal player spell and Cataclysm rejects it while
+            // the druid is still in cat/bear/travel form.  Let the owner use
+            // the same native form-cancel transition a player would use,
+            // retain the bounded reservation, and retry the cast on the next
+            // decision tick.  This is deliberately cancellation only: no
+            // aura is added, no form is manufactured, and native Spell
+            // validation remains authoritative for the eventual cast.
+            if (bot->HasAuraType(SPELL_AURA_MOD_SHAPESHIFT)
+                && CancelRemovableShapeshifts(bot))
+                return BotActionArbitration::Outcome::Progressed(
+                    "typed_combat_res_cancelled_shapeshift");
+
             if (spellInfo->CalcCastTime(bot->getLevel()) > 0)
             {
                 bot->StopMoving();
                 bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
                 bot->GetMotionMaster()->MoveIdle();
             }
-            SpellCastResult const castResult = bot->CastSpell(target,
-                action.SpellId, false);
+            // Rebirth's DBC target is a corpse ally.  When Trinity has already
+            // materialized the player's corpse, preserve that native target
+            // object instead of coercing it to a dead Unit; the latter can
+            // prepare successfully but never reach EffectResurrect.
+            SpellCastResult const castResult = [&]()
+            {
+                if (Corpse* corpse = target->GetCorpse())
+                {
+                    SpellCastTargets corpseTargets;
+                    corpseTargets.SetCorpseTarget(corpse);
+                    return bot->CastSpell(
+                        CastSpellTargetArg(std::move(corpseTargets)),
+                        action.SpellId, false);
+                }
+                return bot->CastSpell(target, action.SpellId, false);
+            }();
             if (castResult != SPELL_CAST_OK)
             {
                 std::string const resultLabel = "spell_cast_result_"
@@ -15617,7 +15700,13 @@ void BotWorldPopulationMgr::RecordCombatAttempt(WorldBotState& state, Player* bo
             && bot->IsWithinDistInMap(actionTarget,
                 std::max(5.0f, spellInfo->GetMaxRange(false)));
     diagnostic.TargetAlive = actionTarget && actionTarget->IsAlive();
-    diagnostic.TargetAttackable = bot && actionTarget && (actionTarget == bot || (spellInfo ? bot->IsValidAttackTarget(actionTarget, spellInfo) : bot->IsValidAttackTarget(actionTarget)));
+    bool const friendlyAction = bot && actionTarget && spellInfo && spellInfo->IsPositive()
+        && bot->IsValidAssistTarget(actionTarget);
+    diagnostic.TargetAttackable = friendlyAction
+        ? true
+        : bot && actionTarget && (actionTarget == bot
+            || (spellInfo ? bot->IsValidAttackTarget(actionTarget, spellInfo)
+                : bot->IsValidAttackTarget(actionTarget)));
     diagnostic.MeleeAutoAttacking = bot && bot->HasUnitState(UNIT_STATE_MELEE_ATTACKING) && bot->GetVictim();
     diagnostic.RangedAutoActive = bot && bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL);
     if (bot)
@@ -21554,6 +21643,21 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
         }
 
+        // Scripted-event actors on the current node are native encounter
+        // participants.  Do not protect them from this node's damage: the
+        // Stonecore Millhouse event intentionally transitions when the party
+        // damages him below 50%, after which the native script makes him
+        // passive and moves him to the next position.  Future-node scripted
+        // actors are already included through nextNode above and remain
+        // protected until their own node.
+        protectedEncounterEntries.erase(std::remove(
+            protectedEncounterEntries.begin(), protectedEncounterEntries.end(), 0),
+            protectedEncounterEntries.end());
+        std::sort(protectedEncounterEntries.begin(), protectedEncounterEntries.end());
+        protectedEncounterEntries.erase(std::unique(
+            protectedEncounterEntries.begin(), protectedEncounterEntries.end()),
+            protectedEncounterEntries.end());
+
         if (Party().ValidationRoutePackGeneration == Party().ValidationRouteGeneration)
             for (ObjectGuid const& guid : Party().ValidationRoutePackMemberGuids)
                 if (Party().ValidationRoutePackDeathGuids.find(guid)
@@ -22050,6 +22154,155 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         if (!lowestTarget)
             return false;
+
+        // In a dungeon pull a healthy healer must not spend its next global on
+        // Wrath/Moonfire while an engaged hostile is still owned by a DPS (or
+        // has no stable tank victim).  That is a rotation/route boundary, not
+        // a healing-threshold decision: the profile is allowed to do damage
+        // only after the tank has re-established native threat.  The first
+        // Stonecore 5H trace showed exactly this failure, with Restoration
+        // Druid casting Wrath at a 25-yard Unbound Earth Rager while the pack
+        // was still splitting onto the party.
+        size_t unstablePartyThreatCount = 0;
+        if (tankTarget && Cohort().Config.ValidationRouteKind != "boss")
+        {
+            for (WorldObject* object : healerObjects)
+            {
+                Creature* creature = object ? object->ToCreature() : nullptr;
+                if (!creature || !creature->IsAlive() || !creature->GetHealth()
+                    || !healer->IsValidAttackTarget(creature)
+                    || (!creature->IsInCombat() && !creature->GetVictim()))
+                    continue;
+
+                Player* victim = creature->GetVictim()
+                    ? creature->GetVictim()->ToPlayer() : nullptr;
+                if (!victim || victim->GetMap() != healer->GetMap()
+                    || victim->GetGroup() != healer->GetGroup()
+                    || victim == tankTarget || victim == healer)
+                    continue;
+
+                ++unstablePartyThreatCount;
+            }
+        }
+        if (unstablePartyThreatCount > 0 && lowestHealthPct > 0.88f
+            && tankTarget && !healer->HasUnitState(UNIT_STATE_CASTING)
+            && !healer->IsFalling())
+        {
+            bool moved = false;
+            if (allowMovement)
+            {
+                Position tankAnchor = tankTarget->GetFirstCollisionPosition(
+                    6.0f, tankTarget->GetAngle(healer) - tankTarget->GetOrientation());
+                moved = MoveBotToPoint(state, healer,
+                    tankAnchor.GetPositionX(), tankAnchor.GetPositionY(),
+                    tankAnchor.GetPositionZ());
+            }
+            if (!moved && (state.ActivePathValid || state.IsMoving || healer->isMoving()))
+            {
+                healer->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+                healer->StopMoving();
+                state.ActivePathValid = false;
+                state.IsMoving = false;
+            }
+            std::string raw = BuildRawJson(healer, combatTarget);
+            std::string semantic = BuildSemanticJson(
+                healer, combatTarget, "healer_assignment", &power, stage, activity);
+            RecordEvent(state, healer, "healer_assignment", tankTarget,
+                moved ? "healer_move_for_tank_threat_stabilization"
+                      : "healer_hold_for_tank_threat_stabilization",
+                raw.c_str(), semantic.c_str(),
+                float(unstablePartyThreatCount), lowestHealthPct);
+            situation = "validation_route_group_heal";
+            action = moved ? "healer_move_for_tank_threat_stabilization"
+                           : "healer_hold_for_tank_threat_stabilization";
+            return true;
+        }
+
+        // A discovery/trash pull can become native combat between the last
+        // threat observation and this healer decision.  Do not begin a hard
+        // damage cast while an attackable dungeon hostile is already inside
+        // the pull envelope; hold at the tank and let native threat/healing
+        // observations settle first.  This closes the opening Stonecore 5H
+        // race where Wrath started at 25 yards, then the pack split before the
+        // next decision could see a victim.
+        size_t pendingDungeonPullCount = 0;
+        if (tankTarget && Cohort().Config.ValidationRouteKind != "boss"
+            && lowestHealthPct > 0.88f)
+        {
+            for (WorldObject* object : healerObjects)
+            {
+                Creature* creature = object ? object->ToCreature() : nullptr;
+                if (!creature || !creature->IsAlive() || !creature->GetHealth()
+                    || creature->GetMap() != healer->GetMap()
+                    || healer->GetExactDist2d(creature) > 35.0f
+                    || !healer->IsValidAttackTarget(creature)
+                    || creature->IsDungeonBoss() || creature->isWorldBoss()
+                    || creature->IsCritter() || creature->IsPet()
+                    || creature->IsTotem() || creature->IsSummon()
+                    || creature->IsGuardian() || !creature->GetOwnerGUID().IsEmpty())
+                    continue;
+
+                ++pendingDungeonPullCount;
+            }
+
+            // The range search above can lag the route focus by one map update:
+            // the healer may already have a hostile target selected while the
+            // creature is not yet present in the 45-yard object snapshot.  Use
+            // that authoritative combat target as a bounded second source so
+            // a hard damage cast cannot slip through the pull boundary.  Only
+            // hold when the target has no tank/healer victim yet; once native
+            // threat belongs to the tank, the ordinary healing/profile lane
+            // resumes unchanged.
+            Creature* focusedPendingPull = combatTarget
+                ? combatTarget->ToCreature() : nullptr;
+            if (focusedPendingPull && focusedPendingPull->IsAlive()
+                && focusedPendingPull->GetHealth()
+                && healer->IsValidAttackTarget(focusedPendingPull)
+                && focusedPendingPull->GetMap() == healer->GetMap())
+            {
+                Unit* victim = focusedPendingPull->GetVictim();
+                if (!victim || (victim != tankTarget && victim != healer))
+                    ++pendingDungeonPullCount;
+            }
+        }
+        if (pendingDungeonPullCount > 0 && !healer->IsFalling())
+        {
+            // If the profile already started Wrath/Moonfire in the one-tick
+            // race, cancel that non-healing cast before anchoring at the tank.
+            // This is a native interruption only; it does not manufacture a
+            // heal or alter the target's combat state.
+            if (healer->HasUnitState(UNIT_STATE_CASTING))
+                healer->InterruptNonMeleeSpells(false);
+
+            bool moved = false;
+            if (allowMovement)
+            {
+                Position tankAnchor = tankTarget->GetFirstCollisionPosition(
+                    6.0f, tankTarget->GetAngle(healer) - tankTarget->GetOrientation());
+                moved = MoveBotToPoint(state, healer,
+                    tankAnchor.GetPositionX(), tankAnchor.GetPositionY(),
+                    tankAnchor.GetPositionZ());
+            }
+            if (!moved && (state.ActivePathValid || state.IsMoving || healer->isMoving()))
+            {
+                healer->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+                healer->StopMoving();
+                state.ActivePathValid = false;
+                state.IsMoving = false;
+            }
+            std::string raw = BuildRawJson(healer, combatTarget);
+            std::string semantic = BuildSemanticJson(
+                healer, combatTarget, "healer_assignment", &power, stage, activity);
+            RecordEvent(state, healer, "healer_assignment", tankTarget,
+                moved ? "healer_hold_for_pending_dungeon_pull"
+                      : "healer_wait_for_pending_dungeon_pull",
+                raw.c_str(), semantic.c_str(),
+                float(pendingDungeonPullCount), lowestHealthPct);
+            situation = "validation_route_group_heal";
+            action = moved ? "healer_hold_for_pending_dungeon_pull"
+                           : "healer_wait_for_pending_dungeon_pull";
+            return true;
+        }
 
         // The tank is the group's only stable threat owner.  At critical health
         // it takes precedence over a marginally lower DPS target; otherwise the
@@ -22551,6 +22804,37 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return 0;
         return auraId;
     };
+    auto isPendingScriptedEventEntry = [this, &resolvedScriptedTransitionAuraId](Creature const* creature) -> bool
+    {
+        if (!creature || !Cohort().Config.ValidationRouteScriptedEventRequirePassive)
+            return false;
+
+        auto entryItr = std::find(Cohort().Config.ValidationRouteScriptedEventEntries.begin(), Cohort().Config.ValidationRouteScriptedEventEntries.end(), creature->GetEntry());
+        if (entryItr == Cohort().Config.ValidationRouteScriptedEventEntries.end())
+            return false;
+
+        // A configured scripted-event creature is not ordinary route trash until
+        // its native transition aura/passive state is observed.  In particular,
+        // Millhouse can be attackable and pathable in the opening corridor while
+        // still being the future Corborus event actor; treating it as discovery
+        // trash causes the tank to pull the event out of order.
+        return resolvedScriptedTransitionAuraId(creature) == 0;
+    };
+    auto isCurrentDiscoveryScriptedEventTarget = [this, discoveryLeg, &isPendingScriptedEventEntry](Creature const* creature) -> bool
+    {
+        if (!discoveryLeg || !creature || !isPendingScriptedEventEntry(creature))
+            return false;
+
+        // A configured actor such as Millhouse is a native script participant,
+        // not an opening trash target.  It becomes eligible only after the
+        // discovery scan has observed real native combat/victim/health-loss
+        // evidence and enrolled its GUID in this generation's pack ledger.
+        // This keeps the party on the real corridor pulls and lets the next
+        // boss node enter the native Corborus area trigger.
+        return Party().ValidationRoutePackGeneration == Party().ValidationRouteGeneration
+            && Party().ValidationRoutePackMemberGuids.find(creature->GetGUID())
+                != Party().ValidationRoutePackMemberGuids.end();
+    };
     auto isEligibleTrashClusterMob = [
         this,
         bot,
@@ -22559,6 +22843,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         &isValidationRoutePackEntry,
         &hasStrictPathToValidationRouteTarget,
         &resolvedScriptedTransitionAuraId,
+        &isPendingScriptedEventEntry,
         &routeEngageRange,
         &wouldPullProtectedFutureValidationRouteSource
     ](Creature const* creature) -> bool
@@ -22569,6 +22854,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && Party().ValidationRoutePackTransitionGuids.find(creature->GetGUID()) != Party().ValidationRoutePackTransitionGuids.end())
             return false;
         if (Party().ValidationRouteFinalTransitionGuids.find(creature->GetGUID()) != Party().ValidationRouteFinalTransitionGuids.end())
+            return false;
+        if (isPendingScriptedEventEntry(creature))
             return false;
         if (resolvedScriptedTransitionAuraId(creature))
             return false;
@@ -22884,7 +23171,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         this,
         bot,
         &isFutureCanonicalValidationRouteSource,
-        &isImmediateNextValidationRouteEncounterMember
+        &isImmediateNextValidationRouteEncounterMember,
+        &isPendingScriptedEventEntry
     ](Creature const* creature) -> bool
     {
         if (!bot || !creature || !creature->IsAlive() || !creature->GetHealth() || creature->GetMap() != bot->GetMap())
@@ -22895,7 +23183,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return false;
         if (isImmediateNextValidationRouteEncounterMember(creature))
             return false;
-        if (isFutureCanonicalValidationRouteSource(creature))
+        bool nativeCombatObserved = creature->IsInCombat()
+            || creature->GetVictim()
+            || creature->GetHealth() < creature->GetMaxHealth();
+        // A future source remains protected while unengaged.  Once native
+        // combat has already linked it to this pull, however, it is part of
+        // the current natural pack and must be enrolled so pack-clear and
+        // death accounting cannot strand the party on one selected GUID.
+        if (isFutureCanonicalValidationRouteSource(creature) && !nativeCombatObserved)
             return false;
         if (creature->IsDungeonBoss() || creature->isWorldBoss())
             return false;
@@ -23110,7 +23405,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 creature ? bot->GetExactDist(creature) : 0.0f, creature ? creature->GetEntry() : 0);
         }
     };
-    auto enrollEngagedValidationRoutePackMembers = [this, bot, &forEachActiveValidationCohortCombatCreature, &isNaturalValidationRoutePackMember, &enrollValidationRoutePackMember, &recordValidationRouteScriptedTransition, &retireStaleValidationRoutePackMembers]() -> void
+    auto enrollEngagedValidationRoutePackMembers = [this, bot, discoveryLeg,
+        &forEachActiveValidationCohortCombatCreature,
+        &isNaturalValidationRoutePackMember,
+        &enrollValidationRoutePackMember,
+        &recordValidationRouteScriptedTransition,
+        &retireStaleValidationRoutePackMembers,
+        &isImmediateNextValidationRouteEncounterMember,
+        &isPendingScriptedEventEntry]() -> void
     {
         if (Cohort().Config.ValidationRouteKind == "boss" || !bot)
             return;
@@ -23123,6 +23425,86 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             enrollValidationRoutePackMember(creature, true);
             recordValidationRouteScriptedTransition(creature);
         });
+
+        // CombatManager references are not guaranteed to exist for every
+        // member of a native area pull.  The first Stonecore 5H trace exposed
+        // this boundary: the party had ten engaged trash creatures, but only
+        // the first selected GUID was in the reference iterator.  Once that
+        // GUID died the route ledger could not prove the natural pack clear
+        // and sent the whole party into an unnecessary runback.  In the
+        // discovery leg, supplement the reference scan with a bounded nearby
+        // world scan and enroll every alive natural creature that has native
+        // combat/victim/health-loss evidence.  Future canonical sources,
+        // bosses, scripted actors, and next-route members remain excluded by
+        // isNaturalValidationRoutePackMember().
+        if (discoveryLeg && bot->GetMap())
+        {
+            auto isCurrentNativeNaturalPackMember = [&](Creature const* creature) -> bool
+            {
+                if (!creature || !creature->IsAlive() || !creature->GetHealth()
+                    || creature->GetMap() != bot->GetMap()
+                    || !bot->IsValidAttackTarget(creature)
+                    || Party().ValidationRoutePendingFinalTransitionGuids.find(creature->GetGUID())
+                        != Party().ValidationRoutePendingFinalTransitionGuids.end()
+                    || Party().ValidationRouteFinalTransitionGuids.find(creature->GetGUID())
+                        != Party().ValidationRouteFinalTransitionGuids.end()
+                    || isImmediateNextValidationRouteEncounterMember(creature)
+                    || isPendingScriptedEventEntry(creature)
+                    || creature->IsDungeonBoss() || creature->isWorldBoss()
+                    || creature->IsCritter() || creature->IsPet()
+                    || creature->IsTotem() || creature->IsSummon()
+                    || creature->IsGuardian() || !creature->GetOwnerGUID().IsEmpty())
+                    return false;
+
+                return creature->IsInCombat() || creature->GetVictim()
+                    || creature->GetHealth() < creature->GetMaxHealth();
+            };
+            std::vector<WorldObject*> nearbyObjects;
+            Trinity::AllWorldObjectsInRange nearbyCheck(bot, 80.0f);
+            Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> nearbySearcher(
+                bot, nearbyObjects, nearbyCheck);
+            Cell::VisitAllObjects(bot, nearbySearcher, 80.0f);
+            for (WorldObject* object : nearbyObjects)
+            {
+                Creature* creature = object ? object->ToCreature() : nullptr;
+                if (!isCurrentNativeNaturalPackMember(creature))
+                    continue;
+
+                enrollValidationRoutePackMember(creature, true);
+                recordValidationRouteScriptedTransition(creature);
+            }
+        }
+
+        // Passive scripted actors do not always create a CombatManager PvE
+        // reference when they are only clipped by native area damage.  That
+        // is still valid native handoff evidence, but the reference iterator
+        // above cannot see it.  Observe only the current node's declared
+        // scripted entries, and require combat/victim state or real health
+        // loss before enrolling; this never discovers or pulls a future node.
+        if (discoveryLeg && bot->GetMap())
+        {
+            std::vector<WorldObject*> objects;
+            Trinity::AllWorldObjectsInRange check(bot, 220.0f);
+            Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
+            Cell::VisitAllObjects(bot, searcher, 220.0f);
+            for (WorldObject* object : objects)
+            {
+                Creature* creature = object ? object->ToCreature() : nullptr;
+                if (!creature || !isPendingScriptedEventEntry(creature)
+                    || !creature->IsAlive() || !creature->GetHealth()
+                    || !bot->IsValidAttackTarget(creature))
+                    continue;
+
+                bool nativeCombatObserved = creature->IsInCombat()
+                    || creature->GetVictim()
+                    || creature->GetHealth() < creature->GetMaxHealth();
+                if (!nativeCombatObserved)
+                    continue;
+
+                enrollValidationRoutePackMember(creature, true);
+                recordValidationRouteScriptedTransition(creature);
+            }
+        }
 
         if (Party().ValidationRoutePackGeneration != Party().ValidationRouteGeneration || !bot->GetMap())
             return;
@@ -23142,9 +23524,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 return true;
         return false;
     };
-    auto activeValidationRoutePackTarget = [this, bot,
+    auto activeValidationRoutePackTarget = [this, bot, discoveryLeg,
         &isValidationRoutePackEntry,
-        &hasStrictPathToValidationRouteTarget]() -> Unit*
+        &hasStrictPathToValidationRouteTarget,
+        &isPendingScriptedEventEntry]() -> Unit*
     {
         if (Party().ValidationRoutePackGeneration != Party().ValidationRouteGeneration || !bot || !bot->GetMap())
             return nullptr;
@@ -23159,12 +23542,30 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             Creature* creature = bot->GetMap()->GetCreature(guid);
             if (!creature || !creature->IsAlive() || !creature->GetHealth() || !bot->IsValidAttackTarget(creature))
                 continue;
+            // Discovery's current scripted actor is enrolled only after its
+            // native combat state is observed.  It is then a persisted member
+            // of the current pack even when the discovery node has no static
+            // PackTargetEntries (Millhouse is the canonical example).  Future
+            // scripted actors remain protected until their own transition.
+            bool currentDiscoveryPackMember = discoveryLeg
+                && Party().ValidationRoutePackGeneration == Party().ValidationRouteGeneration
+                && Party().ValidationRoutePackMemberGuids.find(creature->GetGUID()) != Party().ValidationRoutePackMemberGuids.end();
             // Reengagement is restricted to the exact declared pack entries
-            // and a native path.  A live ledger member without a legal path
-            // remains a blocker and therefore cannot be silently terminaled
-            // or replaced by an unrelated nearby creature.
-            if (!isValidationRoutePackEntry(creature->GetEntry())
-                || !hasStrictPathToValidationRouteTarget(creature))
+            // (or the persisted current discovery member). A member that is
+            // already in native combat may have moved off the original route
+            // corridor, so requiring a fresh path to the navigation anchor
+            // would incorrectly discard the real pull and let the tank select
+            // an unrelated second creature. Keep the engaged member
+            // authoritative; only an unengaged member needs a new path.
+            bool const persistedCurrentPackMember =
+                Party().ValidationRoutePackGeneration == Party().ValidationRouteGeneration
+                && Party().ValidationRoutePackMemberGuids.find(creature->GetGUID())
+                    != Party().ValidationRoutePackMemberGuids.end();
+            bool const persistedCurrentPackCombat = persistedCurrentPackMember
+                && (creature->IsInCombat() || creature->GetVictim());
+            if ((!isValidationRoutePackEntry(creature->GetEntry()) && !currentDiscoveryPackMember)
+                || (!hasStrictPathToValidationRouteTarget(creature)
+                    && !persistedCurrentPackCombat))
                 continue;
             Unit* victim = creature->GetVictim();
             bool botIsTank = std::string(GetDungeonRole(bot)) == "tank";
@@ -23173,6 +23574,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             bool victimIsTank = victimRole == "tank";
             float score = (creature->IsInCombat() || victim ? 10000.0f : 0.0f)
                 - bot->GetExactDist(creature);
+            // Once the current discovery scripted actor has been observed in
+            // native combat, it is the handoff target—not ordinary corridor
+            // trash.  Keep future scripted actors protected, but give this
+            // enrolled actor deterministic focus so its transition aura can
+            // actually be reached before the party dies to the surrounding
+            // pack.  Without this bias the tank's victim/role score can keep
+            // selecting a normal trash mob while AoE still chips the actor.
+            if (currentDiscoveryPackMember && isPendingScriptedEventEntry(creature))
+                score += 50000.0f;
             if (botIsTank && victimRole == "healer")
                 score += 30000.0f;
             else if (botIsTank && victim && !victimIsTank)
@@ -23189,11 +23599,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
         return best;
     };
-    auto isNaturalForwardHostile = [this, bot, &hasStrictPathToValidationRouteTarget, &resolvedScriptedTransitionAuraId](Creature const* creature) -> bool
+    auto isNaturalForwardHostile = [this, bot, &hasStrictPathToValidationRouteTarget, &resolvedScriptedTransitionAuraId, &isPendingScriptedEventEntry](Creature const* creature) -> bool
     {
         if (!bot || !creature || !creature->IsAlive() || !creature->GetHealth() || creature->GetMap() != bot->GetMap())
             return false;
         if (!bot->IsValidAttackTarget(creature) || creature->IsInEvadeMode() || creature->HasUnitState(UNIT_STATE_EVADE))
+            return false;
+        if (isPendingScriptedEventEntry(creature))
             return false;
         if (resolvedScriptedTransitionAuraId(creature))
             return false;
@@ -23266,13 +23678,26 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         return best;
     };
-    auto isValidationRouteObjectiveTarget = [&isValidationRouteScriptTarget, &isEligibleTrashClusterMob, this](Creature const* creature) -> bool
+    auto isValidationRouteObjectiveTarget = [&isValidationRouteScriptTarget,
+        &isEligibleTrashClusterMob,
+        &isCurrentDiscoveryScriptedEventTarget,
+        this](Creature const* creature) -> bool
     {
         if (!creature)
             return false;
 
         if (Cohort().Config.ValidationRouteKind != "boss")
+        {
+            // The current discovery node owns its declared scripted actor.
+            // It is intentionally not ordinary trash (and therefore is not
+            // eligible for the generic cluster predicate), but the tank must
+            // be allowed to open the native scripted handoff once it is
+            // pathable.  Future-node actors never satisfy this current-node
+            // predicate because the helper is bound to this node's entries.
+            if (isCurrentDiscoveryScriptedEventTarget(creature))
+                return true;
             return isEligibleTrashClusterMob(creature);
+        }
 
         // A boss node's explicit add list is part of that node's hostile
         // authority. Treating a listed add as an undeclared prerequisite made
@@ -23318,6 +23743,40 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             enrollValidationRoutePackMember(creature, isValidationCohortCombatLinked(creature));
         return best;
     };
+    auto findCurrentDiscoveryScriptedEventTarget = [this, bot, discoveryLeg,
+        &isCurrentDiscoveryScriptedEventTarget,
+        &hasStrictPathToValidationRouteTarget]() -> Unit*
+    {
+        if (!discoveryLeg || !bot || !bot->GetMap() || std::string(GetDungeonRole(bot)) != "tank")
+            return nullptr;
+
+        std::vector<WorldObject*> objects;
+        Trinity::AllWorldObjectsInRange check(bot, 220.0f);
+        Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
+        Cell::VisitAllObjects(bot, searcher, 220.0f);
+
+        Creature* best = nullptr;
+        float bestDistance = std::numeric_limits<float>::max();
+        for (WorldObject* object : objects)
+        {
+            Creature* creature = object ? object->ToCreature() : nullptr;
+            if (!isCurrentDiscoveryScriptedEventTarget(creature)
+                || !creature->IsAlive() || !creature->GetHealth()
+                || !bot->IsValidAttackTarget(creature)
+                || !hasStrictPathToValidationRouteTarget(creature))
+                continue;
+
+            float distance = bot->GetExactDist(creature);
+            if (!best || distance < bestDistance
+                || (distance == bestDistance
+                    && creature->GetGUID().GetRawValue() < best->GetGUID().GetRawValue()))
+            {
+                best = creature;
+                bestDistance = distance;
+            }
+        }
+        return best;
+    };
     auto findTrashClusterThreatTarget = [&]() -> Unit*
     {
         if (Cohort().Config.ValidationRouteKind == "boss" || !bot)
@@ -23326,6 +23785,20 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         enrollEngagedValidationRoutePackMembers();
         if (Unit* packTarget = activeValidationRoutePackTarget())
             return packTarget;
+        if (Unit* scriptedTarget = findCurrentDiscoveryScriptedEventTarget())
+            return scriptedTarget;
+        // A live current-pack member is a hard ownership boundary. If it is
+        // temporarily not pathable from this decision point, hold the party
+        // rather than pulling a second natural creature and compounding the
+        // encounter. The next native combat/path update can reselect the same
+        // member through activeValidationRoutePackTarget().
+        if (Party().ValidationRoutePackGeneration == Party().ValidationRouteGeneration)
+            for (ObjectGuid const& guid : Party().ValidationRoutePackMemberGuids)
+                if (Party().ValidationRoutePackDeathGuids.find(guid)
+                        == Party().ValidationRoutePackDeathGuids.end()
+                    && Party().ValidationRoutePackTransitionGuids.find(guid)
+                        == Party().ValidationRoutePackTransitionGuids.end())
+                    return nullptr;
         float radius = discoveryLeg ? 120.0f : (Cohort().Config.ValidationRouteClusterRadiusYards > 1.0f ? Cohort().Config.ValidationRouteClusterRadiusYards : 90.0f);
         float searchRange = std::max(40.0f, bot->GetExactDist(Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY, Cohort().Config.ValidationRouteZ) + radius + 40.0f);
         std::vector<WorldObject*> objects;
@@ -23827,9 +24300,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     auto routeUsableCombatTarget = [
         this,
         bot,
+        discoveryLeg,
         &isValidationRouteCombatTarget,
         &isEligibleTrashClusterMob,
-        &isBoundedTerminalPartyCombatTarget
+        &hasStrictPathToValidationRouteTarget,
+        &isBoundedTerminalPartyCombatTarget,
+        &isCurrentDiscoveryScriptedEventTarget
     ](Unit* candidate) -> Unit*
     {
         if (!candidate || !candidate->IsAlive() || !candidate->GetHealth() || !bot || !bot->IsValidAttackTarget(candidate))
@@ -23842,6 +24318,22 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (Cohort().Config.ValidationRouteKind != "boss")
         {
             if (isEligibleTrashClusterMob(creature))
+                return candidate;
+            // A discovery node has no static pack-entry list.  Once a
+            // current-node scripted actor has been observed in native combat,
+            // the persisted pack ledger is the authority that keeps it
+            // targetable (the pending-scripted guard above must still prevent
+            // unobserved/future actors from being pulled).  Without this
+            // exception activeValidationRoutePackTarget can find Millhouse,
+            // but the later common target gate silently discards it.
+            bool currentDiscoveryPackMember = discoveryLeg
+                && Party().ValidationRoutePackGeneration == Party().ValidationRouteGeneration
+                && Party().ValidationRoutePackMemberGuids.find(creature->GetGUID()) != Party().ValidationRoutePackMemberGuids.end()
+                && Party().ValidationRoutePackTransitionGuids.find(creature->GetGUID()) == Party().ValidationRoutePackTransitionGuids.end()
+                && hasStrictPathToValidationRouteTarget(creature);
+            if (currentDiscoveryPackMember
+                || (isCurrentDiscoveryScriptedEventTarget(creature)
+                    && hasStrictPathToValidationRouteTarget(creature)))
                 return candidate;
             bool explicitTerminalCombatFocus = !Party().ValidationRouteFocusGuid.IsEmpty()
                 && candidate->GetGUID() == Party().ValidationRouteFocusGuid
@@ -33685,6 +34177,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         return livingTanksCount > 0 && livingHealers > 0 && livingDps > 0;
     };
     bool currentLivePackCanContinue = currentLiveValidationRoutePackCanContinue();
+    // Refresh discovery-pack membership before any recovery/terminal branch.
+    // Active target selection can bypass findTrashClusterThreatTarget once a
+    // persisted member exists, so relying on that resolver alone leaves a
+    // newly engaged adjacent creature outside the shared pack ledger.
+    if (discoveryLeg)
+        enrollEngagedValidationRoutePackMembers();
     // If most of the party or a critical role is dead and no living class can
     // legally resurrect in combat, continuing at the abandoned pack cannot
     // recover the group. Retreat through ordinary movement so the hostile
@@ -33714,10 +34212,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     if (playerSpell.state == PLAYERSPELL_REMOVED || playerSpell.disabled || !playerSpell.active || !member->HasSpell(spellId))
                         continue;
                     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
-                    if (spellInfo && spellInfo->HasAttribute(SPELL_ATTR8_ENFORCE_IN_COMBAT_RESSURECTION_LIMIT)
-                        && (spellInfo->HasEffect(SPELL_EFFECT_RESURRECT)
-                            || spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_NEW)
-                            || spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_WITH_AURA))
+                    if (IsNativeCombatResSpell(spellInfo)
                         && member->GetSpellHistory()->IsReady(spellInfo) && HasPowerForSpell(member, spellInfo))
                     {
                         livingCombatResurrectionCaster = true;
@@ -34353,6 +34848,17 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (!creature || !creature->IsAlive() || !creature->GetHealth()
                 || !bot->IsValidAttackTarget(creature) || (!creature->IsInCombat() && !creature->GetVictim())
                 || isImmediateNextValidationRouteEncounterMember(creature))
+                continue;
+            // A configured scripted actor (Millhouse in the opening
+            // Corborus node) is a future route event, not ordinary trash.  It
+            // may already be attackable/in combat due to native script
+            // preparation, but it must not enter the generic threat scan until
+            // the discovery handoff has enrolled its current-generation GUID.
+            bool currentDiscoveryScriptedMember = discoveryLeg
+                && Party().ValidationRoutePackGeneration == Party().ValidationRouteGeneration
+                && Party().ValidationRoutePackMemberGuids.find(creature->GetGUID())
+                    != Party().ValidationRoutePackMemberGuids.end();
+            if (isPendingScriptedEventEntry(creature) && !currentDiscoveryScriptedMember)
                 continue;
             bool declaredBossAdd = Cohort().Config.ValidationRouteKind == "boss"
                 && std::find(Cohort().Config.ValidationRouteAddTargetEntries.begin(),
@@ -36163,6 +36669,125 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // that threshold, followed by successful protection and full recovery
         // within 1012 ms. Protect on the first healer attacker so the same
         // native recovery chain starts before the strict exposure ratio fails.
+        // Blood/warrior tanks use a single-target native taunt instead of the
+        // Protection-specific pickup chain below.  The first Stonecore 5H
+        // trace exposed exactly this gap: Dark Command was learned and legal,
+        // but no dungeon threat branch submitted it when Millhouse remained on
+        // the healer, so the tank died with nine other hostiles already owned.
+        if (defenseTarget && std::string(GetDungeonRole(defenseTarget)) == "healer"
+            && defenseAttackerCount >= 1
+            && (bot->getClass() == CLASS_DEATH_KNIGHT
+                || bot->getClass() == CLASS_WARRIOR))
+        {
+            uint32 tauntSpell = bot->getClass() == CLASS_DEATH_KNIGHT ? 56222 : 355;
+            Unit* healerTauntTarget = nullptr;
+            float healerTauntDistance = std::numeric_limits<float>::max();
+            uint32 healerTauntGuid = std::numeric_limits<uint32>::max();
+            auto considerHealerTauntTarget = [&](Unit* attacker)
+            {
+                if (!attacker || !attacker->IsAlive()
+                    || attacker->GetVictim() != defenseTarget
+                    || !bot->IsValidAttackTarget(attacker))
+                    return;
+                float distance = bot->GetExactDist(attacker);
+                uint32 guid = attacker->GetGUID().GetCounter();
+                if (!healerTauntTarget || distance < healerTauntDistance
+                    || (distance == healerTauntDistance && guid < healerTauntGuid))
+                {
+                    healerTauntTarget = attacker;
+                    healerTauntDistance = distance;
+                    healerTauntGuid = guid;
+                }
+            };
+            for (Unit* attacker : trashThreatControl.HealerOwnedTargets)
+                considerHealerTauntTarget(attacker);
+            if (!healerTauntTarget)
+                for (Unit* attacker : defenseTarget->getAttackers())
+                    considerHealerTauntTarget(attacker);
+
+            if (healerTauntTarget && bot->HasSpell(tauntSpell)
+                && TryCastCombatSpell(bot, healerTauntTarget, tauntSpell))
+            {
+                std::string raw = BuildRawJson(bot, healerTauntTarget);
+                std::string semantic = BuildSemanticJson(
+                    bot, healerTauntTarget, "normal_dungeon_trash",
+                    &power, stage, activity);
+                char const* tauntAction = bot->getClass() == CLASS_DEATH_KNIGHT
+                    ? "dark_command_healer_trash_pickup"
+                    : "taunt_healer_trash_pickup";
+                RecordEvent(state, bot, "validation_route_threat_pickup",
+                    healerTauntTarget, tauntAction, raw.c_str(),
+                    semantic.c_str(), healerTauntDistance,
+                    float(defenseAttackerCount), tauntSpell);
+                state.DecisionTimer = std::min<uint32>(state.DecisionTimer, 250);
+                state.TargetGuid = healerTauntTarget->GetGUID();
+                target = healerTauntTarget;
+                situation = "normal_dungeon_trash";
+                action = tauntAction;
+                state.WasInCombat = true;
+                return true;
+            }
+        }
+
+        // The route threat controller intentionally owns the tank decision, so
+        // the ordinary class-profile survival rows are otherwise never reached
+        // during a dense opening pack.  Preserve the native defensive lane for
+        // a Blood DK before another area-threat retry: Icebound Fortitude buys
+        // time at critical health and Death Strike uses the current hostile to
+        // convert the recent damage window into a native self-heal.  No health,
+        // aura, threat, or cooldown state is manufactured here.
+        if (bot->getClass() == CLASS_DEATH_KNIGHT)
+        {
+            Unit* deathStrikeTarget = trashThreatControl.AreaTarget;
+            if (!deathStrikeTarget || !deathStrikeTarget->IsAlive()
+                || !bot->IsValidAttackTarget(deathStrikeTarget))
+                deathStrikeTarget = bot->GetVictim();
+
+            if (UnitHealthPct(bot) <= 0.75f && deathStrikeTarget
+                && deathStrikeTarget->IsAlive()
+                && bot->IsValidAttackTarget(deathStrikeTarget)
+                && bot->HasSpell(49998)
+                && TryCastCombatSpell(bot, deathStrikeTarget, 49998))
+            {
+                std::string raw = BuildRawJson(bot, deathStrikeTarget);
+                std::string semantic = BuildSemanticJson(
+                    bot, deathStrikeTarget, "normal_dungeon_trash",
+                    &power, stage, activity);
+                RecordEvent(state, bot, "defensive",
+                    deathStrikeTarget, "tank_trash_death_strike",
+                    raw.c_str(), semantic.c_str(),
+                    bot->GetExactDist(deathStrikeTarget),
+                    trashThreatControl.EngagedCount, 49998);
+                state.TargetGuid = deathStrikeTarget->GetGUID();
+                target = deathStrikeTarget;
+                situation = "normal_dungeon_trash";
+                action = "tank_trash_death_strike";
+                state.WasInCombat = true;
+                return true;
+            }
+
+            // Death Strike is the only immediate native self-heal in this
+            // emergency lane.  Give it first refusal so a low-health tank
+            // does not spend the decision/GCD on Icebound Fortitude and die
+            // before the heal can land.  Icebound remains the bounded
+            // fallback mitigation when Death Strike is unavailable or fails.
+            if (UnitHealthPct(bot) <= 0.55f && bot->HasSpell(48792)
+                && !bot->HasAura(48792)
+                && TryCastFriendlySpell(bot, bot, 48792))
+            {
+                std::string raw = BuildRawJson(bot, deathStrikeTarget);
+                std::string semantic = BuildSemanticJson(
+                    bot, deathStrikeTarget, "normal_dungeon_trash",
+                    &power, stage, activity);
+                RecordEvent(state, bot, "defensive",
+                    bot, "tank_trash_icebound_fortitude",
+                    raw.c_str(), semantic.c_str(), UnitHealthPct(bot),
+                    trashThreatControl.EngagedCount, 48792);
+                situation = "normal_dungeon_trash";
+                action = "tank_trash_icebound_fortitude";
+                return true;
+            }
+        }
         if (defenseTarget && std::string(GetDungeonRole(defenseTarget)) == "healer"
             && defenseAttackerCount >= 1
             && bot->HasSpell(1022) && !defenseTarget->HasAura(1022)
@@ -37254,7 +37879,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (preAnchorTrashTarget && routeDistance > clusterApproachRadius)
         {
             Creature* threatCreature = preAnchorTrashTarget->ToCreature();
-            if (!threatCreature || !isValidationCohortCombatLinked(threatCreature))
+            if (!threatCreature
+                || (!isValidationCohortCombatLinked(threatCreature)
+                    && !isCurrentDiscoveryScriptedEventTarget(threatCreature)))
                 preAnchorTrashTarget = nullptr;
         }
         // Rerun74 proved that the canonical source can seed and complete its
@@ -40294,7 +40921,7 @@ bool BotWorldPopulationMgr::TryCastFriendlySpell(Player* bot, Unit* target, uint
             ownerGuid, creature->GetEntry(), creature->GetSpawnId(),
             creature->GetGUID().GetRawValue()))
         return fail("future_encounter_target_forbidden");
-    if (BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid)
+    if (HasNearbyProtectedEncounterTarget(bot, target)
         && SpellHasHostileMultiTargetSemantics(spellInfo))
         return fail("future_encounter_splash_forbidden");
     if (!bot->IsWithinLOSInMap(target))
@@ -40995,6 +41622,9 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
          << ",\"assignment_generation\":" << raid.AssignmentGeneration
          << ",\"evidence_sequence\":" << raid.EvidenceSequence
          << ",\"admission_receipt\":{\"attempt_id\":" << raid.AdmissionAttemptId
+         << ",\"server_epoch\":" << raid.ServerEpoch
+         << ",\"group_guid\":" << raid.GroupGuid.GetRawValue()
+         << ",\"instance_id\":" << raid.InstanceId
          << ",\"committed_at_ms\":" << raid.AdmissionCommittedAtMs
          << ",\"bot_actions_enabled_at_commit\":" << (raid.AdmissionActionGateEnabled ? "true" : "false")
          << ",\"scenario_id\":\"" << JsonEscape(raid.AdmissionScenarioId) << "\""
@@ -42021,7 +42651,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     // not already carry this mage's Living Bomb, while preserving the normal
     // priority target for every other action.
     if (allowMultidot
-        && !BotRaidAreaAuthority::HasProtectedEncounterEntries(bot->GetGUID().GetRawValue())
+        && !HasNearbyProtectedEncounterTarget(bot, target)
         && bot->getClass() == CLASS_MAGE && hostileCount >= 3 && bot->HasSpell(44457))
     {
         std::vector<Unit*> spreadTargets = { target };
@@ -42178,7 +42808,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             candidate.RejectReason = "movement_requires_instant_action";
             continue;
         }
-        if (BotRaidAreaAuthority::HasProtectedEncounterEntries(bot->GetGUID().GetRawValue())
+        if (HasNearbyProtectedEncounterTarget(bot, target)
             && SpellHasHostileMultiTargetSemantics(candidateSpellInfo))
         {
             candidate.RejectReason = "future_encounter_splash_forbidden";
@@ -42767,7 +43397,12 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
     petSetup.SummonSpellKnown = petSetup.RequiredSummonSpellId
         && bot->HasSpell(petSetup.RequiredSummonSpellId);
 
-    bool const roguePoisonSetup = role == "dps"
+    // Poison receipts are a calibration pre-score contract. A normal dungeon
+    // party may legitimately arrive with no consumable stack in the generated
+    // roster; do not hold its rogue in persistent setup forever. Calibration
+    // still remains fail-closed and requires the native item-use/finish/live
+    // enchant evidence before the scored window opens.
+    bool const roguePoisonSetup = Cohort().CalibrationActive && role == "dps"
         && (profile.SpecTag == "assassination_rogue"
             || profile.SpecTag == "combat_rogue");
     state.RoguePoisonSetupRequired = roguePoisonSetup;
@@ -43741,7 +44376,7 @@ bool BotWorldPopulationMgr::TryCastCombatSpell(Player* bot, Unit* target, uint32
             ownerGuid, creature->GetEntry(), creature->GetSpawnId(),
             creature->GetGUID().GetRawValue()))
         return false;
-    if (BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid)
+    if (HasNearbyProtectedEncounterTarget(bot, target)
         && SpellHasHostileMultiTargetSemantics(spellInfo))
         return false;
     if (bot->HasUnitState(UNIT_STATE_CONTROLLED)

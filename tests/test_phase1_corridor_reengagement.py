@@ -151,7 +151,22 @@ def test_source_keeps_reengagement_narrow_and_preserves_route_gates():
 
     target = source[source.index("auto activeValidationRoutePackTarget") : source.index("auto isNaturalForwardHostile", source.index("auto activeValidationRoutePackTarget"))]
     assert "isValidationRoutePackEntry(creature->GetEntry())" in target
+    assert "bool currentDiscoveryPackMember = discoveryLeg" in target
+    assert "!isValidationRoutePackEntry(creature->GetEntry()) && !currentDiscoveryPackMember" in target
     assert "hasStrictPathToValidationRouteTarget(creature)" in target
+    assert "currentDiscoveryPackMember && isPendingScriptedEventEntry(creature)" in target
+    assert "score += 50000.0f;" in target
+    assert "auto findCurrentDiscoveryScriptedEventTarget" in source
+    assert "if (Unit* scriptedTarget = findCurrentDiscoveryScriptedEventTarget())" in source
+    enrollment = source[source.index("auto enrollEngagedValidationRoutePackMembers") : source.index("auto persistedValidationRoutePackHasLiveMembers", source.index("auto enrollEngagedValidationRoutePackMembers"))]
+    assert "if (discoveryLeg && bot->GetMap())" in enrollment
+    assert "creature->GetHealth() < creature->GetMaxHealth()" in enrollment
+    assert "enrollValidationRoutePackMember(creature, true);" in enrollment
+    usable = source[source.index("auto routeUsableCombatTarget") : source.index("auto maybeValidationPrerequisiteNoProgressAssist", source.index("auto routeUsableCombatTarget"))]
+    assert "discoveryLeg" in usable
+    assert "Party().ValidationRoutePackMemberGuids.find(creature->GetGUID())" in usable
+    assert "hasStrictPathToValidationRouteTarget(creature)" in usable
+    assert "isCurrentDiscoveryScriptedEventTarget(creature)" in usable
     assert "ValidationRoutePackDeathGuids" in target
 
     route = (ROOT / "experiments/configs/validation_scenarios_cata_001.json").read_text(encoding="utf-8")

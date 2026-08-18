@@ -2264,7 +2264,10 @@ def test_trash_profile_damage_cannot_pull_or_compound_the_next_boss_encounter():
     assert "IsImmediateNextValidationRouteEncounterMember" in IMPL
     assert "SpellHostileMultiTargetReach" not in IMPL
     assert "SetProtectedEncounterEntries" in route_runtime
-    assert "HasProtectedEncounterEntries" in resolver
+    # Future-encounter splash protection is geometry-aware: the route may keep
+    # a protected-entry set while current trash is far outside splash range.
+    assert "HasNearbyProtectedEncounterTarget(bot, target)" in resolver
+    assert "HasProtectedEncounterEntries(bot->GetGUID().GetRawValue())" not in resolver
     assert "future_encounter_splash_forbidden" in resolver
     assert "!IsImmediateNextValidationRouteEncounterMember(unit->ToCreature())" in resolver
     assert "if (IsImmediateNextValidationRouteEncounterMember(creature))" in resolver
@@ -2304,8 +2307,8 @@ def test_trash_profile_damage_cannot_pull_or_compound_the_next_boss_encounter():
     # Protection spell helpers, not only profile-resolved actions.
     assert "IsAllOffenseSuppressed(ownerGuid)" in ACTION_EXECUTOR
     assert "IsProtectedEncounterTarget(" in ACTION_EXECUTOR
-    assert "HasProtectedEncounterEntries(ownerGuid)" in ACTION_EXECUTOR
-    assert "BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid)" in IMPL
+    assert "HasNearbyProtectedEncounterTarget(bot, target)" in ACTION_EXECUTOR
+    assert "BotRaidAreaAuthority::HasProtectedEncounterEntries" in IMPL
     assert "BotRaidAreaAuthority::IsProtectedEncounterTarget(" in IMPL
     assert "AllOffenseSuppressedOwners" in RAID_AUTHORITY
     assert "ProtectedEncounterEntriesByOwner" in RAID_AUTHORITY

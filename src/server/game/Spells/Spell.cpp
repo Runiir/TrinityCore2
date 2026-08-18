@@ -326,6 +326,16 @@ void SpellCastTargets::SetGOTarget(GameObject* target)
     m_targetMask |= TARGET_FLAG_GAMEOBJECT;
 }
 
+void SpellCastTargets::SetCorpseTarget(Corpse* target)
+{
+    if (!target)
+        return;
+
+    m_objectTarget = target;
+    m_objectTargetGUID = target->GetGUID();
+    m_targetMask |= TARGET_FLAG_CORPSE_ALLY;
+}
+
 ObjectGuid SpellCastTargets::GetCorpseTargetGUID() const
 {
     if (m_objectTargetGUID.IsCorpse())

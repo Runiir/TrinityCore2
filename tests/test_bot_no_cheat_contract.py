@@ -101,17 +101,17 @@ def test_live_autonomy_functions_do_not_mutate_native_game_state() -> None:
             assert forbidden_command_path not in body, forbidden_command_path
 
 
-def test_frost_presence_setup_is_a_receipted_native_player_cast() -> None:
+def test_dk_unholy_presence_setup_is_a_receipted_native_player_cast() -> None:
     world = WORLD.read_text(encoding="utf-8")
     setup = function_body(world, "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup")
-    self_buff_setup = setup[: setup.index("if (bot->getClass() == CLASS_MAGE)")]
 
-    assert '{ CLASS_DEATH_KNIGHT, "dps", "frost_death_knight", 48265, 48265' in self_buff_setup
-    assert "bot->HasSpell(48265)" in self_buff_setup
-    assert "BotActionExecutor executor" in self_buff_setup
-    assert "executor.ExecuteCombat(bot, bot, action)" in self_buff_setup
-    assert "PresenceSetupNativeCastSubmittedAtMs = NowMs()" in self_buff_setup
-    assert "PresenceSetupAuraObservedAtMs = NowMs()" in self_buff_setup
+    assert '{ CLASS_DEATH_KNIGHT, "dps", "frost_death_knight", 48265, 48265' in setup
+    assert '{ CLASS_DEATH_KNIGHT, "dps", "unholy_death_knight", 48265, 48265' in setup
+    assert "bot->HasSpell(48265)" in setup
+    assert "BotActionExecutor executor" in setup
+    assert "executor.ExecuteCombat(bot, bot, action)" in setup
+    assert "PresenceSetupNativeCastSubmittedAtMs = NowMs()" in setup
+    assert "PresenceSetupAuraObservedAtMs = NowMs()" in setup
     assert "AddAura(" not in code_only(setup)
     assert "LearnSpell(" not in code_only(setup)
 
@@ -521,6 +521,7 @@ def test_combat_res_owner_usability_is_shared_and_live_reconciled() -> None:
         world,
         "BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent",
     )
+    combat_res_classifier = function_body(world, "bool IsNativeCombatResSpell")
     publisher = function_body(
         world, "void BotWorldPopulationMgr::PublishNativeBattleResDecision"
     )
@@ -536,7 +537,6 @@ def test_combat_res_owner_usability_is_shared_and_live_reconciled() -> None:
         "ownerGroup != targetGroup",
         "owner->IsInSameGroupWith(target)",
         "owner->HasSpell(spellId)",
-        "SPELL_ATTR8_ENFORCE_IN_COMBAT_RESSURECTION_LIMIT",
         "HasPowerForSpell(owner, spellInfo)",
         "owner->GetSpellHistory()->IsReady(spellInfo)",
         "owner->HasUnitState(UNIT_STATE_CASTING)",
@@ -562,6 +562,20 @@ def test_combat_res_owner_usability_is_shared_and_live_reconciled() -> None:
     assert update_bot.count("CurrentCombatResOwnerUsable(") >= 1
     assert builder.count("CurrentCombatResOwnerUsable(") >= 1
     assert executor.count("CurrentCombatResOwnerUsable(") >= 1
+    assert "SPELL_ATTR8_ENFORCE_IN_COMBAT_RESSURECTION_LIMIT" in combat_res_classifier
+    assert "spellInfo->Id == 20484" in combat_res_classifier
+    assert "SPELL_EFFECT_RESURRECT" in combat_res_classifier
+    target_predicate = function_body(world, "bool BotWorldPopulationMgr::IsNativeCombatResTarget")
+    assert "nativeDeathWindow" in target_predicate
+    assert "bot->getDeathState() == JUST_DIED" in target_predicate
+    assert "bot->getDeathState() == CORPSE" in target_predicate
+
+    combat_res_executor = function_body(
+        world, "BotWorldPopulationMgr::ExecuteNativeActionIntent")
+    assert "CancelRemovableShapeshifts(bot)" in combat_res_executor
+    assert "typed_combat_res_cancelled_shapeshift" in combat_res_executor
+    assert "IsNativeCombatResSpell(spellInfo)" in predicate
+    assert "IsNativeCombatResSpell(spellInfo)" in planner
     assert "PublishNativeBattleResDecision(" in planner
     assert "PublishNativeBattleResDecision(" in update_bot
     assert "PublishNativeBattleResDecision(" in executor

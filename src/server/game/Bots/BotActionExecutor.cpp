@@ -1,6 +1,7 @@
 #include "Bots/BotActionExecutor.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "CharmInfo.h"
+#include "CellImpl.h"
 #include "DataStores/DBCStores.h"
 #include "Entities/Item/Container/Bag.h"
 #include "Entities/Item/Item.h"
@@ -10,6 +11,7 @@
 #include "Player.h"
 #include "Server/WorldSession.h"
 #include "WorldPacket.h"
+#include "GridNotifiersImpl.h"
 #include "Spell.h"
 #include "SpellHistory.h"
 #include "SpellInfo.h"
@@ -48,6 +50,34 @@ bool SpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth
             return true;
         if (effect.TriggerSpell
             && SpellHasHostileMultiTargetSemantics(sSpellMgr->GetSpellInfo(effect.TriggerSpell), depth + 1))
+            return true;
+    }
+    return false;
+}
+
+// Route protection is about preventing splash onto a future encounter that is
+// physically near the selected target.  A global "any protected entry" check
+// incorrectly disables tank AoE on an approach pack when the next boss is
+// hundreds of yards away.
+bool HasNearbyProtectedEncounterTarget(Player* owner, Unit const* target)
+{
+    if (!owner || !target || !BotRaidAreaAuthority::HasProtectedEncounterEntries(owner->GetGUID().GetRawValue()))
+        return false;
+
+    std::vector<WorldObject*> nearbyObjects;
+    Trinity::AllWorldObjectsInRange check(target, 45.0f);
+    Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(
+        target, nearbyObjects, check);
+    Cell::VisitAllObjects(target, searcher, 45.0f);
+    for (WorldObject* object : nearbyObjects)
+    {
+        Creature* creature = object ? object->ToCreature() : nullptr;
+        if (!creature || creature == target || !creature->IsAlive()
+            || !owner->IsValidAttackTarget(creature))
+            continue;
+        if (BotRaidAreaAuthority::IsProtectedEncounterTarget(
+                owner->GetGUID().GetRawValue(), creature->GetEntry(),
+                creature->GetSpawnId(), creature->GetGUID().GetRawValue()))
             return true;
     }
     return false;
@@ -188,7 +218,7 @@ BotActionResult BotActionExecutor::Execute(Player* owner, Player* bot, ResolvedB
             ownerGuid, creature->GetEntry(), creature->GetSpawnId(),
             creature->GetGUID().GetRawValue()))
         return BotActionResult::NoAction;
-    if (BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid)
+    if (HasNearbyProtectedEncounterTarget(bot, target)
         && SpellHasHostileMultiTargetSemantics(spellInfo))
         return BotActionResult::NoAction;
     BotActionResult check = CheckSpell(owner, bot, target, action.SpellId);
@@ -267,7 +297,7 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     if (!action.SpellId)
         return BotActionResult::NoAction;
     if ((action.SuppressAreaDamage
-            || BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid))
+            || HasNearbyProtectedEncounterTarget(bot, target))
         && SpellHasHostileMultiTargetSemantics(sSpellMgr->GetSpellInfo(action.SpellId)))
         return BotActionResult::NoAction;
 

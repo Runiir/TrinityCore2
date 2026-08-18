@@ -283,9 +283,9 @@ def _trace_entries(payloads: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]
     return entries
 
 
-def _status_with_admission(
+def _admission_status_candidates(
     payloads: Sequence[Mapping[str, Any]],
-) -> dict[str, Any]:
+) -> list[dict[str, Any]]:
     candidates: list[dict[str, Any]] = []
     for payload in payloads:
         runtime = payload.get("raid_runtime")
@@ -293,9 +293,82 @@ def _status_with_admission(
             runtime.get("admission_receipt"), Mapping
         ):
             candidates.append(dict(payload))
-    # A later terminal observation is decisive.  Selecting an older active
-    # row would conceal post-admission immutable-identity drift.
-    return (candidates or [{}])[-1]
+    return candidates
+
+
+def _status_with_admission(
+    payloads: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    candidates = _admission_status_candidates(payloads)
+    # Admission identity is established by the first complete active receipt.
+    # Later terminal rows intentionally clear live member fields during cleanup;
+    # they are authoritative for route/cleanup state, not for the immutable
+    # five-player roster admitted at the start.
+    for candidate in candidates:
+        runtime = candidate.get("raid_runtime")
+        runtime = runtime if isinstance(runtime, Mapping) else {}
+        receipt = runtime.get("admission_receipt")
+        receipt = receipt if isinstance(receipt, Mapping) else {}
+        if (
+            str(runtime.get("admission_phase") or "") == "active"
+            and runtime.get("bot_actions_enabled") is True
+            and receipt.get("bot_actions_enabled_at_commit") is True
+        ):
+            return candidate
+    return (candidates or [{}])[0]
+
+
+def _post_admission_gear_drift(
+    payloads: Sequence[Mapping[str, Any]],
+) -> bool:
+    candidates = _admission_status_candidates(payloads)
+    if len(candidates) < 2:
+        return False
+    admitted = _status_with_admission(payloads)
+    admitted_runtime = admitted.get("raid_runtime")
+    admitted_runtime = admitted_runtime if isinstance(admitted_runtime, Mapping) else {}
+    admitted_receipt = admitted_runtime.get("admission_receipt")
+    admitted_receipt = admitted_receipt if isinstance(admitted_receipt, Mapping) else {}
+    admitted_members = admitted_receipt.get("members")
+    admitted_members = admitted_members if isinstance(admitted_members, list) else []
+    expected_by_slot = {
+        str(member.get("roster_slot_id") or ""): str(
+            member.get("gear_manifest_sha256") or ""
+        ).lower()
+        for member in admitted_members
+        if isinstance(member, Mapping)
+    }
+    for candidate in candidates:
+        if candidate == admitted:
+            continue
+        runtime = candidate.get("raid_runtime")
+        runtime = runtime if isinstance(runtime, Mapping) else {}
+        receipt = runtime.get("admission_receipt")
+        receipt = receipt if isinstance(receipt, Mapping) else {}
+        members = receipt.get("members")
+        members = members if isinstance(members, list) else []
+        complete_observations = 0
+        for member in members:
+            if not isinstance(member, Mapping):
+                continue
+            slot = str(member.get("roster_slot_id") or "")
+            current = str(member.get("current_gear_manifest_sha256") or "").lower()
+            expected = expected_by_slot.get(slot, "")
+            if len(current) != 64 or len(expected) != 64:
+                continue
+            complete_observations += 1
+            if current != expected or member.get("gear_identity_current_matches_admission") is False:
+                return True
+        # An explicit aggregate mismatch is actionable only when the row also
+        # carries complete current gear observations.  Cleanup rows otherwise
+        # report false/empty values after the bots have been released.
+        if (
+            complete_observations == len(expected_by_slot)
+            and complete_observations > 0
+            and receipt.get("all_current_gear_matches_admission") is False
+        ):
+            return True
+    return False
 
 
 def _status_payloads(payloads: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
@@ -680,6 +753,9 @@ def _admission_projection(status: Mapping[str, Any]) -> dict[str, Any]:
         "members": members,
         "receipt_sha256": canonical_sha256(receipt) if receipt else "",
         "player_like_ready": player_like_ready,
+        # This is populated from the later raw status stream only.  A report's
+        # immutable admission snapshot has no post-admission drift claim.
+        "post_admission_gear_drift": False,
     }
 
 
@@ -731,7 +807,9 @@ def _stonecore_raw_decisive(
 ) -> dict[str, Any]:
     entries = _trace_entries(payloads)
     status = _status_with_admission(payloads)
-    status_route = status.get("validation_route")
+    status_candidates = _admission_status_candidates(payloads)
+    terminal_status = status_candidates[-1] if status_candidates else status
+    status_route = terminal_status.get("validation_route")
     status_route = status_route if isinstance(status_route, Mapping) else {}
     terminals = _scope_rows(entries, {"validation_route_terminal"})
     terminal_scopes = {
@@ -799,6 +877,7 @@ def _stonecore_raw_decisive(
         if (row["route_node_id"], row["route_generation"]) not in boss_keys
     ]
     admission = _admission_projection(status)
+    admission["post_admission_gear_drift"] = _post_admission_gear_drift(payloads)
     return {
         "route_manifest": expected,
         "route_terminal_evidence": terminals,

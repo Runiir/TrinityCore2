@@ -455,6 +455,10 @@ def test_playerbot_runtime_roles_drive_universal_profile_combat():
     assert "profile.SpecTag = profile.Role == \"healer\" ? \"holy_disc_generic\" : \"shadow_or_generic\";" in profiles
     assert 'candidate.RejectReason = "target_health_gate";' in world_mgr
     assert 'candidate.RejectReason = "self_health_gate";' in world_mgr
+    assert 'candidate.RejectReason = "healer_triage_required";' in profiles
+    assert 'candidate.RejectReason = "injured_player_count_too_low";' in profiles
+    assert 'spell.MinInjuredPlayers' in profiles
+    assert 'member->GetHealth()) / float(member->GetMaxHealth()) <= 0.94f' in profiles
     assert "SELECT class_spec FROM character_bot_pool WHERE guid" in profiles
     for alias in (
         '{ "protection_paladin", "protection" }',
@@ -1997,6 +2001,49 @@ def test_trash_swarm_waits_for_secure_tank_threat_before_dps_release():
     assert '"hand_of_salvation_healer_trash_threat_drop"' in route
 
 
+def test_dungeon_healer_holds_pending_pull_and_blood_tank_taunts_healer_target():
+    route = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    heal_helper = route.split("auto tryRouteGroupHeal", 1)[1].split(
+        "bool discoveryLeg", 1
+    )[0]
+    assert "pendingDungeonPullCount" in heal_helper
+    assert "healer->GetExactDist2d(creature) > 35.0f" in heal_helper
+    assert "focusedPendingPull = combatTarget" in heal_helper
+    assert "healer->InterruptNonMeleeSpells(false)" in heal_helper
+    assert '"healer_hold_for_pending_dungeon_pull"' in heal_helper
+    assert '"healer_wait_for_pending_dungeon_pull"' in heal_helper
+    assert_ordered(
+        heal_helper,
+        "pendingDungeonPullCount > 0",
+        "MoveBotToPoint(state, healer",
+        '"healer_hold_for_pending_dungeon_pull"',
+        'return true;',
+    )
+
+    tank_branch = route.split(
+        "Blood/warrior tanks use a single-target native taunt", 1
+    )[1].split("Rerun157 localized", 1)[0]
+    assert "CLASS_DEATH_KNIGHT" in tank_branch
+    assert "CLASS_WARRIOR" in tank_branch
+    assert "uint32 tauntSpell" in tank_branch
+    assert "56222" in tank_branch
+    assert "trashThreatControl.HealerOwnedTargets" in tank_branch
+    assert "TryCastCombatSpell(bot, healerTauntTarget, tauntSpell)" in tank_branch
+    assert '"dark_command_healer_trash_pickup"' in tank_branch
+    assert '"taunt_healer_trash_pickup"' in tank_branch
+    assert '"tank_trash_icebound_fortitude"' in tank_branch
+    assert '"tank_trash_death_strike"' in tank_branch
+    assert "TryCastFriendlySpell(bot, bot, 48792)" in tank_branch
+    assert "TryCastCombatSpell(bot, deathStrikeTarget, 49998)" in tank_branch
+    assert_ordered(
+        tank_branch,
+        "UnitHealthPct(bot) <= 0.75f",
+        '"tank_trash_death_strike"',
+        "UnitHealthPct(bot) <= 0.55f",
+        '"tank_trash_icebound_fortitude"',
+    )
+
+
 def test_validation_route_exact_hazards_scope_secondary_generic_cast_dodges_to_current_pack():
     route_objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     movement = route_objective[
@@ -2515,6 +2562,7 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     )[0]
     assert "if (!bot || !creature || !creature->IsAlive() || !creature->GetHealth() || !bot->IsValidAttackTarget(creature))" in live_cluster_block
     assert "Party().ValidationRouteFinalTransitionGuids.find(creature->GetGUID())" in live_cluster_block
+    assert "isPendingScriptedEventEntry(creature)" in live_cluster_block
     assert "isValidationRoutePackEntry(creature->GetEntry())" in live_cluster_block
     assert "creature->IsInEvadeMode()" in live_cluster_block
     assert "IsValidAttackTarget" in live_cluster_block
@@ -2541,6 +2589,12 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         'SubmitMeleeAutoAttackIntent(state,',
         'BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,',
         '"validation_route_arrival_hold");',
+    )
+    assert_ordered(
+        route_objective,
+        "bool currentLivePackCanContinue = currentLiveValidationRoutePackCanContinue();",
+        "if (discoveryLeg)\n        enrollEngagedValidationRoutePackMembers();",
+        "If most of the party or a critical role is dead",
     )
     assert_ordered(
         route_objective,
@@ -2586,6 +2640,8 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert 'Cohort().Config.ValidationRouteNodeKind = node.NodeKind;' in mgr
     assert 'Cohort().Config.ValidationRouteScriptedEventEntries = node.ScriptedEventEntries;' in mgr
     assert 'Cohort().Config.ValidationRouteScriptedEventTransitionAuraIds = node.ScriptedEventTransitionAuraIds;' in mgr
+    assert "protectedEncounterEntries.insert" in route_objective
+    assert "Cohort().Config.ValidationRouteScriptedEventEntries.begin()" in route_objective
     route_progress_json = function_body(mgr, "std::string BotWorldPopulationMgr::BuildRouteProgressJson")
     record_route_progress = function_body(mgr, "void BotWorldPopulationMgr::RecordRouteProgress")
     assert '<< ",\\"generation\\":" << diagnostic.Generation' in route_progress_json
@@ -2694,6 +2750,12 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     natural_pack_member_block = route_objective.split("auto isNaturalValidationRoutePackMember", 1)[1].split(
         "auto enrollValidationRoutePackMember", 1
     )[0]
+    # Current-node scripted actors (for example Stonecore Millhouse) are
+    # intentionally enrolled so native damage can trigger their transition;
+    # only future scripted actors are excluded from discovery/forward pulls.
+    assert "isFutureCanonicalValidationRouteSource(creature)" in natural_pack_member_block
+    assert "nativeCombatObserved" in natural_pack_member_block
+    assert "&& !nativeCombatObserved" in natural_pack_member_block
     assert "Party().ValidationRoutePendingFinalTransitionGuids.find(creature->GetGUID())" in natural_pack_member_block
     assert "Party().ValidationRouteFinalTransitionGuids.find(creature->GetGUID())" in natural_pack_member_block
     assert "Party().ValidationRoutePackTransitionGuids.find(guid) == Party().ValidationRoutePackTransitionGuids.end()" in route_objective
@@ -2741,8 +2803,17 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert "combatReferences.find(creature->GetGUID())" in active_combat_scan
     assert "Party().ValidationRoutePendingFinalTransitionGuids.find(creature->GetGUID())" in active_combat_scan
     assert "Party().ValidationRouteFinalTransitionGuids.find(creature->GetGUID())" in active_combat_scan
-    assert "AllWorldObjectsInRange" not in enrollment_scan
-    assert "Cell::VisitAllObjects" not in enrollment_scan
+    # Passive current-node scripted actors may only expose native damage
+    # without a CombatManager reference; the discovery-only scan enrolls them
+    # after observed combat/victim state or real health loss.
+    assert "if (discoveryLeg && bot->GetMap())" in enrollment_scan
+    assert "AllWorldObjectsInRange" in enrollment_scan
+    assert "nearbyCheck(bot, 80.0f)" in enrollment_scan
+    assert "nearbyObjects" in enrollment_scan
+    assert "isCurrentNativeNaturalPackMember" in enrollment_scan
+    assert "isPendingScriptedEventEntry(creature)" in enrollment_scan
+    assert "Cell::VisitAllObjects" in enrollment_scan
+    assert "nativeCombatObserved" in enrollment_scan
     assert "forEachActiveValidationCohortCombatCreature" in enrollment_scan
     assert "isNaturalValidationRoutePackMember(creature)" in enrollment_scan
     assert "!discoveryLeg && !isLiveTrashClusterMob(creature)" not in enrollment_scan
@@ -5629,7 +5700,9 @@ def test_rerun157_closes_control_race_and_retains_protection_threat_gates():
     assert "return BotActionResult::Throttled;" in hostile_check
     assert "bool urgentSwarmDamageRelease = cohortSwarmActive && addCount >= 24" in manager
     marker = manager.index("Rerun157 localized 28 of 37 Protection")
-    branch = manager[marker : marker + 1800]
+    branch = manager[marker : manager.index(
+        "Rerun145 localized Protection's only healer exposure", marker
+    )]
     assert 'std::string(GetDungeonRole(defenseTarget)) == "healer"' in branch
     assert "defenseAttackerCount >= 1" in branch
     assert "bot->HasSpell(1022)" in branch
@@ -5730,7 +5803,9 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert 'RecordCombatAttempt(state, bot, target, "misdirection_aoe_transfer"' in manager
     assert '"swarm_pickup_emergency_defensive"' in manager
     assert "bot->getClass() == CLASS_SHAMAN ? 3 : 5" in manager
-    assert "&& (creature->IsInCombat() || creature->GetVictim())" not in manager
+    assert "persistedCurrentPackCombat" in manager
+    assert "!hasStrictPathToValidationRouteTarget(creature)" in manager
+    assert "isPendingScriptedEventEntry(creature) && !currentDiscoveryScriptedMember" in manager
     assert '"righteous_defense_healer_pickup"' in manager
     assert '"hand_of_reckoning_add_pickup"' in manager
     assert '"fade_threat_drop"' in manager
@@ -6027,7 +6102,7 @@ def test_rerun206_feral_dps_provisions_and_maintains_cat_form():
     targets = json.loads((root / "experiments/configs/all_spec_targets_cata_p4_v1.json").read_text())
     feral = next(row for row in targets["targets"] if row["spec_target_id"] == "feral_druid_dps")
 
-    assert '"feral_druid_dps": [768]' in catalogs
+    assert '"feral_druid_dps": [768, 20484]' in catalogs
     assert '{ CLASS_DRUID, "dps", "feral_druid_dps", 768, 768, 0, "cat_form" }' in manager
     assert 768 in feral["action_profile_spell_ids"]
 
