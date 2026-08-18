@@ -2103,6 +2103,13 @@ private:
         BotProgressionActivity activity, Unit* killedTarget, char const* reason,
         std::function<bool(Creature const*)> const& isValidationRouteScriptTarget,
         std::function<bool()> const& trashClusterHasLiveMobs);
+    bool RecordDefeatedValidationRouteTarget(Unit* defeatedTarget,
+        char const* reason,
+        std::function<bool(Creature const*)> const& isValidationRouteScriptTarget,
+        std::function<bool(Unit*, char const*)> const& recordValidationRouteBossKill,
+        std::function<bool(Unit*, char const*)> const& recordValidationRouteTrashKill);
+    bool RecordDefeatedValidationRoutePackMembers(Player* bot,
+        std::function<bool(Unit*, char const*)> const& recordValidationRouteTrashKill);
     bool CurrentLiveValidationRoutePackCanContinue(
         std::function<bool()> const& persistedValidationRoutePackHasLiveMembers,
         std::function<bool(uint32)> const& isValidationRoutePackEntry,

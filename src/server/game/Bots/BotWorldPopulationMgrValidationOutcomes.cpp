@@ -299,3 +299,50 @@ bool BotWorldPopulationMgr::RecordValidationRouteTrashKill(
     }
     return true;
 }
+
+
+bool BotWorldPopulationMgr::RecordDefeatedValidationRouteTarget(
+    Unit* defeatedTarget, char const* reason,
+    std::function<bool(Creature const*)> const& isValidationRouteScriptTarget,
+    std::function<bool(Unit*, char const*)> const& recordValidationRouteBossKill,
+    std::function<bool(Unit*, char const*)> const& recordValidationRouteTrashKill)
+{
+    if (!defeatedTarget || defeatedTarget->IsAlive() || defeatedTarget->GetHealth())
+        return false;
+
+    if (Creature* creature = defeatedTarget->ToCreature())
+    {
+        bool persistedPackMember = Party().ValidationRoutePackGeneration == Party().ValidationRouteGeneration
+            && Party().ValidationRoutePackMemberGuids.find(creature->GetGUID()) != Party().ValidationRoutePackMemberGuids.end();
+        if (!isValidationRouteScriptTarget(creature) && !persistedPackMember)
+            return false;
+
+        return creature->IsDungeonBoss() || creature->isWorldBoss()
+            ? recordValidationRouteBossKill(defeatedTarget, reason)
+            : recordValidationRouteTrashKill(defeatedTarget, reason);
+    }
+
+    return false;
+}
+
+bool BotWorldPopulationMgr::RecordDefeatedValidationRoutePackMembers(
+    Player* bot,
+    std::function<bool(Unit*, char const*)> const& recordValidationRouteTrashKill)
+{
+    if (Cohort().Config.ValidationRouteKind == "boss" || !bot || !bot->GetMap()
+        || Party().ValidationRoutePackGeneration != Party().ValidationRouteGeneration)
+        return false;
+
+    bool recorded = false;
+    std::vector<ObjectGuid> memberGuids(Party().ValidationRoutePackMemberGuids.begin(), Party().ValidationRoutePackMemberGuids.end());
+    for (ObjectGuid const& guid : memberGuids)
+    {
+        if (Party().ValidationRoutePackEngagedGuids.find(guid) == Party().ValidationRoutePackEngagedGuids.end()
+            || Party().ValidationRoutePackDeathGuids.find(guid) != Party().ValidationRoutePackDeathGuids.end()
+            || Party().ValidationRoutePackTransitionGuids.find(guid) != Party().ValidationRoutePackTransitionGuids.end())
+            continue;
+        if (Creature* creature = bot->GetMap()->GetCreature(guid); creature && !creature->IsAlive() && !creature->GetHealth())
+            recorded = recordValidationRouteTrashKill(creature, "enrolled_member_seen_dead") || recorded;
+    }
+    return recorded;
+}
