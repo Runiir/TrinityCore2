@@ -174,6 +174,5 @@ void BotWorldPopulationMgr::AppendCalibrationReferenceConditionJson(
                  << (metrics ? metrics->LastPotionIdNonzeroSampleCount : 0)
                  << ",\"unexpected_dynamic_aura_active_samples\":"
                  << (metrics ? metrics->UnexpectedDynamicAuraActiveSamples : 0)
-                 << "}}"
+                 << "}}";
 }
-
