@@ -97,6 +97,8 @@ list(APPEND PRIVATE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrBossTargeting.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationNoProgress.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrBossDispatch.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrBossMechanics.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrBossMechanicsSupport.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationTargeting.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrDungeonRoute.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationFocus.cpp
