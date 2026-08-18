@@ -53,11 +53,11 @@ char const* ToString(BotWorldPopulationMgr::QuestObjectiveType type)
     {
         case BotWorldPopulationMgr::QuestObjectiveType::Kill: return "kill";
         case BotWorldPopulationMgr::QuestObjectiveType::CollectItem: return "collect_item";
-        case BotWorldPopulationMgr::QuestObjectiveType::TalkTo: return "talk_to";
-        case BotWorldPopulationMgr::QuestObjectiveType::InteractObject: return "interact_object";
-        case BotWorldPopulationMgr::QuestObjectiveType::UseAbilityOnDummy: return "use_ability_on_dummy";
+        case BotWorldPopulationMgr::QuestObjectiveType::InteractGameObject: return "interact_gameobject";
         case BotWorldPopulationMgr::QuestObjectiveType::CastSpellOnTarget: return "cast_spell_on_target";
-        default: return "none";
+        case BotWorldPopulationMgr::QuestObjectiveType::UseAbilityOnDummy: return "use_ability_on_dummy";
+        case BotWorldPopulationMgr::QuestObjectiveType::UseItemOnTarget: return "use_item_on_target";
+        default: return "unknown";
     }
 }
 }
