@@ -116,13 +116,13 @@ std::vector<Active> FindActive(Player* bot,
 
 bool PositionOutside(Active const& hazard, float x, float y)
 {
-    if (!hazard.Source || !hazard.Definition)
+    if (!hazard.Source || !hazard.HazardDefinition)
         return true;
 
     bool inside = Distance2d(x, y,
         hazard.Source->GetPositionX(), hazard.Source->GetPositionY())
         <= hazard.SafeRadius;
-    if (hazard.Definition->Shape == "frontal_cone")
+    if (hazard.HazardDefinition->Shape == "frontal_cone")
     {
         float bearing = std::atan2(
             y - hazard.Source->GetPositionY(),

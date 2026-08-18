@@ -24,7 +24,7 @@ struct Definition
 struct Active
 {
     Creature* Source = nullptr;
-    Definition const* Definition = nullptr;
+    Definition const* HazardDefinition = nullptr;
     float SafeRadius = 0.0f;
 };
 

@@ -6454,7 +6454,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     };
     auto teacherAssistAuthoritativeFocus = [&state, &authoritativeRouteFocusActive, &findAuthoritativeRouteFocusTarget, &authoritativeFocusFailure](Unit* proposedFocus) -> Unit*
     {
-        return TeacherAssistAuthoritativeValidationFocus(state, proposedFocus,
+        return this->TeacherAssistAuthoritativeValidationFocus(state, proposedFocus,
             authoritativeRouteFocusActive, findAuthoritativeRouteFocusTarget,
             authoritativeFocusFailure);
     };
@@ -7333,11 +7333,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 // Sentries place overlapping Laser Strike creatures.
                 for (ActiveHazard const& activeHazard : activeHazards)
                 {
-                    if (!activeHazard.Source || !activeHazard.Definition)
+                    if (!activeHazard.Source || !activeHazard.HazardDefinition)
                         continue;
                     bool insideActiveHazard = bot->GetExactDist2d(activeHazard.Source)
                         <= activeHazard.SafeRadius;
-                    if (activeHazard.Definition->Shape == "frontal_cone")
+                    if (activeHazard.HazardDefinition->Shape == "frontal_cone")
                         insideActiveHazard = insideActiveHazard
                             && activeHazard.Source->HasInArc(float(M_PI), bot);
                     bool outsideActiveHazard = !insideActiveHazard;
@@ -7490,7 +7490,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             for (ActiveHazard const& activeHazard : activeHazards)
             {
                 Creature* hazard = activeHazard.Source;
-                HazardDefinition const* definition = activeHazard.Definition;
+                HazardDefinition const* definition = activeHazard.HazardDefinition;
                 if (!hazard || !definition)
                     continue;
 
