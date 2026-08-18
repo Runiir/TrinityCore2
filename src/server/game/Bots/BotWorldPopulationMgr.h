@@ -202,7 +202,16 @@ private:
         std::string const& decision, ObjectGuid ownerGuid, uint32 spellId,
         uint64 nowMs, uint64 decisionUntilMs);
     void ReconcileNativeBattleResDecisions(uint64 nowMs);
+    struct BotUpdateContext;
     void UpdateBot(WorldBotState& state, uint32 diff);
+    void HoldValidationAttemptFailure(WorldBotState& state, Player* bot);
+    bool PrepareBotUpdate(BotUpdateContext& context);
+    void PrepareValidationKernel(BotUpdateContext& context);
+    void SubmitAdaptiveKernelCandidates(BotUpdateContext& context);
+    void SubmitValidationKernelFallbackCandidates(BotUpdateContext& context);
+    bool RunLegacyBotDecision(BotUpdateContext& context);
+    bool RunBotDecisionKernel(BotUpdateContext& context);
+    void FinalizeBotUpdate(BotUpdateContext& context);
     void HandleBotDeath(WorldBotState& state, Player* bot, uint32 diff);
     void TryRespondNativeRaidReadyCheck(WorldBotState& state, Player* bot);
     bool IsNativeRaidRecoveryEvidencePending() const;

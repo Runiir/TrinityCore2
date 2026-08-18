@@ -3,6 +3,7 @@
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Creature.h"
 #include "Map.h"
+#include "ObjectMgr.h"
 #include "PathGenerator.h"
 #include "Player.h"
 #include "SpellInfo.h"
@@ -349,4 +350,3 @@ bool BotWorldPopulationMgr::TryValidationRoutePatrolPull(
                            : "validation_route_patrol_anchor_action";
         return true;
 }
-

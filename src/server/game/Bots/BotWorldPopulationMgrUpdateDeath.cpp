@@ -54,9 +54,10 @@ void BotWorldPopulationMgr::HandleBotDeath(WorldBotState& state, Player* bot, ui
         // shared terminal hold. This keeps the final immutable bundle
         // deterministic without allowing the dead member to enter any
         // release/runback or direct-recovery path.
-        if (validationAttemptFailed)
+        if (!Cohort().ValidationAttemptFailureReason.empty()
+            && Cohort().ValidationAttemptFailureAttemptId == Cohort().AttemptId)
         {
-            holdValidationAttemptFailure();
+            HoldValidationAttemptFailure(state, bot);
             return;
         }
 
@@ -343,4 +344,3 @@ void BotWorldPopulationMgr::HandleBotDeath(WorldBotState& state, Player* bot, ui
         return;
     }
 }
-

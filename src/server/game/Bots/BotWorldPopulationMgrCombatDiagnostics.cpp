@@ -7,6 +7,7 @@
 #include "Player.h"
 #include "SpellHistory.h"
 #include "SpellInfo.h"
+#include "SpellMgr.h"
 #include "Unit.h"
 
 #include <algorithm>
