@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WORLD = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
 MODULE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrAffliction.cpp"
+CALIBRATION_BOT = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationBot.cpp"
 PERSISTENT_SETUP = ROOT / "src/server/game/Bots/BotWorldPopulationMgrPersistentSetup.cpp"
 CMAKE = ROOT / "src/server/game/CMakeLists.txt"
 
@@ -62,12 +63,13 @@ def test_affliction_pet_setup_keeps_native_profile_authority() -> None:
 def test_affliction_calibration_json_schema_is_byte_ordered() -> None:
     source = WORLD.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
+    calibration_bot = CALIBRATION_BOT.read_text(encoding="utf-8")
     assert "AppendAfflictionCalibrationJson(metrics)" in source
     assert "affliction_modifier_observation" in module
     positions = [module.index(f'\\"{field}\\"') for field in FIELDS]
     assert positions == sorted(positions)
     assert module.count("Affliction") >= len(FIELDS)
-    assert "ObserveAfflictionCalibrationModifiers(metrics, bot, fixtureTarget)" in source
+    assert "ObserveAfflictionCalibrationModifiers(metrics, bot, fixtureTarget)" in calibration_bot
 
 
 def test_affliction_inline_implementation_is_not_duplicated() -> None:
