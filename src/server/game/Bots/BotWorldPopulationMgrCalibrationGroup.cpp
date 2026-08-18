@@ -1,5 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
+#include "Player.h"
+
 #include "Bots/BotMgr.h"
 #include "Group.h"
 #include "GroupMgr.h"
@@ -83,4 +85,3 @@ void BotWorldPopulationMgr::EnsureCalibrationCohortGroup()
             : (role == "healer" ? lfg::PLAYER_ROLE_HEALER : lfg::PLAYER_ROLE_DAMAGE));
     }
 }
-
