@@ -74,7 +74,7 @@ def test_warlock_pet_setup_is_learned_native_cast_not_manufacture() -> None:
     )
     native_pet = setup[
         setup.index("if (petSetup.RequiredSummonSpellId)") : setup.index(
-            "if (bot->getClass() == CLASS_MAGE)"
+            "if (bot->getClass() == CLASS_MAGE"
         )
     ]
 
@@ -119,6 +119,45 @@ def test_warlock_pet_receipt_is_submit_finish_then_later_observation() -> None:
     assert "petSetup.NativeCastFinishedSuccessfully = success" in finished
     assert "petSetup.NativeCastObservedAtMs = nowMs" in setup
     assert "petSetup.NativeCastObservedAtMs\n                < petSetup.NativeCastFinishedAtMs" in setup
+
+
+def test_affliction_calibration_accepts_exact_preexisting_felhunter_observation() -> None:
+    source = WORLD.read_text()
+    setup = _function_body(
+        source, "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup"
+    )
+    native_pet = setup[
+        setup.index("if (petSetup.RequiredSummonSpellId)") : setup.index(
+            "// Mana Gem creation is optional consumable preparation"
+        )
+    ]
+
+    # A calibration fixture may load the exact ordinary Felhunter before the
+    # manager can observe a native summon receipt.  Admission remains scoped
+    # to Affliction and still requires the learned spell plus the exact pet.
+    assert "allowPreexistingAfflictionPet" in native_pet
+    assert 'Cohort().CalibrationTargetSpec == "affliction_warlock"' in native_pet
+    assert 'profile.SpecTag == "affliction_warlock"' in native_pet
+    assert "petSetup.RequiredSummonSpellId == 691" in native_pet
+    assert "petSetup.RequiredCreatedBySpellId == 691" in native_pet
+    assert "petSetup.RequiredEntry == ENTRY_FELHUNTER" in native_pet
+    assert "petSetup.SummonSpellKnown" in native_pet
+    assert "OrdinaryPersistentPetMatches" in native_pet
+    assert "state.LastRecoveryResult.clear()" in native_pet
+    resolver = _function_body(
+        source, "bool BotWorldPopulationMgr::TryResolveBotBlocker"
+    )
+    assert "persistent_preexisting_affliction_pet_observed" in resolver
+
+    update = _function_body(source, "void BotWorldPopulationMgr::Update(uint32 diff)")
+    readiness = update[
+        update.index("bool const nativePetReady") : update.index(
+            "if (populationReady && calibrationBot\n                && Cohort().CalibrationMode"
+        )
+    ]
+    assert "preexistingAfflictionPetReady" in readiness
+    assert "!petSetup.NativeCastSubmittedAtMs" in readiness
+    assert "populationReady = nativePetReady || preexistingAfflictionPetReady;" in readiness
 
 
 def test_previous_window_exposes_complete_live_pet_identity() -> None:

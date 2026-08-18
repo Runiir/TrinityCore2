@@ -2185,6 +2185,40 @@ private:
 
     struct CalibrationMetrics
     {
+        struct EffectiveStatVector
+        {
+            bool Observed = false;
+            uint64 ObservedAtMs = 0;
+            uint32 Guid = 0;
+            uint32 Entry = 0;
+            float Strength = 0.0f;
+            float Agility = 0.0f;
+            float Stamina = 0.0f;
+            float Intellect = 0.0f;
+            float Spirit = 0.0f;
+            float AttackPower = 0.0f;
+            float RangedAttackPower = 0.0f;
+            int32 SpellPower = 0;
+            int32 BonusDamage = 0;
+            uint32 Armor = 0;
+            uint64 Health = 0;
+            uint32 Mana = 0;
+            uint32 HitRating = 0;
+            uint32 CritRating = 0;
+            uint32 HasteRating = 0;
+            uint32 ExpertiseRating = 0;
+            uint32 MasteryRating = 0;
+            float PhysicalHitPct = 0.0f;
+            float SpellHitPct = 0.0f;
+            float MeleeCritPct = 0.0f;
+            float RangedCritPct = 0.0f;
+            float SpellCritPct = 0.0f;
+            float MasteryPoints = 0.0f;
+            float MeleeSpeedMultiplier = 1.0f;
+            float RangedSpeedMultiplier = 1.0f;
+            float SpellSpeedMultiplier = 1.0f;
+        };
+
         struct InitialPowerObservation
         {
             uint8 PowerType = 0;
@@ -2366,6 +2400,8 @@ private:
         bool InitialNeutralEclipseObserved = false;
         bool InitialPetResourceRequired = false;
         bool InitialPetResourceObserved = false;
+        EffectiveStatVector ScoringStartPlayerStats;
+        EffectiveStatVector ScoringStartPetStats;
         bool PreScorePersistentSetupReady = false;
         bool PreScoreReferenceBuffsReady = false;
         bool PreScoreReferenceTargetDebuffsReady = false;

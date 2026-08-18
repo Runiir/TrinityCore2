@@ -96,7 +96,7 @@ def test_unholy_native_pet_setup_never_manufactures_or_refills_state() -> None:
     )
     native_pet = setup[
         setup.index("if (petSetup.RequiredSummonSpellId)") : setup.index(
-            "if (bot->getClass() == CLASS_MAGE)"
+            "if (bot->getClass() == CLASS_MAGE"
         )
     ]
     assert "persistent_setup_preexisting_pet_without_native_receipt" in native_pet

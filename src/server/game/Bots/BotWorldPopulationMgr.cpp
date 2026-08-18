@@ -2981,6 +2981,18 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                     petSetup.RequiredEntry, petSetup.RequiredFamilyId,
                     petSetup.RequiredPetType, petSetup.RequiredPowerType,
                     petSetup.RequiredCreatedBySpellId);
+            bool const preexistingAfflictionPetReady = bot
+                && Cohort().CalibrationTargetSpec == "affliction_warlock"
+                && petSetup.RequiredSummonSpellId == 691
+                && petSetup.RequiredCreatedBySpellId == 691
+                && petSetup.RequiredEntry == ENTRY_FELHUNTER
+                && petSetup.SummonSpellKnown
+                && bot->HasSpell(petSetup.RequiredSummonSpellId)
+                && !petSetup.NativeCastSubmittedAtMs
+                && OrdinaryPersistentPetMatches(ordinaryPet,
+                    petSetup.RequiredEntry, petSetup.RequiredFamilyId,
+                    petSetup.RequiredPetType, petSetup.RequiredPowerType,
+                    petSetup.RequiredCreatedBySpellId);
             if (bot)
             {
                 if (Item* item = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND))
@@ -3083,7 +3095,8 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                             profile.SpecTag == "affliction_warlock"
                             || profile.SpecTag == "demonology_warlock";
                         persistentSetupReady = !petRequired
-                            || nativePersistentPetReady;
+                            || nativePersistentPetReady
+                            || preexistingAfflictionPetReady;
                         break;
                     }
                     case CLASS_ROGUE:
@@ -3767,6 +3780,43 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
             writePoisonReceipt(state.RogueMainhandPoisonSetup);
             json << ",\"offhand\":";
             writePoisonReceipt(state.RogueOffhandPoisonSetup);
+            auto writeEffectiveStats = [&json](
+                CalibrationMetrics::EffectiveStatVector const& stats)
+            {
+                json << "{\"observed\":" << (stats.Observed ? "true" : "false")
+                     << ",\"observed_at_ms\":" << stats.ObservedAtMs
+                     << ",\"guid\":" << stats.Guid
+                     << ",\"entry\":" << stats.Entry
+                     << ",\"strength\":" << stats.Strength
+                     << ",\"agility\":" << stats.Agility
+                     << ",\"stamina\":" << stats.Stamina
+                     << ",\"intellect\":" << stats.Intellect
+                     << ",\"spirit\":" << stats.Spirit
+                     << ",\"attack_power\":" << stats.AttackPower
+                     << ",\"ranged_attack_power\":" << stats.RangedAttackPower
+                     << ",\"spell_power\":" << stats.SpellPower
+                     << ",\"bonus_damage\":" << stats.BonusDamage
+                     << ",\"armor\":" << stats.Armor
+                     << ",\"health\":" << stats.Health
+                     << ",\"mana\":" << stats.Mana
+                     << ",\"hit_rating\":" << stats.HitRating
+                     << ",\"crit_rating\":" << stats.CritRating
+                     << ",\"haste_rating\":" << stats.HasteRating
+                     << ",\"expertise_rating\":" << stats.ExpertiseRating
+                     << ",\"mastery_rating\":" << stats.MasteryRating
+                     << ",\"physical_hit_pct\":" << stats.PhysicalHitPct
+                     << ",\"spell_hit_pct\":" << stats.SpellHitPct
+                     << ",\"melee_crit_pct\":" << stats.MeleeCritPct
+                     << ",\"ranged_crit_pct\":" << stats.RangedCritPct
+                     << ",\"spell_crit_pct\":" << stats.SpellCritPct
+                     << ",\"mastery_points\":" << stats.MasteryPoints
+                     << ",\"melee_speed_multiplier\":"
+                     << stats.MeleeSpeedMultiplier
+                     << ",\"ranged_speed_multiplier\":"
+                     << stats.RangedSpeedMultiplier
+                     << ",\"spell_speed_multiplier\":"
+                     << stats.SpellSpeedMultiplier << '}';
+            };
             json << "}"
                  << ",\"fire_totem\":{\"entry\":" << fireTotemEntry
                  << ",\"created_by_spell\":" << fireTotemCreatedBySpell
@@ -3786,6 +3836,17 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                  << ",\"casting_skips\":" << fireTotemCastingSkips
                  << ",\"missing_spell_skips\":" << fireTotemMissingSpellSkips
                  << ",\"no_target_skips\":" << fireTotemNoTargetSkips << "}}"
+                 << ",\"scoring_start_stats\":{\"schema\":\"trinity_scoring_start_effective_stats_v1\",\"player\":";
+            if (metrics)
+                writeEffectiveStats(metrics->ScoringStartPlayerStats);
+            else
+                writeEffectiveStats(CalibrationMetrics::EffectiveStatVector());
+            json << ",\"pet\":";
+            if (metrics)
+                writeEffectiveStats(metrics->ScoringStartPetStats);
+            else
+                writeEffectiveStats(CalibrationMetrics::EffectiveStatVector());
+            json << "}"
                  << ",\"stats\":{\"strength\":" << (bot ? bot->GetStat(STAT_STRENGTH) : 0.0f)
                  << ",\"agility\":" << (bot ? bot->GetStat(STAT_AGILITY) : 0.0f)
                  << ",\"intellect\":" << (bot ? bot->GetStat(STAT_INTELLECT) : 0.0f)
@@ -5437,7 +5498,7 @@ void BotWorldPopulationMgr::Update(uint32 diff)
             {
                 WorldBotState::NativePersistentPetSetupReceipt const& petSetup =
                     calibrationState.PersistentPetSetup;
-                populationReady = petSetup.RequiredSummonSpellId
+                bool const nativePetReady = petSetup.RequiredSummonSpellId
                     && petSetup.RequiredCreatedBySpellId
                     && petSetup.RequiredEntry && petSetup.SummonSpellKnown
                     && calibrationBot->HasSpell(petSetup.RequiredSummonSpellId)
@@ -5452,6 +5513,20 @@ void BotWorldPopulationMgr::Update(uint32 diff)
                         petSetup.RequiredEntry, petSetup.RequiredFamilyId,
                         petSetup.RequiredPetType, petSetup.RequiredPowerType,
                         petSetup.RequiredCreatedBySpellId);
+                bool const preexistingAfflictionPetReady =
+                    Cohort().CalibrationTargetSpec == "affliction_warlock"
+                    && petSetup.RequiredSummonSpellId == 691
+                    && petSetup.RequiredCreatedBySpellId == 691
+                    && petSetup.RequiredEntry == ENTRY_FELHUNTER
+                    && petSetup.SummonSpellKnown
+                    && calibrationBot->HasSpell(petSetup.RequiredSummonSpellId)
+                    && !petSetup.NativeCastSubmittedAtMs
+                    && OrdinaryPersistentPetMatches(
+                        ObserveOrdinaryPetSetup(calibrationBot),
+                        petSetup.RequiredEntry, petSetup.RequiredFamilyId,
+                        petSetup.RequiredPetType, petSetup.RequiredPowerType,
+                        petSetup.RequiredCreatedBySpellId);
+                populationReady = nativePetReady || preexistingAfflictionPetReady;
             }
             if (populationReady && calibrationBot
                 && Cohort().CalibrationMode == "single_target_300")
@@ -10090,6 +10165,78 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
         if (!bot || metricsItr == Cohort().CalibrationMetricsByGuid.end())
             continue;
         CalibrationMetrics& metrics = metricsItr->second;
+        auto observeUnitStats = [startedMs](Unit* unit,
+            CalibrationMetrics::EffectiveStatVector& stats)
+        {
+            if (!unit)
+                return;
+            stats.Observed = true;
+            stats.ObservedAtMs = startedMs;
+            stats.Guid = unit->GetGUID().GetCounter();
+            stats.Entry = unit->GetEntry();
+            stats.Strength = unit->GetStat(STAT_STRENGTH);
+            stats.Agility = unit->GetStat(STAT_AGILITY);
+            stats.Stamina = unit->GetStat(STAT_STAMINA);
+            stats.Intellect = unit->GetStat(STAT_INTELLECT);
+            stats.Spirit = unit->GetStat(STAT_SPIRIT);
+            stats.AttackPower = unit->GetTotalAttackPowerValue(BASE_ATTACK);
+            stats.RangedAttackPower =
+                unit->GetTotalAttackPowerValue(RANGED_ATTACK);
+            stats.SpellPower = unit->SpellBaseDamageBonusDone(
+                SPELL_SCHOOL_MASK_SPELL, true);
+            stats.Armor = unit->GetArmor();
+            stats.Health = unit->GetMaxHealth();
+            stats.Mana = unit->GetMaxPower(POWER_MANA);
+            float const meleeTime = unit->GetFloatValue(
+                UNIT_FIELD_BASEATTACKTIME);
+            float const rangedTime = unit->GetFloatValue(
+                UNIT_FIELD_RANGEDATTACKTIME);
+            float const spellTime = unit->GetFloatValue(UNIT_MOD_CAST_HASTE);
+            stats.MeleeSpeedMultiplier = meleeTime > 0.0f
+                ? float(unit->GetBaseAttackTime(BASE_ATTACK)) / meleeTime
+                : 1.0f;
+            stats.RangedSpeedMultiplier = rangedTime > 0.0f
+                ? float(unit->GetBaseAttackTime(RANGED_ATTACK)) / rangedTime
+                : 1.0f;
+            stats.SpellSpeedMultiplier = spellTime > 0.0f
+                ? 1.0f / spellTime : 1.0f;
+            stats.PhysicalHitPct = unit->GetTotalAuraModifier(
+                SPELL_AURA_MOD_HIT_CHANCE);
+            stats.SpellHitPct = unit->GetTotalAuraModifier(
+                SPELL_AURA_MOD_SPELL_HIT_CHANCE);
+            stats.MeleeCritPct = unit->GetUnitCriticalChanceDone(BASE_ATTACK);
+            if (Player* player = unit->ToPlayer())
+            {
+                auto rating = [player](CombatRating type)
+                {
+                    return player->GetUInt32Value(
+                        PLAYER_FIELD_COMBAT_RATING_1
+                        + AsUnderlyingType(type));
+                };
+                stats.HitRating = rating(CR_HIT_SPELL);
+                stats.CritRating = rating(CR_CRIT_SPELL);
+                stats.HasteRating = rating(CR_HASTE_SPELL);
+                stats.ExpertiseRating = rating(CR_EXPERTISE);
+                stats.MasteryRating = rating(CR_MASTERY);
+                stats.PhysicalHitPct = player->GetRatingBonusValue(
+                    CR_HIT_MELEE);
+                stats.SpellHitPct = player->GetRatingBonusValue(CR_HIT_SPELL);
+                stats.MeleeCritPct = player->GetFloatValue(
+                    PLAYER_CRIT_PERCENTAGE);
+                stats.RangedCritPct = player->GetFloatValue(
+                    PLAYER_RANGED_CRIT_PERCENTAGE);
+                stats.SpellCritPct = player->GetFloatValue(
+                    PLAYER_SPELL_CRIT_PERCENTAGE1 + SPELL_SCHOOL_SHADOW);
+                stats.MasteryPoints = player->GetRatingBonusValue(CR_MASTERY);
+            }
+            if (Pet* pet = unit->ToPet())
+            {
+                stats.BonusDamage = pet->GetBonusDamage();
+                stats.SpellPower = stats.BonusDamage;
+            }
+        };
+        observeUnitStats(bot, metrics.ScoringStartPlayerStats);
+        observeUnitStats(bot->GetPet(), metrics.ScoringStartPetStats);
         if (!metrics.InitialGearManifestSha256.empty())
         {
             std::vector<RaidRosterItemIdentity> observedGear;
@@ -16104,6 +16251,9 @@ bool BotWorldPopulationMgr::TryResolveBotBlocker(WorldBotState& state, Player* b
     else if (reason == "hunter_pet_missing" && resolver == "hunter_pet_ready")
         resolved = true;
     else if (reason == "hunter_pet_dead" && resolver == "hunter_pet_ready")
+        resolved = true;
+    else if (reason == "persistent_setup_preexisting_pet_without_native_receipt"
+        && resolver == "persistent_preexisting_affliction_pet_observed")
         resolved = true;
     else if (reason == "cast_failed" && resolver == "cast_succeeded")
         resolved = true;
@@ -43659,6 +43809,27 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
         // to fabricate this run's receipt. Core summon handling can heal and
         // refill an existing summon; a fixture must begin without that pet or
         // retain the real receipt from the cast that created it.
+        bool const allowPreexistingAfflictionPet =
+            Cohort().CalibrationActive
+            && Cohort().CalibrationTargetSpec == "affliction_warlock"
+            && profile.SpecTag == "affliction_warlock"
+            && petSetup.RequiredSummonSpellId == 691
+            && petSetup.RequiredCreatedBySpellId == 691
+            && petSetup.RequiredEntry == ENTRY_FELHUNTER
+            && petSetup.SummonSpellKnown;
+        if (exactPetObserved && !petSetup.NativeCastSubmittedAtMs
+            && allowPreexistingAfflictionPet)
+        {
+            // Calibration may start from an already loaded ordinary Felhunter.
+            // Its complete live identity is the only accepted evidence here;
+            // never synthesize a native cast receipt or mutate the pet.
+            TryResolveBotBlocker(state, bot,
+                "persistent_preexisting_affliction_pet_observed");
+            state.LastRecoveryMode.clear();
+            state.LastRecoveryResult.clear();
+            state.LastNoProgressReason.clear();
+            return false;
+        }
         if (exactPetObserved && !petSetup.NativeCastSubmittedAtMs)
         {
             ObserveBotCandidateFailure(state, bot,
