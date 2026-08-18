@@ -27187,23 +27187,6 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
     return false;
 }
 
-void BotWorldPopulationMgr::NotifyCombatAttackAttempt(Unit* attacker,
-    Unit* victim)
-{
-    if (!Cohort().Active || !attacker || !victim
-        || !Cohort().CalibrationScoredStartedMs
-        || Cohort().CalibrationWindowComplete
-        || attacker->GetGUID()
-            != Cohort().CalibrationFixtureTargetGuid)
-        return;
-
-    uint64 const nowMs = NowMs();
-    if (nowMs >= Cohort().CalibrationScoredStartedMs
-        && nowMs - Cohort().CalibrationScoredStartedMs
-            < CalibrationSingleTargetDurationMs)
-        ++Cohort().CalibrationFixtureTargetAttackEventCount;
-}
-
 void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uint32 spellId, uint32 damage,
     uint32 unmitigatedDamage, uint32 damageType, uint32 schoolMask)
 {
@@ -27407,61 +27390,4 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
             damageType, damage, unmitigatedDamage, 0, nowMs);
     AddCombatLogEvent("damage", sourceActor ? sourceActor : targetActor, attacker, victim, spellId,
         damageType, schoolMask, damage, unmitigatedDamage, 0, nowMs);
-}
-
-void BotWorldPopulationMgr::NotifyCombatHeal(Unit* healer, Unit* target, uint32 spellId, uint32 attemptedHeal,
-    uint32 effectiveHeal, uint32 absorbedHeal)
-{
-    if (!Cohort().Active || !healer || !target || (!attemptedHeal && !effectiveHeal && !absorbedHeal))
-        return;
-
-    if (Player* calibrationHealer = CombatOwnerPlayer(healer))
-    {
-        auto calibration = Cohort().CalibrationMetricsByGuid.find(calibrationHealer->GetGUID().GetCounter());
-        bool const scored = Cohort().CalibrationScoredStartedMs && !Cohort().CalibrationWindowComplete
-            && NowMs() >= Cohort().CalibrationScoredStartedMs
-            && NowMs() - Cohort().CalibrationScoredStartedMs <= 300000;
-        if (calibration != Cohort().CalibrationMetricsByGuid.end() && scored)
-        {
-            CalibrationMetrics& metrics = calibration->second;
-            metrics.AttemptedHealing += attemptedHeal;
-            metrics.EffectiveHealing += effectiveHeal;
-            metrics.AbsorbedHealing += absorbedHeal;
-            if (effectiveHeal || absorbedHeal)
-            {
-                uint32 const targetGuid = target->GetGUID().GetCounter();
-                ++metrics.HealTargetCounts[targetGuid];
-                auto damaged = metrics.LastControlledDamageMsByTarget.find(targetGuid);
-                if (damaged != metrics.LastControlledDamageMsByTarget.end())
-                {
-                    uint64 const eventMs = damaged->second;
-                    metrics.HealResponseLatenciesMs.push_back(uint32(std::min<uint64>(
-                        NowMs() - eventMs, std::numeric_limits<uint32>::max())));
-                    for (auto itr = metrics.LastControlledDamageMsByTarget.begin();
-                        itr != metrics.LastControlledDamageMsByTarget.end();)
-                        if (itr->second == eventMs)
-                            itr = metrics.LastControlledDamageMsByTarget.erase(itr);
-                        else
-                            ++itr;
-                }
-            }
-            return;
-        }
-    }
-
-    Player* sourceActor = FindCombatLogCohortPlayer(healer);
-    Player* targetActor = FindCombatLogCohortPlayer(target);
-    if (!sourceActor && !targetActor)
-        return;
-
-    uint64 nowMs = NowMs();
-    ++Party().CombatLogEventCount;
-    if (sourceActor)
-        AddCombatLogAggregate(CombatLogPerspective::HealingDone, sourceActor, healer, target, spellId,
-            0, effectiveHeal, attemptedHeal, absorbedHeal, nowMs);
-    if (targetActor)
-        AddCombatLogAggregate(CombatLogPerspective::HealingReceived, targetActor, healer, target, spellId,
-            0, effectiveHeal, attemptedHeal, absorbedHeal, nowMs);
-    AddCombatLogEvent("heal", sourceActor ? sourceActor : targetActor, healer, target, spellId,
-        0, 0, effectiveHeal, attemptedHeal, absorbedHeal, nowMs);
 }
