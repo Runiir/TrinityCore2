@@ -2129,6 +2129,10 @@ private:
         std::function<bool(Unit const*)> const& hasStrictPathToValidationRouteTarget,
         std::function<bool(Creature const*)> const& isBoundedTerminalPartyCombatTarget,
         std::function<bool(Creature const*)> const& isCurrentDiscoveryScriptedEventTarget);
+    Unit* FindValidationRouteGroupFocusTarget(
+        Player* bot,
+        std::function<Unit*(Unit*)> const& routeUsableValidationFocus,
+        std::function<bool()> const& routeFocusMemoryFresh);
     bool CurrentLiveValidationRoutePackCanContinue(
         std::function<bool()> const& persistedValidationRoutePackHasLiveMembers,
         std::function<bool(uint32)> const& isValidationRoutePackEntry,
