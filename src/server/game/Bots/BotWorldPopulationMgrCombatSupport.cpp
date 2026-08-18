@@ -1,13 +1,16 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotMgr.h"
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotProgressionGoalPolicy.h"
 #include "Bots/BotRaidAreaAuthority.h"
 
 #include "CellImpl.h"
 #include "Creature.h"
+#include "DatabaseEnv.h"
 #include "GameTime.h"
 #include "GridNotifiersImpl.h"
 #include "Group.h"
+#include "LFG.h"
 #include "MotionMaster.h"
 #include "Player.h"
 #include "Spell.h"
@@ -369,4 +372,3 @@ bool BotWorldPopulationMgr::TryNativeSelfResurrection(WorldBotState& state, Play
         raw.c_str(), semantic.c_str(), 0.0f, 0, spellId);
     return false;
 }
-

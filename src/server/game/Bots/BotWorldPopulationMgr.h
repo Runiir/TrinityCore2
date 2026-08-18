@@ -18,6 +18,7 @@
 #include "Bots/BotTelemetryPolicy.h"
 #include "Bots/BotWorldPopulationMgrValidationRouteContexts.h"
 #include "Bots/BotWorldPopulationMgrValidationRouteMovementCheck.h"
+#include "Bots/BotWorldPopulationMgrValidationRouteDrudge.h"
 #include "Bots/BotTypes.h"
 #include <array>
 #include <deque>
@@ -152,9 +153,9 @@ private:
         BotWorldPopulationMgrValidationRoute::AnchorContext;
     using ValidationRouteMovementCheckCallbacks =
         BotWorldPopulationMgrValidationRoute::MovementCheckCallbacks;
+    friend struct BotWorldPopulationMgrValidationRoute::DrudgeLaneContext;
 
 #include "Bots/BotWorldPopulationMgrPlanningContracts.h"
-
 
     void LoadConfig(std::string const& name, BotWorldExperimentConfig const* overrideConfig);
     void ApplyRuntimeConfigOverride(BotWorldExperimentConfig const& overrideConfig);
@@ -358,6 +359,8 @@ private:
         std::function<ObjectGuid()> const& routeTankFocusGuid,
         std::function<bool()> const& persistedPackHasLiveMembers);
     bool TryValidationRouteMovementCheck(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action, Unit* preferredTarget, ValidationRouteMovementCheckCallbacks const& callbacks);
+    bool TryValidationRouteDrudgeChargeLanes(WorldBotState&, Player*, BotRolePowerBreakdown const&, BotProgressionStage, BotProgressionActivity, std::string&, std::string&, Unit*&, std::function<bool(Player*, Unit*, bool, bool)> const&, std::function<bool(Creature const*)> const&, std::function<float()> const&, float);
+    bool TryValidationRouteDrudgeMinimumDistance(WorldBotState&, Player*, BotRolePowerBreakdown const&, BotProgressionStage, BotProgressionActivity, std::string&, std::string&, Unit*&, std::function<bool(Creature const*)> const&, bool = false);
     bool TryValidationRouteFeralHazardHealerRoar(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action);
     bool TryValidationRouteFeralHazardLooseTaunt(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action);
     bool TryValidationRouteHealerHazardFade(WorldBotState& state, Player* bot, Unit* preferredTarget, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action);
@@ -685,7 +688,6 @@ private:
             float RangedSpeedMultiplier = 1.0f;
             float SpellSpeedMultiplier = 1.0f;
         };
-
         struct InitialPowerObservation
         {
             uint8 PowerType = 0;
@@ -700,7 +702,6 @@ private:
             std::string UnitKind;
             std::string PowerName;
         };
-
         struct TargetHealthPhaseObservation
         {
             uint32 SampleCount = 0;
@@ -721,7 +722,6 @@ private:
             uint64 MaximumDamageEventMaxHealth = 0;
             uint32 MaximumDamageEvent = 0;
         };
-
         struct DecisionTimelineEntry
         {
             uint64 ElapsedMs = 0;
@@ -746,7 +746,6 @@ private:
             float TargetDistance = 0.0f;
             bool Alive = false;
         };
-
         struct OffTargetDamageEvent
         {
             struct PeriodicHealthAuraCandidate
@@ -757,7 +756,6 @@ private:
                 uint8 EffectIndex = 0;
                 uint16 AuraType = 0;
             };
-
             uint64 ElapsedMs = 0;
             uint32 AttackerGuid = 0;
             uint32 VictimGuid = 0;
@@ -770,7 +768,6 @@ private:
             bool VictimIsOwner = false;
             std::vector<PeriodicHealthAuraCandidate> PeriodicHealthAuraCandidates;
         };
-
         uint64 WindowStartedMs = 0;
         uint64 WindowEndedMs = 0;
         uint64 Damage = 0;
@@ -953,13 +950,11 @@ private:
         // schedule from these integers; it does not trust an aggregate flag.
         std::array<TargetHealthPhaseObservation, 5> TargetHealthPhaseObservations;
     };
-
     void AppendCombatCalibrationSummaryJson(std::ostringstream& json,
         uint64 nowMs,
         std::function<void(std::map<uint32, CalibrationMetrics> const&, bool)> const& writeBots) const;
 
 #include "Bots/BotWorldPopulationMgrRuntimeContracts.h"
-
     BotWorldPopulationMgr();
     CohortRuntime& Cohort();
     CohortRuntime const& Cohort() const;

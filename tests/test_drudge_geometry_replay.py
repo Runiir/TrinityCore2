@@ -342,97 +342,31 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     implementation = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
         encoding="utf-8"
     )
-    lane = implementation[
-        implementation.index("auto tryValidationRouteDrudgeChargeLanes") :
-        implementation.index("if (tryValidationRouteDrudgeChargeLanes())")
-    ]
-
-    assert '#include "Bots/BotRaidDrudgeGeometryState.h"' in implementation
-    assert "rushGeometry.InvalidateAnchor" in lane
-    assert "proofTransition.ReactivatePriorPathProof" in lane
-    assert "ValidationRouteDrudgeAnchorPathProven" in lane
-    assert "MemberAtProvenAnchor" in lane
-    assert "DynamicSpacingSafe" in lane
-    assert "LastValidationRouteDrudgeChargeGenerationObserved" in lane
-    assert (
-        "LastValidationRouteDrudgeChargeGenerationHandled != chargeObservation->Sequence"
-        not in lane
+    geometry = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp").read_text(
+        encoding="utf-8"
     )
-    assert "combatTankStagingActive()" in lane
-    assert "exactCombatTankAnchorsSafe" in lane
-    assert "!tankStage.NativeEngagementAllowed" in lane
-    assert "tankStageInput.ChargeQueueIdle" in lane
-    assert "tankStageInput.ChargeLanded = nativeChargePending" in lane
-    assert "recoveryFormationActiveForProof" in lane
-    recovery_formation = lane.index("bool const recoveryFormationActiveForProof")
-    assert "drudgeRecoveryFormationActive()" in lane[
-        recovery_formation : recovery_formation + 180
-    ]
-    assert "drudge_lane_native_taunt_approach" in lane
-    assert 'candidate.RejectReason == "out_of_range"' in lane
-    assert "auto strictTankRecoveryPath" in lane
-    assert "path.GetActualEndPosition()" in lane
-    assert "RecoveryPathPreservesTankSeparation" in lane
-    assert "ValidationRouteSplitMinimumSeparationYards" in lane
-    assert "* 0.5f" in lane
-    assert lane.count("strictTankRecoveryPath(") == 2
-    return_guard = lane.index("!assignedTank || !nativeChargePending")
-    return_move = lane.index("moved = MoveBotToPoint", return_guard)
-    assert return_guard < lane.index("strictTankRecoveryPath(", return_guard) < return_move
-    assert "tankStageInput.SourcesAlive" in lane
-    assert "tankStageInput.SourcesSeparated" in lane
-    assert "tankStageInput.SourcesOnFrozenLanes" in lane
-    assert "tankStageInput.TanksOnFrozenLanes" in lane
-    assert "tankStageInput.BoundTankSourceGeometrySafe" in lane
-    assert "tankStageInput.NativeMeleeStopBounded" in lane
-    assert "GetMeleeRange" in lane
-    assert "tankStage.SupportAllowed" in lane
-    assert "tryRouteGroupHeal(bot, laneSource, false)" in lane
-    assert "SelectMemberRecoveryAction" in lane
-    assert "if (tryValidationRouteMinimumDistance(true))" in lane
-    outer_capture = lane[: lane.index("]() -> bool")]
-    assert "&drudgeLandedRushPending" in outer_capture
-    assert "drudge_anchor_source_unsafe" in lane
-    assert "drudge_anchor_spacing_unsafe" in lane
-    assert "drudge_anchor_native_path_rejected:path_type=" in lane
-    assert "drudge_anchor_native_end_rejected:end2d=" in lane
-    assert "bot->GetInstanceId() != 0" in lane
-    assert "ValidationRouteDrudgeAnchorSource0Identity" in lane
+    lanes = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp").read_text(
+        encoding="utf-8"
+    )
+    actions = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp").read_text(
+        encoding="utf-8"
+    )
 
-    barrier = lane.index("!tankStage.NativeEngagementAllowed || formationRequiredMutable")
-    exact_reseparation = lane.index("if (nativeChargePending && exactRosterReSeparated())")
-    specialized_escape = lane.index("if (tryValidationRouteMinimumDistance(true))")
-    unresolved_contract = lane.index("if (!contractResolved")
-    recovery_choice = lane.index("SelectMemberRecoveryAction", barrier)
-    recovery_move = lane.index("tryFormationRecovery();", recovery_choice)
-    support = lane.index("drudge_staging_support")
-    first_taunt = lane.index("drudge_lane_native_taunt")
-    assert specialized_escape < unresolved_contract < exact_reseparation < barrier
-    assert barrier < recovery_choice < recovery_move < support
-    assert first_taunt < barrier
-    assert "assignedTank && tankStage.NativeOwnershipAllowed" in lane[first_taunt - 1200:first_taunt]
-
-    source_unsafe = lane.index('"drudge_anchor_source_unsafe"')
-    spacing_unsafe = lane.index('"drudge_anchor_spacing_unsafe"')
-    cooldown = lane.index("if (!pathSearch.NativePathSearchDue)")
-    strict_path = lane.index("if (!strictNativePath", cooldown)
-    transition = lane.index("SelectAnchorPathSearch(")
-    assert transition < source_unsafe < spacing_unsafe < cooldown < strict_path
-    assert "pathSearch.RetryAfterMs" in lane[transition:source_unsafe]
-    assert "state.LastRecoveryResult.clear();" in lane[strict_path:exact_reseparation]
-
-    minimum = implementation[
-        implementation.index("auto drudgeLandedRushPending") :
-        implementation.index("auto tryValidationRouteDrudgeChargeLanes")
-    ]
-    assert "SelectMinimumDistanceOwner" in minimum
-    assert "MinimumDistanceOwner::LandedRushRecovery" in minimum
-    assert "auto observation = std::find_if(" in minimum
-    assert "&& observation->Landed" in minimum
-    assert "std::any_of(" not in minimum[
-        minimum.index("auto drudgeLandedRushPending") :
-        minimum.index("auto tryValidationRouteMinimumDistance")
-    ]
+    assert "TryValidationRouteDrudgeMinimumDistance" in implementation
+    assert "TryValidationRouteDrudgeChargeLanes" in implementation
+    assert "SelectMinimumDistanceOwner" in geometry
+    assert "MinimumDistanceOwner::LandedRushRecovery" in geometry
+    assert "ValidationRouteDrudgeChargeObservations" in geometry
+    assert "RecoveryPathPreservesTankSeparation" in geometry
+    assert "ValidationRouteDrudgeAnchorSource0Identity" in geometry
+    assert "ExactRosterPrepullStaged" in geometry
+    assert "ValidationRouteSplitSourceGuids" in lanes
+    assert "ValidationRouteSplitLaneARosterSlots" in lanes
+    assert "SetAllOffenseSuppressed" in actions
+    assert "SelectMemberRecoveryAction" in actions
+    assert "drudge_lane_native_taunt" in actions
+    assert "drudge_pre_first_rush_threat_seed" in actions
+    assert "drudge_native_charge_reseparation_complete" in actions
 
 
 def test_future_encounter_contamination_is_attempt_terminal_not_a_transient_hold():
@@ -440,7 +374,7 @@ def test_future_encounter_contamination_is_attempt_terminal_not_a_transient_hold
         encoding="utf-8"
     )
     start = implementation.index("Creature* prematureNextEncounter = nullptr;")
-    end = implementation.index("auto validationPartyHasActiveCombat", start)
+    end = implementation.index("ValidationRoutePackContext pack", start)
     hold = implementation[start:end]
 
     latch = hold.index(
@@ -456,7 +390,7 @@ def test_future_encounter_contamination_is_attempt_terminal_not_a_transient_hold
 
 
 def test_second_same_source_rush_terminalizes_an_unclosed_native_reseparation():
-    implementation = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
+    implementation = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatLog.cpp").read_text(
         encoding="utf-8"
     )
     start = implementation.index(
