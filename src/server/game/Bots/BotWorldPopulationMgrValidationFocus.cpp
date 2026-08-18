@@ -167,3 +167,158 @@ Unit* BotWorldPopulationMgr::FindValidationRouteGroupFocusTarget(
     return nullptr;
 }
 
+
+ObjectGuid BotWorldPopulationMgr::FindValidationRouteTankFocusGuid(
+    Player* bot,
+    std::function<Unit*(Unit*)> const& routeUsableValidationFocus,
+    std::function<bool()> const& routeFocusMemoryFresh)
+{
+    auto activeCohortFocus = [](Player* member, Unit* focus) -> bool
+    {
+        return member && focus && (member->IsInCombat() || focus->IsInCombat() || focus->GetVictim());
+    };
+    auto tankOwnsFocus = [](Player* member, Unit* focus) -> bool
+    {
+        return member && focus && focus->GetVictim() == member;
+    };
+
+    if (routeFocusMemoryFresh())
+        if (Unit* focus = routeUsableValidationFocus(ObjectAccessor::GetUnit(*bot, Party().ValidationRouteFocusGuid)))
+        {
+            if (Cohort().Config.ValidationRouteKind != "boss")
+            {
+                bool ownedByTank = false;
+                for (WorldBotState const& cohortState : Party().Bots)
+                {
+                    Player* member = GetBot(cohortState);
+                    if (member && member != bot && member->IsAlive() && member->GetMap() == bot->GetMap() && std::string(GetDungeonRole(member)) == "tank" && tankOwnsFocus(member, focus))
+                    {
+                        ownedByTank = true;
+                        break;
+                    }
+                }
+                if (!ownedByTank)
+                    return ObjectGuid::Empty;
+            }
+            return focus->GetGUID();
+        }
+
+    for (WorldBotState const& cohortState : Party().Bots)
+    {
+        Player* member = GetBot(cohortState);
+        if (!member || member == bot || !member->IsAlive() || member->GetMap() != bot->GetMap())
+            continue;
+        if (std::string(GetDungeonRole(member)) != "tank")
+            continue;
+
+        if (Unit* victim = routeUsableValidationFocus(member->GetVictim()))
+            return victim->GetGUID();
+        if (!cohortState.TargetGuid.IsEmpty())
+            if (Unit* focus = routeUsableValidationFocus(ObjectAccessor::GetUnit(*member, cohortState.TargetGuid)))
+            {
+                if (!activeCohortFocus(member, focus))
+                    continue;
+                if (Cohort().Config.ValidationRouteKind != "boss" && !tankOwnsFocus(member, focus))
+                    continue;
+                return focus->GetGUID();
+            }
+    }
+
+    if (Player* anchor = FindDungeonAnchor(bot))
+        if (Unit* victim = routeUsableValidationFocus(anchor->GetVictim()))
+            return victim->GetGUID();
+
+    return ObjectGuid::Empty;
+}
+
+void BotWorldPopulationMgr::RememberValidationRouteFocus(Unit* focus)
+{
+    if (!focus)
+        return;
+
+    Party().ValidationRouteFocusGuid = focus->GetGUID();
+    if (Creature const* creature = focus->ToCreature())
+        Party().ValidationRouteFocusEntry = creature->GetEntry();
+    Party().ValidationRouteFocusMapId = focus->GetMapId();
+    Party().ValidationRouteFocusX = focus->GetPositionX();
+    Party().ValidationRouteFocusY = focus->GetPositionY();
+    Party().ValidationRouteFocusZ = focus->GetPositionZ();
+    Party().ValidationRouteFocusSeenMs = NowMs();
+    Creature* boss = focus->ToCreature();
+    if (Cohort().Config.ValidationRouteKind == "boss"
+        && boss
+        && focus->GetEntry() == Cohort().Config.ValidationRouteTargetEntry
+        && (boss->IsDungeonBoss() || boss->isWorldBoss()))
+    {
+        Party().ValidationRouteEngagedBossGuid = focus->GetGUID();
+        Party().ValidationRouteEngagedBossGeneration = Party().ValidationRouteGeneration;
+        Party().ValidationRouteEngagedBossMapId = focus->GetMapId();
+        Party().ValidationRouteEngagedBossInstanceId = focus->GetInstanceId();
+    }
+}
+
+Unit* BotWorldPopulationMgr::MakeExistingValidationRouteCombatReady(
+    Player* bot, Creature* creature,
+    std::function<bool(Creature const*)> const& isValidationRouteCombatTarget)
+{
+    if (!Party().ValidationRouteActivationApplied || Cohort().Config.ValidationRouteKind != "boss" || !bot || !bot->IsAlive() || !creature || !creature->IsAlive())
+        return nullptr;
+    if (!isValidationRouteCombatTarget(creature) || !bot->IsValidAttackTarget(creature))
+        return nullptr;
+
+    RememberValidationRouteFocus(creature);
+    return creature;
+}
+
+Unit* BotWorldPopulationMgr::FindValidationRouteTankFocusTarget(
+    Player* bot, std::function<Unit*(Unit*)> const& routeUsableCombatTarget,
+    ObjectGuid expectedGuid)
+{
+    auto activeCohortFocus = [](Player* member, Unit* focus) -> bool
+    {
+        return member && focus && (member->IsInCombat() || focus->IsInCombat() || focus->GetVictim());
+    };
+
+    auto usableExpected = [&](Unit* focus) -> Unit*
+    {
+        focus = routeUsableCombatTarget(focus);
+        if (!focus)
+            return nullptr;
+        if (!expectedGuid.IsEmpty() && focus->GetGUID() != expectedGuid)
+            return nullptr;
+        return focus;
+    };
+
+    for (WorldBotState const& cohortState : Party().Bots)
+    {
+        Player* member = GetBot(cohortState);
+        if (!member || member == bot || !member->IsAlive() || member->GetMap() != bot->GetMap())
+            continue;
+        if (std::string(GetDungeonRole(member)) != "tank")
+            continue;
+
+        if (Unit* focus = routeUsableCombatTarget(member->GetVictim()))
+        {
+            RememberValidationRouteFocus(focus);
+            return focus;
+        }
+        if (!cohortState.TargetGuid.IsEmpty())
+            if (Unit* focus = usableExpected(ObjectAccessor::GetUnit(*member, cohortState.TargetGuid)))
+            {
+                if (!activeCohortFocus(member, focus))
+                    continue;
+                RememberValidationRouteFocus(focus);
+                return focus;
+            }
+    }
+
+    if (Player* anchor = FindDungeonAnchor(bot))
+        if (Unit* focus = routeUsableCombatTarget(anchor->GetVictim()))
+        {
+            RememberValidationRouteFocus(focus);
+            return focus;
+        }
+
+    return nullptr;
+}
+

@@ -14,6 +14,13 @@ def test_validation_focus_module_is_bounded_and_registered():
     assert "BotWorldPopulationMgrValidationFocus.cpp" in CMAKE.read_text()
     assert '#include "Bots/BotWorldPopulationMgr.h"' in text
     assert "BotWorldPopulationMgr::FindValidationRouteGroupFocusTarget" in text
+    for method in (
+        "BotWorldPopulationMgr::FindValidationRouteTankFocusGuid",
+        "BotWorldPopulationMgr::RememberValidationRouteFocus",
+        "BotWorldPopulationMgr::MakeExistingValidationRouteCombatReady",
+        "BotWorldPopulationMgr::FindValidationRouteTankFocusTarget",
+    ):
+        assert method in text
     assert "FindValidationRouteGroupFocusTarget" in HEADER.read_text()
 
 
@@ -34,4 +41,3 @@ def test_validation_focus_preserves_group_vote_contract():
         "bestScore",
     ):
         assert marker in text
-

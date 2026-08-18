@@ -6403,97 +6403,17 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     };
     auto routeTankFocusGuid = [this, bot, &routeUsableValidationFocus, &routeFocusMemoryFresh]() -> ObjectGuid
     {
-        auto activeCohortFocus = [](Player* member, Unit* focus) -> bool
-        {
-            return member && focus && (member->IsInCombat() || focus->IsInCombat() || focus->GetVictim());
-        };
-        auto tankOwnsFocus = [](Player* member, Unit* focus) -> bool
-        {
-            return member && focus && focus->GetVictim() == member;
-        };
-
-        if (routeFocusMemoryFresh())
-            if (Unit* focus = routeUsableValidationFocus(ObjectAccessor::GetUnit(*bot, Party().ValidationRouteFocusGuid)))
-            {
-                if (Cohort().Config.ValidationRouteKind != "boss")
-                {
-                    bool ownedByTank = false;
-                    for (WorldBotState const& cohortState : Party().Bots)
-                    {
-                        Player* member = GetBot(cohortState);
-                        if (member && member != bot && member->IsAlive() && member->GetMap() == bot->GetMap() && std::string(GetDungeonRole(member)) == "tank" && tankOwnsFocus(member, focus))
-                        {
-                            ownedByTank = true;
-                            break;
-                        }
-                    }
-                    if (!ownedByTank)
-                        return ObjectGuid::Empty;
-                }
-                return focus->GetGUID();
-            }
-
-        for (WorldBotState const& cohortState : Party().Bots)
-        {
-            Player* member = GetBot(cohortState);
-            if (!member || member == bot || !member->IsAlive() || member->GetMap() != bot->GetMap())
-                continue;
-            if (std::string(GetDungeonRole(member)) != "tank")
-                continue;
-
-            if (Unit* victim = routeUsableValidationFocus(member->GetVictim()))
-                return victim->GetGUID();
-            if (!cohortState.TargetGuid.IsEmpty())
-                if (Unit* focus = routeUsableValidationFocus(ObjectAccessor::GetUnit(*member, cohortState.TargetGuid)))
-                {
-                    if (!activeCohortFocus(member, focus))
-                        continue;
-                    if (Cohort().Config.ValidationRouteKind != "boss" && !tankOwnsFocus(member, focus))
-                        continue;
-                    return focus->GetGUID();
-                }
-        }
-
-        if (Player* anchor = FindDungeonAnchor(bot))
-            if (Unit* victim = routeUsableValidationFocus(anchor->GetVictim()))
-                return victim->GetGUID();
-
-        return ObjectGuid::Empty;
+        return FindValidationRouteTankFocusGuid(bot,
+            routeUsableValidationFocus, routeFocusMemoryFresh);
     };
     auto rememberValidationRouteFocus = [this](Unit* focus)
     {
-        if (!focus)
-            return;
-
-        Party().ValidationRouteFocusGuid = focus->GetGUID();
-        if (Creature const* creature = focus->ToCreature())
-            Party().ValidationRouteFocusEntry = creature->GetEntry();
-        Party().ValidationRouteFocusMapId = focus->GetMapId();
-        Party().ValidationRouteFocusX = focus->GetPositionX();
-        Party().ValidationRouteFocusY = focus->GetPositionY();
-        Party().ValidationRouteFocusZ = focus->GetPositionZ();
-        Party().ValidationRouteFocusSeenMs = NowMs();
-        Creature* boss = focus->ToCreature();
-        if (Cohort().Config.ValidationRouteKind == "boss"
-            && boss
-            && focus->GetEntry() == Cohort().Config.ValidationRouteTargetEntry
-            && (boss->IsDungeonBoss() || boss->isWorldBoss()))
-        {
-            Party().ValidationRouteEngagedBossGuid = focus->GetGUID();
-            Party().ValidationRouteEngagedBossGeneration = Party().ValidationRouteGeneration;
-            Party().ValidationRouteEngagedBossMapId = focus->GetMapId();
-            Party().ValidationRouteEngagedBossInstanceId = focus->GetInstanceId();
-        }
+        RememberValidationRouteFocus(focus);
     };
-    auto makeExistingValidationRouteCombatReady = [this, bot, &rememberValidationRouteFocus, &isValidationRouteCombatTarget](Creature* creature) -> Unit*
+    auto makeExistingValidationRouteCombatReady = [this, bot, &isValidationRouteCombatTarget](Creature* creature) -> Unit*
     {
-        if (!Party().ValidationRouteActivationApplied || Cohort().Config.ValidationRouteKind != "boss" || !bot || !bot->IsAlive() || !creature || !creature->IsAlive())
-            return nullptr;
-        if (!isValidationRouteCombatTarget(creature) || !bot->IsValidAttackTarget(creature))
-            return nullptr;
-
-        rememberValidationRouteFocus(creature);
-        return creature;
+        return MakeExistingValidationRouteCombatReady(bot, creature,
+            isValidationRouteCombatTarget);
     };
     auto tryValidationRouteActivation = [this, &state, bot, &power, stage, activity](Unit* seenTarget, char const* reason) -> bool
     {
@@ -6599,54 +6519,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
         return false;
     };
-    auto routeTankFocusTarget = [this, bot, &routeUsableCombatTarget, &rememberValidationRouteFocus](ObjectGuid expectedGuid) -> Unit*
+    auto routeTankFocusTarget = [this, bot, &routeUsableCombatTarget](ObjectGuid expectedGuid) -> Unit*
     {
-        auto activeCohortFocus = [](Player* member, Unit* focus) -> bool
-        {
-            return member && focus && (member->IsInCombat() || focus->IsInCombat() || focus->GetVictim());
-        };
-
-        auto usableExpected = [&](Unit* focus) -> Unit*
-        {
-            focus = routeUsableCombatTarget(focus);
-            if (!focus)
-                return nullptr;
-            if (!expectedGuid.IsEmpty() && focus->GetGUID() != expectedGuid)
-                return nullptr;
-            return focus;
-        };
-
-        for (WorldBotState const& cohortState : Party().Bots)
-        {
-            Player* member = GetBot(cohortState);
-            if (!member || member == bot || !member->IsAlive() || member->GetMap() != bot->GetMap())
-                continue;
-            if (std::string(GetDungeonRole(member)) != "tank")
-                continue;
-
-            if (Unit* focus = routeUsableCombatTarget(member->GetVictim()))
-            {
-                rememberValidationRouteFocus(focus);
-                return focus;
-            }
-            if (!cohortState.TargetGuid.IsEmpty())
-                if (Unit* focus = usableExpected(ObjectAccessor::GetUnit(*member, cohortState.TargetGuid)))
-                {
-                    if (!activeCohortFocus(member, focus))
-                        continue;
-                    rememberValidationRouteFocus(focus);
-                    return focus;
-                }
-        }
-
-        if (Player* anchor = FindDungeonAnchor(bot))
-            if (Unit* focus = routeUsableCombatTarget(anchor->GetVictim()))
-            {
-                rememberValidationRouteFocus(focus);
-                return focus;
-            }
-
-        return nullptr;
+        return FindValidationRouteTankFocusTarget(bot,
+            routeUsableCombatTarget, expectedGuid);
     };
     auto routeFocusMemoryActive = [&routeFocusMemoryFresh]() -> bool
     {
