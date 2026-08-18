@@ -3412,6 +3412,53 @@ def watchdog_state(
     }
 
 
+def calibration_pre_scoring_blocker(
+    report: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    """Return one exact zero-action warmup blocker, never a DPS inference."""
+    calibration = report.get("combat_calibration") or {}
+    if not isinstance(calibration, Mapping):
+        return None
+    if str(calibration.get("phase") or "").lower() in {"scoring", "complete"}:
+        return None
+    for bot in calibration.get("bots") or []:
+        if not isinstance(bot, Mapping) or int(bot.get("attempts") or 0) != 0:
+            continue
+        diagnostic = bot.get("movement_diagnostic") or {}
+        if not isinstance(diagnostic, Mapping):
+            continue
+        reason = str(diagnostic.get("last_recovery_result") or "")
+        if not reason.startswith("persistent_setup_"):
+            continue
+        return {
+            "bot_guid": int(bot.get("guid") or 0),
+            "reason": reason,
+            "attempts": 0,
+        }
+    return None
+
+
+def finalize_calibration_pre_scoring_blocker(
+    output_dir: Path,
+    report: dict[str, Any],
+    blocker: Mapping[str, Any],
+) -> None:
+    label = "calibration_pre_scoring_blocked"
+    report["completion_reason"] = "calibration_pre_scoring_blocker_watchdog"
+    report.setdefault("watchdog_state", {})["calibration_pre_scoring_blocker"] = dict(blocker)
+    report.setdefault("watchdog_state", {})["calibration_pre_scoring_blocker_repeat_count"] = 3
+    if label not in report["failure_labels"]:
+        report["failure_labels"].insert(0, label)
+    report["failure_reason"] = label
+    report["failed"] = max(int(report.get("failed") or 0), 1)
+    report["all_passed"] = False
+    report["acceptable_final_evidence"] = False
+    if "watchdog_failure_is_not_final_evidence" not in report["final_evidence_rejections"]:
+        report["final_evidence_rejections"].append("watchdog_failure_is_not_final_evidence")
+    finalize_heartbeat(output_dir, report)
+    write_json(output_dir / "report.json", report)
+
+
 def resolved_manifest_failure_labels(
     failure_labels: list[str], evidence: dict[str, Any], manifest: dict[str, Any] | None
 ) -> list[str]:
@@ -3525,7 +3572,7 @@ def final_evidence_rejections(
         rejections.append("failure_labels_present")
     if context.get("segment_id") or context.get("route_node_id"):
         rejections.append("segment_or_route_context_is_debug_only")
-    if completion in {"emergency_wall_clock_timeout", "no_progress_watchdog", "repeated_decision_watchdog", "death_loop_watchdog"}:
+    if completion in {"emergency_wall_clock_timeout", "no_progress_watchdog", "repeated_decision_watchdog", "death_loop_watchdog", "calibration_pre_scoring_blocker_watchdog"}:
         rejections.append("watchdog_failure_is_not_final_evidence")
     if evidence.get("forbidden_completion_assists"):
         rejections.append("forced_or_teacher_kill_evidence")
@@ -4019,6 +4066,8 @@ def run_transport_completion_watchdog(
     heartbeat_index = 0
     last_progress_total = -1
     last_progress_at = time.monotonic()
+    last_calibration_blocker = ""
+    calibration_blocker_repeats = 0
 
     def send(command_text: str) -> tuple[int, bool]:
         remaining = (
@@ -4105,6 +4154,16 @@ def run_transport_completion_watchdog(
         calibration = report.get("combat_calibration") or {}
         if bool(calibration.get("window_complete")):
             return finish(0, False)
+        blocker = calibration_pre_scoring_blocker(report)
+        blocker_key = canonical_sha256(blocker) if blocker else ""
+        if blocker_key and blocker_key == last_calibration_blocker:
+            calibration_blocker_repeats += 1
+        else:
+            last_calibration_blocker = blocker_key
+            calibration_blocker_repeats = 1 if blocker_key else 0
+        if blocker and calibration_blocker_repeats >= 3:
+            finalize_calibration_pre_scoring_blocker(output_dir, report, blocker)
+            return finish(0, False)
         if report["acceptable_final_evidence"] or report["completion_reason"] in {"repeated_decision_watchdog", "death_loop_watchdog", "machine_failure_predicate"}:
             return finish(0, False)
         if validation_route_manifest and semantic_progress_plateau:
@@ -4152,6 +4211,8 @@ def run_worldserver_completion_watchdog(
     heartbeat_index = 0
     last_progress_total = -1
     last_progress_at = time.monotonic()
+    last_calibration_blocker = ""
+    calibration_blocker_repeats = 0
     process = subprocess.Popen(
         command,
         stdin=subprocess.PIPE,
@@ -4261,9 +4322,22 @@ def run_worldserver_completion_watchdog(
                 finalize_heartbeat(output_dir, report)
                 write_json(output_dir / "report.json", report)
                 break
+            calibration = report.get("combat_calibration") or {}
+            if bool(calibration.get("window_complete")):
+                break
             if report["acceptable_final_evidence"]:
                 break
             if report["completion_reason"] in {"repeated_decision_watchdog", "death_loop_watchdog", "machine_failure_predicate"}:
+                break
+            blocker = calibration_pre_scoring_blocker(report)
+            blocker_key = canonical_sha256(blocker) if blocker else ""
+            if blocker_key and blocker_key == last_calibration_blocker:
+                calibration_blocker_repeats += 1
+            else:
+                last_calibration_blocker = blocker_key
+                calibration_blocker_repeats = 1 if blocker_key else 0
+            if blocker and calibration_blocker_repeats >= 3:
+                finalize_calibration_pre_scoring_blocker(output_dir, report, blocker)
                 break
             if validation_route_manifest and semantic_progress_plateau:
                 report["completion_reason"] = "semantic_progress_plateau_watchdog"

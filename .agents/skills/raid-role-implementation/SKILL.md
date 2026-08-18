@@ -42,7 +42,16 @@ Record the Trinity commit, profile generation/hash, actor/target,
 gear/talents/glyphs, route/scenario, and evidence identity.
 
 Load `raid-rotation-review` and produce the normalized comparison before
-editing. Stop at the first missing edge:
+editing. For DPS, require its `gear_parity.status` and
+`effective_stat_parity.status` to be `match`, and require
+`dps_tuning_gate.tuning_admitted` to be true before changing rotations or damage
+behavior.
+Gear-manifest equality alone is not enough. A stat mismatch belongs to setup,
+core stat application, or pet inheritance; an `insufficient_data` result needs
+a scoring-start recapture or bound WoWSims stat artifact. Return that boundary
+instead of compensating with priorities, coefficients, or repeated search.
+
+Stop at the first missing edge:
 
 ```text
 observation -> candidate -> hard gates -> priority/resources -> movement/authority
@@ -61,9 +70,12 @@ alternative, target selector, or observed-state transition. Preserve ordinary
 native spell legality and game outcomes.
 
 Do not tune from final DPS alone. A diagnostic-only edit needs one observed
-first-broken edge and one metric expected to move; run one before/after check and
-stop. Never manufacture a proc, aura, resource, threat state, target, cast
-success, heal demand, or boss outcome.
+first-broken edge and one metric expected to move; run one before/after check
+and stop. Permit at most one implementation plus one matched verification run
+for the bounded work unit. If the same first-broken edge remains, report it and
+hand it back to its owning layer rather than entering an optimization loop.
+Never manufacture a proc, aura, resource, threat state, target, cast success,
+heal demand, or boss outcome.
 
 ## Validate by role
 
@@ -75,6 +87,8 @@ heavyweight build. Then run one deterministic role window:
   target correctness, and pet contribution. For pet specs, separate pet
   alive/target uptime, action or landed-event cadence, and damage per event; do
   not change pet priority when cadence matches but damage per event does not.
+  Return that case to `raid-class-mechanics-implementation` with the exact
+  owner/pet stat and event ratios.
 - Tank: threat retention and healer exposure, snap/add threat, taunt/interrupt,
   mitigation and defensive coverage, spike size, survival, action validity, and
   useful damage.

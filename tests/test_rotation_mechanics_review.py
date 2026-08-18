@@ -102,6 +102,171 @@ def _profile() -> dict:
     }
 
 
+def _compute_stats() -> dict:
+    unit_stats = {
+        "apiVersion": 5,
+        "stats": [
+            100, 200, 300, 8_000, 400, 1_700, 1_000, 3_000,
+            0, 0, 0, 1_100, 500, 0, 12_500, 0, 0, 0, 0, 0, 0,
+            0, 10_000, 0, 150_000, 140_000, 1_000,
+        ],
+        "pseudoStats": [
+            0, 0, 0, 0, 0, 5, 1.1, 1.1, 1.05, 30, 30, 30,
+            14, 17, 20, 25,
+        ],
+    }
+    player = {
+        key: json.loads(json.dumps(unit_stats))
+        for key in (
+            "baseStats",
+            "gearStats",
+            "talentsStats",
+            "buffsStats",
+            "consumesStats",
+            "finalStats",
+        )
+    }
+    return {"raidStats": {"parties": [{"players": [player]}]}}
+
+
+def _gear_fixture() -> tuple[dict, list[dict]]:
+    slot_map = [0, 1, 2, 14, 4, 8, 9, 5, 6, 7, 10, 11, 12, 13, 15, 16, 17]
+    wowsims_items = [
+        {} if index == 15 else {"id": 10_000 + index}
+        for index in range(len(slot_map))
+    ]
+    runtime_items = [
+        {
+            "slot": slot_map[index],
+            "item_id": item["id"],
+            "enchant_id": 0,
+            "reforge_id": 0,
+            "gem_item_ids": [],
+        }
+        for index, item in enumerate(wowsims_items)
+        if item
+    ]
+    request = {
+        "raid": {
+            "parties": [
+                {
+                    "players": [
+                        {"equipment": {"items": wowsims_items}, "rotation": _apl()}
+                    ]
+                }
+            ]
+        }
+    }
+    return request, runtime_items
+
+
+def _effective_stats_runtime(
+    *, intellect: float = 8_000, drift_first_item: bool = False
+) -> dict:
+    _, gear_items = _gear_fixture()
+    if drift_first_item:
+        gear_items[0]["item_id"] += 1
+    return {
+        "combat_calibration": {
+            "phase": "complete",
+            "target_guid": 1306,
+            "previous_window": {
+                "bots": [
+                    {
+                        "guid": 1306,
+                        "gear_profile_observation": {"items": gear_items},
+                        "scoring_start_stats": {
+                            "schema": "trinity_scoring_start_effective_stats_v1",
+                            "player": {
+                                "observed": True,
+                                "intellect": intellect,
+                                "hit_rating": 1_700,
+                                "crit_rating": 1_000,
+                                "haste_rating": 3_000,
+                                "mastery_rating": 1_100,
+                                "spell_power": 12_500,
+                                "spell_hit_pct": 17,
+                                "spell_crit_pct": 25,
+                                "spell_speed_multiplier": 1.365,
+                            },
+                            "pet": {
+                                "observed": True,
+                                "strength": 453,
+                                "spell_power": 6_923.55,
+                            },
+                        },
+                    }
+                ]
+            },
+        }
+    }
+
+
+def test_normalize_runtime_preserves_pre_scoring_pet_setup_blocker() -> None:
+    normalized = normalize_runtime_report(
+        {
+            "combat_calibration": {
+                "phase": "warmup",
+                "bots": [
+                    {
+                        "guid": 1306,
+                        "attempts": 0,
+                        "movement_diagnostic": {
+                            "last_recovery_result": "persistent_setup_preexisting_pet_without_native_receipt"
+                        },
+                        "persistent_setup": {
+                            "pet_present": True,
+                            "pet_spellbook_sha256": "a" * 64,
+                            "pet_admission_spellbook_sha256": "",
+                        },
+                    }
+                ],
+            }
+        }
+    )
+    assert normalized["calibration_phase"] == "warmup"
+    assert normalized["pre_scoring_blockers"] == [
+        {
+            "bot_guid": 1306,
+            "reason": "persistent_setup_preexisting_pet_without_native_receipt",
+            "attempts": 0,
+            "pet_present": True,
+            "pet_spellbook_sha256": "a" * 64,
+            "pet_admission_spellbook_sha256": "",
+        }
+    ]
+
+
+def _debug_result_with_pet_stats() -> dict:
+    return {
+        "raidMetrics": {
+            "parties": [
+                {
+                    "players": [
+                        {
+                            "name": "canary",
+                            "actions": [],
+                            "pets": [],
+                            "auras": [],
+                            "resources": [],
+                        }
+                    ]
+                }
+            ]
+        },
+        "iterationsDone": 1,
+        "firstIterationDuration": 300,
+        "avgIterationDuration": 300,
+        "logs": (
+            '[0.00] [canary (#1) - Felhunter] Pet stats: '
+            '{"Strength":453.000,"SpellPower":6923.550,}\n'
+            '[0.00] [canary (#1) - Felhunter] Pet inherited stats: '
+            '{"SpellPower":6923.550,}\n'
+            '[0.00] [canary (#1) - Felhunter] Pet summoned\n'
+        ),
+    }
+
+
 def test_review_preserves_action_identity_order_and_unmapped_gaps():
     review = build_review(wowsims_apl=_apl(), trinity_profile=_profile())
 
@@ -137,6 +302,60 @@ def test_condition_families_are_review_leads_not_equivalence_claims():
     assert gaps[49020]["unrepresented_in_trinity"] == ["proc_state"]
     assert 49143 not in gaps
     assert "not semantic-equivalence" in review["comparison"]["interpretation"]
+
+
+def test_effective_stat_parity_admits_tuning_only_after_owner_and_pet_match():
+    request, _ = _gear_fixture()
+    review = build_review(
+        wowsims_apl=_apl(),
+        wowsims_request=request,
+        wowsims_compute_stats=_compute_stats(),
+        wowsims_result=_debug_result_with_pet_stats(),
+        runtime_report=_effective_stats_runtime(),
+    )
+
+    parity = review["effective_stat_parity"]
+    assert parity["status"] == "match"
+    assert parity["tuning_admitted"] is True
+    assert parity["owner"]["status"] == "match"
+    assert parity["pet"]["status"] == "match"
+    assert parity["pet"]["wowsims_inherited_reference"]["stat_vector"] == {
+        "spell_power": 6923.55
+    }
+    assert review["gear_parity"]["status"] == "match"
+    assert review["dps_tuning_gate"] == {
+        "status": "match",
+        "tuning_admitted": True,
+        "required": [
+            "gear_parity.status=match",
+            "effective_stat_parity.status=match",
+        ],
+        "first_broken_edge": None,
+    }
+
+    mismatch = build_review(
+        wowsims_compute_stats=_compute_stats(),
+        wowsims_result=_debug_result_with_pet_stats(),
+        runtime_report=_effective_stats_runtime(intellect=7_000),
+    )["effective_stat_parity"]
+    assert mismatch["status"] == "mismatch"
+    assert mismatch["tuning_admitted"] is False
+    assert mismatch["first_broken_edge"] == (
+        "effective_stat_application_before_rotation_execution"
+    )
+
+    gear_mismatch = build_review(
+        wowsims_apl=_apl(),
+        wowsims_request=request,
+        wowsims_compute_stats=_compute_stats(),
+        wowsims_result=_debug_result_with_pet_stats(),
+        runtime_report=_effective_stats_runtime(drift_first_item=True),
+    )
+    assert gear_mismatch["gear_parity"]["status"] == "mismatch"
+    assert gear_mismatch["dps_tuning_gate"]["tuning_admitted"] is False
+    assert gear_mismatch["dps_tuning_gate"]["first_broken_edge"] == (
+        "gear_identity_before_effective_stat_application"
+    )
 
 
 def test_review_preserves_zero_priority_bucket():
@@ -475,12 +694,48 @@ def test_runtime_report_reads_completed_combat_calibration_window():
     ]
 
 
+def test_runtime_report_reads_nested_persistent_setup_pet_execution_observation():
+    runtime = {
+        "combat_calibration": {
+            "phase": "complete",
+            "previous_window": {
+                "bots": [
+                    {
+                        "guid": 1306,
+                        "persistent_setup": {
+                            "pet_execution_observation": {
+                                "sample_count": 600,
+                                "alive_ratio": 1.0,
+                                "target_match_ratio": 0.997,
+                            }
+                        },
+                    }
+                ]
+            },
+        }
+    }
+
+    normalized = normalize_runtime_report(runtime)
+
+    assert normalized["pet_execution_observations"] == [
+        {
+            "bot_guid": 1306,
+            "sample_count": 600,
+            "alive_ratio": 1.0,
+            "target_match_ratio": 0.997,
+        }
+    ]
+
+
 def test_runtime_timeline_is_bounded_and_observation_only_in_native_source():
     header = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text()
     source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
 
     assert "std::vector<DecisionTimelineEntry> DecisionTimeline;" in header
     assert "std::vector<OffTargetDamageEvent> OffTargetDamageEvents;" in header
+    assert "struct EffectiveStatVector" in header
+    assert "EffectiveStatVector ScoringStartPlayerStats;" in header
+    assert "EffectiveStatVector ScoringStartPetStats;" in header
     assert "metrics.DecisionTimeline.size() < 4096" in source
     assert "calibration->second.OffTargetDamageEvents.size() < 128" in source
     assert '\\\"decision_timeline\\\"' in source
@@ -488,6 +743,9 @@ def test_runtime_timeline_is_bounded_and_observation_only_in_native_source():
     assert '\\\"current_channeled_spell_id\\\"' in source
     assert '\\\"pet_health\\\"' in source
     assert '\\\"periodic_health_aura_candidates\\\"' in source
+    assert '\\\"scoring_start_stats\\\"' in source
+    assert "observeUnitStats(bot, metrics.ScoringStartPlayerStats);" in source
+    assert "observeUnitStats(bot->GetPet(), metrics.ScoringStartPetStats);" in source
     assert "SPELL_AURA_PERIODIC_HEALTH_FUNNEL" in source
     assert "victim == owner" in source
 

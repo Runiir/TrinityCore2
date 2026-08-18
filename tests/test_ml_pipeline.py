@@ -71,7 +71,7 @@ from tools.bot_ml.live_validation_session import (
     sha256_file,
     systemd_transient_command,
 )
-from tools.bot_ml.run_live_bot_validation import BoundedOutputParts, apply_calibration_only_acceptance, attempt_evidence_envelope, boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, command_script, heartbeat_commands_from_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, split_sql_statements, strict_manifest_evidence, supersede_transient_route_failures, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, wait_for_heroic_admission_status, watchdog_state, write_validation_config
+from tools.bot_ml.run_live_bot_validation import BoundedOutputParts, apply_calibration_only_acceptance, attempt_evidence_envelope, boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, calibration_pre_scoring_blocker, command_script, heartbeat_commands_from_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, split_sql_statements, strict_manifest_evidence, supersede_transient_route_failures, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, wait_for_heroic_admission_status, watchdog_state, write_validation_config
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -3473,6 +3473,33 @@ def test_rejected_calibration_start_returns_promptly_and_runs_cleanup(tmp_path):
     ]
 
 
+def test_calibration_pre_scoring_blocker_requires_zero_action_persistent_setup() -> None:
+    report = {
+        "combat_calibration": {
+            "phase": "warmup",
+            "bots": [
+                {
+                    "guid": 1306,
+                    "attempts": 0,
+                    "movement_diagnostic": {
+                        "last_recovery_result": "persistent_setup_preexisting_pet_without_native_receipt"
+                    },
+                }
+            ],
+        }
+    }
+    assert calibration_pre_scoring_blocker(report) == {
+        "bot_guid": 1306,
+        "reason": "persistent_setup_preexisting_pet_without_native_receipt",
+        "attempts": 0,
+    }
+    report["combat_calibration"]["bots"][0]["attempts"] = 1
+    assert calibration_pre_scoring_blocker(report) is None
+    report["combat_calibration"]["bots"][0]["attempts"] = 0
+    report["combat_calibration"]["phase"] = "scoring"
+    assert calibration_pre_scoring_blocker(report) is None
+
+
 def test_reusable_calibration_cleanup_preserves_session_after_fixture_stop_failure(
     tmp_path, monkeypatch
 ):
@@ -6792,6 +6819,69 @@ def test_live_bot_validation_completion_watchdog_writes_heartbeats(tmp_path):
     assert not (tmp_path / "validation" / "heartbeats").exists()
     assert report["duration_policy"] == "completion-watchdog"
     assert report["completion_reason"] == "repeated_decision_watchdog"
+
+
+def test_process_completion_watchdog_stops_on_completed_calibration_window(
+    tmp_path, monkeypatch
+):
+    fake_worldserver = tmp_path / "fake_worldserver.py"
+    fake_worldserver.write_text(
+        "#!/usr/bin/env python3\n"
+        "import sys\n"
+        "print('TC> ', flush=True)\n"
+        "for line in sys.stdin:\n"
+        "    cmd = line.strip()\n"
+        "    print('CMD ' + cmd)\n"
+        "    if cmd == '.botauto status':\n"
+        "        print('{\"active_bots\":1,\"target_bots\":1}')\n"
+        "    elif cmd.startswith('.botauto diagnose'):\n"
+        "        print('{\"diagnosis_schema_version\":1,\"bots\":[]}')\n"
+        "    elif cmd.startswith('.botauto trace'):\n"
+        "        print('{\"trace_schema_version\":1,\"entries\":[]}')\n"
+        "    elif cmd == '.botexp summary':\n"
+        "        print('{\"duration_minutes\":1}')\n"
+        "    elif cmd.startswith('server shutdown'):\n"
+        "        break\n"
+        "    print('TC> ', flush=True)\n",
+        encoding="utf-8",
+    )
+    fake_worldserver.chmod(0o755)
+    config = tmp_path / "worldserver.conf"
+    config.write_text("", encoding="utf-8")
+
+    reports = []
+
+    def completed_report(*args, **kwargs):
+        report = {
+            "acceptable_final_evidence": False,
+            "completion_reason": "incomplete_evidence",
+            "combat_calibration": {"window_complete": True, "phase": "complete"},
+            "watchdog_state": {"progress_total": 0, "no_progress": False},
+        }
+        reports.append(report)
+        return report
+
+    monkeypatch.setattr(
+        "tools.bot_ml.run_live_bot_validation.rolling_heartbeat_report",
+        completed_report,
+    )
+
+    output, returncode, timed_out, _command = run_worldserver_completion_watchdog(
+        fake_worldserver,
+        config,
+        5,
+        command_script(selector="all", trace_limit=5, start=False, stop=False),
+        tmp_path / "validation",
+        {},
+        {},
+        heartbeat_sec=1,
+    )
+
+    assert reports
+    assert returncode == 0
+    assert timed_out is False
+    assert output.count("CMD .botauto status") == 1
+    assert "CMD server shutdown force 0" in output
 
 
 def test_completion_watchdog_does_not_stop_manifest_run_on_first_route_segment(tmp_path):

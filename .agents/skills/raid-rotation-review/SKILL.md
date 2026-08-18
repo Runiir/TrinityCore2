@@ -44,6 +44,7 @@ Save the returned JSON. Use a pinned APL file or the UI's `CLI Export`, then run
 pixi run python -m tools.bot_ml.review_rotation_mechanics \
   --wowsims-apl /path/to/apl-or-raid-request.json \
   --wowsims-result /path/to/raid-sim-result.json \
+  --wowsims-compute-stats /path/to/compute-stats.json \
   --trinity-profile /path/to/botauto-rotation-dump.json \
   --runtime-report /path/to/report.json \
   --route-manifest dataset/validation_scenarios/validation_routes.jsonl \
@@ -87,6 +88,20 @@ Pass only the available inputs. The tool hashes every supplied file and emits:
 - attributed `off_target_damage_events`, including attacker, victim entry/GUID,
   spell, damage, and whether the victim was the acting player;
 - route-node mechanic obligations, target identities, and completion policy.
+
+Before interpreting cast mix or DPS, pass the full exported `RaidSimRequest`
+to `--wowsims-apl` and require `gear_parity.status == "match"`,
+`effective_stat_parity.status == "match"`, and
+`dps_tuning_gate.tuning_admitted == true`. The tool compares the exact request
+equipment manifest with Trinity's scoring-window gear observation, then the
+exact WoWSims `finalStats` owner vector with Trinity's immutable
+`scoring_start_stats` captured at the published `t=0` edge. For a required pet,
+it also compares Trinity's scoring-start pet vector with the debug result's
+timestamp-zero `Pet stats`, while retaining `Pet inherited stats` as the
+inheritance diagnostic. `mismatch` means gear/setup/stat application is the first
+broken edge; `insufficient_data` means recapture the missing artifact. In both
+cases stop rotation tuning rather than changing priorities or coefficients to
+hide the discrepancy.
 
 Treat its comparisons as review leads, never semantic-equivalence or DPS
 claims. Inspect the exact code/data for every reported gap.
@@ -159,6 +174,11 @@ For pet specs, compare owner and pet separately. Bind pet identity, alive/target
 uptime, action or landed-event counts, per-event damage, and total damage share.
 A matching pet share can hide uniformly low output, while low absolute pet
 damage does not prove idle AI when event cadence matches.
+
+After producing the closed review for a bounded spec canary, run
+`tools.bot_ml.spec_canary_gate`. Its policy deliberately routes event-cadence
+failures to `raid-role-implementation` and matching-cadence damage failures to
+`raid-class-mechanics-implementation`; it never authorizes repeated tuning.
 
 WoWSims aggregate metrics cover all iterations; its debug log/timeline normally
 covers the first iteration only. Compare aggregate distributions separately

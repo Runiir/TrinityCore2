@@ -17,8 +17,12 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Iterable, Iterator
 
+from .wowsims_gear_binding import canonical_wowsims_manifest
+
 
 SCHEMA = "trinity_wowsims_rotation_mechanics_review_v1"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+GEAR_PROFILES = REPO_ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json"
 
 _TRINITY_WEIGHT_COLUMNS = (
     "damage_weight",
@@ -427,6 +431,42 @@ def find_wowsims_apl(document: Any, player_index: int = 0) -> dict[str, Any]:
     raise ValueError("no WoWSims APL found in document")
 
 
+def normalize_wowsims_gear(
+    document: Any, player_index: int = 0
+) -> dict[str, Any] | None:
+    normalized = _camelize_json_keys(document)
+    raid = normalized.get("raid") if isinstance(normalized, dict) else None
+    if not isinstance(raid, dict):
+        return None
+    players: list[Any] = []
+    for party in raid.get("parties") or []:
+        if isinstance(party, dict):
+            players.extend(party.get("players") or [])
+    if not 0 <= player_index < len(players) or not isinstance(
+        players[player_index], dict
+    ):
+        raise ValueError("WoWSims request player index is outside the raid")
+    equipment = players[player_index].get("equipment")
+    if not isinstance(equipment, dict):
+        raise ValueError("WoWSims request player equipment is missing")
+    gear_profile_bytes = GEAR_PROFILES.read_bytes()
+    gear_profiles = json.loads(gear_profile_bytes)
+    slot_map = gear_profiles.get("slot_map")
+    if not isinstance(slot_map, list) or not slot_map:
+        raise ValueError("WoWSims gear slot map is missing")
+    manifest = canonical_wowsims_manifest(
+        equipment, [int(value) for value in slot_map]
+    )
+    return {
+        "schema": "rotation_review_wowsims_gear_identity_v1",
+        "player_index": player_index,
+        "manifest": manifest,
+        "manifest_sha256": canonical_sha256(manifest),
+        "slot_map_path": str(GEAR_PROFILES.relative_to(REPO_ROOT)),
+        "slot_map_file_sha256": hashlib.sha256(gear_profile_bytes).hexdigest(),
+    }
+
+
 def normalize_wowsims_apl(apl: dict[str, Any]) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     for index, entry in enumerate(apl.get("prepullActions") or []):
@@ -500,6 +540,10 @@ def _identity_key(identity: dict[str, Any] | None) -> str:
 
 
 def _classify_wowsims_log(line: str) -> str:
+    if " Pet inherited stats: " in line:
+        return "pet_inherited_stats"
+    if " Pet stats: " in line:
+        return "pet_stats"
     if "Completed cast " in line:
         return "cast_completed"
     if " failed to cast:" in line:
@@ -558,6 +602,21 @@ def _normalize_wowsims_log(log_text: str) -> dict[str, Any]:
             "target_entity": entities[1] if len(entities) > 1 else None,
             "raw": raw,
         }
+        pet_stats_match = re.search(
+            r" (?:Pet inherited stats|Pet stats): (?P<stats>\{.*\})$", raw
+        )
+        if pet_stats_match:
+            try:
+                raw_pet_stats = json.loads(
+                    re.sub(r",\s*}", "}", pet_stats_match.group("stats"))
+                )
+            except json.JSONDecodeError:
+                raw_pet_stats = {}
+            event["stat_vector"] = {
+                re.sub(r"(?<!^)(?=[A-Z])", "_", str(key)).lower(): float(value)
+                for key, value in raw_pet_stats.items()
+                if isinstance(value, (int, float)) and not isinstance(value, bool)
+            }
         resource_match = re.search(
             r"\b(?P<direction>Gained|Spent) (?P<amount>\d+(?:\.\d+)?) "
             r"(?P<resource>health|mana|energy|focus|rage|combo points|runic power|blood rune|frost rune|unholy rune|death rune|solar energy|lunar energy) "
@@ -621,6 +680,17 @@ def _normalize_wowsims_log(log_text: str) -> dict[str, Any]:
         "event_kind_counts": dict(sorted(kind_counts.items())),
         "event_identity_counts": dict(sorted(identity_counts.items())),
         "events": events,
+        "pet_stat_references": [
+            {
+                "line_index": event["line_index"],
+                "timestamp_seconds": event["timestamp_seconds"],
+                "kind": event["kind"],
+                "source_entity": event["source_entity"],
+                "stat_vector": event.get("stat_vector") or {},
+            }
+            for event in events
+            if event["kind"] in {"pet_stats", "pet_inherited_stats"}
+        ],
         "action_timeline": action_timeline,
     }
 
@@ -640,6 +710,99 @@ def find_wowsims_result(document: Any) -> dict[str, Any]:
                 except ValueError:
                     pass
     raise ValueError("no WoWSims RaidSimResult found in document")
+
+
+def _wowsims_unit_stat_vector(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError("WoWSims UnitStats is missing")
+    stats = value.get("stats") or []
+    pseudo = value.get("pseudoStats") or value.get("pseudo_stats") or []
+    if len(stats) < 27 or len(pseudo) < 16:
+        raise ValueError("WoWSims UnitStats arrays are incomplete")
+    return {
+        "api_version": int(value.get("apiVersion") or value.get("api_version") or 0),
+        "stats": {
+            "strength": float(stats[0]),
+            "agility": float(stats[1]),
+            "stamina": float(stats[2]),
+            "intellect": float(stats[3]),
+            "spirit": float(stats[4]),
+            "hit_rating": float(stats[5]),
+            "crit_rating": float(stats[6]),
+            "haste_rating": float(stats[7]),
+            "expertise_rating": float(stats[8]),
+            "dodge_rating": float(stats[9]),
+            "parry_rating": float(stats[10]),
+            "mastery_rating": float(stats[11]),
+            "attack_power": float(stats[12]),
+            "ranged_attack_power": float(stats[13]),
+            "spell_power": float(stats[14]),
+            "armor": float(stats[22]),
+            "bonus_armor": float(stats[23]),
+            "health": float(stats[24]),
+            "mana": float(stats[25]),
+        },
+        "pseudo_stats": {
+            "melee_speed_multiplier": float(pseudo[6]),
+            "ranged_speed_multiplier": float(pseudo[7]),
+            "cast_speed_multiplier": float(pseudo[8]),
+            "melee_haste_pct": float(pseudo[9]),
+            "ranged_haste_pct": float(pseudo[10]),
+            "spell_haste_pct": float(pseudo[11]),
+            "physical_hit_pct": float(pseudo[12]),
+            "spell_hit_pct": float(pseudo[13]),
+            "physical_crit_pct": float(pseudo[14]),
+            "spell_crit_pct": float(pseudo[15]),
+        },
+    }
+
+
+def normalize_wowsims_compute_stats(
+    document: Any, player_index: int = 0
+) -> dict[str, Any]:
+    if not isinstance(document, dict):
+        raise ValueError("WoWSims ComputeStats result must be a JSON object")
+    raid_stats = _get(document, "raidStats", "raid_stats", default={}) or {}
+    players: list[dict[str, Any]] = []
+    for party in _get(raid_stats, "parties", default=[]) or []:
+        if isinstance(party, dict):
+            players.extend(_get(party, "players", default=[]) or [])
+    if not 0 <= player_index < len(players):
+        raise ValueError(
+            f"WoWSims ComputeStats player index {player_index} is outside {len(players)} players"
+        )
+    player = players[player_index]
+    stages: dict[str, Any] = {}
+    for stage, camel, snake in (
+        ("base", "baseStats", "base_stats"),
+        ("gear", "gearStats", "gear_stats"),
+        ("talents", "talentsStats", "talents_stats"),
+        ("buffs", "buffsStats", "buffs_stats"),
+        ("consumes", "consumesStats", "consumes_stats"),
+        ("final", "finalStats", "final_stats"),
+    ):
+        stages[stage] = _wowsims_unit_stat_vector(_get(player, camel, snake))
+    final = stages["final"]
+    primary_stat = max(
+        ("strength", "agility", "intellect"),
+        key=lambda key: final["stats"][key],
+    )
+    if primary_stat == "intellect":
+        archetype = "spell"
+    elif final["stats"]["ranged_attack_power"] > final["stats"]["attack_power"]:
+        archetype = "ranged"
+    else:
+        archetype = "melee"
+    normalized = {
+        "schema": "rotation_review_wowsims_effective_stats_v1",
+        "player_index": player_index,
+        "primary_stat": primary_stat,
+        "archetype": archetype,
+        "stage": "final_stats_before_dynamic_combat_procs",
+        "stages": stages,
+    }
+    normalized["content_sha256"] = canonical_sha256(normalized)
+    return normalized
 
 
 def _normalize_action_metric(
@@ -1266,6 +1429,34 @@ def _iter_runtime_bots(document: dict[str, Any]) -> Iterator[dict[str, Any]]:
                     yield bot
 
 
+def _canonical_runtime_gear(items: Any) -> list[dict[str, Any]]:
+    if not isinstance(items, list):
+        raise ValueError("Trinity scoring-window gear observation is missing")
+    manifest: list[dict[str, Any]] = []
+    slots: set[int] = set()
+    for raw in items:
+        if not isinstance(raw, dict):
+            raise ValueError("Trinity scoring-window gear item is invalid")
+        slot = int(raw.get("slot", -1))
+        item_id = int(raw.get("item_id") or 0)
+        if slot < 0 or slot in slots or item_id <= 0:
+            raise ValueError("Trinity scoring-window gear identity is invalid")
+        slots.add(slot)
+        gems = [int(value or 0) for value in raw.get("gem_item_ids") or []]
+        while gems and gems[-1] == 0:
+            gems.pop()
+        manifest.append(
+            {
+                "slot": slot,
+                "item_id": item_id,
+                "enchant_id": int(raw.get("enchant_id") or 0),
+                "reforge_id": int(raw.get("reforge_id") or 0),
+                "gem_item_ids": gems,
+            }
+        )
+    return sorted(manifest, key=lambda row: row["slot"])
+
+
 def normalize_runtime_report(document: Any) -> dict[str, Any]:
     if not isinstance(document, dict):
         raise ValueError("runtime report must be a JSON object")
@@ -1296,7 +1487,10 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
     movement_distance_total = 0.0
     movement_distance_max = 0.0
     calibration_windows: list[dict[str, Any]] = []
+    scoring_start_stats: list[dict[str, Any]] = []
+    gear_identities: list[dict[str, Any]] = []
     pet_execution_observations: list[dict[str, Any]] = []
+    pre_scoring_blockers: list[dict[str, Any]] = []
     decision_timeline: list[dict[str, Any]] = []
     off_target_damage_events: list[dict[str, Any]] = []
 
@@ -1338,9 +1532,59 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
 
     for bot in _iter_runtime_bots(document):
         bot_guid = int(bot.get("guid") or 0)
+        gear_observation = bot.get("gear_profile_observation")
+        if isinstance(gear_observation, dict):
+            manifest = _canonical_runtime_gear(gear_observation.get("items"))
+            gear_identities.append(
+                {
+                    "bot_guid": bot_guid,
+                    "manifest": manifest,
+                    "manifest_sha256": canonical_sha256(manifest),
+                }
+            )
+        start_stats = bot.get("scoring_start_stats")
+        if isinstance(start_stats, dict):
+            scoring_start_stats.append(
+                {
+                    "bot_guid": bot_guid,
+                    "schema": str(start_stats.get("schema") or ""),
+                    "player": dict(start_stats.get("player") or {})
+                    if isinstance(start_stats.get("player"), dict)
+                    else {},
+                    "pet": dict(start_stats.get("pet") or {})
+                    if isinstance(start_stats.get("pet"), dict)
+                    else {},
+                }
+            )
         snapshot = bot.get("snapshot") if isinstance(bot.get("snapshot"), dict) else {}
         decision = snapshot.get("decision") if isinstance(snapshot.get("decision"), dict) else {}
         movement = snapshot.get("movement") if isinstance(snapshot.get("movement"), dict) else {}
+        movement_diagnostic = (
+            bot.get("movement_diagnostic")
+            if isinstance(bot.get("movement_diagnostic"), dict)
+            else {}
+        )
+        recovery_result = str(movement_diagnostic.get("last_recovery_result") or "")
+        if not calibration_complete and recovery_result:
+            persistent_setup = (
+                bot.get("persistent_setup")
+                if isinstance(bot.get("persistent_setup"), dict)
+                else {}
+            )
+            pre_scoring_blockers.append(
+                {
+                    "bot_guid": bot_guid,
+                    "reason": recovery_result,
+                    "attempts": int(bot.get("attempts") or 0),
+                    "pet_present": bool(persistent_setup.get("pet_present")),
+                    "pet_spellbook_sha256": str(
+                        persistent_setup.get("pet_spellbook_sha256") or ""
+                    ),
+                    "pet_admission_spellbook_sha256": str(
+                        persistent_setup.get("pet_admission_spellbook_sha256") or ""
+                    ),
+                }
+            )
         diagnosis = bot.get("diagnosis") if isinstance(bot.get("diagnosis"), dict) else {}
         if decision.get("action"):
             decision_actions[str(decision["action"])] += 1
@@ -1385,7 +1629,14 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
         if isinstance(aggregate_results, dict):
             for result, count in aggregate_results.items():
                 results[str(result)] += int(count or 0)
+        persistent_setup = (
+            bot.get("persistent_setup")
+            if isinstance(bot.get("persistent_setup"), dict)
+            else {}
+        )
         pet_execution = bot.get("pet_execution_observation")
+        if not isinstance(pet_execution, dict):
+            pet_execution = persistent_setup.get("pet_execution_observation")
         if isinstance(pet_execution, dict):
             pet_execution_observations.append(
                 {
@@ -1502,7 +1753,13 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
 
     return {
         "schema": "rotation_review_runtime_observation_v1",
+        "calibration_phase": str(
+            calibration.get("phase") or ""
+        ) if isinstance(calibration, dict) else "",
         "calibration_complete": calibration_complete,
+        "calibration_target_guid": int(
+            (calibration or {}).get("target_guid") or document.get("target_guid") or 0
+        ) if isinstance(calibration, dict) else int(document.get("target_guid") or 0),
         "decision_timeline_basis": (
             "completed_combat_calibration"
             if calibration_complete
@@ -1524,7 +1781,13 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
         "rejection_reason_counts": dict(sorted(rejection_reasons.items())),
         "pipeline_edges": dict(sorted(pipeline_edges.items())),
         "calibration_windows": calibration_windows,
+        "gear_identities": gear_identities,
+        "scoring_start_stats": scoring_start_stats,
         "pet_execution_observations": pet_execution_observations,
+        "pre_scoring_blockers": sorted(
+            pre_scoring_blockers,
+            key=lambda row: (row["bot_guid"], row["reason"]),
+        ),
         "decision_timeline": decision_timeline,
         "off_target_damage_events": off_target_damage_events,
         "timeline_summary": {
@@ -2737,10 +3000,347 @@ def compare_simulated_to_trinity_runtime(
     }
 
 
+def _stat_check(
+    name: str,
+    expected: Any,
+    observed: Any,
+    *,
+    absolute_tolerance: float,
+    relative_tolerance: float = 0.0,
+) -> dict[str, Any]:
+    try:
+        expected_value = float(expected)
+        observed_value = float(observed)
+    except (TypeError, ValueError):
+        return {
+            "stat": name,
+            "status": "missing",
+            "expected": expected,
+            "observed": observed,
+            "absolute_tolerance": absolute_tolerance,
+            "relative_tolerance": relative_tolerance,
+        }
+    delta = observed_value - expected_value
+    allowed = max(absolute_tolerance, abs(expected_value) * relative_tolerance)
+    return {
+        "stat": name,
+        "status": "match" if abs(delta) <= allowed else "mismatch",
+        "expected": expected_value,
+        "observed": observed_value,
+        "delta": delta,
+        "absolute_delta": abs(delta),
+        "allowed_delta": allowed,
+        "absolute_tolerance": absolute_tolerance,
+        "relative_tolerance": relative_tolerance,
+    }
+
+
+def compare_gear_identity(
+    wowsims_gear: dict[str, Any] | None,
+    runtime: dict[str, Any] | None,
+) -> dict[str, Any]:
+    if not wowsims_gear:
+        return {
+            "status": "insufficient_data",
+            "reason": "missing_wowsims_request_gear",
+            "first_broken_edge": "wowsims_request_gear_identity",
+        }
+    if not runtime:
+        return {
+            "status": "insufficient_data",
+            "reason": "missing_trinity_runtime",
+            "first_broken_edge": "trinity_runtime_gear_observation",
+        }
+    target_guid = int(runtime.get("calibration_target_guid") or 0)
+    candidates = [
+        row
+        for row in runtime.get("gear_identities") or []
+        if isinstance(row, dict)
+        and (not target_guid or int(row.get("bot_guid") or 0) == target_guid)
+    ]
+    if not candidates:
+        return {
+            "status": "insufficient_data",
+            "reason": "missing_trinity_scoring_window_gear",
+            "first_broken_edge": "trinity_scoring_window_gear_observation",
+            "wowsims_manifest_sha256": wowsims_gear.get("manifest_sha256"),
+        }
+    observed = candidates[0]
+    expected_manifest = wowsims_gear.get("manifest") or []
+    observed_manifest = observed.get("manifest") or []
+    if len(expected_manifest) < 16 or len(observed_manifest) < 16:
+        return {
+            "status": "insufficient_data",
+            "reason": "incomplete_equipment_manifest",
+            "first_broken_edge": "complete_gear_identity_before_stat_comparison",
+            "wowsims_manifest_sha256": wowsims_gear.get("manifest_sha256"),
+            "trinity_manifest_sha256": observed.get("manifest_sha256"),
+            "wowsims_item_count": len(expected_manifest),
+            "trinity_item_count": len(observed_manifest),
+        }
+    return {
+        "status": "match" if expected_manifest == observed_manifest else "mismatch",
+        "wowsims_manifest_sha256": wowsims_gear.get("manifest_sha256"),
+        "trinity_manifest_sha256": observed.get("manifest_sha256"),
+        "wowsims_item_count": len(expected_manifest),
+        "trinity_item_count": len(observed_manifest),
+        "first_broken_edge": (
+            None
+            if expected_manifest == observed_manifest
+            else "gear_identity_before_effective_stat_application"
+        ),
+    }
+
+
+def compare_effective_stats(
+    wowsims_compute_stats: dict[str, Any] | None,
+    wowsims_result: dict[str, Any] | None,
+    runtime: dict[str, Any] | None,
+) -> dict[str, Any]:
+    basis = {
+        "wowsims_owner": "ComputeStats.finalStats before dynamic combat procs",
+        "wowsims_pet": "first timestamp-zero debug-log Pet stats and Pet inherited stats",
+        "trinity": "immutable scoring_start_stats captured at the published calibration t=0 edge",
+    }
+    if not wowsims_compute_stats:
+        return {
+            "status": "insufficient_data",
+            "reason": "missing_wowsims_compute_stats",
+            "first_broken_edge": "wowsims_compute_stats_reference",
+            "basis": basis,
+            "tuning_admitted": False,
+        }
+    if not runtime:
+        return {
+            "status": "insufficient_data",
+            "reason": "missing_trinity_runtime",
+            "first_broken_edge": "trinity_runtime_effective_stat_observation",
+            "basis": basis,
+            "tuning_admitted": False,
+        }
+    target_guid = int(runtime.get("calibration_target_guid") or 0)
+    runtime_rows = runtime.get("scoring_start_stats") or []
+    runtime_row = next(
+        (
+            row
+            for row in runtime_rows
+            if isinstance(row, dict)
+            and (not target_guid or int(row.get("bot_guid") or 0) == target_guid)
+        ),
+        None,
+    )
+    if not isinstance(runtime_row, dict):
+        return {
+            "status": "insufficient_data",
+            "reason": "missing_trinity_scoring_start_stats",
+            "first_broken_edge": "trinity_scoring_start_stat_observation",
+            "basis": basis,
+            "tuning_admitted": False,
+        }
+    if runtime_row.get("schema") != "trinity_scoring_start_effective_stats_v1":
+        return {
+            "status": "insufficient_data",
+            "reason": "unexpected_trinity_scoring_start_stats_schema",
+            "first_broken_edge": "trinity_scoring_start_stat_schema",
+            "basis": basis,
+            "tuning_admitted": False,
+        }
+    observed_player = runtime_row.get("player") or {}
+    if observed_player.get("observed") is not True:
+        return {
+            "status": "insufficient_data",
+            "reason": "trinity_player_stats_not_observed_at_scoring_start",
+            "first_broken_edge": "trinity_scoring_start_player_stat_observation",
+            "basis": basis,
+            "tuning_admitted": False,
+        }
+    final = (wowsims_compute_stats.get("stages") or {}).get("final") or {}
+    expected_stats = final.get("stats") or {}
+    expected_pseudo = final.get("pseudo_stats") or {}
+    archetype = str(wowsims_compute_stats.get("archetype") or "")
+    primary_stat = str(wowsims_compute_stats.get("primary_stat") or "")
+    owner_specs: list[tuple[str, Any, Any, float, float]] = [
+        (primary_stat, expected_stats.get(primary_stat), observed_player.get(primary_stat), 1.1, 0.001),
+        ("hit_rating", expected_stats.get("hit_rating"), observed_player.get("hit_rating"), 0.51, 0.0),
+        ("crit_rating", expected_stats.get("crit_rating"), observed_player.get("crit_rating"), 0.51, 0.0),
+        ("haste_rating", expected_stats.get("haste_rating"), observed_player.get("haste_rating"), 0.51, 0.0),
+        ("mastery_rating", expected_stats.get("mastery_rating"), observed_player.get("mastery_rating"), 0.51, 0.0),
+    ]
+    if archetype == "spell":
+        owner_specs.extend(
+            (
+                ("spell_power", expected_stats.get("spell_power"), observed_player.get("spell_power"), 5.0, 0.01),
+                ("spell_hit_pct", expected_pseudo.get("spell_hit_pct"), observed_player.get("spell_hit_pct"), 0.05, 0.0),
+                ("spell_crit_pct", expected_pseudo.get("spell_crit_pct"), observed_player.get("spell_crit_pct"), 0.05, 0.0),
+                (
+                    "spell_speed_multiplier",
+                    float(expected_pseudo.get("cast_speed_multiplier") or 1.0)
+                    * (1.0 + float(expected_pseudo.get("spell_haste_pct") or 0.0) / 100.0),
+                    observed_player.get("spell_speed_multiplier"),
+                    0.002,
+                    0.0,
+                ),
+            )
+        )
+    elif archetype == "ranged":
+        owner_specs.extend(
+            (
+                ("ranged_attack_power", expected_stats.get("ranged_attack_power"), observed_player.get("ranged_attack_power"), 5.0, 0.01),
+                ("physical_hit_pct", expected_pseudo.get("physical_hit_pct"), observed_player.get("physical_hit_pct"), 0.05, 0.0),
+                ("ranged_crit_pct", expected_pseudo.get("physical_crit_pct"), observed_player.get("ranged_crit_pct"), 0.05, 0.0),
+                (
+                    "ranged_speed_multiplier",
+                    float(expected_pseudo.get("ranged_speed_multiplier") or 1.0)
+                    * (1.0 + float(expected_pseudo.get("ranged_haste_pct") or 0.0) / 100.0),
+                    observed_player.get("ranged_speed_multiplier"),
+                    0.002,
+                    0.0,
+                ),
+            )
+        )
+    else:
+        owner_specs.extend(
+            (
+                ("attack_power", expected_stats.get("attack_power"), observed_player.get("attack_power"), 5.0, 0.01),
+                ("expertise_rating", expected_stats.get("expertise_rating"), observed_player.get("expertise_rating"), 0.51, 0.0),
+                ("physical_hit_pct", expected_pseudo.get("physical_hit_pct"), observed_player.get("physical_hit_pct"), 0.05, 0.0),
+                ("melee_crit_pct", expected_pseudo.get("physical_crit_pct"), observed_player.get("melee_crit_pct"), 0.05, 0.0),
+                (
+                    "melee_speed_multiplier",
+                    float(expected_pseudo.get("melee_speed_multiplier") or 1.0)
+                    * (1.0 + float(expected_pseudo.get("melee_haste_pct") or 0.0) / 100.0),
+                    observed_player.get("melee_speed_multiplier"),
+                    0.002,
+                    0.0,
+                ),
+            )
+        )
+    owner_checks = [
+        _stat_check(
+            name,
+            expected,
+            observed,
+            absolute_tolerance=absolute,
+            relative_tolerance=relative,
+        )
+        for name, expected, observed, absolute, relative in owner_specs
+        if name
+    ]
+    owner_status = (
+        "match"
+        if owner_checks and all(row["status"] == "match" for row in owner_checks)
+        else "mismatch"
+    )
+
+    observed_pet = runtime_row.get("pet") or {}
+    pet_references = ((wowsims_result or {}).get("timeline") or {}).get(
+        "pet_stat_references"
+    ) or []
+    initial_pet_stats = next(
+        (
+            row
+            for row in pet_references
+            if row.get("kind") == "pet_stats"
+            and float(row.get("timestamp_seconds") or 0.0) == 0.0
+        ),
+        None,
+    )
+    initial_pet_inherited = next(
+        (
+            row
+            for row in pet_references
+            if row.get("kind") == "pet_inherited_stats"
+            and float(row.get("timestamp_seconds") or 0.0) == 0.0
+        ),
+        None,
+    )
+    if observed_pet.get("observed") is not True and initial_pet_stats is None:
+        pet_comparison = {"status": "not_applicable", "checks": []}
+    elif observed_pet.get("observed") is not True:
+        pet_comparison = {
+            "status": "mismatch",
+            "reason": "wowsims_pet_present_but_trinity_pet_missing_at_scoring_start",
+            "checks": [],
+        }
+    elif initial_pet_stats is None:
+        pet_comparison = {
+            "status": "insufficient_data",
+            "reason": "trinity_pet_present_but_wowsims_debug_pet_stats_missing",
+            "checks": [],
+        }
+    else:
+        expected_pet = initial_pet_stats.get("stat_vector") or {}
+        pet_stat_pairs = (
+            ("strength", "strength", 2.0, 0.01),
+            ("agility", "agility", 2.0, 0.01),
+            ("stamina", "stamina", 2.0, 0.01),
+            ("intellect", "intellect", 2.0, 0.01),
+            ("spirit", "spirit", 2.0, 0.01),
+            ("attack_power", "attack_power", 5.0, 0.01),
+            ("spell_power", "spell_power", 5.0, 0.01),
+            ("armor", "armor", 2.0, 0.01),
+            ("physical_hit_percent", "physical_hit_pct", 0.6, 0.0),
+            ("spell_hit_percent", "spell_hit_pct", 0.6, 0.0),
+            ("physical_crit_percent", "melee_crit_pct", 1.1, 0.0),
+        )
+        pet_checks = [
+            _stat_check(
+                expected_key,
+                expected_pet.get(expected_key),
+                observed_pet.get(observed_key),
+                absolute_tolerance=absolute,
+                relative_tolerance=relative,
+            )
+            for expected_key, observed_key, absolute, relative in pet_stat_pairs
+            if expected_key in expected_pet
+        ]
+        pet_comparison = {
+            "status": (
+                "match"
+                if pet_checks and all(row["status"] == "match" for row in pet_checks)
+                else "mismatch"
+            ),
+            "source_entity": initial_pet_stats.get("source_entity"),
+            "checks": pet_checks,
+        }
+    pet_comparison["wowsims_inherited_reference"] = initial_pet_inherited
+    overall_status = (
+        "match"
+        if owner_status == "match"
+        and pet_comparison["status"] in {"match", "not_applicable"}
+        else (
+            "insufficient_data"
+            if owner_status == "match"
+            and pet_comparison["status"] == "insufficient_data"
+            else "mismatch"
+        )
+    )
+    return {
+        "status": overall_status,
+        "tuning_admitted": overall_status == "match",
+        "basis": basis,
+        "archetype": archetype,
+        "primary_stat": primary_stat,
+        "owner": {"status": owner_status, "checks": owner_checks},
+        "pet": pet_comparison,
+        "first_broken_edge": (
+            None
+            if overall_status == "match"
+            else "effective_stat_application_before_rotation_execution"
+        ),
+        "interpretation": (
+            "Do not tune action priority or damage coefficients to hide a mismatch here. "
+            "Repair setup, stat application, or pet inheritance first, then recapture."
+        ),
+    }
+
+
 def build_review(
     *,
     wowsims_apl: dict[str, Any] | None = None,
+    wowsims_request: dict[str, Any] | None = None,
     wowsims_result: dict[str, Any] | None = None,
+    wowsims_compute_stats: dict[str, Any] | None = None,
     wowsims_player_index: int = 0,
     trinity_profile: dict[str, Any] | None = None,
     runtime_report: dict[str, Any] | None = None,
@@ -2751,9 +3351,19 @@ def build_review(
         "schema": SCHEMA,
         "sources": sources or {},
         "wowsims": normalize_wowsims_apl(wowsims_apl) if wowsims_apl else None,
+        "wowsims_gear": (
+            normalize_wowsims_gear(wowsims_request, wowsims_player_index)
+            if wowsims_request
+            else None
+        ),
         "wowsims_result": (
             normalize_wowsims_result(wowsims_result, wowsims_player_index)
             if wowsims_result
+            else None
+        ),
+        "wowsims_compute_stats": (
+            normalize_wowsims_compute_stats(wowsims_compute_stats, wowsims_player_index)
+            if wowsims_compute_stats
             else None
         ),
         "trinity": normalize_trinity_profile(trinity_profile) if trinity_profile else None,
@@ -2788,6 +3398,36 @@ def build_review(
             else compare_cast_mix(review["wowsims"], review["wowsims_result"], review["runtime"])
         ),
     }
+    review["effective_stat_parity"] = compare_effective_stats(
+        review["wowsims_compute_stats"], review["wowsims_result"], review["runtime"]
+    )
+    review["gear_parity"] = compare_gear_identity(
+        review["wowsims_gear"], review["runtime"]
+    )
+    gate_statuses = {
+        review["gear_parity"]["status"],
+        review["effective_stat_parity"]["status"],
+    }
+    overall_status = (
+        "match"
+        if gate_statuses == {"match"}
+        else "mismatch"
+        if "mismatch" in gate_statuses
+        else "insufficient_data"
+    )
+    review["dps_tuning_gate"] = {
+        "status": overall_status,
+        "tuning_admitted": overall_status == "match",
+        "required": [
+            "gear_parity.status=match",
+            "effective_stat_parity.status=match",
+        ],
+        "first_broken_edge": (
+            review["gear_parity"].get("first_broken_edge")
+            if review["gear_parity"]["status"] != "match"
+            else review["effective_stat_parity"].get("first_broken_edge")
+        ),
+    }
     review["review_sha256"] = canonical_sha256(review)
     return review
 
@@ -2803,6 +3443,7 @@ def main() -> int:
     parser.add_argument("--wowsims-apl", type=Path)
     parser.add_argument("--wowsims-player-index", type=int, default=0)
     parser.add_argument("--wowsims-result", type=Path)
+    parser.add_argument("--wowsims-compute-stats", type=Path)
     parser.add_argument("--trinity-profile", type=Path)
     parser.add_argument("--trinity-worldserver-conf", type=Path)
     parser.add_argument("--trinity-class-id", type=int)
@@ -2830,18 +3471,29 @@ def main() -> int:
             "database review requires --trinity-worldserver-conf, "
             "--trinity-class-id, and --trinity-spec-tag"
         )
-    if not any((args.wowsims_apl, args.wowsims_result, args.trinity_profile, args.trinity_worldserver_conf, args.runtime_report, args.route_manifest)):
+    if not any((args.wowsims_apl, args.wowsims_result, args.wowsims_compute_stats, args.trinity_profile, args.trinity_worldserver_conf, args.runtime_report, args.route_manifest)):
         parser.error("provide at least one review input")
 
     sources: dict[str, Any] = {}
     apl = None
+    wowsims_request = None
     if args.wowsims_apl:
         raw = _load_json(args.wowsims_apl)
         apl = find_wowsims_apl(raw, args.wowsims_player_index)
+        wowsims_request = raw if isinstance(raw.get("raid"), dict) else None
         sources["wowsims_apl"] = _source_record(args.wowsims_apl)
     wowsims_result = _load_json(args.wowsims_result) if args.wowsims_result else None
     if args.wowsims_result:
         sources["wowsims_result"] = _source_record(args.wowsims_result)
+    wowsims_compute_stats = (
+        _load_json(args.wowsims_compute_stats)
+        if args.wowsims_compute_stats
+        else None
+    )
+    if args.wowsims_compute_stats:
+        sources["wowsims_compute_stats"] = _source_record(
+            args.wowsims_compute_stats
+        )
     profile = _load_json(args.trinity_profile) if args.trinity_profile else None
     if args.trinity_profile:
         sources["trinity_profile"] = _source_record(args.trinity_profile)
@@ -2866,7 +3518,9 @@ def main() -> int:
 
     review = build_review(
         wowsims_apl=apl,
+        wowsims_request=wowsims_request,
         wowsims_result=wowsims_result,
+        wowsims_compute_stats=wowsims_compute_stats,
         wowsims_player_index=args.wowsims_player_index,
         trinity_profile=profile,
         runtime_report=runtime,

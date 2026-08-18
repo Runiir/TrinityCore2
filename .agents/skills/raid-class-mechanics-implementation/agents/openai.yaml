@@ -1,0 +1,4 @@
+interface:
+  display_name: "Raid Class Mechanics Implementation"
+  short_description: "Repair native class and pet damage mechanics"
+  default_prompt: "Use $raid-class-mechanics-implementation to repair one trace-backed native class-mechanics failure."

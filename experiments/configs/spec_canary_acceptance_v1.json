@@ -1,0 +1,40 @@
+{
+  "schema": "trinity_spec_canary_acceptance_v1",
+  "max_capture_attempts": 1,
+  "max_fix_attempts": 1,
+  "required_duration_seconds": 300.0,
+  "thresholds": {
+    "cast_cadence_ratio": {
+      "minimum": 0.85,
+      "maximum": 1.15
+    },
+    "cast_mix_total_variation_distance_maximum": 0.08,
+    "cast_share_absolute_delta_maximum": 0.05,
+    "total_dps_ratio": {
+      "minimum": 0.9,
+      "maximum": 1.1
+    },
+    "pet_alive_ratio_minimum": 0.95,
+    "pet_target_match_ratio_minimum": 0.95,
+    "pet_landed_event_cadence_ratio": {
+      "minimum": 0.85,
+      "maximum": 1.15
+    },
+    "pet_damage_per_event_ratio": {
+      "minimum": 0.9,
+      "maximum": 1.1
+    }
+  },
+  "specs": {
+    "affliction_warlock": {
+      "pet_required": true,
+      "wowsims_primary_pet_names": [
+        "Felhunter"
+      ],
+      "trinity_primary_pet_spell_ids": [
+        0,
+        54049
+      ]
+    }
+  }
+}
