@@ -493,3 +493,56 @@ Unit* BotWorldPopulationMgr::FindValidationRouteTankFocusTarget(
 
     return nullptr;
 }
+
+
+float UnitHealthPct(Unit const* unit)
+{
+    if (!unit || !unit->GetMaxHealth())
+        return 0.0f;
+    return float(unit->GetHealth()) / float(unit->GetMaxHealth());
+}
+
+bool BotWorldPopulationMgr::RecoverAuthoritativeValidationRouteFocus(
+    WorldBotState& state, Player* bot,
+    BotRolePowerBreakdown const& power, BotProgressionStage stage,
+    BotProgressionActivity activity,
+    std::function<Unit*()> const& findAuthoritativeRouteFocusTarget,
+    std::string const& authoritativeFocusFailure, char const* context)
+{
+    Unit* focus = findAuthoritativeRouteFocusTarget();
+    if (!focus || !focus->IsAlive())
+    {
+        std::string raw = BuildRawJson(bot, nullptr);
+        std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_recovery", &power, stage, activity);
+        std::string reason = std::string(context ? context : "assist_unresolved_authoritative_focus") + "_" + authoritativeFocusFailure;
+        RecordEvent(state, bot, "validation_route_recovery", nullptr, reason.c_str(), raw.c_str(), semantic.c_str(), 0.0f, Cohort().Config.ValidationRouteTargetEntry);
+        return false;
+    }
+
+    std::string raw = BuildRawJson(bot, focus);
+    std::string semantic = BuildSemanticJson(bot, focus, "validation_route_recovery", &power, stage, activity);
+    RecordEvent(state, bot, "validation_route_recovery", focus, context ? context : "recover_authoritative_focus", raw.c_str(), semantic.c_str(), UnitHealthPct(focus), Cohort().Config.ValidationRouteTargetEntry);
+    state.TargetGuid = focus->GetGUID();
+    return true;
+}
+
+Unit* BotWorldPopulationMgr::TeacherAssistAuthoritativeValidationFocus(
+    WorldBotState& state, Unit* proposedFocus,
+    std::function<bool()> const& authoritativeRouteFocusActive,
+    std::function<Unit*()> const& findAuthoritativeRouteFocusTarget,
+    std::string& authoritativeFocusFailure)
+{
+    if (!authoritativeRouteFocusActive())
+        return proposedFocus;
+
+    Unit* authoritativeFocus = findAuthoritativeRouteFocusTarget();
+    if (authoritativeFocus)
+    {
+        state.ValidationRouteUnresolvedFocusHoldCount = 0;
+        return authoritativeFocus;
+    }
+
+    ++state.ValidationRouteUnresolvedFocusHoldCount;
+    authoritativeFocusFailure = authoritativeFocusFailure.empty() ? "assist_target_search_authoritative_focus" : authoritativeFocusFailure;
+    return nullptr;
+}

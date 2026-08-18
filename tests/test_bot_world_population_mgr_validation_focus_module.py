@@ -20,7 +20,9 @@ def test_validation_focus_module_is_bounded_and_registered():
         "BotWorldPopulationMgr::MakeExistingValidationRouteCombatReady",
        "BotWorldPopulationMgr::FindValidationRouteTankFocusTarget",
         "BotWorldPopulationMgr::FindLastKnownValidationRouteFocusTarget",
-        "BotWorldPopulationMgr::FindAuthoritativeValidationRouteFocusTarget",
+       "BotWorldPopulationMgr::FindAuthoritativeValidationRouteFocusTarget",
+        "BotWorldPopulationMgr::RecoverAuthoritativeValidationRouteFocus",
+        "BotWorldPopulationMgr::TeacherAssistAuthoritativeValidationFocus",
     ):
         assert method in text
     assert "FindValidationRouteGroupFocusTarget" in HEADER.read_text()

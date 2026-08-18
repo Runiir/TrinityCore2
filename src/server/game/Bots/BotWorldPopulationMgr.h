@@ -2151,6 +2151,17 @@ private:
         Player* bot, std::function<Unit*(Unit*)> const& routeUsableCombatTarget,
         std::function<bool(Creature const*)> const& isValidationRouteScriptTarget,
         std::string& authoritativeFocusFailure);
+    bool RecoverAuthoritativeValidationRouteFocus(
+        WorldBotState& state, Player* bot,
+        BotRolePowerBreakdown const& power, BotProgressionStage stage,
+        BotProgressionActivity activity,
+        std::function<Unit*()> const& findAuthoritativeRouteFocusTarget,
+        std::string const& authoritativeFocusFailure, char const* context);
+    Unit* TeacherAssistAuthoritativeValidationFocus(
+        WorldBotState& state, Unit* proposedFocus,
+        std::function<bool()> const& authoritativeRouteFocusActive,
+        std::function<Unit*()> const& findAuthoritativeRouteFocusTarget,
+        std::string& authoritativeFocusFailure);
     bool CurrentLiveValidationRoutePackCanContinue(
         std::function<bool()> const& persistedValidationRoutePackHasLiveMembers,
         std::function<bool(uint32)> const& isValidationRoutePackEntry,
