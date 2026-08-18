@@ -18,6 +18,7 @@
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/BotRaidHazardState.h"
 #include "Bots/BotRaidDrudgeGeometryState.h"
+#include "Bots/BotWorldPopulationMgrValidationHazards.h"
 #include "Bots/BotRaidDrudgeThreatSeedState.h"
 #include "Bots/BotRaidDrudgeNativeRushState.h"
 #include "CellImpl.h"
@@ -6650,34 +6651,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             || bot->IsFalling())
             return false;
 
-        struct HazardDefinition
-        {
-            uint32 SourceEntry = 0;
-            uint32 DetectionSpellId = 0;
-            uint32 DamageSpellId = 0;
-            std::string Shape;
-            float RadiusYards = 0.0f;
-            float SafetyMarginYards = 0.0f;
-        };
-        std::vector<HazardDefinition> hazardDefinitions;
-        auto addHazardDefinition = [&hazardDefinitions](uint32 sourceEntry, uint32 detectionSpellId,
-            uint32 damageSpellId, std::string const& shape, float radiusYards, float safetyMarginYards)
-        {
-            if (!sourceEntry)
-                return;
-            for (HazardDefinition const& definition : hazardDefinitions)
-                if (definition.SourceEntry == sourceEntry
-                    && definition.DetectionSpellId == detectionSpellId
-                    && definition.DamageSpellId == damageSpellId)
-                    return;
-            hazardDefinitions.push_back({ sourceEntry, detectionSpellId, damageSpellId, shape, radiusYards, safetyMarginYards });
-        };
-        addHazardDefinition(Cohort().Config.ValidationRouteHazardSourceEntry,
-            Cohort().Config.ValidationRouteHazardDetectionSpellId,
-            Cohort().Config.ValidationRouteHazardDamageSpellId,
-            Cohort().Config.ValidationRouteHazardShape,
-            Cohort().Config.ValidationRouteHazardRadiusYards,
-            Cohort().Config.ValidationRouteHazardSafetyMarginYards);
+        using HazardDefinition = BotWorldValidationHazards::Definition;
+        using ActiveHazard = BotWorldValidationHazards::Active;
+        std::vector<HazardDefinition> hazardDefinitions =
+            BotWorldValidationHazards::BuildDefinitions(
+                Cohort().Config.ValidationRouteHazardSourceEntry,
+                Cohort().Config.ValidationRouteHazardDetectionSpellId,
+                Cohort().Config.ValidationRouteHazardDamageSpellId,
+                Cohort().Config.ValidationRouteHazardShape,
+                Cohort().Config.ValidationRouteHazardRadiusYards,
+                Cohort().Config.ValidationRouteHazardSafetyMarginYards);
 
         // Hazard geometry belongs to the active route node. Importing every
         // later manifest node here made ordinary opening-pack casts inherit
@@ -6688,180 +6671,33 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         bool currentNodeHasConfiguredHazard = Cohort().Config.ValidationRouteHazardSourceEntry != 0;
         auto hazardDefinitionFor = [&hazardDefinitions](uint32 sourceEntry, uint32 spellId) -> HazardDefinition const*
         {
-            for (HazardDefinition const& definition : hazardDefinitions)
-                if (definition.SourceEntry == sourceEntry
-                    && (!spellId || definition.DamageSpellId == spellId || definition.DetectionSpellId == spellId))
-                    return &definition;
-            return nullptr;
-        };
-        struct ActiveHazard
-        {
-            Creature* Source = nullptr;
-            HazardDefinition const* Definition = nullptr;
-            float SafeRadius = 0.0f;
+            return BotWorldValidationHazards::FindDefinition(
+                hazardDefinitions, sourceEntry, spellId);
         };
         std::vector<ActiveHazard> activeHazards;
-        auto hazardIsActive = [this, bot](Creature* hazard, HazardDefinition const* definition) -> bool
+        auto hazardIsActive = [bot](Creature* hazard, HazardDefinition const* definition) -> bool
         {
-            if (!hazard || !definition || !hazard->IsAlive())
-                return false;
-
-            // Most non-attackable radial hazards are persistent ground objects.
-            // The Chainwielder's Overhead Smash is different: its native
-            // summon lives for 27 seconds, while spell 79580 is dangerous only
-            // for its 3-second cast plus 2-second effect. Treating the visual
-            // marker's full lifetime as damage repeatedly starved healing and
-            // pulled the raid back into an already completed dodge.
-            bool active = definition->Shape == "radial"
-                    && !bot->IsValidAttackTarget(hazard);
-            if (active && definition->SourceEntry == 42690
-                && definition->DamageSpellId == 79580)
-            {
-                TempSummon const* summon = hazard->ToTempSummon();
-                SpellInfo const* damageSpell = sSpellMgr->GetSpellInfo(
-                    definition->DamageSpellId);
-                if (!summon || !damageSpell)
-                    return true;
-
-                uint32 castTimeMs = uint32(std::max<int32>(
-                    0, damageSpell->CalcCastTime(hazard->getLevel())));
-                uint32 effectDurationMs = uint32(std::max<int32>(
-                    0, damageSpell->GetDuration()));
-                active = BotRaidHazard::TimedMarkerDangerActive(
-                    summon->GetTimer(), summon->GetLifetime(), castTimeMs,
-                    effectDurationMs);
-            }
-            if (definition->DetectionSpellId)
-                for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
-                    if (Spell* spell = hazard->GetCurrentSpell(spellType))
-                        if (SpellInfo const* spellInfo = spell->GetSpellInfo(); spellInfo
-                            && (spellInfo->Id == definition->DetectionSpellId
-                                || spellInfo->Id == definition->DamageSpellId))
-                            active = true;
-            return active;
+            return BotWorldValidationHazards::IsActive(bot, hazard, definition);
         };
         auto refreshActiveHazards = [&]()
         {
-            activeHazards.clear();
-            if (!mechanicProfileRequiresMovement || hazardDefinitions.empty())
-                return;
-
-            std::vector<WorldObject*> hazardObjects;
-            Trinity::AllWorldObjectsInRange hazardCheck(bot, 35.0f);
-            Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> hazardSearcher(
-                bot, hazardObjects, hazardCheck);
-            Cell::VisitAllObjects(bot, hazardSearcher, 35.0f);
-            for (WorldObject* object : hazardObjects)
-            {
-                Creature* hazard = object ? object->ToCreature() : nullptr;
-                HazardDefinition const* definition = hazardDefinitionFor(
-                    hazard ? hazard->GetEntry() : 0, 0);
-                if (!hazardIsActive(hazard, definition))
-                    continue;
-
-                activeHazards.push_back({
-                    hazard, definition,
-                    std::max(1.0f, definition->RadiusYards + definition->SafetyMarginYards)
-                });
-            }
+            activeHazards = BotWorldValidationHazards::FindActive(
+                bot, hazardDefinitions, mechanicProfileRequiresMovement);
         };
         auto positionOutsideHazard = [](ActiveHazard const& hazard, Position const& position) -> bool
         {
-            if (!hazard.Source || !hazard.Definition)
-                return true;
-
-            bool inside = Distance2d(
-                position.GetPositionX(), position.GetPositionY(),
-                hazard.Source->GetPositionX(), hazard.Source->GetPositionY())
-                <= hazard.SafeRadius;
-            if (hazard.Definition->Shape == "frontal_cone")
-            {
-                float bearing = std::atan2(
-                    position.GetPositionY() - hazard.Source->GetPositionY(),
-                    position.GetPositionX() - hazard.Source->GetPositionX());
-                float relative = bearing - hazard.Source->GetOrientation();
-                while (relative > float(M_PI))
-                    relative -= float(2.0 * M_PI);
-                while (relative < -float(M_PI))
-                    relative += float(2.0 * M_PI);
-                    inside = inside && std::fabs(relative) <= float(M_PI_2);
-            }
-            return !inside;
+            return BotWorldValidationHazards::PositionOutside(
+                hazard, position.GetPositionX(), position.GetPositionY());
         };
         auto positionOutsideActiveHazards = [&](Position const& position) -> bool
         {
-            for (ActiveHazard const& hazard : activeHazards)
-                if (!positionOutsideHazard(hazard, position))
-                    return false;
-            return true;
+            return BotWorldValidationHazards::PositionsOutside(
+                activeHazards, position.GetPositionX(), position.GetPositionY());
         };
         auto pathOutsideActiveHazards = [&](float x, float y, float z) -> bool
         {
-            if (activeHazards.empty())
-                return true;
-
-            PathGenerator path(bot);
-            if (!path.CalculatePath(x, y, z, false))
-                return false;
-            PathType const pathType = path.GetPathType();
-            if ((pathType & PATHFIND_NOPATH)
-                || (pathType & PATHFIND_NOT_USING_PATH)
-                || (pathType & PATHFIND_INCOMPLETE)
-                || (pathType & PATHFIND_SHORTCUT)
-                || (pathType & PATHFIND_FARFROMPOLY))
-                return false;
-
-            std::vector<float> previousDistances;
-            std::vector<bool> startedOutside;
-            std::vector<bool> exitedHazards;
-            previousDistances.reserve(activeHazards.size());
-            startedOutside.reserve(activeHazards.size());
-            exitedHazards.reserve(activeHazards.size());
-            Position const start(
-                bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), 0.0f);
-            for (ActiveHazard const& hazard : activeHazards)
-            {
-                previousDistances.push_back(bot->GetExactDist2d(hazard.Source));
-                startedOutside.push_back(positionOutsideHazard(hazard, start));
-                exitedHazards.push_back(false);
-            }
-
-            bool endpointOutside = false;
-            for (G3D::Vector3 const& point : path.GetPath())
-            {
-                Position const sample(point.x, point.y, point.z, 0.0f);
-                endpointOutside = positionOutsideActiveHazards(sample);
-                for (size_t index = 0; index < activeHazards.size(); ++index)
-                {
-                    ActiveHazard const& hazard = activeHazards[index];
-                    float distance = Distance2d(
-                        point.x, point.y,
-                        hazard.Source->GetPositionX(), hazard.Source->GetPositionY());
-                    bool outside = positionOutsideHazard(hazard, sample);
-                    if (startedOutside[index])
-                    {
-                        if (!outside)
-                            return false;
-                        continue;
-                    }
-
-                    // The initial path prefix may be contaminated because the
-                    // bot is already standing in a strike.  Require a
-                    // non-worsening radial exit, then keep the path outside
-                    // once it reaches the exact 12-yard damage radius.
-                    if (!exitedHazards[index])
-                    {
-                        if (distance + 0.5f < previousDistances[index])
-                            return false;
-                        previousDistances[index] = std::max(previousDistances[index], distance);
-                        if (distance > hazard.SafeRadius)
-                            exitedHazards[index] = true;
-                    }
-                    else if (!outside)
-                        return false;
-                }
-            }
-            return endpointOutside;
+            return BotWorldValidationHazards::PathOutside(
+                bot, activeHazards, x, y, z);
         };
         auto isScopedGenericCastCandidate = [this, &hazardDefinitionFor, &isValidationCohortCombatLinked,
             currentNodeHasConfiguredHazard](Unit* candidate) -> bool
