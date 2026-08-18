@@ -9,6 +9,7 @@
 #include "MotionMaster.h"
 #include "Player.h"
 #include "Spell.h"
+#include "SpellHistory.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
 #include "Unit.h"
@@ -665,4 +666,3 @@ bool BotWorldPopulationMgr::TryValidationRouteGroupHeal(
         action = cast ? "validation_route_group_heal" : "validation_route_group_heal_failed";
         return cast || (allowMovement && feralTankApproachesHealerSwarm);
 }
-

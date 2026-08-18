@@ -3,6 +3,7 @@
 #include "Group.h"
 #include "GroupMgr.h"
 #include "ObjectAccessor.h"
+#include "Player.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
 

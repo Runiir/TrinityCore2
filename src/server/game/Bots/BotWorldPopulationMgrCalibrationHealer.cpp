@@ -6,6 +6,7 @@
 #include "GroupReference.h"
 #include "Player.h"
 #include "Spell.h"
+#include "SpellHistory.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
 #include "Unit.h"
@@ -272,5 +273,4 @@ bool BotWorldPopulationMgr::UpdateCalibrationHealer(WorldBotState& state, Player
     }
     return true;
 }
-
 

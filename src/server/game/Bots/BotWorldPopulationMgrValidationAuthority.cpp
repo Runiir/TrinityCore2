@@ -3,6 +3,7 @@
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Creature.h"
 #include "Map.h"
+#include "Player.h"
 
 #include <algorithm>
 #include <vector>
@@ -101,4 +102,3 @@ void BotWorldPopulationMgr::ConfigureValidationRouteCombatAuthority(Player* bot)
     BotRaidAreaAuthority::SetAllOffenseSuppressed(raidAuthorityOwner, false);
     BotRaidAreaAuthority::Set(raidAuthorityOwner, false);
 }
-

@@ -5,6 +5,7 @@
 #include "ObjectAccessor.h"
 #include "Pet.h"
 #include "Player.h"
+#include "SpellHistory.h"
 #include "SpellInfo.h"
 #include "Unit.h"
 
@@ -493,4 +494,3 @@ bool BotWorldPopulationMgr::TryResolveBotBlocker(WorldBotState& state, Player* b
         MarkBotUnstuck(state, bot, resolver.c_str());
     return resolved;
 }
-

@@ -12,6 +12,7 @@
 #include "Pet.h"
 #include "Player.h"
 #include "SpellInfo.h"
+#include "SpellHistory.h"
 #include "SpellMgr.h"
 #include "Unit.h"
 
@@ -894,4 +895,3 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
     TryResolveBotBlocker(state, bot, "persistent_combat_setup_ready");
     return false;
 }
-

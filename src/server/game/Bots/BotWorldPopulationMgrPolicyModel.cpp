@@ -2,6 +2,8 @@
 
 #include "Bots/BotLongTermProgressionBrain.h"
 
+#include "Player.h"
+
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -299,4 +301,3 @@ uint32 BotWorldPopulationMgr::FeatureSchemaHash(std::string const& value)
     }
     return hash;
 }
-
