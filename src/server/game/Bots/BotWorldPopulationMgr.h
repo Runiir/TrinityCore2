@@ -2074,6 +2074,10 @@ private:
         std::vector<Creature*> const& localAdds,
         std::function<size_t(Player const*)> const& observedListedAttackerCount,
         bool activeClusterArrived);
+    bool ContinueStableTankSwarmApproach(
+        WorldBotState& state, Unit* selectedAdd, Player* densityHealer,
+        std::string const& role, BotClassSpecActionProfile const& profile,
+        bool cohortSwarmActive, float tankDensityClusterRadius) const;
     void ConfigureValidationRouteCombatAuthority(Player* bot) const;
     bool IsImmediateNextValidationRouteBossTarget(Creature const* creature) const;
     bool IsImmediateNextValidationRouteEncounterMember(Creature const* creature) const;
