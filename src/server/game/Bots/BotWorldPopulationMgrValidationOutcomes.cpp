@@ -8,6 +8,74 @@
 #include <chrono>
 #include <functional>
 #include <string>
+#include <sstream>
+
+
+bool BotWorldPopulationMgr::CompleteDiscoveredPackIfReady(
+    bool discoveryLeg, Player* bot, WorldBotState& state,
+    BotRolePowerBreakdown const& power, BotProgressionStage stage,
+    BotProgressionActivity activity,
+    std::function<bool()> const& validationPartyHasActiveCombat)
+{
+    if (!discoveryLeg || Party().ValidationRoutePackGeneration != Party().ValidationRouteGeneration || !Party().ValidationRoutePackObservedEngagement
+        || Party().ValidationRoutePackMemberGuids.empty())
+        return false;
+
+    bool ledgerComplete = true;
+    for (ObjectGuid const& guid : Party().ValidationRoutePackMemberGuids)
+        if (Party().ValidationRoutePackDeathGuids.find(guid) == Party().ValidationRoutePackDeathGuids.end()
+            && Party().ValidationRoutePackTransitionGuids.find(guid) == Party().ValidationRoutePackTransitionGuids.end())
+        {
+            ledgerComplete = false;
+            break;
+        }
+    if (!ledgerComplete || validationPartyHasActiveCombat())
+    {
+        Party().ValidationRoutePackClearCandidateSinceMs = 0;
+        return false;
+    }
+
+    uint64 nowMs = NowMs();
+    if (!Party().ValidationRoutePackClearCandidateSinceMs)
+    {
+        Party().ValidationRoutePackClearCandidateSinceMs = nowMs;
+        return true;
+    }
+    if (nowMs - Party().ValidationRoutePackClearCandidateSinceMs < 2000)
+        return true;
+
+    std::ostringstream raw;
+    raw << "{\"base\":" << BuildRawJson(bot, nullptr)
+        << ",\"route_generation\":" << Party().ValidationRouteGeneration
+        << ",\"pack_sequence\":" << Party().ValidationRoutePackSequence
+        << ",\"member_count\":" << Party().ValidationRoutePackMemberGuids.size()
+        << ",\"death_count\":" << Party().ValidationRoutePackDeathGuids.size()
+        << ",\"transition_count\":" << Party().ValidationRoutePackTransitionGuids.size() << "}";
+    std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_pack_terminal", &power, stage, activity);
+    RecordEvent(state, bot, "validation_route_pack_terminal", nullptr, "discovered_pack_cleared", raw.str().c_str(), semantic.c_str(), float(Party().ValidationRoutePackSequence), uint32(Party().ValidationRoutePackMemberGuids.size()));
+
+    ++Party().ValidationRouteCompletedPackCount;
+    ++Party().ValidationRoutePackSequence;
+    Party().ValidationRoutePackMemberGuids.clear();
+    Party().ValidationRoutePackEngagedGuids.clear();
+    Party().ValidationRoutePackDeathGuids.clear();
+    Party().ValidationRoutePackTransitionGuids.clear();
+    Party().ValidationRoutePackObservedEngagement = false;
+    Party().ValidationRoutePackClearCandidateSinceMs = 0;
+    Party().ValidationRouteNodeClearCandidateSinceMs = 0;
+    for (WorldBotState& cohortState : Party().Bots)
+    {
+        cohortState.TargetGuid.Clear();
+        cohortState.ValidationRouteCombatProgressTargetGuid.Clear();
+        cohortState.ValidationRoutePackProgressTargetGuid.Clear();
+        cohortState.ValidationRouteCombatNoProgressCount = 0;
+        cohortState.ValidationRouteCombatNoProgressSinceMs = 0;
+        cohortState.ValidationRoutePackNoProgressCount = 0;
+        cohortState.ValidationRoutePackNoProgressSinceMs = 0;
+    }
+    return true;
+}
+
 
 namespace
 {

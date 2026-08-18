@@ -21,6 +21,7 @@ def test_validation_outcomes_module_is_bounded_and_registered():
        "BotWorldPopulationMgr::RecordValidationRouteTrashKill",
         "BotWorldPopulationMgr::RecordDefeatedValidationRouteTarget",
         "BotWorldPopulationMgr::RecordDefeatedValidationRoutePackMembers",
+        "BotWorldPopulationMgr::CompleteDiscoveredPackIfReady",
     ):
         assert method in text
     assert "MarkTrashClusterCleared" in HEADER.read_text()
