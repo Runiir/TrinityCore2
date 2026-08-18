@@ -2141,9 +2141,16 @@ private:
     Unit* MakeExistingValidationRouteCombatReady(
         Player* bot, Creature* creature,
         std::function<bool(Creature const*)> const& isValidationRouteCombatTarget);
-    Unit* FindValidationRouteTankFocusTarget(
+   Unit* FindValidationRouteTankFocusTarget(
+       Player* bot, std::function<Unit*(Unit*)> const& routeUsableCombatTarget,
+       ObjectGuid expectedGuid);
+    Unit* FindLastKnownValidationRouteFocusTarget(
         Player* bot, std::function<Unit*(Unit*)> const& routeUsableCombatTarget,
-        ObjectGuid expectedGuid);
+        std::function<bool()> const& routeFocusMemoryFresh);
+    Unit* FindAuthoritativeValidationRouteFocusTarget(
+        Player* bot, std::function<Unit*(Unit*)> const& routeUsableCombatTarget,
+        std::function<bool(Creature const*)> const& isValidationRouteScriptTarget,
+        std::string& authoritativeFocusFailure);
     bool CurrentLiveValidationRoutePackCanContinue(
         std::function<bool()> const& persistedValidationRoutePackHasLiveMembers,
         std::function<bool(uint32)> const& isValidationRoutePackEntry,

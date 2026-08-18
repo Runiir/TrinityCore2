@@ -6,6 +6,167 @@
 #include "ObjectAccessor.h"
 #include "Player.h"
 #include "Unit.h"
+#include "CellImpl.h"
+#include "GridNotifiersImpl.h"
+
+
+Unit* BotWorldPopulationMgr::FindLastKnownValidationRouteFocusTarget(
+    Player* bot, std::function<Unit*(Unit*)> const& routeUsableCombatTarget,
+    std::function<bool()> const& routeFocusMemoryFresh)
+{
+    if (!routeFocusMemoryFresh() || !Party().ValidationRouteFocusEntry)
+        return nullptr;
+
+    float focusSearchRange = Cohort().Config.ValidationRouteKind == "boss" ? 220.0f : 160.0f;
+    std::vector<WorldObject*> objects;
+    Trinity::AllWorldObjectsInRange check(bot, focusSearchRange);
+    Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
+    Cell::VisitAllObjects(bot, searcher, focusSearchRange);
+
+    Unit* nearestMatchingEntry = nullptr;
+    float nearestMatchingEntryDistance = 0.0f;
+    for (WorldObject* object : objects)
+    {
+        Creature* creature = object ? object->ToCreature() : nullptr;
+        if (!creature || creature->GetEntry() != Party().ValidationRouteFocusEntry)
+            continue;
+
+        Unit* candidate = routeUsableCombatTarget(creature);
+        if (!candidate || !bot->IsValidAttackTarget(candidate))
+            continue;
+
+        if (candidate->GetGUID() == Party().ValidationRouteFocusGuid)
+            return candidate;
+        if (Cohort().Config.ValidationRouteKind != "boss")
+            continue;
+
+        float distance = bot->GetExactDist(candidate);
+        if (!nearestMatchingEntry || distance < nearestMatchingEntryDistance)
+        {
+            nearestMatchingEntry = candidate;
+            nearestMatchingEntryDistance = distance;
+        }
+    }
+
+    return Cohort().Config.ValidationRouteKind == "boss" ? nearestMatchingEntry : nullptr;
+}
+
+Unit* BotWorldPopulationMgr::FindAuthoritativeValidationRouteFocusTarget(
+    Player* bot, std::function<Unit*(Unit*)> const& routeUsableCombatTarget,
+    std::function<bool(Creature const*)> const& isValidationRouteScriptTarget,
+    std::string& authoritativeFocusFailure)
+{
+    auto activeCohortFocus = [](Player* member, Unit* focus) -> bool
+    {
+        return member && focus && (member->IsInCombat() || focus->IsInCombat() || focus->GetVictim());
+    };
+
+    auto usableFocus = [&](Unit* focus) -> Unit*
+    {
+        focus = routeUsableCombatTarget(focus);
+        if (!focus)
+            return nullptr;
+        if (!Party().ValidationRouteFocusGuid.IsEmpty() && focus->GetGUID() == Party().ValidationRouteFocusGuid)
+            return focus;
+        if (Cohort().Config.ValidationRouteKind != "boss" && !Party().ValidationRouteFocusGuid.IsEmpty())
+            return nullptr;
+        if (Party().ValidationRouteFocusEntry)
+        {
+            if (Creature const* creature = focus->ToCreature())
+                if (creature->GetEntry() == Party().ValidationRouteFocusEntry)
+                    return focus;
+        }
+        if (Party().ValidationRouteActivationApplied && Cohort().Config.ValidationRouteKind == "boss" && Cohort().Config.ValidationRouteTargetEntry)
+        {
+            if (Creature const* creature = focus->ToCreature())
+                if (isValidationRouteScriptTarget(creature))
+                    return focus;
+        }
+        return nullptr;
+    };
+
+    bool sawLoadedCohort = false;
+    bool sawSameMapCohort = false;
+    bool sawVictimReference = false;
+    bool sawStateTargetGuid = false;
+    bool sawResolvedStateTarget = false;
+    bool sawMemoryFocusGuid = false;
+    bool sawResolvedMemoryFocus = false;
+    bool sawRejectedReference = false;
+    for (WorldBotState const& cohortState : Party().Bots)
+    {
+        Player* member = GetLoadedBot(cohortState);
+        if (!member || member == bot)
+            continue;
+        sawLoadedCohort = true;
+        if (!member->GetMap() || member->GetMap() != bot->GetMap())
+            continue;
+        sawSameMapCohort = true;
+
+        if (Unit* victim = member->GetVictim())
+        {
+            sawVictimReference = true;
+            if (Unit* focus = usableFocus(victim))
+                return focus;
+            sawRejectedReference = true;
+        }
+        if (!cohortState.TargetGuid.IsEmpty())
+        {
+            sawStateTargetGuid = true;
+            if (Unit* resolved = ObjectAccessor::GetUnit(*member, cohortState.TargetGuid))
+            {
+                sawResolvedStateTarget = true;
+                bool activeStateTarget = activeCohortFocus(member, resolved);
+                if (activeStateTarget)
+                    if (Unit* focus = usableFocus(resolved))
+                        return focus;
+                if (!activeStateTarget)
+                    authoritativeFocusFailure = "authoritative_focus_state_target_inactive";
+                else
+                    sawRejectedReference = true;
+            }
+        }
+        if (!Party().ValidationRouteFocusGuid.IsEmpty())
+        {
+            sawMemoryFocusGuid = true;
+            if (Unit* resolved = ObjectAccessor::GetUnit(*member, Party().ValidationRouteFocusGuid))
+            {
+                sawResolvedMemoryFocus = true;
+                if (Unit* focus = usableFocus(resolved))
+                    return focus;
+                sawRejectedReference = true;
+            }
+        }
+    }
+
+    if (!sawLoadedCohort)
+        authoritativeFocusFailure = "authoritative_focus_no_loaded_cohort";
+    else if (!sawSameMapCohort)
+        authoritativeFocusFailure = "authoritative_focus_no_same_map_cohort";
+    else if (!sawVictimReference && !sawStateTargetGuid && !sawMemoryFocusGuid)
+        authoritativeFocusFailure = "authoritative_focus_no_reference";
+    else if ((sawStateTargetGuid && !sawResolvedStateTarget) || (sawMemoryFocusGuid && !sawResolvedMemoryFocus))
+        authoritativeFocusFailure = "authoritative_focus_guid_not_resolved";
+    else if (sawRejectedReference)
+        authoritativeFocusFailure = "authoritative_focus_reference_rejected";
+    else
+        authoritativeFocusFailure = "authoritative_focus_unavailable";
+
+    if (Player* anchor = FindDungeonAnchor(bot))
+    {
+        if (Unit* victim = anchor->GetVictim())
+        {
+            if (Unit* focus = usableFocus(victim))
+                return focus;
+            authoritativeFocusFailure = "authoritative_focus_anchor_reference_rejected";
+        }
+        else if (authoritativeFocusFailure == "authoritative_focus_no_reference")
+            authoritativeFocusFailure = "authoritative_focus_anchor_no_victim";
+    }
+
+    return nullptr;
+}
+
 
 #include <functional>
 #include <string>
@@ -321,4 +482,3 @@ Unit* BotWorldPopulationMgr::FindValidationRouteTankFocusTarget(
 
     return nullptr;
 }
-
