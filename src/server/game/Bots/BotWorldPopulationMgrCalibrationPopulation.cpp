@@ -8,6 +8,7 @@
 #include "DatabaseEnv.h"
 #include "GameTime.h"
 #include "GridNotifiersImpl.h"
+#include "Log.h"
 #include "Map.h"
 #include "PathGenerator.h"
 #include "PhasingHandler.h"
@@ -608,4 +609,3 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
             restoredDeadBot ? 1u : 0u);
     }
 }
-
