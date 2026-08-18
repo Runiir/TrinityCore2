@@ -3,8 +3,8 @@
 
 #include <cmath>
 
-#include "PetDefines.h"
 #include "Define.h"
+#include "PetDefines.h"
 #include "ObjectGuid.h"
 
 #include <string>
