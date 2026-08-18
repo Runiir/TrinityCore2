@@ -2078,6 +2078,11 @@ private:
         WorldBotState& state, Unit* selectedAdd, Player* densityHealer,
         std::string const& role, BotClassSpecActionProfile const& profile,
         bool cohortSwarmActive, float tankDensityClusterRadius) const;
+    void MarkValidationRouteTerminalAfterProgress(
+        char const* reason, WorldBotState& state, Player* bot,
+        BotRolePowerBreakdown const& power, BotProgressionStage stage,
+        BotProgressionActivity activity, std::string& situation,
+        std::string& action, Unit*& target, float routeDistance);
     void ConfigureValidationRouteCombatAuthority(Player* bot) const;
     bool IsImmediateNextValidationRouteBossTarget(Creature const* creature) const;
     bool IsImmediateNextValidationRouteEncounterMember(Creature const* creature) const;
