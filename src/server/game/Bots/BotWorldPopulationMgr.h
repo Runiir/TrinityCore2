@@ -2083,6 +2083,17 @@ private:
         BotRolePowerBreakdown const& power, BotProgressionStage stage,
         BotProgressionActivity activity, std::string& situation,
         std::string& action, Unit*& target, float routeDistance);
+    void MarkTrashClusterCleared(WorldBotState& state, Player* bot,
+        BotRolePowerBreakdown const& power, BotProgressionStage stage,
+        BotProgressionActivity activity, char const* reason);
+    void MarkValidationRouteTrashFailed(WorldBotState& state, Player* bot,
+        BotRolePowerBreakdown const& power, BotProgressionStage stage,
+        BotProgressionActivity activity, Unit* failedTarget, char const* reason,
+        char const* situationName, float metric, uint32 data,
+        float bestHealthPct = -1.0f, uint32 noProgressCount = 0,
+        uint32 noProgressThreshold = 0);
+    void ClearValidationRouteKilledFocus(WorldBotState& state,
+        ObjectGuid killedGuid);
     bool CurrentLiveValidationRoutePackCanContinue(
         std::function<bool()> const& persistedValidationRoutePackHasLiveMembers,
         std::function<bool(uint32)> const& isValidationRoutePackEntry,
