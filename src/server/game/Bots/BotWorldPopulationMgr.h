@@ -33,6 +33,7 @@ class Player;
 class Quest;
 class Unit;
 class WorldObject;
+struct BotClassSpecActionProfile;
 namespace BotCalibrationFixtureContractGenerated
 {
 struct SpecContract;
@@ -2065,6 +2066,14 @@ private:
         std::function<ObjectGuid::LowType()> const& currentValidationRouteTargetSpawnId,
         std::function<bool(Creature const*)> const& isValidationCohortCombatLinked,
         std::function<void(Creature const*, bool)> const& enrollValidationRoutePackMember);
+    bool TryValidationFeralRoarPickup(WorldBotState& state, Player* bot,
+        BotRolePowerBreakdown const& power, BotProgressionStage stage,
+        BotProgressionActivity activity, std::string& situation,
+        std::string& action, Unit*& target, std::string const& role,
+        BotClassSpecActionProfile const& profile, Player* densityHealer,
+        std::vector<Creature*> const& localAdds,
+        std::function<size_t(Player const*)> const& observedListedAttackerCount,
+        bool activeClusterArrived);
     void ConfigureValidationRouteCombatAuthority(Player* bot) const;
     bool IsImmediateNextValidationRouteBossTarget(Creature const* creature) const;
     bool IsImmediateNextValidationRouteEncounterMember(Creature const* creature) const;
