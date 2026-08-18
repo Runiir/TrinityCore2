@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotWorldPopulationMgrScopeGuard.h"
 #include "Bots/BotAdmissionIdentityGenerated.h"
 #include "Bots/BotClassSpecActionProfile.h"
 
@@ -14,6 +15,7 @@
 #include "Pet.h"
 #include "Player.h"
 #include "Spell.h"
+#include "SpellHistory.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
 #include "Unit.h"
@@ -331,7 +333,7 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
 {
     Player* bot = GetBot(state);
     BeginMeleeAutoAttackDecision(state, bot);
-    ReconcileOnScopeExit meleeAutoAttackReconcile{
+    BotWorldPopulationMgrInternal::ReconcileOnScopeExit meleeAutoAttackReconcile{
         [this, &state, bot]()
         {
             ResolveAndReconcileMeleeAutoAttack(state, bot);

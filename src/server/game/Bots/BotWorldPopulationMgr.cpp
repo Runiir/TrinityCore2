@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotWorldPopulationMgrScopeGuard.h"
 #include "Bots/BotAdmissionIdentityGenerated.h"
 #include "Bots/BotCalibrationFixtureContractGenerated.h"
 #include "Bots/BotActionExecutor.h"
@@ -101,17 +102,6 @@
 
 namespace
 {
-struct ReconcileOnScopeExit
-{
-    std::function<void()> Callback;
-
-    ~ReconcileOnScopeExit()
-    {
-        if (Callback)
-            Callback();
-    }
-};
-
 char const* RuntimeModeName(BotWorldRuntimeMode mode)
 {
     switch (mode)
@@ -2014,7 +2004,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         return;
 
     BeginMeleeAutoAttackDecision(state, bot);
-    ReconcileOnScopeExit meleeAutoAttackReconcile{
+    BotWorldPopulationMgrInternal::ReconcileOnScopeExit meleeAutoAttackReconcile{
         [this, &state, bot]()
         {
             ResolveAndReconcileMeleeAutoAttack(state, bot);
