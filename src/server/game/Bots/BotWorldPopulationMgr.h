@@ -1914,6 +1914,9 @@ private:
     void ValidatePolicyModelDeployment();
     bool LoadPolicyModelArtifact(std::string const& artifactPath);
     void EnsurePopulation();
+    void EnsureValidationRaidAdmission(
+        std::vector<RaidRosterPlanSlot> const& rosterPlan,
+        uint32 expectedPopulation);
     void EnsureCalibrationPopulation();
     void ResetCalibrationScoredWindow();
     void UpdateCalibrationTargetHealthSchedule(uint64 nowMs);
