@@ -2113,6 +2113,11 @@ private:
     void RecordActivityStop(WorldBotState const& state, Player* bot = nullptr);
     struct RaidRosterItemIdentity;
     void EnsureValidationCohortGroup();
+    void UpdateValidationCohortRaidRuntime(
+        std::vector<Player*> const& members, Player* leader, Group* group,
+        bool activeObservationOnly, bool raidValidation,
+        std::vector<RaidRosterPlanSlot> const& rosterPlan,
+        uint32 leaderMapId, uint32 leaderInstanceId);
     void EnsureCalibrationCohortGroup();
     bool ObserveEquippedGearIdentity(Player const* bot,
         std::vector<RaidRosterItemIdentity>& manifest,
