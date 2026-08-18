@@ -10,7 +10,6 @@
 #include "Pet.h"
 #include "Player.h"
 #include "Unit.h"
-#include "WorldObject.h"
 
 #include <algorithm>
 #include <chrono>
@@ -271,4 +270,3 @@ void BotWorldPopulationMgr::RecordDecisionTrace(WorldBotState& state, char const
     while (state.DecisionTrace.size() > 128)
         state.DecisionTrace.pop_front();
 }
-

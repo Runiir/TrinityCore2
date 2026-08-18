@@ -12,7 +12,6 @@
 #include "Pet.h"
 #include "Player.h"
 #include "Unit.h"
-#include "WorldObject.h"
 
 #include <algorithm>
 #include <chrono>
@@ -740,4 +739,3 @@ std::string BotWorldPopulationMgr::BuildBotTraceEntriesJson(WorldBotState const&
     json << "]";
     return json.str();
 }
-
