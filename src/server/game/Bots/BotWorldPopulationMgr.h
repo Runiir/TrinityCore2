@@ -32,6 +32,10 @@ class Player;
 class Quest;
 class Unit;
 class WorldObject;
+namespace BotCalibrationFixtureContractGenerated
+{
+struct SpecContract;
+}
 struct AreaTriggerEntry;
 struct AreaTriggerStruct;
 
@@ -1934,6 +1938,9 @@ private:
     static std::string AppendAfflictionCalibrationJson(CalibrationMetrics const* metrics);
     void AppendCalibrationBotActionJson(std::ostringstream& json,
         CalibrationMetrics const* metrics) const;
+    void AppendCalibrationReferenceConditionJson(std::ostringstream& json,
+        WorldBotState const& state, CalibrationMetrics const* metrics,
+        BotCalibrationFixtureContractGenerated::SpecContract const* fixtureSpecContract) const;
     void UpdateCalibrationBot(WorldBotState& state, uint32 diff);
     bool ResolveSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
     bool ResolveSavedSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
