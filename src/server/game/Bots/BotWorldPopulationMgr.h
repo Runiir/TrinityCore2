@@ -2057,6 +2057,14 @@ private:
         BotProgressionActivity activity, std::string& situation,
         std::string& action, bool allowMovement = true,
         bool allowStationaryCastTime = false);
+    bool TryValidationRoutePatrolPull(WorldBotState& state, Player* bot,
+        BotRolePowerBreakdown const& power, BotProgressionStage stage,
+        BotProgressionActivity activity, std::string& situation,
+        std::string& action, Unit*& target,
+        std::function<bool(Player*, Unit*, bool, bool)> const& tryRouteGroupHeal,
+        std::function<ObjectGuid::LowType()> const& currentValidationRouteTargetSpawnId,
+        std::function<bool(Creature const*)> const& isValidationCohortCombatLinked,
+        std::function<void(Creature const*, bool)> const& enrollValidationRoutePackMember);
     void ConfigureValidationRouteCombatAuthority(Player* bot) const;
     bool IsImmediateNextValidationRouteBossTarget(Creature const* creature) const;
     bool IsImmediateNextValidationRouteEncounterMember(Creature const* creature) const;
