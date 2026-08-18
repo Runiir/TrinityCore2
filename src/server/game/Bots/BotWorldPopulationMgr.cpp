@@ -19,6 +19,9 @@
 #include "Bots/BotRaidHazardState.h"
 #include "Bots/BotRaidDrudgeGeometryState.h"
 #include "Bots/BotWorldPopulationMgrValidationHazards.h"
+#include "Bots/BotWorldPopulationMgrNativeHelpers.h"
+#include "Bots/BotWorldPopulationMgrPolicyHelpers.h"
+#include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 #include "Bots/BotRaidDrudgeThreatSeedState.h"
 #include "Bots/BotRaidDrudgeNativeRushState.h"
 #include "CellImpl.h"
@@ -102,532 +105,48 @@
 namespace
 {
 
-// Rebirth is a real native combat-resurrection spell, but the Cata spell data
-// used by this validation world does not carry the generic combat-res attribute
-// that the other resurrection spells expose.  Keep the eligibility decision
-// native (learned spell, resurrection effect, range/LOS/path, cooldown and
-// power are still checked by the caller) while recognizing the max-rank player
-// spell by its immutable ID.
-bool IsNativeCombatResSpell(SpellInfo const* spellInfo)
-{
-    if (!spellInfo)
-        return false;
-
-    // The Cataclysm DBC exposes Rebirth as learned base spell 20484, but its
-    // effect row is not tagged with the generic combat-resurrection attribute.
-    // The caller still requires this exact spell to be present in the owner's
-    // native spell map and applies the normal range/LOS/path/cooldown/power
-    // gates; this branch only preserves the immutable DBC identity.
-    if (spellInfo->Id == 20484)
-        return true;
-
-    bool const isResurrect = spellInfo->HasEffect(SPELL_EFFECT_RESURRECT)
-        || spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_NEW)
-        || spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_WITH_AURA);
-    return isResurrect && spellInfo->HasAttribute(SPELL_ATTR8_ENFORCE_IN_COMBAT_RESSURECTION_LIMIT);
-}
-
-
 // Blackwing Descent's native entrance is the only runback contract used by
 // the phase-one validation route.  Keep these IDs tied to the DBC/SQL
 // contract instead of selecting an arbitrary area trigger at runtime.
 constexpr uint32 DecisionFingerprintPersistHeartbeatMs = 5000;
 constexpr uint32 RepeatableDiagnosticEventHeartbeatMs = 5000;
 
-bool IsNativeCombatObserved(Player const* bot, Unit const* target)
-{
-    if (!bot || !target)
-        return false;
-
-    // These are the same postconditions visible to an ordinary client. Merely
-    // selecting a target or submitting Attack/CastSpell is intent, not proof
-    // that combat started or that the target made health progress.
-    return bot->IsInCombat() || target->IsInCombat();
-}
-
-bool SubmitNativeQuestAccept(Player* bot, WorldObject* giver, uint32 questId)
-{
-    if (!bot || !giver || !questId || !bot->GetSession()
-        || !bot->IsWithinDistInMap(giver, INTERACTION_DISTANCE))
-        return false;
-
-    WorldPackets::Quest::QuestGiverAcceptQuest packet(
-        WorldPacket(CMSG_QUEST_GIVER_ACCEPT_QUEST, 0));
-    packet.QuestGiverGUID = giver->GetGUID();
-    packet.QuestID = questId;
-    packet.StartCheat = 0;
-    bot->GetSession()->HandleQuestgiverAcceptQuestOpcode(packet);
-    QuestStatus const status = bot->GetQuestStatus(questId);
-    return status == QUEST_STATUS_INCOMPLETE || status == QUEST_STATUS_COMPLETE;
-}
-
-bool SubmitNativeQuestReward(Player* bot, WorldObject* giver, uint32 questId, uint32 rewardChoice)
-{
-    if (!bot || !giver || !questId || !bot->GetSession()
-        || !bot->IsWithinDistInMap(giver, INTERACTION_DISTANCE))
-        return false;
-
-    WorldPackets::Quest::QuestGiverChooseReward packet(
-        WorldPacket(CMSG_QUEST_GIVER_CHOOSE_REWARD, 0));
-    packet.QuestGiverGUID = giver->GetGUID();
-    packet.QuestID = int32(questId);
-    packet.ItemChoiceID = int32(rewardChoice);
-    bot->GetSession()->HandleQuestgiverChooseRewardOpcode(packet);
-    return bot->GetQuestStatus(questId) != QUEST_STATUS_COMPLETE;
-}
-
-uint64 ReadLastInsertId()
-{
-    if (QueryResult result = CharacterDatabase.Query("SELECT LAST_INSERT_ID()"))
-        return result->Fetch()[0].GetUInt64();
-
-    return 0;
-}
-
-float Distance2d(float ax, float ay, float bx, float by)
-{
-    float dx = ax - bx;
-    float dy = ay - by;
-    return std::sqrt(dx * dx + dy * dy);
-}
-
-bool UsesRangedAoeCalibrationLane(std::string const& spec)
-{
-    static constexpr std::array<char const*, 12> RangedAoeSpecs =
-    {
-        "balance_druid", "beast_mastery_hunter", "marksmanship_hunter", "survival_hunter",
-        "shadow_priest", "elemental_shaman", "arcane_mage", "fire_mage", "frost_mage",
-        "affliction_warlock", "demonology_warlock", "destruction_warlock"
-    };
-    return std::find(RangedAoeSpecs.begin(), RangedAoeSpecs.end(), spec) != RangedAoeSpecs.end();
-}
-
-float UnitHealthPct(Unit const* unit)
-{
-    if (!unit || !unit->GetMaxHealth())
-        return 0.0f;
-
-    return float(unit->GetHealth()) / float(unit->GetMaxHealth());
-}
-
-bool HasPowerForSpell(Player const* bot, SpellInfo const* spellInfo)
-{
-    if (!bot || !spellInfo)
-        return false;
-
-    int32 powerCost = spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask());
-    if (powerCost <= 0)
-        return true;
-    if (spellInfo->PowerType >= MAX_POWERS)
-        return true;
-    if (spellInfo->PowerType == POWER_HEALTH)
-        return int64(bot->GetHealth()) > powerCost;
-    return bot->GetPower(Powers(spellInfo->PowerType)) >= uint32(powerCost);
-}
-
-uint32 ControlledDispelAuraForHealer(Player const* healer)
-{
-    // Nature's Cure reliably removes curses without depending on the optional
-    // Restoration magic-dispel talent. The other healer profiles use their
-    // native hostile-magic dispel against Shadow Word: Pain.
-    return healer && healer->getClass() == CLASS_DRUID ? 702 : 589;
-}
-
-Player* CombatOwnerPlayer(Unit* unit)
-{
-    if (!unit)
-        return nullptr;
-
-    if (Player* player = unit->GetCharmerOrOwnerPlayerOrPlayerItself())
-        return player;
-
-    // Resolve nested summon ownership (for example elemental -> totem ->
-    // player). The generic helper only checks one owner GUID level.
-    Unit* current = unit;
-    for (uint8 depth = 0; depth < 4 && current; ++depth)
-    {
-        current = current->IsTotem() ? current->ToTotem()->GetOwner() : current->GetCharmerOrOwner();
-        if (!current)
-            break;
-        if (Player* player = current->ToPlayer())
-            return player;
-    }
-
-    return nullptr;
-}
-
-bool CancelRemovableShapeshifts(Player* bot)
-{
-    if (!bot)
-        return false;
-
-    Unit::AuraEffectList const& shapeshiftAuras = bot->GetAuraEffectsByType(SPELL_AURA_MOD_SHAPESHIFT);
-    std::vector<Aura*> removable;
-    for (AuraEffect* effect : shapeshiftAuras)
-    {
-        Aura* aura = effect ? effect->GetBase() : nullptr;
-        SpellInfo const* auraInfo = aura ? aura->GetSpellInfo() : nullptr;
-        if (!auraInfo || auraInfo->HasAttribute(SPELL_ATTR0_NO_AURA_CANCEL)
-            || !auraInfo->IsPositive() || auraInfo->IsPassive())
-            continue;
-        if (std::find(removable.begin(), removable.end(), aura) == removable.end())
-            removable.push_back(aura);
-    }
-
-    for (Aura* aura : removable)
-        bot->RemoveOwnedAura(aura, AuraRemoveFlags::ByCancel);
-    return !removable.empty();
-}
-
-bool MaintainedProfileAuraBlocksRefresh(Unit const* target, BotActionProfileSpell const& spell)
-{
-    Aura const* aura = target && spell.MaintainAuraId ? target->GetAura(spell.MaintainAuraId) : nullptr;
-    if (!aura)
-        return false;
-    int32 durationMs = aura->GetDuration();
-    return !spell.RefreshAuraBelowMs || durationMs < 0 || uint32(durationMs) > spell.RefreshAuraBelowMs;
-}
-
-std::string LowerCopy(std::string value)
-{
-    std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) { return char(std::tolower(c)); });
-    return value;
-}
-
-std::string BoundedResultLabel(char const* result)
-{
-    std::string label = result && *result ? result : "ok";
-    if (label.size() <= 63)
-        return label;
-    return label.substr(0, 63);
-}
-
-std::string BoundedResultLabel(std::string const& result)
-{
-    return BoundedResultLabel(result.c_str());
-}
-
-bool ContainsInsensitive(std::string const& text, char const* needle)
-{
-    if (!needle || !*needle)
-        return false;
-    return LowerCopy(text).find(LowerCopy(needle)) != std::string::npos;
-}
-
-BotPolicySource WorldPolicySource(BotPolicyModelConfig const& config, bool decision)
-{
-    if (config.Enabled && !config.Version.empty())
-    {
-        if (config.Mode == "assist")
-            return BotPolicySource::AssistModel;
-        if (config.Mode == "control")
-            return BotPolicySource::ControlModel;
-        return BotPolicySource::ShadowModel;
-    }
-
-    return decision ? BotPolicySource::Exploration : BotPolicySource::Heuristic;
-}
-
-std::string WorldPolicyVersion(BotPolicyModelConfig const& config, std::string const& brainVersion)
-{
-    return config.Enabled && !config.Version.empty() ? config.Version : brainVersion;
-}
-
-char const* ToString(BotWorldPopulationMgr::QuestObjectiveType type)
-{
-    switch (type)
-    {
-        case BotWorldPopulationMgr::QuestObjectiveType::Kill: return "kill";
-        case BotWorldPopulationMgr::QuestObjectiveType::CollectItem: return "collect_item";
-        case BotWorldPopulationMgr::QuestObjectiveType::InteractGameObject: return "interact_gameobject";
-        case BotWorldPopulationMgr::QuestObjectiveType::CastSpellOnTarget: return "cast_spell_on_target";
-        case BotWorldPopulationMgr::QuestObjectiveType::UseAbilityOnDummy: return "use_ability_on_dummy";
-        case BotWorldPopulationMgr::QuestObjectiveType::UseItemOnTarget: return "use_item_on_target";
-        default: return "unknown";
-    }
-}
-
-bool IsSimpleOpenWorldQuestMobAssistTarget(Player const* bot, BotWorldPopulationMgr::QuestObjectiveType objectiveType, bool isItemObjective, int32 requiredEntry, Unit const* target)
-{
-    bool questMobObjective = objectiveType == BotWorldPopulationMgr::QuestObjectiveType::Kill
-        || objectiveType == BotWorldPopulationMgr::QuestObjectiveType::CollectItem
-        || isItemObjective;
-    if (!bot || !target || !questMobObjective)
-        return false;
-
-    Creature const* creature = target->ToCreature();
-    if (!creature || creature->isElite() || creature->IsDungeonBoss() || creature->isWorldBoss())
-        return false;
-
-    if (bot->GetMap() && (bot->GetMap()->IsDungeon() || bot->GetMap()->IsRaid()))
-        return false;
-
-    if (requiredEntry > 0 && creature->GetEntry() != uint32(requiredEntry))
-        return false;
-
-    return creature->getLevel() <= bot->getLevel() + 1;
-}
-
-char const* ToString(BotWorldPopulationMgr::QuestClassification classification)
-{
-    switch (classification)
-    {
-        case BotWorldPopulationMgr::QuestClassification::ObjectiveQuest: return "objective";
-        case BotWorldPopulationMgr::QuestClassification::ChainQuest: return "chain";
-        case BotWorldPopulationMgr::QuestClassification::UnsupportedQuest: return "unsupported";
-        default: return "unknown";
-    }
-}
-
-uint64 NowMs()
-{
-    return uint64(std::chrono::duration_cast<std::chrono::milliseconds>(GameTime::GetGameTimeSystemPoint().time_since_epoch()).count());
-}
-
-bool SpellLooksLikeHeal(SpellInfo const* spellInfo)
-{
-    return spellInfo && (spellInfo->HasEffect(SPELL_EFFECT_HEAL)
-        || spellInfo->HasEffect(SPELL_EFFECT_HEAL_PCT)
-        || spellInfo->HasEffect(SPELL_EFFECT_HEAL_MECHANICAL));
-}
-
-bool SpellLooksDangerous(SpellInfo const* spellInfo)
-{
-    if (!spellInfo)
-        return false;
-
-    return spellInfo->HasEffect(SPELL_EFFECT_SCHOOL_DAMAGE)
-        || spellInfo->HasEffect(SPELL_EFFECT_WEAPON_DAMAGE)
-        || spellInfo->HasEffect(SPELL_EFFECT_WEAPON_DAMAGE_NOSCHOOL)
-        || spellInfo->HasEffect(SPELL_EFFECT_NORMALIZED_WEAPON_DMG)
-        || spellInfo->HasEffect(SPELL_EFFECT_WEAPON_PERCENT_DAMAGE)
-        || spellInfo->HasEffect(SPELL_EFFECT_POWER_DRAIN)
-        || spellInfo->HasEffect(SPELL_EFFECT_HEALTH_LEECH);
-}
-
-bool SpellLooksLikeSummonOrAdds(SpellInfo const* spellInfo)
-{
-    if (!spellInfo)
-        return false;
-
-    return spellInfo->HasEffect(SPELL_EFFECT_SUMMON)
-        || spellInfo->HasEffect(SPELL_EFFECT_SUMMON_PET)
-        || spellInfo->HasEffect(SPELL_EFFECT_SUMMON_OBJECT_SLOT1)
-        || spellInfo->HasEffect(SPELL_EFFECT_SUMMON_OBJECT_SLOT2)
-        || spellInfo->HasEffect(SPELL_EFFECT_SUMMON_OBJECT_SLOT3)
-        || spellInfo->HasEffect(SPELL_EFFECT_SUMMON_OBJECT_SLOT4)
-        || spellInfo->HasEffect(SPELL_EFFECT_SUMMON_CHANGE_ITEM);
-}
-
-bool SpellLooksLikeGroundDanger(SpellInfo const* spellInfo)
-{
-    if (!spellInfo)
-        return false;
-
-    if (spellInfo->HasEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA))
-        return true;
-
-    for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
-    {
-        SpellEffectInfo const& effect = spellInfo->Effects[i];
-        if (!effect.IsEffect())
-            continue;
-
-        if ((effect.IsTargetingArea() || effect.CalcRadius() >= 4.0f)
-            && (SpellLooksDangerous(spellInfo) || effect.ApplyAuraName == SPELL_AURA_PERIODIC_DAMAGE))
-            return true;
-    }
-
-    return false;
-}
-
-bool SpellLooksRaidWide(SpellInfo const* spellInfo)
-{
-    if (!spellInfo)
-        return false;
-
-    if (spellInfo->MaxAffectedTargets >= 4)
-        return true;
-
-    for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
-    {
-        SpellEffectInfo const& effect = spellInfo->Effects[i];
-        if (!effect.IsEffect())
-            continue;
-
-        if ((effect.IsTargetingArea() || effect.CalcRadius() >= 12.0f) && SpellLooksDangerous(spellInfo))
-            return true;
-    }
-
-    return false;
-}
-
-bool SpellLooksTankSpike(SpellInfo const* spellInfo)
-{
-    if (!spellInfo)
-        return false;
-
-    if (spellInfo->HasEffect(SPELL_EFFECT_WEAPON_DAMAGE)
-        || spellInfo->HasEffect(SPELL_EFFECT_WEAPON_DAMAGE_NOSCHOOL)
-        || spellInfo->HasEffect(SPELL_EFFECT_NORMALIZED_WEAPON_DMG)
-        || spellInfo->HasEffect(SPELL_EFFECT_WEAPON_PERCENT_DAMAGE))
-        return true;
-
-    return SpellLooksDangerous(spellInfo) && !SpellLooksRaidWide(spellInfo);
-}
-
-uint32 SemanticMechanicKey(char const* eventType, char const* result)
-{
-    std::string event = eventType ? eventType : "";
-    std::string res = BoundedResultLabel(result);
-    if (event == "interrupt_success" || event == "interrupt_failed")
-        return 2;
-    if (event == "boss_mechanic" || res == "move_out")
-        return 1;
-    if (event == "boss_adds" || event == "boss_add_killed")
-        return 5;
-    if (event == "boss_heal")
-        return 4;
-    if (event == "boss_action" || event == "boss_started")
-        return 11;
-    if (event == "trash_action" || event == "trash_heal")
-        return 10;
-    if (event == "death")
-        return 99;
-    return 0;
-}
-
-char const* SemanticMechanicFamily(uint32 key)
-{
-    switch (key)
-    {
-        case 1: return "ground_danger";
-        case 2: return "must_interrupt";
-        case 4: return "raid_damage";
-        case 5: return "adds";
-        case 10: return "trash_pack";
-        case 11: return "boss_pressure";
-        case 99: return "death_failure";
-        default: return "unknown";
-    }
-}
-
-bool EventLooksSuccessful(char const* eventType, char const* result)
-{
-    std::string event = eventType ? eventType : "";
-    std::string res = BoundedResultLabel(result);
-    return res == "ok"
-        || event == "mob_killed"
-        || event == "boss_killed"
-        || event == "quest_completed"
-        || event == "objective_progress"
-        || event == "gear_upgrade"
-        || event == "gear_evaluated"
-        || event == "interrupt_success";
-}
-
-bool EventLooksFailure(char const* eventType, char const* result)
-{
-    std::string event = eventType ? eventType : "";
-    std::string res = BoundedResultLabel(result);
-    return event == "death"
-        || event == "repeated_death"
-        || event == "stuck_detected"
-        || event == "objective_failed"
-        || event == "death_recovery_failed"
-        || event == "interrupt_failed"
-        || event == "teleport_fallback_used"
-        || res == "failed"
-        || res.find("failed") != std::string::npos
-        || res.find("blocked") != std::string::npos;
-}
-
-std::string BuildSpellTagJson(SpellInfo const* spellInfo, bool mustInterrupt, bool groundDanger, bool tankSpike, bool raidDamage, bool adds)
-{
-    std::ostringstream tags;
-    tags << "[";
-    bool first = true;
-    auto addTag = [&tags, &first](char const* tag)
-    {
-        if (!first)
-            tags << ",";
-        tags << "\"" << tag << "\"";
-        first = false;
-    };
-
-    if (SpellLooksDangerous(spellInfo))
-        addTag("direct_damage");
-    if (groundDanger)
-    {
-        addTag("ground_effect");
-        addTag("move_out");
-    }
-    if (mustInterrupt)
-        addTag("must_interrupt");
-    if (tankSpike)
-        addTag("tank_spike");
-    if (raidDamage)
-        addTag("raid_damage");
-    if (adds)
-        addTag("add_wave");
-    if (SpellLooksLikeHeal(spellInfo))
-        addTag("boss_heal");
-
-    tags << "]";
-    return tags.str();
-}
-
-bool SpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth = 0)
-{
-    if (!spellInfo || depth > 4)
-        return false;
-    // Starfall's owner aura delegates hostile selection to triggered spells;
-    // retain the explicit root as a conservative client-data semantic guard.
-    if (spellInfo->Id == 48505 || spellInfo->Id == 89751)
-        return true;
-    for (uint8 effectIndex = 0; effectIndex < MAX_SPELL_EFFECTS; ++effectIndex)
-    {
-        SpellEffectInfo const& effect = spellInfo->Effects[effectIndex];
-        if (!effect.IsEffect())
-            continue;
-        if (!spellInfo->IsPositiveEffect(effectIndex)
-            && (effect.ChainTarget > 1 || effect.IsTargetingArea()
-                || effect.IsEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA)
-                || effect.IsAreaAuraEffect()))
-            return true;
-        if (effect.TriggerSpell
-            && SpellHasHostileMultiTargetSemantics(sSpellMgr->GetSpellInfo(effect.TriggerSpell), depth + 1))
-            return true;
-    }
-    return false;
-}
-
-// Future encounter protection must be geometry-aware.  Keeping the global
-// entry set is useful for route bookkeeping, but it must not suppress AoE on
-// a current trash pack that is nowhere near the protected encounter.
-bool HasNearbyProtectedEncounterTarget(Player* owner, Unit const* target)
-{
-    if (!owner || !target || !BotRaidAreaAuthority::HasProtectedEncounterEntries(owner->GetGUID().GetRawValue()))
-        return false;
-
-    std::vector<WorldObject*> nearbyObjects;
-    Trinity::AllWorldObjectsInRange check(target, 45.0f);
-    Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(
-        target, nearbyObjects, check);
-    Cell::VisitAllObjects(target, searcher, 45.0f);
-    for (WorldObject* object : nearbyObjects)
-    {
-        Creature* creature = object ? object->ToCreature() : nullptr;
-        if (!creature || creature == target || !creature->IsAlive()
-            || !owner->IsValidAttackTarget(creature))
-            continue;
-        if (BotRaidAreaAuthority::IsProtectedEncounterTarget(
-                owner->GetGUID().GetRawValue(), creature->GetEntry(),
-                creature->GetSpawnId(), creature->GetGUID().GetRawValue()))
-            return true;
-    }
-    return false;
-}
+using BotWorldPopulationMgrNativeHelpers::CancelRemovableShapeshifts;
+using BotWorldPopulationMgrNativeHelpers::CombatOwnerPlayer;
+using BotWorldPopulationMgrNativeHelpers::ControlledDispelAuraForHealer;
+using BotWorldPopulationMgrNativeHelpers::Distance2d;
+using BotWorldPopulationMgrNativeHelpers::HasPowerForSpell;
+using BotWorldPopulationMgrNativeHelpers::IsNativeCombatObserved;
+using BotWorldPopulationMgrNativeHelpers::IsNativeCombatResSpell;
+using BotWorldPopulationMgrNativeHelpers::MaintainedProfileAuraBlocksRefresh;
+using BotWorldPopulationMgrNativeHelpers::ReadLastInsertId;
+using BotWorldPopulationMgrNativeHelpers::SubmitNativeQuestAccept;
+using BotWorldPopulationMgrNativeHelpers::SubmitNativeQuestReward;
+using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
+using BotWorldPopulationMgrNativeHelpers::UsesRangedAoeCalibrationLane;
+
+using BotWorldPopulationMgrPolicyHelpers::BoundedResultLabel;
+using BotWorldPopulationMgrPolicyHelpers::ContainsInsensitive;
+using BotWorldPopulationMgrPolicyHelpers::IsSimpleOpenWorldQuestMobAssistTarget;
+using BotWorldPopulationMgrPolicyHelpers::LowerCopy;
+using BotWorldPopulationMgrPolicyHelpers::ToString;
+using BotWorldPopulationMgrPolicyHelpers::WorldPolicySource;
+using BotWorldPopulationMgrPolicyHelpers::WorldPolicyVersion;
+
+using BotWorldPopulationMgrSpellSemantics::BuildSpellTagJson;
+using BotWorldPopulationMgrSpellSemantics::EventLooksFailure;
+using BotWorldPopulationMgrSpellSemantics::EventLooksSuccessful;
+using BotWorldPopulationMgrSpellSemantics::HasNearbyProtectedEncounterTarget;
+using BotWorldPopulationMgrSpellSemantics::NowMs;
+using BotWorldPopulationMgrSpellSemantics::SemanticMechanicFamily;
+using BotWorldPopulationMgrSpellSemantics::SemanticMechanicKey;
+using BotWorldPopulationMgrSpellSemantics::SpellHasHostileMultiTargetSemantics;
+using BotWorldPopulationMgrSpellSemantics::SpellLooksDangerous;
+using BotWorldPopulationMgrSpellSemantics::SpellLooksLikeGroundDanger;
+using BotWorldPopulationMgrSpellSemantics::SpellLooksLikeHeal;
+using BotWorldPopulationMgrSpellSemantics::SpellLooksLikeSummonOrAdds;
+using BotWorldPopulationMgrSpellSemantics::SpellLooksRaidWide;
+using BotWorldPopulationMgrSpellSemantics::SpellLooksTankSpike;
 
 }
 

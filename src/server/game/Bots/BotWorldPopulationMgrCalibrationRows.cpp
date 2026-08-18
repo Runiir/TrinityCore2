@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotCalibrationFixtureContractGenerated.h"
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotWorldPopulationMgrCalibrationIdentity.h"
 #include "Bots/BotWorldPopulationMgrCalibrationReportSupport.h"
@@ -20,7 +21,6 @@
 #include <iomanip>
 #include <sstream>
 using BotWorldPopulationMgrCalibrationReport::CalibrationSpecUsesMana;
-using BotWorldPopulationMgrCalibrationReport::RuntimeModeName;
 void BotWorldPopulationMgr::AppendCombatCalibrationBotRowsJson(
     std::ostringstream& json,
     std::map<uint32, CalibrationMetrics> const& metricsByGuid,
