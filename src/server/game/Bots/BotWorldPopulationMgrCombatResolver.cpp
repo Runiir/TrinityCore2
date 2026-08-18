@@ -4,12 +4,14 @@
 #include "Bots/BotProgressionGoalPolicy.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/BotRoleSaturationPolicy.h"
+#include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "CellImpl.h"
 #include "Creature.h"
 #include "GridNotifiersImpl.h"
 #include "Map.h"
 #include "Player.h"
 #include "SpellAuras.h"
+#include "SpellAuraEffects.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
 #include "Unit.h"
@@ -23,6 +25,8 @@
 
 namespace
 {
+using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
+
 bool MaintainedProfileAuraBlocksRefresh(Unit const* target, BotActionProfileSpell const& spell)
 {
     Aura const* aura = target && spell.MaintainAuraId ? target->GetAura(spell.MaintainAuraId) : nullptr;

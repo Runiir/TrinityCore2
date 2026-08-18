@@ -17,6 +17,7 @@
 #include "Bots/BotTelemetryBuffer.h"
 #include "Bots/BotTelemetryPolicy.h"
 #include "Bots/BotWorldPopulationMgrValidationRouteContexts.h"
+#include "Bots/BotWorldPopulationMgrValidationRouteMovementCheck.h"
 #include "Bots/BotTypes.h"
 #include <array>
 #include <deque>
@@ -149,6 +150,8 @@ private:
         BotWorldPopulationMgrValidationRoute::FocusContext;
     using ValidationRouteAnchorContext =
         BotWorldPopulationMgrValidationRoute::AnchorContext;
+    using ValidationRouteMovementCheckCallbacks =
+        BotWorldPopulationMgrValidationRoute::MovementCheckCallbacks;
 
 #include "Bots/BotWorldPopulationMgrPlanningContracts.h"
 
@@ -354,6 +357,11 @@ private:
         std::function<Unit*(Unit*)> const& routeUsableCombatTarget,
         std::function<ObjectGuid()> const& routeTankFocusGuid,
         std::function<bool()> const& persistedPackHasLiveMembers);
+    bool TryValidationRouteMovementCheck(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action, Unit* preferredTarget, ValidationRouteMovementCheckCallbacks const& callbacks);
+    bool TryValidationRouteFeralHazardHealerRoar(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action);
+    bool TryValidationRouteFeralHazardLooseTaunt(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action);
+    bool TryValidationRouteHealerHazardFade(WorldBotState& state, Player* bot, Unit* preferredTarget, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action);
+    bool TryValidationRouteTankHazardHoldAreaThreat(WorldBotState& state, Player* bot, Unit* activeHazard, float safeRadius, bool radialHazard, bool allowMovement, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action);
     bool TryValidationRouteObjective(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action, Unit*& target);
     bool TryValidationRouteGroupHeal(WorldBotState& state, Player* bot,
         Player* healer, Unit* combatTarget,
