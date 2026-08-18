@@ -15,6 +15,7 @@
 #include "Bots/BotTypes.h"
 #include <array>
 #include <deque>
+#include <functional>
 #include <map>
 #include <memory>
 #include <limits>
@@ -2511,6 +2512,10 @@ private:
         // schedule from these integers; it does not trust an aggregate flag.
         std::array<TargetHealthPhaseObservation, 5> TargetHealthPhaseObservations;
     };
+
+    void AppendCombatCalibrationSummaryJson(std::ostringstream& json,
+        uint64 nowMs,
+        std::function<void(std::map<uint32, CalibrationMetrics> const&, bool)> const& writeBots) const;
 
     struct PartyRuntime
     {
