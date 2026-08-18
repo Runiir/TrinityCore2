@@ -2056,6 +2056,9 @@ private:
     bool IsBossContext(Player* bot, Unit const* target) const;
     Unit* FindBossTarget(Player* bot) const;
     BossMechanicFeatures BuildBossMechanicFeatures(Player* bot, Unit const* boss) const;
+    void ReconcileRaidAreaAutocasts(Player* bot, bool suppress) const;
+    bool PrepareBossMechanicAction(WorldBotState& state, Player* bot,
+        Unit* boundRouteTarget, BossMechanicActionResult& result);
     BossMechanicActionResult TryBossMechanics(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, Unit* boundRouteTarget = nullptr);
     RaidRoleAssignment BuildRaidRoleAssignment(Player* bot) const;
     RaidPositioningAnchors BuildRaidPositioningAnchors(Player* bot, Unit const* boss, RaidRoleAssignment const& assignment, BossMechanicFeatures const& features) const;

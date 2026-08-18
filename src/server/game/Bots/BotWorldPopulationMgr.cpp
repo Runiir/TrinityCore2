@@ -21660,114 +21660,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMechanics(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, Unit* boundRouteTarget)
 {
     BossMechanicActionResult result;
-    auto reconcileRaidAreaAutocasts = [bot](bool suppress)
-    {
-        if (!bot)
-            return;
-        BotRaidAreaAuthority::Set(bot->GetGUID().GetRawValue(), suppress);
-        if (!suppress)
-            return;
-
-        for (Unit* controlled : bot->m_Controlled)
-        {
-            Creature* creature = controlled ? controlled->ToCreature() : nullptr;
-            if (!creature)
-                continue;
-            std::vector<uint32> activeAreaSpells;
-            for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
-                if (Spell* current = controlled->GetCurrentSpell(spellType))
-                    if (SpellHasHostileMultiTargetSemantics(current->GetSpellInfo()))
-                    {
-                        activeAreaSpells.push_back(current->GetSpellInfo()->Id);
-                        controlled->InterruptSpell(spellType, false);
-                    }
-            for (uint32 spellId : activeAreaSpells)
-            {
-                controlled->RemoveAura(spellId);
-                controlled->RemoveDynObject(spellId);
-            }
-            std::vector<uint32> enabledAreaSpells;
-            for (uint8 index = 0; index < creature->GetPetAutoSpellSize(); ++index)
-                if (uint32 const spellId = creature->GetPetAutoSpellOnPos(index))
-                    if (SpellHasHostileMultiTargetSemantics(sSpellMgr->GetSpellInfo(spellId)))
-                        enabledAreaSpells.push_back(spellId);
-            for (uint32 spellId : enabledAreaSpells)
-            {
-                controlled->RemoveAura(spellId);
-                controlled->RemoveDynObject(spellId);
-            }
-        }
-    };
-    // A caller that already resolved an authoritative route focus must not be
-    // retargeted by FindBossTarget through this bot's victim, a group victim,
-    // or an unrelated nearby boss. Ordinary boss dispatch remains unchanged
-    // when no target is bound.
-    result.Target = boundRouteTarget ? boundRouteTarget : FindBossTarget(bot);
-    if (!result.Target && !boundRouteTarget && !state.TargetGuid.IsEmpty())
-        result.Target = ObjectAccessor::GetUnit(*bot, state.TargetGuid);
-    if (!result.Target)
-    {
-        reconcileRaidAreaAutocasts(false);
+    if (!PrepareBossMechanicAction(state, bot, boundRouteTarget, result))
         return result;
-    }
-
-    // A validation-route boss can be approached before the native boss
-    // context reports in-combat. Treat only the declared route objective as
-    // boss context here, so its typed mechanic contract remains the sole
-    // combat authority during initial engagement.
-    Creature const* routeCreature = result.Target->ToCreature();
-    bool const routeDirectedBoss = Cohort().Config.ValidationRouteKind == "boss"
-        && routeCreature
-        && (routeCreature->GetEntry() == Cohort().Config.ValidationRouteTargetEntry
-            || routeCreature->GetEntry() == Cohort().Config.ValidationRouteOpenerTargetEntry
-            || std::find(Cohort().Config.ValidationRouteAlternateTargetEntries.begin(),
-                Cohort().Config.ValidationRouteAlternateTargetEntries.end(), routeCreature->GetEntry())
-                != Cohort().Config.ValidationRouteAlternateTargetEntries.end());
-    if (boundRouteTarget && !routeDirectedBoss)
-    {
-        reconcileRaidAreaAutocasts(true);
-        bot->InterruptNonMeleeSpells(false);
-        SubmitMeleeAutoAttackIntent(state,
-            BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
-            BotMeleeAutoAttack::Owner::Mechanic,
-            BotActionArbitration::Priority::Mechanic,
-            "bound_route_target_without_boss_contract");
-        if (Pet* pet = bot->GetPet())
-            pet->AttackStop();
-        for (Unit* controlled : bot->m_Controlled)
-            if (controlled)
-                controlled->AttackStop();
-        result.Handled = true;
-        result.Situation = bot->GetMap() && bot->GetMap()->IsRaid() ? "raid_boss" : "dungeon_boss";
-        result.Action = "raid_target_not_declared_hold";
-        result.Failure = true;
-        return result;
-    }
-    if (!IsBossContext(bot, result.Target) && !routeDirectedBoss)
-    {
-        reconcileRaidAreaAutocasts(false);
-        return result;
-    }
-
-    result.Handled = true;
-    result.Situation = bot->GetMap() && bot->GetMap()->IsRaid() ? "raid_boss" : "dungeon_boss";
-    result.Features = BuildBossMechanicFeatures(bot, result.Target);
-    state.TargetGuid = result.Target->GetGUID();
-    bool const nativeCombatObservedBeforeAction =
-        IsNativeCombatObserved(bot, result.Target);
-    if (state.LastRaidTankSwapWipeGeneration != Cohort().Raid.WipeGeneration)
-    {
-        state.LastRaidTankSwapTriggerKey.clear();
-        state.LastRaidTankSwapWipeGeneration = Cohort().Raid.WipeGeneration;
-    }
-    if (result.Features.RaidEncounter && !state.WasInCombat
-        && nativeCombatObservedBeforeAction)
-    {
-        ++state.RaidAttempts;
-        state.LastRaidTankSwapTriggerKey.clear();
-        state.LastRaidTankSwapMs = NowMs();
-        state.WasInCombat = true;
-    }
 
     std::string raw = BuildRawJson(bot, result.Target);
     std::string semantic = BuildSemanticJson(bot, result.Target, result.Situation.c_str(), &power, stage, activity);
@@ -21788,7 +21682,7 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
 
     if (result.Features.RaidEncounter && !raidAdapter.ContractResolved)
     {
-        reconcileRaidAreaAutocasts(true);
+        ReconcileRaidAreaAutocasts(bot, true);
         bot->InterruptNonMeleeSpells(false);
         SubmitMeleeAutoAttackIntent(state,
             BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
@@ -21817,7 +21711,7 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
         // allow_area_damage policy as an immediate release.
         bool const suppressAreaDamage = !raidAdapter.AllowAreaDamage
             || raidAdapter.TargetControl == "controlled_aoe";
-        reconcileRaidAreaAutocasts(suppressAreaDamage);
+        ReconcileRaidAreaAutocasts(bot, suppressAreaDamage);
     }
 
     if (result.Features.RaidEncounter && raidAdapter.ContractResolved && raidAdapter.DispelAuraId)
@@ -21913,11 +21807,11 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
     }
 raid_cooldown_complete:
 
-    auto closeRecallableAreaDamage = [this, bot, &reconcileRaidAreaAutocasts]() -> bool
+    auto closeRecallableAreaDamage = [this, bot]() -> bool
     {
         if (!bot)
             return false;
-        reconcileRaidAreaAutocasts(true);
+        ReconcileRaidAreaAutocasts(bot, true);
         for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
             if (Spell* current = bot->GetCurrentSpell(spellType))
                 if (SpellHasHostileMultiTargetSemantics(current->GetSpellInfo()))
@@ -22550,7 +22444,7 @@ raid_cooldown_complete:
         && !undeclaredControlledAoeHostile
         && declaredControlledAoeTargets >= raidAdapter.ControlledAoeMinimumTargets;
     if (raidAdapter.ContractResolved && raidAdapter.TargetControl == "controlled_aoe")
-        reconcileRaidAreaAutocasts(!controlledAoeReleased);
+        ReconcileRaidAreaAutocasts(bot, !controlledAoeReleased);
     if (raidAdapter.ContractResolved && raidAdapter.TargetControl == "controlled_aoe"
         && !controlledAoeReleased)
     {
