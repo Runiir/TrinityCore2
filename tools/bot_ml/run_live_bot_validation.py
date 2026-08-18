@@ -30,7 +30,7 @@ try:
     from .common import write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
     from .generate_bot_admission_identities import source_content_sha256 as admission_identity_source_sha256
-    from .live_validation_session import apply_acceptance_evaluation, build_evidence_envelope, build_session, canonical_sha256, ensure_healthy_matching_session, git_dirty_state_sha256, git_head, live_validation_lock, sha256_file, sha256_text, stop_session
+    from .live_validation_session import apply_acceptance_evaluation, build_evidence_envelope, build_session, canonical_sha256, ensure_healthy_matching_session, git_dirty_state_sha256, git_head, inspect_session, live_validation_lock, sha256_file, sha256_text
     from .phase8_calibration_adapter import Phase8CalibrationNormalizationError, canonical_gear_manifest, canonical_gear_profile_id, evaluate_runtime_calibration, expected_gear_manifest
     from .phase8_evidence_identity import validate_manifest as validate_phase8_evidence_manifest
     from .phase9_evidence_identity import validate_manifest as validate_phase9_evidence_manifest
@@ -42,7 +42,7 @@ except ImportError:
     from common import write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
     from generate_bot_admission_identities import source_content_sha256 as admission_identity_source_sha256
-    from live_validation_session import apply_acceptance_evaluation, build_evidence_envelope, build_session, canonical_sha256, ensure_healthy_matching_session, git_dirty_state_sha256, git_head, live_validation_lock, sha256_file, sha256_text, stop_session
+    from live_validation_session import apply_acceptance_evaluation, build_evidence_envelope, build_session, canonical_sha256, ensure_healthy_matching_session, git_dirty_state_sha256, git_head, inspect_session, live_validation_lock, sha256_file, sha256_text
     from phase8_calibration_adapter import Phase8CalibrationNormalizationError, canonical_gear_manifest, canonical_gear_profile_id, evaluate_runtime_calibration, expected_gear_manifest
     from phase8_evidence_identity import validate_manifest as validate_phase8_evidence_manifest
     from phase9_evidence_identity import validate_manifest as validate_phase9_evidence_manifest
@@ -5206,14 +5206,33 @@ def run_reusable_validation_session(
             output_parts.append(output)
             lifecycle["watchdog_completed"] = True
         finally:
+            cleanup_errors: list[str] = []
+            cleanup_record: dict[str, Any] = {
+                "cohort_id": admitted.cohort_id,
+                "active": None,
+                "active_bots": None,
+                "lease_count": None,
+                "party_bot_count": None,
+                "server_epoch": None,
+                "fixture_cleanup_required": bool(args.calibration_only),
+                "fixture_cleanup_submitted_or_absent": not bool(args.calibration_only),
+            }
+            lifecycle["cleanup"] = cleanup_record
+            lifecycle["worldserver_stop_requested"] = False
             try:
                 fixture_cleanup_required = bool(args.calibration_only)
                 fixture_cleanup_submitted_or_absent = not fixture_cleanup_required
                 if fixture_cleanup_required:
-                    calibration_stop_output = checked(
-                        f".botauto calibrate {admitted.cohort_id} stop",
-                        executor.calibration("stop"),
-                    )
+                    try:
+                        calibration_stop_output = checked(
+                            f".botauto calibrate {admitted.cohort_id} stop",
+                            executor.calibration("stop"),
+                        )
+                    except Exception as exc:
+                        cleanup_errors.append(
+                            f"calibration fixture cleanup command failed: {exc}"
+                        )
+                        calibration_stop_output = ""
                     calibration_stop = next(
                         (
                             row
@@ -5232,21 +5251,30 @@ def run_reusable_validation_session(
                         is True
                     )
                     if not fixture_cleanup_submitted_or_absent:
-                        raise RuntimeError(
+                        cleanup_errors.append(
                             "calibration fixture cleanup was not submitted or absent"
                         )
-                checked(f".botauto stop {admitted.cohort_id}", executor.stop())
-                inactive_output, inactive_status = wait_for_bot_status_state(
-                    execute,
-                    False,
-                    time.monotonic() + args.session_transition_timeout_sec,
-                    status_command=executor.status_command,
-                )
-                output_parts.append(inactive_output)
-                if inactive_status is None:
-                    raise RuntimeError("cohort status unavailable after stop")
-                inactive_payload = inactive_status["payload"]
-                _, registry = cohort_registry()
+                try:
+                    checked(f".botauto stop {admitted.cohort_id}", executor.stop())
+                except Exception as exc:
+                    cleanup_errors.append(f"cohort cleanup command failed: {exc}")
+
+                inactive_status = None
+                registry: dict[str, Any] = {}
+                try:
+                    inactive_output, inactive_status = wait_for_bot_status_state(
+                        execute,
+                        False,
+                        time.monotonic() + args.session_transition_timeout_sec,
+                        status_command=executor.status_command,
+                    )
+                    output_parts.append(inactive_output)
+                    if inactive_status is None:
+                        raise RuntimeError("cohort status unavailable after stop")
+                    _, registry = cohort_registry()
+                except Exception as exc:
+                    cleanup_errors.append(f"cohort cleanup readback failed: {exc}")
+
                 cohort_row = next(
                     (
                         row for row in registry.get("cohorts", [])
@@ -5254,8 +5282,40 @@ def run_reusable_validation_session(
                     ),
                     None,
                 )
+                inactive_payload = (
+                    inactive_status["payload"] if inactive_status is not None else {}
+                )
+                cleanup_record.update(
+                    {
+                        "active": (
+                            bool(inactive_status["active"])
+                            if inactive_status is not None
+                            else None
+                        ),
+                        "active_bots": (
+                            int(inactive_status["active_bots"])
+                            if inactive_status is not None
+                            else None
+                        ),
+                        "lease_count": int(
+                            inactive_payload.get("lease_count") or 0
+                        ) if inactive_status is not None else None,
+                        "party_bot_count": int(
+                            cohort_row.get("party_bot_count") or 0
+                        ) if cohort_row is not None else None,
+                        "server_epoch": int(registry.get("server_epoch") or 0),
+                        "fixture_cleanup_required": fixture_cleanup_required,
+                        "fixture_cleanup_submitted_or_absent": (
+                            fixture_cleanup_submitted_or_absent
+                        ),
+                    }
+                )
+                status_server_epoch = int(inactive_payload.get("server_epoch") or 0)
+                registry_server_epoch = int(registry.get("server_epoch") or 0)
                 clean = (
-                    not inactive_status["active"]
+                    not cleanup_errors
+                    and inactive_status is not None
+                    and not inactive_status["active"]
                     and int(inactive_status["active_bots"]) == 0
                     and int(inactive_payload.get("lease_count") or 0) == 0
                     and cohort_row is not None
@@ -5263,30 +5323,40 @@ def run_reusable_validation_session(
                     and int(cohort_row.get("lease_count") or 0) == 0
                     and int(cohort_row.get("party_bot_count") or 0) == 0
                     and fixture_cleanup_submitted_or_absent
+                    and status_server_epoch == int(lifecycle["server_epoch"])
+                    and registry_server_epoch == int(lifecycle["server_epoch"])
                 )
                 if not clean:
-                    raise RuntimeError("cohort cleanup left active bots, leases, or party state")
+                    if not cleanup_errors:
+                        cleanup_errors.append(
+                            "cohort cleanup left active bots, leases, party state, or changed server epoch"
+                        )
+                    raise RuntimeError("cleanup quarantined: " + "; ".join(cleanup_errors))
                 scheduler.close_active()
                 lifecycle["scheduler_events"] = scheduler.events
                 lifecycle["closed_at_unix"] = int(time.time())
                 lifecycle["inactive_after_attempt"] = True
-                lifecycle["cleanup"] = {
-                    "active": False,
-                    "active_bots": 0,
-                    "lease_count": 0,
-                    "party_bot_count": 0,
-                    "server_epoch": int(registry.get("server_epoch") or 0),
-                    "fixture_cleanup_required": fixture_cleanup_required,
-                    "fixture_cleanup_submitted_or_absent": (
-                        fixture_cleanup_submitted_or_absent
-                    ),
-                }
-                if lifecycle["cleanup"]["server_epoch"] != lifecycle["server_epoch"]:
+                lifecycle["worldserver_preserved"] = True
+                if cleanup_record["server_epoch"] != lifecycle["server_epoch"]:
                     raise RuntimeError("server epoch changed during validation attempt")
             except Exception as exc:
                 lifecycle["inactive_after_attempt"] = False
                 lifecycle["cleanup_failure"] = str(exc)
-                stop_session(session)
+                lifecycle["cleanup_quarantine_reason"] = str(exc)
+                lifecycle["worldserver_preserved"] = True
+                lifecycle["worldserver_healthy_after_cleanup_failure"] = None
+                lifecycle["worldserver_pid_after_cleanup_failure"] = None
+                try:
+                    session_status = inspect_session(session)
+                    pid_value = session_status.properties.get("MainPID") or 0
+                    lifecycle["worldserver_healthy_after_cleanup_failure"] = bool(
+                        session_status.healthy
+                    )
+                    lifecycle["worldserver_pid_after_cleanup_failure"] = (
+                        int(pid_value) if str(pid_value).isdigit() else 0
+                    )
+                except Exception as inspection_exc:
+                    lifecycle["worldserver_inspection_error"] = str(inspection_exc)
                 raise
             finally:
                 lifecycle["commands"] = executor.commands

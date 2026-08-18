@@ -3473,6 +3473,178 @@ def test_rejected_calibration_start_returns_promptly_and_runs_cleanup(tmp_path):
     ]
 
 
+def test_reusable_calibration_cleanup_preserves_session_after_fixture_stop_failure(
+    tmp_path, monkeypatch
+):
+    import tools.bot_ml.run_live_bot_validation as live_validation
+
+    commands: list[str] = []
+    status_payloads = iter(
+        [
+            {
+                "action": "botauto_status",
+                "active": False,
+                "active_bots": 0,
+                "target_bots": 0,
+                "lease_count": 0,
+                "server_epoch": 7,
+            },
+            {
+                "action": "botauto_status",
+                "active": True,
+                "active_bots": 0,
+                "target_bots": 0,
+                "lease_count": 0,
+                "server_epoch": 7,
+            },
+            {
+                "action": "botauto_status",
+                "active": False,
+                "active_bots": 0,
+                "target_bots": 0,
+                "lease_count": 0,
+                "server_epoch": 7,
+            },
+        ]
+    )
+    registry = {
+        "action": "botauto_cohorts",
+        "server_epoch": 7,
+        "cohorts": [
+            {
+                "cohort_id": "calibration-preserve",
+                "active": False,
+                "lease_count": 0,
+                "party_bot_count": 0,
+            }
+        ],
+    }
+
+    def execute(_soap_url, _user, _password, command, _timeout):
+        commands.append(command)
+        if command == ".botauto calibrate calibration-preserve stop":
+            return '{"ok":false,"action":"botauto_calibrate_stop"}', 1, False
+        if command == ".botauto cohorts":
+            return json.dumps(registry), 0, False
+        if command == ".botauto status calibration-preserve":
+            return json.dumps(next(status_payloads)), 0, False
+        return '{"ok":true}', 0, False
+
+    class FakeSession:
+        unit_name = "trinity-live-validation-fake"
+
+        def metadata(self):
+            return {"session_fingerprint": "fake"}
+
+    class FakeOwner:
+        def __init__(self, *_args, **_kwargs):
+            self.lifecycle = {
+                "server_pid": 4242,
+                "server_epoch": 7,
+                "max_active_cohorts": 1,
+            }
+
+        def owned(self):
+            return self
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def wait_until_ready(self):
+            return ""
+
+        def reload_rotation_profiles(self):
+            raise AssertionError("rotation reload is not part of this fixture")
+
+    saved: dict[str, object] = {}
+    monkeypatch.setattr(live_validation, "build_session", lambda *_args, **_kwargs: FakeSession())
+    monkeypatch.setattr(live_validation, "ReusableValidationServerOwner", FakeOwner)
+    monkeypatch.setattr(live_validation, "execute_soap_command", execute)
+    monkeypatch.setattr(
+        live_validation,
+        "run_transport_completion_watchdog",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            RuntimeError("injected calibration attempt failure")
+        ),
+    )
+    monkeypatch.setattr(
+        live_validation,
+        "inspect_session",
+        lambda _session: SimpleNamespace(
+            healthy=True,
+            properties={"MainPID": "4242"},
+        ),
+    )
+    monkeypatch.setattr(
+        live_validation,
+        "write_json",
+        lambda _path, payload: saved.update(payload),
+    )
+
+    config = tmp_path / "worldserver.conf"
+    config.write_text("", encoding="utf-8")
+    args = SimpleNamespace(
+        soap_user="user",
+        soap_password="password",
+        soap_url="http://fake/",
+        config=config,
+        session_profile="calibration-profile",
+        session_environment="test",
+        worldserver=tmp_path / "worldserver",
+        cohort_id="calibration-preserve",
+        session_attempt_index=1,
+        output_dir=tmp_path,
+        timeout_sec=30,
+        observe_sec=0,
+        session_transition_timeout_sec=1,
+        party_spec_target=[],
+        party_pool_tag="",
+        reload_rotation_profiles=False,
+        calibration_only=True,
+        apply_validation_provisioning=False,
+        validation_provisioning_config=tmp_path / "provisioning.json",
+        bwd_diagnostic_shard_fixture=tmp_path / "fixture.json",
+        gear_profiles=tmp_path / "gear.json",
+        validation_scenario_dir=tmp_path,
+        validation_scenario_id="calibration-only",
+        evidence_identity_manifest=None,
+        selector="all",
+        trace_limit=5,
+        combat_calibration=True,
+        calibration_mode="single_target_300",
+        calibration_target_spec="protection_paladin",
+        calibration_seed=1,
+    )
+
+    with pytest.raises(RuntimeError, match="cleanup quarantined"):
+        run_reusable_validation_session(
+            args,
+            "",
+            {},
+            {"scenario_id": "calibration-only"},
+            {},
+            {},
+            None,
+            [],
+        )
+
+    assert commands.count(".botauto calibrate calibration-preserve stop") == 1
+    assert commands.count(".botauto stop calibration-preserve") == 2
+    assert ".botauto stop" not in commands
+    assert not any("server shutdown" in command or command == "server exit" for command in commands)
+    assert saved["inactive_after_attempt"] is False
+    assert saved["cleanup"]["cohort_id"] == "calibration-preserve"
+    assert saved["worldserver_stop_requested"] is False
+    assert saved["worldserver_preserved"] is True
+    assert saved["worldserver_healthy_after_cleanup_failure"] is True
+    assert saved["worldserver_pid_after_cleanup_failure"] == 4242
+    assert saved["cleanup"]["fixture_cleanup_submitted_or_absent"] is False
+    assert "calibration fixture cleanup command failed" in saved["cleanup_failure"]
+
+
 def test_run_to_completion_watchdog_stops_only_on_semantic_plateau(tmp_path, monkeypatch):
     commands: list[str] = []
     output = "\n".join(
