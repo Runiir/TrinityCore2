@@ -290,7 +290,6 @@ bool CalibrationPetObservationReady(
     return !snapshot.Present;
 }
 }
-}
 
 void BotWorldPopulationMgr::CompleteCalibrationScoredWindow()
 {
@@ -430,4 +429,3 @@ void BotWorldPopulationMgr::CompleteCalibrationScoredWindow()
         ++Cohort().CalibrationCompletedSingleWindows;
     }
 }
-
