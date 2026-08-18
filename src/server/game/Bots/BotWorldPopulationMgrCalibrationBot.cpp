@@ -62,7 +62,6 @@ bool UsesRangedAoeCalibrationLane(std::string const& spec)
     return std::find(RangedAoeSpecs.begin(), RangedAoeSpecs.end(), spec) != RangedAoeSpecs.end();
 }
 
-sed: can't read src/server/game/BotWorldPopulationMgr.cpp: No such file or directory
 struct HunterPetIdentitySnapshot
 {
     uint32 PetId = 0;
