@@ -3,6 +3,7 @@
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "ChaseMovementGenerator.h"
+#include "Creature.h"
 #include "GameTime.h"
 #include "Group.h"
 #include "GroupReference.h"
@@ -545,4 +546,3 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
     }
     return false;
 }
-

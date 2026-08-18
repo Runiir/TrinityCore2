@@ -116,6 +116,12 @@ int main()
     assert(Evaluate(lease, differentLiveTarget, 1003)
         == Decision::PreserveExisting);
 
+    // A stale lease never blocks a new intent, even when the replacement is
+    // lower priority.  Lease expiry is checked before priority preservation.
+    Lease expiredLease = lease;
+    expiredLease.ExpiresAtMs = 1000;
+    assert(Evaluate(expiredLease, lower, 1001) == Decision::Acquire);
+
     assert(FromBotActionResult(BotActionResult::Ok).LifecyclePhase
         == Phase::Submitted);
     assert(FromBotActionResult(BotActionResult::GlobalCooldown).Result

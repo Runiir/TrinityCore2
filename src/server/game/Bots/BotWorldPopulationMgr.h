@@ -11,6 +11,7 @@
 #include "Bots/BotExperimentCoordinator.h"
 #include "Bots/BotLongTermProgressionBrain.h"
 #include "Bots/BotMovementArbiter.h"
+#include "Bots/BotWorldPopulationMgrMovement.h"
 #include "Bots/BotNativeActionIntent.h"
 #include "Bots/BotRoleSaturationPolicy.h"
 #include "Bots/BotTelemetryBuffer.h"
@@ -242,6 +243,22 @@ private:
         BotMovementArbitration::Owner movementOwner = BotMovementArbitration::Owner::None,
         BotMovementArbitration::Priority movementPriority = BotMovementArbitration::Priority::Idle,
         Unit* dynamicTarget = nullptr, float dynamicTargetRange = 0.0f);
+    bool ExecuteMovementIntent(WorldBotState& state, Player* bot,
+        BotWorldMovement::Intent const& intent);
+    BotMovementArbitration::Request BuildMovementRequest(
+        Player* bot, BotWorldMovement::Intent const& intent, uint64 nowMs) const;
+    BotWorldMovement::ActivePathObservation ObserveActiveMovement(
+        WorldBotState const& state, Player* bot,
+        BotWorldMovement::Intent const& intent,
+        BotMovementArbitration::Request const& request) const;
+    bool PlanMovementPath(Player* bot, BotWorldMovement::Intent const& intent,
+        BotWorldMovement::PathPlan& plan) const;
+    bool RejectMovementPath(WorldBotState& state, Player* bot,
+        BotWorldMovement::Intent const& intent, char const* reason);
+    void CommitMovementEvidence(WorldBotState& state, Player* bot,
+        BotWorldMovement::Intent const& intent,
+        BotWorldMovement::PathPlan const& plan,
+        BotMovementArbitration::Request const& request, uint64 nowMs);
     BotActionArbitration::Outcome ExecuteNativeActionIntent(WorldBotState& state, Player* bot,
         BotNativeAction::Intent const& intent,
         BotMovementArbitration::Owner movementOwner = BotMovementArbitration::Owner::None,
