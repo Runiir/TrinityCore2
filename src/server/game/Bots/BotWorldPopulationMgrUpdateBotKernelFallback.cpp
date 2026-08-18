@@ -10,6 +10,7 @@
 
 #include <string>
 #include <string_view>
+#include <memory>
 #include <utility>
 
 using BotWorldPopulationMgrNativeHelpers::IsNativeCombatObserved;
@@ -17,112 +18,242 @@ using BotWorldPopulationMgrNativeHelpers::IsNativeCombatObserved;
 void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
     BotUpdateContext& context)
 {
-        BotActionArbitration::Candidate route;
-        route.Key = "world.validation_route";
-        route.Source = "validation_route_adapter";
-        route.ActionPriority = BotActionArbitration::Priority::Mechanic;
-        route.UtilityScore = 3.0f;
-        route.RequiredResources = BotActionArbitration::Uses(
-            BotActionArbitration::Resource::Movement,
+        struct RouteAttempt
+        {
+            bool Attempted = false;
+            bool Handled = false;
+            bool MovementSubmitted = false;
+            bool CombatAttempted = false;
+            bool ActionSubmitted = false;
+            BotActionArbitration::Outcome RouteOutcome;
+        };
+        std::shared_ptr<RouteAttempt> routeAttempt =
+            std::make_shared<RouteAttempt>();
+
+        auto routeOwnerReason = [&context]() -> char const*
+        {
+            if (context.AdaptiveDrudgeOwnsNode)
+                return "adaptive_drudge_owns_live_pack";
+            if (context.AdaptiveMagmawOwnsNode)
+                return "adaptive_magmaw_owns_live_encounter";
+            if (context.AdaptiveOmnotronOwnsNode)
+                return "adaptive_omnotron_owns_live_encounter";
+            if (context.AdaptiveMaloriakOwnsNode)
+                return "adaptive_maloriak_owns_live_encounter";
+            if (context.AdaptiveChimaeronOwnsNode)
+                return "adaptive_chimaeron_owns_live_encounter";
+            if (context.AdaptiveAtramedesOwnsNode)
+                return "adaptive_atramedes_owns_live_encounter";
+            if (context.AdaptiveNefarianOwnsNode)
+                return "adaptive_nefarian_owns_live_encounter";
+            if (context.AdaptiveNativeRouteOwnsNode)
+                return "native_route_contract_owns_node";
+            return nullptr;
+        };
+
+        auto routeActionIsMovementOnly = [](std::string const& action)
+        {
+            return action.empty()
+                || action == "validation_route"
+                || action.find("hold") != std::string::npos
+                || action.find("wait") != std::string::npos
+                || action.find("move") != std::string::npos
+                || action.find("approach") != std::string::npos
+                || action.find("retreat") != std::string::npos
+                || action.find("stack") != std::string::npos
+                || action.find("preposition") != std::string::npos
+                || action.find("staging") != std::string::npos
+                || action.find("descent") != std::string::npos
+                || action.find("anchor") != std::string::npos
+                || action.find("position") != std::string::npos
+                || action.find("density_escape") != std::string::npos
+                || action.find("side_hazard") != std::string::npos
+                || action.find("blocked") != std::string::npos
+                || action.find("pending") != std::string::npos
+                || action.find("retry") != std::string::npos
+                || action.find("failed") != std::string::npos;
+        };
+
+        auto runRoute = [&context, routeAttempt, routeOwnerReason,
+            routeActionIsMovementOnly]() -> BotActionArbitration::Outcome
+        {
+            if (routeAttempt->Attempted)
+                return routeAttempt->RouteOutcome;
+            routeAttempt->Attempted = true;
+
+            if (char const* ownerReason = routeOwnerReason())
+            {
+                routeAttempt->RouteOutcome =
+                    BotActionArbitration::Outcome::NotApplicable(ownerReason);
+                return routeAttempt->RouteOutcome;
+            }
+
+            Unit* const targetBeforeRoute = context.Target;
+            ObjectGuid const stateTargetBeforeRoute = context.State.TargetGuid;
+            uint64 const previousPathChangeMs = context.State.LastPathChangeMs;
+            uint64 const previousCombatAttemptMs =
+                context.State.LastCombatAttempt.RecordedAtMs;
+            routeAttempt->Handled = TryValidationRouteObjective(
+                context.State, context.Bot, context.Power, context.Stage,
+                context.ChosenActivity.Activity, context.Situation,
+                context.Action, context.Target);
+            if (!routeAttempt->Handled)
+            {
+                routeAttempt->RouteOutcome =
+                    BotActionArbitration::Outcome::NotApplicable(
+                        "route_not_applicable");
+                return routeAttempt->RouteOutcome;
+            }
+
+            context.State.LastDecisionHandler = "validation_route";
+            if (context.State.ValidationRouteTerminalState)
+            {
+                routeAttempt->RouteOutcome = BotActionArbitration::Outcome::Terminal(
+                    context.State.ValidationRouteTerminalReason.empty()
+                        ? std::string_view("route_terminal")
+                        : std::string_view(
+                            context.State.ValidationRouteTerminalReason));
+                return routeAttempt->RouteOutcome;
+            }
+
+            routeAttempt->MovementSubmitted =
+                context.State.LastPathChangeMs > previousPathChangeMs
+                && context.State.ActivePathValid;
+            routeAttempt->CombatAttempted =
+                context.State.LastCombatAttempt.RecordedAtMs
+                    > previousCombatAttemptMs;
+            routeAttempt->ActionSubmitted = routeAttempt->CombatAttempted
+                || (!routeAttempt->MovementSubmitted
+                    && !routeActionIsMovementOnly(context.Action));
+
+            if (routeAttempt->MovementSubmitted)
+                routeAttempt->RouteOutcome =
+                    BotActionArbitration::Outcome::Started(
+                        "route_movement_submitted");
+            else if (routeAttempt->CombatAttempted)
+            {
+                std::string const& result =
+                    context.State.LastCombatAttempt.Result;
+                if (result == "ok")
+                {
+                    if (context.State.LastCombatAttempt.Reason
+                            == "no_line_of_sight"
+                        || context.State.LastCombatAttempt.Reason
+                            == "target_missing"
+                        || context.State.LastCombatAttempt.Reason
+                            == "target_dead"
+                        || context.State.LastCombatAttempt.Reason
+                            == "target_not_attackable")
+                        routeAttempt->RouteOutcome =
+                            BotActionArbitration::Outcome::Retryable(
+                                context.State.LastCombatAttempt.Reason);
+                    else
+                        routeAttempt->RouteOutcome =
+                            IsNativeCombatObserved(context.Bot, context.Target)
+                                ? BotActionArbitration::Outcome::Progressed(
+                                    "route_native_combat_observed")
+                                : BotActionArbitration::Outcome::Started(
+                                    "route_combat_submitted");
+                }
+                else if (result == "casting" || result == "global_cooldown")
+                    routeAttempt->RouteOutcome =
+                        BotActionArbitration::Outcome::Started(
+                            "route_combat_scheduled");
+                else
+                    routeAttempt->RouteOutcome =
+                        BotActionArbitration::Outcome::Retryable(
+                            context.State.LastCombatAttempt.Reason.empty()
+                                ? std::string_view("route_combat_retryable")
+                                : std::string_view(
+                                    context.State.LastCombatAttempt.Reason));
+            }
+            else if (routeAttempt->ActionSubmitted)
+                routeAttempt->RouteOutcome =
+                    BotActionArbitration::Outcome::Started(
+                        "route_action_submitted");
+            else
+            {
+                bool const routeYield = context.Action.find("hold")
+                        != std::string::npos
+                    || context.Action.find("wait") != std::string::npos
+                    || context.Action.find("blocked") != std::string::npos
+                    || context.Action.find("pending") != std::string::npos
+                    || context.Action.find("retry") != std::string::npos
+                    || context.Action.find("failed") != std::string::npos
+                    || context.Action == "validation_route_wrong_map";
+                if (routeYield)
+                {
+                    if (targetBeforeRoute && targetBeforeRoute->IsAlive()
+                        && context.Bot->IsValidAttackTarget(targetBeforeRoute)
+                        && (context.Bot->IsInCombat()
+                            || targetBeforeRoute->IsInCombat()))
+                    {
+                        context.Target = targetBeforeRoute;
+                        context.State.TargetGuid = stateTargetBeforeRoute;
+                    }
+                    routeAttempt->RouteOutcome =
+                        BotActionArbitration::Outcome::Retryable(
+                            context.State.LastNoProgressReason.empty()
+                                ? std::string_view("route_retryable")
+                                : std::string_view(
+                                    context.State.LastNoProgressReason));
+                }
+                else
+                    routeAttempt->RouteOutcome =
+                        BotActionArbitration::Outcome::Started(
+                            "route_handled_pending_postcondition");
+            }
+            return routeAttempt->RouteOutcome;
+        };
+
+        // Keep Movement out of the action candidate's mask. The cached route
+        // attempt may submit a legal cast while also accepting movement, but
+        // only the paired movement candidate can claim that resource. The
+        // native movement arbiter therefore remains authoritative for any
+        // higher-priority movement lease already active on this bot.
+        BotActionArbitration::Candidate routeAction;
+        routeAction.Key = "world.validation_route_action";
+        routeAction.Source = "validation_route_adapter";
+        routeAction.ActionPriority = BotActionArbitration::Priority::Mechanic;
+        routeAction.UtilityScore = 3.1f;
+        routeAction.RequiredResources = BotActionArbitration::Uses(
             BotActionArbitration::Resource::GlobalCooldown,
             BotActionArbitration::Resource::Cast,
             BotActionArbitration::Resource::Target,
             BotActionArbitration::Resource::Interaction);
-        route.Attempt = [&]()
+        routeAction.Attempt = [runRoute, routeAttempt]()
         {
-            if (context.AdaptiveDrudgeOwnsNode || context.AdaptiveMagmawOwnsNode
-                || context.AdaptiveOmnotronOwnsNode || context.AdaptiveMaloriakOwnsNode
-                || context.AdaptiveChimaeronOwnsNode || context.AdaptiveAtramedesOwnsNode
-                || context.AdaptiveNefarianOwnsNode || context.AdaptiveNativeRouteOwnsNode)
-                return BotActionArbitration::Outcome::NotApplicable(
-                    context.AdaptiveDrudgeOwnsNode
-                        ? "adaptive_drudge_owns_live_pack"
-                        : (context.AdaptiveMagmawOwnsNode
-                            ? "adaptive_magmaw_owns_live_encounter"
-                            : (context.AdaptiveOmnotronOwnsNode
-                                ? "adaptive_omnotron_owns_live_encounter"
-                                : (context.AdaptiveMaloriakOwnsNode
-                                    ? "adaptive_maloriak_owns_live_encounter"
-                                    : (context.AdaptiveChimaeronOwnsNode
-                                        ? "adaptive_chimaeron_owns_live_encounter"
-                                        : (context.AdaptiveAtramedesOwnsNode
-                                            ? "adaptive_atramedes_owns_live_encounter"
-                                            : (context.AdaptiveNefarianOwnsNode
-                                                ? "adaptive_nefarian_owns_live_encounter"
-                                                : "native_route_contract_owns_node")))))));
-            Unit* const targetBeforeRoute = context.Target;
-            ObjectGuid const stateTargetBeforeRoute = context.State.TargetGuid;
-            uint64 const previousPathChangeMs = context.State.LastPathChangeMs;
-            uint64 const previousCombatAttemptMs = context.State.LastCombatAttempt.RecordedAtMs;
-            bool const handled = TryValidationRouteObjective(context.State, context.Bot, context.Power,
-                context.Stage, context.ChosenActivity.Activity, context.Situation, context.Action, context.Target);
-            if (!handled)
-                return BotActionArbitration::Outcome::NotApplicable(
-                    "route_not_applicable");
-            context.State.LastDecisionHandler = "validation_route";
-            if (context.State.ValidationRouteTerminalState)
-                return BotActionArbitration::Outcome::Terminal(
-                    context.State.ValidationRouteTerminalReason.empty()
-                        ? std::string_view("route_terminal")
-                        : std::string_view(context.State.ValidationRouteTerminalReason));
-            if (context.State.LastPathChangeMs > previousPathChangeMs && context.State.ActivePathValid)
-                return BotActionArbitration::Outcome::Started(
-                    "route_movement_submitted");
-            if (context.State.LastCombatAttempt.RecordedAtMs > previousCombatAttemptMs)
-            {
-                std::string const& result = context.State.LastCombatAttempt.Result;
-                if (result == "ok")
-                {
-                    if (context.State.LastCombatAttempt.Reason == "no_line_of_sight"
-                        || context.State.LastCombatAttempt.Reason == "target_missing"
-                        || context.State.LastCombatAttempt.Reason == "target_dead"
-                        || context.State.LastCombatAttempt.Reason == "target_not_attackable")
-                        return BotActionArbitration::Outcome::Retryable(
-                            context.State.LastCombatAttempt.Reason);
-                    return IsNativeCombatObserved(context.Bot, context.Target)
-                        ? BotActionArbitration::Outcome::Progressed(
-                            "route_native_combat_observed")
-                        : BotActionArbitration::Outcome::Started(
-                            "route_combat_submitted");
-                }
-                if (result == "casting" || result == "global_cooldown")
-                    return BotActionArbitration::Outcome::Started(
-                        "route_combat_scheduled");
-                return BotActionArbitration::Outcome::Retryable(
-                    context.State.LastCombatAttempt.Reason.empty()
-                        ? std::string_view("route_combat_retryable")
-                        : std::string_view(context.State.LastCombatAttempt.Reason));
-            }
-            bool const routeYield = context.Action.find("hold") != std::string::npos
-                || context.Action.find("wait") != std::string::npos
-                || context.Action.find("blocked") != std::string::npos
-                || context.Action.find("pending") != std::string::npos
-                || context.Action.find("retry") != std::string::npos
-                || context.Action.find("failed") != std::string::npos
-                || context.Action == "validation_route_wrong_map";
-            if (routeYield)
-            {
-                // Legacy route handlers mutate their output context.Target before
-                // returning a hold. Restore a still-valid native combat context.Target
-                // so lower-priority healing/damage candidates can actually
-                // fall through during this migration.
-                if (targetBeforeRoute && targetBeforeRoute->IsAlive()
-                    && context.Bot->IsValidAttackTarget(targetBeforeRoute)
-                    && (context.Bot->IsInCombat() || targetBeforeRoute->IsInCombat()))
-                {
-                    context.Target = targetBeforeRoute;
-                    context.State.TargetGuid = stateTargetBeforeRoute;
-                }
-                return BotActionArbitration::Outcome::Retryable(
-                    context.State.LastNoProgressReason.empty()
-                        ? std::string_view("route_retryable")
-                        : std::string_view(context.State.LastNoProgressReason));
-            }
-            return BotActionArbitration::Outcome::Started(
-                "route_handled_pending_postcondition");
+            BotActionArbitration::Outcome const outcome = runRoute();
+            if (outcome.Result == BotActionArbitration::Disposition::Terminal
+                || routeAttempt->ActionSubmitted)
+                return outcome;
+            return BotActionArbitration::Outcome::NotApplicable(
+                routeAttempt->MovementSubmitted
+                    ? "route_movement_only"
+                    : outcome.Reason);
         };
-        context.State.DecisionKernel.Submit(std::move(route));
+        context.State.DecisionKernel.Submit(std::move(routeAction));
 
+        BotActionArbitration::Candidate routeMovement;
+        routeMovement.Key = "world.validation_route_movement";
+        routeMovement.Source = "validation_route_adapter";
+        routeMovement.ActionPriority = BotActionArbitration::Priority::Mechanic;
+        routeMovement.UtilityScore = 3.0f;
+        routeMovement.RequiredResources = BotActionArbitration::Uses(
+            BotActionArbitration::Resource::Movement);
+        routeMovement.Attempt = [runRoute, routeAttempt]()
+        {
+            BotActionArbitration::Outcome const outcome = runRoute();
+            if (outcome.Result == BotActionArbitration::Disposition::Terminal)
+                return outcome;
+            if (routeAttempt->MovementSubmitted)
+                return outcome;
+            if (routeAttempt->ActionSubmitted)
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "route_action_only");
+            return outcome;
+        };
+        context.State.DecisionKernel.Submit(std::move(routeMovement));
         BotActionArbitration::Candidate boss;
         boss.Key = "world.boss_mechanics";
         boss.Source = "boss_mechanics_adapter";

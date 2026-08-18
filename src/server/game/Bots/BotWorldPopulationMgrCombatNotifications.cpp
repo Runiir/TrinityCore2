@@ -3,6 +3,7 @@
 #include "Creature.h"
 #include "GameTime.h"
 #include "Log.h"
+#include "Pet.h"
 #include "Player.h"
 #include "Spell.h"
 #include "SpellAuraEffects.h"

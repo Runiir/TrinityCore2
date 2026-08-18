@@ -317,6 +317,10 @@ private:
     bool HasSimpleSupportedObjective(Quest const* quest) const;
     uint32 ChooseQuestReward(Player* bot, Quest const* quest, uint32* rewardItemId = nullptr) const;
     QuestActionResult TryQuesting(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity);
+    bool TryValidationRouteObjectiveGate(WorldBotState& state, Player* bot,
+        BotRolePowerBreakdown const& power, BotProgressionStage stage,
+        BotProgressionActivity activity, std::string& situation,
+        std::string& action, Unit*& target, bool& arrivalRoute);
     bool TryValidationRouteObjective(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action, Unit*& target);
     bool TryValidationRouteGroupHeal(WorldBotState& state, Player* bot,
         Player* healer, Unit* combatTarget,

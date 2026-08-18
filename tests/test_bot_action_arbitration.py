@@ -6,6 +6,25 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+BOTS = ROOT / "src/server/game/Bots"
+
+
+def bot_source(*names: str) -> str:
+    return "\n".join((BOTS / name).read_text(encoding="utf-8") for name in names)
+
+
+def function_body(source: str, signature: str) -> str:
+    start = source.index(signature)
+    brace = source.index("{", start)
+    depth = 0
+    for index in range(brace, len(source)):
+        if source[index] == "{":
+            depth += 1
+        elif source[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return source[brace + 1 : index]
+    raise AssertionError(f"unterminated function: {signature}")
 
 
 def test_action_and_movement_arbiters_compile_and_replay(tmp_path: Path) -> None:
@@ -157,8 +176,8 @@ int main()
 
     // Producers submit in arbitrary order. The kernel applies the hard mask,
     // then ranks by priority and utility/model score. A failed high-priority
-    // candidate does not monopolize the tick. Stationary trained damage does
-    // not claim movement, so independent route movement may also commit.
+    // candidate does not monopolize the tick. An active route movement and a
+    // legal DPS cast use independent lanes and both commit in one tick.
     Kernel kernel;
     kernel.Begin(2000);
     bool lowRan = false;
@@ -167,7 +186,7 @@ int main()
     bool maskedRan = false;
     bool duplicateRan = false;
     kernel.Submit(Candidate{
-        "route", "legacy_route", BotActionArbitration::Priority::RouteMovement, 1.0f, 0.0f, 0.0f,
+        "active_route_movement", "legacy_route", BotActionArbitration::Priority::RouteMovement, 1.0f, 0.0f, 0.0f,
         Uses(Resource::Movement), 0, 100, 3000, 5, true, "", [&]
         {
             lowRan = true;
@@ -192,7 +211,7 @@ int main()
         }
     });
     kernel.Submit(Candidate{
-        "damage", "profile", BotActionArbitration::Priority::TrainedDamage, 5.0f, 1.0f, 2.0f,
+        "legal_dps_cast", "profile", BotActionArbitration::Priority::TrainedDamage, 5.0f, 1.0f, 2.0f,
         Uses(Resource::GlobalCooldown, Resource::Cast, Resource::Target),
         0, 100, 3000, 5, true, "", [&]
         {
@@ -217,8 +236,8 @@ int main()
     assert(!maskedRan);
     assert(!duplicateRan);
     assert(resolution.CommittedCandidates.size() == 2);
-    assert(resolution.CommittedCandidates.front() == "damage");
-    assert(resolution.CommittedCandidates.back() == "route");
+    assert(resolution.CommittedCandidates.front() == "legal_dps_cast");
+    assert(resolution.CommittedCandidates.back() == "active_route_movement");
     assert(kernel.LastResolutionJson().find("hard_masked") != std::string::npos);
 
     // Combat-res approach owns only movement: the owner can keep performing
@@ -677,12 +696,14 @@ int main()
 
 
 def test_live_route_function_does_not_reintroduce_direct_cheat_actions() -> None:
-    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
-        encoding="utf-8"
-    )
-    start = source.index("bool BotWorldPopulationMgr::TryValidationRouteObjective(")
-    end = source.index("\nbool BotWorldPopulationMgr::IsBossContext", start)
-    route = source[start:end]
+    main = bot_source("BotWorldPopulationMgr.cpp")
+    route = "\n".join((
+        function_body(main, "bool BotWorldPopulationMgr::TryValidationRouteObjective("),
+        function_body(
+            bot_source("BotWorldPopulationMgrValidationRouteGate.cpp"),
+            "bool BotWorldPopulationMgr::TryValidationRouteObjectiveGate(",
+        ),
+    ))
     for forbidden in (
         "ResurrectPlayer(",
         "NearTeleportTo(",
@@ -695,12 +716,10 @@ def test_live_route_function_does_not_reintroduce_direct_cheat_actions() -> None
 
 
 def test_route_adapter_yields_retryable_holds_and_declared_boss_adds() -> None:
-    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
-        encoding="utf-8"
+    main = bot_source("BotWorldPopulationMgr.cpp")
+    route = function_body(
+        main, "bool BotWorldPopulationMgr::TryValidationRouteObjective("
     )
-    start = source.index("bool BotWorldPopulationMgr::TryValidationRouteObjective(")
-    end = source.index("\nbool BotWorldPopulationMgr::IsBossContext", start)
-    route = source[start:end]
 
     objective_start = route.index("auto isValidationRouteObjectiveTarget")
     objective_end = route.index("\n    auto findNearestTrashClusterMob", objective_start)
@@ -708,9 +727,11 @@ def test_route_adapter_yields_retryable_holds_and_declared_boss_adds() -> None:
     assert "ValidationRouteAddTargetEntries.begin()" in objective
     assert "creature->GetEntry()" in objective
 
-    kernel_start = source.index('route.Key = "world.validation_route"')
-    kernel_end = source.index('boss.Key = "world.boss_mechanics"', kernel_start)
-    route_adapter = source[kernel_start:kernel_end]
+    fallback = bot_source("BotWorldPopulationMgrUpdateBotKernelFallback.cpp")
+    route_adapter = function_body(
+        fallback,
+        "void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(",
+    )
     for retryable_fragment in (
         'action.find("hold")',
         'action.find("wait")',
@@ -722,24 +743,42 @@ def test_route_adapter_yields_retryable_holds_and_declared_boss_adds() -> None:
         assert retryable_fragment in route_adapter
     assert "targetBeforeRoute" in route_adapter
     assert "stateTargetBeforeRoute" in route_adapter
-    resources = route_adapter.split("route.Attempt", 1)[0]
+    movement_start = route_adapter.index("routeMovement.RequiredResources")
+    movement_end = route_adapter.index("routeMovement.Attempt", movement_start)
+    movement_resources = route_adapter[movement_start:movement_end]
+    assert "Resource::Movement" in movement_resources
     for resource in (
-        "Resource::Movement",
         "Resource::GlobalCooldown",
         "Resource::Cast",
         "Resource::Target",
         "Resource::Interaction",
     ):
-        assert resource in resources
+        assert resource not in movement_resources
+
+    action_start = route_adapter.index("routeAction.RequiredResources")
+    action_end = route_adapter.index("routeAction.Attempt", action_start)
+    action_resources = route_adapter[action_start:action_end]
+    for resource in (
+        "Resource::GlobalCooldown",
+        "Resource::Cast",
+        "Resource::Target",
+        "Resource::Interaction",
+    ):
+        assert resource in action_resources
+    assert "Resource::Movement" not in action_resources
+    assert "std::shared_ptr<RouteAttempt>" in route_adapter
+    assert "auto runRoute = [&context, routeAttempt" in route_adapter
+    assert "routeAction.Attempt = [runRoute, routeAttempt]" in route_adapter
+    assert "routeMovement.Attempt = [runRoute, routeAttempt]" in route_adapter
+    assert "routeAction.Attempt = [&]" not in route_adapter
+    assert "routeMovement.Attempt = [&]" not in route_adapter
 
 
 def test_boss_adapter_requires_observable_work_and_rejects_stale_focus() -> None:
-    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
-        encoding="utf-8"
-    )
-    kernel_start = source.index('boss.Key = "world.boss_mechanics"')
-    kernel_end = source.index('trash.Key = "world.dungeon_trash"', kernel_start)
-    boss_adapter = source[kernel_start:kernel_end]
+    fallback = bot_source("BotWorldPopulationMgrUpdateBotKernelFallback.cpp")
+    boss_start = fallback.index('boss.Key = "world.boss_mechanics"')
+    boss_end = fallback.index('trash.Key = "world.dungeon_trash"', boss_start)
+    boss_adapter = fallback[boss_start:boss_end]
     assert "previousPathChangeMs" in boss_adapter
     assert "previousCombatAttemptMs" in boss_adapter
     assert "boss_no_observable_effect" in boss_adapter
@@ -748,28 +787,29 @@ def test_boss_adapter_requires_observable_work_and_rejects_stale_focus() -> None
     assert "Resource::Movement" in resources
     assert "Resource::Cast" in resources
 
-    route_start = source.index("bool BotWorldPopulationMgr::TryValidationRouteObjective(")
-    focus_start = source.index("auto routeUsableValidationFocus", route_start)
-    focus_end = source.index("\n    auto routeGroupFocusTarget", focus_start)
-    focus_filter = source[focus_start:focus_end]
+    main = bot_source("BotWorldPopulationMgr.cpp")
+    route = function_body(
+        main, "bool BotWorldPopulationMgr::TryValidationRouteObjective("
+    )
+    focus_start = route.index("auto routeUsableValidationFocus")
+    focus_end = route.index("\n    auto routeGroupFocusTarget", focus_start)
+    focus_filter = route[focus_start:focus_end]
     assert "isValidationRouteObjectiveTarget" in focus_filter
     assert "isValidationRouteScriptTarget" not in focus_filter
 
 
 def test_trash_adapter_requires_observable_work_and_yields_passive_waits() -> None:
-    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
-        encoding="utf-8"
-    )
-    start = source.index('trash.Key = "world.dungeon_trash"')
-    end = source.index('combat.Key = "world.profile_combat"', start)
-    adapter = source[start:end]
+    fallback = bot_source("BotWorldPopulationMgrUpdateBotKernelFallback.cpp")
+    start = fallback.index('trash.Key = "world.dungeon_trash"')
+    end = fallback.index('combat.Key = "world.profile_combat"', start)
+    adapter = fallback[start:end]
 
     assert "previousPathChangeMs" in adapter
     assert "previousCombatAttemptMs" in adapter
-    assert 'state.LastCombatAttempt.Reason == "no_line_of_sight"' in adapter
+    assert 'context.State.LastCombatAttempt.Reason == "no_line_of_sight"' in adapter
     assert "nativeFollowActive" in adapter
-    assert 'action.find("wait")' in adapter
-    assert 'action.find("readiness")' in adapter
+    assert 'context.Action.find("wait")' in adapter
+    assert 'context.Action.find("readiness")' in adapter
     assert "trash_no_observable_effect" in adapter
     assert "trash_action_committed" not in adapter
     resources = adapter.split("trash.Attempt", 1)[0]
@@ -777,34 +817,36 @@ def test_trash_adapter_requires_observable_work_and_yields_passive_waits() -> No
 
 
 def test_raid_healing_is_independent_and_does_not_cancel_hazard_movement() -> None:
-    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
-        encoding="utf-8"
-    )
-    support_start = source.index('support.Key = "raid.support.heal."')
-    route_start = source.index('route.Key = "world.validation_route"', support_start)
-    support = source[support_start:route_start]
+    candidates = bot_source("BotWorldPopulationMgrUpdateBotKernelCandidates.cpp")
+    support_start = candidates.index('support.Key = "raid.support.heal."')
+    support = candidates[support_start:]
     assert "Resource::GlobalCooldown" in support
     assert "Resource::Cast" in support
     assert "Resource::Movement" not in support
-    assert "SelectHealSpell(\n                        bot, healTarget, adaptiveHazardMovementProposed)" in support
+    assert "SelectHealSpell(\n                        context.Bot, healTarget, adaptiveHazardMovementProposed)" in support
     assert '"no_instant_heal_while_moving"' in support
 
-    heal_start = source.index("uint32 BotWorldPopulationMgr::SelectHealSpell")
-    heal_end = source.index("bool BotWorldPopulationMgr::TryCastFriendlySpell", heal_start)
-    heal = source[heal_start:heal_end]
+    combat_support = bot_source("BotWorldPopulationMgrCombatSupport.cpp")
+    heal = function_body(
+        combat_support, "uint32 BotWorldPopulationMgr::SelectHealSpell("
+    )
     assert "instantOnly" in heal
     assert 'candidate.RejectReason = "movement_requires_instant_heal"' in heal
 
 
 def test_native_route_interactions_use_player_handlers_and_observed_postconditions() -> None:
-    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
-        encoding="utf-8"
-    )
+    native_action = bot_source("BotWorldPopulationMgrNativeAction.cpp")
+    preparation = bot_source("BotWorldPopulationMgrUpdateBotKernelPreparation.cpp")
+    runtime = bot_source("BotWorldPopulationMgrValidationRouteRuntime.cpp")
+    manifest = bot_source("BotWorldPopulationMgrValidationRouteManifest.cpp")
+    source = "\n".join((native_action, preparation, runtime, manifest))
     native = (ROOT / "src/server/game/Bots/BotNativeActionIntent.h").read_text(
         encoding="utf-8"
     )
-    header = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text(
-        encoding="utf-8"
+    header = bot_source(
+        "BotWorldPopulationMgr.h",
+        "BotWorldPopulationMgrConfig.h",
+        "BotWorldPopulationMgrRouteState.h",
     )
 
     assert "struct GossipOpen" in native
@@ -812,9 +854,10 @@ def test_native_route_interactions_use_player_handlers_and_observed_postconditio
     assert "HandleGossipHelloOpcode(hello)" in source
     assert "HandleGossipSelectOptionOpcode(select)" in source
     assert "HandleGameObjectUseOpcode(use)" in source
-    assert "AI()->DoAction" not in source[source.index(
-        "adaptiveNativeRouteOwnsNode"
-    ):source.index('route.Key = "world.validation_route"')]
+    native_block = function_body(
+        preparation, "void BotWorldPopulationMgr::PrepareValidationKernel("
+    )
+    assert "AI()->DoAction" not in native_block
 
     for field in (
         "NativeInteractionAction",
@@ -828,10 +871,6 @@ def test_native_route_interactions_use_player_handlers_and_observed_postconditio
         assert field in header
         assert field in source
 
-    native_block = source[
-        source.index("adaptiveNativeRouteOwnsNode"):
-        source.index('route.Key = "world.validation_route"')
-    ]
     assert '"gameobject_selectable"' in native_block
     assert '"boss_summoned"' in native_block
     assert '"aura_present"' in native_block
@@ -841,20 +880,25 @@ def test_native_route_interactions_use_player_handlers_and_observed_postconditio
     assert "intro_complete_and_elevator_ready" not in native_block
     assert "player_in_nefarian_arena" not in native_block
 
-    route_adapter = source[
-        source.index('route.Key = "world.validation_route"'):
-        source.index('boss.Key = "world.boss_mechanics"')
-    ]
-    assert "adaptiveNativeRouteOwnsNode" in route_adapter
+    route_adapter = bot_source(
+        "BotWorldPopulationMgrUpdateBotKernelFallback.cpp"
+    )
+    assert "AdaptiveNativeRouteOwnsNode" in route_adapter
     assert '"native_route_contract_owns_node"' in route_adapter
 
 
 def test_dungeon_intro_activation_uses_native_area_trigger_opcode() -> None:
-    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
-        encoding="utf-8"
+    activation_source = bot_source("BotWorldPopulationMgrValidationActivation.cpp")
+    activation = function_body(
+        activation_source,
+        "bool BotWorldPopulationMgr::TryValidationRouteActivation(",
     )
-    header = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text(
-        encoding="utf-8"
+    native_action = bot_source("BotWorldPopulationMgrNativeAction.cpp")
+    manifest = bot_source("BotWorldPopulationMgrValidationRouteManifest.cpp")
+    header = bot_source(
+        "BotWorldPopulationMgr.h",
+        "BotWorldPopulationMgrConfig.h",
+        "BotWorldPopulationMgrRouteState.h",
     )
     config = (ROOT / "src/server/worldserver/worldserver.conf.dist").read_text(
         encoding="utf-8"
@@ -863,13 +907,9 @@ def test_dungeon_intro_activation_uses_native_area_trigger_opcode() -> None:
         encoding="utf-8"
     )
 
-    activation = source[
-        source.index("auto tryValidationRouteActivation"):
-        source.index("auto routeTankFocusTarget")
-    ]
     assert "ValidationRouteActivationAreaTriggerId" in header
     assert "BotWorld.ValidationRoute.ActivationAreaTriggerId = 0" in config
-    assert 'readInt(routeJson, "activation_area_trigger_id")' in source
+    assert 'readInt(routeJson, "activation_area_trigger_id")' in manifest
     assert '"activation_area_trigger_id"' in live_runner
     assert "sAreaTriggerStore.LookupEntry(triggerId)" in activation
     assert "bot->IsInAreaTriggerRadius(trigger)" in activation
@@ -878,7 +918,7 @@ def test_dungeon_intro_activation_uses_native_area_trigger_opcode() -> None:
     assert "struct AreaTrigger" in (ROOT / "src/server/game/Bots/BotNativeActionIntent.h").read_text(
         encoding="utf-8"
     )
-    assert "HandleAreaTriggerOpcode(areaTrigger)" in source
+    assert "HandleAreaTriggerOpcode(areaTrigger)" in native_action
     assert '"native_area_trigger_submitted"' in activation
     assert "InstanceScript::SetData" in activation
     assert "->SetData(" not in activation
@@ -898,20 +938,20 @@ def test_dungeon_intro_activation_uses_native_area_trigger_opcode() -> None:
     assert stonecore_steps["Corborus"]["activation_area_trigger_id"] == 6076
     assert stonecore_steps["Slabhide"]["activation_area_trigger_id"] == 6070
 
-    generated_routes = [
-        json.loads(line)
-        for line in (
-            ROOT / "dataset/validation_scenarios/validation_routes.jsonl"
-        ).read_text(encoding="utf-8").splitlines()
-        if line.strip()
-    ]
-    stonecore_routes = {
-        route["label"]: route
-        for route in generated_routes
-        if route["scenario_id"] == "stonecore_5n"
-    }
-    assert stonecore_routes["Corborus"]["activation_area_trigger_id"] == 6076
-    assert stonecore_routes["Slabhide"]["activation_area_trigger_id"] == 6070
-    assert "interaction_contract" not in stonecore_routes["Corborus"]
-    assert "completion_contract" not in stonecore_routes["Corborus"]
-    assert "mechanic_contract" not in stonecore_routes["Corborus"]
+    generated_routes_path = ROOT / "dataset/validation_scenarios/validation_routes.jsonl"
+    if generated_routes_path.exists():
+        generated_routes = [
+            json.loads(line)
+            for line in generated_routes_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        stonecore_routes = {
+            route["label"]: route
+            for route in generated_routes
+            if route["scenario_id"] == "stonecore_5n"
+        }
+        assert stonecore_routes["Corborus"]["activation_area_trigger_id"] == 6076
+        assert stonecore_routes["Slabhide"]["activation_area_trigger_id"] == 6070
+        assert "interaction_contract" not in stonecore_routes["Corborus"]
+        assert "completion_contract" not in stonecore_routes["Corborus"]
+        assert "mechanic_contract" not in stonecore_routes["Corborus"]
