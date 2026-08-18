@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotAdmissionIdentityGenerated.h"
 #include "Bots/BotCalibrationFixtureContractGenerated.h"
 #include "Bots/BotClassSpecActionProfile.h"
 
@@ -38,6 +39,128 @@ uint64 NowMs()
         GameTime::GetGameTimeSystemPoint().time_since_epoch()).count());
 }
 
+struct HunterPetIdentitySnapshot
+{
+    uint32 PetId = 0;
+    uint32 PetEntry = 0;
+    std::vector<std::pair<uint32, uint8>> Spellbook;
+    std::string SpellbookSha256;
+    std::vector<uint32> AutocastSpellIds;
+};
+BotAdmissionIdentityGenerated::Identity const* FindExpectedBotAdmissionIdentity(
+    std::string const& classSpec)
+{
+    for (BotAdmissionIdentityGenerated::Identity const& identity :
+        BotAdmissionIdentityGenerated::Identities)
+        if (classSpec == identity.ClassSpec)
+            return &identity;
+    return nullptr;
+}
+
+bool ResolveExpectedHunterPetIdentity(std::string const& classSpec,
+    uint32& petId, uint32& petEntry,
+    std::vector<std::pair<uint32, uint8>>& spellbook)
+{
+    // Admission only observes this generated compile-time authority; it must
+    // never repair, summon, or rewrite a pet after the cohort becomes active.
+    BotAdmissionIdentityGenerated::Identity const* identity =
+        FindExpectedBotAdmissionIdentity(classSpec);
+    if (!identity || !identity->PetId || !identity->PetEntry
+        || !identity->PetSpellCount
+        || identity->PetSpellOffset + identity->PetSpellCount
+            > BotAdmissionIdentityGenerated::PetSpells.size())
+        return false;
+    petId = identity->PetId;
+    petEntry = identity->PetEntry;
+    spellbook.clear();
+    for (uint32 index = 0; index < identity->PetSpellCount; ++index)
+    {
+        BotAdmissionIdentityGenerated::PetSpellIdentity const& spell =
+            BotAdmissionIdentityGenerated::PetSpells[
+                identity->PetSpellOffset + index];
+        spellbook.emplace_back(spell.SpellId, spell.Active);
+    }
+    return true;
+}
+std::string HunterPetSpellbookSha256(std::vector<std::pair<uint32, uint8>> const& spellbook)
+{
+    std::ostringstream canonical;
+    for (size_t index = 0; index < spellbook.size(); ++index)
+    {
+        if (index)
+            canonical << ';';
+        canonical << spellbook[index].first << ':' << uint32(spellbook[index].second);
+    }
+    std::string digest = ByteArrayToHexStr(
+        Trinity::Crypto::SHA256::GetDigestOf(canonical.str()));
+    std::transform(digest.begin(), digest.end(), digest.begin(),
+        [](unsigned char c) { return char(std::tolower(c)); });
+    return digest;
+}
+
+bool ObserveActiveOrdinaryHunterPet(Player const* bot, HunterPetIdentitySnapshot& snapshot)
+{
+    if (!bot || bot->getClass() != CLASS_HUNTER)
+        return false;
+
+    Pet* pet = bot->GetPet();
+    PlayerPetData const* stored = const_cast<Player*>(bot)->GetPlayerPetDataCurrent();
+    if (!pet || !stored || !stored->Active || stored->Type != HUNTER_PET
+        || pet->getPetType() != HUNTER_PET || !pet->IsInWorld() || !pet->IsAlive()
+        || !pet->IsPermanentPetFor(const_cast<Player*>(bot)) || pet->GetOwner() != bot
+        || !pet->GetCharmInfo() || !stored->PetId || !stored->CreatureId
+        || pet->GetCharmInfo()->GetPetNumber() != stored->PetId
+        || pet->GetEntry() != stored->CreatureId)
+        return false;
+
+    snapshot.PetId = stored->PetId;
+    snapshot.PetEntry = stored->CreatureId;
+    // Family passives are deterministically derived from world DBC data and
+    // are intentionally never persisted by Pet::_SaveSpells.  The pinned
+    // provisioning identity is the mutable, persistable runtime spellbook;
+    // including derived family passives would make an exact catalog check
+    // depend on unrelated world-data implementation details.
+    for (auto const& [spellId, petSpell] : pet->m_spells)
+        if (petSpell.state != PETSPELL_REMOVED
+            && petSpell.type != PETSPELL_FAMILY)
+            snapshot.Spellbook.emplace_back(spellId, uint8(petSpell.active));
+    std::sort(snapshot.Spellbook.begin(), snapshot.Spellbook.end());
+    snapshot.SpellbookSha256 = HunterPetSpellbookSha256(snapshot.Spellbook);
+    snapshot.AutocastSpellIds.assign(
+        pet->m_autospells.begin(), pet->m_autospells.end());
+    std::sort(snapshot.AutocastSpellIds.begin(),
+        snapshot.AutocastSpellIds.end());
+    snapshot.AutocastSpellIds.erase(std::unique(
+        snapshot.AutocastSpellIds.begin(), snapshot.AutocastSpellIds.end()),
+        snapshot.AutocastSpellIds.end());
+    return true;
+}
+
+bool LoadedBotMatchesPinnedHunterPet(Player const* bot, std::string const& classSpec)
+{
+    if (!bot || bot->getClass() != CLASS_HUNTER)
+        return true;
+
+    uint32 expectedPetId = 0;
+    uint32 expectedPetEntry = 0;
+    std::vector<std::pair<uint32, uint8>> expectedSpellbook;
+    std::vector<uint32> expectedAutocastSpellIds;
+    HunterPetIdentitySnapshot observed;
+    if (!ResolveExpectedHunterPetIdentity(classSpec, expectedPetId,
+            expectedPetEntry, expectedSpellbook))
+        return false;
+    for (auto const& [spellId, active] : expectedSpellbook)
+        if (active == ACT_ENABLED)
+            expectedAutocastSpellIds.push_back(spellId);
+    std::sort(expectedAutocastSpellIds.begin(),
+        expectedAutocastSpellIds.end());
+    return ObserveActiveOrdinaryHunterPet(bot, observed)
+        && observed.PetId == expectedPetId
+        && observed.PetEntry == expectedPetEntry
+        && observed.Spellbook == expectedSpellbook
+        && observed.SpellbookSha256 == HunterPetSpellbookSha256(expectedSpellbook)
+        && observed.AutocastSpellIds == expectedAutocastSpellIds;
+}
 struct OrdinaryPetSpellIdentity
 {
     uint32 SpellId = 0;
