@@ -188,6 +188,35 @@ def test_scored_window_observes_required_pet_uptime_without_repair() -> None:
         assert forbidden not in calibration
 
 
+def test_affliction_pet_diagnostic_separates_execution_state_and_damage_events() -> None:
+    source = WORLD.read_text()
+    header = HEADER.read_text()
+
+    # Pet health alone cannot explain a lower pet numerator. The scored
+    # timeline must retain the native victim/command/current-spell state, while
+    # damage events must identify the exact ordinary pet rather than any other
+    # controlled unit owned by the warlock.
+    for field in (
+        "PetVictimGuid",
+        "PetCurrentGenericSpellId",
+        "PetCurrentChanneledSpellId",
+        "PetCurrentAutorepeatSpellId",
+        "PetCommandState",
+        "PetCommandAttack",
+        "PrimaryPetSpellDamage",
+        "PrimaryPetSpellDamageEvents",
+    ):
+        assert field in header
+    assert "capturePetTimelineState" in source
+    assert "entry.PetVictimGuid = pet->GetVictim()" in source
+    assert "entry.PetCommandAttack = charmInfo->IsCommandAttack()" in source
+    assert "entry.PetCurrentAutorepeatSpellId" in source
+    assert "bool const exactPetDamage = owner->GetPet() == attacker" in source
+    assert "calibration->second.PrimaryPetSpellDamage[spellId]" in source
+    assert '\\"pet_execution_observation\\"' in source
+    assert '\\"primary_pet_spell_damage\\"' in source
+
+
 def test_setup_precedes_calibration_scoring_and_normal_combat_resolution() -> None:
     source = WORLD.read_text()
     calibration = _function_body(

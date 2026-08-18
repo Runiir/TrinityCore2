@@ -322,9 +322,26 @@ def test_runtime_report_reads_completed_combat_calibration_window():
                             {"spell_id": 1120, "count": 4},
                         ],
                         "spell_damage": [
-                            {"spell_id": 686, "damage": 1857836},
-                            {"spell_id": 1120, "damage": 603362},
+                            {"spell_id": 686, "damage": 1857836, "event_count": 85},
+                            {"spell_id": 1120, "damage": 603362, "event_count": 4},
                         ],
+                        "primary_pet_spell_damage": [
+                            {"spell_id": 0, "damage": 416790, "event_count": 199},
+                            {"spell_id": 54049, "damage": 1332284, "event_count": 50},
+                        ],
+                        "pet_execution_observation": {
+                            "sample_count": 600,
+                            "alive_samples": 600,
+                            "alive_ratio": 1.0,
+                            "attacking_samples": 598,
+                            "attacking_ratio": 0.9966666667,
+                            "target_match_samples": 598,
+                            "target_match_ratio": 0.9966666667,
+                            "command_attack_samples": 598,
+                            "command_attack_ratio": 0.9966666667,
+                            "last_victim_guid": 77,
+                            "diagnostic_basis": "decision_timeline_pet_state",
+                        },
                         "result_counts": {"ok": 148, "no_action": 389},
                         "quality_metrics": {
                             "active_uptime_ratio": 1.0,
@@ -343,6 +360,14 @@ def test_runtime_report_reads_completed_combat_calibration_window():
                                 "current_channeled_spell_id": 0,
                                 "pet_health": 800,
                                 "pet_max_health": 1000,
+                                "pet_alive": True,
+                                "pet_victim_guid": 77,
+                                "pet_attacking": True,
+                                "pet_command_state": 1,
+                                "pet_command_attack": True,
+                                "pet_current_generic_spell_id": 54049,
+                                "pet_current_channeled_spell_id": 0,
+                                "pet_current_autorepeat_spell_id": 0,
                                 "target_distance": 15.0,
                                 "alive": True,
                             },
@@ -391,6 +416,30 @@ def test_runtime_report_reads_completed_combat_calibration_window():
 
     assert normalized["attempt_counts_by_spell"] == {"1120": 4, "686": 85}
     assert normalized["damage_by_spell"] == {"1120": 603362, "686": 1857836}
+    assert normalized["damage_event_counts_by_spell"] == {"1120": 4, "686": 85}
+    assert normalized["primary_pet_damage_by_spell"] == {"0": 416790, "54049": 1332284}
+    assert normalized["primary_pet_damage_event_counts_by_spell"] == {
+        "0": 199,
+        "54049": 50,
+    }
+    assert normalized["pet_execution_observations"] == [
+        {
+            "bot_guid": 1306,
+            "sample_count": 600,
+            "alive_samples": 600,
+            "alive_ratio": 1.0,
+            "attacking_samples": 598,
+            "attacking_ratio": 0.9966666667,
+            "target_match_samples": 598,
+            "target_match_ratio": 0.9966666667,
+            "command_attack_samples": 598,
+            "command_attack_ratio": 0.9966666667,
+            "last_victim_guid": 77,
+            "diagnostic_basis": "decision_timeline_pet_state",
+        }
+    ]
+    assert normalized["decision_timeline"][0]["pet_victim_guid"] == 77
+    assert normalized["decision_timeline"][0]["pet_current_generic_spell_id"] == 54049
     assert normalized["result_counts"] == {"no_action": 389, "ok": 148}
     assert normalized["calibration_windows"] == [
         {
@@ -1174,6 +1223,91 @@ def test_cast_mix_keeps_share_comparison_usable_without_durations():
     assert comparison["cast_cadence"]["status"] == "insufficient_duration_data"
     assert comparison["cast_cadence"]["wowsims_casts_per_second"] is None
     assert comparison["cast_cadence"]["trinity_casts_per_second"] is None
+
+
+def test_cast_cadence_separates_ordinary_starts_channel_starts_and_landed_events():
+    apl = _cast_mix_apl()
+    apl["priorityList"].append(
+        {
+            "action": {
+                "channelSpell": {
+                    "spellId": {"spellId": 1120},
+                }
+            }
+        }
+    )
+    result = _cast_mix_result(duration_seconds=10.0)
+    result["raidMetrics"]["parties"][0]["players"][0]["actions"].append(
+        {
+            "id": {"spellId": 1120, "tag": 0},
+            "isPassive": False,
+            "targets": [{"unitIndex": 0, "casts": 2, "ticks": 4}],
+        }
+    )
+    runtime = _cast_mix_runtime_with_duration(
+        [(100, "ok"), (100, "ok"), (100, "ok"), (1120, "ok"), (1120, "ok")],
+        10.0,
+    )
+    runtime["combat_calibration"]["bots"][0]["spell_damage"] = [
+        {"spell_id": 1120, "damage": 100, "event_count": 4}
+    ]
+
+    comparison = build_review(
+        wowsims_apl=apl,
+        wowsims_result=result,
+        runtime_report=runtime,
+    )["execution_comparison"]["cast_mix"]
+    components = comparison["cast_cadence_components"]
+
+    assert components["classification"] == {
+        "ordinary_cast_spell_ids": [100, 200],
+        "channel_spell_ids": [1120],
+        "ambiguous_spell_ids": [],
+        "non_comparable_apl_action_kinds": [],
+    }
+    assert components["ordinary_cast_starts"]["wowsims_count"] == 4.0
+    assert components["ordinary_cast_starts"]["trinity_count"] == 3
+    assert components["ordinary_cast_starts"]["wowsims_per_second"] == 0.4
+    assert components["ordinary_cast_starts"]["trinity_per_second"] == 0.3
+    assert components["channel_starts"]["wowsims_count"] == 2.0
+    assert components["channel_starts"]["trinity_count"] == 2
+    assert components["channel_landed_events"]["wowsims_count"] == 4.0
+    assert components["channel_landed_events"]["trinity_count"] == 4
+    assert (
+        components["channel_landed_events"]["trinity_count_label"]
+        == "runtime_spell_damage_event_count_not_proven_tick_equivalent"
+    )
+    # The old aggregate remains available, but is explicitly not the ordinary rate.
+    assert comparison["cast_cadence"]["wowsims_casts_per_second"] == 0.6
+    assert comparison["cast_cadence_limitations"]
+
+
+def test_cast_cadence_excludes_special_actions_without_equating_them_to_casts():
+    apl = _cast_mix_apl()
+    apl["priorityList"].append(
+        {"action": {"autocastOtherCooldowns": {}}}
+    )
+    comparison = build_review(
+        wowsims_apl=apl,
+        wowsims_result=_cast_mix_result(),
+        runtime_report=_cast_mix_runtime([(100, "ok")]),
+    )["execution_comparison"]["cast_mix"]
+
+    components = comparison["cast_cadence_components"]
+    assert components["non_comparable_actions"] == {
+        "status": "excluded_from_cadence",
+        "used_for_cadence": False,
+        "apl_action_kinds": ["autocastOtherCooldowns"],
+        "apl_action_count": 1,
+        "apl_paths": ["priorityList[2].autocastOtherCooldowns"],
+        "reason": (
+            "WoWSims special/off-GCD/structural actions have no native cast-start "
+            "or landed-event identity in this comparison."
+        ),
+    }
+    assert components["classification"]["non_comparable_apl_action_kinds"] == [
+        "autocastOtherCooldowns"
+    ]
 
 
 def test_cast_mix_direct_helper_requires_normalized_completed_calibration():

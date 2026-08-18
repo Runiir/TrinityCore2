@@ -2234,6 +2234,14 @@ private:
             uint32 CurrentChanneledSpellId = 0;
             uint64 PetHealth = 0;
             uint64 PetMaxHealth = 0;
+            uint32 PetVictimGuid = 0;
+            uint32 PetCurrentGenericSpellId = 0;
+            uint32 PetCurrentChanneledSpellId = 0;
+            uint32 PetCurrentAutorepeatSpellId = 0;
+            uint8 PetCommandState = 0;
+            bool PetAlive = false;
+            bool PetAttacking = false;
+            bool PetCommandAttack = false;
             float TargetDistance = 0.0f;
             bool Alive = false;
         };
@@ -2415,6 +2423,11 @@ private:
         uint64 MaximumGearIdentityObservationGapMs = 0;
         std::map<uint32, uint64> SpellDamage;
         std::map<uint32, uint32> SpellDamageEvents;
+        // The owner's primary pet damage is kept separate from the owner's
+        // spell totals. This intentionally excludes other controlled units
+        // such as guardians, which remain in the aggregate PetDamage value.
+        std::map<uint32, uint64> PrimaryPetSpellDamage;
+        std::map<uint32, uint32> PrimaryPetSpellDamageEvents;
         std::map<uint32, uint32> ActionAttempts;
         std::map<uint32, uint32> HealTargetCounts;
         std::map<uint32, uint64> LastDamageMsByTarget;

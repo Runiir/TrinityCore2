@@ -2893,6 +2893,27 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                     && metrics->PetSetupObservationSampleCount
                 ? double(metrics->PetSetupReadySampleCount)
                     / double(metrics->PetSetupObservationSampleCount) : 0.0;
+            uint32 petExecutionSamples = 0;
+            uint32 petAliveSamples = 0;
+            uint32 petAttackingSamples = 0;
+            uint32 petTargetMatchSamples = 0;
+            uint32 petCommandAttackSamples = 0;
+            if (metrics)
+                for (CalibrationMetrics::DecisionTimelineEntry const& entry
+                    : metrics->DecisionTimeline)
+                {
+                    ++petExecutionSamples;
+                    if (entry.PetAlive)
+                        ++petAliveSamples;
+                    if (entry.PetAttacking)
+                        ++petAttackingSamples;
+                    if (entry.PetVictimGuid
+                        && entry.PetVictimGuid
+                            == Cohort().CalibrationFixtureTargetGuid.GetCounter())
+                        ++petTargetMatchSamples;
+                    if (entry.PetCommandAttack)
+                        ++petCommandAttackSamples;
+                }
             uint32 observedExpectedGroups = 0;
             if (metrics)
                 for (std::string const& group : metrics->ExpectedActionGroups)
@@ -3645,6 +3666,29 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                 json << ordinaryPet.AutocastSpellIds[index];
             }
             json << ']'
+                 << ",\"pet_execution_observation\":{\"sample_count\":"
+                 << petExecutionSamples
+                 << ",\"alive_samples\":" << petAliveSamples
+                 << ",\"alive_ratio\":"
+                 << (petExecutionSamples
+                         ? double(petAliveSamples) / petExecutionSamples : 0.0)
+                 << ",\"attacking_samples\":" << petAttackingSamples
+                 << ",\"attacking_ratio\":"
+                 << (petExecutionSamples
+                         ? double(petAttackingSamples) / petExecutionSamples : 0.0)
+                 << ",\"target_match_samples\":" << petTargetMatchSamples
+                 << ",\"target_match_ratio\":"
+                 << (petExecutionSamples
+                         ? double(petTargetMatchSamples) / petExecutionSamples : 0.0)
+                 << ",\"command_attack_samples\":"
+                 << petCommandAttackSamples
+                 << ",\"command_attack_ratio\":"
+                 << (petExecutionSamples
+                         ? double(petCommandAttackSamples) / petExecutionSamples : 0.0)
+                 << ",\"last_victim_guid\":"
+                 << (metrics && !metrics->DecisionTimeline.empty()
+                         ? metrics->DecisionTimeline.back().PetVictimGuid : 0)
+                 << ",\"diagnostic_basis\":\"decision_timeline_pet_state\"}"
                  << ",\"arcane_brilliance\":" << (bot && (bot->HasAura(1459) || bot->HasAura(79058)) ? "true" : "false")
                  << ",\"molten_armor\":" << (bot && bot->HasAura(30482) ? "true" : "false")
                  << ",\"mage_armor\":" << (bot && bot->HasAura(6117) ? "true" : "false")
@@ -3965,6 +4009,32 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                          << ",\"event_count\":" << metrics->SpellDamageEvents.at(spellId) << '}';
                 }
             }
+            json << "],\"primary_pet_spell_damage\":[";
+            bool firstPetSpell = true;
+            if (metrics)
+            {
+                std::vector<std::pair<uint32, uint64>> petSpells(
+                    metrics->PrimaryPetSpellDamage.begin(), metrics->PrimaryPetSpellDamage.end());
+                std::sort(petSpells.begin(), petSpells.end(),
+                    [](auto const& left, auto const& right)
+                    {
+                        return left.second > right.second;
+                    });
+                for (auto const& [spellId, amount] : petSpells)
+                {
+                    if (!firstPetSpell)
+                        json << ',';
+                    firstPetSpell = false;
+                    SpellInfo const* info = spellId
+                        ? sSpellMgr->GetSpellInfo(spellId) : nullptr;
+                    json << "{\"spell_id\":" << spellId
+                         << ",\"spell_name\":\""
+                         << JsonEscape(info ? info->SpellName : "Melee") << "\""
+                         << ",\"damage\":" << amount
+                         << ",\"event_count\":"
+                         << metrics->PrimaryPetSpellDamageEvents.at(spellId) << '}';
+                }
+            }
             json << "],\"decision_timeline\":[";
             bool firstTimeline = true;
             if (metrics)
@@ -3984,6 +4054,18 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                          << ",\"current_channeled_spell_id\":" << entry.CurrentChanneledSpellId
                          << ",\"pet_health\":" << entry.PetHealth
                          << ",\"pet_max_health\":" << entry.PetMaxHealth
+                         << ",\"pet_alive\":" << (entry.PetAlive ? "true" : "false")
+                         << ",\"pet_victim_guid\":" << entry.PetVictimGuid
+                         << ",\"pet_attacking\":" << (entry.PetAttacking ? "true" : "false")
+                         << ",\"pet_command_state\":" << uint32(entry.PetCommandState)
+                         << ",\"pet_command_attack\":"
+                         << (entry.PetCommandAttack ? "true" : "false")
+                         << ",\"pet_current_generic_spell_id\":"
+                         << entry.PetCurrentGenericSpellId
+                         << ",\"pet_current_channeled_spell_id\":"
+                         << entry.PetCurrentChanneledSpellId
+                         << ",\"pet_current_autorepeat_spell_id\":"
+                         << entry.PetCurrentAutorepeatSpellId
                          << ",\"target_distance\":" << std::fixed << std::setprecision(3)
                          << entry.TargetDistance
                          << ",\"alive\":" << (entry.Alive ? "true" : "false") << '}';
@@ -11199,6 +11281,28 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     }
     if (scored)
         ++metrics.TickCount;
+    auto capturePetTimelineState = [bot](CalibrationMetrics::DecisionTimelineEntry& entry)
+    {
+        Pet* pet = bot ? bot->GetPet() : nullptr;
+        if (!pet)
+            return;
+
+        entry.PetAlive = pet->IsAlive();
+        entry.PetVictimGuid = pet->GetVictim()
+            ? pet->GetVictim()->GetGUID().GetCounter() : 0;
+        entry.PetAttacking = entry.PetAlive && pet->GetVictim() != nullptr;
+        if (CharmInfo* charmInfo = pet->GetCharmInfo())
+        {
+            entry.PetCommandState = uint8(charmInfo->GetCommandState());
+            entry.PetCommandAttack = charmInfo->IsCommandAttack();
+        }
+        if (Spell* current = pet->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+            entry.PetCurrentGenericSpellId = current->GetSpellInfo()->Id;
+        if (Spell* current = pet->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+            entry.PetCurrentChanneledSpellId = current->GetSpellInfo()->Id;
+        if (Spell* current = pet->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
+            entry.PetCurrentAutorepeatSpellId = current->GetSpellInfo()->Id;
+    };
     if (!bot->IsAlive())
     {
         if (scored && !metrics.DeathRecorded)
@@ -11223,6 +11327,7 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
                     entry.PetHealth = pet->GetHealth();
                     entry.PetMaxHealth = pet->GetMaxHealth();
                 }
+                capturePetTimelineState(entry);
                 entry.Alive = false;
                 metrics.DecisionTimeline.push_back(std::move(entry));
             }
@@ -11705,6 +11810,7 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
                     entry.PetHealth = pet->GetHealth();
                     entry.PetMaxHealth = pet->GetMaxHealth();
                 }
+                capturePetTimelineState(entry);
                 entry.TargetDistance = distance;
                 entry.Alive = true;
                 metrics.DecisionTimeline.push_back(std::move(entry));
@@ -11760,6 +11866,7 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
                 entry.PetHealth = pet->GetHealth();
                 entry.PetMaxHealth = pet->GetMaxHealth();
             }
+            capturePetTimelineState(entry);
             entry.TargetDistance = bot->GetExactDist(target);
             entry.Alive = bot->IsAlive();
             metrics.DecisionTimeline.push_back(std::move(entry));
@@ -47047,6 +47154,7 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
                 return;
             }
             uint32 measuredDamage = damage ? damage : unmitigatedDamage;
+            bool const exactPetDamage = owner->GetPet() == attacker;
             bool const isolatedSingleTarget =
                 Cohort().CalibrationMode == "single_target_300";
             bool const primaryTargetDamage = isolatedSingleTarget
@@ -47156,6 +47264,11 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
                     calibration->second.PetDamage += measuredDamage;
                 calibration->second.SpellDamage[spellId] += measuredDamage;
                 ++calibration->second.SpellDamageEvents[spellId];
+                if (exactPetDamage)
+                {
+                    calibration->second.PrimaryPetSpellDamage[spellId] += measuredDamage;
+                    ++calibration->second.PrimaryPetSpellDamageEvents[spellId];
+                }
             }
             if (Creature* dummy = victim->ToCreature(); dummy && IsTrainingDummy(dummy))
             {

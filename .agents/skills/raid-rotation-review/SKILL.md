@@ -155,6 +155,11 @@ Compare more than spell membership:
 - observed action distribution, failure/rejection distribution, active uptime,
   resource starvation/capping, movement loss, and off-target effects.
 
+For pet specs, compare owner and pet separately. Bind pet identity, alive/target
+uptime, action or landed-event counts, per-event damage, and total damage share.
+A matching pet share can hide uniformly low output, while low absolute pet
+damage does not prove idle AI when event cadence matches.
+
 WoWSims aggregate metrics cover all iterations; its debug log/timeline normally
 covers the first iteration only. Compare aggregate distributions separately
 from exact ordered timeline events. At equal displayed timestamps, preserve log

@@ -1279,6 +1279,9 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
     )
     attempts: Counter[int] = Counter()
     damage: Counter[int] = Counter()
+    damage_events: Counter[int] = Counter()
+    pet_damage: Counter[int] = Counter()
+    pet_damage_events: Counter[int] = Counter()
     results: Counter[str] = Counter()
     rejection_reasons: Counter[str] = Counter()
     chosen: Counter[int] = Counter()
@@ -1293,6 +1296,7 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
     movement_distance_total = 0.0
     movement_distance_max = 0.0
     calibration_windows: list[dict[str, Any]] = []
+    pet_execution_observations: list[dict[str, Any]] = []
     decision_timeline: list[dict[str, Any]] = []
     off_target_damage_events: list[dict[str, Any]] = []
 
@@ -1367,10 +1371,32 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
                 spell_id = int(spell.get("spell_id") or 0)
                 if spell_id:
                     damage[spell_id] += int(spell.get("damage") or 0)
+                    damage_events[spell_id] += int(spell.get("event_count") or 0)
+        for spell in bot.get("primary_pet_spell_damage") or []:
+            if isinstance(spell, dict):
+                spell_id = int(spell.get("spell_id") or 0)
+                # Spell id 0 is the native melee bucket. Keep it when the
+                # simulator/native report carries an actual damage event so
+                # pet melee is not silently dropped from attribution.
+                if spell_id or spell.get("damage") or spell.get("event_count"):
+                    pet_damage[spell_id] += int(spell.get("damage") or 0)
+                    pet_damage_events[spell_id] += int(spell.get("event_count") or 0)
         aggregate_results = bot.get("result_counts")
         if isinstance(aggregate_results, dict):
             for result, count in aggregate_results.items():
                 results[str(result)] += int(count or 0)
+        pet_execution = bot.get("pet_execution_observation")
+        if isinstance(pet_execution, dict):
+            pet_execution_observations.append(
+                {
+                    "bot_guid": bot_guid,
+                    **{
+                        str(key): value
+                        for key, value in pet_execution.items()
+                        if isinstance(key, str)
+                    },
+                }
+            )
         if bot.get("elapsed_seconds") is not None:
             quality = bot.get("quality_metrics")
             calibration_windows.append(
@@ -1410,6 +1436,20 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
                 "current_channeled_spell_id": int(event.get("current_channeled_spell_id") or 0),
                 "pet_health": int(event.get("pet_health") or 0),
                 "pet_max_health": int(event.get("pet_max_health") or 0),
+                "pet_alive": bool(event.get("pet_alive", False)),
+                "pet_victim_guid": int(event.get("pet_victim_guid") or 0),
+                "pet_attacking": bool(event.get("pet_attacking", False)),
+                "pet_command_state": int(event.get("pet_command_state") or 0),
+                "pet_command_attack": bool(event.get("pet_command_attack", False)),
+                "pet_current_generic_spell_id": int(
+                    event.get("pet_current_generic_spell_id") or 0
+                ),
+                "pet_current_channeled_spell_id": int(
+                    event.get("pet_current_channeled_spell_id") or 0
+                ),
+                "pet_current_autorepeat_spell_id": int(
+                    event.get("pet_current_autorepeat_spell_id") or 0
+                ),
                 "target_distance": float(event.get("target_distance") or 0.0),
                 # Older reports do not carry this observation. Treat absence
                 # as unknown/non-death rather than fabricating a dead sample.
@@ -1470,11 +1510,21 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
         ),
         "attempt_counts_by_spell": {str(key): value for key, value in sorted(attempts.items())},
         "damage_by_spell": {str(key): value for key, value in sorted(damage.items())},
+        "damage_event_counts_by_spell": {
+            str(key): value for key, value in sorted(damage_events.items())
+        },
+        "primary_pet_damage_by_spell": {
+            str(key): value for key, value in sorted(pet_damage.items())
+        },
+        "primary_pet_damage_event_counts_by_spell": {
+            str(key): value for key, value in sorted(pet_damage_events.items())
+        },
         "chosen_counts_by_spell": {str(key): value for key, value in sorted(chosen.items())},
         "result_counts": dict(sorted(results.items())),
         "rejection_reason_counts": dict(sorted(rejection_reasons.items())),
         "pipeline_edges": dict(sorted(pipeline_edges.items())),
         "calibration_windows": calibration_windows,
+        "pet_execution_observations": pet_execution_observations,
         "decision_timeline": decision_timeline,
         "off_target_damage_events": off_target_damage_events,
         "timeline_summary": {
@@ -1836,6 +1886,11 @@ def _insufficient_cast_mix(
             "trinity_to_wowsims_cadence_ratio": None,
             "trinity_minus_wowsims_casts_per_second": None,
         },
+        "cast_cadence_components": _empty_cast_cadence_components(),
+        "cast_cadence_limitations": [
+            "The legacy aggregate cadence is unavailable for this input.",
+            "Use typed cast_cadence_components when ordinary casts, channels, or special actions matter.",
+        ],
         "timeline_reconciliation": {
             "status": "not_evaluated",
             "cast_started_count": 0,
@@ -1900,6 +1955,288 @@ def _cast_cadence(
             _stable_cast_mix_float(trinity_rate - wowsims_rate)
             if wowsims_rate is not None and trinity_rate is not None
             else None
+        ),
+    }
+
+
+def _cadence_component(
+    *,
+    wowsims_count: float | None,
+    trinity_count: int | None,
+    wowsims_duration: float | None,
+    trinity_duration: float | None,
+    wowsims_count_label: str,
+    trinity_count_label: str,
+) -> dict[str, Any]:
+    """Describe one comparable event stream without renaming its evidence.
+
+    A channel start and a channel damage event are different observations.  The
+    labels are therefore carried in the component rather than silently calling
+    every event a ``cast`` or a ``tick``.
+    """
+    wowsims_rate = (
+        _stable_cast_mix_float(wowsims_count / wowsims_duration)
+        if wowsims_count is not None and wowsims_duration is not None
+        else None
+    )
+    trinity_rate = (
+        _stable_cast_mix_float(trinity_count / trinity_duration)
+        if trinity_count is not None and trinity_duration is not None
+        else None
+    )
+    if wowsims_count is None:
+        status = "wowsims_observation_unavailable"
+    elif trinity_count is None:
+        status = "trinity_observation_unavailable"
+    elif wowsims_duration is None or trinity_duration is None:
+        status = "insufficient_duration_data"
+    else:
+        status = "available"
+    return {
+        "status": status,
+        "wowsims_count_label": wowsims_count_label,
+        "trinity_count_label": trinity_count_label,
+        "wowsims_count": (
+            _stable_cast_mix_float(wowsims_count) if wowsims_count is not None else None
+        ),
+        "trinity_count": trinity_count,
+        "wowsims_duration_seconds": wowsims_duration,
+        "trinity_duration_seconds": trinity_duration,
+        "wowsims_per_second": wowsims_rate,
+        "trinity_per_second": trinity_rate,
+        "trinity_to_wowsims_ratio": (
+            _stable_cast_mix_float(trinity_rate / wowsims_rate)
+            if wowsims_rate is not None and trinity_rate is not None and wowsims_rate > 0
+            else None
+        ),
+        "trinity_minus_wowsims_per_second": (
+            _stable_cast_mix_float(trinity_rate - wowsims_rate)
+            if wowsims_rate is not None and trinity_rate is not None
+            else None
+        ),
+    }
+
+
+def _empty_cast_cadence_components() -> dict[str, Any]:
+    """Return the typed cadence shape when a cast mix cannot be computed."""
+    unavailable = _cadence_component(
+        wowsims_count=None,
+        trinity_count=None,
+        wowsims_duration=None,
+        trinity_duration=None,
+        wowsims_count_label="unavailable",
+        trinity_count_label="unavailable",
+    )
+    return {
+        "status": "insufficient_data",
+        "ordinary_cast_starts": unavailable,
+        "channel_starts": unavailable,
+        "channel_landed_events": unavailable,
+        "channel_ticks": unavailable,
+        "classification": {
+            "ordinary_cast_spell_ids": [],
+            "channel_spell_ids": [],
+            "ambiguous_spell_ids": [],
+            "non_comparable_apl_action_kinds": [],
+        },
+        "non_comparable_actions": {
+            "status": "not_evaluated",
+            "used_for_cadence": False,
+            "apl_action_kinds": [],
+            "apl_action_count": 0,
+            "reason": "cast mix was not available",
+        },
+        "interpretation": (
+            "Typed cadence components are unavailable; do not infer ordinary casts, "
+            "channel uptime, or special-action equivalence from the aggregate field."
+        ),
+    }
+
+
+def _cast_cadence_components(
+    *,
+    wowsims: dict[str, Any],
+    wowsims_result: dict[str, Any],
+    runtime: dict[str, Any],
+) -> dict[str, Any]:
+    """Separate ordinary starts, channel starts/events, and special actions.
+
+    The old aggregate cadence remains useful as a coarse scheduler signal, but
+    it is not an ordinary-cast rate when a channel is present.  Only exact APL
+    root identities are counted here; IDs appearing as both cast and channel
+    roots are excluded from both streams instead of being guessed.
+    """
+    combat_rows = [row for row in wowsims.get("actions") or [] if row.get("phase") == "combat"]
+    ordinary_rows = [row for row in combat_rows if row.get("action_kind") == "castSpell"]
+    channel_rows = [row for row in combat_rows if row.get("action_kind") == "channelSpell"]
+    special_rows = [
+        row
+        for row in combat_rows
+        if row.get("action_kind") not in {"castSpell", "channelSpell"}
+    ]
+
+    ordinary_ids = {
+        int(row["identity"]["id"])
+        for row in ordinary_rows
+        if (row.get("identity") or {}).get("kind") == "spell"
+        and isinstance((row.get("identity") or {}).get("id"), int)
+    }
+    channel_ids = {
+        int(row["identity"]["id"])
+        for row in channel_rows
+        if (row.get("identity") or {}).get("kind") == "spell"
+        and isinstance((row.get("identity") or {}).get("id"), int)
+    }
+    ambiguous_ids = ordinary_ids & channel_ids
+    ordinary_ids -= ambiguous_ids
+    channel_ids -= ambiguous_ids
+
+    ordinary_counts: Counter[int] = Counter()
+    channel_counts: Counter[int] = Counter()
+    channel_ticks: Counter[int] = Counter()
+    for row in wowsims_result.get("action_metrics") or []:
+        if not isinstance(row, dict):
+            continue
+        if (row.get("source") or {}).get("kind") != "player" or bool(row.get("is_passive")):
+            continue
+        identity = row.get("identity") or {}
+        spell_id = identity.get("id")
+        if not isinstance(spell_id, int):
+            continue
+        casts = float((row.get("per_iteration_target_metric_sums") or {}).get("casts") or 0.0)
+        ticks = float((row.get("per_iteration_target_metric_sums") or {}).get("ticks") or 0.0)
+        if spell_id in ordinary_ids and casts > 0 and _cast_mix_identity_matches_apl(
+            identity,
+            [item["identity"] for item in ordinary_rows],
+        ):
+            ordinary_counts[spell_id] += casts
+        if spell_id in channel_ids and (casts > 0 or ticks > 0) and _cast_mix_identity_matches_apl(
+            identity,
+            [item["identity"] for item in channel_rows],
+        ):
+            channel_counts[spell_id] += casts
+            channel_ticks[spell_id] += ticks
+
+    trinity_ordinary: Counter[int] = Counter()
+    trinity_channels: Counter[int] = Counter()
+    for event in runtime.get("decision_timeline") or []:
+        if not isinstance(event, dict) or str(event.get("result") or "") != "ok":
+            continue
+        spell_id = int(event.get("spell_id") or 0)
+        if spell_id in ordinary_ids:
+            trinity_ordinary[spell_id] += 1
+        elif spell_id in channel_ids:
+            trinity_channels[spell_id] += 1
+
+    event_counts = runtime.get("damage_event_counts_by_spell") or {}
+    trinity_channel_events: Counter[int] = Counter()
+    event_counts_available = False
+    for spell_id in channel_ids:
+        raw_count = event_counts.get(str(spell_id), event_counts.get(spell_id))
+        if raw_count is None:
+            continue
+        event_counts_available = True
+        trinity_channel_events[spell_id] += int(raw_count or 0)
+
+    wowsims_duration = next(
+        (
+            duration
+            for duration in (
+                _positive_duration(wowsims_result.get("first_iteration_duration_seconds")),
+                _positive_duration(wowsims_result.get("avg_iteration_duration_seconds")),
+            )
+            if duration is not None
+        ),
+        None,
+    )
+    trinity_duration = _runtime_window_duration(runtime)
+    ordinary_wowsims = sum(ordinary_counts.values())
+    channel_wowsims = sum(channel_counts.values())
+    channel_wowsims_ticks = sum(channel_ticks.values())
+    ordinary_trinity = sum(trinity_ordinary.values())
+    channel_trinity = sum(trinity_channels.values())
+    channel_trinity_events = sum(trinity_channel_events.values()) if event_counts_available else None
+
+    channel_landed_events = _cadence_component(
+        wowsims_count=channel_wowsims_ticks,
+        trinity_count=channel_trinity_events,
+        wowsims_duration=wowsims_duration,
+        trinity_duration=trinity_duration,
+        wowsims_count_label="aggregate_per_iteration_channel_ticks",
+        trinity_count_label="runtime_spell_damage_event_count_not_proven_tick_equivalent",
+    ) | {
+        "wowsims_counts_by_spell": {
+            str(spell_id): _stable_cast_mix_float(count)
+            for spell_id, count in sorted(channel_ticks.items())
+        },
+        "trinity_counts_by_spell": {
+            str(spell_id): int(count)
+            for spell_id, count in sorted(trinity_channel_events.items())
+        },
+        "trinity_event_count_observed": event_counts_available,
+    }
+
+    return {
+        "status": "available",
+        "ordinary_cast_starts": _cadence_component(
+            wowsims_count=ordinary_wowsims,
+            trinity_count=ordinary_trinity,
+            wowsims_duration=wowsims_duration,
+            trinity_duration=trinity_duration,
+            wowsims_count_label="aggregate_per_iteration_castSpell_root_starts",
+            trinity_count_label="successful_decision_timeline_castSpell_root_starts",
+        ) | {
+            "wowsims_counts_by_spell": {
+                str(spell_id): _stable_cast_mix_float(count)
+                for spell_id, count in sorted(ordinary_counts.items())
+            },
+            "trinity_counts_by_spell": {
+                str(spell_id): int(count) for spell_id, count in sorted(trinity_ordinary.items())
+            },
+        },
+        "channel_starts": _cadence_component(
+            wowsims_count=channel_wowsims,
+            trinity_count=channel_trinity,
+            wowsims_duration=wowsims_duration,
+            trinity_duration=trinity_duration,
+            wowsims_count_label="aggregate_per_iteration_channelSpell_root_starts",
+            trinity_count_label="successful_decision_timeline_channelSpell_root_starts",
+        ) | {
+            "wowsims_counts_by_spell": {
+                str(spell_id): _stable_cast_mix_float(count)
+                for spell_id, count in sorted(channel_counts.items())
+            },
+            "trinity_counts_by_spell": {
+                str(spell_id): int(count) for spell_id, count in sorted(trinity_channels.items())
+            },
+        },
+        "channel_landed_events": channel_landed_events,
+        "channel_ticks": channel_landed_events,
+        "classification": {
+            "ordinary_cast_spell_ids": sorted(ordinary_ids),
+            "channel_spell_ids": sorted(channel_ids),
+            "ambiguous_spell_ids": sorted(ambiguous_ids),
+            "non_comparable_apl_action_kinds": sorted(
+                {str(row.get("action_kind") or "unknown") for row in special_rows}
+            ),
+        },
+        "non_comparable_actions": {
+            "status": "excluded_from_cadence",
+            "used_for_cadence": False,
+            "apl_action_kinds": sorted(
+                {str(row.get("action_kind") or "unknown") for row in special_rows}
+            ),
+            "apl_action_count": len(special_rows),
+            "apl_paths": sorted(str(row.get("path") or "") for row in special_rows),
+            "reason": (
+                "WoWSims special/off-GCD/structural actions have no native cast-start "
+                "or landed-event identity in this comparison."
+            ),
+        },
+        "interpretation": (
+            "Ordinary cast starts and channel starts are separate streams. Channel landed "
+            "events are reported beside starts; runtime spell-damage event counts are not "
+            "declared tick-equivalent, and special/off-GCD actions remain excluded."
         ),
     }
 
@@ -2102,6 +2439,11 @@ def compare_cast_mix(
     maximum_delta_spell_ids = sorted(
         spell_id for spell_id, delta in deltas.items() if abs(delta) == maximum_delta
     )
+    cadence_components = _cast_cadence_components(
+        wowsims=wowsims,
+        wowsims_result=wowsims_result,
+        runtime=runtime,
+    )
     return {
         "status": "ok",
         "basis": basis,
@@ -2122,6 +2464,12 @@ def compare_cast_mix(
             wowsims_casts=wowsims_total,
             trinity_casts=trinity_total,
         ),
+        "cast_cadence_components": cadence_components,
+        "cast_cadence_limitations": [
+            "The legacy aggregate cadence combines ordinary castSpell starts and channelSpell starts.",
+            "Channel starts are not channel ticks or uptime; inspect cast_cadence_components.",
+            "Special, off-GCD, pet, passive, and tagged child actions are excluded when they lack an exact root event stream.",
+        ],
         "timeline_reconciliation": timeline_reconciliation,
         "interpretation": (
             "This measures action-mix alignment from attributable cast counts; it is not "
