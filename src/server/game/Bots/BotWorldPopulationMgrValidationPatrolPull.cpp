@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Creature.h"
@@ -17,6 +18,9 @@
 #include <set>
 #include <string>
 #include <vector>
+
+using BotWorldPopulationMgrNativeHelpers::Distance2d;
+using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
 
 bool BotWorldPopulationMgr::TryValidationRoutePatrolPull(
     WorldBotState& state, Player* bot,
@@ -316,7 +320,7 @@ bool BotWorldPopulationMgr::TryValidationRoutePatrolPull(
         BotRaidAreaAuthority::Set(bot->GetGUID().GetRawValue(), true);
         if (roster != Cohort().Raid.RosterByGuid.end()
             && roster->second.Role == "healer"
-            && tryRouteGroupHeal(bot, source, false))
+            && tryRouteGroupHeal(bot, source, false, false))
             return true;
 
         ResolvedCombatAction profileAction = ResolveProfileCombatAction(
