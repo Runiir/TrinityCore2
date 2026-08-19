@@ -11,6 +11,7 @@ namespace BotWorldPopulationMgrValidationRoute
 {
 struct TrashThreatControl;
 struct TrashThreatControlCallbacks;
+struct FeralTrashHandoffCallbacks;
 
 struct ObjectiveCallbacks
 {
@@ -62,6 +63,7 @@ struct ObjectiveContext
     bool Run();
     bool RunTrashThreatControl(TrashThreatControl& trashThreatControl,
         TrashThreatControlCallbacks const& callbacks);
+    bool RunFeralTrashHandoff(FeralTrashHandoffCallbacks const& callbacks);
 };
 }
 
