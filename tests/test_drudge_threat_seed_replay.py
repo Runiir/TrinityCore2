@@ -10,7 +10,7 @@ def test_production_drudge_seed_transition_replays_native_event_orderings(tmp_pa
     binary = tmp_path / "drudge_seed_replay"
     source.write_text(
         r'''
-#include "Bots/BotRaidDrudgeThreatSeedState.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeThreatSeedState.h"
 #include <cassert>
 
 using namespace BotRaidDrudgeThreatSeed;
@@ -153,69 +153,67 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
     implementation = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
         encoding="utf-8"
     )
-    lane = implementation[
-        implementation.index("auto tryValidationRouteDrudgeChargeLanes") :
-        implementation.index("if (tryValidationRouteDrudgeChargeLanes())")
-    ]
-    callback = implementation[
-        implementation.index("uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted") :
-        implementation.index("void BotWorldPopulationMgr::NotifyCombatDamage")
-    ]
+    lane = (
+        ROOT
+        / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/"
+        "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp"
+    ).read_text(encoding="utf-8")
+    callback = (
+        ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatLog.cpp"
+    ).read_text(encoding="utf-8")
 
-    assert '#include "Bots/BotRaidDrudgeThreatSeedState.h"' in implementation
-    assert "Result seedTransition = Advance(loadSeedState(), seedInput);" in lane
+    assert '#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeThreatSeedState.h"' in implementation
+    assert "BotRaidDrudgeThreatSeed::Result seedTransition =" in lane
+    assert "Advance(seedState, seedInput);" in lane
     assert "seedInput.Type = Event::ActionResult;" in lane
     assert "Result const transition = Advance(seedState, rushInput);" in callback
-    assert "candidate, laneSource, 1, false, 0, false, false, true, false, true" in lane
-    assert "selectedMember, laneSource, &selectedAction," in lane
+    assert "candidate, LaneSource, 1, false, 0, false, false, true, false, true" in lane
+    assert "selected, LaneSource, 1, false, 0, false, false, true, false, true" in lane
     assert "1, false, 0, false, false, true, false, true" in lane
-    assert 'candidateAction.MovementDirective == "ranged"' in lane
-    assert "candidateAction.MaxRange > 5.0f" in lane
+    assert 'candidateAction.MovementDirective != "ranged"' in lane
+    assert "candidateAction.MaxRange <= 5.0f" in lane
     assert 'candidateAction.AutoAttackMode == "ranged"' not in lane
 
-    barrier = lane.index("for (WorldBotState const& memberState : Party().Bots)")
-    roster_gate = lane.index("bool exactAuthorityRoster", barrier)
+    roster_gate = lane.index("bool exactAuthorityRoster")
     roster_hold = lane.index('"drudge_pre_first_rush_seed_roster_wait"', roster_gate)
     assert "!member->IsInWorld() || !member->IsAlive()" in lane[roster_gate:roster_hold]
-    assert "!memberRoster->second.Active || !memberRoster->second.LeaseOwned" in lane[
+    assert "!roster->second.Active || !roster->second.LeaseOwned" in lane[
         roster_gate:roster_hold
     ]
-    assert "authorityRosterGuids.size() != Cohort().Raid.RosterByGuid.size()" in lane[
+    assert "authorityRosterGuids.size() != Manager.Cohort().Raid.RosterByGuid.size()" in lane[
         roster_gate:roster_hold
     ]
-    barrier = lane.index("for (WorldBotState const& memberState : Party().Bots)", roster_hold)
-    authority_check = lane.index("bool otherOffenseSuppressed = true;", barrier)
-    release = lane.index("SetAllOffenseSuppressed(selectedOwnerGuid, false)", authority_check)
-    assert barrier < authority_check < release
+    suppression = lane.index(
+        "for (WorldBotState const& memberState : Manager.Party().Bots)",
+        roster_hold,
+    )
+    release = lane.index(
+        "BotRaidAreaAuthority::SetAllOffenseSuppressed(\n"
+        "            selected->GetGUID().GetRawValue(), false)",
+        suppression,
+    )
+    assert suppression < release
 
-    resolver_start = implementation.index(
-        "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction"
-    )
-    resolver_end = implementation.index(
-        "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup", resolver_start
-    )
-    resolver = implementation[resolver_start:resolver_end]
+    resolver = (
+        ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp"
+    ).read_text(encoding="utf-8")
     assert 'hostileTargetOnly && candidate.Profile.TargetSelector != "enemy"' in resolver
     assert 'candidate.RejectReason = "hostile_target_required"' in resolver
 
-    regular_action = lane.index("bool profileActionHostileValid")
+    regular_action = lane.index("bool const valid = profileAction.Valid")
     regular_insert = lane.index(
         "ValidationRouteDrudgeProfileActionRosterGuids.insert", regular_action
     )
     assert lane.count("ValidationRouteDrudgeProfileActionRosterGuids.insert") == 1
-    assert lane.index("if (sources[0]->IsAlive() && sources[1]->IsAlive() && !exactRosterReSeparated())") < regular_insert
-    assert 'profileAction.TargetGuid == laneSource->GetGUID()' in lane[
+    assert lane.index("&& !ExactRosterReSeparated()") < regular_insert
+    assert 'profileAction.TargetGuid == LaneSource->GetGUID()' in lane[
         regular_action:regular_insert
     ]
-    assert "if (profileActionSucceeded)" in lane[regular_action:regular_insert]
+    assert "if (succeeded)" in lane[regular_action:regular_insert]
 
-    executor_start = implementation.index(
-        "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*"
-    )
-    executor_end = implementation.index(
-        "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(Player*", executor_start
-    )
-    executor = implementation[executor_start:executor_end]
+    executor = (
+        ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatExecution.cpp"
+    ).read_text(encoding="utf-8")
     assert "allowMultidot && !forbidArea, hostileTargetOnly" in " ".join(
         executor.split()
     )

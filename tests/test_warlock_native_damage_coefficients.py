@@ -36,7 +36,12 @@ def test_shadow_bite_script_binding_is_idempotent() -> None:
 
 
 def test_affliction_modifier_diagnostics_observe_native_auras_without_applying_them() -> None:
-    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    source = "\n".join(
+        (
+            (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(),
+            (ROOT / "src/server/game/Bots/BotWorldPopulationMgrAffliction.cpp").read_text(),
+        )
+    )
     header = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text()
 
     assert "AfflictionModifierObservationTicks" in header

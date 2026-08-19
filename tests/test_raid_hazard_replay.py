@@ -7,6 +7,12 @@ import pytest
 
 ROOT = Path(__file__).parents[1]
 IMPL = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+MOVEMENT = (
+    ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteMovementCheck.cpp"
+).read_text()
+HAZARDS = (
+    ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationHazards.cpp"
+).read_text()
 
 
 def test_timed_marker_window_and_failed_bearing_rotation_compile_and_replay(tmp_path):
@@ -112,13 +118,10 @@ def test_local_native_dbc_pins_overhead_smash_radius_cast_and_effect_window():
 
 
 def test_chainwielder_safe_side_healing_and_rotated_exit_are_production_wired():
-    movement = IMPL[
-        IMPL.index("auto tryValidationRouteMovementCheck") :
-        IMPL.index("auto drudgeLandedRushPending")
-    ]
-    assert '#include "Bots/BotRaidHazardState.h"' in IMPL
-    assert "summon->GetTimer(), summon->GetLifetime()" in movement
-    assert "TimedMarkerDangerActive" in movement
+    movement = MOVEMENT
+    assert '#include "Bots/BotRaidHazardState.h"' in movement
+    assert "summon->GetTimer(), summon->GetLifetime()" in HAZARDS
+    assert "TimedMarkerDangerActive" in HAZARDS
     assert "RotatedBearingBucket" in movement
     assert "ValidationRouteDodgeBearingAttempt + 1" in movement
 
@@ -126,9 +129,7 @@ def test_chainwielder_safe_side_healing_and_rotated_exit_are_production_wired():
         movement.index("if (outsideHazard && hazardActive") :
         movement.index("if (!previousHazard->IsAlive()")
     ]
-    heal = safe_hold.index(
-        "tryRouteGroupHeal(bot, preferredTarget, false, true)"
-    )
+    heal = safe_hold.index("callbacks.TryGroupHeal(bot, preferredTarget, false, true)")
     hold = safe_hold.index('action = "hold_outside_hazard"')
     assert heal < hold
     assert "MoveBotToPoint" not in safe_hold[heal:hold]
