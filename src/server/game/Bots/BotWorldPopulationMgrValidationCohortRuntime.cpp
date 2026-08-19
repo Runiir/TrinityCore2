@@ -12,6 +12,7 @@
 #include "Instances/InstanceSaveMgr.h"
 #include "Item.h"
 #include "ItemTemplate.h"
+#include "LFG.h"
 #include "Log.h"
 #include "Map.h"
 #include "MapManager.h"
@@ -20,6 +21,7 @@
 #include "SpellInfo.h"
 #include "Unit.h"
 #include "Util.h"
+#include "WorldSession.h"
 
 #include <algorithm>
 #include <chrono>
