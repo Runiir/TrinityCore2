@@ -19,7 +19,9 @@ def test_validation_terminal_module_is_bounded_and_registered():
 
 def test_validation_terminal_lambda_is_not_left_in_monolith():
     text = SOURCE.read_text()
-    assert "MarkValidationRouteTerminalAfterProgress(reason, state, bot" in text
+    canonical = MODULE.read_text()
+    assert "BotWorldPopulationMgr::MarkValidationRouteTerminalAfterProgress(" in canonical
+    assert "MarkValidationRouteTerminalAfterProgress(" not in text
     assert "route_exhausted_after_progress" not in text
 
 
