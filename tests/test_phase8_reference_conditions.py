@@ -1328,7 +1328,7 @@ def test_all_fixture_simulator_option_leaves_are_explicitly_classified() -> None
 def test_cpp_reference_aura_universe_covers_every_fixture_setup_aura() -> None:
     root = Path(__file__).resolve().parents[1]
     source = (
-        root / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
+        root / "src/server/game/Bots/BotWorldPopulationMgrCalibrationReference.cpp"
     ).read_text(encoding="utf-8")
     match = re.search(
         r"std::array<uint32,\s*(\d+)>\s+PlayerAuraUniverse\s*=\s*\{(.*?)\};",

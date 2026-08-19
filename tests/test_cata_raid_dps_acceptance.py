@@ -1644,41 +1644,70 @@ def test_targeted_eviction_requires_receipt_and_no_bulk_payload(tmp_path: Path) 
     assert not targeted_eviction_complete(tmp_path)
 
 
+BOT_WORLD_DIR = ROOT / "src/server/game/Bots"
+
+
+def _owned_function_body(owner: str, signature: str) -> str:
+    source = (BOT_WORLD_DIR / owner).read_text(encoding="utf-8")
+    start = source.index(signature)
+    brace = source.index("{", start)
+    depth = 0
+    for index in range(brace, len(source)):
+        if source[index] == "{":
+            depth += 1
+        elif source[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return source[brace + 1 : index]
+    raise AssertionError(f"unterminated function: {signature}")
+
+
 def test_world_validation_path_uses_kernel_and_recovery_supervisor() -> None:
-    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
-        encoding="utf-8"
+    update = _owned_function_body(
+        "BotWorldPopulationMgrUpdateBot.cpp",
+        "void BotWorldPopulationMgr::UpdateBot",
     )
-    update_start = source.index("void BotWorldPopulationMgr::UpdateBot(")
-    update_end = source.index("\nPlayer* BotWorldPopulationMgr::GetLoadedBot", update_start)
-    update = source[update_start:update_end]
+    preparation = _owned_function_body(
+        "BotWorldPopulationMgrUpdateBotPreparation.cpp",
+        "bool BotWorldPopulationMgr::PrepareBotUpdate",
+    )
+    decision = _owned_function_body(
+        "BotWorldPopulationMgrUpdateBotDecision.cpp",
+        "bool BotWorldPopulationMgr::RunBotDecisionKernel",
+    )
+    recovery = _owned_function_body(
+        "BotWorldPopulationMgrCombatDiagnostics.cpp",
+        "bool BotWorldPopulationMgr::TryRecoverStuckBot",
+    )
+    prepare = _owned_function_body(
+        "BotWorldPopulationMgrValidationProfile.cpp",
+        "std::string BotWorldPopulationMgr::PrepareValidationProfile",
+    )
+    record = _owned_function_body(
+        "BotWorldPopulationMgrEventRecording.cpp",
+        "void BotWorldPopulationMgr::RecordDecision",
+    )
 
-    assert "validationKernelOwnsTick" in update
-    assert "state.DecisionKernel.Resolve()" in update
-    assert "TryRecoverStuckBot(state, bot)" in update
-    assert "validation_route_stuck_no_fallback" not in update
-    assert "stuck_no_fallback" not in update
+    # UpdateBot delegates the live validation path through the preparation and
+    # kernel owners; recovery is submitted by preparation and resolved by the
+    # native decision kernel rather than being a monolithic function body.
+    assert "PrepareBotUpdate(context)" in update
+    assert "RunBotDecisionKernel(context)" in update
+    assert "ValidationKernelOwnsTick" in preparation
+    assert "TryRecoverStuckBot(context.State, context.Bot)" in preparation
+    assert "context.State.DecisionKernel.Resolve()" in decision
+    assert "validation_route_stuck_no_fallback" not in (
+        update + preparation + decision + recovery
+    )
+    assert "stuck_no_fallback" not in (update + preparation + decision + recovery)
 
-    recovery_start = source.index("bool BotWorldPopulationMgr::TryRecoverStuckBot(")
-    recovery_end = source.index("void BotWorldPopulationMgr::ObserveBotCandidateFailure", recovery_start)
-    recovery = source[recovery_start:recovery_end]
     assert "recoveryStrategy" in recovery
     assert "world.recovery.sidestep_left" in recovery
     assert "world.recovery.sidestep_right" in recovery
-
-    prepare_start = source.index(
-        "std::string BotWorldPopulationMgr::PrepareValidationProfile("
-    )
-    prepare_end = source.index(
-        "bool BotWorldPopulationMgr::PrepareCurrentValidationProfile", prepare_start
-    )
-    prepare = source[prepare_start:prepare_end]
     assert "exactPartyRequested" in prepare
     assert "!exactPartyRequested" in prepare
     assert "invalid_exact_party_contract" in prepare
 
-    record_start = source.index("void BotWorldPopulationMgr::RecordDecision(")
-    record_end = source.index("void BotWorldPopulationMgr::RecordDecisionFingerprintMemory", record_start)
-    record = source[record_start:record_end]
     assert "bot_decision_mask_v3" in record
     assert "decision_kernel" in record
     assert "state.LastDecisionKernelJson" in record
