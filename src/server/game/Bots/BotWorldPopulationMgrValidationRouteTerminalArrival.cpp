@@ -370,5 +370,7 @@ bool ObjectiveContext::Run()
         Situation = "validation_route_regroup";
         Action = moved ? "move_to_validation_route_anchor" : "validation_route_hold_anchor";
         return true;
+    }
+    return false;
 }
 }
