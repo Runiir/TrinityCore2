@@ -4535,6 +4535,10 @@ def route_sequence_child_command(args: argparse.Namespace, route: dict[str, Any]
         command.append("--force-start-command")
     if args.stop:
         command.append("--stop")
+    if getattr(args, "preserve_worldserver", False):
+        command.append("--preserve-worldserver")
+    if getattr(args, "session_runtime_dir", None):
+        command.extend(["--session-runtime-dir", str(args.session_runtime_dir)])
     if getattr(args, "combat_calibration", False):
         command.append("--combat-calibration")
     if args.soap_user:
@@ -5475,6 +5479,7 @@ def main() -> int:
     parser.add_argument("--soap-password", default=os.environ.get("TRINITY_SOAP_PASSWORD"))
     parser.add_argument("--session-environment", default="default", help="Stable identity for the shared validation server and live-attempt lock.")
     parser.add_argument("--session-runtime-dir", type=Path, help="Stable directory for the shared session config and route manifest across serial attempts.")
+    parser.add_argument("--preserve-worldserver", action="store_true", help="Require reusable-session transport so cleanup stops only this cohort/calibration fixture and leaves the worldserver running.")
     parser.add_argument("--session-profile", default="", help="Runtime profile selected by .botauto start in reusable session mode; defaults to the scenario ID.")
     parser.add_argument("--cohort-id", default="live-validation", help="Explicit cohort identity used by every reusable-session command.")
     parser.add_argument("--session-attempt-index", type=int, default=1, help="Immutable scheduler attempt index for reusable-session evidence.")
@@ -5522,6 +5527,13 @@ def main() -> int:
         raise SystemExit("--calibration-reference-conditions requires --calibration-only")
     if args.session_runtime_dir and args.transport != "session":
         raise SystemExit("--session-runtime-dir requires --transport session")
+    if args.preserve_worldserver and (
+        args.transport != "session" or args.session_runtime_dir is None
+    ):
+        raise SystemExit(
+            "--preserve-worldserver requires --transport session and "
+            "--session-runtime-dir"
+        )
     if args.prepare_only:
         if args.transport == "session" or args.input_log or args.dry_run:
             raise SystemExit("--prepare-only requires a live non-session preparation run")
@@ -5737,6 +5749,7 @@ def main() -> int:
             "validation_route_manifest": validation_route_manifest,
             "validation_route_manifest_path": str(validation_route_manifest_path or ""),
             "transport": args.transport,
+            "preserve_worldserver_required": args.preserve_worldserver,
             "soap_url": args.soap_url if args.transport == "soap" else "",
             "duration_policy": args.duration_policy,
             "execution_policy": (
@@ -5900,6 +5913,7 @@ def main() -> int:
     report["start_command"] = send_start_command
     report["calibration_only"] = args.calibration_only
     report["calibration_reference_conditions"] = args.calibration_reference_conditions
+    report["preserve_worldserver_required"] = args.preserve_worldserver
     report["execution_policy"] = (
         "run_to_completion" if args.run_to_completion else "bounded_wall_clock"
     )

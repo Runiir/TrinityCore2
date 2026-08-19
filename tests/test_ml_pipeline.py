@@ -8524,6 +8524,68 @@ def test_live_bot_validation_dry_run_writes_command_file(tmp_path, monkeypatch):
     assert "BotProgression.AllowDungeons = 1" in generated_config
 
 
+def test_live_bot_validation_preserve_worldserver_rejects_process_transport(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "bot-live-validate",
+            "--dry-run",
+            "--transport",
+            "process",
+            "--preserve-worldserver",
+            "--output-dir",
+            str(tmp_path / "capture"),
+        ],
+    )
+
+    with pytest.raises(SystemExit, match="requires --transport session"):
+        live_validation_main()
+
+
+def test_live_bot_validation_preserve_worldserver_session_excludes_shutdown(
+    tmp_path, monkeypatch
+):
+    config = tmp_path / "worldserver.conf"
+    config.write_text(
+        'BotWorld.AutoStart = 0\nBotWorld.ProfileManifest = "dataset/bot_runtime_profiles/profiles.json"\n',
+        encoding="utf-8",
+    )
+    output_dir = tmp_path / "capture"
+    runtime_dir = tmp_path / "runtime"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "bot-live-validate",
+            "--dry-run",
+            "--config",
+            str(config),
+            "--transport",
+            "session",
+            "--session-runtime-dir",
+            str(runtime_dir),
+            "--session-profile",
+            "affliction_canary",
+            "--preserve-worldserver",
+            "--calibration-only",
+            "--calibration-reference-conditions",
+            "--calibration-target-spec",
+            "affliction_warlock",
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+
+    assert live_validation_main() == 0
+    commands = (output_dir / "commands.txt").read_text(encoding="utf-8")
+    report = json.loads((output_dir / "report.json").read_text(encoding="utf-8"))
+
+    assert "server shutdown force 0" not in commands
+    assert report["transport"] == "session"
+    assert report["preserve_worldserver_required"] is True
+
+
 def test_upsert_trinity_config_normalizes_literal_newline_fragments():
     text = 'BotWorld.DeathRecoveryMode = "native_corpse_run"\\nBotWorld.RespawnMode = "native_corpse_run"\n'
 

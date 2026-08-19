@@ -10,7 +10,7 @@ The work unit must identify:
 - exact WoWSims request, result, ComputeStats, source revision, and binary;
 - exact Trinity commit, binary receipt, profile generation, actor, target, and
   closed calibration report;
-- identical gear and comparable scoring-start owner/pet effective stats;
+- identical gear and attributable scoring-start owner/pet effective stats;
 - action-share, cast-start, and landed-event cadence ratios;
 - owner, primary-pet, and total damage ratios;
 - the spell or pet event whose damage per event is wrong.
@@ -18,6 +18,19 @@ The work unit must identify:
 Damage per event is meaningful only for the same semantic event. Do not compare
 a channel start with a tick, a DoT application with all periodic ticks, a
 primary pet with all guardians, or an aggregate over different durations.
+
+## Admission modes
+
+`stat_application_or_pet_inheritance` starts at the first mismatching
+scoring-start stat after exact gear is proven. The capture must bind the owner,
+primary pet, auras, talents, glyphs, and reference ComputeStats. This mode may
+repair rating/stat application, owner-to-pet inheritance, or native pet-base
+normalization only. It may not alter damage coefficients, action policy, or a
+total-DPS multiplier. Cadence is reclassified after the repaired stats match.
+
+`damage_outcome` starts only after gear, owner/pet effective stats, cast mix,
+and landed-event cadence are within policy. It repairs one attributable native
+spell, periodic, proc, melee, or primary-pet damage-per-event edge.
 
 ## Allowed implementation surfaces
 

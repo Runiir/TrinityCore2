@@ -1,6 +1,6 @@
 ---
 name: raid-class-mechanics-implementation
-description: Repair one native Trinity-Cata class-mechanics mismatch after exact gear, effective stats, and action cadence have been proven comparable. Use for spell coefficients, aura/talent/glyph modifiers, stat conversion or application, proc outcomes, pet stat inheritance, primary-pet damage per event, and other core spell outcomes that remain wrong when the bot selects the right actions. Do not use for priority queues, action cadence, simulator reference generation, boss scripts, live shard control, or repeated DPS optimization.
+description: Repair one trace-backed native Trinity-Cata class-mechanics mismatch. Use for effective-stat application, pet stat inheritance, spell coefficients, aura/talent/glyph modifiers, proc outcomes, primary-pet damage per event, and other core outcomes. Damage tuning requires matching gear, effective stats, and cadence; stat/inheritance repair requires exact gear and attributable runtime stats. Do not use for priority queues, simulator references, boss scripts, live shard control, or repeated DPS optimization.
 ---
 
 # Raid Class Mechanics Implementation
@@ -12,7 +12,24 @@ unit.
 ## Admit only a mechanics failure
 
 Read [references/native-mechanics-contract.md](references/native-mechanics-contract.md).
-Require one immutable rotation review or spec-canary decision with:
+Require one immutable rotation review or spec-canary decision and admit exactly
+one of these modes.
+
+For `stat_application_or_pet_inheritance`:
+
+```text
+gear_parity.status = match
+scoring-start owner/pet stats = runtime-attributable
+effective_stat_parity.status = mismatch
+first_broken_edge = stat_application or pet_stat_inheritance
+dps_tuning_gate.tuning_admitted = false
+```
+
+This mode repairs only the first stat/inheritance edge. Cast mix and cadence
+need only be usable enough to attribute the scoring-start snapshot; remeasure
+them after stat parity is restored. It must not change coefficients or tune DPS.
+
+For `damage_outcome`:
 
 ```text
 gear_parity.status = match
@@ -22,8 +39,9 @@ cast mix and landed-event cadence = within policy
 first_broken_edge = native_class_damage_model or native_pet_damage_model
 ```
 
-If owner or pet cadence, target uptime, action selection, resources, range, or
-rejections are wrong, return the work unit to `raid-role-implementation`.
+In `damage_outcome`, wrong owner or pet cadence, target uptime, action
+selection, resources, range, or rejections returns the work unit to
+`raid-role-implementation`.
 Missing runtime attribution belongs to a capture-only
 `raid-shard-architecture` work unit. Never compensate for missing evidence with
 a coefficient change.
@@ -52,16 +70,19 @@ that explains the measured discrepancy. Preserve normal spell legality and the
 priority/action model. Do not add hidden damage multipliers, simulator-only
 auras, synthetic procs, or calibration-specific gameplay branches.
 
-Permit one implementation attempt. Run focused unit/replay tests, then request
+Permit one implementation attempt in the admitted mode. Run focused unit/replay tests, then request
 one heavyweight build through `queued_build.py`. Hand the resulting binary and
 receipt to `raid-shard-architecture`; this skill must not start, stop, restart,
 or attach to a worldserver.
 
 ## Verify once and stop
 
-Use one matched calibration window. Pass only when gear and effective stats
-still match, cadence remains within policy, and the affected owner/pet
-damage-per-event plus total DPS move inside the declared acceptance envelope.
+Use one matched calibration window. A stat/inheritance repair passes when gear
+still matches and the affected effective stats enter the declared parity
+envelope; the coordinator then re-runs cadence and damage classification. A
+damage-outcome repair passes only when gear and effective stats still match,
+cadence remains within policy, and the affected owner/pet damage-per-event plus
+total DPS enter the declared acceptance envelope.
 If the same edge remains after that verification, return a failed handoff with
 the observed ratios and no new patch proposal. Do not search or tune again.
 

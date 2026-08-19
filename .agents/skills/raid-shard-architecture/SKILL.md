@@ -17,6 +17,12 @@ Require one exact tuple across config, generated route, runtime status, capture,
 - Require the selected profile to own the selected route manifest. Reject empty, foreign, or substituted manifests.
 - Never inherit Stonecore, canonical BWD, or another boss profile as a fallback.
 - Reject transports that cannot prove config ownership. In particular, do not use SOAP for scenario-scoped live execution unless the running server's exact config identity is independently bound.
+- A capture that must leave the worldserver alive must pass
+  `--preserve-worldserver --transport session --session-runtime-dir <stable-dir>`.
+  This is a fail-closed contract, not a prompt convention: process transport
+  appends a server shutdown command and is non-accepting for such a canary.
+  Cleanup stops and reads back only the named cohort and calibration fixture;
+  it must report `worldserver_preserved=true` without changing the server epoch.
 
 ## Compose routes
 

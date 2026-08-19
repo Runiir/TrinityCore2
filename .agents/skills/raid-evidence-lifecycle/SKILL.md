@@ -43,6 +43,11 @@ These shutdown and persistence duties belong to the capture controller or coordi
 - Bind every retained JSON row to scenario, cohort, server epoch, attempt, runtime profile/hash, strategy, assignment generation, exact roster hash, action, and capture sequence.
 - Classify every row. Unknown, missing, cross-attempt, cross-roster, stale-profile, or forged wrapper identity fails closed.
 - Require successful, fresh status, diagnose, and trace envelopes with exactly the frozen roster when the gate needs per-bot decisions.
+- For a `calibration-only` class canary, derive measurement integrity from the
+  scoped `combat_calibration` decision timeline, action attempts/successes,
+  landed events, actor/target identity, and cleanup receipt. Zero global route
+  bots or route trace entries are expected in this mode and are not themselves
+  a rejection. Do not use this exception for a route or boss claim.
 - Reconstruct milestones from ordered native observations rather than trusting aggregate completion flags.
 - In uncapped mode, use channel-freshness and monotonic semantic-progress clocks. Activity churn, casting toggles, or changing victim GUIDs are not progress.
 - Keep controller admission predicates byte-for-byte semantic peers of the

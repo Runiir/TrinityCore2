@@ -71,6 +71,13 @@ Use `trinity-orchestrator` for model selection and worker limits. Give each
 worker exactly one specialist skill and one work-unit JSON. Require the worker
 to work directly without launching nested agents.
 
+Require a compact material-gate receipt within 60 seconds of dispatch and at
+least every 60 seconds while work continues: current gate, command or process
+identity, decisive evidence path, and next expected edge. A worker may make at
+most two failed command attempts on the same edge before returning a failed
+handoff. Interrupt a silent worker and request the bounded handoff; do not let
+it expand into repository discovery or an optimization loop.
+
 ## Parallelize only disjoint lanes
 
 Parallel work is useful across these boundaries:
