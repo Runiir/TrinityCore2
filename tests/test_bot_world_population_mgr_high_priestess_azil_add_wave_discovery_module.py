@@ -5,7 +5,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 CMAKE = ROOT / "src/server/game/CMakeLists.txt"
 MODULE_HEADER = ROOT / (
-    "src/server/game/Bots/Content/Dungeons/Stonecore/HighPriestessAzil/"
+    "src/server/game/Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/"
     "HighPriestessAzilAddWaveDiscovery.h"
 )
 MODULE = MODULE_HEADER.with_suffix(".cpp")

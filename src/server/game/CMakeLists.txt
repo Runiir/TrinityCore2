@@ -128,9 +128,9 @@ list(APPEND PRIVATE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationHazards.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationRouteMovementCheck.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationRouteMovementCheckActions.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationRouteRuntime.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationRouteGate.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationRouteManifest.cpp
@@ -138,21 +138,21 @@ list(APPEND PRIVATE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrReplay.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrRecovery.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrSemantic.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilAddWaveDiscovery.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilAddWaveDensity.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilAddWaveOpeningActions.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilAddWaveTankPreparation.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilFeralHandoffState.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilFeralLocalRetention.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilFeralRemoteActions.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilFeralActiveSwarmMovement.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilHunterThreatTransfer.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilHighDensityPositioning.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilDensityCombatResolution.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilPassiveSwarmStaging.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilTankThreatRecovery.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilSwarmThreatSafety.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilHealerAddWavePreposition.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilAddWaveDiscovery.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilAddWaveDensity.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilAddWaveOpeningActions.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilAddWaveTankPreparation.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilFeralHandoffState.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilFeralLocalRetention.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilFeralRemoteActions.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilFeralActiveSwarmMovement.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilHunterThreatTransfer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilHighDensityPositioning.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilDensityCombatResolution.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilPassiveSwarmStaging.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilTankThreatRecovery.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilSwarmThreatSafety.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilHealerAddWavePreposition.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrStatus.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrRuntimeProfiles.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgr.cpp

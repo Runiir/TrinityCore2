@@ -5,10 +5,10 @@ ROOT = Path(__file__).resolve().parents[1]
 WORLD = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
 CMAKE = ROOT / "src/server/game/CMakeLists.txt"
-CONTRACT = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteDrudge.h"
-GEOMETRY = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
-LANES = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp"
-ACTIONS = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp"
+CONTRACT = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudge.h"
+GEOMETRY = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
+LANES = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp"
+ACTIONS = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp"
 
 
 def test_drudge_route_modules_are_bounded_and_registered():

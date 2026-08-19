@@ -18,7 +18,7 @@
 #include "Bots/BotTelemetryPolicy.h"
 #include "Bots/BotWorldPopulationMgrValidationRouteContexts.h"
 #include "Bots/BotWorldPopulationMgrValidationRouteMovementCheck.h"
-#include "Bots/BotWorldPopulationMgrValidationRouteDrudge.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudge.h"
 #include "Bots/BotTypes.h"
 #include <array>
 #include <deque>

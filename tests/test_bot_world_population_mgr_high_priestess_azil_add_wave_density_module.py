@@ -6,7 +6,7 @@ SOURCE = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
 CMAKE = ROOT / "src/server/game/CMakeLists.txt"
 MODULE_HEADER = ROOT / (
-    "src/server/game/Bots/Content/Dungeons/Stonecore/HighPriestessAzil/"
+    "src/server/game/Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/"
     "HighPriestessAzilAddWaveDensity.h"
 )
 MODULE = MODULE_HEADER.with_suffix(".cpp")

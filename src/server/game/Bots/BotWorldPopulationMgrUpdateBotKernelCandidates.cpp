@@ -1,7 +1,7 @@
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
-#include "Bots/BotAdaptiveRaidTrashStrategy.h"
+#include "Bots/Content/Raids/Shared/Trash/BotAdaptiveRaidTrashStrategy.h"
 
 #include "ObjectAccessor.h"
 #include "CharmInfo.h"

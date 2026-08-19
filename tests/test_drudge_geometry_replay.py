@@ -10,8 +10,8 @@ def test_production_drudge_geometry_transition_replays_charge_edges_and_pull_ord
     binary = tmp_path / "drudge_geometry_replay"
     source.write_text(
         r'''
-#include "Bots/BotRaidDrudgeGeometryState.h"
-#include "Bots/BotRaidDrudgeNativeRushState.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeGeometryState.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeNativeRushState.h"
 #include <cassert>
 
 using namespace BotRaidDrudgeGeometry;
@@ -342,13 +342,13 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     implementation = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
         encoding="utf-8"
     )
-    geometry = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp").read_text(
+    geometry = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp").read_text(
         encoding="utf-8"
     )
-    lanes = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp").read_text(
+    lanes = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp").read_text(
         encoding="utf-8"
     )
-    actions = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp").read_text(
+    actions = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp").read_text(
         encoding="utf-8"
     )
 

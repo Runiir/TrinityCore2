@@ -1,6 +1,6 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
-#include "Bots/BotRaidDrudgeThreatSeedState.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeThreatSeedState.h"
 #include "Creature.h"
 #include "GameTime.h"
 #include "Log.h"

@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
 #include "Config.h"
+#include "DBCEnums.h"
 #include "Log.h"
 
 #include <algorithm>

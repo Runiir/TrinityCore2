@@ -6,7 +6,7 @@ WORLD = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 MGR_HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
 CMAKE = ROOT / "src/server/game/CMakeLists.txt"
 MODULE_HEADER = ROOT / (
-    "src/server/game/Bots/Content/Dungeons/Stonecore/HighPriestessAzil/"
+    "src/server/game/Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/"
     "HighPriestessAzilFeralHandoffState.h"
 )
 MODULE = MODULE_HEADER.with_suffix(".cpp")
