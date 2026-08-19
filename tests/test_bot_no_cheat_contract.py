@@ -5,7 +5,99 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-WORLD = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
+BOT_DIR = ROOT / "src/server/game/Bots"
+
+
+class WorldSourceSet(str):
+    """Read the BotWorldPopulationMgr implementation as one indexed source set.
+
+    The implementation is intentionally split into translation units.  Keep
+    the aggregate text for whole-manager assertions, but resolve every
+    function body against exactly one owning module so a missing or ambiguous
+    function cannot silently fall through to another module.
+    """
+
+    def __new__(cls, paths: tuple[Path, ...]):
+        sources = tuple(
+            (path, path.read_text(encoding="utf-8")) for path in paths
+        )
+        value = "\n".join(text for _, text in sources)
+        instance = str.__new__(cls, value)
+        instance._paths = paths
+        instance._sources = sources
+        return instance
+
+    def read_text(self, *, encoding: str = "utf-8") -> "WorldSourceSet":
+        # Match Path.read_text at each test call while preserving the source
+        # owner index for function_body.
+        if encoding != "utf-8":
+            raise ValueError("WorldSourceSet requires UTF-8 source files")
+        return type(self)(self._paths)
+
+    def resolve(
+        self, signature: str, owner: str | None = None
+    ) -> tuple[Path, str]:
+        candidates = [
+            (path, source)
+            for path, source in self._sources
+            if _contains_function_signature(source, signature)
+        ]
+        preferred_owner = owner or WORLD_FUNCTION_OWNER_OVERRIDES.get(signature)
+        if preferred_owner is not None:
+            candidates = [
+                (path, source)
+                for path, source in candidates
+                if path.name == preferred_owner
+            ]
+        if len(candidates) != 1:
+            owners = ", ".join(path.name for path, _ in candidates) or "none"
+            raise AssertionError(
+                f"expected one owner for {signature!r}, found {owners}"
+            )
+        return candidates[0]
+
+
+WORLD_MODULES = tuple(sorted(BOT_DIR.glob("BotWorldPopulationMgr*.cpp")))
+if not WORLD_MODULES:
+    raise AssertionError("BotWorldPopulationMgr modules are missing")
+
+# These helpers intentionally exist in more than one translation unit after
+# the extraction.  The live contract must inspect the implementation used by
+# the certifying path, rather than whichever module happens to sort first.
+WORLD_FUNCTION_OWNER_OVERRIDES = {
+    "bool SubmitNativeQuestAccept": "BotWorldPopulationMgrQuestActions.cpp",
+    "bool SubmitNativeQuestReward": "BotWorldPopulationMgrQuestActions.cpp",
+    "bool IsNativeCombatResSpell": "BotWorldPopulationMgrCombatRes.cpp",
+    "bool ObserveActiveOrdinaryHunterPet": "BotWorldPopulationMgrValidationCohortGroup.cpp",
+    "bool LoadedBotMatchesPinnedHunterPet": "BotWorldPopulationMgrValidationCohortGroup.cpp",
+}
+
+
+def _contains_function_signature(source: str, signature: str) -> bool:
+    """Match a function-name prefix without confusing a longer function name."""
+
+    start = 0
+    while True:
+        try:
+            start = source.index(signature, start)
+        except ValueError:
+            return False
+        end = start + len(signature)
+        if not signature[-1].isalnum() or end == len(source):
+            return True
+        if not (source[end].isalnum() or source[end] == "_"):
+            return True
+        start = end
+
+
+WORLD = WorldSourceSet(WORLD_MODULES)
+WORLD_HEADER_MODULES = (
+    BOT_DIR / "BotWorldPopulationMgr.h",
+    BOT_DIR / "BotWorldPopulationMgrConfig.h",
+    BOT_DIR / "BotWorldPopulationMgrBotState.h",
+    BOT_DIR / "BotWorldPopulationMgrRuntimeContracts.h",
+)
+WORLD_HEADER = WorldSourceSet(WORLD_HEADER_MODULES)
 MELEE_INTENT = ROOT / "src/server/game/Bots/BotMeleeAutoAttackIntent.h"
 NATIVE_INTENT = ROOT / "src/server/game/Bots/BotNativeActionIntent.h"
 ACTION_ARBITER = ROOT / "src/server/game/Bots/BotActionArbiter.h"
@@ -15,7 +107,11 @@ BOT_CONTROLLER = ROOT / "src/server/game/Bots/BotController.cpp"
 BOT_PROFILE = ROOT / "src/server/game/Bots/BotClassSpecActionProfile.cpp"
 
 
-def function_body(source: str, signature: str) -> str:
+def function_body(
+    source: str | WorldSourceSet, signature: str, owner: str | None = None
+) -> str:
+    if isinstance(source, WorldSourceSet):
+        _, source = source.resolve(signature, owner)
     start = source.index(signature)
     brace = source.index("{", start)
     depth = 0
@@ -186,14 +282,15 @@ def test_login_does_not_promote_stabled_pets_or_restore_resources() -> None:
 
 def test_hunter_admission_observes_exact_ordinary_pet_without_manufacturing_state() -> None:
     source = WORLD.read_text(encoding="utf-8")
-    header = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text(
-        encoding="utf-8"
-    )
+    header = WORLD_HEADER.read_text(encoding="utf-8")
     observer = function_body(source, "bool ObserveActiveOrdinaryHunterPet")
     declared_spec = function_body(source, "bool LoadedBotMatchesDeclaredSpec")
     pinned_pet = function_body(source, "bool LoadedBotMatchesPinnedHunterPet")
     admission = function_body(
         source, "void BotWorldPopulationMgr::EnsureValidationCohortGroup"
+    )
+    runtime = function_body(
+        source, "void BotWorldPopulationMgr::UpdateValidationCohortRaidRuntime"
     )
 
     for token in (
@@ -210,7 +307,10 @@ def test_hunter_admission_observes_exact_ordinary_pet_without_manufacturing_stat
     ):
         assert token in observer or token in pinned_pet
     assert "!activeObservationOnly" in admission
-    assert "!LoadedBotMatchesPinnedHunterPet(bot, slot.ClassSpec)" in admission
+    # The roster-composition helper is now a separate owner called by
+    # EnsureValidationCohortGroup; keep the admission-to-runtime chain intact.
+    assert "!LoadedBotMatchesPinnedHunterPet(member, row.ClassSpec)" in admission
+    assert "!LoadedBotMatchesPinnedHunterPet(bot, slot.ClassSpec)" in runtime
     for field in (
         "PetIdentityPresent",
         "PetId",
@@ -350,7 +450,7 @@ def test_activation_barrier_and_native_recovery_cannot_reprovision_or_reinsert()
     formation = function_body(
         world, "void BotWorldPopulationMgr::EnsureValidationCohortGroup"
     )
-    update_bot = function_body(world, "void BotWorldPopulationMgr::UpdateBot")
+    update_bot = function_body(world, "bool BotWorldPopulationMgr::PrepareBotUpdate")
     reattach = function_body(
         world, "bool BotWorldPopulationMgr::TryReattachValidationBot"
     )
@@ -375,7 +475,7 @@ def test_activation_barrier_and_native_recovery_cannot_reprovision_or_reinsert()
 
 def test_combat_reservation_precedes_release_and_validation_self_res() -> None:
     world = WORLD.read_text(encoding="utf-8")
-    update_bot = function_body(world, "void BotWorldPopulationMgr::UpdateBot")
+    update_bot = function_body(world, "void BotWorldPopulationMgr::HandleBotDeath")
     planner = function_body(
         world, "void BotWorldPopulationMgr::ReconcileNativeBattleResDecisions"
     )
@@ -422,9 +522,7 @@ def test_combat_reservation_precedes_release_and_validation_self_res() -> None:
 
 def test_certifying_native_recovery_is_receipt_bound_and_bounded() -> None:
     world = WORLD.read_text(encoding="utf-8")
-    header = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text(
-        encoding="utf-8"
-    )
+    header = WORLD_HEADER.read_text(encoding="utf-8")
     corpse_run = function_body(world, "bool BotWorldPopulationMgr::TryNativeCorpseRun")
     recovery = function_body(
         world,
@@ -435,7 +533,7 @@ def test_certifying_native_recovery_is_receipt_bound_and_bounded() -> None:
     recovery_receipt = function_body(
         world, "std::string BotWorldPopulationMgr::BuildNativeRecoveryEpisodeJson"
     )
-    update = function_body(world, "void BotWorldPopulationMgr::UpdateBot")
+    update = function_body(world, "void BotWorldPopulationMgr::HandleBotDeath")
 
     for field in (
         "NativeRecoveryEpisodeAttemptId",
@@ -504,16 +602,14 @@ def test_certifying_native_recovery_is_receipt_bound_and_bounded() -> None:
 
 def test_combat_res_owner_usability_is_shared_and_live_reconciled() -> None:
     world = WORLD.read_text(encoding="utf-8")
-    header = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text(
-        encoding="utf-8"
-    )
+    header = WORLD_HEADER.read_text(encoding="utf-8")
     predicate = function_body(
         world, "bool BotWorldPopulationMgr::CurrentCombatResOwnerUsable"
     )
     planner = function_body(
         world, "void BotWorldPopulationMgr::ReconcileNativeBattleResDecisions"
     )
-    update_bot = function_body(world, "void BotWorldPopulationMgr::UpdateBot")
+    update_bot = function_body(world, "void BotWorldPopulationMgr::HandleBotDeath")
     builder = function_body(
         world, "BotWorldPopulationMgr::BuildCombatResNativeActionCandidate"
     )
@@ -615,7 +711,7 @@ def test_combat_res_scheduler_owns_movement_cast_and_native_acceptance() -> None
     intents = (ROOT / "src/server/game/Bots/BotNativeActionIntent.h").read_text(
         encoding="utf-8"
     )
-    update = function_body(world, "void BotWorldPopulationMgr::UpdateBot")
+    update = function_body(world, "void BotWorldPopulationMgr::PrepareValidationKernel")
     builder = function_body(
         world, "BotWorldPopulationMgr::BuildCombatResNativeActionCandidate"
     )
@@ -648,7 +744,7 @@ def test_combat_res_scheduler_owns_movement_cast_and_native_acceptance() -> None
     assert "Resource::Cast, Resource::Target" in intents
     assert "Resource::Interaction, Resource::Target" in intents
     assert "candidate.RequiredResources = combatRes->Resources()" in update
-    assert "state.DecisionKernel.Submit(std::move(candidate))" in update
+    assert "context.State.DecisionKernel.Submit(std::move(candidate))" in update
     assert "CurrentCombatResOwnerUsable" in builder
     assert "CurrentCombatResOwnerUsable" in executor
     assert "typed_combat_res_cast_resources_pending" in executor
@@ -676,12 +772,13 @@ def test_combat_res_scheduler_owns_movement_cast_and_native_acceptance() -> None
 
 def test_validation_admission_is_monotonic_and_active_population_is_observation_only() -> None:
     world = WORLD.read_text(encoding="utf-8")
-    header = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text(
-        encoding="utf-8"
-    )
+    header = WORLD_HEADER.read_text(encoding="utf-8")
     ensure = function_body(world, "void BotWorldPopulationMgr::EnsurePopulation")
     formation = function_body(
         world, "void BotWorldPopulationMgr::EnsureValidationCohortGroup"
+    )
+    runtime = function_body(
+        world, "void BotWorldPopulationMgr::UpdateValidationCohortRaidRuntime"
     )
     violation = function_body(
         world, "void BotWorldPopulationMgr::MarkValidationCohortViolation"
@@ -713,8 +810,9 @@ def test_validation_admission_is_monotonic_and_active_population_is_observation_
 
     assert "if (!activeObservationOnly && !member->GetGroup()" in formation
     assert "if (!activeObservationOnly && raidValidation && !group->isRaidGroup())" in formation
-    assert "if (!activeObservationOnly && raidValidation && group->GetMemberGroup" in formation
-    assert "if (!activeObservationOnly && role == \"tank\")" in formation
+    assert "UpdateValidationCohortRaidRuntime(" in formation
+    assert "if (!activeObservationOnly && raidValidation && group->GetMemberGroup" in runtime
+    assert "if (!activeObservationOnly && role == \"tank\")" in runtime
 
 
 def test_melee_autoattack_is_a_persistent_toggle_independent_of_movement_and_gcd() -> None:
@@ -779,10 +877,14 @@ def test_melee_autoattack_is_a_persistent_toggle_independent_of_movement_and_gcd
 
 def test_fixture_mutations_remain_outside_live_update_paths() -> None:
     source = WORLD.read_text(encoding="utf-8")
-    header = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text(encoding="utf-8")
+    header = WORLD_HEADER.read_text(encoding="utf-8")
     calibration = function_body(source, "void BotWorldPopulationMgr::UpdateCalibrationControlledDamage")
     calibration_start = function_body(source, "std::string BotWorldPopulationMgr::StartCombatCalibration(std::string const& mode")
-    calibration_status = function_body(source, "std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const")
+    calibration_status = function_body(
+        source, "std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const"
+    ) + function_body(
+        source, "void BotWorldPopulationMgr::AppendCombatCalibrationSummaryJson"
+    )
     replay = function_body(source, "BotWorldPopulationMgr::ReplayExecutionResult BotWorldPopulationMgr::ExecuteReplayRecord")
     update_bot = function_body(source, "void BotWorldPopulationMgr::UpdateBot")
 
