@@ -44,7 +44,7 @@ def test_azil_tank_preparation_stops_before_feral_roar_logic():
     density = world.index("ResolveAddWaveDensity(")
     opening = world.index("TryAddWaveOpeningActions(")
     preparation = world.index("PrepareAddWaveTank(")
-    feral_roar = world.index("auto tryFeralRoarPickup")
+    feral_roar = world.index("ResolveFeralHandoffState(")
     assert density < opening < preparation < feral_roar
 
     for marker in (
@@ -58,7 +58,7 @@ def test_azil_tank_preparation_stops_before_feral_roar_logic():
         assert marker in module
         assert marker not in world[preparation:feral_roar]
 
-    assert "auto tryFeralRoarPickup" not in module
+    assert "ResolveFeralHandoffState" not in module
     assert "TryValidationFeralRoarPickup" not in module
 
 

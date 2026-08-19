@@ -3,6 +3,7 @@
 #include "Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilAddWaveDensity.h"
 #include "Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilAddWaveOpeningActions.h"
 #include "Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilAddWaveTankPreparation.h"
+#include "Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilFeralHandoffState.h"
 #include "Bots/BotWorldPopulationMgrScopeGuard.h"
 #include "Bots/BotCalibrationFixtureContractGenerated.h"
 #include "Bots/BotActionExecutor.h"
@@ -719,266 +720,40 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 tankPreparationRequest);
         add = tankPreparation.Add;
         sharedFocusValid = tankPreparation.SharedFocusValid;
+        BotWorldPopulationMgrContent::Stonecore::HighPriestessAzil::FeralHandoffStateRequest feralHandoffRequest;
+        feralHandoffRequest.Manager = this;
+        feralHandoffRequest.State = &state;
+        feralHandoffRequest.Bot = bot;
+        feralHandoffRequest.Power = &power;
+        feralHandoffRequest.Stage = stage;
+        feralHandoffRequest.Activity = activity;
+        feralHandoffRequest.Discovery = &addWaveDiscovery;
+        feralHandoffRequest.Density = &addWaveDensity;
+        feralHandoffRequest.Add = &add;
+        feralHandoffRequest.SharedFocusValid = &sharedFocusValid;
+        feralHandoffRequest.Situation = &situation;
+        feralHandoffRequest.Action = &action;
+        feralHandoffRequest.Target = &target;
+        BotWorldPopulationMgrContent::Stonecore::HighPriestessAzil::FeralHandoffStateResult feralHandoff =
+            BotWorldPopulationMgrContent::Stonecore::HighPriestessAzil::ResolveFeralHandoffState(
+                feralHandoffRequest);
+        if (feralHandoff.Handled)
+            return true;
 
-        auto tryFeralRoarPickup = [&](bool activeClusterArrived = false) -> bool
-        {
-            return TryValidationFeralRoarPickup(state, bot, power, stage,
-                activity, situation, action, target, role, profile,
-                densityHealer, localAdds, observedListedAttackerCount,
-                activeClusterArrived);
-        };
+        auto const& tryFeralRoarPickup = feralHandoff.TryFeralRoarPickup;
+        bool feralChargePickupInFlight =
+            feralHandoff.FeralChargePickupInFlight;
+        Unit* feralChargePickupTarget =
+            feralHandoff.FeralChargePickupTarget;
+        bool feralChargePickupArrived =
+            feralHandoff.FeralChargePickupArrived;
+        Unit* feralHealerHandoffAnchor =
+            feralHandoff.FeralHealerHandoffAnchor;
+        bool feralHealerHandoffActive =
+            feralHandoff.FeralHealerHandoffActive;
+        bool feralHealerHandoffArrived =
+            feralHandoff.FeralHealerHandoffArrived;
 
-        // A successful Feral Charge owns its movement briefly. Issuing MovePoint
-        // on the next decision clears MOTION_SLOT_ACTIVE and can cancel the charge
-        // before the tank reaches a newly activated follower wave. Preserve the
-        // charged target until that target and nearby adds prove arrival, then
-        // hand control back to the existing strict self-centered area resolver.
-        uint64 feralChargeNowMs = NowMs();
-        bool feralChargePickupInFlight = role == "tank"
-            && profile.SpecTag == "feral_druid_tank"
-            && state.FeralChargePickupUntilMs > feralChargeNowMs
-            && !state.FeralChargePickupTargetGuid.IsEmpty();
-        Unit* feralChargePickupTarget = nullptr;
-        bool feralChargePickupArrived = false;
-        if (feralChargePickupInFlight)
-        {
-            // Rerun148 accepted Charge on the final healer-owned follower, but
-            // the next changing local-add snapshot omitted that GUID and
-            // cleared the reservation while the same live unit remained in the
-            // identity-scoped threat trace. Resolve the exact accepted identity
-            // independently of the density snapshot; the original bounded
-            // lifetime and native alive/map/attackable gates remain unchanged.
-            feralChargePickupTarget = ObjectAccessor::GetUnit(
-                *bot, state.FeralChargePickupTargetGuid);
-            if (feralChargePickupTarget
-                && (!feralChargePickupTarget->IsAlive()
-                    || feralChargePickupTarget->GetMap() != bot->GetMap()
-                    || !bot->IsValidAttackTarget(feralChargePickupTarget)))
-                feralChargePickupTarget = nullptr;
-            if (feralChargePickupTarget)
-            {
-                add = feralChargePickupTarget;
-                sharedFocusValid = false;
-            }
-            else
-            {
-                // Rerun126 charged the first Azil follower in 508 ms, but the
-                // anchor died on arrival and discarded the accepted movement.
-                // Preserve arrival only when a live healer-owned follower is
-                // already inside native Roar range; no victim is reassigned.
-                Unit* nearbyHealerFollower = nullptr;
-                float nearbyHealerFollowerDistance =
-                    std::numeric_limits<float>::max();
-                uint32 nearbyHealerFollowerGuid =
-                    std::numeric_limits<uint32>::max();
-                for (Creature* candidate : localAdds)
-                    if (candidate && densityHealer
-                        && candidate->GetVictim() == densityHealer
-                        && bot->GetExactDist2d(candidate) <= 10.0f)
-                    {
-                        float distance = bot->GetExactDist(candidate);
-                        uint32 guid = candidate->GetGUID().GetCounter();
-                        if (!nearbyHealerFollower
-                            || distance < nearbyHealerFollowerDistance
-                            || (distance == nearbyHealerFollowerDistance
-                                && guid < nearbyHealerFollowerGuid))
-                        {
-                            nearbyHealerFollower = candidate;
-                            nearbyHealerFollowerDistance = distance;
-                            nearbyHealerFollowerGuid = guid;
-                        }
-                    }
-                if (nearbyHealerFollower)
-                {
-                    add = nearbyHealerFollower;
-                    sharedFocusValid = false;
-                    feralChargePickupArrived = true;
-                }
-                state.FeralChargePickupTargetGuid.Clear();
-                state.FeralChargePickupUntilMs = 0;
-                feralChargePickupInFlight = false;
-            }
-        }
-        else if (!state.FeralChargePickupTargetGuid.IsEmpty()
-            || state.FeralChargePickupUntilMs)
-        {
-            state.FeralChargePickupTargetGuid.Clear();
-            state.FeralChargePickupUntilMs = 0;
-        }
-
-        if (feralChargePickupInFlight && feralChargePickupTarget)
-        {
-            Unit* nearbyPickupAdd = nullptr;
-            float nearbyPickupDistance = std::numeric_limits<float>::max();
-            uint32 nearbyPickupAddCount = 0;
-            for (Creature* candidate : localAdds)
-                if (candidate && bot->GetExactDist2d(candidate) <= 10.0f)
-                {
-                    ++nearbyPickupAddCount;
-                    float distance = bot->GetExactDist(candidate);
-                    if (!nearbyPickupAdd || distance < nearbyPickupDistance
-                        || (distance == nearbyPickupDistance
-                            && candidate->GetGUID().GetCounter()
-                                < nearbyPickupAdd->GetGUID().GetCounter()))
-                    {
-                        nearbyPickupAdd = candidate;
-                        nearbyPickupDistance = distance;
-                    }
-                }
-
-            if (bot->GetExactDist2d(feralChargePickupTarget) <= 10.0f
-                && nearbyPickupAddCount >= 2 && nearbyPickupAdd)
-            {
-                add = nearbyPickupAdd;
-                sharedFocusValid = false;
-                feralChargePickupArrived = true;
-            }
-            else if (bot->GetExactDist2d(feralChargePickupTarget) > 10.0f)
-            {
-                std::string raw = BuildRawJson(bot, feralChargePickupTarget);
-                std::string semantic = BuildSemanticJson(
-                    bot, feralChargePickupTarget, "dungeon_boss", &power, stage, activity);
-                RecordEvent(state, bot, "boss_add_density", feralChargePickupTarget,
-                    "feral_charge_swarm_pickup_in_flight",
-                    raw.c_str(), semantic.c_str(),
-                    bot->GetExactDist2d(feralChargePickupTarget), addCount, 16979);
-                state.TargetGuid = feralChargePickupTarget->GetGUID();
-                target = feralChargePickupTarget;
-                situation = "dungeon_boss";
-                action = "feral_charge_swarm_pickup_in_flight";
-                return true;
-            }
-        }
-
-        // Preserve the bounded post-Roar movement for 2.5 seconds while exact
-        // hazard movement above remains authoritative. Rerun103 proved the
-        // stationary-healer form must not replace an already accepted path to
-        // the remaining remote follower cluster. On arrival, hold through the
-        // native Roar GCD instead of walking back to another cluster.
-        uint64 feralHealerHandoffNowMs = NowMs();
-        Unit* feralHealerHandoffAnchor = nullptr;
-        if (!state.FeralHealerThreatHandoffAnchorGuid.IsEmpty())
-            feralHealerHandoffAnchor = ObjectAccessor::GetUnit(
-                *bot, state.FeralHealerThreatHandoffAnchorGuid);
-        // Rerun156 proved the boss handoff discarded a still-valid Azil
-        // cluster when Roar transferred the exact anchor but neighboring
-        // followers remained healer-owned. Match the proven ordinary-trash
-        // behavior: rebind within the original anchor's ten-yard cluster,
-        // without changing the existing bounded handoff lifetime.
-        if (state.FeralHealerThreatHandoffRemoteCluster && densityHealer
-            && feralHealerHandoffAnchor
-            && feralHealerHandoffAnchor->IsAlive()
-            && feralHealerHandoffAnchor->GetMap() == bot->GetMap()
-            && feralHealerHandoffAnchor->GetVictim() != densityHealer
-            && state.FeralHealerThreatHandoffUntilMs
-                > feralHealerHandoffNowMs)
-        {
-            Creature* reboundAnchor = nullptr;
-            uint32 reboundGuid = std::numeric_limits<uint32>::max();
-            for (Creature* candidate : localAdds)
-                if (candidate && candidate->IsAlive()
-                    && candidate->GetMap() == bot->GetMap()
-                    && candidate->GetVictim() == densityHealer
-                    && bot->IsValidAttackTarget(candidate)
-                    && feralHealerHandoffAnchor->GetExactDist2d(candidate)
-                        <= 10.0f
-                    && candidate->GetGUID().GetCounter() < reboundGuid)
-                {
-                    reboundAnchor = candidate;
-                    reboundGuid = candidate->GetGUID().GetCounter();
-                }
-            // Rerun186's first Roar started a bounded split-cluster handoff,
-            // then a newly listed healer-owned follower appeared outside the
-            // original remote anchor's ten-yard cluster. The second Roar
-            // transferred that original cluster and invalidated its anchor,
-            // leaving the newcomer behind until generic Thrash exceeded the
-            // strict dwell bound by 77 ms. Preserve the original-cluster
-            // preference above; only when it is empty, rebind the same active,
-            // healer-identity-bound handoff to the nearest remaining follower.
-            // The original 2.5-second lifetime, native Charge/Roar/area casts,
-            // movement, hazard, victim, and threat rules remain unchanged.
-            if (!reboundAnchor)
-            {
-                float reboundDistance = std::numeric_limits<float>::max();
-                for (Creature* candidate : localAdds)
-                    if (candidate && candidate->IsAlive()
-                        && candidate->GetMap() == bot->GetMap()
-                        && candidate->GetVictim() == densityHealer
-                        && bot->IsValidAttackTarget(candidate))
-                    {
-                        float distance = bot->GetExactDist(candidate);
-                        uint32 guid = candidate->GetGUID().GetCounter();
-                        if (!reboundAnchor || distance < reboundDistance
-                            || (distance == reboundDistance
-                                && guid < reboundGuid))
-                        {
-                            reboundAnchor = candidate;
-                            reboundDistance = distance;
-                            reboundGuid = guid;
-                        }
-                    }
-            }
-            if (reboundAnchor)
-            {
-                state.FeralHealerThreatHandoffAnchorGuid =
-                    reboundAnchor->GetGUID();
-                feralHealerHandoffAnchor = reboundAnchor;
-            }
-        }
-        bool feralHealerRemoteHandoffValid =
-            !state.FeralHealerThreatHandoffRemoteCluster
-            || (feralHealerHandoffAnchor
-                && feralHealerHandoffAnchor->IsAlive()
-                && feralHealerHandoffAnchor->GetMap() == bot->GetMap()
-                && feralHealerHandoffAnchor->GetVictim() == densityHealer
-                && bot->IsValidAttackTarget(feralHealerHandoffAnchor));
-        bool feralHealerHandoffActive = role == "tank"
-            && profile.SpecTag == "feral_druid_tank"
-            && densityHealer
-            && state.FeralHealerThreatHandoffUntilMs
-                > feralHealerHandoffNowMs
-            && state.FeralHealerThreatHandoffTargetGuid
-                == densityHealer->GetGUID()
-            && feralHealerRemoteHandoffValid
-            && observedListedAttackerCount(densityHealer) >= 2;
-        if (!feralHealerHandoffActive
-            && (!state.FeralHealerThreatHandoffTargetGuid.IsEmpty()
-                || !state.FeralHealerThreatHandoffAnchorGuid.IsEmpty()
-                || state.FeralHealerThreatHandoffUntilMs
-                || state.FeralHealerThreatHandoffRemoteCluster))
-        {
-            state.FeralHealerThreatHandoffTargetGuid.Clear();
-            state.FeralHealerThreatHandoffAnchorGuid.Clear();
-            state.FeralHealerThreatHandoffUntilMs = 0;
-            state.FeralHealerThreatHandoffRemoteCluster = false;
-        }
-
-        bool feralHealerHandoffArrived = false;
-        if (feralHealerHandoffActive)
-        {
-            // Rerun109's Azil episode repeatedly waited on one moving anchor
-            // although two other still-unaffected healer followers were
-            // already inside native Roar range. Match the corrected ordinary
-            // handoff: an unaffected local majority proves bounded arrival,
-            // without accepting a minority edge cast for a large wave.
-            uint32 localMissingRoarDuringHandoff = 0;
-            for (Creature* candidate : localAdds)
-                if (candidate && candidate->GetVictim() == densityHealer
-                    && bot->GetExactDist2d(candidate) <= 10.0f
-                    && !candidate->HasAura(99, bot->GetGUID()))
-                    ++localMissingRoarDuringHandoff;
-            uint32 healerOwnedDuringHandoff =
-                uint32(observedListedAttackerCount(densityHealer));
-            bool localMissingRoarCoversMajority =
-                localMissingRoarDuringHandoff >= 2
-                && localMissingRoarDuringHandoff * 2
-                    >= healerOwnedDuringHandoff;
-            feralHealerHandoffArrived =
-                localMissingRoarCoversMajority
-                || (state.FeralHealerThreatHandoffRemoteCluster
-                    ? bot->GetExactDist2d(feralHealerHandoffAnchor) <= 10.0f
-                    : bot->GetExactDist2d(densityHealer) <= 3.0f);
-        }
 
         // Rerun171 completed all fourteen route nodes and all four bosses, but
         // Azil follower waves remained on the healer for up to 4108 ms while
@@ -1650,6 +1425,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // same GUID's current endpoint on each reserved tick. Larger split waves
         // retain passive preposition/Charge, and hazard movement remains
         // authoritative because it runs before this resolver.
+        static constexpr float TankDensityClusterRadius = 10.0f;
         uint64 activeSwarmPickupNowMs = NowMs();
         bool activeSwarmPickupEligible = role == "tank"
             && profile.SpecTag == "feral_druid_tank"
