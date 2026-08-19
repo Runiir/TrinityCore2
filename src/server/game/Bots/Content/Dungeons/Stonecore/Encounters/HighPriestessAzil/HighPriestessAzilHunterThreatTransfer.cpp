@@ -5,6 +5,7 @@
 
 #include "Creature.h"
 #include "Player.h"
+#include "Spell.h"
 #include "SpellHistory.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
