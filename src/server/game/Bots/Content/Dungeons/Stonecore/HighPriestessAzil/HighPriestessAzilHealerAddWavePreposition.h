@@ -29,6 +29,7 @@ struct HunterThreatTransferRequest;
 struct HunterThreatTransferResult;
 struct PassiveSwarmStagingRequest;
 struct TankThreatRecoveryRequest;
+struct SwarmThreatSafetyRequest;
 
 struct GroupHealCallback
 {
@@ -73,6 +74,7 @@ struct Context
         HunterThreatTransferRequest const& request);
     static bool Run(PassiveSwarmStagingRequest const& request);
     static bool Run(TankThreatRecoveryRequest const& request);
+    static bool Run(SwarmThreatSafetyRequest const& request);
 };
 
 bool TryHealerAddWavePreposition(

@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "MotionMaster.h"
 
 #include "Bots/BotExperienceLearningPolicy.h"
 #include "CellImpl.h"

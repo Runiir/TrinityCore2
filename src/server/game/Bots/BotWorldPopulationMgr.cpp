@@ -10,6 +10,7 @@
 #include "Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilHunterThreatTransfer.h"
 #include "Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilPassiveSwarmStaging.h"
 #include "Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilTankThreatRecovery.h"
+#include "Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilSwarmThreatSafety.h"
 #include "Bots/BotWorldPopulationMgrScopeGuard.h"
 #include "Bots/BotCalibrationFixtureContractGenerated.h"
 #include "Bots/BotActionExecutor.h"
@@ -912,174 +913,24 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (BotWorldPopulationMgrContent::Stonecore::HighPriestessAzil::TryTankThreatRecovery(
                 tankThreatRecoveryRequest))
             return true;
-        // Azil can activate an entire follower wave on one damage dealer in a
-        // single server tick. The tank normally owns the wave on its next
-        // decision, but that interval is enough to kill a cloth or mail DPS.
-        // Use each spec's native emergency defensive immediately while normal
-        // tank pickup completes; Enhancement needs the earlier threshold
-        // because Shamanistic Rage mitigates rather than immunizes.
-        size_t swarmDefensiveThreshold = bot->getClass() == CLASS_SHAMAN ? 3 : 5;
-        uint32 swarmDefensiveSpellId = bot->getClass() == CLASS_MAGE ? 45438
-            : (bot->getClass() == CLASS_HUNTER ? 19263
-                : (bot->getClass() == CLASS_SHAMAN ? 30823 : 0));
-        if (role == "dps" && cohortSwarmActive
-            && observedListedAttackerCount(bot) >= swarmDefensiveThreshold
-            && swarmDefensiveSpellId && bot->HasSpell(swarmDefensiveSpellId)
-            && !bot->HasAura(swarmDefensiveSpellId)
-            && TryCastFriendlySpell(bot, bot, swarmDefensiveSpellId))
-        {
-            SubmitMeleeAutoAttackIntent(state,
-                BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
-                BotMeleeAutoAttack::Owner::Threat,
-                BotActionArbitration::Priority::ThreatControl,
-                "swarm_pickup_emergency_defensive");
-            std::string raw = BuildRawJson(bot, add);
-            std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
-            RecordEvent(state, bot, "defensive", bot, "swarm_pickup_emergency_defensive",
-                raw.c_str(), semantic.c_str(), float(observedListedAttackerCount(bot)), addCount,
-                swarmDefensiveSpellId);
-            state.TargetGuid = densityTank && densityTank->GetVictim()
-                ? densityTank->GetVictim()->GetGUID() : (add ? add->GetGUID() : ObjectGuid::Empty);
-            target = densityTank && densityTank->GetVictim() ? densityTank->GetVictim() : add;
-            situation = "dungeon_boss";
-            action = "swarm_pickup_emergency_defensive";
+
+        BotWorldPopulationMgrContent::Stonecore::HighPriestessAzil::SwarmThreatSafetyRequest swarmThreatSafetyRequest;
+        swarmThreatSafetyRequest.Manager = this;
+        swarmThreatSafetyRequest.State = &state;
+        swarmThreatSafetyRequest.Bot = bot;
+        swarmThreatSafetyRequest.Power = &power;
+        swarmThreatSafetyRequest.Stage = stage;
+        swarmThreatSafetyRequest.Activity = activity;
+        swarmThreatSafetyRequest.Discovery = &addWaveDiscovery;
+        swarmThreatSafetyRequest.Density = &addWaveDensity;
+        swarmThreatSafetyRequest.HunterThreatTransfer = &hunterThreatTransfer;
+        swarmThreatSafetyRequest.Add = add;
+        swarmThreatSafetyRequest.Situation = &situation;
+        swarmThreatSafetyRequest.Action = &action;
+        swarmThreatSafetyRequest.Target = &target;
+        if (BotWorldPopulationMgrContent::Stonecore::HighPriestessAzil::TrySwarmThreatSafety(
+                swarmThreatSafetyRequest))
             return true;
-        }
-
-        // Do not let the first ranged AoE tick assign an entire newly spawned
-        // swarm to a DPS before the tank can act.  Stack an unowned focus into
-        // the pickup radius and suppress new threat until that focus transfers.
-        if (role == "dps" && densityTank && cohortSwarmActive && add
-            && !hunterMisdirectionActive
-            && (!dpsSwarmDamageRelease
-                || (observedListedAttackerCount(bot) && !botInsideTankPickup)))
-        {
-            SubmitMeleeAutoAttackIntent(state,
-                BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
-                BotMeleeAutoAttack::Owner::Threat,
-                BotActionArbitration::Priority::ThreatControl,
-                "dps_wait_for_swarm_tank_ownership");
-            if (Pet* pet = bot->GetPet())
-                pet->AttackStop();
-
-            if (!bot->HasUnitState(UNIT_STATE_CASTING) && !bot->IsFalling())
-            {
-                Position pickup = densityTank->GetFirstCollisionPosition(4.0f,
-                    add->GetAngle(densityTank) - densityTank->GetOrientation());
-                if (bot->GetExactDist2d(pickup.GetPositionX(), pickup.GetPositionY()) > 2.0f
-                    && MoveBotToPoint(state, bot, pickup.GetPositionX(), pickup.GetPositionY(), pickup.GetPositionZ()))
-                {
-                    std::string raw = BuildRawJson(bot, add);
-                    std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
-                    RecordEvent(state, bot, "boss_adds", add, "dps_stack_for_swarm_pickup",
-                        raw.c_str(), semantic.c_str(), bot->GetExactDist2d(densityTank), addCount);
-                    state.TargetGuid = densityTank->GetVictim() ? densityTank->GetVictim()->GetGUID() : add->GetGUID();
-                    target = densityTank->GetVictim() ? densityTank->GetVictim() : add;
-                    situation = "dungeon_boss";
-                    action = "dps_stack_for_swarm_pickup";
-                    return true;
-                }
-            }
-
-            Unit* pickupFocus = densityTank->GetVictim() ? densityTank->GetVictim() : add;
-            state.TargetGuid = pickupFocus ? pickupFocus->GetGUID() : ObjectGuid::Empty;
-            target = pickupFocus;
-            std::string raw = BuildRawJson(bot, add);
-            std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
-            RecordEvent(state, bot, "boss_adds", add, "dps_wait_for_swarm_tank_ownership",
-                raw.c_str(), semantic.c_str(), float(observedListedAttackerCount(bot)), addCount);
-            situation = "dungeon_boss";
-            action = "dps_wait_for_swarm_tank_ownership";
-            return true;
-        }
-
-        if (role == "dps" && densityTank && !dpsSwarmDamageRelease && observedListedAttackerCount(bot)
-            && !bot->HasUnitState(UNIT_STATE_CASTING) && !bot->IsFalling())
-        {
-            Unit* nearestAttacker = nullptr;
-            float nearestDistance = std::numeric_limits<float>::max();
-            auto considerPickupAttacker = [&](Unit* attacker)
-            {
-                if (!attacker || !attacker->IsAlive() || attacker->GetMap() != bot->GetMap())
-                    return;
-                float distance = bot->GetExactDist2d(attacker);
-                if (!nearestAttacker || distance < nearestDistance)
-                {
-                    nearestAttacker = attacker;
-                    nearestDistance = distance;
-                }
-            };
-            for (Creature* candidate : localAdds)
-                if (candidate && candidate->GetVictim() == bot)
-                    considerPickupAttacker(candidate);
-            if (!nearestAttacker)
-                for (Unit* attacker : bot->getAttackers())
-                    considerPickupAttacker(attacker);
-            if (nearestAttacker)
-            {
-                Position pickup = densityTank->GetFirstCollisionPosition(4.0f,
-                    nearestAttacker->GetAngle(densityTank) - densityTank->GetOrientation());
-                if (bot->GetExactDist2d(pickup.GetPositionX(), pickup.GetPositionY()) > 2.0f
-                    && MoveBotToPoint(state, bot, pickup.GetPositionX(), pickup.GetPositionY(), pickup.GetPositionZ()))
-                {
-                    SubmitMeleeAutoAttackIntent(state,
-                        BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
-                        BotMeleeAutoAttack::Owner::Threat,
-                        BotActionArbitration::Priority::ThreatControl,
-                        "dps_stack_for_add_pickup");
-                    if (Pet* pet = bot->GetPet())
-                        pet->AttackStop();
-                    std::string raw = BuildRawJson(bot, nearestAttacker);
-                    std::string semantic = BuildSemanticJson(bot, nearestAttacker, "dungeon_boss", &power, stage, activity);
-                    RecordEvent(state, bot, "boss_adds", nearestAttacker, "dps_stack_for_add_pickup",
-                        raw.c_str(), semantic.c_str(), nearestDistance, addCount);
-                    Unit* pickupFocus = densityTank->GetVictim() ? densityTank->GetVictim() : add;
-                    state.TargetGuid = pickupFocus ? pickupFocus->GetGUID() : ObjectGuid::Empty;
-                    target = pickupFocus;
-                    situation = "dungeon_boss";
-                    action = "dps_stack_for_add_pickup";
-                    return true;
-                }
-            }
-        }
-
-        // If the bot is already in pickup range, or its legal path to the tank
-        // was rejected above, stop adding threat until ownership transfers.
-        if (role == "dps" && densityTank && !dpsSwarmDamageRelease && observedListedAttackerCount(bot))
-        {
-            SubmitMeleeAutoAttackIntent(state,
-                BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
-                BotMeleeAutoAttack::Owner::Threat,
-                BotActionArbitration::Priority::ThreatControl,
-                "dps_hold_for_nearby_add_pickup");
-            if (Pet* pet = bot->GetPet())
-                pet->AttackStop();
-            Unit* pickupFocus = densityTank->GetVictim() ? densityTank->GetVictim() : add;
-            state.TargetGuid = pickupFocus ? pickupFocus->GetGUID() : ObjectGuid::Empty;
-            target = pickupFocus;
-            std::string raw = BuildRawJson(bot, add);
-            std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
-            RecordEvent(state, bot, "boss_adds", add, "dps_hold_for_nearby_add_pickup",
-                raw.c_str(), semantic.c_str(), float(observedListedAttackerCount(bot)), addCount);
-            situation = "dungeon_boss";
-            action = "dps_hold_for_nearby_add_pickup";
-            return true;
-        }
-
-        if (role == "tank" && densityHealer
-            && observedListedAttackerCount(densityHealer)
-            && bot->HasSpell(1038) && !densityHealer->HasAura(1038)
-            && TryCastFriendlySpell(bot, densityHealer, 1038))
-        {
-            std::string raw = BuildRawJson(bot, densityHealer);
-            std::string semantic = BuildSemanticJson(bot, densityHealer, "dungeon_boss", &power, stage, activity);
-            RecordEvent(state, bot, "boss_adds", densityHealer, "hand_of_salvation_healer_threat_drop",
-                raw.c_str(), semantic.c_str(), float(observedListedAttackerCount(densityHealer)), addCount, 1038);
-            target = add;
-            situation = "dungeon_boss";
-            action = "hand_of_salvation_healer_threat_drop";
-            return true;
-        }
 
         float densityHealerRange = 0.0f;
         if (densityHealer)
