@@ -4,6 +4,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 MODULE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteFeralTrashHandoff.cpp"
+TANK_MODULE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteTankTrashRecovery.cpp"
 HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteFeralTrashHandoff.h"
 OBJECTIVE_HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteTerminalArrival.h"
 MGR_HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
@@ -26,8 +27,9 @@ def test_feral_trash_handoff_has_exact_single_boundary_and_ownership():
 
     assert source.count("terminalArrivalContext.RunFeralTrashHandoff") == 1
     assert "bool feralTrashHandoffExpired" not in source
-    assert "Rerun157 localized 28 of 37 Protection healer-target samples" in source
+    assert "Rerun157 localized 28 of 37 Protection healer-target samples" not in source
     assert "Rerun157 localized 28 of 37 Protection healer-target samples" not in module
+    assert "Rerun157 localized 28 of 37 Protection healer-target samples" in TANK_MODULE.read_text()
 
     for marker in (
         "feral_charge_remote_healer_trash_cluster_in_flight",

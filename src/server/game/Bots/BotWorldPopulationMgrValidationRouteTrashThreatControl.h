@@ -25,6 +25,8 @@ struct TrashThreatControl
     uint32 HealerTargetCount = 0;
     uint32 TankOwnedCount = 0;
     uint32 SecureTankCount = 0;
+    bool InsecureTrashSwarm = false;
+    bool TankOwnsTrashMajority = false;
 };
 
 struct TrashThreatControlCallbacks

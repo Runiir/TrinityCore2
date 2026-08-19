@@ -254,9 +254,9 @@ bool ObjectiveContext::RunTrashThreatControl(
         action = "boss_route_prerequisite_blocked";
         return true;
     }
-    bool insecureTrashSwarm = trashThreatControl.EngagedCount >= 3
+    trashThreatControl.InsecureTrashSwarm = trashThreatControl.EngagedCount >= 3
         && trashThreatControl.SecureTankCount * 10 < trashThreatControl.EngagedCount * 9;
-    bool tankOwnsTrashMajority = trashThreatControl.EngagedCount > 0
+    trashThreatControl.TankOwnsTrashMajority = trashThreatControl.EngagedCount > 0
         && trashThreatControl.TankOwnedCount * 10 >= trashThreatControl.EngagedCount * 9;
     bool hunterTrashMisdirectionActive = bot->getClass() == CLASS_HUNTER
         && (bot->HasAura(34477) || bot->HasAura(35079));
@@ -550,11 +550,11 @@ bool ObjectiveContext::RunTrashThreatControl(
     }
     if (std::string(GetDungeonRole(bot)) == "dps"
         && trashThreatControl.Tank
-        && insecureTrashSwarm
+        && trashThreatControl.InsecureTrashSwarm
         && !hunterTrashMisdirectionActive)
     {
         Unit* tankFocus = trashThreatControl.Tank->GetVictim();
-        if (tankOwnsTrashMajority && tankFocus && tankFocus->IsAlive() && bot->IsValidAttackTarget(tankFocus))
+        if (trashThreatControl.TankOwnsTrashMajority && tankFocus && tankFocus->IsAlive() && bot->IsValidAttackTarget(tankFocus))
         {
             bool rangedDps = bot->getClass() == CLASS_MAGE || bot->getClass() == CLASS_HUNTER;
             if (rangedDps && trashThreatControl.EngagedCount >= 3
