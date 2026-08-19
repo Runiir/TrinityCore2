@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotRaidAreaAuthority.h"
@@ -11,6 +12,8 @@
 #include <limits>
 #include <string>
 #include <vector>
+
+using BotWorldPopulationMgrSpellSemantics::NowMs;
 
 bool BotWorldPopulationMgr::TryValidationFeralRoarPickup(
     WorldBotState& state, Player* bot,
