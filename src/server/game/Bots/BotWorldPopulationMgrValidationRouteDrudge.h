@@ -2,6 +2,7 @@
 #define TRINITY_BOT_WORLD_POPULATION_MGR_VALIDATION_ROUTE_DRUDGE_H
 
 #include "Bots/BotWorldPopulationMgrBotState.h"
+#include "Bots/BotWorldPopulationMgrConfig.h"
 #include "Bots/BotWorldPopulationMgrRouteState.h"
 #include "Bots/BotTypes.h"
 
@@ -47,7 +48,7 @@ struct DrudgeLaneRequest
 struct DrudgeLaneContext
 {
     using WorldBotState = BotWorldPopulationMgrBotState::WorldBotState;
-    using MemberAnchor = BotWorldPopulationMgrRouteState::ValidationRouteMemberAnchor;
+    using MemberAnchor = ::ValidationRouteMemberAnchor;
     using ChargeObservation = BotWorldPopulationMgrRouteState::ValidationRouteDrudgeChargeObservation;
 
     enum class PhaseResult

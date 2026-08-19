@@ -32,7 +32,6 @@
 #include <tuple>
 #include <utility>
 #include <vector>
-
 class Creature;
 class Group;
 class Map;
@@ -44,6 +43,11 @@ struct BotClassSpecActionProfile;
 namespace BotCalibrationFixtureContractGenerated
 {
 struct SpecContract;
+}
+namespace BotWorldPopulationMgrContent::Stonecore::HighPriestessAzil
+{
+struct HealerAddWavePrepositionRequest;
+struct Context;
 }
 struct AreaTriggerEntry;
 struct AreaTriggerStruct;
@@ -154,6 +158,7 @@ private:
     using ValidationRouteMovementCheckCallbacks =
         BotWorldPopulationMgrValidationRoute::MovementCheckCallbacks;
     friend struct BotWorldPopulationMgrValidationRoute::DrudgeLaneContext;
+    friend struct BotWorldPopulationMgrContent::Stonecore::HighPriestessAzil::Context;
 
 #include "Bots/BotWorldPopulationMgrPlanningContracts.h"
 
