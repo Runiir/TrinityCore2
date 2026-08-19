@@ -393,7 +393,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     };
     auto trashClusterHasLiveMobs = [&]() -> bool
     {
-        trashClusterTerminalBlocker = TrashClusterTerminalBlocker();
+        trashClusterTerminalBlocker = {};
         if (Cohort().Config.ValidationRouteKind == "boss" || !bot)
             return false;
 
