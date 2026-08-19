@@ -1,0 +1,4 @@
+interface:
+  display_name: "Encounter Research"
+  short_description: "Research one boss into an auditable contract"
+  default_prompt: "Use $raid-encounter-research to research one raid boss and update its sourced mechanic contract."

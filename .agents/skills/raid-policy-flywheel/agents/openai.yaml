@@ -1,0 +1,4 @@
+interface:
+  display_name: "Policy Flywheel"
+  short_description: "Curate raid data for safe policy learning"
+  default_prompt: "Use $raid-policy-flywheel to admit, quarantine, or evaluate one batch of raid decision data."

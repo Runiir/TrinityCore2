@@ -1,0 +1,4 @@
+interface:
+  display_name: "Raid Performance Loop"
+  short_description: "Optimize raid roles and encounter execution"
+  default_prompt: "Use $raid-performance-loop to select and execute the next evidence-backed raid performance work unit."

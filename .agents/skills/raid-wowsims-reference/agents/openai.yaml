@@ -1,0 +1,4 @@
+interface:
+  display_name: "Wowsims Reference"
+  short_description: "Build exact WoWSims role reference values"
+  default_prompt: "Use $raid-wowsims-reference to build or repair one exact roster-spec benchmark with reconstructible evidence."

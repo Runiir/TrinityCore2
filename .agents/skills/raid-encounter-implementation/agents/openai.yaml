@@ -1,0 +1,4 @@
+interface:
+  display_name: "Encounter Implementation"
+  short_description: "Implement one native raid encounter unit"
+  default_prompt: "Use $raid-encounter-implementation to implement or repair one boss script from its reviewed contract."
