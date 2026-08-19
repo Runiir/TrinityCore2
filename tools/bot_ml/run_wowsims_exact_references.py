@@ -3360,7 +3360,12 @@ def _debug_stat_vector(raw: Mapping[str, Any], *, label: str) -> dict[str, float
 def parse_debug_pet_stat_references(
     result: Mapping[str, Any], *, expected_pet_kind: str
 ) -> dict[str, Any]:
-    """Bind the first timestamp-zero Pet stats pair from a debug result log."""
+    """Bind the required pet's timestamp-zero stats pair from a debug log.
+
+    WoWSims can emit initialization records for inactive pets and guardians
+    before the catalog-required pet.  Those unrelated entities are ignored,
+    but every record belonging to the expected pet remains strictly parsed.
+    """
     _require(not result.get("error"), "debug_result:simulator_error")
     iterations = int(result.get("iterationsDone") or result.get("iterations_done") or 0)
     _require(iterations == 1, "debug_result:iterations")
@@ -3389,10 +3394,8 @@ def parse_debug_pet_stat_references(
         source_entity = entity_match.group("entity").strip()
         _require(source_entity, f"debug_result:{kind}:entity_empty")
         entity_kind = source_entity.rsplit(" - ", 1)[-1].strip().lower()
-        _require(
-            entity_kind == expected_kind,
-            f"debug_result:{kind}:wrong_pet",
-        )
+        if entity_kind != expected_kind:
+            continue
         payload_match = re.search(r":\s*(\{.*\})\s*$", raw_line)
         _require(payload_match is not None, f"debug_result:{kind}:payload")
         payload_text = re.sub(r",\s*}", "}", payload_match.group(1))

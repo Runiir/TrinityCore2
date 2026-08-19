@@ -1187,11 +1187,24 @@ def test_debug_pet_stat_references_require_timestamp_zero_pair() -> None:
         {key: value for key, value in observed.items() if key != "observation_sha256"}
     )
 
+    unrelated_first = debug_result_with_pet(pet_kind="Imp")
+    unrelated_first["logs"] += debug_result_with_pet()["logs"]
+    selected = parse_debug_pet_stat_references(
+        unrelated_first, expected_pet_kind="felhunter"
+    )
+    assert selected["timestamp_zero"]["pet_stats"]["source_entity"].endswith(
+        "Felhunter"
+    )
+    assert all(
+        row["source_entity"].endswith("Felhunter")
+        for row in selected["pet_stat_references"]
+    )
+
     with pytest.raises(WowsimsGenerationError, match="missing_timestamp_zero_pet_inherited_stats"):
         parse_debug_pet_stat_references(
             debug_result_with_pet(include_inherited=False), expected_pet_kind="felhunter"
         )
-    with pytest.raises(WowsimsGenerationError, match="wrong_pet"):
+    with pytest.raises(WowsimsGenerationError, match="missing_timestamp_zero_pet_stats"):
         parse_debug_pet_stat_references(
             debug_result_with_pet(pet_kind="Wolf"), expected_pet_kind="felhunter"
         )
