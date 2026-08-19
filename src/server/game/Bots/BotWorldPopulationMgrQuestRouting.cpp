@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
 #include "Bots/BotLongTermProgressionBrain.h"
+#include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Creature.h"
 #include "DatabaseEnv.h"
 #include "Entities/Item/ItemTemplate.h"
@@ -30,6 +31,8 @@ uint64 NowMs()
         GameTime::GetGameTimeSystemPoint().time_since_epoch()).count());
 }
 }
+
+using BotWorldPopulationMgrNativeHelpers::Distance2d;
 
 bool BotWorldPopulationMgr::ResolveObjectiveRoutePoint(Player* bot, QuestObjectivePlan const& plan, QuestRoutePoint& point) const
 {
