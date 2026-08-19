@@ -17,6 +17,8 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Mapping
 
+from tools.bot_ml.build_wowsims_reference_requests import pending_catalog_projection
+
 
 ROOT = Path(__file__).resolve().parents[2]
 ROSTER_PATH = Path("experiments/configs/cata_raid_roster_25_v1.json")
@@ -261,7 +263,9 @@ def wowsims_status(root: Path = ROOT) -> dict[str, Any]:
     request_specs = {
         str(row.get("target_spec") or "") for row in request_rows if isinstance(row, dict)
     }
-    request_catalog_sha256 = _canonical_sha256(requests)
+    pending_requests = pending_catalog_projection(requests)
+    request_catalog_sha256 = _canonical_sha256(pending_requests)
+    request_catalog_file_sha256 = _file_sha256(root / WOWSIMS_REQUESTS_PATH)
     candidates = _candidate_receipts(root, request_catalog_sha256)
     dvc_digest = _dvc_digest(root / WOWSIMS_DVC_POINTER)
     promotion_rows = [
@@ -296,7 +300,7 @@ def wowsims_status(root: Path = ROOT) -> dict[str, Any]:
         "provider_revision": requests.get("provider_revision"),
         "request_catalog_path": WOWSIMS_REQUESTS_PATH.as_posix(),
         "request_catalog_canonical_sha256": request_catalog_sha256,
-        "request_catalog_file_sha256": _file_sha256(root / WOWSIMS_REQUESTS_PATH),
+        "request_catalog_file_sha256": request_catalog_file_sha256,
         "request_count": len(request_rows),
         "request_target_count": len(request_specs),
         "current_candidate_count": len(candidates["current"]),

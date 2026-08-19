@@ -3360,7 +3360,12 @@ def _debug_stat_vector(raw: Mapping[str, Any], *, label: str) -> dict[str, float
 def parse_debug_pet_stat_references(
     result: Mapping[str, Any], *, expected_pet_kind: str
 ) -> dict[str, Any]:
-    """Bind the first timestamp-zero Pet stats pair from a debug result log."""
+    """Bind the required pet's timestamp-zero stats pair from a debug log.
+
+    WoWSims can emit initialization records for inactive pets and guardians
+    before the catalog-required pet.  Those unrelated entities are ignored,
+    but every record belonging to the expected pet remains strictly parsed.
+    """
     _require(not result.get("error"), "debug_result:simulator_error")
     iterations = int(result.get("iterationsDone") or result.get("iterations_done") or 0)
     _require(iterations == 1, "debug_result:iterations")
@@ -3389,10 +3394,8 @@ def parse_debug_pet_stat_references(
         source_entity = entity_match.group("entity").strip()
         _require(source_entity, f"debug_result:{kind}:entity_empty")
         entity_kind = source_entity.rsplit(" - ", 1)[-1].strip().lower()
-        _require(
-            entity_kind == expected_kind,
-            f"debug_result:{kind}:wrong_pet",
-        )
+        if entity_kind != expected_kind:
+            continue
         payload_match = re.search(r":\s*(\{.*\})\s*$", raw_line)
         _require(payload_match is not None, f"debug_result:{kind}:payload")
         payload_text = re.sub(r",\s*}", "}", payload_match.group(1))
@@ -3454,6 +3457,31 @@ def parse_debug_pet_stat_references(
         "timestamp_zero": by_kind,
     }
     return {**observation, "observation_sha256": canonical_sha256(observation)}
+
+
+def validate_debug_reexecution_observation(
+    *,
+    rerun_result: Mapping[str, Any],
+    recorded_result: Mapping[str, Any],
+    receipt_observation: Mapping[str, Any],
+    expected_pet_kind: str,
+) -> dict[str, Any]:
+    """Require parsed pet evidence to match across all reexecution sources."""
+    recorded_observation = parse_debug_pet_stat_references(
+        recorded_result, expected_pet_kind=expected_pet_kind
+    )
+    _require(
+        recorded_observation == receipt_observation,
+        "audit:recorded_debug_result_identity",
+    )
+    rerun_observation = parse_debug_pet_stat_references(
+        rerun_result, expected_pet_kind=expected_pet_kind
+    )
+    _require(
+        rerun_observation == recorded_observation,
+        "audit:debug_result_identity",
+    )
+    return rerun_observation
 
 
 def validate_debug_pet_evidence(
@@ -4307,24 +4335,17 @@ def audit_generation_reexecution(
             _require_normal_child(debug_sim_outcome, label="audit:debug_sim")
             _require(debug_result_path.is_file(), "audit:debug_result_missing")
             debug_rerun_bytes = debug_result_path.read_bytes()
-            _require(
-                debug_rerun_bytes == expected_debug_result_path.read_bytes(),
-                "audit:debug_result_bytes",
-            )
             debug_result = _json_object_from_bytes(
                 debug_rerun_bytes, label="audit:rerun_debug_result"
             )
             expected_debug_result = _json_object_from_bytes(
                 expected_debug_result_path.read_bytes(), label="audit:expected_debug_result"
             )
-            debug_observation = parse_debug_pet_stat_references(
-                debug_result,
+            debug_observation = validate_debug_reexecution_observation(
+                rerun_result=debug_result,
+                recorded_result=expected_debug_result,
+                receipt_observation=debug_record.get("observation") or {},
                 expected_pet_kind=str(debug_record.get("pet_kind") or ""),
-            )
-            _require(
-                debug_observation == debug_record.get("observation")
-                and debug_result == expected_debug_result,
-                "audit:debug_result_identity",
             )
     observation = {
         "schema": "wowsims_generation_reexecution_audit_v1",
@@ -4338,6 +4359,11 @@ def audit_generation_reexecution(
         "debug_result_sha256": (
             hashlib.sha256(debug_rerun_bytes).hexdigest()
             if debug_rerun_bytes is not None
+            else None
+        ),
+        "debug_result_observation_sha256": (
+            debug_observation["observation_sha256"]
+            if debug_required
             else None
         ),
         "compute_stats_sha256": sha256_file(expected_compute_path),
