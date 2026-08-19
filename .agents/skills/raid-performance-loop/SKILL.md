@@ -75,8 +75,9 @@ Require a compact material-gate receipt within 60 seconds of dispatch and at
 least every 60 seconds while work continues: current gate, command or process
 identity, decisive evidence path, and next expected edge. A worker may make at
 most two failed command attempts on the same edge before returning a failed
-handoff. Interrupt a silent worker and request the bounded handoff; do not let
-it expand into repository discovery or an optimization loop.
+handoff. After the first missed receipt, request status without interrupting.
+After the second consecutive miss, interrupt and request the bounded handoff;
+do not let silence expand into repository discovery or an optimization loop.
 
 ## Parallelize only disjoint lanes
 
