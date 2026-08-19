@@ -8,6 +8,7 @@
 #include "Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilFeralRemoteActions.h"
 #include "Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilFeralActiveSwarmMovement.h"
 #include "Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilHunterThreatTransfer.h"
+#include "Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilHighDensityPositioning.h"
 #include "Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilPassiveSwarmStaging.h"
 #include "Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilTankThreatRecovery.h"
 #include "Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilSwarmThreatSafety.h"
@@ -932,142 +933,35 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 swarmThreatSafetyRequest))
             return true;
 
-        float densityHealerRange = 0.0f;
-        if (densityHealer)
-        {
-            BotClassSpecActionProfile healerProfile = BotClassSpecActionProfileStore::Build(densityHealer, "healer");
-            for (BotActionProfileSpell const& spell : healerProfile.Spells)
+        BotWorldPopulationMgrContent::Stonecore::HighPriestessAzil::HighDensityPositioningRequest highDensityPositioningRequest;
+        highDensityPositioningRequest.Manager = this;
+        highDensityPositioningRequest.State = &state;
+        highDensityPositioningRequest.Bot = bot;
+        highDensityPositioningRequest.Power = &power;
+        highDensityPositioningRequest.Stage = stage;
+        highDensityPositioningRequest.Activity = activity;
+        highDensityPositioningRequest.Discovery = &addWaveDiscovery;
+        highDensityPositioningRequest.Density = &addWaveDensity;
+        highDensityPositioningRequest.Add = add;
+        highDensityPositioningRequest.Situation = &situation;
+        highDensityPositioningRequest.Action = &action;
+        highDensityPositioningRequest.Target = &target;
+        bool highDensityPositioningReturnFalse = false;
+        highDensityPositioningRequest.ReturnFalse =
+            &highDensityPositioningReturnFalse;
+        highDensityPositioningRequest.TryRouteGroupHeal.Function =
+            [&tryRouteGroupHeal](Player* healer, Unit* combatTarget,
+                bool allowMovement, bool allowStationaryCastTime)
             {
-                if (!spell.SpellId || !densityHealer->HasSpell(spell.SpellId)
-                    || (spell.Category != BotCombatActionCategory::HealFast
-                        && spell.Category != BotCombatActionCategory::HealEfficient
-                        && spell.Category != BotCombatActionCategory::HealAoe))
-                    continue;
-                float spellRange = spell.MaxRange;
-                if (spellRange <= 0.0f)
-                    if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell.SpellId))
-                        spellRange = spellInfo->GetMaxRange(true);
-                densityHealerRange = std::max(densityHealerRange, spellRange);
-            }
-        }
-
-        bool escapeCohortValid = densityTank && densityHealer && densityHealerRange > 3.0f;
-        if (Party().ValidationRouteBossAddEscapeActive && escapeCohortValid)
-        {
-            escapeCohortValid = densityTank->GetExactDist(Party().ValidationRouteBossAddEscapeX,
-                    Party().ValidationRouteBossAddEscapeY, Party().ValidationRouteBossAddEscapeZ) <= densityHealerRange - 1.0f
-                && densityHealer->GetExactDist(Party().ValidationRouteBossAddEscapeX,
-                    Party().ValidationRouteBossAddEscapeY, Party().ValidationRouteBossAddEscapeZ) <= densityHealerRange - 1.0f
-                && densityTank->IsWithinLOS(Party().ValidationRouteBossAddEscapeX, Party().ValidationRouteBossAddEscapeY, Party().ValidationRouteBossAddEscapeZ)
-                && densityHealer->IsWithinLOS(Party().ValidationRouteBossAddEscapeX, Party().ValidationRouteBossAddEscapeY, Party().ValidationRouteBossAddEscapeZ);
-        }
-        if (Party().ValidationRouteBossAddEscapeActive && !escapeCohortValid)
-            ResetValidationRouteBossAddEscapeState();
-
-        if (highDensityPhase && bot == densityTank && addCount >= 3 && !densityDefenseTarget)
-        {
-            float centroidX = addX / float(addCount);
-            float centroidY = addY / float(addCount);
-            float centroidDistance = densityTank->GetExactDist2d(centroidX, centroidY);
-            if (centroidDistance > 4.0f && !densityTank->HasUnitState(UNIT_STATE_CASTING) && !densityTank->IsFalling())
-            {
-                Map* map = densityTank->GetMap();
-                float centroidZ = densityTank->GetPositionZ();
-                if (map)
-                {
-                    float floorZ = map->GetHeight(densityTank->GetPhaseShift(), centroidX, centroidY, centroidZ + 4.0f, true, 10.0f);
-                    if (floorZ > INVALID_HEIGHT && std::fabs(floorZ - centroidZ) <= 10.0f)
-                        centroidZ = floorZ;
-                }
-                bool moved = densityTank->IsWithinLOS(centroidX, centroidY, centroidZ)
-                    && MoveBotToPoint(state, densityTank, centroidX, centroidY, centroidZ);
-                std::string raw = BuildRawJson(bot, add);
-                std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
-                RecordEvent(state, bot, "boss_add_density", add,
-                    moved ? "tank_move_to_add_centroid" : "tank_add_centroid_path_rejected",
-                    raw.c_str(), semantic.c_str(), centroidDistance, addCount);
-                state.TargetGuid = add ? add->GetGUID() : ObjectGuid::Empty;
-                target = add;
-                situation = "dungeon_boss";
-                action = moved ? "tank_move_to_add_centroid" : "hold_tank_add_centroid";
-                return true;
-            }
-        }
-
-        // Healing at maximum range makes newly spawned adds run away from the
-        // tank's Consecration/Hammer radius. Issue one pickup-stack movement,
-        // then allow normal instant healing while that path remains active.
-        // Exact hazard exits run before this branch and remain authoritative.
-        if (highDensityPhase && role == "healer" && densityTank
-            && observedListedAttackerCount(bot)
-            && UnitHealthPct(bot) > 0.45f && UnitHealthPct(densityTank) > 0.40f
-            && bot->GetExactDist2d(densityTank) > 6.0f
-            && !bot->HasUnitState(UNIT_STATE_CASTING) && !bot->IsFalling()
-            && !(state.ActivePathValid && state.IsMoving))
-        {
-            Unit* approachFrom = add ? add : densityTank;
-            Position pickup = densityTank->GetFirstCollisionPosition(4.0f,
-                approachFrom->GetAngle(densityTank) - densityTank->GetOrientation());
-            if (MoveBotToPoint(state, bot, pickup.GetPositionX(), pickup.GetPositionY(), pickup.GetPositionZ()))
-            {
-                std::string raw = BuildRawJson(bot, add);
-                std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
-                RecordEvent(state, bot, "boss_adds", add, "healer_stack_for_swarm_pickup",
-                    raw.c_str(), semantic.c_str(), bot->GetExactDist2d(densityTank), addCount);
-                state.TargetGuid = densityTank->GetVictim()
-                    ? densityTank->GetVictim()->GetGUID() : (add ? add->GetGUID() : ObjectGuid::Empty);
-                target = densityTank->GetVictim() ? densityTank->GetVictim() : add;
-                situation = "dungeon_boss";
-                action = "healer_stack_for_swarm_pickup";
-                return true;
-            }
-        }
-
-        if (highDensityPhase && role == "healer" && tryRouteGroupHeal(bot, add))
+                return tryRouteGroupHeal(healer, combatTarget,
+                    allowMovement, allowStationaryCastTime);
+            };
+        if (BotWorldPopulationMgrContent::Stonecore::HighPriestessAzil::TryHighDensityPositioning(
+                highDensityPositioningRequest))
             return true;
-
-        if (highDensityPhase
-            && nearbyAddCount >= 3
-            && !profile.MissingProfile
-            && profile.MovementDirective != "melee"
-            && Party().ValidationRouteBossAddEscapeActive
-            && Party().ValidationRouteBossAddEscapeGeneration == Party().ValidationRouteGeneration
-            && !bot->HasUnitState(UNIT_STATE_CASTING)
-            && !bot->IsFalling())
-        {
-            bool reachedEscape = bot->GetExactDist2d(Party().ValidationRouteBossAddEscapeX, Party().ValidationRouteBossAddEscapeY) <= 2.5f;
-            bool escapeIssued = Party().ValidationRouteBossAddEscapeIssuedGuids.find(bot->GetGUID()) != Party().ValidationRouteBossAddEscapeIssuedGuids.end();
-            constexpr float escapePathEpsilon = 0.5f;
-            bool escapePathPending = state.ActivePathValid
-                && state.IsMoving
-                && std::fabs(state.ActivePathToX - Party().ValidationRouteBossAddEscapeX) <= escapePathEpsilon
-                && std::fabs(state.ActivePathToY - Party().ValidationRouteBossAddEscapeY) <= escapePathEpsilon
-                && std::fabs(state.ActivePathToZ - Party().ValidationRouteBossAddEscapeZ) <= escapePathEpsilon;
-            bool shouldIssueEscape = !reachedEscape && !escapePathPending;
-            if (!reachedEscape && shouldIssueEscape
-                && MoveBotToPoint(state, bot, Party().ValidationRouteBossAddEscapeX, Party().ValidationRouteBossAddEscapeY, Party().ValidationRouteBossAddEscapeZ))
-            {
-                std::string raw = BuildRawJson(bot, add);
-                std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
-                RecordEvent(state, bot, "boss_add_density", add, escapeIssued ? "reissue_shared_escape_unreached" : "move_to_shared_escape", raw.c_str(), semantic.c_str(), float(nearbyAddCount), addCount);
-                Party().ValidationRouteBossAddEscapeIssuedGuids.insert(bot->GetGUID());
-                state.TargetGuid = add ? add->GetGUID() : ObjectGuid::Empty;
-                target = add;
-                situation = "dungeon_boss";
-                action = "move_to_boss_add_density_escape";
-                return true;
-            }
-            if (!reachedEscape && escapePathPending)
-            {
-                state.TargetGuid = add ? add->GetGUID() : ObjectGuid::Empty;
-                target = add;
-                situation = "dungeon_boss";
-                action = "continue_to_boss_add_density_escape";
-                return true;
-            }
-        }
-        if (role == "healer")
+        if (highDensityPositioningReturnFalse)
             return false;
+
         if (highDensityPhase && !add && densityApproachAnchor)
         {
             ResolvedCombatAction approachAction;

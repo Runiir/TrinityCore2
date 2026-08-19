@@ -44,7 +44,7 @@ def test_azil_swarm_threat_safety_owns_the_exact_ordered_window():
 
     recovery = world.index("TryTankThreatRecovery(")
     dispatch = world.index("TrySwarmThreatSafety(", recovery)
-    density_range = world.index("float densityHealerRange", dispatch)
+    density_range = world.index("TryHighDensityPositioning(", dispatch)
     manager_gap = world[dispatch:density_range]
     for marker in (
         "swarm_pickup_emergency_defensive",

@@ -8,6 +8,30 @@
 #include <string>
 #include <vector>
 
+namespace
+{
+BotAdmissionIdentityGenerated::Identity const* FindExpectedBotAdmissionIdentity(
+    std::string const& classSpec)
+{
+    for (BotAdmissionIdentityGenerated::Identity const& identity :
+        BotAdmissionIdentityGenerated::Identities)
+        if (classSpec == identity.ClassSpec)
+            return &identity;
+    return nullptr;
+}
+
+bool ResolveExpectedBotGearIdentity(std::string const& classSpec,
+    std::string& gearProfileId, std::string& gearManifestSha256)
+{
+    auto const* identity = FindExpectedBotAdmissionIdentity(classSpec);
+    if (!identity)
+        return false;
+    gearProfileId = identity->GearProfileId;
+    gearManifestSha256 = identity->GearManifestSha256;
+    return !gearProfileId.empty() && gearManifestSha256.size() == 64;
+}
+}
+
 std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) const
 {
     RaidRuntime const& raid = Cohort().Raid;
@@ -735,4 +759,3 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
     json << "]}";
     return json.str();
 }
-
