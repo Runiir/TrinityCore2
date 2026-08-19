@@ -42,12 +42,14 @@ def test_azil_feral_local_retention_owns_the_exact_handoff_tail():
 
     handoff_dispatch = world.index("ResolveFeralHandoffState(")
     retention_dispatch = world.index("TryFeralLocalRetention(")
-    remote_charge = world.index(
-        "// A remote Charge must not abandon a useful local healer-owned cluster."
-    )
-    assert handoff_dispatch < retention_dispatch < remote_charge
-    assert "localHealerOwnedSwipeWindow" not in world[retention_dispatch:remote_charge]
-    assert "feralHealerHandoffArrived" not in world[retention_dispatch:remote_charge]
+    remote_actions_dispatch = world.index("TryFeralRemoteActions(")
+    assert handoff_dispatch < retention_dispatch < remote_actions_dispatch
+    assert "localHealerOwnedSwipeWindow" not in world[
+        retention_dispatch:remote_actions_dispatch
+    ]
+    assert "feralHealerHandoffArrived" not in world[
+        retention_dispatch:remote_actions_dispatch
+    ]
 
     for marker in (
         "localHealerOwnedSwipeWindow",

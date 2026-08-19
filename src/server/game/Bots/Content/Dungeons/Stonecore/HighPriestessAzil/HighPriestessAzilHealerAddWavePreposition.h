@@ -23,6 +23,7 @@ struct AddWaveTankPreparationResult;
 struct FeralHandoffStateRequest;
 struct FeralHandoffStateResult;
 struct FeralLocalRetentionRequest;
+struct FeralRemoteActionsRequest;
 
 struct GroupHealCallback
 {
@@ -61,6 +62,7 @@ struct Context
     static FeralHandoffStateResult Run(
         FeralHandoffStateRequest const& request);
     static bool Run(FeralLocalRetentionRequest const& request);
+    static bool Run(FeralRemoteActionsRequest const& request);
 };
 
 bool TryHealerAddWavePreposition(

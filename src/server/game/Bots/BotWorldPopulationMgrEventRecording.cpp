@@ -192,7 +192,7 @@ void BotWorldPopulationMgr::RecordEvent(WorldBotState& state, Player* bot, char 
     std::string semantic = semanticJson ? semanticJson : "{}";
     std::string event = eventType ? eventType : "unknown";
     std::string res = BoundedResultLabel(result);
-    std::string dbRes = BoundedResultLabel(res);
+    std::string dbRes = BoundedResultLabel(res.c_str());
     std::string brain = Cohort().Config.BrainVersion;
     BotDatasetEvent dataset;
     dataset.run_id = Cohort().RunId;
@@ -531,4 +531,3 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
     std::string areaFeatures = BuildEmbeddingFeaturesJson(bot, target, "area", bot->GetAreaId(), situation ? situation : "decision");
     UpdateSemanticOutcomeStats(bot, "area", bot->GetAreaId(), situation, failure ? "failed" : "sampled", failure ? -1.0f : chosenActivity.Score, power.Total - state.ActivityStartPower, failure, areaFeatures.c_str());
 }
-
