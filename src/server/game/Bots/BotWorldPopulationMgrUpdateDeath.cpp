@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
 #include "Bots/BotLongTermProgressionBrain.h"
+#include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 #include "Creature.h"
 #include "Map.h"
 #include "ObjectAccessor.h"
@@ -11,6 +12,8 @@
 #include <limits>
 #include <sstream>
 #include <string>
+
+using BotWorldPopulationMgrSpellSemantics::NowMs;
 
 void BotWorldPopulationMgr::HandleBotDeath(WorldBotState& state, Player* bot, uint32 diff)
 {
