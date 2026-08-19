@@ -355,34 +355,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     auto const& findNearestTrashClusterMob = pack.FindNearestTrash;
     auto const& findTrashClusterThreatTarget = pack.FindTrashThreat;
 
-    struct TrashClusterTerminalBlocker
-    {
-        ObjectGuid Guid;
-        uint32 Entry = 0;
-        ObjectGuid::LowType SpawnId = 0;
-        uint32 FormationId = 0;
-        ObjectGuid FormationLeaderGuid;
-        float Distance = 0.0f;
-        float PositionX = 0.0f;
-        float PositionY = 0.0f;
-        float PositionZ = 0.0f;
-        float HomeX = 0.0f;
-        float HomeY = 0.0f;
-        float HomeZ = 0.0f;
-        float HomeDistance = 0.0f;
-        uint32 CurrentMotionType = MAX_MOTION_TYPE;
-        uint32 ActiveMotionType = MAX_MOTION_TYPE;
-        bool Observed = false;
-        bool Alive = false;
-        bool Attackable = false;
-        bool Evade = false;
-        bool Path = false;
-        bool Member = false;
-        bool ReturningHome = false;
-        bool FormationMember = false;
-        bool FormationLeader = false;
-        bool FormationFormed = false;
-    } trashClusterTerminalBlocker;
+    BotWorldPopulationMgrValidationRoute::TrashClusterTerminalBlockerSnapshot
+        trashClusterTerminalBlocker;
     auto captureTrashClusterTerminalBlocker = [&](Creature* creature) -> void
     {
         if (!creature)
@@ -924,6 +898,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         rememberValidationRouteFocus;
     targetEngagementCallbacks.TrashClusterHasLiveMobs =
         trashClusterHasLiveMobs;
+    targetEngagementCallbacks.TrashClusterTerminalBlockerResult =
+        [&trashClusterTerminalBlocker]()
+            -> BotWorldPopulationMgrValidationRoute::TrashClusterTerminalBlockerSnapshot const&
+        {
+            return trashClusterTerminalBlocker;
+        };
     targetEngagementCallbacks.ValidationPartyHasActiveCombat =
         validationPartyHasActiveCombat;
     targetEngagementCallbacks.FindBoundedTerminalPartyCombatTarget =

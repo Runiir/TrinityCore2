@@ -42,6 +42,8 @@ bool ObjectiveContext::RunTargetEngagement(
     std::string& situation = Situation;
     std::string& action = Action;
     Unit*& target = Target;
+    using BossMechanicActionResult =
+        BotWorldPopulationMgr::BossMechanicActionResult;
     bool discoveryLeg = callbacks.DiscoveryLeg();
     float routeArrivalRadius = RouteArrivalRadius;
     float const& canonicalRouteDistance = CanonicalRouteDistance;
@@ -100,6 +102,8 @@ bool ObjectiveContext::RunTargetEngagement(
     auto const& rememberValidationRouteFocus =
         callbacks.RememberValidationRouteFocus;
     auto const& trashClusterHasLiveMobs = callbacks.TrashClusterHasLiveMobs;
+    TrashClusterTerminalBlockerSnapshot const& trashClusterTerminalBlocker =
+        callbacks.TrashClusterTerminalBlockerResult();
     auto const& validationPartyHasActiveCombat =
         callbacks.ValidationPartyHasActiveCombat;
     auto const& findBoundedTerminalPartyCombatTarget =
@@ -915,4 +919,3 @@ bool ObjectiveContext::RunTargetEngagement(
 }
 
 }
-
