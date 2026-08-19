@@ -74,7 +74,7 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                 || action.find("failed") != std::string::npos;
         };
 
-        auto runRoute = [&context, routeAttempt, routeOwnerReason,
+        auto runRoute = [this, &context, routeAttempt, routeOwnerReason,
             routeActionIsMovementOnly]() -> BotActionArbitration::Outcome
         {
             if (routeAttempt->Attempted)
@@ -267,6 +267,7 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             BotActionArbitration::Resource::Interaction);
         boss.Attempt = [&]()
         {
+            BossMechanicActionResult& bossAction = context.BossAction;
             if (context.AdaptiveMagmawOwnsNode || context.AdaptiveOmnotronOwnsNode
                 || context.AdaptiveMaloriakOwnsNode || context.AdaptiveChimaeronOwnsNode
                 || context.AdaptiveAtramedesOwnsNode || context.AdaptiveNefarianOwnsNode)
@@ -370,6 +371,7 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             BotActionArbitration::Resource::Target);
         trash.Attempt = [&]()
         {
+            DungeonTrashActionResult& trashAction = context.TrashAction;
             if (!IsDungeonTrashContext(context.Bot, context.Target))
                 return BotActionArbitration::Outcome::NotApplicable(
                     "not_dungeon_trash_context");

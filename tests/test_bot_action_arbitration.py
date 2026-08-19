@@ -769,7 +769,7 @@ def test_route_adapter_yields_retryable_holds_and_declared_boss_adds() -> None:
         assert resource in action_resources
     assert "Resource::Movement" not in action_resources
     assert "std::shared_ptr<RouteAttempt>" in route_adapter
-    assert "auto runRoute = [&context, routeAttempt" in route_adapter
+    assert "auto runRoute = [this, &context, routeAttempt" in route_adapter
     assert "routeAction.Attempt = [runRoute, routeAttempt]" in route_adapter
     assert "routeMovement.Attempt = [runRoute, routeAttempt]" in route_adapter
     assert "routeAction.Attempt = [&]" not in route_adapter
@@ -785,6 +785,7 @@ def test_boss_adapter_requires_observable_work_and_rejects_stale_focus() -> None
     assert "previousCombatAttemptMs" in boss_adapter
     assert "boss_no_observable_effect" in boss_adapter
     assert "boss_action_committed" not in boss_adapter
+    assert "BossMechanicActionResult& bossAction = context.BossAction;" in boss_adapter
     resources = boss_adapter.split("boss.Attempt", 1)[0]
     assert "Resource::Movement" in resources
     assert "Resource::Cast" in resources
@@ -808,6 +809,7 @@ def test_trash_adapter_requires_observable_work_and_yields_passive_waits() -> No
 
     assert "previousPathChangeMs" in adapter
     assert "previousCombatAttemptMs" in adapter
+    assert "DungeonTrashActionResult& trashAction = context.TrashAction;" in adapter
     assert 'context.State.LastCombatAttempt.Reason == "no_line_of_sight"' in adapter
     assert "nativeFollowActive" in adapter
     assert 'context.Action.find("wait")' in adapter
