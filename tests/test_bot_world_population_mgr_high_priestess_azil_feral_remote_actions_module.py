@@ -13,6 +13,9 @@ MODULE = MODULE_HEADER.with_suffix(".cpp")
 CONTEXT_HEADER = MODULE_HEADER.with_name(
     "HighPriestessAzilHealerAddWavePreposition.h"
 )
+ACTIVE_MODULE = MODULE_HEADER.with_name(
+    "HighPriestessAzilFeralActiveSwarmMovement.cpp"
+)
 
 
 def test_azil_feral_remote_actions_is_registered_and_bounded():
@@ -42,15 +45,17 @@ def test_azil_feral_remote_actions_is_registered_and_bounded():
 def test_azil_feral_remote_actions_owns_the_exact_native_action_window():
     world = WORLD.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
+    active_module = ACTIVE_MODULE.read_text(encoding="utf-8")
 
     handoff_dispatch = world.index("ResolveFeralHandoffState(")
     retention_dispatch = world.index("TryFeralLocalRetention(")
     remote_dispatch = world.index("TryFeralRemoteActions(")
-    active_window = world.index("uint64 activeSwarmPickupNowMs = NowMs();")
+    active_window = world.index("TryFeralActiveSwarmMovement(")
     assert handoff_dispatch < retention_dispatch < remote_dispatch < active_window
     assert "A remote Charge must not abandon" not in world[remote_dispatch:active_window]
     assert "feralHealerHandoffArrived" not in world[remote_dispatch:active_window]
     assert "activeSwarmPickupEligible" not in module
+    assert "uint64 activeSwarmPickupNowMs = NowMs();" in active_module
 
     for marker in (
         "A remote Charge must not abandon a useful local healer-owned cluster.",

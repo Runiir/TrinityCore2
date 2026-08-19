@@ -45,9 +45,6 @@ float Distance2d(float ax, float ay, float bx, float by)
     return std::sqrt(dx * dx + dy * dy);
 }
 
-bool UsesRangedAoeCalibrationLane(std::string const& spec)
-{
-
 BotPolicySource WorldPolicySource(BotPolicyModelConfig const& config, bool decision)
 {
     if (config.Enabled && !config.Version.empty())
@@ -439,4 +436,3 @@ bool BotWorldPopulationMgr::TryProfessionMemoryAction(WorldBotState& state, Play
 
     return false;
 }
-

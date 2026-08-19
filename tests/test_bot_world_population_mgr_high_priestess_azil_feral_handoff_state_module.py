@@ -13,6 +13,9 @@ MODULE = MODULE_HEADER.with_suffix(".cpp")
 CONTEXT_HEADER = MODULE_HEADER.with_name(
     "HighPriestessAzilHealerAddWavePreposition.h"
 )
+ACTIVE_MODULE = MODULE_HEADER.with_name(
+    "HighPriestessAzilFeralActiveSwarmMovement.cpp"
+)
 
 
 def test_azil_feral_handoff_state_is_registered_and_bounded():
@@ -56,6 +59,7 @@ def test_azil_feral_handoff_state_stops_before_local_swipe_window():
 def test_azil_feral_handoff_state_preserves_identity_order_and_callback():
     module = MODULE.read_text(encoding="utf-8")
     world = WORLD.read_text(encoding="utf-8")
+    active_module = ACTIVE_MODULE.read_text(encoding="utf-8")
 
     assert "std::function<bool(bool)> TryFeralRoarPickup;" in MODULE_HEADER.read_text(
         encoding="utf-8"
@@ -70,7 +74,7 @@ def test_azil_feral_handoff_state_preserves_identity_order_and_callback():
     assert module.index("feralHealerHandoffActive = role == \"tank\"") < module.index(
         "feralHealerHandoffArrived ="
     )
-    assert "static constexpr float TankDensityClusterRadius = 10.0f;" in world
-    assert world.index("static constexpr float TankDensityClusterRadius = 10.0f;") < world.index(
+    assert "static constexpr float TankDensityClusterRadius = 10.0f;" in active_module
+    assert active_module.index("static constexpr float TankDensityClusterRadius = 10.0f;") < active_module.index(
         "<= TankDensityClusterRadius"
     )

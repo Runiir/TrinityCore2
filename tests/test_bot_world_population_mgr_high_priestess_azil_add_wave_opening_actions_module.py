@@ -39,7 +39,7 @@ def test_azil_opening_actions_stay_between_density_and_cluster_resolvers():
 
     density = world.index("ResolveAddWaveDensity(")
     dispatch = world.index("TryAddWaveOpeningActions(")
-    cluster = world.index("TankDensityClusterRadius")
+    cluster = world.index("TryFeralActiveSwarmMovement(")
     assert density < dispatch < cluster
     opening_gap = world[dispatch:cluster]
     for marker in (

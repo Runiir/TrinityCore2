@@ -24,6 +24,7 @@ struct FeralHandoffStateRequest;
 struct FeralHandoffStateResult;
 struct FeralLocalRetentionRequest;
 struct FeralRemoteActionsRequest;
+struct FeralActiveSwarmMovementRequest;
 
 struct GroupHealCallback
 {
@@ -63,6 +64,7 @@ struct Context
         FeralHandoffStateRequest const& request);
     static bool Run(FeralLocalRetentionRequest const& request);
     static bool Run(FeralRemoteActionsRequest const& request);
+    static bool Run(FeralActiveSwarmMovementRequest const& request);
 };
 
 bool TryHealerAddWavePreposition(
