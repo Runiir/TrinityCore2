@@ -93,6 +93,21 @@ OLD_ROOT_FILES = {
     "BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp",
 }
 
+def test_content_contract_covers_raids_and_dungeons():
+    contract = (CONTENT / "README.md").read_text(encoding="utf-8")
+
+    for fragment in (
+        "Content/Raids/<Raid>/Instance/<module>",
+        "Content/Raids/<Raid>/Trash/<WingOrPack>/<module>",
+        "Content/Raids/<Raid>/Encounters/<Boss>/<module>",
+        "Content/Dungeons/<Dungeon>/Instance/<module>",
+        "Content/Dungeons/<Dungeon>/Trash/<WingOrPack>/<module>",
+        "Content/Dungeons/<Dungeon>/Encounters/<Boss>/<module>",
+    ):
+        assert fragment in contract
+
+    assert "Do not create placeholder modules" in contract
+
 
 def _is_source_or_header(path: Path) -> bool:
     return path.is_file() and path.suffix.lower() in SOURCE_SUFFIXES
@@ -158,7 +173,7 @@ def test_bot_content_layout_has_explicit_owners_and_bounded_size():
     oversized = [
         path
         for path in CONTENT.rglob("*")
-        if path.is_file()
+        if _is_source_or_header(path)
         and len(path.read_text(encoding="utf-8").splitlines()) > 1000
     ]
     assert oversized == []
