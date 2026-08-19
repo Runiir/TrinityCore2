@@ -8586,6 +8586,62 @@ def test_live_bot_validation_preserve_worldserver_session_excludes_shutdown(
     assert report["preserve_worldserver_required"] is True
 
 
+def test_scoring_start_stat_modifier_ledger_surface_is_deterministic():
+    header = Path("src/server/game/Bots/BotWorldPopulationMgr.h").read_text(
+        encoding="utf-8"
+    )
+    ledger = Path(
+        "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp"
+    ).read_text(encoding="utf-8")
+    reset = Path(
+        "src/server/game/Bots/BotWorldPopulationMgrCalibrationReset.cpp"
+    ).read_text(encoding="utf-8")
+    rows = Path(
+        "src/server/game/Bots/BotWorldPopulationMgrCalibrationRows.cpp"
+    ).read_text(encoding="utf-8")
+    cmake = Path("src/server/game/CMakeLists.txt").read_text(encoding="utf-8")
+
+    assert "BotWorldPopulationMgrCalibrationStatLedger.cpp" in cmake
+    assert "std::array<PrimaryStatLedger, 5>" in header
+    for field in [
+        "CreateStat",
+        "BaseValue",
+        "BasePct",
+        "TotalValue",
+        "TotalPct",
+        "RecomputedTotal",
+        "PublishedStat",
+        "AuraContributions",
+    ]:
+        assert field in header
+    for field in [
+        '"create_stat"',
+        '"base_value"',
+        '"base_pct"',
+        '"total_value"',
+        '"total_pct"',
+        '"recomputed_total"',
+        '"published_stat"',
+        '"aura_effects"',
+        '"aura_type"',
+        '"spell_id"',
+        '"effect_index"',
+        '"amount"',
+        '"misc_value"',
+        '"misc_value_b"',
+        '"caster_guid"',
+    ]:
+        assert field.replace('"', '\\"') in ledger
+    assert "trinity_scoring_start_stat_modifier_ledger_v1" in ledger
+    assert "std::sort(ledger.AuraContributions.begin()" in ledger
+    assert "std::tie(left.AuraType, left.SpellId, left.EffectIndex" in ledger
+    assert "ObserveCalibrationEffectiveStats(" in reset
+    assert "AppendCalibrationEffectiveStatsJson(" in rows
+    assert len(reset.splitlines()) <= 1000
+    assert len(rows.splitlines()) <= 1000
+    assert len(ledger.splitlines()) <= 1000
+
+
 def test_upsert_trinity_config_normalizes_literal_newline_fragments():
     text = 'BotWorld.DeathRecoveryMode = "native_corpse_run"\\nBotWorld.RespawnMode = "native_corpse_run"\n'
 

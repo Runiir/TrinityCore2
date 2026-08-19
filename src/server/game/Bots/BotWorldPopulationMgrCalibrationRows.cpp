@@ -804,43 +804,6 @@ void BotWorldPopulationMgr::AppendCombatCalibrationBotRowsJson(
         writePoisonReceipt(state.RogueMainhandPoisonSetup);
         json << ",\"offhand\":";
         writePoisonReceipt(state.RogueOffhandPoisonSetup);
-        auto writeEffectiveStats = [&json](
-            CalibrationMetrics::EffectiveStatVector const& stats)
-        {
-            json << "{\"observed\":" << (stats.Observed ? "true" : "false")
-                 << ",\"observed_at_ms\":" << stats.ObservedAtMs
-                 << ",\"guid\":" << stats.Guid
-                 << ",\"entry\":" << stats.Entry
-                 << ",\"strength\":" << stats.Strength
-                 << ",\"agility\":" << stats.Agility
-                 << ",\"stamina\":" << stats.Stamina
-                 << ",\"intellect\":" << stats.Intellect
-                 << ",\"spirit\":" << stats.Spirit
-                 << ",\"attack_power\":" << stats.AttackPower
-                 << ",\"ranged_attack_power\":" << stats.RangedAttackPower
-                 << ",\"spell_power\":" << stats.SpellPower
-                 << ",\"bonus_damage\":" << stats.BonusDamage
-                 << ",\"armor\":" << stats.Armor
-                 << ",\"health\":" << stats.Health
-                 << ",\"mana\":" << stats.Mana
-                 << ",\"hit_rating\":" << stats.HitRating
-                 << ",\"crit_rating\":" << stats.CritRating
-                 << ",\"haste_rating\":" << stats.HasteRating
-                 << ",\"expertise_rating\":" << stats.ExpertiseRating
-                 << ",\"mastery_rating\":" << stats.MasteryRating
-                 << ",\"physical_hit_pct\":" << stats.PhysicalHitPct
-                 << ",\"spell_hit_pct\":" << stats.SpellHitPct
-                 << ",\"melee_crit_pct\":" << stats.MeleeCritPct
-                 << ",\"ranged_crit_pct\":" << stats.RangedCritPct
-                 << ",\"spell_crit_pct\":" << stats.SpellCritPct
-                 << ",\"mastery_points\":" << stats.MasteryPoints
-                 << ",\"melee_speed_multiplier\":"
-                 << stats.MeleeSpeedMultiplier
-                 << ",\"ranged_speed_multiplier\":"
-                 << stats.RangedSpeedMultiplier
-                 << ",\"spell_speed_multiplier\":"
-                 << stats.SpellSpeedMultiplier << '}';
-        };
         json << "}"
              << ",\"fire_totem\":{\"entry\":" << fireTotemEntry
              << ",\"created_by_spell\":" << fireTotemCreatedBySpell
@@ -862,14 +825,18 @@ void BotWorldPopulationMgr::AppendCombatCalibrationBotRowsJson(
              << ",\"no_target_skips\":" << fireTotemNoTargetSkips << "}}"
              << ",\"scoring_start_stats\":{\"schema\":\"trinity_scoring_start_effective_stats_v1\",\"player\":";
         if (metrics)
-            writeEffectiveStats(metrics->ScoringStartPlayerStats);
+            AppendCalibrationEffectiveStatsJson(
+                json, metrics->ScoringStartPlayerStats);
         else
-            writeEffectiveStats(CalibrationMetrics::EffectiveStatVector());
+            AppendCalibrationEffectiveStatsJson(
+                json, CalibrationMetrics::EffectiveStatVector());
         json << ",\"pet\":";
         if (metrics)
-            writeEffectiveStats(metrics->ScoringStartPetStats);
+            AppendCalibrationEffectiveStatsJson(
+                json, metrics->ScoringStartPetStats);
         else
-            writeEffectiveStats(CalibrationMetrics::EffectiveStatVector());
+            AppendCalibrationEffectiveStatsJson(
+                json, CalibrationMetrics::EffectiveStatVector());
         json << "}"
              << ",\"stats\":{\"strength\":" << (bot ? bot->GetStat(STAT_STRENGTH) : 0.0f)
              << ",\"agility\":" << (bot ? bot->GetStat(STAT_AGILITY) : 0.0f)

@@ -672,6 +672,28 @@ private:
     {
         struct EffectiveStatVector
         {
+            struct AuraContribution
+            {
+                uint16 AuraType = 0;
+                uint32 SpellId = 0;
+                uint8 EffectIndex = 0;
+                int32 Amount = 0;
+                int32 MiscValue = 0;
+                int32 MiscValueB = 0;
+                uint64 CasterGuid = 0;
+            };
+            struct PrimaryStatLedger
+            {
+                uint8 StatIndex = 0;
+                float CreateStat = 0.0f;
+                float BaseValue = 0.0f;
+                float BasePct = 1.0f;
+                float TotalValue = 0.0f;
+                float TotalPct = 1.0f;
+                float RecomputedTotal = 0.0f;
+                float PublishedStat = 0.0f;
+                std::vector<AuraContribution> AuraContributions;
+            };
             bool Observed = false;
             uint64 ObservedAtMs = 0;
             uint32 Guid = 0;
@@ -702,6 +724,7 @@ private:
             float MeleeSpeedMultiplier = 1.0f;
             float RangedSpeedMultiplier = 1.0f;
             float SpellSpeedMultiplier = 1.0f;
+            std::array<PrimaryStatLedger, 5> PrimaryStatLedgerEntries;
         };
         struct InitialPowerObservation
         {
@@ -965,6 +988,10 @@ private:
         // schedule from these integers; it does not trust an aggregate flag.
         std::array<TargetHealthPhaseObservation, 5> TargetHealthPhaseObservations;
     };
+    static void ObserveCalibrationEffectiveStats(Unit* unit,
+        uint64 observedAtMs, CalibrationMetrics::EffectiveStatVector& stats);
+    static void AppendCalibrationEffectiveStatsJson(std::ostringstream& json,
+        CalibrationMetrics::EffectiveStatVector const& stats);
     void AppendCombatCalibrationSummaryJson(std::ostringstream& json,
         uint64 nowMs,
         std::function<void(std::map<uint32, CalibrationMetrics> const&, bool)> const& writeBots) const;
