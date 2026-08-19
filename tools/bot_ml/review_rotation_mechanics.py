@@ -467,6 +467,36 @@ def normalize_wowsims_gear(
     }
 
 
+def normalize_wowsims_consumables(
+    document: Any, player_index: int = 0
+) -> dict[str, Any] | None:
+    normalized = _camelize_json_keys(document)
+    raid = normalized.get("raid") if isinstance(normalized, dict) else None
+    if not isinstance(raid, dict):
+        return None
+    players: list[Any] = []
+    for party in raid.get("parties") or []:
+        if isinstance(party, dict):
+            players.extend(party.get("players") or [])
+    if not 0 <= player_index < len(players) or not isinstance(
+        players[player_index], dict
+    ):
+        raise ValueError("WoWSims request player index is outside the raid")
+    consumes = players[player_index].get("consumes") or players[player_index].get(
+        "consumables"
+    )
+    if not isinstance(consumes, dict):
+        return None
+    return {
+        "schema": "rotation_review_wowsims_consumables_v1",
+        "player_index": player_index,
+        "flask": {"item_id": int(consumes.get("flaskId") or 0)},
+        "food": {"item_id": int(consumes.get("foodId") or 0)},
+        "prepot": {"item_id": int(consumes.get("prepotId") or 0)},
+        "combat_potion": {"item_id": int(consumes.get("potId") or 0)},
+    }
+
+
 def normalize_wowsims_apl(apl: dict[str, Any]) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     for index, entry in enumerate(apl.get("prepullActions") or []):
@@ -1490,6 +1520,7 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
     scoring_start_stats: list[dict[str, Any]] = []
     gear_identities: list[dict[str, Any]] = []
     pet_execution_observations: list[dict[str, Any]] = []
+    consumable_execution_observations: list[dict[str, Any]] = []
     pre_scoring_blockers: list[dict[str, Any]] = []
     decision_timeline: list[dict[str, Any]] = []
     off_target_damage_events: list[dict[str, Any]] = []
@@ -1648,6 +1679,45 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
                     },
                 }
             )
+        consumable_execution = bot.get("consumable_execution_observation")
+        if isinstance(consumable_execution, dict):
+            consumable_execution_observations.append(
+                {"bot_guid": bot_guid, **dict(consumable_execution)}
+            )
+        else:
+            legacy_conditions = bot.get("reference_condition_observation")
+            if isinstance(legacy_conditions, dict):
+                configured = legacy_conditions.get("configured") or {}
+                dynamic = legacy_conditions.get("dynamic_disabled") or {}
+                consumable_execution_observations.append(
+                    {
+                        "bot_guid": bot_guid,
+                        "schema": "legacy_static_reference_conditions_v1",
+                        "inventory_backed": False,
+                        "flask": {
+                            "item_id": int(configured.get("flask_item_id") or 0),
+                            "native_use_count": 0,
+                        },
+                        "food": {
+                            "item_id": int(configured.get("food_item_id") or 0),
+                            "native_use_count": 0,
+                        },
+                        "prepot": {
+                            "item_id": int(dynamic.get("prepot_item_id") or 0),
+                            "native_use_count": int(
+                                dynamic.get("prepot_use_count") or 0
+                            ),
+                        },
+                        "combat_potion": {
+                            "item_id": int(
+                                dynamic.get("combat_potion_item_id") or 0
+                            ),
+                            "native_use_count": int(
+                                dynamic.get("combat_potion_use_count") or 0
+                            ),
+                        },
+                    }
+                )
         if bot.get("elapsed_seconds") is not None:
             quality = bot.get("quality_metrics")
             calibration_windows.append(
@@ -1784,6 +1854,7 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
         "gear_identities": gear_identities,
         "scoring_start_stats": scoring_start_stats,
         "pet_execution_observations": pet_execution_observations,
+        "consumable_execution_observations": consumable_execution_observations,
         "pre_scoring_blockers": sorted(
             pre_scoring_blockers,
             key=lambda row: (row["bot_guid"], row["reason"]),
@@ -3092,6 +3163,98 @@ def compare_gear_identity(
     }
 
 
+def compare_consumable_execution(
+    wowsims_consumables: dict[str, Any] | None,
+    runtime: dict[str, Any] | None,
+) -> dict[str, Any]:
+    if not wowsims_consumables:
+        return {
+            "status": "not_applicable",
+            "reason": "wowsims_request_has_no_consumable_contract",
+        }
+    if not runtime:
+        return {
+            "status": "insufficient_data",
+            "reason": "missing_trinity_runtime",
+            "first_broken_edge": "consumable_runtime_observation",
+        }
+    target_guid = int(runtime.get("calibration_target_guid") or 0)
+    observations = [
+        row
+        for row in runtime.get("consumable_execution_observations") or []
+        if isinstance(row, dict)
+        and (not target_guid or int(row.get("bot_guid") or 0) == target_guid)
+    ]
+    if not observations:
+        return {
+            "status": "insufficient_data",
+            "reason": "missing_consumable_execution_observation",
+            "first_broken_edge": "consumable_runtime_observation",
+        }
+    observed = observations[0]
+    inventory_backed = observed.get("inventory_backed") is True
+    checks: list[dict[str, Any]] = []
+    first_broken_edge: str | None = None
+    missing = False
+    mismatch = False
+    for kind in ("flask", "food", "prepot", "combat_potion"):
+        expected_item = int(
+            ((wowsims_consumables.get(kind) or {}).get("item_id")) or 0
+        )
+        observed_kind = observed.get(kind) or {}
+        observed_item = int(observed_kind.get("item_id") or 0)
+        use_count = observed_kind.get("native_use_count")
+        inventory_before = observed_kind.get("inventory_count_before")
+        inventory_after = observed_kind.get("inventory_count_after")
+        aura_observed = observed_kind.get("expected_aura_observed")
+        if expected_item == 0:
+            status = (
+                "match"
+                if observed_item == 0 and int(use_count or 0) == 0
+                else "mismatch"
+            )
+        elif not inventory_backed or observed_item != expected_item:
+            status = "mismatch"
+            first_broken_edge = first_broken_edge or f"consumable_inventory_{kind}"
+        elif use_count is None or inventory_before is None or inventory_after is None:
+            status = "missing"
+            first_broken_edge = first_broken_edge or f"{kind}_inventory_receipt"
+        elif int(use_count) != 1 or int(inventory_after) >= int(inventory_before):
+            status = "mismatch"
+            first_broken_edge = first_broken_edge or f"{kind}_native_execution"
+        elif aura_observed is not True:
+            status = "missing" if aura_observed is None else "mismatch"
+            first_broken_edge = first_broken_edge or f"{kind}_aura_outcome"
+        else:
+            status = "match"
+        mismatch = mismatch or status == "mismatch"
+        missing = missing or status == "missing"
+        checks.append(
+            {
+                "kind": kind,
+                "status": status,
+                "expected_item_id": expected_item,
+                "observed_item_id": observed_item,
+                "native_use_count": use_count,
+                "inventory_count_before": inventory_before,
+                "inventory_count_after": inventory_after,
+                "expected_aura_observed": aura_observed,
+            }
+        )
+    status = "mismatch" if mismatch else "insufficient_data" if missing else "match"
+    return {
+        "status": status,
+        "inventory_backed": inventory_backed,
+        "checks": checks,
+        "first_broken_edge": first_broken_edge,
+        "interpretation": (
+            "A fixture-added aura is not a native item-use receipt. Each configured "
+            "item requires inventory provisioning, one native use in its phase, an "
+            "item-count decrease, and the expected aura outcome."
+        ),
+    }
+
+
 def compare_effective_stats(
     wowsims_compute_stats: dict[str, Any] | None,
     wowsims_result: dict[str, Any] | None,
@@ -3346,13 +3509,20 @@ def build_review(
     runtime_report: dict[str, Any] | None = None,
     route_manifest: dict[str, Any] | None = None,
     sources: dict[str, Any] | None = None,
+    reference_class: str | None = None,
 ) -> dict[str, Any]:
     review: dict[str, Any] = {
         "schema": SCHEMA,
+        "reference_class": reference_class,
         "sources": sources or {},
         "wowsims": normalize_wowsims_apl(wowsims_apl) if wowsims_apl else None,
         "wowsims_gear": (
             normalize_wowsims_gear(wowsims_request, wowsims_player_index)
+            if wowsims_request
+            else None
+        ),
+        "wowsims_consumables": (
+            normalize_wowsims_consumables(wowsims_request, wowsims_player_index)
             if wowsims_request
             else None
         ),
@@ -3404,6 +3574,9 @@ def build_review(
     review["gear_parity"] = compare_gear_identity(
         review["wowsims_gear"], review["runtime"]
     )
+    review["consumable_parity"] = compare_consumable_execution(
+        review["wowsims_consumables"], review["runtime"]
+    )
     gate_statuses = {
         review["gear_parity"]["status"],
         review["effective_stat_parity"]["status"],
@@ -3428,6 +3601,31 @@ def build_review(
             else review["effective_stat_parity"].get("first_broken_edge")
         ),
     }
+    consumable_required = review["consumable_parity"]["status"] != "not_applicable"
+    total_statuses = set(gate_statuses)
+    if consumable_required:
+        total_statuses.add(review["consumable_parity"]["status"])
+    total_status = (
+        "match"
+        if total_statuses == {"match"}
+        else "mismatch"
+        if "mismatch" in total_statuses
+        else "insufficient_data"
+    )
+    review["total_dps_comparison_gate"] = {
+        "status": total_status,
+        "comparison_admitted": total_status == "match",
+        "required": review["dps_tuning_gate"]["required"]
+        + (["consumable_parity.status=match"] if consumable_required else []),
+        "first_broken_edge": (
+            review["dps_tuning_gate"].get("first_broken_edge")
+            if review["dps_tuning_gate"]["status"] != "match"
+            else review["consumable_parity"].get("first_broken_edge")
+            if consumable_required
+            else None
+        ),
+        "trace_only_signals_remain_usable": True,
+    }
     review["review_sha256"] = canonical_sha256(review)
     return review
 
@@ -3442,6 +3640,7 @@ def main() -> int:
     )
     parser.add_argument("--wowsims-apl", type=Path)
     parser.add_argument("--wowsims-player-index", type=int, default=0)
+    parser.add_argument("--reference-class")
     parser.add_argument("--wowsims-result", type=Path)
     parser.add_argument("--wowsims-compute-stats", type=Path)
     parser.add_argument("--trinity-profile", type=Path)
@@ -3526,6 +3725,7 @@ def main() -> int:
         runtime_report=runtime,
         route_manifest=route,
         sources=sources,
+        reference_class=args.reference_class,
     )
     rendered = json.dumps(review, indent=2, sort_keys=True) + "\n"
     if args.output:

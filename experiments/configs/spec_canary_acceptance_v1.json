@@ -3,6 +3,30 @@
   "max_capture_attempts": 1,
   "max_fix_attempts": 1,
   "required_duration_seconds": 300.0,
+  "default_reference_class": "self_provided_baseline",
+  "reference_classes": {
+    "self_provided_baseline": {
+      "purpose": "one_sided_minimum_throughput_floor",
+      "requires_consumable_parity": true,
+      "total_dps_ratio": {
+        "minimum": 1.0
+      },
+      "overtuned_is_failure": false
+    },
+    "controlled_live_parity": {
+      "purpose": "like_for_like_action_stat_and_damage_diagnosis",
+      "requires_consumable_parity": true,
+      "total_dps_ratio": {
+        "minimum": 0.9,
+        "maximum": 1.1
+      }
+    },
+    "upstream_full_throughput": {
+      "purpose": "duration_bound_capability_and_ui_cross_check",
+      "requires_consumable_parity": false,
+      "supplies_acceptance_denominator": false
+    }
+  },
   "thresholds": {
     "cast_cadence_ratio": {
       "minimum": 0.85,

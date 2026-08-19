@@ -11,6 +11,18 @@ def _policy() -> dict:
         "max_capture_attempts": 1,
         "max_fix_attempts": 1,
         "required_duration_seconds": 300,
+        "default_reference_class": "self_provided_baseline",
+        "reference_classes": {
+            "self_provided_baseline": {
+                "requires_consumable_parity": True,
+                "total_dps_ratio": {"minimum": 1.0},
+                "overtuned_is_failure": False,
+            },
+            "controlled_live_parity": {
+                "requires_consumable_parity": True,
+                "total_dps_ratio": {"minimum": 0.9, "maximum": 1.1},
+            },
+        },
         "thresholds": {
             "cast_cadence_ratio": {"minimum": 0.85, "maximum": 1.15},
             "cast_mix_total_variation_distance_maximum": 0.08,
@@ -36,6 +48,15 @@ def _review() -> dict:
         "gear_parity": {"status": "match"},
         "effective_stat_parity": {"status": "match"},
         "dps_tuning_gate": {"tuning_admitted": True},
+        "reference_class": "self_provided_baseline",
+        "consumable_parity": {
+            "status": "match",
+            "inventory_backed": True,
+            "flask_native_use_before_scoring": 1,
+            "food_native_use_before_scoring": 1,
+            "prepot_native_use_before_combat": 1,
+            "combat_potion_native_use_during_combat": 1,
+        },
         "execution_comparison": {
             "cast_mix": {
                 "cast_mix_overlap": 0.96,
@@ -90,6 +111,39 @@ def test_passes_a_complete_matched_baseline() -> None:
     assert decision["status"] == "passed"
     assert decision["terminal_reason"] == "baseline_within_policy"
     assert decision["next_work_unit"] is None
+
+
+def test_self_provided_baseline_has_no_upper_dps_rejection() -> None:
+    review = _review()
+    review["runtime"]["calibration_windows"][0]["dps"] = 1_350
+    decision = _evaluate(review)
+    assert decision["status"] == "passed"
+    assert decision["reference_class"] == "self_provided_baseline"
+    assert decision["signals"]["total_dps_ratio"] == 1.35
+
+
+def test_missing_native_prepot_routes_to_role_owner() -> None:
+    review = _review()
+    review["consumable_parity"] = {
+        "status": "mismatch",
+        "first_broken_edge": "prepot_native_execution",
+        "prepot_native_use_before_combat": 0,
+    }
+    decision = _evaluate(review)
+    assert decision["status"] == "failed"
+    assert decision["first_broken_edge"] == "prepot_native_execution"
+    assert decision["owner_skill"] == "raid-role-implementation"
+
+
+def test_missing_consumable_inventory_routes_to_provisioning_owner() -> None:
+    review = _review()
+    review["consumable_parity"] = {
+        "status": "mismatch",
+        "first_broken_edge": "consumable_inventory_missing",
+    }
+    decision = _evaluate(review)
+    assert decision["first_broken_edge"] == "consumable_inventory_missing"
+    assert decision["owner_skill"] == "raid-shard-architecture"
 
 
 def test_routes_missing_scoring_start_stats_to_one_capture() -> None:

@@ -27,6 +27,15 @@ Hash labels are part of identity. Never compare a request-catalog canonical
 JSON SHA-256 with its file SHA-256, a target-catalog SHA-256, or a receipt
 SHA-256. Preserve the exact field name in every handoff.
 
-The baseline value answers: “What does the frozen spec/setup produce in this
-controlled 300-second single-target fixture?” It does not claim boss DPS,
+Every promoted result names its reference class. A `self_provided_baseline`
+answers: “What does the frozen player produce alone, including its own pet,
+class effects, professions, flask, food, pre-pot, and combat potion, with no
+external raid buff or pre-applied target debuff?” It is a one-sided minimum:
+meeting or exceeding it passes and has no upper rejection bound.
+
+A `controlled_live_parity` result answers: “What does this exact runtime setup
+produce in the controlled 300-second single-target fixture?” It is the only
+class allowed to supply a like-for-like DPS ratio or exact action comparison.
+An `upstream_full_throughput` result preserves the original preset and duration
+for capability and UI cross-checks. None of the three claims boss DPS,
 movement performance, cleave performance, or raid completion.

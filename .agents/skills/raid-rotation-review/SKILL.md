@@ -30,6 +30,15 @@ Record hashes and identities before comparing:
 If a required identity is absent, continue a static review but label the result
 `informational_only_identity_incomplete`.
 
+Record `reference_class` explicitly. `self_provided_baseline` is a one-sided
+minimum throughput floor with all external raid buffs and pre-applied target
+debuffs disabled. It includes the frozen player's own pet, class effects,
+professions, flask, food, pre-pot, combat potion, racial, and profession
+actions. `controlled_live_parity` is the reference for exact action and damage
+comparison. `upstream_full_throughput` is only a capability/UI cross-check
+unless every runtime input matches. A difference among these classes is not a
+rotation failure.
+
 ## Build the normalized comparison
 
 Obtain the live profile with:
@@ -42,6 +51,7 @@ Save the returned JSON. Use a pinned APL file or the UI's `CLI Export`, then run
 
 ```bash
 pixi run python -m tools.bot_ml.review_rotation_mechanics \
+  --reference-class self_provided_baseline \
   --wowsims-apl /path/to/apl-or-raid-request.json \
   --wowsims-result /path/to/raid-sim-result.json \
   --wowsims-compute-stats /path/to/compute-stats.json \
@@ -89,10 +99,14 @@ Pass only the available inputs. The tool hashes every supplied file and emits:
   spell, damage, and whether the victim was the acting player;
 - route-node mechanic obligations, target identities, and completion policy.
 
-Before interpreting cast mix or DPS, pass the full exported `RaidSimRequest`
-to `--wowsims-apl` and require `gear_parity.status == "match"`,
-`effective_stat_parity.status == "match"`, and
-`dps_tuning_gate.tuning_admitted == true`. The tool compares the exact request
+Before interpreting total DPS, stat-sensitive cadence, or damage per event,
+pass the full exported `RaidSimRequest` to `--wowsims-apl` and require
+`gear_parity.status == "match"`, `effective_stat_parity.status == "match"`,
+consume and setup parity, `dps_tuning_gate.tuning_admitted == true`, and
+`total_dps_comparison_gate.comparison_admitted == true`.
+Trace-only review may still compare unaffected action membership, priority,
+rejections, and eligible cast mix when it labels every mismatched input and
+excludes sensitive actions. The tool compares the exact request
 equipment manifest with Trinity's scoring-window gear observation, then the
 exact WoWSims `finalStats` owner vector with Trinity's immutable
 `scoring_start_stats` captured at the published `t=0` edge. For a required pet,
@@ -102,6 +116,14 @@ inheritance diagnostic. `mismatch` means gear/setup/stat application is the firs
 broken edge; `insufficient_data` means recapture the missing artifact. In both
 cases stop rotation tuning rather than changing priorities or coefficients to
 hide the discrepancy.
+
+For consumables, compare configured item IDs and native outcomes separately.
+Every spec receives its exact flask, food, pre-pot, and combat potion as
+inventory items. Food and flask require successful pre-score native item uses,
+item-count changes, and the expected auras. Pre-pot and combat potion each
+require one successful native item action in the correct phase. Aura presence
+alone cannot prove item use. If WoWSims uses two potions and Trinity uses none,
+total DPS is ineligible, but unaffected rotation signals remain usable.
 
 Treat its comparisons as review leads, never semantic-equivalence or DPS
 claims. Inspect the exact code/data for every reported gap.

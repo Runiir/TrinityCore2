@@ -63,6 +63,16 @@ def _in_range(value: float | None, limits: Mapping[str, Any]) -> bool | None:
     return minimum <= value <= maximum
 
 
+def _meets_limits(value: float | None, limits: Mapping[str, Any]) -> bool | None:
+    minimum = _number(limits.get("minimum"))
+    maximum = _number(limits.get("maximum"))
+    if value is None or (minimum is None and maximum is None):
+        return None
+    return (minimum is None or value >= minimum) and (
+        maximum is None or value <= maximum
+    )
+
+
 def _gate(name: str, passed: bool | None, observed: Any, expected: Any) -> dict[str, Any]:
     return {
         "name": name,
@@ -97,6 +107,7 @@ def _pet_reference(result: Mapping[str, Any], names: set[str]) -> dict[str, floa
 def _next_work_unit(
     *,
     spec: str,
+    reference_class: str,
     review_sha256: str,
     edge: str,
     skill: str,
@@ -107,6 +118,7 @@ def _next_work_unit(
 ) -> dict[str, Any]:
     identity = {
         "spec": spec,
+        "reference_class": reference_class,
         "review_sha256": review_sha256,
         "first_broken_edge": edge,
         "specialist_skill": skill,
@@ -118,6 +130,7 @@ def _next_work_unit(
         "specialist_skill": skill,
         "mode": mode,
         "scope": {"spec": spec, "first_broken_edge": edge},
+        "reference_class": reference_class,
         "expected_metric": expected_metric,
         "constraints": [
             "one specialist skill",
@@ -135,6 +148,7 @@ def evaluate_canary(
     spec: str,
     review_sha256: str,
     policy_sha256: str,
+    reference_class: str | None = None,
     fixes_used: int = 0,
     capture_attempts_used: int = 0,
 ) -> dict[str, Any]:
@@ -149,6 +163,21 @@ def evaluate_canary(
         raise SpecCanaryError("malformed_policy")
     if fixes_used < 0 or capture_attempts_used < 0:
         raise SpecCanaryError("attempt_counts_must_be_nonnegative")
+
+    reference_classes = policy.get("reference_classes") or {}
+    selected_reference_class = str(
+        reference_class
+        or review.get("reference_class")
+        or policy.get("default_reference_class")
+        or "controlled_live_parity"
+    )
+    if reference_classes and selected_reference_class not in reference_classes:
+        raise SpecCanaryError(
+            f"unsupported_reference_class:{selected_reference_class}"
+        )
+    selected_reference_policy = reference_classes.get(selected_reference_class) or {}
+    if not isinstance(selected_reference_policy, Mapping):
+        raise SpecCanaryError("malformed_reference_class_policy")
 
     max_fixes = int(policy.get("max_fix_attempts") or 0)
     max_captures = int(policy.get("max_capture_attempts") or 0)
@@ -165,6 +194,39 @@ def evaluate_canary(
             _gate("effective_stat_parity", stat_gate, stat_status or None, "match"),
             _gate("dps_tuning_admission", tuning_gate, tuning_admitted, True),
         ]
+    )
+
+    consumable_parity = review.get("consumable_parity") or {}
+    consumes_required = (
+        selected_reference_policy.get("requires_consumable_parity") is True
+    )
+    consume_status = str(
+        consumable_parity.get("status") or ""
+    ) if isinstance(consumable_parity, Mapping) else ""
+    consume_gate = (
+        True
+        if not consumes_required or consume_status == "match"
+        else False
+        if consume_status == "mismatch"
+        else None
+    )
+    gates.append(
+        _gate(
+            "consumable_parity",
+            consume_gate,
+            consumable_parity if consumable_parity else None,
+            {
+                "status": "match",
+                "inventory_backed": True,
+                "flask_native_use_before_scoring": 1,
+                "food_native_use_before_scoring": 1,
+                "prepot_native_use_before_combat": 1,
+                "combat_potion_native_use_during_combat": 1,
+                "static_aura_is_use_receipt": False,
+            }
+            if consumes_required
+            else "not_required_by_selected_reference_class",
+        )
     )
 
     runtime = review.get("runtime") or {}
@@ -225,6 +287,25 @@ def evaluate_canary(
         mode = "review_only"
         expected_metric = "dps_tuning_gate.tuning_admitted=true"
         evidence_gap = True
+    elif consume_gate is not True:
+        consume_edge = str(
+            consumable_parity.get("first_broken_edge") or ""
+        ) if isinstance(consumable_parity, Mapping) else ""
+        edge = consume_edge or "consumable_parity_observation"
+        if consume_gate is False:
+            skill = (
+                "raid-wowsims-reference"
+                if edge.startswith("wowsims_")
+                else "raid-shard-architecture"
+                if edge.startswith("consumable_inventory_")
+                else "raid-role-implementation"
+            )
+            expected_metric = "inventory-backed per-spec consumables and native-use receipts match"
+        else:
+            skill = "raid-rotation-review"
+            mode = "review_only"
+            expected_metric = "normalized consumable_parity.status=match"
+            evidence_gap = True
 
     result = review.get("wowsims_result") or {}
     execution = review.get("execution_comparison") or {}
@@ -350,8 +431,16 @@ def evaluate_canary(
     player_dps = result.get("player_dps") or {} if isinstance(result, Mapping) else {}
     wowsims_dps = _number(player_dps.get("avg")) if isinstance(player_dps, Mapping) else None
     total_dps_ratio = _ratio(runtime_dps, wowsims_dps)
-    total_limits = thresholds.get("total_dps_ratio") or {}
-    total_dps_pass = _in_range(total_dps_ratio, total_limits) if isinstance(total_limits, Mapping) else None
+    total_limits = (
+        selected_reference_policy.get("total_dps_ratio")
+        or thresholds.get("total_dps_ratio")
+        or {}
+    )
+    total_dps_pass = (
+        _meets_limits(total_dps_ratio, total_limits)
+        if isinstance(total_limits, Mapping)
+        else None
+    )
     gates.append(_gate("total_dps_ratio", total_dps_pass, total_dps_ratio, total_limits))
     if edge is None and total_dps_ratio is None:
         edge = "total_dps_observation"
@@ -377,7 +466,8 @@ def evaluate_canary(
         else:
             status = "insufficient_data"
             next_work_unit = _next_work_unit(
-                spec=spec, review_sha256=review_sha256, edge=edge or "unknown",
+                spec=spec, reference_class=selected_reference_class,
+                review_sha256=review_sha256, edge=edge or "unknown",
                 skill=skill or "raid-rotation-review", mode=mode, fixes_used=fixes_used,
                 captures_used=capture_attempts_used, expected_metric=expected_metric,
             )
@@ -387,7 +477,8 @@ def evaluate_canary(
     else:
         status = "failed"
         next_work_unit = _next_work_unit(
-            spec=spec, review_sha256=review_sha256, edge=edge or "unknown",
+            spec=spec, reference_class=selected_reference_class,
+            review_sha256=review_sha256, edge=edge or "unknown",
             skill=skill or "raid-rotation-review", mode=mode, fixes_used=fixes_used,
             captures_used=capture_attempts_used, expected_metric=expected_metric,
         )
@@ -395,6 +486,7 @@ def evaluate_canary(
     decision: dict[str, Any] = {
         "schema": "trinity_spec_canary_decision_v1",
         "spec": spec,
+        "reference_class": selected_reference_class,
         "status": status,
         "stage": "verification" if fixes_used else "baseline",
         "first_broken_edge": edge,
@@ -440,6 +532,7 @@ def main() -> int:
     parser.add_argument("--review", type=Path, required=True)
     parser.add_argument("--policy", type=Path, default=DEFAULT_POLICY)
     parser.add_argument("--spec", required=True)
+    parser.add_argument("--reference-class")
     parser.add_argument("--fixes-used", type=int, default=0)
     parser.add_argument("--capture-attempts-used", type=int, default=0)
     parser.add_argument("--output", type=Path)
@@ -451,6 +544,7 @@ def main() -> int:
     decision = evaluate_canary(
         load_object(review_path), load_object(policy_path), spec=args.spec,
         review_sha256=file_sha256(review_path), policy_sha256=file_sha256(policy_path),
+        reference_class=args.reference_class,
         fixes_used=args.fixes_used, capture_attempts_used=args.capture_attempts_used,
     )
     rendered = json.dumps(decision, indent=2, sort_keys=True) + "\n"

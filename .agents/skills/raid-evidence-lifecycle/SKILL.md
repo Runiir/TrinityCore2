@@ -48,6 +48,15 @@ These shutdown and persistence duties belong to the capture controller or coordi
   landed events, actor/target identity, and cleanup receipt. Zero global route
   bots or route trace entries are expected in this mode and are not themselves
   a rejection. Do not use this exception for a route or boss claim.
+- Bind the selected DPS `reference_class` in the report. For a
+  `self_provided_baseline`, retain the exact per-spec flask, food, pre-pot, and
+  combat-potion item IDs, provisioning readback, pre/post item counts,
+  successful native uses, and resulting auras. Require flask and food before
+  scoring, one pre-pot before combat, one combat potion during scoring, and
+  zero externally supplied raid buffs or pre-applied target debuffs. A directly
+  installed aura is not a consumable-use receipt. For
+  `controlled_live_parity`, retain the exact condition projection used by both
+  sides. Reference-class differences do not invalidate trace-only evidence.
 - Treat timing as part of evidence identity. The exact 300-second measurement
   window is valid only for an isolated training-dummy DPS calibration. Raid and
   dungeon captures must be completion-watchdog-driven and retain the typed

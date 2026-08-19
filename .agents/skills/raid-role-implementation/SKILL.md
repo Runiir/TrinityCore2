@@ -34,6 +34,14 @@ actions or making a total-DPS acceptance claim. Stop only when the proposed code
 change depends on the missing exact reference or when no attributable runtime
 signal remains.
 
+Read `benchmark.reference_class_policy` before using a DPS number. A
+`self_provided_baseline` is a one-sided floor, so exceeding it passes and is not
+an overtuning failure. Use `controlled_live_parity` for action ratios and
+damage-per-event diagnosis. Never compare Trinity against a UI or full-preset
+number whose race, professions, consumes, external buffs/debuffs, duration,
+variation, distance, or target differs. Such a difference narrows the usable
+signals; it does not halt the whole work unit.
+
 Compare only hashes with the same explicit field name; catalog file, canonical
 JSON, target-catalog, and receipt hashes are different identities. Treat
 `wowsims_source_relative_apl` as relative to the pinned WoWSims checkout, not
@@ -92,6 +100,13 @@ checks use completion watchdogs rather than a fixed 300-second timer:
   not change pet priority when cadence matches but damage per event does not.
   Return that case to `raid-class-mechanics-implementation` with the exact
   owner/pet stat and event ratios.
+  Provision the exact per-spec flask, food, pre-pot, and combat potion as real
+  inventory items. Teach the policy to use them through native item actions.
+  Require a successful pre-pot before combat, a successful potion during
+  combat, item-count changes, and the expected auras. A fixture-added aura is
+  not consumable-use evidence. If consumable execution differs, report that
+  first edge or regenerate a condition-matched reference before interpreting
+  total DPS.
 - Tank: threat retention and healer exposure, snap/add threat, taunt/interrupt,
   mitigation and defensive coverage, spike size, survival, action validity, and
   useful damage.

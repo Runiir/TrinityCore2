@@ -62,8 +62,38 @@ def test_dps_work_unit_binds_all_duplicate_roster_slots() -> None:
     assert "wowsims_apl" not in unit["source_paths"]
     assert unit["source_paths"]["wowsims_source_relative_apl"].startswith("ui/")
     reference_work = unit["benchmark"]["required_reference_work_unit"]
+    self_reference_work = unit["benchmark"][
+        "required_self_provided_reference_work_unit"
+    ]
+    reference_policy = unit["benchmark"]["reference_class_policy"]
     diagnostic = unit["benchmark"]["diagnostic_policy"]
     assert unit["benchmark"]["state_scope"] == "dps_acceptance_and_promotion_only"
+    assert unit["benchmark"]["accepted_dps_reference_class"] == (
+        "controlled_live_parity"
+    )
+    assert unit["benchmark"]["accepted_dps_status_authority"] == (
+        "current_work_unit_catalog_projection_overrides_embedded_run_metadata"
+    )
+    assert reference_policy["selected_acceptance_reference_class"] == (
+        "self_provided_baseline"
+    )
+    self_baseline = reference_policy["classes"]["self_provided_baseline"]
+    assert self_baseline["pass_rule"] == (
+        "runtime_dps_greater_than_or_equal_to_reference"
+    )
+    assert self_baseline["upper_rejection_bound"] is None
+    assert self_baseline["overtuned_is_failure"] is False
+    assert self_baseline["external_raid_buffs"] is False
+    assert self_baseline["preapplied_target_debuffs"] is False
+    assert self_baseline["consumables"] == {
+        "item_ids": "per_spec_exact",
+        "inventory_provisioning_required": True,
+        "flask": "native_use_before_scoring",
+        "food": "native_use_before_scoring",
+        "prepot": "one_native_use_before_combat",
+        "combat_potion": "one_native_use_during_combat",
+        "static_aura_is_use_receipt": False,
+    }
     assert diagnostic["state"] == "ready_trace_only"
     assert diagnostic["max_implementation_hypotheses"] == 1
     assert diagnostic["parameter_mismatch"] == (
@@ -73,14 +103,38 @@ def test_dps_work_unit_binds_all_duplicate_roster_slots() -> None:
     assert "simulator_dps_ratio" in diagnostic["forbidden_claims"]
     assert reference_work["owner_skill"] == "raid-wowsims-reference"
     assert reference_work["work_unit"] == "wowsims:cata_raid_dps_reference_cohort_v1"
+    assert reference_work["reference_class"] == "controlled_live_parity"
     assert reference_work["atomic_promotion_required"] is True
     assert reference_work["target_count"] == 16
     assert "fire_mage" in reference_work["target_specs"]
     assert reference_work["request_catalog_canonical_sha256"] == (
         workloop.wowsims_status()["request_catalog_canonical_sha256"]
     )
+    assert self_reference_work["reference_class"] == "self_provided_baseline"
+    assert self_reference_work["atomic_promotion_required"] is True
+    assert self_reference_work["duration_seconds"] == 300
+    assert self_reference_work["duration_variation_seconds"] == 0
+    assert self_reference_work["scope"] == "simulator_reference_generation_only"
+    assert self_reference_work[
+        "simulator_per_spec_consumable_item_ids_required"
+    ] is True
+    assert self_reference_work["runtime_receipts_are_not_reference_owner_output"] is True
+    runtime_consumables = unit["benchmark"][
+        "downstream_runtime_consumable_work_units"
+    ]
+    assert [row["owner_skill"] for row in runtime_consumables] == [
+        "raid-shard-architecture",
+        "raid-role-implementation",
+    ]
+    assert runtime_consumables[1]["depends_on"] == (
+        "consumable_inventory_provisioning"
+    )
+    assert runtime_consumables[1]["static_aura_is_use_receipt"] is False
     if unit["benchmark"]["state"] == "ready":
         assert unit["benchmark"]["accepted_dps"] > 0
+        assert unit["benchmark"]["next_action"] == (
+            "generate_self_provided_reference_and_continue_role_comparison"
+        )
     else:
         assert unit["benchmark"]["state"] == "blocked_exact_reference"
         assert unit["benchmark"]["accepted_dps"] is None

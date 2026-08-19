@@ -358,6 +358,114 @@ def test_effective_stat_parity_admits_tuning_only_after_owner_and_pet_match():
     )
 
 
+def test_consumable_parity_requires_inventory_backed_native_uses() -> None:
+    request, _ = _gear_fixture()
+    request["raid"]["parties"][0]["players"][0]["consumes"] = {
+        "flaskId": 58086,
+        "foodId": 62671,
+        "prepotId": 58091,
+        "potId": 58091,
+    }
+    runtime = _effective_stats_runtime()
+    bot = runtime["combat_calibration"]["previous_window"]["bots"][0]
+    bot["consumable_execution_observation"] = {
+        "schema": "trinity_consumable_execution_v1",
+        "inventory_backed": True,
+        "flask": {
+            "item_id": 58086,
+            "native_use_count": 1,
+            "inventory_count_before": 1,
+            "inventory_count_after": 0,
+            "expected_aura_observed": True,
+        },
+        "food": {
+            "item_id": 62671,
+            "native_use_count": 1,
+            "inventory_count_before": 1,
+            "inventory_count_after": 0,
+            "expected_aura_observed": True,
+        },
+        "prepot": {
+            "item_id": 58091,
+            "native_use_count": 1,
+            "inventory_count_before": 2,
+            "inventory_count_after": 1,
+            "expected_aura_observed": True,
+        },
+        "combat_potion": {
+            "item_id": 58091,
+            "native_use_count": 1,
+            "inventory_count_before": 1,
+            "inventory_count_after": 0,
+            "expected_aura_observed": True,
+        },
+    }
+    review = build_review(
+        wowsims_apl=_apl(),
+        wowsims_request=request,
+        wowsims_compute_stats=_compute_stats(),
+        wowsims_result=_debug_result_with_pet_stats(),
+        runtime_report=runtime,
+        reference_class="self_provided_baseline",
+    )
+    assert review["reference_class"] == "self_provided_baseline"
+    assert review["consumable_parity"]["status"] == "match"
+    assert review["dps_tuning_gate"]["tuning_admitted"] is True
+    assert review["total_dps_comparison_gate"]["comparison_admitted"] is True
+    assert "consumable_parity.status=match" in review[
+        "total_dps_comparison_gate"
+    ]["required"]
+
+
+def test_static_consumable_aura_does_not_count_as_item_use() -> None:
+    request, _ = _gear_fixture()
+    request["raid"]["parties"][0]["players"][0]["consumes"] = {
+        "flaskId": 58086,
+        "foodId": 62671,
+        "prepotId": 58091,
+        "potId": 58091,
+    }
+    runtime = _effective_stats_runtime()
+    bot = runtime["combat_calibration"]["previous_window"]["bots"][0]
+    bot["reference_condition_observation"] = {
+        "configured": {
+            "flask_item_id": 58086,
+            "food_item_id": 62671,
+        },
+        "dynamic_disabled": {
+            "prepot_item_id": 0,
+            "prepot_use_count": 0,
+            "combat_potion_item_id": 0,
+            "combat_potion_use_count": 0,
+        },
+    }
+    review = build_review(
+        wowsims_apl=_apl(),
+        wowsims_request=request,
+        wowsims_compute_stats=_compute_stats(),
+        wowsims_result=_debug_result_with_pet_stats(),
+        runtime_report=runtime,
+        reference_class="self_provided_baseline",
+    )
+    assert review["consumable_parity"]["status"] == "mismatch"
+    assert review["consumable_parity"]["inventory_backed"] is False
+    assert review["consumable_parity"]["first_broken_edge"] == (
+        "consumable_inventory_flask"
+    )
+    assert review["dps_tuning_gate"]["tuning_admitted"] is True
+    assert review["total_dps_comparison_gate"] == {
+        "status": "mismatch",
+        "comparison_admitted": False,
+        "required": [
+            "gear_parity.status=match",
+            "effective_stat_parity.status=match",
+            "consumable_parity.status=match",
+        ],
+        "first_broken_edge": "consumable_inventory_flask",
+        "trace_only_signals_remain_usable": True,
+    }
+
+
 def test_review_preserves_zero_priority_bucket():
     profile = _profile()
     profile["actions"][0]["priority_bucket"] = 0
@@ -729,7 +837,12 @@ def test_runtime_report_reads_nested_persistent_setup_pet_execution_observation(
 
 def test_runtime_timeline_is_bounded_and_observation_only_in_native_source():
     header = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text()
-    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    source = "\n".join(
+        path.read_text()
+        for path in sorted(
+            (ROOT / "src/server/game/Bots").glob("BotWorldPopulationMgr*.cpp")
+        )
+    )
 
     assert "std::vector<DecisionTimelineEntry> DecisionTimeline;" in header
     assert "std::vector<OffTargetDamageEvent> OffTargetDamageEvents;" in header
@@ -744,8 +857,8 @@ def test_runtime_timeline_is_bounded_and_observation_only_in_native_source():
     assert '\\\"pet_health\\\"' in source
     assert '\\\"periodic_health_aura_candidates\\\"' in source
     assert '\\\"scoring_start_stats\\\"' in source
-    assert "observeUnitStats(bot, metrics.ScoringStartPlayerStats);" in source
-    assert "observeUnitStats(bot->GetPet(), metrics.ScoringStartPetStats);" in source
+    assert "bot, startedMs, metrics.ScoringStartPlayerStats);" in source
+    assert "bot->GetPet(), startedMs, metrics.ScoringStartPetStats);" in source
     assert "SPELL_AURA_PERIODIC_HEALTH_FUNNEL" in source
     assert "victim == owner" in source
 

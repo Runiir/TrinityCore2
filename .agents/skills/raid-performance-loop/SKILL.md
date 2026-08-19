@@ -42,10 +42,28 @@ effective_stat_parity.status = match
 dps_tuning_gate.tuning_admitted = true
 ```
 
+Total-DPS claims additionally require
+`total_dps_comparison_gate.comparison_admitted = true`. Consumable mismatch
+fails that total-DPS gate without invalidating unaffected trace-only signals.
+
 `insufficient_data` routes to one bounded reference or capture work unit.
 `mismatch` routes to the owner of setup, stat application, or pet inheritance at
 the reported first-broken edge. Neither result may be retried as rotation tuning,
 and neither permits the coordinator to stop or restart the worldserver.
+
+Bind every DPS claim to one reference class. Use `self_provided_baseline` as a
+one-sided minimum floor with no upper rejection bound. It includes only effects
+the frozen player can provide through its own setup and normal actions. Require
+per-spec inventory provisioning and native use of the exact flask, food,
+pre-pot, combat potion, racial, and profession actions selected by the request.
+Use `controlled_live_parity` for exact cast, cadence, stat, and damage diagnosis.
+Keep `upstream_full_throughput` as a duration-bound capability/UI cross-check.
+Differences among these values are expected and do not block trace-only review.
+A missing class blocks only its own acceptance claim.
+The current work unit's catalog projection is authoritative for current versus
+stale classification. Embedded metadata in an older runtime report remains
+capture-time provenance and cannot override `accepted_dps_reference_class` or a
+`current_accepted` catalog classification.
 
 Use deterministic routing for an `insufficient_data` result:
 
@@ -125,6 +143,7 @@ For one-spec canaries, classify the closed comparison with:
 pixi run python -m tools.bot_ml.spec_canary_gate \
   --review /path/to/rotation-review.json \
   --spec affliction_warlock \
+  --reference-class self_provided_baseline \
   --output /tmp/affliction-canary-decision.json
 ```
 
@@ -133,3 +152,9 @@ verification, pass `--fixes-used 1`; a remaining mismatch then terminates as
 `fix_budget_exhausted`. Route cast mix, cadence, pet uptime, or pet event
 cadence to `raid-role-implementation`. Route matching cadence with wrong owner
 or primary-pet damage per event to `raid-class-mechanics-implementation`.
+When the selected denominator is `self_provided_baseline`, accept
+`runtime_dps >= reference_dps`; never fail a canary merely for exceeding the
+baseline. Before that comparison, require exact consumable parity. Provision
+the per-spec items and retain one successful native pre-pot use before combat
+plus one successful native combat-potion use during the scoring window when
+both are configured.

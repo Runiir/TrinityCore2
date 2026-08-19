@@ -446,8 +446,63 @@ def build_spec_work_unit(spec: str, root: Path = ROOT) -> dict[str, Any]:
             "state": "ready" if accepted is not None else "blocked_exact_reference",
             "state_scope": "dps_acceptance_and_promotion_only",
             "accepted_dps": accepted,
+            "accepted_dps_reference_class": "controlled_live_parity",
+            "accepted_dps_status_authority": (
+                "current_work_unit_catalog_projection_overrides_embedded_run_metadata"
+            ),
             "current_unpromoted_candidate": current,
             "stale_candidate_informational_only": stale,
+            "reference_class_policy": {
+                "selected_acceptance_reference_class": "self_provided_baseline",
+                "difference_between_classes": "expected_non_blocking",
+                "classes": {
+                    "self_provided_baseline": {
+                        "state": "requires_generation",
+                        "purpose": "one_sided_minimum_throughput_floor",
+                        "duration_seconds": 300,
+                        "duration_variation_seconds": 0,
+                        "external_raid_buffs": False,
+                        "external_individual_buffs": False,
+                        "preapplied_target_debuffs": False,
+                        "self_applied_class_effects": "normal_actions_only",
+                        "exact_player_identity_required": True,
+                        "pass_rule": "runtime_dps_greater_than_or_equal_to_reference",
+                        "upper_rejection_bound": None,
+                        "overtuned_is_failure": False,
+                        "consumables": {
+                            "item_ids": "per_spec_exact",
+                            "inventory_provisioning_required": True,
+                            "flask": "native_use_before_scoring",
+                            "food": "native_use_before_scoring",
+                            "prepot": "one_native_use_before_combat",
+                            "combat_potion": "one_native_use_during_combat",
+                            "static_aura_is_use_receipt": False,
+                        },
+                    },
+                    "controlled_live_parity": {
+                        "state": "ready" if accepted is not None else "missing",
+                        "catalog_classification": (
+                            "current_accepted" if accepted is not None else "missing"
+                        ),
+                        "purpose": "like_for_like_action_stat_and_damage_diagnosis",
+                        "accepted_dps": accepted,
+                        "condition_identity_required_for_total_dps": True,
+                    },
+                    "upstream_full_throughput": {
+                        "state": "informational_only",
+                        "purpose": "duration_bound_capability_and_ui_cross_check",
+                        "supplies_acceptance_denominator": False,
+                    },
+                },
+                "does_not_block": [
+                    "static_rotation_review",
+                    "unaffected_action_membership",
+                    "unaffected_priority_order",
+                    "eligible_cast_mix",
+                    "action_rejections",
+                    "pet_execution",
+                ],
+            },
             "diagnostic_policy": {
                 "state": "ready_trace_only",
                 "allowed_signals": [
@@ -473,6 +528,7 @@ def build_spec_work_unit(spec: str, root: Path = ROOT) -> dict[str, Any]:
             "required_reference_work_unit": {
                 "owner_skill": "raid-wowsims-reference",
                 "work_unit": "wowsims:cata_raid_dps_reference_cohort_v1",
+                "reference_class": "controlled_live_parity",
                 "atomic_promotion_required": True,
                 "target_count": len(roster["dps_targets"]),
                 "target_specs": roster["dps_targets"],
@@ -490,8 +546,48 @@ def build_spec_work_unit(spec: str, root: Path = ROOT) -> dict[str, Any]:
                     (reference.get("apl") or {}).get("path")
                 ),
             },
+            "required_self_provided_reference_work_unit": {
+                "owner_skill": "raid-wowsims-reference",
+                "work_unit": (
+                    "wowsims:self_provided_baseline:"
+                    "cata_raid_dps_reference_cohort_v1"
+                ),
+                "reference_class": "self_provided_baseline",
+                "scope": "simulator_reference_generation_only",
+                "atomic_promotion_required": True,
+                "target_count": len(roster["dps_targets"]),
+                "target_specs": roster["dps_targets"],
+                "duration_seconds": 300,
+                "duration_variation_seconds": 0,
+                "external_raid_buffs": False,
+                "external_individual_buffs": False,
+                "preapplied_target_debuffs": False,
+                "simulator_per_spec_consumable_item_ids_required": True,
+                "runtime_receipts_are_not_reference_owner_output": True,
+                "requested_spec": spec,
+            },
+            "downstream_runtime_consumable_work_units": [
+                {
+                    "owner_skill": "raid-shard-architecture",
+                    "first_broken_edge": "consumable_inventory_provisioning",
+                    "requires_exact_item_ids_from": "self_provided_baseline",
+                    "output": "inventory_provisioning_and_readback_receipt",
+                },
+                {
+                    "owner_skill": "raid-role-implementation",
+                    "first_broken_edge": "consumable_native_execution",
+                    "depends_on": "consumable_inventory_provisioning",
+                    "required_native_uses": [
+                        "flask_before_scoring",
+                        "food_before_scoring",
+                        "prepot_before_combat",
+                        "combat_potion_during_combat",
+                    ],
+                    "static_aura_is_use_receipt": False,
+                },
+            ],
             "next_action": (
-                "run_role_comparison"
+                "generate_self_provided_reference_and_continue_role_comparison"
                 if accepted is not None
                 else "run_trace_only_diagnostic_and_handoff_exact_reference"
             ),
