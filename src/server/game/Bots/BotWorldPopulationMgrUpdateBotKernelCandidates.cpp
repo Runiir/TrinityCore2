@@ -15,6 +15,7 @@
 #include <utility>
 
 using BotWorldPopulationMgrNativeHelpers::IsNativeCombatObserved;
+using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
 
 void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
     BotUpdateContext& context)
@@ -170,10 +171,10 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                 BotActionArbitration::Resource::GlobalCooldown,
                 BotActionArbitration::Resource::Cast,
                 BotActionArbitration::Resource::Target);
-            interrupt.Attempt = [&, context.AdaptiveOmnotronInterruptTargetGuid]()
+            interrupt.Attempt = [&, adaptiveOmnotronInterruptTargetGuid = context.AdaptiveOmnotronInterruptTargetGuid]()
             {
                 Unit* caster = ObjectAccessor::GetUnit(*context.Bot,
-                    context.AdaptiveOmnotronInterruptTargetGuid);
+                    adaptiveOmnotronInterruptTargetGuid);
                 if (!caster || !caster->IsAlive())
                     return BotActionArbitration::Outcome::NotApplicable(
                         "interrupt_caster_stale");
@@ -236,10 +237,10 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                 BotActionArbitration::Resource::GlobalCooldown,
                 BotActionArbitration::Resource::Cast,
                 BotActionArbitration::Resource::Target);
-            interrupt.Attempt = [&, context.AdaptiveMaloriakInterruptTargetGuid]()
+            interrupt.Attempt = [&, adaptiveMaloriakInterruptTargetGuid = context.AdaptiveMaloriakInterruptTargetGuid]()
             {
                 Unit* caster = ObjectAccessor::GetUnit(*context.Bot,
-                    context.AdaptiveMaloriakInterruptTargetGuid);
+                    adaptiveMaloriakInterruptTargetGuid);
                 if (!caster || !caster->IsAlive())
                     return BotActionArbitration::Outcome::NotApplicable(
                         "interrupt_caster_stale");
@@ -276,10 +277,10 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                 BotActionArbitration::Resource::GlobalCooldown,
                 BotActionArbitration::Resource::Cast,
                 BotActionArbitration::Resource::Target);
-            dispel.Attempt = [&, context.AdaptiveMaloriakDispelTargetGuid]()
+            dispel.Attempt = [&, adaptiveMaloriakDispelTargetGuid = context.AdaptiveMaloriakDispelTargetGuid]()
             {
                 Unit* auraTarget = ObjectAccessor::GetUnit(*context.Bot,
-                    context.AdaptiveMaloriakDispelTargetGuid);
+                    adaptiveMaloriakDispelTargetGuid);
                 if (!auraTarget || !auraTarget->IsAlive())
                     return BotActionArbitration::Outcome::NotApplicable(
                         "dispel_target_stale");
@@ -406,10 +407,10 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                 BotActionArbitration::Resource::GlobalCooldown,
                 BotActionArbitration::Resource::Cast,
                 BotActionArbitration::Resource::Target);
-            interrupt.Attempt = [&, context.AdaptiveNefarianInterruptTargetGuid]()
+            interrupt.Attempt = [&, adaptiveNefarianInterruptTargetGuid = context.AdaptiveNefarianInterruptTargetGuid]()
             {
                 Unit* caster = ObjectAccessor::GetUnit(*context.Bot,
-                    context.AdaptiveNefarianInterruptTargetGuid);
+                    adaptiveNefarianInterruptTargetGuid);
                 if (!caster || !caster->IsAlive())
                     return BotActionArbitration::Outcome::NotApplicable(
                         "interrupt_caster_stale");
@@ -446,10 +447,10 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                 BotActionArbitration::Resource::GlobalCooldown,
                 BotActionArbitration::Resource::Cast,
                 BotActionArbitration::Resource::Target);
-            ownership.Attempt = [&, context.AdaptiveDrudgeTankTargetGuid]()
+            ownership.Attempt = [&, adaptiveDrudgeTankTargetGuid = context.AdaptiveDrudgeTankTargetGuid]()
             {
                 Unit* source = ObjectAccessor::GetUnit(*context.Bot,
-                    context.AdaptiveDrudgeTankTargetGuid);
+                    adaptiveDrudgeTankTargetGuid);
                 if (!source || !source->IsAlive())
                     return BotActionArbitration::Outcome::Retryable(
                         "assigned_drudge_stale");
