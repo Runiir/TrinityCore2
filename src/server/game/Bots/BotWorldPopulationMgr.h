@@ -17,6 +17,7 @@
 #include "Bots/BotTelemetryBuffer.h"
 #include "Bots/BotTelemetryPolicy.h"
 #include "Bots/BotWorldPopulationMgrValidationRouteContexts.h"
+#include "Bots/BotWorldPopulationMgrValidationRouteGroupRecovery.h"
 #include "Bots/BotWorldPopulationMgrValidationRouteMovementCheck.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudge.h"
 #include "Bots/BotTypes.h"
@@ -157,7 +158,10 @@ private:
         BotWorldPopulationMgrValidationRoute::AnchorContext;
     using ValidationRouteMovementCheckCallbacks =
         BotWorldPopulationMgrValidationRoute::MovementCheckCallbacks;
+    using ValidationRouteGroupRecoveryCallbacks =
+        BotWorldPopulationMgrValidationRoute::GroupRecoveryCallbacks;
     friend struct BotWorldPopulationMgrValidationRoute::DrudgeLaneContext;
+    friend struct BotWorldPopulationMgrValidationRoute::GroupRecoveryContext;
     friend struct BotWorldPopulationMgrContent::Stonecore::HighPriestessAzil::Context;
 
 #include "Bots/BotWorldPopulationMgrPlanningContracts.h"
@@ -364,6 +368,11 @@ private:
         std::function<ObjectGuid()> const& routeTankFocusGuid,
         std::function<bool()> const& persistedPackHasLiveMembers);
     bool TryValidationRouteMovementCheck(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action, Unit* preferredTarget, ValidationRouteMovementCheckCallbacks const& callbacks);
+    bool TryValidationRouteGroupRecovery(WorldBotState& state, Player* bot,
+        BotRolePowerBreakdown const& power, BotProgressionStage stage,
+        BotProgressionActivity activity, std::string& situation,
+        std::string& action, Unit*& target, bool discoveryLeg,
+        ValidationRouteGroupRecoveryCallbacks const& callbacks);
     bool TryValidationRouteDrudgeChargeLanes(WorldBotState&, Player*, BotRolePowerBreakdown const&, BotProgressionStage, BotProgressionActivity, std::string&, std::string&, Unit*&, std::function<bool(Player*, Unit*, bool, bool)> const&, std::function<bool(Creature const*)> const&, std::function<float()> const&, float);
     bool TryValidationRouteDrudgeMinimumDistance(WorldBotState&, Player*, BotRolePowerBreakdown const&, BotProgressionStage, BotProgressionActivity, std::string&, std::string&, Unit*&, std::function<bool(Creature const*)> const&, bool = false);
     bool TryValidationRouteFeralHazardHealerRoar(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action);
