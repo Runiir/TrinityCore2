@@ -33,7 +33,6 @@ uint64 ReadLastInsertId()
     return 0;
 }
 
-float Distance2d(float ax, float ay, float bx, float by)
 
 std::string BoundedResultLabel(char const* result)
 {
@@ -426,4 +425,3 @@ std::string BotWorldPopulationMgr::CompareBrains(uint64 replayId, std::string co
     json << "}";
     return json.str();
 }
-

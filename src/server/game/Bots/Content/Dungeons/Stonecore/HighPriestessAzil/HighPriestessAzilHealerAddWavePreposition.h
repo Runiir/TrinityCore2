@@ -31,6 +31,7 @@ struct PassiveSwarmStagingRequest;
 struct TankThreatRecoveryRequest;
 struct SwarmThreatSafetyRequest;
 struct HighDensityPositioningRequest;
+struct DensityCombatResolutionRequest;
 
 struct GroupHealCallback
 {
@@ -77,6 +78,7 @@ struct Context
     static bool Run(TankThreatRecoveryRequest const& request);
     static bool Run(SwarmThreatSafetyRequest const& request);
     static bool Run(HighDensityPositioningRequest const& request);
+    static bool Run(DensityCombatResolutionRequest const& request);
 };
 
 bool TryHealerAddWavePreposition(

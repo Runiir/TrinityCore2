@@ -9,6 +9,7 @@
 #include "Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilFeralActiveSwarmMovement.h"
 #include "Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilHunterThreatTransfer.h"
 #include "Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilHighDensityPositioning.h"
+#include "Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilDensityCombatResolution.h"
 #include "Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilPassiveSwarmStaging.h"
 #include "Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilTankThreatRecovery.h"
 #include "Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilSwarmThreatSafety.h"
@@ -678,12 +679,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             addWaveDiscovery.IsUsableListedAdd;
         bool sharedLargePassiveSwarmStaging =
             addWaveDensity.SharedLargePassiveSwarmStaging;
-        bool highDensityPhase = addWaveDensity.HighDensityPhase;
         bool swarmDefenseActive = addWaveDensity.SwarmDefenseActive;
         std::string const& role = addWaveDensity.Role;
         BotClassSpecActionProfile const& profile = addWaveDensity.Profile;
         uint32 reservedAreaSpellId = addWaveDensity.ReservedAreaSpellId;
-        Creature* densityApproachAnchor = addWaveDensity.DensityApproachAnchor;
         Player* densityTank = addWaveDensity.DensityTank;
         Player* densityHealer = addWaveDensity.DensityHealer;
         Player* densityDefenseTarget = addWaveDensity.DensityDefenseTarget;
@@ -695,7 +694,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             addWaveDensity.DensityTankOwnsVictimMajority;
         bool urgentSwarmDamageRelease =
             addWaveDensity.UrgentSwarmDamageRelease;
-        bool dpsSwarmDamageRelease = addWaveDensity.DpsSwarmDamageRelease;
         bool botInsideTankPickup = addWaveDensity.BotInsideTankPickup;
         std::function<size_t(Player const*)> observedListedAttackerCount =
             addWaveDensity.ObservedListedAttackerCount;
@@ -962,164 +960,26 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (highDensityPositioningReturnFalse)
             return false;
 
-        if (highDensityPhase && !add && densityApproachAnchor)
-        {
-            ResolvedCombatAction approachAction;
-            approachAction.MovementDirective = profile.MovementDirective;
-            approachAction.AutoAttackMode = profile.AutoAttackMode;
-            approachAction.MinRange = profile.MinRange;
-            approachAction.MaxRange = profile.MaxRange;
-            bool moved = MoveBotToProfileRange(state, bot, densityApproachAnchor, &approachAction);
-            std::string raw = BuildRawJson(bot, densityApproachAnchor);
-            std::string semantic = BuildSemanticJson(bot, densityApproachAnchor, "dungeon_boss", &power, stage, activity);
-            RecordEvent(state, bot, "boss_add_density", densityApproachAnchor, "approach_density_anchor", raw.c_str(), semantic.c_str(),
-                bot->GetExactDist(densityApproachAnchor), addCount);
-            state.TargetGuid = densityApproachAnchor->GetGUID();
-            target = densityApproachAnchor;
-            situation = "dungeon_boss";
-            action = moved ? "move_to_density_anchor_range" : "hold_density_anchor_range";
-            return true;
-        }
-        if (!add)
-        {
-            if (!highDensityPhase)
-                return false;
-
-            std::string raw = BuildRawJson(bot, nullptr);
-            std::string semantic = BuildSemanticJson(bot, nullptr, "dungeon_boss", &power, stage, activity);
-            RecordEvent(state, bot, "boss_add_density", nullptr, "no_compatible_density_anchor", raw.c_str(), semantic.c_str(), float(addCount));
-            state.TargetGuid.Clear();
-            target = nullptr;
-            situation = "dungeon_boss";
-            action = "hold_boss_add_density";
-            return true;
-        }
-        if (!highDensityPhase && !sharedFocusValid)
-        {
-            Party().ValidationRouteAddFocusGuid = add->GetGUID();
-            Party().ValidationRouteAddFocusGeneration = Party().ValidationRouteGeneration;
-        }
-        if (!bot->IsValidAttackTarget(add))
-        {
-            std::string raw = BuildRawJson(bot, add);
-            std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
-            RecordEvent(state, bot, "boss_adds", add, "hold_unattackable_focus", raw.c_str(), semantic.c_str(), float(addCount));
-            state.TargetGuid = add->GetGUID();
-            target = add;
-            situation = "dungeon_boss";
-            action = "hold_boss_add_focus";
-            return true;
-        }
-
-        // The boss can remain attackable while a complete add wave activates.
-        // Tanks must enter their area-threat profile immediately in that case;
-        // otherwise they alternate single-target taunts while healing threat
-        // assigns most of an Azil follower wave to the healer.  DPS still wait
-        // for secure ownership before using their own area profiles.
-        bool tankSwarmAreaPhase = role == "tank" && cohortSwarmActive;
-        bool secureSwarmAreaPhase = role == "dps" && cohortSwarmActive
-            && (dpsSwarmDamageRelease || hunterMisdirectionActive);
-        bool densityAreaPhase = highDensityPhase || tankSwarmAreaPhase || secureSwarmAreaPhase;
-        ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, add,
-            densityAreaPhase ? addCount : 0, densityAreaPhase);
-        // A tank with an active scripted swarm must not spend native area
-        // resources through the ordinary single-target fallback. In particular,
-        // Heart Strike can consume the Blood rune needed by the next Blood Boil
-        // after the strict area resolver reports only cooldown/resource gates.
-        // The invalid-area branch below preserves auto-attack uptime without
-        // consuming that resource, while non-swarm and non-tank fallbacks retain
-        // their existing behavior.
-        bool preserveTankSwarmAreaResources = role == "tank" && cohortSwarmActive;
-        bool densitySingleTargetFallback = densityAreaPhase && !profileAction.Valid
-            && !preserveTankSwarmAreaResources;
-        if (densitySingleTargetFallback)
-            profileAction = ResolveProfileCombatAction(bot, add);
-        if (densityAreaPhase && !profileAction.Valid)
-        {
-            if (role == "tank")
-            {
-                BotActionResult pull = SubmitMeleeAutoAttackIntent(state,
-                    BotMeleeAutoAttack::Kind::StartOrSwitch,
-                    add->GetGUID(), BotMeleeAutoAttack::Owner::Threat,
-                    BotActionArbitration::Priority::ThreatControl,
-                    "tank_density_autoattack_fallback")
-                        ? BotActionResult::Ok : BotActionResult::NoAction;
-                if (pull == BotActionResult::Ok)
-                {
-                    std::string raw = BuildRawJson(bot, add);
-                    std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
-                    RecordEvent(state, bot, "boss_add_density", add, "tank_auto_attack_density_fallback",
-                        raw.c_str(), semantic.c_str(), float(addCount));
-                    state.TargetGuid = add->GetGUID();
-                    state.WasInCombat = true;
-                    target = add;
-                    situation = "dungeon_boss";
-                    action = "tank_auto_attack_density_fallback";
-                    return true;
-                }
-            }
-            std::string raw = BuildRawJson(bot, add);
-            std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
-            RecordEvent(state, bot, "boss_add_density", add, "no_legal_density_action", raw.c_str(), semantic.c_str(), float(addCount));
-            state.TargetGuid = add->GetGUID();
-            target = add;
-            situation = "dungeon_boss";
-            action = "hold_boss_add_density";
-            return true;
-        }
-        bool densityGenerator = densityAreaPhase && profileAction.DebugName == "resource_generator";
-        if (densityAreaPhase)
-        {
-            std::string raw = BuildRawJson(bot, add);
-            std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
-            char const* densityActionReason = densitySingleTargetFallback
-                ? "single_target_fallback_selected"
-                : (densityGenerator ? "resource_generator_selected" : "area_action_selected");
-            RecordEvent(state, bot, "boss_add_density", add, densityActionReason, raw.c_str(), semantic.c_str(), float(addCount), 0, profileAction.SpellId);
-        }
-        uint32 spellId = profileAction.SpellId;
-        float engageRange = profileAction.MaxRange > 0.0f ? profileAction.MaxRange : routeEngageRange(bot, add, spellId);
-        bool approach = bot->GetExactDist(add) > std::max(5.0f, engageRange - 1.0f) || !bot->IsWithinLOSInMap(add);
-        bool continuingStableApproach = approach && continueStableTankSwarmApproach(add);
-        BotActionResult result = BotActionResult::NoAction;
-        if (approach && !continuingStableApproach)
-            MoveBotToProfileRange(state, bot, add, &profileAction);
-        else if (!approach)
-        {
-            if (densityAreaPhase)
-                result = ExecuteProfileCombatAction(&state, bot, add, &profileAction, addCount, true);
-            else
-            {
-                BotActionResult pull = profileAction.AutoAttackMode == "melee"
-                    && SubmitMeleeAutoAttackIntent(state,
-                        BotMeleeAutoAttack::Kind::StartOrSwitch,
-                        add->GetGUID(), BotMeleeAutoAttack::Owner::Profile,
-                        BotActionArbitration::Priority::TrainedDamage,
-                        "boss_add_melee_engagement")
-                            ? BotActionResult::Ok : BotActionResult::NoAction;
-                result = ExecuteProfileCombatAction(&state, bot, add, &profileAction);
-                if (result == BotActionResult::NoAction)
-                    result = pull;
-            }
-        }
-
-        std::string raw = BuildRawJson(bot, add);
-        std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
-        RecordEvent(state, bot, "boss_adds", add,
-            continuingStableApproach ? "continue_stable_swarm_approach"
-                : (approach ? "approach_target" : ToString(result)),
-            raw.c_str(), semantic.c_str(), float(addCount), 0,
-            result == BotActionResult::Ok ? spellId : 0);
-        state.TargetGuid = add->GetGUID();
-        state.WasInCombat = true;
-        target = add;
-        situation = "dungeon_boss";
-        action = continuingStableApproach ? "continue_stable_tank_swarm_approach"
-            : (approach ? "move_to_boss_add"
-                : (densitySingleTargetFallback ? "focused_attack_boss_add_density"
-                    : (densityGenerator ? "generate_resource_boss_add_density"
-                        : (densityAreaPhase ? "area_attack_boss_add_density" : "switch_to_boss_add"))));
-        return true;
+        BotWorldPopulationMgrContent::Stonecore::HighPriestessAzil::DensityCombatResolutionRequest densityCombatResolutionRequest;
+        densityCombatResolutionRequest.Manager = this;
+        densityCombatResolutionRequest.State = &state;
+        densityCombatResolutionRequest.Bot = bot;
+        densityCombatResolutionRequest.Power = &power;
+        densityCombatResolutionRequest.Stage = stage;
+        densityCombatResolutionRequest.Activity = activity;
+        densityCombatResolutionRequest.Discovery = &addWaveDiscovery;
+        densityCombatResolutionRequest.Density = &addWaveDensity;
+        densityCombatResolutionRequest.Add = add;
+        densityCombatResolutionRequest.SharedFocusValid = sharedFocusValid;
+        densityCombatResolutionRequest.HunterMisdirectionActive = hunterMisdirectionActive;
+        densityCombatResolutionRequest.ContinueStableTankSwarmApproach =
+            continueStableTankSwarmApproach;
+        densityCombatResolutionRequest.RouteEngageRange = routeEngageRange;
+        densityCombatResolutionRequest.Situation = &situation;
+        densityCombatResolutionRequest.Action = &action;
+        densityCombatResolutionRequest.Target = &target;
+        return BotWorldPopulationMgrContent::Stonecore::HighPriestessAzil::TryDensityCombatResolution(
+            densityCombatResolutionRequest);
     };
     auto markValidationRouteTerminalAfterProgress = [&](char const* reason) -> void
     {

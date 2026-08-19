@@ -43,9 +43,7 @@ def test_azil_high_density_positioning_owns_the_exact_ordered_window():
     module = MODULE.read_text(encoding="utf-8")
 
     dispatch = world.index("TryHighDensityPositioning(")
-    continuation = world.index(
-        "if (highDensityPhase && !add && densityApproachAnchor)", dispatch
-    )
+    continuation = world.index("TryDensityCombatResolution(", dispatch)
     manager_gap = world[dispatch:continuation]
     for marker in (
         "densityHealerRange",

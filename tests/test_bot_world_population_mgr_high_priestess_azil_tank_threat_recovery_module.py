@@ -106,10 +106,7 @@ def test_azil_tank_threat_recovery_keeps_native_execution_and_callbacks():
     assert world.index("continueStableTankSwarmApproach =") < world.index(
         "TryTankThreatRecovery("
     )
-    assert world.index("TryTankThreatRecovery(") < world.index(
-        "continueStableTankSwarmApproach(add)",
-        world.index("TryTankThreatRecovery("),
-    )
+    assert "continueStableTankSwarmApproach(add)" in module
     for marker in (
         "manager.TryCastCombatSpell(",
         "manager.TryCastFriendlySpell(",
