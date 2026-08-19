@@ -3459,6 +3459,31 @@ def parse_debug_pet_stat_references(
     return {**observation, "observation_sha256": canonical_sha256(observation)}
 
 
+def validate_debug_reexecution_observation(
+    *,
+    rerun_result: Mapping[str, Any],
+    recorded_result: Mapping[str, Any],
+    receipt_observation: Mapping[str, Any],
+    expected_pet_kind: str,
+) -> dict[str, Any]:
+    """Require parsed pet evidence to match across all reexecution sources."""
+    recorded_observation = parse_debug_pet_stat_references(
+        recorded_result, expected_pet_kind=expected_pet_kind
+    )
+    _require(
+        recorded_observation == receipt_observation,
+        "audit:recorded_debug_result_identity",
+    )
+    rerun_observation = parse_debug_pet_stat_references(
+        rerun_result, expected_pet_kind=expected_pet_kind
+    )
+    _require(
+        rerun_observation == recorded_observation,
+        "audit:debug_result_identity",
+    )
+    return rerun_observation
+
+
 def validate_debug_pet_evidence(
     debug_record: Mapping[str, Any],
     *,
@@ -4310,24 +4335,17 @@ def audit_generation_reexecution(
             _require_normal_child(debug_sim_outcome, label="audit:debug_sim")
             _require(debug_result_path.is_file(), "audit:debug_result_missing")
             debug_rerun_bytes = debug_result_path.read_bytes()
-            _require(
-                debug_rerun_bytes == expected_debug_result_path.read_bytes(),
-                "audit:debug_result_bytes",
-            )
             debug_result = _json_object_from_bytes(
                 debug_rerun_bytes, label="audit:rerun_debug_result"
             )
             expected_debug_result = _json_object_from_bytes(
                 expected_debug_result_path.read_bytes(), label="audit:expected_debug_result"
             )
-            debug_observation = parse_debug_pet_stat_references(
-                debug_result,
+            debug_observation = validate_debug_reexecution_observation(
+                rerun_result=debug_result,
+                recorded_result=expected_debug_result,
+                receipt_observation=debug_record.get("observation") or {},
                 expected_pet_kind=str(debug_record.get("pet_kind") or ""),
-            )
-            _require(
-                debug_observation == debug_record.get("observation")
-                and debug_result == expected_debug_result,
-                "audit:debug_result_identity",
             )
     observation = {
         "schema": "wowsims_generation_reexecution_audit_v1",
@@ -4341,6 +4359,11 @@ def audit_generation_reexecution(
         "debug_result_sha256": (
             hashlib.sha256(debug_rerun_bytes).hexdigest()
             if debug_rerun_bytes is not None
+            else None
+        ),
+        "debug_result_observation_sha256": (
+            debug_observation["observation_sha256"]
+            if debug_required
             else None
         ),
         "compute_stats_sha256": sha256_file(expected_compute_path),

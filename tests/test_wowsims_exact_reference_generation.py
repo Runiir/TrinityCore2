@@ -28,6 +28,7 @@ from tools.bot_ml.run_wowsims_exact_references import (
     project_native_request_conditions,
     store_content_addressed_bytes,
     transform_apl_rotation,
+    validate_debug_reexecution_observation,
     validate_exact_native_request_bytes,
     validate_dvc_bundle_pre_pull,
     validate_effective_stat_reference,
@@ -1219,6 +1220,64 @@ def test_debug_pet_stat_references_require_timestamp_zero_pair() -> None:
     )
     with pytest.raises(WowsimsGenerationError, match="pet_stats:payload_json"):
         parse_debug_pet_stat_references(malformed, expected_pet_kind="felhunter")
+
+
+def test_debug_reexecution_observation_ignores_action_target_ordering() -> None:
+    recorded = debug_result_with_pet()
+    recorded["raidMetrics"]["parties"][0]["players"][0]["actions"] = [
+        {
+            "id": {"spellId": 172},
+            "targets": [
+                {"unitIndex": 0, "casts": 1, "damage": 10},
+                {"unitIndex": 1, "casts": 2, "damage": 11},
+            ],
+        },
+        {
+            "id": {"spellId": 47897},
+            "targets": [
+                {"unitIndex": 0, "casts": 3, "damage": 20},
+                {"unitIndex": 1, "casts": 4, "damage": 21},
+            ],
+        },
+    ]
+    rerun = copy.deepcopy(recorded)
+    rerun["raidMetrics"]["parties"][0]["players"][0]["actions"].reverse()
+    for action in rerun["raidMetrics"]["parties"][0]["players"][0]["actions"]:
+        action["targets"].reverse()
+    receipt_observation = parse_debug_pet_stat_references(
+        recorded, expected_pet_kind="felhunter"
+    )
+    observed = validate_debug_reexecution_observation(
+        rerun_result=rerun,
+        recorded_result=recorded,
+        receipt_observation=receipt_observation,
+        expected_pet_kind="felhunter",
+    )
+    assert observed == receipt_observation
+
+
+@pytest.mark.parametrize("mutation", ["pet_stat", "debug_log"])
+def test_debug_reexecution_observation_rejects_pet_or_log_changes(
+    mutation: str,
+) -> None:
+    recorded = debug_result_with_pet()
+    rerun = copy.deepcopy(recorded)
+    if mutation == "pet_stat":
+        rerun["logs"] = rerun["logs"].replace(
+            '"Strength":453.000', '"Strength":454.000', 1
+        )
+    else:
+        rerun["logs"] += "debug-only\n"
+    receipt_observation = parse_debug_pet_stat_references(
+        recorded, expected_pet_kind="felhunter"
+    )
+    with pytest.raises(WowsimsGenerationError, match="audit:debug_result_identity"):
+        validate_debug_reexecution_observation(
+            rerun_result=rerun,
+            recorded_result=recorded,
+            receipt_observation=receipt_observation,
+            expected_pet_kind="felhunter",
+        )
 
 
 def test_compute_stats_rejects_any_apl_warning() -> None:
