@@ -3,6 +3,7 @@
 
 #include "Creature.h"
 #include "GameTime.h"
+#include "Pet.h"
 #include "Player.h"
 #include "Unit.h"
 
@@ -162,4 +163,3 @@ void BotWorldPopulationMgr::SuppressNativeRaidRecovery(WorldBotState& state, Pla
     state.LastRecoveryResult = "native_recovery_evidence_pending";
     state.LastNoProgressReason = "native_recovery_evidence_pending";
 }
-
