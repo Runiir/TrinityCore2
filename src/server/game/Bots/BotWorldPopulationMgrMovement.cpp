@@ -1,5 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
+#include "Player.h"
+
 bool BotWorldPopulationMgr::MoveBotToPoint(
     WorldBotState& state, Player* bot, float x, float y, float z,
     bool terminalOnFailure, BotMovementArbitration::Owner movementOwner,

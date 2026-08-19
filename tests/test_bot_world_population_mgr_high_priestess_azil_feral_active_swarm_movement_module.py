@@ -46,7 +46,7 @@ def test_azil_active_swarm_movement_owns_the_bounded_window():
 
     remote_dispatch = world.index("TryFeralRemoteActions(")
     active_dispatch = world.index("TryFeralActiveSwarmMovement(")
-    hunter_window = world.index("bool hunterAoeTransferReady = true;")
+    hunter_window = world.index("TryHunterThreatTransfer(")
     assert remote_dispatch < active_dispatch < hunter_window
     manager_gap = world[remote_dispatch:hunter_window]
     assert "activeSwarmPickupNowMs" not in manager_gap
