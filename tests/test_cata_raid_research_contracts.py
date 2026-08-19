@@ -309,11 +309,12 @@ def test_bwd_certification_route_is_native_and_fail_closed() -> None:
     assert all(row.get("activation_summon_entry", 0) == 0 for row in bosses)
 
     by_label = {row["label"]: row for row in bosses}
-    for label in ("Atramedes", "Nefarian"):
-        assert by_label[label].get("activation_data_id", 0) == 0
-        assert by_label[label]["source_guid"] == "native_instance_unlock"
-    assert by_label["Omnotron Defense System"]["activation_action_entry"] == 42186
-    assert by_label["Omnotron Defense System"]["activation_action_id"] == 1
+    assert by_label["Atramedes"].get("activation_data_id", 0) == 0
+    assert by_label["Atramedes"]["source_guid"] == "native_bell_summon"
+    assert by_label["Nefarian"].get("activation_data_id", 0) == 0
+    assert by_label["Nefarian"]["source_guid"] == "native_orb_summon"
+    assert by_label["Omnotron Defense System"].get("activation_action_entry", 0) == 0
+    assert by_label["Omnotron Defense System"].get("activation_action_id", 0) == 0
 
 
 def test_bwd_scenario_audit_reconstructs_and_blocks_unproven_native_unlocks() -> None:
