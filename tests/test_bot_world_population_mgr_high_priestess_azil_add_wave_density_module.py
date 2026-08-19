@@ -13,6 +13,9 @@ MODULE = MODULE_HEADER.with_suffix(".cpp")
 HEALER_HEADER = MODULE_HEADER.with_name(
     "HighPriestessAzilHealerAddWavePreposition.h"
 )
+OPENING_MODULE = MODULE_HEADER.with_name(
+    "HighPriestessAzilAddWaveOpeningActions.cpp"
+)
 
 
 def test_azil_add_wave_density_is_registered_and_bounded():
@@ -37,10 +40,12 @@ def test_azil_add_wave_density_is_registered_and_bounded():
 def test_azil_density_owns_prearrival_and_generation_state_before_pending_pickup():
     source = SOURCE.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
+    opening_module = OPENING_MODULE.read_text(encoding="utf-8")
 
     density_call = source.index("ResolveAddWaveDensity(")
-    pending_pickup = source.index("pendingSwarmPickupNowMs")
-    assert density_call < pending_pickup
+    assert "pendingSwarmPickupNowMs" not in source
+    assert density_call < source.index("TryAddWaveOpeningActions(")
+    assert "pendingSwarmPickupNowMs" in opening_module
     for marker in (
         "sharedLargePassiveSwarmStaging",
         "CanonicalRouteDistance > request.RouteArrivalRadius",

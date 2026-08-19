@@ -2,6 +2,7 @@
 #include "Bots/BotTelemetryBuffer.h"
 
 #include "Config.h"
+#include "DataStores/DBCEnums.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -303,4 +304,3 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     telemetry.MaxOpenClipsPerBot = std::max<uint32>(1, sConfigMgr->GetIntDefault("BotTelemetry.MaxOpenClipsPerBot", telemetry.MaxOpenClipsPerBot));
     Cohort().TelemetryBuffer.Configure(telemetry);
 }
-
