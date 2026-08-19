@@ -30,7 +30,7 @@ def test_shared_focus_action_moves_the_requested_contiguous_boundary_once():
         "terminalArrivalContext.RunSharedFocusAction"
     )
     assert source.index("terminalArrivalContext.RunSharedFocusAction") < source.index(
-        'if (std::string(GetDungeonRole(bot)) != "tank"'
+        "terminalArrivalContext.RunActiveCombat"
     )
     for marker in (
         "assist_target_search_authoritative_focus_",
