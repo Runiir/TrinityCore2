@@ -31,6 +31,8 @@ bool ObjectiveContext::RunTankFocusAssist(
     std::string& situation = Situation;
     std::string& action = Action;
     Unit*& target = Target;
+    using BossMechanicActionResult =
+        BotWorldPopulationMgr::BossMechanicActionResult;
 
     auto const& GetDungeonRole = callbacks.GetDungeonRole;
     auto const& routeUsableCombatTarget =
@@ -113,7 +115,12 @@ bool ObjectiveContext::RunTankFocusAssist(
         return Manager.FindDungeonAnchor(
             std::forward<decltype(args)>(args)...);
     };
-
+    auto SubmitMeleeAutoAttackIntent = [this](auto&&... args)
+        -> decltype(auto)
+    {
+        return Manager.SubmitMeleeAutoAttackIntent(
+            std::forward<decltype(args)>(args)...);
+    };
 
     if (std::string(GetDungeonRole(bot)) == "tank")
     {
@@ -377,5 +384,6 @@ bool ObjectiveContext::RunTankFocusAssist(
             return true;
         }
     }
+    return false;
 }
 }
