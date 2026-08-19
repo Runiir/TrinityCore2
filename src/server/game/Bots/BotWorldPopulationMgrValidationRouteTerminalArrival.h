@@ -9,6 +9,9 @@
 
 namespace BotWorldPopulationMgrValidationRoute
 {
+struct TrashThreatControl;
+struct TrashThreatControlCallbacks;
+
 struct ObjectiveCallbacks
 {
     std::function<bool()> PersistedPackHasLiveMembers;
@@ -57,6 +60,8 @@ struct ObjectiveContext
         ObjectiveCallbacks callbacks);
 
     bool Run();
+    bool RunTrashThreatControl(TrashThreatControl& trashThreatControl,
+        TrashThreatControlCallbacks const& callbacks);
 };
 }
 
