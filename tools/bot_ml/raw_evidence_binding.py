@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import math
@@ -1428,19 +1429,95 @@ def _calibration_projection(calibration: Mapping[str, Any]) -> dict[str, Any]:
     return projection
 
 
+def _latest_calibration_status(
+    payloads: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Recover the latest direct or completely reassembled calibration status."""
+    latest: dict[str, Any] = {}
+    chunks: dict[int, Mapping[str, Any]] = {}
+    expected = 0
+    cohort_id = ""
+
+    for payload in payloads:
+        action = str(payload.get("action") or "")
+        if action == "botauto_calibrate_status":
+            latest = dict(payload)
+            chunks = {}
+            expected = 0
+            cohort_id = str(payload.get("cohort_id") or "")
+            continue
+        if action == "botauto_calibrate_status_chunk":
+            try:
+                sequence = int(payload.get("sequence"))
+                chunk_count = int(payload.get("chunk_count"))
+            except (TypeError, ValueError):
+                latest = {}
+                continue
+            row_cohort = str(payload.get("cohort_id") or "")
+            if sequence == 0:
+                latest = {}
+                chunks = {}
+                expected = chunk_count
+                cohort_id = row_cohort
+            if (
+                chunk_count <= 0
+                or chunk_count != expected
+                or sequence < 0
+                or sequence >= expected
+                or row_cohort != cohort_id
+                or payload.get("encoding") != "base64"
+                or int(payload.get("calibration_status_chunk_schema_version") or 0)
+                != 1
+            ):
+                latest = {}
+                continue
+            chunks[sequence] = payload
+            continue
+        if action != "botauto_calibrate_status_complete":
+            continue
+
+        try:
+            completion_expected = int(payload.get("chunk_count"))
+            total_bytes = int(payload.get("total_bytes"))
+        except (TypeError, ValueError):
+            completion_expected = 0
+            total_bytes = 0
+        complete = (
+            int(payload.get("calibration_status_chunk_schema_version") or 0) == 1
+            and str(payload.get("cohort_id") or "") == cohort_id
+            and completion_expected == expected
+            and expected > 0
+            and set(chunks) == set(range(expected))
+        )
+        decoded: Any = None
+        if complete:
+            try:
+                raw = b"".join(
+                    base64.b64decode(chunks[index]["data"], validate=True)
+                    for index in range(expected)
+                )
+                decoded = json.loads(raw)
+                complete = (
+                    len(raw) == total_bytes
+                    and isinstance(decoded, dict)
+                    and decoded.get("action") == "botauto_calibrate_status"
+                    and str(decoded.get("cohort_id") or "") == cohort_id
+                    and bool(decoded.get("ok")) == bool(payload.get("payload_ok"))
+                )
+            except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+                complete = False
+        latest = dict(decoded) if complete else {}
+
+    return latest
+
+
 def _raw_calibration_decisive(
     payloads: Sequence[Mapping[str, Any]],
     exact_manifests: Mapping[str, Any],
 ) -> dict[str, Any]:
-    calibration = next(
-        (
-            payload
-            for payload in reversed(payloads)
-            if payload.get("action") == "botauto_calibrate_status"
-            and payload.get("active") is True
-        ),
-        {},
-    )
+    calibration = _latest_calibration_status(payloads)
+    if calibration.get("active") is not True:
+        calibration = {}
     observed = _calibration_projection(calibration)
     target = _selected_target_measurement(calibration)
     dps_mode = observed["mode"] in {"single_target_300", "aoe_300"}

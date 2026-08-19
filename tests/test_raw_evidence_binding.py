@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import copy
 import inspect
 import json
@@ -119,6 +120,34 @@ def _raw_rows(batch_id: str, payloads: list[dict]) -> list[dict]:
         }
         for sequence, payload in enumerate(payloads)
     ]
+
+
+def _chunked_calibration_payloads(payload: dict, *, chunk_size: int = 256) -> list[dict]:
+    raw = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    parts = [raw[offset : offset + chunk_size] for offset in range(0, len(raw), chunk_size)]
+    rows = [
+        {
+            "action": "botauto_calibrate_status_chunk",
+            "cohort_id": payload["cohort_id"],
+            "calibration_status_chunk_schema_version": 1,
+            "sequence": sequence,
+            "chunk_count": len(parts),
+            "encoding": "base64",
+            "data": base64.b64encode(part).decode(),
+        }
+        for sequence, part in enumerate(parts)
+    ]
+    rows.append(
+        {
+            "action": "botauto_calibrate_status_complete",
+            "cohort_id": payload["cohort_id"],
+            "calibration_status_chunk_schema_version": 1,
+            "chunk_count": len(parts),
+            "total_bytes": len(raw),
+            "payload_ok": bool(payload.get("ok")),
+        }
+    )
+    return rows
 
 
 def _calibration_payload() -> dict:
@@ -327,6 +356,54 @@ def test_calibration_leaf_binds_raw_transport_report_and_parquet(tmp_path: Path)
             "decisive": projection["decisive"],
         }
     )
+
+
+def test_chunked_final_calibration_status_overrides_direct_warmup(tmp_path: Path):
+    calibration = _calibration_payload()
+    warmup = copy.deepcopy(calibration)
+    warmup.update(
+        {
+            "phase": "warmup",
+            "window_complete": False,
+            "reset_applied": False,
+            "reset_id": "",
+            "scored_seconds": 0.0,
+            "scored_started_at_ms": 0,
+            "scored_ended_at_ms": 0,
+            "previous_window": {"mode": "single_target_300", "bots": []},
+        }
+    )
+    report = _calibration_report(calibration)
+
+    manifest = _capture_calibration(
+        tmp_path,
+        report,
+        [warmup, *_chunked_calibration_payloads(calibration), *_cleanup_payloads()],
+    )
+
+    projection = json.loads(
+        (tmp_path / "batch/raw/decisive_projection.json").read_text()
+    )
+    assert projection["decisive"]["combat_calibration"]["window_complete"] is True
+    assert projection["decisive"]["selected_target_scoring"]["damage"] == 13_500_000
+    assert manifest["semantic_binding"]["decisive_projection_sha256"]
+
+
+def test_incomplete_chunked_status_cannot_fall_back_to_direct_status(tmp_path: Path):
+    calibration = _calibration_payload()
+    chunked = _chunked_calibration_payloads(calibration)
+    incomplete = chunked[:-2] + chunked[-1:]
+    report = _calibration_report(calibration)
+
+    with pytest.raises(
+        lifecycle.BatchLifecycleError,
+        match="raw calibration/admission, cleanup, and event envelope identities differ",
+    ):
+        _capture_calibration(
+            tmp_path,
+            report,
+            [calibration, *incomplete, *_cleanup_payloads()],
+        )
 
 
 def test_tampered_calibration_report_cannot_disagree_with_raw_fixture_mode(
