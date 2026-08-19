@@ -28,7 +28,7 @@ def test_tank_focus_assist_moves_the_requested_contiguous_boundary_once():
     assert 'if (Cohort().Config.ValidationRouteKind == "boss" && std::string(GetDungeonRole(bot)) != "tank")' in module
     assert source.index("terminalArrivalContext.RunTankTrashRecovery") < source.index(
         "terminalArrivalContext.RunTankFocusAssist"
-    ) < source.index("if (Unit* focusTarget = routeGroupFocusTarget())")
+    ) < source.index("terminalArrivalContext.RunSharedFocusAction")
     for marker in (
         "shared_focus_not_declared",
         "shared_boss_mechanic_fail_closed",

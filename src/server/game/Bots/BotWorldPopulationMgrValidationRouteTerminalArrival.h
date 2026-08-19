@@ -14,6 +14,7 @@ struct TrashThreatControlCallbacks;
 struct FeralTrashHandoffCallbacks;
 struct TankTrashRecoveryCallbacks;
 struct TankFocusAssistCallbacks;
+struct SharedFocusActionCallbacks;
 struct TargetEngagementCallbacks;
 
 struct ObjectiveCallbacks
@@ -69,6 +70,7 @@ struct ObjectiveContext
     bool RunFeralTrashHandoff(FeralTrashHandoffCallbacks const& callbacks);
     bool RunTankTrashRecovery(TankTrashRecoveryCallbacks const& callbacks);
     bool RunTankFocusAssist(TankFocusAssistCallbacks const& callbacks);
+    bool RunSharedFocusAction(SharedFocusActionCallbacks const& callbacks);
     bool RunTargetEngagement(TargetEngagementCallbacks const& callbacks);
 };
 }
