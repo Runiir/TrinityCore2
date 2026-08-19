@@ -4,6 +4,7 @@
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 
 #include "Creature.h"
+#include "Map.h"
 #include "MotionMaster.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
