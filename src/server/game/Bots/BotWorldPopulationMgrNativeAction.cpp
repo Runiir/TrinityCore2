@@ -62,10 +62,6 @@ bool CancelRemovableShapeshifts(Player* bot)
     return !removable.empty();
 }
 
-bool MaintainedProfileAuraBlocksRefresh(Unit const* target, BotActionProfileSpell const& spell)
-{
-    Aura const* aura = target && spell.MaintainAuraId ? target->GetAura(spell.MaintainAuraId) : nullptr;
-    if (!aura)
 }
 
 BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
@@ -566,4 +562,3 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
             return BotActionArbitration::Outcome::Unsafe("native_intent_not_implemented");
     }, intent);
 }
-

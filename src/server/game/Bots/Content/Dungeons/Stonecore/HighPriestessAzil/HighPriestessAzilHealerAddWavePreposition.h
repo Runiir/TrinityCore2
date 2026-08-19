@@ -27,6 +27,7 @@ struct FeralRemoteActionsRequest;
 struct FeralActiveSwarmMovementRequest;
 struct HunterThreatTransferRequest;
 struct HunterThreatTransferResult;
+struct PassiveSwarmStagingRequest;
 
 struct GroupHealCallback
 {
@@ -69,6 +70,7 @@ struct Context
     static bool Run(FeralActiveSwarmMovementRequest const& request);
     static HunterThreatTransferResult Run(
         HunterThreatTransferRequest const& request);
+    static bool Run(PassiveSwarmStagingRequest const& request);
 };
 
 bool TryHealerAddWavePreposition(

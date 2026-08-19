@@ -147,6 +147,7 @@ list(APPEND PRIVATE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilFeralRemoteActions.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilFeralActiveSwarmMovement.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilHunterThreatTransfer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilPassiveSwarmStaging.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilHealerAddWavePreposition.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrStatus.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrRuntimeProfiles.cpp
