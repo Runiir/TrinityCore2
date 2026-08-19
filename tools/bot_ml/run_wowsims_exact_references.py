@@ -61,6 +61,59 @@ RESEARCH_CLASSIFICATION = "research_only_not_gate_bearing"
 UNPUBLISHED_CLASSIFICATION = "generated_candidate_requires_dvc_reconstruction"
 EXPECTED_ITERATIONS = 2000
 EXPECTED_RANDOM_SEED = 101
+EXPECTED_UNIT_STATS_API_VERSION = 5
+# These indices are the pinned provider's proto/common.proto Stat and
+# PseudoStat enums.  Keep the full maps here so the normalized receipt cannot
+# silently drift when a provider changes an array ordering.
+WOWSIMS_STAT_INDEX_BY_NAME = {
+    "strength": 0,
+    "agility": 1,
+    "stamina": 2,
+    "intellect": 3,
+    "spirit": 4,
+    "hit_rating": 5,
+    "crit_rating": 6,
+    "haste_rating": 7,
+    "expertise_rating": 8,
+    "dodge_rating": 9,
+    "parry_rating": 10,
+    "mastery_rating": 11,
+    "attack_power": 12,
+    "ranged_attack_power": 13,
+    "spell_power": 14,
+    "spell_penetration": 15,
+    "resilience_rating": 16,
+    "arcane_resistance": 17,
+    "fire_resistance": 18,
+    "frost_resistance": 19,
+    "nature_resistance": 20,
+    "shadow_resistance": 21,
+    "armor": 22,
+    "bonus_armor": 23,
+    "health": 24,
+    "mana": 25,
+    "mp5": 26,
+}
+WOWSIMS_PSEUDO_STAT_INDEX_BY_NAME = {
+    "main_hand_dps": 0,
+    "off_hand_dps": 1,
+    "ranged_dps": 2,
+    "dodge_pct": 3,
+    "parry_pct": 4,
+    "block_pct": 5,
+    "melee_speed_multiplier": 6,
+    "ranged_speed_multiplier": 7,
+    "cast_speed_multiplier": 8,
+    "melee_haste_pct": 9,
+    "ranged_haste_pct": 10,
+    "spell_haste_pct": 11,
+    "physical_hit_pct": 12,
+    "spell_hit_pct": 13,
+    "physical_crit_pct": 14,
+    "spell_crit_pct": 15,
+}
+SCORING_OWNER_STAT_NAMES = tuple(WOWSIMS_STAT_INDEX_BY_NAME)
+SCORING_OWNER_PSEUDO_STAT_NAMES = tuple(WOWSIMS_PSEUDO_STAT_INDEX_BY_NAME)
 FORBIDDEN_TEMPORAL_EXTERNAL_RESULT_SPELL_IDS = {
     2825,
     32182,
@@ -197,6 +250,16 @@ class WowsimsGenerationError(ValueError):
 def _require(condition: bool, reason: str) -> None:
     if not condition:
         raise WowsimsGenerationError(reason)
+
+
+def _finite_number(value: Any, *, label: str) -> float:
+    _require(
+        isinstance(value, (int, float)) and not isinstance(value, bool),
+        f"{label}:not_number",
+    )
+    converted = float(value)
+    _require(math.isfinite(converted), f"{label}:not_finite")
+    return converted
 
 
 def _normalized_repository_url(value: Any) -> str:
@@ -3248,6 +3311,264 @@ def _rotation_spell_action_ids(value: Any) -> set[tuple[int, int]]:
     return observed
 
 
+def required_pet_setup(request_row: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the catalog-owned permanent-pet requirement for one request."""
+    request_contract = request_row.get("request")
+    _require(isinstance(request_contract, Mapping), "pet_setup:request_contract")
+    player = request_contract.get("player")
+    _require(isinstance(player, Mapping), "pet_setup:request_player")
+    setup = player.get("pet_setup")
+    _require(isinstance(setup, Mapping), "pet_setup:missing")
+    required = setup.get("required")
+    _require(isinstance(required, bool), "pet_setup:required_type")
+    kind = str(setup.get("kind") or "").strip().lower()
+    if required:
+        _require(kind and kind != "none", "pet_setup:required_kind")
+        uptime = _finite_number(setup.get("uptime"), label="pet_setup:uptime")
+        _require(uptime == 1.0, "pet_setup:required_not_permanent")
+    return {
+        "required": required,
+        "kind": kind,
+        "setup": dict(setup),
+    }
+
+
+def build_debug_request(native_request: Mapping[str, Any]) -> dict[str, Any]:
+    """Derive the one-iteration debug request without changing fixture inputs."""
+    request = copy.deepcopy(dict(native_request))
+    sim_options = request.get("sim_options")
+    _require(isinstance(sim_options, Mapping), "debug_request:sim_options")
+    debug_options = dict(sim_options)
+    debug_options["iterations"] = 1
+    debug_options["debug"] = True
+    debug_options["debug_first_iteration"] = True
+    request["sim_options"] = debug_options
+    return request
+
+
+def _debug_stat_vector(raw: Mapping[str, Any], *, label: str) -> dict[str, float]:
+    _require(bool(raw), f"{label}:empty")
+    normalized: dict[str, float] = {}
+    for key, value in raw.items():
+        normalized[_snake_case_key(str(key))] = _finite_number(
+            value, label=f"{label}:{key}"
+        )
+    _require(bool(normalized), f"{label}:empty")
+    return normalized
+
+
+def parse_debug_pet_stat_references(
+    result: Mapping[str, Any], *, expected_pet_kind: str
+) -> dict[str, Any]:
+    """Bind the first timestamp-zero Pet stats pair from a debug result log."""
+    _require(not result.get("error"), "debug_result:simulator_error")
+    iterations = int(result.get("iterationsDone") or result.get("iterations_done") or 0)
+    _require(iterations == 1, "debug_result:iterations")
+    logs = result.get("logs")
+    _require(isinstance(logs, str) and logs, "debug_result:missing_logs")
+    references: list[dict[str, Any]] = []
+    timestamp_re = re.compile(r"^\[(?P<timestamp>-?\d+(?:\.\d+)?)\]")
+    entity_re = re.compile(r"^\[[^\]]+\]\s+\[(?P<entity>[^\]]+)\]")
+    expected_kind = str(expected_pet_kind or "").strip().lower()
+    _require(expected_kind and expected_kind != "none", "debug_result:expected_pet_kind")
+    for line_index, raw_line in enumerate(logs.splitlines()):
+        if " Pet stats: " in raw_line:
+            kind = "pet_stats"
+        elif " Pet inherited stats: " in raw_line:
+            kind = "pet_inherited_stats"
+        else:
+            continue
+        timestamp_match = timestamp_re.match(raw_line)
+        _require(timestamp_match is not None, f"debug_result:{kind}:timestamp")
+        timestamp = _finite_number(
+            float(timestamp_match.group("timestamp")),
+            label=f"debug_result:{kind}:timestamp",
+        )
+        entity_match = entity_re.match(raw_line)
+        _require(entity_match is not None, f"debug_result:{kind}:entity")
+        source_entity = entity_match.group("entity").strip()
+        _require(source_entity, f"debug_result:{kind}:entity_empty")
+        entity_kind = source_entity.rsplit(" - ", 1)[-1].strip().lower()
+        _require(
+            entity_kind == expected_kind,
+            f"debug_result:{kind}:wrong_pet",
+        )
+        payload_match = re.search(r":\s*(\{.*\})\s*$", raw_line)
+        _require(payload_match is not None, f"debug_result:{kind}:payload")
+        payload_text = re.sub(r",\s*}", "}", payload_match.group(1))
+        try:
+            payload = json.loads(payload_text)
+        except json.JSONDecodeError as exc:
+            raise WowsimsGenerationError(f"debug_result:{kind}:payload_json") from exc
+        _require(isinstance(payload, Mapping), f"debug_result:{kind}:payload_shape")
+        references.append(
+            {
+                "line_index": line_index,
+                "timestamp_seconds": timestamp,
+                "kind": kind,
+                "source_entity": source_entity,
+                "stat_vector": _debug_stat_vector(
+                    payload, label=f"debug_result:{kind}:stat_vector"
+                ),
+            }
+        )
+    timestamp_zero = [
+        row for row in references if row["timestamp_seconds"] == 0.0
+    ]
+    by_kind = {
+        kind: next(
+            (row for row in timestamp_zero if row["kind"] == kind),
+            None,
+        )
+        for kind in ("pet_stats", "pet_inherited_stats")
+    }
+    _require(by_kind["pet_stats"] is not None, "debug_result:missing_timestamp_zero_pet_stats")
+    _require(
+        by_kind["pet_inherited_stats"] is not None,
+        "debug_result:missing_timestamp_zero_pet_inherited_stats",
+    )
+    _require(
+        by_kind["pet_stats"]["source_entity"]
+        == by_kind["pet_inherited_stats"]["source_entity"],
+        "debug_result:timestamp_zero_pet_entity_mismatch",
+    )
+    observation = {
+        "schema": "wowsims_debug_pet_stat_reference_v1",
+        "iterations_done": iterations,
+        "first_iteration_duration_seconds": _finite_number(
+            result.get("firstIterationDuration")
+            or result.get("first_iteration_duration")
+            or 0.0,
+            label="debug_result:first_iteration_duration",
+        ),
+        "avg_iteration_duration_seconds": _finite_number(
+            result.get("avgIterationDuration")
+            or result.get("avg_iteration_duration")
+            or 0.0,
+            label="debug_result:avg_iteration_duration",
+        ),
+        "debug_log_sha256": hashlib.sha256(logs.encode("utf-8")).hexdigest(),
+        "debug_log_byte_count": len(logs.encode("utf-8")),
+        "pet_kind": expected_kind,
+        "pet_stat_references": references,
+        "timestamp_zero": by_kind,
+    }
+    return {**observation, "observation_sha256": canonical_sha256(observation)}
+
+
+def validate_debug_pet_evidence(
+    debug_record: Mapping[str, Any],
+    *,
+    artifact_root: Path,
+    native_request: Mapping[str, Any],
+    pet_setup: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Validate receipt-bound one-iteration evidence for a required pet."""
+    required = pet_setup.get("required") is True
+    _require(
+        debug_record.get("required") is required,
+        "generation_debug_pet:required_identity",
+    )
+    if not required:
+        _require(
+            debug_record.get("status") == "not_required",
+            "generation_debug_pet:not_required_status",
+        )
+        return dict(debug_record)
+    _require(
+        debug_record.get("status") == "verified",
+        "generation_debug_pet:status",
+    )
+    debug_request_path = verify_artifact(
+        debug_record.get("request") or {},
+        artifact_root=artifact_root,
+        label="generation_debug_request",
+    )
+    debug_result_path = verify_artifact(
+        debug_record.get("native_result") or {},
+        artifact_root=artifact_root,
+        label="generation_debug_result",
+    )
+    verify_process_evidence(
+        debug_record.get("transport") or {},
+        debug_record.get("process_log") or {},
+        artifact_root=artifact_root,
+        label="generation_debug_transport",
+    )
+    debug_request = _read_json_object(debug_request_path, label="debug_request")
+    _require(
+        debug_request == build_debug_request(native_request),
+        "generation_debug_request:not_derived",
+    )
+    expected_kind = str(pet_setup.get("kind") or "").strip().lower()
+    debug_result = _read_json_object(debug_result_path, label="debug_result")
+    observation = parse_debug_pet_stat_references(
+        debug_result, expected_pet_kind=expected_kind
+    )
+    _require(
+        observation == debug_record.get("observation"),
+        "generation_debug_pet:observation",
+    )
+    _require(
+        debug_record.get("pet_stat_reference")
+        == observation.get("timestamp_zero"),
+        "generation_debug_pet:timestamp_zero_identity",
+    )
+    _require(
+        debug_record.get("result_sha256")
+        == sha256_file(debug_result_path)
+        == (debug_record.get("native_result") or {}).get("sha256"),
+        "generation_debug_pet:result_identity",
+    )
+    return dict(debug_record)
+
+
+def validate_effective_stat_reference(
+    value: Mapping[str, Any], *, label: str = "effective_stat_reference"
+) -> dict[str, Any]:
+    """Validate the complete pinned UnitStats vector carried by a receipt."""
+    _require(isinstance(value, Mapping), f"{label}:missing")
+    stored = str(value.get("content_sha256") or "")
+    identity = {key: item for key, item in value.items() if key != "content_sha256"}
+    _require(stored == canonical_sha256(identity), f"{label}:self_hash")
+    _require(value.get("schema") == "wowsims_scoring_start_effective_stats_v1", f"{label}:schema")
+    _require(
+        value.get("stage") == "final_stats_before_dynamic_combat_procs",
+        f"{label}:stage",
+    )
+    _require(
+        value.get("api_version") == EXPECTED_UNIT_STATS_API_VERSION,
+        f"{label}:api_version",
+    )
+    _require(
+        value.get("stat_index_schema")
+        == {
+            "stats": WOWSIMS_STAT_INDEX_BY_NAME,
+            "pseudo_stats": WOWSIMS_PSEUDO_STAT_INDEX_BY_NAME,
+        },
+        f"{label}:index_schema",
+    )
+    stats = value.get("stats")
+    pseudo_stats = value.get("pseudo_stats")
+    _require(isinstance(stats, Mapping), f"{label}:stats")
+    _require(isinstance(pseudo_stats, Mapping), f"{label}:pseudo_stats")
+    _require(set(stats) == set(SCORING_OWNER_STAT_NAMES), f"{label}:stats_coverage")
+    _require(
+        set(pseudo_stats) == set(SCORING_OWNER_PSEUDO_STAT_NAMES),
+        f"{label}:pseudo_stats_coverage",
+    )
+    for name in SCORING_OWNER_STAT_NAMES:
+        _finite_number(stats.get(name), label=f"{label}:stats:{name}")
+    for name in SCORING_OWNER_PSEUDO_STAT_NAMES:
+        _finite_number(pseudo_stats.get(name), label=f"{label}:pseudo_stats:{name}")
+    _require(
+        value.get("primary_stat") in {"strength", "agility", "intellect"},
+        f"{label}:primary_stat",
+    )
+    _require(value.get("archetype") in {"melee", "ranged", "spell"}, f"{label}:archetype")
+    return dict(value)
+
+
 def parse_compute_stats_validation(
     result: Mapping[str, Any], *, rotation: Mapping[str, Any]
 ) -> dict[str, Any]:
@@ -3301,6 +3622,71 @@ def parse_compute_stats_validation(
     )
     _require(not missing, f"compute_stats:missing_spells:{missing}")
     _require(not uncastable, f"compute_stats:uncastable_spells:{uncastable}")
+    final_stats = player.get("finalStats") or player.get("final_stats") or {}
+    stat_values = final_stats.get("stats") or []
+    pseudo_values = (
+        final_stats.get("pseudoStats")
+        or final_stats.get("pseudo_stats")
+        or []
+    )
+    _require(
+        len(stat_values) == len(WOWSIMS_STAT_INDEX_BY_NAME),
+        "compute_stats:final_stats_length",
+    )
+    _require(
+        len(pseudo_values) == len(WOWSIMS_PSEUDO_STAT_INDEX_BY_NAME),
+        "compute_stats:final_pseudo_stats_length",
+    )
+    api_version_value = final_stats.get("apiVersion")
+    if api_version_value is None:
+        api_version_value = final_stats.get("api_version")
+    api_version_number = _finite_number(
+        api_version_value, label="compute_stats:final_stats_api_version"
+    )
+    _require(
+        api_version_number == EXPECTED_UNIT_STATS_API_VERSION,
+        "compute_stats:final_stats_api_version",
+    )
+    api_version = int(api_version_number)
+    normalized_stats = {
+        name: _finite_number(
+            stat_values[index], label=f"compute_stats:final_stats:{name}"
+        )
+        for name, index in WOWSIMS_STAT_INDEX_BY_NAME.items()
+    }
+    normalized_pseudo_stats = {
+        name: _finite_number(
+            pseudo_values[index], label=f"compute_stats:final_pseudo_stats:{name}"
+        )
+        for name, index in WOWSIMS_PSEUDO_STAT_INDEX_BY_NAME.items()
+    }
+    primary_stat = max(
+        ("strength", "agility", "intellect"),
+        key=lambda key: normalized_stats[key],
+    )
+    if primary_stat == "intellect":
+        archetype = "spell"
+    elif normalized_stats["ranged_attack_power"] > normalized_stats["attack_power"]:
+        archetype = "ranged"
+    else:
+        archetype = "melee"
+    effective_stat_reference = {
+        "schema": "wowsims_scoring_start_effective_stats_v1",
+        "stage": "final_stats_before_dynamic_combat_procs",
+        "api_version": api_version,
+        "stat_index_schema": {
+            "stats": dict(WOWSIMS_STAT_INDEX_BY_NAME),
+            "pseudo_stats": dict(WOWSIMS_PSEUDO_STAT_INDEX_BY_NAME),
+        },
+        "archetype": archetype,
+        "primary_stat": primary_stat,
+        "stats": normalized_stats,
+        "pseudo_stats": normalized_pseudo_stats,
+    }
+    effective_stat_reference["content_sha256"] = canonical_sha256(
+        effective_stat_reference
+    )
+    validate_effective_stat_reference(effective_stat_reference)
     normalized_required = [
         {"spell_id": spell_id, "tag": tag} for spell_id, tag in sorted(required)
     ]
@@ -3310,6 +3696,7 @@ def parse_compute_stats_validation(
         "validation_count": len(validations),
         "validations_sha256": canonical_sha256(validations),
         "warning_or_error_count": 0,
+        "effective_stat_reference": effective_stat_reference,
     }
     return {**observation, "observation_sha256": canonical_sha256(observation)}
 
@@ -3384,6 +3771,7 @@ def generate_one_reference(
     _require(request_bytes == canonical_json_bytes(request), "native_request:not_canonical_bytes")
     request_contract = request_row.get("request")
     _require(isinstance(request_contract, Mapping), "generation_request_contract")
+    pet_setup = required_pet_setup(request_row)
     request_contract_sha256 = request_canonical_sha256(request_contract)
     _require(
         request_contract_sha256 == request_row.get("request_sha256"),
@@ -3462,6 +3850,61 @@ def generate_one_reference(
     process_output_artifact = store_content_addressed_bytes(
         output_root, "process_logs", process_output, suffix=".log"
     )
+    if pet_setup["required"]:
+        debug_request = build_debug_request(request)
+        debug_request_bytes = canonical_json_bytes(debug_request)
+        debug_request_artifact = store_content_addressed_bytes(
+            output_root, "debug_requests", debug_request_bytes, suffix=".json"
+        )
+        with tempfile.TemporaryDirectory(prefix=f"wowsims-debug-{target_spec}-") as temporary:
+            debug_result_path = Path(temporary) / "debug-result.json"
+            debug_outcome, debug_process_output = _run_capture(
+                [
+                    str(binary_path),
+                    "sim",
+                    "--infile",
+                    str(output_root.resolve() / str(debug_request_artifact["path"])),
+                    "--outfile",
+                    str(debug_result_path),
+                ],
+                cwd=REPO_ROOT,
+                env=dict(os.environ),
+                timeout_seconds=60.0,
+            )
+            _require_normal_child(debug_outcome, label="wowsims_debug_sim")
+            _require(debug_result_path.is_file(), "debug_result:missing")
+            debug_result_bytes = debug_result_path.read_bytes()
+        debug_result = _json_object_from_bytes(
+            debug_result_bytes, label="debug_result"
+        )
+        debug_observation = parse_debug_pet_stat_references(
+            debug_result, expected_pet_kind=str(pet_setup["kind"])
+        )
+        debug_result_artifact = store_content_addressed_bytes(
+            output_root, "debug_results", debug_result_bytes, suffix=".json"
+        )
+        debug_process_artifact = store_content_addressed_bytes(
+            output_root, "process_logs", debug_process_output, suffix=".log"
+        )
+        debug_identity = {
+            "required": True,
+            "status": "verified",
+            "pet_kind": pet_setup["kind"],
+            "request": debug_request_artifact,
+            "native_result": debug_result_artifact,
+            "result_sha256": debug_result_artifact["sha256"],
+            "process_log": debug_process_artifact,
+            "transport": debug_outcome,
+            "observation": debug_observation,
+            "pet_stat_reference": debug_observation["timestamp_zero"],
+        }
+    else:
+        debug_identity = {
+            "required": False,
+            "status": "not_required",
+            "pet_kind": pet_setup["kind"],
+            "pet_stat_reference": None,
+        }
     build_artifact = {
         "path": build_receipt_path.resolve().relative_to(output_root.resolve()).as_posix(),
         "sha256": sha256_file(build_receipt_path),
@@ -3510,6 +3953,10 @@ def generate_one_reference(
             "compute_stats": compute_stats_artifact,
             "compute_stats_observation": compute_stats_observation,
         },
+        "effective_stat_reference": compute_stats_observation[
+            "effective_stat_reference"
+        ],
+        "debug_result": debug_identity,
         "native_result": result_artifact,
         "process_log": process_output_artifact,
         "transport": outcome,
@@ -3621,6 +4068,15 @@ def validate_generation_receipt(
         == proto_validation.get("compute_stats_observation"),
         "generation_compute_stats:observation",
     )
+    validate_effective_stat_reference(
+        compute_stats_observation.get("effective_stat_reference") or {},
+        label="generation_effective_stat_reference",
+    )
+    _require(
+        receipt.get("effective_stat_reference")
+        == compute_stats_observation.get("effective_stat_reference"),
+        "generation_effective_stat_reference:identity",
+    )
     request_contract = _read_json_object(
         request_contract_path, label="request_contract"
     )
@@ -3685,6 +4141,12 @@ def validate_generation_receipt(
         and receipt.get("native_result_sha256") == sha256_file(result_path),
         "generation_flat_transport_identity",
     )
+    validate_debug_pet_evidence(
+        receipt.get("debug_result") or {},
+        artifact_root=artifact_root,
+        native_request=request,
+        pet_setup=required_pet_setup(request_row),
+    )
     build_receipt, binary_path = validate_build_receipt(
         build_path,
         expected_revision=str((fixture.get("authority") or {}).get("revision") or ""),
@@ -3743,6 +4205,21 @@ def audit_generation_reexecution(
         artifact_root=artifact_root,
         label="audit:native_result",
     )
+    debug_record = generation.get("debug_result") or {}
+    debug_required = debug_record.get("required") is True
+    expected_debug_request_path: Path | None = None
+    expected_debug_result_path: Path | None = None
+    if debug_required:
+        expected_debug_request_path = verify_artifact(
+            debug_record.get("request") or {},
+            artifact_root=artifact_root,
+            label="audit:debug_request",
+        )
+        expected_debug_result_path = verify_artifact(
+            debug_record.get("native_result") or {},
+            artifact_root=artifact_root,
+            label="audit:debug_result",
+        )
     compute_record = (
         (generation.get("request_proto_validation") or {}).get("compute_stats") or {}
     )
@@ -3803,6 +4280,52 @@ def audit_generation_reexecution(
             == canonical_json_bytes(expected_semantics),
             "audit:result_bytes",
         )
+    debug_rerun_bytes: bytes | None = None
+    debug_sim_outcome: dict[str, Any] | None = None
+    debug_sim_output = b""
+    if debug_required:
+        _require(
+            expected_debug_request_path is not None
+            and expected_debug_result_path is not None,
+            "audit:debug_paths",
+        )
+        with tempfile.TemporaryDirectory(prefix="wowsims-debug-reexecution-") as debug_temp:
+            debug_result_path = Path(debug_temp) / "debug-result.json"
+            debug_sim_outcome, debug_sim_output = _run_capture(
+                [
+                    str(rebuilt_binary),
+                    "sim",
+                    "--infile",
+                    str(expected_debug_request_path),
+                    "--outfile",
+                    str(debug_result_path),
+                ],
+                cwd=REPO_ROOT,
+                env=dict(os.environ),
+                timeout_seconds=60.0,
+            )
+            _require_normal_child(debug_sim_outcome, label="audit:debug_sim")
+            _require(debug_result_path.is_file(), "audit:debug_result_missing")
+            debug_rerun_bytes = debug_result_path.read_bytes()
+            _require(
+                debug_rerun_bytes == expected_debug_result_path.read_bytes(),
+                "audit:debug_result_bytes",
+            )
+            debug_result = _json_object_from_bytes(
+                debug_rerun_bytes, label="audit:rerun_debug_result"
+            )
+            expected_debug_result = _json_object_from_bytes(
+                expected_debug_result_path.read_bytes(), label="audit:expected_debug_result"
+            )
+            debug_observation = parse_debug_pet_stat_references(
+                debug_result,
+                expected_pet_kind=str(debug_record.get("pet_kind") or ""),
+            )
+            _require(
+                debug_observation == debug_record.get("observation")
+                and debug_result == expected_debug_result,
+                "audit:debug_result_identity",
+            )
     observation = {
         "schema": "wowsims_generation_reexecution_audit_v1",
         "generation_receipt_sha256": generation["receipt_sha256"],
@@ -3811,6 +4334,12 @@ def audit_generation_reexecution(
         "native_request_sha256": sha256_file(request_path),
         "native_result_sha256": hashlib.sha256(rerun_bytes).hexdigest(),
         "canonical_result_sha256": canonical_sha256(rerun_semantics),
+        "debug_result_required": debug_required,
+        "debug_result_sha256": (
+            hashlib.sha256(debug_rerun_bytes).hexdigest()
+            if debug_rerun_bytes is not None
+            else None
+        ),
         "compute_stats_sha256": sha256_file(expected_compute_path),
         "validator_transport": validator_outcome,
         "validator_output_sha256": hashlib.sha256(validator_output).hexdigest(),
@@ -3820,6 +4349,10 @@ def audit_generation_reexecution(
         "sim_output_sha256": hashlib.sha256(sim_output).hexdigest(),
         "sim_output_byte_count": len(sim_output),
         "sim_output_utf8": sim_output.decode("utf-8"),
+        "debug_sim_transport": debug_sim_outcome,
+        "debug_sim_output_sha256": hashlib.sha256(debug_sim_output).hexdigest(),
+        "debug_sim_output_byte_count": len(debug_sim_output),
+        "debug_sim_output_utf8": debug_sim_output.decode("utf-8"),
         "byte_identical_rebuild": original_build["binary_sha256"]
         == rebuilt_build["binary_sha256"],
         "canonical_result_identical": True,
@@ -5420,6 +5953,12 @@ def promote_generated_references(
             "dps": dps,
             "authority_scope": "offline_denominator_only",
             "live_fixture_join_status": "pending_physical_raw_capture",
+            "effective_stat_reference": copy.deepcopy(
+                generation.get("effective_stat_reference") or {}
+            ),
+            "pet_stat_reference": copy.deepcopy(
+                (generation.get("debug_result") or {}).get("pet_stat_reference")
+            ),
             "publication_domain": copy.deepcopy(publication),
             "artifacts": {
                 "request_contract_sha256": row["request_sha256"],

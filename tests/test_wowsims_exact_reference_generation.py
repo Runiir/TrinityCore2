@@ -16,10 +16,12 @@ from tools.bot_ml.run_wowsims_exact_references import (
     apl_condition_variants_from_pinned_proto,
     canonical_sha256,
     canonical_json_bytes,
+    build_debug_request,
     decode_talent_spell_ids,
     glyph_slots_from_pinned_proto,
     load_slot_map,
     parse_compute_stats_validation,
+    parse_debug_pet_stat_references,
     parse_dvc_pointer,
     parse_fresh_build_log_identity,
     parse_native_result,
@@ -28,6 +30,7 @@ from tools.bot_ml.run_wowsims_exact_references import (
     transform_apl_rotation,
     validate_exact_native_request_bytes,
     validate_dvc_bundle_pre_pull,
+    validate_effective_stat_reference,
     validate_native_request_projection,
     validate_projection_against_request_contract,
     verify_artifact,
@@ -289,8 +292,46 @@ def native_result(dps: float = 52_000.25) -> dict:
     }
 
 
+def debug_result_with_pet(
+    *,
+    pet_kind: str = "Felhunter",
+    include_inherited: bool = True,
+    timestamp: str = "0.00",
+) -> dict:
+    lines = [
+        f'[{timestamp}] [canary (#1) - {pet_kind}] Pet stats: '
+        '{"Strength":453.000,"SpellPower":6923.550,}',
+    ]
+    if include_inherited:
+        lines.append(
+            f'[{timestamp}] [canary (#1) - {pet_kind}] Pet inherited stats: '
+            '{"SpellPower":6923.550,}'
+        )
+    lines.append(f"[{timestamp}] [canary (#1) - {pet_kind}] Pet summoned")
+    return {
+        "raidMetrics": {"parties": [{"players": [{}]}]},
+        "iterationsDone": 1,
+        "firstIterationDuration": 300,
+        "avgIterationDuration": 300,
+        "error": None,
+        "logs": "\n".join(lines) + "\n",
+    }
+
+
 def compute_stats_result(*, validation: dict | None = None) -> dict:
     active = {
+        "finalStats": {
+            "apiVersion": 5,
+            "stats": [
+                100, 200, 300, 8_000, 400, 1_700, 1_000, 3_000,
+                0, 0, 0, 1_100, 500, 0, 12_500, 0, 0, 0, 0, 0, 0,
+                0, 10_000, 0, 150_000, 140_000, 1_000,
+            ],
+            "pseudoStats": [
+                0, 0, 0, 0, 0, 5, 1.1, 1.1, 1.05, 30, 30, 30,
+                14, 17, 20, 25,
+            ],
+        },
         "rotationStats": {
             "prepullActions": [],
             "priorityList": [
@@ -1076,6 +1117,12 @@ def test_compute_stats_requires_all_surviving_spell_actions_to_resolve() -> None
     )
     assert observed["required_spell_actions"] == [{"spell_id": 100, "tag": 0}]
     assert observed["warning_or_error_count"] == 0
+    assert observed["effective_stat_reference"]["archetype"] == "spell"
+    assert observed["effective_stat_reference"]["primary_stat"] == "intellect"
+    assert observed["effective_stat_reference"]["stats"]["spell_power"] == 12_500
+    assert observed["effective_stat_reference"]["pseudo_stats"][
+        "spell_haste_pct"
+    ] == 30
 
     missing = compute_stats_result()
     missing["raidStats"]["parties"][0]["players"][0]["metadata"]["spells"] = []
@@ -1088,6 +1135,77 @@ def test_compute_stats_requires_all_surviving_spell_actions_to_resolve() -> None
     ] = False
     with pytest.raises(WowsimsGenerationError, match="uncastable_spells"):
         parse_compute_stats_validation(uncastable, rotation=rotation)
+
+
+def test_compute_stats_effective_reference_covers_pinned_unit_stats_schema() -> None:
+    observed = parse_compute_stats_validation(
+        compute_stats_result(), rotation={"priority_list": []}
+    )
+    reference = observed["effective_stat_reference"]
+    validate_effective_stat_reference(reference)
+    assert set(reference["stats"]) == set(exact_runner.WOWSIMS_STAT_INDEX_BY_NAME)
+    assert set(reference["pseudo_stats"]) == set(
+        exact_runner.WOWSIMS_PSEUDO_STAT_INDEX_BY_NAME
+    )
+    assert reference["stat_index_schema"]["stats"]["spell_power"] == 14
+    assert reference["stat_index_schema"]["pseudo_stats"]["spell_haste_pct"] == 11
+
+    missing_stat = compute_stats_result()
+    missing_stat["raidStats"]["parties"][0]["players"][0]["finalStats"]["stats"][12] = None
+    with pytest.raises(WowsimsGenerationError, match="final_stats:attack_power:not_number"):
+        parse_compute_stats_validation(missing_stat, rotation={"priority_list": []})
+
+    wrong_version = compute_stats_result()
+    wrong_version["raidStats"]["parties"][0]["players"][0]["finalStats"]["apiVersion"] = 4
+    with pytest.raises(WowsimsGenerationError, match="final_stats_api_version"):
+        parse_compute_stats_validation(wrong_version, rotation={"priority_list": []})
+
+
+def test_debug_request_only_changes_debug_sim_options() -> None:
+    request = native_request()
+    debug = build_debug_request(request)
+    assert debug["raid"] == request["raid"]
+    assert debug["encounter"] == request["encounter"]
+    assert debug["sim_options"]["random_seed"] == request["sim_options"]["random_seed"]
+    assert debug["sim_options"]["iterations"] == 1
+    assert debug["sim_options"]["debug"] is True
+    assert debug["sim_options"]["debug_first_iteration"] is True
+
+
+def test_debug_pet_stat_references_require_timestamp_zero_pair() -> None:
+    observed = parse_debug_pet_stat_references(
+        debug_result_with_pet(), expected_pet_kind="felhunter"
+    )
+    assert observed["timestamp_zero"]["pet_stats"]["stat_vector"] == {
+        "strength": 453.0,
+        "spell_power": 6923.55,
+    }
+    assert observed["timestamp_zero"]["pet_inherited_stats"]["source_entity"].endswith(
+        "Felhunter"
+    )
+    assert observed["observation_sha256"] == canonical_sha256(
+        {key: value for key, value in observed.items() if key != "observation_sha256"}
+    )
+
+    with pytest.raises(WowsimsGenerationError, match="missing_timestamp_zero_pet_inherited_stats"):
+        parse_debug_pet_stat_references(
+            debug_result_with_pet(include_inherited=False), expected_pet_kind="felhunter"
+        )
+    with pytest.raises(WowsimsGenerationError, match="wrong_pet"):
+        parse_debug_pet_stat_references(
+            debug_result_with_pet(pet_kind="Wolf"), expected_pet_kind="felhunter"
+        )
+    with pytest.raises(WowsimsGenerationError, match="missing_timestamp_zero_pet_stats"):
+        parse_debug_pet_stat_references(
+            debug_result_with_pet(timestamp="1.00"), expected_pet_kind="felhunter"
+        )
+    malformed = debug_result_with_pet()
+    malformed["logs"] = malformed["logs"].replace(
+        '{"Strength":453.000,"SpellPower":6923.550,}',
+        '{"Strength":453.000,"SpellPower":oops,}',
+    )
+    with pytest.raises(WowsimsGenerationError, match="pet_stats:payload_json"):
+        parse_debug_pet_stat_references(malformed, expected_pet_kind="felhunter")
 
 
 def test_compute_stats_rejects_any_apl_warning() -> None:
