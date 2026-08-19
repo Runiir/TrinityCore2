@@ -25,8 +25,15 @@ Also watch hazard exits, tank ownership, formations, add control, recovery/ready
 
 - Success: the shard's declared gate is independently observable.
 - Semantic stall: no monotonic route, kill, health-low-water, generation, or native milestone progress for the configured window.
+- Repeated-decision or death-loop failure: the configured typed watchdog is
+  reached without a normal recovery/clear edge.
 - Infrastructure loss: stale/missing status, diagnose, or trace; process loss; identity drift.
 - Contamination: operator/gameplay intervention, forbidden assistance, cross-shard rows, or repeated stuck recovery.
+
+Do not use a 300-second observation deadline for a raid or dungeon. That exact
+window belongs to isolated training-dummy DPS calibration. Observe the route
+until a typed success/failure condition occurs; an emergency host timeout is
+noncompletion evidence, not success.
 
 Tell the coordinator whether evidence is sufficient to stop. Do not stop the run yourself.
 

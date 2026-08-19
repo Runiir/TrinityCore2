@@ -77,7 +77,9 @@ or attach to a worldserver.
 
 ## Verify once and stop
 
-Use one matched calibration window. A stat/inheritance repair passes when gear
+Use one matched isolated training-dummy calibration window; DPS throughput
+uses the exact 300-second scoring duration. Never reuse that duration as a raid
+or dungeon completion condition. A stat/inheritance repair passes when gear
 still matches and the affected effective stats enter the declared parity
 envelope; the coordinator then re-runs cadence and damage classification. A
 damage-outcome repair passes only when gear and effective stats still match,

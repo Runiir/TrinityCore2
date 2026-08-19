@@ -49,7 +49,6 @@ except ImportError:
 
 
 DEFAULT_LIVE_VALIDATION_TIMEOUT_SEC = 90
-DEFAULT_BOSS_ROUTE_OBSERVE_SEC = 300
 DEFAULT_BOSS_ROUTE_TIMEOUT_SEC = 900
 DEFAULT_COMPLETION_HEARTBEAT_SEC = 30
 DEFAULT_NO_PROGRESS_WINDOW_SEC = 180
@@ -4510,8 +4509,6 @@ def route_sequence_child_command(args: argparse.Namespace, route: dict[str, Any]
         args.session_profile or scenario_id,
         "--session-transition-timeout-sec",
         str(args.session_transition_timeout_sec),
-        "--observe-sec",
-        str(args.observe_sec),
         "--validation-scenario-dir",
         str(args.validation_scenario_dir),
         "--validation-scenario-id",
@@ -5455,7 +5452,7 @@ def main() -> int:
     parser.add_argument("--config", type=Path, default=Path("trinity-worldserver-test.conf"))
     parser.add_argument("--output-dir", type=Path, default=Path("dataset/live_validation"))
     parser.add_argument("--duration-policy", choices=["completion-watchdog", "fixed-window"], default="completion-watchdog")
-    parser.add_argument("--timeout-sec", type=int, default=None, help="Emergency wall-clock cap. Defaults to 90 seconds for fixed smoke checks and 900 seconds for boss-route or watchdog validations.")
+    parser.add_argument("--timeout-sec", type=int, default=None, help="Emergency wall-clock cap. Defaults to 90 seconds for fixed smoke checks and 900 seconds for watchdog validations. Expiry never counts as route success.")
     parser.add_argument("--run-to-completion", action="store_true", help="Stonecore session mode: no overall wall-clock deadline; terminate only on clear, attributable watchdog failure, or controller interruption.")
     parser.add_argument("--heartbeat-sec", type=int, default=DEFAULT_COMPLETION_HEARTBEAT_SEC)
     parser.add_argument("--no-progress-window-sec", type=int, default=DEFAULT_NO_PROGRESS_WINDOW_SEC)
@@ -5491,7 +5488,7 @@ def main() -> int:
     parser.add_argument("--retain-published-batch", action="store_true", help="Keep raw and compact batch files locally after verified publication.")
     parser.add_argument("--reload-rotation-profiles", action="store_true", help="Ask the server owner to atomically reload DB-only rotation tuning before admission.")
     parser.add_argument("--evidence-identity-manifest", type=Path, help="Canonical Phase 2 component hashes and scope IDs; DB/schema/epoch/profile generation hashes are required for certifying acceptance.")
-    parser.add_argument("--observe-sec", type=int, default=None, help="Sleep after .botauto start before collecting diagnostics. Defaults to 0 seconds for smoke checks and 300 seconds for boss-route validations.")
+    parser.add_argument("--observe-sec", type=int, default=None, help="Fixed-window observation delay for non-route diagnostics. Raid/dungeon routes poll at --heartbeat-sec; isolated DPS calibration owns its native 300-second scoring window.")
     parser.add_argument("--reset-bot-pool", action="store_true", help="Before validation, reset volatile state for enabled bot-pool rows matching --bot-pool-tag.")
     parser.add_argument("--bot-pool-tag", action="append", default=[], help="Experiment tag substring for --reset-bot-pool. Defaults to test_account when omitted.")
     parser.add_argument("--keep-bot-pool-position", action="store_true", help="Do not move reset bot-pool characters back to race/class start positions.")
@@ -5545,6 +5542,24 @@ def main() -> int:
         raise SystemExit("scenario-scoped validation cannot use SOAP because the server config identity is not owned")
     if args.transport == "session" and args.validation_scenario_id and args.session_profile and args.session_profile != args.validation_scenario_id:
         raise SystemExit("--session-profile must equal --validation-scenario-id for validation sessions")
+    route_validation_requested = bool(
+        args.validation_scenario_id
+        or args.validation_segment_id
+        or args.validation_route_node_id
+        or args.validation_route_kind
+        or args.validation_route_manifest
+        or args.validation_route_sequence
+    )
+    if route_validation_requested and args.duration_policy != "completion-watchdog":
+        raise SystemExit(
+            "raid/dungeon validation requires --duration-policy "
+            "completion-watchdog"
+        )
+    if route_validation_requested and args.observe_sec is not None:
+        raise SystemExit(
+            "--observe-sec is not a raid/dungeon completion timer; use "
+            "--heartbeat-sec and the typed watchdogs"
+        )
     if args.run_to_completion and not (
         args.transport == "session"
         and args.duration_policy == "completion-watchdog"
@@ -5588,9 +5603,6 @@ def main() -> int:
     elif args.duration_policy == "completion-watchdog":
         args.timeout_sec = args.timeout_sec if args.timeout_sec is not None else DEFAULT_BOSS_ROUTE_TIMEOUT_SEC
         args.observe_sec = args.observe_sec if args.observe_sec is not None else args.heartbeat_sec
-    elif str(args.validation_route_kind or "").lower() == "boss":
-        args.timeout_sec = args.timeout_sec if args.timeout_sec is not None else DEFAULT_BOSS_ROUTE_TIMEOUT_SEC
-        args.observe_sec = args.observe_sec if args.observe_sec is not None else DEFAULT_BOSS_ROUTE_OBSERVE_SEC
     else:
         args.timeout_sec = args.timeout_sec if args.timeout_sec is not None else DEFAULT_LIVE_VALIDATION_TIMEOUT_SEC
         args.observe_sec = args.observe_sec if args.observe_sec is not None else 0

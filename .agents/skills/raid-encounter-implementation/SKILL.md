@@ -79,7 +79,14 @@ Run the narrowest applicable static and unit checks, then native replay. If nati
 tools.raid_program.queued_build
 ```
 
-Do not run direct heavyweight builds. After deterministic checks pass, hand one exact route/mode shard to `raid-shard-architecture`; use the generated long-budget validation plan, not a 90-second command smoke test. `raid-boss-babysitter` observes an already-started run and `raid-evidence-lifecycle` owns capture and publication.
+Do not run direct heavyweight builds. After deterministic checks pass, hand one
+exact route/mode shard to `raid-shard-architecture`; use the generated
+completion-watchdog validation plan, not a 90-second command smoke test or a
+fixed 300-second observation. The route ends on normal completion or typed
+stall/repeated-decision/death-loop/infrastructure evidence; any generous
+emergency wall-clock expiry is noncompletion. `raid-boss-babysitter` observes
+an already-started run and `raid-evidence-lifecycle` owns capture and
+publication.
 
 ## Completion gate
 

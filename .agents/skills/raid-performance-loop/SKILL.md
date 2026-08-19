@@ -25,6 +25,13 @@ pixi run python -m tools.raid_program.raid_workloop boss blackwing_descent magma
 Do not treat a stale WoWSims value, source-present boss, dossier, diagnostic
 shard, or old DVC batch as a passing gate.
 
+Keep validation clocks explicit in every work unit. Only isolated
+training-dummy DPS throughput calibration owns an exact 300-second scoring
+window. Raid and dungeon work units must use completion-watchdog execution and
+terminate on normal clear or typed semantic/no-progress, repeated-decision,
+death-loop, infrastructure, contamination, or interruption evidence. An
+emergency wall-clock expiry never passes a route.
+
 For a DPS work unit, inspect the rotation-review gate before assigning a role
 implementation owner. The exact simulator and Trinity inputs must have the same
 gear identity, and the comparison record must report:

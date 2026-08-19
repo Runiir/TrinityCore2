@@ -48,6 +48,12 @@ These shutdown and persistence duties belong to the capture controller or coordi
   landed events, actor/target identity, and cleanup receipt. Zero global route
   bots or route trace entries are expected in this mode and are not themselves
   a rejection. Do not use this exception for a route or boss claim.
+- Treat timing as part of evidence identity. The exact 300-second measurement
+  window is valid only for an isolated training-dummy DPS calibration. Raid and
+  dungeon captures must be completion-watchdog-driven and retain the typed
+  terminal edge: normal clear, monotonic semantic/no-progress stall, repeated
+  decisions, excessive death loops, infrastructure loss, contamination, or
+  explicit interruption. An emergency wall-clock expiry is noncompletion.
 - Reconstruct milestones from ordered native observations rather than trusting aggregate completion flags.
 - In uncapped mode, use channel-freshness and monotonic semantic-progress clocks. Activity churn, casting toggles, or changing victim GUIDs are not progress.
 - Keep controller admission predicates byte-for-byte semantic peers of the

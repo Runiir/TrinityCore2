@@ -80,7 +80,10 @@ heal demand, or boss outcome.
 ## Validate by role
 
 Run focused unit/replay checks first. Use `queued_build.py` for every native
-heavyweight build. Then run one deterministic role window:
+heavyweight build. Then run one deterministic role window. Only an isolated
+training-dummy DPS throughput check uses the exact 300-second scoring window;
+tank/healer harnesses use their declared demand contracts, and raid/dungeon
+checks use completion watchdogs rather than a fixed 300-second timer:
 
 - DPS: current reference ratio, active/elapsed DPS, action mix, landed/attempted
   ratio, resource capping/starvation, cooldown/proc uptime, movement/range loss,

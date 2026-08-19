@@ -195,6 +195,13 @@ differences and observed score/tie-break facts establish an ordering.
 
 ## Review boss and dungeon mechanics
 
+Do not compare a raid or dungeon against a fixed 300-second observation as if
+it were a completion gate. That exact duration belongs to isolated
+training-dummy DPS calibration. For route evidence, inspect the complete
+watchdog-driven attempt and its typed terminal reason: normal clear,
+semantic/no-progress stall, repeated decisions, excessive death loops,
+infrastructure loss, contamination, or interruption.
+
 Map every required route obligation to a typed observation, candidate, resource
 claim, native action, and terminal/completion observation. Verify that:
 

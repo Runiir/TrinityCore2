@@ -67,6 +67,10 @@ def live_validate_command(
     include_emergency_timeout: bool = False,
     output_dir: Path | None = None,
 ) -> list[str]:
+    if duration_policy != "completion-watchdog":
+        raise ValueError(
+            "raid/dungeon validation plans require completion-watchdog timing"
+        )
     scenario_id = str(scenario.get("scenario_id") or "")
     bot_pool_tag = str(scenario.get("provisioning_scenario_id") or scenario_id)
     output_dir = output_dir or output_root / scenario_output_name(scenario_id)
@@ -123,12 +127,7 @@ def live_validate_command(
         command.extend(["--transport", transport])
     if route_sequence:
         command.append("--validation-route-manifest")
-    if duration_policy == "fixed-window":
-        if observe_sec is not None:
-            command.extend(["--observe-sec", str(observe_sec)])
-        if timeout_sec is not None:
-            command.extend(["--timeout-sec", str(timeout_sec)])
-    elif include_emergency_timeout and timeout_sec is not None:
+    if include_emergency_timeout and timeout_sec is not None:
         command.extend(["--timeout-sec", str(timeout_sec)])
     return command
 
@@ -188,7 +187,7 @@ def build_plan(
     output_root: Path,
     report_root: Path,
     validation_scenario_dir: Path,
-    observe_sec: int,
+    observe_sec: int | None,
     timeout_sec: int,
     routes_by_scenario: dict[str, list[dict[str, Any]]] | None = None,
     duration_policy: str = "completion-watchdog",
@@ -373,7 +372,7 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path, default=Path("dataset/validation_run_plan"))
     parser.add_argument("--live-output-root", type=Path, default=Path("dataset/live_validation_scenarios"))
     parser.add_argument("--scenario-report-root", type=Path, default=Path("dataset/live_validation_scenario_reports_built"))
-    parser.add_argument("--observe-sec", type=int, default=300)
+    parser.add_argument("--observe-sec", type=int, default=None, help="Deprecated for route plans; routes poll at --heartbeat-sec.")
     parser.add_argument("--timeout-sec", type=int, default=900)
     parser.add_argument("--duration-policy", choices=["completion-watchdog", "fixed-window"], default="completion-watchdog")
     parser.add_argument("--heartbeat-sec", type=int, default=30)

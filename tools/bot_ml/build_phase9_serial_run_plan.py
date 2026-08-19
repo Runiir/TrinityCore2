@@ -93,8 +93,6 @@ def build_plan(
             "--duration-policy",
             "completion-watchdog",
             "--run-to-completion",
-            "--observe-sec",
-            "300",
             "--publish-batch",
             "--evidence-identity-manifest",
             str(evidence_identity_manifest),
@@ -148,7 +146,8 @@ def build_plan(
         "required_successes_per_combination": repetitions_per_combination,
         "route_mode": "strict_uninterrupted_current_manifest_full_clear",
         "route_node_count": 14,
-        "observe_sec": 300,
+        "fixed_observe_sec": None,
+        "heartbeat_sec": 30,
         "execution_policy": "run_to_completion",
         "overall_wall_clock_timeout_sec": None,
         "terminal_conditions": [

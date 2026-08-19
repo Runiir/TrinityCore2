@@ -170,7 +170,24 @@ Require one exact tuple across config, generated route, runtime status, capture,
 3. Start one verified worldserver with the generated shard config.
 4. Confirm console/process readiness and active runtime identity.
 5. Only then attach the boss babysitter. The babysitter monitors; it does not silently repair or manufacture state.
-6. Keep observation uncapped. Terminate on success, explicit user interruption, stale telemetry/infrastructure loss, or a monotonic semantic stall—not an arbitrary fight deadline.
+6. Keep route observation completion-driven. Terminate on success, explicit
+   user interruption, stale telemetry/infrastructure loss, a monotonic
+   semantic/no-progress stall, repeated-decision watchdog, or excessive death
+   loops—not an arbitrary fight deadline.
+
+## Keep timing semantics separate
+
+- Reserve the exact 300-second scoring window for isolated training-dummy DPS
+  calibration. It measures stable throughput, action mix, cadence, and pet
+  contribution; it does not model raid or dungeon completion.
+- Never pass `--observe-sec 300` as a raid/dungeon success condition. Use
+  `--duration-policy completion-watchdog` and poll at the configured heartbeat.
+- For raids and dungeons, require typed terminal evidence: normal clear,
+  monotonic semantic/no-progress stall, repeated decisions, excessive death
+  loops, stale telemetry/infrastructure loss, contamination, or explicit
+  interruption.
+- A generous emergency wall-clock cap may protect the host. Expiry is an
+  infrastructure/noncompletion result, never a successful fight result.
 
 ## Keep roles separate
 

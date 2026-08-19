@@ -803,6 +803,8 @@ def test_phase9_serial_plan_covers_targeted_specs_and_protection_regression(tmp_
     assert plan["promotion_requires_dps_acceptance"] is True
     assert plan["execution_policy"] == "run_to_completion"
     assert plan["overall_wall_clock_timeout_sec"] is None
+    assert plan["fixed_observe_sec"] is None
+    assert plan["heartbeat_sec"] == 30
     assert plan["retry_policy"] == "unlimited_physical_tries_until_terminal_success"
     assert tuple(plan["terminal_conditions"]) == (
         "strict_route_clear",
@@ -817,6 +819,7 @@ def test_phase9_serial_plan_covers_targeted_specs_and_protection_regression(tmp_
     assert all(
         "--run-to-completion" in attempt["command"]
         and "--timeout-sec" not in attempt["command"]
+        and "--observe-sec" not in attempt["command"]
         and attempt["execution_policy"] == "run_to_completion"
         and attempt["overall_wall_clock_timeout_sec"] is None
         for attempt in plan["attempts"]

@@ -2249,6 +2249,10 @@ def test_validation_run_plan_preserves_instance_positions_and_tags():
     assert "completion-watchdog" in stonecore["live_validate_command"]
     assert "--observe-sec" not in stonecore["live_validate_command"]
     assert "--timeout-sec" not in stonecore["live_validate_command"]
+    assert all(
+        "--observe-sec" not in segment["live_validate_command"]
+        for segment in stonecore["segments"]
+    )
 
 
 def test_validation_run_plan_reusable_session_cli_flag(tmp_path, monkeypatch):
@@ -2323,7 +2327,7 @@ def test_validation_run_plan_reusable_session_isolates_full_clear_output_and_tim
     assert "--timeout-sec" not in segment_command
 
 
-def test_validation_run_plan_reusable_session_keeps_fixed_window_segment_defaults():
+def test_validation_run_plan_rejects_fixed_window_routes():
     scenarios = [{"scenario_id": "stonecore_5n"}]
     routes_by_scenario = {
         "stonecore_5n": [
@@ -2331,23 +2335,21 @@ def test_validation_run_plan_reusable_session_keeps_fixed_window_segment_default
         ],
     }
 
-    plan = build_validation_run_plan(
-        scenarios,
-        Path("dataset/live_validation_scenarios"),
-        Path("dataset/live_validation_scenario_reports_built"),
-        Path("dataset/validation_scenarios"),
-        300,
-        2400,
-        routes_by_scenario,
-        duration_policy="fixed-window",
-        reusable_session=True,
-    )
-    stonecore = plan["scenarios"][0]
-
-    assert stonecore["live_validate_command"][stonecore["live_validate_command"].index("--timeout-sec") + 1] == "2400"
-    segment_command = stonecore["segments"][0]["live_validate_command"]
-    assert "--transport" not in segment_command
-    assert segment_command[segment_command.index("--timeout-sec") + 1] == "2400"
+    with pytest.raises(
+        ValueError,
+        match="raid/dungeon validation plans require completion-watchdog timing",
+    ):
+        build_validation_run_plan(
+            scenarios,
+            Path("dataset/live_validation_scenarios"),
+            Path("dataset/live_validation_scenario_reports_built"),
+            Path("dataset/validation_scenarios"),
+            300,
+            2400,
+            routes_by_scenario,
+            duration_policy="fixed-window",
+            reusable_session=True,
+        )
 
 
 def test_validation_run_plan_segments_boss_routes_for_aggregate_reports():
@@ -7622,6 +7624,7 @@ def test_live_bot_validation_route_sequence_dry_run_writes_ordered_child_command
     assert report["route_sequence"]["expected_segments"] == ["01_entrance_packs", "02_corborus"]
     assert "--validation-segment-id' '01_entrance_packs" in commands
     assert "--validation-route-node-id' 'stonecore_corborus" in commands
+    assert "--observe-sec" not in commands
     assert "stonecore_missing" not in commands
 
 
@@ -8541,6 +8544,33 @@ def test_live_bot_validation_preserve_worldserver_rejects_process_transport(
     )
 
     with pytest.raises(SystemExit, match="requires --transport session"):
+        live_validation_main()
+
+
+@pytest.mark.parametrize(
+    ("timing_args", "message"),
+    [
+        (["--duration-policy", "fixed-window"], "requires --duration-policy completion-watchdog"),
+        (["--observe-sec", "300"], "is not a raid/dungeon completion timer"),
+    ],
+)
+def test_live_bot_validation_route_rejects_fixed_observation_timing(
+    tmp_path, monkeypatch, timing_args, message
+):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "bot-live-validate",
+            "--dry-run",
+            "--validation-scenario-id",
+            "stonecore_5n",
+            "--output-dir",
+            str(tmp_path / "capture"),
+            *timing_args,
+        ],
+    )
+
+    with pytest.raises(SystemExit, match=message):
         live_validation_main()
 
 
