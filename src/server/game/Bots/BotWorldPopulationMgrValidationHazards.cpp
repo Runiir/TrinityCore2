@@ -10,7 +10,7 @@
 #include "SpellInfo.h"
 #include "SpellMgr.h"
 #include "TemporarySummon.h"
-#include "WorldObject.h"
+#include "Object.h"
 
 #include <algorithm>
 #include <cmath>

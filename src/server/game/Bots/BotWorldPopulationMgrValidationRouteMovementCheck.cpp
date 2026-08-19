@@ -17,7 +17,7 @@
 #include "SpellInfo.h"
 #include "SpellMgr.h"
 #include "Unit.h"
-#include "WorldObject.h"
+#include "Object.h"
 
 #include <algorithm>
 #include <cmath>

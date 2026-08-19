@@ -9,7 +9,7 @@
 #include "ObjectAccessor.h"
 #include "Player.h"
 #include "Unit.h"
-#include "WorldObject.h"
+#include "Object.h"
 
 #include <algorithm>
 #include <string>
