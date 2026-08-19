@@ -39,9 +39,9 @@ def test_azil_feral_handoff_state_stops_before_local_swipe_window():
     module = MODULE.read_text(encoding="utf-8")
 
     dispatch = world.index("ResolveFeralHandoffState(")
-    swipe_window = world.index("localHealerOwnedSwipeWindow")
-    assert dispatch < swipe_window
-    assert "auto tryFeralRoarPickup" not in world[dispatch:swipe_window]
+    retention_dispatch = world.index("TryFeralLocalRetention(")
+    assert dispatch < retention_dispatch
+    assert "localHealerOwnedSwipeWindow" not in world[dispatch:retention_dispatch]
     for marker in (
         "feralChargeNowMs = NowMs()",
         "feralChargePickupTarget = ObjectAccessor::GetUnit(",
