@@ -9419,6 +9419,75 @@ def test_validation_provisioning_leaves_selected_tree_mastery_to_native_learn_re
     assert "SELECT c.`guid`, 77215, 1, 0" not in sql
 
 
+def test_affliction_nethermancy_is_in_canonical_generated_character_spell_sql():
+    config = load_validation_provisioning_config(Path("experiments/configs/validation_provisioning_cata_001.json"))
+    affliction = next(
+        bot
+        for scenario in config["scenarios"]
+        if scenario["id"] == "all_spec_candidate_pool"
+        for bot in scenario["bots"]
+        if bot["class_spec"] == "affliction_warlock"
+    )
+
+    action_profiles = load_action_profile_manifest()
+    assert 86091 in action_profiles["proficiency_spells_by_class"][9]
+    assert 86091 in bot_known_spell_ids(affliction)
+
+    sql = build_character_insert_sql({
+        "scenarios": [{
+            "id": "all_spec_candidate_pool",
+            "start_position": {"map_id": 0, "x": 1, "y": 2, "z": 3},
+            "bots": [affliction],
+        }]
+    })
+    assert sql.count("SELECT c.`guid`, 86091, 1, 0") == 1
+
+
+def test_affliction_nethermancy_readback_rejects_missing_character_spell(monkeypatch, tmp_path):
+    conf = tmp_path / "worldserver.conf"
+    conf.write_text(
+        'LoginDatabaseInfo = "db.example;3306;trinity;secret;auth"\n'
+        'CharacterDatabaseInfo = "db.example;3306;trinity;secret;characters"\n',
+        encoding="utf-8",
+    )
+    bot = {
+        "account": "A",
+        "name": "Afflock",
+        "class": 9,
+        "class_spec": "affliction_warlock",
+    }
+    config = {"scenarios": [{"id": "all_spec_candidate_pool", "bots": [bot]}]}
+
+    monkeypatch.setattr(
+        "tools.bot_ml.validate_validation_provisioning.fetch_columns",
+        lambda _url, _table: set(),
+    )
+    monkeypatch.setattr(
+        "tools.bot_ml.validate_validation_provisioning.fetch_existing_values",
+        lambda _url, _table, _column, values: set(values),
+    )
+    monkeypatch.setattr(
+        "tools.bot_ml.validate_validation_provisioning.fetch_runtime_gear",
+        lambda _url, _names: {
+            "Afflock": {
+                "guid": 1306,
+                "talentTree": "0 0",
+                "equipmentCache": "",
+                "items": {},
+                "glyphs": [],
+                "talent_spells": set(),
+                "known_spells": set(),
+            }
+        },
+    )
+
+    failures, evidence = validate_provisioning_database(config, conf, require_applied=True)
+
+    failure = next(row for row in failures if row["check"] == "runtime_character_spell")
+    assert 86091 in failure["missing_spells"]
+    assert 86091 in evidence["runtime_gear"]["Afflock"]["missing_known_spells"]
+
+
 def test_stonecore_role_specs_inherit_complete_dbc_legal_talent_and_action_profiles():
     config = load_validation_provisioning_config(Path("experiments/configs/validation_provisioning_cata_001.json"))
     action_profiles = load_action_profile_manifest()
