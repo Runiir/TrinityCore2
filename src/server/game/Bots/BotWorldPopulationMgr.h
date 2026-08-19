@@ -162,6 +162,7 @@ private:
         BotWorldPopulationMgrValidationRoute::GroupRecoveryCallbacks;
     friend struct BotWorldPopulationMgrValidationRoute::DrudgeLaneContext;
     friend struct BotWorldPopulationMgrValidationRoute::GroupRecoveryContext;
+    friend struct BotWorldPopulationMgrValidationRoute::ObjectiveContext;
     friend struct BotWorldPopulationMgrContent::Stonecore::HighPriestessAzil::Context;
 
 #include "Bots/BotWorldPopulationMgrPlanningContracts.h"

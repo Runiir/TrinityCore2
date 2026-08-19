@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotWorldPopulationMgrValidationRouteTerminalArrival.h"
 #include "Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilAddWaveDiscovery.h"
 #include "Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilAddWaveDensity.h"
 #include "Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilAddWaveOpeningActions.h"
@@ -991,336 +992,31 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     if (TryValidationRouteGroupRecovery(state, bot, power, stage, activity,
             situation, action, target, discoveryLeg, groupRecoveryCallbacks))
         return true;
-    bool failedTrashPackComplete = !persistedValidationRoutePackHasLiveMembers();
-    Unit* retryableFailedTrashTarget = failedTrashPackComplete ? nullptr : activeValidationRoutePackTarget();
-    bool failedTrashPackCanRetry = retryableFailedTrashTarget
-        && isEligibleTrashClusterMob(retryableFailedTrashTarget->ToCreature());
-    bool failedTrashPartyCombatActive = validationPartyHasActiveCombat();
-    bool failedTrashRetryDue = state.ValidationRouteTerminalAtMs
-        && NowMs() - state.ValidationRouteTerminalAtMs >= 5000;
-    if (state.ValidationRouteTerminalState
-        && state.ValidationRouteGeneration == Party().ValidationRouteGeneration
-        && state.ValidationRouteTerminalGeneration == Party().ValidationRouteGeneration
-        && Cohort().Config.ValidationRouteKind != "boss"
-        && state.ValidationRouteTerminalReason == "validation_trash_no_progress"
-        && Party().ValidationRoutePackGeneration == Party().ValidationRouteGeneration
-        && Party().ValidationRoutePackObservedEngagement
-        && (failedTrashPackComplete || failedTrashPackCanRetry)
-        && (!failedTrashPartyCombatActive || (failedTrashPackCanRetry && failedTrashRetryDue)))
-    {
-        uint64 retryNowMs = NowMs();
-        for (WorldBotState& cohortState : Party().Bots)
+    BotWorldPopulationMgrValidationRoute::ObjectiveCallbacks terminalArrivalCallbacks;
+    terminalArrivalCallbacks.PersistedPackHasLiveMembers =
+        persistedValidationRoutePackHasLiveMembers;
+    terminalArrivalCallbacks.ActivePackTarget =
+        activeValidationRoutePackTarget;
+    terminalArrivalCallbacks.IsEligibleTrash =
+        isEligibleTrashClusterMob;
+    terminalArrivalCallbacks.PartyHasActiveCombat =
+        validationPartyHasActiveCombat;
+    terminalArrivalCallbacks.IsOriginalInstanceMember =
+        [this](WorldBotState const& cohortState, Player const* cohortBot)
         {
-            if (Player* cohortBot = GetLoadedBot(cohortState))
-                cohortBot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
-            cohortState.TargetGuid.Clear();
-            cohortState.ValidationRouteCombatProgressTargetGuid.Clear();
-            cohortState.ValidationRoutePackProgressTargetGuid.Clear();
-            cohortState.ValidationRouteCombatNoProgressCount = 0;
-            cohortState.ValidationRouteCombatNoProgressSinceMs = 0;
-            cohortState.ValidationRoutePackNoProgressCount = 0;
-            cohortState.ValidationRoutePackNoProgressSinceMs = 0;
-            cohortState.ValidationRouteTerminalState = false;
-            cohortState.ValidationRouteTerminalAtMs = 0;
-            cohortState.ValidationRouteTerminalGeneration = 0;
-            cohortState.ValidationRouteTerminalReason.clear();
-            cohortState.ActivePathValid = false;
-            cohortState.IsMoving = false;
-            cohortState.LoopRecoveryCooldownUntilMs = retryNowMs + 1000;
-            if (failedTrashPackCanRetry)
-            {
-                // Reopen onto the actual surviving pack member rather than
-                // the already-cleared lower anchor. This also recovers a live
-                // engaged pack after the bounded terminal hold instead of
-                // waiting forever for hostile combat state to disappear.
-                cohortState.ValidationRouteAnchorOverrideValid = true;
-                cohortState.ValidationRouteAnchorOverrideUntilMs = retryNowMs + 30000;
-                cohortState.ValidationRouteAnchorOverrideX = retryableFailedTrashTarget->GetPositionX();
-                cohortState.ValidationRouteAnchorOverrideY = retryableFailedTrashTarget->GetPositionY();
-                cohortState.ValidationRouteAnchorOverrideZ = retryableFailedTrashTarget->GetPositionZ();
-                cohortState.ValidationRouteAnchorOverrideReason = "validation_route_live_pack_reapproach";
-            }
-        }
-        Unit* retryEvidenceTarget = failedTrashPackCanRetry ? retryableFailedTrashTarget : nullptr;
-        // Leave combat focus empty for one decision so the route override
-        // stays authoritative and all roles reapproach with the tank.
-        target = nullptr;
-        std::string raw = BuildRawJson(bot, retryEvidenceTarget);
-        std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_recovery", &power, stage, activity);
-        char const* recoveryReason = failedTrashPackCanRetry
-            ? "failed_terminal_reopened_for_live_pack_reapproach"
-            : "failed_terminal_reopened_after_pack_death";
-        RecordEvent(state, bot, "validation_route_recovery", retryEvidenceTarget, recoveryReason,
-            raw.c_str(), semantic.c_str(), float(Party().ValidationRoutePackDeathGuids.size()), uint32(Party().ValidationRoutePackMemberGuids.size()));
-        situation = "validation_route_recovery";
-        action = "validation_route_recovery";
+            return IsValidationCohortMemberInOriginalInstance(cohortState,
+                cohortBot);
+        };
+    terminalArrivalCallbacks.EnrollEngagedPackMembers =
+        enrollEngagedValidationRoutePackMembers;
+    terminalArrivalCallbacks.MoveToRouteAnchor = moveToRouteAnchor;
+    BotWorldPopulationMgrValidationRoute::ObjectiveContext terminalArrivalContext(
+        *this, state, bot, power, stage, activity, situation, action, target,
+        arrivalRoute, routeArrivalRadius, canonicalRouteDistance,
+        routeAnchorX, routeAnchorY, routeAnchorZ, routeAnchorReason,
+        routeDistance, std::move(terminalArrivalCallbacks));
+    if (terminalArrivalContext.Run())
         return true;
-    }
-    bool routePartyCombatActive = validationPartyHasActiveCombat();
-    bool arrivalCombatActive = arrivalRoute && routePartyCombatActive;
-    bool allRouteParticipantsAlive = true;
-    uint32 loadedRouteParticipants = 0;
-    for (WorldBotState const& cohortState : Party().Bots)
-    {
-        Player* cohortBot = GetLoadedBot(cohortState);
-        if (!cohortBot)
-            continue;
-        ++loadedRouteParticipants;
-        if (!cohortBot->IsAlive() || !IsValidationCohortMemberInOriginalInstance(cohortState, cohortBot))
-        {
-            allRouteParticipantsAlive = false;
-            break;
-        }
-    }
-    if (Cohort().Config.TargetPopulation && loadedRouteParticipants < Cohort().Config.TargetPopulation)
-        allRouteParticipantsAlive = false;
-
-    bool releasedRetreatRendezvous = !routePartyCombatActive && allRouteParticipantsAlive
-        && state.ValidationRouteAnchorOverrideValid
-        && state.ValidationRouteAnchorOverrideReason == "validation_route_partial_wipe_retreat_rendezvous";
-    if (releasedRetreatRendezvous)
-    {
-        for (WorldBotState& cohortState : Party().Bots)
-        {
-            if (cohortState.ValidationRouteAnchorOverrideReason != "validation_route_partial_wipe_retreat_rendezvous")
-                continue;
-            cohortState.ValidationRouteAnchorOverrideValid = false;
-            cohortState.ValidationRouteAnchorOverrideUntilMs = 0;
-            cohortState.ValidationRouteAnchorOverrideReason.clear();
-        }
-        routeAnchorX = Cohort().Config.ValidationRouteX;
-        routeAnchorY = Cohort().Config.ValidationRouteY;
-        routeAnchorZ = Cohort().Config.ValidationRouteZ;
-        routeAnchorReason = "validation_route_anchor";
-        routeDistance = canonicalRouteDistance;
-        state.QuestRouteDestination.X = routeAnchorX;
-        state.QuestRouteDestination.Y = routeAnchorY;
-        state.QuestRouteDestination.Z = routeAnchorZ;
-        state.QuestRouteDestination.Reason = routeAnchorReason;
-    }
-
-    bool invalidArrivalTerminal = arrivalRoute
-        && state.ValidationRouteTerminalState
-        && state.ValidationRouteGeneration == Party().ValidationRouteGeneration
-        && state.ValidationRouteTerminalGeneration == Party().ValidationRouteGeneration
-        && state.ValidationRouteTerminalReason == "arrival"
-        && (canonicalRouteDistance > routeArrivalRadius
-            || std::fabs(bot->GetPositionZ() - Cohort().Config.ValidationRouteZ) > 4.0f
-            || arrivalCombatActive);
-    if (invalidArrivalTerminal)
-    {
-        state.ValidationRouteTerminalState = false;
-        state.ValidationRouteTerminalAtMs = 0;
-        state.ValidationRouteTerminalGeneration = 0;
-        state.ValidationRouteTerminalReason.clear();
-        state.LoopRecoveryCooldownUntilMs = 0;
-    }
-
-    if (state.ValidationRouteTerminalState
-        && state.ValidationRouteGeneration == Party().ValidationRouteGeneration
-        && state.ValidationRouteTerminalGeneration == Party().ValidationRouteGeneration)
-    {
-        float terminalCohortRadius = Cohort().Config.ValidationRouteClusterRadiusYards > 1.0f
-            ? std::min(Cohort().Config.ValidationRouteClusterRadiusYards, 90.0f)
-            : 90.0f;
-        if (!arrivalRoute
-            && !Party().ValidationRouteManifest.empty()
-            && !Party().ValidationRouteManifestComplete
-            && Cohort().Config.ValidationRouteAdvanceMode == "terminal"
-            && routeDistance > terminalCohortRadius)
-        {
-            SubmitMeleeAutoAttackIntent(state,
-                BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
-                BotMeleeAutoAttack::Owner::Safety,
-                BotActionArbitration::Priority::Terminal,
-                "terminal_cohort_catchup");
-            target = nullptr;
-            state.TargetGuid.Clear();
-            if (moveToRouteAnchor())
-            {
-                std::string raw = BuildRawJson(bot, nullptr);
-                std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_regroup", &power, stage, activity);
-                RecordEvent(state, bot, "validation_route_regroup", nullptr, "terminal_cohort_catchup", raw.c_str(), semantic.c_str(), routeDistance, Cohort().Config.ValidationRouteTargetEntry);
-                situation = "validation_route_regroup";
-                action = "move_to_validation_route_anchor";
-                return true;
-            }
-        }
-
-        SubmitMeleeAutoAttackIntent(state,
-            BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
-            BotMeleeAutoAttack::Owner::Safety,
-            BotActionArbitration::Priority::Terminal,
-            "validation_route_terminal_hold");
-        state.TargetGuid.Clear();
-        state.WasInCombat = false;
-        state.LoopRecoveryCooldownUntilMs = NowMs() + 60000;
-        situation = Cohort().Config.ValidationRouteKind == "boss"
-            ? "validation_route_manifest"
-            : "normal_dungeon_trash";
-        action = state.ValidationRouteTerminalReason == "trash_cluster_cleared"
-            || state.ValidationRouteTerminalReason == "boss_killed"
-            || state.ValidationRouteTerminalReason == "arrival"
-            ? "validation_route_complete"
-            : "validation_route_failed";
-        if (!state.ValidationRouteTerminalAtMs || NowMs() - state.ValidationRouteTerminalAtMs <= 5000)
-        {
-            std::string raw = BuildRawJson(bot, nullptr);
-            std::string semantic = BuildSemanticJson(bot, nullptr, situation.c_str(), &power, stage, activity);
-            RecordEvent(state, bot, "validation_route_recovery", nullptr, state.ValidationRouteTerminalReason.empty() ? "route_terminal_hold" : state.ValidationRouteTerminalReason.c_str(), raw.c_str(), semantic.c_str(), routeDistance, Cohort().Config.ValidationRouteTargetEntry);
-        }
-        return true;
-    }
-    // Regroup and descent nodes must not suppress a natural pull merely because
-    // the cohort reached the navigation anchor. Finish every active attacker
-    // before marking arrival; otherwise mobs can evade back across a one-way
-    // descent and poison the following trash ledger with unreachable survivors.
-    if (arrivalCombatActive)
-        enrollEngagedValidationRoutePackMembers();
-    if (arrivalRoute && !arrivalCombatActive)
-    {
-        SubmitMeleeAutoAttackIntent(state,
-            BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
-            BotMeleeAutoAttack::Owner::Route,
-            BotActionArbitration::Priority::Mechanic,
-            "validation_route_arrival_hold");
-        target = nullptr;
-        state.TargetGuid.Clear();
-        std::string raw = BuildRawJson(bot, nullptr);
-        std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_regroup", &power, stage, activity);
-        if (Cohort().Config.ValidationRouteKind == "descent"
-            && !Cohort().Config.ValidationRouteDescentAction.empty())
-        {
-            if (Cohort().Config.ValidationRouteDescentAction
-                != "native_walkable_descent")
-            {
-                // A manifest may name a player input that the server-side bot
-                // cannot safely express (for example a client jump). Keep it
-                // fail-closed instead of substituting a spline or position
-                // mutation.
-                state.ActivePathValid = false;
-                state.ValidationRouteDescentPhase =
-                    WorldBotState::ValidationDescentPhase::Blocked;
-                state.ValidationRouteDescentRejectReason =
-                    "native_descent_semantics_unavailable";
-                state.LastPathRejectReason =
-                    state.ValidationRouteDescentRejectReason;
-                state.LastNoProgressReason =
-                    state.ValidationRouteDescentRejectReason;
-                state.LastDecisionResult = "native_descent_unavailable";
-                FailValidationAttemptOnce(state, bot,
-                    "native_descent_semantics_unavailable",
-                    Party().ValidationRouteGeneration);
-                situation = "validation_route_descent";
-                action = "validation_route_descent_blocked";
-                target = nullptr;
-                return true;
-            }
-
-            size_t const nextIndex = Party().ValidationRouteManifestIndex + 1;
-            bool const hasNextGoal = nextIndex
-                < Party().ValidationRouteManifest.size();
-            ValidationRouteManifestNode const* nextNode = hasNextGoal
-                ? &Party().ValidationRouteManifest[nextIndex] : nullptr;
-            WorldBotState::ValidationDescentPhase const previousPhase =
-                state.ValidationRouteDescentPhase;
-            BotActionArbitration::Outcome const descentOutcome =
-                ExecuteNativeActionIntent(state, bot,
-                    BotNativeAction::NativeDescent{
-                        Cohort().Config.ValidationRouteX,
-                        Cohort().Config.ValidationRouteY,
-                        Cohort().Config.ValidationRouteZ,
-                        nextNode ? nextNode->NavigationAnchorX : 0.0f,
-                        nextNode ? nextNode->NavigationAnchorY : 0.0f,
-                        nextNode ? nextNode->NavigationAnchorZ : 0.0f,
-                        Party().ValidationRouteGeneration,
-                        hasNextGoal },
-                    BotMovementArbitration::Owner::Route,
-                    BotMovementArbitration::Priority::Route);
-
-            char const* const descentPhase = ValidationDescentPhaseName(
-                state.ValidationRouteDescentPhase);
-            bool const phaseChanged = previousPhase
-                != state.ValidationRouteDescentPhase;
-            bool const descentReady = state.ValidationRouteDescentPhase
-                    == WorldBotState::ValidationDescentPhase::Ready
-                && state.ValidationRouteDescentDepartureObserved
-                && state.ValidationRouteDescentLandingObserved
-                && state.ValidationRouteDescentHealthMarginSatisfied
-                && state.ValidationRouteDescentLandingPathProven
-                && state.ValidationRouteDescentMonotonicProgressObserved
-                && !bot->IsFalling();
-            if (phaseChanged || descentReady
-                || descentOutcome.Result
-                    != BotActionArbitration::Disposition::Committed)
-                RecordEvent(state, bot, "validation_route_descent", nullptr,
-                    state.ValidationRouteDescentRejectReason.empty()
-                        ? descentPhase
-                        : state.ValidationRouteDescentRejectReason.c_str(),
-                    raw.c_str(), semantic.c_str(), canonicalRouteDistance,
-                    uint32(std::round(
-                        state.ValidationRouteDescentLandingHealthPct * 100.0f)));
-
-            situation = "validation_route_descent";
-            if (descentReady)
-            {
-                state.ValidationRouteTerminalState = true;
-                state.ValidationRouteTerminalAtMs = NowMs();
-                state.ValidationRouteTerminalGeneration =
-                    Party().ValidationRouteGeneration;
-                state.ValidationRouteTerminalReason =
-                    "native_descent_landed_path_proven";
-                state.LoopRecoveryCooldownUntilMs = NowMs() + 60000;
-                RecordEvent(state, bot, "validation_route_terminal", nullptr,
-                    state.ValidationRouteTerminalReason.c_str(), raw.c_str(),
-                    semantic.c_str(), canonicalRouteDistance,
-                    Cohort().Config.ValidationRouteTargetEntry);
-                action = "validation_route_descent_complete";
-                MaybeAdvanceValidationRouteManifest();
-            }
-            else if (state.ValidationRouteDescentPhase
-                == WorldBotState::ValidationDescentPhase::Falling)
-                action = "validation_route_descent_falling";
-            else if (state.ValidationRouteDescentPhase
-                == WorldBotState::ValidationDescentPhase::Landed)
-                action = "validation_route_descent_landing_pending";
-            else if (descentOutcome.Result
-                == BotActionArbitration::Disposition::Committed)
-                action = "validation_route_descent_walk_segment";
-            else
-                action = "validation_route_descent_blocked";
-            target = nullptr;
-            return true;
-        }
-        if (canonicalRouteDistance <= routeArrivalRadius
-            && std::fabs(bot->GetPositionZ() - Cohort().Config.ValidationRouteZ) <= 4.0f)
-        {
-            state.ValidationRouteTerminalState = true;
-            state.ValidationRouteTerminalAtMs = NowMs();
-            state.ValidationRouteTerminalGeneration = Party().ValidationRouteGeneration;
-            state.ValidationRouteTerminalReason = "arrival";
-            state.LoopRecoveryCooldownUntilMs = NowMs() + 60000;
-            RecordEvent(state, bot, "validation_route_regroup", nullptr, "arrival", raw.c_str(), semantic.c_str(), canonicalRouteDistance, Cohort().Config.ValidationRouteTargetEntry);
-            RecordEvent(state, bot, "validation_route_terminal", nullptr, "arrival", raw.c_str(), semantic.c_str(), canonicalRouteDistance, Cohort().Config.ValidationRouteTargetEntry);
-            situation = "validation_route_regroup";
-            action = "validation_route_complete";
-            MaybeAdvanceValidationRouteManifest();
-            return true;
-        }
-
-        bool const moved = moveToRouteAnchor();
-        char const* movementResult = moved
-            ? (Cohort().Config.ValidationRouteLabel.empty()
-                ? "move_to_arrival" : Cohort().Config.ValidationRouteLabel.c_str())
-            : (state.LastPathRejectReason.empty()
-                ? "route_anchor_retryable" : state.LastPathRejectReason.c_str());
-        RecordEvent(state, bot, "validation_route_regroup", nullptr,
-            movementResult, raw.c_str(), semantic.c_str(), routeDistance,
-            Cohort().Config.ValidationRouteTargetEntry);
-        situation = "validation_route_regroup";
-        action = moved ? "move_to_validation_route_anchor" : "validation_route_hold_anchor";
-        return true;
-    }
     if (Cohort().Config.ValidationRouteKind != "boss"
         && std::string(GetDungeonRole(bot)) != "tank"
         && routeDistance > routeArrivalRadius

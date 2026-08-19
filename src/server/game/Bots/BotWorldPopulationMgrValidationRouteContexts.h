@@ -2,13 +2,23 @@
 #define TRINITY_BOT_WORLD_POPULATION_MGR_VALIDATION_ROUTE_CONTEXTS_H
 
 #include "ObjectGuid.h"
+#include "Define.h"
 
 #include <functional>
 #include <string>
 
+class BotWorldPopulationMgr;
 class Creature;
 class Player;
 class Unit;
+struct BotRolePowerBreakdown;
+enum class BotProgressionStage : uint8;
+enum class BotProgressionActivity : uint8;
+
+namespace BotWorldPopulationMgrBotState
+{
+struct WorldBotState;
+}
 
 namespace BotWorldPopulationMgrValidationRoute
 {
@@ -84,6 +94,8 @@ struct AnchorContext
     float Distance = 0.0f;
     float CanonicalDistance = 0.0f;
 };
+
+struct ObjectiveContext;
 }
 
 #endif

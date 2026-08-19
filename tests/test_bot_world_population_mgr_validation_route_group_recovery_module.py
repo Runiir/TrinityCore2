@@ -24,8 +24,9 @@ def test_group_recovery_is_extracted_at_the_validation_route_boundary():
     source = SOURCE.read_text()
     module = MODULE.read_text()
     source_call = source.index("TryValidationRouteGroupRecovery")
-    failed_pack = source.index("bool failedTrashPackComplete")
-    assert source_call < failed_pack
+    terminal_context = source.index("ObjectiveContext terminalArrivalContext")
+    assert source_call < terminal_context
+    assert "terminalArrivalContext.Run()" in source
     assert "auto markValidationRouteTerminalAfterProgress" not in source
     assert "RetireStalePackMembers" in source
     for marker in (
