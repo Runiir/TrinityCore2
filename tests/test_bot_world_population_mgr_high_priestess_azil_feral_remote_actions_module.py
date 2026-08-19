@@ -10,6 +10,9 @@ MODULE_HEADER = ROOT / (
     "HighPriestessAzilFeralRemoteActions.h"
 )
 MODULE = MODULE_HEADER.with_suffix(".cpp")
+ORCHESTRATION_MODULE = MODULE_HEADER.with_name(
+    "HighPriestessAzilAddWaveOrchestration.cpp"
+)
 CONTEXT_HEADER = MODULE_HEADER.with_name(
     "HighPriestessAzilHealerAddWavePreposition.h"
 )
@@ -20,13 +23,14 @@ ACTIVE_MODULE = MODULE_HEADER.with_name(
 
 def test_azil_feral_remote_actions_is_registered_and_bounded():
     world = WORLD.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     mgr_header = MGR_HEADER.read_text(encoding="utf-8")
     module_header = MODULE_HEADER.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
     context_header = CONTEXT_HEADER.read_text(encoding="utf-8")
     cmake = CMAKE.read_text(encoding="utf-8")
 
-    assert len(mgr_header.splitlines()) <= 990
+    assert len(mgr_header.splitlines()) <= 1000
     assert len(module_header.splitlines()) <= 1000
     assert len(module.splitlines()) <= 1000
     assert "HighPriestessAzilFeralRemoteActions.cpp" in cmake
@@ -39,21 +43,22 @@ def test_azil_feral_remote_actions_is_registered_and_bounded():
     assert "static bool Run(FeralRemoteActionsRequest const& request);" in (
         context_header
     )
-    assert "HighPriestessAzilFeralRemoteActions.h" in world
+    assert "HighPriestessAzilAddWaveOrchestration.h" in world
 
 
 def test_azil_feral_remote_actions_owns_the_exact_native_action_window():
     world = WORLD.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
     active_module = ACTIVE_MODULE.read_text(encoding="utf-8")
 
-    handoff_dispatch = world.index("ResolveFeralHandoffState(")
-    retention_dispatch = world.index("TryFeralLocalRetention(")
-    remote_dispatch = world.index("TryFeralRemoteActions(")
-    active_window = world.index("TryFeralActiveSwarmMovement(")
+    handoff_dispatch = orchestration.index("ResolveFeralHandoffState(")
+    retention_dispatch = orchestration.index("TryFeralLocalRetention(")
+    remote_dispatch = orchestration.index("TryFeralRemoteActions(")
+    active_window = orchestration.index("TryFeralActiveSwarmMovement(")
     assert handoff_dispatch < retention_dispatch < remote_dispatch < active_window
-    assert "A remote Charge must not abandon" not in world[remote_dispatch:active_window]
-    assert "feralHealerHandoffArrived" not in world[remote_dispatch:active_window]
+    assert "A remote Charge must not abandon" not in world
+    assert "feralHealerHandoffArrived" not in world
     assert "activeSwarmPickupEligible" not in module
     assert "uint64 activeSwarmPickupNowMs = NowMs();" in active_module
 

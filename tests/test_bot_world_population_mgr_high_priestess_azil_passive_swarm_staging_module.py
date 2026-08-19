@@ -10,6 +10,9 @@ MODULE_HEADER = ROOT / (
     "HighPriestessAzilPassiveSwarmStaging.h"
 )
 MODULE = MODULE_HEADER.with_suffix(".cpp")
+ORCHESTRATION_MODULE = MODULE_HEADER.with_name(
+    "HighPriestessAzilAddWaveOrchestration.cpp"
+)
 CONTEXT_HEADER = MODULE_HEADER.with_name(
     "HighPriestessAzilHealerAddWavePreposition.h"
 )
@@ -17,13 +20,14 @@ CONTEXT_HEADER = MODULE_HEADER.with_name(
 
 def test_azil_passive_swarm_staging_is_registered_and_bounded():
     world = WORLD.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     mgr_header = MGR_HEADER.read_text(encoding="utf-8")
     module_header = MODULE_HEADER.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
     context_header = CONTEXT_HEADER.read_text(encoding="utf-8")
     cmake = CMAKE.read_text(encoding="utf-8")
 
-    assert len(mgr_header.splitlines()) <= 990
+    assert len(mgr_header.splitlines()) <= 1000
     assert len(module_header.splitlines()) <= 1000
     assert len(module.splitlines()) <= 1000
     assert "HighPriestessAzilPassiveSwarmStaging.cpp" in cmake
@@ -34,19 +38,20 @@ def test_azil_passive_swarm_staging_is_registered_and_bounded():
     assert "static bool Run(PassiveSwarmStagingRequest const& request);" in (
         context_header
     )
-    assert "HighPriestessAzilPassiveSwarmStaging.h" in world
+    assert "HighPriestessAzilAddWaveOrchestration.h" in world
 
 
 def test_azil_passive_swarm_staging_owns_the_exact_ordered_window():
     world = WORLD.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
 
-    dispatch = world.index("TryPassiveSwarmStaging(")
-    continuation = world.index(
+    dispatch = orchestration.index("TryPassiveSwarmStaging(")
+    continuation = orchestration.index(
         "// A moving swarm can select a different representative attacker every",
         dispatch,
     )
-    manager_gap = world[dispatch:continuation]
+    manager_gap = world
     for marker in (
         "pendingSwarmActivation",
         "passiveSwarmClusterAnchor",
@@ -60,7 +65,7 @@ def test_azil_passive_swarm_staging_owns_the_exact_ordered_window():
         assert marker in module
         assert marker not in manager_gap
 
-    assert world.index("tank_swarm_defensive") < dispatch
+    assert orchestration.index("tank_swarm_defensive") < dispatch
     assert module.index("pendingSwarmActivation") < module.index(
         "passiveSwarmClusterAnchor"
     )

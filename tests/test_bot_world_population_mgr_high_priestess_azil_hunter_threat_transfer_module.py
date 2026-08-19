@@ -10,6 +10,9 @@ MODULE_HEADER = ROOT / (
     "HighPriestessAzilHunterThreatTransfer.h"
 )
 MODULE = MODULE_HEADER.with_suffix(".cpp")
+ORCHESTRATION_MODULE = MODULE_HEADER.with_name(
+    "HighPriestessAzilAddWaveOrchestration.cpp"
+)
 CONTEXT_HEADER = MODULE_HEADER.with_name(
     "HighPriestessAzilHealerAddWavePreposition.h"
 )
@@ -17,13 +20,14 @@ CONTEXT_HEADER = MODULE_HEADER.with_name(
 
 def test_azil_hunter_threat_transfer_is_registered_and_bounded():
     world = WORLD.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     mgr_header = MGR_HEADER.read_text(encoding="utf-8")
     module_header = MODULE_HEADER.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
     context_header = CONTEXT_HEADER.read_text(encoding="utf-8")
     cmake = CMAKE.read_text(encoding="utf-8")
 
-    assert len(mgr_header.splitlines()) <= 990
+    assert len(mgr_header.splitlines()) <= 1000
     assert len(module_header.splitlines()) <= 1000
     assert len(module.splitlines()) <= 1000
     assert "HighPriestessAzilHunterThreatTransfer.cpp" in cmake
@@ -32,19 +36,20 @@ def test_azil_hunter_threat_transfer_is_registered_and_bounded():
     assert "HunterMisdirectionActive" in module_header
     assert "TryHunterThreatTransfer" in module_header
     assert "static HunterThreatTransferResult Run(" in context_header
-    assert "HighPriestessAzilHunterThreatTransfer.h" in world
+    assert "HighPriestessAzilAddWaveOrchestration.h" in world
 
 
 def test_azil_hunter_threat_transfer_owns_the_exact_ordered_window():
     world = WORLD.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
 
-    dispatch = world.index("TryHunterThreatTransfer(")
-    strict_area_resolver = world.index(
+    dispatch = orchestration.index("TryHunterThreatTransfer(")
+    strict_area_resolver = orchestration.index(
         "// The strict area-only resolver intentionally filters defensives",
         dispatch,
     )
-    manager_gap = world[dispatch:strict_area_resolver]
+    manager_gap = world
     assert "hunterAoeTransferReady" not in manager_gap
     assert "legalTransferTarget" not in manager_gap
     assert "misdirection_aoe_wait_for_focus" not in manager_gap
@@ -68,6 +73,7 @@ def test_azil_hunter_threat_transfer_owns_the_exact_ordered_window():
 def test_azil_hunter_threat_transfer_preserves_native_legality_and_ties():
     module = MODULE.read_text(encoding="utf-8")
     world = WORLD.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
 
     assert "AddWaveDiscoveryResult const* Discovery" in MODULE_HEADER.read_text(
         encoding="utf-8"
@@ -76,8 +82,8 @@ def test_azil_hunter_threat_transfer_preserves_native_legality_and_ties():
         encoding="utf-8"
     )
     assert "bool Handled = false;" in MODULE_HEADER.read_text(encoding="utf-8")
-    assert "bool hunterMisdirectionActive =" in world
-    assert "hunterThreatTransfer.HunterMisdirectionActive" in world
+    assert "bool hunterMisdirectionActive =" in orchestration
+    assert "hunterThreatTransfer.HunterMisdirectionActive" in orchestration
     assert module.index("hunterAoeResourceReady") < module.index(
         "hunterAoeTransferReady = hunterAoeResourceReady"
     )

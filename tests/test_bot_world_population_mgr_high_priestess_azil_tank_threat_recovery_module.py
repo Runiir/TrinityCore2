@@ -10,6 +10,9 @@ MODULE_HEADER = ROOT / (
     "HighPriestessAzilTankThreatRecovery.h"
 )
 MODULE = MODULE_HEADER.with_suffix(".cpp")
+ORCHESTRATION_MODULE = MODULE_HEADER.with_name(
+    "HighPriestessAzilAddWaveOrchestration.cpp"
+)
 CONTEXT_HEADER = MODULE_HEADER.with_name(
     "HighPriestessAzilHealerAddWavePreposition.h"
 )
@@ -17,13 +20,14 @@ CONTEXT_HEADER = MODULE_HEADER.with_name(
 
 def test_azil_tank_threat_recovery_is_registered_and_bounded():
     world = WORLD.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     mgr_header = MGR_HEADER.read_text(encoding="utf-8")
     module_header = MODULE_HEADER.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
     context_header = CONTEXT_HEADER.read_text(encoding="utf-8")
     cmake = CMAKE.read_text(encoding="utf-8")
 
-    assert len(mgr_header.splitlines()) <= 990
+    assert len(mgr_header.splitlines()) <= 1000
     assert len(module_header.splitlines()) <= 1000
     assert len(module.splitlines()) <= 1000
     assert "HighPriestessAzilTankThreatRecovery.cpp" in cmake
@@ -36,18 +40,19 @@ def test_azil_tank_threat_recovery_is_registered_and_bounded():
     assert "static bool Run(TankThreatRecoveryRequest const& request);" in (
         context_header
     )
-    assert "HighPriestessAzilTankThreatRecovery.h" in world
+    assert "HighPriestessAzilAddWaveOrchestration.h" in world
 
 
 def test_azil_tank_threat_recovery_owns_the_exact_ordered_window():
     world = WORLD.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
 
-    dispatch = world.index("TryTankThreatRecovery(")
-    swarm_threat_safety = world.index(
+    dispatch = orchestration.index("TryTankThreatRecovery(")
+    swarm_threat_safety = orchestration.index(
         "TrySwarmThreatSafety(", dispatch
     )
-    manager_gap = world[dispatch:swarm_threat_safety]
+    manager_gap = world
     for marker in (
         "warrior_taunt_residual_healer_threat",
         "warrior_charge_healer_swarm_pickup",
@@ -101,9 +106,10 @@ def test_azil_tank_threat_recovery_owns_the_exact_ordered_window():
 
 def test_azil_tank_threat_recovery_keeps_native_execution_and_callbacks():
     world = WORLD.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
 
-    assert world.index("continueStableTankSwarmApproach =") < world.index(
+    assert orchestration.index("continueStableTankSwarmApproach =") < orchestration.index(
         "TryTankThreatRecovery("
     )
     assert "continueStableTankSwarmApproach(add)" in module

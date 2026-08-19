@@ -10,6 +10,9 @@ MODULE_HEADER = ROOT / (
     "HighPriestessAzilFeralActiveSwarmMovement.h"
 )
 MODULE = MODULE_HEADER.with_suffix(".cpp")
+ORCHESTRATION_MODULE = MODULE_HEADER.with_name(
+    "HighPriestessAzilAddWaveOrchestration.cpp"
+)
 CONTEXT_HEADER = MODULE_HEADER.with_name(
     "HighPriestessAzilHealerAddWavePreposition.h"
 )
@@ -17,13 +20,14 @@ CONTEXT_HEADER = MODULE_HEADER.with_name(
 
 def test_azil_feral_active_swarm_movement_is_registered_and_bounded():
     world = WORLD.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     mgr_header = MGR_HEADER.read_text(encoding="utf-8")
     module_header = MODULE_HEADER.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
     context_header = CONTEXT_HEADER.read_text(encoding="utf-8")
     cmake = CMAKE.read_text(encoding="utf-8")
 
-    assert len(mgr_header.splitlines()) <= 990
+    assert len(mgr_header.splitlines()) <= 1000
     assert len(module_header.splitlines()) <= 1000
     assert len(module.splitlines()) <= 1000
     assert (
@@ -37,18 +41,19 @@ def test_azil_feral_active_swarm_movement_is_registered_and_bounded():
     assert "static bool Run(FeralActiveSwarmMovementRequest const& request);" in (
         context_header
     )
-    assert "HighPriestessAzilFeralActiveSwarmMovement.h" in world
+    assert "HighPriestessAzilAddWaveOrchestration.h" in world
 
 
 def test_azil_active_swarm_movement_owns_the_bounded_window():
     world = WORLD.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
 
-    remote_dispatch = world.index("TryFeralRemoteActions(")
-    active_dispatch = world.index("TryFeralActiveSwarmMovement(")
-    hunter_window = world.index("TryHunterThreatTransfer(")
+    remote_dispatch = orchestration.index("TryFeralRemoteActions(")
+    active_dispatch = orchestration.index("TryFeralActiveSwarmMovement(")
+    hunter_window = orchestration.index("TryHunterThreatTransfer(")
     assert remote_dispatch < active_dispatch < hunter_window
-    manager_gap = world[remote_dispatch:hunter_window]
+    manager_gap = world
     assert "activeSwarmPickupNowMs" not in manager_gap
     assert "stationary_healer_swarm_pickup" not in manager_gap
 

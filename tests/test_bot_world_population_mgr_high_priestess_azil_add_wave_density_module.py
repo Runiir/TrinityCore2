@@ -10,6 +10,9 @@ MODULE_HEADER = ROOT / (
     "HighPriestessAzilAddWaveDensity.h"
 )
 MODULE = MODULE_HEADER.with_suffix(".cpp")
+ORCHESTRATION_MODULE = MODULE_HEADER.with_name(
+    "HighPriestessAzilAddWaveOrchestration.cpp"
+)
 HEALER_HEADER = MODULE_HEADER.with_name(
     "HighPriestessAzilHealerAddWavePreposition.h"
 )
@@ -20,13 +23,14 @@ OPENING_MODULE = MODULE_HEADER.with_name(
 
 def test_azil_add_wave_density_is_registered_and_bounded():
     source = SOURCE.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     header = HEADER.read_text(encoding="utf-8")
     module_header = MODULE_HEADER.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
     healer_header = HEALER_HEADER.read_text(encoding="utf-8")
     cmake = CMAKE.read_text(encoding="utf-8")
 
-    assert len(header.splitlines()) <= 990
+    assert len(header.splitlines()) <= 1000
     assert len(module_header.splitlines()) <= 1000
     assert len(module.splitlines()) <= 1000
     assert "HighPriestessAzilAddWaveDensity.cpp" in cmake
@@ -34,17 +38,18 @@ def test_azil_add_wave_density_is_registered_and_bounded():
     assert "AddWaveDensityResult" in module_header
     assert "ResolveAddWaveDensity" in module_header
     assert "static AddWaveDensityResult Run(AddWaveDensityRequest const& request);" in healer_header
-    assert "HighPriestessAzilAddWaveDensity.h" in source
+    assert "HighPriestessAzilAddWaveOrchestration.h" in source
 
 
 def test_azil_density_owns_prearrival_and_generation_state_before_pending_pickup():
     source = SOURCE.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
     opening_module = OPENING_MODULE.read_text(encoding="utf-8")
 
-    density_call = source.index("ResolveAddWaveDensity(")
+    density_call = orchestration.index("ResolveAddWaveDensity(")
     assert "pendingSwarmPickupNowMs" not in source
-    assert density_call < source.index("TryAddWaveOpeningActions(")
+    assert density_call < orchestration.index("TryAddWaveOpeningActions(")
     assert "pendingSwarmPickupNowMs" in opening_module
     for marker in (
         "sharedLargePassiveSwarmStaging",

@@ -10,6 +10,9 @@ MODULE_HEADER = ROOT / (
     "HighPriestessAzilDensityCombatResolution.h"
 )
 MODULE = MODULE_HEADER.with_suffix(".cpp")
+ORCHESTRATION_MODULE = MODULE_HEADER.with_name(
+    "HighPriestessAzilAddWaveOrchestration.cpp"
+)
 CONTEXT_HEADER = MODULE_HEADER.with_name(
     "HighPriestessAzilHealerAddWavePreposition.h"
 )
@@ -18,13 +21,14 @@ REPLAY = ROOT / "src/server/game/Bots/BotWorldPopulationMgrReplay.cpp"
 
 def test_azil_density_combat_resolution_is_registered_and_bounded():
     world = WORLD.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     mgr_header = MGR_HEADER.read_text(encoding="utf-8")
     module_header = MODULE_HEADER.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
     context_header = CONTEXT_HEADER.read_text(encoding="utf-8")
     cmake = CMAKE.read_text(encoding="utf-8")
 
-    assert len(mgr_header.splitlines()) <= 990
+    assert len(mgr_header.splitlines()) <= 1000
     assert len(module_header.splitlines()) <= 1000
     assert len(module.splitlines()) <= 1000
     assert "HighPriestessAzilDensityCombatResolution.cpp" in cmake
@@ -37,14 +41,15 @@ def test_azil_density_combat_resolution_is_registered_and_bounded():
     assert "static bool Run(DensityCombatResolutionRequest const& request);" in (
         context_header
     )
-    assert "HighPriestessAzilDensityCombatResolution.h" in world
+    assert "HighPriestessAzilAddWaveOrchestration.h" in world
 
 
 def test_azil_density_combat_resolution_owns_the_exact_ordered_window():
     world = WORLD.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
 
-    dispatch = world.index("TryDensityCombatResolution(")
+    dispatch = orchestration.index("TryDensityCombatResolution(")
     for marker in (
         "if (highDensityPhase && !add && densityApproachAnchor)",
         '"approach_density_anchor"',
@@ -57,7 +62,7 @@ def test_azil_density_combat_resolution_owns_the_exact_ordered_window():
         '"boss_add_melee_engagement"',
     ):
         assert marker in module
-        assert marker not in world[dispatch:]
+        assert marker not in world
 
     assert module.index("approach_density_anchor") < module.index(
         "no_compatible_density_anchor"

@@ -9,6 +9,9 @@ MODULE_HEADER = ROOT / (
     "HighPriestessAzilAddWaveDiscovery.h"
 )
 MODULE = MODULE_HEADER.with_suffix(".cpp")
+ORCHESTRATION_MODULE = MODULE_HEADER.with_name(
+    "HighPriestessAzilAddWaveOrchestration.cpp"
+)
 HEALER_HEADER = MODULE_HEADER.with_name(
     "HighPriestessAzilHealerAddWavePreposition.h"
 )
@@ -16,6 +19,7 @@ HEALER_HEADER = MODULE_HEADER.with_name(
 
 def test_azil_add_wave_discovery_is_registered_and_bounded():
     source = SOURCE.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     module_header = MODULE_HEADER.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
     healer_header = HEALER_HEADER.read_text(encoding="utf-8")
@@ -28,16 +32,17 @@ def test_azil_add_wave_discovery_is_registered_and_bounded():
     assert "AddWaveDiscoveryResult" in module_header
     assert "DiscoverAddWave" in module_header
     assert "static AddWaveDiscoveryResult Run(AddWaveDiscoveryRequest const& request);" in healer_header
-    assert "HighPriestessAzilAddWaveDiscovery.h" in source
+    assert "HighPriestessAzilAddWaveOrchestration.h" in source
 
 
 def test_azil_add_discovery_owns_eligibility_and_stops_before_density_decisions():
     source = SOURCE.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
 
-    dispatch = source.index("DiscoverAddWave(")
-    discovery_result = source.index("Unit* add = nullptr;", dispatch)
-    passive_guard = source.index("bool sharedLargePassiveSwarmStaging", discovery_result)
+    dispatch = orchestration.index("DiscoverAddWave(")
+    discovery_result = orchestration.index("Unit* add = nullptr;", dispatch)
+    passive_guard = orchestration.index("bool sharedLargePassiveSwarmStaging", discovery_result)
     assert dispatch < discovery_result < passive_guard
     for marker in (
         "isUsableUnexpectedPartyHostile",

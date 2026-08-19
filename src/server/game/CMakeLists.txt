@@ -163,6 +163,7 @@ list(APPEND PRIVATE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilTankThreatRecovery.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilSwarmThreatSafety.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilHealerAddWavePreposition.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilAddWaveOrchestration.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrStatus.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrRuntimeProfiles.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgr.cpp

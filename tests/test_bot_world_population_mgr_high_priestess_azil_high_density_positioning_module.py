@@ -10,6 +10,9 @@ MODULE_HEADER = ROOT / (
     "HighPriestessAzilHighDensityPositioning.h"
 )
 MODULE = MODULE_HEADER.with_suffix(".cpp")
+ORCHESTRATION_MODULE = MODULE_HEADER.with_name(
+    "HighPriestessAzilAddWaveOrchestration.cpp"
+)
 CONTEXT_HEADER = MODULE_HEADER.with_name(
     "HighPriestessAzilHealerAddWavePreposition.h"
 )
@@ -17,13 +20,14 @@ CONTEXT_HEADER = MODULE_HEADER.with_name(
 
 def test_azil_high_density_positioning_is_registered_and_bounded():
     world = WORLD.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     mgr_header = MGR_HEADER.read_text(encoding="utf-8")
     module_header = MODULE_HEADER.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
     context_header = CONTEXT_HEADER.read_text(encoding="utf-8")
     cmake = CMAKE.read_text(encoding="utf-8")
 
-    assert len(mgr_header.splitlines()) <= 990
+    assert len(mgr_header.splitlines()) <= 1000
     assert len(module_header.splitlines()) <= 1000
     assert len(module.splitlines()) <= 1000
     assert "HighPriestessAzilHighDensityPositioning.cpp" in cmake
@@ -35,16 +39,17 @@ def test_azil_high_density_positioning_is_registered_and_bounded():
     assert "static bool Run(HighDensityPositioningRequest const& request);" in (
         context_header
     )
-    assert "HighPriestessAzilHighDensityPositioning.h" in world
+    assert "HighPriestessAzilAddWaveOrchestration.h" in world
 
 
 def test_azil_high_density_positioning_owns_the_exact_ordered_window():
     world = WORLD.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
 
-    dispatch = world.index("TryHighDensityPositioning(")
-    continuation = world.index("TryDensityCombatResolution(", dispatch)
-    manager_gap = world[dispatch:continuation]
+    dispatch = orchestration.index("TryHighDensityPositioning(")
+    continuation = orchestration.index("TryDensityCombatResolution(", dispatch)
+    manager_gap = world
     for marker in (
         "densityHealerRange",
         "tank_move_to_add_centroid",

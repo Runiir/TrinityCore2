@@ -23,6 +23,8 @@ SOURCE_SUFFIXES = frozenset(
 )
 
 AZIL_FILES = {
+    "HighPriestessAzilAddWaveOrchestration.cpp",
+    "HighPriestessAzilAddWaveOrchestration.h",
     "HighPriestessAzilAddWaveDensity.cpp",
     "HighPriestessAzilAddWaveDensity.h",
     "HighPriestessAzilAddWaveDiscovery.cpp",

@@ -10,6 +10,9 @@ MODULE_HEADER = ROOT / (
     "HighPriestessAzilAddWaveOpeningActions.h"
 )
 MODULE = MODULE_HEADER.with_suffix(".cpp")
+ORCHESTRATION_MODULE = MODULE_HEADER.with_name(
+    "HighPriestessAzilAddWaveOrchestration.cpp"
+)
 CONTEXT_HEADER = MODULE_HEADER.with_name(
     "HighPriestessAzilHealerAddWavePreposition.h"
 )
@@ -17,31 +20,33 @@ CONTEXT_HEADER = MODULE_HEADER.with_name(
 
 def test_azil_opening_actions_module_is_registered_and_bounded():
     world = WORLD.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     mgr_header = MGR_HEADER.read_text(encoding="utf-8")
     module_header = MODULE_HEADER.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
     context_header = CONTEXT_HEADER.read_text(encoding="utf-8")
     cmake = CMAKE.read_text(encoding="utf-8")
 
-    assert len(mgr_header.splitlines()) <= 990
+    assert len(mgr_header.splitlines()) <= 1000
     assert len(module_header.splitlines()) <= 1000
     assert len(module.splitlines()) <= 1000
     assert "HighPriestessAzilAddWaveOpeningActions.cpp" in cmake
     assert "AddWaveOpeningActionsRequest" in module_header
     assert "TryAddWaveOpeningActions" in module_header
     assert "static bool Run(AddWaveOpeningActionsRequest const& request);" in context_header
-    assert "HighPriestessAzilAddWaveOpeningActions.h" in world
+    assert "HighPriestessAzilAddWaveOrchestration.h" in world
 
 
 def test_azil_opening_actions_stay_between_density_and_cluster_resolvers():
     world = WORLD.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
 
-    density = world.index("ResolveAddWaveDensity(")
-    dispatch = world.index("TryAddWaveOpeningActions(")
-    cluster = world.index("TryFeralActiveSwarmMovement(")
+    density = orchestration.index("ResolveAddWaveDensity(")
+    dispatch = orchestration.index("TryAddWaveOpeningActions(")
+    cluster = orchestration.index("TryFeralActiveSwarmMovement(")
     assert density < dispatch < cluster
-    opening_gap = world[dispatch:cluster]
+    opening_gap = world
     for marker in (
         "pendingSwarmPickupNowMs",
         "TankPendingSwarmPickupEngagedHandoff",

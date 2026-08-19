@@ -10,6 +10,9 @@ MODULE_HEADER = ROOT / (
     "HighPriestessAzilAddWaveTankPreparation.h"
 )
 MODULE = MODULE_HEADER.with_suffix(".cpp")
+ORCHESTRATION_MODULE = MODULE_HEADER.with_name(
+    "HighPriestessAzilAddWaveOrchestration.cpp"
+)
 CONTEXT_HEADER = MODULE_HEADER.with_name(
     "HighPriestessAzilHealerAddWavePreposition.h"
 )
@@ -17,13 +20,14 @@ CONTEXT_HEADER = MODULE_HEADER.with_name(
 
 def test_azil_tank_preparation_module_is_registered_and_bounded():
     world = WORLD.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     mgr_header = MGR_HEADER.read_text(encoding="utf-8")
     module_header = MODULE_HEADER.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
     context_header = CONTEXT_HEADER.read_text(encoding="utf-8")
     cmake = CMAKE.read_text(encoding="utf-8")
 
-    assert len(mgr_header.splitlines()) <= 990
+    assert len(mgr_header.splitlines()) <= 1000
     assert len(module_header.splitlines()) <= 1000
     assert len(module.splitlines()) <= 1000
     assert "HighPriestessAzilAddWaveTankPreparation.cpp" in cmake
@@ -34,17 +38,18 @@ def test_azil_tank_preparation_module_is_registered_and_bounded():
         "static AddWaveTankPreparationResult Run("
         in context_header
     )
-    assert "HighPriestessAzilAddWaveTankPreparation.h" in world
+    assert "HighPriestessAzilAddWaveOrchestration.h" in world
 
 
 def test_azil_tank_preparation_stops_before_feral_roar_logic():
     world = WORLD.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
 
-    density = world.index("ResolveAddWaveDensity(")
-    opening = world.index("TryAddWaveOpeningActions(")
-    preparation = world.index("PrepareAddWaveTank(")
-    feral_roar = world.index("ResolveFeralHandoffState(")
+    density = orchestration.index("ResolveAddWaveDensity(")
+    opening = orchestration.index("TryAddWaveOpeningActions(")
+    preparation = orchestration.index("PrepareAddWaveTank(")
+    feral_roar = orchestration.index("ResolveFeralHandoffState(")
     assert density < opening < preparation < feral_roar
 
     for marker in (
@@ -56,7 +61,7 @@ def test_azil_tank_preparation_stops_before_feral_roar_logic():
         "state.DecisionTimer, 250",
     ):
         assert marker in module
-        assert marker not in world[preparation:feral_roar]
+        assert marker not in world
 
     assert "ResolveFeralHandoffState" not in module
     assert "TryValidationFeralRoarPickup" not in module

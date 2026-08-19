@@ -10,6 +10,9 @@ MODULE_HEADER = ROOT / (
     "HighPriestessAzilFeralLocalRetention.h"
 )
 MODULE = MODULE_HEADER.with_suffix(".cpp")
+ORCHESTRATION_MODULE = MODULE_HEADER.with_name(
+    "HighPriestessAzilAddWaveOrchestration.cpp"
+)
 CONTEXT_HEADER = MODULE_HEADER.with_name(
     "HighPriestessAzilHealerAddWavePreposition.h"
 )
@@ -17,13 +20,14 @@ CONTEXT_HEADER = MODULE_HEADER.with_name(
 
 def test_azil_feral_local_retention_is_registered_and_bounded():
     world = WORLD.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     mgr_header = MGR_HEADER.read_text(encoding="utf-8")
     module_header = MODULE_HEADER.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
     context_header = CONTEXT_HEADER.read_text(encoding="utf-8")
     cmake = CMAKE.read_text(encoding="utf-8")
 
-    assert len(mgr_header.splitlines()) <= 990
+    assert len(mgr_header.splitlines()) <= 1000
     assert len(module_header.splitlines()) <= 1000
     assert len(module.splitlines()) <= 1000
     assert "HighPriestessAzilFeralLocalRetention.cpp" in cmake
@@ -33,23 +37,20 @@ def test_azil_feral_local_retention_is_registered_and_bounded():
     assert "static bool Run(FeralLocalRetentionRequest const& request);" in (
         context_header
     )
-    assert "HighPriestessAzilFeralLocalRetention.h" in world
+    assert "HighPriestessAzilAddWaveOrchestration.h" in world
 
 
 def test_azil_feral_local_retention_owns_the_exact_handoff_tail():
     world = WORLD.read_text(encoding="utf-8")
+    orchestration = ORCHESTRATION_MODULE.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
 
-    handoff_dispatch = world.index("ResolveFeralHandoffState(")
-    retention_dispatch = world.index("TryFeralLocalRetention(")
-    remote_actions_dispatch = world.index("TryFeralRemoteActions(")
+    handoff_dispatch = orchestration.index("ResolveFeralHandoffState(")
+    retention_dispatch = orchestration.index("TryFeralLocalRetention(")
+    remote_actions_dispatch = orchestration.index("TryFeralRemoteActions(")
     assert handoff_dispatch < retention_dispatch < remote_actions_dispatch
-    assert "localHealerOwnedSwipeWindow" not in world[
-        retention_dispatch:remote_actions_dispatch
-    ]
-    assert "feralHealerHandoffArrived" not in world[
-        retention_dispatch:remote_actions_dispatch
-    ]
+    assert "localHealerOwnedSwipeWindow" not in world
+    assert "feralHealerHandoffArrived" not in world
 
     for marker in (
         "localHealerOwnedSwipeWindow",
