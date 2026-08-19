@@ -2993,9 +2993,9 @@
           43395
         ],
         "consumable_item_ids": [
-          58085,
-          58086,
-          58257
+          58088,
+          62670,
+          58146
         ],
         "primary_talent_tree_id": 746,
         "talents": [
@@ -3084,6 +3084,84 @@
           12294,
           12296,
           12712
+        ],
+        "controlled_consumable_profile": {
+          "schema": "cata_controlled_dps_consumables_v1",
+          "primary_stat": "strength",
+          "flask": {
+            "item_id": 58088,
+            "item_spell_id": 79472,
+            "observed_aura_spell_id": 79472
+          },
+          "food": {
+            "item_id": 62670,
+            "item_spell_id": 87584,
+            "observed_aura_spell_id": 87545
+          },
+          "prepot": {
+            "item_id": 58146,
+            "item_spell_id": 79634,
+            "observed_aura_spell_id": 79634
+          },
+          "combat_potion": {
+            "item_id": 58146,
+            "item_spell_id": 79634,
+            "observed_aura_spell_id": 79634
+          },
+          "inventory": [
+            {
+              "item_id": 58088,
+              "slot": 26,
+              "count": 20,
+              "uses": [
+                "flask_before_scoring"
+              ]
+            },
+            {
+              "item_id": 62670,
+              "slot": 27,
+              "count": 20,
+              "uses": [
+                "food_before_scoring"
+              ]
+            },
+            {
+              "item_id": 58146,
+              "slot": 28,
+              "count": 20,
+              "uses": [
+                "prepot_before_combat",
+                "combat_potion_during_combat"
+              ]
+            }
+          ]
+        },
+        "consumables": [
+          {
+            "item_id": 58088,
+            "slot": 26,
+            "count": 20,
+            "uses": [
+              "flask_before_scoring"
+            ]
+          },
+          {
+            "item_id": 62670,
+            "slot": 27,
+            "count": 20,
+            "uses": [
+              "food_before_scoring"
+            ]
+          },
+          {
+            "item_id": 58146,
+            "slot": 28,
+            "count": 20,
+            "uses": [
+              "prepot_before_combat",
+              "combat_potion_during_combat"
+            ]
+          }
         ]
       },
       "talent_build": {
@@ -3189,9 +3267,9 @@
       ],
       "gear_profile_id": "arms_warrior",
       "consumable_item_ids": [
-        58085,
-        58086,
-        58257
+        58088,
+        62670,
+        58146
       ],
       "pet_form_stance_presence": [
         "battle_stance",
@@ -3310,9 +3388,9 @@
           43396
         ],
         "consumable_item_ids": [
-          58085,
-          58086,
-          58257
+          58088,
+          62670,
+          58146
         ],
         "primary_talent_tree_id": 815,
         "talents": [
@@ -3401,6 +3479,84 @@
           23588,
           23881,
           29592
+        ],
+        "controlled_consumable_profile": {
+          "schema": "cata_controlled_dps_consumables_v1",
+          "primary_stat": "strength",
+          "flask": {
+            "item_id": 58088,
+            "item_spell_id": 79472,
+            "observed_aura_spell_id": 79472
+          },
+          "food": {
+            "item_id": 62670,
+            "item_spell_id": 87584,
+            "observed_aura_spell_id": 87545
+          },
+          "prepot": {
+            "item_id": 58146,
+            "item_spell_id": 79634,
+            "observed_aura_spell_id": 79634
+          },
+          "combat_potion": {
+            "item_id": 58146,
+            "item_spell_id": 79634,
+            "observed_aura_spell_id": 79634
+          },
+          "inventory": [
+            {
+              "item_id": 58088,
+              "slot": 26,
+              "count": 20,
+              "uses": [
+                "flask_before_scoring"
+              ]
+            },
+            {
+              "item_id": 62670,
+              "slot": 27,
+              "count": 20,
+              "uses": [
+                "food_before_scoring"
+              ]
+            },
+            {
+              "item_id": 58146,
+              "slot": 28,
+              "count": 20,
+              "uses": [
+                "prepot_before_combat",
+                "combat_potion_during_combat"
+              ]
+            }
+          ]
+        },
+        "consumables": [
+          {
+            "item_id": 58088,
+            "slot": 26,
+            "count": 20,
+            "uses": [
+              "flask_before_scoring"
+            ]
+          },
+          {
+            "item_id": 62670,
+            "slot": 27,
+            "count": 20,
+            "uses": [
+              "food_before_scoring"
+            ]
+          },
+          {
+            "item_id": 58146,
+            "slot": 28,
+            "count": 20,
+            "uses": [
+              "prepot_before_combat",
+              "combat_potion_during_combat"
+            ]
+          }
         ]
       },
       "talent_build": {
@@ -3506,9 +3662,9 @@
       ],
       "gear_profile_id": "fury_warrior",
       "consumable_item_ids": [
-        58085,
-        58086,
-        58257
+        58088,
+        62670,
+        58146
       ],
       "pet_form_stance_presence": [
         "berserker_stance",
@@ -3627,9 +3783,9 @@
           43340
         ],
         "consumable_item_ids": [
-          58085,
-          58086,
-          58257
+          58088,
+          62670,
+          58146
         ],
         "primary_talent_tree_id": 855,
         "talents": [
@@ -3723,6 +3879,84 @@
           53503,
           85256,
           89901
+        ],
+        "controlled_consumable_profile": {
+          "schema": "cata_controlled_dps_consumables_v1",
+          "primary_stat": "strength",
+          "flask": {
+            "item_id": 58088,
+            "item_spell_id": 79472,
+            "observed_aura_spell_id": 79472
+          },
+          "food": {
+            "item_id": 62670,
+            "item_spell_id": 87584,
+            "observed_aura_spell_id": 87545
+          },
+          "prepot": {
+            "item_id": 58146,
+            "item_spell_id": 79634,
+            "observed_aura_spell_id": 79634
+          },
+          "combat_potion": {
+            "item_id": 58146,
+            "item_spell_id": 79634,
+            "observed_aura_spell_id": 79634
+          },
+          "inventory": [
+            {
+              "item_id": 58088,
+              "slot": 26,
+              "count": 20,
+              "uses": [
+                "flask_before_scoring"
+              ]
+            },
+            {
+              "item_id": 62670,
+              "slot": 27,
+              "count": 20,
+              "uses": [
+                "food_before_scoring"
+              ]
+            },
+            {
+              "item_id": 58146,
+              "slot": 28,
+              "count": 20,
+              "uses": [
+                "prepot_before_combat",
+                "combat_potion_during_combat"
+              ]
+            }
+          ]
+        },
+        "consumables": [
+          {
+            "item_id": 58088,
+            "slot": 26,
+            "count": 20,
+            "uses": [
+              "flask_before_scoring"
+            ]
+          },
+          {
+            "item_id": 62670,
+            "slot": 27,
+            "count": 20,
+            "uses": [
+              "food_before_scoring"
+            ]
+          },
+          {
+            "item_id": 58146,
+            "slot": 28,
+            "count": 20,
+            "uses": [
+              "prepot_before_combat",
+              "combat_potion_during_combat"
+            ]
+          }
         ]
       },
       "talent_build": {
@@ -3833,9 +4067,9 @@
       ],
       "gear_profile_id": "retribution_paladin",
       "consumable_item_ids": [
-        58085,
-        58086,
-        58257
+        58088,
+        62670,
+        58146
       ],
       "pet_form_stance_presence": [
         "seal_and_judgement",
@@ -4308,9 +4542,9 @@
           42899
         ],
         "consumable_item_ids": [
-          58085,
-          58086,
-          58257
+          58087,
+          62669,
+          58145
         ],
         "primary_talent_tree_id": 807,
         "talents": [
@@ -4426,7 +4660,85 @@
             },
             62760
           ]
-        }
+        },
+        "controlled_consumable_profile": {
+          "schema": "cata_controlled_dps_consumables_v1",
+          "primary_stat": "agility",
+          "flask": {
+            "item_id": 58087,
+            "item_spell_id": 79471,
+            "observed_aura_spell_id": 79471
+          },
+          "food": {
+            "item_id": 62669,
+            "item_spell_id": 87586,
+            "observed_aura_spell_id": 87546
+          },
+          "prepot": {
+            "item_id": 58145,
+            "item_spell_id": 79633,
+            "observed_aura_spell_id": 79633
+          },
+          "combat_potion": {
+            "item_id": 58145,
+            "item_spell_id": 79633,
+            "observed_aura_spell_id": 79633
+          },
+          "inventory": [
+            {
+              "item_id": 58087,
+              "slot": 26,
+              "count": 20,
+              "uses": [
+                "flask_before_scoring"
+              ]
+            },
+            {
+              "item_id": 62669,
+              "slot": 27,
+              "count": 20,
+              "uses": [
+                "food_before_scoring"
+              ]
+            },
+            {
+              "item_id": 58145,
+              "slot": 28,
+              "count": 20,
+              "uses": [
+                "prepot_before_combat",
+                "combat_potion_during_combat"
+              ]
+            }
+          ]
+        },
+        "consumables": [
+          {
+            "item_id": 58087,
+            "slot": 26,
+            "count": 20,
+            "uses": [
+              "flask_before_scoring"
+            ]
+          },
+          {
+            "item_id": 62669,
+            "slot": 27,
+            "count": 20,
+            "uses": [
+              "food_before_scoring"
+            ]
+          },
+          {
+            "item_id": 58145,
+            "slot": 28,
+            "count": 20,
+            "uses": [
+              "prepot_before_combat",
+              "combat_potion_during_combat"
+            ]
+          }
+        ]
       },
       "talent_build": {
         "primary_talent_tree_id": 807,
@@ -4523,9 +4835,9 @@
       ],
       "gear_profile_id": "marksmanship_hunter",
       "consumable_item_ids": [
-        58085,
-        58086,
-        58257
+        58087,
+        62669,
+        58145
       ],
       "pet_form_stance_presence": [
         "permanent_pet",
@@ -4643,9 +4955,9 @@
           42899
         ],
         "consumable_item_ids": [
-          58085,
-          58086,
-          58257
+          58087,
+          62669,
+          58145
         ],
         "primary_talent_tree_id": 809,
         "talents": [
@@ -4761,7 +5073,85 @@
             },
             62760
           ]
-        }
+        },
+        "controlled_consumable_profile": {
+          "schema": "cata_controlled_dps_consumables_v1",
+          "primary_stat": "agility",
+          "flask": {
+            "item_id": 58087,
+            "item_spell_id": 79471,
+            "observed_aura_spell_id": 79471
+          },
+          "food": {
+            "item_id": 62669,
+            "item_spell_id": 87586,
+            "observed_aura_spell_id": 87546
+          },
+          "prepot": {
+            "item_id": 58145,
+            "item_spell_id": 79633,
+            "observed_aura_spell_id": 79633
+          },
+          "combat_potion": {
+            "item_id": 58145,
+            "item_spell_id": 79633,
+            "observed_aura_spell_id": 79633
+          },
+          "inventory": [
+            {
+              "item_id": 58087,
+              "slot": 26,
+              "count": 20,
+              "uses": [
+                "flask_before_scoring"
+              ]
+            },
+            {
+              "item_id": 62669,
+              "slot": 27,
+              "count": 20,
+              "uses": [
+                "food_before_scoring"
+              ]
+            },
+            {
+              "item_id": 58145,
+              "slot": 28,
+              "count": 20,
+              "uses": [
+                "prepot_before_combat",
+                "combat_potion_during_combat"
+              ]
+            }
+          ]
+        },
+        "consumables": [
+          {
+            "item_id": 58087,
+            "slot": 26,
+            "count": 20,
+            "uses": [
+              "flask_before_scoring"
+            ]
+          },
+          {
+            "item_id": 62669,
+            "slot": 27,
+            "count": 20,
+            "uses": [
+              "food_before_scoring"
+            ]
+          },
+          {
+            "item_id": 58145,
+            "slot": 28,
+            "count": 20,
+            "uses": [
+              "prepot_before_combat",
+              "combat_potion_during_combat"
+            ]
+          }
+        ]
       },
       "talent_build": {
         "primary_talent_tree_id": 809,
@@ -4858,9 +5248,9 @@
       ],
       "gear_profile_id": "wowsims_cata_p4_survival_hunter",
       "consumable_item_ids": [
-        58085,
-        58086,
-        58257
+        58087,
+        62669,
+        58145
       ],
       "pet_form_stance_presence": [
         "permanent_pet",
@@ -4977,9 +5367,9 @@
           42974
         ],
         "consumable_item_ids": [
-          58085,
-          58086,
-          58257,
+          58087,
+          62669,
+          58145,
           43233,
           43231
         ],
@@ -5069,19 +5459,29 @@
         ],
         "consumables": [
           {
-            "item_id": 58085,
-            "slot": 40,
-            "count": 20
+            "item_id": 58087,
+            "slot": 26,
+            "count": 20,
+            "uses": [
+              "flask_before_scoring"
+            ]
           },
           {
-            "item_id": 58086,
-            "slot": 41,
-            "count": 20
+            "item_id": 62669,
+            "slot": 27,
+            "count": 20,
+            "uses": [
+              "food_before_scoring"
+            ]
           },
           {
-            "item_id": 58257,
-            "slot": 42,
-            "count": 20
+            "item_id": 58145,
+            "slot": 28,
+            "count": 20,
+            "uses": [
+              "prepot_before_combat",
+              "combat_potion_during_combat"
+            ]
           },
           {
             "item_id": 43233,
@@ -5093,7 +5493,58 @@
             "slot": 24,
             "count": 20
           }
-        ]
+        ],
+        "controlled_consumable_profile": {
+          "schema": "cata_controlled_dps_consumables_v1",
+          "primary_stat": "agility",
+          "flask": {
+            "item_id": 58087,
+            "item_spell_id": 79471,
+            "observed_aura_spell_id": 79471
+          },
+          "food": {
+            "item_id": 62669,
+            "item_spell_id": 87586,
+            "observed_aura_spell_id": 87546
+          },
+          "prepot": {
+            "item_id": 58145,
+            "item_spell_id": 79633,
+            "observed_aura_spell_id": 79633
+          },
+          "combat_potion": {
+            "item_id": 58145,
+            "item_spell_id": 79633,
+            "observed_aura_spell_id": 79633
+          },
+          "inventory": [
+            {
+              "item_id": 58087,
+              "slot": 26,
+              "count": 20,
+              "uses": [
+                "flask_before_scoring"
+              ]
+            },
+            {
+              "item_id": 62669,
+              "slot": 27,
+              "count": 20,
+              "uses": [
+                "food_before_scoring"
+              ]
+            },
+            {
+              "item_id": 58145,
+              "slot": 28,
+              "count": 20,
+              "uses": [
+                "prepot_before_combat",
+                "combat_potion_during_combat"
+              ]
+            }
+          ]
+        }
       },
       "talent_build": {
         "primary_talent_tree_id": 182,
@@ -5191,9 +5642,9 @@
       ],
       "gear_profile_id": "assassination_rogue",
       "consumable_item_ids": [
-        58085,
-        58086,
-        58257,
+        58087,
+        62669,
+        58145,
         43233,
         43231
       ],
@@ -5304,9 +5755,9 @@
           42966
         ],
         "consumable_item_ids": [
-          58085,
-          58086,
-          58257,
+          58087,
+          62669,
+          58145,
           43233,
           43231
         ],
@@ -5392,19 +5843,29 @@
         ],
         "consumables": [
           {
-            "item_id": 58085,
-            "slot": 40,
-            "count": 20
+            "item_id": 58087,
+            "slot": 26,
+            "count": 20,
+            "uses": [
+              "flask_before_scoring"
+            ]
           },
           {
-            "item_id": 58086,
-            "slot": 41,
-            "count": 20
+            "item_id": 62669,
+            "slot": 27,
+            "count": 20,
+            "uses": [
+              "food_before_scoring"
+            ]
           },
           {
-            "item_id": 58257,
-            "slot": 42,
-            "count": 20
+            "item_id": 58145,
+            "slot": 28,
+            "count": 20,
+            "uses": [
+              "prepot_before_combat",
+              "combat_potion_during_combat"
+            ]
           },
           {
             "item_id": 43233,
@@ -5416,7 +5877,58 @@
             "slot": 24,
             "count": 20
           }
-        ]
+        ],
+        "controlled_consumable_profile": {
+          "schema": "cata_controlled_dps_consumables_v1",
+          "primary_stat": "agility",
+          "flask": {
+            "item_id": 58087,
+            "item_spell_id": 79471,
+            "observed_aura_spell_id": 79471
+          },
+          "food": {
+            "item_id": 62669,
+            "item_spell_id": 87586,
+            "observed_aura_spell_id": 87546
+          },
+          "prepot": {
+            "item_id": 58145,
+            "item_spell_id": 79633,
+            "observed_aura_spell_id": 79633
+          },
+          "combat_potion": {
+            "item_id": 58145,
+            "item_spell_id": 79633,
+            "observed_aura_spell_id": 79633
+          },
+          "inventory": [
+            {
+              "item_id": 58087,
+              "slot": 26,
+              "count": 20,
+              "uses": [
+                "flask_before_scoring"
+              ]
+            },
+            {
+              "item_id": 62669,
+              "slot": 27,
+              "count": 20,
+              "uses": [
+                "food_before_scoring"
+              ]
+            },
+            {
+              "item_id": 58145,
+              "slot": 28,
+              "count": 20,
+              "uses": [
+                "prepot_before_combat",
+                "combat_potion_during_combat"
+              ]
+            }
+          ]
+        }
       },
       "talent_build": {
         "primary_talent_tree_id": 181,
@@ -5510,9 +6022,9 @@
       ],
       "gear_profile_id": "combat_rogue",
       "consumable_item_ids": [
-        58085,
-        58086,
-        58257,
+        58087,
+        62669,
+        58145,
         43233,
         43231
       ],
@@ -5916,9 +6428,9 @@
           43544
         ],
         "consumable_item_ids": [
-          58085,
-          58086,
-          58257
+          58088,
+          62670,
+          58146
         ],
         "primary_talent_tree_id": 399,
         "talents": [
@@ -6003,6 +6515,84 @@
           49143,
           50887,
           54637
+        ],
+        "controlled_consumable_profile": {
+          "schema": "cata_controlled_dps_consumables_v1",
+          "primary_stat": "strength",
+          "flask": {
+            "item_id": 58088,
+            "item_spell_id": 79472,
+            "observed_aura_spell_id": 79472
+          },
+          "food": {
+            "item_id": 62670,
+            "item_spell_id": 87584,
+            "observed_aura_spell_id": 87545
+          },
+          "prepot": {
+            "item_id": 58146,
+            "item_spell_id": 79634,
+            "observed_aura_spell_id": 79634
+          },
+          "combat_potion": {
+            "item_id": 58146,
+            "item_spell_id": 79634,
+            "observed_aura_spell_id": 79634
+          },
+          "inventory": [
+            {
+              "item_id": 58088,
+              "slot": 26,
+              "count": 20,
+              "uses": [
+                "flask_before_scoring"
+              ]
+            },
+            {
+              "item_id": 62670,
+              "slot": 27,
+              "count": 20,
+              "uses": [
+                "food_before_scoring"
+              ]
+            },
+            {
+              "item_id": 58146,
+              "slot": 28,
+              "count": 20,
+              "uses": [
+                "prepot_before_combat",
+                "combat_potion_during_combat"
+              ]
+            }
+          ]
+        },
+        "consumables": [
+          {
+            "item_id": 58088,
+            "slot": 26,
+            "count": 20,
+            "uses": [
+              "flask_before_scoring"
+            ]
+          },
+          {
+            "item_id": 62670,
+            "slot": 27,
+            "count": 20,
+            "uses": [
+              "food_before_scoring"
+            ]
+          },
+          {
+            "item_id": 58146,
+            "slot": 28,
+            "count": 20,
+            "uses": [
+              "prepot_before_combat",
+              "combat_potion_during_combat"
+            ]
+          }
         ]
       },
       "talent_build": {
@@ -6104,9 +6694,9 @@
       ],
       "gear_profile_id": "frost_death_knight",
       "consumable_item_ids": [
-        58085,
-        58086,
-        58257
+        58088,
+        62670,
+        58146
       ],
       "pet_form_stance_presence": [
         "unholy_presence",
@@ -6227,9 +6817,9 @@
           43544
         ],
         "consumable_item_ids": [
-          58085,
-          58086,
-          58257
+          58088,
+          62670,
+          58146
         ],
         "primary_talent_tree_id": 400,
         "talents": [
@@ -6319,6 +6909,84 @@
           55090,
           56835,
           91107
+        ],
+        "controlled_consumable_profile": {
+          "schema": "cata_controlled_dps_consumables_v1",
+          "primary_stat": "strength",
+          "flask": {
+            "item_id": 58088,
+            "item_spell_id": 79472,
+            "observed_aura_spell_id": 79472
+          },
+          "food": {
+            "item_id": 62670,
+            "item_spell_id": 87584,
+            "observed_aura_spell_id": 87545
+          },
+          "prepot": {
+            "item_id": 58146,
+            "item_spell_id": 79634,
+            "observed_aura_spell_id": 79634
+          },
+          "combat_potion": {
+            "item_id": 58146,
+            "item_spell_id": 79634,
+            "observed_aura_spell_id": 79634
+          },
+          "inventory": [
+            {
+              "item_id": 58088,
+              "slot": 26,
+              "count": 20,
+              "uses": [
+                "flask_before_scoring"
+              ]
+            },
+            {
+              "item_id": 62670,
+              "slot": 27,
+              "count": 20,
+              "uses": [
+                "food_before_scoring"
+              ]
+            },
+            {
+              "item_id": 58146,
+              "slot": 28,
+              "count": 20,
+              "uses": [
+                "prepot_before_combat",
+                "combat_potion_during_combat"
+              ]
+            }
+          ]
+        },
+        "consumables": [
+          {
+            "item_id": 58088,
+            "slot": 26,
+            "count": 20,
+            "uses": [
+              "flask_before_scoring"
+            ]
+          },
+          {
+            "item_id": 62670,
+            "slot": 27,
+            "count": 20,
+            "uses": [
+              "food_before_scoring"
+            ]
+          },
+          {
+            "item_id": 58146,
+            "slot": 28,
+            "count": 20,
+            "uses": [
+              "prepot_before_combat",
+              "combat_potion_during_combat"
+            ]
+          }
         ]
       },
       "talent_build": {
@@ -6425,9 +7093,9 @@
       ],
       "gear_profile_id": "unholy_death_knight",
       "consumable_item_ids": [
-        58085,
-        58086,
-        58257
+        58088,
+        62670,
+        58146
       ],
       "pet_form_stance_presence": [
         "unholy_presence",
@@ -6550,9 +7218,9 @@
           43386
         ],
         "consumable_item_ids": [
-          58085,
           58086,
-          58257
+          62671,
+          58091
         ],
         "primary_talent_tree_id": 261,
         "talents": [
@@ -6641,6 +7309,84 @@
           51490,
           60188,
           62099
+        ],
+        "controlled_consumable_profile": {
+          "schema": "cata_controlled_dps_consumables_v1",
+          "primary_stat": "intellect",
+          "flask": {
+            "item_id": 58086,
+            "item_spell_id": 79470,
+            "observed_aura_spell_id": 79470
+          },
+          "food": {
+            "item_id": 62671,
+            "item_spell_id": 87587,
+            "observed_aura_spell_id": 87547
+          },
+          "prepot": {
+            "item_id": 58091,
+            "item_spell_id": 79476,
+            "observed_aura_spell_id": 79476
+          },
+          "combat_potion": {
+            "item_id": 58091,
+            "item_spell_id": 79476,
+            "observed_aura_spell_id": 79476
+          },
+          "inventory": [
+            {
+              "item_id": 58086,
+              "slot": 26,
+              "count": 20,
+              "uses": [
+                "flask_before_scoring"
+              ]
+            },
+            {
+              "item_id": 62671,
+              "slot": 27,
+              "count": 20,
+              "uses": [
+                "food_before_scoring"
+              ]
+            },
+            {
+              "item_id": 58091,
+              "slot": 28,
+              "count": 20,
+              "uses": [
+                "prepot_before_combat",
+                "combat_potion_during_combat"
+              ]
+            }
+          ]
+        },
+        "consumables": [
+          {
+            "item_id": 58086,
+            "slot": 26,
+            "count": 20,
+            "uses": [
+              "flask_before_scoring"
+            ]
+          },
+          {
+            "item_id": 62671,
+            "slot": 27,
+            "count": 20,
+            "uses": [
+              "food_before_scoring"
+            ]
+          },
+          {
+            "item_id": 58091,
+            "slot": 28,
+            "count": 20,
+            "uses": [
+              "prepot_before_combat",
+              "combat_potion_during_combat"
+            ]
+          }
         ]
       },
       "talent_build": {
@@ -6746,9 +7492,9 @@
       ],
       "gear_profile_id": "elemental_shaman",
       "consumable_item_ids": [
-        58085,
         58086,
-        58257
+        62671,
+        58091
       ],
       "pet_form_stance_presence": [
         "lightning_shield",
@@ -7491,9 +8237,9 @@
           43360
         ],
         "consumable_item_ids": [
-          58085,
           58086,
-          58257
+          62671,
+          58091
         ],
         "primary_talent_tree_id": 851,
         "talents": [
@@ -7581,6 +8327,84 @@
         "primary_tree_spells": [
           11366,
           84668
+        ],
+        "controlled_consumable_profile": {
+          "schema": "cata_controlled_dps_consumables_v1",
+          "primary_stat": "intellect",
+          "flask": {
+            "item_id": 58086,
+            "item_spell_id": 79470,
+            "observed_aura_spell_id": 79470
+          },
+          "food": {
+            "item_id": 62671,
+            "item_spell_id": 87587,
+            "observed_aura_spell_id": 87547
+          },
+          "prepot": {
+            "item_id": 58091,
+            "item_spell_id": 79476,
+            "observed_aura_spell_id": 79476
+          },
+          "combat_potion": {
+            "item_id": 58091,
+            "item_spell_id": 79476,
+            "observed_aura_spell_id": 79476
+          },
+          "inventory": [
+            {
+              "item_id": 58086,
+              "slot": 26,
+              "count": 20,
+              "uses": [
+                "flask_before_scoring"
+              ]
+            },
+            {
+              "item_id": 62671,
+              "slot": 27,
+              "count": 20,
+              "uses": [
+                "food_before_scoring"
+              ]
+            },
+            {
+              "item_id": 58091,
+              "slot": 28,
+              "count": 20,
+              "uses": [
+                "prepot_before_combat",
+                "combat_potion_during_combat"
+              ]
+            }
+          ]
+        },
+        "consumables": [
+          {
+            "item_id": 58086,
+            "slot": 26,
+            "count": 20,
+            "uses": [
+              "flask_before_scoring"
+            ]
+          },
+          {
+            "item_id": 62671,
+            "slot": 27,
+            "count": 20,
+            "uses": [
+              "food_before_scoring"
+            ]
+          },
+          {
+            "item_id": 58091,
+            "slot": 28,
+            "count": 20,
+            "uses": [
+              "prepot_before_combat",
+              "combat_potion_during_combat"
+            ]
+          }
         ]
       },
       "talent_build": {
@@ -7685,9 +8509,9 @@
       ],
       "gear_profile_id": "wowsims_cata_p4_fire_mage",
       "consumable_item_ids": [
-        58085,
         58086,
-        58257
+        62671,
+        58091
       ],
       "pet_form_stance_presence": [
         "living_bomb",
@@ -8113,9 +8937,9 @@
           43389
         ],
         "consumable_item_ids": [
-          58085,
           58086,
-          58257
+          62671,
+          58091
         ],
         "primary_talent_tree_id": 871,
         "talents": [
@@ -8195,6 +9019,84 @@
         "primary_tree_spells": [
           30108,
           87339
+        ],
+        "controlled_consumable_profile": {
+          "schema": "cata_controlled_dps_consumables_v1",
+          "primary_stat": "intellect",
+          "flask": {
+            "item_id": 58086,
+            "item_spell_id": 79470,
+            "observed_aura_spell_id": 79470
+          },
+          "food": {
+            "item_id": 62671,
+            "item_spell_id": 87587,
+            "observed_aura_spell_id": 87547
+          },
+          "prepot": {
+            "item_id": 58091,
+            "item_spell_id": 79476,
+            "observed_aura_spell_id": 79476
+          },
+          "combat_potion": {
+            "item_id": 58091,
+            "item_spell_id": 79476,
+            "observed_aura_spell_id": 79476
+          },
+          "inventory": [
+            {
+              "item_id": 58086,
+              "slot": 26,
+              "count": 20,
+              "uses": [
+                "flask_before_scoring"
+              ]
+            },
+            {
+              "item_id": 62671,
+              "slot": 27,
+              "count": 20,
+              "uses": [
+                "food_before_scoring"
+              ]
+            },
+            {
+              "item_id": 58091,
+              "slot": 28,
+              "count": 20,
+              "uses": [
+                "prepot_before_combat",
+                "combat_potion_during_combat"
+              ]
+            }
+          ]
+        },
+        "consumables": [
+          {
+            "item_id": 58086,
+            "slot": 26,
+            "count": 20,
+            "uses": [
+              "flask_before_scoring"
+            ]
+          },
+          {
+            "item_id": 62671,
+            "slot": 27,
+            "count": 20,
+            "uses": [
+              "food_before_scoring"
+            ]
+          },
+          {
+            "item_id": 58091,
+            "slot": 28,
+            "count": 20,
+            "uses": [
+              "prepot_before_combat",
+              "combat_potion_during_combat"
+            ]
+          }
         ]
       },
       "talent_build": {
@@ -8291,9 +9193,9 @@
       ],
       "gear_profile_id": "affliction_warlock",
       "consumable_item_ids": [
-        58085,
         58086,
-        58257
+        62671,
+        58091
       ],
       "pet_form_stance_presence": [
         "felhunter_pet",
@@ -8408,37 +9310,35 @@
           43389
         ],
         "consumable_item_ids": [
-          58085,
           58086,
-          58257,
-          58091,
-          70142
+          62671,
+          58091
         ],
         "consumables": [
           {
-            "item_id": 58085,
-            "slot": 23,
-            "count": 20
-          },
-          {
             "item_id": 58086,
-            "slot": 24,
-            "count": 20
+            "slot": 26,
+            "count": 20,
+            "uses": [
+              "flask_before_scoring"
+            ]
           },
           {
-            "item_id": 58257,
-            "slot": 25,
-            "count": 20
+            "item_id": 62671,
+            "slot": 27,
+            "count": 20,
+            "uses": [
+              "food_before_scoring"
+            ]
           },
           {
             "item_id": 58091,
-            "slot": 26,
-            "count": 20
-          },
-          {
-            "item_id": 70142,
-            "slot": 27,
-            "count": 1
+            "slot": 28,
+            "count": 20,
+            "uses": [
+              "prepot_before_combat",
+              "combat_potion_during_combat"
+            ]
           }
         ],
         "primary_talent_tree_id": 867,
@@ -8527,7 +9427,58 @@
         "primary_tree_spells": [
           30146,
           84740
-        ]
+        ],
+        "controlled_consumable_profile": {
+          "schema": "cata_controlled_dps_consumables_v1",
+          "primary_stat": "intellect",
+          "flask": {
+            "item_id": 58086,
+            "item_spell_id": 79470,
+            "observed_aura_spell_id": 79470
+          },
+          "food": {
+            "item_id": 62671,
+            "item_spell_id": 87587,
+            "observed_aura_spell_id": 87547
+          },
+          "prepot": {
+            "item_id": 58091,
+            "item_spell_id": 79476,
+            "observed_aura_spell_id": 79476
+          },
+          "combat_potion": {
+            "item_id": 58091,
+            "item_spell_id": 79476,
+            "observed_aura_spell_id": 79476
+          },
+          "inventory": [
+            {
+              "item_id": 58086,
+              "slot": 26,
+              "count": 20,
+              "uses": [
+                "flask_before_scoring"
+              ]
+            },
+            {
+              "item_id": 62671,
+              "slot": 27,
+              "count": 20,
+              "uses": [
+                "food_before_scoring"
+              ]
+            },
+            {
+              "item_id": 58091,
+              "slot": 28,
+              "count": 20,
+              "uses": [
+                "prepot_before_combat",
+                "combat_potion_during_combat"
+              ]
+            }
+          ]
+        }
       },
       "talent_build": {
         "primary_talent_tree_id": 867,
@@ -8631,11 +9582,9 @@
       ],
       "gear_profile_id": "demonology_warlock",
       "consumable_item_ids": [
-        58085,
         58086,
-        58257,
-        58091,
-        70142
+        62671,
+        58091
       ],
       "pet_form_stance_presence": [
         "felguard_pet",
@@ -9062,31 +10011,35 @@
           43374
         ],
         "consumable_item_ids": [
-          58085,
           58086,
-          58257,
+          62671,
           58091
         ],
         "consumables": [
           {
-            "item_id": 58085,
-            "slot": 23,
-            "count": 20
-          },
-          {
             "item_id": 58086,
-            "slot": 24,
-            "count": 20
+            "slot": 26,
+            "count": 20,
+            "uses": [
+              "flask_before_scoring"
+            ]
           },
           {
-            "item_id": 58257,
-            "slot": 25,
-            "count": 20
+            "item_id": 62671,
+            "slot": 27,
+            "count": 20,
+            "uses": [
+              "food_before_scoring"
+            ]
           },
           {
             "item_id": 58091,
-            "slot": 26,
-            "count": 20
+            "slot": 28,
+            "count": 20,
+            "uses": [
+              "prepot_before_combat",
+              "combat_potion_during_combat"
+            ]
           }
         ],
         "primary_talent_tree_id": 795,
@@ -9180,7 +10133,58 @@
           15407,
           87327,
           95740
-        ]
+        ],
+        "controlled_consumable_profile": {
+          "schema": "cata_controlled_dps_consumables_v1",
+          "primary_stat": "intellect",
+          "flask": {
+            "item_id": 58086,
+            "item_spell_id": 79470,
+            "observed_aura_spell_id": 79470
+          },
+          "food": {
+            "item_id": 62671,
+            "item_spell_id": 87587,
+            "observed_aura_spell_id": 87547
+          },
+          "prepot": {
+            "item_id": 58091,
+            "item_spell_id": 79476,
+            "observed_aura_spell_id": 79476
+          },
+          "combat_potion": {
+            "item_id": 58091,
+            "item_spell_id": 79476,
+            "observed_aura_spell_id": 79476
+          },
+          "inventory": [
+            {
+              "item_id": 58086,
+              "slot": 26,
+              "count": 20,
+              "uses": [
+                "flask_before_scoring"
+              ]
+            },
+            {
+              "item_id": 62671,
+              "slot": 27,
+              "count": 20,
+              "uses": [
+                "food_before_scoring"
+              ]
+            },
+            {
+              "item_id": 58091,
+              "slot": 28,
+              "count": 20,
+              "uses": [
+                "prepot_before_combat",
+                "combat_potion_during_combat"
+              ]
+            }
+          ]
+        }
       },
       "talent_build": {
         "primary_talent_tree_id": 795,
@@ -9289,11 +10293,9 @@
       ],
       "gear_profile_id": "wowsims_cata_p4_shadow_priest",
       "consumable_item_ids": [
-        58085,
         58086,
-        58257,
-        58091,
-        82174
+        62671,
+        58091
       ],
       "pet_form_stance_presence": [
         "shadowform",
@@ -9425,31 +10427,35 @@
           43335
         ],
         "consumable_item_ids": [
-          58085,
           58086,
-          58257,
+          62671,
           58091
         ],
         "consumables": [
           {
-            "item_id": 58085,
-            "slot": 23,
-            "count": 20
-          },
-          {
             "item_id": 58086,
-            "slot": 24,
-            "count": 20
+            "slot": 26,
+            "count": 20,
+            "uses": [
+              "flask_before_scoring"
+            ]
           },
           {
-            "item_id": 58257,
-            "slot": 25,
-            "count": 20
+            "item_id": 62671,
+            "slot": 27,
+            "count": 20,
+            "uses": [
+              "food_before_scoring"
+            ]
           },
           {
             "item_id": 58091,
-            "slot": 26,
-            "count": 20
+            "slot": 28,
+            "count": 20,
+            "uses": [
+              "prepot_before_combat",
+              "combat_potion_during_combat"
+            ]
           }
         ],
         "primary_talent_tree_id": 752,
@@ -9546,7 +10552,58 @@
         "primary_tree_spells": [
           16913,
           78674
-        ]
+        ],
+        "controlled_consumable_profile": {
+          "schema": "cata_controlled_dps_consumables_v1",
+          "primary_stat": "intellect",
+          "flask": {
+            "item_id": 58086,
+            "item_spell_id": 79470,
+            "observed_aura_spell_id": 79470
+          },
+          "food": {
+            "item_id": 62671,
+            "item_spell_id": 87587,
+            "observed_aura_spell_id": 87547
+          },
+          "prepot": {
+            "item_id": 58091,
+            "item_spell_id": 79476,
+            "observed_aura_spell_id": 79476
+          },
+          "combat_potion": {
+            "item_id": 58091,
+            "item_spell_id": 79476,
+            "observed_aura_spell_id": 79476
+          },
+          "inventory": [
+            {
+              "item_id": 58086,
+              "slot": 26,
+              "count": 20,
+              "uses": [
+                "flask_before_scoring"
+              ]
+            },
+            {
+              "item_id": 62671,
+              "slot": 27,
+              "count": 20,
+              "uses": [
+                "food_before_scoring"
+              ]
+            },
+            {
+              "item_id": 58091,
+              "slot": 28,
+              "count": 20,
+              "uses": [
+                "prepot_before_combat",
+                "combat_potion_during_combat"
+              ]
+            }
+          ]
+        }
       },
       "talent_build": {
         "primary_talent_tree_id": 752,
@@ -9658,9 +10715,8 @@
       ],
       "gear_profile_id": "wowsims_cata_p4_balance_druid",
       "consumable_item_ids": [
-        58085,
         58086,
-        58257,
+        62671,
         58091
       ],
       "pet_form_stance_presence": [
@@ -9780,9 +10836,9 @@
           43331
         ],
         "consumable_item_ids": [
-          58085,
-          58086,
-          58257
+          58087,
+          62669,
+          58145
         ],
         "primary_talent_tree_id": 750,
         "talents": [
@@ -9876,6 +10932,84 @@
           84735,
           84840,
           87335
+        ],
+        "controlled_consumable_profile": {
+          "schema": "cata_controlled_dps_consumables_v1",
+          "primary_stat": "agility",
+          "flask": {
+            "item_id": 58087,
+            "item_spell_id": 79471,
+            "observed_aura_spell_id": 79471
+          },
+          "food": {
+            "item_id": 62669,
+            "item_spell_id": 87586,
+            "observed_aura_spell_id": 87546
+          },
+          "prepot": {
+            "item_id": 58145,
+            "item_spell_id": 79633,
+            "observed_aura_spell_id": 79633
+          },
+          "combat_potion": {
+            "item_id": 58145,
+            "item_spell_id": 79633,
+            "observed_aura_spell_id": 79633
+          },
+          "inventory": [
+            {
+              "item_id": 58087,
+              "slot": 26,
+              "count": 20,
+              "uses": [
+                "flask_before_scoring"
+              ]
+            },
+            {
+              "item_id": 62669,
+              "slot": 27,
+              "count": 20,
+              "uses": [
+                "food_before_scoring"
+              ]
+            },
+            {
+              "item_id": 58145,
+              "slot": 28,
+              "count": 20,
+              "uses": [
+                "prepot_before_combat",
+                "combat_potion_during_combat"
+              ]
+            }
+          ]
+        },
+        "consumables": [
+          {
+            "item_id": 58087,
+            "slot": 26,
+            "count": 20,
+            "uses": [
+              "flask_before_scoring"
+            ]
+          },
+          {
+            "item_id": 62669,
+            "slot": 27,
+            "count": 20,
+            "uses": [
+              "food_before_scoring"
+            ]
+          },
+          {
+            "item_id": 58145,
+            "slot": 28,
+            "count": 20,
+            "uses": [
+              "prepot_before_combat",
+              "combat_potion_during_combat"
+            ]
+          }
         ]
       },
       "talent_build": {
@@ -9986,9 +11120,9 @@
       ],
       "gear_profile_id": "feral_druid_dps",
       "consumable_item_ids": [
-        58085,
-        58086,
-        58257
+        58087,
+        62669,
+        58145
       ],
       "pet_form_stance_presence": [
         "cat_form",

@@ -57,8 +57,14 @@ def _condition_variants() -> set[str]:
         "aura_remaining_time",
         "dot_is_active",
         "spell_time_to_ready",
+        "spell_is_ready",
+        "spell_is_known",
         "current_mana_percent",
     }
+
+
+def _controlled_available_item_ids(policy: dict) -> set[int]:
+    return {int(value) for value in policy["allowed_cast_item_ids"]}
 
 
 def fixture_contract() -> dict:
@@ -509,7 +515,7 @@ def test_apl_transform_recursively_removes_forbidden_actions_only() -> None:
         prepull_actions=prepull,
         action_variants=action_variants,
         condition_variants=_condition_variants(),
-        equipped_item_ids=set(),
+        equipped_item_ids=_controlled_available_item_ids(policy),
     )
     assert transformed["prepull_actions"] == prepull
     assert len(transformed["priority_list"]) == 2
@@ -543,7 +549,7 @@ def test_apl_transform_rejects_unknown_native_action_shape() -> None:
                 "cancel_aura",
             },
             condition_variants=_condition_variants(),
-            equipped_item_ids=set(),
+            equipped_item_ids=_controlled_available_item_ids(policy),
         )
 
 
@@ -573,7 +579,7 @@ def test_apl_transform_rejects_unlisted_item_action() -> None:
                 "cancel_aura",
             },
             condition_variants=_condition_variants(),
-            equipped_item_ids=set(),
+            equipped_item_ids=_controlled_available_item_ids(policy),
         )
 
 
@@ -603,7 +609,7 @@ def test_apl_transform_rejects_unlisted_state_mutation() -> None:
                 "cancel_aura",
             },
             condition_variants=_condition_variants(),
-            equipped_item_ids=set(),
+            equipped_item_ids=_controlled_available_item_ids(policy),
         )
 
 
@@ -694,7 +700,7 @@ def test_apl_transform_rewrites_only_fixture_absent_conditions_and_folds() -> No
         prepull_actions=[],
         action_variants=variants,
         condition_variants=_condition_variants(),
-        equipped_item_ids=set(),
+        equipped_item_ids=_controlled_available_item_ids(policy),
     )
     assert len(transformed["priority_list"]) == 3
     assert "condition" not in transformed["priority_list"][0]["action"]
@@ -808,7 +814,7 @@ def test_apl_transform_rejects_malformed_condition_oneof() -> None:
                 "cancel_aura",
             },
             condition_variants=_condition_variants(),
-            equipped_item_ids=set(),
+            equipped_item_ids=_controlled_available_item_ids(policy),
         )
 
 
@@ -847,7 +853,7 @@ def test_apl_transform_rejects_unlisted_condition_payload_scope() -> None:
                 "cancel_aura",
             },
             condition_variants=_condition_variants(),
-            equipped_item_ids=set(),
+            equipped_item_ids=_controlled_available_item_ids(policy),
         )
 
 
@@ -1136,6 +1142,35 @@ def test_compute_stats_requires_all_surviving_spell_actions_to_resolve() -> None
     ] = False
     with pytest.raises(WowsimsGenerationError, match="uncastable_spells"):
         parse_compute_stats_validation(uncastable, rotation=rotation)
+
+
+def test_compute_stats_accepts_only_controlled_potion_non_spell_actions() -> None:
+    rotation = {
+        "prepull_actions": [
+            {
+                "action": {
+                    "cast_spell": {
+                        "spell_id": {"other_id": "OtherActionPotion"}
+                    }
+                }
+            }
+        ],
+        "priority_list": [
+            {
+                "action": {
+                    "cast_spell": {"spell_id": {"item_id": 58091}}
+                }
+            }
+        ],
+    }
+    observed = parse_compute_stats_validation(compute_stats_result(), rotation=rotation)
+    assert observed["required_spell_actions"] == []
+
+    rotation["priority_list"][0]["action"]["cast_spell"]["spell_id"] = {
+        "item_id": 99999
+    }
+    with pytest.raises(WowsimsGenerationError, match="non_spell_action_survived"):
+        parse_compute_stats_validation(compute_stats_result(), rotation=rotation)
 
 
 def test_compute_stats_effective_reference_covers_pinned_unit_stats_schema() -> None:

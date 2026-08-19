@@ -118,7 +118,11 @@ PRIMARY_STAT_AURA_IDS = (20217, 79063, 1126, 79061)
 REPLENISHMENT_AURA_ID = 57669
 NON_PALADIN_MIGHT_AURA_ID = 79102
 FLASK_ITEM_BY_AURA = {79470: 58086, 79471: 58087, 79472: 58088}
-FOOD_ITEMS_BY_AURA = {87547: frozenset({62290, 62671})}
+FOOD_ITEMS_BY_AURA = {
+    87545: frozenset({62670}),
+    87546: frozenset({62669}),
+    87547: frozenset({62290, 62671}),
+}
 RACE_NAME_BY_ID = {
     1: "human",
     2: "orc",
@@ -1430,7 +1434,38 @@ def reference_condition_projections(
     )
     dynamic_valid = bool(
         all(type(dynamic.get(key)) is int for key in dynamic_keys)
-        and all(_integer(dynamic.get(key)) == 0 for key in dynamic_keys)
+        and (
+            (
+                _integer(dynamic.get("prepot_item_id")) == 0
+                and _integer(dynamic.get("prepot_use_count")) == 0
+            )
+            or (
+                _integer(dynamic.get("prepot_item_id")) > 0
+                and _integer(dynamic.get("prepot_use_count")) == 1
+            )
+        )
+        and (
+            (
+                _integer(dynamic.get("combat_potion_item_id")) == 0
+                and _integer(dynamic.get("combat_potion_use_count")) == 0
+            )
+            or (
+                _integer(dynamic.get("combat_potion_item_id")) > 0
+                and _integer(dynamic.get("combat_potion_use_count")) == 1
+            )
+        )
+        and all(
+            _integer(dynamic.get(key)) == 0
+            for key in (
+                "tinker_item_id",
+                "tinker_spell_id",
+                "tinker_use_count",
+                "racial_spell_id",
+                "racial_use_count",
+                "unexpected_dynamic_aura_active_samples",
+            )
+        )
+        and _integer(dynamic.get("last_potion_id_nonzero_samples")) >= 0
     )
     race_id = _integer(target.get("race_id"))
     pre_score = target.get("pre_score_state")

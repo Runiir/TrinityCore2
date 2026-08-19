@@ -26,6 +26,7 @@ from typing import Any, Mapping, Sequence
 
 import yaml
 
+from .cata_dps_consumables import CONTROLLED_POTION_ITEM_IDS
 from .build_wowsims_reference_requests import (
     canonical_sha256 as request_canonical_sha256,
     load_manifest as load_request_manifest,
@@ -716,7 +717,6 @@ def transform_apl_rotation(
     declared_state_mutations = {
         canonical_json_bytes(dict(value)) for value in state_mutation_rows
     }
-    _require(bool(forbidden_kinds), "apl_transform:forbidden_action_kinds")
     _require(bool(forbidden_spell_ids), "apl_transform:forbidden_spell_ids")
     _require(70142 in forbidden_item_ids, "apl_transform:moonwell_chalice")
     _require(
@@ -794,6 +794,8 @@ def transform_apl_rotation(
                 "aura_remaining_time",
                 "dot_is_active",
                 "spell_time_to_ready",
+                "spell_is_ready",
+                "spell_is_known",
             }
             and isinstance(payloads, list)
             and payloads
@@ -2301,6 +2303,11 @@ def materialize_native_request(
         for value in ((contract_player.get("gear") or {}).get("wowsims_items") or [])
         if isinstance(value, Mapping) and int(value.get("id") or 0) > 0
     }
+    equipped_item_ids.update(
+        int(value)
+        for key, value in (native_contract.get("consumables") or {}).items()
+        if key in {"prepot_id", "pot_id"} and int(value or 0) > 0
+    )
     rotation, apl_transform_observation = transform_apl_rotation(
         raw_rotation,
         native_contract.get("apl_transform_policy") or {},
@@ -2571,6 +2578,11 @@ def validate_materialization_receipt(
         for value in (((request.get("player") or {}).get("gear") or {}).get("wowsims_items") or [])
         if isinstance(value, Mapping) and int(value.get("id") or 0) > 0
     }
+    equipped_item_ids.update(
+        int(value)
+        for key, value in (fixture_native.get("consumables") or {}).items()
+        if key in {"prepot_id", "pot_id"} and int(value or 0) > 0
+    )
     expected_rotation, apl_transform_observation = transform_apl_rotation(
         source_rotation,
         fixture_native.get("apl_transform_policy") or {},
@@ -3301,8 +3313,16 @@ def _rotation_spell_action_ids(value: Any) -> set[tuple[int, int]]:
             action_id = payload.get("spell_id") if isinstance(payload, Mapping) else None
             _require(isinstance(action_id, Mapping), "compute_stats:spell_action_id")
             spell_id = int(action_id.get("spell_id") or 0)
-            _require(spell_id > 0, "compute_stats:non_spell_action_survived")
-            observed.add((spell_id, int(action_id.get("tag") or 0)))
+            if spell_id > 0:
+                observed.add((spell_id, int(action_id.get("tag") or 0)))
+                continue
+            item_id = int(action_id.get("item_id") or 0)
+            if item_id in CONTROLLED_POTION_ITEM_IDS:
+                continue
+            _require(
+                action_id == {"other_id": "OtherActionPotion"},
+                "compute_stats:non_spell_action_survived",
+            )
         for child in value.values():
             observed.update(_rotation_spell_action_ids(child))
     elif isinstance(value, list):

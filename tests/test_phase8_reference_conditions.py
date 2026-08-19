@@ -1436,6 +1436,12 @@ def test_all_16_reference_condition_projections_match_raw_fixture_observations()
                 "required_aura_spell_ids"
             ],
         }
+        raw["dynamic_disabled"].update(
+            prepot_item_id=expected["prepot"]["item_id"],
+            prepot_use_count=expected["prepot"]["use_count"],
+            combat_potion_item_id=expected["combat_potion"]["item_id"],
+            combat_potion_use_count=expected["combat_potion"]["use_count"],
+        )
         active_ids = set(expected["raid_buffs"]["required_player_aura_spell_ids"])
         active_ids.add(79061)
         active_ids.update(expected["raid_buffs"]["mana_player_aura_spell_ids"])
@@ -1644,6 +1650,8 @@ def _reference_condition_observation() -> dict:
         1126,
         79470,
         79471,
+        87545,
+        87546,
         87547,
     }
     required_target = {1490, 22959, 81326, 58567}

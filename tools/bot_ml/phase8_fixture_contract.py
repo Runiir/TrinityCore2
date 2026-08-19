@@ -11,6 +11,11 @@ import sys
 from pathlib import Path
 from typing import Any, Mapping
 
+from tools.bot_ml.cata_dps_consumables import (
+    CONTROLLED_DPS_SPECS,
+    validate_controlled_consumable_profile,
+)
+
 
 ROOT = Path(__file__).resolve().parents[2]
 if __package__ in {None, ""}:
@@ -146,19 +151,16 @@ NATIVE_ROTATION_PREPULL_CASTS: dict[str, tuple[tuple[int, str], ...]] = {
     "unholy_death_knight": ((48265, "-20s"),),
 }
 
-# The live fixture does not provision or authorize dynamic consumable,
-# profession, or racial throughput actions. The generated simulator request
-# therefore applies this content-addressed recursive transform to the pinned
-# APL instead of inheriting source actions that the live player cannot take.
+# The controlled live fixture provisions flask, food, and a two-use potion
+# stack for every DPS spec. Profession and racial throughput actions remain
+# disabled until their native runtime contracts exist.
 APL_TRANSFORM_POLICY = {
     "schema": "phase8_forbidden_dynamic_actions_transform_v1",
     "policy": "recursive_remove_matching_action",
     "matching_semantics": "exact_native_field_and_canonical_full_payload",
     "combat_tree_policy": "preserve_allowed_nodes_and_order",
     "preserve_surviving_action_order": True,
-    "forbidden_action_kinds": [
-        "OtherActionPotion",
-    ],
+    "forbidden_action_kinds": [],
     "forbidden_generic_operations": [
         {
             "semantic_name": "autocastOtherCooldowns",
@@ -208,9 +210,6 @@ APL_TRANSFORM_POLICY = {
     ],
     "forbidden_cast_item_ids": [
         36799,
-        58091,
-        58145,
-        58146,
         59461,
         62464,
         62469,
@@ -241,8 +240,6 @@ APL_TRANSFORM_POLICY = {
             {
                 "native_field": "aura_is_active",
                 "payloads": [
-                    {"aura_id": {"item_id": 58091}},
-                    {"aura_id": {"item_id": 58146}},
                     {"aura_id": {"item_id": 62464}},
                     {"aura_id": {"item_id": 69002}},
                     {"aura_id": {"item_id": 77116}},
@@ -278,6 +275,7 @@ APL_TRANSFORM_POLICY = {
                 "payloads": [
                     {"aura_id": {"item_id": 62464}},
                     {"aura_id": {"item_id": 69002}},
+                    {"aura_id": {"item_id": 77114}},
                     {"aura_id": {"item_id": 77116}},
                     {"aura_id": {"spell_id": 26297}},
                     {"aura_id": {"spell_id": 96923}},
@@ -290,7 +288,6 @@ APL_TRANSFORM_POLICY = {
             {
                 "native_field": "aura_remaining_time",
                 "payloads": [
-                    {"aura_id": {"item_id": 58146}},
                     {"aura_id": {"spell_id": 26297}},
                     {"aura_id": {"spell_id": 96229}},
                     {"aura_id": {"spell_id": 96230}},
@@ -310,12 +307,29 @@ APL_TRANSFORM_POLICY = {
                 "payloads": [
                     {"spell_id": {"item_id": 62464}},
                     {"spell_id": {"item_id": 69002}},
+                    {"spell_id": {"item_id": 77114}},
                     {"spell_id": {"item_id": 77116}},
                     {"spell_id": {"spell_id": 33697}},
                     {"spell_id": {"spell_id": 82174}},
                 ],
                 "replacement": 0,
                 "replacement_type": "number",
+            },
+            {
+                "native_field": "spell_is_ready",
+                "payloads": [
+                    {"spell_id": {"item_id": 68972}},
+                    {"spell_id": {"item_id": 69113}},
+                ],
+                "replacement": False,
+            },
+            {
+                "native_field": "spell_is_known",
+                "payloads": [
+                    {"spell_id": {"item_id": 68972}},
+                    {"spell_id": {"item_id": 69113}},
+                ],
+                "replacement": False,
             },
         ],
         "forbidden_executable_cast_spell_ids": [57933, 58984],
@@ -359,6 +373,8 @@ APL_TRANSFORM_POLICY = {
     },
     "provenance_policy": "hash_input_output_removed_and_added_actions",
 }
+
+POTION_ITEM_IDS = frozenset({58091, 58145, 58146})
 
 REFERENCE_EXECUTION_POLICY = {
     "reaction_time_ms": 10,
@@ -681,6 +697,45 @@ def _glyph_identity(
     }
 
 
+def _rotation_prepull_actions(spec: str) -> list[dict[str, Any]]:
+    actions = [
+        {
+            "action": {
+                "cast_spell": {"spell_id": {"spell_id": spell_id}}
+            },
+            "do_at_value": {"const": {"val": at_value}},
+        }
+        for spell_id, at_value in NATIVE_ROTATION_PREPULL_CASTS.get(spec, ())
+    ]
+    actions.append(
+        {
+            "action": {
+                "cast_spell": {
+                    "spell_id": {"other_id": "OtherActionPotion"}
+                }
+            },
+            "do_at_value": {"const": {"val": "-1s"}},
+        }
+    )
+    return actions
+
+
+def _apl_transform_policy(
+    consume_profile: Mapping[str, Any],
+) -> dict[str, Any]:
+    policy = copy.deepcopy(APL_TRANSFORM_POLICY)
+    potion_item_id = int(consume_profile["combat_potion"]["item_id"])
+    _require(potion_item_id in POTION_ITEM_IDS, "controlled_potion_item_id")
+    policy["allowed_cast_item_ids"] = [potion_item_id]
+    policy["forbidden_cast_item_ids"] = sorted(
+        {
+            int(value) for value in policy["forbidden_cast_item_ids"]
+        }
+        | (set(POTION_ITEM_IDS) - {potion_item_id})
+    )
+    return policy
+
+
 def materialize_fixture_contract(
     raw_contract: Mapping[str, Any],
     *,
@@ -743,9 +798,33 @@ def materialize_fixture_contract(
     for spec, row in contract["specs"].items():
         target_row = target_rows.get(spec) or {}
         provisioning = target_row.get("provisioning_bot") or {}
+        consume_profile = provisioning.get("controlled_consumable_profile")
+        _require(
+            spec in CONTROLLED_DPS_SPECS and isinstance(consume_profile, Mapping),
+            f"{spec}:controlled_consumable_profile_missing",
+        )
+        validate_controlled_consumable_profile(spec, consume_profile)
         glyph_item_ids = list(provisioning.get("glyphs") or [])
         glyph_identity = _glyph_identity(glyph_authority, glyph_item_ids)
         prepull = row["prepull_setup"]
+        prepull["flask"] = {
+            "item_id": int(consume_profile["flask"]["item_id"]),
+            "observed_aura_spell_id": int(
+                consume_profile["flask"]["observed_aura_spell_id"]
+            ),
+        }
+        prepull["food"] = {
+            "item_id": int(consume_profile["food"]["item_id"]),
+            "observed_aura_spell_id": int(
+                consume_profile["food"]["observed_aura_spell_id"]
+            ),
+        }
+        prepull["prepot"] = {
+            "item_id": int(consume_profile["prepot"]["item_id"])
+        }
+        prepull["combat_potion"] = {
+            "item_id": int(consume_profile["combat_potion"]["item_id"])
+        }
         prepull["form_presence"]["required_aura_spell_ids"] = sorted(
             {
                 int(spell_id)
@@ -862,20 +941,8 @@ def materialize_fixture_contract(
             "target_debuffs": copy.deepcopy(
                 simulator_reference["target_debuffs"]
             ),
-            "rotation_prepull_actions": [
-                {
-                    "action": {
-                        "cast_spell": {
-                            "spell_id": {"spell_id": spell_id}
-                        }
-                    },
-                    "do_at_value": {"const": {"val": at_value}},
-                }
-                for spell_id, at_value in NATIVE_ROTATION_PREPULL_CASTS.get(
-                    spec, ()
-                )
-            ],
-            "apl_transform_policy": copy.deepcopy(APL_TRANSFORM_POLICY),
+            "rotation_prepull_actions": _rotation_prepull_actions(spec),
+            "apl_transform_policy": _apl_transform_policy(consume_profile),
             "reference_execution_policy": copy.deepcopy(
                 REFERENCE_EXECUTION_POLICY
             ),
@@ -906,8 +973,14 @@ def materialize_fixture_contract(
             "item_swap": copy.deepcopy(row["item_swap"]),
             "flask": copy.deepcopy(prepull["flask"]),
             "food": copy.deepcopy(prepull["food"]),
-            "prepot": {"item_id": 0, "use_count": 0},
-            "combat_potion": {"item_id": 0, "use_count": 0},
+            "prepot": {
+                "item_id": int(prepull["prepot"]["item_id"]),
+                "use_count": 1,
+            },
+            "combat_potion": {
+                "item_id": int(prepull["combat_potion"]["item_id"]),
+                "use_count": 1,
+            },
             "tinker": {"item_id": 0, "use_count": 0},
             "racial": {**copy.deepcopy(prepull["racial"]), "use_count": 0},
             "raid_buffs": {
@@ -1193,8 +1266,9 @@ def validate_fixture_contract(contract: Mapping[str, Any]) -> None:
         _require(required_prepull_keys.issubset(prepull_setup), f"{spec}:prepull_keys")
         for key in ("flask", "food", "prepot", "combat_potion", "tinker"):
             _require(int((prepull_setup.get(key) or {}).get("item_id", -1)) >= 0, f"{spec}:{key}")
-        for key in ("prepot", "combat_potion", "tinker"):
-            _require(int(prepull_setup[key]["item_id"]) == 0, f"{spec}:{key}_must_be_disabled")
+        for key in ("prepot", "combat_potion"):
+            _require(int(prepull_setup[key]["item_id"]) > 0, f"{spec}:{key}_required")
+        _require(int(prepull_setup["tinker"]["item_id"]) == 0, f"{spec}:tinker_must_be_disabled")
         _require(isinstance((prepull_setup.get("racial") or {}).get("race"), str), f"{spec}:race")
         _require(int((prepull_setup.get("racial") or {}).get("spell_id", -1)) == 0, f"{spec}:racial_disabled")
         live_provisioning = (target_rows.get(spec) or {}).get("provisioning_bot") or {}
@@ -1269,24 +1343,14 @@ def validate_fixture_contract(contract: Mapping[str, Any]) -> None:
         )
         _require(
             native_request.get("rotation_prepull_actions")
-            == [
-                {
-                    "action": {
-                        "cast_spell": {
-                            "spell_id": {"spell_id": spell_id}
-                        }
-                    },
-                    "do_at_value": {"const": {"val": at_value}},
-                }
-                for spell_id, at_value in NATIVE_ROTATION_PREPULL_CASTS.get(
-                    spec, ()
-                )
-            ],
+            == _rotation_prepull_actions(spec),
             f"{spec}:native_rotation_prepull",
         )
         _require(
             native_request.get("apl_transform_policy")
-            == APL_TRANSFORM_POLICY,
+            == _apl_transform_policy(
+                (live_provisioning.get("controlled_consumable_profile") or {})
+            ),
             f"{spec}:native_apl_transform_policy",
         )
         _require(
@@ -1300,7 +1364,17 @@ def validate_fixture_contract(contract: Mapping[str, Any]) -> None:
             f"{spec}:native_external_windows",
         )
         consumes = native_request.get("consumables") or {}
-        for key in ("prepot_id", "pot_id", "tinker_id", "explosive_id", "conjured_id"):
+        _require(
+            int(consumes.get("prepot_id", 0))
+            == int(prepull_setup["prepot"]["item_id"]),
+            f"{spec}:native_prepot_id",
+        )
+        _require(
+            int(consumes.get("pot_id", 0))
+            == int(prepull_setup["combat_potion"]["item_id"]),
+            f"{spec}:native_pot_id",
+        )
+        for key in ("tinker_id", "explosive_id", "conjured_id"):
             _require(int(consumes.get(key, -1)) == 0, f"{spec}:native_{key}")
         _require(row.get("initial_state") == native_request.get("initial_state"), f"{spec}:initial_state")
         runtime_expected = row.get("runtime_expected") or {}

@@ -10,6 +10,12 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+from tools.bot_ml.cata_dps_consumables import (
+    CONTROLLED_DPS_SPECS,
+    controlled_consumable_profile,
+    validate_controlled_consumable_profile,
+)
+
 try:
     from .build_validation_provisioning import talent_data, validate_talent_manifest
     from .wowsims_gear_binding import (
@@ -524,6 +530,74 @@ def reconcile_rogue_poison_provisioning(targets: list[dict[str, Any]]) -> None:
             bot.pop("consumables", None)
 
 
+def reconcile_controlled_dps_consumable_provisioning(
+    targets: list[dict[str, Any]],
+) -> None:
+    """Install exact flask, food, and two-use potion stacks for DPS refs."""
+    for target in targets:
+        spec = str(target.get("spec_target_id") or "")
+        if spec not in CONTROLLED_DPS_SPECS:
+            continue
+        bot = target.get("provisioning_bot")
+        if not isinstance(bot, dict):
+            raise ValueError(f"{spec}: missing provisioning bot")
+        profile = controlled_consumable_profile(spec)
+        inventory = [dict(row) for row in profile["inventory"]]
+        bot["controlled_consumable_profile"] = profile
+        bot["consumables"] = inventory
+        bot["consumable_item_ids"] = [
+            int(row["item_id"]) for row in inventory
+        ]
+        target["consumable_item_ids"] = list(bot["consumable_item_ids"])
+
+
+def validate_controlled_dps_consumable_provisioning(
+    targets: list[dict[str, Any]],
+) -> None:
+    seen: set[str] = set()
+    poison_ids = {int(row["item_id"]) for row in ROGUE_POISON_CONSUMABLES}
+    for target in targets:
+        spec = str(target.get("spec_target_id") or "")
+        if spec not in CONTROLLED_DPS_SPECS:
+            continue
+        seen.add(spec)
+        bot = target.get("provisioning_bot") or {}
+        profile = bot.get("controlled_consumable_profile")
+        if not isinstance(profile, dict):
+            raise ValueError(f"{spec}: missing controlled consumable profile")
+        validate_controlled_consumable_profile(spec, profile)
+        expected_inventory = {
+            (int(row["item_id"]), int(row["slot"]), int(row["count"]))
+            for row in profile["inventory"]
+        }
+        actual_inventory = {
+            (
+                int(row.get("item_id") or 0),
+                int(row.get("slot") or 0),
+                int(row.get("count") or 0),
+            )
+            for row in bot.get("consumables", [])
+            if int(row.get("item_id") or 0) not in poison_ids
+        }
+        if actual_inventory != expected_inventory:
+            raise ValueError(f"{spec}: controlled consumable inventory drift")
+        expected_ids = {row[0] for row in expected_inventory}
+        actual_ids = {
+            int(value)
+            for value in bot.get("consumable_item_ids", [])
+            if int(value) not in poison_ids
+        }
+        top_level_ids = {
+            int(value)
+            for value in target.get("consumable_item_ids", [])
+            if int(value) not in poison_ids
+        }
+        if actual_ids != expected_ids or top_level_ids != expected_ids:
+            raise ValueError(f"{spec}: controlled consumable item identity drift")
+    if seen != set(CONTROLLED_DPS_SPECS):
+        raise ValueError("controlled DPS consumable cohort is incomplete")
+
+
 def validate_rogue_poison_provisioning(targets: list[dict[str, Any]]) -> None:
     poison_contract = {
         int(row["item_id"]): (int(row["slot"]), int(row["count"]))
@@ -870,11 +944,16 @@ def build_catalogs(refresh_sources: bool) -> dict[str, dict[str, Any]]:
                 }
 
         pet = pet_for(target_id, index)
-        consumables = [58085, 58086, 58257]
-        if target_id in {"demonology_warlock", "shadow_priest"}:
-            consumables.append(58091)
-        if target_id == "demonology_warlock":
-            consumables.append(70142)
+        consume_profile = (
+            controlled_consumable_profile(target_id)
+            if target_id in CONTROLLED_DPS_SPECS
+            else None
+        )
+        consumables = (
+            [int(row["item_id"]) for row in consume_profile["inventory"]]
+            if consume_profile
+            else [58085, 58086, 58257]
+        )
         runtime_gear_profile = canonical_gear_profile_id(target_id)
         exact_gear_profile = wowsims_gear_profiles.get(runtime_gear_profile)
         runtime_race = {
@@ -896,20 +975,10 @@ def build_catalogs(refresh_sources: bool) -> dict[str, dict[str, Any]]:
             "consumable_item_ids": consumables,
             **build,
         }
-        if target_id == "demonology_warlock":
+        if consume_profile:
+            provisioning_bot["controlled_consumable_profile"] = consume_profile
             provisioning_bot["consumables"] = [
-                {"item_id": 58085, "slot": 23, "count": 20},
-                {"item_id": 58086, "slot": 24, "count": 20},
-                {"item_id": 58257, "slot": 25, "count": 20},
-                {"item_id": 58091, "slot": 26, "count": 20},
-                {"item_id": 70142, "slot": 27, "count": 1},
-            ]
-        elif target_id == "shadow_priest":
-            provisioning_bot["consumables"] = [
-                {"item_id": 58085, "slot": 23, "count": 20},
-                {"item_id": 58086, "slot": 24, "count": 20},
-                {"item_id": 58257, "slot": 25, "count": 20},
-                {"item_id": 58091, "slot": 26, "count": 20},
+                dict(row) for row in consume_profile["inventory"]
             ]
         reconcile_rogue_poison_provisioning(
             [{"spec_target_id": target_id, "provisioning_bot": provisioning_bot}]
@@ -1161,6 +1230,7 @@ def validate_catalogs(payloads: dict[str, dict[str, Any]], *, check_linked: bool
     if len(targets) != 31 or len(set(ids)) != 31:
         raise ValueError("Phase 1 requires exactly 31 unique target rows")
     validate_rogue_poison_provisioning(targets)
+    validate_controlled_dps_consumable_provisioning(targets)
     roles = Counter(row["role"] for row in targets)
     if dict(roles) != {"tank": 4, "healer": 5, "dps": 22}:
         raise ValueError("Phase 1 role counts must be 4 tanks, 5 healers, and 22 DPS")
@@ -1364,6 +1434,33 @@ def reconcile_checked_in_rogue_poison_catalog() -> dict[str, dict[str, Any]]:
     return payloads
 
 
+def reconcile_checked_in_controlled_consumable_catalog() -> dict[str, dict[str, Any]]:
+    paths = [
+        TARGET_CATALOG_PATH,
+        REFERENCE_CATALOG_PATH,
+        CALIBRATION_CATALOG_PATH,
+        PAIRWISE_CATALOG_PATH,
+    ]
+    payloads = {
+        path.name: json.loads(path.read_text(encoding="utf-8"))
+        for path in paths
+    }
+    target_catalog = payloads[TARGET_CATALOG_PATH.name]
+    reconcile_controlled_dps_consumable_provisioning(target_catalog["targets"])
+    reconcile_rogue_poison_provisioning(target_catalog["targets"])
+    validate_controlled_dps_consumable_provisioning(target_catalog["targets"])
+    validate_rogue_poison_provisioning(target_catalog["targets"])
+    rendered = json.dumps(target_catalog, indent=2) + "\n"
+    with tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", dir=TARGET_CATALOG_PATH.parent,
+        prefix=f".{TARGET_CATALOG_PATH.name}.", suffix=".tmp", delete=False,
+    ) as temporary:
+        temporary.write(rendered)
+        temporary_path = Path(temporary.name)
+    temporary_path.replace(TARGET_CATALOG_PATH)
+    return payloads
+
+
 def write_bundle(output_dir: Path, payloads: dict[str, dict[str, Any]]) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     for stale in output_dir.glob("*.json"):
@@ -1389,7 +1486,18 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--refresh-sources", action="store_true")
     parser.add_argument("--reconcile-rogue-poisons", action="store_true")
+    parser.add_argument("--reconcile-controlled-consumables", action="store_true")
     args = parser.parse_args()
+    if args.reconcile_controlled_consumables:
+        if args.refresh_sources or args.reconcile_rogue_poisons:
+            parser.error("controlled consumable reconciliation is exclusive")
+        payloads = reconcile_checked_in_controlled_consumable_catalog()
+        print(json.dumps({
+            "controlled_consumable_contract_valid": True,
+            "target_count": len(payloads[TARGET_CATALOG_PATH.name]["targets"]),
+            "reconciled": str(TARGET_CATALOG_PATH),
+        }, sort_keys=True))
+        return 0
     if args.reconcile_rogue_poisons:
         if args.refresh_sources:
             parser.error("--reconcile-rogue-poisons and --refresh-sources are exclusive")

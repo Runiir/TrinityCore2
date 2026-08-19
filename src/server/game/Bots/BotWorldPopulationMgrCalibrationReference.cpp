@@ -228,11 +228,12 @@ void BotWorldPopulationMgr::ObserveCalibrationReferenceConditions(
     if (!bot || !target || !observedAtMs)
         return;
 
-    static constexpr std::array<uint32, 44> PlayerAuraUniverse = {
+    static constexpr std::array<uint32, 46> PlayerAuraUniverse = {
         // Static raid/stat categories, flasks, food, and native setup.
         53646, 79058, 24932, 2895, 8515, 8076, 82930, 57669,
         20217, 79063, 1126, 79061, 79102, 79470, 79471, 79472,
-        87547, 2457, 2458, 768, 24858, 28176, 30482, 48265, 13165, 31801, 7294,
+        87545, 87546, 87547, 2457, 2458, 768, 24858, 28176, 30482, 48265,
+        13165, 31801, 7294,
         588, 15473, 324, 64420,
         // Temporal externals and every v1 disabled racial/tinker spell.
         2825, 10060, 85767, 85759, 96230, 20572, 26297, 28730,
@@ -384,5 +385,4 @@ void BotWorldPopulationMgr::UpdateCalibrationTargetHealthSchedule(uint64 nowMs)
     observation.MaximumObservedMaxHealth = std::max(
         observation.MaximumObservedMaxHealth, observedMaxHealth);
 }
-
 

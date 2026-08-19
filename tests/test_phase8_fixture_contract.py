@@ -4,6 +4,7 @@ import hashlib
 import re
 from pathlib import Path
 
+from tools.bot_ml.cata_dps_consumables import controlled_consumable_profile
 from tools.bot_ml.phase8_fixture_contract import (
     DEFAULT_AUTHORED_CONTRACT_PATH,
     DEFAULT_MATERIALIZED_CONTRACT_PATH,
@@ -52,7 +53,7 @@ def test_canonical_fixture_target_is_exact_passive_and_content_addressed() -> No
     assert digest in HEADER.read_text(encoding="utf-8")
 
 
-def test_every_spec_has_exact_native_start_and_disabled_dynamic_actions() -> None:
+def test_every_spec_has_exact_native_start_and_controlled_consumables() -> None:
     contract, _digest = load_fixture_contract()
     for spec, row in contract["specs"].items():
         native = row["native_request"]
@@ -64,7 +65,7 @@ def test_every_spec_has_exact_native_start_and_disabled_dynamic_actions() -> Non
         transform = native["apl_transform_policy"]
         assert transform["policy"] == "recursive_remove_matching_action"
         assert transform["empty_node_policy"].startswith("remove_empty_")
-        assert "OtherActionPotion" in transform["forbidden_action_kinds"]
+        assert "OtherActionPotion" not in transform["forbidden_action_kinds"]
         assert "OtherActionSwapItem" not in transform["forbidden_action_kinds"]
         native_fields = {
             value["native_field"]
@@ -105,11 +106,10 @@ def test_every_spec_has_exact_native_start_and_disabled_dynamic_actions() -> Non
         } <= set(
             transform["forbidden_cast_spell_ids"]
         )
-        assert transform["forbidden_cast_item_ids"] == [
+        profile = controlled_consumable_profile(spec)
+        potion_item_id = profile["combat_potion"]["item_id"]
+        assert transform["forbidden_cast_item_ids"] == sorted({
             36799,
-            58091,
-            58145,
-            58146,
             59461,
             62464,
             62469,
@@ -118,8 +118,8 @@ def test_every_spec_has_exact_native_start_and_disabled_dynamic_actions() -> Non
             69113,
             70142,
             77116,
-        ]
-        assert transform["allowed_cast_item_ids"] == []
+        } | ({58091, 58145, 58146} - {potion_item_id}))
+        assert transform["allowed_cast_item_ids"] == [potion_item_id]
         assert transform["unlisted_cast_item_policy"] == "reject"
         assert transform["prepull_replacement_policy"]["mode"] == (
             "replace_entire_source_with_fixture_exact_list"
@@ -135,7 +135,7 @@ def test_every_spec_has_exact_native_start_and_disabled_dynamic_actions() -> Non
             "canonical_full_native_payload_equality"
         )
         leaves = condition_policy["unavailable_condition_leaves"]
-        assert sum(len(leaf["payloads"]) for leaf in leaves) == 37
+        assert sum(len(leaf["payloads"]) for leaf in leaves) == 40
         assert all("id_kind" not in leaf and "ids" not in leaf for leaf in leaves)
         active_payloads = next(
             leaf["payloads"]
@@ -149,8 +149,25 @@ def test_every_spec_has_exact_native_start_and_disabled_dynamic_actions() -> Non
         } in active_payloads
         assert {"aura_id": {"spell_id": 16511}} not in active_payloads
         assert row["item_swap"] == {"enabled": False, "items": []}
-        assert row["prepull_setup"]["prepot"]["item_id"] == 0
-        assert row["prepull_setup"]["combat_potion"]["item_id"] == 0
+        setup = row["prepull_setup"]
+        assert setup["flask"]["item_id"] == profile["flask"]["item_id"]
+        assert setup["food"]["item_id"] == profile["food"]["item_id"]
+        assert setup["prepot"]["item_id"] == profile["prepot"]["item_id"]
+        assert setup["combat_potion"]["item_id"] == potion_item_id
+        assert native["consumables"] == {
+            "battle_elixir_id": 0,
+            "conjured_id": 0,
+            "explosive_id": 0,
+            "flask_id": profile["flask"]["item_id"],
+            "food_id": profile["food"]["item_id"],
+            "guardian_elixir_id": 0,
+            "pot_id": potion_item_id,
+            "prepot_id": profile["prepot"]["item_id"],
+            "tinker_id": 0,
+        }
+        assert native["rotation_prepull_actions"][-1]["action"]["cast_spell"][
+            "spell_id"
+        ] == {"other_id": "OtherActionPotion"}
         assert row["prepull_setup"]["tinker"]["item_id"] == 0
         assert row["prepull_setup"]["racial"]["spell_id"] == 0, spec
 

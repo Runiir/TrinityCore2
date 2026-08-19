@@ -45,7 +45,6 @@ RESULT_PENDING = "requires_generation"
 RESULT_ACCEPTED = "generated_verified"
 EXPECTED_ITERATIONS = 2_000
 EXPECTED_RANDOM_SEED = 101
-FIXED_FOOD_SPECS = frozenset({"balance_druid", "shadow_priest"})
 
 REQUIRED_REQUIREMENTS = {
     "gear_manifest": "gear_source_manifest",
@@ -734,11 +733,11 @@ def _build_row(
         f"fixture_race_mismatch:{target_spec}",
     )
     _require(
-        int((prepull["prepot"] or {}).get("item_id") or 0) == 0
-        and int((prepull["combat_potion"] or {}).get("item_id") or 0) == 0
+        int((prepull["prepot"] or {}).get("item_id") or 0) > 0
+        and int((prepull["combat_potion"] or {}).get("item_id") or 0) > 0
         and int((prepull["tinker"] or {}).get("item_id") or 0) == 0
         and int(racial.get("spell_id") or 0) == 0,
-        f"unsupported_dynamic_consume_enabled:{target_spec}",
+        f"controlled_consumable_contract:{target_spec}",
     )
     flask = prepull["flask"]
     food = prepull["food"]
@@ -747,12 +746,10 @@ def _build_row(
         and int((flask or {}).get("observed_aura_spell_id") or 0) > 0,
         f"fixed_flask_incomplete:{target_spec}",
     )
-    food_enabled = target_spec in FIXED_FOOD_SPECS
     _require(
-        (int((food or {}).get("item_id") or 0) > 0) is food_enabled
-        and (int((food or {}).get("observed_aura_spell_id") or 0) > 0)
-        is food_enabled,
-        f"fixed_food_policy:{target_spec}",
+        int((food or {}).get("item_id") or 0) > 0
+        and int((food or {}).get("observed_aura_spell_id") or 0) > 0,
+        f"controlled_food_policy:{target_spec}",
     )
     request = {
         "schema": REQUEST_SCHEMA,
