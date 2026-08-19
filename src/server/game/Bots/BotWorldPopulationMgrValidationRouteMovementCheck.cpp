@@ -9,6 +9,7 @@
 #include "Creature.h"
 #include "DynamicObject.h"
 #include "GridNotifiersImpl.h"
+#include "MotionMaster.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
 #include "Spell.h"

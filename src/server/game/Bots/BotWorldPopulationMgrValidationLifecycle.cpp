@@ -11,6 +11,7 @@
 #include "Log.h"
 #include "Map.h"
 #include "MapManager.h"
+#include "MotionMaster.h"
 #include "ObjectMgr.h"
 #include "Player.h"
 #include "WorldSession.h"
@@ -525,4 +526,3 @@ bool BotWorldPopulationMgr::FailValidationAttemptOnce(
 
     return true;
 }
-
