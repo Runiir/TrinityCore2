@@ -1,6 +1,8 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
 #include "Bots/BotClassSpecActionProfile.h"
+#include "Bots/BotWorldPopulationMgrNativeHelpers.h"
+#include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 #include "CellImpl.h"
 #include "Creature.h"
 #include "GridNotifiersImpl.h"
@@ -19,6 +21,11 @@
 #include <sstream>
 #include <string>
 #include <vector>
+
+using BotWorldPopulationMgrNativeHelpers::HasPowerForSpell;
+using BotWorldPopulationMgrNativeHelpers::MaintainedProfileAuraBlocksRefresh;
+using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
+using BotWorldPopulationMgrSpellSemantics::NowMs;
 
 bool BotWorldPopulationMgr::TryValidationRouteGroupHeal(
     WorldBotState& state, Player* bot, Player* healer, Unit* combatTarget,
