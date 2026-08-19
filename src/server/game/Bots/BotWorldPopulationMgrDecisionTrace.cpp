@@ -19,6 +19,8 @@
 
 namespace
 {
+constexpr uint32 DecisionFingerprintPersistHeartbeatMs = 5000;
+
 uint64 NowMs()
 {
     return uint64(std::chrono::duration_cast<std::chrono::milliseconds>(

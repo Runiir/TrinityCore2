@@ -18,6 +18,8 @@ struct AddWaveDiscoveryResult;
 struct AddWaveDensityRequest;
 struct AddWaveDensityResult;
 struct AddWaveOpeningActionsRequest;
+struct AddWaveTankPreparationRequest;
+struct AddWaveTankPreparationResult;
 
 struct GroupHealCallback
 {
@@ -51,6 +53,8 @@ struct Context
     static AddWaveDiscoveryResult Run(AddWaveDiscoveryRequest const& request);
     static AddWaveDensityResult Run(AddWaveDensityRequest const& request);
     static bool Run(AddWaveOpeningActionsRequest const& request);
+    static AddWaveTankPreparationResult Run(
+        AddWaveTankPreparationRequest const& request);
 };
 
 bool TryHealerAddWavePreposition(
