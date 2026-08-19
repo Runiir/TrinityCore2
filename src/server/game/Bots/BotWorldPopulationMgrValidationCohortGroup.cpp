@@ -8,11 +8,14 @@
 #include "Group.h"
 #include "GroupMgr.h"
 #include "GroupReference.h"
+#include "LFG.h"
+#include "Log.h"
 #include "Map.h"
 #include "MapManager.h"
 #include "ObjectAccessor.h"
 #include "Pet.h"
 #include "Player.h"
+#include "WorldSession.h"
 #include "WorldPacket.h"
 
 #include <algorithm>
