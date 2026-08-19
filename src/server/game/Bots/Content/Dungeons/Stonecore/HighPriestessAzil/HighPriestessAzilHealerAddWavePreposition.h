@@ -15,6 +15,8 @@ namespace BotWorldPopulationMgrContent::Stonecore::HighPriestessAzil
 {
 struct AddWaveDiscoveryRequest;
 struct AddWaveDiscoveryResult;
+struct AddWaveDensityRequest;
+struct AddWaveDensityResult;
 
 struct GroupHealCallback
 {
@@ -46,6 +48,7 @@ struct Context
 {
     static bool Run(HealerAddWavePrepositionRequest const& request);
     static AddWaveDiscoveryResult Run(AddWaveDiscoveryRequest const& request);
+    static AddWaveDensityResult Run(AddWaveDensityRequest const& request);
 };
 
 bool TryHealerAddWavePreposition(
