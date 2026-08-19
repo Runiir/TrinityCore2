@@ -13,6 +13,9 @@ class Unit;
 
 namespace BotWorldPopulationMgrContent::Stonecore::HighPriestessAzil
 {
+struct AddWaveDiscoveryRequest;
+struct AddWaveDiscoveryResult;
+
 struct GroupHealCallback
 {
     std::function<bool(Player*, Unit*, bool, bool)> Function;
@@ -42,6 +45,7 @@ struct HealerAddWavePrepositionRequest
 struct Context
 {
     static bool Run(HealerAddWavePrepositionRequest const& request);
+    static AddWaveDiscoveryResult Run(AddWaveDiscoveryRequest const& request);
 };
 
 bool TryHealerAddWavePreposition(

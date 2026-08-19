@@ -1,5 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
-#include "Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilHealerAddWavePreposition.h"
+#include "Bots/Content/Dungeons/Stonecore/HighPriestessAzil/HighPriestessAzilAddWaveDiscovery.h"
 #include "Bots/BotWorldPopulationMgrScopeGuard.h"
 #include "Bots/BotCalibrationFixtureContractGenerated.h"
 #include "Bots/BotActionExecutor.h"
@@ -626,175 +626,28 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 healerAddWaveRequest))
             return true;
 
+        BotWorldPopulationMgrContent::Stonecore::HighPriestessAzil::AddWaveDiscoveryRequest addWaveDiscoveryRequest;
+        addWaveDiscoveryRequest.Manager = this;
+        addWaveDiscoveryRequest.State = &state;
+        addWaveDiscoveryRequest.Bot = bot;
+        addWaveDiscoveryRequest.Power = &power;
+        addWaveDiscoveryRequest.Stage = stage;
+        addWaveDiscoveryRequest.Activity = activity;
+        BotWorldPopulationMgrContent::Stonecore::HighPriestessAzil::AddWaveDiscoveryResult addWaveDiscovery =
+            BotWorldPopulationMgrContent::Stonecore::HighPriestessAzil::DiscoverAddWave(
+                addWaveDiscoveryRequest);
         Unit* add = nullptr;
-        bool sharedFocusValid = false;
-        uint32 addCount = 0;
-        uint32 engagedAddCount = 0;
-        uint32 nearbyAddCount = 0;
-        float addX = 0.0f;
-        float addY = 0.0f;
-        uint8 bestPriority = 0;
-        float bestHealthPct = 1.0f;
-        uint32 bestGuid = 0;
-        std::vector<Creature*> localAdds;
-        auto isUsableListedAdd = [this](Player* observer, Unit* candidate) -> bool
-        {
-            Creature* creature = candidate ? candidate->ToCreature() : nullptr;
-            return observer && creature && creature->IsAlive() && creature->GetHealth()
-                && creature->GetMap() == observer->GetMap()
-                && std::find(Cohort().Config.ValidationRouteAddTargetEntries.begin(), Cohort().Config.ValidationRouteAddTargetEntries.end(), creature->GetEntry()) != Cohort().Config.ValidationRouteAddTargetEntries.end()
-                && observer->IsValidAttackTarget(creature);
-        };
-        auto isUsableUnexpectedPartyHostile = [this](Player* observer, Unit* candidate) -> bool
-        {
-            Creature* creature = candidate ? candidate->ToCreature() : nullptr;
-            if (!observer || !creature || !creature->IsAlive() || !creature->GetHealth()
-                || creature->GetMap() != observer->GetMap()
-                || !observer->IsValidAttackTarget(creature))
-                return false;
-
-            uint32 entry = creature->GetEntry();
-            if (entry == Cohort().Config.ValidationRouteTargetEntry
-                || std::find(Cohort().Config.ValidationRouteAlternateTargetEntries.begin(),
-                    Cohort().Config.ValidationRouteAlternateTargetEntries.end(), entry)
-                    != Cohort().Config.ValidationRouteAlternateTargetEntries.end()
-                || std::find(Cohort().Config.ValidationRoutePackTargetEntries.begin(),
-                    Cohort().Config.ValidationRoutePackTargetEntries.end(), entry)
-                    != Cohort().Config.ValidationRoutePackTargetEntries.end())
-                return false;
-
-            Player* victim = creature->GetVictim() ? creature->GetVictim()->ToPlayer() : nullptr;
-            return victim && (observer->GetGroup()
-                ? victim->GetGroup() == observer->GetGroup()
-                : victim == observer);
-        };
-        if (Party().ValidationRouteAddFocusGeneration != Party().ValidationRouteGeneration)
-        {
-            Party().ValidationRouteAddFocusGuid.Clear();
-            Party().ValidationRouteAddFocusGeneration = 0;
-        }
-        if (!Party().ValidationRouteAddFocusGuid.IsEmpty())
-        {
-            add = ObjectAccessor::GetUnit(*bot, Party().ValidationRouteAddFocusGuid);
-            if (!add)
-            {
-                Party().ValidationRouteAddFocusGuid.Clear();
-            }
-            else if (!add->IsAlive() || !add->GetHealth())
-            {
-                std::string raw = BuildRawJson(bot, add);
-                std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
-                RecordEvent(state, bot, "boss_add_killed", add, "observed_dead", raw.c_str(), semantic.c_str());
-                Party().ValidationRouteAddFocusGuid.Clear();
-                add = nullptr;
-            }
-            else if (!isUsableListedAdd(bot, add))
-            {
-                Party().ValidationRouteAddFocusGuid.Clear();
-                add = nullptr;
-            }
-            else
-                sharedFocusValid = true;
-        }
-
-        std::vector<WorldObject*> objects;
-        Trinity::AllWorldObjectsInRange check(bot, 45.0f);
-        Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
-        Cell::VisitAllObjects(bot, searcher, 45.0f);
-        GuidSet cohortAddGuids;
-        auto considerLocalAdd = [&](Creature* creature)
-        {
-            cohortAddGuids.insert(creature->GetGUID());
-            localAdds.push_back(creature);
-            ++addCount;
-            if (creature->GetVictim())
-                ++engagedAddCount;
-            addX += creature->GetPositionX();
-            addY += creature->GetPositionY();
-            if (bot->GetExactDist2d(creature) <= 12.0f)
-                ++nearbyAddCount;
-            if (sharedFocusValid)
-                return;
-            uint8 priority = 1;
-            if (Player* victim = creature->GetVictim() ? creature->GetVictim()->ToPlayer() : nullptr)
-            {
-                std::string victimRole = GetDungeonRole(victim);
-                priority = victimRole == "healer" ? 3 : (victimRole == "tank" ? 2 : 1);
-            }
-            float healthPct = UnitHealthPct(creature);
-            uint32 guid = creature->GetGUID().GetCounter();
-            if (!add
-                || priority > bestPriority
-                || (priority == bestPriority && healthPct < bestHealthPct)
-                || (priority == bestPriority && healthPct == bestHealthPct && guid < bestGuid))
-            {
-                add = creature;
-                bestPriority = priority;
-                bestHealthPct = healthPct;
-                bestGuid = guid;
-            }
-        };
-        std::vector<Creature*> unexpectedPartyHostiles;
-        for (WorldObject* object : objects)
-        {
-            Creature* creature = object ? object->ToCreature() : nullptr;
-            bool listedAdd = isUsableListedAdd(bot, creature);
-            bool unexpectedPartyHostile = !listedAdd
-                && isUsableUnexpectedPartyHostile(bot, creature);
-            if ((!listedAdd && !unexpectedPartyHostile)
-                || !bot->IsWithinLOSInMap(creature))
-                continue;
-            if (unexpectedPartyHostile)
-            {
-                unexpectedPartyHostiles.push_back(creature);
-                continue;
-            }
-            considerLocalAdd(creature);
-        }
-        // The authoritative retention audit includes every hostile creature
-        // attacking this exact party. Admit a real unexpected swarm here, while
-        // ordinary route targets remain owned by the route-pack logic.
-        //
-        // Rerun211's final generation retained one Stonecore Bruiser beside the
-        // tank and healer after three Azil recoveries. The shared density phase
-        // was still active, but the three-hostile admission floor discarded that
-        // exact healer attacker. It therefore remained visible to the strict
-        // threat audit while the add handler returned no_compatible_density_anchor
-        // and never exposed it to the Warrior's native Taunt. During an already
-        // active generation-scoped density recovery, admit every real party-
-        // targeting unexpected hostile; initial natural overlap still requires
-        // the unchanged three-hostile proof.
-        bool sharedDensityRecoveryActive =
-            Party().ValidationRouteBossAddDensityPhase
-            && Party().ValidationRouteBossAddDensityGeneration
-                == Party().ValidationRouteGeneration;
-        if (unexpectedPartyHostiles.size() >= 3
-            || sharedDensityRecoveryActive)
-            for (Creature* creature : unexpectedPartyHostiles)
-                considerLocalAdd(creature);
-        if (Party().ValidationRouteBossAddDensityPhase && addCount < 3)
-        {
-            for (WorldBotState const& cohortState : Party().Bots)
-            {
-                Player* observer = GetLoadedBot(cohortState);
-                if (!observer || !observer->IsAlive() || observer->GetMap() != bot->GetMap())
-                    continue;
-
-                std::vector<WorldObject*> cohortObjects;
-                Trinity::AllWorldObjectsInRange cohortCheck(observer, 45.0f);
-                Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> cohortSearcher(observer, cohortObjects, cohortCheck);
-                Cell::VisitAllObjects(observer, cohortSearcher, 45.0f);
-                for (WorldObject* object : cohortObjects)
-                {
-                    Creature* creature = object ? object->ToCreature() : nullptr;
-                    if (isUsableListedAdd(observer, creature) && observer->IsWithinLOSInMap(creature))
-                        cohortAddGuids.insert(creature->GetGUID());
-                }
-                if (cohortAddGuids.size() >= 3)
-                    break;
-            }
-        }
-        bool cohortSwarmActive = cohortAddGuids.size() >= 3;
+        add = addWaveDiscovery.Add;
+        bool sharedFocusValid = addWaveDiscovery.SharedFocusValid;
+        uint32 addCount = addWaveDiscovery.AddCount;
+        uint32 engagedAddCount = addWaveDiscovery.EngagedAddCount;
+        uint32 nearbyAddCount = addWaveDiscovery.NearbyAddCount;
+        float addX = addWaveDiscovery.AddX;
+        float addY = addWaveDiscovery.AddY;
+        std::vector<Creature*>& localAdds = addWaveDiscovery.LocalAdds;
+        bool cohortSwarmActive = addWaveDiscovery.CohortSwarmActive;
+        std::function<bool(Player*, Unit*)> isUsableListedAdd =
+            addWaveDiscovery.IsUsableListedAdd;
         // Rerun170 reached Azil's route generation roughly 80-115 yards from
         // the navigation anchor. Passive followers were already visible there,
         // so the add handler repeatedly diverted the tank among followers at
