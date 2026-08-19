@@ -32,6 +32,8 @@ bool Context::Run(PassiveSwarmStagingRequest const& request)
     BotWorldPopulationMgrBotState::WorldBotState& state = *request.State;
     Player* bot = request.Bot;
     BotRolePowerBreakdown const& power = *request.Power;
+    BotProgressionStage stage = request.Stage;
+    BotProgressionActivity activity = request.Activity;
     AddWaveDiscoveryResult const& discovery = *request.Discovery;
     AddWaveDensityResult const& density = *request.Density;
     Unit* add = request.Add;
