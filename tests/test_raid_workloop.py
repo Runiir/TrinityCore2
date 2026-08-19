@@ -34,6 +34,25 @@ def test_wowsims_gate_never_promotes_stale_candidates() -> None:
         assert "current_promoted_references_incomplete" in status["issues"]
 
 
+def test_promoted_catalog_uses_pending_identity_for_current_receipts() -> None:
+    requests = workloop._load_json(workloop.ROOT / workloop.WOWSIMS_REQUESTS_PATH)
+    pending = workloop._canonical_sha256(
+        workloop.pending_catalog_projection(requests)
+    )
+    promoted_file_sha256 = workloop._file_sha256(
+        workloop.ROOT / workloop.WOWSIMS_REQUESTS_PATH
+    )
+    assert pending != workloop._canonical_sha256(requests)
+
+    status = workloop.wowsims_status()
+
+    assert status["request_catalog_canonical_sha256"] == pending
+    assert status["request_catalog_file_sha256"] == promoted_file_sha256
+    assert status["current_candidate_count"] == 16
+    assert status["accepted_reference_count"] == 16
+    assert status["promotion_states"] == {"locally_reconstructed_current": 16}
+
+
 def test_dps_work_unit_binds_all_duplicate_roster_slots() -> None:
     unit = workloop.build_spec_work_unit("fire_mage")
 
