@@ -31,6 +31,7 @@ struct TrashThreatControl
 
 struct TrashThreatControlCallbacks
 {
+    std::function<bool()> DiscoveryLeg;
     std::function<bool(Creature const*)>
         IsImmediateNextValidationRouteEncounterMember;
     std::function<bool(Creature const*)> IsPendingScriptedEventEntry;

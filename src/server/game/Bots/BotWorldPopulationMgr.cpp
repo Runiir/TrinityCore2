@@ -691,6 +691,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     BotWorldPopulationMgrValidationRoute::TrashThreatControl trashThreatControl;
     BotWorldPopulationMgrValidationRoute::TrashThreatControlCallbacks
         trashThreatControlCallbacks;
+    trashThreatControlCallbacks.DiscoveryLeg =
+        [discoveryLeg]() { return discoveryLeg; };
     trashThreatControlCallbacks.IsImmediateNextValidationRouteEncounterMember =
         isImmediateNextValidationRouteEncounterMember;
     trashThreatControlCallbacks.IsPendingScriptedEventEntry =

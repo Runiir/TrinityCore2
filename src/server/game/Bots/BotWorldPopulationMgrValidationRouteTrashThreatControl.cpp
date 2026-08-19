@@ -36,6 +36,7 @@ bool ObjectiveContext::RunTrashThreatControl(
     std::string& situation = Situation;
     std::string& action = Action;
     Unit*& target = Target;
+    bool discoveryLeg = callbacks.DiscoveryLeg();
     auto const& isImmediateNextValidationRouteEncounterMember =
         callbacks.IsImmediateNextValidationRouteEncounterMember;
     auto const& isPendingScriptedEventEntry =

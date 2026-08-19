@@ -605,5 +605,6 @@ bool ObjectiveContext::RunTrashIntervention(
                 tankTrashRecoveryCallbacks))
             return true;
     }
+    return false;
 }
 }
