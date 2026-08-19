@@ -5,6 +5,10 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 MODULE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationFeralPickup.cpp"
 HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
+CANONICAL_CALLER = ROOT / (
+    "src/server/game/Bots/Content/Dungeons/Stonecore/Encounters/"
+    "HighPriestessAzil/HighPriestessAzilFeralHandoffState.cpp"
+)
 CMAKE = ROOT / "src/server/game/CMakeLists.txt"
 
 
@@ -19,7 +23,9 @@ def test_validation_feral_pickup_module_is_bounded_and_registered():
 
 def test_validation_feral_pickup_lambda_is_not_left_in_monolith():
     text = SOURCE.read_text()
-    assert "TryValidationFeralRoarPickup(state, bot, power, stage" in text
+    canonical = CANONICAL_CALLER.read_text()
+    assert "manager->TryValidationFeralRoarPickup(*state, bot, *power," in canonical
+    assert "TryValidationFeralRoarPickup(state, bot, power, stage" not in text
     assert "feral_move_to_healer_for_split_swarm_pickup" not in text
 
 

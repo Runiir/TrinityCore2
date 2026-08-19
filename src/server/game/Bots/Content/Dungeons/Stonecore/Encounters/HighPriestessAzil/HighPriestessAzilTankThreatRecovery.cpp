@@ -535,6 +535,8 @@ bool Context::Run(TankThreatRecoveryRequest const& request)
         action = pickupAction;
         return true;
     }
+
+    return false;
 }
 
 bool TryTankThreatRecovery(
