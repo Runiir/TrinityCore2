@@ -26,7 +26,7 @@ def test_tank_focus_assist_moves_the_requested_contiguous_boundary_once():
     assert module.count("bool ObjectiveContext::RunTankFocusAssist") == 1
     assert 'if (std::string(GetDungeonRole(bot)) == "tank")' in module
     assert 'if (Cohort().Config.ValidationRouteKind == "boss" && std::string(GetDungeonRole(bot)) != "tank")' in module
-    assert source.index("terminalArrivalContext.RunTankTrashRecovery") < source.index(
+    assert source.index("terminalArrivalContext.RunTrashIntervention") < source.index(
         "terminalArrivalContext.RunTankFocusAssist"
     ) < source.index("terminalArrivalContext.RunSharedFocusAction")
     for marker in (

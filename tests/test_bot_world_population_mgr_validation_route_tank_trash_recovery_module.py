@@ -4,6 +4,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 MODULE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteTankTrashRecovery.cpp"
+INTERVENTION_MODULE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteTrashIntervention.cpp"
 HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteTankTrashRecovery.h"
 OBJECTIVE_HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteTerminalArrival.h"
 MGR_HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
@@ -25,7 +26,9 @@ def test_tank_trash_recovery_module_is_bounded_registered_and_friended():
 def test_tank_trash_recovery_moves_the_requested_boundary_once():
     source = SOURCE.read_text()
     module = MODULE.read_text()
-    assert source.count("terminalArrivalContext.RunTankTrashRecovery") == 1
+    intervention = INTERVENTION_MODULE.read_text()
+    assert source.count("terminalArrivalContext.RunTrashIntervention") == 1
+    assert intervention.count("terminalArrivalContext.RunTankTrashRecovery") == 1
     assert source.count("Rerun157 localized 28 of 37 Protection healer-target samples") == 0
     assert module.count("Rerun157 localized 28 of 37 Protection healer-target samples") == 1
     assert module.count("bool ObjectiveContext::RunTankTrashRecovery") == 1
@@ -45,6 +48,7 @@ def test_tank_trash_recovery_passes_explicit_typed_dependencies():
     source = SOURCE.read_text()
     header = HEADER.read_text()
     module = MODULE.read_text()
+    intervention = INTERVENTION_MODULE.read_text()
     for marker in (
         "tankTrashRecoveryCallbacks.DefenseTarget",
         "tankTrashRecoveryCallbacks.DefenseAttackerCount",
@@ -57,7 +61,7 @@ def test_tank_trash_recovery_passes_explicit_typed_dependencies():
         "tankTrashRecoveryCallbacks.RouteUsableCombatTarget",
         "tankTrashRecoveryCallbacks.RememberValidationRouteFocus",
     ):
-        assert marker in source
+        assert marker in intervention
     for marker in (
         "std::function<Player*()> DefenseTarget",
         "std::function<std::size_t()> DefenseAttackerCount",
@@ -79,11 +83,12 @@ def test_trash_threat_result_fields_cross_the_compile_boundary():
     header = THREAT_HEADER.read_text()
     threat_module = THREAT_MODULE.read_text()
     source = SOURCE.read_text()
+    intervention = INTERVENTION_MODULE.read_text()
     assert "bool InsecureTrashSwarm = false;" in header
     assert "bool TankOwnsTrashMajority = false;" in header
     assert "trashThreatControl.InsecureTrashSwarm =" in threat_module
     assert "trashThreatControl.TankOwnsTrashMajority =" in threat_module
     assert "bool insecureTrashSwarm" not in threat_module
     assert "bool tankOwnsTrashMajority" not in threat_module
-    assert "trashThreatControl.InsecureTrashSwarm" in source
-    assert "trashThreatControl.TankOwnsTrashMajority" in source
+    assert "trashThreatControl.InsecureTrashSwarm" in intervention
+    assert "trashThreatControl.TankOwnsTrashMajority" in intervention

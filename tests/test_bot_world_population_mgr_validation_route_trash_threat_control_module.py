@@ -4,6 +4,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 MODULE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteTrashThreatControl.cpp"
+INTERVENTION_MODULE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteTrashIntervention.cpp"
 HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteTrashThreatControl.h"
 OBJECTIVE_HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteTerminalArrival.h"
 MGR_HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
@@ -23,6 +24,7 @@ def test_trash_threat_control_module_is_bounded_and_registered():
 def test_trash_threat_control_block_moves_once_at_terminal_boundary():
     source = SOURCE.read_text()
     module = MODULE.read_text()
+    intervention = INTERVENTION_MODULE.read_text()
     header = HEADER.read_text()
 
     assert source.count("struct TrashThreatControl") == 0
@@ -60,9 +62,10 @@ def test_trash_threat_control_block_moves_once_at_terminal_boundary():
 def test_trash_threat_control_keeps_typed_objective_friend_and_post_boundary_state():
     source = SOURCE.read_text()
     module = MODULE.read_text()
+    intervention = INTERVENTION_MODULE.read_text()
     assert "friend struct BotWorldPopulationMgrValidationRoute::ObjectiveContext;" in MGR_HEADER.read_text()
     assert "TrashThreatControl& trashThreatControl" in module
-    assert "trashThreatControl.EngagedCount" in source
+    assert "trashThreatControl.EngagedCount" in intervention
     assert "if (recordDefeatedValidationRoutePackMembers()" in source
     assert source.index("terminalArrivalContext.RunTrashThreatControl") < source.index(
         "if (recordDefeatedValidationRoutePackMembers()"

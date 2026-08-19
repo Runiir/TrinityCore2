@@ -4,6 +4,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 MODULE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteFeralTrashHandoff.cpp"
+INTERVENTION_MODULE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteTrashIntervention.cpp"
 TANK_MODULE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteTankTrashRecovery.cpp"
 HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteFeralTrashHandoff.h"
 OBJECTIVE_HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteTerminalArrival.h"
@@ -24,8 +25,10 @@ def test_feral_trash_handoff_module_is_bounded_and_registered():
 def test_feral_trash_handoff_has_exact_single_boundary_and_ownership():
     source = SOURCE.read_text()
     module = MODULE.read_text()
+    intervention = INTERVENTION_MODULE.read_text()
 
-    assert source.count("terminalArrivalContext.RunFeralTrashHandoff") == 1
+    assert source.count("terminalArrivalContext.RunTrashIntervention") == 1
+    assert intervention.count("terminalArrivalContext.RunFeralTrashHandoff") == 1
     assert "bool feralTrashHandoffExpired" not in source
     assert "Rerun157 localized 28 of 37 Protection healer-target samples" not in source
     assert "Rerun157 localized 28 of 37 Protection healer-target samples" not in module
@@ -57,13 +60,14 @@ def test_feral_trash_handoff_passes_typed_local_dependencies():
     source = SOURCE.read_text()
     header = HEADER.read_text()
     module = MODULE.read_text()
+    intervention = INTERVENTION_MODULE.read_text()
 
     for marker in (
         "feralTrashHandoffCallbacks.DefenseTarget",
         "feralTrashHandoffCallbacks.DefenseAttackerCount",
         "feralTrashHandoffCallbacks.TrashThreatControlResult",
     ):
-        assert marker in source
+        assert marker in intervention
     for marker in (
         "std::function<Player*()> DefenseTarget",
         "std::function<std::size_t()> DefenseAttackerCount",

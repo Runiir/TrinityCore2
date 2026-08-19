@@ -11,6 +11,7 @@ namespace BotWorldPopulationMgrValidationRoute
 {
 struct TrashThreatControl;
 struct TrashThreatControlCallbacks;
+struct TrashInterventionCallbacks;
 struct FeralTrashHandoffCallbacks;
 struct TankTrashRecoveryCallbacks;
 struct TankFocusAssistCallbacks;
@@ -68,6 +69,8 @@ struct ObjectiveContext
     bool Run();
     bool RunTrashThreatControl(TrashThreatControl& trashThreatControl,
         TrashThreatControlCallbacks const& callbacks);
+    bool RunTrashIntervention(TrashThreatControl& trashThreatControl,
+        TrashInterventionCallbacks const& callbacks);
     bool RunFeralTrashHandoff(FeralTrashHandoffCallbacks const& callbacks);
     bool RunTankTrashRecovery(TankTrashRecoveryCallbacks const& callbacks);
     bool RunTankFocusAssist(TankFocusAssistCallbacks const& callbacks);
