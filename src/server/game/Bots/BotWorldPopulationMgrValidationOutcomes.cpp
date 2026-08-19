@@ -2,6 +2,7 @@
 
 #include "Creature.h"
 #include "GameTime.h"
+#include "Map.h"
 #include "Player.h"
 #include "Unit.h"
 
@@ -10,6 +11,22 @@
 #include <string>
 #include <sstream>
 
+
+namespace
+{
+uint64 NowMs()
+{
+    return uint64(std::chrono::duration_cast<std::chrono::milliseconds>(
+        GameTime::GetGameTimeSystemPoint().time_since_epoch()).count());
+}
+
+float UnitHealthPct(Unit const* unit)
+{
+    if (!unit || !unit->GetMaxHealth())
+        return 0.0f;
+    return float(unit->GetHealth()) / float(unit->GetMaxHealth());
+}
+}
 
 bool BotWorldPopulationMgr::CompleteDiscoveredPackIfReady(
     bool discoveryLeg, Player* bot, WorldBotState& state,
@@ -76,22 +93,6 @@ bool BotWorldPopulationMgr::CompleteDiscoveredPackIfReady(
     return true;
 }
 
-
-namespace
-{
-uint64 NowMs()
-{
-    return uint64(std::chrono::duration_cast<std::chrono::milliseconds>(
-        GameTime::GetGameTimeSystemPoint().time_since_epoch()).count());
-}
-
-float UnitHealthPct(Unit const* unit)
-{
-    if (!unit || !unit->GetMaxHealth())
-        return 0.0f;
-    return float(unit->GetHealth()) / float(unit->GetMaxHealth());
-}
-}
 
 void BotWorldPopulationMgr::MarkTrashClusterCleared(
     WorldBotState& state, Player* bot,
