@@ -52,6 +52,7 @@ def test_tank_trash_recovery_passes_explicit_typed_dependencies():
     for marker in (
         "tankTrashRecoveryCallbacks.DefenseTarget",
         "tankTrashRecoveryCallbacks.DefenseAttackerCount",
+        "tankTrashRecoveryCallbacks.FeralCurrentHealerThreat",
         "tankTrashRecoveryCallbacks.TrashThreatControlResult",
         "tankTrashRecoveryCallbacks.IsProtectionProfile",
         "tankTrashRecoveryCallbacks.RouteEngageRange",
@@ -65,6 +66,7 @@ def test_tank_trash_recovery_passes_explicit_typed_dependencies():
     for marker in (
         "std::function<Player*()> DefenseTarget",
         "std::function<std::size_t()> DefenseAttackerCount",
+        "bool FeralCurrentHealerThreat = false;",
         "std::function<TrashThreatControl&()> TrashThreatControlResult",
         "std::function<bool()> IsProtectionProfile",
         "std::function<float(Player*, Unit const*, uint32)> RouteEngageRange",
@@ -77,6 +79,8 @@ def test_tank_trash_recovery_passes_explicit_typed_dependencies():
     assert "TrashThreatControl& trashThreatControl" in module
     assert "callbacks.TrashThreatControlResult()" in module
     assert "callbacks.DefenseTarget()" in module
+    assert "bool feralCurrentHealerThreat = callbacks.FeralCurrentHealerThreat;" in module
+    assert "bool feralCurrentHealerThreat = defenseTarget" in intervention
 
 
 def test_trash_threat_result_fields_cross_the_compile_boundary():

@@ -30,6 +30,7 @@ bool ObjectiveContext::RunTankTrashRecovery(
     Unit*& target = Target;
     Player* defenseTarget = callbacks.DefenseTarget();
     std::size_t defenseAttackerCount = callbacks.DefenseAttackerCount();
+    bool feralCurrentHealerThreat = callbacks.FeralCurrentHealerThreat;
     TrashThreatControl& trashThreatControl =
         callbacks.TrashThreatControlResult();
     auto const& isProtectionProfile = callbacks.IsProtectionProfile;

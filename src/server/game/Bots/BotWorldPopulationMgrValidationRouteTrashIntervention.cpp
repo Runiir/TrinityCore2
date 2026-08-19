@@ -580,6 +580,8 @@ bool ObjectiveContext::RunTrashIntervention(
             [&defenseTarget]() { return defenseTarget; };
         tankTrashRecoveryCallbacks.DefenseAttackerCount =
             [&defenseAttackerCount]() { return defenseAttackerCount; };
+        tankTrashRecoveryCallbacks.FeralCurrentHealerThreat =
+            feralCurrentHealerThreat;
         tankTrashRecoveryCallbacks.TrashThreatControlResult =
             [&trashThreatControl]()
                 -> BotWorldPopulationMgrValidationRoute::TrashThreatControl&

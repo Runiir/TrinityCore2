@@ -19,6 +19,7 @@ struct TankTrashRecoveryCallbacks
 {
     std::function<Player*()> DefenseTarget;
     std::function<std::size_t()> DefenseAttackerCount;
+    bool FeralCurrentHealerThreat = false;
     std::function<TrashThreatControl&()> TrashThreatControlResult;
     std::function<bool()> IsProtectionProfile;
     std::function<float(Player*, Unit const*, uint32)> RouteEngageRange;
