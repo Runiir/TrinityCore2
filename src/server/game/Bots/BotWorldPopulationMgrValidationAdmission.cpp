@@ -8,6 +8,7 @@
 #include "GameTime.h"
 #include "Group.h"
 #include "Log.h"
+#include "Map.h"
 #include "MapManager.h"
 #include "Player.h"
 #include "Random.h"
