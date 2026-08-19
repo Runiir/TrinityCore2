@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import subprocess
 import urllib.request
 from pathlib import Path
 from typing import Any, Mapping
@@ -55,6 +56,134 @@ def _source_asset(reference: Mapping[str, Any], url: str) -> Mapping[str, Any]:
             f"{reference.get('spec_target_id')}: gear source asset is not unique"
         )
     return matches[0]
+
+
+def rebind_local_preset(
+    *, target_id: str, source_path: str, checkout: Path
+) -> None:
+    """Rebind one exact gear profile from a clean pinned local checkout."""
+    acceptance = _load(ACCEPTANCE_PATH)
+    if target_id not in acceptance.get("dps_targets", []):
+        raise ValueError(f"{target_id}: not in the selected DPS cohort")
+    targets_document = _load(TARGETS_PATH)
+    references_document = _load(REFERENCES_PATH)
+    profiles_document = _load(PROFILES_PATH)
+    targets = {
+        str(row["spec_target_id"]): row for row in targets_document["targets"]
+    }
+    references = {
+        str(row["spec_target_id"]): row
+        for row in references_document["references"]
+    }
+    target = targets[target_id]
+    reference = references[target_id]
+    revision = str(reference.get("provider_revision") or "")
+    head = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=checkout,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    porcelain = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=checkout,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    if head != revision or porcelain:
+        raise ValueError(f"{target_id}: provider checkout identity mismatch")
+    checkout_root = checkout.resolve()
+    source_file = (checkout_root / source_path).resolve()
+    try:
+        source_file.relative_to(checkout_root)
+    except ValueError as exc:
+        raise ValueError(f"{target_id}: source path escapes checkout") from exc
+    if not source_file.is_file() or source_file.is_symlink():
+        raise ValueError(f"{target_id}: local preset is not a regular file")
+    source_bytes = source_file.read_bytes()
+    source_document = json.loads(source_bytes)
+    source_items = source_document.get("items")
+    if not isinstance(source_items, list):
+        raise ValueError(f"{target_id}: local preset has no items")
+
+    gear = reference.get("gear") or {}
+    old_path = str((gear.get("simulator_preset") or {}).get("path") or "")
+    old_url = (
+        f"https://raw.githubusercontent.com/wowsims/cata/{revision}/{old_path}"
+    )
+    new_url = (
+        f"https://raw.githubusercontent.com/wowsims/cata/{revision}/{source_path}"
+    )
+    old_asset = _source_asset(reference, old_url)
+    source_sha256 = hashlib.sha256(source_bytes).hexdigest()
+    new_asset = {
+        "url": new_url,
+        "sha256": source_sha256,
+        "byte_count": len(source_bytes),
+    }
+    reference["source_assets"] = [
+        new_asset if row is old_asset else row
+        for row in reference.get("source_assets") or []
+    ]
+
+    profile_id = str(target["gear_profile_id"])
+    snapshot_path = SOURCES_DIR / f"{profile_id}.gear.json"
+    snapshot_path.write_bytes(source_bytes)
+    item_rows = {int(row["ID"]): row for row in load_db2_item_rows(DBC_DIR)}
+    item_rows.update(validated_hotfix_item_rows())
+    inventory_types: dict[str, int] = {}
+    items: list[dict[str, Any]] = []
+    for index, raw in enumerate(source_items):
+        if not raw:
+            items.append({})
+            continue
+        item = dict(raw)
+        items.append(item)
+        item_id = int(item.get("id") or 0)
+        item_row = item_rows.get(item_id)
+        if item_row is None:
+            raise ValueError(f"{target_id}: item {item_id} has no local identity")
+        inventory_types[str(SLOT_MAP[index])] = int(
+            item_row.get("InventoryType") or 0
+        )
+    profile: dict[str, Any] = {
+        "source": {
+            "repository": str(reference.get("repository") or ""),
+            "commit": revision,
+            "path": source_path,
+            "sha256": source_sha256,
+            "snapshot": str(snapshot_path.relative_to(REPO_ROOT)),
+        },
+        "transformed_manifest_sha256": "",
+        "permanent_enchant_applicability_authority": (
+            ENCHANT_APPLICABILITY_AUTHORITY
+        ),
+        "inventory_types": inventory_types,
+        "items": items,
+    }
+    profile["transformed_manifest_sha256"] = canonical_sha256(
+        canonical_wowsims_manifest(profile, SLOT_MAP)
+    )
+    profiles_document["profiles"][profile_id] = profile
+    gear.update(
+        {
+            "simulator_preset": {"path": source_path, "phase": "phase_4"},
+            "source_sha256": source_sha256,
+            "source_snapshot": str(snapshot_path.relative_to(REPO_ROOT)),
+            "transform_schema": TRANSFORM_SCHEMA,
+            "transformed_manifest_sha256": profile[
+                "transformed_manifest_sha256"
+            ],
+            "permanent_enchant_applicability_authority": (
+                ENCHANT_APPLICABILITY_AUTHORITY
+            ),
+        }
+    )
+    _write(PROFILES_PATH, profiles_document)
+    _write(REFERENCES_PATH, references_document)
+    check()
 
 
 def refresh() -> None:
@@ -218,6 +347,14 @@ def check() -> None:
         profile = profiles.get(profile_id)
         if not isinstance(profile, Mapping):
             raise ValueError(f"{target_id}: exact WoWSims gear profile missing")
+        preset_path = str(
+            ((reference.get("gear") or {}).get("simulator_preset") or {}).get(
+                "path"
+            )
+            or ""
+        ).lower()
+        if not any(token in preset_path for token in ("p4", "t13")):
+            raise ValueError(f"{target_id}: selected DPS gear is not phase 4")
         source = validate_profile_source_binding(
             profile=profile, reference=reference, slot_map=slot_map
         )
@@ -250,10 +387,27 @@ def check() -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--refresh", action="store_true")
+    parser.add_argument("--rebind-target")
+    parser.add_argument("--source-path")
+    parser.add_argument("--checkout", type=Path)
     args = parser.parse_args()
-    if args.refresh:
+    if args.rebind_target:
+        if args.refresh or not args.source_path or args.checkout is None:
+            parser.error(
+                "--rebind-target requires --source-path and --checkout and is exclusive"
+            )
+        rebind_local_preset(
+            target_id=args.rebind_target,
+            source_path=args.source_path,
+            checkout=args.checkout,
+        )
+    elif args.refresh:
+        if args.source_path or args.checkout is not None:
+            parser.error("--refresh cannot be combined with local rebind options")
         refresh()
     else:
+        if args.source_path or args.checkout is not None:
+            parser.error("local rebind options require --rebind-target")
         check()
     return 0
 

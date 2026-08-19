@@ -177,7 +177,7 @@ GEAR_PATH = {
     "fury_warrior": "ui/warrior/fury/gear_sets/p4_fury_tg.gear.json",
     "retribution_paladin": "ui/paladin/retribution/gear_sets/p4_bis.gear.json",
     "beast_mastery_hunter": "ui/hunter/beast_mastery/gear_sets/p3_bm.gear.json",
-    "marksmanship_hunter": "ui/hunter/marksmanship/gear_sets/preraid_mm.gear.json",
+    "marksmanship_hunter": "ui/hunter/marksmanship/gear_sets/p4_mm.gear.json",
     "survival_hunter": "ui/hunter/survival/gear_sets/p4_sv.gear.json",
     "assassination_rogue": "ui/rogue/assassination/gear_sets/p4_assassination.gear.json",
     "combat_rogue": "ui/rogue/combat/gear_sets/p4_combat.gear.json",

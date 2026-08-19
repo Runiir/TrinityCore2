@@ -1521,12 +1521,12 @@
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
         "runtime_manifest": "experiments/configs/wowsims_cata_p4_gear_profiles.json",
         "simulator_preset": {
-          "path": "ui/hunter/marksmanship/gear_sets/preraid_mm.gear.json",
-          "phase": "best_executable_legacy_preset"
+          "path": "ui/hunter/marksmanship/gear_sets/p4_mm.gear.json",
+          "phase": "phase_4"
         },
-        "source_sha256": "f9f4d473b591c6d37493b089b636eb2669977cc45caec7ffc766079ba664aadd",
+        "source_sha256": "67a4682a2c8213028ee05979205f972daca4082fd71f19313712151e5a680691",
         "transform_schema": "wowsims_cata_equipment_manifest_v1",
-        "transformed_manifest_sha256": "4fa6b70730a55d4dd2ee8220a5277e5c2db884febbd8e127db77db48d383d7d6",
+        "transformed_manifest_sha256": "ee445820a89cd272bbe71674e1b2f535277400d90fd220ac8734f780a20b16f1",
         "permanent_enchant_applicability_authority": "pinned_wowsims_preset_exact",
         "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/marksmanship_hunter.gear.json",
         "numeric_fixture_test_source_sha256": "e07dd1ec1662cadad96084a8720e935a2bc825259ac696a5d0c319b1767b432a",
@@ -1566,9 +1566,9 @@
           "byte_count": 134671
         },
         {
-          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/hunter/marksmanship/gear_sets/preraid_mm.gear.json",
-          "sha256": "f9f4d473b591c6d37493b089b636eb2669977cc45caec7ffc766079ba664aadd",
-          "byte_count": 911
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/hunter/marksmanship/gear_sets/p4_mm.gear.json",
+          "sha256": "67a4682a2c8213028ee05979205f972daca4082fd71f19313712151e5a680691",
+          "byte_count": 1103
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/hunter/marksmanship/apls/mm.apl.json",

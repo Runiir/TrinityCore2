@@ -38096,11 +38096,11 @@
           },
           "gear": {
             "gear_profile_id": "marksmanship_hunter",
-            "source_sha256": "f9f4d473b591c6d37493b089b636eb2669977cc45caec7ffc766079ba664aadd",
-            "source_path": "ui/hunter/marksmanship/gear_sets/preraid_mm.gear.json",
+            "source_sha256": "67a4682a2c8213028ee05979205f972daca4082fd71f19313712151e5a680691",
+            "source_path": "ui/hunter/marksmanship/gear_sets/p4_mm.gear.json",
             "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/marksmanship_hunter.gear.json",
             "transform_schema": "wowsims_cata_equipment_manifest_v1",
-            "transformed_manifest_sha256": "4fa6b70730a55d4dd2ee8220a5277e5c2db884febbd8e127db77db48d383d7d6",
+            "transformed_manifest_sha256": "ee445820a89cd272bbe71674e1b2f535277400d90fd220ac8734f780a20b16f1",
             "applicability_authority": "pinned_wowsims_preset_exact",
             "slot_map": [
               0,
@@ -38123,112 +38123,121 @@
             ],
             "wowsims_items": [
               {
-                "id": 59456,
+                "id": 78698,
                 "enchant": 4209,
                 "gems": [
                   68778,
-                  59478,
-                  59493
-                ]
+                  71840
+                ],
+                "reforging": 165
               },
               {
-                "id": 52350,
-                "gems": [
-                  52212
-                ]
+                "id": 71610,
+                "reforging": 152
               },
               {
-                "id": 64712,
+                "id": 78737,
                 "enchant": 4204,
                 "gems": [
-                  52212
+                  71879,
+                  71879
                 ],
-                "reforging": 152
+                "reforging": 154
               },
               {
-                "id": 56315,
-                "enchant": 1099
-              },
-              {
-                "id": 56564,
-                "enchant": 4063,
+                "id": 71415,
+                "enchant": 4100,
                 "gems": [
-                  52258
-                ],
-                "reforging": 152
-              },
-              {
-                "id": 63479,
-                "enchant": 4071,
-                "gems": [
-                  0
-                ]
-              },
-              {
-                "id": 64709,
-                "enchant": 3222,
-                "gems": [
-                  52212,
-                  0
+                  71879,
+                  71879
                 ],
                 "reforging": 137
               },
               {
-                "id": 56539,
+                "id": 78661,
+                "enchant": 4102,
                 "gems": [
-                  52212,
-                  52212
+                  71879,
+                  71879,
+                  71840
+                ],
+                "reforging": 152
+              },
+              {
+                "id": 78430,
+                "enchant": 4258,
+                "gems": [
+                  71879,
+                  71879
                 ],
                 "reforging": 165
               },
               {
-                "id": 56386,
+                "id": 78362,
+                "enchant": 4107,
+                "gems": [
+                  71879,
+                  71879,
+                  71879
+                ],
+                "reforging": 151
+              },
+              {
+                "id": 78447,
+                "gems": [
+                  71879,
+                  71879,
+                  71879
+                ],
+                "reforging": 151
+              },
+              {
+                "id": 78709,
                 "enchant": 4126,
                 "gems": [
-                  52258,
-                  52258
-                ]
-              },
-              {
-                "id": 62385,
-                "enchant": 4076,
-                "gems": [
-                  52212
+                  71879,
+                  71879,
+                  71879
                 ],
-                "reforging": 166
-              },
-              {
-                "id": 52348,
-                "gems": [
-                  52212
-                ],
-                "reforging": 167
-              },
-              {
-                "id": 62362,
-                "reforging": 166
-              },
-              {
-                "id": 68709,
-                "reforging": 166
-              },
-              {
-                "id": 56328,
-                "reforging": 137
-              },
-              {
-                "id": 55066,
-                "enchant": 4227,
                 "reforging": 165
+              },
+              {
+                "id": 78415,
+                "enchant": 4105,
+                "gems": [
+                  71879,
+                  71879
+                ],
+                "reforging": 154
+              },
+              {
+                "id": 78413,
+                "gems": [
+                  71879
+                ],
+                "reforging": 151
+              },
+              {
+                "id": 78489,
+                "gems": [
+                  71879
+                ],
+                "reforging": 159
+              },
+              {
+                "id": 77994
+              },
+              {
+                "id": 77999
+              },
+              {
+                "id": 78473,
+                "enchant": 4227
               },
               {},
               {
-                "id": 59367,
-                "enchant": 4175,
-                "gems": [
-                  52212
-                ],
-                "reforging": 151
+                "id": 78471,
+                "enchant": 4267
               }
             ]
           },
@@ -39469,13 +39478,13 @@
           }
         }
       },
-      "request_sha256": "e255a65b0434924d3987a0a49f31a8e96e2bef59d624f46e1597f1bf6313beba",
+      "request_sha256": "fac336668ad1d1d0b6fa2d3eeaa49f58d481e14cf2ed831ac3d9c2bcdfdb5ff3",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "e255a65b0434924d3987a0a49f31a8e96e2bef59d624f46e1597f1bf6313beba",
+          "request_contract_sha256": "fac336668ad1d1d0b6fa2d3eeaa49f58d481e14cf2ed831ac3d9c2bcdfdb5ff3",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -39510,15 +39519,15 @@
         "reference_result_key": null,
         "reference_dps": null,
         "source_contract_sha256": "914000526d5bf9933b746d6a4e0dbb7491fd6129f162a62395fa32fb1b54575a",
-        "request_sha256": "e255a65b0434924d3987a0a49f31a8e96e2bef59d624f46e1597f1bf6313beba",
+        "request_sha256": "fac336668ad1d1d0b6fa2d3eeaa49f58d481e14cf2ed831ac3d9c2bcdfdb5ff3",
         "fixture_contract_sha256": "07aca206d493dca6b829cb51a81b1c28103d2ec0ad4ff674e9338266667fba93",
         "source_setup": {
           "race": 3,
           "gear": {
             "gear_profile_id": "marksmanship_hunter",
-            "source_sha256": "f9f4d473b591c6d37493b089b636eb2669977cc45caec7ffc766079ba664aadd",
+            "source_sha256": "67a4682a2c8213028ee05979205f972daca4082fd71f19313712151e5a680691",
             "transform_schema": "wowsims_cata_equipment_manifest_v1",
-            "transformed_manifest_sha256": "4fa6b70730a55d4dd2ee8220a5277e5c2db884febbd8e127db77db48d383d7d6",
+            "transformed_manifest_sha256": "ee445820a89cd272bbe71674e1b2f535277400d90fd220ac8734f780a20b16f1",
             "applicability_authority": "pinned_wowsims_preset_exact"
           },
           "talents": {
@@ -40600,17 +40609,17 @@
             }
           }
         },
-        "source_setup_sha256": "6d23fd86213d07a7ddc752c60f9a2c1b7dfb73206bf5daba9472eeb8860411a2",
-        "request_condition_projection_sha256": "68fa0feb0f57fd0a19837f3016d79705ecb2884c02a55453819e694b798456b1",
+        "source_setup_sha256": "36d9fcddff7be57232488c55ed744e81a40f043182ad488b12128eb6f4775462",
+        "request_condition_projection_sha256": "d92b59debd8cfab0ed785cbb78e0607042a1ba07277d684f1926a78673a5d9f5",
         "requirements": [
           {
             "id": "gear_manifest",
             "condition_class": "gear_source_manifest",
             "static_verifiability": "catalog_exact",
             "planned_path": "reference.gear.transformed_manifest_sha256",
-            "planned_equals": "4fa6b70730a55d4dd2ee8220a5277e5c2db884febbd8e127db77db48d383d7d6",
+            "planned_equals": "ee445820a89cd272bbe71674e1b2f535277400d90fd220ac8734f780a20b16f1",
             "path": "runtime.reference_gear_manifest_sha256",
-            "equals": "4fa6b70730a55d4dd2ee8220a5277e5c2db884febbd8e127db77db48d383d7d6"
+            "equals": "ee445820a89cd272bbe71674e1b2f535277400d90fd220ac8734f780a20b16f1"
           },
           {
             "id": "item_swap",
