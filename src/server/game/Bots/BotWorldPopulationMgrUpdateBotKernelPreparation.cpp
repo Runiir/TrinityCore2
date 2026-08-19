@@ -9,6 +9,7 @@
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 
+#include "GossipDef.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
 
