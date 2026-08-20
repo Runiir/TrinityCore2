@@ -150,6 +150,12 @@ def test_prepot_runs_after_the_only_pre_score_cooldown_reset() -> None:
         ensure.index("submit(metrics.PrepotConsumable)")
     )
     assert "&& metrics.PreScoreCooldownResetComplete)\n            continue;" in reset
+    assert "bool selfProvidedCooldownResetApplied = false;" in reset
+    assert (
+        reset.index("metrics.PreScoreCooldownResetComplete = true;")
+        < reset.index("if (selfProvidedCooldownResetApplied)")
+        < reset.index("calibration_pre_score_state_contract_mismatch")
+    )
 
 
 def test_runner_requires_an_explicit_exclusive_self_provided_mode() -> None:

@@ -377,6 +377,7 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
                     return;
             }
 
+    bool selfProvidedCooldownResetApplied = false;
     for (WorldBotState& state : Party().CalibrationBots)
     {
         Player* bot = GetLoadedBot(state);
@@ -599,8 +600,16 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
             if (summon && summon->IsInWorld())
                 summon->UnSummon();
         if (IsSelfProvidedCalibrationBaseline())
+        {
             metrics.PreScoreCooldownResetComplete = true;
+            selfProvidedCooldownResetApplied = true;
+        }
     }
+
+    // The next warmup tick owns the pre-pot. Do not evaluate the final
+    // pre-score contract in the same tick that makes it eligible.
+    if (selfProvidedCooldownResetApplied)
+        return;
 
     if (Cohort().CalibrationMode == "single_target_300")
     {
