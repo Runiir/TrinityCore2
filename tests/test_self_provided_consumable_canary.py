@@ -154,3 +154,19 @@ def test_runner_requires_an_explicit_exclusive_self_provided_mode() -> None:
         '"BotWorld.CombatCalibration.SelfProvidedBaseline"'
         in runner
     )
+
+
+def test_evidence_identity_builder_can_bind_the_self_provided_server() -> None:
+    builder = _source(
+        "tools/bot_ml/build_phase8_evidence_identity_manifest.py"
+    )
+
+    assert '"--calibration-self-provided-baseline"' in builder
+    assert (
+        "calibration_reference_conditions="
+        "not calibration_self_provided_baseline"
+    ) in builder
+    assert (
+        "calibration_self_provided_baseline="
+        "calibration_self_provided_baseline"
+    ) in builder

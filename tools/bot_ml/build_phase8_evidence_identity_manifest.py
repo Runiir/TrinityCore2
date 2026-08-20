@@ -231,6 +231,7 @@ def build_manifest(
     soap_user: str,
     soap_password: str,
     identity_config_dir: Path,
+    calibration_self_provided_baseline: bool = False,
 ) -> dict[str, Any]:
     initial_source_identity = _clean_source_identity(REPO_ROOT, worldserver)
     effective_config = write_validation_config(
@@ -239,7 +240,8 @@ def build_manifest(
         pool_tag="all_spec_candidate_pool",
         autostart=False,
         calibration_only=True,
-        calibration_reference_conditions=True,
+        calibration_reference_conditions=not calibration_self_provided_baseline,
+        calibration_self_provided_baseline=calibration_self_provided_baseline,
         console_enabled=False,
     )
     database = _database_identity(effective_config)
@@ -374,6 +376,14 @@ def main() -> int:
     parser.add_argument("--soap-url", default="http://127.0.0.1:7878/")
     parser.add_argument("--soap-user", default=os.environ.get("TRINITY_SOAP_USER"))
     parser.add_argument("--soap-password", default=os.environ.get("TRINITY_SOAP_PASSWORD"))
+    parser.add_argument(
+        "--calibration-self-provided-baseline",
+        action="store_true",
+        help=(
+            "Bind the identity to the self-provided flask, food, pre-pot, and "
+            "combat-potion calibration config instead of full reference conditions."
+        ),
+    )
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     args = parser.parse_args()
     if not args.soap_user or not args.soap_password:
@@ -387,6 +397,9 @@ def main() -> int:
         soap_user=args.soap_user,
         soap_password=args.soap_password,
         identity_config_dir=output_path.parent / "identity_runtime_config",
+        calibration_self_provided_baseline=(
+            args.calibration_self_provided_baseline
+        ),
     )
     write_json(output_path, manifest)
     print(json.dumps({
