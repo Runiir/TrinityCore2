@@ -226,7 +226,9 @@ void BotWorldPopulationMgr::NotifyBotItemSpellFinished(Player* caster,
                 &metrics.PrepotConsumable, &metrics.CombatPotionConsumable,
             }};
             for (CalibrationMetrics::NativeConsumableReceipt* receipt : receipts)
-                if (receipt && receipt->SubmittedItemGuid == castItemGuid
+                if (receipt
+                    && receipt->SubmittedAtMs > receipt->FinishedAtMs
+                    && receipt->SubmittedItemGuid == castItemGuid
                     && receipt->SpellId == spellId
                     && receipt->ItemId == castItemEntry)
                 {
