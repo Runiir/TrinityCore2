@@ -2,221 +2,221 @@
   "schema": "wowsims_generated_reference_promotion_index_v1",
   "publication_domain": {
     "repository_url": "git@github.com:Runiir/TrinityCore2.git",
-    "repository_revision": "24960ce7f82aa56f21b9579998b9a7cf7cc06374",
+    "repository_revision": "66865644d6aa6ffc07f7262bd0a505b1cb2c396f",
     "dvc_pointer_path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1.dvc",
     "bundle_root": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1",
-    "pending_request_catalog_sha256": "a243a9c40eaabf764931bc40806c4905eec8e48f9e6f1ac5d2835f9c9c35416d",
+    "pending_request_catalog_sha256": "6744d31d0a237699344999da995f373ff05af865e64ab435eb79999a6d788d41",
     "control_plane_policy": "commit_a_pointer_then_commit_b_reconstruction_receipt_and_promotion"
   },
   "entries": [
     {
       "target_spec": "affliction_warlock",
       "generation_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/c4a90934c257a17adf527f0f979b88628f3094ccfc135fe161f8a5a7069e956e.json",
-        "sha256": "c4a90934c257a17adf527f0f979b88628f3094ccfc135fe161f8a5a7069e956e",
-        "byte_count": 16940
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/aa9509e1cf76354858677375b4c944281ba0c4718466686f0d213b146db3703b.json",
+        "sha256": "aa9509e1cf76354858677375b4c944281ba0c4718466686f0d213b146db3703b",
+        "byte_count": 16225
       },
       "dvc_reconstruction_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca.json",
-        "sha256": "82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca",
-        "byte_count": 114050
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a.json",
+        "sha256": "aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a",
+        "byte_count": 113302
       }
     },
     {
       "target_spec": "arms_warrior",
       "generation_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/f77c6bca8b0fbb7cbea8f31409342fbc8d2c3507e384a87db25eeb9d65a06868.json",
-        "sha256": "f77c6bca8b0fbb7cbea8f31409342fbc8d2c3507e384a87db25eeb9d65a06868",
-        "byte_count": 11834
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/6e124ddc9c07417b2847c8dfa8d7d80bf601fd05ed9db700748cfee7b1b774fa.json",
+        "sha256": "6e124ddc9c07417b2847c8dfa8d7d80bf601fd05ed9db700748cfee7b1b774fa",
+        "byte_count": 11347
       },
       "dvc_reconstruction_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca.json",
-        "sha256": "82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca",
-        "byte_count": 114050
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a.json",
+        "sha256": "aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a",
+        "byte_count": 113302
       }
     },
     {
       "target_spec": "assassination_rogue",
       "generation_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/10a810be69128cb73dcd818269482d4713f52348e086e89c65e4dba02e63186d.json",
-        "sha256": "10a810be69128cb73dcd818269482d4713f52348e086e89c65e4dba02e63186d",
-        "byte_count": 11579
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/987ef4bf2e78a06d9a58ed98b7aac192a1f206ff1aff2193da677a52866f030f.json",
+        "sha256": "987ef4bf2e78a06d9a58ed98b7aac192a1f206ff1aff2193da677a52866f030f",
+        "byte_count": 11108
       },
       "dvc_reconstruction_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca.json",
-        "sha256": "82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca",
-        "byte_count": 114050
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a.json",
+        "sha256": "aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a",
+        "byte_count": 113302
       }
     },
     {
       "target_spec": "balance_druid",
       "generation_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/bd8253b524c6c4383b9888d36e2ae49d50140fc7906d339f93c5f5298c9e8ea3.json",
-        "sha256": "bd8253b524c6c4383b9888d36e2ae49d50140fc7906d339f93c5f5298c9e8ea3",
-        "byte_count": 11556
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/ee697f0776e05a61311ebb8b4d9d6e3d6f317b2bbe39486933cc6c57aec495d8.json",
+        "sha256": "ee697f0776e05a61311ebb8b4d9d6e3d6f317b2bbe39486933cc6c57aec495d8",
+        "byte_count": 11119
       },
       "dvc_reconstruction_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca.json",
-        "sha256": "82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca",
-        "byte_count": 114050
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a.json",
+        "sha256": "aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a",
+        "byte_count": 113302
       }
     },
     {
       "target_spec": "combat_rogue",
       "generation_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/5c74627d589a026aef61d357f2eb7a9bab8f0624aad5fc0261214f83eb01c5e3.json",
-        "sha256": "5c74627d589a026aef61d357f2eb7a9bab8f0624aad5fc0261214f83eb01c5e3",
-        "byte_count": 11603
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/3e1176505b6815e4be373556bef446608362ca8adff16755bda711e9ec4126ee.json",
+        "sha256": "3e1176505b6815e4be373556bef446608362ca8adff16755bda711e9ec4126ee",
+        "byte_count": 11120
       },
       "dvc_reconstruction_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca.json",
-        "sha256": "82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca",
-        "byte_count": 114050
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a.json",
+        "sha256": "aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a",
+        "byte_count": 113302
       }
     },
     {
       "target_spec": "demonology_warlock",
       "generation_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/accac82d9d65890a2eb512b60ab17a6b72dd043bda571fa3eb03d6cce71b5104.json",
-        "sha256": "accac82d9d65890a2eb512b60ab17a6b72dd043bda571fa3eb03d6cce71b5104",
-        "byte_count": 17058
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/d56c42306b7e48ca8f51545b038c58a48b576c88425ab59a5766c917ae2c642f.json",
+        "sha256": "d56c42306b7e48ca8f51545b038c58a48b576c88425ab59a5766c917ae2c642f",
+        "byte_count": 16284
       },
       "dvc_reconstruction_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca.json",
-        "sha256": "82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca",
-        "byte_count": 114050
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a.json",
+        "sha256": "aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a",
+        "byte_count": 113302
       }
     },
     {
       "target_spec": "elemental_shaman",
       "generation_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/b77fdba9cd93539b0f0e2fe7e634eebc4b12e5f826761b5eec8d35c75079e1eb.json",
-        "sha256": "b77fdba9cd93539b0f0e2fe7e634eebc4b12e5f826761b5eec8d35c75079e1eb",
-        "byte_count": 11475
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/833d38792bdb11ee8741e1b92e20a4fbfbea48b9bb09d5b09c1bb3220e36e2ea.json",
+        "sha256": "833d38792bdb11ee8741e1b92e20a4fbfbea48b9bb09d5b09c1bb3220e36e2ea",
+        "byte_count": 10934
       },
       "dvc_reconstruction_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca.json",
-        "sha256": "82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca",
-        "byte_count": 114050
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a.json",
+        "sha256": "aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a",
+        "byte_count": 113302
       }
     },
     {
       "target_spec": "feral_druid_dps",
       "generation_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/3d22367bd2c4ca224fef1f1074cc1f6c8f04ab5a6eae9e10bcd332071509cc36.json",
-        "sha256": "3d22367bd2c4ca224fef1f1074cc1f6c8f04ab5a6eae9e10bcd332071509cc36",
-        "byte_count": 11512
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/613ac7364d3a8435c304273294a929742dad54d24a57990af23982528cb11f95.json",
+        "sha256": "613ac7364d3a8435c304273294a929742dad54d24a57990af23982528cb11f95",
+        "byte_count": 11091
       },
       "dvc_reconstruction_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca.json",
-        "sha256": "82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca",
-        "byte_count": 114050
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a.json",
+        "sha256": "aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a",
+        "byte_count": 113302
       }
     },
     {
       "target_spec": "fire_mage",
       "generation_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/f1e8de2e2b445a32fd343003912f511c87866add3d7d6d73db8449e53d3ab856.json",
-        "sha256": "f1e8de2e2b445a32fd343003912f511c87866add3d7d6d73db8449e53d3ab856",
-        "byte_count": 11597
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/2bed4c89ef5f526884524a3f2c5606ed0bfcde5ee27e446e0e9ed3b2e831e1b0.json",
+        "sha256": "2bed4c89ef5f526884524a3f2c5606ed0bfcde5ee27e446e0e9ed3b2e831e1b0",
+        "byte_count": 11100
       },
       "dvc_reconstruction_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca.json",
-        "sha256": "82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca",
-        "byte_count": 114050
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a.json",
+        "sha256": "aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a",
+        "byte_count": 113302
       }
     },
     {
       "target_spec": "frost_death_knight",
       "generation_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/72d4d6f59ce9c835eb39b2e3f96c2118ed05650a2f727452bb969c20e33f351b.json",
-        "sha256": "72d4d6f59ce9c835eb39b2e3f96c2118ed05650a2f727452bb969c20e33f351b",
-        "byte_count": 11779
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/71ba4386dc4bb2e95e5a5d36e2daf1225598ccd8c27526dc4fb5692ff6637192.json",
+        "sha256": "71ba4386dc4bb2e95e5a5d36e2daf1225598ccd8c27526dc4fb5692ff6637192",
+        "byte_count": 11258
       },
       "dvc_reconstruction_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca.json",
-        "sha256": "82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca",
-        "byte_count": 114050
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a.json",
+        "sha256": "aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a",
+        "byte_count": 113302
       }
     },
     {
       "target_spec": "fury_warrior",
       "generation_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/99f339807781c3cd7d05c81f547bd7cbc3d6e4a44d8625e1c5fbcd1a17b04560.json",
-        "sha256": "99f339807781c3cd7d05c81f547bd7cbc3d6e4a44d8625e1c5fbcd1a17b04560",
-        "byte_count": 11799
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/4fbd85f2c1dd8ea4cbd66873175a1addca193771e4c73b4e359c004787dc1039.json",
+        "sha256": "4fbd85f2c1dd8ea4cbd66873175a1addca193771e4c73b4e359c004787dc1039",
+        "byte_count": 11339
       },
       "dvc_reconstruction_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca.json",
-        "sha256": "82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca",
-        "byte_count": 114050
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a.json",
+        "sha256": "aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a",
+        "byte_count": 113302
       }
     },
     {
       "target_spec": "marksmanship_hunter",
       "generation_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/79eea34131615060cfc91a6f3c5f356b1af029f7dbcc55163c9d7c5ca8613c68.json",
-        "sha256": "79eea34131615060cfc91a6f3c5f356b1af029f7dbcc55163c9d7c5ca8613c68",
-        "byte_count": 16491
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/106a5a520f7ae14db7b350dfa6140e9fe189da93300b1d25f7538a68f1e5094d.json",
+        "sha256": "106a5a520f7ae14db7b350dfa6140e9fe189da93300b1d25f7538a68f1e5094d",
+        "byte_count": 15792
       },
       "dvc_reconstruction_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca.json",
-        "sha256": "82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca",
-        "byte_count": 114050
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a.json",
+        "sha256": "aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a",
+        "byte_count": 113302
       }
     },
     {
       "target_spec": "retribution_paladin",
       "generation_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/1d4496d3a1ae1fe2221cf4033c4cfba273983bbb847725d17fb630226842fb11.json",
-        "sha256": "1d4496d3a1ae1fe2221cf4033c4cfba273983bbb847725d17fb630226842fb11",
-        "byte_count": 11776
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/1e05c9b951f5594b82f51595631e438ef061a0e34c706c2199d287f4871b016e.json",
+        "sha256": "1e05c9b951f5594b82f51595631e438ef061a0e34c706c2199d287f4871b016e",
+        "byte_count": 11314
       },
       "dvc_reconstruction_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca.json",
-        "sha256": "82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca",
-        "byte_count": 114050
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a.json",
+        "sha256": "aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a",
+        "byte_count": 113302
       }
     },
     {
       "target_spec": "shadow_priest",
       "generation_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/b1d124325d91699499a96ee2b4bf69afa3543c2113e0b67716df38c8b4016e50.json",
-        "sha256": "b1d124325d91699499a96ee2b4bf69afa3543c2113e0b67716df38c8b4016e50",
-        "byte_count": 11564
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/beefecdca302aac8b3b936be98f3d96b52b4b5d9207f31a5e8e1b092c00c76ff.json",
+        "sha256": "beefecdca302aac8b3b936be98f3d96b52b4b5d9207f31a5e8e1b092c00c76ff",
+        "byte_count": 11030
       },
       "dvc_reconstruction_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca.json",
-        "sha256": "82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca",
-        "byte_count": 114050
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a.json",
+        "sha256": "aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a",
+        "byte_count": 113302
       }
     },
     {
       "target_spec": "survival_hunter",
       "generation_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/88cfe79379ba10ea4471f9ec084e5e5e98e763b6db48649392f4cbc284b74674.json",
-        "sha256": "88cfe79379ba10ea4471f9ec084e5e5e98e763b6db48649392f4cbc284b74674",
-        "byte_count": 16483
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/e6872307d721ed8740eae75f48c2db721835abd185bbd00dc8155c014f12bb4e.json",
+        "sha256": "e6872307d721ed8740eae75f48c2db721835abd185bbd00dc8155c014f12bb4e",
+        "byte_count": 15848
       },
       "dvc_reconstruction_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca.json",
-        "sha256": "82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca",
-        "byte_count": 114050
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a.json",
+        "sha256": "aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a",
+        "byte_count": 113302
       }
     },
     {
       "target_spec": "unholy_death_knight",
       "generation_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/4f1d5217e9efc1c40c38f99653e774d747d9515ddd476ab4c8f8a23c4dd1e183.json",
-        "sha256": "4f1d5217e9efc1c40c38f99653e774d747d9515ddd476ab4c8f8a23c4dd1e183",
-        "byte_count": 16247
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/generation_receipts/a3d9ed350e513971f4e53595b4f3ea475e90baacac9388f4921b2af97ed0ed47.json",
+        "sha256": "a3d9ed350e513971f4e53595b4f3ea475e90baacac9388f4921b2af97ed0ed47",
+        "byte_count": 15516
       },
       "dvc_reconstruction_receipt": {
-        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca.json",
-        "sha256": "82f934fba1803234af1dd084a6303bf58f145d0df2259ae427c34d01c7d46fca",
-        "byte_count": 114050
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_v1/dvc_reconstruction_receipts/aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a.json",
+        "sha256": "aaab8be62f325d64fc4e58164988898abefa4688ab91e12998d937bbc71eb27a",
+        "byte_count": 113302
       }
     }
   ],
-  "index_sha256": "c0a3cc3468257c4d4ed4d9526754075438f7a6265f91eb4b7821cd7b520f00b9"
+  "index_sha256": "95abf370e1e8af800dca55c78bff3e3bf1f2af5814efd8b97fdcbf8b106b3bee"
 }
