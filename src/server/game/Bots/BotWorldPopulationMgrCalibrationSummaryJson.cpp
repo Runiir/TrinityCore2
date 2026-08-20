@@ -374,5 +374,5 @@ void BotWorldPopulationMgr::AppendCombatCalibrationSummaryJson(
     else
         writeBots(Cohort().CalibrationBestAoeMetrics, true);
     json << '}';
-    json << ",\"failure_reason\":null}";
+    json << '}';
 }

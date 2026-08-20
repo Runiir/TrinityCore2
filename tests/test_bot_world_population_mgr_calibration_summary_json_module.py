@@ -36,3 +36,9 @@ def test_calibration_summary_json_keeps_window_contract():
         "best_windows",
     ):
         assert marker in text
+
+
+def test_calibration_summary_json_emits_failure_reason_once():
+    text = MODULE.read_text()
+
+    assert text.count('\\"failure_reason\\":') == 1
