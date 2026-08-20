@@ -9,6 +9,8 @@
 #include "Map.h"
 #include "Player.h"
 #include "SpellAuras.h"
+#include "SpellHistory.h"
+#include "SpellMgr.h"
 #include "Unit.h"
 
 #include <algorithm>
