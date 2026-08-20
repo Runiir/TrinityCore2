@@ -604,6 +604,8 @@ void BotWorldPopulationMgr::AppendCombatCalibrationBotRowsJson(
              << ",\"synapse_springs\":{\"spell_id\":96230,\"windows_ms\":[],\"expected_windows_ms\":[],\"unexpected_active_samples\":"
              << (metrics ? metrics->UnexpectedSynapseSpringsSamples : 0) << "}}";
         AppendCalibrationReferenceConditionJson(json, state, metrics, fixtureSpecContract);
+        if (IsSelfProvidedCalibrationBaseline())
+            AppendCalibrationConsumableExecutionJson(json, metrics, fixtureSpecContract);
         json << ",\"persistent_setup\":{\"ready\":" << (persistentSetupReady ? "true" : "false")
              << ",\"required_presence_spell_id\":" << state.RequiredPresenceSetupSpellId
              << ",\"required_presence_aura_id\":" << state.RequiredPresenceSetupAuraId

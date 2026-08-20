@@ -562,6 +562,7 @@ def request_condition_projection(request: Mapping[str, Any]) -> dict[str, Any]:
         )
     }
     source_setup = {
+        "reference_class": request.get("reference_class"),
         "race": player.get("race_id"),
         "gear": gear_identity,
         "talents": dict(talents),
@@ -682,6 +683,11 @@ def _build_row(
         f"gear_transform_join:{target_spec}",
     )
     fixture_values = _fixture_values(fixture, fixture_sha256, target_spec)
+    reference_class = str(fixture.get("reference_class") or "")
+    _require(
+        reference_class == "self_provided_baseline",
+        f"fixture_reference_class:{target_spec}",
+    )
     source_contract = _source_contract(
         root=root,
         target_spec=target_spec,
@@ -753,6 +759,7 @@ def _build_row(
     )
     request = {
         "schema": REQUEST_SCHEMA,
+        "reference_class": reference_class,
         "target_spec": target_spec,
         "fixture_contract_sha256": fixture_sha256,
         "source_contract_sha256": source_contract_sha,
@@ -858,6 +865,7 @@ def _build_row(
     source_setup_sha = canonical_sha256(source_setup)
     comparison = {
         "schema": COMPARISON_SCHEMA,
+        "reference_class": reference_class,
         "target_spec": target_spec,
         "result_status": RESULT_PENDING,
         "reference_result_key": None,
@@ -952,6 +960,7 @@ def build_manifest(
         )
     manifest = {
         "schema": CATALOG_SCHEMA,
+        "reference_class": str(fixture.get("reference_class") or ""),
         "provider": "WoWSims",
         "provider_repository": "https://github.com/wowsims/cata",
         "provider_revision": rows[0]["source_contract"]["provider_revision"],
@@ -1105,6 +1114,11 @@ def validate_manifest(
     verify_generated_artifacts: bool = True,
 ) -> None:
     _require(manifest.get("schema") == CATALOG_SCHEMA, "catalog_schema")
+    reference_class = str(manifest.get("reference_class") or "")
+    _require(
+        reference_class == "self_provided_baseline",
+        "catalog_reference_class",
+    )
     revision = str(manifest.get("provider_revision") or "")
     _require(bool(re.fullmatch(r"[0-9a-f]{40}", revision)), "catalog_provider_revision")
     fixture_sha = str(manifest.get("fixture_contract_sha256") or "")
@@ -1115,6 +1129,10 @@ def validate_manifest(
 
     fixture_document, actual_fixture_sha = load_fixture_contract(fixture_path)
     _require(actual_fixture_sha == fixture_sha, "catalog_fixture_bytes")
+    _require(
+        fixture_document.get("reference_class") == reference_class,
+        "catalog_fixture_reference_class",
+    )
     requests = manifest.get("requests")
     _require(isinstance(requests, list), "requests_must_be_list")
     _require(len(requests) == manifest.get("request_count") == 16, "request_count")
@@ -1158,6 +1176,10 @@ def validate_manifest(
             f"upstream_test_selector:{target_spec}",
         )
         _require(request.get("schema") == REQUEST_SCHEMA, f"request_schema:{target_spec}")
+        _require(
+            request.get("reference_class") == reference_class,
+            f"request_reference_class:{target_spec}",
+        )
         _require(request.get("target_spec") == target_spec, f"request_spec:{target_spec}")
         _require(request.get("fixture_contract_sha256") == fixture_sha, f"request_fixture:{target_spec}")
         _require(request.get("source_contract_sha256") == source_sha, f"request_source:{target_spec}")
@@ -1247,6 +1269,10 @@ def validate_manifest(
             f"request_gear_transform:{target_spec}",
         )
         _require(comparison.get("schema") == COMPARISON_SCHEMA, f"comparison_schema:{target_spec}")
+        _require(
+            comparison.get("reference_class") == reference_class,
+            f"comparison_reference_class:{target_spec}",
+        )
         _require(comparison.get("target_spec") == target_spec, f"comparison_spec:{target_spec}")
         _require(comparison.get("source_contract_sha256") == source_sha, f"comparison_source:{target_spec}")
         _require(comparison.get("request_sha256") == request_sha, f"comparison_request:{target_spec}")

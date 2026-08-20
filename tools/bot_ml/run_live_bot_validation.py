@@ -733,6 +733,7 @@ def write_validation_config(
     autostart: bool = True,
     calibration_only: bool = False,
     calibration_reference_conditions: bool = False,
+    calibration_self_provided_baseline: bool = False,
     console_enabled: bool | None = None,
 ) -> Path:
     route = validation_route or {}
@@ -765,6 +766,11 @@ def write_validation_config(
             text,
             "BotWorld.CombatCalibration.ReferenceConditions",
             "1" if calibration_reference_conditions else "0",
+        )
+        text = upsert_trinity_config(
+            text,
+            "BotWorld.CombatCalibration.SelfProvidedBaseline",
+            "1" if calibration_self_provided_baseline else "0",
         )
     if validation_route_manifest_path and not calibration_only:
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ManifestPath", f'"{str(validation_route_manifest_path).replace(chr(34), "")}"')
@@ -5466,6 +5472,7 @@ def main() -> int:
     parser.add_argument("--combat-calibration", action="store_true", help="Run isolated DPS/TPS training-dummy clones beside the validation cohort and attach their status to the report.")
     parser.add_argument("--calibration-only", action="store_true", help="Start an empty autonomy controller and run only the isolated combat-calibration clones, without a route/world cohort.")
     parser.add_argument("--calibration-reference-conditions", action="store_true", help="For calibration-only runs, apply real full-raid reference auras, target debuffs, and class-appropriate flasks without changing damage coefficients.")
+    parser.add_argument("--calibration-self-provided-baseline", action="store_true", help="For calibration-only runs, use only exact inventory flask, food, pre-pot, and combat potion through native item use; do not manufacture raid buffs or target debuffs.")
     parser.add_argument("--calibration-mode", choices=["single_target_300", "aoe_300", "tank_threat_300", "healer_controlled_damage_300"], default="single_target_300")
     parser.add_argument("--calibration-target-spec", default="protection_paladin", help="Canonical all-spec target selected from the calibration candidate pool.")
     parser.add_argument("--calibration-seed", type=int, default=1, help="Deterministic calibration target/support selection seed.")
@@ -5522,6 +5529,10 @@ def main() -> int:
             raise SystemExit("--calibration-only cannot use SOAP because an empty controller config cannot be established")
     if args.calibration_reference_conditions and not args.calibration_only:
         raise SystemExit("--calibration-reference-conditions requires --calibration-only")
+    if args.calibration_self_provided_baseline and not args.calibration_only:
+        raise SystemExit("--calibration-self-provided-baseline requires --calibration-only")
+    if args.calibration_reference_conditions and args.calibration_self_provided_baseline:
+        raise SystemExit("calibration reference conditions and self-provided baseline are mutually exclusive")
     if args.session_runtime_dir and args.transport != "session":
         raise SystemExit("--session-runtime-dir requires --transport session")
     if args.preserve_worldserver and (
@@ -5684,6 +5695,7 @@ def main() -> int:
             autostart=False if args.transport == "session" else (True if args.calibration_only else not args.no_start),
             calibration_only=args.calibration_only,
             calibration_reference_conditions=args.calibration_reference_conditions,
+            calibration_self_provided_baseline=args.calibration_self_provided_baseline,
             console_enabled=False if args.transport == "session" else None,
         )
     config_autostart = trinity_config_bool(effective_config, "BotWorld.AutoStart", False)
@@ -5780,6 +5792,7 @@ def main() -> int:
             "start_command": send_start_command,
             "calibration_only": args.calibration_only,
             "calibration_reference_conditions": args.calibration_reference_conditions,
+            "calibration_self_provided_baseline": args.calibration_self_provided_baseline,
             "preparation": preparation,
             "scenario_reports": scenario_reports,
             "validation_context": validation_context,
@@ -5925,6 +5938,7 @@ def main() -> int:
     report["start_command"] = send_start_command
     report["calibration_only"] = args.calibration_only
     report["calibration_reference_conditions"] = args.calibration_reference_conditions
+    report["calibration_self_provided_baseline"] = args.calibration_self_provided_baseline
     report["preserve_worldserver_required"] = args.preserve_worldserver
     report["execution_policy"] = (
         "run_to_completion" if args.run_to_completion else "bounded_wall_clock"

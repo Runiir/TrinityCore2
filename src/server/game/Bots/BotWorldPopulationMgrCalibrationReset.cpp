@@ -306,6 +306,7 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
     // This function is the calibration controller's final provisioning
     // boundary. Publish the scored start timestamp only after every resource,
     // target, and gear observation below has been read back successfully.
+    bool const firstResetPass = Cohort().CalibrationResetId.empty();
     Cohort().CalibrationScoredStartedMs = 0;
     Cohort().CalibrationScoredEndedMs = 0;
     Cohort().CalibrationLastPostWindowDrainMs = 0;
@@ -323,6 +324,15 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
     Cohort().CalibrationCurrentDamagePhase.clear();
     Cohort().CalibrationResetId = Cohort().CalibrationTargetSpec + ":" + Cohort().CalibrationMode
         + ":seed-" + std::to_string(Cohort().CalibrationSeed);
+
+    if (firstResetPass || !IsSelfProvidedCalibrationBaseline())
+        for (WorldBotState& state : Party().CalibrationBots)
+        {
+            CalibrationMetrics& metrics =
+                Cohort().CalibrationMetricsByGuid[state.Guid.GetCounter()];
+            metrics = CalibrationMetrics();
+            state.DecisionTimer = 0;
+        }
 
     using namespace BotCalibrationFixtureContractGenerated;
     SpecContract const* fixtureContract = Cohort().CalibrationMode
@@ -356,6 +366,9 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
         for (WorldBotState& state : Party().CalibrationBots)
             if (Player* bot = GetLoadedBot(state))
             {
+                if (EnsureCalibrationSelfProvidedConsumables(
+                        state, bot, preScoreFixtureTarget, false))
+                    return;
                 ApplyCalibrationReferenceConditions(
                     bot, preScoreFixtureTarget);
                 if (TryEnsurePersistentCombatSetup(
@@ -368,9 +381,14 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
     {
         Player* bot = GetLoadedBot(state);
         CalibrationMetrics& metrics = Cohort().CalibrationMetricsByGuid[state.Guid.GetCounter()];
-        metrics = CalibrationMetrics();
         state.DecisionTimer = 0;
         if (!bot)
+            continue;
+        // A self-provided pre-pot is submitted only after this reset. Never
+        // repeat the reset afterward, because that would clear its native
+        // potion cooldown and manufacture an immediate combat potion.
+        if (IsSelfProvidedCalibrationBaseline()
+            && metrics.PreScoreCooldownResetComplete)
             continue;
         bot->InterruptNonMeleeSpells(true);
         bot->GetSpellHistory()->ResetAllCooldowns();
@@ -580,6 +598,8 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
         for (TempSummon* summon : temporarySummons)
             if (summon && summon->IsInWorld())
                 summon->UnSummon();
+        if (IsSelfProvidedCalibrationBaseline())
+            metrics.PreScoreCooldownResetComplete = true;
     }
 
     if (Cohort().CalibrationMode == "single_target_300")
@@ -693,6 +713,40 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
             auto [referenceBuffsReady, referenceTargetDebuffsReady] =
                 ApplyCalibrationReferenceConditions(bot, fixtureTarget);
 
+            static constexpr std::array<uint32, 11>
+                SelfProvidedForbiddenPlayerAuras = {
+                    53646, 79058, 24932, 2895, 8515, 8076, 82930,
+                    57669, 20217, 79063, 79102,
+                };
+            static constexpr std::array<uint32, 4>
+                SelfProvidedForbiddenTargetAuras = {
+                    1490, 22959, 81326, 58567,
+                };
+            bool const selfProvidedExternalAurasAbsent =
+                !IsSelfProvidedCalibrationBaseline()
+                || std::none_of(SelfProvidedForbiddenPlayerAuras.begin(),
+                    SelfProvidedForbiddenPlayerAuras.end(),
+                    [bot](uint32 spellId) { return bot->HasAura(spellId); });
+            bool const selfProvidedTargetAurasAbsent =
+                !IsSelfProvidedCalibrationBaseline()
+                || std::none_of(SelfProvidedForbiddenTargetAuras.begin(),
+                    SelfProvidedForbiddenTargetAuras.end(),
+                    [fixtureTarget](uint32 spellId)
+                    {
+                        return fixtureTarget->HasAura(spellId);
+                    });
+            bool const selfProvidedConsumablesReady =
+                !IsSelfProvidedCalibrationBaseline()
+                || (metrics.FlaskConsumable.NativeUseFinishedSuccessfully
+                    && metrics.FlaskConsumable.SuccessfulUseCount >= 1
+                    && metrics.FoodConsumable.NativeUseFinishedSuccessfully
+                    && metrics.FoodConsumable.SuccessfulUseCount >= 1
+                    && metrics.PrepotConsumable.NativeUseFinishedSuccessfully
+                    && metrics.PrepotConsumable.SuccessfulUseCount >= 1
+                    && metrics.CombatPotionConsumable.SuccessfulUseCount == 0
+                    && bot->HasAura(fixtureContract->FlaskAuraSpellId)
+                    && bot->HasAura(fixtureContract->FoodAuraSpellId));
+
             // The base v1 denominator has no temporal external cooldowns.
             // Observe their absence; never manufacture or strip them in the
             // fixture controller. A stale aura therefore fails closed.
@@ -761,7 +815,8 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
                 && (!fixtureContract->FlaskAuraSpellId
                     || bot->HasAura(fixtureContract->FlaskAuraSpellId))
                 && (!fixtureContract->FoodAuraSpellId
-                    || bot->HasAura(fixtureContract->FoodAuraSpellId));
+                    || bot->HasAura(fixtureContract->FoodAuraSpellId))
+                && selfProvidedConsumablesReady;
             metrics.PreScoreReferenceTargetDebuffsReady =
                 referenceTargetDebuffsReady;
             metrics.PreScoreHeroismReady = false;
@@ -784,7 +839,11 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
                 && metrics.PreScoreReferenceTargetDebuffsReady
                 && metrics.PreScoreTemporalExternalsAbsent
                 && metrics.PreScoreExternalBleedAbsent
-                && !metrics.PreScoreLastPotionItemId
+                && selfProvidedExternalAurasAbsent
+                && selfProvidedTargetAurasAbsent
+                && (IsSelfProvidedCalibrationBaseline()
+                    ? selfProvidedConsumablesReady
+                    : !metrics.PreScoreLastPotionItemId)
                 && metrics.PreScoreNoActiveCast
                 && metrics.PreScoreNoCombat
                 && metrics.PreScoreGlobalCooldownClear;

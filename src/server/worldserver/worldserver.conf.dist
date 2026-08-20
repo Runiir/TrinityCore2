@@ -3497,6 +3497,12 @@ PlayerBot.Debug = 1
 #                     This does not alter spell coefficients and never affects route or normal world cohorts.
 #        Default:     0
 #
+#    BotWorld.CombatCalibration.SelfProvidedBaseline
+#        Description: Runs an isolated DPS calibration with only the bot's exact inventory consumables.
+#                     Flask, food, pre-pot, and combat potion must complete through native item use;
+#                     no external raid buffs or pre-applied target debuffs are manufactured.
+#        Default:     0
+#
 #    BotWorld.DeathRecoveryMode
 #        Description: Player-legal death recovery strategy. Autonomous runtime uses client release,
 #                     native ghost movement, and the core corpse-reclaim opcode.
@@ -3593,6 +3599,7 @@ BotWorld.UseSavedPosition = 1
 BotWorld.NearPlayerRadius = 20
 BotWorld.TrainingDummyEntries = ""
 BotWorld.CombatCalibration.ReferenceConditions = 0
+BotWorld.CombatCalibration.SelfProvidedBaseline = 0
 BotWorld.DeathRecoveryMode = "native_corpse_run"
 BotWorld.TeleportToCenterOnDeath = 0
 BotWorld.MaxDeathsBeforeFallback = 3

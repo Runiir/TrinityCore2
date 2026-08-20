@@ -1,5 +1,6 @@
 {
   "schema": "phase8_calibration_fixture_contract_v1",
+  "reference_class": "self_provided_baseline",
   "authority": {
     "repository": "https://github.com/wowsims/cata",
     "revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
@@ -59,35 +60,27 @@
       "inherit_full_individual_buffs": false,
       "inherit_full_target_debuffs": false,
       "raid_buffs": {
-        "blessing_of_kings": true,
-        "strength_of_earth_totem": true,
-        "windfury_totem": true,
-        "arcane_brilliance": true,
-        "demonic_pact": true,
-        "wrath_of_air_totem": true,
-        "arcane_tactics": true,
-        "leader_of_the_pack": true,
+        "blessing_of_kings": false,
+        "strength_of_earth_totem": false,
+        "windfury_totem": false,
+        "arcane_brilliance": false,
+        "demonic_pact": false,
+        "wrath_of_air_totem": false,
+        "arcane_tactics": false,
+        "leader_of_the_pack": false,
         "bloodlust": false
       },
       "conditional_raid_buffs": {
-        "blessing_of_might": {"enabled": true, "excluded_specs": ["retribution_paladin"]}
+        "blessing_of_might": {"enabled": false, "excluded_specs": []}
       },
       "party_buffs": {},
       "individual_buffs": {},
-      "individual_buffs_by_spec": {
-        "affliction_warlock": {"vampiric_touch": true},
-        "balance_druid": {"vampiric_touch": true},
-        "demonology_warlock": {"vampiric_touch": true},
-        "elemental_shaman": {"vampiric_touch": true},
-        "fire_mage": {"vampiric_touch": true},
-        "retribution_paladin": {"vampiric_touch": true},
-        "shadow_priest": {"vampiric_touch": true, "dark_intent": false, "power_infusion_count": 0}
-      },
+      "individual_buffs_by_spec": {},
       "target_debuffs": {
-        "curse_of_elements": true,
-        "critical_mass": true,
-        "brittle_bones": true,
-        "sunder_armor": true
+        "curse_of_elements": false,
+        "critical_mass": false,
+        "brittle_bones": false,
+        "sunder_armor": false
       }
     },
     "common_player_aura_spell_ids": [53646, 79058, 24932, 2895, 8515, 8076, 82930],

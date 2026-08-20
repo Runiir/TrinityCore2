@@ -1,4 +1,9 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotCalibrationFixtureContractGenerated.h"
+#include "Bag.h"
+#include "GameTime.h"
+#include "Item.h"
+#include "ItemTemplate.h"
 
 #include "Creature.h"
 #include "Map.h"
@@ -8,6 +13,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <string>
 #include <utility>
 
@@ -34,6 +40,59 @@ constexpr std::array<CalibrationExecuteHealthWindow, 5> CalibrationExecuteHealth
     { "below_20",     240000, 300000, 19,  0, true,   20, false },
 }};
 
+uint64 CalibrationNowMs()
+{
+    return uint64(std::chrono::duration_cast<std::chrono::milliseconds>(
+        GameTime::GetGameTimeSystemPoint().time_since_epoch()).count());
+}
+
+Item* FindCalibrationConsumable(Player* bot, uint32 itemId, uint32 spellId)
+{
+    if (!bot || !itemId || !spellId)
+        return nullptr;
+
+    auto matches = [itemId, spellId](Item* item)
+    {
+        ItemTemplate const* itemTemplate = item ? item->GetTemplate() : nullptr;
+        if (!itemTemplate || item->GetEntry() != itemId || !item->GetCount())
+            return false;
+        for (ItemEffect const& effect : itemTemplate->Effects)
+            if (effect.SpellID == int32(spellId)
+                && effect.Trigger == ITEM_SPELLTRIGGER_ON_USE)
+                return true;
+        return false;
+    };
+
+    for (uint8 slot = INVENTORY_SLOT_ITEM_START; slot < INVENTORY_SLOT_ITEM_END; ++slot)
+        if (Item* item = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot); matches(item))
+            return item;
+    for (uint8 bagSlot = INVENTORY_SLOT_BAG_START; bagSlot < INVENTORY_SLOT_BAG_END; ++bagSlot)
+        if (Bag* bag = bot->GetBagByPos(bagSlot))
+            for (uint32 slot = 0; slot < bag->GetBagSize(); ++slot)
+                if (Item* item = bag->GetItemByPos(slot); matches(item))
+                    return item;
+    return nullptr;
+}
+
+uint32 CountCalibrationConsumable(Player* bot, uint32 itemId)
+{
+    if (!bot || !itemId)
+        return 0;
+    uint32 count = 0;
+    auto add = [&count, itemId](Item* item)
+    {
+        if (item && item->GetEntry() == itemId)
+            count += item->GetCount();
+    };
+    for (uint8 slot = INVENTORY_SLOT_ITEM_START; slot < INVENTORY_SLOT_ITEM_END; ++slot)
+        add(bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot));
+    for (uint8 bagSlot = INVENTORY_SLOT_BAG_START; bagSlot < INVENTORY_SLOT_BAG_END; ++bagSlot)
+        if (Bag* bag = bot->GetBagByPos(bagSlot))
+            for (uint32 slot = 0; slot < bag->GetBagSize(); ++slot)
+                add(bag->GetItemByPos(slot));
+    return count;
+}
+
 size_t CalibrationExecuteHealthWindowIndex(uint64 elapsedMs)
 {
     for (size_t index = 0; index < CalibrationExecuteHealthWindows.size(); ++index)
@@ -56,8 +115,159 @@ bool CalibrationSpecUsesMana(std::string const& targetSpec)
 }
 }
 
+bool BotWorldPopulationMgr::IsSelfProvidedCalibrationBaseline() const
+{
+    return Cohort().Config.CombatCalibrationSelfProvidedBaseline
+        && std::string_view(
+            BotCalibrationFixtureContractGenerated::ReferenceClass)
+            == "self_provided_baseline";
+}
+
+bool BotWorldPopulationMgr::EnsureCalibrationSelfProvidedConsumables(
+    WorldBotState& state, Player* bot, Unit* target, bool scored)
+{
+    if (!IsSelfProvidedCalibrationBaseline() || !bot || !target)
+        return false;
+
+    auto metricsItr = Cohort().CalibrationMetricsByGuid.find(
+        bot->GetGUID().GetCounter());
+    auto const* contract = BotCalibrationFixtureContractGenerated::FindSpec(
+        Cohort().CalibrationTargetSpec);
+    if (metricsItr == Cohort().CalibrationMetricsByGuid.end() || !contract)
+        return false;
+    CalibrationMetrics& metrics = metricsItr->second;
+    auto receiptReady = [](CalibrationMetrics::NativeConsumableReceipt const& receipt)
+    {
+        return receipt.ItemId && receipt.SpellId
+            && receipt.SuccessfulUseCount >= receipt.RequiredUses
+            && receipt.NativeUseFinishedSuccessfully
+            && receipt.FinishedAtMs >= receipt.SubmittedAtMs
+            && receipt.PreUseItemCount > receipt.PostUseItemCount;
+    };
+
+    auto initialize = [](CalibrationMetrics::NativeConsumableReceipt& receipt,
+        uint32 itemId, uint32 spellId, char const* phase)
+    {
+        if (receipt.ItemId)
+            return;
+        receipt.ItemId = itemId;
+        receipt.SpellId = spellId;
+        receipt.Phase = phase;
+    };
+    initialize(metrics.FlaskConsumable, contract->FlaskItemId,
+        contract->FlaskItemSpellId,
+        "flask_before_scoring");
+    initialize(metrics.FoodConsumable, contract->FoodItemId,
+        contract->FoodItemSpellId,
+        "food_before_scoring");
+    initialize(metrics.PrepotConsumable, contract->PrepotItemId,
+        contract->PrepotItemSpellId, "prepot_before_combat");
+    initialize(metrics.CombatPotionConsumable,
+        contract->CombatPotionItemId, contract->CombatPotionItemSpellId,
+        "combat_potion_during_combat");
+
+    auto submit = [&](CalibrationMetrics::NativeConsumableReceipt& receipt)
+    {
+        uint64 const nowMs = CalibrationNowMs();
+        if (receipt.NativeUseFinishedSuccessfully)
+            return false;
+        if (receipt.SubmittedAtMs > receipt.FinishedAtMs)
+        {
+            if (receipt.NextRetryAtMs > nowMs)
+                return false;
+            receipt.SubmittedItemGuid.Clear();
+            receipt.SubmittedAtMs = 0;
+        }
+        if (receipt.NextRetryAtMs > nowMs)
+            return false;
+        Item* item = FindCalibrationConsumable(bot, receipt.ItemId,
+            receipt.SpellId);
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(receipt.SpellId);
+        if (!item || bot->HasUnitState(UNIT_STATE_CASTING)
+            || !spellInfo
+            || bot->GetSpellHistory()->HasGlobalCooldown(spellInfo)
+            || !bot->GetSpellHistory()->IsReady(spellInfo, receipt.ItemId))
+            return false;
+
+        BotNativeAction::UseItem useItem;
+        useItem.Item = item->GetGUID();
+        useItem.Target = bot->GetGUID();
+        useItem.SpellId = receipt.SpellId;
+        receipt.SubmittedItemGuid = useItem.Item;
+        receipt.SubmittedAtMs = nowMs;
+        receipt.FinishedAtMs = 0;
+        receipt.NativeUseFinishedSuccessfully = false;
+        receipt.PreUseItemCount = CountCalibrationConsumable(bot,
+            receipt.ItemId);
+        receipt.PostUseItemCount = receipt.PreUseItemCount;
+        BotActionArbitration::Outcome const outcome = ExecuteNativeActionIntent(
+            state, bot, useItem, BotMovementArbitration::Owner::Support,
+            BotMovementArbitration::Priority::Support);
+        if (outcome.Result != BotActionArbitration::Disposition::Committed
+            || outcome.LifecyclePhase != BotActionArbitration::Phase::Submitted)
+        {
+            receipt.SubmittedItemGuid.Clear();
+            receipt.SubmittedAtMs = 0;
+            receipt.NextRetryAtMs = nowMs + 1000;
+            return false;
+        }
+        ++receipt.SubmissionCount;
+        // Food is a cast rather than an instant item use. Keep the native
+        // request pending long enough to finish, then permit a retry if the
+        // session rejected it without a completion callback.
+        receipt.NextRetryAtMs = nowMs + 30000;
+        return true;
+    };
+
+    // Setup is deliberately serialized. A failed or rejected request is
+    // retried on a bounded cadence and never spins in the combat decision loop.
+    if (!scored)
+    {
+        if (!receiptReady(metrics.FlaskConsumable)
+            || !bot->HasAura(contract->FlaskAuraSpellId))
+        {
+            submit(metrics.FlaskConsumable);
+            return true;
+        }
+        if (!receiptReady(metrics.FoodConsumable)
+            || !bot->HasAura(contract->FoodAuraSpellId))
+        {
+            submit(metrics.FoodConsumable);
+            return true;
+        }
+        // The ordinary reset below must run before the pre-pot. Otherwise its
+        // ResetAllCooldowns call would manufacture an immediate second potion.
+        if (!metrics.PreScoreCooldownResetComplete)
+            return false;
+        if (!receiptReady(metrics.PrepotConsumable))
+        {
+            if (!bot->IsInCombat())
+                submit(metrics.PrepotConsumable);
+            return true;
+        }
+        return false;
+    }
+
+    if (bot->IsInCombat() && !receiptReady(metrics.CombatPotionConsumable))
+    {
+        if (submit(metrics.CombatPotionConsumable))
+            return true;
+        return metrics.CombatPotionConsumable.SubmittedAtMs
+                > metrics.CombatPotionConsumable.FinishedAtMs
+            && metrics.CombatPotionConsumable.NextRetryAtMs
+                > CalibrationNowMs();
+    }
+    return false;
+}
+
 std::pair<bool, bool> BotWorldPopulationMgr::ApplyCalibrationReferenceConditions(Player* bot, Unit* target) const
 {
+    // Self-provided baseline owns only native consumable execution. External
+    // raid/stat auras and target debuffs are not part of this denominator and
+    // must never be manufactured by the fixture.
+    if (IsSelfProvidedCalibrationBaseline())
+        return bot && target ? std::pair<bool, bool>{ true, true }
+                             : std::pair<bool, bool>{ false, false };
     if (!Cohort().Config.CombatCalibrationReferenceConditions || !bot || !target)
         return { false, false };
     bool const provisioning = !Cohort().CalibrationScoredStartedMs;
@@ -249,6 +459,13 @@ void BotWorldPopulationMgr::ObserveCalibrationReferenceConditions(
     static constexpr std::array<uint32, 3> ExternalBleedAuraUniverse = {
         16511, 33876, 46857,
     };
+    static constexpr std::array<uint32, 11> SelfProvidedForbiddenPlayerAuras = {
+        53646, 79058, 24932, 2895, 8515, 8076, 82930, 57669,
+        20217, 79063, 79102,
+    };
+    static constexpr std::array<uint32, 4> SelfProvidedForbiddenTargetAuras = {
+        1490, 22959, 81326, 58567,
+    };
 
     ++metrics.ReferenceConditionSampleCount;
     if (!metrics.FirstReferenceConditionObservedAtMs)
@@ -309,6 +526,17 @@ void BotWorldPopulationMgr::ObserveCalibrationReferenceConditions(
     if (std::any_of(ExternalBleedAuraUniverse.begin(),
             ExternalBleedAuraUniverse.end(), hasAuraFromAnotherCaster))
         ++metrics.UnexpectedExternalBleedActiveSamples;
+    if (IsSelfProvidedCalibrationBaseline())
+    {
+        if (std::any_of(SelfProvidedForbiddenPlayerAuras.begin(),
+                SelfProvidedForbiddenPlayerAuras.end(),
+                [bot](uint32 spellId) { return bot->HasAura(spellId); }))
+            ++metrics.UnexpectedSelfProvidedPlayerAuraActiveSamples;
+        if (std::any_of(SelfProvidedForbiddenTargetAuras.begin(),
+                SelfProvidedForbiddenTargetAuras.end(),
+                [target](uint32 spellId) { return target->HasAura(spellId); }))
+            ++metrics.UnexpectedSelfProvidedTargetAuraActiveSamples;
+    }
 }
 
 void BotWorldPopulationMgr::UpdateCalibrationTargetHealthSchedule(uint64 nowMs)
@@ -385,4 +613,3 @@ void BotWorldPopulationMgr::UpdateCalibrationTargetHealthSchedule(uint64 nowMs)
     observation.MaximumObservedMaxHealth = std::max(
         observation.MaximumObservedMaxHealth, observedMaxHealth);
 }
-

@@ -1422,16 +1422,31 @@ def test_all_16_reference_condition_projections_match_raw_fixture_observations()
             [53304] if target_spec == "survival_hunter" else [100]
         )
         raw = target["reference_condition_observation"]
+        raw["reference_class"] = "self_provided_baseline"
+        raw["unexpected_player_aura_active_samples"] = 0
+        raw["unexpected_target_aura_active_samples"] = 0
         raw["fixture_contract_sha256"] = binding["content_sha256"]
         raw["configured"] = {
-            "flask_item_id": expected["flask"]["item_id"],
-            "flask_aura_spell_id": expected["flask"][
-                "observed_aura_spell_id"
-            ],
-            "food_item_id": expected["food"]["item_id"],
-            "food_aura_spell_id": expected["food"][
-                "observed_aura_spell_id"
-            ],
+                "flask_item_id": expected["flask"]["item_id"],
+                "flask_item_spell_id": expected["flask"]["item_spell_id"],
+                "flask_aura_spell_id": expected["flask"][
+                    "observed_aura_spell_id"
+                ],
+                "food_item_id": expected["food"]["item_id"],
+                "food_item_spell_id": expected["food"]["item_spell_id"],
+                "food_aura_spell_id": expected["food"][
+                    "observed_aura_spell_id"
+                ],
+                "prepot_item_spell_id": expected["prepot"]["item_spell_id"],
+                "prepot_aura_spell_id": expected["prepot"][
+                    "observed_aura_spell_id"
+                ],
+                "combat_potion_item_spell_id": expected["combat_potion"][
+                    "item_spell_id"
+                ],
+                "combat_potion_aura_spell_id": expected["combat_potion"][
+                    "observed_aura_spell_id"
+                ],
             "required_setup_aura_spell_ids": expected["form_presence"][
                 "required_aura_spell_ids"
             ],
@@ -1443,7 +1458,6 @@ def test_all_16_reference_condition_projections_match_raw_fixture_observations()
             combat_potion_use_count=expected["combat_potion"]["use_count"],
         )
         active_ids = set(expected["raid_buffs"]["required_player_aura_spell_ids"])
-        active_ids.add(79061)
         active_ids.update(expected["raid_buffs"]["mana_player_aura_spell_ids"])
         active_ids.update(
             expected["raid_buffs"]["non_paladin_player_aura_spell_ids"]
@@ -1462,6 +1476,30 @@ def test_all_16_reference_condition_projections_match_raw_fixture_observations()
                 "inactive_samples": 0 if spell_id in active_ids else 601,
             }
             for spell_id in sorted(player_universe)
+        ]
+        raw["target_auras"] = [
+            {
+                **row,
+                "active_samples": 0,
+                "inactive_samples": 601,
+                "caster_guid": 0,
+                "owner_match_samples": 0,
+                "owner_mismatch_samples": 0,
+            }
+            for row in raw["target_auras"]
+        ]
+        raw["target_stacked_auras"] = [
+            {
+                "spell_id": 58567,
+                "required_stacks": 3,
+                "matching_samples": 0,
+                "mismatch_samples": 601,
+                "minimum_observed_stacks": 0,
+                "maximum_observed_stacks": 0,
+                "caster_guid": 0,
+                "owner_match_samples": 0,
+                "owner_mismatch_samples": 0,
+            }
         ]
 
         projections, valid = reference_condition_projections(
@@ -1697,9 +1735,15 @@ def _reference_condition_observation() -> dict:
             "sample_count": sample_count,
             "configured": {
                 "flask_item_id": 58088,
+                "flask_item_spell_id": 79472,
                 "flask_aura_spell_id": 79472,
                 "food_item_id": 0,
+                "food_item_spell_id": 0,
                 "food_aura_spell_id": 0,
+                "prepot_item_spell_id": 0,
+                "prepot_aura_spell_id": 0,
+                "combat_potion_item_spell_id": 0,
+                "combat_potion_aura_spell_id": 0,
                 "required_setup_aura_spell_ids": [2457],
             },
             "player_auras": [
@@ -1754,11 +1798,26 @@ def test_reference_condition_projections_reconstruct_full_window_raw_facts() -> 
     assert valid is True
     assert projection["flask"] == {
         "item_id": 58088,
+        "item_spell_id": 79472,
         "observed_aura_spell_id": 79472,
     }
-    assert projection["food"] == {"item_id": 0, "observed_aura_spell_id": 0}
-    assert projection["prepot"] == {"item_id": 0, "use_count": 0}
-    assert projection["combat_potion"] == {"item_id": 0, "use_count": 0}
+    assert projection["food"] == {
+        "item_id": 0,
+        "item_spell_id": 0,
+        "observed_aura_spell_id": 0,
+    }
+    assert projection["prepot"] == {
+        "item_id": 0,
+        "item_spell_id": 0,
+        "observed_aura_spell_id": 0,
+        "use_count": 0,
+    }
+    assert projection["combat_potion"] == {
+        "item_id": 0,
+        "item_spell_id": 0,
+        "observed_aura_spell_id": 0,
+        "use_count": 0,
+    }
     assert projection["tinker"] == {"item_id": 0, "use_count": 0}
     assert projection["racial"] == {
         "race": "human",

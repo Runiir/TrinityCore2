@@ -748,6 +748,7 @@ def materialize_fixture_contract(
     the object content-addressed by :func:`load_fixture_contract`.
     """
     contract = copy.deepcopy(dict(raw_contract))
+    self_provided = contract.get("reference_class") == "self_provided_baseline"
     target_catalog_path = target_catalog_path.resolve()
     target_rows, targets_sha256 = _target_catalog_rows(target_catalog_path)
     contract["authority"]["live_target_catalog_path"] = (
@@ -809,21 +810,39 @@ def materialize_fixture_contract(
         prepull = row["prepull_setup"]
         prepull["flask"] = {
             "item_id": int(consume_profile["flask"]["item_id"]),
+            "item_spell_id": int(
+                consume_profile["flask"]["item_spell_id"]
+            ),
             "observed_aura_spell_id": int(
                 consume_profile["flask"]["observed_aura_spell_id"]
             ),
         }
         prepull["food"] = {
             "item_id": int(consume_profile["food"]["item_id"]),
+            "item_spell_id": int(
+                consume_profile["food"]["item_spell_id"]
+            ),
             "observed_aura_spell_id": int(
                 consume_profile["food"]["observed_aura_spell_id"]
             ),
         }
         prepull["prepot"] = {
-            "item_id": int(consume_profile["prepot"]["item_id"])
+            "item_id": int(consume_profile["prepot"]["item_id"]),
+            "item_spell_id": int(
+                consume_profile["prepot"]["item_spell_id"]
+            ),
+            "observed_aura_spell_id": int(
+                consume_profile["prepot"]["observed_aura_spell_id"]
+            ),
         }
         prepull["combat_potion"] = {
-            "item_id": int(consume_profile["combat_potion"]["item_id"])
+            "item_id": int(consume_profile["combat_potion"]["item_id"]),
+            "item_spell_id": int(
+                consume_profile["combat_potion"]["item_spell_id"]
+            ),
+            "observed_aura_spell_id": int(
+                consume_profile["combat_potion"]["observed_aura_spell_id"]
+            ),
         }
         prepull["form_presence"]["required_aura_spell_ids"] = sorted(
             {
@@ -886,10 +905,14 @@ def materialize_fixture_contract(
         prepull["external_windows"] = copy.deepcopy(external_windows)
 
         raid_buffs = copy.deepcopy(simulator_reference["raid_buffs"])
-        if spec != "retribution_paladin":
+        if not self_provided and spec != "retribution_paladin":
             raid_buffs["blessing_of_might"] = True
-        individual_buffs = copy.deepcopy(
-            simulator_reference["individual_buffs_by_spec"].get(spec, {})
+        individual_buffs = (
+            {}
+            if self_provided
+            else copy.deepcopy(
+                simulator_reference["individual_buffs_by_spec"].get(spec, {})
+            )
         )
         native_consumables = {
             "prepot_id": int(prepull["prepot"]["item_id"]),
@@ -974,39 +997,39 @@ def materialize_fixture_contract(
             "flask": copy.deepcopy(prepull["flask"]),
             "food": copy.deepcopy(prepull["food"]),
             "prepot": {
-                "item_id": int(prepull["prepot"]["item_id"]),
+                **copy.deepcopy(prepull["prepot"]),
                 "use_count": 1,
             },
             "combat_potion": {
-                "item_id": int(prepull["combat_potion"]["item_id"]),
+                **copy.deepcopy(prepull["combat_potion"]),
                 "use_count": 1,
             },
             "tinker": {"item_id": 0, "use_count": 0},
             "racial": {**copy.deepcopy(prepull["racial"]), "use_count": 0},
             "raid_buffs": {
                 "required_player_aura_spell_ids": copy.deepcopy(
-                    reference["common_player_aura_spell_ids"]
+                    [] if self_provided else reference["common_player_aura_spell_ids"]
                 ),
                 "mana_player_aura_spell_ids": copy.deepcopy(
                     reference["mana_player_aura_spell_ids"]
-                    if spec in MANA_RESOURCE_SPECS
+                    if not self_provided and spec in MANA_RESOURCE_SPECS
                     else []
                 ),
                 "primary_stat_aura_any_of_spell_ids": copy.deepcopy(
-                    reference["primary_stat_aura_any_of_spell_ids"]
+                    [] if self_provided else reference["primary_stat_aura_any_of_spell_ids"]
                 ),
                 "non_paladin_player_aura_spell_ids": copy.deepcopy(
                     reference["non_paladin_player_aura_spell_ids"]
-                    if spec != "retribution_paladin"
+                    if not self_provided and spec != "retribution_paladin"
                     else []
                 ),
             },
             "target_debuffs": {
                 "required_aura_spell_ids": copy.deepcopy(
-                    reference["target_aura_spell_ids"]
+                    [] if self_provided else reference["target_aura_spell_ids"]
                 ),
                 "required_stacked_auras": copy.deepcopy(
-                    reference["target_stacked_auras"]
+                    [] if self_provided else reference["target_stacked_auras"]
                 ),
                 **(
                     {"external_bleed_active": False}
@@ -1036,6 +1059,10 @@ def materialize_fixture_contract(
 
 def validate_fixture_contract(contract: Mapping[str, Any]) -> None:
     _require(contract.get("schema") == "phase8_calibration_fixture_contract_v1", "schema")
+    _require(
+        contract.get("reference_class") == "self_provided_baseline",
+        "reference_class",
+    )
     authority = contract.get("authority") or {}
     _require(
         authority.get("lifecycle_status") in LIFECYCLE_STATUSES,
@@ -1172,6 +1199,19 @@ def validate_fixture_contract(contract: Mapping[str, Any]) -> None:
     _require(bool(projection.get("raid_buffs")), "reference_environment:raid_buffs")
     _require(projection.get("party_buffs") == {}, "reference_environment:party_buffs")
     _require(bool(projection.get("target_debuffs")), "reference_environment:target_debuffs")
+    _require(
+        not any(bool(value) for value in projection["raid_buffs"].values()),
+        "reference_environment:external_raid_buff_enabled",
+    )
+    _require(
+        projection.get("individual_buffs") == {}
+        and projection.get("individual_buffs_by_spec") == {},
+        "reference_environment:external_individual_buff_enabled",
+    )
+    _require(
+        not any(bool(value) for value in projection["target_debuffs"].values()),
+        "reference_environment:target_debuff_enabled",
+    )
     _require(reference_environment.get("heroism_windows_ms") == [], "reference_environment:heroism")
     shadow_external = reference_environment.get("shadow_priest_external_windows") or {}
     _require(
@@ -1503,14 +1543,38 @@ def render_generated_header(contract: Mapping[str, Any], content_sha256: str) ->
                 "flask_aura": int(
                     row["prepull_setup"]["flask"]["observed_aura_spell_id"]
                 ),
+                "flask_item_spell": int(
+                    row["prepull_setup"]["flask"]["item_spell_id"]
+                ),
                 "flask_item": int(
                     row["prepull_setup"]["flask"]["item_id"]
                 ),
                 "food_aura": int(
                     row["prepull_setup"]["food"]["observed_aura_spell_id"]
                 ),
+                "food_item_spell": int(
+                    row["prepull_setup"]["food"]["item_spell_id"]
+                ),
                 "food_item": int(
                     row["prepull_setup"]["food"]["item_id"]
+                ),
+                "prepot_item": int(
+                    row["prepull_setup"]["prepot"]["item_id"]
+                ),
+                "prepot_item_spell": int(
+                    row["prepull_setup"]["prepot"]["item_spell_id"]
+                ),
+                "prepot_aura": int(
+                    row["prepull_setup"]["prepot"]["observed_aura_spell_id"]
+                ),
+                "combat_potion_item": int(
+                    row["prepull_setup"]["combat_potion"]["item_id"]
+                ),
+                "combat_potion_item_spell": int(
+                    row["prepull_setup"]["combat_potion"]["item_spell_id"]
+                ),
+                "combat_potion_aura": int(
+                    row["prepull_setup"]["combat_potion"]["observed_aura_spell_id"]
                 ),
                 "pet_runtime_projection_complete": bool(
                     row["runtime_expected"]["pet_setup"][
@@ -1538,6 +1602,7 @@ def render_generated_header(contract: Mapping[str, Any], content_sha256: str) ->
         "namespace BotCalibrationFixtureContractGenerated",
         "{",
         f"inline constexpr char Schema[] = {_cpp_string(contract['schema'])};",
+        f"inline constexpr char ReferenceClass[] = {_cpp_string(contract['reference_class'])};",
         f"inline constexpr char ContentSha256[] = {_cpp_string(content_sha256)};",
         f"inline constexpr char UpstreamRevision[] = {_cpp_string(contract['authority']['revision'])};",
         f"inline constexpr uint32_t TargetEntry = {int(target['entry'])};",
@@ -1573,9 +1638,17 @@ def render_generated_header(contract: Mapping[str, Any], content_sha256: str) ->
         "    uint16_t SetupAuraOffset;",
         "    uint8_t SetupAuraCount;",
         "    uint32_t FlaskItemId;",
+        "    uint32_t FlaskItemSpellId;",
         "    uint32_t FlaskAuraSpellId;",
         "    uint32_t FoodItemId;",
+        "    uint32_t FoodItemSpellId;",
         "    uint32_t FoodAuraSpellId;",
+        "    uint32_t PrepotItemId;",
+        "    uint32_t PrepotItemSpellId;",
+        "    uint32_t PrepotAuraSpellId;",
+        "    uint32_t CombatPotionItemId;",
+        "    uint32_t CombatPotionItemSpellId;",
+        "    uint32_t CombatPotionAuraSpellId;",
         "    bool PetRuntimeProjectionComplete;",
         "    float RuntimeMinimumDistanceYards;",
         "    float RuntimeMaximumDistanceYards;",
@@ -1614,8 +1687,11 @@ def render_generated_header(contract: Mapping[str, Any], content_sha256: str) ->
             f"{'true' if row['neutral_eclipse'] else 'false'}, "
             f"{'true' if row['pet_required'] else 'false'}, "
             f"{row['setup_aura_offset']}, {row['setup_aura_count']}, "
-            f"{row['flask_item']}, {row['flask_aura']}, "
-            f"{row['food_item']}, {row['food_aura']}, "
+            f"{row['flask_item']}, {row['flask_item_spell']}, {row['flask_aura']}, "
+            f"{row['food_item']}, {row['food_item_spell']}, {row['food_aura']}, "
+            f"{row['prepot_item']}, {row['prepot_item_spell']}, {row['prepot_aura']}, "
+            f"{row['combat_potion_item']}, {row['combat_potion_item_spell']}, "
+            f"{row['combat_potion_aura']}, "
             f"{'true' if row['pet_runtime_projection_complete'] else 'false'}, "
             f"{row['runtime_min_distance']:.1f}f, "
             f"{row['runtime_max_distance']:.1f}f }} ,"

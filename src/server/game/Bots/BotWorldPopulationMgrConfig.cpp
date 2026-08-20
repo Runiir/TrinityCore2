@@ -152,6 +152,8 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     Cohort().Config.PoolTagFilter = sConfigMgr->GetStringDefault("BotWorld.PoolTagFilter", Cohort().Config.PoolTagFilter);
     Cohort().Config.CombatCalibrationReferenceConditions = sConfigMgr->GetBoolDefault(
         "BotWorld.CombatCalibration.ReferenceConditions", Cohort().Config.CombatCalibrationReferenceConditions);
+    Cohort().Config.CombatCalibrationSelfProvidedBaseline = sConfigMgr->GetBoolDefault(
+        "BotWorld.CombatCalibration.SelfProvidedBaseline", Cohort().Config.CombatCalibrationSelfProvidedBaseline);
     Cohort().Config.ValidationRouteEnable = sConfigMgr->GetBoolDefault("BotWorld.ValidationRoute.Enable", Cohort().Config.ValidationRouteEnable);
     Cohort().Config.ValidationRouteManifestPath = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.ManifestPath", Cohort().Config.ValidationRouteManifestPath);
     Cohort().Config.ValidationRouteAdvanceMode = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.AdvanceMode", Cohort().Config.ValidationRouteAdvanceMode);

@@ -7,7 +7,9 @@
 #include "Config.h"
 #include "Creature.h"
 #include "DatabaseEnv.h"
+#include "Bag.h"
 #include "GameTime.h"
+#include "Item.h"
 #include "Log.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
@@ -43,6 +45,25 @@ std::string BoundedResultLabel(char const* result)
 std::string BoundedResultLabel(std::string const& result)
 {
     return BoundedResultLabel(result.c_str());
+}
+
+uint32 CountInventoryItem(Player* player, uint32 itemId)
+{
+    if (!player || !itemId)
+        return 0;
+    uint32 count = 0;
+    auto add = [&count, itemId](Item* item)
+    {
+        if (item && item->GetEntry() == itemId)
+            count += item->GetCount();
+    };
+    for (uint8 slot = INVENTORY_SLOT_ITEM_START; slot < INVENTORY_SLOT_ITEM_END; ++slot)
+        add(player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot));
+    for (uint8 bagSlot = INVENTORY_SLOT_BAG_START; bagSlot < INVENTORY_SLOT_BAG_END; ++bagSlot)
+        if (Bag* bag = player->GetBagByPos(bagSlot))
+            for (uint32 slot = 0; slot < bag->GetBagSize(); ++slot)
+                add(bag->GetItemByPos(slot));
+    return count;
 }
 
 uint32 SemanticMechanicKey(char const* eventType, char const* result)
@@ -193,12 +214,44 @@ void BotWorldPopulationMgr::NotifyBotItemSpellFinished(Player* caster,
     if (!caster || !spellId || !castItemGuid)
         return;
 
+    bool expectedSelfConsumableReceipt = false;
+    if (IsSelfProvidedCalibrationBaseline() && Cohort().CalibrationActive)
+        if (auto metricsItr = Cohort().CalibrationMetricsByGuid.find(
+                caster->GetGUID().GetCounter());
+            metricsItr != Cohort().CalibrationMetricsByGuid.end())
+        {
+            CalibrationMetrics& metrics = metricsItr->second;
+            std::array<CalibrationMetrics::NativeConsumableReceipt*, 4> receipts = {{
+                &metrics.FlaskConsumable, &metrics.FoodConsumable,
+                &metrics.PrepotConsumable, &metrics.CombatPotionConsumable,
+            }};
+            for (CalibrationMetrics::NativeConsumableReceipt* receipt : receipts)
+                if (receipt && receipt->SubmittedItemGuid == castItemGuid
+                    && receipt->SpellId == spellId
+                    && receipt->ItemId == castItemEntry)
+                {
+                    expectedSelfConsumableReceipt = true;
+                    receipt->FinishedAtMs = NowMs();
+                    receipt->FinishedItemGuid = castItemGuid;
+                    receipt->PostUseItemCount = CountInventoryItem(caster,
+                        receipt->ItemId);
+                    receipt->NativeUseFinishedSuccessfully = success;
+                    receipt->NextRetryAtMs = receipt->FinishedAtMs + 1000;
+                    if (success)
+                        ++receipt->SuccessfulUseCount;
+                    if (success && receipt == &metrics.CombatPotionConsumable
+                        && Cohort().CalibrationScoredStartedMs
+                        && !Cohort().CalibrationWindowComplete)
+                        ++metrics.ScoredPotionUseCount;
+                    break;
+                }
+        }
+
     // A completed native item spell is the only accepted dynamic-item-use
-    // receipt.  The base DPS fixture authorizes no scored potions, tinkers,
-    // trinkets, or other item activations; rogue poison setup finishes before
-    // the scored timestamp and therefore cannot satisfy or contaminate these
-    // counters.
-    if (success && Cohort().CalibrationActive
+    // receipt.  Self-provided mode counts only its expected combat potion as a
+    // permitted scored potion; all other native item completions remain
+    // visible as unexpected dynamic actions.
+    if (success && !expectedSelfConsumableReceipt && Cohort().CalibrationActive
         && Cohort().CalibrationScoredStartedMs
         && !Cohort().CalibrationWindowComplete)
         if (auto metricsItr = Cohort().CalibrationMetricsByGuid.find(
@@ -566,4 +619,3 @@ std::string BotWorldPopulationMgr::BuildNativeRecoveryEpisodeJson(
          << "}";
     return json.str();
 }
-

@@ -429,6 +429,9 @@ class TC_GAME_API Spell
         Item* m_CastItem;
         ObjectGuid m_castItemGUID;
         uint32 m_castItemEntry;
+        // Retained for native item-use telemetry after TakeCastItem destroys
+        // the last stack and clears the live cast-item pointer/entry.
+        uint32 m_initialCastItemEntry;
         uint8 m_cast_count;
         uint32 m_glyphIndex;
         SpellCastTargets m_targets;

@@ -494,19 +494,22 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
         else if constexpr (std::is_same_v<T, BotNativeAction::UseItem>)
         {
             // Follow the same request boundary as CMSG_USE_ITEM. In
-            // particular, item-on-item casts such as rogue poisons must pass
-            // live inventory ownership, item usability, the declared on-use
-            // spell, and the session's pending-cast checks. This path never
-            // writes an enchantment or consumes an item itself.
+            // particular, item-on-item casts such as rogue poisons and
+            // self-target consumables must pass live inventory ownership, item
+            // usability, the declared on-use spell, and the session's
+            // pending-cast checks. This path never writes an aura, enchantment,
+            // or item count itself.
             Item* item = bot->GetItemByGuid(action.Item);
             if (!item || !item->GetTemplate())
                 return BotActionArbitration::Outcome::Retryable(
                     "native_use_item_unavailable");
+            bool const selfTarget = action.Target.IsEmpty()
+                || action.Target == bot->GetGUID();
             Item* itemTarget = action.Target.IsItem()
                 ? bot->GetItemByGuid(action.Target) : nullptr;
-            if (!itemTarget || !itemTarget->GetTemplate())
+            if (!selfTarget && (!itemTarget || !itemTarget->GetTemplate()))
                 return BotActionArbitration::Outcome::Unsafe(
-                    "native_use_item_owned_item_target_required");
+                    "native_use_item_target_must_be_owned_item_or_self");
 
             ItemTemplate const* itemTemplate = item->GetTemplate();
             ItemEffect const* selectedEffect = nullptr;
@@ -538,8 +541,11 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
             request.Slot = item->GetSlot();
             request.CastItem = item->GetGUID();
             request.Cast.SpellID = int32(action.SpellId);
-            request.Cast.Target.Flags = TARGET_FLAG_ITEM;
-            request.Cast.Target.Item = itemTarget->GetGUID();
+            if (!selfTarget)
+            {
+                request.Cast.Target.Flags = TARGET_FLAG_ITEM;
+                request.Cast.Target.Item = itemTarget->GetGUID();
+            }
             bot->GetSession()->HandleUseItemOpcode(request);
             return BotActionArbitration::Outcome::Submitted(
                 "native_use_item_session_request_submitted");

@@ -648,6 +648,7 @@ m_caster((info->HasAttribute(SPELL_ATTR6_ORIGINATE_FROM_CONTROLLER) && caster->G
     m_CastItem = nullptr;
     m_castItemGUID.Clear();
     m_castItemEntry = 0;
+    m_initialCastItemEntry = 0;
 
     unitTarget = nullptr;
     itemTarget = nullptr;
@@ -3337,6 +3338,7 @@ SpellCastResult Spell::prepare(SpellCastTargets const& targets, AuraEffect const
     {
         m_castItemGUID = m_CastItem->GetGUID();
         m_castItemEntry = m_CastItem->GetEntry();
+        m_initialCastItemEntry = m_castItemEntry;
     }
     else
     {
@@ -4258,8 +4260,10 @@ void Spell::finish(bool ok)
             sBotWorldPopulationMgr->NotifyBotItemSpellFinished(playerCaster,
                 m_spellInfo->Id, ok, m_castItemGUID,
                 m_targets.GetItemTargetGUID(),
-                m_CastItem ? m_CastItem->GetEntry() : 0,
-                m_CastItem && m_CastItem->IsPotion());
+                m_initialCastItemEntry,
+                m_CastItem ? m_CastItem->IsPotion()
+                           : (sObjectMgr->GetItemTemplate(m_initialCastItemEntry)
+                               && sObjectMgr->GetItemTemplate(m_initialCastItemEntry)->IsPotion()));
     }
 
     // successful cast of the initial autorepeat spell is moved to idle state so that it is not deleted as long as autorepeat is active

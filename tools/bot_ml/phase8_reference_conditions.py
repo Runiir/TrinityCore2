@@ -1230,6 +1230,7 @@ def reference_condition_projections(
     configured = configured if isinstance(configured, Mapping) else {}
     dynamic = raw.get("dynamic_disabled")
     dynamic = dynamic if isinstance(dynamic, Mapping) else {}
+    self_provided = raw.get("reference_class") == "self_provided_baseline"
     player_guid = _integer(target.get("guid"))
     target_guid = _integer(fixture_target_guid)
     started_at_ms = _integer(scored_started_at_ms)
@@ -1275,9 +1276,15 @@ def reference_condition_projections(
 
     configured_integer_keys = (
         "flask_item_id",
+        "flask_item_spell_id",
         "flask_aura_spell_id",
         "food_item_id",
+        "food_item_spell_id",
         "food_aura_spell_id",
+        "prepot_item_spell_id",
+        "prepot_aura_spell_id",
+        "combat_potion_item_spell_id",
+        "combat_potion_aura_spell_id",
     )
     configured_integers_valid = all(
         type(configured.get(key)) is int for key in configured_integer_keys
@@ -1291,6 +1298,7 @@ def reference_condition_projections(
         and all(continuously_active(player_auras, spell_id) for spell_id in setup_aura_ids)
     )
     flask_item_id = _integer(configured.get("flask_item_id"))
+    flask_item_spell_id = _integer(configured.get("flask_item_spell_id"))
     flask_aura_id = _integer(configured.get("flask_aura_spell_id"))
     flask_valid = bool(
         flask_aura_id in FLASK_ITEM_BY_AURA
@@ -1303,6 +1311,7 @@ def reference_condition_projections(
         )
     )
     food_item_id = _integer(configured.get("food_item_id"))
+    food_item_spell_id = _integer(configured.get("food_item_spell_id"))
     food_aura_id = _integer(configured.get("food_aura_spell_id"))
     if food_aura_id == 0:
         food_valid = bool(
@@ -1320,12 +1329,16 @@ def reference_condition_projections(
         )
 
     raid_required_valid = all(
-        continuously_active(player_auras, spell_id)
+        continuously_inactive(player_auras, spell_id)
+        if self_provided else continuously_active(player_auras, spell_id)
         for spell_id in RAID_REQUIRED_PLAYER_AURA_IDS
     )
     primary_states_valid = all(
-        continuously_active(player_auras, spell_id)
-        or continuously_inactive(player_auras, spell_id)
+        continuously_inactive(player_auras, spell_id)
+        if self_provided else (
+            continuously_active(player_auras, spell_id)
+            or continuously_inactive(player_auras, spell_id)
+        )
         for spell_id in PRIMARY_STAT_AURA_IDS
     )
     primary_active_count = sum(
@@ -1347,23 +1360,24 @@ def reference_condition_projections(
     raid_buffs_valid = bool(
         raid_required_valid
         and primary_states_valid
-        and primary_active_count == 1
-        and (replenishment_active or replenishment_inactive)
-        and (might_active or might_inactive)
+        and (primary_active_count == 0 if self_provided else primary_active_count == 1)
+        and (replenishment_inactive if self_provided else (replenishment_active or replenishment_inactive))
+        and (might_inactive if self_provided else (might_active or might_inactive))
     )
     raid_buffs = {
-        "mana_player_aura_spell_ids": (
+        "mana_player_aura_spell_ids": [] if self_provided else (
             [REPLENISHMENT_AURA_ID] if replenishment_active else []
         ),
-        "non_paladin_player_aura_spell_ids": (
+        "non_paladin_player_aura_spell_ids": [] if self_provided else (
             [NON_PALADIN_MIGHT_AURA_ID] if might_active else []
         ),
-        "primary_stat_aura_any_of_spell_ids": list(PRIMARY_STAT_AURA_IDS),
-        "required_player_aura_spell_ids": list(RAID_REQUIRED_PLAYER_AURA_IDS),
+        "primary_stat_aura_any_of_spell_ids": [] if self_provided else list(PRIMARY_STAT_AURA_IDS),
+        "required_player_aura_spell_ids": [] if self_provided else list(RAID_REQUIRED_PLAYER_AURA_IDS),
     }
 
     target_required_valid = all(
-        continuously_active(target_auras, spell_id)
+        continuously_inactive(target_auras, spell_id)
+        if self_provided else continuously_active(target_auras, spell_id)
         for spell_id in REQUIRED_TARGET_DEBUFF_AURA_IDS
     )
     stacked_rows = raw.get("target_stacked_auras")
@@ -1393,12 +1407,12 @@ def reference_condition_projections(
             )
         )
         and _integer(sunder.get("required_stacks")) == 3
-        and _integer(sunder.get("matching_samples")) == sample_count
-        and _integer(sunder.get("mismatch_samples")) == 0
-        and _integer(sunder.get("minimum_observed_stacks")) == 3
-        and _integer(sunder.get("maximum_observed_stacks")) == 3
-        and _integer(sunder.get("caster_guid")) == player_guid
-        and _integer(sunder.get("owner_match_samples")) == sample_count
+        and _integer(sunder.get("matching_samples")) == (0 if self_provided else sample_count)
+        and _integer(sunder.get("mismatch_samples")) == (sample_count if self_provided else 0)
+        and _integer(sunder.get("minimum_observed_stacks")) == (0 if self_provided else 3)
+        and _integer(sunder.get("maximum_observed_stacks")) == (0 if self_provided else 3)
+        and _integer(sunder.get("caster_guid")) == (0 if self_provided else player_guid)
+        and _integer(sunder.get("owner_match_samples")) == (0 if self_provided else sample_count)
         and _integer(sunder.get("owner_mismatch_samples")) == 0
     )
     bleed_ids = raw.get("external_bleed_aura_spell_ids")
@@ -1410,12 +1424,16 @@ def reference_condition_projections(
         and _integer(raw.get("unexpected_external_bleed_active_samples")) == 0
         and all(spell_id in target_auras for spell_id in bleed_ids)
     )
-    target_debuffs: dict[str, Any] = {
-        "required_aura_spell_ids": list(REQUIRED_TARGET_DEBUFF_AURA_IDS),
-        "required_stacked_auras": [
-            {"spell_id": SUNDER_ARMOR_AURA_ID, "stacks": 3}
-        ],
-    }
+    target_debuffs: dict[str, Any] = (
+        {"required_aura_spell_ids": [], "required_stacked_auras": []}
+        if self_provided
+        else {
+            "required_aura_spell_ids": list(REQUIRED_TARGET_DEBUFF_AURA_IDS),
+            "required_stacked_auras": [
+                {"spell_id": SUNDER_ARMOR_AURA_ID, "stacks": 3}
+            ],
+        }
+    )
     if target_spec == "feral_druid_dps":
         target_debuffs["external_bleed_active"] = False
 
@@ -1486,18 +1504,30 @@ def reference_condition_projections(
     projections = {
         "flask": {
             "item_id": flask_item_id,
+            "item_spell_id": flask_item_spell_id,
             "observed_aura_spell_id": flask_aura_id,
         },
         "food": {
             "item_id": food_item_id,
+            "item_spell_id": food_item_spell_id,
             "observed_aura_spell_id": food_aura_id,
         },
         "prepot": {
             "item_id": _integer(dynamic.get("prepot_item_id")),
+            "item_spell_id": _integer(configured.get("prepot_item_spell_id")),
+            "observed_aura_spell_id": _integer(
+                configured.get("prepot_aura_spell_id")
+            ),
             "use_count": _integer(dynamic.get("prepot_use_count")),
         },
         "combat_potion": {
             "item_id": _integer(dynamic.get("combat_potion_item_id")),
+            "item_spell_id": _integer(
+                configured.get("combat_potion_item_spell_id")
+            ),
+            "observed_aura_spell_id": _integer(
+                configured.get("combat_potion_aura_spell_id")
+            ),
             "use_count": _integer(dynamic.get("combat_potion_use_count")),
         },
         "tinker": {
@@ -1557,6 +1587,15 @@ def reference_condition_projections(
         and sunder_valid
         and bleed_valid
         and dynamic_valid
+        and (
+            not self_provided
+            or (
+                type(raw.get("unexpected_player_aura_active_samples")) is int
+                and type(raw.get("unexpected_target_aura_active_samples")) is int
+                and _integer(raw.get("unexpected_player_aura_active_samples")) == 0
+                and _integer(raw.get("unexpected_target_aura_active_samples")) == 0
+            )
+        )
         and sniper_training_valid
         and bool(racial["race"])
     )
@@ -1590,9 +1629,8 @@ def compose_prepull_setup_projection(
     )
     projection: dict[str, Any] = {
         "combat_potion": {
-            "item_id": (conditions.get("combat_potion") or {}).get(
-                "item_id"
-            )
+            key: (conditions.get("combat_potion") or {}).get(key)
+            for key in ("item_id", "item_spell_id", "observed_aura_spell_id")
         },
         "external_windows": dict(external),
         "flask": dict(conditions.get("flask") or {}),
@@ -1601,7 +1639,8 @@ def compose_prepull_setup_projection(
         "heroism": {"authority": "reference_environment"},
         "item_swap": dict(item_swap),
         "prepot": {
-            "item_id": (conditions.get("prepot") or {}).get("item_id")
+            key: (conditions.get("prepot") or {}).get(key)
+            for key in ("item_id", "item_spell_id", "observed_aura_spell_id")
         },
         "racial": {
             key: (conditions.get("racial") or {}).get(key)

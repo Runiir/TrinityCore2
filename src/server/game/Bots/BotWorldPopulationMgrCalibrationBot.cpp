@@ -689,6 +689,8 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
         }
     }
 
+    if (EnsureCalibrationSelfProvidedConsumables(state, bot, target, scored))
+        return;
     auto [referenceBuffsReady, referenceTargetDebuffsReady] = ApplyCalibrationReferenceConditions(bot, target);
     metrics.ReferenceBuffsReady = referenceBuffsReady;
     metrics.ReferenceReplenishmentObserved = metrics.ReferenceReplenishmentObserved || bot->HasAura(57669);

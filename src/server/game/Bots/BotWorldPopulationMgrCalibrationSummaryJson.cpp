@@ -242,27 +242,37 @@ void BotWorldPopulationMgr::AppendCombatCalibrationSummaryJson(
          << Cohort().CalibrationExcludedBoundaryDamageEventCount
          << ",\"current_damage_phase\":\"" << JsonEscape(Cohort().CalibrationCurrentDamagePhase) << "\""
          << ",\"normalization\":{\"gear_basis\":\"equipped_clone_average_item_level\""
-         << ",\"buff_basis\":\"" << (Cohort().Config.CombatCalibrationReferenceConditions
-            ? "exact_static_fixture_auras" : "stonecore_party_owned_buffs") << "\""
-         << ",\"flask\":" << (Cohort().Config.CombatCalibrationReferenceConditions ? "true" : "false")
+         << ",\"buff_basis\":\"" << (IsSelfProvidedCalibrationBaseline()
+            ? "self_provided_consumables"
+            : (Cohort().Config.CombatCalibrationReferenceConditions
+                ? "exact_static_fixture_auras" : "stonecore_party_owned_buffs")) << "\""
+         << ",\"flask\":" << (IsSelfProvidedCalibrationBaseline()
+            || Cohort().Config.CombatCalibrationReferenceConditions ? "true" : "false")
          << ",\"heroism_window_seconds\":0"
          << ",\"external_power_infusion_windows_seconds\":[]"
          << ",\"external_power_infusion_source_count\":0"
          << ",\"dark_intent_base\":false"
          << ",\"dark_intent_proc_uptime_pct\":0"
          << ",\"food_buff_spell_id\":"
-         << (Cohort().Config.CombatCalibrationReferenceConditions
-             && (Cohort().CalibrationTargetSpec == "shadow_priest" || Cohort().CalibrationTargetSpec == "balance_druid")
-            ? 87547 : 0)
+         << (IsSelfProvidedCalibrationBaseline() && fixtureSpecContract
+                ? fixtureSpecContract->FoodAuraSpellId
+                : (Cohort().Config.CombatCalibrationReferenceConditions
+                    && (Cohort().CalibrationTargetSpec == "shadow_priest" || Cohort().CalibrationTargetSpec == "balance_druid")
+                    ? 87547 : 0))
          << ",\"synapse_springs_windows_seconds\":[]"
          << ",\"dispersion_cast_cap\":0"
-         << ",\"potions\":false"
+         << ",\"potions\":" << (IsSelfProvidedCalibrationBaseline() ? "true" : "false")
          << ",\"engineering_cooldowns\":false"
          << ",\"racial_cooldowns\":false"
-         << ",\"dynamic_consumable_actions\":false"
-         << ",\"consumables\":false"
-         << ",\"target_debuffs\":" << (Cohort().Config.CombatCalibrationReferenceConditions ? "true" : "false")
-         << ",\"reference_conditions\":" << (Cohort().Config.CombatCalibrationReferenceConditions ? "true" : "false")
+         << ",\"dynamic_consumable_actions\":" << (IsSelfProvidedCalibrationBaseline() ? "true" : "false")
+         << ",\"consumables\":" << (IsSelfProvidedCalibrationBaseline() ? "true" : "false")
+         << ",\"target_debuffs\":" << (Cohort().Config.CombatCalibrationReferenceConditions
+            && !IsSelfProvidedCalibrationBaseline() ? "true" : "false")
+         << ",\"reference_conditions\":" << (Cohort().Config.CombatCalibrationReferenceConditions
+            && !IsSelfProvidedCalibrationBaseline() ? "true" : "false")
+         << ",\"reference_class\":\""
+         << (IsSelfProvidedCalibrationBaseline()
+                ? "self_provided_baseline" : "controlled_live_parity") << "\""
          << ",\"external_bis_target_configured\":false"
          << ",\"execute_threshold_windows\":";
     if (Cohort().CalibrationMode != "single_target_300")
@@ -366,4 +376,3 @@ void BotWorldPopulationMgr::AppendCombatCalibrationSummaryJson(
     json << '}';
     json << ",\"failure_reason\":null}";
 }
-

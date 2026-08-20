@@ -85,6 +85,7 @@ struct BotWorldExperimentConfig
     std::string PoolTagFilter;
     std::vector<std::string> PoolClassSpecFilter;
     bool CombatCalibrationReferenceConditions = false;
+    bool CombatCalibrationSelfProvidedBaseline = false;
     bool ValidationRouteEnable = false;
     std::string ValidationRouteManifestPath;
     std::string ValidationRouteAdvanceMode = "disabled";

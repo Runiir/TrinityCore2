@@ -191,7 +191,10 @@ private:
     void DrainCalibrationPostWindowEffects();
     bool UpdateCalibrationHealer(WorldBotState& state, Player* healer);
     struct CalibrationMetrics;
+    bool IsSelfProvidedCalibrationBaseline() const;
     std::pair<bool, bool> ApplyCalibrationReferenceConditions(Player* bot, Unit* target) const;
+    bool EnsureCalibrationSelfProvidedConsumables(WorldBotState& state,
+        Player* bot, Unit* target, bool scored);
     void ObserveCalibrationReferenceConditions(CalibrationMetrics& metrics,
         Player* bot, Unit* target, uint64 observedAtMs) const;
     static void ObserveAfflictionCalibrationModifiers(CalibrationMetrics& metrics,
@@ -201,6 +204,9 @@ private:
         CalibrationMetrics const* metrics) const;
     void AppendCalibrationReferenceConditionJson(std::ostringstream& json,
         WorldBotState const& state, CalibrationMetrics const* metrics,
+        BotCalibrationFixtureContractGenerated::SpecContract const* fixtureSpecContract) const;
+    void AppendCalibrationConsumableExecutionJson(std::ostringstream& json,
+        CalibrationMetrics const* metrics,
         BotCalibrationFixtureContractGenerated::SpecContract const* fixtureSpecContract) const;
     void AppendCombatCalibrationBotRowsJson(std::ostringstream& json,
         std::map<uint32, CalibrationMetrics> const& metricsByGuid,
@@ -670,6 +676,24 @@ private:
 
     struct CalibrationMetrics
     {
+        struct NativeConsumableReceipt
+        {
+            uint32 ItemId = 0;
+            uint32 SpellId = 0;
+            uint32 RequiredUses = 1;
+            uint32 SubmissionCount = 0;
+            uint32 SuccessfulUseCount = 0;
+            uint32 PreUseItemCount = 0;
+            uint32 PostUseItemCount = 0;
+            uint64 SubmittedAtMs = 0;
+            uint64 FinishedAtMs = 0;
+            uint64 NextRetryAtMs = 0;
+            ObjectGuid SubmittedItemGuid;
+            ObjectGuid FinishedItemGuid;
+            bool NativeUseFinishedSuccessfully = false;
+            std::string Phase;
+        };
+
         struct EffectiveStatVector
         {
             struct AuraContribution
@@ -941,6 +965,13 @@ private:
         uint32 ScoredTinkerSpellUseCount = 0;
         uint32 UnexpectedDynamicAuraActiveSamples = 0;
         uint32 UnexpectedExternalBleedActiveSamples = 0;
+        uint32 UnexpectedSelfProvidedPlayerAuraActiveSamples = 0;
+        uint32 UnexpectedSelfProvidedTargetAuraActiveSamples = 0;
+        NativeConsumableReceipt FlaskConsumable;
+        NativeConsumableReceipt FoodConsumable;
+        NativeConsumableReceipt PrepotConsumable;
+        NativeConsumableReceipt CombatPotionConsumable;
+        bool PreScoreCooldownResetComplete = false;
         std::map<uint32, uint32> ReferencePlayerAuraActiveSamples;
         std::map<uint32, uint32> ReferencePlayerAuraInactiveSamples;
         std::map<uint32, uint32> ReferenceTargetAuraActiveSamples;

@@ -14,6 +14,9 @@ void BotWorldPopulationMgr::AppendCalibrationReferenceConditionJson(
     json << ",\"reference_condition_observation\":{\"schema\":\"phase8_reference_condition_observation_v1\""
                  << ",\"fixture_contract_sha256\":\""
                  << BotCalibrationFixtureContractGenerated::ContentSha256
+                 << "\",\"reference_class\":\""
+                 << (IsSelfProvidedCalibrationBaseline()
+                        ? "self_provided_baseline" : "controlled_live_parity")
                  << "\",\"player_guid\":" << state.Guid.GetCounter()
                  << ",\"fixture_target_guid\":"
                  << Cohort().CalibrationFixtureTargetGuid.GetCounter()
@@ -31,12 +34,28 @@ void BotWorldPopulationMgr::AppendCalibrationReferenceConditionJson(
                  << (metrics ? metrics->ReferenceConditionSampleCount : 0)
                  << ",\"configured\":{\"flask_item_id\":"
                  << (fixtureSpecContract ? fixtureSpecContract->FlaskItemId : 0)
+                 << ",\"flask_item_spell_id\":"
+                 << (fixtureSpecContract ? fixtureSpecContract->FlaskItemSpellId : 0)
                  << ",\"flask_aura_spell_id\":"
                  << (fixtureSpecContract ? fixtureSpecContract->FlaskAuraSpellId : 0)
                  << ",\"food_item_id\":"
                  << (fixtureSpecContract ? fixtureSpecContract->FoodItemId : 0)
+                 << ",\"food_item_spell_id\":"
+                 << (fixtureSpecContract ? fixtureSpecContract->FoodItemSpellId : 0)
                  << ",\"food_aura_spell_id\":"
                  << (fixtureSpecContract ? fixtureSpecContract->FoodAuraSpellId : 0)
+                 << ",\"prepot_item_id\":"
+                 << (fixtureSpecContract ? fixtureSpecContract->PrepotItemId : 0)
+                 << ",\"prepot_item_spell_id\":"
+                 << (fixtureSpecContract ? fixtureSpecContract->PrepotItemSpellId : 0)
+                 << ",\"prepot_aura_spell_id\":"
+                 << (fixtureSpecContract ? fixtureSpecContract->PrepotAuraSpellId : 0)
+                 << ",\"combat_potion_item_id\":"
+                 << (fixtureSpecContract ? fixtureSpecContract->CombatPotionItemId : 0)
+                 << ",\"combat_potion_item_spell_id\":"
+                 << (fixtureSpecContract ? fixtureSpecContract->CombatPotionItemSpellId : 0)
+                 << ",\"combat_potion_aura_spell_id\":"
+                 << (fixtureSpecContract ? fixtureSpecContract->CombatPotionAuraSpellId : 0)
                  << ",\"required_setup_aura_spell_ids\":[";
             std::vector<uint32> configuredSetupAuraSpellIds;
             if (fixtureSpecContract
@@ -161,9 +180,16 @@ void BotWorldPopulationMgr::AppendCalibrationReferenceConditionJson(
                  << "}],\"external_bleed_aura_spell_ids\":[16511,33876,46857]"
                  << ",\"unexpected_external_bleed_active_samples\":"
                  << (metrics ? metrics->UnexpectedExternalBleedActiveSamples : 0)
-                 << ",\"dynamic_disabled\":{\"prepot_item_id\":0,\"prepot_use_count\":"
-                 << (metrics && metrics->PreScoreLastPotionItemId ? 1 : 0)
-                 << ",\"combat_potion_item_id\":0,\"combat_potion_use_count\":"
+                 << ",\"dynamic_disabled\":{\"prepot_item_id\":"
+                 << (IsSelfProvidedCalibrationBaseline() && fixtureSpecContract
+                        ? fixtureSpecContract->PrepotItemId : 0)
+                 << ",\"prepot_use_count\":"
+                 << (IsSelfProvidedCalibrationBaseline() && metrics
+                        ? metrics->PrepotConsumable.SuccessfulUseCount : 0)
+                 << ",\"combat_potion_item_id\":"
+                 << (IsSelfProvidedCalibrationBaseline() && fixtureSpecContract
+                        ? fixtureSpecContract->CombatPotionItemId : 0)
+                 << ",\"combat_potion_use_count\":"
                  << (metrics ? metrics->ScoredPotionUseCount : 0)
                  << ",\"tinker_item_id\":0,\"tinker_spell_id\":0,\"tinker_use_count\":"
                  << (metrics ? metrics->ScoredTinkerOrOtherItemUseCount
@@ -174,5 +200,112 @@ void BotWorldPopulationMgr::AppendCalibrationReferenceConditionJson(
                  << (metrics ? metrics->LastPotionIdNonzeroSampleCount : 0)
                  << ",\"unexpected_dynamic_aura_active_samples\":"
                  << (metrics ? metrics->UnexpectedDynamicAuraActiveSamples : 0)
-                 << "}}";
+                 << "},\"native_consumables\":{\"enabled\":"
+                 << (IsSelfProvidedCalibrationBaseline() ? "true" : "false")
+                 << ",\"receipts\":[";
+            auto appendReceipt = [&json](
+                CalibrationMetrics::NativeConsumableReceipt const& receipt,
+                uint32 itemId, char const* phase, bool first)
+            {
+                if (!first)
+                    json << ',';
+                json << "{\"phase\":\"" << phase
+                     << "\",\"item_id\":" << itemId
+                     << ",\"spell_id\":" << receipt.SpellId
+                     << ",\"required_uses\":" << receipt.RequiredUses
+                     << ",\"submission_count\":" << receipt.SubmissionCount
+                     << ",\"successful_use_count\":" << receipt.SuccessfulUseCount
+                     << ",\"pre_use_item_count\":" << receipt.PreUseItemCount
+                     << ",\"post_use_item_count\":" << receipt.PostUseItemCount
+                     << ",\"submitted_at_ms\":" << receipt.SubmittedAtMs
+                     << ",\"finished_at_ms\":" << receipt.FinishedAtMs
+                     << ",\"native_use_finished_successfully\":"
+                     << (receipt.NativeUseFinishedSuccessfully ? "true" : "false")
+                     << ",\"submitted_item_guid\":"
+                     << receipt.SubmittedItemGuid.GetCounter()
+                     << ",\"finished_item_guid\":"
+                     << receipt.FinishedItemGuid.GetCounter() << '}';
+            };
+            CalibrationMetrics const emptyMetrics;
+            CalibrationMetrics const& receiptMetrics = metrics ? *metrics : emptyMetrics;
+            appendReceipt(receiptMetrics.FlaskConsumable,
+                fixtureSpecContract ? fixtureSpecContract->FlaskItemId : 0,
+                "flask_before_scoring", true);
+            appendReceipt(receiptMetrics.FoodConsumable,
+                fixtureSpecContract ? fixtureSpecContract->FoodItemId : 0,
+                "food_before_scoring", false);
+            appendReceipt(receiptMetrics.PrepotConsumable,
+                fixtureSpecContract ? fixtureSpecContract->PrepotItemId : 0,
+                "prepot_before_combat", false);
+            appendReceipt(receiptMetrics.CombatPotionConsumable,
+                fixtureSpecContract ? fixtureSpecContract->CombatPotionItemId : 0,
+                "combat_potion_during_combat", false);
+            json << "]},\"unexpected_player_aura_active_samples\":"
+                 << (metrics ? metrics->UnexpectedSelfProvidedPlayerAuraActiveSamples : 0)
+                 << ",\"unexpected_target_aura_active_samples\":"
+                 << (metrics ? metrics->UnexpectedSelfProvidedTargetAuraActiveSamples : 0)
+                 << "}";
+}
+
+void BotWorldPopulationMgr::AppendCalibrationConsumableExecutionJson(
+    std::ostringstream& json, CalibrationMetrics const* metrics,
+    BotCalibrationFixtureContractGenerated::SpecContract const* fixtureSpecContract) const
+{
+    CalibrationMetrics const emptyMetrics;
+    CalibrationMetrics const& observed = metrics ? *metrics : emptyMetrics;
+    auto auraObserved = [&observed](uint32 spellId)
+    {
+        auto itr = observed.ReferencePlayerAuraActiveSamples.find(spellId);
+        return itr != observed.ReferencePlayerAuraActiveSamples.end()
+            && itr->second > 0;
+    };
+    json << ",\"consumable_execution_observation\":{\"schema\":\"phase8_native_consumable_execution_v1\""
+         << ",\"inventory_backed\":true"
+         << ",\"static_aura_is_use_receipt\":false"
+         << ",\"enabled\":" << (IsSelfProvidedCalibrationBaseline() ? "true" : "false")
+         << ",\"flask\":{\"item_id\":"
+         << (fixtureSpecContract ? fixtureSpecContract->FlaskItemId : 0)
+         << ",\"native_use_count\":" << observed.FlaskConsumable.SuccessfulUseCount
+         << ",\"native_use_finished_successfully\":"
+         << (observed.FlaskConsumable.NativeUseFinishedSuccessfully ? "true" : "false")
+         << ",\"inventory_count_before\":" << observed.FlaskConsumable.PreUseItemCount
+         << ",\"inventory_count_after\":" << observed.FlaskConsumable.PostUseItemCount
+         << ",\"expected_aura_observed\":"
+         << (auraObserved(fixtureSpecContract ? fixtureSpecContract->FlaskAuraSpellId : 0) ? "true" : "false")
+         << ",\"submitted_at_ms\":" << observed.FlaskConsumable.SubmittedAtMs
+         << ",\"finished_at_ms\":" << observed.FlaskConsumable.FinishedAtMs << '}'
+         << ",\"food\":{\"item_id\":"
+         << (fixtureSpecContract ? fixtureSpecContract->FoodItemId : 0)
+         << ",\"native_use_count\":" << observed.FoodConsumable.SuccessfulUseCount
+         << ",\"native_use_finished_successfully\":"
+         << (observed.FoodConsumable.NativeUseFinishedSuccessfully ? "true" : "false")
+         << ",\"inventory_count_before\":" << observed.FoodConsumable.PreUseItemCount
+         << ",\"inventory_count_after\":" << observed.FoodConsumable.PostUseItemCount
+         << ",\"expected_aura_observed\":"
+         << (auraObserved(fixtureSpecContract ? fixtureSpecContract->FoodAuraSpellId : 0) ? "true" : "false")
+         << ",\"submitted_at_ms\":" << observed.FoodConsumable.SubmittedAtMs
+         << ",\"finished_at_ms\":" << observed.FoodConsumable.FinishedAtMs << '}'
+         << ",\"prepot\":{\"item_id\":"
+         << (fixtureSpecContract ? fixtureSpecContract->PrepotItemId : 0)
+         << ",\"native_use_count\":" << observed.PrepotConsumable.SuccessfulUseCount
+         << ",\"native_use_finished_successfully\":"
+         << (observed.PrepotConsumable.NativeUseFinishedSuccessfully ? "true" : "false")
+         << ",\"inventory_count_before\":" << observed.PrepotConsumable.PreUseItemCount
+         << ",\"inventory_count_after\":" << observed.PrepotConsumable.PostUseItemCount
+         << ",\"expected_aura_observed\":"
+         << (auraObserved(fixtureSpecContract ? fixtureSpecContract->PrepotAuraSpellId : 0) ? "true" : "false")
+         << ",\"submitted_at_ms\":" << observed.PrepotConsumable.SubmittedAtMs
+         << ",\"finished_at_ms\":" << observed.PrepotConsumable.FinishedAtMs << '}'
+         << ",\"combat_potion\":{\"item_id\":"
+         << (fixtureSpecContract ? fixtureSpecContract->CombatPotionItemId : 0)
+         << ",\"native_use_count\":" << observed.CombatPotionConsumable.SuccessfulUseCount
+         << ",\"native_use_finished_successfully\":"
+         << (observed.CombatPotionConsumable.NativeUseFinishedSuccessfully ? "true" : "false")
+         << ",\"inventory_count_before\":" << observed.CombatPotionConsumable.PreUseItemCount
+         << ",\"inventory_count_after\":" << observed.CombatPotionConsumable.PostUseItemCount
+         << ",\"expected_aura_observed\":"
+         << (auraObserved(fixtureSpecContract ? fixtureSpecContract->CombatPotionAuraSpellId : 0) ? "true" : "false")
+         << ",\"submitted_at_ms\":" << observed.CombatPotionConsumable.SubmittedAtMs
+         << ",\"finished_at_ms\":" << observed.CombatPotionConsumable.FinishedAtMs << '}'
+         << '}';
 }
