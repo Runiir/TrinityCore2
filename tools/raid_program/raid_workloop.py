@@ -260,6 +260,7 @@ def wowsims_status(root: Path = ROOT) -> dict[str, Any]:
     requests = _load_json(root / WOWSIMS_REQUESTS_PATH)
     promotion = _load_json(root / WOWSIMS_PROMOTION_PATH)
     request_rows = requests.get("requests") or []
+    reference_class = str(requests.get("reference_class") or "")
     request_specs = {
         str(row.get("target_spec") or "") for row in request_rows if isinstance(row, dict)
     }
@@ -287,6 +288,12 @@ def wowsims_status(root: Path = ROOT) -> dict[str, Any]:
     issues: list[str] = []
     if request_specs != set(roster["dps_targets"]):
         issues.append("request_target_universe_mismatch")
+    if reference_class not in {
+        "self_provided_baseline",
+        "controlled_live_parity",
+        "upstream_full_throughput",
+    }:
+        issues.append("request_reference_class_invalid")
     if len(candidates["current"]) != len(roster["dps_targets"]):
         issues.append("current_generation_receipts_incomplete")
     if len(accepted) != len(roster["dps_targets"]):
@@ -298,6 +305,7 @@ def wowsims_status(root: Path = ROOT) -> dict[str, Any]:
         "ready": not issues,
         "provider": requests.get("provider"),
         "provider_revision": requests.get("provider_revision"),
+        "reference_class": reference_class,
         "request_catalog_path": WOWSIMS_REQUESTS_PATH.as_posix(),
         "request_catalog_canonical_sha256": request_catalog_sha256,
         "request_catalog_file_sha256": request_catalog_file_sha256,
@@ -440,13 +448,14 @@ def build_spec_work_unit(spec: str, root: Path = ROOT) -> dict[str, Any]:
     if role == "dps":
         exact = wowsims_status(root)
         accepted = exact["accepted_dps"].get(spec)
+        accepted_class = exact["reference_class"] if accepted is not None else None
         stale = exact["_candidate_details"]["stale"].get(spec)
         current = exact["_candidate_details"]["current"].get(spec)
         output["benchmark"] = {
             "state": "ready" if accepted is not None else "blocked_exact_reference",
             "state_scope": "dps_acceptance_and_promotion_only",
             "accepted_dps": accepted,
-            "accepted_dps_reference_class": "controlled_live_parity",
+            "accepted_dps_reference_class": accepted_class,
             "accepted_dps_status_authority": (
                 "current_work_unit_catalog_projection_overrides_embedded_run_metadata"
             ),
@@ -457,7 +466,23 @@ def build_spec_work_unit(spec: str, root: Path = ROOT) -> dict[str, Any]:
                 "difference_between_classes": "expected_non_blocking",
                 "classes": {
                     "self_provided_baseline": {
-                        "state": "requires_generation",
+                        "state": (
+                            "ready"
+                            if accepted is not None
+                            and accepted_class == "self_provided_baseline"
+                            else "requires_generation"
+                        ),
+                        "catalog_classification": (
+                            "current_accepted"
+                            if accepted is not None
+                            and accepted_class == "self_provided_baseline"
+                            else "missing"
+                        ),
+                        "accepted_dps": (
+                            accepted
+                            if accepted_class == "self_provided_baseline"
+                            else None
+                        ),
                         "purpose": "one_sided_minimum_throughput_floor",
                         "duration_seconds": 300,
                         "duration_variation_seconds": 0,
@@ -480,12 +505,24 @@ def build_spec_work_unit(spec: str, root: Path = ROOT) -> dict[str, Any]:
                         },
                     },
                     "controlled_live_parity": {
-                        "state": "ready" if accepted is not None else "missing",
+                        "state": (
+                            "ready"
+                            if accepted is not None
+                            and accepted_class == "controlled_live_parity"
+                            else "missing"
+                        ),
                         "catalog_classification": (
-                            "current_accepted" if accepted is not None else "missing"
+                            "current_accepted"
+                            if accepted is not None
+                            and accepted_class == "controlled_live_parity"
+                            else "missing"
                         ),
                         "purpose": "like_for_like_action_stat_and_damage_diagnosis",
-                        "accepted_dps": accepted,
+                        "accepted_dps": (
+                            accepted
+                            if accepted_class == "controlled_live_parity"
+                            else None
+                        ),
                         "condition_identity_required_for_total_dps": True,
                     },
                     "upstream_full_throughput": {
@@ -527,8 +564,11 @@ def build_spec_work_unit(spec: str, root: Path = ROOT) -> dict[str, Any]:
             },
             "required_reference_work_unit": {
                 "owner_skill": "raid-wowsims-reference",
-                "work_unit": "wowsims:cata_raid_dps_reference_cohort_v1",
-                "reference_class": "controlled_live_parity",
+                "work_unit": (
+                    f"wowsims:{exact['reference_class']}:"
+                    "cata_raid_dps_reference_cohort_v1"
+                ),
+                "reference_class": exact["reference_class"],
                 "atomic_promotion_required": True,
                 "target_count": len(roster["dps_targets"]),
                 "target_specs": roster["dps_targets"],
@@ -553,6 +593,12 @@ def build_spec_work_unit(spec: str, root: Path = ROOT) -> dict[str, Any]:
                     "cata_raid_dps_reference_cohort_v1"
                 ),
                 "reference_class": "self_provided_baseline",
+                "state": (
+                    "satisfied"
+                    if accepted is not None
+                    and accepted_class == "self_provided_baseline"
+                    else "requires_generation"
+                ),
                 "scope": "simulator_reference_generation_only",
                 "atomic_promotion_required": True,
                 "target_count": len(roster["dps_targets"]),
@@ -587,7 +633,10 @@ def build_spec_work_unit(spec: str, root: Path = ROOT) -> dict[str, Any]:
                 },
             ],
             "next_action": (
-                "generate_self_provided_reference_and_continue_role_comparison"
+                "run_self_provided_consumable_canary"
+                if accepted is not None
+                and accepted_class == "self_provided_baseline"
+                else "generate_self_provided_reference_and_continue_role_comparison"
                 if accepted is not None
                 else "run_trace_only_diagnostic_and_handoff_exact_reference"
             ),

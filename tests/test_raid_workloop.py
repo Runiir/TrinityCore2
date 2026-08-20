@@ -29,6 +29,11 @@ def test_wowsims_gate_never_promotes_stale_candidates() -> None:
     assert len(status["request_catalog_canonical_sha256"]) == 64
     assert len(status["request_catalog_file_sha256"]) == 64
     assert status["accepted_reference_count"] <= 16
+    assert status["reference_class"] in {
+        "self_provided_baseline",
+        "controlled_live_parity",
+        "upstream_full_throughput",
+    }
     if status["accepted_reference_count"] != 16:
         assert status["ready"] is False
         assert "current_promoted_references_incomplete" in status["issues"]
@@ -69,7 +74,7 @@ def test_dps_work_unit_binds_all_duplicate_roster_slots() -> None:
     diagnostic = unit["benchmark"]["diagnostic_policy"]
     assert unit["benchmark"]["state_scope"] == "dps_acceptance_and_promotion_only"
     assert unit["benchmark"]["accepted_dps_reference_class"] == (
-        "controlled_live_parity"
+        "self_provided_baseline"
     )
     assert unit["benchmark"]["accepted_dps_status_authority"] == (
         "current_work_unit_catalog_projection_overrides_embedded_run_metadata"
@@ -81,6 +86,9 @@ def test_dps_work_unit_binds_all_duplicate_roster_slots() -> None:
     assert self_baseline["pass_rule"] == (
         "runtime_dps_greater_than_or_equal_to_reference"
     )
+    assert self_baseline["state"] == "ready"
+    assert self_baseline["catalog_classification"] == "current_accepted"
+    assert self_baseline["accepted_dps"] == unit["benchmark"]["accepted_dps"]
     assert self_baseline["upper_rejection_bound"] is None
     assert self_baseline["overtuned_is_failure"] is False
     assert self_baseline["external_raid_buffs"] is False
@@ -102,8 +110,10 @@ def test_dps_work_unit_binds_all_duplicate_roster_slots() -> None:
     assert "pet_execution" in diagnostic["allowed_signals"]
     assert "simulator_dps_ratio" in diagnostic["forbidden_claims"]
     assert reference_work["owner_skill"] == "raid-wowsims-reference"
-    assert reference_work["work_unit"] == "wowsims:cata_raid_dps_reference_cohort_v1"
-    assert reference_work["reference_class"] == "controlled_live_parity"
+    assert reference_work["work_unit"] == (
+        "wowsims:self_provided_baseline:cata_raid_dps_reference_cohort_v1"
+    )
+    assert reference_work["reference_class"] == "self_provided_baseline"
     assert reference_work["atomic_promotion_required"] is True
     assert reference_work["target_count"] == 16
     assert "fire_mage" in reference_work["target_specs"]
@@ -111,6 +121,7 @@ def test_dps_work_unit_binds_all_duplicate_roster_slots() -> None:
         workloop.wowsims_status()["request_catalog_canonical_sha256"]
     )
     assert self_reference_work["reference_class"] == "self_provided_baseline"
+    assert self_reference_work["state"] == "satisfied"
     assert self_reference_work["atomic_promotion_required"] is True
     assert self_reference_work["duration_seconds"] == 300
     assert self_reference_work["duration_variation_seconds"] == 0
@@ -133,7 +144,7 @@ def test_dps_work_unit_binds_all_duplicate_roster_slots() -> None:
     if unit["benchmark"]["state"] == "ready":
         assert unit["benchmark"]["accepted_dps"] > 0
         assert unit["benchmark"]["next_action"] == (
-            "generate_self_provided_reference_and_continue_role_comparison"
+            "run_self_provided_consumable_canary"
         )
     else:
         assert unit["benchmark"]["state"] == "blocked_exact_reference"
