@@ -120,6 +120,16 @@ def test_native_self_provided_path_uses_inventory_without_injecting_auras() -> N
     assert "DestroyItem" not in use_item
 
 
+def test_native_item_completion_retains_consumed_item_identity() -> None:
+    spell = _source("src/server/game/Spells/Spell.cpp")
+    header = _source("src/server/game/Spells/Spell.h")
+
+    assert "ObjectGuid m_initialCastItemGUID;" in header
+    assert "m_initialCastItemGUID = m_castItemGUID;" in spell
+    assert "if (m_initialCastItemGUID)" in spell
+    assert "m_spellInfo->Id, ok, m_initialCastItemGUID," in spell
+
+
 def test_prepot_runs_after_the_only_pre_score_cooldown_reset() -> None:
     reset = _source(
         "src/server/game/Bots/BotWorldPopulationMgrCalibrationReset.cpp"

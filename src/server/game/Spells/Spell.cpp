@@ -648,6 +648,7 @@ m_caster((info->HasAttribute(SPELL_ATTR6_ORIGINATE_FROM_CONTROLLER) && caster->G
     m_CastItem = nullptr;
     m_castItemGUID.Clear();
     m_castItemEntry = 0;
+    m_initialCastItemGUID.Clear();
     m_initialCastItemEntry = 0;
 
     unitTarget = nullptr;
@@ -3338,12 +3339,15 @@ SpellCastResult Spell::prepare(SpellCastTargets const& targets, AuraEffect const
     {
         m_castItemGUID = m_CastItem->GetGUID();
         m_castItemEntry = m_CastItem->GetEntry();
+        m_initialCastItemGUID = m_castItemGUID;
         m_initialCastItemEntry = m_castItemEntry;
     }
     else
     {
         m_castItemGUID.Clear();
         m_castItemEntry = 0;
+        m_initialCastItemGUID.Clear();
+        m_initialCastItemEntry = 0;
     }
 
     InitExplicitTargets(targets);
@@ -4256,9 +4260,9 @@ void Spell::finish(bool ok)
     if (Player* playerCaster = unitCaster->ToPlayer())
     {
         sBotWorldPopulationMgr->NotifyBotSpellFinished(playerCaster, m_spellInfo->Id, ok);
-        if (m_castItemGUID)
+        if (m_initialCastItemGUID)
             sBotWorldPopulationMgr->NotifyBotItemSpellFinished(playerCaster,
-                m_spellInfo->Id, ok, m_castItemGUID,
+                m_spellInfo->Id, ok, m_initialCastItemGUID,
                 m_targets.GetItemTargetGUID(),
                 m_initialCastItemEntry,
                 m_CastItem ? m_CastItem->IsPotion()
