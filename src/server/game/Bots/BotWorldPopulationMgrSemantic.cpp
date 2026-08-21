@@ -134,20 +134,6 @@ bool EventLooksFailure(char const* eventType, char const* result)
 
 }
 
-static CalibrationMetrics::ScoredOtherItemUse* FindScoredOtherItemUseSlot(
-    CalibrationMetrics& metrics, uint32 spellId, uint32 itemEntry)
-{
-    CalibrationMetrics::ScoredOtherItemUse* reuseSlot = nullptr;
-    for (CalibrationMetrics::ScoredOtherItemUse& use : metrics.ScoredOtherItemUses)
-    {
-        if (use.SpellId == spellId && use.ItemEntry == itemEntry)
-            return &use;
-        if (!reuseSlot && !use.SpellId && !use.ItemEntry)
-            reuseSlot = &use;
-    }
-    return reuseSlot;
-}
-
 void BotWorldPopulationMgr::NotifyBotSpellFinished(Player* caster, uint32 spellId, bool success)
 {
     if (!caster || !spellId)
@@ -282,12 +268,23 @@ void BotWorldPopulationMgr::NotifyBotItemSpellFinished(Player* caster,
             {
                 ++metrics.ScoredTinkerOrOtherItemUseCount;
                 ++metrics.ScoredOtherItemUseCount;
-                if (CalibrationMetrics::ScoredOtherItemUse* use =
-                    FindScoredOtherItemUseSlot(metrics, spellId, castItemEntry))
+                CalibrationMetrics::ScoredOtherItemUse* reuseSlot = nullptr;
+                for (CalibrationMetrics::ScoredOtherItemUse& use :
+                    metrics.ScoredOtherItemUses)
                 {
-                    use->SpellId = spellId;
-                    use->ItemEntry = castItemEntry;
-                    ++use->UseCount;
+                    if (use.SpellId == spellId && use.ItemEntry == castItemEntry)
+                    {
+                        reuseSlot = &use;
+                        break;
+                    }
+                    if (!reuseSlot && !use.SpellId && !use.ItemEntry)
+                        reuseSlot = &use;
+                }
+                if (reuseSlot)
+                {
+                    reuseSlot->SpellId = spellId;
+                    reuseSlot->ItemEntry = castItemEntry;
+                    ++reuseSlot->UseCount;
                 }
             }
         }

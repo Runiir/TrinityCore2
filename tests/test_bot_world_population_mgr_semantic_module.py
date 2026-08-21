@@ -80,13 +80,10 @@ def test_semantic_module_attributes_scored_other_item_uses() -> None:
     assert "struct ScoredOtherItemUse" in header
     assert "uint32 ScoredOtherItemUseCount = 0;" in header
     assert "std::array<ScoredOtherItemUse, 8> ScoredOtherItemUses;" in header
-    assert (
-        "FindScoredOtherItemUseSlot(metrics, spellId, castItemEntry)"
-        in item_finished
-    )
-    assert "use->SpellId = spellId;" in item_finished
-    assert "use->ItemEntry = castItemEntry;" in item_finished
-    assert "++use->UseCount;" in item_finished
+    assert "use.SpellId == spellId && use.ItemEntry == castItemEntry" in item_finished
+    assert "reuseSlot->SpellId = spellId;" in item_finished
+    assert "reuseSlot->ItemEntry = castItemEntry;" in item_finished
+    assert "++reuseSlot->UseCount;" in item_finished
 
     assert "++metrics.ScoredTinkerOrOtherItemUseCount;" in item_finished
     assert "++metrics.ScoredOtherItemUseCount;" in item_finished
