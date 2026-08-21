@@ -2795,6 +2795,7 @@ def derive_reference_condition_compatibility(
     target_observation: Any = None,
     runtime_facts: Any = None,
     expected_manifest: Any = None,
+    reference_class: Any = None,
 ) -> dict[str, Any]:
     """Recompute comparability; never trust a reported compatibility boolean.
 
@@ -2811,6 +2812,10 @@ def derive_reference_condition_compatibility(
     target = target_observation if isinstance(target_observation, Mapping) else {}
     supplied_runtime = runtime_facts if isinstance(runtime_facts, Mapping) else {}
     manifest = expected_manifest if isinstance(expected_manifest, Mapping) else {}
+    self_provided_baseline = (
+        str(reference_class) == "self_provided_baseline"
+        or str(normalization.get("buff_basis")) == "self_provided_consumables"
+    )
     runtime = {
         key: supplied_runtime.get(key)
         for key in (
@@ -3001,34 +3006,35 @@ def derive_reference_condition_compatibility(
     checks: dict[str, bool] = {}
 
     checks["supported_target_spec"] = target_spec in SUPPORTED_REFERENCE_SPECS
-    checks["reference_setup_enabled"] = setup.get("enabled") is True
     checks["replenishment_requirement_matches_spec"] = (
         setup.get("replenishment_required") is spec_uses_mana(target_spec)
     )
-    for key, expected in EXPECTED_REFERENCE_CONDITIONS.items():
-        checks[f"reference_{key}_matches"] = conditions.get(key) == expected
-    for aura in required_buff_auras(target_spec):
-        if aura == "kings_or_mark":
-            observed = primary_stat_aura_any_of == PRIMARY_STAT_AURA_IDS
-        else:
-            spell_id = int(aura)
-            observed = spell_id in required_player_auras
-            if spell_id == REPLENISHMENT_AURA_ID:
-                observed = spell_id in mana_player_auras
-            elif spell_id == NON_PALADIN_MIGHT_AURA_ID:
-                observed = spell_id in non_paladin_player_auras
-        checks[f"required_buff_aura_{aura}"] = bool(
-            reference_condition_observation_valid and observed
+    if not self_provided_baseline:
+        # Full-raid reference conditions only exist for controlled baselines.
+        # A self-provided baseline owns its own consumables and must not be
+        # rejected for the absence of a raid-buff environment it never had.
+        checks["reference_setup_enabled"] = setup.get("enabled") is True
+        for key, expected in EXPECTED_REFERENCE_CONDITIONS.items():
+            checks[f"reference_{key}_matches"] = conditions.get(key) == expected
+        for aura in required_buff_auras(target_spec):
+            if aura == "kings_or_mark":
+                observed = primary_stat_aura_any_of == PRIMARY_STAT_AURA_IDS
+            else:
+                spell_id = int(aura)
+                observed = spell_id in required_player_auras
+                if spell_id == REPLENISHMENT_AURA_ID:
+                    observed = spell_id in mana_player_auras
+                elif spell_id == NON_PALADIN_MIGHT_AURA_ID:
+                    observed = spell_id in non_paladin_player_auras
+            checks[f"required_buff_aura_{aura}"] = bool(
+                reference_condition_observation_valid and observed
+            )
+        checks["runtime_reference_conditions_enabled"] = (
+            normalization.get("reference_conditions") is True
         )
-    # The individual raw aura observations above are authoritative. The
-    # server's aggregate buffs_ready bit is retained elsewhere as a diagnostic
-    # and is deliberately not accepted as a substitute for those facts.
     checks["runtime_reference_not_declared_mismatched"] = (
         normalization.get("external_reference_mode")
         != "informational_only_conditions_mismatched"
-    )
-    checks["runtime_reference_conditions_enabled"] = (
-        normalization.get("reference_conditions") is True
     )
     checks["runtime_execute_threshold_windows_valid"] = (
         execute_observations_valid
@@ -3046,9 +3052,12 @@ def derive_reference_condition_compatibility(
     checks["runtime_external_windows_observation_valid"] = (
         external_windows_observation_valid
     )
-    checks["runtime_reference_condition_observation_valid"] = (
-        reference_condition_observation_valid
-    )
+    if not self_provided_baseline:
+        # Raid-buff observation validity is undefined when the baseline class
+        # never provisions a raid-buff environment.
+        checks["runtime_reference_condition_observation_valid"] = (
+            reference_condition_observation_valid
+        )
     checks["runtime_pet_setup_receipts_valid"] = pet_observation_valid
     checks["runtime_prepull_setup_receipts_valid"] = prepull_observation_valid
     reference_gear_sha256 = str(runtime.get("reference_gear_manifest_sha256") or "")

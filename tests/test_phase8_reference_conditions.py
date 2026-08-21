@@ -355,6 +355,76 @@ def test_nonmana_reference_compatibility_does_not_require_replenishment() -> Non
     assert compatibility["conditions_compatible"] is False
 
 
+def test_self_provided_baseline_skips_raid_condition_predicates() -> None:
+    calibration, target, setup, runtime, manifest = _compatible_fixture()
+
+    compatibility = derive_reference_condition_compatibility(
+        target_spec="arms_warrior",
+        reference_setup=setup,
+        reference_conditions=EXPECTED_REFERENCE_CONDITIONS,
+        calibration=calibration,
+        runtime_normalization=calibration["normalization"],
+        target_observation=target,
+        runtime_facts=runtime,
+        expected_manifest=manifest,
+        reference_class="self_provided_baseline",
+    )
+
+    checks = compatibility["checks"]
+    assert "reference_setup_enabled" not in checks
+    assert not [name for name in checks if name.startswith("required_buff_aura_")]
+    assert "runtime_reference_conditions_enabled" not in checks
+    assert "runtime_reference_condition_observation_valid" not in checks
+    assert "reference_setup_enabled" not in compatibility["reasons"]
+    assert checks["replenishment_requirement_matches_spec"] is True
+
+
+def test_buff_basis_self_provided_consumables_implies_baseline_class() -> None:
+    calibration, target, setup, runtime, manifest = _compatible_fixture()
+    normalization = copy.deepcopy(calibration["normalization"])
+    normalization["buff_basis"] = "self_provided_consumables"
+
+    compatibility = derive_reference_condition_compatibility(
+        target_spec="arms_warrior",
+        reference_setup=setup,
+        reference_conditions=EXPECTED_REFERENCE_CONDITIONS,
+        calibration=calibration,
+        runtime_normalization=normalization,
+        target_observation=target,
+        runtime_facts=runtime,
+        expected_manifest=manifest,
+    )
+
+    checks = compatibility["checks"]
+    assert "reference_setup_enabled" not in checks
+    assert not [name for name in checks if name.startswith("required_buff_aura_")]
+    assert "runtime_reference_conditions_enabled" not in checks
+
+
+def test_controlled_baseline_still_requires_raid_conditions() -> None:
+    calibration, target, setup, runtime, manifest = _compatible_fixture()
+    setup = copy.deepcopy(setup)
+    setup["enabled"] = False
+
+    compatibility = derive_reference_condition_compatibility(
+        target_spec="arms_warrior",
+        reference_setup=setup,
+        reference_conditions=EXPECTED_REFERENCE_CONDITIONS,
+        calibration=calibration,
+        runtime_normalization=calibration["normalization"],
+        target_observation=target,
+        runtime_facts=runtime,
+        expected_manifest=manifest,
+    )
+
+    assert compatibility["checks"]["reference_setup_enabled"] is False
+    assert "reference_setup_enabled" in compatibility["reasons"]
+    assert any(
+        name.startswith("required_buff_aura_")
+        for name in compatibility["checks"]
+    )
+
+
 def test_mana_spec_missing_replenishment_is_incompatible() -> None:
     calibration, target, setup, runtime, manifest = _compatible_fixture()
     setup = copy.deepcopy(setup)
@@ -1832,6 +1902,28 @@ def test_reference_condition_projections_reconstruct_full_window_raw_facts() -> 
     assert projection["form_presence"] == {
         "required_aura_spell_ids": [2457]
     }
+
+
+def test_reference_condition_projections_tolerate_attributed_other_item_keys() -> None:
+    target = _reference_condition_observation()
+    dynamic = target["reference_condition_observation"]["dynamic_disabled"]
+    dynamic["other_item_use_count"] = 2
+    dynamic["other_item_uses"] = [
+        {"spell_id": 82174, "item_entry": 60443, "count": 1},
+        {"spell_id": 40768, "item_entry": 36946, "count": 1},
+    ]
+
+    projection, valid = reference_condition_projections(
+        "arms_warrior",
+        target,
+        fixture_target_guid=90,
+        fixture_contract_sha256="e" * 64,
+        scored_started_at_ms=1_000,
+        scored_ended_at_ms=301_000,
+    )
+
+    assert projection["tinker"] == {"item_id": 0, "use_count": 0}
+    assert valid is True
 
 
 def test_reference_condition_projections_reject_raw_identity_and_condition_tamper() -> None:

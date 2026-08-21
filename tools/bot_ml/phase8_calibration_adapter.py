@@ -311,6 +311,7 @@ def normalize_runtime_calibration(
             ),
         },
         expected_manifest=expected_comparison_manifest,
+        reference_class=normalization.get("reference_class"),
     )
 
     identity = {
