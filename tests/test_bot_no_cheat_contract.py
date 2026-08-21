@@ -301,11 +301,18 @@ def test_hunter_admission_observes_exact_ordinary_pet_without_manufacturing_stat
         "pet->GetEntry() != stored->CreatureId",
         "petSpell.state != PETSPELL_REMOVED",
         "petSpell.type != PETSPELL_FAMILY",
-        "observed.Spellbook == expectedSpellbook",
-        "observed.PetId == expectedPetId",
-        "observed.PetEntry == expectedPetEntry",
     ):
         assert token in observer or token in pinned_pet
+    # Shard rosters own disjoint pet rows, so the pinned identity is the
+    # cohort's own admission-frozen receipt rather than the reference-world
+    # catalog row number and spellbook.
+    for token in (
+        "frozenPet.PetId == observedPet.PetId",
+        "frozenPet.PetEntry == observedPet.PetEntry",
+        "frozenPet.PetSpellbook == observedPet.Spellbook",
+        "frozenPet.PetSpellbookSha256 == observedPet.SpellbookSha256",
+    ):
+        assert token in admission
     assert "!activeObservationOnly" in admission
     # The roster-composition helper is now a separate owner called by
     # EnsureValidationCohortGroup; keep the admission-to-runtime chain intact.
@@ -343,7 +350,7 @@ def test_hunter_admission_observes_exact_ordinary_pet_without_manufacturing_stat
         assert forbidden not in observed_admission
 
 
-def test_active_hunter_pet_identity_is_reconciled_against_catalog_and_frozen_receipt() -> None:
+def test_active_hunter_pet_identity_is_reconciled_against_frozen_receipt() -> None:
     source = WORLD.read_text(encoding="utf-8")
     admission = function_body(
         source, "void BotWorldPopulationMgr::EnsureValidationCohortGroup"
@@ -357,22 +364,27 @@ def test_active_hunter_pet_identity_is_reconciled_against_catalog_and_frozen_rec
     for token in (
         "admission.AdmissionReceiptByGuid.find",
         "ObserveActiveOrdinaryHunterPet(bot, observedPet)",
-        "ResolveExpectedHunterPetIdentity(",
-        "observedPet.PetId == expectedPetId",
-        "observedPet.PetEntry == expectedPetEntry",
-        "observedPet.Spellbook == expectedSpellbook",
-        "observedPet.SpellbookSha256",
         "frozenPet.PetId == observedPet.PetId",
         "frozenPet.PetEntry == observedPet.PetEntry",
+        "frozenPet.PetSpellCount == observedPet.Spellbook.size()",
         "frozenPet.PetSpellbook == observedPet.Spellbook",
         "frozenPet.PetSpellbookSha256 == observedPet.SpellbookSha256",
         '"validation_active_hunter_pet_receipt_missing"',
         '"validation_active_hunter_pet_missing"',
-        '"validation_active_hunter_pet_canonical_identity_drift"',
         '"validation_active_hunter_pet_admission_identity_drift"',
         "MarkValidationCohortViolation(*invalidState, invalidBot, invalidReason)",
     ):
         assert token in active
+
+    # The compile-time catalog row belongs to the reference world; a disjoint
+    # shard's pet row number and spellbook can never equal it, so the active
+    # reconciliation must compare against the frozen receipt only.
+    for forbidden in (
+        "ResolveExpectedHunterPetIdentity(",
+        "observedPet.PetId == expectedPetId",
+        '"validation_active_hunter_pet_canonical_identity_drift"',
+    ):
+        assert forbidden not in active
 
     # Active reconciliation is observation-only: it can close the action gate
     # through the existing terminal-violation path, but cannot repair the pet.

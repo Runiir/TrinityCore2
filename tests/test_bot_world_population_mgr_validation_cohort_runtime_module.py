@@ -35,3 +35,16 @@ def test_validation_cohort_runtime_keeps_native_roster_and_recovery_contract():
         "raid.ReadyCheckSatisfied",
     ):
         assert marker in text
+
+
+def test_validation_cohort_runtime_pet_pinning_is_scoped_to_cohort_roster():
+    text = MODULE.read_text()
+    # The composition gate keeps requiring an active ordinary pet for every
+    # hunter member, but the expected identity comes from the shard's own
+    # frozen roster: the compile-time catalog pins one reference-world pet
+    # row number and spellbook that a disjoint roster can never equal.
+    assert "!LoadedBotMatchesPinnedHunterPet(bot, slot.ClassSpec)" in text
+    assert "Diagnostic shards own disjoint pet rows" in text
+    assert "return ObserveActiveOrdinaryHunterPet(bot, observed);" in text
+    assert "ResolveExpectedHunterPetIdentity" not in text
+    assert "observed.PetId == expectedPetId" not in text

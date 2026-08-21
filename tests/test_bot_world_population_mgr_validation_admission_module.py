@@ -118,3 +118,26 @@ def test_validation_seed_group_survives_native_map_entry():
     # one-member raid seed would otherwise be disbanded inside AddPlayerToMap
     # and the cohort would split across two native instances.
     assert "group->isLFGGroup() && group->GetMembersCount() == 1" in lfg_scripts
+
+
+def test_validation_admission_keeps_exact_roster_pet_identity_cohort_scoped():
+    # The exact-roster preflight binds every plan slot to one manifest guid,
+    # name, and class spec; the hunter pet identity must stay bound to that
+    # same admitted cohort. The compile-time catalog pins a single
+    # reference-world pet row number and spellbook, which disjoint diagnostic
+    # rosters can never equal, so both validation translation units scope the
+    # pinned pet identity to the cohort's own observed row and freeze it into
+    # the admission receipt instead.
+    runtime = (
+        ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationCohortRuntime.cpp"
+    ).read_text()
+    cohort_group = (
+        ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationCohortGroup.cpp"
+    ).read_text()
+    for module in (runtime, cohort_group):
+        assert "Diagnostic shards own disjoint pet rows" in module
+        assert "return ObserveActiveOrdinaryHunterPet(bot, observed);" in module
+        assert "ResolveExpectedHunterPetIdentity" not in module
+    assert "!LoadedBotMatchesPinnedHunterPet(bot, slot.ClassSpec)" in runtime
+    assert "!LoadedBotMatchesPinnedHunterPet(member, row.ClassSpec)" in cohort_group
+    assert "frozenPet.PetId == observedPet.PetId" in cohort_group

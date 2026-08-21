@@ -44,3 +44,22 @@ def test_validation_cohort_group_adopts_leader_seed_group_before_creating():
     assert "FindSeedRaidGroupForLeader" in (
         ROOT / "src/server/game/Bots/BotMgr.h"
     ).read_text()
+
+
+def test_validation_cohort_group_reconciles_hunter_pet_against_frozen_receipt():
+    module = MODULE.read_text()
+    # Shard rosters own disjoint pet rows: the pinned hunter pet identity is
+    # the cohort's own admission receipt, not the reference-world catalog row.
+    assert "!LoadedBotMatchesPinnedHunterPet(member, row.ClassSpec)" in module
+    assert "Diagnostic shards own disjoint pet rows" in module
+    for marker in (
+        "frozenPet.PetId == observedPet.PetId",
+        "frozenPet.PetEntry == observedPet.PetEntry",
+        "frozenPet.PetSpellCount == observedPet.Spellbook.size()",
+        "frozenPet.PetSpellbook == observedPet.Spellbook",
+        "frozenPet.PetSpellbookSha256 == observedPet.SpellbookSha256",
+        '"validation_active_hunter_pet_admission_identity_drift"',
+    ):
+        assert marker in module
+    assert "ResolveExpectedHunterPetIdentity" not in module
+    assert '"validation_active_hunter_pet_canonical_identity_drift"' not in module

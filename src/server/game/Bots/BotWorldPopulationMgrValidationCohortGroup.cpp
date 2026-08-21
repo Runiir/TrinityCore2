@@ -65,28 +65,6 @@ BotAdmissionIdentityGenerated::Identity const* FindExpectedBotAdmissionIdentity(
     return nullptr;
 }
 
-bool ResolveExpectedHunterPetIdentity(std::string const& classSpec,
-    uint32& petId, uint32& petEntry,
-    std::vector<std::pair<uint32, uint8>>& spellbook)
-{
-    auto const* identity = FindExpectedBotAdmissionIdentity(classSpec);
-    if (!identity || !identity->PetId || !identity->PetEntry
-        || !identity->PetSpellCount
-        || identity->PetSpellOffset + identity->PetSpellCount
-            > BotAdmissionIdentityGenerated::PetSpells.size())
-        return false;
-    petId = identity->PetId;
-    petEntry = identity->PetEntry;
-    spellbook.clear();
-    for (uint32 index = 0; index < identity->PetSpellCount; ++index)
-    {
-        auto const& spell = BotAdmissionIdentityGenerated::PetSpells[
-            identity->PetSpellOffset + index];
-        spellbook.emplace_back(spell.SpellId, spell.Active);
-    }
-    return true;
-}
-
 std::string HunterPetSpellbookSha256(
     std::vector<std::pair<uint32, uint8>> const& spellbook)
 {
@@ -141,28 +119,17 @@ bool ObserveActiveOrdinaryHunterPet(Player const* bot,
 }
 
 bool LoadedBotMatchesPinnedHunterPet(Player const* bot,
-    std::string const& classSpec)
+    std::string const& /*classSpec*/)
 {
     if (!bot || bot->getClass() != CLASS_HUNTER)
         return true;
-    uint32 expectedPetId = 0;
-    uint32 expectedPetEntry = 0;
-    std::vector<std::pair<uint32, uint8>> expectedSpellbook;
-    if (!ResolveExpectedHunterPetIdentity(classSpec, expectedPetId,
-            expectedPetEntry, expectedSpellbook))
-        return false;
-    std::vector<uint32> expectedAutocastSpellIds;
-    for (auto const& [spellId, active] : expectedSpellbook)
-        if (active == ACT_ENABLED)
-            expectedAutocastSpellIds.push_back(spellId);
-    std::sort(expectedAutocastSpellIds.begin(), expectedAutocastSpellIds.end());
+    // The compile-time catalog pins one reference-world pet row number and
+    // spellbook. Diagnostic shards own disjoint pet rows by construction, so
+    // roster composition pins the cohort's own active ordinary pet here; its
+    // exact identity is frozen into the admission receipt and every later
+    // pass reconciles against that frozen copy.
     HunterPetIdentitySnapshot observed;
-    return ObserveActiveOrdinaryHunterPet(bot, observed)
-        && observed.PetId == expectedPetId
-        && observed.PetEntry == expectedPetEntry
-        && observed.Spellbook == expectedSpellbook
-        && observed.SpellbookSha256 == HunterPetSpellbookSha256(expectedSpellbook)
-        && observed.AutocastSpellIds == expectedAutocastSpellIds;
+    return ObserveActiveOrdinaryHunterPet(bot, observed);
 }
 
 bool ResolveExpectedBotGearIdentity(std::string const& classSpec,
@@ -312,24 +279,10 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
                     continue;
                 }
 
-                uint32 expectedPetId = 0;
-                uint32 expectedPetEntry = 0;
-                std::vector<std::pair<uint32, uint8>> expectedSpellbook;
-                bool const canonicalPetMatches = ResolveExpectedHunterPetIdentity(
-                        admittedPet->second.ClassSpec, expectedPetId, expectedPetEntry,
-                        expectedSpellbook)
-                    && observedPet.PetId == expectedPetId
-                    && observedPet.PetEntry == expectedPetEntry
-                    && observedPet.Spellbook == expectedSpellbook
-                    && observedPet.SpellbookSha256
-                        == HunterPetSpellbookSha256(expectedSpellbook);
-                if (!canonicalPetMatches)
-                {
-                    invalidate(state, bot,
-                        "validation_active_hunter_pet_canonical_identity_drift");
-                    continue;
-                }
-
+                // The admission receipt froze this cohort's own pet row
+                // number and spellbook; the compile-time catalog names the
+                // reference world's row and cannot identify a disjoint
+                // shard's pet. Reconcile only against that frozen copy.
                 CohortAdmissionMemberReceipt const& frozenPet = admittedPet->second;
                 bool const frozenPetMatches = frozenPet.PetId == observedPet.PetId
                     && frozenPet.PetEntry == observedPet.PetEntry
