@@ -132,7 +132,9 @@ bool EventLooksFailure(char const* eventType, char const* result)
         || res.find("blocked") != std::string::npos;
 }
 
-CalibrationMetrics::ScoredOtherItemUse* FindScoredOtherItemUseSlot(
+}
+
+static CalibrationMetrics::ScoredOtherItemUse* FindScoredOtherItemUseSlot(
     CalibrationMetrics& metrics, uint32 spellId, uint32 itemEntry)
 {
     CalibrationMetrics::ScoredOtherItemUse* reuseSlot = nullptr;
@@ -144,7 +146,6 @@ CalibrationMetrics::ScoredOtherItemUse* FindScoredOtherItemUseSlot(
             reuseSlot = &use;
     }
     return reuseSlot;
-}
 }
 
 void BotWorldPopulationMgr::NotifyBotSpellFinished(Player* caster, uint32 spellId, bool success)
