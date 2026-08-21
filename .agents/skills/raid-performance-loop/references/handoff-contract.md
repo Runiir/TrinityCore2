@@ -43,3 +43,16 @@ Rules:
   catalog, binary, receipt, or DVC digests into a generic `sha256` comparison.
 - The next owner must be able to start from the paths and hashes without
   repeating repository-wide discovery.
+- Never return an empty final message. An empty handoff is a missed receipt:
+  the coordinator must request status and then interrupt on the second miss.
+- Every claimed fix must name the exact test commands it ran with pass/fail
+  counts. A fix without executed tests is `failed`, not `passed`.
+- Before threading a new field through any gate, prove the field exists in one
+  real closed artifact (cite path plus JSON path). If only a derived signal
+  exists (for example `buff_basis: self_provided_consumables`), derive from
+  that instead of inventing an absent key.
+- When a condition class does not apply to the selected reference class, skip
+  its predicates entirely; never invert them into absence assertions that can
+  false-fail on stray observations.
+- When the honest fix requires native changes or a new capture, stop at that
+  edge and report it exactly; do not approximate it with a tools-side hack.

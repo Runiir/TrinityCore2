@@ -104,6 +104,14 @@ handoff. After the first missed receipt, request status without interrupting.
 After the second consecutive miss, interrupt and request the bounded handoff;
 do not let silence expand into repository discovery or an optimization loop.
 
+Treat an empty final message as a missed receipt: verify what actually landed
+with `git status`/`git diff` and your own test run before accepting or
+rejecting the unit. Reject any fix handoff that (a) did not execute its tests,
+(b) threads a field that no real closed artifact contains, or (c) inverts
+non-applicable predicates instead of skipping them. When one worker proves a
+fix requires native changes or a new capture, stop that lane; do not redispatch
+the same tools-side unit against the same edge.
+
 ## Parallelize only disjoint lanes
 
 Parallel work is useful across these boundaries:
