@@ -141,3 +141,38 @@ def test_validation_admission_keeps_exact_roster_pet_identity_cohort_scoped():
     assert "!LoadedBotMatchesPinnedHunterPet(bot, slot.ClassSpec)" in runtime
     assert "!LoadedBotMatchesPinnedHunterPet(member, row.ClassSpec)" in cohort_group
     assert "frozenPet.PetId == observedPet.PetId" in cohort_group
+
+
+def test_validation_admission_keeps_gear_identity_scoped_to_cohort_receipt():
+    # The compile-time catalog pins one reference-world gear manifest sha per
+    # spec, which disjoint diagnostic-shard provisioning can never equal. The
+    # receipt loop must therefore anchor only the catalog profile id and
+    # freeze the cohort's own observed manifest; every later pass (cohort
+    # gate and raid-runtime telemetry) reconciles against that frozen copy.
+    cohort_group = (
+        ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationCohortGroup.cpp"
+    ).read_text()
+    raid_runtime = (
+        ROOT / "src/server/game/Bots/BotWorldPopulationMgrRaidRuntime.cpp"
+    ).read_text()
+    assert "Diagnostic shards own disjoint gear manifests" in cohort_group
+    assert "Diagnostic shards own disjoint gear manifests" in raid_runtime
+    assert (
+        "row.GearManifestSha256 != expectedGearManifestSha256"
+        not in cohort_group
+    )
+    assert '"validation_cohort_gear_identity_mismatch"' in cohort_group
+    # Post-admission drift enforcement stays fail-closed against the frozen
+    # receipt: any item/enchant/reforge/gem edit still disqualifies the bot.
+    assert (
+        "currentManifestSha256 != receiptItr->second.GearManifestSha256"
+        in cohort_group
+    )
+    assert (
+        "currentManifestSha256 == receipt.GearManifestSha256" in raid_runtime
+    )
+    assert (
+        "receiptItr->second.GearManifestSha256 != expectedManifestSha256"
+        not in cohort_group
+    )
+    assert "receipt.GearManifestSha256 == expectedManifestSha256" not in raid_runtime

@@ -50,6 +50,10 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
             }
         std::vector<RaidRosterItemIdentity> currentManifest;
         std::string currentManifestSha256;
+        // Diagnostic shards own disjoint gear manifests by construction, so
+        // the compile-time reference-world manifest sha cannot identify their
+        // equipped items. Matches are measured against the admission
+        // receipt's own frozen copy of the cohort's equipped gear.
         std::string expectedGearProfileId;
         std::string expectedManifestSha256;
         Player const* member = state ? GetLoadedBot(*state) : nullptr;
@@ -59,7 +63,6 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
             && ObserveEquippedGearIdentity(member,
                 currentManifest, currentManifestSha256)
             && receipt.GearProfileId == expectedGearProfileId
-            && receipt.GearManifestSha256 == expectedManifestSha256
             && currentManifestSha256 == receipt.GearManifestSha256
             && EquippedGearManifestsEqual(currentManifest, receipt.GearManifest);
         currentGearManifestSha256ByGuid.emplace(guid, currentManifestSha256);

@@ -63,3 +63,34 @@ def test_validation_cohort_group_reconciles_hunter_pet_against_frozen_receipt():
         assert marker in module
     assert "ResolveExpectedHunterPetIdentity" not in module
     assert '"validation_active_hunter_pet_canonical_identity_drift"' not in module
+
+
+def test_validation_cohort_group_reconciles_gear_against_frozen_receipt():
+    module = MODULE.read_text()
+    # Shard rosters own disjoint gear manifests: the pinned gear identity is
+    # the cohort's own admission receipt, not the reference-world catalog sha.
+    assert "Diagnostic shards own disjoint gear manifests" in module
+    # Admission anchors only the catalog profile id and freezes the cohort's
+    # own observed manifest into the receipt.
+    assert (
+        "!ResolveExpectedBotGearIdentity(row.ClassSpec,\n"
+        "                        row.GearProfileId, expectedGearManifestSha256)"
+    ) in module
+    assert "!ObserveEquippedGearIdentity(member," in module
+    assert '"validation_cohort_gear_identity_mismatch"' in module
+    assert (
+        "row.GearManifestSha256 != expectedGearManifestSha256" not in module
+    )
+    for marker in (
+        "!ResolveExpectedBotGearIdentity(state.RosterClassSpec,",
+        'receiptItr->second.ClassSpec != state.RosterClassSpec',
+        "receiptItr->second.GearProfileId != expectedGearProfileId",
+        "currentManifestSha256 != receiptItr->second.GearManifestSha256",
+        "!EquippedGearManifestsEqual(",
+        '"validation_cohort_gear_identity_drift"',
+    ):
+        assert marker in module
+    assert (
+        "receiptItr->second.GearManifestSha256 != expectedManifestSha256"
+        not in module
+    )
