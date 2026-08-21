@@ -409,6 +409,15 @@ std::vector<PlannedValidationRaidSpawn> validationRaidSpawnPlan;
             BotRaidAreaAuthority::Clear(itr->GetRawValue());
             sBotMgr->RemoveWorldBot(*itr);
         }
+        if (!spawnedGuids.empty())
+        {
+            if (Group* ghostCohortGroup = sBotMgr->FindSeedRaidGroupForLeader(spawnedGuids.front()))
+            {
+                TC_LOG_INFO("server", "BotWorld validation cohort group rollback disband leader=%s group=%s",
+                    spawnedGuids.front().ToString().c_str(), ghostCohortGroup->GetGUID().ToString().c_str());
+                ghostCohortGroup->Disband();
+            }
+        }
         for (uint32 guid : claimedGuids)
         {
             ReleaseBotGuid(guid);

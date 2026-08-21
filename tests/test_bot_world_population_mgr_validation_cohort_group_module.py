@@ -31,3 +31,16 @@ def test_validation_cohort_group_keeps_native_admission_receipts():
         "ObserveActiveOrdinaryHunterPet",
     ):
         assert marker in module
+
+
+def test_validation_cohort_group_adopts_leader_seed_group_before_creating():
+    module = MODULE.read_text()
+    assert "sBotMgr->FindSeedRaidGroupForLeader(leader->GetGUID())" in module
+    assert "BotWorld validation cohort group adopted" in module
+    assert "leader->SetGroup(group, group->GetMemberGroup(leader->GetGUID()))" in module
+    # Adoption of an existing leader-owned seed group must be attempted
+    # before any new-group creation fallback.
+    assert module.index("FindSeedRaidGroupForLeader") < module.index("new Group()")
+    assert "FindSeedRaidGroupForLeader" in (
+        ROOT / "src/server/game/Bots/BotMgr.h"
+    ).read_text()

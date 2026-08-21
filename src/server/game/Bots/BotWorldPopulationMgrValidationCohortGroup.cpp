@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotAdmissionIdentityGenerated.h"
+#include "Bots/BotMgr.h"
 
 #include "CharmInfo.h"
 #include "Cryptography/CryptoHash.h"
@@ -374,6 +375,8 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
 
     Group* group = leader->GetGroup();
     if (!group)
+        group = sBotMgr->FindSeedRaidGroupForLeader(leader->GetGUID());
+    if (!group)
     {
         if (activeObservationOnly)
         {
@@ -391,6 +394,14 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
 
         sGroupMgr->AddGroup(group);
         TC_LOG_INFO("server", "BotWorld validation cohort group created leader=%s group=%s",
+            leader->GetGUID().ToString().c_str(), group->GetGUID().ToString().c_str());
+    }
+    else if (group != leader->GetGroup())
+    {
+        // The seed slot persists in the adopted group; only the leader's
+        // reference dropped. Re-link exactly like Player::_LoadGroup.
+        leader->SetGroup(group, group->GetMemberGroup(leader->GetGUID()));
+        TC_LOG_INFO("server", "BotWorld validation cohort group adopted leader=%s group=%s",
             leader->GetGUID().ToString().c_str(), group->GetGUID().ToString().c_str());
     }
 

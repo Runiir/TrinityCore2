@@ -76,6 +76,7 @@ private:
     bool IsOwnedBot(ObjectGuid botGuid) const;
     ObjectGuid GetOwnerGuid(ObjectGuid botGuid) const;
     bool IsTrackedPartyMember(ObjectGuid botGuid, ObjectGuid unitGuid) const;
+    Group* FindSeedRaidGroupForLeader(ObjectGuid leaderGuid) const;
     struct BotSpawnPlacement
     {
         uint32 MapId;
@@ -107,6 +108,7 @@ private:
     std::map<ObjectGuid, BotRecentEvents> _recentEventsByBot;
     std::set<ObjectGuid> _removingBots;
     std::set<ObjectGuid> _worldBots;
+    std::map<ObjectGuid, ObjectGuid::LowType> _seedRaidGroupsByLeader;
     BotActionExecutor _executor;
 };
 

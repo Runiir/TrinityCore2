@@ -56,3 +56,27 @@ def test_validation_admission_seeds_raid_leader_before_map_entry():
     assert "PlayerBot raid seed group created" in bot_mgr
     assert "seedRaidLeader" in bot_mgr
     assert "CANNOT_ENTER_NOT_IN_RAID && seedRaidLeader" in bot_mgr
+
+
+def test_validation_admission_seed_divergence_fails_closed():
+    bot_mgr = (
+        __import__("pathlib").Path("src/server/game/Bots/BotMgr.cpp").read_text()
+    )
+    # After Group::Create the leader reference must still point at the seed;
+    # divergence is logged with both guids and the seed is cleaned fail-closed.
+    assert "bot->GetGroup() == seed" in bot_mgr
+    assert "PlayerBot raid seed group diverged" in bot_mgr
+    assert "sGroupMgr->RemoveGroup(seed)" in bot_mgr
+    assert "_seedRaidGroupsByLeader" in bot_mgr
+    # A diverged seed skips the re-entry probe so NOT_IN_RAID persists.
+    assert "if (!seedDiverged)" in bot_mgr
+
+
+def test_validation_admission_rollback_disbands_ghost_seed_group():
+    text = MODULE.read_text()
+    assert "FindSeedRaidGroupForLeader(spawnedGuids.front())" in text
+    assert "ghostCohortGroup->Disband()" in text
+    # The ghost disband runs only after every spawned bot was removed.
+    assert text.index("RemoveWorldBot(*itr)") < text.index(
+        "ghostCohortGroup->Disband()"
+    )

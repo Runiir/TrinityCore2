@@ -847,10 +847,28 @@ void BotMgr::OnGroupRemoveMember(Group* /*group*/, ObjectGuid guid)
         Remove(owner, "all");
 }
 
+Group* BotMgr::FindSeedRaidGroupForLeader(ObjectGuid leaderGuid) const
+{
+    auto itr = _seedRaidGroupsByLeader.find(leaderGuid);
+    if (itr == _seedRaidGroupsByLeader.end())
+        return nullptr;
+
+    Group* group = sGroupMgr->GetGroupByGUID(itr->second);
+    return group && group->GetLeaderGUID() == leaderGuid ? group : nullptr;
+}
+
 void BotMgr::OnGroupDisband(Group* group)
 {
     if (!group)
         return;
+
+    for (auto itr = _seedRaidGroupsByLeader.begin(); itr != _seedRaidGroupsByLeader.end();)
+    {
+        if (itr->second == group->GetGUID().GetCounter())
+            itr = _seedRaidGroupsByLeader.erase(itr);
+        else
+            ++itr;
+    }
 
     std::vector<Player*> ownersToClean;
     for (auto const& ownerBots : _botsByOwner)
@@ -1229,19 +1247,34 @@ Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Pla
             // A validation raid admission seeds its cohort with the first
             // planned member. The raid forms here so the leader's own entry
             // creates the one native instance every later member joins.
+            bool seedDiverged = false;
             if (Group* seed = new Group())
             {
                 if (seed->Create(bot))
                 {
                     sGroupMgr->AddGroup(seed);
                     seed->ConvertToRaid();
-                    TC_LOG_INFO("server", "PlayerBot raid seed group created leader=%s group=%s map=%u",
-                        guid.ToString().c_str(), seed->GetGUID().ToString().c_str(), placement->MapId);
+                    if (bot->GetGroup() == seed)
+                    {
+                        _seedRaidGroupsByLeader[guid] = seed->GetGUID().GetCounter();
+                        TC_LOG_INFO("server", "PlayerBot raid seed group created leader=%s group=%s map=%u",
+                            guid.ToString().c_str(), seed->GetGUID().ToString().c_str(), placement->MapId);
+                    }
+                    else
+                    {
+                        TC_LOG_ERROR("server", "PlayerBot raid seed group diverged leader=%s seed=%s member_group=%s",
+                            guid.ToString().c_str(), seed->GetGUID().ToString().c_str(),
+                            bot->GetGroup() ? bot->GetGroup()->GetGUID().ToString().c_str() : ObjectGuid::Empty.ToString());
+                        sGroupMgr->RemoveGroup(seed);
+                        delete seed;
+                        seedDiverged = true;
+                    }
                 }
                 else
                     delete seed;
             }
-            denyReason = Map::PlayerCannotEnter(placement->MapId, bot, false);
+            if (!seedDiverged)
+                denyReason = Map::PlayerCannotEnter(placement->MapId, bot, false);
         }
         if (denyReason != Map::CAN_ENTER)
         {
