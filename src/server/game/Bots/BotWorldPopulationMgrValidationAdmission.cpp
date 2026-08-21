@@ -539,16 +539,51 @@ std::vector<PlannedValidationRaidSpawn> validationRaidSpawnPlan;
     {
         Player* bot = GetLoadedBot(state);
         Group* group = bot ? bot->GetGroup() : nullptr;
-        if (!bot || !bot->IsInWorld() || !bot->IsAlive()
-            || bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST) || bot->HasCorpse() || !group
-            || !state.ValidationCohortLocked
-            || bot->GetMapId() != routeStart.BotStartMapId || !bot->GetInstanceId()
-            || Distance2d(bot->GetPositionX(), bot->GetPositionY(),
-                routeStart.BotStartX, routeStart.BotStartY) > RouteStartHorizontalToleranceYards
-            || std::fabs(bot->GetPositionZ() - routeStart.BotStartZ) > RouteStartVerticalToleranceYards
-            || state.ValidationCohortMapId != bot->GetMapId()
-            || state.ValidationCohortInstanceId != bot->GetInstanceId())
+        std::string failedConditions;
+        auto appendFailedCondition = [&failedConditions](std::string const& detail)
         {
+            if (!failedConditions.empty())
+                failedConditions += ',';
+            failedConditions += detail;
+        };
+        if (!bot)
+            appendFailedCondition("loaded_bot_missing");
+        else
+        {
+            if (!bot->IsInWorld())
+                appendFailedCondition("not_in_world");
+            if (!bot->IsAlive())
+                appendFailedCondition("not_alive");
+            if (bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST))
+                appendFailedCondition("ghost_flag");
+            if (bot->HasCorpse())
+                appendFailedCondition("corpse");
+            if (!group)
+                appendFailedCondition("native_group_missing");
+            if (!state.ValidationCohortLocked)
+                appendFailedCondition("cohort_not_locked");
+            if (bot->GetMapId() != routeStart.BotStartMapId)
+                appendFailedCondition("map_mismatch:" + std::to_string(bot->GetMapId()));
+            if (!bot->GetInstanceId())
+                appendFailedCondition("zero_instance_id");
+            float const horizontalDrift = Distance2d(bot->GetPositionX(), bot->GetPositionY(),
+                routeStart.BotStartX, routeStart.BotStartY);
+            if (horizontalDrift > RouteStartHorizontalToleranceYards)
+                appendFailedCondition("horizontal_drift:" + std::to_string(horizontalDrift));
+            float const verticalDrift = std::fabs(bot->GetPositionZ() - routeStart.BotStartZ);
+            if (verticalDrift > RouteStartVerticalToleranceYards)
+                appendFailedCondition("vertical_drift:" + std::to_string(verticalDrift));
+            if (state.ValidationCohortMapId != bot->GetMapId())
+                appendFailedCondition("frozen_map_mismatch:" + std::to_string(state.ValidationCohortMapId));
+            if (state.ValidationCohortInstanceId != bot->GetInstanceId())
+                appendFailedCondition("frozen_instance_mismatch:" + std::to_string(state.ValidationCohortInstanceId));
+        }
+        if (!failedConditions.empty())
+        {
+            TC_LOG_ERROR("server", "BotWorld validation raid admission exact state failed bot=%s slot=%s expected_map=%u expected_instance_locked=%u expected_pos=%.3f,%.3f,%.3f conditions=%s",
+                state.Guid.ToString().c_str(), state.RosterSlotId.c_str(), routeStart.BotStartMapId,
+                uint32(state.ValidationCohortLocked), routeStart.BotStartX, routeStart.BotStartY,
+                routeStart.BotStartZ, failedConditions.c_str());
             exactNativeGroup = false;
             break;
         }
@@ -556,6 +591,8 @@ std::vector<PlannedValidationRaidSpawn> validationRaidSpawnPlan;
             admittedGroupGuid = group->GetGUID();
         else if (admittedGroupGuid != group->GetGUID())
         {
+            TC_LOG_ERROR("server", "BotWorld validation raid admission exact state failed bot=%s slot=%s conditions=split_native_group",
+                state.Guid.ToString().c_str(), state.RosterSlotId.c_str());
             exactNativeGroup = false;
             break;
         }

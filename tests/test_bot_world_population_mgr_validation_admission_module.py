@@ -80,3 +80,41 @@ def test_validation_admission_rollback_disbands_ghost_seed_group():
     assert text.index("RemoveWorldBot(*itr)") < text.index(
         "ghostCohortGroup->Disband()"
     )
+
+
+def test_validation_admission_exact_state_failure_names_conditions():
+    text = MODULE.read_text()
+    # The post-loop verification must log one line per failing bot naming the
+    # exact failed conditions instead of collapsing into an opaque rollback.
+    assert 'TC_LOG_ERROR("server", "BotWorld validation raid admission exact state failed' in text
+    for marker in (
+        '"loaded_bot_missing"',
+        '"not_in_world"',
+        '"not_alive"',
+        '"ghost_flag"',
+        '"corpse"',
+        '"native_group_missing"',
+        '"cohort_not_locked"',
+        '"map_mismatch:"',
+        '"zero_instance_id"',
+        '"horizontal_drift:"',
+        '"vertical_drift:"',
+        '"frozen_map_mismatch:"',
+        '"frozen_instance_mismatch:"',
+        "conditions=split_native_group",
+    ):
+        assert marker in text
+    # Fail-closed semantics are unchanged: diagnostics precede the rollback.
+    assert text.index("conditions=%s") < text.index(
+        "validation_raid_admission_exact_group_or_alive_state_failed"
+    )
+
+
+def test_validation_seed_group_survives_native_map_entry():
+    lfg_scripts = (
+        ROOT / "src/server/game/DungeonFinding/LFGScripts.cpp"
+    ).read_text()
+    # The LFG solo-residue disband must not fire for non-LFG groups; a fresh
+    # one-member raid seed would otherwise be disbanded inside AddPlayerToMap
+    # and the cohort would split across two native instances.
+    assert "group->isLFGGroup() && group->GetMembersCount() == 1" in lfg_scripts
