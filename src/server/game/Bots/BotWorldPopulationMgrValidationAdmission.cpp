@@ -5,6 +5,7 @@
 
 #include "Config.h"
 #include "DatabaseEnv.h"
+#include "DataStores/DBCStores.h"
 #include "GameTime.h"
 #include "Group.h"
 #include "Log.h"
@@ -442,15 +443,27 @@ std::vector<PlannedValidationRaidSpawn> validationRaidSpawnPlan;
             }
         }
 
-        Player* bot = groupAnchor
-            ? sBotMgr->ProvisionWorldBotInGroup(groupAnchor, "any", std::to_string(planned.Guid),
+        Player* bot = nullptr;
+        MapEntry const* placementMap = sMapStore.LookupEntry(planned.Placement.MapId);
+        if (!groupAnchor && placementMap && placementMap->IsRaid())
+        {
+            // The first planned member seeds the cohort raid so its own raid
+            // map entry creates the one native instance every later member
+            // joins. Ungrouped entry would fail closed on NOT_IN_RAID.
+            bot = sBotMgr->ProvisionWorldBotRaidSeed("any", std::to_string(planned.Guid),
                 planned.Placement.MapId, planned.Placement.X, planned.Placement.Y,
-                planned.Placement.Z, planned.Placement.O,
-                BotMgr::NoProvisionedDungeonDifficulty, Cohort().Config.RaidDifficulty)
-            : sBotMgr->ProvisionWorldBot("any", std::to_string(planned.Guid),
-                planned.Placement.MapId, planned.Placement.X, planned.Placement.Y,
-                planned.Placement.Z, planned.Placement.O,
-                BotMgr::NoProvisionedDungeonDifficulty, Cohort().Config.RaidDifficulty);
+                planned.Placement.Z, planned.Placement.O, Cohort().Config.RaidDifficulty);
+        }
+        if (!bot)
+            bot = groupAnchor
+                ? sBotMgr->ProvisionWorldBotInGroup(groupAnchor, "any", std::to_string(planned.Guid),
+                    planned.Placement.MapId, planned.Placement.X, planned.Placement.Y,
+                    planned.Placement.Z, planned.Placement.O,
+                    BotMgr::NoProvisionedDungeonDifficulty, Cohort().Config.RaidDifficulty)
+                : sBotMgr->ProvisionWorldBot("any", std::to_string(planned.Guid),
+                    planned.Placement.MapId, planned.Placement.X, planned.Placement.Y,
+                    planned.Placement.Z, planned.Placement.O,
+                    BotMgr::NoProvisionedDungeonDifficulty, Cohort().Config.RaidDifficulty);
         if (!bot)
         {
             rollbackAdmission("validation_raid_admission_spawn_failed");

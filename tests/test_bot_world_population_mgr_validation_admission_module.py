@@ -42,3 +42,17 @@ def test_validation_admission_keeps_transaction_and_identity_contract():
         "rollbackAdmission",
     ):
         assert marker in text
+
+
+def test_validation_admission_seeds_raid_leader_before_map_entry():
+    text = MODULE.read_text()
+    # The first planned member must seed the cohort raid instead of entering
+    # a raid map ungrouped, which fails closed on CANNOT_ENTER_NOT_IN_RAID.
+    assert "ProvisionWorldBotRaidSeed" in text
+    assert "placementMap->IsRaid()" in text
+    bot_mgr = (
+        __import__("pathlib").Path("src/server/game/Bots/BotMgr.cpp").read_text()
+    )
+    assert "PlayerBot raid seed group created" in bot_mgr
+    assert "seedRaidLeader" in bot_mgr
+    assert "CANNOT_ENTER_NOT_IN_RAID && seedRaidLeader" in bot_mgr

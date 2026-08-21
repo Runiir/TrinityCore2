@@ -285,6 +285,35 @@ Player* BotMgr::ProvisionWorldBot(std::string const& role, std::string const& se
     return bot;
 }
 
+Player* BotMgr::ProvisionWorldBotRaidSeed(std::string const& role, std::string const& selector, uint32 mapId,
+    float x, float y, float z, float o, uint8 raidDifficulty)
+{
+    if (!sConfigMgr->GetBoolDefault("PlayerBot.Enable", false)
+        || raidDifficulty == NoProvisionedRaidDifficulty
+        || raidDifficulty >= MAX_RAID_DIFFICULTY)
+        return nullptr;
+
+    std::string normalizedRole = NormalizeBotRole(role);
+    if (!IsKnownBotRole(normalizedRole) && !IsMixedBotRoleSelector(normalizedRole))
+        return nullptr;
+
+    BotSpawnPlacement placement = { mapId, x, y, z, o };
+    Player* bot = LoadBotFromPool(nullptr, normalizedRole, selector, &placement,
+        nullptr, NoProvisionedDungeonDifficulty, raidDifficulty, true);
+    if (!bot)
+        return nullptr;
+
+    ObjectGuid botGuid = bot->GetGUID();
+    bot->CastStop();
+    bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+    bot->GetMotionMaster()->MoveIdle();
+    _worldBots.insert(botGuid);
+    TC_LOG_INFO("server", "PlayerBot raid seed provision complete bot=%s name=%s map=%u instance=%u raid_difficulty=%u position=%f,%f,%f",
+        botGuid.ToString().c_str(), bot->GetName().c_str(), bot->GetMapId(), bot->GetInstanceId(),
+        uint32(raidDifficulty), x, y, z);
+    return bot;
+}
+
 Player* BotMgr::ProvisionWorldBotInGroup(Player* groupAnchor, std::string const& role, std::string const& selector,
     uint32 mapId, float x, float y, float z, float o, uint8 dungeonDifficulty, uint8 raidDifficulty)
 {
@@ -1031,7 +1060,7 @@ bool BotMgr::IsTrackedPartyMember(ObjectGuid botGuid, ObjectGuid unitGuid) const
 }
 
 Player* BotMgr::LoadBotFromPool(Player* owner, std::string const& role, std::string const& selector, BotSpawnPlacement const* placement,
-    Player* groupAnchor, uint8 provisionedDungeonDifficulty, uint8 provisionedRaidDifficulty)
+    Player* groupAnchor, uint8 provisionedDungeonDifficulty, uint8 provisionedRaidDifficulty, bool seedRaidLeader)
 {
     std::string normalizedRole = NormalizeBotRole(role);
     bool mixedRole = IsMixedBotRoleSelector(normalizedRole);
@@ -1084,7 +1113,7 @@ Player* BotMgr::LoadBotFromPool(Player* owner, std::string const& role, std::str
     }
 
     Player* bot = LoadCharacterAsBotSession(botGuid, accountId, owner, placement,
-        groupAnchor, provisionedDungeonDifficulty, provisionedRaidDifficulty);
+        groupAnchor, provisionedDungeonDifficulty, provisionedRaidDifficulty, seedRaidLeader);
     if (!bot)
         return nullptr;
 
@@ -1100,7 +1129,7 @@ Player* BotMgr::LoadBotFromPool(Player* owner, std::string const& role, std::str
 }
 
 Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Player* nearPlayer, BotSpawnPlacement const* placement,
-    Player* groupAnchor, uint8 provisionedDungeonDifficulty, uint8 provisionedRaidDifficulty)
+    Player* groupAnchor, uint8 provisionedDungeonDifficulty, uint8 provisionedRaidDifficulty, bool seedRaidLeader)
 {
     uint8 expansion = nearPlayer && nearPlayer->GetSession() ? nearPlayer->GetSession()->GetExpansion() : uint8(sWorld->getIntConfig(CONFIG_EXPANSION));
     LocaleConstant locale = nearPlayer && nearPlayer->GetSession() ? nearPlayer->GetSession()->GetSessionDbcLocale() : LOCALE_enUS;
@@ -1194,10 +1223,31 @@ Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Pla
 
     if (placement)
     {
-        if (Map::EnterState const denyReason = Map::PlayerCannotEnter(placement->MapId, bot, false))
+        Map::EnterState denyReason = Map::PlayerCannotEnter(placement->MapId, bot, false);
+        if (denyReason == Map::CANNOT_ENTER_NOT_IN_RAID && seedRaidLeader)
+        {
+            // A validation raid admission seeds its cohort with the first
+            // planned member. The raid forms here so the leader's own entry
+            // creates the one native instance every later member joins.
+            if (Group* seed = new Group())
+            {
+                if (seed->Create(bot))
+                {
+                    sGroupMgr->AddGroup(seed);
+                    seed->ConvertToRaid();
+                    TC_LOG_INFO("server", "PlayerBot raid seed group created leader=%s group=%s map=%u",
+                        guid.ToString().c_str(), seed->GetGUID().ToString().c_str(), placement->MapId);
+                }
+                else
+                    delete seed;
+            }
+            denyReason = Map::PlayerCannotEnter(placement->MapId, bot, false);
+        }
+        if (denyReason != Map::CAN_ENTER)
         {
             TC_LOG_ERROR("server", "PlayerBot placement failed character=%s stage=player_cannot_enter map=%u reason=%u",
                 guid.ToString().c_str(), placement->MapId, uint32(denyReason));
+            bot->RemoveAllAuras();
             if (prejoinedGroup && bot->GetGroup() == prejoinedGroup)
                 prejoinedGroup->RemoveMember(bot->GetGUID());
             session->SetPlayer(nullptr);
@@ -1211,6 +1261,7 @@ Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Pla
         {
             TC_LOG_ERROR("server", "PlayerBot placement failed character=%s stage=destination_map_rejected map=%u",
                 guid.ToString().c_str(), placement->MapId);
+            bot->RemoveAllAuras();
             if (prejoinedGroup && bot->GetGroup() == prejoinedGroup)
                 prejoinedGroup->RemoveMember(bot->GetGUID());
             session->SetPlayer(nullptr);
@@ -1235,6 +1286,7 @@ Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Pla
     if (!bot->GetMap() || !bot->GetMap()->AddPlayerToMap(bot))
     {
         TC_LOG_ERROR("server", "PlayerBot load failed character=%s stage=add_player_to_map map=%u", guid.ToString().c_str(), bot->GetMapId());
+        bot->RemoveAllAuras();
         if (prejoinedGroup && bot->GetGroup() == prejoinedGroup)
             prejoinedGroup->RemoveMember(bot->GetGUID());
         session->SetPlayer(nullptr);
