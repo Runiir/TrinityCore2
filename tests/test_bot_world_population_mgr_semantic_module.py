@@ -6,6 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 WORLD = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 MODULE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrSemantic.cpp"
+HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
 CMAKE = ROOT / "src/server/game/CMakeLists.txt"
 
 
@@ -63,3 +64,32 @@ def test_semantic_module_preserves_outcome_feature_contract() -> None:
         "BuildNativeRecoveryEpisodeJson",
     ):
         assert field in module
+
+
+def test_semantic_module_attributes_scored_other_item_uses() -> None:
+    module = MODULE.read_text(encoding="utf-8")
+    header = HEADER.read_text(encoding="utf-8")
+    spell_finished = module[
+        module.index("void BotWorldPopulationMgr::NotifyBotSpellFinished") :
+        module.index("void BotWorldPopulationMgr::NotifyBotItemSpellFinished")
+    ]
+    item_finished = module[
+        module.index("void BotWorldPopulationMgr::NotifyBotItemSpellFinished") :
+    ]
+
+    assert "struct ScoredOtherItemUse" in header
+    assert "uint32 ScoredOtherItemUseCount = 0;" in header
+    assert "std::array<ScoredOtherItemUse, 8> ScoredOtherItemUses;" in header
+    assert (
+        "FindScoredOtherItemUseSlot(metrics, spellId, castItemEntry)"
+        in item_finished
+    )
+    assert "use->SpellId = spellId;" in item_finished
+    assert "use->ItemEntry = castItemEntry;" in item_finished
+    assert "++use->UseCount;" in item_finished
+
+    assert "++metrics.ScoredTinkerOrOtherItemUseCount;" in item_finished
+    assert "++metrics.ScoredOtherItemUseCount;" in item_finished
+    assert "ScoredTinkerSpellUseCount" not in item_finished
+    assert "spellId == 82174" in spell_finished
+    assert "++metricsItr->second.ScoredTinkerSpellUseCount;" in spell_finished

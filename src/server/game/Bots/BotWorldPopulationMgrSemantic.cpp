@@ -131,6 +131,20 @@ bool EventLooksFailure(char const* eventType, char const* result)
         || res.find("failed") != std::string::npos
         || res.find("blocked") != std::string::npos;
 }
+
+CalibrationMetrics::ScoredOtherItemUse* FindScoredOtherItemUseSlot(
+    CalibrationMetrics& metrics, uint32 spellId, uint32 itemEntry)
+{
+    CalibrationMetrics::ScoredOtherItemUse* reuseSlot = nullptr;
+    for (CalibrationMetrics::ScoredOtherItemUse& use : metrics.ScoredOtherItemUses)
+    {
+        if (use.SpellId == spellId && use.ItemEntry == itemEntry)
+            return &use;
+        if (!reuseSlot && !use.SpellId && !use.ItemEntry)
+            reuseSlot = &use;
+    }
+    return reuseSlot;
+}
 }
 
 void BotWorldPopulationMgr::NotifyBotSpellFinished(Player* caster, uint32 spellId, bool success)
@@ -264,7 +278,17 @@ void BotWorldPopulationMgr::NotifyBotItemSpellFinished(Player* caster,
             if (castItemIsPotion)
                 ++metrics.ScoredPotionUseCount;
             else if (castItemEntry != 43231 && castItemEntry != 43233)
+            {
                 ++metrics.ScoredTinkerOrOtherItemUseCount;
+                ++metrics.ScoredOtherItemUseCount;
+                if (CalibrationMetrics::ScoredOtherItemUse* use =
+                    FindScoredOtherItemUseSlot(metrics, spellId, castItemEntry))
+                {
+                    use->SpellId = spellId;
+                    use->ItemEntry = castItemEntry;
+                    ++use->UseCount;
+                }
+            }
         }
 
     if (!itemTargetGuid)

@@ -694,6 +694,13 @@ private:
             std::string Phase;
         };
 
+        struct ScoredOtherItemUse
+        {
+            uint32 SpellId = 0;
+            uint32 ItemEntry = 0;
+            uint32 UseCount = 0;
+        };
+
         struct EffectiveStatVector
         {
             struct AuraContribution
@@ -961,6 +968,8 @@ private:
         uint32 LastPotionIdNonzeroSampleCount = 0;
         uint32 ScoredPotionUseCount = 0;
         uint32 ScoredTinkerOrOtherItemUseCount = 0;
+        uint32 ScoredOtherItemUseCount = 0;
+        std::array<ScoredOtherItemUse, 8> ScoredOtherItemUses;
         uint32 ScoredRacialUseCount = 0;
         uint32 ScoredTinkerSpellUseCount = 0;
         uint32 UnexpectedDynamicAuraActiveSamples = 0;

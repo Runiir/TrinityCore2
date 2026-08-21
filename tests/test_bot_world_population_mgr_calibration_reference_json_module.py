@@ -36,3 +36,25 @@ def test_calibration_reference_json_keeps_condition_contract():
         "dynamic_disabled",
     ):
         assert marker in text
+
+
+def test_calibration_reference_json_attributes_other_item_uses_without_changing_tinker_count():
+    text = MODULE.read_text()
+    header = HEADER.read_text()
+
+    assert (
+        '\\"tinker_use_count\\":"\n'
+        "                 << (metrics ? metrics->ScoredTinkerOrOtherItemUseCount\n"
+        "                        + metrics->ScoredTinkerSpellUseCount : 0)" in text
+    )
+    assert '\\"other_item_use_count\\":"' in text
+    assert "(metrics ? metrics->ScoredOtherItemUseCount : 0)" in text
+    assert '\\"other_item_uses\\":[' in text
+    for marker in (
+        '{\\"spell_id\\":" << otherUse.SpellId',
+        ',\\"item_entry\\":" << otherUse.ItemEntry',
+        ',\\"count\\":" << otherUse.UseCount',
+    ):
+        assert marker in text
+    assert "struct ScoredOtherItemUse" in header
+    assert "std::array<ScoredOtherItemUse, 8> ScoredOtherItemUses;" in header

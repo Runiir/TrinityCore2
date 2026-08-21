@@ -194,7 +194,24 @@ void BotWorldPopulationMgr::AppendCalibrationReferenceConditionJson(
                  << ",\"tinker_item_id\":0,\"tinker_spell_id\":0,\"tinker_use_count\":"
                  << (metrics ? metrics->ScoredTinkerOrOtherItemUseCount
                         + metrics->ScoredTinkerSpellUseCount : 0)
-                 << ",\"racial_spell_id\":0,\"racial_use_count\":"
+                 << ",\"other_item_use_count\":"
+                 << (metrics ? metrics->ScoredOtherItemUseCount : 0)
+                 << ",\"other_item_uses\":[";
+            bool firstOtherItemUse = true;
+            if (metrics)
+                for (CalibrationMetrics::ScoredOtherItemUse const& otherUse :
+                    metrics->ScoredOtherItemUses)
+                {
+                    if (!otherUse.SpellId && !otherUse.ItemEntry)
+                        continue;
+                    if (!firstOtherItemUse)
+                        json << ',';
+                    firstOtherItemUse = false;
+                    json << "{\"spell_id\":" << otherUse.SpellId
+                         << ",\"item_entry\":" << otherUse.ItemEntry
+                         << ",\"count\":" << otherUse.UseCount << '}';
+                }
+            json << "],\"racial_spell_id\":0,\"racial_use_count\":"
                  << (metrics ? metrics->ScoredRacialUseCount : 0)
                  << ",\"last_potion_id_nonzero_samples\":"
                  << (metrics ? metrics->LastPotionIdNonzeroSampleCount : 0)
