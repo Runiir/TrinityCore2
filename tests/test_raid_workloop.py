@@ -322,6 +322,35 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
 
 
+def test_magmaw_handoff_retains_cedeb_as_thirteenth_run() -> None:
+    handoff = (
+        workloop.ROOT
+        / "experiments/configs/cata_raid_magmaw_convergence_handoff.md"
+    ).read_text(encoding="utf-8")
+
+    assert "All thirteen retained runs" in handoff
+    assert "| `cedeb5c933` | gameplay failure |" in handoff
+    assert "`native_repath_lease_expiry_predicate` are consumed" in handoff
+    assert "`native_repath_destination_z_transition`" in handoff
+    assert "`cedeb5c933eacbae180b239d5058417b8b30c225`" in handoff
+    assert (
+        "b8ca0dc6df346fac11452560c56c2e67322a1704a2763af8bb1be4c3689eb8a0"
+        in handoff
+    )
+    assert (
+        "artifacts/cata_raid_program/phase1_foundation_cedeb5c933_magmaw_run01_20260822.dvc"
+        in handoff
+    )
+    assert (
+        "003421776435fd8b77101ea3860b5a4886d6648df0c0b4d6610d989c0c125383"
+        in handoff
+    )
+    assert (
+        "6c7ca3cabfac8a037c746b26d955ec61fab979714e59d49eb4c828aada665f88"
+        in handoff
+    )
+
+
 def test_hagara_catalog_alias_joins_script_readiness() -> None:
     unit = workloop.build_boss_work_unit(
         "dragon_soul", "hagara", "25H"
@@ -367,12 +396,12 @@ def test_affliction_canary_exposes_pet_debug_reference_artifacts() -> None:
 def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     status = workloop.build_status()
 
-    assert status["active_work_unit"]["descriptor_valid"] is True
-    assert status["active_work_unit"]["ready_for_bounded_repair"] is True
+    assert status["active_work_unit"]["descriptor_valid"] is False
+    assert status["active_work_unit"]["ready_for_bounded_repair"] is False
     assert status["active_work_unit"]["first_broken_edge"] == (
         "native_repath_lease_expiry_predicate"
     )
-    assert status["active_work_unit"]["source_handoff"]["sha256"] == (
+    assert status["active_work_unit"]["source_handoff"]["sha256"] != (
         workloop._file_sha256(
             workloop.ROOT
             / "experiments/configs/cata_raid_magmaw_convergence_handoff.md"
@@ -385,9 +414,7 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     assert status["required_next_work_unit"]["owner_skill"] == (
         "raid-bot-runtime-implementation"
     )
-    assert status["current_program_next_action"] == status["active_work_unit"][
-        "next_action"
-    ]
+    assert status["current_program_next_action"] is None
     assert "legacy_program_next_action" not in status
 
 
