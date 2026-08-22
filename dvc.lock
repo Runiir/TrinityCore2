@@ -340,22 +340,22 @@ stages:
       size: 337263
     - path: dataset/validation_gear_profiles
       hash: md5
-      md5: 14bceda375f6e9ae504ed8e80a001d0f.dir
+      md5: 04390df2e4c5b36de0b2ca6e432ba79f.dir
       size: 840048
       nfiles: 3
     - path: dataset/validation_provisioning
       hash: md5
-      md5: 9fb1ad3d1e91c296d842deace5aeea20.dir
-      size: 3527324
+      md5: d6a119becba5e5ea0703c27dc7303081.dir
+      size: 3559189
       nfiles: 5
     - path: experiments/configs/all_spec_targets_cata_p4_v1.json
       hash: md5
-      md5: 300943155fcdcc1aa7208e9a8e9d2181
-      size: 219139
+      md5: 794ed92f2718fbd90e106bbec3cd05d6
+      size: 251977
     - path: experiments/configs/cata_434_action_profiles.json
       hash: md5
-      md5: ca05b7597ccd172b66d7068b3083cde0
-      size: 20123
+      md5: 2e19ad8340cd9b186df49f662dac8214
+      size: 20336
     - path: experiments/configs/cata_434_combat_loot_profiles.json
       hash: md5
       md5: 012afbc3288c3ec227a26114fd2fb962
@@ -370,24 +370,24 @@ stages:
       size: 24469
     - path: experiments/configs/wowsims_cata_p4_gear_profiles.json
       hash: md5
-      md5: 3c9274a9677e71bd4f3bc812a0b3495e
-      size: 10453
+      md5: accd6e1b1fcd5fb4cf629e8b93a5f9f7
+      size: 53521
     - path: tools/bot_ml/build_validation_gear_profiles.py
       hash: md5
-      md5: 3179d1f239ec8ecc21a43f575e28bc1a
-      size: 40664
+      md5: 8734398417596c5130300d38c79d89bc
+      size: 40667
     - path: tools/bot_ml/build_validation_provisioning.py
       hash: md5
-      md5: def7befbf6f752f951d823686f7785bd
-      size: 54412
+      md5: bfb38905667cb0e4c2b5bba771537dca
+      size: 57514
     - path: tools/bot_ml/extract_world_knowledge.py
       hash: md5
       md5: 9f9d6ddb0fcae27397951db8b02c3d68
       size: 31879
     - path: tools/bot_ml/validate_validation_provisioning.py
       hash: md5
-      md5: c2c67bd3f36ad4d3a9758bc090c68607
-      size: 46987
+      md5: 5a204810cc887feb0f601fa592903a4a
+      size: 50380
     - path: tools/bot_ml/validation_profile_manifests.py
       hash: md5
       md5: b6ff6de9234f3be1e6347021d0ff677a
@@ -399,7 +399,7 @@ stages:
     outs:
     - path: dataset/validation_provisioning_verification/report.json
       hash: md5
-      md5: 14e4635eec6a47c2fa5eeb4c60ffeb82
+      md5: 2a7a07b33962ddaf83565e86cb06d285
       size: 1651
   validation_scenarios:
     cmd: python -m tools.bot_ml.build_validation_scenario_manifests --config 
