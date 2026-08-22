@@ -1,6 +1,6 @@
 # Magmaw convergence handoff — 2026-08-22
 
-This is a diagnostic history, not an acceptance claim. All eleven retained runs
+This is a diagnostic history, not an acceptance claim. All twelve retained runs
 used exact clean source/build/config identities, produced classified telemetry,
 observed native shutdown, returned bots and leases to zero, and recorded no
 forbidden assistance.
@@ -52,6 +52,7 @@ forbidden assistance.
 | `5756bb492f` | gameplay failure | The dead-hunter pet gate did not recur. Three dead members released to map 0 while seven survivors remained inside. All three stayed at the same graveyard position while entrance movement returned `native_instance_runback_path_retryable`; the first tank exhausted six attempts and terminalized as `native_runback_no_progress` at 273.858 seconds. |
 | `ea84aba64a` | gameplay failure | Two dead tanks released to map 0 and each committed three `native_instance_runback_moving` decisions, reaching one shared local endpoint. The next winding-corridor edge did not reduce straight-line distance to entrance trigger 6581, so the planner returned `route_destination_invalid_floor`; the first tank exhausted nine attempts and terminalized at 283.884 seconds. The full-wipe aggregate remained false because eight members were alive, but per-bot diagnose/trace proves individual recovery was active. |
 | `d98451124d` | gameplay failure | The single canary reached Drudge generation 3 with one kill, two deaths, and eight alive. Ghost 30001 reached `(-7482.93,-1383.73,416.785)`, stopped for more than 30 seconds, and terminalized; ghost 30002 reached `(-7530.67,-1258.93,471.885)` and remained `native_instance_runback_moving`. No trigger/reclaim/rejoin was observed; the watchdog closed `native_runback_no_progress` at 304.114 seconds. |
+| `a09d5a83c4` | gameplay failure | The one-run verification reached Drudge generation 3 with one kill, two deaths, and eight alive, but submitted zero `native_instance_runback_repath` actions. Ghost 30001 terminalized at `(-7482.65,-1383.71,416.664)` while ghost 30002 remained moving at `(-7482.93,-1383.73,416.785)`. No trigger/rejoin occurred; the watchdog closed `native_runback_no_progress` at 309.101 seconds. The prior `native_runback_progress_witness_and_single_repath` implementation is rejected because its repath branch was unexercised. |
 
 The three Drudge policy edits after `8ef7d2f25c` did not converge and are not
 promotion-ready. Affliction SQL changes are also unpromoted until a fresh exact
@@ -67,19 +68,24 @@ Raid and dungeon success remains completion-driven, never time-driven.
 
 ## Next bounded work unit
 
-The dead-hunter pet gate and invalid-final-floor hypothesis are proven consumed.
-The single next work unit is `native_runback_progress_witness_and_single_repath`,
-owned by `raid-bot-runtime-implementation`: count recovery-owned native
-position/path advancement as progress even when final-distance is non-monotonic;
-when that recovery-owned path is invalid and position is unchanged for the
-bounded interval, permit exactly one native re-path, then retain the existing
-30-second/retry terminal bound. Do not add coordinates, waypoints, teleport,
-resurrection, or boss/class/pet/Drudge tuning. Use one implementation
-hypothesis and one matched completion-watchdog shard.
+The dead-hunter pet gate and invalid-final-floor hypothesis remain consumed, but
+the `native_runback_progress_witness_and_single_repath` implementation is
+rejected because the a09 canary never exercised its repath branch. The single
+next work unit is `native_repath_lease_expiry_predicate`, owned by
+`raid-bot-runtime-implementation`: `BuildMovementRequest` sets
+`ExpiresAtMs=nowMs+1500`, while recovery decisions recur at about 1500 ms, and
+`matchingNativeRecoveryPath` checks `ExpiresAtMs>nowMs` before the typed move can
+refresh the lease. Remove lease freshness only from observation/repath matching
+of an already-admitted active recovery native path; preserve the recorded
+Recovery owner, active path, attempt/wipe/route/destination/traversal scope,
+and every existing terminal bound. Add deterministic before/equal/after expiry
+predicate coverage. Use one implementation hypothesis and one matched
+completion-watchdog shard. Do not add coordinates, waypoints, teleport,
+resurrection, or boss/class/pet/Drudge tuning.
 
 ## Evidence
 
-The eleven immutable diagnostic bundles are tracked by adjacent `.dvc` pointers.
+The twelve immutable diagnostic bundles are tracked by adjacent `.dvc` pointers.
 The latest report hashes are:
 
 - `198bac19d6`: `4c157675ff37d400c8ae0dba6672b40625c7262373115eedfaa2739057d80e2e`
@@ -91,6 +97,7 @@ The latest report hashes are:
 - `5756bb492f`: `85e88cfff9ca7fada210217ac64760bba7a2a778d69ca3fd0429cc1f7b928db1`
 - `ea84aba64a`: `b54847e3be211261a9f49673cbb5cb3a65fa90d9259ebd5305074bcedecfc9ed`
 - `d98451124d`: `462dcd4b06c3e729ec87d5e7dcccb1efc1e10617ec77036a8f93aaf78807ff10`
+- `a09d5a83c4`: `df293bf0c94d3d28c5a6b36e5b48cdd58aa419cb35535a07151fcde50f99c9d9`
 
 The d984 canary is bound to source commit
 `d98451124d343fdb49ae6718c70cd4dfdfb9f762`, worldserver binary SHA-256
@@ -99,5 +106,13 @@ the DVC pointer
 `artifacts/cata_raid_program/phase1_foundation_d98451124d_magmaw_run01_20260822.dvc`.
 The retained report file SHA-256 is
 `6527e539440cf93a096d4b6bafd247db1595a2ec9b8f5424b60c7503e179f7e8`.
+
+The a09 canary is bound to source commit
+`a09d5a83c4052a685f38c705765ee6edb6c12f38`, worldserver binary SHA-256
+`b8d7bf129ce9324dd01048b3931b02305f4611151baf68d8ca2fe888e6a418a8`, and
+the DVC pointer
+`artifacts/cata_raid_program/phase1_foundation_a09d5a83c4_magmaw_run01_20260822.dvc`.
+The retained a09 report file SHA-256 is
+`81e72636605d03bcb5ffa72981aa5e28a8fedc7d1ad4b3c366dfed3e95da15e9`.
 
 The DVC cache and configured remote were verified in sync after publication.
