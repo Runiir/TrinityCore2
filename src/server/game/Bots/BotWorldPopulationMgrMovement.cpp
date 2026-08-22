@@ -43,11 +43,33 @@ bool BotWorldPopulationMgr::MoveBotToPoint(
     intent.DynamicTarget = dynamicTarget;
     intent.DynamicTargetRange = dynamicTargetRange;
 
+    // A released validation member can briefly reach this adapter before the
+    // recovery episode has published its entrance-required flag.  The exact
+    // frozen corpse authority and map mismatch are sufficient to admit the
+    // already-typed entrance Move through the native long-path executor; no
+    // destination is rewritten here.
+    bool const nativeRecoveryEpisodeScoped = state.NativeRecoveryEpisodeStartedMs
+        && state.NativeRecoveryEpisodeAttemptId == Cohort().AttemptId
+        && state.NativeRecoveryEpisodeRouteGeneration
+            == Party().ValidationRouteGeneration
+        && state.NativeRecoveryEpisodeWipeGeneration
+            == Cohort().Raid.WipeGeneration
+        && state.NativeRecoveryEpisodeDeathOrdinal == state.RecentDeathCount;
+    bool const nativeRecoveryCrossMap = movementOwner
+        == BotMovementArbitration::Owner::Recovery
+        && state.ValidationCohortLocked
+        && nativeRecoveryEpisodeScoped
+        && HasNativeRaidCorpseAuthority(state, bot)
+        && bot->GetMapId() != state.ValidationCohortMapId;
+    bool const nativeRecoveryEntranceRequired =
+        (state.NativeRecoveryEntranceRequired && nativeRecoveryEpisodeScoped)
+        || nativeRecoveryCrossMap;
+
     // These are mechanical admission requirements carried by the legacy
     // route adapter.  The executor never infers them from combat, quest, or
     // encounter policy.
     intent.AllowProgressiveSegments = BotWorldMovement::AllowsProgressiveSegments(
-        movementOwner, state.NativeRecoveryEntranceRequired);
+        movementOwner, nativeRecoveryEntranceRequired);
     intent.RequireCompletePath = movementOwner
         == BotMovementArbitration::Owner::Route
         && intent.AllowProgressiveSegments
@@ -56,9 +78,9 @@ bool BotWorldPopulationMgr::MoveBotToPoint(
             == "native_walkable_descent";
     intent.AllowRecentFailureRetry = Cohort().Config.ValidationRouteEnable;
     intent.AllowNativeLongPath = BotWorldMovement::AllowsNativeLongPath(
-        movementOwner, state.NativeRecoveryEntranceRequired);
+        movementOwner, nativeRecoveryEntranceRequired);
     intent.NativeRecoveryCrossMapPending =
-        state.NativeRecoveryEntranceRequired
+        nativeRecoveryEntranceRequired
         && state.ValidationCohortLocked
         && bot->GetMapId() != state.ValidationCohortMapId;
     return ExecuteMovementIntent(state, bot, intent);

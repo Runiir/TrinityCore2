@@ -45,6 +45,18 @@ def _blocks_cross_map_movement(owner: str, pending: bool) -> bool:
     return pending and owner != "Recovery"
 
 
+def _admits_native_recovery_cross_map(*, owner: str,
+                                      validation_enabled: bool,
+                                      cohort_locked: bool,
+                                      episode_scoped: bool,
+                                      corpse_authority: bool,
+                                      bot_map: int,
+                                      cohort_map: int) -> bool:
+    return (owner == "Recovery" and validation_enabled and cohort_locked
+            and episode_scoped
+            and corpse_authority and bot_map != cohort_map)
+
+
 def test_native_long_path_is_recovery_entrance_only() -> None:
     header = MOVEMENT_HEADER.read_text(encoding="utf-8")
     adapter = MOVEMENT_ADAPTER.read_text(encoding="utf-8")
@@ -52,9 +64,17 @@ def test_native_long_path_is_recovery_entrance_only() -> None:
 
     assert "constexpr bool AllowsNativeLongPath" in header
     assert "owner == BotMovementArbitration::Owner::Recovery" in header
+    assert "bool const nativeRecoveryCrossMap = movementOwner" in adapter
+    assert "bool const nativeRecoveryEpisodeScoped" in adapter
+    assert "state.NativeRecoveryEpisodeAttemptId == Cohort().AttemptId" in adapter
+    assert "state.NativeRecoveryEpisodeRouteGeneration" in adapter
+    assert "state.NativeRecoveryEpisodeWipeGeneration" in adapter
+    assert "state.NativeRecoveryEpisodeDeathOrdinal == state.RecentDeathCount" in adapter
+    assert "HasNativeRaidCorpseAuthority(state, bot)" in adapter
+    assert "nativeRecoveryEntranceRequired" in adapter
     assert (
         "intent.AllowNativeLongPath = BotWorldMovement::AllowsNativeLongPath(\n"
-        "        movementOwner, state.NativeRecoveryEntranceRequired);"
+        "        movementOwner, nativeRecoveryEntranceRequired);"
     ) in adapter
     assert "intent.Owner == BotMovementArbitration::Owner::Recovery" in planner
     assert "plan.NativeLongPath = true" in planner
@@ -75,6 +95,37 @@ def test_native_long_path_is_recovery_entrance_only() -> None:
     for owner, required, expected in cases:
         actual = owner == "Recovery" and required
         assert actual is expected
+
+
+def test_cross_map_recovery_requires_exact_native_corpse_authority() -> None:
+    adapter = MOVEMENT_ADAPTER.read_text(encoding="utf-8")
+    assert "state.ValidationCohortLocked" in adapter
+    assert "bot->GetMapId() != state.ValidationCohortMapId" in adapter
+    assert "state.NativeRecoveryEntranceRequired && nativeRecoveryEpisodeScoped" in adapter
+    assert "|| nativeRecoveryCrossMap" in adapter
+
+    common = dict(
+        owner="Recovery", validation_enabled=True, cohort_locked=True,
+        episode_scoped=True,
+        corpse_authority=True, bot_map=0, cohort_map=669,
+    )
+    assert _admits_native_recovery_cross_map(**common)
+    assert not _admits_native_recovery_cross_map(**{**common, "owner": "Route"})
+    assert not _admits_native_recovery_cross_map(
+        **{**common, "validation_enabled": False}
+    )
+    assert not _admits_native_recovery_cross_map(
+        **{**common, "cohort_locked": False}
+    )
+    assert not _admits_native_recovery_cross_map(
+        **{**common, "episode_scoped": False}
+    )
+    assert not _admits_native_recovery_cross_map(
+        **{**common, "corpse_authority": False}
+    )
+    assert not _admits_native_recovery_cross_map(
+        **{**common, "bot_map": 669}
+    )
 
 
 def test_cross_map_recovery_blocks_stale_non_recovery_movement() -> None:
@@ -142,12 +193,14 @@ def test_native_long_path_keeps_motionmaster_in_executor_and_preserves_active_pa
 def test_recovery_brain_stays_typed_and_forbids_cheat_operations() -> None:
     recovery = RECOVERY.read_text(encoding="utf-8")
     native_action = NATIVE_ACTION.read_text(encoding="utf-8")
+    adapter = MOVEMENT_ADAPTER.read_text(encoding="utf-8")
 
     assert "BotNativeAction::Move" in recovery
     assert "BotNativeAction::AreaTrigger" in recovery
     assert "GetMotionMaster()->MovePoint" not in recovery
     for forbidden in ("TeleportTo(", "NearTeleportTo(", "ResurrectPlayer"):
         assert forbidden not in recovery
+        assert forbidden not in adapter
     assert "forceDestination" not in recovery
     assert "BotNativeAction::Move" in native_action
     assert "MoveBotToPoint(state, bot, action.X, action.Y, action.Z" in native_action
