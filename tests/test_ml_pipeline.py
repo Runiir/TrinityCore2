@@ -8663,6 +8663,9 @@ def test_scoring_start_stat_modifier_ledger_surface_is_deterministic():
     ]:
         assert field.replace('"', '\\"') in ledger
     assert "trinity_scoring_start_stat_modifier_ledger_v1" in ledger
+    assert "EffectiveSingleSchoolSpellPower" in ledger
+    assert "school = SPELL_SCHOOL_HOLY; school < MAX_SPELL_SCHOOL" in ledger
+    assert "SPELL_SCHOOL_MASK_SPELL, true" not in ledger
     assert "std::sort(ledger.AuraContributions.begin()" in ledger
     assert "std::tie(left.AuraType, left.SpellId, left.EffectIndex" in ledger
     assert "ObserveCalibrationEffectiveStats(" in reset

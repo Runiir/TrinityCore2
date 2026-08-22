@@ -3269,7 +3269,10 @@ def compare_effective_stats(
     basis = {
         "wowsims_owner": "ComputeStats.finalStats before dynamic combat procs",
         "wowsims_pet": "first timestamp-zero debug-log Pet stats and Pet inherited stats",
-        "trinity": "immutable scoring_start_stats captured at the published calibration t=0 edge",
+        "trinity": (
+            "immutable scoring_start_stats captured at the published calibration t=0 edge; "
+            "spell_power is the maximum effective single-school value, not a combined school mask"
+        ),
     }
     if not wowsims_compute_stats:
         return {

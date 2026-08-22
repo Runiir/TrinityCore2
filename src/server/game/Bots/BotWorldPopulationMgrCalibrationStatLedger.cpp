@@ -32,6 +32,15 @@ bool AuraAffectsStat(AuraEffect const* effect, Stats stat)
     return effect->GetMiscValue() < 0
         || effect->GetMiscValue() == AsUnderlyingType(stat);
 }
+
+int32 EffectiveSingleSchoolSpellPower(Unit* unit)
+{
+    int32 spellPower = 0;
+    for (uint8 school = SPELL_SCHOOL_HOLY; school < MAX_SPELL_SCHOOL; ++school)
+        spellPower = std::max(spellPower, unit->SpellBaseDamageBonusDone(
+            SpellSchoolMask(1 << school), true));
+    return spellPower;
+}
 }
 
 void BotWorldPopulationMgr::ObserveCalibrationEffectiveStats(
@@ -52,8 +61,7 @@ void BotWorldPopulationMgr::ObserveCalibrationEffectiveStats(
     stats.Spirit = unit->GetStat(STAT_SPIRIT);
     stats.AttackPower = unit->GetTotalAttackPowerValue(BASE_ATTACK);
     stats.RangedAttackPower = unit->GetTotalAttackPowerValue(RANGED_ATTACK);
-    stats.SpellPower = unit->SpellBaseDamageBonusDone(
-        SPELL_SCHOOL_MASK_SPELL, true);
+    stats.SpellPower = EffectiveSingleSchoolSpellPower(unit);
     stats.Armor = unit->GetArmor();
     stats.Health = unit->GetMaxHealth();
     stats.Mana = unit->GetMaxPower(POWER_MANA);

@@ -389,6 +389,7 @@ def test_self_provided_baseline_uses_debug_result_and_allows_favorable_stats():
     assert parity["comparison_mode"] == (
         "one_sided_minimum_for_monotonic_throughput_stats"
     )
+    assert "maximum effective single-school value" in parity["basis"]["trinity"]
     assert {
         row["stat"]
         for row in parity["owner"]["checks"]
