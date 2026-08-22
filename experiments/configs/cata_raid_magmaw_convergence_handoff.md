@@ -1,44 +1,63 @@
-# Magmaw shard convergence handoff — session state
+# Magmaw convergence handoff — 2026-08-22
 
-Branch test/ox-aplha-det-bot-workflow. Coordinator-owned pipeline proven working:
-build receipts gate-bearing per commit, prep/readback green, captures produce
-typed immediate gameplay failures with full telemetry.
+This is a diagnostic history, not an acceptance claim. All five retained runs
+used exact clean source/build/config identities, produced classified telemetry,
+observed native shutdown, returned bots and leases to zero, and recorded no
+forbidden assistance.
 
-## Fixed chain (all worker-authored, runtime-confirmed unless noted)
-1. dd554843f7 raid-seed entry + assert hygiene (coordinator-era)
-2. 5d0e566672 adopt seed raid group (w6)
-3. 1aad594117 LFG solo-disband killed seed on map entry (w8)
-4. 9bfca50ead hunter pet pin -> cohort receipt freeze (w9)
-5. 3144164122 gear identity -> cohort receipt freeze (w10)
-6. dd554843f7 attempt-restart stale Raid reset (w11) — admission ACTIVE reached
-7. 8ef7d2f25c gem padding canonicalization -> immediate typed failures (w12, runtime-confirmed)
-8. 8ef7d2f25c drudge ownership requires engagement (w13): Z-transitions 22->6
-9. 198bac19d6 non-tank offense hold until seed staged (w15): pet no longer dies early
-10. 43521ba995 lane-tank threat window pre-staging (w16): staging completes,
-    charges prepared 2/2
+## What worked
 
-## Current blocker (run 43521ba995, typed gameplay_failure @293.9s)
-validation_active_hunter_pet_missing again. Seed closed=true failure=true;
-charges PREPARED_COUNT=2 DELIVERED_COUNT=1 — second lane charge not delivered.
-Pet dies in extended fight window before seed completes.
+- Raid admission now forms one native raid before the seed leader enters the
+  instance, adopts that group for the cohort, and survives the solo-map LFG
+  cleanup path.
+- Hunter pet and equipped-gear identities are frozen in the admission receipt;
+  later checks reconcile against that receipt.
+- Restarting an attempt clears stale raid-runtime state.
+- Capture-side gear comparison ignores only trailing zero gem padding. Item,
+  enchant, non-zero gem, and reforge mismatches still fail closed.
+- The route consistently clears the entry regroup and Chainwielder nodes and
+  reaches `bwd.magmaw.drudges`.
+- The watchdog now emits a typed gameplay failure instead of misclassifying
+  the Drudge failure as infrastructure loss.
 
-## Next work unit (worker #17)
-Diagnose why second lane charge never delivers + why hunter/pet dies in the
-window: raw.jsonl at artifacts/cata_raid_program/phase1_foundation_43521ba995_
-magmaw_diagnostic_20260821/. Check charge queue interval semantics
-(charge_native_interval_ms=20000), lane tank threat retention post-first-rush,
-healer coverage of tanks/hunter during seed window. Fix minimal edge; keep
-typed fail-closed gates.
+## What did not work
 
-## Stop conditions (user-defined)
-- One DPS spec on par with WoWSims reference (affliction 31312.97; canary rerun
-  pending — fixes landed, unproven live).
-- Bots clear 1 BWD boss flawlessly (Magmaw = node 3 of 4; currently node 2).
+| Source | Result | Decisive observation |
+| --- | --- | --- |
+| `dd554843f7` | infrastructure abort | A real Drudge stall was hidden by the trailing-zero gem mismatch. |
+| `8ef7d2f25c` | gameplay failure | Hunter pet admission failed before Drudge evidence converged. |
+| `198bac19d6` | gameplay failure | Four Rushes landed, but exact ownership/re-separation never formed. |
+| `43521ba995` | gameplay failure | Only one Rush landed; hunter pet admission regressed during the extended pull. |
+| `69b230aae5` | gameplay failure | Four Rushes landed, but ownership/re-separation still failed and three bots died. |
 
-## Process rules in force
-- Workers own specialist fixes; coordinator owns builds/captures/publication.
-- Every native fix carries a runtime_verification_plan + post-capture verdict.
-- Receipts committed each cycle; run artifacts DVC-published (dd55 + 8ef7 done).
-- Known pre-existing test debt: 2 capture source-text assertions
-  (ValidationRouteDrudgeAnchorAttemptId) + BotWorldPopulationMgr.h >1000-line
-  bound — stale, unrelated to current edges.
+The three Drudge policy edits after `8ef7d2f25c` did not converge and are not
+promotion-ready. Affliction SQL changes are also unpromoted until a fresh exact
+300-second self-provided-consumables canary proves the result.
+
+## Current acceptance policy
+
+Trash does not need a flawless formation. Individual deaths are acceptable
+when the trash pack dies, the raid does not wipe, native recovery succeeds,
+and the route continues. A re-separation deadline is therefore diagnostic; it
+must not terminate a run while hostile-health or kill progress is monotonic.
+Raid and dungeon success remains completion-driven, never time-driven.
+
+## Next bounded work unit
+
+Change the Drudge watchdog from formation-contract termination to outcome
+tracking: continue while hostile health decreases, fail on a real wipe,
+semantic no-progress, repeated decisions, or failed recovery, and require
+native recovery before advancing after deaths. Then run one clean Magmaw shard
+against the resulting exact build. Do not add another lane/taunt tuning rule
+before that run shows the first remaining native edge.
+
+## Evidence
+
+The five immutable diagnostic bundles are tracked by adjacent `.dvc` pointers.
+The latest report hashes are:
+
+- `198bac19d6`: `4c157675ff37d400c8ae0dba6672b40625c7262373115eedfaa2739057d80e2e`
+- `43521ba995`: `ee2f8487b40d4d229e5d06f41b047cb9aea38e0a2637391e234d16b75986ddc2`
+- `69b230aae5`: `5214b36af63b8082244bc167786467dedef5e91573ad3e467d79cd5685144f0f`
+
+The DVC cache and configured remote were verified in sync after publication.
