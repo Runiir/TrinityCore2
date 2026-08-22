@@ -18,6 +18,8 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     _protected_process_matches,
     expected_bwd_10n_roster,
     _expected_identity_by_slot,
+    _compact_trailing_zero_gems,
+    _identity_manifest_rejections,
     preflight_runtime_exclusions,
     validate_runtime_profile_assets,
     evidence_demux_report,
@@ -1285,14 +1287,22 @@ def test_drudge_native_threat_ignores_ordinary_pre_rush_snapshot_until_complete(
 
 
 def test_drudge_anchor_fallback_is_generation_scoped_and_native_path_validated():
-    source = (Path(__file__).parents[1] / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
-        encoding="utf-8",
+    root = Path(__file__).parents[1] / "src/server/game/Bots"
+    source = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in (
+            root / "BotWorldPopulationMgrBotState.h",
+            root
+            / "Content/Raids/BlackwingDescent/Trash/Drudge"
+            / "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp",
+            root / "BotWorldPopulationMgrRaidRuntime.cpp",
+        )
     )
     assert "ValidationRouteDrudgeAnchorAttemptId" in source
     assert "ValidationRouteDrudgeAnchorWipeGeneration" in source
     assert "ValidationRouteDrudgeAnchorRouteGeneration" in source
-    assert "selectPathableDrudgeAnchor" in source
-    assert "strictNativePath(candidates[candidateIndex].first" in source
+    assert "SelectAnchorPathSearch" in source
+    assert "StrictNativePath(candidates[candidateIndex].first" in source
     assert "anchor_path_valid" in source
 
 
@@ -1344,6 +1354,81 @@ def test_magmaw_diagnostic_accepts_only_its_materialized_roster_identity():
     )
     assert accepted is True
     assert reasons == []
+
+
+def test_compacted_runtime_gem_arrays_match_padded_frozen_manifests():
+    status = accepted_status()
+    padded_slots = {
+        (row["roster_slot_id"], item["slot"])
+        for row in status["raid_runtime"]["roster"]
+        for item in row["gear_identity_manifest"]["items"]
+        if item["gem_item_ids"] and item["gem_item_ids"][-1] == 0
+    }
+    assert padded_slots, "fixture must contain padded frozen gem arrays"
+    for row in status["raid_runtime"]["roster"]:
+        for item in row["gear_identity_manifest"]["items"]:
+            while item["gem_item_ids"] and item["gem_item_ids"][-1] == 0:
+                item["gem_item_ids"].pop()
+    assert _identity_manifest_rejections({"roster": status["raid_runtime"]["roster"]}) == []
+
+
+def test_trailing_zero_gem_canonicalization_is_symmetric():
+    assert _compact_trailing_zero_gems((71881, 0)) == _compact_trailing_zero_gems((71881,))
+    assert _compact_trailing_zero_gems((71881,)) == _compact_trailing_zero_gems((71881, 0, 0))
+    assert _compact_trailing_zero_gems((71881, 71882)) != _compact_trailing_zero_gems((71881,))
+    assert _compact_trailing_zero_gems((0, 71881)) == (0, 71881)
+    assert _compact_trailing_zero_gems(()) == ()
+
+
+def test_genuine_gem_content_and_length_differences_still_fail_closed():
+    status = accepted_status()
+    dps_row = next(
+        row for row in status["raid_runtime"]["roster"] if row["roster_slot_id"] == "raid_dps_3"
+    )
+    slot8 = next(item for item in dps_row["gear_identity_manifest"]["items"] if item["slot"] == 8)
+    assert slot8["entry"] == 78417
+    slot8["gem_item_ids"] = [71825]
+    tank_row = next(
+        row for row in status["raid_runtime"]["roster"] if row["roster_slot_id"] == "raid_tank_1"
+    )
+    slot0 = next(item for item in tank_row["gear_identity_manifest"]["items"] if item["slot"] == 0)
+    assert slot0["entry"] == 78693 and len(slot0["gem_item_ids"]) == 2
+    slot0["gem_item_ids"] = [slot0["gem_item_ids"][0]]
+    reasons = _identity_manifest_rejections({"roster": status["raid_runtime"]["roster"]})
+    assert "frozen_identity_gear_modifiers_mismatch" in reasons
+
+
+def test_enchant_reforge_talent_and_glyph_comparisons_stay_strict():
+    status = accepted_status()
+    tank_row = next(
+        row for row in status["raid_runtime"]["roster"] if row["roster_slot_id"] == "raid_tank_1"
+    )
+    slot0 = next(item for item in tank_row["gear_identity_manifest"]["items"] if item["slot"] == 0)
+    slot0["enchant_id"] += 1
+    slot0["reforge_id"] += 1
+    reasons = _identity_manifest_rejections({"roster": status["raid_runtime"]["roster"]})
+    assert "frozen_identity_gear_modifiers_mismatch" in reasons
+    zeroed = accepted_status()
+    zeroed["raid_runtime"]["roster"][0]["talents"] += [0]
+    zeroed["raid_runtime"]["roster"][0]["glyphs"] += [0]
+    reasons = _identity_manifest_rejections({"roster": zeroed["raid_runtime"]["roster"]})
+    assert "frozen_identity_talents_mismatch" in reasons
+    assert "frozen_identity_glyphs_mismatch" in reasons
+
+
+def test_gem_gate_canonicalization_is_boundary_only_text_contract():
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "tools/raid_program/capture_phase1_raid_foundation.py"
+    ).read_text(encoding="utf-8")
+    assert (
+        '_compact_trailing_zero_gems(actual[4]) != _compact_trailing_zero_gems(item["gem_item_ids"])'
+        in source
+    )
+    assert '"gem_item_ids": tuple(int(value) for value in item.get("gem_item_ids", [])),' in source
+    assert 'actual[3] != item["enchant_id"]' in source
+    assert 'actual[5] != item["reforge_id"]' in source
+    assert source.count("_compact_trailing_zero_gems") == 3
 
 
 def test_diagnostic_capture_rejects_cross_shard_account_and_guid_identity():
@@ -1950,8 +2035,9 @@ def test_live_evidence_demux_rejects_frozen_character_build_drift():
 def test_capture_telemetry_poll_is_incremental_and_bounded():
     root = Path(__file__).resolve().parents[1]
     capture_source = (root / "tools/raid_program/capture_phase1_raid_foundation.py").read_text(encoding="utf-8")
-    manager_source = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(encoding="utf-8")
-    header_source = (root / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text(encoding="utf-8")
+    bot_root = root / "src/server/game/Bots"
+    manager_source = (bot_root / "BotWorldPopulationMgrStatus.cpp").read_text(encoding="utf-8")
+    header_source = (bot_root / "BotWorldPopulationMgrRuntimeContracts.h").read_text(encoding="utf-8")
 
     # A long capture must not re-export the complete ring on every poll.  Keep
     # this source-level regression independent of a heavyweight worldserver

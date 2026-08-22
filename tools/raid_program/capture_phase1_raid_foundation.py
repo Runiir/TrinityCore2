@@ -453,6 +453,13 @@ def _runtime_gear_manifest(row: dict[str, Any]) -> tuple[tuple[Any, ...], ...] |
     return tuple(sorted(items))
 
 
+def _compact_trailing_zero_gems(values: tuple[int, ...]) -> tuple[int, ...]:
+    end = len(values)
+    while end and values[end - 1] == 0:
+        end -= 1
+    return values[:end]
+
+
 def _identity_manifest_rejections(
     runtime: dict[str, Any],
     profile_name: str = "blackwing_descent_10n",
@@ -507,7 +514,11 @@ def _identity_manifest_rejections(
                     continue
                 if actual[2] != item["entry"]:
                     reasons.append("frozen_identity_gear_entry_mismatch")
-                if actual[3] != item["enchant_id"] or actual[4] != item["gem_item_ids"] or actual[5] != item["reforge_id"]:
+                if (
+                    actual[3] != item["enchant_id"]
+                    or _compact_trailing_zero_gems(actual[4]) != _compact_trailing_zero_gems(item["gem_item_ids"])
+                    or actual[5] != item["reforge_id"]
+                ):
                     reasons.append("frozen_identity_gear_modifiers_mismatch")
     return list(dict.fromkeys(reasons))
 
