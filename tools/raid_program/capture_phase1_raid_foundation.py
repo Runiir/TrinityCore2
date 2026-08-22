@@ -826,6 +826,38 @@ def accepted_foundation_status(
     return not reasons, reasons
 
 
+def terminal_preflight_failure_reason(
+    status: dict[str, Any],
+    *,
+    profile_name: str = "blackwing_descent_10n",
+) -> tuple[str | None, list[str]]:
+    """Recognize a native admission/preflight terminal before watchdog timing.
+
+    Validation admission is a one-shot native transaction.  A failed
+    preflight leaves the generic bot status envelope alive while the raid
+    runtime is terminal and empty, so the ordinary active-attempt terminal
+    predicate cannot bind a ten-member roster.  This edge is an infrastructure
+    failure, not a raid attempt that should consume the semantic-stall window.
+    """
+
+    runtime = status.get("raid_runtime")
+    if not isinstance(runtime, dict) or runtime.get("admission_phase") != "terminal":
+        return None, []
+    reason = status.get("failure_reason")
+    checks = {
+        "terminal_preflight_status_not_ok": status.get("ok") is True,
+        "terminal_preflight_action_mismatch": status.get("action") == "botauto_status",
+        "terminal_preflight_profile_mismatch": status.get("active_profile") == profile_name,
+        "terminal_preflight_reason_missing": isinstance(reason, str) and bool(reason.strip()),
+        "terminal_preflight_reason_not_validation": (
+            isinstance(reason, str)
+            and reason.strip().startswith("validation_raid_preflight_")
+        ),
+    }
+    rejections = [name for name, passed in checks.items() if not passed]
+    return (reason.strip() if not rejections else None), rejections
+
+
 def terminal_runtime_failure_reason(
     status: dict[str, Any],
     *,
@@ -4886,6 +4918,48 @@ def main() -> int:
                     monitor_statuses.extend(new_statuses)
                     for status in new_statuses:
                         telemetry_scheduler.observe_status(status)
+                        preflight_failure_reason, preflight_rejections = (
+                            terminal_preflight_failure_reason(
+                                status, profile_name=profile_name,
+                            )
+                        )
+                        if preflight_failure_reason is not None:
+                            forced_evidence_report = request_final_evidence(
+                                "terminal_preflight_failure"
+                            )
+                            terminal_failure = {
+                                "detected": True,
+                                "classification": "infrastructure_abort",
+                                "failure_reason": preflight_failure_reason,
+                                "terminal_kind": "admission_preflight",
+                                "terminal_status": status,
+                                "status_rejections": preflight_rejections,
+                                "route": status.get("validation_route"),
+                                "raid_runtime": status.get("raid_runtime"),
+                                "elapsed_seconds": round(
+                                    time.monotonic() - monitor_started_at, 3
+                                ),
+                                "final_forced_evidence": forced_evidence_report.get(
+                                    "gate_passed"
+                                ) is True,
+                                "final_forced_evidence_report": forced_evidence_report,
+                            }
+                            if forced_evidence_report.get("gate_passed") is not True:
+                                telemetry_abort = {
+                                    "detected": True,
+                                    "classification": "infrastructure_abort",
+                                    "reason": "terminal_failure_forced_evidence_incomplete",
+                                    "missing_channels": forced_evidence_report.get(
+                                        "missing_channels", []
+                                    ),
+                                    "rejections": forced_evidence_report.get(
+                                        "rejections", []
+                                    ),
+                                    "elapsed_seconds": round(
+                                        time.monotonic() - monitor_started_at, 3
+                                    ),
+                                }
+                            break
                         accepted, rejections = accepted_foundation_status(
                             status,
                             profile_name=profile_name,
@@ -5249,6 +5323,7 @@ def main() -> int:
                 or bool(demux_rejections)
                 or not telemetry_envelopes["gate_passed"]
                 or forced_evidence_report.get("gate_passed") is not True
+                or terminal_failure.get("classification") == "infrastructure_abort"
             ) else (
                 "gameplay_failure"
                 if (

@@ -30,6 +30,7 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     observe_telemetry_freshness,
     TelemetryScheduler,
     material_status_signature,
+    terminal_preflight_failure_reason,
     terminal_runtime_failure_reason,
     validate_forced_evidence_bundle,
     bounded_native_shutdown,
@@ -114,6 +115,37 @@ def test_terminal_runtime_failure_is_exact_roster_bound_and_material():
     reason, rejections = terminal_runtime_failure_reason(status)
     assert reason is None
     assert "terminal_failure_all_roster_leases_owned" in rejections
+
+
+def test_terminal_preflight_failure_stops_before_semantic_stall_and_keeps_active_terminal_semantics():
+    status = accepted_status()
+    status["active_profile"] = "blackwing_descent_10n"
+    status["bots"] = 0
+    status["lease_count"] = 0
+    status["failure_reason"] = "validation_raid_preflight_full_stat_seed_missing"
+    status["raid_runtime"].update(
+        active=False,
+        admission_phase="terminal",
+        expected_size=0,
+        active_size=0,
+        alive_size=0,
+        roster_complete=False,
+        roster=[],
+    )
+
+    reason, rejections = terminal_preflight_failure_reason(status)
+
+    assert reason == "validation_raid_preflight_full_stat_seed_missing"
+    assert rejections == []
+
+    active = accepted_status()
+    active["cohort_id"] = "default"
+    active["active_profile"] = "blackwing_descent_10n"
+    active["failure_reason"] = "drudge_partial_death_before_threat_seed"
+    assert terminal_preflight_failure_reason(active)[0] is None
+    gameplay_reason, gameplay_rejections = terminal_runtime_failure_reason(active)
+    assert gameplay_reason == "drudge_partial_death_before_threat_seed"
+    assert gameplay_rejections == []
 
 
 class _FakeShutdownProcess:
