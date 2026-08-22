@@ -2516,6 +2516,11 @@ def test_monotonic_semantic_progress_rejects_cast_victim_and_hp_oscillation():
 
 def _watchdog_status() -> dict:
     status = accepted_status()
+    runtime = status["raid_runtime"]
+    runtime["admission_receipt"] = {
+        "entrance_map_id": runtime["map_id"],
+        "members": [{"guid": row["guid"]} for row in runtime["roster"]],
+    }
     status["cohort_id"] = "default"
     status["active_profile"] = "blackwing_descent_10n"
     status["validation_route"] = {
@@ -2525,6 +2530,103 @@ def _watchdog_status() -> dict:
         "terminal_evidence": [],
     }
     return status
+
+
+def _generic_watchdog_status(*, size: int, profile: str, map_id: int) -> dict:
+    roster = [
+        {"slot": slot, "guid": 2000 + slot, "active": True, "lease_owned": True}
+        for slot in range(size)
+    ]
+    return {
+        "ok": True,
+        "action": "botauto_status",
+        "cohort_id": "default",
+        "active_profile": profile,
+        "bots": size,
+        "lease_count": size,
+        "validation_route": {
+            "node_id": f"{profile}.node",
+            "generation": 1,
+            "map_id": map_id,
+        },
+        "raid_runtime": {
+            "active": True,
+            "expected_size": size,
+            "active_size": size,
+            "roster_complete": True,
+            "map_id": map_id,
+            "instance_id": 42,
+            "attempt_id": 1,
+            "assignment_generation": 1,
+            "unique_leases": True,
+            "leader_guid": roster[0]["guid"],
+            "strategy_id": f"{profile}.initial",
+            "roster": roster,
+            "admission_receipt": {
+                "entrance_map_id": map_id,
+                "members": [{"guid": row["guid"]} for row in roster],
+            },
+        },
+    }
+
+
+def test_capture_watchdog_arms_for_bwd_raid_and_dungeon_roster_sizes():
+    for size, profile, map_id in (
+        (10, "blackwing_descent_10n", 669),
+        (25, "blackwing_descent_25n", 669),
+        (5, "stonecore_5h", 725),
+    ):
+        report = observe_capture_watchdog(
+            {}, _generic_watchdog_status(size=size, profile=profile, map_id=map_id), None,
+            profile_name=profile,
+        )
+        assert report["detected"] is False
+        assert report["rejections"] == []
+
+
+def test_capture_watchdog_fails_closed_for_roster_map_and_profile_mismatch():
+    cases = (
+        ("watchdog_roster_admission_identity_mismatch", "roster"),
+        ("watchdog_map_mismatch", "map"),
+        ("watchdog_profile_mismatch", "profile"),
+    )
+    for expected_reason, mismatch in cases:
+        status = _generic_watchdog_status(size=25, profile="blackwing_descent_25n", map_id=669)
+        if mismatch == "roster":
+            status["raid_runtime"]["roster"][0]["guid"] += 1
+        elif mismatch == "map":
+            status["raid_runtime"]["map_id"] = 725
+        else:
+            status["active_profile"] = "stonecore_5h"
+        report = observe_capture_watchdog({}, status, None, profile_name="blackwing_descent_25n")
+        assert report["detected"] is False
+        assert expected_reason in report["rejections"]
+
+
+def test_capture_watchdog_stays_armed_across_route_strategy_transition():
+    status = _generic_watchdog_status(size=10, profile="blackwing_descent_10n", map_id=669)
+    state = {}
+    first = observe_capture_watchdog(
+        state,
+        status,
+        None,
+        [_watchdog_trace([{
+            "action": "validation_route_recovery",
+            "result": "route_destination_invalid_z_transition",
+            "route_node_id": "blackwing_descent_10n.node",
+            "route_generation": 1,
+            "sequence": 1,
+        }])],
+        profile_name="blackwing_descent_10n",
+    )
+    assert first["detected"] is False
+    status["raid_runtime"]["strategy_id"] = "trash_two_tank_charge_lanes"
+    second = observe_capture_watchdog(
+        state, status, None, [], profile_name="blackwing_descent_10n",
+    )
+    assert second["detected"] is False
+    assert second["rejections"] == []
+    assert second["repeated_decision_count"] == 1
 
 
 def _watchdog_trace(entries: list[dict]) -> dict:

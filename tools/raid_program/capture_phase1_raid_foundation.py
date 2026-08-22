@@ -2463,25 +2463,85 @@ def _watchdog_scope_rejections(
     runtime = status.get("raid_runtime")
     if not isinstance(runtime, dict):
         return ["watchdog_runtime_missing"]
+    expected_size = runtime.get("expected_size")
+    if not _positive_int(expected_size):
+        return ["watchdog_expected_size_invalid"]
+    roster = runtime.get("roster")
+    roster_rejections: list[str] = []
+    roster_guids: list[int] = []
+    if not isinstance(roster, list):
+        roster_rejections.append("watchdog_roster_not_a_list")
+    else:
+        if len(roster) != expected_size:
+            roster_rejections.append("watchdog_roster_size_mismatch")
+        rows = [row for row in roster if isinstance(row, dict)]
+        if len(rows) != len(roster):
+            roster_rejections.append("watchdog_roster_row_invalid")
+        slots = [row.get("slot") for row in rows]
+        if (
+            any(isinstance(slot, bool) or not isinstance(slot, int) for slot in slots)
+            or sorted(slots) != list(range(expected_size))
+        ):
+            roster_rejections.append("watchdog_roster_slots_mismatch")
+        guids = [row.get("guid") for row in rows]
+        if any(not _positive_int(guid) for guid in guids):
+            roster_rejections.append("watchdog_roster_guid_invalid")
+        else:
+            roster_guids = [int(guid) for guid in guids]
+            if len(set(roster_guids)) != len(roster_guids):
+                roster_rejections.append("watchdog_roster_guid_duplicate")
+        if any(row.get("active") is not True for row in rows):
+            roster_rejections.append("watchdog_roster_member_inactive")
+        if any(row.get("lease_owned") is not True for row in rows):
+            roster_rejections.append("watchdog_roster_lease_unowned")
+
+    admission = runtime.get("admission_receipt")
+    expected_map_id = admission.get("entrance_map_id") if isinstance(admission, dict) else None
+    route = status.get("validation_route")
+    if not isinstance(route, dict):
+        route = runtime.get("validation_route")
+    if not _positive_int(expected_map_id) and isinstance(route, dict):
+        expected_map_id = route.get("map_id")
+    if not _positive_int(expected_map_id):
+        roster_rejections.append("watchdog_expected_map_missing")
+    accepted_members = admission.get("members") if isinstance(admission, dict) else None
+    if isinstance(accepted_members, list):
+        accepted_guids = [
+            member.get("guid") for member in accepted_members
+            if isinstance(member, dict)
+        ]
+        if len(accepted_guids) != len(accepted_members):
+            roster_rejections.append("watchdog_admission_member_invalid")
+        elif len(accepted_members) != expected_size:
+            roster_rejections.append("watchdog_admission_member_count_mismatch")
+        elif any(not _positive_int(guid) for guid in accepted_guids):
+            roster_rejections.append("watchdog_admission_guid_invalid")
+        elif len(set(accepted_guids)) != len(accepted_guids):
+            roster_rejections.append("watchdog_admission_guid_duplicate")
+        elif roster_guids and sorted(roster_guids) != sorted(accepted_guids):
+            roster_rejections.append("watchdog_roster_admission_identity_mismatch")
     checks = {
         "watchdog_status_not_ok": status.get("ok") is True,
         "watchdog_action_mismatch": status.get("action") == "botauto_status",
         "watchdog_cohort_mismatch": status.get("cohort_id") == "default",
         "watchdog_profile_mismatch": status.get("active_profile") == profile_name,
-        "watchdog_bot_count_mismatch": status.get("bots") == 10,
-        "watchdog_lease_count_mismatch": status.get("lease_count") == 10,
+        "watchdog_bot_count_mismatch": status.get("bots") == expected_size,
+        "watchdog_lease_count_mismatch": status.get("lease_count") == expected_size,
         "watchdog_runtime_inactive": runtime.get("active") is True,
-        "watchdog_expected_size_mismatch": runtime.get("expected_size") == 10,
-        "watchdog_active_size_mismatch": runtime.get("active_size") == 10,
+        "watchdog_active_size_mismatch": runtime.get("active_size") == expected_size,
         "watchdog_roster_incomplete": runtime.get("roster_complete") is True,
-        "watchdog_map_mismatch": runtime.get("map_id") == 669,
+        "watchdog_map_mismatch": runtime.get("map_id") == expected_map_id,
+        "watchdog_strategy_missing": (
+            isinstance(runtime.get("strategy_id"), str)
+            and bool(runtime.get("strategy_id", "").strip())
+        ),
         "watchdog_instance_missing": _positive_int(runtime.get("instance_id")),
         "watchdog_attempt_missing": _positive_int(runtime.get("attempt_id")),
         "watchdog_assignment_missing": _positive_int(runtime.get("assignment_generation")),
         "watchdog_unique_leases_missing": runtime.get("unique_leases") is True,
     }
     reasons = [name for name, passed in checks.items() if not passed]
-    reasons.extend(f"watchdog_{item}" for item in _roster_rejections(runtime, profile_name))
+    reasons.extend(roster_rejections)
     return list(dict.fromkeys(reasons))
 
 
