@@ -1213,6 +1213,61 @@ def _continuous_aura_rows(
     return by_spell, valid
 
 
+def _reconcile_legacy_tinker_use_count(
+    dynamic: Mapping[str, Any],
+) -> tuple[int, bool]:
+    """Remove independently attributed item uses from the legacy aggregate.
+
+    Older reference telemetry puts ``ScoredTinkerOrOtherItemUseCount`` and
+    ``ScoredTinkerSpellUseCount`` in one ``tinker_use_count`` field.  Newer
+    payloads also retain the per-item rows needed to identify the ordinary
+    item-use portion.  Reconcile that portion only when every row and count
+    agrees.  An absent pair keeps the legacy behavior; a partial or malformed
+    pair fails closed and leaves the aggregate untouched.
+    """
+    raw_count = dynamic.get("tinker_use_count")
+    if type(raw_count) is not int or raw_count < 0:
+        return _integer(raw_count), False
+
+    has_other_item_fields = (
+        "other_item_use_count" in dynamic or "other_item_uses" in dynamic
+    )
+    if not has_other_item_fields:
+        return raw_count, True
+
+    other_item_count = dynamic.get("other_item_use_count")
+    other_item_rows = dynamic.get("other_item_uses")
+    if (
+        type(other_item_count) is not int
+        or other_item_count < 0
+        or not isinstance(other_item_rows, list)
+    ):
+        return raw_count, False
+
+    total_row_count = 0
+    seen_rows: set[tuple[int, int]] = set()
+    for row in other_item_rows:
+        if not isinstance(row, Mapping):
+            return raw_count, False
+        spell_id = row.get("spell_id")
+        item_entry = row.get("item_entry")
+        use_count = row.get("count")
+        if any(
+            type(value) is not int or value <= 0
+            for value in (spell_id, item_entry, use_count)
+        ):
+            return raw_count, False
+        identity = (spell_id, item_entry)
+        if identity in seen_rows:
+            return raw_count, False
+        seen_rows.add(identity)
+        total_row_count += use_count
+
+    if total_row_count != other_item_count or other_item_count > raw_count:
+        return raw_count, False
+    return raw_count - other_item_count, True
+
+
 def reference_condition_projections(
     target_spec: str,
     target_observation: Any,
@@ -1327,6 +1382,10 @@ def reference_condition_projections(
             and food_item_id in FOOD_ITEMS_BY_AURA[food_aura_id]
             and continuously_active(player_auras, food_aura_id)
         )
+
+    normalized_tinker_use_count, other_item_reconciliation_valid = (
+        _reconcile_legacy_tinker_use_count(dynamic)
+    )
 
     raid_required_valid = all(
         continuously_inactive(player_auras, spell_id)
@@ -1473,7 +1532,12 @@ def reference_condition_projections(
             )
         )
         and all(
-            _integer(dynamic.get(key)) == 0
+            _integer(
+                normalized_tinker_use_count
+                if key == "tinker_use_count"
+                else dynamic.get(key)
+            )
+            == 0
             for key in (
                 "tinker_item_id",
                 "tinker_spell_id",
@@ -1483,6 +1547,7 @@ def reference_condition_projections(
                 "unexpected_dynamic_aura_active_samples",
             )
         )
+        and other_item_reconciliation_valid
         and _integer(dynamic.get("last_potion_id_nonzero_samples")) >= 0
     )
     race_id = _integer(target.get("race_id"))
@@ -1532,7 +1597,7 @@ def reference_condition_projections(
         },
         "tinker": {
             "item_id": _integer(dynamic.get("tinker_item_id")),
-            "use_count": _integer(dynamic.get("tinker_use_count")),
+            "use_count": normalized_tinker_use_count,
         },
         "racial": racial,
         "raid_buffs": raid_buffs,

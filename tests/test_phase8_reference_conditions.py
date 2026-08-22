@@ -1907,6 +1907,7 @@ def test_reference_condition_projections_reconstruct_full_window_raw_facts() -> 
 def test_reference_condition_projections_tolerate_attributed_other_item_keys() -> None:
     target = _reference_condition_observation()
     dynamic = target["reference_condition_observation"]["dynamic_disabled"]
+    dynamic["tinker_use_count"] = 2
     dynamic["other_item_use_count"] = 2
     dynamic["other_item_uses"] = [
         {"spell_id": 82174, "item_entry": 60443, "count": 1},
@@ -1924,6 +1925,78 @@ def test_reference_condition_projections_tolerate_attributed_other_item_keys() -
 
     assert projection["tinker"] == {"item_id": 0, "use_count": 0}
     assert valid is True
+
+
+def test_reference_condition_projections_reconcile_food_uses_from_legacy_tinker_count() -> None:
+    target = _reference_condition_observation()
+    raw = target["reference_condition_observation"]
+    raw["configured"].update(
+        food_item_id=62671,
+        food_item_spell_id=87587,
+        food_aura_spell_id=87547,
+    )
+    food_aura = next(
+        row for row in raw["player_auras"] if row["spell_id"] == 87547
+    )
+    food_aura.update(active_samples=601, inactive_samples=0)
+    raw["dynamic_disabled"].update(
+        tinker_use_count=3,
+        other_item_use_count=3,
+        other_item_uses=[
+            {"spell_id": 87547, "item_entry": 62671, "count": 3}
+        ],
+    )
+
+    projection, valid = reference_condition_projections(
+        "affliction_warlock",
+        target,
+        fixture_target_guid=90,
+        fixture_contract_sha256="e" * 64,
+        scored_started_at_ms=1_000,
+        scored_ended_at_ms=301_000,
+    )
+
+    assert projection["food"] == {
+        "item_id": 62671,
+        "item_spell_id": 87587,
+        "observed_aura_spell_id": 87547,
+    }
+    assert projection["tinker"] == {"item_id": 0, "use_count": 0}
+    assert valid is True
+
+
+def test_reference_condition_projections_fail_closed_on_unreconciled_other_items() -> None:
+    mutations = (
+        lambda dynamic: dynamic.update(
+            tinker_use_count=3,
+            other_item_use_count=2,
+            other_item_uses=[
+                {"spell_id": 87547, "item_entry": 62671, "count": 3}
+            ],
+        ),
+        lambda dynamic: dynamic.update(
+            tinker_use_count=3,
+            other_item_use_count=3,
+            other_item_uses=[
+                {"spell_id": 87547, "item_entry": 62671, "count": 0}
+            ],
+        ),
+    )
+    for mutate in mutations:
+        target = _reference_condition_observation()
+        mutate(target["reference_condition_observation"]["dynamic_disabled"])
+
+        projection, valid = reference_condition_projections(
+            "arms_warrior",
+            target,
+            fixture_target_guid=90,
+            fixture_contract_sha256="e" * 64,
+            scored_started_at_ms=1_000,
+            scored_ended_at_ms=301_000,
+        )
+
+        assert projection["tinker"] == {"item_id": 0, "use_count": 3}
+        assert valid is False
 
 
 def test_reference_condition_projections_reject_raw_identity_and_condition_tamper() -> None:
