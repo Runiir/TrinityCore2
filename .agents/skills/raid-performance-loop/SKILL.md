@@ -186,8 +186,17 @@ pixi run python -m tools.bot_ml.spec_canary_gate \
 ```
 
 The decision emits at most one capture/review/fix work unit. On the matched
-verification, pass `--fixes-used 1`; a remaining mismatch then terminates as
-`fix_budget_exhausted`. Route cast mix, cadence, pet uptime, or pet event
+verification, pass `--fixes-used 1`; a remaining mismatch then terminates that
+specialist work unit as `fix_budget_exhausted`. It does not complete or block
+the spec program. Close the attempt, preserve its before/after evidence, run a
+fresh comparison, and route the newly observed first-broken edge to its owning
+specialist. Do not redispatch the failed hypothesis or let one worker tune it
+again. Continue this diagnose, bounded-repair, matched-verification sequence
+until the spec passes its acceptance contract or a genuine external authority
+or infrastructure dependency is unavailable. A report that only establishes
+that the bot still fails is a routing receipt, not the requested outcome.
+
+Route cast mix, cadence, pet uptime, or pet event
 cadence to `raid-role-implementation`. Route matching cadence with wrong owner
 or primary-pet damage per event to `raid-class-mechanics-implementation`.
 When the selected denominator is `self_provided_baseline`, accept
