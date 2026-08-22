@@ -55,6 +55,21 @@ def test_affliction_soulburn_window_consumes_once_and_requires_live_shards() -> 
     assert "`action`.`required_self_aura` = 74434" in migration
 
 
+def test_affliction_soulburn_native_consumer_is_bound_and_one_charge() -> None:
+    migration = (
+        ROOT
+        / "sql/custom/world/2026_08_23_01_affliction_soulburn_native_binding.sql"
+    ).read_text()
+
+    assert "`spell_id` = 74434" in migration
+    assert "'spell_warl_soulburn'" in migration
+    assert "DELETE FROM `spell_proc` WHERE `SpellId` = 74434" in migration
+    assert "`SpellFamilyMask0`" in migration
+    assert "`SpellFamilyMask1`" in migration
+    assert "`Charges`, `Chance`" in migration
+    assert "7, 1, 0, 0, 0, 1, 100" in migration
+
+
 def test_affliction_modifier_diagnostics_observe_native_auras_without_applying_them() -> None:
     source = "\n".join(
         (
