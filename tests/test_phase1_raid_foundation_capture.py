@@ -2252,6 +2252,105 @@ def test_live_evidence_demux_accepts_bound_terminal_without_readycheck():
     assert report["gate_passed"] is True
 
 
+def test_live_evidence_demux_accepts_controller_gameplay_terminals_without_readycheck():
+    def build_rows():
+        active = accepted_status()
+        active["cohort_id"] = "default"
+        active["active_profile"] = "blackwing_descent_10n"
+        bots = [{"bot_guid": 1001 + index} for index in range(10)]
+        diagnosis = {
+            "ok": True, "action": "botauto_diagnose", "cohort_id": "default",
+            "raid_runtime": active["raid_runtime"], "bots": bots,
+        }
+        trace = {
+            "ok": True, "action": "botauto_trace", "cohort_id": "default",
+            "raid_runtime": active["raid_runtime"], "bots": bots,
+        }
+        stop = {
+            "ok": True, "action": "botauto_stop", "cohort_id": "default",
+            "server_epoch": 88, "attempt_id": 1,
+            "raid_runtime_before_cleanup": active["raid_runtime"],
+            "post_cleanup": {"active": False, "bots": 0, "lease_count": 0},
+        }
+        inactive = json.loads(json.dumps(active))
+        inactive["active"] = False
+        inactive["bots"] = 0
+        inactive["lease_count"] = 0
+        inactive["server_epoch"] = 88
+        inactive["attempt_id"] = 1
+        inactive["raid_runtime"]["active"] = False
+        rows = normalized_batch_payload(
+            b"\n".join(
+                json.dumps(row).encode()
+                for row in (
+                    {"ok": True, "action": "botauto_profile", "cohort_id": "default",
+                     "active_profile": "blackwing_descent_10n"},
+                    active, diagnosis, trace, stop, inactive,
+                )
+            ) + b"\n"
+        )
+        return rows, active
+
+    for reason in ("semantic_stall", "repeated_decision_watchdog", "death_loop_watchdog"):
+        rows, terminal_status = build_rows()
+        report = evidence_demux_report(
+            rows,
+            controller_terminal={
+                "detected": True,
+                "classification": "gameplay_failure",
+                "failure_reason": reason,
+                "terminal_status": terminal_status,
+                "final_forced_evidence": True,
+            },
+        )
+        assert report["rejections"] == []
+        assert report["gate_passed"] is True
+
+    rows, terminal_status = build_rows()
+    drifted_status = json.loads(json.dumps(terminal_status))
+    drifted_status["raid_runtime"]["attempt_id"] = 2
+    report = evidence_demux_report(
+        rows,
+        controller_terminal={
+            "detected": True,
+            "classification": "gameplay_failure",
+            "failure_reason": "semantic_stall",
+            "terminal_status": drifted_status,
+            "final_forced_evidence": True,
+        },
+    )
+    assert "evidence_demux_controller_terminal_attempt_mismatch" in report["rejections"]
+    assert "evidence_demux_required_action_missing:botauto_readycheck" in report["rejections"]
+
+
+def test_live_evidence_demux_still_requires_readycheck_for_clear_run():
+    active = accepted_status()
+    active["cohort_id"] = "default"
+    active["active_profile"] = "blackwing_descent_10n"
+    bots = [{"bot_guid": 1001 + index} for index in range(10)]
+    rows = normalized_batch_payload(
+        b"\n".join(json.dumps(row).encode() for row in (
+            {"ok": True, "action": "botauto_profile", "cohort_id": "default",
+             "active_profile": "blackwing_descent_10n"},
+            active,
+            {"ok": True, "action": "botauto_diagnose", "cohort_id": "default",
+             "raid_runtime": active["raid_runtime"], "bots": bots},
+            {"ok": True, "action": "botauto_trace", "cohort_id": "default",
+             "raid_runtime": active["raid_runtime"], "bots": bots},
+            {"ok": True, "action": "botauto_stop", "cohort_id": "default",
+             "server_epoch": 88, "attempt_id": 1,
+             "raid_runtime_before_cleanup": active["raid_runtime"],
+             "post_cleanup": {"active": False, "bots": 0, "lease_count": 0}},
+            {"ok": True, "action": "botauto_status", "cohort_id": "default",
+             "bots": 0, "lease_count": 0, "server_epoch": 88, "attempt_id": 1,
+             "raid_runtime": {**active["raid_runtime"], "active": False}},
+        )) + b"\n"
+    )
+    report = evidence_demux_report(rows)
+    assert "evidence_demux_required_action_missing:botauto_readycheck" in report["rejections"]
+    assert report["gate_passed"] is False
+
+
 def test_live_evidence_demux_reconstructs_bindings_and_rejects_missing_lifecycle_identity():
     active = accepted_status()
     active["cohort_id"] = "raid"

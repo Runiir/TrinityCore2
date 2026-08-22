@@ -50,6 +50,11 @@ _WATCHDOG_FAILURE_TOKENS = (
     "failure",
     "no_candidate",
 )
+_CONTROLLER_TERMINAL_FAILURE_REASONS = frozenset({
+    "semantic_stall",
+    "repeated_decision_watchdog",
+    "death_loop_watchdog",
+})
 
 
 def process_resource_sample(
@@ -864,6 +869,77 @@ def terminal_runtime_failure_reason(
         f"terminal_failure_{item}" for item in _roster_rejections(runtime, profile_name)
     )
     return (reason.strip() if not rejections else None), list(dict.fromkeys(rejections))
+
+
+def _controller_terminal_binding(
+    controller_terminal: dict[str, Any] | None,
+    rows: list[dict[str, Any]],
+    *,
+    canonical_identity: tuple[Any, ...],
+    canonical_roster: tuple[tuple[Any, ...], ...],
+    canonical_cohort: str,
+    profile_name: str,
+) -> tuple[bool, list[str]]:
+    """Validate controller-owned terminal evidence before waiving ready-check.
+
+    Semantic stalls and watchdog thresholds are capture-controller decisions,
+    not native status failure reasons.  They may skip the ready-check only when
+    the controller retained the exact active status that triggered the edge and
+    its forced diagnosis/trace bundle passed.  This keeps the exception bound
+    to the same attempt and prevents a caller-provided terminal label from
+    weakening the ordinary demux gates.
+    """
+
+    if controller_terminal is None:
+        return False, []
+    reasons: list[str] = []
+    if not isinstance(controller_terminal, dict):
+        return False, ["evidence_demux_controller_terminal_invalid"]
+    if controller_terminal.get("detected") is not True:
+        reasons.append("evidence_demux_controller_terminal_not_detected")
+    if controller_terminal.get("classification") != "gameplay_failure":
+        reasons.append("evidence_demux_controller_terminal_classification_invalid")
+    if controller_terminal.get("failure_reason") not in _CONTROLLER_TERMINAL_FAILURE_REASONS:
+        reasons.append("evidence_demux_controller_terminal_reason_invalid")
+    if controller_terminal.get("final_forced_evidence") is not True:
+        reasons.append("evidence_demux_controller_terminal_forced_evidence_missing")
+
+    terminal_status = controller_terminal.get("terminal_status")
+    if not isinstance(terminal_status, dict):
+        reasons.append("evidence_demux_controller_terminal_status_missing")
+        return False, reasons
+    if terminal_status.get("ok") is not True:
+        reasons.append("evidence_demux_controller_terminal_status_not_ok")
+    if terminal_status.get("action") != "botauto_status":
+        reasons.append("evidence_demux_controller_terminal_status_action_invalid")
+    if terminal_status.get("cohort_id") != canonical_cohort:
+        reasons.append("evidence_demux_controller_terminal_cohort_mismatch")
+    if terminal_status.get("active_profile") != profile_name:
+        reasons.append("evidence_demux_controller_terminal_profile_mismatch")
+    runtime = terminal_status.get("raid_runtime")
+    roster = runtime.get("roster") if isinstance(runtime, dict) else None
+    if not isinstance(runtime, dict) or runtime.get("active") is not True:
+        reasons.append("evidence_demux_controller_terminal_runtime_inactive")
+    if not isinstance(runtime, dict) or _runtime_identity(runtime, include_strategy=False) != canonical_identity:
+        reasons.append("evidence_demux_controller_terminal_attempt_mismatch")
+    if not isinstance(roster, list) or _roster_binding_identity(roster) != canonical_roster:
+        reasons.append("evidence_demux_controller_terminal_roster_mismatch")
+    if terminal_status.get("bots") != len(canonical_roster):
+        reasons.append("evidence_demux_controller_terminal_bot_count_mismatch")
+    if terminal_status.get("lease_count") != len(canonical_roster):
+        reasons.append("evidence_demux_controller_terminal_lease_count_mismatch")
+
+    # The context is only admissible if its exact trigger status was retained
+    # in the immutable batch.  Equal identity alone is insufficient: it could
+    # otherwise waive ready-check for an unobserved or stale controller edge.
+    if not any(
+        isinstance(row.get("payload"), dict)
+        and row.get("payload") == terminal_status
+        and row.get("payload", {}).get("action") == "botauto_status"
+        for row in rows
+    ):
+        reasons.append("evidence_demux_controller_terminal_status_unretained")
+    return not reasons, list(dict.fromkeys(reasons))
 
 
 def _route_advancement_marker(runtime: dict[str, Any]) -> int | None:
@@ -3644,7 +3720,8 @@ def _required_telemetry_envelope_report(
 
 
 def evidence_demux_report(
-    rows: list[dict[str, Any]], *, profile_name: str = "blackwing_descent_10n"
+    rows: list[dict[str, Any]], *, profile_name: str = "blackwing_descent_10n",
+    controller_terminal: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Independently bind every retained JSON row to one raid lifecycle."""
 
@@ -3729,6 +3806,15 @@ def evidence_demux_report(
         }
 
     telemetry_envelopes = _required_telemetry_envelope_report(rows)
+    controller_terminal_bound, controller_terminal_rejections = _controller_terminal_binding(
+        controller_terminal,
+        rows,
+        canonical_identity=canonical_identity,
+        canonical_roster=canonical_roster,
+        canonical_cohort=canonical_cohort,
+        profile_name=profile_name,
+    )
+    reasons.extend(controller_terminal_rejections)
     stop_seen = False
     inactive_cleanup_seen = False
     observed_actions: set[str] = set()
@@ -3874,7 +3960,7 @@ def evidence_demux_report(
         reasons.append("evidence_demux_inactive_cleanup_missing")
     reasons.extend(telemetry_envelopes["rejections"])
     required_actions = known_actions - {"botauto_profile"}
-    if terminal_failure_seen:
+    if terminal_failure_seen or controller_terminal_bound:
         # A recognized failed attempt never reaches the post-wipe ready-check
         # success gate.  Its exact terminal status plus forced diagnose/trace
         # and ordinary cleanup remain mandatory evidence.
@@ -4821,6 +4907,7 @@ def main() -> int:
                                 "detected": True,
                                 "classification": "gameplay_failure",
                                 "failure_reason": failure_reason,
+                                "terminal_status": status,
                                 "status_rejections": failure_rejections,
                                 "route": status.get("validation_route"),
                                 "raid_runtime": status.get("raid_runtime"),
@@ -4869,6 +4956,7 @@ def main() -> int:
                                 "failure_reason": controller_watchdog.get(
                                     "failure_reason"
                                 ),
+                                "terminal_status": monitor_statuses[-1],
                                 "watchdog": controller_watchdog,
                                 "route": monitor_statuses[-1].get("validation_route"),
                                 "raid_runtime": monitor_statuses[-1].get("raid_runtime"),
@@ -4939,6 +5027,9 @@ def main() -> int:
                             forced_evidence_report = flush_forced_evidence()
                             semantic_stall = {
                                 "detected": True,
+                                "classification": "gameplay_failure",
+                                "failure_reason": "semantic_stall",
+                                "terminal_status": monitor_statuses[-1],
                                 "stalled_for_seconds": round(stalled_for, 3),
                                 "unchanged_samples": unchanged_semantic_samples,
                                 "semantic_signature": signature,
@@ -5043,8 +5134,6 @@ def main() -> int:
         log_bytes = server_log_output.read_bytes()
 
     normalized_rows = normalized_batch_payload(log_bytes)
-    demux_report = evidence_demux_report(normalized_rows, profile_name=profile_name)
-    demux_rejections = demux_report["rejections"]
     telemetry_envelopes = _required_telemetry_envelope_report(normalized_rows)
     raw_payload_sha256, raw_payload_rows = write_normalized_batch(raw_output, normalized_rows)
     # The complete log was decoded once into normalized_rows above.  Project
@@ -5091,6 +5180,21 @@ def main() -> int:
             "rejections": ["controller_watchdog_not_started"],
         },
     )
+    controller_terminal = None
+    if (
+        isinstance(terminal_failure, dict)
+        and terminal_failure.get("detected") is True
+        and terminal_failure.get("failure_reason") in _CONTROLLER_TERMINAL_FAILURE_REASONS
+    ):
+        controller_terminal = terminal_failure
+    elif isinstance(semantic_stall, dict) and semantic_stall.get("detected") is True:
+        controller_terminal = semantic_stall
+    demux_report = evidence_demux_report(
+        normalized_rows,
+        profile_name=profile_name,
+        controller_terminal=controller_terminal,
+    )
+    demux_rejections = demux_report["rejections"]
     telemetry_abort = locals().get("telemetry_abort", {"detected": False})
     resource_summary = summarize_process_resource_samples(
         resource_samples,
@@ -5147,7 +5251,10 @@ def main() -> int:
                 or forced_evidence_report.get("gate_passed") is not True
             ) else (
                 "gameplay_failure"
-                if terminal_failure.get("detected") is True
+                if (
+                    terminal_failure.get("detected") is True
+                    or semantic_stall.get("detected") is True
+                )
                 else "incomplete_evidence"
             ))
         ),
