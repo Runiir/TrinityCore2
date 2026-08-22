@@ -42,6 +42,25 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         return true;
     }
 
+    bool const nativeLongPathRecovery = intent.AllowNativeLongPath
+        && intent.Owner == BotMovementArbitration::Owner::Recovery;
+    if (nativeLongPathRecovery)
+    {
+        // This is deliberately an intent-only admission.  The recovery brain
+        // submits the same typed Move used for an ordinary player request;
+        // only the movement executor below owns MotionMaster and submits the
+        // final destination with native path generation.  Native pathing is
+        // allowed to take a winding route here, so a segment need not reduce
+        // straight-line distance to the entrance trigger.
+        plan.SegmentX = intent.X;
+        plan.SegmentY = intent.Y;
+        plan.SegmentZ = intent.Z;
+        plan.TraversalMode = "native_recovery_long_path";
+        plan.NativeLongPath = true;
+        plan.Selected = true;
+        return true;
+    }
+
     float segmentX = intent.X;
     float segmentY = intent.Y;
     float segmentZ = intent.Z;

@@ -55,5 +55,11 @@ bool BotWorldPopulationMgr::MoveBotToPoint(
         && Cohort().Config.ValidationRouteDescentAction
             == "native_walkable_descent";
     intent.AllowRecentFailureRetry = Cohort().Config.ValidationRouteEnable;
+    bool const nativeRecoveryEntranceReady =
+        state.NativeRecoveryEntranceRequired
+        && state.NativeRecoveryEntranceAvailable
+        && state.NativeRunbackAreaTriggerId != 0;
+    intent.AllowNativeLongPath = BotWorldMovement::AllowsNativeLongPath(
+        movementOwner, nativeRecoveryEntranceReady);
     return ExecuteMovementIntent(state, bot, intent);
 }

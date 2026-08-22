@@ -22,6 +22,17 @@ constexpr bool AllowsProgressiveSegments(
             && nativeRecoveryEntrance);
 }
 
+// A corpse-authorized recovery entrance may rely on the same native long
+// path that a player submits with MovePoint(generatePath=true).  Keep this
+// admission separate from ordinary progressive route segments so no combat,
+// formation, or support movement can bypass path planning.
+constexpr bool AllowsNativeLongPath(
+    BotMovementArbitration::Owner owner, bool nativeRecoveryEntranceReady)
+{
+    return owner == BotMovementArbitration::Owner::Recovery
+        && nativeRecoveryEntranceReady;
+}
+
 struct Intent
 {
     float X = 0.0f;
@@ -40,6 +51,7 @@ struct Intent
     bool AllowProgressiveSegments = false;
     bool RequireCompletePath = false;
     bool AllowRecentFailureRetry = false;
+    bool AllowNativeLongPath = false;
 };
 
 struct PathPlan
@@ -52,6 +64,7 @@ struct PathPlan
     std::string TraversalMode;
     std::string RejectReason;
     bool RecentFailure = false;
+    bool NativeLongPath = false;
 };
 
 struct ActivePathObservation

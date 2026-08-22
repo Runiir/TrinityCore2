@@ -79,6 +79,9 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
         else
             bot->GetMotionMaster()->MoveChase(intent.DynamicTarget);
     }
+    else if (plan.NativeLongPath)
+        bot->GetMotionMaster()->MovePoint(0, intent.X, intent.Y, intent.Z,
+            true);
     else if (std::fabs(plan.SegmentX - intent.X) > 0.1f
         || std::fabs(plan.SegmentY - intent.Y) > 0.1f
         || std::fabs(plan.SegmentZ - intent.Z) > 0.1f)
