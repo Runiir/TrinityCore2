@@ -48,3 +48,14 @@ def test_validation_cohort_runtime_pet_pinning_is_scoped_to_cohort_roster():
     assert "return ObserveActiveOrdinaryHunterPet(bot, observed);" in text
     assert "ResolveExpectedHunterPetIdentity" not in text
     assert "observed.PetId == expectedPetId" not in text
+
+
+def test_hostile_inactivity_can_release_partial_trash_recovery():
+    text = MODULE.read_text()
+    inactivity = text.index(
+        "else if (raid.NativeHostileActivitySeenAtWipe || raid.NativeHostileActivitySeen)"
+    )
+    reset = text.index("++raid.NativeHostileResetGeneration", inactivity)
+
+    assert "raid.WipeGeneration > 0" not in text[inactivity - 80:inactivity]
+    assert inactivity < reset

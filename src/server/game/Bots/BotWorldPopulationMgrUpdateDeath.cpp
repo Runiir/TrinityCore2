@@ -85,12 +85,12 @@ void BotWorldPopulationMgr::HandleBotDeath(WorldBotState& state, Player* bot, ui
             : state.DeadTimer >= 5000;
         if (deathRecoveryReady)
         {
-            // Phase 1 Magmaw is a native-encounter smoke, not a tactical
-            // recovery exercise.  Keep a dead member in place while any
-            // exact cohort member remains alive or the roster cannot be
-            // reconstructed.  Only the native all-dead path below may then
-            // release corpses and let the encounter script reset/respawn.
-            if (Cohort().Config.ValidationRouteBossRecovery == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly)
+            // Boss attempts keep the exact all-dead latch. Trash deaths are
+            // different: once native hostile activity has settled, an
+            // ordinary corpse run must be able to restore the party without
+            // requiring the surviving members to manufacture a full wipe.
+            if (Cohort().Config.ValidationRouteBossRecovery == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly
+                && Cohort().Config.ValidationRouteKind == "boss")
             {
                 RaidRuntime const& raid = Cohort().Raid;
                 bool const exactSignalRoster = raid.RosterComplete

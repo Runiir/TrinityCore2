@@ -35,3 +35,16 @@ def test_update_death_keeps_native_recovery_contract():
         "tactical_retreat_no_combat_res",
     ):
         assert marker in text
+
+
+def test_partial_trash_deaths_do_not_require_a_manufactured_full_wipe():
+    text = MODULE.read_text()
+    full_wipe_gate = text.index(
+        "Cohort().Config.ValidationRouteBossRecovery == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly"
+    )
+    reset_gate = text.index("native_recovery_wait_hostile_activity")
+
+    assert '&& Cohort().Config.ValidationRouteKind == "boss"' in text[
+        full_wipe_gate:full_wipe_gate + 240
+    ]
+    assert "RecoverDeadBot(state, bot)" in text[reset_gate:]

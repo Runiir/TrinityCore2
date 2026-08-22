@@ -547,8 +547,7 @@ void BotWorldPopulationMgr::UpdateValidationCohortRaidRuntime(
             raid.NativeHostileActivitySeen = true;
             raid.NativeHostileInactiveSinceMs = 0;
         }
-        else if (raid.WipeGeneration > 0
-            && (raid.NativeHostileActivitySeenAtWipe || raid.NativeHostileActivitySeen))
+        else if (raid.NativeHostileActivitySeenAtWipe || raid.NativeHostileActivitySeen)
         {
             if (!raid.NativeHostileInactiveSinceMs)
                 raid.NativeHostileInactiveSinceMs = nowMs;
