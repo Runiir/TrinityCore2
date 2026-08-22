@@ -1,24 +1,31 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:25H:native_rejoin",
+  "work_unit": "boss:blackwing_descent:magmaw:25H:native_rejoin_long_path",
   "owner_skill": "raid-bot-runtime-implementation",
   "classification": "failed",
-  "observed_at_commit": "5756bb492fb543ccbf403bdde77857fe8e1086b6",
+  "observed_at_commit": "ea84aba64af7c26ef06c2875af65806a9daf97fc",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_convergence_handoff.md",
-    "sha256": "8523da1b7d3e9e25377d8209053ef49742ce983358d6d9c7f3e9be5735a07669"
+    "sha256": "019f704e6dc81068da2fb97adb23af48e070beffff872017e1c78179b1b1ed17"
   },
-  "first_broken_edge": "native_runback_no_progress",
+  "first_broken_edge": "native_runback_nonmonotonic_path_rejected",
   "decisive_evidence": {
-    "report_dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_5756bb492f_magmaw_run01_20260822.dvc",
-    "report_sha256": "85e88cfff9ca7fada210217ac64760bba7a2a778d69ca3fd0429cc1f7b928db1",
-    "elapsed_seconds": 273.858,
+    "report_dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_ea84aba64a_magmaw_run01_20260822.dvc",
+    "report_sha256": "b54847e3be211261a9f49673cbb5cb3a65fa90d9259ebd5305074bcedecfc9ed",
+    "elapsed_seconds": 283.884,
     "diagnostic_difficulty": "10N",
-    "dead_bots": 3,
-    "living_bots_inside_instance": 7,
-    "failed_native_runback_attempts": 6,
+    "dead_bots": 2,
+    "living_bots_inside_instance": 8,
+    "failed_native_runback_attempts": 9,
     "ghost_map_id": 0,
+    "native_graveyard_position": [-7316.97, -1648.84, 282.085],
+    "last_progress_position": [-7334.46, -1626.77, 283.392],
+    "entrance_trigger_id": 6581,
+    "entrance_position": [-7542.91015625, -1184.9300537109375, 482.0],
+    "moving_decisions_before_rejection": 3,
     "entrance_movement_result": "native_instance_runback_path_retryable",
+    "planner_rejection": "route_destination_invalid_floor",
+    "historical_native_long_path_success_commit": "291653c1549d972c0f363e9505e30e3462db5e31",
     "terminal_reason": "native_runback_no_progress"
   },
   "validation_clock": {
@@ -39,5 +46,5 @@
     "matched_live_verification_runs": 1
   },
   "live_verification_owner_skill": "raid-shard-architecture",
-  "next_action": "Repair only the trace-backed native entrance movement admission/planning edge for ghosts released to map 0 while living raid members remain inside map 669. Preserve mmap-validated movement, native area-trigger entry, and the no-teleport/no-forced-resurrection contract; add focused regression coverage, obtain one policy-v8 coordinator build receipt, and run one clean completion-watchdog Magmaw shard. Do not tune Drudge damage, formation, taunts, class rotations, pets, or boss scripts from this evidence."
+  "next_action": "Restore one recovery-only native long-path intent for the corpse-authorized map-0 entrance, equivalent to the historically live-proven MovePoint generatePath=true behavior. Keep MotionMaster exclusively in the movement executor, preserve the active native path, use forceDestination=false, and retain native area-trigger entry. Do not require each segment to reduce Euclidean distance to the final trigger, hardcode an unproven corridor, teleport, or force resurrection. Add focused regression coverage, obtain one policy-v8 coordinator build receipt, and run one clean completion-watchdog Magmaw shard. Do not tune Drudge damage, formation, taunts, class rotations, pets, or boss scripts from this evidence."
 }

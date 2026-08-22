@@ -248,7 +248,7 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert magmaw["validation_clock"]["policy"] == "completion_watchdog"
     assert magmaw["validation_clock"]["fixed_success_timer_seconds"] is None
     assert magmaw["active_program_work_unit"]["first_broken_edge"] == (
-        "native_runback_no_progress"
+        "native_runback_nonmonotonic_path_rejected"
     )
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
@@ -303,7 +303,7 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     assert status["active_work_unit"]["descriptor_valid"] is True
     assert status["active_work_unit"]["ready_for_bounded_repair"] is True
     assert status["active_work_unit"]["first_broken_edge"] == (
-        "native_runback_no_progress"
+        "native_runback_nonmonotonic_path_rejected"
     )
     assert status["current_program_next_action"] == status["active_work_unit"][
         "next_action"

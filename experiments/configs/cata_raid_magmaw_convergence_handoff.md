@@ -1,6 +1,6 @@
 # Magmaw convergence handoff — 2026-08-22
 
-This is a diagnostic history, not an acceptance claim. All nine retained runs
+This is a diagnostic history, not an acceptance claim. All ten retained runs
 used exact clean source/build/config identities, produced classified telemetry,
 observed native shutdown, returned bots and leases to zero, and recorded no
 forbidden assistance.
@@ -28,6 +28,10 @@ forbidden assistance.
   `validation_active_hunter_pet_missing` failure did not recur, ordinary death
   recovery was reached, and the watchdog closed the next attributable edge
   without a retry.
+- The `ea84aba64a` shard proved that the invalid-final-floor admission change
+  can commit one ordinary local movement segment. Both dead tanks moved from
+  the native graveyard to `(-7334.46,-1626.77,283.392)` before the greedy
+  progressive planner rejected the next non-monotonic corridor edge.
 
 ## What did not work
 
@@ -42,6 +46,7 @@ forbidden assistance.
 | `04751b3306` | gameplay failure | The false full-wipe wait was removed. Two dead bots entered native corpse runback while eight survivors held inside the instance, but one bot exhausted six attempts with `native_runback_no_progress`; the watchdog closed the run at 278.8 seconds. |
 | `22282882a0` | gameplay failure | The progressive native-rejoin repair was compiled, but no dead member left map 669, so that edge was not exercised. At 435.3 seconds a dead hunter had no active pet while its pet DB row remained intact; `validation_active_hunter_pet_missing` ran before dead-bot recovery and terminalized the shard with six survivors. |
 | `5756bb492f` | gameplay failure | The dead-hunter pet gate did not recur. Three dead members released to map 0 while seven survivors remained inside. All three stayed at the same graveyard position while entrance movement returned `native_instance_runback_path_retryable`; the first tank exhausted six attempts and terminalized as `native_runback_no_progress` at 273.858 seconds. |
+| `ea84aba64a` | gameplay failure | Two dead tanks released to map 0 and each committed three `native_instance_runback_moving` decisions, reaching one shared local endpoint. The next winding-corridor edge did not reduce straight-line distance to entrance trigger 6581, so the planner returned `route_destination_invalid_floor`; the first tank exhausted nine attempts and terminalized at 283.884 seconds. The full-wipe aggregate remained false because eight members were alive, but per-bot diagnose/trace proves individual recovery was active. |
 
 The three Drudge policy edits after `8ef7d2f25c` did not converge and are not
 promotion-ready. Affliction SQL changes are also unpromoted until a fresh exact
@@ -57,14 +62,17 @@ Raid and dungeon success remains completion-driven, never time-driven.
 
 ## Next bounded work unit
 
-The dead-hunter pet gate is now proven fixed. The next work unit returns to the
-native corpse-run/rejoin edge with stronger evidence: ghosts on map 0 resolve
-the instance entrance but the movement service rejects every entrance move as
-retryable without changing position. Repair only that attributable movement
-admission/planning edge, retain mmap-validated movement and native area-trigger
-entry, add focused regression coverage, then run one clean Magmaw
-completion-watchdog shard. Do not add teleportation or forced resurrection, and
-do not tune Drudge damage, formation, taunts, class rotations, or pet behavior.
+The dead-hunter pet gate is proven fixed, and the invalid-final-floor hypothesis
+is consumed. The next work unit is the non-monotonic native entrance path:
+restore a recovery-only native long-path intent equivalent to the previously
+live-proven `MovePoint(..., generatePath=true)` behavior while keeping
+`MotionMaster` exclusively in the movement executor. The brain still submits
+only a typed move to the corpse-authorized entrance; the executor must preserve
+the active native path and use `forceDestination=false`. Do not hardcode an
+unproven corridor, require Euclidean distance to the final trigger to decrease,
+teleport, or force resurrection. Add focused regression coverage, then run one
+clean Magmaw completion-watchdog shard. Do not tune Drudge damage, formation,
+taunts, class rotations, pets, or boss scripts.
 
 ## Evidence
 
@@ -78,5 +86,6 @@ The latest report hashes are:
 - `04751b3306`: `e8e5e61996da532ce13ba478895b501ec256f849dcdc07b0b97791aa0add5869`
 - `22282882a0`: `1194187be0ba4581b5cbb1da2c5cc9aef9f24f95332598f5a554e8e4daf54b0a`
 - `5756bb492f`: `85e88cfff9ca7fada210217ac64760bba7a2a778d69ca3fd0429cc1f7b928db1`
+- `ea84aba64a`: `b54847e3be211261a9f49673cbb5cb3a65fa90d9259ebd5305074bcedecfc9ed`
 
 The DVC cache and configured remote were verified in sync after publication.
