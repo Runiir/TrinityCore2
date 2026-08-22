@@ -15,6 +15,10 @@ Run:
 pixi run python -m tools.raid_program.raid_workloop status
 ```
 
+Treat `required_next_work_unit` as authoritative. If the active-work-unit
+descriptor is stale, stop before assigning gameplay work
+and repair that descriptor from the latest immutable handoff.
+
 Then emit an exact work unit when needed:
 
 ```bash
@@ -73,6 +77,19 @@ Use deterministic routing for an `insufficient_data` result:
   existing worldserver lifecycle, followed by `raid-rotation-review`;
 - a malformed comparison artifact -> `raid-rotation-review`.
 
+When WoWSims reports `workspace_state=remote_requires_hydration`, run the
+commands from `required_hydration_work_unit` exactly. This is materialization
+of an already promoted reference, not reference regeneration and not a class
+fix. The normal sequence is:
+
+```bash
+pixi run python -m tools.raid_program.wowsims_reference_workspace hydrate
+pixi run python -m tools.raid_program.raid_workloop status
+```
+
+After the bounded reference/review work finishes, run the emitted exact
+`evict_after_use` command. Never replace it with broad DVC garbage collection.
+
 The completed comparison is `failed` when one of these data gates does not
 pass. Do not classify it as `blocked` unless authority or an external input is
 actually unavailable.
@@ -84,6 +101,7 @@ actually unavailable.
 | Exact simulator input or DPS denominator | `raid-wowsims-reference` | current promoted value plus reconstruction receipt |
 | DPS, tank, or healer policy behavior | `raid-role-implementation` | one fixed first-broken edge plus role-harness evidence |
 | Native class, spell, stat, or pet outcome | `raid-class-mechanics-implementation` | one fixed damage/stat edge plus coordinator build receipt |
+| Shared bot movement, recovery, lifecycle, or native submission | `raid-bot-runtime-implementation` | one fixed shared runtime edge plus replay and runtime-verification plan |
 | Online boss strategy and numeric claims | `raid-encounter-research` | reviewed dossier, mechanic contract, and value ledger |
 | Native boss/instance/DB implementation | `raid-encounter-implementation` | replay-tested native change and build receipt |
 | Closed decision data or learned ranker | `raid-policy-flywheel` | admitted/quarantined batch and evaluation |

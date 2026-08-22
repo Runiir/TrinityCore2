@@ -165,6 +165,12 @@ Require one exact tuple across config, generated route, runtime status, capture,
 
 ## Start and hand off a live shard
 
+Before preparation, read `required_next_work_unit` from `raid_workloop status`
+and the boss work unit's `active_program_work_unit`. They must agree on the
+same first-broken edge and source-handoff hash. A stale or missing active
+descriptor blocks live mutation until the coordinator repairs it from the
+latest immutable handoff.
+
 1. Review and build one exact clean commit.
 2. Reprovision the exact shard roster and verify DB readback: ten expected characters, offline, unleased, and free of group/instance/corpse/ghost residue.
 3. Start one verified worldserver with the generated shard config.

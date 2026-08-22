@@ -1,0 +1,4 @@
+interface:
+  display_name: "Raid bot runtime implementation"
+  short_description: "Repair one shared bot runtime edge"
+  default_prompt: "Use $raid-bot-runtime-implementation to repair the exact trace-backed shared bot-runtime failure."

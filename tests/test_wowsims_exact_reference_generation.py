@@ -42,6 +42,19 @@ from tools.bot_ml.build_wowsims_reference_requests import load_manifest, request
 from tools.bot_ml.phase8_fixture_contract import load_fixture_contract
 
 
+REFERENCE_BUNDLE = (
+    Path(__file__).resolve().parents[1]
+    / "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1"
+)
+requires_hydrated_reference = pytest.mark.skipif(
+    not REFERENCE_BUNDLE.is_dir(),
+    reason=(
+        "hydrate the promoted WoWSims cohort with "
+        "tools.raid_program.wowsims_reference_workspace"
+    ),
+)
+
+
 def _condition_variants() -> set[str]:
     """Minimal pinned-proto-shaped APLValue oneof used by transform unit tests."""
     return {
@@ -857,6 +870,7 @@ def test_apl_transform_rejects_unlisted_condition_payload_scope() -> None:
         )
 
 
+@requires_hydrated_reference
 def test_checked_in_catalog_validates_through_actual_cli() -> None:
     completed = subprocess.run(
         [
@@ -900,6 +914,7 @@ def test_native_request_projection_is_derived_from_proto_bytes() -> None:
     ]
 
 
+@requires_hydrated_reference
 def test_native_request_conditions_must_match_request_and_fixture() -> None:
     manifest = load_manifest()
     row = request_by_spec(manifest, "frost_death_knight")

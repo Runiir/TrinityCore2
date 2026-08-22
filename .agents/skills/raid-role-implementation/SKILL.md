@@ -26,6 +26,11 @@ failed/rejected actions, priority order, DoT or buff uptime, resources, or pet
 execution. It must not use stale DPS as a tuning target, claim a simulator DPS
 ratio, or promote the result.
 
+If `benchmark.state=hydrate_exact_reference`, do not hand off generation and
+do not edit the role. Return the emitted `required_hydration_work_unit` to the
+coordinator. After its hydrate-and-verify command passes, rerun the same spec
+work unit and proceed from the now-local promoted reference.
+
 Parameter differences such as target distance are dimensions to normalize, not
 reasons to abandon the whole diagnostic. Compare unaffected actions and signals
 directly; isolate or exclude actions whose eligibility changes with the

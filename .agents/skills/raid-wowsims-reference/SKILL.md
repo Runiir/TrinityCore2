@@ -20,6 +20,28 @@ pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check
 pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog
 ```
 
+If the first status reports `workspace_state=remote_requires_hydration`, do
+not run `validate-catalog` yet and do not regenerate the cohort. Materialize
+and verify the already promoted cohort with:
+
+```bash
+pixi run python -m tools.raid_program.wowsims_reference_workspace hydrate
+pixi run python -m tools.raid_program.raid_workloop status
+```
+
+Continue only when the receipt reports `state=locally_verified`, 181 files,
+16 accepted references, and
+`promotion_states.locally_reconstructed_current=16`. When the reference work
+unit is finished, run:
+
+```bash
+pixi run python -m tools.raid_program.wowsims_reference_workspace evict
+```
+
+That command verifies the catalog and remote before removing only the exact
+workspace. It preserves the shared DVC cache and never runs broad garbage
+collection.
+
 Require one explicit WoWSims source checkout at the revision in the request
 catalog. Do not guess a replacement when a handed path such as
 `tools/wowsims-amd554` is absent. A downloaded web-server binary is exploratory

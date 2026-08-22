@@ -1,0 +1,39 @@
+{
+  "schema": "cata_raid_active_work_unit_v1",
+  "work_unit": "boss:blackwing_descent:magmaw:25H:native_rejoin",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "failed",
+  "observed_at_commit": "04751b33066b9c0bcefd14a23850b09569e0daa3",
+  "source_handoff": {
+    "path": "experiments/configs/cata_raid_magmaw_convergence_handoff.md",
+    "sha256": "1372f402628590083c606af957a7e33816602329d7b78a23262caeb2891fdbd6"
+  },
+  "first_broken_edge": "native_runback_no_progress",
+  "decisive_evidence": {
+    "report_dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_04751b3306_magmaw_recovery_20260822.dvc",
+    "report_sha256": "e8e5e61996da532ce13ba478895b501ec256f849dcdc07b0b97791aa0add5869",
+    "elapsed_seconds": 278.828,
+    "dead_bots": 2,
+    "living_bots_inside_instance": 8,
+    "failed_native_runback_attempts": 6
+  },
+  "validation_clock": {
+    "policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null,
+    "terminal_conditions": [
+      "normal_clear",
+      "semantic_no_progress",
+      "repeated_decisions",
+      "excessive_death_loop",
+      "infrastructure_loss",
+      "contamination",
+      "explicit_interruption"
+    ]
+  },
+  "implementation_budget": {
+    "hypotheses": 1,
+    "matched_live_verification_runs": 1
+  },
+  "live_verification_owner_skill": "raid-shard-architecture",
+  "next_action": "Repair only the native corpse-run and instance-rejoin edge for a dead cohort member outside map 669 while living raid members remain inside. Preserve native movement and entrance use, add deterministic replay coverage, obtain one policy-v8 coordinator build receipt, and run one clean completion-watchdog Magmaw shard. Do not tune Drudge damage, formation, taunts, or class rotations from this evidence."
+}

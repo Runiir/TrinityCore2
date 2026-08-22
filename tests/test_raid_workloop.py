@@ -53,9 +53,24 @@ def test_promoted_catalog_uses_pending_identity_for_current_receipts() -> None:
 
     assert status["request_catalog_canonical_sha256"] == pending
     assert status["request_catalog_file_sha256"] == promoted_file_sha256
-    assert status["current_candidate_count"] == 16
-    assert status["accepted_reference_count"] == 16
-    assert status["promotion_states"] == {"locally_reconstructed_current": 16}
+    if status["workspace_state"] == "locally_verified":
+        assert status["current_candidate_count"] == 16
+        assert status["accepted_reference_count"] == 16
+        assert status["promotion_states"] == {"locally_reconstructed_current": 16}
+        assert status["required_hydration_work_unit"] is None
+    else:
+        assert status["workspace_state"] == "remote_requires_hydration"
+        assert status["current_candidate_count"] == 0
+        assert status["accepted_reference_count"] == 0
+        assert status["promotion_states"] == {
+            "current_remote_requires_hydration": 16
+        }
+        hydration = status["required_hydration_work_unit"]
+        assert hydration["owner_skill"] == "raid-wowsims-reference"
+        assert hydration["target_count"] == 16
+        assert "wowsims_reference_workspace hydrate" in hydration["commands"][
+            "hydrate_and_verify"
+        ]
 
 
 def test_dps_work_unit_binds_all_duplicate_roster_slots() -> None:
@@ -86,8 +101,14 @@ def test_dps_work_unit_binds_all_duplicate_roster_slots() -> None:
     assert self_baseline["pass_rule"] == (
         "runtime_dps_greater_than_or_equal_to_reference"
     )
-    assert self_baseline["state"] == "ready"
-    assert self_baseline["catalog_classification"] == "current_accepted"
+    assert self_baseline["state"] in {
+        "ready",
+        "current_remote_requires_hydration",
+    }
+    assert self_baseline["catalog_classification"] in {
+        "current_accepted",
+        "current_remote_requires_hydration",
+    }
     assert self_baseline["accepted_dps"] == unit["benchmark"]["accepted_dps"]
     assert self_baseline["upper_rejection_bound"] is None
     assert self_baseline["overtuned_is_failure"] is False
@@ -121,7 +142,10 @@ def test_dps_work_unit_binds_all_duplicate_roster_slots() -> None:
         workloop.wowsims_status()["request_catalog_canonical_sha256"]
     )
     assert self_reference_work["reference_class"] == "self_provided_baseline"
-    assert self_reference_work["state"] == "satisfied"
+    assert self_reference_work["state"] in {
+        "satisfied",
+        "current_remote_requires_hydration",
+    }
     assert self_reference_work["atomic_promotion_required"] is True
     assert self_reference_work["duration_seconds"] == 300
     assert self_reference_work["duration_variation_seconds"] == 0
@@ -146,6 +170,43 @@ def test_dps_work_unit_binds_all_duplicate_roster_slots() -> None:
         assert unit["benchmark"]["next_action"] == (
             "run_self_provided_consumable_canary"
         )
+        pipeline = unit["benchmark"]["canary_pipeline"]
+        assert pipeline["state"] == "ready_for_capture"
+        assert pipeline["fixed_order"] == [
+            "capture",
+            "rotation_review",
+            "acceptance_decision",
+        ]
+        assert pipeline["capture"]["owner_skill"] == "raid-shard-architecture"
+        assert pipeline["capture"]["validation_clock"] == {
+            "policy": "isolated_training_dummy_scoring_window",
+            "duration_seconds": 300,
+            "duration_variation_seconds": 0,
+        }
+        flags = pipeline["capture"]["required_runner_flags"]
+        assert "--calibration-self-provided-baseline" in flags
+        assert "--preserve-worldserver" in flags
+        assert pipeline["rotation_review"]["owner_skill"] == (
+            "raid-rotation-review"
+        )
+        artifacts = pipeline["rotation_review"]["simulator_artifacts"]
+        for name in (
+            "generation_receipt",
+            "raid_sim_request",
+            "raid_sim_result",
+            "compute_stats",
+        ):
+            assert artifacts[name]
+        assert pipeline["acceptance_decision"]["max_capture_attempts"] == 1
+        assert pipeline["acceptance_decision"]["max_fix_attempts"] == 1
+    elif unit["benchmark"]["state"] == "hydrate_exact_reference":
+        assert unit["benchmark"]["accepted_dps"] is None
+        assert unit["benchmark"]["next_action"] == (
+            "hydrate_current_reference_cohort"
+        )
+        assert unit["benchmark"]["required_hydration_work_unit"][
+            "target_count"
+        ] == 16
     else:
         assert unit["benchmark"]["state"] == "blocked_exact_reference"
         assert unit["benchmark"]["accepted_dps"] is None
@@ -164,6 +225,11 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
 
     assert magmaw["task_kind"] == "audit_and_validate_existing_boss_script"
     assert magmaw["source_present"] is True
+    assert magmaw["validation_clock"]["policy"] == "completion_watchdog"
+    assert magmaw["validation_clock"]["fixed_success_timer_seconds"] is None
+    assert magmaw["active_program_work_unit"]["first_broken_edge"] == (
+        "native_runback_no_progress"
+    )
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
@@ -182,3 +248,54 @@ def test_outside_roster_spec_fails_closed() -> None:
         workloop.WorkloopError, match="spec_outside_frozen_roster"
     ):
         workloop.build_spec_work_unit("arcane_mage")
+
+
+def test_role_harnesses_do_not_inherit_the_dps_300_second_clock() -> None:
+    tank = workloop.build_spec_work_unit("blood_death_knight")
+    healer = workloop.build_spec_work_unit("restoration_druid")
+
+    assert tank["benchmark"]["next_action"] == "run_tank_threat_role_harness"
+    assert healer["benchmark"]["next_action"] == (
+        "run_healer_controlled_damage_role_harness"
+    )
+    for unit in (tank, healer):
+        assert unit["benchmark"]["validation_clock"] == {
+            "policy": "role_harness_contract",
+            "fixed_success_timer_seconds": None,
+        }
+
+
+def test_affliction_canary_exposes_pet_debug_reference_artifacts() -> None:
+    unit = workloop.build_spec_work_unit("affliction_warlock")
+
+    if unit["benchmark"]["state"] != "ready":
+        pytest.skip("exact promoted WoWSims workspace is not hydrated")
+    artifacts = unit["benchmark"]["canary_pipeline"]["rotation_review"][
+        "simulator_artifacts"
+    ]
+    assert artifacts["debug_raid_sim_request"]
+    assert artifacts["debug_raid_sim_result"]
+
+
+def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
+    status = workloop.build_status()
+
+    assert status["active_work_unit"]["descriptor_valid"] is True
+    assert status["active_work_unit"]["ready_for_bounded_repair"] is True
+    assert status["active_work_unit"]["first_broken_edge"] == (
+        "native_runback_no_progress"
+    )
+    assert status["current_program_next_action"] == status["active_work_unit"][
+        "next_action"
+    ]
+    assert "legacy_program_next_action" not in status
+
+
+def test_script_readiness_uses_source_tree_identity() -> None:
+    status = workloop.encounter_status()
+
+    assert len(status["script_readiness_source_tree_sha256"]) == 64
+    assert status["script_readiness_source_tree_sha256"] == (
+        status["script_readiness_recorded_source_tree_sha256"]
+    )
+    assert status["script_readiness_audit_current"] is True

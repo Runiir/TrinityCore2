@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from tools.bot_ml.build_wowsims_reference_requests import pending_catalog_projection
+from tools.raid_program.spec_canary_contract import build_canary_pipeline
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -37,8 +38,8 @@ WOWSIMS_DVC_POINTER = Path(
 )
 STRATEGY_CATALOG_PATH = Path("experiments/configs/cata_raid_strategy_catalog_v1.json")
 SCRIPT_READINESS_PATH = Path("experiments/configs/cata_raid_script_readiness_v1.json")
-PROGRAM_STATUS_PATH = Path(
-    "experiments/configs/cata_raid_progression_program_status_v1.json"
+ACTIVE_WORK_UNIT_PATH = Path(
+    "experiments/configs/cata_raid_active_work_unit_v1.json"
 )
 
 EXPECTED_ROLE_COUNTS = {
@@ -49,12 +50,8 @@ EXPECTED_ROLE_COUNTS = {
 }
 MODE_FIELDS = ("class_spec", "alternate_spec", "alternate_role_spec")
 HAGARA_ALIASES = {"hagara": "hagara_the_stormbinder"}
-
-
 class WorkloopError(ValueError):
     """Raised when a canonical workloop input is malformed."""
-
-
 def _load_json(path: Path) -> dict[str, Any]:
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
@@ -116,11 +113,49 @@ def _git_head(root: Path) -> str | None:
     )
 
 
+def _git_commit_exists(root: Path, commit: str) -> bool:
+    if not re.fullmatch(r"[0-9a-f]{40}", commit):
+        return False
+    completed = subprocess.run(
+        ["git", "-C", str(root), "cat-file", "-e", f"{commit}^{{commit}}"],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    return completed.returncode == 0
+
+
 def _dvc_digest(path: Path) -> str | None:
     if not path.is_file():
         return None
     match = re.search(r"(?m)^\s*-\s+md5:\s+([^\s]+)\s*$", path.read_text())
     return match.group(1) if match else None
+
+
+def script_readiness_source_tree_sha256(
+    readiness: Mapping[str, Any], root: Path = ROOT
+) -> str | None:
+    records: list[dict[str, str]] = []
+    for raid in readiness.get("raids") or []:
+        if not isinstance(raid, Mapping):
+            return None
+        instance_source = Path(str(raid.get("instance_source") or ""))
+        paths = [instance_source]
+        for encounter in raid.get("encounters") or []:
+            if not isinstance(encounter, Mapping) or not encounter.get("source"):
+                continue
+            paths.append(instance_source.parent / str(encounter["source"]))
+        for relative in paths:
+            path = _repo_file(root, relative.as_posix())
+            if path is None:
+                return None
+            records.append(
+                {
+                    "path": relative.as_posix(),
+                    "sha256": _file_sha256(path),
+                }
+            )
+    return _canonical_sha256(sorted(records, key=lambda row: row["path"]))
 
 
 def roster_status(root: Path = ROOT) -> dict[str, Any]:
@@ -301,6 +336,53 @@ def wowsims_status(root: Path = ROOT) -> dict[str, Any]:
     if candidates["invalid"]:
         issues.append("invalid_generation_receipts")
 
+    remote_requires_hydration = promotion_states == {
+        "current_remote_requires_hydration": len(roster["dps_targets"])
+    }
+    workspace_state = (
+        "locally_verified"
+        if len(accepted) == len(roster["dps_targets"])
+        else "remote_requires_hydration"
+        if remote_requires_hydration
+        else "invalid_or_incomplete"
+    )
+    hydration_work_unit = (
+        {
+            "work_unit": "wowsims:hydrate:current_promoted_reference_cohort",
+            "owner_skill": "raid-wowsims-reference",
+            "classification": "required_local_materialization",
+            "dvc_pointer": WOWSIMS_DVC_POINTER.as_posix(),
+            "dvc_bundle_digest": dvc_digest,
+            "target_count": len(roster["dps_targets"]),
+            "commands": {
+                "status": (
+                    "pixi run python -m "
+                    "tools.raid_program.wowsims_reference_workspace status"
+                ),
+                "hydrate_and_verify": (
+                    "pixi run python -m "
+                    "tools.raid_program.wowsims_reference_workspace hydrate"
+                ),
+                "recheck_control_plane": (
+                    "pixi run python -m tools.raid_program.raid_workloop status"
+                ),
+                "evict_after_use": (
+                    "pixi run python -m "
+                    "tools.raid_program.wowsims_reference_workspace evict"
+                ),
+            },
+            "success": {
+                "workspace_state": "locally_verified",
+                "accepted_reference_count": len(roster["dps_targets"]),
+                "promotion_states": {
+                    "locally_reconstructed_current": len(roster["dps_targets"])
+                },
+            },
+        }
+        if remote_requires_hydration
+        else None
+    )
+
     return {
         "ready": not issues,
         "provider": requests.get("provider"),
@@ -315,6 +397,8 @@ def wowsims_status(root: Path = ROOT) -> dict[str, Any]:
         "stale_candidate_count": len(candidates["stale"]),
         "invalid_candidate_receipts": candidates["invalid"],
         "dvc_bundle_digest": dvc_digest,
+        "workspace_state": workspace_state,
+        "required_hydration_work_unit": hydration_work_unit,
         "promotion_states": dict(sorted(promotion_states.items())),
         "accepted_reference_count": len(accepted),
         "accepted_dps": {
@@ -342,7 +426,13 @@ def encounter_status(root: Path = ROOT) -> dict[str, Any]:
         for row in raid.get("bosses") or []
     ]
     fidelity_states = Counter(str(row.get("fidelity_state") or "") for row in strategy_rows)
-    audit_current = bool(head and readiness.get("repository_commit") == head)
+    current_source_tree = script_readiness_source_tree_sha256(readiness, root)
+    recorded_source_tree = str(readiness.get("source_tree_sha256") or "")
+    audit_current = bool(
+        current_source_tree
+        and recorded_source_tree
+        and current_source_tree == recorded_source_tree
+    )
     issues: list[str] = []
     if encounter_count != len(strategy_rows):
         issues.append("strategy_and_script_inventory_count_mismatch")
@@ -357,6 +447,13 @@ def encounter_status(root: Path = ROOT) -> dict[str, Any]:
         "repository_head": head,
         "script_readiness_commit": readiness.get("repository_commit"),
         "script_readiness_audit_current": audit_current,
+        "script_readiness_source_tree_sha256": current_source_tree,
+        "script_readiness_recorded_source_tree_sha256": recorded_source_tree or None,
+        "script_readiness_freshness_basis": (
+            "audited_encounter_source_tree_matches"
+            if audit_current
+            else "encounter_source_tree_changed_or_digest_missing"
+        ),
         "named_encounter_count": encounter_count,
         "script_states": dict(sorted(encounter_states.items())),
         "strategy_fidelity_states": dict(sorted(fidelity_states.items())),
@@ -364,11 +461,40 @@ def encounter_status(root: Path = ROOT) -> dict[str, Any]:
     }
 
 
+def active_work_unit_status(root: Path = ROOT) -> dict[str, Any]:
+    active = _load_json(root / ACTIVE_WORK_UNIT_PATH)
+    source = active.get("source_handoff") or {}
+    source_path = _repo_file(root, source.get("path"))
+    expected_hash = str(source.get("sha256") or "")
+    issues: list[str] = []
+    if active.get("schema") != "cata_raid_active_work_unit_v1":
+        issues.append("active_work_unit_schema")
+    if source_path is None or not re.fullmatch(r"[0-9a-f]{64}", expected_hash):
+        issues.append("active_work_unit_source_missing")
+    elif _file_sha256(source_path) != expected_hash:
+        issues.append("active_work_unit_source_stale")
+    if not _git_commit_exists(root, str(active.get("observed_at_commit") or "")):
+        issues.append("active_work_unit_commit_missing")
+    clock = active.get("validation_clock") or {}
+    if (
+        clock.get("policy") != "completion_watchdog"
+        or clock.get("fixed_success_timer_seconds") is not None
+    ):
+        issues.append("active_work_unit_validation_clock")
+    return {
+        **active,
+        "descriptor_valid": not issues,
+        "ready_for_bounded_repair": not issues and active.get("classification") == "failed",
+        "issues": issues,
+        "descriptor_path": ACTIVE_WORK_UNIT_PATH.as_posix(),
+    }
+
+
 def build_status(root: Path = ROOT) -> dict[str, Any]:
     roster = roster_status(root)
     wowsims = wowsims_status(root)
     encounters = encounter_status(root)
-    program = _load_json(root / PROGRAM_STATUS_PATH)
+    active = active_work_unit_status(root)
     wowsims.pop("_candidate_details", None)
     wowsims.pop("_promotion_details", None)
     return {
@@ -377,7 +503,13 @@ def build_status(root: Path = ROOT) -> dict[str, Any]:
         "roster": roster,
         "wowsims": wowsims,
         "encounters": encounters,
-        "current_program_next_action": program.get("next_action"),
+        "active_work_unit": active,
+        "current_program_next_action": (
+            active.get("next_action") if active["descriptor_valid"] else None
+        ),
+        "required_next_work_unit": (
+            wowsims.get("required_hydration_work_unit") or active
+        ),
     }
 
 
@@ -395,6 +527,37 @@ def _target_maps(root: Path) -> tuple[dict[str, Any], dict[str, Any]]:
         if isinstance(row, Mapping)
     }
     return target_map, reference_map
+
+
+def _promoted_reference_artifacts(
+    spec: str, current: Mapping[str, Any] | None, root: Path
+) -> dict[str, Any] | None:
+    if not current:
+        return None
+    receipt_path = _repo_file(root, current.get("path"))
+    if receipt_path is None:
+        return None
+    receipt = _load_json(receipt_path)
+    if receipt.get("target_spec") != spec:
+        return None
+
+    def bundle_path(descriptor: Any) -> str | None:
+        if not isinstance(descriptor, Mapping) or not descriptor.get("path"):
+            return None
+        return (WOWSIMS_BUNDLE / str(descriptor["path"])).as_posix()
+
+    debug = receipt.get("debug_result") or {}
+    proto = receipt.get("request_proto_validation") or {}
+    paths = {
+        "generation_receipt": str(current["path"]),
+        "raid_sim_request": bundle_path(receipt.get("native_request")),
+        "raid_sim_result": bundle_path(receipt.get("native_result")),
+        "compute_stats": bundle_path(proto.get("compute_stats")),
+        "debug_raid_sim_request": bundle_path(debug.get("request")),
+        "debug_raid_sim_result": bundle_path(debug.get("native_result")),
+    }
+    required = ("generation_receipt", "raid_sim_request", "raid_sim_result", "compute_stats")
+    return paths if all(paths[name] for name in required) else None
 
 
 def build_spec_work_unit(spec: str, root: Path = ROOT) -> dict[str, Any]:
@@ -448,17 +611,35 @@ def build_spec_work_unit(spec: str, root: Path = ROOT) -> dict[str, Any]:
     if role == "dps":
         exact = wowsims_status(root)
         accepted = exact["accepted_dps"].get(spec)
-        accepted_class = exact["reference_class"] if accepted is not None else None
+        accepted_class = (
+            exact["reference_class"]
+            if accepted is not None
+            or exact["workspace_state"] == "remote_requires_hydration"
+            else None
+        )
+        hydration_required = exact["workspace_state"] == "remote_requires_hydration"
         stale = exact["_candidate_details"]["stale"].get(spec)
         current = exact["_candidate_details"]["current"].get(spec)
+        reference_artifacts = _promoted_reference_artifacts(spec, current, root)
         output["benchmark"] = {
-            "state": "ready" if accepted is not None else "blocked_exact_reference",
+            "state": (
+                "ready"
+                if accepted is not None
+                else "hydrate_exact_reference"
+                if hydration_required
+                else "blocked_exact_reference"
+            ),
             "state_scope": "dps_acceptance_and_promotion_only",
             "accepted_dps": accepted,
             "accepted_dps_reference_class": accepted_class,
             "accepted_dps_status_authority": (
                 "current_work_unit_catalog_projection_overrides_embedded_run_metadata"
             ),
+            "validation_clock": {
+                "policy": "isolated_training_dummy_scoring_window",
+                "duration_seconds": 300,
+                "duration_variation_seconds": 0,
+            },
             "current_unpromoted_candidate": current,
             "stale_candidate_informational_only": stale,
             "reference_class_policy": {
@@ -470,12 +651,16 @@ def build_spec_work_unit(spec: str, root: Path = ROOT) -> dict[str, Any]:
                             "ready"
                             if accepted is not None
                             and accepted_class == "self_provided_baseline"
+                            else "current_remote_requires_hydration"
+                            if hydration_required
                             else "requires_generation"
                         ),
                         "catalog_classification": (
                             "current_accepted"
                             if accepted is not None
                             and accepted_class == "self_provided_baseline"
+                            else "current_remote_requires_hydration"
+                            if hydration_required
                             else "missing"
                         ),
                         "accepted_dps": (
@@ -586,6 +771,9 @@ def build_spec_work_unit(spec: str, root: Path = ROOT) -> dict[str, Any]:
                     (reference.get("apl") or {}).get("path")
                 ),
             },
+            "required_hydration_work_unit": exact[
+                "required_hydration_work_unit"
+            ],
             "required_self_provided_reference_work_unit": {
                 "owner_skill": "raid-wowsims-reference",
                 "work_unit": (
@@ -597,6 +785,8 @@ def build_spec_work_unit(spec: str, root: Path = ROOT) -> dict[str, Any]:
                     "satisfied"
                     if accepted is not None
                     and accepted_class == "self_provided_baseline"
+                    else "current_remote_requires_hydration"
+                    if hydration_required
                     else "requires_generation"
                 ),
                 "scope": "simulator_reference_generation_only",
@@ -632,10 +822,19 @@ def build_spec_work_unit(spec: str, root: Path = ROOT) -> dict[str, Any]:
                     "static_aura_is_use_receipt": False,
                 },
             ],
+            "canary_pipeline": build_canary_pipeline(
+                spec,
+                reference_artifacts
+                if accepted is not None
+                and accepted_class == "self_provided_baseline"
+                else None,
+            ),
             "next_action": (
                 "run_self_provided_consumable_canary"
                 if accepted is not None
                 and accepted_class == "self_provided_baseline"
+                else "hydrate_current_reference_cohort"
+                if hydration_required
                 else "generate_self_provided_reference_and_continue_role_comparison"
                 if accepted is not None
                 else "run_trace_only_diagnostic_and_handoff_exact_reference"
@@ -647,8 +846,14 @@ def build_spec_work_unit(spec: str, root: Path = ROOT) -> dict[str, Any]:
             "reference_type": (reference.get("expected_output") or {}).get("type"),
             "reference_metrics": (reference.get("expected_output") or {}).get("metrics"),
             "next_action": (
-                "run_tank_threat_300" if role == "tank" else "run_healer_controlled_damage_300"
+                "run_tank_threat_role_harness"
+                if role == "tank"
+                else "run_healer_controlled_damage_role_harness"
             ),
+            "validation_clock": {
+                "policy": "role_harness_contract",
+                "fixed_success_timer_seconds": None,
+            },
         }
     return output
 
@@ -699,6 +904,15 @@ def build_boss_work_unit(
         if script.get("status") == "missing_dedicated_implementation"
         else "audit_and_validate_existing_boss_script"
     )
+    encounter = encounter_status(root)
+    active = active_work_unit_status(root)
+    active_for_boss = (
+        active
+        if str(active.get("work_unit") or "").startswith(
+            f"boss:{raid}:{boss}:{mode}:"
+        )
+        else None
+    )
     return {
         "schema": "raid_performance_boss_work_unit_v1",
         "work_unit": f"boss:{raid}:{boss}:{mode}",
@@ -707,7 +921,9 @@ def build_boss_work_unit(
         "mode": mode,
         "task_kind": task_kind,
         "script_status": script.get("status"),
-        "script_readiness_audit_current": readiness.get("repository_commit") == _git_head(root),
+        "script_readiness_audit_current": encounter[
+            "script_readiness_audit_current"
+        ],
         "source": source,
         "source_present": source_present,
         "instance_source": raid_readiness.get("instance_source"),
@@ -717,6 +933,23 @@ def build_boss_work_unit(
         "fidelity_state": strategy.get("fidelity_state"),
         "diagnostic_shard_allowed_after_static_gates": source_present,
         "qualification_allowed": strategy.get("fidelity_state") != "fidelity_blocked",
+        "active_program_work_unit": active_for_boss,
+        "validation_clock": {
+            "policy": "completion_watchdog",
+            "fixed_success_timer_seconds": None,
+            "terminal_conditions": [
+                "normal_clear",
+                "semantic_no_progress",
+                "repeated_decisions",
+                "excessive_death_loop",
+                "infrastructure_loss",
+                "contamination",
+                "explicit_interruption",
+            ],
+        },
+        "next_action": (
+            active_for_boss.get("next_action") if active_for_boss else None
+        ),
         "loop": [
             "refresh_claim_ledger_from_online_sources_client_data_db_and_scripts",
             "mark_every_unproved_value_or_transition_unresolved",
