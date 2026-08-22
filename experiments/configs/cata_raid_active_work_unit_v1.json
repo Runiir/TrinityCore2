@@ -1,21 +1,23 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:25H:native_rejoin",
+  "work_unit": "boss:blackwing_descent:magmaw:10N:dead_hunter_pet_gate",
   "owner_skill": "raid-bot-runtime-implementation",
   "classification": "failed",
-  "observed_at_commit": "04751b33066b9c0bcefd14a23850b09569e0daa3",
+  "observed_at_commit": "22282882a0f986566d6195bd9b09235af40cbd62",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_convergence_handoff.md",
-    "sha256": "1372f402628590083c606af957a7e33816602329d7b78a23262caeb2891fdbd6"
+    "sha256": "a489225d83c93588fba270d94cac871a796d78cf2ca921e144387733c61543ea"
   },
-  "first_broken_edge": "native_runback_no_progress",
+  "first_broken_edge": "dead_hunter_pet_gate_before_native_recovery",
   "decisive_evidence": {
-    "report_dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_04751b3306_magmaw_recovery_20260822.dvc",
-    "report_sha256": "e8e5e61996da532ce13ba478895b501ec256f849dcdc07b0b97791aa0add5869",
-    "elapsed_seconds": 278.828,
-    "dead_bots": 2,
-    "living_bots_inside_instance": 8,
-    "failed_native_runback_attempts": 6
+    "report_dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_22282882a0_magmaw_run02_20260822.dvc",
+    "report_sha256": "1194187be0ba4581b5cbb1da2c5cc9aef9f24f95332598f5a554e8e4daf54b0a",
+    "elapsed_seconds": 435.338,
+    "living_bots_inside_instance": 6,
+    "hunter_pet_db_row_present": true,
+    "hunter_pet_store_active": false,
+    "hunter_pet_revive_attempt_count": 0,
+    "terminal_reason": "validation_active_hunter_pet_missing"
   },
   "validation_clock": {
     "policy": "completion_watchdog",
@@ -35,5 +37,5 @@
     "matched_live_verification_runs": 1
   },
   "live_verification_owner_skill": "raid-shard-architecture",
-  "next_action": "Repair only the native corpse-run and instance-rejoin edge for a dead cohort member outside map 669 while living raid members remain inside. Preserve native movement and entrance use, add deterministic replay coverage, obtain one policy-v8 coordinator build receipt, and run one clean completion-watchdog Magmaw shard. Do not tune Drudge damage, formation, taunts, or class rotations from this evidence."
+  "next_action": "Repair only the active-validation gate ordering so a dead hunter enters ordinary recovery before active pet reconciliation. Preserve the frozen admission pet receipt and post-resurrection native call/revive-pet behavior, add focused regression coverage, obtain one policy-v8 coordinator build receipt, and run one clean completion-watchdog Magmaw shard. Do not tune Drudge damage, formation, taunts, class rotations, pet damage, or native recovery movement from this evidence."
 }

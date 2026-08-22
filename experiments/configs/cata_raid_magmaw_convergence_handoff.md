@@ -1,6 +1,6 @@
 # Magmaw convergence handoff — 2026-08-22
 
-This is a diagnostic history, not an acceptance claim. All seven retained runs
+This is a diagnostic history, not an acceptance claim. All eight retained runs
 used exact clean source/build/config identities, produced classified telemetry,
 observed native shutdown, returned bots and leases to zero, and recorded no
 forbidden assistance.
@@ -21,6 +21,9 @@ forbidden assistance.
   stable native reset. Dead bots now enter the ordinary corpse-run path.
 - The watchdog now emits a typed gameplay failure instead of misclassifying
   the Drudge failure as infrastructure loss.
+- The `22282882a0` shard passed deterministic provisioning and exact ten-member
+  DB readback, cleared the entry regroup and Chainwielder, and shut down its
+  owned server cleanly after a typed gameplay failure.
 
 ## What did not work
 
@@ -33,6 +36,7 @@ forbidden assistance.
 | `69b230aae5` | gameplay failure | Four Rushes landed, but ownership/re-separation still failed and three bots died. |
 | `f3768b83d9` | infrastructure abort | Chainwielder cleared and the raid recovered from early deaths, but two dead tanks waited for a manufactured full wipe while eight survivors idled at the reset Drudge pack. The semantic watchdog closed the run after 302.8 seconds without progress. |
 | `04751b3306` | gameplay failure | The false full-wipe wait was removed. Two dead bots entered native corpse runback while eight survivors held inside the instance, but one bot exhausted six attempts with `native_runback_no_progress`; the watchdog closed the run at 278.8 seconds. |
+| `22282882a0` | gameplay failure | The progressive native-rejoin repair was compiled, but no dead member left map 669, so that edge was not exercised. At 435.3 seconds a dead hunter had no active pet while its pet DB row remained intact; `validation_active_hunter_pet_missing` ran before dead-bot recovery and terminalized the shard with six survivors. |
 
 The three Drudge policy edits after `8ef7d2f25c` did not converge and are not
 promotion-ready. Affliction SQL changes are also unpromoted until a fresh exact
@@ -48,13 +52,14 @@ Raid and dungeon success remains completion-driven, never time-driven.
 
 ## Next bounded work unit
 
-The outcome-based trash gate and ordinary partial-death recovery are active.
-The next work unit is one trace-backed repair of the native corpse-run/rejoin
-edge exposed by `04751b3306`: determine why a dead bot outside map 669 makes no
-progress after six attempts while living members remain inside, then repair
-that policy-to-native-movement edge and run one clean Magmaw shard. Do not add
-another lane, taunt, or DPS rule; this evidence does not implicate Drudge
-throughput or formation.
+The progressive native corpse-run/rejoin repair remains compiled but
+unexercised. The next work unit is the earlier first-broken edge from
+`22282882a0`: active hunter-pet identity reconciliation must not run for a dead
+hunter. Preserve the frozen pet receipt, group/instance/difficulty checks, and
+the ordinary post-resurrection call/revive-pet path. Change only the liveness
+gate ordering, add focused regression coverage, then run one clean Magmaw
+completion-watchdog shard. Do not tune Drudge damage, formation, taunts, class
+rotations, pet damage, or native recovery movement from this evidence.
 
 ## Evidence
 
@@ -66,5 +71,6 @@ The latest report hashes are:
 - `69b230aae5`: `5214b36af63b8082244bc167786467dedef5e91573ad3e467d79cd5685144f0f`
 - `f3768b83d9`: `d928b29fcc08aba19fe2b25fe13b2bb3e769231b248e278ed849b8c3f26b4378`
 - `04751b3306`: `e8e5e61996da532ce13ba478895b501ec256f849dcdc07b0b97791aa0add5869`
+- `22282882a0`: `1194187be0ba4581b5cbb1da2c5cc9aef9f24f95332598f5a554e8e4daf54b0a`
 
 The DVC cache and configured remote were verified in sync after publication.
