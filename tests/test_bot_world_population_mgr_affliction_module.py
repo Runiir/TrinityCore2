@@ -9,6 +9,7 @@ WORLD = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
 MODULE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrAffliction.cpp"
 CALIBRATION_BOT = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationBot.cpp"
+CALIBRATION_ROWS = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationRows.cpp"
 PERSISTENT_SETUP = ROOT / "src/server/game/Bots/BotWorldPopulationMgrPersistentSetup.cpp"
 CMAKE = ROOT / "src/server/game/CMakeLists.txt"
 
@@ -61,10 +62,10 @@ def test_affliction_pet_setup_keeps_native_profile_authority() -> None:
 
 
 def test_affliction_calibration_json_schema_is_byte_ordered() -> None:
-    source = WORLD.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
     calibration_bot = CALIBRATION_BOT.read_text(encoding="utf-8")
-    assert "AppendAfflictionCalibrationJson(metrics)" in source
+    calibration_rows = CALIBRATION_ROWS.read_text(encoding="utf-8")
+    assert "AppendAfflictionCalibrationJson(metrics)" in calibration_rows
     assert "affliction_modifier_observation" in module
     positions = [module.index(f'\\"{field}\\"') for field in FIELDS]
     assert positions == sorted(positions)
