@@ -45,6 +45,17 @@ noncompletion evidence, not success.
 
 Tell the coordinator whether evidence is sufficient to stop. Do not stop the run yourself.
 
+Once the owned worldserver is absent and its final `report.json` exists, the
+observation job is complete. Read the terminal classification and final forced
+diagnose/trace evidence, return the compact handoff immediately, and do not
+continue waiting for a process that has already shut down.
+
+Never print or ingest an entire raw JSONL/log line. For a decisive event count,
+stream the normalized batch, filter only the required action/result fields,
+deduplicate trace events by `(bot_guid, sequence)`, and cap the rendered output.
+Count an explicit result such as `native_instance_runback_repath_submitted`, not
+the number of times that text is repeated inside later trace snapshots.
+
 ## Report compactly
 
 Return exact identity, last route/node and boss phase, decisive bot decisions, profile execution counts/blockers, native mechanic comparison, stuck/CPU/disk facts, and the smallest next investigation. Label unknown facts as unknown.

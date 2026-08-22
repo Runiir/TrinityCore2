@@ -167,6 +167,14 @@ Before stopping, update the governing status/handoff artifact, commit coherent
 code/config, and apply the required DVC lifecycle. Never let the coordinator
 silently implement a specialist's failed work unit.
 
+Route from the compact report and verified specialist handoff. Do not hand a
+worker a multi-megabyte raw trace for open-ended reading. When one exact event
+must be confirmed, use a streaming bounded extractor that filters the requested
+action/result and deduplicates by `(bot_guid, sequence)`; pass the resulting
+small receipt to the routing worker. A completed report plus an absent owned
+worldserver is terminal evidence for the observation worker, not a reason to
+keep polling.
+
 For one-spec canaries, classify the closed comparison with:
 
 ```bash
