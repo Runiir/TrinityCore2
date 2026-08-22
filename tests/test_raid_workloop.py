@@ -3,6 +3,16 @@ from __future__ import annotations
 import pytest
 
 from tools.raid_program import raid_workloop as workloop
+from tools.raid_program.spec_canary_contract import build_canary_pipeline
+
+
+def test_canary_runner_binds_identity_manifest_pool_tag() -> None:
+    pipeline = build_canary_pipeline(
+        "affliction_warlock", {"generation_receipt": "fixture"}
+    )
+    flags = pipeline["capture"]["required_runner_flags"]
+
+    assert "--bot-pool-tag all_spec_candidate_pool" in flags
 
 
 def test_frozen_roster_shape_and_dps_universe_are_explicit() -> None:
@@ -186,6 +196,7 @@ def test_dps_work_unit_binds_all_duplicate_roster_slots() -> None:
         flags = pipeline["capture"]["required_runner_flags"]
         assert "--calibration-self-provided-baseline" in flags
         assert "--preserve-worldserver" in flags
+        assert "--bot-pool-tag all_spec_candidate_pool" in flags
         assert "--profile-target-spec fire_mage" in pipeline["capture"][
             "identity_manifest_command"
         ]

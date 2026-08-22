@@ -40,6 +40,7 @@ def build_canary_pipeline(
                 "--transport session",
                 "--preserve-worldserver",
                 "--session-runtime-dir <owned-session-runtime-dir>",
+                "--bot-pool-tag all_spec_candidate_pool",
                 "--evidence-identity-manifest <canary>/identity/identity-manifest.json",
                 "--output-dir <canary>/run",
             ],
