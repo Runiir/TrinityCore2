@@ -174,6 +174,41 @@ bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot
             && nowMs - state.NativeRecoveryEpisodeLastProgressMs
                 >= NativeRecoveryNoProgressMs;
     };
+    auto matchingNativeRecoveryPath = [&]()
+    {
+        return state.NativeRecoveryEntranceRequired
+            && state.ActivePathValid
+            && state.ActivePathTraversalMode == "native_long_path"
+            && state.ActivePathTargetGuid.IsEmpty()
+            && state.MovementLease.MovementOwner
+                == BotMovementArbitration::Owner::Recovery
+            && state.MovementLease.ExpiresAtMs > nowMs
+            && state.ActivePathAttemptId == Cohort().AttemptId
+            && state.ActivePathWipeGeneration == wipeGeneration
+            && state.ActivePathRouteGeneration == routeGeneration
+            && state.ActivePathRouteNodeId
+                == Cohort().Config.ValidationRouteNodeId;
+    };
+    auto observeNativeRecoveryMovement = [&]()
+    {
+        if (!matchingNativeRecoveryPath())
+            return false;
+
+        // PrepareBotUpdate is the authoritative position sampler. Its
+        // LastMovementProgressMs timestamp is episode-safe because a new
+        // episode starts by setting its own witness to nowMs above; only a
+        // later movement sample can refresh this matching native path.
+        if (!state.LastMovementProgressMs
+            || state.LastMovementProgressMs
+                <= state.NativeRecoveryEpisodeLastProgressMs)
+            return false;
+
+        state.NativeRecoveryEpisodeLastProgressMs =
+            state.LastMovementProgressMs;
+        state.LastNoProgressReason.clear();
+        return true;
+    };
+    observeNativeRecoveryMovement();
     auto terminal = [&](char const* reason)
     {
         // Preserve the timestamp of the last observed native progress.  A
@@ -268,6 +303,33 @@ bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot
             if (!bot->IsInAreaTriggerRadius(entranceEntry))
             {
                 transition("moving_to_entrance");
+                if (noProgressExpired() && matchingNativeRecoveryPath()
+                    && state.NativeRecoveryMovementRetryCount == 0)
+                {
+                    // The existing native generator has stalled. Invalidate
+                    // only the evidence, then let the typed movement intent
+                    // ask the movement executor for exactly one fresh native
+                    // path. The executor remains the sole MotionMaster owner.
+                    state.ActivePathValid = false;
+                    ++state.NativeRecoveryMovementRetryCount;
+                    BotActionArbitration::Outcome const repathOutcome =
+                        ExecuteNativeActionIntent(state, bot,
+                        BotNativeAction::Move{ entranceEntry->Pos.X,
+                            entranceEntry->Pos.Y, entranceEntry->Pos.Z },
+                        BotMovementArbitration::Owner::Recovery,
+                        BotMovementArbitration::Priority::Recovery);
+                    bool const repathed = repathOutcome.Result
+                        == BotActionArbitration::Disposition::Committed;
+                    result = repathed
+                        ? "native_instance_runback_repath_submitted"
+                        : "native_instance_runback_repath_rejected";
+                    if (repathed)
+                    {
+                        state.NativeRecoveryEpisodeLastProgressMs = nowMs;
+                        return true;
+                    }
+                    return terminal("native_runback_no_progress");
+                }
                 BotActionArbitration::Outcome const moveOutcome =
                     ExecuteNativeActionIntent(state, bot,
                     BotNativeAction::Move{ entranceEntry->Pos.X,
@@ -576,4 +638,3 @@ void BotWorldPopulationMgr::TryRespondNativeRaidReadyCheck(WorldBotState& state,
         raid.NativeReadyCheckActionEvidenceSequence = raid.EvidenceSequence;
     }
 }
-

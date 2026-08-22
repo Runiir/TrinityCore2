@@ -8,6 +8,22 @@ PLANNER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrMovementPlanner.cpp"
 EXECUTOR = ROOT / "src/server/game/Bots/BotWorldPopulationMgrMovementExecutor.cpp"
 RECOVERY = ROOT / "src/server/game/Bots/BotWorldPopulationMgrRecovery.cpp"
 NATIVE_ACTION = ROOT / "src/server/game/Bots/BotWorldPopulationMgrNativeAction.cpp"
+PREPARATION = ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdateBotPreparation.cpp"
+
+
+def _recovery_witness(last_progress_ms: int, native_progress_ms: int,
+                      matching: bool) -> int:
+    """Model the bounded native-position witness from the update timestamp."""
+    return native_progress_ms if matching and native_progress_ms > last_progress_ms else last_progress_ms
+
+
+def _stalled_native_path(now_ms: int, last_progress_ms: int,
+                         repath_count: int, matching: bool) -> tuple[str, int]:
+    if now_ms - last_progress_ms >= 30_000 and matching and repath_count == 0:
+        return "repath", 1
+    if now_ms - last_progress_ms >= 30_000:
+        return "terminal", repath_count
+    return "wait", repath_count
 
 
 def test_native_long_path_is_recovery_entrance_only() -> None:
@@ -89,3 +105,49 @@ def test_recovery_brain_stays_typed_and_forbids_cheat_operations() -> None:
     assert "forceDestination" not in recovery
     assert "BotNativeAction::Move" in native_action
     assert "MoveBotToPoint(state, bot, action.X, action.Y, action.Z" in native_action
+
+
+def test_non_monotonic_native_position_refreshes_episode_witness() -> None:
+    recovery = RECOVERY.read_text(encoding="utf-8")
+    preparation = PREPARATION.read_text(encoding="utf-8")
+    assert "state.LastMovementProgressMs" in recovery
+    assert "state.NativeRecoveryEpisodeLastProgressMs = nowMs;" in recovery
+    assert "state.LastMovementProgressMs\n                <= state.NativeRecoveryEpisodeLastProgressMs" in recovery
+    assert preparation.index("context.State.LastMovementProgressMs = NowMs();") < preparation.index(
+        "context.State.LastX = context.Bot->GetPositionX();"
+    )
+    assert preparation.index("HandleBotDeath(context.State, context.Bot, context.Diff)") < preparation.index(
+        "context.State.LastX = context.Bot->GetPositionX();"
+    )
+
+    # A winding native path can increase trigger distance while the position
+    # itself advances. The episode witness must follow actual movement.
+    trigger_distances = (10.0, 11.5, 9.0)
+    assert trigger_distances[1] > trigger_distances[0]
+    assert _recovery_witness(1_000, 2_000, True) == 2_000
+    assert _recovery_witness(1_000, 2_000, False) == 1_000
+
+
+def test_stalled_native_generator_gets_one_repath_then_terminal_bound() -> None:
+    recovery = RECOVERY.read_text(encoding="utf-8")
+    assert "state.NativeRecoveryMovementRetryCount == 0" in recovery
+    assert "++state.NativeRecoveryMovementRetryCount;" in recovery
+    assert "BotNativeAction::Move{ entranceEntry->Pos.X" in recovery
+    assert 'terminal("native_runback_no_progress")' in recovery
+
+    decision, retries = _stalled_native_path(30_000, 0, 0, True)
+    assert (decision, retries) == ("repath", 1)
+    decision, retries = _stalled_native_path(60_000, 30_000, retries, True)
+    assert (decision, retries) == ("terminal", 1)
+
+
+def test_repath_keeps_native_executor_and_no_cheat_boundaries() -> None:
+    recovery = RECOVERY.read_text(encoding="utf-8")
+    executor = EXECUTOR.read_text(encoding="utf-8")
+    assert "matchingNativeRecoveryPath" in recovery
+    assert 'state.ActivePathTraversalMode == "native_long_path"' in recovery
+    assert "BotMovementArbitration::Owner::Recovery" in recovery
+    assert "GetMotionMaster()->MovePoint" not in recovery
+    for forbidden in ("TeleportTo(", "NearTeleportTo(", "ResurrectPlayer"):
+        assert forbidden not in recovery
+    assert "MovePoint(0, intent.X, intent.Y, intent.Z," in executor
