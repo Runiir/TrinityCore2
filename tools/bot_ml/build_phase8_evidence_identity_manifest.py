@@ -258,6 +258,104 @@ def _profile_target(catalog: Mapping[str, Any], target_spec: str | None) -> dict
     return dict(targets[0])
 
 
+def _database_identity_matches(left: Mapping[str, Any], right: Mapping[str, Any]) -> bool:
+    """Compare the complete database identity projection used for admission."""
+    return all(
+        left.get(name) == right.get(name)
+        for name in ("database_snapshot_sha256", "database_schema_sha256")
+    )
+
+
+def _database_restart_components(database: Mapping[str, Any]) -> dict[str, str]:
+    """Return the DB fields that must participate in a session fingerprint."""
+    return {
+        name: str(database[name])
+        for name in ("database_snapshot_sha256", "database_schema_sha256")
+    }
+
+
+def _startup_identity_rebind(
+    *,
+    preboot_database: Mapping[str, Any],
+    preboot_session: Any,
+    read_database: Any,
+    build_rebound_session: Any,
+    ensure_session: Any,
+    capture_runtime_identity: Any,
+) -> tuple[dict[str, Any], Any, bool, Any]:
+    """Start once, then permit exactly one deterministic post-boot rebind.
+
+    Worldserver startup can normalize durable rows (for example, item
+    durability).  The first session is therefore started from a preboot
+    snapshot, but its runtime identity is not admitted until that snapshot is
+    read back.  A changed snapshot gets one new session fingerprint and one
+    restart.  The second boot must be stable; a second drift fails closed.
+    """
+    ensure_session(preboot_session)
+    # The live identity probe waits for SOAP readiness, so database updater and
+    # item-load normalization have completed before the post-boot readback.
+    runtime_identity = capture_runtime_identity(preboot_session)
+    postboot_database = dict(read_database())
+    rebound = not _database_identity_matches(preboot_database, postboot_database)
+    session = preboot_session
+    if rebound:
+        session = build_rebound_session(postboot_database)
+        ensure_session(session)
+        runtime_identity = capture_runtime_identity(session)
+    final_database = dict(read_database())
+    expected_database = postboot_database if rebound else dict(preboot_database)
+    if not _database_identity_matches(final_database, expected_database):
+        if rebound:
+            raise RuntimeError(
+                "database snapshot or schema changed after one allowed startup rebind"
+            )
+        raise RuntimeError("database snapshot or schema changed while building evidence identity")
+    return final_database, runtime_identity, rebound, session
+
+
+def _capture_live_runtime_identity(
+    *,
+    session: Any,
+    soap_url: str,
+    soap_user: str,
+    soap_password: str,
+    target: Mapping[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    """Capture process, idle-serial-server, and exact profile identity."""
+    action = ensure_healthy_matching_session(session)
+    metadata = session.metadata()
+    main_pid = int(action.status.properties.get("MainPID") or 0)
+    cohort_payload = _soap_payload(
+        soap_url=soap_url,
+        soap_user=soap_user,
+        soap_password=soap_password,
+        command=".botauto cohorts",
+        action="botauto_cohorts",
+    )
+    responder_pid = int(cohort_payload.get("server_process_id") or 0)
+    if main_pid <= 0 or responder_pid != main_pid:
+        raise RuntimeError("live SOAP responder does not match the owned worldserver process")
+    if (
+        int(cohort_payload.get("max_active_cohorts") or 0) != 1
+        or int(cohort_payload.get("active_cohort_count") or 0) != 0
+    ):
+        raise RuntimeError("Phase 8 identity requires an idle serial worldserver owner")
+    dump_payload = _soap_payload(
+        soap_url=soap_url,
+        soap_user=soap_user,
+        soap_password=soap_password,
+        command="botauto rotations dump {class_id} {spec_tag} {role}".format(
+            class_id=int(target["class_id"]),
+            spec_tag=str(target.get("rotation_spec_tag") or target["runtime_join_key"]),
+            role=str(target["role"]),
+        ),
+        action="botauto_rotations_dump",
+    )
+    if dump_payload.get("ok") is not True:
+        raise RuntimeError("failed to read live rotation snapshot identity")
+    return metadata, cohort_payload, dump_payload
+
+
 def build_manifest(
     *,
     worldserver: Path,
@@ -300,10 +398,7 @@ def build_manifest(
         )
         if path.is_file()
     ]
-    restart_components = {
-        name: database[name]
-        for name in ("database_snapshot_sha256", "database_schema_sha256")
-    }
+    restart_components = _database_restart_components(database)
     session = build_session(
         REPO_ROOT,
         session_environment,
@@ -312,43 +407,39 @@ def build_manifest(
         fingerprint_paths=fingerprint_paths,
         restart_components=restart_components,
     )
+    target_catalog = json.loads(
+        (REPO_ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.json").read_text(encoding="utf-8")
+    )
+    target = _profile_target(target_catalog, profile_target_spec)
+
+    def rebound_session(postboot_database: Mapping[str, Any]) -> Any:
+        return build_session(
+            REPO_ROOT,
+            session_environment,
+            worldserver,
+            effective_config,
+            fingerprint_paths=fingerprint_paths,
+            restart_components=_database_restart_components(postboot_database),
+        )
+
     with live_validation_lock(REPO_ROOT, session_environment):
-        action = ensure_healthy_matching_session(session)
-        metadata = session.metadata()
-        main_pid = int(action.status.properties.get("MainPID") or 0)
-        cohort_payload = _soap_payload(
-            soap_url=soap_url,
-            soap_user=soap_user,
-            soap_password=soap_password,
-            command=".botauto cohorts",
-            action="botauto_cohorts",
+        database, runtime_identity, startup_rebound, session = _startup_identity_rebind(
+            preboot_database=database,
+            preboot_session=session,
+            read_database=lambda: _database_identity(effective_config),
+            build_rebound_session=rebound_session,
+            ensure_session=ensure_healthy_matching_session,
+            capture_runtime_identity=lambda active_session: _capture_live_runtime_identity(
+                session=active_session,
+                soap_url=soap_url,
+                soap_user=soap_user,
+                soap_password=soap_password,
+                target=target,
+            ),
         )
-        responder_pid = int(cohort_payload.get("server_process_id") or 0)
-        if main_pid <= 0 or responder_pid != main_pid:
-            raise RuntimeError("live SOAP responder does not match the owned worldserver process")
-        if (
-            int(cohort_payload.get("max_active_cohorts") or 0) != 1
-            or int(cohort_payload.get("active_cohort_count") or 0) != 0
-        ):
-            raise RuntimeError("Phase 8 identity requires an idle serial worldserver owner")
-        target_catalog = json.loads(
-            (REPO_ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.json").read_text(encoding="utf-8")
-        )
-        target = _profile_target(target_catalog, profile_target_spec)
-        dump_command = "botauto rotations dump {class_id} {spec_tag} {role}".format(
-            class_id=int(target["class_id"]),
-            spec_tag=str(target.get("rotation_spec_tag") or target["runtime_join_key"]),
-            role=str(target["role"]),
-        )
-        dump_payload = _soap_payload(
-            soap_url=soap_url,
-            soap_user=soap_user,
-            soap_password=soap_password,
-            command=dump_command,
-            action="botauto_rotations_dump",
-        )
-        if dump_payload.get("ok") is not True:
-            raise RuntimeError("failed to read live rotation snapshot identity")
+    metadata, cohort_payload, dump_payload = runtime_identity
+    responder_pid = int(cohort_payload.get("server_process_id") or 0)
+    restart_components = _database_restart_components(database)
 
     server_identity = server_epoch_identity(
         server_epoch=int(cohort_payload.get("server_epoch") or 0),
@@ -363,12 +454,6 @@ def build_manifest(
     final_source_identity = _clean_source_identity(REPO_ROOT, worldserver)
     if final_source_identity != initial_source_identity:
         raise RuntimeError("source commit or worldserver binary changed while building evidence identity")
-    final_database = _database_identity(effective_config)
-    if any(
-        final_database[name] != database[name]
-        for name in ("database_snapshot_sha256", "database_schema_sha256")
-    ):
-        raise RuntimeError("database snapshot or schema changed while building evidence identity")
     if (
         str(metadata.get("git_head") or "").lower() != initial_source_identity["git_commit"]
         or str(metadata.get("binary_sha256") or "").lower()
@@ -399,7 +484,10 @@ def build_manifest(
         },
         "build_identity": build_identity,
         "runtime_identity": {**server_identity, **profile_identity},
-        "database_summary": database["summary"],
+        "database_summary": {
+            **database["summary"],
+            "startup_rebind_performed": startup_rebound,
+        },
         "rotation_profile_snapshot": dump_payload,
     }
     manifest["manifest_sha256"] = canonical_sha256(manifest)
