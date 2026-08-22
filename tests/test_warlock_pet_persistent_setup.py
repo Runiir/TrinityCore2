@@ -3,9 +3,20 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-WORLD = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
+BOT_STATE_HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrBotState.h"
 CATALOG_BUILDER = ROOT / "tools/bot_ml/build_all_spec_phase1_catalogs.py"
+AFFLICTION = ROOT / "src/server/game/Bots/BotWorldPopulationMgrAffliction.cpp"
+PERSISTENT_SETUP = ROOT / "src/server/game/Bots/BotWorldPopulationMgrPersistentSetup.cpp"
+SEMANTIC = ROOT / "src/server/game/Bots/BotWorldPopulationMgrSemantic.cpp"
+COMBAT_DIAGNOSTICS = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatDiagnostics.cpp"
+UPDATE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdate.cpp"
+CALIBRATION_BOT = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationBot.cpp"
+CALIBRATION_BOT_JSON = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationBotJson.cpp"
+CALIBRATION_REFERENCE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationReference.cpp"
+CALIBRATION_ROWS = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationRows.cpp"
+COMBAT_EXECUTION = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatExecution.cpp"
+COMBAT_NOTIFICATIONS = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp"
 
 
 def _function_body(source: str, signature: str) -> str:
@@ -22,18 +33,23 @@ def _function_body(source: str, signature: str) -> str:
     raise AssertionError(f"unterminated function: {signature}")
 
 
+def _source(*paths: Path) -> str:
+    return "\n".join(path.read_text() for path in paths)
+
+
 def test_warlock_pet_profiles_use_exact_ordinary_summons() -> None:
-    source = WORLD.read_text()
+    source = PERSISTENT_SETUP.read_text()
+    affliction = AFFLICTION.read_text()
     setup = _function_body(
         source, "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup"
     )
 
     assert 'profile.SpecTag == "affliction_warlock"' in setup
-    assert "requiredPet.RequiredSummonSpellId = 691" in setup
-    assert "requiredPet.RequiredCreatedBySpellId = 691" in setup
-    assert "requiredPet.RequiredEntry = ENTRY_FELHUNTER" in setup
-    assert "requiredPet.RequiredFamilyId = CREATURE_FAMILY_FELHUNTER" in setup
-    assert 'requiredPetName = "summon_felhunter"' in setup
+    assert "requiredPet.RequiredSummonSpellId = 691" in affliction
+    assert "requiredPet.RequiredCreatedBySpellId = 691" in affliction
+    assert "requiredPet.RequiredEntry = ENTRY_FELHUNTER" in affliction
+    assert "requiredPet.RequiredFamilyId = CREATURE_FAMILY_FELHUNTER" in affliction
+    assert 'requiredPetName = "summon_felhunter"' in affliction
 
     assert 'profile.SpecTag == "demonology_warlock"' in setup
     assert "requiredPet.RequiredSummonSpellId = 30146" in setup
@@ -55,7 +71,7 @@ def test_warlock_summons_are_canonical_persistent_setup_spells() -> None:
 
 
 def test_warlock_fel_armor_is_native_persistent_setup_and_observed() -> None:
-    source = WORLD.read_text()
+    source = _source(PERSISTENT_SETUP, CALIBRATION_REFERENCE)
     setup = _function_body(
         source, "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup"
     )
@@ -63,12 +79,12 @@ def test_warlock_fel_armor_is_native_persistent_setup_and_observed() -> None:
     assert '{ CLASS_WARLOCK, nullptr, nullptr, 28176, 28176, 0, "fel_armor" }' in setup
     assert "bot->HasSpell(buff.SpellId)" in setup
     assert "executor.ExecuteCombat(bot, bot, action)" in setup
-    assert "44> PlayerAuraUniverse" in source
+    assert "46> PlayerAuraUniverse" in source
     assert re.search(r"PlayerAuraUniverse\s*=\s*\{.*?\b28176\b", source, re.DOTALL)
 
 
 def test_warlock_pet_setup_is_learned_native_cast_not_manufacture() -> None:
-    source = WORLD.read_text()
+    source = PERSISTENT_SETUP.read_text()
     setup = _function_body(
         source, "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup"
     )
@@ -98,8 +114,8 @@ def test_warlock_pet_setup_is_learned_native_cast_not_manufacture() -> None:
 
 
 def test_warlock_pet_receipt_is_submit_finish_then_later_observation() -> None:
-    source = WORLD.read_text()
-    header = HEADER.read_text()
+    source = _source(PERSISTENT_SETUP, SEMANTIC)
+    header = _source(HEADER, BOT_STATE_HEADER)
     setup = _function_body(
         source, "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup"
     )
@@ -122,7 +138,7 @@ def test_warlock_pet_receipt_is_submit_finish_then_later_observation() -> None:
 
 
 def test_affliction_calibration_accepts_exact_preexisting_felhunter_observation() -> None:
-    source = WORLD.read_text()
+    source = _source(PERSISTENT_SETUP, COMBAT_DIAGNOSTICS, UPDATE)
     setup = _function_body(
         source, "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup"
     )
@@ -161,7 +177,7 @@ def test_affliction_calibration_accepts_exact_preexisting_felhunter_observation(
 
 
 def test_previous_window_exposes_complete_live_pet_identity() -> None:
-    source = WORLD.read_text()
+    source = _source(PERSISTENT_SETUP, CALIBRATION_BOT_JSON, CALIBRATION_ROWS)
     required_json_fields = {
         "required_pet_spell_id",
         "required_pet_created_by_spell_id",
@@ -212,7 +228,7 @@ def test_previous_window_exposes_complete_live_pet_identity() -> None:
 
 
 def test_scored_window_observes_required_pet_uptime_without_repair() -> None:
-    source = WORLD.read_text()
+    source = CALIBRATION_BOT.read_text()
     header = HEADER.read_text()
     calibration = _function_body(
         source, "void BotWorldPopulationMgr::UpdateCalibrationBot"
@@ -228,7 +244,12 @@ def test_scored_window_observes_required_pet_uptime_without_repair() -> None:
 
 
 def test_affliction_pet_diagnostic_separates_execution_state_and_damage_events() -> None:
-    source = WORLD.read_text()
+    source = _source(
+        CALIBRATION_BOT,
+        COMBAT_NOTIFICATIONS,
+        CALIBRATION_ROWS,
+        CALIBRATION_BOT_JSON,
+    )
     header = HEADER.read_text()
 
     # Pet health alone cannot explain a lower pet numerator. The scored
@@ -257,7 +278,7 @@ def test_affliction_pet_diagnostic_separates_execution_state_and_damage_events()
 
 
 def test_setup_precedes_calibration_scoring_and_normal_combat_resolution() -> None:
-    source = WORLD.read_text()
+    source = _source(CALIBRATION_BOT, COMBAT_EXECUTION)
     calibration = _function_body(
         source, "void BotWorldPopulationMgr::UpdateCalibrationBot"
     )
