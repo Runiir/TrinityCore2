@@ -95,6 +95,21 @@ def test_affliction_modifier_diagnostics_observe_native_auras_without_applying_t
     assert "AddAura(32389" not in source
 
 
+def test_shadow_embrace_restores_canonical_all_ranks_native_proc_binding() -> None:
+    migration = (
+        ROOT
+        / "sql/custom/world/2026_08_23_02_affliction_shadow_embrace_native_proc.sql"
+    ).read_text()
+
+    assert "DELETE FROM `spell_proc` WHERE `SpellId` = -32385" in migration
+    assert "`SpellFamilyName`, `SpellFamilyMask0`" in migration
+    assert "`SpellFamilyMask1`, `SpellFamilyMask2`" in migration
+    assert "`SpellPhaseMask`" in migration
+    assert "(-32385, 0, 5, 0x00000001, 0x00040000, 0, 0, 0, 2" in migration
+    assert "CastSpell(32389" not in migration
+    assert "AddAura(32389" not in migration
+
+
 def test_pet_resource_contract_waits_for_native_regeneration_without_refilling() -> None:
     source = "\n".join(
         (
