@@ -176,7 +176,31 @@ descriptor blocks live mutation until the coordinator repairs it from the
 latest immutable handoff.
 
 1. Review and build one exact clean commit.
-2. Reprovision the exact shard roster and verify DB readback: ten expected characters, offline, unleased, and free of group/instance/corpse/ghost residue.
+2. Reprovision the exact shard roster and verify DB readback before starting a
+   worldserver. Use the repository preparation path; do not assume an earlier
+   run left usable characters:
+
+   ```bash
+   pixi run python -m tools.bot_ml.run_live_bot_validation \
+     --config <exact-worldserver-conf> \
+     --output-dir <external-preparation-dir> \
+     --apply-validation-provisioning --prepare-only \
+     --validation-scenario-id <scenario-id> \
+     --bot-pool-tag <pool-tag>
+   pixi run python -m tools.bot_ml.validate_validation_provisioning \
+     --worldserver-conf <exact-worldserver-conf> \
+     --check-db --require-applied --output <strict-verifier.json>
+   pixi run python -m tools.raid_program.capture_phase1_provisioning_readback \
+     --scenario-id <scenario-id> \
+     --worldserver-conf <exact-worldserver-conf> \
+     --output <shard-readback.json>
+   ```
+
+   Both reports must pass. The shard readback must contain exactly ten expected
+   characters, offline, unleased, at the declared entrance, with full health
+   and power seeds and no group/instance/corpse/ghost residue. A failed
+   provisioning preflight is an infrastructure result and consumes no gameplay
+   attempt, but the capture process and its owned server must still terminate.
 3. Start one verified worldserver with the generated shard config.
 4. Confirm console/process readiness and active runtime identity.
 5. Only then attach the boss babysitter. The babysitter monitors; it does not silently repair or manufacture state.
