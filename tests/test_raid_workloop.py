@@ -15,6 +15,15 @@ def test_canary_runner_binds_identity_manifest_pool_tag() -> None:
     assert "--bot-pool-tag all_spec_candidate_pool" in flags
 
 
+def test_affliction_canary_runner_requires_named_session_profile() -> None:
+    pipeline = build_canary_pipeline(
+        "affliction_warlock", {"generation_receipt": "fixture"}
+    )
+    flags = pipeline["capture"]["required_runner_flags"]
+
+    assert "--session-profile affliction_canary" in flags
+
+
 def test_frozen_roster_shape_and_dps_universe_are_explicit() -> None:
     status = workloop.roster_status()
 

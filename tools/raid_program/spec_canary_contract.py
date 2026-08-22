@@ -38,6 +38,7 @@ def build_canary_pipeline(
                 "--calibration-mode single_target_300",
                 f"--calibration-target-spec {spec}",
                 "--transport session",
+                "--session-profile affliction_canary",
                 "--preserve-worldserver",
                 "--session-runtime-dir <owned-session-runtime-dir>",
                 "--bot-pool-tag all_spec_candidate_pool",
