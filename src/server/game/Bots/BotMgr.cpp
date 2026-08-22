@@ -1262,9 +1262,12 @@ Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Pla
                     }
                     else
                     {
+                        std::string const memberGroupGuid = bot->GetGroup()
+                            ? bot->GetGroup()->GetGUID().ToString()
+                            : ObjectGuid::Empty.ToString();
                         TC_LOG_ERROR("server", "PlayerBot raid seed group diverged leader=%s seed=%s member_group=%s",
                             guid.ToString().c_str(), seed->GetGUID().ToString().c_str(),
-                            bot->GetGroup() ? bot->GetGroup()->GetGUID().ToString().c_str() : ObjectGuid::Empty.ToString());
+                            memberGroupGuid.c_str());
                         sGroupMgr->RemoveGroup(seed);
                         delete seed;
                         seedDiverged = true;
