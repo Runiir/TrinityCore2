@@ -57,5 +57,9 @@ bool BotWorldPopulationMgr::MoveBotToPoint(
     intent.AllowRecentFailureRetry = Cohort().Config.ValidationRouteEnable;
     intent.AllowNativeLongPath = BotWorldMovement::AllowsNativeLongPath(
         movementOwner, state.NativeRecoveryEntranceRequired);
+    intent.NativeRecoveryCrossMapPending =
+        state.NativeRecoveryEntranceRequired
+        && state.ValidationCohortLocked
+        && bot->GetMapId() != state.ValidationCohortMapId;
     return ExecuteMovementIntent(state, bot, intent);
 }

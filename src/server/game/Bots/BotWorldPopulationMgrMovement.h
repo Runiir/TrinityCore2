@@ -33,6 +33,17 @@ constexpr bool AllowsNativeLongPath(
         && nativeRecoveryEntranceRequired;
 }
 
+// While a corpse-authorized recovery is crossing maps, only the recovery
+// owner may submit movement.  A route or combat callback can still run during
+// the worldport transition, but its stale instance destination must not be
+// handed to the ordinary floor/Z planner on the source map.
+constexpr bool BlocksNonRecoveryCrossMapMovement(
+    BotMovementArbitration::Owner owner, bool recoveryCrossMapPending)
+{
+    return recoveryCrossMapPending
+        && owner != BotMovementArbitration::Owner::Recovery;
+}
+
 struct Intent
 {
     float X = 0.0f;
@@ -52,6 +63,7 @@ struct Intent
     bool RequireCompletePath = false;
     bool AllowRecentFailureRetry = false;
     bool AllowNativeLongPath = false;
+    bool NativeRecoveryCrossMapPending = false;
 };
 
 struct PathPlan

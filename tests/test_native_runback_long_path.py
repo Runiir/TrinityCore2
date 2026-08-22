@@ -41,6 +41,10 @@ def _matching_native_recovery_path(*, now_ms: int, expires_at_ms: int,
             and node == "drudges")
 
 
+def _blocks_cross_map_movement(owner: str, pending: bool) -> bool:
+    return pending and owner != "Recovery"
+
+
 def test_native_long_path_is_recovery_entrance_only() -> None:
     header = MOVEMENT_HEADER.read_text(encoding="utf-8")
     adapter = MOVEMENT_ADAPTER.read_text(encoding="utf-8")
@@ -71,6 +75,33 @@ def test_native_long_path_is_recovery_entrance_only() -> None:
     for owner, required, expected in cases:
         actual = owner == "Recovery" and required
         assert actual is expected
+
+
+def test_cross_map_recovery_blocks_stale_non_recovery_movement() -> None:
+    header = MOVEMENT_HEADER.read_text(encoding="utf-8")
+    adapter = MOVEMENT_ADAPTER.read_text(encoding="utf-8")
+    executor = EXECUTOR.read_text(encoding="utf-8")
+
+    assert "constexpr bool BlocksNonRecoveryCrossMapMovement" in header
+    assert "intent.NativeRecoveryCrossMapPending =" in adapter
+    assert "state.ValidationCohortMapId" in adapter
+    assert "BlocksNonRecoveryCrossMapMovement" in executor
+    assert 'native_recovery_worldport_pending' in executor
+
+    # A route/combat callback can be evaluated while the corpse-run entrance
+    # is still on the source map, but it must not reach PlanMovementPath. The
+    # recovery owner remains admitted, and every same-map movement owner is
+    # unchanged.
+    owners = ("Route", "Formation", "CombatRange", "Support", "Recovery")
+    assert [_blocks_cross_map_movement(owner, True) for owner in owners] == [
+        True, True, True, True, False
+    ]
+    assert not any(_blocks_cross_map_movement(owner, False) for owner in owners)
+
+    gate = executor.index("BlocksNonRecoveryCrossMapMovement")
+    observation = executor.index("ObserveActiveMovement")
+    planner = executor.index("PlanMovementPath")
+    assert gate < observation < planner
 
 
 def test_native_long_path_keeps_motionmaster_in_executor_and_preserves_active_path() -> None:

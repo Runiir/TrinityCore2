@@ -27,6 +27,19 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
         return RejectMovementPath(state, bot, intent,
             "route_destination_unreachable");
 
+    if (BotWorldMovement::BlocksNonRecoveryCrossMapMovement(
+            intent.Owner, intent.NativeRecoveryCrossMapPending))
+    {
+        // The recovery brain remains the sole owner of a cross-map entrance
+        // transition.  Route/combat callbacks may still be evaluated while a
+        // native worldport is pending, but must not submit their instance
+        // destination to the source-map floor/Z planner.
+        state.LastRecoveryMode = "native_corpse_run";
+        state.LastRecoveryResult = "native_recovery_worldport_pending";
+        state.LastNoProgressReason = "native_recovery_worldport_pending";
+        return false;
+    }
+
     uint64 const nowMs = MovementExecutorNowMs();
     BotMovementArbitration::Request const request = BuildMovementRequest(
         bot, intent, nowMs);
