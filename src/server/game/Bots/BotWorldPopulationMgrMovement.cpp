@@ -46,9 +46,11 @@ bool BotWorldPopulationMgr::MoveBotToPoint(
     // These are mechanical admission requirements carried by the legacy
     // route adapter.  The executor never infers them from combat, quest, or
     // encounter policy.
-    intent.AllowProgressiveSegments = movementOwner
-        == BotMovementArbitration::Owner::Route;
-    intent.RequireCompletePath = intent.AllowProgressiveSegments
+    intent.AllowProgressiveSegments = BotWorldMovement::AllowsProgressiveSegments(
+        movementOwner, state.NativeRecoveryEntranceRequired);
+    intent.RequireCompletePath = movementOwner
+        == BotMovementArbitration::Owner::Route
+        && intent.AllowProgressiveSegments
         && Cohort().Config.ValidationRouteKind == "descent"
         && Cohort().Config.ValidationRouteDescentAction
             == "native_walkable_descent";

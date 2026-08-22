@@ -14,6 +14,14 @@ class Unit;
 // requirements.
 namespace BotWorldMovement
 {
+constexpr bool AllowsProgressiveSegments(
+    BotMovementArbitration::Owner owner, bool nativeRecoveryEntrance)
+{
+    return owner == BotMovementArbitration::Owner::Route
+        || (owner == BotMovementArbitration::Owner::Recovery
+            && nativeRecoveryEntrance);
+}
+
 struct Intent
 {
     float X = 0.0f;

@@ -266,6 +266,27 @@ def test_native_player_handlers_are_the_only_progression_boundaries() -> None:
     assert "bot->AttackStop()" in melee_reconcile
 
 
+def test_corpse_run_progressive_walk_has_no_cheat_escape() -> None:
+    corpse_run = function_body(
+        WORLD, "bool BotWorldPopulationMgr::TryNativeCorpseRun"
+    )
+    movement = (BOT_DIR / "BotWorldPopulationMgrMovement.cpp").read_text(
+        encoding="utf-8"
+    )
+    assert "BotNativeAction::Move" in corpse_run
+    assert "BotNativeAction::AreaTrigger" in corpse_run
+    assert "BotWorldMovement::AllowsProgressiveSegments(" in movement
+    for forbidden in (
+        "TeleportTo(",
+        "NearTeleportTo(",
+        "ResurrectPlayer(",
+        "HandleRepopRequestOpcode",
+        "HandleAreaTriggerOpcode",
+        "HandleReclaimCorpseOpcode",
+    ):
+        assert forbidden not in corpse_run
+
+
 def test_login_does_not_promote_stabled_pets_or_restore_resources() -> None:
     source = BOT_MGR.read_text(encoding="utf-8")
     login = function_body(source, "Player* BotMgr::LoadCharacterAsBotSession")
