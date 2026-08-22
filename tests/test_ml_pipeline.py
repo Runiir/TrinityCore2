@@ -71,7 +71,7 @@ from tools.bot_ml.live_validation_session import (
     sha256_file,
     systemd_transient_command,
 )
-from tools.bot_ml.run_live_bot_validation import BoundedOutputParts, apply_calibration_only_acceptance, attempt_evidence_envelope, boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, calibration_pre_scoring_blocker, command_script, heartbeat_commands_from_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, split_sql_statements, strict_manifest_evidence, supersede_transient_route_failures, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, wait_for_heroic_admission_status, watchdog_state, write_validation_config
+from tools.bot_ml.run_live_bot_validation import BoundedOutputParts, apply_calibration_only_acceptance, attempt_evidence_envelope, boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, calibration_pre_scoring_blocker, command_script, heartbeat_commands_from_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, preflight_calibration_reference_binding, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, split_sql_statements, strict_manifest_evidence, supersede_transient_route_failures, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, wait_for_heroic_admission_status, watchdog_state, write_validation_config
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -7883,6 +7883,116 @@ def test_live_bot_validation_rejects_calibration_with_manifest_route(tmp_path, m
 
     with pytest.raises(SystemExit, match="cannot be combined"):
         live_validation_main()
+
+
+def test_calibration_dps_reference_preflight_fails_before_live_preparation(
+    tmp_path, monkeypatch
+):
+    import tools.bot_ml.run_live_bot_validation as live_validation
+
+    output_dir = tmp_path / "live"
+    monkeypatch.setattr(
+        live_validation,
+        "load_reference_request_binding",
+        lambda target_spec: {
+            "target_spec": target_spec,
+            "valid": False,
+            "reasons": ["generated_result_artifacts_bound"],
+        },
+    )
+    monkeypatch.setattr(
+        live_validation,
+        "calibration_reference_hydrate_command",
+        lambda: "pixi run python -m tools.raid_program.wowsims_reference_workspace hydrate",
+    )
+
+    def unexpected_preparation(*_args, **_kwargs):
+        raise AssertionError("live preparation started before reference preflight")
+
+    monkeypatch.setattr(live_validation, "write_validation_config", unexpected_preparation)
+    monkeypatch.setattr(live_validation, "build_session", unexpected_preparation)
+    monkeypatch.setattr(live_validation, "prepare_bot_pool_reset", unexpected_preparation)
+    monkeypatch.setattr(live_validation, "prepare_validation_provisioning", unexpected_preparation)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "bot-live-validate",
+            "--calibration-only",
+            "--calibration-target-spec",
+            "synthetic_dps",
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        live_validation_main()
+
+    message = str(exc_info.value)
+    assert "generated_result_artifacts_bound" in message
+    assert "pixi run python -m tools.raid_program.wowsims_reference_workspace hydrate" in message
+    assert not output_dir.exists()
+
+
+def test_calibration_dps_reference_preflight_allows_valid_run_to_continue(
+    tmp_path, monkeypatch
+):
+    import tools.bot_ml.run_live_bot_validation as live_validation
+
+    monkeypatch.setattr(
+        live_validation,
+        "load_reference_request_binding",
+        lambda target_spec: {"target_spec": target_spec, "valid": True},
+    )
+    config = tmp_path / "worldserver.conf"
+    config.write_text("BotWorld.AutoStart = 0\n", encoding="utf-8")
+    output_dir = tmp_path / "live"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "bot-live-validate",
+            "--dry-run",
+            "--calibration-only",
+            "--calibration-target-spec",
+            "synthetic_dps",
+            "--config",
+            str(config),
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+
+    assert live_validation_main() == 0
+    report = json.loads((output_dir / "report.json").read_text(encoding="utf-8"))
+    assert report["calibration_reference_preflight"] == {
+        "required": True,
+        "valid": True,
+        "calibration_mode": "single_target_300",
+        "target_spec": "synthetic_dps",
+    }
+
+
+def test_calibration_reference_preflight_skips_tank_and_healer_modes(
+    monkeypatch,
+):
+    def unexpected_binding(_target_spec):
+        raise AssertionError("non-DPS calibration mode consulted DPS references")
+
+    monkeypatch.setattr(
+        "tools.bot_ml.run_live_bot_validation.load_reference_request_binding",
+        unexpected_binding,
+    )
+
+    for mode in ("tank_threat_300", "healer_controlled_damage_300"):
+        result = preflight_calibration_reference_binding(
+            calibration_only=True,
+            calibration_mode=mode,
+            target_spec="non_dps_target",
+        )
+        assert result["required"] is False
+        assert result["valid"] is True
 
 
 def test_live_bot_validation_rejects_empty_manifest_route_selection(tmp_path, monkeypatch):

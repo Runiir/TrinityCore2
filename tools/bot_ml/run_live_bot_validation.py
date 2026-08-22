@@ -34,6 +34,7 @@ try:
     from .phase8_calibration_adapter import Phase8CalibrationNormalizationError, canonical_gear_manifest, canonical_gear_profile_id, evaluate_runtime_calibration, expected_gear_manifest
     from .phase8_evidence_identity import validate_manifest as validate_phase8_evidence_manifest
     from .phase9_evidence_identity import validate_manifest as validate_phase9_evidence_manifest
+    from .phase8_reference_conditions import load_reference_request_binding
 except ImportError:
     from analyze_combat_log import analyze_combat_log
     from audit_role_efficiency import build_audit
@@ -46,6 +47,7 @@ except ImportError:
     from phase8_calibration_adapter import Phase8CalibrationNormalizationError, canonical_gear_manifest, canonical_gear_profile_id, evaluate_runtime_calibration, expected_gear_manifest
     from phase8_evidence_identity import validate_manifest as validate_phase8_evidence_manifest
     from phase9_evidence_identity import validate_manifest as validate_phase9_evidence_manifest
+    from phase8_reference_conditions import load_reference_request_binding
 
 
 DEFAULT_LIVE_VALIDATION_TIMEOUT_SEC = 90
@@ -58,6 +60,10 @@ DEFAULT_MAX_WORLDSERVER_OUTPUT_BYTES = 64 * 1024 * 1024
 WORLDSERVER_OUTPUT_TRUNCATED_MARKER = "\n[worldserver_output_truncated]\n"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_COMBAT_CALIBRATION_REFERENCE = REPO_ROOT / "dataset/combat_calibration/wowsims_cata_p4.json"
+CALIBRATION_DPS_MODES = frozenset({"single_target_300", "aoe_300"})
+DEFAULT_REFERENCE_HYDRATE_COMMAND = (
+    "pixi run python -m tools.raid_program.wowsims_reference_workspace hydrate"
+)
 SESSION_CONTROLLER_PRELAUNCH_LAYOUTS = (
     frozenset({"runner.log", "physical_try_started.json"}),
     frozenset({"phase9_runner.log", "phase9_physical_try_started.json"}),
@@ -129,6 +135,79 @@ def session_output_dir_available(path: Path) -> bool:
         return True
     names = {child.name for child in children}
     return names in SESSION_CONTROLLER_PRELAUNCH_LAYOUTS
+
+
+def calibration_reference_hydrate_command() -> str:
+    """Return the canonical read-only workloop command for reference hydration."""
+    try:
+        from tools.raid_program import raid_workloop
+
+        control_plane = raid_workloop.wowsims_status(REPO_ROOT)
+        work_unit = control_plane.get("required_hydration_work_unit")
+        commands = work_unit.get("commands") if isinstance(work_unit, Mapping) else {}
+        command = commands.get("hydrate_and_verify") if isinstance(commands, Mapping) else ""
+        if isinstance(command, str) and command.strip():
+            return command.strip()
+    except Exception:
+        # The binding check remains authoritative.  If the broader control
+        # plane cannot be read, retain the deterministic workspace command.
+        pass
+    return DEFAULT_REFERENCE_HYDRATE_COMMAND
+
+
+def preflight_calibration_reference_binding(
+    *,
+    calibration_only: bool,
+    calibration_mode: str,
+    target_spec: str,
+) -> dict[str, Any]:
+    """Require a verified generated reference before DPS calibration startup.
+
+    Tank and healer calibration modes intentionally remain independent of the
+    DPS WoWSims request catalog.  DPS modes must prove the exact target's
+    generated request/result artifacts before any session, config, or fixture
+    preparation can mutate live state.
+    """
+    required = calibration_only and calibration_mode in CALIBRATION_DPS_MODES
+    if not required:
+        return {
+            "required": False,
+            "valid": True,
+            "calibration_mode": calibration_mode,
+            "target_spec": target_spec,
+        }
+
+    binding = load_reference_request_binding(target_spec)
+    if isinstance(binding, Mapping) and binding.get("valid") is True:
+        return {
+            "required": True,
+            "valid": True,
+            "calibration_mode": calibration_mode,
+            "target_spec": target_spec,
+        }
+
+    reasons = []
+    if isinstance(binding, Mapping):
+        reasons = sorted(
+            {
+                str(reason)
+                for reason in (binding.get("reasons") or [])
+                if str(reason)
+            }
+        )
+    hydrate_command = calibration_reference_hydrate_command()
+    failure = {
+        "schema": "bot_calibration_reference_preflight_v1",
+        "valid": False,
+        "calibration_mode": calibration_mode,
+        "target_spec": target_spec,
+        "reasons": reasons or ["reference_request_binding_invalid"],
+        "hydrate_command": hydrate_command,
+    }
+    raise SystemExit(
+        "calibration reference preflight failed: "
+        + json.dumps(failure, sort_keys=True)
+    )
 
 
 @dataclass(frozen=True)
@@ -5609,6 +5688,12 @@ def main() -> int:
         if exact_party_specs[2:] != sorted(exact_party_specs[2:]):
             raise SystemExit("--party-spec-target DPS targets must be canonically sorted")
 
+    calibration_reference_preflight = preflight_calibration_reference_binding(
+        calibration_only=args.calibration_only,
+        calibration_mode=args.calibration_mode,
+        target_spec=args.calibration_target_spec,
+    )
+
     if args.run_to_completion:
         args.timeout_sec = None
         args.observe_sec = args.observe_sec if args.observe_sec is not None else args.heartbeat_sec
@@ -5794,6 +5879,7 @@ def main() -> int:
             "calibration_only": args.calibration_only,
             "calibration_reference_conditions": args.calibration_reference_conditions,
             "calibration_self_provided_baseline": args.calibration_self_provided_baseline,
+            "calibration_reference_preflight": calibration_reference_preflight,
             "preparation": preparation,
             "scenario_reports": scenario_reports,
             "validation_context": validation_context,
@@ -5940,6 +6026,7 @@ def main() -> int:
     report["calibration_only"] = args.calibration_only
     report["calibration_reference_conditions"] = args.calibration_reference_conditions
     report["calibration_self_provided_baseline"] = args.calibration_self_provided_baseline
+    report["calibration_reference_preflight"] = calibration_reference_preflight
     report["preserve_worldserver_required"] = args.preserve_worldserver
     report["execution_policy"] = (
         "run_to_completion" if args.run_to_completion else "bounded_wall_clock"
