@@ -1,44 +1,69 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:25H:native_repath_destination_z_transition",
-  "owner_skill": "raid-bot-runtime-implementation",
+  "work_unit": "boss:blackwing_descent:magmaw:10N:scoped_cross_map_native_recovery_admission_verification",
+  "owner_skill": "raid-shard-architecture",
   "classification": "failed",
-  "observed_at_commit": "cedeb5c933eacbae180b239d5058417b8b30c225",
+  "observed_at_commit": "902710a4ef45c63d9f735db75c39ed20aaf19d9b",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_convergence_handoff.md",
-    "sha256": "79ee3850e14203beb03c0e22f4fedb89188e4e9e0255f8939026790750a2ac61"
+    "sha256": "8db4da909df8b9a548761203968242cbbec9745a4b423e5f45decfd00e1a3bd2"
   },
-  "first_broken_edge": "native_repath_destination_z_transition",
+  "first_broken_edge": "scoped_cross_map_native_recovery_admission_live_verification",
   "decisive_evidence": {
-    "source_commit": "cedeb5c933eacbae180b239d5058417b8b30c225",
-    "binary_sha256": "b8ca0dc6df346fac11452560c56c2e67322a1704a2763af8bb1be4c3689eb8a0",
-    "report_dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_cedeb5c933_magmaw_run01_20260822.dvc",
-    "report_sha256": "6c7ca3cabfac8a037c746b26d955ec61fab979714e59d49eb4c828aada665f88",
-    "report_file_sha256": "003421776435fd8b77101ea3860b5a4886d6648df0c0b4d6610d989c0c125383",
-    "elapsed_seconds": 369.610,
+    "source_commit": "902710a4ef45c63d9f735db75c39ed20aaf19d9b",
+    "source_tree": "04e7a1c5698cc4466dcf86ab45042240f86ab5be",
+    "source_worktree": "/home/runiir/Games/trinity-cata-worktrees/phase1-foundation-build",
+    "binary_sha256": "d03f1dd227fed03ceb820216d612fc4e54e2da36fb9ee338c1848f11c15e8378",
+    "config_sha256": "fb5f37b3740b179f8c0d3ed63bbbcc25ccfd73c63ce7005c889a73cd7bbabdab",
+    "profile_content_hash": "99157A313CB89D2CD241E8BF67A04D0FD3F9F2800E546212472A6089A4A75039",
+    "route_manifest_sha256": "edee2fe5d1537a648340b72f4bc81988eab50d232b65e364270c1a8c005e2af0",
+    "route_sha256": "55d72fe950801a128de5fdafc2626e82cbeb161701131b22f7cf2872c323b0a3",
+    "canonical_identity_sha256": "da2bc3d5f8ca925f8c243574ff74abfa67c60f53cd1c4e96c8d6fc0fd9515fbd",
+    "canonical_roster_sha256": "2177d7cfb7f92d700d35bc42e50625b5653ab18bb498950a3c293a432f65f46b",
+    "build_receipt_file_sha256": "646704673fa7f7e0eb0e38e2946cf587c35ae8ba1acde6e55af0ebde11faa564",
+    "build_receipt_embedded_sha256": "a12a254e8d08a3d53b383cd2ae0d29d2b99ed3de97a7553b7a92c10fdbb1ca0c",
+    "report_dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_902710a4ef_magmaw_diagnostic_20260822.dvc",
+    "report_sha256": "d6295a33118b0a3780fde311137844a59c3a5c58c6f4c1e22c2cb8a41d906463",
+    "report_file_sha256": "186727107adb3a981d569adbfa81195b1e9268924fc5f5b1b9ae2a1883cc96f3",
+    "summary_path": "artifacts/cata_raid_program/phase1_foundation_902710a4ef_magmaw_diagnostic_20260822_summary.json",
+    "summary_file_sha256": "7e30b3b84e3d3860ba19a63968f626d5c8beca4aa010529846416906f991ca90",
+    "capture_id": "cata_raid_phase1_blackwing_descent_10n_magmaw_diagnostic_v1",
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
     "diagnostic_difficulty": "10N",
     "route_generation": 3,
     "route_node_index": 2,
     "route_node_id": "bwd.magmaw.drudges",
     "kills": 1,
-    "deaths": 2,
-    "dead_bots": 2,
-    "living_bots_inside_instance": 8,
-    "native_instance_runback_repath_submitted": 2,
-    "repath_submission_bot_guids": [30001, 30002],
-    "repeated_repath_loop_observed": false,
-    "invalid_z_transition_bot_guid": 30001,
-    "invalid_z_transition_destination": [-345.872, -110, 214.207],
-    "invalid_z_transition_path_state": "active_path_invalid",
-    "invalid_z_transition_terminal_position": [-7482.93, -1379.73, 419.462],
-    "downstream_bot_guid": 30002,
-    "downstream_bot_state": "native_long_path/moving",
-    "trigger_rejoin_observed": false,
+    "deaths": 8,
+    "final_alive_size_before_stop": 2,
+    "active_size_before_cleanup": 10,
+    "invalid_z_result": "route_destination_invalid_z_transition",
+    "invalid_z_unique_event_count": 67,
+    "invalid_z_distinct_decision_count": 53,
+    "invalid_z_events_canonical_sha256": "8e2822ddc3fd3c7141f1d17c6fde90426273cd8a58e29646559fd2f11852e",
+    "semantic_stall_watchdog": true,
+    "semantic_stall_seconds": 303.005,
+    "boss_reached": false,
+    "boss_death_evidence": false,
     "forbidden_assistance_observed": false,
     "cleanup_passed": true,
-    "admitted_native_traversal_mode": "native_long_path",
-    "owner_scope_receipt_bound": true,
-    "terminal_reason": "native_runback_no_progress"
+    "worldserver_exit_code": 0,
+    "evidence_demux_gate_passed": false,
+    "evidence_demux_classification_defect": "evidence_demux_required_action_missing:botauto_readycheck",
+    "evidence_demux_required_telemetry_gate_passed": true,
+    "do_not_relabel_as_clear": true
+  },
+  "implemented_fix": {
+    "commit": "f23b29f0f5a08f21e5044c16275ff235ed4d96a9",
+    "status": "implemented_not_live_verified",
+    "scope": "scoped_cross_map_native_recovery_admission",
+    "changed_files": [
+      "src/server/game/Bots/BotWorldPopulationMgrMovement.cpp",
+      "tests/test_native_runback_long_path.py"
+    ],
+    "runtime_verification_required": true
   },
   "validation_clock": {
     "policy": "completion_watchdog",
@@ -55,8 +80,32 @@
   },
   "implementation_budget": {
     "hypotheses": 1,
-    "matched_live_verification_runs": 1
+    "matched_live_verification_runs": 0
   },
   "live_verification_owner_skill": "raid-shard-architecture",
-  "next_action": "Route exactly one work unit, native_repath_destination_z_transition, to raid-bot-runtime-implementation: isolate the repeated route_destination_invalid_z_transition after the one admitted native repath for bot 30001. Preserve the existing native recovery owner, active path, attempt/wipe/route/destination/traversal scope, and terminal bounds. Do not add coordinates, waypoints, teleport, resurrection, or boss/class/pet/Drudge tuning. Use one implementation hypothesis and one matched completion-watchdog Magmaw shard."
+  "runtime_verification_plan": {
+    "status": "required",
+    "identity": {
+      "difficulty": "10N",
+      "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+      "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
+      "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+      "route_node_id": "bwd.magmaw.drudges"
+    },
+    "required_source_commit": "f23b29f0f5a08f21e5044c16275ff235ed4d96a9",
+    "required_clock_policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null,
+    "must_observe": [
+      "f23 source and binary identity in the build receipt",
+      "Recovery-owner cross-map admission bound to the exact attempt, wipe, route, death episode, cohort, and native corpse authority",
+      "native recovery progress and its typed terminal evidence without teleport, resurrection, forced destination, or route-scope substitution",
+      "no forbidden assistance and cleanup with zero bots and zero leases"
+    ],
+    "must_not_claim": [
+      "25H acceptance",
+      "live confirmation from deterministic tests alone",
+      "Magmaw completion when the boss is not reached"
+    ]
+  },
+  "next_action": "Run exactly one 10N Magmaw completion-watchdog verification of f23b29f0f5a08f21e5044c16275ff235ed4d96a9 through raid-shard-architecture. Bind the scenario_id, runtime_profile, pool_tag, route manifest, frozen ten-member roster, assignment generation, source commit, and binary receipt; verify the scoped cross-map native recovery admission and its typed progress/terminal evidence. This is verification of the implemented fix, not a new implementation and not a 25H acceptance claim. Use no fixed success timer; terminate only on normal clear, semantic/no-progress, repeated decisions, excessive death loop, infrastructure loss, contamination, or explicit interruption."
 }

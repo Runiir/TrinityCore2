@@ -1,6 +1,6 @@
 # Magmaw convergence handoff — 2026-08-22
 
-This is a diagnostic history, not an acceptance claim. All thirteen retained runs
+This is a diagnostic history, not an acceptance claim. All fourteen retained runs
 used exact clean source/build/config identities, produced classified telemetry,
 observed native shutdown, returned bots and leases to zero, and recorded no
 forbidden assistance.
@@ -37,6 +37,23 @@ forbidden assistance.
   two deaths, and eight living bots. Cleanup passed with no forbidden
   assistance.
 
+## Current implementation state
+
+- The retained `902710a4ef` evidence is a 10N diagnostic only. It observed 67
+  unique `route_destination_invalid_z_transition` events at the Drudge node,
+  eight deaths with two bots alive, and no Magmaw reach or boss-death evidence.
+  The semantic-stall watchdog terminated the run; no forbidden assistance was
+  observed and cleanup/exit passed.
+- The compact summary classifies this as
+  `gameplay_failure_with_evidence_demux_classification_defect`: the required
+  telemetry gate passed, but the demux gate reported the missing
+  `botauto_readycheck` action. Do not relabel the run as clear.
+- The scoped cross-map native recovery admission fix is implemented at
+  `f23b29f0f5a08f21e5044c16275ff235ed4d96a9` in
+  `BotWorldPopulationMgrMovement.cpp`, with deterministic coverage in
+  `tests/test_native_runback_long_path.py`. That implementation has not been
+  live-verified; the 902 run predates it and cannot confirm it.
+
 ## What did not work
 
 | Source | Result | Decisive observation |
@@ -54,6 +71,7 @@ forbidden assistance.
 | `d98451124d` | gameplay failure | The single canary reached Drudge generation 3 with one kill, two deaths, and eight alive. Ghost 30001 reached `(-7482.93,-1383.73,416.785)`, stopped for more than 30 seconds, and terminalized; ghost 30002 reached `(-7530.67,-1258.93,471.885)` and remained `native_instance_runback_moving`. No trigger/reclaim/rejoin was observed; the watchdog closed `native_runback_no_progress` at 304.114 seconds. |
 | `a09d5a83c4` | gameplay failure | The one-run verification reached Drudge generation 3 with one kill, two deaths, and eight alive, but submitted zero `native_instance_runback_repath` actions. Ghost 30001 terminalized at `(-7482.65,-1383.71,416.664)` while ghost 30002 remained moving at `(-7482.93,-1383.73,416.785)`. No trigger/rejoin occurred; the watchdog closed `native_runback_no_progress` at 309.101 seconds. The prior `native_runback_progress_witness_and_single_repath` implementation is rejected because its repath branch was unexercised. |
 | `cedeb5c933` | gameplay failure | The run reached Drudge generation 3 with one kill, two deaths, and eight alive. Raw trace recorded exactly one explicit `native_instance_runback_repath_submitted` for each dead bot (30001 and 30002), with no repeated repath loop, accepting `native_repath_lease_expiry_predicate`. After repath, 30001 repeatedly received `route_destination_invalid_z_transition` toward `(-345.872,-110,214.207)` with its active path invalid, ending at `(-7482.93,-1379.73,419.462)`; 30002 remained `native_long_path`/moving before terminal `native_runback_no_progress`. The watchdog closed at 369.610 seconds after cleanup passed with no forbidden assistance. |
+| `902710a4ef` | gameplay failure with evidence-demux classification defect | Exact 10N diagnostic on source `902710a4ef45c63d9f735db75c39ed20aaf19d9b` observed 67 unique `route_destination_invalid_z_transition` events at `bwd.magmaw.drudges`, eight deaths and two alive before stop, and no Magmaw reach. The semantic-stall watchdog terminated the run. No forbidden assistance was observed; worldserver exit and cleanup passed. The demux gate failed only because `botauto_readycheck` was missing while all retained rows were bound and the required telemetry gate passed. |
 
 The three Drudge policy edits after `8ef7d2f25c` did not converge and are not
 promotion-ready. Affliction SQL changes are also unpromoted until a fresh exact
@@ -66,26 +84,37 @@ when the trash pack dies, the raid does not wipe, native recovery succeeds,
 and the route continues. A re-separation deadline is therefore diagnostic; it
 must not terminate a run while hostile-health or kill progress is monotonic.
 Raid and dungeon success remains completion-driven, never time-driven.
+The next 10N verification has no fixed success timer and is not a 25H
+acceptance claim.
 
 ## Next bounded work unit
 
 The dead-hunter pet gate, invalid-final-floor hypothesis, and
-`native_repath_lease_expiry_predicate` are consumed. Cedeb's raw trace contains
-exactly one explicit `result=native_instance_runback_repath_submitted` for each
-dead bot and no repeated repath loop, so the lease-expiry edge is accepted. The
-single next work unit is `native_repath_destination_z_transition`, owned by
-`raid-bot-runtime-implementation`: isolate the repeated
-`route_destination_invalid_z_transition` after the one admitted native repath
-for bot 30001. Bot 30002's later `native_runback_no_progress` is downstream
-evidence and is not routed separately. Preserve the existing native recovery
-owner, active path, attempt/wipe/route/destination/traversal scope, and terminal
-bounds; do not add coordinates, waypoints, teleport, resurrection, or
-boss/class/pet/Drudge tuning. Use one implementation hypothesis and one matched
-completion-watchdog shard.
+`native_repath_lease_expiry_predicate` are consumed. The 902 diagnostic is
+retained as a failed 10N gameplay observation with an evidence-demux
+classification defect; its 67 unique invalid-Z events, eight deaths/two alive,
+semantic-stall terminal, no Magmaw reach, clean exit, and no-assistance result
+are not a live verdict on f23 because the run predates that commit.
+
+The single next work unit is an exact 10N completion-watchdog verification of
+the implemented scoped cross-map native recovery admission fix
+`f23b29f0f5a08f21e5044c16275ff235ed4d96a9`, owned by
+`raid-shard-architecture`. Bind the
+`blackwing_descent_10n_magmaw_diagnostic` scenario, runtime profile, pool tag,
+route manifest, frozen ten-member roster, assignment generation, source
+commit, and binary receipt. Verify the Recovery-owner cross-map admission is
+bound to the exact attempt, wipe, route, death episode, cohort, and native
+corpse authority, then retain typed progress/terminal evidence. This is
+verification of an existing implementation, not a new implementation and not
+a 25H acceptance claim. Do not add coordinates, waypoints, teleport,
+resurrection, or boss/class/pet/Drudge tuning. Use no fixed success timer;
+terminate only on normal clear, semantic/no-progress, repeated decisions,
+excessive death loop, infrastructure loss, contamination, or explicit
+interruption.
 
 ## Evidence
 
-The thirteen immutable diagnostic bundles are tracked by adjacent `.dvc` pointers.
+The fourteen immutable diagnostic bundles are tracked by adjacent `.dvc` pointers.
 The latest report hashes are:
 
 - `198bac19d6`: `4c157675ff37d400c8ae0dba6672b40625c7262373115eedfaa2739057d80e2e`
@@ -99,6 +128,8 @@ The latest report hashes are:
 - `d98451124d`: `462dcd4b06c3e729ec87d5e7dcccb1efc1e10617ec77036a8f93aaf78807ff10`
 - `a09d5a83c4`: `df293bf0c94d3d28c5a6b36e5b48cdd58aa419cb35535a07151fcde50f99c9d9`
 - `cedeb5c933`: `6c7ca3cabfac8a037c746b26d955ec61fab979714e59d49eb4c828aada665f88`
+
+- `902710a4ef`: `d6295a33118b0a3780fde311137844a59c3a5c58c6f4c1e22c2cb8a41d906463`
 
 The d984 canary is bound to source commit
 `d98451124d343fdb49ae6718c70cd4dfdfb9f762`, worldserver binary SHA-256
@@ -123,5 +154,26 @@ the DVC pointer
 `artifacts/cata_raid_program/phase1_foundation_cedeb5c933_magmaw_run01_20260822.dvc`.
 The retained cedeb report file SHA-256 is
 `003421776435fd8b77101ea3860b5a4886d6648df0c0b4d6610d989c0c125383`.
+
+The 902 diagnostic is bound to source commit
+`902710a4ef45c63d9f735db75c39ed20aaf19d9b`, source tree
+`04e7a1c5698cc4466dcf86ab45042240f86ab5be`, worldserver binary SHA-256
+`d03f1dd227fed03ceb820216d612fc4e54e2da36fb9ee338c1848f11c15e8378`, and the
+DVC pointer
+`artifacts/cata_raid_program/phase1_foundation_902710a4ef_magmaw_diagnostic_20260822.dvc`.
+Its retained compact summary SHA-256 is
+`7e30b3b84e3d3860ba19a63968f626d5c8beca4aa010529846416906f991ca90`; the
+report file SHA-256 is
+`186727107adb3a981d569adbfa81195b1e9268924fc5f5b1b9ae2a1883cc96f3`, and its
+canonical report SHA-256 is
+`d6295a33118b0a3780fde311137844a59c3a5c58c6f4c1e22c2cb8a41d906463`.
+The evidence-demux classification defect is
+`evidence_demux_required_action_missing:botauto_readycheck`; all 152 retained
+rows were bound, the required telemetry gate passed, and the run is not clear.
+
+The next verification must use the implemented native fix at
+`f23b29f0f5a08f21e5044c16275ff235ed4d96a9`. It remains unverified until a
+fresh exact 10N completion-watchdog capture binds that source identity and
+produces the scoped cross-map recovery evidence described above.
 
 The DVC cache and configured remote were verified in sync after publication.

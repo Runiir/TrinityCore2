@@ -248,6 +248,9 @@ def test_dps_work_unit_binds_all_duplicate_roster_slots() -> None:
 
 def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     magmaw = workloop.build_boss_work_unit(
+        "blackwing_descent", "magmaw", "10N"
+    )
+    magmaw_25h = workloop.build_boss_work_unit(
         "blackwing_descent", "magmaw", "25H"
     )
     sinestra = workloop.build_boss_work_unit(
@@ -260,86 +263,79 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert magmaw["validation_clock"]["fixed_success_timer_seconds"] is None
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
-        "boss:blackwing_descent:magmaw:25H:"
-        "native_repath_destination_z_transition"
+        "boss:blackwing_descent:magmaw:10N:"
+        "scoped_cross_map_native_recovery_admission_verification"
     )
-    assert active["owner_skill"] == "raid-bot-runtime-implementation"
+    assert magmaw_25h["active_program_work_unit"] is None
+    assert active["owner_skill"] == "raid-shard-architecture"
     assert active["first_broken_edge"] == (
-        "native_repath_destination_z_transition"
+        "scoped_cross_map_native_recovery_admission_live_verification"
     )
     evidence = active["decisive_evidence"]
     assert evidence["source_commit"] == (
-        "cedeb5c933eacbae180b239d5058417b8b30c225"
+        "902710a4ef45c63d9f735db75c39ed20aaf19d9b"
     )
     assert evidence["binary_sha256"] == (
-        "b8ca0dc6df346fac11452560c56c2e67322a1704a2763af8bb1be4c3689eb8a0"
+        "d03f1dd227fed03ceb820216d612fc4e54e2da36fb9ee338c1848f11c15e8378"
     )
     assert evidence["report_dvc_pointer"] == (
         "artifacts/cata_raid_program/"
-        "phase1_foundation_cedeb5c933_magmaw_run01_20260822.dvc"
+        "phase1_foundation_902710a4ef_magmaw_diagnostic_20260822.dvc"
     )
     assert evidence["report_sha256"] == (
-        "6c7ca3cabfac8a037c746b26d955ec61fab979714e59d49eb4c828aada665f88"
+        "d6295a33118b0a3780fde311137844a59c3a5c58c6f4c1e22c2cb8a41d906463"
     )
     assert evidence["report_file_sha256"] == (
-        "003421776435fd8b77101ea3860b5a4886d6648df0c0b4d6610d989c0c125383"
+        "186727107adb3a981d569adbfa81195b1e9268924fc5f5b1b9ae2a1883cc96f3"
     )
     assert (
         evidence["route_generation"],
         evidence["route_node_index"],
         evidence["route_node_id"],
     ) == (3, 2, "bwd.magmaw.drudges")
-    assert (evidence["kills"], evidence["deaths"], evidence["living_bots_inside_instance"]) == (
-        1,
-        2,
-        8,
-    )
-    assert evidence["native_instance_runback_repath_submitted"] == 2
-    assert evidence["repath_submission_bot_guids"] == [30001, 30002]
-    assert evidence["repeated_repath_loop_observed"] is False
-    assert evidence["invalid_z_transition_bot_guid"] == 30001
-    assert evidence["invalid_z_transition_destination"] == [
-        -345.872,
-        -110,
-        214.207,
-    ]
-    assert evidence["invalid_z_transition_path_state"] == "active_path_invalid"
-    assert evidence["invalid_z_transition_terminal_position"] == [
-        -7482.93,
-        -1379.73,
-        419.462,
-    ]
-    assert evidence["downstream_bot_guid"] == 30002
-    assert evidence["downstream_bot_state"] == "native_long_path/moving"
-    assert evidence["trigger_rejoin_observed"] is False
+    assert evidence["diagnostic_difficulty"] == "10N"
+    assert evidence["invalid_z_unique_event_count"] == 67
+    assert evidence["deaths"] == 8
+    assert evidence["final_alive_size_before_stop"] == 2
+    assert evidence["boss_reached"] is False
+    assert evidence["semantic_stall_watchdog"] is True
     assert evidence["forbidden_assistance_observed"] is False
     assert evidence["cleanup_passed"] is True
-    assert evidence["admitted_native_traversal_mode"] == "native_long_path"
-    assert evidence["owner_scope_receipt_bound"] is True
-    assert evidence["terminal_reason"] == "native_runback_no_progress"
+    assert evidence["worldserver_exit_code"] == 0
+    assert evidence["evidence_demux_gate_passed"] is False
+    assert evidence["evidence_demux_classification_defect"] == (
+        "evidence_demux_required_action_missing:botauto_readycheck"
+    )
     assert active["implementation_budget"] == {
         "hypotheses": 1,
-        "matched_live_verification_runs": 1,
+        "matched_live_verification_runs": 0,
     }
-    assert "native_repath_destination_z_transition" in active[
-        "next_action"
-    ]
-    assert "native_repath_lease_expiry_predicate" not in active["next_action"]
+    assert active["implemented_fix"]["commit"] == (
+        "f23b29f0f5a08f21e5044c16275ff235ed4d96a9"
+    )
+    assert active["implemented_fix"]["status"] == "implemented_not_live_verified"
+    assert active["implemented_fix"]["scope"] == (
+        "scoped_cross_map_native_recovery_admission"
+    )
+    assert active["validation_clock"]["fixed_success_timer_seconds"] is None
+    assert active["runtime_verification_plan"]["identity"]["difficulty"] == "10N"
+    assert active["runtime_verification_plan"]["fixed_success_timer_seconds"] is None
+    assert "not a new implementation" in active["next_action"]
+    assert "25H acceptance claim" in active["next_action"]
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
 
 
-def test_magmaw_handoff_retains_cedeb_as_thirteenth_run() -> None:
+def test_magmaw_handoff_retains_cedeb_and_902_runs() -> None:
     handoff = (
         workloop.ROOT
         / "experiments/configs/cata_raid_magmaw_convergence_handoff.md"
     ).read_text(encoding="utf-8")
 
-    assert "All thirteen retained runs" in handoff
+    assert "All fourteen retained runs" in handoff
     assert "| `cedeb5c933` | gameplay failure |" in handoff
     assert "`native_repath_lease_expiry_predicate` are consumed" in handoff
-    assert "`native_repath_destination_z_transition`" in handoff
     assert "`cedeb5c933eacbae180b239d5058417b8b30c225`" in handoff
     assert (
         "b8ca0dc6df346fac11452560c56c2e67322a1704a2763af8bb1be4c3689eb8a0"
@@ -357,6 +353,16 @@ def test_magmaw_handoff_retains_cedeb_as_thirteenth_run() -> None:
         "6c7ca3cabfac8a037c746b26d955ec61fab979714e59d49eb4c828aada665f88"
         in handoff
     )
+    assert "902710a4ef" in handoff
+    assert "Exact 10N diagnostic" in handoff
+    assert "67 unique" in handoff
+    assert "eight deaths and two alive" in handoff
+    assert "gameplay_failure_with_evidence_demux_classification_defect" in handoff
+    assert "evidence_demux_required_action_missing:botauto_readycheck" in handoff
+    assert "f23b29f0f5a08f21e5044c16275ff235ed4d96a9" in handoff
+    assert "exact 10N completion-watchdog verification" in handoff
+    assert "not a new implementation" in handoff
+    assert "not a 25H" in handoff
 
 
 def test_hagara_catalog_alias_joins_script_readiness() -> None:
@@ -407,7 +413,7 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     assert status["active_work_unit"]["descriptor_valid"] is True
     assert status["active_work_unit"]["ready_for_bounded_repair"] is True
     assert status["active_work_unit"]["first_broken_edge"] == (
-        "native_repath_destination_z_transition"
+        "scoped_cross_map_native_recovery_admission_live_verification"
     )
     assert status["active_work_unit"]["source_handoff"]["sha256"] == (
         workloop._file_sha256(
@@ -416,18 +422,17 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
         )
     )
     assert status["required_next_work_unit"]["work_unit"] == (
-        "boss:blackwing_descent:magmaw:25H:"
-        "native_repath_destination_z_transition"
+        "boss:blackwing_descent:magmaw:10N:"
+        "scoped_cross_map_native_recovery_admission_verification"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
-        "raid-bot-runtime-implementation"
+        "raid-shard-architecture"
     )
     assert status["current_program_next_action"] == status["active_work_unit"][
         "next_action"
     ]
-    assert "native_repath_lease_expiry_predicate" not in status[
-        "active_work_unit"
-    ]["next_action"]
+    assert "not a new implementation" in status["active_work_unit"]["next_action"]
+    assert "25H acceptance claim" in status["active_work_unit"]["next_action"]
     assert "legacy_program_next_action" not in status
 
 
