@@ -75,6 +75,7 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
     Cohort().ValidationAdmissionBatchSealed = false;
     Cohort().ValidationRaidAdmissionComplete = false;
     Cohort().ValidationRaidAdmissionFailed = false;
+    Cohort().Raid = RaidRuntime();
     Cohort().Metrics = BotWorldStatus();
     Cohort().Metrics.Active = true;
     Cohort().Metrics.Mode = BotWorldRuntimeMode::ManualExperiment;
@@ -182,6 +183,7 @@ bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overri
     Cohort().ValidationAdmissionBatchSealed = false;
     Cohort().ValidationRaidAdmissionComplete = false;
     Cohort().ValidationRaidAdmissionFailed = false;
+    Cohort().Raid = RaidRuntime();
     Cohort().Metrics = BotWorldStatus();
     Cohort().Metrics.Active = true;
     Cohort().Metrics.Mode = BotWorldRuntimeMode::AlwaysOnAutonomy;

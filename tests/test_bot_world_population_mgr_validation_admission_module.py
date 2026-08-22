@@ -176,3 +176,38 @@ def test_validation_admission_keeps_gear_identity_scoped_to_cohort_receipt():
         not in cohort_group
     )
     assert "receipt.GearManifestSha256 == expectedManifestSha256" not in raid_runtime
+
+
+def test_validation_attempt_restart_resets_stale_raid_action_gate():
+    # Every raid-runtime field is attempt-scoped: admission receipts, the
+    # action gate, and ExpectedSize die with the attempt that committed them.
+    # Start/StartAutonomy already reset the party and admission latches for a
+    # new attempt; inheriting the previous attempt's post-admission
+    # Raid.BotActionsEnabled makes the cohort-group active-observation block
+    # run against a half-built party during provisioning and latches
+    # validation_active_roster_size_drift before the batch can ever seal.
+    lifecycle = (
+        ROOT / "src/server/game/Bots/BotWorldPopulationMgrLifecycle.cpp"
+    ).read_text()
+    start_scope = lifecycle[
+        lifecycle.index("bool BotWorldPopulationMgr::Start("):
+        lifecycle.index("void BotWorldPopulationMgr::Stop()")
+    ]
+    autonomy_scope = lifecycle[
+        lifecycle.index("bool BotWorldPopulationMgr::StartAutonomy("):
+        lifecycle.index("void BotWorldPopulationMgr::StopAutonomy()")
+    ]
+    for scope in (start_scope, autonomy_scope):
+        assert "Party() = PartyRuntime();" in scope
+        assert "Cohort().ValidationAdmissionBatchSealed = false;" in scope
+        assert "Cohort().Raid = RaidRuntime();" in scope
+        # The raid reset lands inside the per-attempt validation reset block,
+        # before activation, so no partial window can observe stale gates.
+        assert scope.index("Cohort().Raid = RaidRuntime();") < scope.index(
+            "Cohort().Active = true;"
+        )
+    stop_autonomy = lifecycle[
+        lifecycle.index("void BotWorldPopulationMgr::StopAutonomy()"):
+    ]
+    # Stop paths must not silently re-arm anything; they stay read-down only.
+    assert "BotActionsEnabled" not in stop_autonomy

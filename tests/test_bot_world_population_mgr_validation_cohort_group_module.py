@@ -94,3 +94,34 @@ def test_validation_cohort_group_reconciles_gear_against_frozen_receipt():
         "receiptItr->second.GearManifestSha256 != expectedManifestSha256"
         not in module
     )
+
+
+def test_validation_cohort_group_active_observation_stays_fail_closed():
+    # The active-observation block is the only source of
+    # validation_active_roster_size_drift and must keep failing the attempt
+    # closed on roster, identity, difficulty, or instance drift. The stale-gate
+    # defect is fixed at the lifecycle layer (new attempts reset RaidRuntime),
+    # so this gate keeps its full invalidation surface unchanged.
+    module = MODULE.read_text()
+    assert (
+        "Cohort().ValidationAdmission == ValidationAdmissionPhase::Active\n"
+        "        || Cohort().Raid.BotActionsEnabled;" in module
+    )
+    for marker in (
+        '"validation_active_roster_size_drift"',
+        '"validation_active_member_identity_missing"',
+        '"validation_active_group_identity_drift"',
+        '"validation_active_difficulty_drift"',
+        '"validation_active_instance_drift"',
+        "MarkValidationCohortViolation(*invalidState, invalidBot, invalidReason);",
+    ):
+        assert marker in module
+    # Defense in depth: the runtime update still rebuilds raid state whenever
+    # it observes a foreign group or a stale attempt id.
+    runtime = (
+        ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationCohortRuntime.cpp"
+    ).read_text()
+    assert (
+        "if (raid.GroupGuid != group->GetGUID() || raid.AttemptId != Cohort().AttemptId)\n"
+        "        raid = RaidRuntime();" in runtime
+    )
