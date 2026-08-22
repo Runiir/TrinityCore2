@@ -35,6 +35,26 @@ def test_shadow_bite_script_binding_is_idempotent() -> None:
     assert "ON DUPLICATE KEY UPDATE" in migration
 
 
+def test_affliction_soulburn_window_consumes_once_and_requires_live_shards() -> None:
+    profile_source = (
+        ROOT / "src/server/game/Bots/BotClassSpecActionProfile.cpp"
+    ).read_text()
+    native_source = (ROOT / "src/server/scripts/Spells/spell_warlock.cpp").read_text()
+    migration = (
+        ROOT
+        / "sql/custom/world/2026_08_23_00_affliction_soulburn_soul_fire_gate.sql"
+    ).read_text()
+
+    assert 'HasMechanicTag(spell.MechanicTags, "soul_shard")' in profile_source
+    assert "bot->GetPower(POWER_SOUL_SHARDS) < 1" in profile_source
+    assert 'return "insufficient_soul_shards"' in profile_source
+    assert "SPELL_WARLOCK_SOUL_FIRE" in native_source
+    assert "target->RemoveAurasDueToSpell(SPELL_WARLOCK_SOULBURN);" in native_source
+    assert "soulburn,soul_shard,live_resource,apl_priority_2" in migration
+    assert "soul_fire,soulburn,live_aura,apl_priority_1_12" in migration
+    assert "`action`.`required_self_aura` = 74434" in migration
+
+
 def test_affliction_modifier_diagnostics_observe_native_auras_without_applying_them() -> None:
     source = "\n".join(
         (

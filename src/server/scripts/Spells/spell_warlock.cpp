@@ -109,6 +109,8 @@ enum WarlockSpells
     SPELL_WARLOCK_SOULBURN_DEMONIC_CIRCLE           = 79438,
     SPELL_WARLOCK_SOULBURN_SEARING_PAIN             = 79440,
     SPELL_WARLOCK_SOULBURN_DUMMY_SEED_OF_CORRUPTION = 93313,
+    SPELL_WARLOCK_SOULBURN                           = 74434,
+    SPELL_WARLOCK_SOUL_FIRE                          = 6353,
     SPELL_WARLOCK_SOUL_HARVEST_ENERGIZE             = 101977,
     SPELL_WARLOCK_SOUL_SHARD                        = 87388,
     SPELL_WARLOCK_SOUL_SHARD_ENERGIZE               = 95810,
@@ -1391,7 +1393,8 @@ class spell_warl_soulburn : public AuraScript
                 SPELL_WARLOCK_HEALTHSTONE,
                 SPELL_WARLOCK_DEMONIC_CIRCLE_TELEPORT,
                 SPELL_WARLOCK_SEARING_PAIN,
-                SPELL_WARLOCK_SEED_OF_CORRUPTION
+                SPELL_WARLOCK_SEED_OF_CORRUPTION,
+                SPELL_WARLOCK_SOUL_FIRE
             });
     }
 
@@ -1424,6 +1427,12 @@ class spell_warl_soulburn : public AuraScript
                 break;
             case SPELL_WARLOCK_SEED_OF_CORRUPTION:
                 target->ToPlayer()->SetLastSoulburnSpell(spellInfo);
+                break;
+            case SPELL_WARLOCK_SOUL_FIRE:
+                // Soul Fire is the Affliction Soulburn window's one ordinary
+                // spender. Consume the native aura after the proc so a stale
+                // aura cannot authorize another Soul Fire candidate.
+                target->RemoveAurasDueToSpell(SPELL_WARLOCK_SOULBURN);
                 break;
             default:
                 break;

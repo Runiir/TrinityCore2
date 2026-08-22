@@ -420,6 +420,9 @@ std::string EvaluateCompiledConditions(Player const* bot, Unit const* target, Un
         return "forbidden_owned_target_aura_active";
     if (HasMechanicTag(spell.MechanicTags, "holy_power_3") && bot->GetPower(POWER_HOLY_POWER) < 3)
         return "insufficient_holy_power";
+    if (HasMechanicTag(spell.MechanicTags, "soul_shard")
+        && bot->GetPower(POWER_SOUL_SHARDS) < 1)
+        return "insufficient_soul_shards";
     if (spell.MaintainAuraId && !spell.RequiredOwnedTargetAura
         && !spell.ForbiddenOwnedTargetAura)
     {
