@@ -1,9 +1,12 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 
 #include "Pet.h"
 #include "Player.h"
 #include "SpellAuraEffects.h"
 #include "SpellAuras.h"
+#include "SpellInfo.h"
+#include "SpellMgr.h"
 #include "Unit.h"
 #include "Util.h"
 
@@ -105,6 +108,23 @@ void BotWorldPopulationMgr::ObserveCalibrationEffectiveStats(
     {
         stats.BonusDamage = pet->GetBonusDamage();
         stats.SpellPower = stats.BonusDamage;
+
+        SpellInfo const* petDamageSpell = nullptr;
+        for (uint8 index = 0; index < pet->GetPetAutoSpellSize(); ++index)
+        {
+            uint32 const spellId = pet->GetPetAutoSpellOnPos(index);
+            SpellInfo const* spellInfo = spellId
+                ? sSpellMgr->GetSpellInfo(spellId) : nullptr;
+            if (BotWorldPopulationMgrSpellSemantics::SpellLooksDangerous(
+                    spellInfo))
+            {
+                petDamageSpell = spellInfo;
+                break;
+            }
+        }
+        if (petDamageSpell)
+            stats.SpellCritPct = pet->SpellCritChanceDone(
+                petDamageSpell, petDamageSpell->GetSchoolMask());
     }
 
     static constexpr std::array<AuraType, 3> AuraTypes = {

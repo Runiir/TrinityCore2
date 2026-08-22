@@ -8785,6 +8785,27 @@ def test_scoring_start_stat_modifier_ledger_surface_is_deterministic():
     assert len(ledger.splitlines()) <= 1000
 
 
+def test_pet_spell_crit_observation_uses_native_autocast_identity():
+    ledger = Path(
+        "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp"
+    ).read_text(encoding="utf-8")
+
+    pet_observation = ledger[ledger.index("if (Pet* pet = unit->ToPet())") : ledger.index(
+        "    static constexpr std::array<AuraType, 3> AuraTypes", ledger.index(
+            "if (Pet* pet = unit->ToPet())"
+        )
+    )]
+    assert "GetPetAutoSpellSize()" in pet_observation
+    assert "GetPetAutoSpellOnPos(index)" in pet_observation
+    assert "sSpellMgr->GetSpellInfo(spellId)" in pet_observation
+    assert "SpellLooksDangerous" in pet_observation
+    assert "pet->SpellCritChanceDone(" in pet_observation
+    assert "petDamageSpell->GetSchoolMask()" in pet_observation
+    assert "stats.SpellCritPct = 0.0f" not in pet_observation
+    assert "54049" not in ledger
+    assert "691" not in ledger
+
+
 def test_upsert_trinity_config_normalizes_literal_newline_fragments():
     text = 'BotWorld.DeathRecoveryMode = "native_corpse_run"\\nBotWorld.RespawnMode = "native_corpse_run"\n'
 
