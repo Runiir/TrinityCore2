@@ -59,6 +59,13 @@ CHARACTER_TABLES = (
     "pet_spell",
 )
 
+# Item durability is mutable runtime state.  Item::LoadFromDB normalizes an
+# out-of-range value and persists it through CHAR_UPD_ITEM_INSTANCE_ON_LOAD;
+# combat can also wear an item down.  Every other item_instance field remains
+# part of the identity projection, including item entry, ownership,
+# enchantments, random properties, charges, and count.
+VOLATILE_ITEM_INSTANCE_COLUMNS = frozenset({"durability"})
+
 
 def _clean_source_identity(repository: Path, worldserver: Path) -> dict[str, Any]:
     """Fail closed unless the executable belongs to one exact clean Git tree."""
@@ -83,6 +90,15 @@ def _query_rows(connection: Any, query: str, parameters: Sequence[Any] = ()) -> 
     with connection.cursor() as cursor:
         cursor.execute(query, tuple(parameters))
         return _normalized_rows(cursor.fetchall())
+
+
+def _identity_rows(table_name: str, rows: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """Project database rows while excluding only proven runtime bookkeeping."""
+    excluded = VOLATILE_ITEM_INSTANCE_COLUMNS if table_name == "item_instance" else frozenset()
+    return [
+        {str(key): value for key, value in row.items() if str(key) not in excluded}
+        for row in rows
+    ]
 
 
 def _database_identity(config: Path) -> dict[str, Any]:
@@ -168,7 +184,13 @@ def _database_identity(config: Path) -> dict[str, Any]:
             "spell_proc": spell_proc,
             "spell_script_names": spell_script_names,
         },
-        "characters": {"pool": pool, **table_rows},
+        "characters": {
+            "pool": pool,
+            **{
+                name: _identity_rows(name, rows)
+                for name, rows in table_rows.items()
+            },
+        },
     }
     return {
         "database_schema_sha256": canonical_sha256(schema_payload),
@@ -185,6 +207,9 @@ def _database_identity(config: Path) -> dict[str, Any]:
             "character_schema_sha256": character_schema["schema_sha256"],
             "character_table_row_counts": {
                 name: len(rows) for name, rows in sorted(table_rows.items())
+            },
+            "volatile_runtime_columns_excluded": {
+                "item_instance": sorted(VOLATILE_ITEM_INSTANCE_COLUMNS),
             },
         },
     }
