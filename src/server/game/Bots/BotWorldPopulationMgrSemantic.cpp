@@ -239,6 +239,11 @@ void BotWorldPopulationMgr::NotifyBotItemSpellFinished(Player* caster,
                     receipt->PostUseItemCount = CountInventoryItem(caster,
                         receipt->ItemId);
                     receipt->NativeUseFinishedSuccessfully = success;
+                    // Eating applies the native sitting state. A real client
+                    // stands before its next offensive request; complete that
+                    // transition before releasing the precombat barrier.
+                    if (success && receipt == &metrics.FoodConsumable)
+                        caster->SetStandState(UNIT_STAND_STATE_STAND);
                     receipt->NextRetryAtMs = receipt->FinishedAtMs + 1000;
                     if (success)
                         ++receipt->SuccessfulUseCount;

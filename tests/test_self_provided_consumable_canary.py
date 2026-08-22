@@ -143,6 +143,28 @@ def test_native_item_completion_retains_consumed_item_identity() -> None:
     assert "receipt->SubmittedAtMs > receipt->FinishedAtMs" in completion
 
 
+def test_successful_food_completion_stands_before_precombat_release() -> None:
+    semantic = _source(
+        "src/server/game/Bots/BotWorldPopulationMgrSemantic.cpp"
+    )
+    completion = _between(
+        semantic,
+        "void BotWorldPopulationMgr::NotifyBotItemSpellFinished",
+        "void BotWorldPopulationMgr::FlushPendingHealCast",
+    )
+    food_completion = _between(
+        completion,
+        "receipt->NativeUseFinishedSuccessfully = success;",
+        "break;",
+    )
+
+    assert "if (success && receipt == &metrics.FoodConsumable)" in food_completion
+    assert "caster->SetStandState(UNIT_STAND_STATE_STAND);" in food_completion
+    assert food_completion.index(
+        "receipt->NativeUseFinishedSuccessfully = success;"
+    ) < food_completion.index("caster->SetStandState(UNIT_STAND_STATE_STAND);")
+
+
 def test_prepot_runs_after_the_only_pre_score_cooldown_reset() -> None:
     reset = _source(
         "src/server/game/Bots/BotWorldPopulationMgrCalibrationReset.cpp"
