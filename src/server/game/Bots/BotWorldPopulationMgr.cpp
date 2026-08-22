@@ -611,7 +611,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     groupRecoveryCallbacks.RetireStalePackMembers = retireStaleValidationRoutePackMembers;
     groupRecoveryCallbacks.EnrollEngagedPackMembers = enrollEngagedValidationRoutePackMembers;
     groupRecoveryCallbacks.PersistedPackHasLiveMembers = persistedValidationRoutePackHasLiveMembers;
-    groupRecoveryCallbacks.MarkTrashFailed = markValidationRouteTrashFailed;
     groupRecoveryCallbacks.IsPackEntry = isValidationRoutePackEntry;
     groupRecoveryCallbacks.ResolvedTransitionAura = resolvedScriptedTransitionAuraId;
     if (TryValidationRouteGroupRecovery(state, bot, power, stage, activity,

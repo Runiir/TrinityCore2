@@ -2049,6 +2049,19 @@ def test_capture_telemetry_poll_is_incremental_and_bounded():
     assert "BuildRaidRuntimeJson(true)" in manager_source
 
 
+def test_drudge_lane_contract_is_diagnostic_while_route_outcome_gates_success():
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "tools/raid_program/capture_phase1_raid_foundation.py"
+    ).read_text(encoding="utf-8")
+    assert 'drudge_observed = profile_name == "blackwing_descent_10n"' in source
+    assert "drudge_required = False" in source
+    assert '"acceptance_role": "diagnostic_only"' in source
+    assert "if drudge_observed" in source
+    assert "and (not drudge_required or drudge_accepted)" in source
+    assert '"alive_size_10": runtime.get("alive_size") == 10' in source
+
+
 def test_live_evidence_demux_rejects_strategy_drift():
     active = accepted_status()
     active["cohort_id"] = "raid"

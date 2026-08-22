@@ -20,7 +20,6 @@ struct GroupRecoveryCallbacks
     std::function<void()> RetireStalePackMembers;
     std::function<void()> EnrollEngagedPackMembers;
     std::function<bool()> PersistedPackHasLiveMembers;
-    std::function<void(Unit*, char const*, char const*, float, uint32, float, uint32, uint32)> MarkTrashFailed;
     std::function<bool(uint32)> IsPackEntry;
     std::function<uint32(Creature const*)> ResolvedTransitionAura;
 };

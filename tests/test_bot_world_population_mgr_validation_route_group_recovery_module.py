@@ -34,15 +34,15 @@ def test_group_recovery_is_extracted_at_the_validation_route_boundary():
         "EnrollEngagedPackMembers",
         "PersistedPackHasLiveMembers",
         "RetireStalePackMembers",
-        "MarkTrashFailed",
-        "drudge_partial_death_before_threat_seed",
-        "drudge_native_full_wipe_hold_partial_death",
         "native_full_wipe_hold_partial_death",
         "validation_route_partial_wipe_retreat_rendezvous",
         "validation_route_tactical_retreat",
         "validation_route_hold_retreat",
     ):
         assert marker in module
+    assert "Partial deaths do not make a trash pull terminal" in module
+    assert "drudge_partial_death_before_threat_seed" not in module
+    assert "drudge_native_full_wipe_hold_partial_death" not in module
 
 
 def test_group_recovery_passes_pack_and_failure_callbacks_explicitly():
@@ -51,7 +51,6 @@ def test_group_recovery_passes_pack_and_failure_callbacks_explicitly():
         "groupRecoveryCallbacks.RetireStalePackMembers",
         "groupRecoveryCallbacks.EnrollEngagedPackMembers",
         "groupRecoveryCallbacks.PersistedPackHasLiveMembers",
-        "groupRecoveryCallbacks.MarkTrashFailed",
         "groupRecoveryCallbacks.IsPackEntry",
         "groupRecoveryCallbacks.ResolvedTransitionAura",
     ):

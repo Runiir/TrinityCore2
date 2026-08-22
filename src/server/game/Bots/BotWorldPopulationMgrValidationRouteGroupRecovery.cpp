@@ -2,7 +2,6 @@
 
 #include "Bots/BotMeleeAutoAttackIntent.h"
 #include "Bots/BotActionArbiter.h"
-#include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
@@ -116,78 +115,11 @@ bool GroupRecoveryContext::Run()
             }
         }
         bool majorityDead = aliveMembers <= 2 && deadMembers >= 3;
-        // The Drudge lane contract is a native-mechanics observation, not a
-        // recoverable trash route.  Once any exact roster member dies while
-        // the pack is active, hold only newly issued bot offense and leave
-        // threat, movement, corpses, and reset authority to the encounter.
-        // This keeps a four-death tactical retreat from masquerading as a
-        // clean lane generation; the native wipe gate will terminate it.
-        if (Manager.Cohort().Config.ValidationRouteMechanicProfile == "trash_two_tank_charge_lanes"
-            && Manager.Cohort().Config.ValidationRouteBossRecovery
-                == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly
-            && deadMembers > 0)
-        {
-            bool const threatSeedCompleteForCurrentScope =
-                Manager.Party().ValidationRouteDrudgeThreatSeedComplete
-                && !Manager.Party().ValidationRouteDrudgeThreatSeedFailure
-                && Manager.Party().ValidationRouteDrudgeThreatSeedAttemptId == Manager.Cohort().AttemptId
-                && Manager.Party().ValidationRouteDrudgeThreatSeedWipeGeneration
-                    == Manager.Cohort().Raid.WipeGeneration
-                && Manager.Party().ValidationRouteDrudgeThreatSeedRouteGeneration
-                    == Manager.Party().ValidationRouteGeneration;
-            if (!threatSeedCompleteForCurrentScope)
-            {
-                for (WorldBotState const& cohortState : Manager.Party().Bots)
-                    if (Player* cohortBot = Manager.GetLoadedBot(cohortState))
-                        BotRaidAreaAuthority::SetAllOffenseSuppressed(
-                            cohortBot->GetGUID().GetRawValue(), true);
-                Manager.Cohort().ValidationAttemptFailureReason =
-                    "drudge_partial_death_before_threat_seed";
-                Manager.Cohort().ValidationAttemptFailureAttemptId = Manager.Cohort().AttemptId;
-                Manager.Cohort().ValidationAttemptFailureRouteGeneration =
-                    Manager.Party().ValidationRouteGeneration;
-                Callbacks.MarkTrashFailed(retreatThreat,
-                    "drudge_partial_death_before_threat_seed",
-                    "validation_route_recovery", float(aliveMembers), deadMembers,
-                    -1.0f, 0, 0);
-                State.LastRecoveryMode = "terminal_restart_required";
-                State.LastRecoveryResult = "drudge_partial_death_before_threat_seed";
-                State.LastRecoveryMs = NowMs();
-                Situation = "validation_route_recovery";
-                Action = "validation_route_failed";
-                Target = retreatThreat;
-                return true;
-            }
-            if (groupCombatActive)
-            {
-                for (WorldBotState const& cohortState : Manager.Party().Bots)
-                    if (Player* cohortBot = Manager.GetLoadedBot(cohortState))
-                        BotRaidAreaAuthority::SetAllOffenseSuppressed(
-                            cohortBot->GetGUID().GetRawValue(), true);
-                std::string raw = Manager.BuildRawJson(Bot, retreatThreat);
-                std::ostringstream gateRaw;
-                gateRaw << "{\"base\":" << raw
-                        << ",\"drudge_native_recovery_gate\":{\"policy\":\"native_full_wipe_only\""
-                        << ",\"authority\":\"native_encounter\""
-                        << ",\"assistance\":\"none\""
-                        << ",\"direct_respawn\":false"
-                        << ",\"direct_state_manufacture\":false"
-                        << ",\"alive_members\":" << aliveMembers
-                        << ",\"dead_members\":" << deadMembers << "}}";
-                std::string semantic = Manager.BuildSemanticJson(Bot, retreatThreat, "validation_route_recovery", &Power, Stage, Activity);
-                Manager.RecordEvent(State, Bot, "validation_route_recovery", retreatThreat,
-                    "drudge_native_full_wipe_hold_partial_death", gateRaw.str().c_str(), semantic.c_str(),
-                    float(aliveMembers), deadMembers);
-                State.LastRecoveryMode = "native_full_wipe_only";
-                State.LastRecoveryResult = "drudge_native_full_wipe_hold_partial_death";
-                State.LastRecoveryMs = NowMs();
-                State.LastNoProgressReason = "drudge_native_full_wipe_hold_partial_death";
-                Situation = "validation_route_recovery";
-                Action = "native_full_wipe_hold";
-                Target = retreatThreat;
-                return true;
-            }
-        }
+        // Partial deaths do not make a trash pull terminal while its hostile
+        // pack is still making progress. Living members keep executing their
+        // ordinary profiles; once the pack dies, the existing out-of-combat
+        // recovery path can restore the group before route advancement. A real
+        // wipe or a pack that stops making progress remains watchdog-owned.
         if ((majorityDead || criticalRoleDead) && groupCombatActive && !livingCombatResurrectionCaster
             && !currentLivePackCanContinue)
         {

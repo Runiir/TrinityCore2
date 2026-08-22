@@ -332,31 +332,11 @@ uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster,
         return 0;
 
     uint64 const observedAtMs = NowMs();
-    bool const sameSourceRecoveryMissed = std::any_of(
-        Party().ValidationRouteDrudgeChargeObservations.begin(),
-        Party().ValidationRouteDrudgeChargeObservations.end(),
-        [this, sourceSpawnId](ValidationRouteDrudgeChargeObservation const& observation)
-        {
-            return observation.SourceSpawnId == sourceSpawnId
-                && observation.Landed && !observation.ReseparationRecorded
-                && observation.AttemptId == Cohort().AttemptId
-                && observation.WipeGeneration == Cohort().Raid.WipeGeneration
-                && observation.RouteGeneration == Party().ValidationRouteGeneration;
-        });
-    if (sameSourceRecoveryMissed && Cohort().ValidationAttemptFailureReason.empty())
-    {
-        // The native 20-second clock is the production deadline. Preserve the
-        // new native observation below, but terminal-latch the experiment as
-        // soon as the same source begins another Rush before the authoritative
-        // head observation has exact-roster closure. This converts an
-        // unrecoverable queue into a prompt gameplay failure instead of a
-        // telemetry/CPU flood.
-        Cohort().ValidationAttemptFailureReason =
-            "drudge_reseparation_deadline_missed";
-        Cohort().ValidationAttemptFailureAttemptId = Cohort().AttemptId;
-        Cohort().ValidationAttemptFailureRouteGeneration =
-            Party().ValidationRouteGeneration;
-    }
+    // An unclosed re-separation observation remains useful diagnostic evidence,
+    // but it is not a terminal trash outcome. The route watchdog already owns
+    // full-wipe, death-loop, repeated-decision, and monotonic no-progress
+    // termination. Preserve the next native Rush so a pack that is still losing
+    // health can die and the survivors can recover normally.
     bool const currentScopeHasChargeObservation = std::any_of(
         Party().ValidationRouteDrudgeChargeObservations.begin(),
         Party().ValidationRouteDrudgeChargeObservations.end(),
@@ -583,4 +563,3 @@ void BotWorldPopulationMgr::NotifyNativeCreatureSpellLanded(
     if (observation->IntervalValid && observation->ObservedIntervalMs > 0)
         ++Party().ValidationRouteDrudgeValidIntervalsBySpawn[observation->SourceSpawnId];
 }
-

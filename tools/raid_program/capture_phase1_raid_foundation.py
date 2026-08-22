@@ -4112,13 +4112,17 @@ def main() -> int:
     if not runtime_assets["passed"]:
         raise SystemExit("runtime profile assets rejected: " + ",".join(runtime_assets["reasons"]))
     route_manifest = runtime_assets.get("route_manifest")
-    drudge_required = profile_name == "blackwing_descent_10n" \
+    drudge_observed = profile_name == "blackwing_descent_10n" \
         or profile_name.endswith("_magmaw_diagnostic")
+    # The exact lane/re-separation contract is retained as diagnostic evidence.
+    # Trash acceptance is outcome-based: the route must clear the pack and
+    # recover without a wipe, semantic stall, or forbidden assistance.
+    drudge_required = False
     drudge_navmesh_preflight: dict[str, Any] = {
-        "required": drudge_required,
+        "required": drudge_observed,
         "all_passed": None,
     }
-    if drudge_required:
+    if drudge_observed:
         try:
             drudge_navmesh_preflight = {
                 "required": True,
@@ -4516,7 +4520,7 @@ def main() -> int:
                             monitor_statuses,
                             profile_name=profile_name,
                         )
-                    if drudge_required:
+                    if drudge_observed:
                         drudge_accepted, _ = accepted_drudge_contract(
                             monitor_statuses, frozen_anchors=drudge_frozen_anchors,
                         )
@@ -4617,7 +4621,7 @@ def main() -> int:
     )
     drudge_accepted, drudge_rejections = (
         accepted_drudge_contract(active_statuses, frozen_anchors=drudge_frozen_anchors)
-        if drudge_required
+        if drudge_observed
         else (True, ["drudge_contract_not_required_for_diagnostic_partition"])
     )
     cleanup_status = statuses[-1] if statuses else {}
@@ -4646,7 +4650,7 @@ def main() -> int:
         and process_return_code == 0
         and len(stable) >= args.required_stable_statuses
         and recovery_accepted
-        and drudge_accepted
+        and (not drudge_required or drudge_accepted)
         and cleanup_ok
         and bool(stop_rows and stop_rows[-1].get("ok") is True)
         and process_absent
@@ -4753,6 +4757,7 @@ def main() -> int:
         },
         "drudge_contract_evidence": {
             "source": "botauto_status.raid_runtime.drudge_charge",
+            "acceptance_role": "diagnostic_only",
             "independently_reconstructed": drudge_accepted,
             "rejections": drudge_rejections,
             "requirements": "two delivered native Rushes per exact source; one non-early 20000ms interval per source; exact-roster reseparation; exact native tank ownership; any recorded taunts are successful tank casts; tank health-sync hold; all seven offensive slots use trained single-target profiles",

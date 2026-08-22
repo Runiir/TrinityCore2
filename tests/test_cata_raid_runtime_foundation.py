@@ -6,6 +6,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 HEADER = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text(encoding="utf-8")
 IMPL = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(encoding="utf-8")
+GROUP_RECOVERY = (
+    ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteGroupRecovery.cpp"
+).read_text(encoding="utf-8")
+UPDATE_PREPARATION = (
+    ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdateBotPreparation.cpp"
+).read_text(encoding="utf-8")
+UPDATE_DEATH = (
+    ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdateDeath.cpp"
+).read_text(encoding="utf-8")
+STATUS = (
+    ROOT / "src/server/game/Bots/BotWorldPopulationMgrStatus.cpp"
+).read_text(encoding="utf-8")
 ACTION_EXECUTOR = (ROOT / "src/server/game/Bots/BotActionExecutor.cpp").read_text(encoding="utf-8")
 RAID_AUTHORITY = (ROOT / "src/server/game/Bots/BotRaidAreaAuthority.h").read_text(encoding="utf-8")
 PET_AI = (ROOT / "src/server/game/AI/CoreAI/PetAI.cpp").read_text(encoding="utf-8")
@@ -3116,71 +3128,54 @@ def test_phase1_magmaw_uses_typed_native_full_wipe_recovery_policy():
 
 
 def test_phase1_partial_critical_death_holds_native_fight_without_tactical_retreat():
-    objective = IMPL[
-        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective"):
-        IMPL.index("bool BotWorldPopulationMgr::IsBossContext")
-    ]
+    objective = GROUP_RECOVERY
     retreat = objective.index("bool majorityDead = aliveMembers <= 2 && deadMembers >= 3;")
     hold = objective.index('"native_full_wipe_hold_partial_death"', retreat)
     retreat_action = objective.index('if (!retreatThreat)', hold)
     assert hold < retreat_action
-    assert 'action = "native_full_wipe_hold";' in objective[hold:retreat_action]
-    assert 'state.LastRecoveryMode = "native_full_wipe_only";' in objective[hold:retreat_action]
+    assert 'Action = "native_full_wipe_hold";' in objective[hold:retreat_action]
+    assert 'State.LastRecoveryMode = "native_full_wipe_only";' in objective[hold:retreat_action]
     assert 'cohortState.ValidationRouteAnchorOverrideReason = "validation_route_partial_wipe_retreat_rendezvous"' not in objective[hold:retreat_action]
 
 
-def test_drudge_partial_death_cannot_enter_tactical_recovery():
-    objective = IMPL[
-        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective"):
-        IMPL.index("bool BotWorldPopulationMgr::IsBossContext")
-    ]
-    drudge_guard = objective.index(
-        'if (Cohort().Config.ValidationRouteMechanicProfile == "trash_two_tank_charge_lanes"\n'
-        '            && Cohort().Config.ValidationRouteBossRecovery\n'
-        '                == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly\n'
-        '            && deadMembers > 0)'
-    )
-    generic_recovery = objective.index(
+def test_drudge_partial_death_keeps_live_pack_outcome_path_running():
+    assert "Partial deaths do not make a trash pull terminal" in GROUP_RECOVERY
+    assert "drudge_partial_death_before_threat_seed" not in GROUP_RECOVERY
+    assert "drudge_native_full_wipe_hold_partial_death" not in GROUP_RECOVERY
+    generic_recovery = GROUP_RECOVERY.index(
         "if ((majorityDead || criticalRoleDead) && groupCombatActive"
     )
-    assert drudge_guard < generic_recovery
-    guard = objective[drudge_guard:generic_recovery]
-    terminal = guard.index('"drudge_partial_death_before_threat_seed"')
-    hold = guard.index('"drudge_native_full_wipe_hold_partial_death"')
-    assert terminal < hold
-    assert "threatSeedCompleteForCurrentScope" in guard[:hold]
-    assert "markValidationRouteTrashFailed" in guard[:hold]
-    assert "if (groupCombatActive)" in guard[terminal:hold]
-    assert '"drudge_native_full_wipe_hold_partial_death"' in guard
-    assert 'action = "native_full_wipe_hold";' in guard
-    assert "SetAllOffenseSuppressed" in guard
-    assert "CombatStopWithPets" not in guard
-    assert "MoveBotToPoint" not in guard
+    assert "&& !currentLivePackCanContinue" in GROUP_RECOVERY[
+        generic_recovery:generic_recovery + 220
+    ]
 
 
-def test_drudge_preseed_failure_latches_before_dead_member_recovery_and_is_serialized():
-    update_start = IMPL.index("void BotWorldPopulationMgr::UpdateBot")
-    objective_start = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
-    update = IMPL[update_start:objective_start]
-    terminal = update.index("bool const validationAttemptFailed")
-    dead_member = update.index("if (!bot->IsAlive())")
-    assert terminal < dead_member
-    assert "ValidationAttemptFailureAttemptId == Cohort().AttemptId" in update[terminal:dead_member]
-    assert "SetAllOffenseSuppressed" in update[terminal:dead_member]
-    assert 'state.LastDecisionAction = "validation_route_terminal_hold";' in update[terminal:dead_member]
-    assert "CombatStop" not in update[terminal:dead_member]
-    death_record = update.index("if (!state.DeathEpisodeRecorded)", dead_member)
-    dead_terminal = update.index("if (validationAttemptFailed)", death_record)
-    native_dead_recovery = update.index(
+def test_terminal_failure_hold_remains_without_drudge_partial_death_latch():
+    alive_terminal = UPDATE_PREPARATION.index(
+        "if (!Cohort().ValidationAttemptFailureReason.empty()"
+    )
+    dead_member = UPDATE_PREPARATION.index("if (!context.Bot->IsAlive())")
+    assert alive_terminal < dead_member
+    assert "HoldValidationAttemptFailure(context.State, context.Bot);" in UPDATE_PREPARATION[
+        alive_terminal:dead_member
+    ]
+    assert 'state.LastDecisionAction = "validation_route_terminal_hold";' in UPDATE_PREPARATION
+    assert "CombatStop" not in UPDATE_PREPARATION[alive_terminal:dead_member]
+    death_record = UPDATE_DEATH.index("if (!state.DeathEpisodeRecorded)")
+    dead_terminal = UPDATE_DEATH.index(
+        "if (!Cohort().ValidationAttemptFailureReason.empty()", death_record
+    )
+    native_dead_recovery = UPDATE_DEATH.index(
         "bool const nativeDeathDecisionWindowComplete", dead_terminal
     )
     assert death_record < dead_terminal < native_dead_recovery
-    assert "holdValidationAttemptFailure();" in update[dead_terminal:native_dead_recovery]
+    assert "HoldValidationAttemptFailure(state, bot);" in UPDATE_DEATH[
+        dead_terminal:native_dead_recovery
+    ]
 
-    failure = 'Cohort().ValidationAttemptFailureReason =\n                    "drudge_partial_death_before_threat_seed";'
-    assert failure in IMPL
-    assert '<< ",\\\"failure_reason\\\":"' in IMPL
-    assert "Cohort().ValidationAttemptFailureAttemptId == Cohort().AttemptId" in IMPL
+    assert "drudge_partial_death_before_threat_seed" not in GROUP_RECOVERY
+    assert '<< ",\\\"failure_reason\\\":"' in STATUS
+    assert "Cohort().ValidationAttemptFailureAttemptId == Cohort().AttemptId" in UPDATE_PREPARATION
 
 
 def test_repeated_owned_destination_skips_floor_and_native_path_recalculation():

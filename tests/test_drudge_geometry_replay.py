@@ -389,7 +389,7 @@ def test_future_encounter_contamination_is_attempt_terminal_not_a_transient_hold
     assert "ValidationAttemptFailureRouteGeneration" in hold
 
 
-def test_second_same_source_rush_terminalizes_an_unclosed_native_reseparation():
+def test_second_same_source_rush_retains_diagnostic_without_terminalizing_pull():
     implementation = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatLog.cpp").read_text(
         encoding="utf-8"
     )
@@ -400,13 +400,7 @@ def test_second_same_source_rush_terminalizes_an_unclosed_native_reseparation():
         "void BotWorldPopulationMgr::NotifyNativeCreatureSpellLanded", start
     )
     callback = implementation[start:end]
-    assert "observation.SourceSpawnId == sourceSpawnId" in callback
-    assert "observation.Landed && !observation.ReseparationRecorded" in callback
-    latch = callback.index(
-        'Cohort().ValidationAttemptFailureReason =\n'
-        '            "drudge_reseparation_deadline_missed";'
-    )
-    append = callback.index(
-        "Party().ValidationRouteDrudgeChargeObservations.push_back"
-    )
-    assert latch < append
+    assert "drudge_reseparation_deadline_missed" not in callback
+    assert "Cohort().ValidationAttemptFailureReason" not in callback
+    assert "unclosed re-separation observation remains useful diagnostic evidence" in callback
+    assert "Party().ValidationRouteDrudgeChargeObservations.push_back" in callback
