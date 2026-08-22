@@ -341,7 +341,7 @@ def test_effective_stat_parity_admits_tuning_only_after_owner_and_pet_match():
     assert mismatch["status"] == "mismatch"
     assert mismatch["tuning_admitted"] is False
     assert mismatch["first_broken_edge"] == (
-        "effective_stat_application_before_rotation_execution"
+        "owner_effective_stat_application_before_rotation_execution"
     )
 
     gear_mismatch = build_review(
@@ -416,6 +416,26 @@ def test_self_provided_baseline_uses_debug_result_and_allows_favorable_stats():
         if row["stat"] == "intellect"
     )
     assert intellect["status"] == "mismatch"
+
+
+def test_effective_stat_parity_names_pet_inheritance_as_first_broken_edge():
+    runtime = _effective_stats_runtime()
+    pet = runtime["combat_calibration"]["previous_window"]["bots"][0][
+        "scoring_start_stats"
+    ]["pet"]
+    pet["spell_power"] = 5_500
+
+    parity = build_review(
+        wowsims_compute_stats=_compute_stats(),
+        wowsims_debug_result=_debug_result_with_pet_stats(),
+        runtime_report=runtime,
+    )["effective_stat_parity"]
+
+    assert parity["owner"]["status"] == "match"
+    assert parity["pet"]["status"] == "mismatch"
+    assert parity["first_broken_edge"] == (
+        "pet_stat_inheritance_before_rotation_execution"
+    )
 
 
 def test_consumable_parity_requires_inventory_backed_native_uses() -> None:

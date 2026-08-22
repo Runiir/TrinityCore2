@@ -3517,6 +3517,16 @@ def compare_effective_stats(
             else "mismatch"
         )
     )
+    if overall_status == "match":
+        first_broken_edge = None
+    elif owner_status != "match":
+        first_broken_edge = "owner_effective_stat_application_before_rotation_execution"
+    elif pet_comparison["status"] == "insufficient_data":
+        first_broken_edge = "wowsims_debug_pet_stat_reference"
+    elif pet_comparison["status"] == "mismatch":
+        first_broken_edge = "pet_stat_inheritance_before_rotation_execution"
+    else:
+        first_broken_edge = "effective_stat_application_before_rotation_execution"
     return {
         "status": overall_status,
         "tuning_admitted": overall_status == "match",
@@ -3530,11 +3540,7 @@ def compare_effective_stats(
         "primary_stat": primary_stat,
         "owner": {"status": owner_status, "checks": owner_checks},
         "pet": pet_comparison,
-        "first_broken_edge": (
-            None
-            if overall_status == "match"
-            else "effective_stat_application_before_rotation_execution"
-        ),
+        "first_broken_edge": first_broken_edge,
         "interpretation": (
             "Do not tune action priority or damage coefficients to hide a mismatch here. "
             "Repair setup, stat application, or pet inheritance first, then recapture."
