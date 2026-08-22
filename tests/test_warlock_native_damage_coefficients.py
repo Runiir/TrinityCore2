@@ -60,6 +60,7 @@ def test_affliction_modifier_diagnostics_observe_native_auras_without_applying_t
         (
             (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(),
             (ROOT / "src/server/game/Bots/BotWorldPopulationMgrAffliction.cpp").read_text(),
+            (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationBot.cpp").read_text(),
         )
     )
     header = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text()
@@ -80,7 +81,12 @@ def test_affliction_modifier_diagnostics_observe_native_auras_without_applying_t
 
 
 def test_pet_resource_contract_waits_for_native_regeneration_without_refilling() -> None:
-    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    source = "\n".join(
+        (
+            (ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdate.cpp").read_text(),
+            (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationReset.cpp").read_text(),
+        )
+    )
 
     assert "fixtureContract->PetResourceRequired" in source
     assert 'std::string_view(power.UnitKind) != "pet"' in source
@@ -91,7 +97,9 @@ def test_pet_resource_contract_waits_for_native_regeneration_without_refilling()
 
 
 def test_isolated_single_target_allows_one_target_shadowflame_without_multidot() -> None:
-    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    source = (
+        ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationBot.cpp"
+    ).read_text()
 
     assert "independently requires one damaged target plus zero off-target damage" in source
     assert "bool const forbidArea = false;" in source
@@ -103,7 +111,9 @@ def test_profile_range_prefilter_preserves_native_combat_reach() -> None:
     profile_source = (
         ROOT / "src/server/game/Bots/BotClassSpecActionProfile.cpp"
     ).read_text()
-    world_source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    world_source = (
+        ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp"
+    ).read_text()
     executor_source = (ROOT / "src/server/game/Bots/BotActionExecutor.cpp").read_text()
 
     assert "ProfileSpellMaximumRange" in profile_source
@@ -119,7 +129,12 @@ def test_profile_range_prefilter_preserves_native_combat_reach() -> None:
 
 
 def test_higher_priority_short_range_action_moves_before_long_range_filler() -> None:
-    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    source = "\n".join(
+        (
+            (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp").read_text(),
+            (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp").read_text(),
+        )
+    )
 
     assert "BotActionCandidate* bestRangeRecovery = nullptr;" in source
     assert 'candidate.RejectReason == "out_of_range"' in source
@@ -148,7 +163,13 @@ def test_higher_priority_short_range_action_moves_before_long_range_filler() -> 
 
 
 def test_shadowflame_uses_a_self_cast_with_a_hostile_range_anchor() -> None:
-    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    source = "\n".join(
+        (
+            (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatExecution.cpp").read_text(),
+            (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp").read_text(),
+            (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationRows.cpp").read_text(),
+        )
+    )
     migration = (
         ROOT / "sql/custom/world/2026_08_16_01_affliction_warlock_apl_rotation.sql"
     ).read_text()
