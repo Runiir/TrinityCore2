@@ -21,6 +21,14 @@ Compare bot choices with native boss/trash scripts and observed casts, auras, ta
 
 Also watch hazard exits, tank ownership, formations, add control, recovery/ready-check order, stuck/unstuck events, CPU/RSS, and log growth. Engagement or a wipe does not prove tactics or fidelity.
 
+For partial-death recovery, `raid_runtime.native_recovery` is not presence
+proof: it is scoped to full-wipe recovery and may remain false. Join final
+status with the affected bot's diagnose row and delta trace. Report ghost/map/
+corpse/current position, `recovery_attempt_count`, ordered
+`death_recovery_progress` results, and the exact matching
+`validation_route_recovery` rejection. Never conclude that recovery was not
+entered from the aggregate alone.
+
 ## Identify termination evidence
 
 - Success: the shard's declared gate is independently observable.

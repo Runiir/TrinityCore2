@@ -223,6 +223,22 @@ latest immutable handoff.
 - A generous emergency wall-clock cap may protect the host. Expiry is an
   infrastructure/noncompletion result, never a successful fight result.
 
+## Interpret recovery at the correct scope
+
+- Treat `raid_runtime.native_recovery` as a wipe-scoped aggregate. It may stay
+  false when one or several dead members have already released and started an
+  individual corpse run while the rest of the raid is alive.
+- For `native_runback_no_progress`, join the terminal status with each affected
+  bot's final `botauto diagnose` row and delta `botauto trace` events. Require
+  the ghost/map/corpse/current-position facts, `recovery_attempt_count`, and
+  ordered `death_recovery_progress` results such as
+  `native_release_requested`, `native_instance_runback_moving`, and
+  `native_instance_runback_path_retryable`.
+- Attribute the movement failure from the matching
+  `validation_route_recovery` event and retain its exact result, for example
+  `route_destination_invalid_floor`. Never report that recovery was not
+  entered solely because the wipe-scoped aggregate remained false.
+
 ## Keep roles separate
 
 - The coordinator builds, provisions, starts, stops, restarts, and mutates state.
