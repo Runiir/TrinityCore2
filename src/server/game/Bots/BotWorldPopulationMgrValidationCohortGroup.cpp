@@ -259,7 +259,7 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
                 || !HasNativeRaidCorpseAuthority(state, bot)))
                 invalidate(state, bot, "validation_active_untyped_recovery_transit");
 
-            if (bot->getClass() == CLASS_HUNTER)
+            if (bot->IsAlive() && bot->getClass() == CLASS_HUNTER)
             {
                 auto const admittedPet = admission.AdmissionReceiptByGuid.find(
                     state.Guid.GetCounter());

@@ -422,6 +422,33 @@ def test_active_hunter_pet_identity_is_reconciled_against_frozen_receipt() -> No
         assert forbidden not in code_only(active)
 
 
+def test_dead_hunter_skips_active_pet_reconciliation_but_living_hunter_requires_frozen_identity() -> None:
+    source = WORLD.read_text(encoding="utf-8")
+    admission = function_body(
+        source, "void BotWorldPopulationMgr::EnsureValidationCohortGroup"
+    )
+    active = admission[
+        admission.index("if (activeObservationOnly)") : admission.index(
+            "if (members.empty())"
+        )
+    ]
+    hunter_gate = "if (bot->IsAlive() && bot->getClass() == CLASS_HUNTER)"
+    assert hunter_gate in active
+    assert active.count("if (bot->getClass() == CLASS_HUNTER)") == 0
+
+    hunter_reconciliation = active[active.index(hunter_gate) :]
+    for token in (
+        "admission.AdmissionReceiptByGuid.find",
+        "!admittedPet->second.PetIdentityPresent",
+        "ObserveActiveOrdinaryHunterPet(bot, observedPet)",
+        "frozenPet.PetId == observedPet.PetId",
+        "frozenPet.PetEntry == observedPet.PetEntry",
+        "frozenPet.PetSpellbook == observedPet.Spellbook",
+        "frozenPet.PetSpellbookSha256 == observedPet.SpellbookSha256",
+    ):
+        assert token in hunter_reconciliation
+
+
 def test_certifying_routes_use_server_owned_manifest_entrance_placement() -> None:
     source = WORLD.read_text(encoding="utf-8")
     ensure_population = function_body(
