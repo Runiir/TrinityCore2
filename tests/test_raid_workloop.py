@@ -1,27 +1,94 @@
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from tools.raid_program import raid_workloop as workloop
 from tools.raid_program.spec_canary_contract import build_canary_pipeline
 
 
+def _reference_artifacts(*, debug: bool = False) -> dict[str, Any]:
+    artifacts = {
+        "generation_receipt": "artifacts/generation-receipt.json",
+        "raid_sim_request": "artifacts/native-request.json",
+        "raid_sim_result": "artifacts/native-result.json",
+        "compute_stats": "artifacts/compute-stats.json",
+    }
+    if debug:
+        artifacts["debug_raid_sim_request"] = "artifacts/debug-request.json"
+        artifacts["debug_raid_sim_result"] = "artifacts/debug-result.json"
+    return artifacts
+
+
 def test_canary_runner_binds_identity_manifest_pool_tag() -> None:
-    pipeline = build_canary_pipeline(
-        "affliction_warlock", {"generation_receipt": "fixture"}
-    )
+    pipeline = build_canary_pipeline("affliction_warlock", _reference_artifacts())
     flags = pipeline["capture"]["required_runner_flags"]
 
     assert "--bot-pool-tag all_spec_candidate_pool" in flags
 
 
 def test_affliction_canary_runner_requires_named_session_profile() -> None:
-    pipeline = build_canary_pipeline(
-        "affliction_warlock", {"generation_receipt": "fixture"}
-    )
+    pipeline = build_canary_pipeline("affliction_warlock", _reference_artifacts())
     flags = pipeline["capture"]["required_runner_flags"]
 
     assert "--session-profile affliction_canary" in flags
+
+
+def test_rotation_review_command_carries_exact_reference_artifacts() -> None:
+    artifacts = _reference_artifacts(debug=True)
+    pipeline = build_canary_pipeline("affliction_warlock", artifacts)
+
+    assert pipeline["state"] == "ready_for_capture"
+    review = pipeline["rotation_review"]
+    assert review["required_simulator_artifacts"] == [
+        "generation_receipt",
+        "raid_sim_request",
+        "raid_sim_result",
+        "compute_stats",
+    ]
+    argv = review["argv"]
+    assert argv[argv.index("--wowsims-apl") + 1] == artifacts["raid_sim_request"]
+    assert argv[argv.index("--wowsims-result") + 1] == artifacts["raid_sim_result"]
+    assert (
+        argv[argv.index("--wowsims-compute-stats") + 1]
+        == artifacts["compute_stats"]
+    )
+    assert (
+        argv[argv.index("--wowsims-debug-result") + 1]
+        == artifacts["debug_raid_sim_result"]
+    )
+    assert "--wowsims-compute-stats artifacts/compute-stats.json" in review[
+        "command"
+    ]
+
+
+def test_embedded_compute_stats_descriptor_is_not_reported_missing() -> None:
+    artifacts = _reference_artifacts()
+    artifacts["compute_stats"] = {"path": artifacts["compute_stats"]}
+
+    pipeline = build_canary_pipeline("affliction_warlock", artifacts)
+
+    assert pipeline["state"] == "ready_for_capture"
+    assert pipeline["rotation_review"]["compute_stats_input"] == (
+        "artifacts/compute-stats.json"
+    )
+
+
+def test_missing_compute_stats_blocks_capture_and_routes_reference_repair() -> None:
+    artifacts = _reference_artifacts()
+    artifacts["compute_stats"] = ""
+
+    pipeline = build_canary_pipeline("affliction_warlock", artifacts)
+
+    assert pipeline["state"] == "blocked_missing_rotation_review_artifacts"
+    assert pipeline["missing_required_simulator_artifacts"] == ["compute_stats"]
+    assert pipeline["blocked_before_gameplay_tuning"] is True
+    assert pipeline["capture"]["admitted"] is False
+    assert pipeline["routing"] == {
+        "owner_skill": "raid-wowsims-reference",
+        "first_broken_edge": "wowsims_compute_stats_reference",
+    }
 
 
 def test_frozen_roster_shape_and_dps_universe_are_explicit() -> None:

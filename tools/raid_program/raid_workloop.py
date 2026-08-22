@@ -542,22 +542,27 @@ def _promoted_reference_artifacts(
         return None
 
     def bundle_path(descriptor: Any) -> str | None:
-        if not isinstance(descriptor, Mapping) or not descriptor.get("path"):
+        # Normal promoted receipts carry a content-addressed descriptor, but
+        # preserve a repo-relative path if a hydrated artifact was already
+        # embedded by an upstream materialization step.
+        if isinstance(descriptor, Mapping):
+            descriptor = descriptor.get("path")
+        if not isinstance(descriptor, str) or not descriptor.strip():
             return None
-        return (WOWSIMS_BUNDLE / str(descriptor["path"])).as_posix()
+        return (WOWSIMS_BUNDLE / descriptor).as_posix()
 
     debug = receipt.get("debug_result") or {}
     proto = receipt.get("request_proto_validation") or {}
+    compute_stats = proto.get("compute_stats") or receipt.get("compute_stats")
     paths = {
         "generation_receipt": str(current["path"]),
         "raid_sim_request": bundle_path(receipt.get("native_request")),
         "raid_sim_result": bundle_path(receipt.get("native_result")),
-        "compute_stats": bundle_path(proto.get("compute_stats")),
+        "compute_stats": bundle_path(compute_stats),
         "debug_raid_sim_request": bundle_path(debug.get("request")),
         "debug_raid_sim_result": bundle_path(debug.get("native_result")),
     }
-    required = ("generation_receipt", "raid_sim_request", "raid_sim_result", "compute_stats")
-    return paths if all(paths[name] for name in required) else None
+    return paths
 
 
 def build_spec_work_unit(spec: str, root: Path = ROOT) -> dict[str, Any]:
@@ -621,10 +626,23 @@ def build_spec_work_unit(spec: str, root: Path = ROOT) -> dict[str, Any]:
         stale = exact["_candidate_details"]["stale"].get(spec)
         current = exact["_candidate_details"]["current"].get(spec)
         reference_artifacts = _promoted_reference_artifacts(spec, current, root)
+        canary_pipeline = build_canary_pipeline(
+            spec,
+            reference_artifacts
+            if accepted is not None
+            and accepted_class == "self_provided_baseline"
+            else None,
+        )
+        canary_ready = canary_pipeline.get("state") == "ready_for_capture"
         output["benchmark"] = {
             "state": (
                 "ready"
                 if accepted is not None
+                and accepted_class == "self_provided_baseline"
+                and canary_ready
+                else "blocked_rotation_review_reference"
+                if accepted is not None
+                and accepted_class == "self_provided_baseline"
                 else "hydrate_exact_reference"
                 if hydration_required
                 else "blocked_exact_reference"
@@ -642,6 +660,7 @@ def build_spec_work_unit(spec: str, root: Path = ROOT) -> dict[str, Any]:
             },
             "current_unpromoted_candidate": current,
             "stale_candidate_informational_only": stale,
+            "rotation_review_reference_artifacts": reference_artifacts,
             "reference_class_policy": {
                 "selected_acceptance_reference_class": "self_provided_baseline",
                 "difference_between_classes": "expected_non_blocking",
@@ -822,15 +841,13 @@ def build_spec_work_unit(spec: str, root: Path = ROOT) -> dict[str, Any]:
                     "static_aura_is_use_receipt": False,
                 },
             ],
-            "canary_pipeline": build_canary_pipeline(
-                spec,
-                reference_artifacts
-                if accepted is not None
-                and accepted_class == "self_provided_baseline"
-                else None,
-            ),
+            "canary_pipeline": canary_pipeline,
             "next_action": (
                 "run_self_provided_consumable_canary"
+                if accepted is not None
+                and accepted_class == "self_provided_baseline"
+                and canary_ready
+                else "repair_exact_rotation_review_reference_artifacts"
                 if accepted is not None
                 and accepted_class == "self_provided_baseline"
                 else "hydrate_current_reference_cohort"
