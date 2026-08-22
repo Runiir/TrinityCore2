@@ -26,6 +26,21 @@ def _stalled_native_path(now_ms: int, last_progress_ms: int,
     return "wait", repath_count
 
 
+def _matching_native_recovery_path(*, now_ms: int, expires_at_ms: int,
+                                   owner: str = "Recovery", active: bool = True,
+                                   traversal: str = "native_long_path",
+                                   dynamic_target_guid: int = 0,
+                                   attempt: int = 7, wipe: int = 3,
+                                   route: int = 11, node: str = "drudges") -> bool:
+    # Lease expiry is intentionally an observation detail, not part of the
+    # receipt-bound native-generator identity.
+    _ = (now_ms, expires_at_ms)
+    return (active and traversal == "native_long_path"
+            and dynamic_target_guid == 0 and owner == "Recovery"
+            and attempt == 7 and wipe == 3 and route == 11
+            and node == "drudges")
+
+
 def test_native_long_path_is_recovery_entrance_only() -> None:
     header = MOVEMENT_HEADER.read_text(encoding="utf-8")
     adapter = MOVEMENT_ADAPTER.read_text(encoding="utf-8")
@@ -151,3 +166,21 @@ def test_repath_keeps_native_executor_and_no_cheat_boundaries() -> None:
     for forbidden in ("TeleportTo(", "NearTeleportTo(", "ResurrectPlayer"):
         assert forbidden not in recovery
     assert "MovePoint(0, intent.X, intent.Y, intent.Z," in executor
+
+
+def test_native_repath_match_ignores_lease_expiry_but_preserves_scope() -> None:
+    recovery = RECOVERY.read_text(encoding="utf-8")
+    matcher = recovery[recovery.index("auto matchingNativeRecoveryPath"):
+                       recovery.index("auto observeNativeRecoveryMovement")]
+    assert "ExpiresAtMs" not in matcher
+
+    for now_ms, expires_at_ms in ((1499, 1500), (1500, 1500), (1501, 1500)):
+        assert _matching_native_recovery_path(
+            now_ms=now_ms, expires_at_ms=expires_at_ms
+        )
+    assert not _matching_native_recovery_path(
+        now_ms=1500, expires_at_ms=1500, owner="Route"
+    )
+    assert not _matching_native_recovery_path(
+        now_ms=1500, expires_at_ms=1500, route=12
+    )

@@ -182,7 +182,6 @@ bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot
             && state.ActivePathTargetGuid.IsEmpty()
             && state.MovementLease.MovementOwner
                 == BotMovementArbitration::Owner::Recovery
-            && state.MovementLease.ExpiresAtMs > nowMs
             && state.ActivePathAttemptId == Cohort().AttemptId
             && state.ActivePathWipeGeneration == wipeGeneration
             && state.ActivePathRouteGeneration == routeGeneration
