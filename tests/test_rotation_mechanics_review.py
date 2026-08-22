@@ -358,6 +358,66 @@ def test_effective_stat_parity_admits_tuning_only_after_owner_and_pet_match():
     )
 
 
+def test_self_provided_baseline_uses_debug_result_and_allows_favorable_stats():
+    runtime = _effective_stats_runtime(intellect=9_000)
+    player = runtime["combat_calibration"]["previous_window"]["bots"][0][
+        "scoring_start_stats"
+    ]["player"]
+    player["spell_power"] = 13_500
+    player["spell_crit_pct"] = 26
+    player["spell_speed_multiplier"] = 1.4
+    aggregate = {
+        "raidMetrics": {
+            "parties": [
+                {"players": [{"name": "canary", "actions": [], "pets": []}]}
+            ]
+        },
+        "iterationsDone": 1,
+    }
+
+    review = build_review(
+        wowsims_compute_stats=_compute_stats(),
+        wowsims_result=aggregate,
+        wowsims_debug_result=_debug_result_with_pet_stats(),
+        runtime_report=runtime,
+        reference_class="self_provided_baseline",
+    )
+
+    parity = review["effective_stat_parity"]
+    assert parity["status"] == "match"
+    assert parity["tuning_admitted"] is True
+    assert parity["comparison_mode"] == (
+        "one_sided_minimum_for_monotonic_throughput_stats"
+    )
+    assert {
+        row["stat"]
+        for row in parity["owner"]["checks"]
+        if row["status"] == "favorable"
+    } == {
+        "intellect",
+        "spell_power",
+        "spell_crit_pct",
+        "spell_speed_multiplier",
+    }
+    assert review["wowsims_result"]["debug_log_present"] is False
+    assert review["wowsims_debug_result"]["debug_log_present"] is True
+
+    lower = _effective_stats_runtime(intellect=7_000)
+    lower_review = build_review(
+        wowsims_compute_stats=_compute_stats(),
+        wowsims_debug_result=_debug_result_with_pet_stats(),
+        runtime_report=lower,
+        reference_class="self_provided_baseline",
+    )
+    assert lower_review["effective_stat_parity"]["status"] == "mismatch"
+    intellect = next(
+        row
+        for row in lower_review["effective_stat_parity"]["owner"]["checks"]
+        if row["stat"] == "intellect"
+    )
+    assert intellect["status"] == "mismatch"
+
+
 def test_consumable_parity_requires_inventory_backed_native_uses() -> None:
     request, _ = _gear_fixture()
     request["raid"]["parties"][0]["players"][0]["consumes"] = {

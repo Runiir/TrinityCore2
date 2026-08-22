@@ -117,6 +117,13 @@ broken edge; `insufficient_data` means recapture the missing artifact. In both
 cases stop rotation tuning rather than changing priorities or coefficients to
 hide the discrepancy.
 
+For `self_provided_baseline`, effective-stat `match` is one-sided only for
+monotonic throughput stats: exact parity or a higher Trinity value is admitted
+and marked `favorable`; lower values still fail. Gear identity and ratings stay
+exact. Pass the immutable aggregate result with `--wowsims-result` and the exact
+one-iteration log result with `--wowsims-debug-result`; never substitute the
+debug result for the DPS/action aggregate.
+
 For consumables, compare configured item IDs and native outcomes separately.
 Every spec receives its exact flask, food, pre-pot, and combat potion as
 inventory items. Food and flask require successful pre-score native item uses,

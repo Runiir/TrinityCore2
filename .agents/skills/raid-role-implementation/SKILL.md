@@ -64,6 +64,11 @@ core stat application, or pet inheritance; an `insufficient_data` result needs
 a scoring-start recapture or bound WoWSims stat artifact. Return that boundary
 instead of compensating with priorities, coefficients, or repeated search.
 
+For a `self_provided_baseline`, `effective_stat_parity.status=match` may include
+explicit `favorable` checks where a monotonic Trinity throughput stat is above
+the simulator minimum. A lower stat, gear drift, or secondary-rating drift is
+still a blocker.
+
 Stop at the first missing edge:
 
 ```text

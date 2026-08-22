@@ -3078,6 +3078,7 @@ def _stat_check(
     *,
     absolute_tolerance: float,
     relative_tolerance: float = 0.0,
+    allow_favorable_above: bool = False,
 ) -> dict[str, Any]:
     try:
         expected_value = float(expected)
@@ -3093,9 +3094,11 @@ def _stat_check(
         }
     delta = observed_value - expected_value
     allowed = max(absolute_tolerance, abs(expected_value) * relative_tolerance)
+    within_tolerance = abs(delta) <= allowed
+    favorable = allow_favorable_above and delta > allowed
     return {
         "stat": name,
-        "status": "match" if abs(delta) <= allowed else "mismatch",
+        "status": "favorable" if favorable else "match" if within_tolerance else "mismatch",
         "expected": expected_value,
         "observed": observed_value,
         "delta": delta,
@@ -3103,6 +3106,7 @@ def _stat_check(
         "allowed_delta": allowed,
         "absolute_tolerance": absolute_tolerance,
         "relative_tolerance": relative_tolerance,
+        "allow_favorable_above": allow_favorable_above,
     }
 
 
@@ -3257,8 +3261,10 @@ def compare_consumable_execution(
 
 def compare_effective_stats(
     wowsims_compute_stats: dict[str, Any] | None,
-    wowsims_result: dict[str, Any] | None,
+    wowsims_debug_result: dict[str, Any] | None,
     runtime: dict[str, Any] | None,
+    *,
+    reference_class: str | None = None,
 ) -> dict[str, Any]:
     basis = {
         "wowsims_owner": "ComputeStats.finalStats before dynamic combat procs",
@@ -3322,6 +3328,7 @@ def compare_effective_stats(
     expected_pseudo = final.get("pseudo_stats") or {}
     archetype = str(wowsims_compute_stats.get("archetype") or "")
     primary_stat = str(wowsims_compute_stats.get("primary_stat") or "")
+    one_sided_baseline = reference_class == "self_provided_baseline"
     owner_specs: list[tuple[str, Any, Any, float, float]] = [
         (primary_stat, expected_stats.get(primary_stat), observed_player.get(primary_stat), 1.1, 0.001),
         ("hit_rating", expected_stats.get("hit_rating"), observed_player.get("hit_rating"), 0.51, 0.0),
@@ -3385,18 +3392,35 @@ def compare_effective_stats(
             observed,
             absolute_tolerance=absolute,
             relative_tolerance=relative,
+            allow_favorable_above=(
+                one_sided_baseline
+                and name
+                in {
+                    primary_stat,
+                    "spell_power",
+                    "spell_crit_pct",
+                    "spell_speed_multiplier",
+                    "ranged_attack_power",
+                    "ranged_crit_pct",
+                    "ranged_speed_multiplier",
+                    "attack_power",
+                    "melee_crit_pct",
+                    "melee_speed_multiplier",
+                }
+            ),
         )
         for name, expected, observed, absolute, relative in owner_specs
         if name
     ]
     owner_status = (
         "match"
-        if owner_checks and all(row["status"] == "match" for row in owner_checks)
+        if owner_checks
+        and all(row["status"] in {"match", "favorable"} for row in owner_checks)
         else "mismatch"
     )
 
     observed_pet = runtime_row.get("pet") or {}
-    pet_references = ((wowsims_result or {}).get("timeline") or {}).get(
+    pet_references = ((wowsims_debug_result or {}).get("timeline") or {}).get(
         "pet_stat_references"
     ) or []
     initial_pet_stats = next(
@@ -3453,6 +3477,20 @@ def compare_effective_stats(
                 observed_pet.get(observed_key),
                 absolute_tolerance=absolute,
                 relative_tolerance=relative,
+                allow_favorable_above=(
+                    one_sided_baseline
+                    and expected_key
+                    in {
+                        "strength",
+                        "agility",
+                        "intellect",
+                        "attack_power",
+                        "spell_power",
+                        "physical_hit_percent",
+                        "spell_hit_percent",
+                        "physical_crit_percent",
+                    }
+                ),
             )
             for expected_key, observed_key, absolute, relative in pet_stat_pairs
             if expected_key in expected_pet
@@ -3460,7 +3498,8 @@ def compare_effective_stats(
         pet_comparison = {
             "status": (
                 "match"
-                if pet_checks and all(row["status"] == "match" for row in pet_checks)
+                if pet_checks
+                and all(row["status"] in {"match", "favorable"} for row in pet_checks)
                 else "mismatch"
             ),
             "source_entity": initial_pet_stats.get("source_entity"),
@@ -3482,6 +3521,11 @@ def compare_effective_stats(
         "status": overall_status,
         "tuning_admitted": overall_status == "match",
         "basis": basis,
+        "comparison_mode": (
+            "one_sided_minimum_for_monotonic_throughput_stats"
+            if one_sided_baseline
+            else "exact_parity"
+        ),
         "archetype": archetype,
         "primary_stat": primary_stat,
         "owner": {"status": owner_status, "checks": owner_checks},
@@ -3503,6 +3547,7 @@ def build_review(
     wowsims_apl: dict[str, Any] | None = None,
     wowsims_request: dict[str, Any] | None = None,
     wowsims_result: dict[str, Any] | None = None,
+    wowsims_debug_result: dict[str, Any] | None = None,
     wowsims_compute_stats: dict[str, Any] | None = None,
     wowsims_player_index: int = 0,
     trinity_profile: dict[str, Any] | None = None,
@@ -3529,6 +3574,11 @@ def build_review(
         "wowsims_result": (
             normalize_wowsims_result(wowsims_result, wowsims_player_index)
             if wowsims_result
+            else None
+        ),
+        "wowsims_debug_result": (
+            normalize_wowsims_result(wowsims_debug_result, wowsims_player_index)
+            if wowsims_debug_result
             else None
         ),
         "wowsims_compute_stats": (
@@ -3569,7 +3619,10 @@ def build_review(
         ),
     }
     review["effective_stat_parity"] = compare_effective_stats(
-        review["wowsims_compute_stats"], review["wowsims_result"], review["runtime"]
+        review["wowsims_compute_stats"],
+        review["wowsims_debug_result"] or review["wowsims_result"],
+        review["runtime"],
+        reference_class=reference_class,
     )
     review["gear_parity"] = compare_gear_identity(
         review["wowsims_gear"], review["runtime"]
@@ -3642,6 +3695,7 @@ def main() -> int:
     parser.add_argument("--wowsims-player-index", type=int, default=0)
     parser.add_argument("--reference-class")
     parser.add_argument("--wowsims-result", type=Path)
+    parser.add_argument("--wowsims-debug-result", type=Path)
     parser.add_argument("--wowsims-compute-stats", type=Path)
     parser.add_argument("--trinity-profile", type=Path)
     parser.add_argument("--trinity-worldserver-conf", type=Path)
@@ -3670,7 +3724,7 @@ def main() -> int:
             "database review requires --trinity-worldserver-conf, "
             "--trinity-class-id, and --trinity-spec-tag"
         )
-    if not any((args.wowsims_apl, args.wowsims_result, args.wowsims_compute_stats, args.trinity_profile, args.trinity_worldserver_conf, args.runtime_report, args.route_manifest)):
+    if not any((args.wowsims_apl, args.wowsims_result, args.wowsims_debug_result, args.wowsims_compute_stats, args.trinity_profile, args.trinity_worldserver_conf, args.runtime_report, args.route_manifest)):
         parser.error("provide at least one review input")
 
     sources: dict[str, Any] = {}
@@ -3684,6 +3738,11 @@ def main() -> int:
     wowsims_result = _load_json(args.wowsims_result) if args.wowsims_result else None
     if args.wowsims_result:
         sources["wowsims_result"] = _source_record(args.wowsims_result)
+    wowsims_debug_result = (
+        _load_json(args.wowsims_debug_result) if args.wowsims_debug_result else None
+    )
+    if args.wowsims_debug_result:
+        sources["wowsims_debug_result"] = _source_record(args.wowsims_debug_result)
     wowsims_compute_stats = (
         _load_json(args.wowsims_compute_stats)
         if args.wowsims_compute_stats
@@ -3719,6 +3778,7 @@ def main() -> int:
         wowsims_apl=apl,
         wowsims_request=wowsims_request,
         wowsims_result=wowsims_result,
+        wowsims_debug_result=wowsims_debug_result,
         wowsims_compute_stats=wowsims_compute_stats,
         wowsims_player_index=args.wowsims_player_index,
         trinity_profile=profile,

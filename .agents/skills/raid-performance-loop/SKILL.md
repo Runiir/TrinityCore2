@@ -50,6 +50,10 @@ Total-DPS claims additionally require
 `total_dps_comparison_gate.comparison_admitted = true`. Consumable mismatch
 fails that total-DPS gate without invalidating unaffected trace-only signals.
 
+For `self_provided_baseline`, the reviewer's `match` may contain explicit
+one-sided `favorable` throughput-stat checks. Do not reopen those as blockers;
+lower stats, gear drift, and rating drift remain blocking mismatches.
+
 `insufficient_data` routes to one bounded reference or capture work unit.
 `mismatch` routes to the owner of setup, stat application, or pet inheritance at
 the reported first-broken edge. Neither result may be retried as rotation tuning,
