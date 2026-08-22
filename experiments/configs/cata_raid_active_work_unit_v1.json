@@ -6,7 +6,7 @@
   "observed_at_commit": "ea84aba64af7c26ef06c2875af65806a9daf97fc",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_convergence_handoff.md",
-    "sha256": "019f704e6dc81068da2fb97adb23af48e070beffff872017e1c78179b1b1ed17"
+    "sha256": "aacdc38f031044f1cb0bff4265e2edd463f89b3f55078e6a536e80b0be8c124d"
   },
   "first_broken_edge": "native_runback_nonmonotonic_path_rejected",
   "decisive_evidence": {
@@ -46,5 +46,5 @@
     "matched_live_verification_runs": 1
   },
   "live_verification_owner_skill": "raid-shard-architecture",
-  "next_action": "Restore one recovery-only native long-path intent for the corpse-authorized map-0 entrance, equivalent to the historically live-proven MovePoint generatePath=true behavior. Keep MotionMaster exclusively in the movement executor, preserve the active native path, use forceDestination=false, and retain native area-trigger entry. Do not require each segment to reduce Euclidean distance to the final trigger, hardcode an unproven corridor, teleport, or force resurrection. Add focused regression coverage, obtain one policy-v8 coordinator build receipt, and run one clean completion-watchdog Magmaw shard. Do not tune Drudge damage, formation, taunts, class rotations, pets, or boss scripts from this evidence."
+  "next_action": "Restore one recovery-only native long-path intent for the corpse-authorized map-0 entrance, equivalent to the historically live-proven MovePoint generatePath=true behavior. Keep MotionMaster exclusively in the movement executor, preserve the active native path, use this core's MovePoint generatePath=true overload, and retain native area-trigger entry; this Trinity version exposes no forced-destination option. Do not require each segment to reduce Euclidean distance to the final trigger, hardcode an unproven corridor, teleport, or force resurrection. Add focused regression coverage, obtain one policy-v8 coordinator build receipt, and run one clean completion-watchdog Magmaw shard. Do not tune Drudge damage, formation, taunts, class rotations, pets, or boss scripts from this evidence."
 }

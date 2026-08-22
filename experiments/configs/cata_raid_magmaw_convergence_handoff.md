@@ -68,9 +68,10 @@ restore a recovery-only native long-path intent equivalent to the previously
 live-proven `MovePoint(..., generatePath=true)` behavior while keeping
 `MotionMaster` exclusively in the movement executor. The brain still submits
 only a typed move to the corpse-authorized entrance; the executor must preserve
-the active native path and use `forceDestination=false`. Do not hardcode an
-unproven corridor, require Euclidean distance to the final trigger to decrease,
-teleport, or force resurrection. Add focused regression coverage, then run one
+the active native path and use this core's `MovePoint(..., generatePath=true)`
+overload. This Trinity version exposes no forced-destination option. Do not
+hardcode an unproven corridor, require Euclidean distance to the final trigger
+to decrease, teleport, or force resurrection. Add focused regression coverage, then run one
 clean Magmaw completion-watchdog shard. Do not tune Drudge damage, formation,
 taunts, class rotations, pets, or boss scripts.
 
