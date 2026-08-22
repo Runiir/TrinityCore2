@@ -66,3 +66,20 @@ def test_warlock_pet_scaling_has_no_unmodified_owner_spell_power_calls():
     assert not re.search(
         r"SpellBaseDamageBonusDone\(SPELL_SCHOOL_MASK_(?:FIRE|SHADOW)\)", body
     )
+
+
+def test_warlock_pet_scaling_06_binds_owner_spell_crit_to_crit_effect():
+    body = SOURCE[
+        SOURCE.index("class spell_warl_pet_scaling_06") : SOURCE.index(
+            "class spell_warl_pet_passive"
+        )
+    ]
+
+    assert (
+        "DoEffectCalcAmount.Register(&spell_warl_pet_scaling_06::CalculateCritChanceBonus, "
+        "EFFECT_0, SPELL_AURA_MOD_CRIT_PCT);"
+    ) in body
+    assert (
+        "DoEffectCalcAmount.Register(&spell_warl_pet_scaling_06::CalculateMeleeHasteAmount, "
+        "EFFECT_0, SPELL_AURA_MOD_CRIT_PCT);"
+    ) not in body

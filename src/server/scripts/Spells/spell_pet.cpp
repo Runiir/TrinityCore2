@@ -367,7 +367,7 @@ class spell_warl_pet_scaling_06 : public AuraScript
 
     void Register() override
     {
-        DoEffectCalcAmount.Register(&spell_warl_pet_scaling_06::CalculateMeleeHasteAmount, EFFECT_0, SPELL_AURA_MOD_CRIT_PCT);
+        DoEffectCalcAmount.Register(&spell_warl_pet_scaling_06::CalculateCritChanceBonus, EFFECT_0, SPELL_AURA_MOD_CRIT_PCT);
         DoEffectCalcAmount.Register(&spell_warl_pet_scaling_06::CalculateMeleeHasteAmount, EFFECT_1, SPELL_AURA_MELEE_SLOW);
     }
 };
