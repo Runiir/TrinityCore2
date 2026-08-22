@@ -6281,9 +6281,16 @@ void AuraEffect::HandleProcTriggerSpellAuraProc(AuraApplication* aurApp, ProcEve
     if (SpellInfo const* triggeredSpellInfo = sSpellMgr->GetSpellInfo(triggerSpellId))
     {
         TC_LOG_DEBUG("spells", "AuraEffect::HandleProcTriggerSpellAuraProc: Triggering spell %u from aura %u proc", triggeredSpellInfo->Id, GetId());
-        triggerCaster->CastSpell(triggerTarget, triggeredSpellInfo->Id, CastSpellExtraArgs(this)
+        SpellCastResult const castResult = triggerCaster->CastSpell(triggerTarget, triggeredSpellInfo->Id, CastSpellExtraArgs(this)
             .SetTriggeringSpell(eventInfo.GetProcSpell())
             .SetTriggerFlags(TRIGGERED_FULL_MASK & ~(TRIGGERED_IGNORE_POWER_COST | TRIGGERED_IGNORE_REAGENT_COST)));
+        if (GetId() == 32392 && triggeredSpellInfo->Id == 32389)
+        {
+            SpellInfo const* eventSpellInfo = eventInfo.GetSpellInfo();
+            TC_LOG_DEBUG("spells", "shadow_embrace_proc {\"stage\":\"trigger_submission\",\"aura_spell_id\":%u,\"trigger_spell_id\":%u,\"event_entry\":%u,\"result\":%u,\"accepted\":%s}",
+                GetId(), triggeredSpellInfo->Id, eventSpellInfo ? eventSpellInfo->Id : 0,
+                uint32(castResult), castResult == SPELL_CAST_OK ? "true" : "false");
+        }
     }
     else if (triggerSpellId && GetAuraType() != SPELL_AURA_DUMMY)
         TC_LOG_ERROR("spells","AuraEffect::HandleProcTriggerSpellAuraProc: Could not trigger spell %u from aura %u proc, because the spell does not have an entry in Spell.dbc.", triggerSpellId, GetId());

@@ -84,8 +84,15 @@ def test_affliction_modifier_diagnostics_observe_native_auras_without_applying_t
     assert 'Cohort().CalibrationTargetSpec == "affliction_warlock"' in source
     assert "bot->HasAura(87339)" in source
     assert "bot->HasAura(77215)" in source
+    assert "bot->GetAura(32392, bot->GetGUID())" in source
     assert "fixtureTarget->HasAura(48181, bot->GetGUID())" in source
     assert "fixtureTarget->GetAura(32389," in source
+    assert "AfflictionShadowEmbraceCasterActiveTicks" in header
+    assert "AfflictionShadowEmbraceCasterEffectMask" in header
+    assert "AfflictionMaximumShadowEmbraceCasterStacks" in header
+    assert "shadow_embrace_caster_active_samples" in source
+    assert "shadow_embrace_caster_effect_mask" in source
+    assert "maximum_shadow_embrace_caster_stacks" in source
     assert "hauntModifier->IsAffectingSpell(corruption)" in source
     assert "shadowEmbraceModifier->IsAffectingSpell(corruption)" in source
     assert "fixtureTarget->SpellDamageBonusTaken(bot, corruption," in source
@@ -93,6 +100,26 @@ def test_affliction_modifier_diagnostics_observe_native_auras_without_applying_t
     assert '\\"affliction_modifier_observation\\"' in source
     assert "CastSpell(32389" not in source
     assert "AddAura(32389" not in source
+
+
+def test_shadow_embrace_diagnostic_traces_cover_only_native_proc_stages() -> None:
+    proc_filter = (ROOT / "src/server/game/Spells/Auras/SpellAuras.cpp").read_text()
+    trigger = (ROOT / "src/server/game/Spells/Auras/SpellAuraEffects.cpp").read_text()
+
+    assert "m_spellInfo->Id == 32392" in proc_filter
+    assert "eventSpellId == 686 || eventSpellId == 48181" in proc_filter
+    assert '"stage\\\":\\\"proc_filter' in proc_filter
+    assert '"event_entry\\\":%u' in proc_filter
+    assert '"effect_mask\\\":%u' in proc_filter
+    assert 'traceShadowEmbraceResult("accepted", "proc_chance", procEffectMask)' in proc_filter
+    assert 'traceShadowEmbraceResult("rejected", "effect_filter", procEffectMask)' in proc_filter
+
+    assert "GetId() == 32392 && triggeredSpellInfo->Id == 32389" in trigger
+    assert '"stage\\\":\\\"trigger_submission' in trigger
+    assert '"trigger_spell_id\\\":%u' in trigger
+    assert '"result\\\":%u' in trigger
+    assert "SpellCastResult const castResult = triggerCaster->CastSpell" in trigger
+    assert "castResult == SPELL_CAST_OK" in trigger
 
 
 def test_shadow_embrace_restores_canonical_all_ranks_native_proc_binding() -> None:

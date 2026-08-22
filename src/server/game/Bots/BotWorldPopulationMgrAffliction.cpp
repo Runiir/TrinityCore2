@@ -40,6 +40,15 @@ void BotWorldPopulationMgr::ObserveAfflictionCalibrationModifiers(
         ++metrics.AfflictionPotentAfflictionsActiveTicks;
     if (fixtureTarget->HasAura(48181, bot->GetGUID()))
         ++metrics.AfflictionHauntDebuffActiveTicks;
+    if (Aura const* shadowEmbraceCaster = bot->GetAura(32392, bot->GetGUID()))
+    {
+        ++metrics.AfflictionShadowEmbraceCasterActiveTicks;
+        metrics.AfflictionShadowEmbraceCasterEffectMask |=
+            shadowEmbraceCaster->GetEffectMask();
+        metrics.AfflictionMaximumShadowEmbraceCasterStacks =
+            std::max<uint8>(metrics.AfflictionMaximumShadowEmbraceCasterStacks,
+                shadowEmbraceCaster->GetStackAmount());
+    }
     if (Aura const* shadowEmbrace = fixtureTarget->GetAura(32389,
         bot->GetGUID()))
     {
@@ -98,6 +107,12 @@ std::string BotWorldPopulationMgr::AppendAfflictionCalibrationJson(
          << (metrics ? metrics->AfflictionPotentAfflictionsActiveTicks : 0)
          << ",\"haunt_debuff_active_samples\":"
          << (metrics ? metrics->AfflictionHauntDebuffActiveTicks : 0)
+         << ",\"shadow_embrace_caster_active_samples\":"
+         << (metrics ? metrics->AfflictionShadowEmbraceCasterActiveTicks : 0)
+         << ",\"shadow_embrace_caster_effect_mask\":"
+         << (metrics ? uint32(metrics->AfflictionShadowEmbraceCasterEffectMask) : 0)
+         << ",\"maximum_shadow_embrace_caster_stacks\":"
+         << (metrics ? uint32(metrics->AfflictionMaximumShadowEmbraceCasterStacks) : 0)
          << ",\"shadow_embrace_active_samples\":"
          << (metrics ? metrics->AfflictionShadowEmbraceActiveTicks : 0)
          << ",\"maximum_shadow_embrace_stacks\":"

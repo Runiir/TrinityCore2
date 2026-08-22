@@ -1801,39 +1801,71 @@ void Aura::ConsumeProcCharges(SpellProcEntry const* procEntry)
 
 uint8 Aura::GetProcEffectMask(AuraApplication* aurApp, ProcEventInfo& eventInfo, std::chrono::steady_clock::time_point now) const
 {
+    SpellInfo const* eventSpellInfo = eventInfo.GetSpellInfo();
+    uint32 const eventSpellId = eventSpellInfo ? eventSpellInfo->Id : 0;
+    bool const traceShadowEmbrace = m_spellInfo->Id == 32392
+        && (eventSpellId == 686 || eventSpellId == 48181);
+    auto traceShadowEmbraceResult = [&](char const* result, char const* reason, uint8 effectMask)
+    {
+        if (traceShadowEmbrace)
+            TC_LOG_DEBUG("spells", "shadow_embrace_proc {\"stage\":\"proc_filter\",\"aura_spell_id\":%u,\"event_entry\":%u,\"result\":\"%s\",\"reason\":\"%s\",\"effect_mask\":%u}",
+                m_spellInfo->Id, eventSpellId, result, reason, uint32(effectMask));
+    };
+
     SpellProcEntry const* procEntry = sSpellMgr->GetSpellProcEntry(GetId());
     // only auras with spell proc entry can trigger proc
     if (!procEntry)
+    {
+        traceShadowEmbraceResult("rejected", "missing_proc_entry", 0);
         return 0;
+    }
 
     // check spell triggering us
     if (Spell const* spell = eventInfo.GetProcSpell())
     {
         // Do not allow auras to proc from effect triggered from itself
         if (spell->IsTriggeredByAura(m_spellInfo))
+        {
+            traceShadowEmbraceResult("rejected", "triggered_by_same_aura", 0);
             return 0;
+        }
 
         // check if aura can proc when spell is triggered (exception for hunter auto shot & wands)
         if (!GetSpellInfo()->HasAttribute(SPELL_ATTR3_CAN_PROC_FROM_PROCS) && !(procEntry->AttributesMask & PROC_ATTR_TRIGGERED_CAN_PROC) && !(eventInfo.GetTypeMask() & AUTO_ATTACK_PROC_FLAG_MASK))
             if (spell->IsTriggered() && !spell->GetSpellInfo()->HasAttribute(SPELL_ATTR3_NOT_A_PROC))
+            {
+                traceShadowEmbraceResult("rejected", "triggered_spell_not_allowed", 0);
                 return 0;
+            }
 
         if (spell->m_CastItem && (procEntry->AttributesMask & PROC_ATTR_CANT_PROC_FROM_ITEM_CAST))
+        {
+            traceShadowEmbraceResult("rejected", "item_cast_not_allowed", 0);
             return 0;
+        }
 
         if (spell->GetSpellInfo()->HasAttribute(SPELL_ATTR4_SUPPRESS_WEAPON_PROCS) && GetSpellInfo()->HasAttribute(SPELL_ATTR6_AURA_IS_WEAPON_PROC))
+        {
+            traceShadowEmbraceResult("rejected", "weapon_proc_suppressed", 0);
             return 0;
+        }
 
         if (eventInfo.GetTypeMask() & TAKEN_HIT_PROC_FLAG_MASK)
         {
             if (spell->GetSpellInfo()->HasAttribute(SPELL_ATTR3_SUPPRESS_TARGET_PROCS)
                 && !GetSpellInfo()->HasAttribute(SPELL_ATTR7_CAN_PROC_FROM_SUPPRESSED_TARGET_PROCS))
+            {
+                traceShadowEmbraceResult("rejected", "target_proc_suppressed", 0);
                 return 0;
+            }
         }
         else
         {
             if (spell->GetSpellInfo()->HasAttribute(SPELL_ATTR3_SUPPRESS_CASTER_PROCS))
+            {
+                traceShadowEmbraceResult("rejected", "caster_proc_suppressed", 0);
                 return 0;
+            }
         }
     }
 
@@ -1842,34 +1874,55 @@ uint8 Aura::GetProcEffectMask(AuraApplication* aurApp, ProcEventInfo& eventInfo,
     {
         if (SpellInfo const* spellInfo = eventInfo.GetSpellInfo())
             if (spellInfo->HasAttribute(SPELL_ATTR0_CU_DONT_BREAK_STEALTH))
+            {
+                traceShadowEmbraceResult("rejected", "stealth_break", 0);
                 return 0;
+            }
     }
 
     // check if we have charges to proc with
     if (IsUsingCharges() && !GetCharges())
+    {
+        traceShadowEmbraceResult("rejected", "no_charges", 0);
         return 0;
+    }
 
     if (procEntry->AttributesMask & PROC_ATTR_REQ_SPELLMOD && (IsUsingCharges() || procEntry->AttributesMask & PROC_ATTR_USE_STACKS_FOR_CHARGES))
         if (Spell const* spell = eventInfo.GetProcSpell())
             if (!spell->m_appliedMods.contains(const_cast<Aura*>(this)))
+            {
+                traceShadowEmbraceResult("rejected", "spellmod_not_applied", 0);
                 return 0;
+            }
 
     // check proc cooldown
     if (IsProcOnCooldown(now))
+    {
+        traceShadowEmbraceResult("rejected", "proc_cooldown", 0);
         return 0;
+    }
 
     // do checks against db data
     if (!SpellMgr::CanSpellTriggerProcOnEvent(*procEntry, eventInfo))
+    {
+        traceShadowEmbraceResult("rejected", "db_filter", 0);
         return 0;
+    }
 
     // do checks using conditions table
     if (!sConditionMgr->IsObjectMeetingNotGroupedConditions(CONDITION_SOURCE_TYPE_SPELL_PROC, GetId(), eventInfo.GetActor(), eventInfo.GetActionTarget()))
+    {
+        traceShadowEmbraceResult("rejected", "condition_filter", 0);
         return 0;
+    }
 
     // AuraScript Hook
     bool check = const_cast<Aura*>(this)->CallScriptCheckProcHandlers(aurApp, eventInfo);
     if (!check)
+    {
+        traceShadowEmbraceResult("rejected", "script_filter", 0);
         return 0;
+    }
 
     // At least one effect has to pass checks to proc aura
     uint8 procEffectMask = aurApp->GetEffectMask();
@@ -1879,7 +1932,10 @@ uint8 Aura::GetProcEffectMask(AuraApplication* aurApp, ProcEventInfo& eventInfo,
                 procEffectMask &= ~(1u << i);
 
     if (!procEffectMask)
+    {
+        traceShadowEmbraceResult("rejected", "effect_filter", procEffectMask);
         return 0;
+    }
 
     /// @todo
     // do allow additional requirements for procs
@@ -1898,7 +1954,10 @@ uint8 Aura::GetProcEffectMask(AuraApplication* aurApp, ProcEventInfo& eventInfo,
             if (GetSpellInfo()->EquippedItemClass == ITEM_CLASS_WEAPON)
             {
                 if (target->ToPlayer()->IsInFeralForm())
+                {
+                    traceShadowEmbraceResult("rejected", "feral_form", procEffectMask);
                     return 0;
+                }
 
                 if (DamageInfo const* damageInfo = eventInfo.GetDamageInfo())
                 {
@@ -1923,25 +1982,41 @@ uint8 Aura::GetProcEffectMask(AuraApplication* aurApp, ProcEventInfo& eventInfo,
             }
 
             if (!item || item->IsBroken() || !item->IsFitToSpellRequirements(GetSpellInfo()))
+            {
+                traceShadowEmbraceResult("rejected", "equipment", procEffectMask);
                 return 0;
+            }
         }
     }
 
     if (m_spellInfo->HasAttribute(SPELL_ATTR3_ONLY_PROC_OUTDOORS))
         if (!target->IsOutdoors())
+        {
+            traceShadowEmbraceResult("rejected", "outdoors", procEffectMask);
             return 0;
+        }
 
     if (m_spellInfo->HasAttribute(SPELL_ATTR3_ONLY_PROC_ON_CASTER))
         if (target->GetGUID() != GetCasterGUID())
+        {
+            traceShadowEmbraceResult("rejected", "caster_only", procEffectMask);
             return 0;
+        }
 
     if (!m_spellInfo->HasAttribute(SPELL_ATTR4_ALLOW_PROC_WHILE_SITTING))
         if (!target->IsStandState())
+        {
+            traceShadowEmbraceResult("rejected", "sitting", procEffectMask);
             return 0;
+        }
 
     if (roll_chance_f(CalcProcChance(*procEntry, eventInfo)))
+    {
+        traceShadowEmbraceResult("accepted", "proc_chance", procEffectMask);
         return procEffectMask;
+    }
 
+    traceShadowEmbraceResult("rejected", "proc_chance", procEffectMask);
     return 0;
 }
 

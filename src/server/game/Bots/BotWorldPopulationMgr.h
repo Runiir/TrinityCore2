@@ -872,6 +872,9 @@ private:
         uint32 AfflictionShadowMasteryActiveTicks = 0;
         uint32 AfflictionPotentAfflictionsActiveTicks = 0;
         uint32 AfflictionHauntDebuffActiveTicks = 0;
+        uint32 AfflictionShadowEmbraceCasterActiveTicks = 0;
+        uint8 AfflictionShadowEmbraceCasterEffectMask = 0;
+        uint8 AfflictionMaximumShadowEmbraceCasterStacks = 0;
         uint32 AfflictionShadowEmbraceActiveTicks = 0;
         uint8 AfflictionMaximumShadowEmbraceStacks = 0;
         uint32 AfflictionHauntAffectsCorruptionTicks = 0;
