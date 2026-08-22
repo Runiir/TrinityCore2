@@ -40,6 +40,16 @@ Extract or reuse a deterministic C++ transition boundary when practical. Add
 focused tests for the recorded counterexample and nearby valid states. A
 source-shape test alone does not confirm native behavior.
 
+For set-and-forget native movement, distinguish the short arbitration lease
+from the native generator it admitted. A lease may expire exactly at the next
+decision cadence while the receipt-bound `MotionMaster` path is still active.
+Do not make observation, progress, or one-shot recovery predicates depend on
+`ExpiresAtMs > nowMs` unless the action itself requires a currently valid
+lease. Bind them instead to the recorded owner, attempt/wipe/route scope,
+destination, traversal mode, and observed native path state. Test the exact
+lease-expiry boundary at `nowMs == ExpiresAtMs`, plus one tick before and one
+tick after; a source-shape assertion is not enough.
+
 Use the queued build coordinator for every native build. Return a runtime
 verification plan to `raid-shard-architecture`; that coordinator runs at most
 one matched completion-watchdog shard. If the same edge remains, return a
