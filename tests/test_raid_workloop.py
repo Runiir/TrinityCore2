@@ -250,28 +250,28 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
         "boss:blackwing_descent:magmaw:25H:"
-        "native_repath_lease_expiry_predicate"
+        "native_repath_destination_z_transition"
     )
     assert active["owner_skill"] == "raid-bot-runtime-implementation"
     assert active["first_broken_edge"] == (
-        "native_repath_lease_expiry_predicate"
+        "native_repath_destination_z_transition"
     )
     evidence = active["decisive_evidence"]
     assert evidence["source_commit"] == (
-        "a09d5a83c4052a685f38c705765ee6edb6c12f38"
+        "cedeb5c933eacbae180b239d5058417b8b30c225"
     )
     assert evidence["binary_sha256"] == (
-        "b8d7bf129ce9324dd01048b3931b02305f4611151baf68d8ca2fe888e6a418a8"
+        "b8ca0dc6df346fac11452560c56c2e67322a1704a2763af8bb1be4c3689eb8a0"
     )
     assert evidence["report_dvc_pointer"] == (
         "artifacts/cata_raid_program/"
-        "phase1_foundation_a09d5a83c4_magmaw_run01_20260822.dvc"
+        "phase1_foundation_cedeb5c933_magmaw_run01_20260822.dvc"
     )
     assert evidence["report_sha256"] == (
-        "df293bf0c94d3d28c5a6b36e5b48cdd58aa419cb35535a07151fcde50f99c9d9"
+        "6c7ca3cabfac8a037c746b26d955ec61fab979714e59d49eb4c828aada665f88"
     )
     assert evidence["report_file_sha256"] == (
-        "81e72636605d03bcb5ffa72981aa5e28a8fedc7d1ad4b3c366dfed3e95da15e9"
+        "003421776435fd8b77101ea3860b5a4886d6648df0c0b4d6610d989c0c125383"
     )
     assert (
         evidence["route_generation"],
@@ -283,30 +283,26 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
         2,
         8,
     )
-    assert evidence["native_instance_runback_repath_submitted"] == 0
-    assert evidence["final_ghosts"] == [
-        {
-            "guid": 30001,
-            "position": [-7482.65, -1383.71, 416.664],
-            "outcome": "terminal",
-        },
-        {
-            "guid": 30002,
-            "position": [-7482.93, -1383.73, 416.785],
-            "outcome": "native_instance_runback_moving",
-        },
+    assert evidence["native_instance_runback_repath_submitted"] == 2
+    assert evidence["repath_submission_bot_guids"] == [30001, 30002]
+    assert evidence["repeated_repath_loop_observed"] is False
+    assert evidence["invalid_z_transition_bot_guid"] == 30001
+    assert evidence["invalid_z_transition_destination"] == [
+        -345.872,
+        -110,
+        214.207,
     ]
+    assert evidence["invalid_z_transition_path_state"] == "active_path_invalid"
+    assert evidence["invalid_z_transition_terminal_position"] == [
+        -7482.93,
+        -1379.73,
+        419.462,
+    ]
+    assert evidence["downstream_bot_guid"] == 30002
+    assert evidence["downstream_bot_state"] == "native_long_path/moving"
     assert evidence["trigger_rejoin_observed"] is False
     assert evidence["forbidden_assistance_observed"] is False
     assert evidence["cleanup_passed"] is True
-    assert evidence["request_expiry_offset_ms"] == 1500
-    assert evidence["recovery_decision_interval_ms"] == 1500
-    assert evidence["matching_native_recovery_path_predicate"] == (
-        "ExpiresAtMs>nowMs"
-    )
-    assert evidence["typed_move_lease_refresh_order"] == (
-        "after_matching_predicate"
-    )
     assert evidence["admitted_native_traversal_mode"] == "native_long_path"
     assert evidence["owner_scope_receipt_bound"] is True
     assert evidence["terminal_reason"] == "native_runback_no_progress"
@@ -314,9 +310,10 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
         "hypotheses": 1,
         "matched_live_verification_runs": 1,
     }
-    assert "native_repath_lease_expiry_predicate" in active[
+    assert "native_repath_destination_z_transition" in active[
         "next_action"
     ]
+    assert "native_repath_lease_expiry_predicate" not in active["next_action"]
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
@@ -396,12 +393,12 @@ def test_affliction_canary_exposes_pet_debug_reference_artifacts() -> None:
 def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     status = workloop.build_status()
 
-    assert status["active_work_unit"]["descriptor_valid"] is False
-    assert status["active_work_unit"]["ready_for_bounded_repair"] is False
+    assert status["active_work_unit"]["descriptor_valid"] is True
+    assert status["active_work_unit"]["ready_for_bounded_repair"] is True
     assert status["active_work_unit"]["first_broken_edge"] == (
-        "native_repath_lease_expiry_predicate"
+        "native_repath_destination_z_transition"
     )
-    assert status["active_work_unit"]["source_handoff"]["sha256"] != (
+    assert status["active_work_unit"]["source_handoff"]["sha256"] == (
         workloop._file_sha256(
             workloop.ROOT
             / "experiments/configs/cata_raid_magmaw_convergence_handoff.md"
@@ -409,12 +406,17 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:25H:"
-        "native_repath_lease_expiry_predicate"
+        "native_repath_destination_z_transition"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
         "raid-bot-runtime-implementation"
     )
-    assert status["current_program_next_action"] is None
+    assert status["current_program_next_action"] == status["active_work_unit"][
+        "next_action"
+    ]
+    assert "native_repath_lease_expiry_predicate" not in status[
+        "active_work_unit"
+    ]["next_action"]
     assert "legacy_program_next_action" not in status
 
 

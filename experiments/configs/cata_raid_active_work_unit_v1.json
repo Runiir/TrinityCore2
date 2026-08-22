@@ -1,21 +1,21 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:25H:native_repath_lease_expiry_predicate",
+  "work_unit": "boss:blackwing_descent:magmaw:25H:native_repath_destination_z_transition",
   "owner_skill": "raid-bot-runtime-implementation",
   "classification": "failed",
-  "observed_at_commit": "a09d5a83c4052a685f38c705765ee6edb6c12f38",
+  "observed_at_commit": "cedeb5c933eacbae180b239d5058417b8b30c225",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_convergence_handoff.md",
-    "sha256": "4899bab4de2c4313ca136b44a480b458b964c11ef918c713c12296e73b1d73ec"
+    "sha256": "79ee3850e14203beb03c0e22f4fedb89188e4e9e0255f8939026790750a2ac61"
   },
-  "first_broken_edge": "native_repath_lease_expiry_predicate",
+  "first_broken_edge": "native_repath_destination_z_transition",
   "decisive_evidence": {
-    "source_commit": "a09d5a83c4052a685f38c705765ee6edb6c12f38",
-    "binary_sha256": "b8d7bf129ce9324dd01048b3931b02305f4611151baf68d8ca2fe888e6a418a8",
-    "report_dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_a09d5a83c4_magmaw_run01_20260822.dvc",
-    "report_sha256": "df293bf0c94d3d28c5a6b36e5b48cdd58aa419cb35535a07151fcde50f99c9d9",
-    "report_file_sha256": "81e72636605d03bcb5ffa72981aa5e28a8fedc7d1ad4b3c366dfed3e95da15e9",
-    "elapsed_seconds": 309.101,
+    "source_commit": "cedeb5c933eacbae180b239d5058417b8b30c225",
+    "binary_sha256": "b8ca0dc6df346fac11452560c56c2e67322a1704a2763af8bb1be4c3689eb8a0",
+    "report_dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_cedeb5c933_magmaw_run01_20260822.dvc",
+    "report_sha256": "6c7ca3cabfac8a037c746b26d955ec61fab979714e59d49eb4c828aada665f88",
+    "report_file_sha256": "003421776435fd8b77101ea3860b5a4886d6648df0c0b4d6610d989c0c125383",
+    "elapsed_seconds": 369.610,
     "diagnostic_difficulty": "10N",
     "route_generation": 3,
     "route_node_index": 2,
@@ -24,26 +24,18 @@
     "deaths": 2,
     "dead_bots": 2,
     "living_bots_inside_instance": 8,
-    "native_instance_runback_repath_submitted": 0,
-    "final_ghosts": [
-      {
-        "guid": 30001,
-        "position": [-7482.65, -1383.71, 416.664],
-        "outcome": "terminal"
-      },
-      {
-        "guid": 30002,
-        "position": [-7482.93, -1383.73, 416.785],
-        "outcome": "native_instance_runback_moving"
-      }
-    ],
+    "native_instance_runback_repath_submitted": 2,
+    "repath_submission_bot_guids": [30001, 30002],
+    "repeated_repath_loop_observed": false,
+    "invalid_z_transition_bot_guid": 30001,
+    "invalid_z_transition_destination": [-345.872, -110, 214.207],
+    "invalid_z_transition_path_state": "active_path_invalid",
+    "invalid_z_transition_terminal_position": [-7482.93, -1379.73, 419.462],
+    "downstream_bot_guid": 30002,
+    "downstream_bot_state": "native_long_path/moving",
     "trigger_rejoin_observed": false,
     "forbidden_assistance_observed": false,
     "cleanup_passed": true,
-    "request_expiry_offset_ms": 1500,
-    "recovery_decision_interval_ms": 1500,
-    "matching_native_recovery_path_predicate": "ExpiresAtMs>nowMs",
-    "typed_move_lease_refresh_order": "after_matching_predicate",
     "admitted_native_traversal_mode": "native_long_path",
     "owner_scope_receipt_bound": true,
     "terminal_reason": "native_runback_no_progress"
@@ -66,5 +58,5 @@
     "matched_live_verification_runs": 1
   },
   "live_verification_owner_skill": "raid-shard-architecture",
-  "next_action": "Route exactly one work unit, native_repath_lease_expiry_predicate, to raid-bot-runtime-implementation: remove lease freshness only from observation/repath matching of an already-admitted active recovery native path. Preserve the recorded Recovery owner, active path, attempt/wipe/route/destination/traversal scope, and every existing terminal bound. Add deterministic before/equal/after expiry predicate coverage. Use one implementation hypothesis and one matched completion-watchdog Magmaw shard. Do not add coordinates, waypoints, teleport, resurrection, or boss/class/pet/Drudge tuning."
+  "next_action": "Route exactly one work unit, native_repath_destination_z_transition, to raid-bot-runtime-implementation: isolate the repeated route_destination_invalid_z_transition after the one admitted native repath for bot 30001. Preserve the existing native recovery owner, active path, attempt/wipe/route/destination/traversal scope, and terminal bounds. Do not add coordinates, waypoints, teleport, resurrection, or boss/class/pet/Drudge tuning. Use one implementation hypothesis and one matched completion-watchdog Magmaw shard."
 }
