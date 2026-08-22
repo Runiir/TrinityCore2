@@ -1,6 +1,6 @@
 # Magmaw convergence handoff — 2026-08-22
 
-This is a diagnostic history, not an acceptance claim. All five retained runs
+This is a diagnostic history, not an acceptance claim. All six retained runs
 used exact clean source/build/config identities, produced classified telemetry,
 observed native shutdown, returned bots and leases to zero, and recorded no
 forbidden assistance.
@@ -29,6 +29,7 @@ forbidden assistance.
 | `198bac19d6` | gameplay failure | Four Rushes landed, but exact ownership/re-separation never formed. |
 | `43521ba995` | gameplay failure | Only one Rush landed; hunter pet admission regressed during the extended pull. |
 | `69b230aae5` | gameplay failure | Four Rushes landed, but ownership/re-separation still failed and three bots died. |
+| `f3768b83d9` | infrastructure abort | Chainwielder cleared and the raid recovered from early deaths, but two dead tanks waited for a manufactured full wipe while eight survivors idled at the reset Drudge pack. The semantic watchdog closed the run after 302.8 seconds without progress. |
 
 The three Drudge policy edits after `8ef7d2f25c` did not converge and are not
 promotion-ready. Affliction SQL changes are also unpromoted until a fresh exact
@@ -44,20 +45,21 @@ Raid and dungeon success remains completion-driven, never time-driven.
 
 ## Next bounded work unit
 
-Change the Drudge watchdog from formation-contract termination to outcome
-tracking: continue while hostile health decreases, fail on a real wipe,
-semantic no-progress, repeated decisions, or failed recovery, and require
-native recovery before advancing after deaths. Then run one clean Magmaw shard
-against the resulting exact build. Do not add another lane/taunt tuning rule
-before that run shows the first remaining native edge.
+The outcome-based trash gate is now active. Commit `2679e3ca9f` fixes the first
+remaining trace-backed edge: full-wipe latching stays boss-only, while trash
+records a stable native hostile activity-to-inactivity transition and permits
+ordinary corpse runback after partial deaths. Build that exact source and run
+one clean Magmaw shard. Do not add another lane, taunt, or DPS rule before the
+run shows whether the raid recovers and continues.
 
 ## Evidence
 
-The five immutable diagnostic bundles are tracked by adjacent `.dvc` pointers.
+The six immutable diagnostic bundles are tracked by adjacent `.dvc` pointers.
 The latest report hashes are:
 
 - `198bac19d6`: `4c157675ff37d400c8ae0dba6672b40625c7262373115eedfaa2739057d80e2e`
 - `43521ba995`: `ee2f8487b40d4d229e5d06f41b047cb9aea38e0a2637391e234d16b75986ddc2`
 - `69b230aae5`: `5214b36af63b8082244bc167786467dedef5e91573ad3e467d79cd5685144f0f`
+- `f3768b83d9`: `d928b29fcc08aba19fe2b25fe13b2bb3e769231b248e278ed849b8c3f26b4378`
 
 The DVC cache and configured remote were verified in sync after publication.
