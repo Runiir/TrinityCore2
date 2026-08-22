@@ -320,8 +320,29 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
     assert active["runtime_verification_plan"]["identity"]["difficulty"] == "10N"
     assert active["runtime_verification_plan"]["fixed_success_timer_seconds"] is None
+    verification = active["runtime_verification_plan"]
+    assert verification["required_fix_commit"] == (
+        "f23b29f0f5a08f21e5044c16275ff235ed4d96a9"
+    )
+    assert verification["required_fix_commit_relation"] == (
+        "must_be_ancestor_of_live_build_receipt_commit"
+    )
+    assert verification["required_live_build_commit"] == (
+        "7f5acba803a61a6320836663421941175a38c451"
+    )
+    assert verification["required_live_build_tree"] == (
+        "6d68682d569d272f869182aefa7335cb9d7a5f91"
+    )
+    assert verification["live_build_receipt_contract"] == {
+        "must_bind_exact_commit": True,
+        "must_be_clean": True,
+        "required_fix_commit_is_ancestor": True,
+        "required_commit": "7f5acba803a61a6320836663421941175a38c451",
+    }
     assert "not a new implementation" in active["next_action"]
     assert "25H acceptance claim" in active["next_action"]
+    assert "as an ancestor" in active["next_action"]
+    assert "7f5acba803a61a6320836663421941175a38c451" in active["next_action"]
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
@@ -360,6 +381,9 @@ def test_magmaw_handoff_retains_cedeb_and_902_runs() -> None:
     assert "gameplay_failure_with_evidence_demux_classification_defect" in handoff
     assert "evidence_demux_required_action_missing:botauto_readycheck" in handoff
     assert "f23b29f0f5a08f21e5044c16275ff235ed4d96a9" in handoff
+    assert "7f5acba803a61a6320836663421941175a38c451" in handoff
+    assert "contains the required" in handoff
+    assert "do not treat" in handoff
     assert "exact 10N completion-watchdog verification" in handoff
     assert "not a new implementation" in handoff
     assert "not a 25H" in handoff

@@ -6,7 +6,7 @@
   "observed_at_commit": "902710a4ef45c63d9f735db75c39ed20aaf19d9b",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_convergence_handoff.md",
-    "sha256": "8db4da909df8b9a548761203968242cbbec9745a4b423e5f45decfd00e1a3bd2"
+    "sha256": "98265064e357de3f9831dae05264a7377926940d3c5170fcde348b98bb94bb78"
   },
   "first_broken_edge": "scoped_cross_map_native_recovery_admission_live_verification",
   "decisive_evidence": {
@@ -92,11 +92,20 @@
       "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
       "route_node_id": "bwd.magmaw.drudges"
     },
-    "required_source_commit": "f23b29f0f5a08f21e5044c16275ff235ed4d96a9",
+    "required_fix_commit": "f23b29f0f5a08f21e5044c16275ff235ed4d96a9",
+    "required_fix_commit_relation": "must_be_ancestor_of_live_build_receipt_commit",
+    "required_live_build_commit": "7f5acba803a61a6320836663421941175a38c451",
+    "required_live_build_tree": "6d68682d569d272f869182aefa7335cb9d7a5f91",
+    "live_build_receipt_contract": {
+      "must_bind_exact_commit": true,
+      "must_be_clean": true,
+      "required_fix_commit_is_ancestor": true,
+      "required_commit": "7f5acba803a61a6320836663421941175a38c451"
+    },
     "required_clock_policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "must_observe": [
-      "f23 source and binary identity in the build receipt",
+      "a live build receipt bound to exact clean descendant 7f5acba803a61a6320836663421941175a38c451 whose history contains required_fix_commit f23b29f0f5a08f21e5044c16275ff235ed4d96a9 as an ancestor",
       "Recovery-owner cross-map admission bound to the exact attempt, wipe, route, death episode, cohort, and native corpse authority",
       "native recovery progress and its typed terminal evidence without teleport, resurrection, forced destination, or route-scope substitution",
       "no forbidden assistance and cleanup with zero bots and zero leases"
@@ -107,5 +116,5 @@
       "Magmaw completion when the boss is not reached"
     ]
   },
-  "next_action": "Run exactly one 10N Magmaw completion-watchdog verification of f23b29f0f5a08f21e5044c16275ff235ed4d96a9 through raid-shard-architecture. Bind the scenario_id, runtime_profile, pool_tag, route manifest, frozen ten-member roster, assignment generation, source commit, and binary receipt; verify the scoped cross-map native recovery admission and its typed progress/terminal evidence. This is verification of the implemented fix, not a new implementation and not a 25H acceptance claim. Use no fixed success timer; terminate only on normal clear, semantic/no-progress, repeated decisions, excessive death loop, infrastructure loss, contamination, or explicit interruption."
+  "next_action": "Run exactly one 10N Magmaw completion-watchdog verification through raid-shard-architecture. Bind required_fix_commit f23b29f0f5a08f21e5044c16275ff235ed4d96a9 as an ancestor of the exact clean live build receipt commit 7f5acba803a61a6320836663421941175a38c451, plus the scenario_id, runtime_profile, pool_tag, route manifest, frozen ten-member roster, assignment generation, source tree, and binary receipt; verify the scoped cross-map native recovery admission and its typed progress/terminal evidence. This is verification of the implemented fix, not a new implementation and not a 25H acceptance claim. Use no fixed success timer; terminate only on normal clear, semantic/no-progress, repeated decisions, excessive death loop, infrastructure loss, contamination, or explicit interruption."
 }
