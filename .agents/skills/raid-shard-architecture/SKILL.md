@@ -23,6 +23,10 @@ Require one exact tuple across config, generated route, runtime status, capture,
   appends a server shutdown command and is non-accepting for such a canary.
   Cleanup stops and reads back only the named cohort and calibration fixture;
   it must report `worldserver_preserved=true` without changing the server epoch.
+- Keep pre-admission identity output separate from the session runner output.
+  Write the manifest and rotation profile under `<canary>/identity/`, and pass
+  a new or empty sibling `<canary>/run/` to `--output-dir`. Never prepopulate
+  the runner output directory with identity files.
 
 ## Compose routes
 

@@ -23,8 +23,8 @@ def build_canary_pipeline(
                 "--calibration-self-provided-baseline "
                 f"--profile-target-spec {spec} "
                 "--session-runtime-dir <owned-session-runtime-dir> "
-                "--profile-output <capture>/rotation-profile.json "
-                "--output <capture>/identity-manifest.json"
+                "--profile-output <canary>/identity/rotation-profile.json "
+                "--output <canary>/identity/identity-manifest.json"
             ),
             "runner_module": "tools.bot_ml.run_live_bot_validation",
             "validation_clock": {
@@ -40,9 +40,15 @@ def build_canary_pipeline(
                 "--transport session",
                 "--preserve-worldserver",
                 "--session-runtime-dir <owned-session-runtime-dir>",
-                "--evidence-identity-manifest <current-manifest.json>",
-                "--output-dir <new-closed-capture-dir>",
+                "--evidence-identity-manifest <canary>/identity/identity-manifest.json",
+                "--output-dir <canary>/run",
             ],
+            "directory_contract": {
+                "identity_dir": "<canary>/identity",
+                "runner_output_dir": "<canary>/run",
+                "runner_output_dir_must_be_new_or_empty": True,
+                "identity_files_must_not_be_written_to_runner_output_dir": True,
+            },
             "required_outputs": [
                 "closed runtime report",
                 "runtime botauto rotation dump",
@@ -59,19 +65,19 @@ def build_canary_pipeline(
             "reference_class": "self_provided_baseline",
             "simulator_artifacts": dict(reference_artifacts),
             "runtime_inputs": {
-                "trinity_profile": "<capture>/rotation-profile.json",
-                "runtime_report": "<capture>/report.json",
+                "trinity_profile": "<canary>/identity/rotation-profile.json",
+                "runtime_report": "<canary>/run/report.json",
             },
-            "output": "<capture>/rotation-review.json",
+            "output": "<canary>/rotation-review.json",
         },
         "acceptance_decision": {
             "owner_skill": "raid-performance-loop",
             "command": (
                 "pixi run python -m tools.bot_ml.spec_canary_gate "
-                "--review <capture>/rotation-review.json "
+                "--review <canary>/rotation-review.json "
                 f"--spec {spec} "
                 "--reference-class self_provided_baseline "
-                "--output <capture>/canary-decision.json"
+                "--output <canary>/canary-decision.json"
             ),
             "max_capture_attempts": 1,
             "max_fix_attempts": 1,

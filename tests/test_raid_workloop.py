@@ -189,12 +189,23 @@ def test_dps_work_unit_binds_all_duplicate_roster_slots() -> None:
         assert "--profile-target-spec fire_mage" in pipeline["capture"][
             "identity_manifest_command"
         ]
-        assert "--profile-output <capture>/rotation-profile.json" in pipeline[
+        assert "--profile-output <canary>/identity/rotation-profile.json" in pipeline[
             "capture"
         ]["identity_manifest_command"]
         assert "--session-runtime-dir <owned-session-runtime-dir>" in pipeline[
             "capture"
         ]["identity_manifest_command"]
+        assert pipeline["capture"]["directory_contract"] == {
+            "identity_dir": "<canary>/identity",
+            "runner_output_dir": "<canary>/run",
+            "runner_output_dir_must_be_new_or_empty": True,
+            "identity_files_must_not_be_written_to_runner_output_dir": True,
+        }
+        assert "--output-dir <canary>/run" in flags
+        assert pipeline["rotation_review"]["runtime_inputs"] == {
+            "trinity_profile": "<canary>/identity/rotation-profile.json",
+            "runtime_report": "<canary>/run/report.json",
+        }
         assert pipeline["rotation_review"]["owner_skill"] == (
             "raid-rotation-review"
         )
