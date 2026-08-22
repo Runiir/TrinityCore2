@@ -1121,6 +1121,10 @@ def _raw_target_scoring(
     reference_authority = _generated_reference_scoring_authority(
         str(calibration.get("target_spec") or "")
     )
+    if reference_authority.get("valid") is not True:
+        raise RawEvidenceBindingError(
+            "calibration has no verified generated DPS reference"
+        )
     reference_value = _number(reference_authority.get("reference_value"))
     hard_ratio = _number(contract.get("hard_reference_ratio"))
     optimization_ratio = _number(contract.get("optimization_reference_ratio"))

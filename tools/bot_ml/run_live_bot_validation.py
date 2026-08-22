@@ -402,6 +402,7 @@ def compact_published_report(report: Mapping[str, Any]) -> dict[str, Any]:
         "validation_route_manifest",
         "requested_calibration",
         "calibration_acceptance",
+        "role_calibration_record",
         "role_calibration_identity",
         "role_calibration_evaluation",
         "role_efficiency_audit",
@@ -5983,7 +5984,7 @@ def main() -> int:
         validation_route_manifest,
         session_lifecycle,
     )
-    AcceptanceRecomputer().recompute(
+    report = AcceptanceRecomputer().recompute(
         report,
         identity_required=True,
         session_required=args.transport == "session",

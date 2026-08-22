@@ -15,7 +15,10 @@ from tools.bot_ml.generate_bot_admission_identities import source_content_sha256
 from tools.bot_ml.raw_evidence_binding import (
     _derive_raw_reference_compatibility,
 )
-from tools.bot_ml.run_live_bot_validation import run_reusable_validation_session
+from tools.bot_ml.run_live_bot_validation import (
+    compact_published_report,
+    run_reusable_validation_session,
+)
 
 
 _REAL_GENERATED_REFERENCE_SCORING_AUTHORITY = (
@@ -830,6 +833,84 @@ def test_failed_dps_normalization_still_retains_the_raw_measurement(tmp_path: Pa
     assert scoring["hard_floor_passed"] is True
     assert scoring["optimization_target_met"] is True
     assert manifest["semantic_binding"]["evidence_kind"] == "dps_calibration"
+
+
+def test_compact_publication_input_retains_exact_generated_reference_binding(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    authority = _test_generated_reference_authority(31_312.966894306235)
+    monkeypatch.setattr(
+        raw_binding,
+        "_generated_reference_scoring_authority",
+        lambda _target_spec: authority,
+    )
+    calibration = _calibration_payload()
+    report = _calibration_report(calibration)
+    report["role_calibration_record"]["metrics"].update(
+        {
+            "reference_value": authority["reference_value"],
+            "reference_basis": authority["reference_basis"],
+        }
+    )
+    report["role_calibration_evaluation"]["record_sha256"] = lifecycle.canonical_sha256(
+        report["role_calibration_record"]
+    )
+
+    compact = compact_published_report(report)
+
+    assert compact["requested_calibration"] == report["requested_calibration"]
+    assert compact["role_calibration_record"]["metrics"]["reference_value"] == authority[
+        "reference_value"
+    ]
+    assert compact["role_calibration_record"]["metrics"]["reference_basis"] == (
+        "generated_verified_live_compatible_wowsims_dps"
+    )
+
+
+def test_missing_generated_reference_fails_closed_without_role_record(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.setattr(
+        raw_binding,
+        "_generated_reference_scoring_authority",
+        lambda _target_spec: {
+            "valid": False,
+            "reference_value": 0.0,
+            "reference_result_key": "",
+            "reference_basis": "generated_reference_unavailable",
+            "reference_request_catalog_sha256": "",
+        },
+    )
+    calibration = _calibration_payload()
+    report = _report_base()
+    report.update(
+        {
+            "calibration_only": True,
+            "requested_calibration": {
+                "mode": "single_target_300",
+                "target_spec": "fire_mage",
+                "seed": 3,
+            },
+            "combat_calibration": calibration,
+            "role_calibration_record": None,
+            "role_calibration_evaluation": {
+                "reference_ratio": 0.0,
+                "hard_floor_passed": False,
+                "optimization_target_met": False,
+                "record_sha256": None,
+                "policy_sha256": None,
+            },
+        }
+    )
+
+    with pytest.raises(
+        lifecycle.BatchLifecycleError,
+        match="raw semantic binding failed: calibration has no verified generated DPS reference",
+    ):
+        _capture_calibration(
+            tmp_path, report, [calibration, *_cleanup_payloads()]
+        )
 
 
 def test_off_target_damage_is_retained_as_failed_fixture_evidence(tmp_path: Path):
