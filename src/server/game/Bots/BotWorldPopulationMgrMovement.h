@@ -27,10 +27,10 @@ constexpr bool AllowsProgressiveSegments(
 // admission separate from ordinary progressive route segments so no combat,
 // formation, or support movement can bypass path planning.
 constexpr bool AllowsNativeLongPath(
-    BotMovementArbitration::Owner owner, bool nativeRecoveryEntranceReady)
+    BotMovementArbitration::Owner owner, bool nativeRecoveryEntranceRequired)
 {
     return owner == BotMovementArbitration::Owner::Recovery
-        && nativeRecoveryEntranceReady;
+        && nativeRecoveryEntranceRequired;
 }
 
 struct Intent

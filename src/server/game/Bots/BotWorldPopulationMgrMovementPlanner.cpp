@@ -55,7 +55,7 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         plan.SegmentX = intent.X;
         plan.SegmentY = intent.Y;
         plan.SegmentZ = intent.Z;
-        plan.TraversalMode = "native_recovery_long_path";
+        plan.TraversalMode = "native_long_path";
         plan.NativeLongPath = true;
         plan.Selected = true;
         return true;
