@@ -191,6 +191,7 @@ def test_evidence_identity_builder_can_bind_the_self_provided_server() -> None:
     )
 
     assert '"--calibration-self-provided-baseline"' in builder
+    assert '"--session-runtime-dir"' in builder
     assert (
         "calibration_reference_conditions="
         "not calibration_self_provided_baseline"

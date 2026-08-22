@@ -386,6 +386,15 @@ def main() -> int:
     parser.add_argument("--worldserver", type=Path, default=Path("build/src/server/worldserver/worldserver"))
     parser.add_argument("--config", type=Path, default=Path("trinity-worldserver-test.conf"))
     parser.add_argument("--session-environment", default="phase8-calibration")
+    parser.add_argument(
+        "--session-runtime-dir",
+        type=Path,
+        required=True,
+        help=(
+            "Stable out-of-tree directory shared with the reusable validation "
+            "runner for its generated worldserver config."
+        ),
+    )
     parser.add_argument("--soap-url", default="http://127.0.0.1:7878/")
     parser.add_argument("--soap-user", default=os.environ.get("TRINITY_SOAP_USER"))
     parser.add_argument("--soap-password", default=os.environ.get("TRINITY_SOAP_PASSWORD"))
@@ -418,7 +427,7 @@ def main() -> int:
         soap_url=args.soap_url,
         soap_user=args.soap_user,
         soap_password=args.soap_password,
-        identity_config_dir=output_path.parent / "identity_runtime_config",
+        identity_config_dir=args.session_runtime_dir.resolve(),
         calibration_self_provided_baseline=(
             args.calibration_self_provided_baseline
         ),

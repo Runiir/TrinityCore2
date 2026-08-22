@@ -192,6 +192,9 @@ def test_dps_work_unit_binds_all_duplicate_roster_slots() -> None:
         assert "--profile-output <capture>/rotation-profile.json" in pipeline[
             "capture"
         ]["identity_manifest_command"]
+        assert "--session-runtime-dir <owned-session-runtime-dir>" in pipeline[
+            "capture"
+        ]["identity_manifest_command"]
         assert pipeline["rotation_review"]["owner_skill"] == (
             "raid-rotation-review"
         )

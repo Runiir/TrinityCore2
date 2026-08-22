@@ -22,6 +22,7 @@ def build_canary_pipeline(
                 "tools.bot_ml.build_phase8_evidence_identity_manifest "
                 "--calibration-self-provided-baseline "
                 f"--profile-target-spec {spec} "
+                "--session-runtime-dir <owned-session-runtime-dir> "
                 "--profile-output <capture>/rotation-profile.json "
                 "--output <capture>/identity-manifest.json"
             ),
