@@ -1,6 +1,6 @@
 # Magmaw convergence handoff — 2026-08-22
 
-This is a diagnostic history, not an acceptance claim. All ten retained runs
+This is a diagnostic history, not an acceptance claim. All eleven retained runs
 used exact clean source/build/config identities, produced classified telemetry,
 observed native shutdown, returned bots and leases to zero, and recorded no
 forbidden assistance.
@@ -32,6 +32,10 @@ forbidden assistance.
   can commit one ordinary local movement segment. Both dead tanks moved from
   the native graveyard to `(-7334.46,-1626.77,283.392)` before the greedy
   progressive planner rejected the next non-monotonic corridor edge.
+- The `d98451124d` canary accepts `native_runback_nonmonotonic_path_rejected`:
+  route generation 3, node index 2 (`bwd.magmaw.drudges`), recorded one kill,
+  two deaths, and eight living bots. Cleanup passed with no forbidden
+  assistance.
 
 ## What did not work
 
@@ -47,6 +51,7 @@ forbidden assistance.
 | `22282882a0` | gameplay failure | The progressive native-rejoin repair was compiled, but no dead member left map 669, so that edge was not exercised. At 435.3 seconds a dead hunter had no active pet while its pet DB row remained intact; `validation_active_hunter_pet_missing` ran before dead-bot recovery and terminalized the shard with six survivors. |
 | `5756bb492f` | gameplay failure | The dead-hunter pet gate did not recur. Three dead members released to map 0 while seven survivors remained inside. All three stayed at the same graveyard position while entrance movement returned `native_instance_runback_path_retryable`; the first tank exhausted six attempts and terminalized as `native_runback_no_progress` at 273.858 seconds. |
 | `ea84aba64a` | gameplay failure | Two dead tanks released to map 0 and each committed three `native_instance_runback_moving` decisions, reaching one shared local endpoint. The next winding-corridor edge did not reduce straight-line distance to entrance trigger 6581, so the planner returned `route_destination_invalid_floor`; the first tank exhausted nine attempts and terminalized at 283.884 seconds. The full-wipe aggregate remained false because eight members were alive, but per-bot diagnose/trace proves individual recovery was active. |
+| `d98451124d` | gameplay failure | The single canary reached Drudge generation 3 with one kill, two deaths, and eight alive. Ghost 30001 reached `(-7482.93,-1383.73,416.785)`, stopped for more than 30 seconds, and terminalized; ghost 30002 reached `(-7530.67,-1258.93,471.885)` and remained `native_instance_runback_moving`. No trigger/reclaim/rejoin was observed; the watchdog closed `native_runback_no_progress` at 304.114 seconds. |
 
 The three Drudge policy edits after `8ef7d2f25c` did not converge and are not
 promotion-ready. Affliction SQL changes are also unpromoted until a fresh exact
@@ -62,22 +67,19 @@ Raid and dungeon success remains completion-driven, never time-driven.
 
 ## Next bounded work unit
 
-The dead-hunter pet gate is proven fixed, and the invalid-final-floor hypothesis
-is consumed. The next work unit is the non-monotonic native entrance path:
-restore a recovery-only native long-path intent equivalent to the previously
-live-proven `MovePoint(..., generatePath=true)` behavior while keeping
-`MotionMaster` exclusively in the movement executor. The brain still submits
-only a typed move to the corpse-authorized entrance; the executor must preserve
-the active native path and use this core's `MovePoint(..., generatePath=true)`
-overload. This Trinity version exposes no forced-destination option. Do not
-hardcode an unproven corridor, require Euclidean distance to the final trigger
-to decrease, teleport, or force resurrection. Add focused regression coverage, then run one
-clean Magmaw completion-watchdog shard. Do not tune Drudge damage, formation,
-taunts, class rotations, pets, or boss scripts.
+The dead-hunter pet gate and invalid-final-floor hypothesis are proven consumed.
+The single next work unit is `native_runback_progress_witness_and_single_repath`,
+owned by `raid-bot-runtime-implementation`: count recovery-owned native
+position/path advancement as progress even when final-distance is non-monotonic;
+when that recovery-owned path is invalid and position is unchanged for the
+bounded interval, permit exactly one native re-path, then retain the existing
+30-second/retry terminal bound. Do not add coordinates, waypoints, teleport,
+resurrection, or boss/class/pet/Drudge tuning. Use one implementation
+hypothesis and one matched completion-watchdog shard.
 
 ## Evidence
 
-The nine immutable diagnostic bundles are tracked by adjacent `.dvc` pointers.
+The eleven immutable diagnostic bundles are tracked by adjacent `.dvc` pointers.
 The latest report hashes are:
 
 - `198bac19d6`: `4c157675ff37d400c8ae0dba6672b40625c7262373115eedfaa2739057d80e2e`
@@ -88,5 +90,14 @@ The latest report hashes are:
 - `22282882a0`: `1194187be0ba4581b5cbb1da2c5cc9aef9f24f95332598f5a554e8e4daf54b0a`
 - `5756bb492f`: `85e88cfff9ca7fada210217ac64760bba7a2a778d69ca3fd0429cc1f7b928db1`
 - `ea84aba64a`: `b54847e3be211261a9f49673cbb5cb3a65fa90d9259ebd5305074bcedecfc9ed`
+- `d98451124d`: `462dcd4b06c3e729ec87d5e7dcccb1efc1e10617ec77036a8f93aaf78807ff10`
+
+The d984 canary is bound to source commit
+`d98451124d343fdb49ae6718c70cd4dfdfb9f762`, worldserver binary SHA-256
+`0b74313eea45f657d983dec6d11a7b2d4340811e64822ca91cf8162962cc7eb8`, and
+the DVC pointer
+`artifacts/cata_raid_program/phase1_foundation_d98451124d_magmaw_run01_20260822.dvc`.
+The retained report file SHA-256 is
+`6527e539440cf93a096d4b6bafd247db1595a2ec9b8f5424b60c7503e179f7e8`.
 
 The DVC cache and configured remote were verified in sync after publication.

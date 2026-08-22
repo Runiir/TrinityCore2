@@ -1,31 +1,46 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:25H:native_rejoin_long_path",
+  "work_unit": "boss:blackwing_descent:magmaw:25H:native_rejoin_progress_witness_and_single_repath",
   "owner_skill": "raid-bot-runtime-implementation",
   "classification": "failed",
-  "observed_at_commit": "ea84aba64af7c26ef06c2875af65806a9daf97fc",
+  "observed_at_commit": "d98451124d343fdb49ae6718c70cd4dfdfb9f762",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_convergence_handoff.md",
-    "sha256": "aacdc38f031044f1cb0bff4265e2edd463f89b3f55078e6a536e80b0be8c124d"
+    "sha256": "d00fde5db95f7dfc63b40a2c471bfcbafc9796e438222aa62b43c5c1ae768cb2"
   },
-  "first_broken_edge": "native_runback_nonmonotonic_path_rejected",
+  "first_broken_edge": "native_runback_progress_witness_and_single_repath",
   "decisive_evidence": {
-    "report_dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_ea84aba64a_magmaw_run01_20260822.dvc",
-    "report_sha256": "b54847e3be211261a9f49673cbb5cb3a65fa90d9259ebd5305074bcedecfc9ed",
-    "elapsed_seconds": 283.884,
+    "source_commit": "d98451124d343fdb49ae6718c70cd4dfdfb9f762",
+    "binary_sha256": "0b74313eea45f657d983dec6d11a7b2d4340811e64822ca91cf8162962cc7eb8",
+    "report_dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_d98451124d_magmaw_run01_20260822.dvc",
+    "report_sha256": "462dcd4b06c3e729ec87d5e7dcccb1efc1e10617ec77036a8f93aaf78807ff10",
+    "report_file_sha256": "6527e539440cf93a096d4b6bafd247db1595a2ec9b8f5424b60c7503e179f7e8",
+    "elapsed_seconds": 304.114,
     "diagnostic_difficulty": "10N",
+    "route_generation": 3,
+    "route_node_index": 2,
+    "route_node_id": "bwd.magmaw.drudges",
+    "kills": 1,
+    "deaths": 2,
     "dead_bots": 2,
     "living_bots_inside_instance": 8,
-    "failed_native_runback_attempts": 9,
-    "ghost_map_id": 0,
-    "native_graveyard_position": [-7316.97, -1648.84, 282.085],
     "last_progress_position": [-7334.46, -1626.77, 283.392],
-    "entrance_trigger_id": 6581,
-    "entrance_position": [-7542.91015625, -1184.9300537109375, 482.0],
-    "moving_decisions_before_rejection": 3,
-    "entrance_movement_result": "native_instance_runback_path_retryable",
-    "planner_rejection": "route_destination_invalid_floor",
-    "historical_native_long_path_success_commit": "291653c1549d972c0f363e9505e30e3462db5e31",
+    "last_progress_source_commit": "ea84aba64af7c26ef06c2875af65806a9daf97fc",
+    "final_ghosts": [
+      {
+        "guid": 30001,
+        "position": [-7482.93, -1383.73, 416.785],
+        "outcome": "stopped_over_30s_then_terminalized"
+      },
+      {
+        "guid": 30002,
+        "position": [-7530.67, -1258.93, 471.885],
+        "outcome": "native_instance_runback_moving"
+      }
+    ],
+    "trigger_reclaim_rejoin_observed": false,
+    "forbidden_assistance_observed": false,
+    "cleanup_passed": true,
     "terminal_reason": "native_runback_no_progress"
   },
   "validation_clock": {
@@ -46,5 +61,5 @@
     "matched_live_verification_runs": 1
   },
   "live_verification_owner_skill": "raid-shard-architecture",
-  "next_action": "Restore one recovery-only native long-path intent for the corpse-authorized map-0 entrance, equivalent to the historically live-proven MovePoint generatePath=true behavior. Keep MotionMaster exclusively in the movement executor, preserve the active native path, use this core's MovePoint generatePath=true overload, and retain native area-trigger entry; this Trinity version exposes no forced-destination option. Do not require each segment to reduce Euclidean distance to the final trigger, hardcode an unproven corridor, teleport, or force resurrection. Add focused regression coverage, obtain one policy-v8 coordinator build receipt, and run one clean completion-watchdog Magmaw shard. Do not tune Drudge damage, formation, taunts, class rotations, pets, or boss scripts from this evidence."
+  "next_action": "Route exactly one work unit, native_runback_progress_witness_and_single_repath, to raid-bot-runtime-implementation: count recovery-owned native position/path advancement as progress even when final-distance is non-monotonic. If the recovery-owned native path is invalid and position is unchanged for the bounded interval, permit exactly one native re-path before retaining the existing 30-second/retry terminal bound. Use one implementation hypothesis and one matched completion-watchdog Magmaw shard. Do not add coordinates, waypoints, teleport, resurrection, or boss/class/pet/Drudge tuning."
 }

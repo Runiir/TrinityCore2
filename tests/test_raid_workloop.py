@@ -247,9 +247,69 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert magmaw["source_present"] is True
     assert magmaw["validation_clock"]["policy"] == "completion_watchdog"
     assert magmaw["validation_clock"]["fixed_success_timer_seconds"] is None
-    assert magmaw["active_program_work_unit"]["first_broken_edge"] == (
-        "native_runback_nonmonotonic_path_rejected"
+    active = magmaw["active_program_work_unit"]
+    assert active["work_unit"] == (
+        "boss:blackwing_descent:magmaw:25H:"
+        "native_rejoin_progress_witness_and_single_repath"
     )
+    assert active["owner_skill"] == "raid-bot-runtime-implementation"
+    assert active["first_broken_edge"] == (
+        "native_runback_progress_witness_and_single_repath"
+    )
+    evidence = active["decisive_evidence"]
+    assert evidence["source_commit"] == (
+        "d98451124d343fdb49ae6718c70cd4dfdfb9f762"
+    )
+    assert evidence["binary_sha256"] == (
+        "0b74313eea45f657d983dec6d11a7b2d4340811e64822ca91cf8162962cc7eb8"
+    )
+    assert evidence["report_dvc_pointer"] == (
+        "artifacts/cata_raid_program/"
+        "phase1_foundation_d98451124d_magmaw_run01_20260822.dvc"
+    )
+    assert evidence["report_sha256"] == (
+        "462dcd4b06c3e729ec87d5e7dcccb1efc1e10617ec77036a8f93aaf78807ff10"
+    )
+    assert evidence["report_file_sha256"] == (
+        "6527e539440cf93a096d4b6bafd247db1595a2ec9b8f5424b60c7503e179f7e8"
+    )
+    assert (
+        evidence["route_generation"],
+        evidence["route_node_index"],
+        evidence["route_node_id"],
+    ) == (3, 2, "bwd.magmaw.drudges")
+    assert (evidence["kills"], evidence["deaths"], evidence["living_bots_inside_instance"]) == (
+        1,
+        2,
+        8,
+    )
+    assert evidence["last_progress_position"] == [-7334.46, -1626.77, 283.392]
+    assert evidence["last_progress_source_commit"] == (
+        "ea84aba64af7c26ef06c2875af65806a9daf97fc"
+    )
+    assert evidence["final_ghosts"] == [
+        {
+            "guid": 30001,
+            "position": [-7482.93, -1383.73, 416.785],
+            "outcome": "stopped_over_30s_then_terminalized",
+        },
+        {
+            "guid": 30002,
+            "position": [-7530.67, -1258.93, 471.885],
+            "outcome": "native_instance_runback_moving",
+        },
+    ]
+    assert evidence["trigger_reclaim_rejoin_observed"] is False
+    assert evidence["forbidden_assistance_observed"] is False
+    assert evidence["cleanup_passed"] is True
+    assert evidence["terminal_reason"] == "native_runback_no_progress"
+    assert active["implementation_budget"] == {
+        "hypotheses": 1,
+        "matched_live_verification_runs": 1,
+    }
+    assert "native_runback_progress_witness_and_single_repath" in active[
+        "next_action"
+    ] or "native re-path" in active["next_action"]
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
@@ -303,7 +363,20 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     assert status["active_work_unit"]["descriptor_valid"] is True
     assert status["active_work_unit"]["ready_for_bounded_repair"] is True
     assert status["active_work_unit"]["first_broken_edge"] == (
-        "native_runback_nonmonotonic_path_rejected"
+        "native_runback_progress_witness_and_single_repath"
+    )
+    assert status["active_work_unit"]["source_handoff"]["sha256"] == (
+        workloop._file_sha256(
+            workloop.ROOT
+            / "experiments/configs/cata_raid_magmaw_convergence_handoff.md"
+        )
+    )
+    assert status["required_next_work_unit"]["work_unit"] == (
+        "boss:blackwing_descent:magmaw:25H:"
+        "native_rejoin_progress_witness_and_single_repath"
+    )
+    assert status["required_next_work_unit"]["owner_skill"] == (
+        "raid-bot-runtime-implementation"
     )
     assert status["current_program_next_action"] == status["active_work_unit"][
         "next_action"
