@@ -42,13 +42,6 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         return true;
     }
 
-    float const floorZ = bot->GetMap()->GetHeight(bot->GetPhaseShift(),
-        intent.X, intent.Y, intent.Z + 2.0f, true, 8.0f);
-    if (floorZ <= INVALID_HEIGHT)
-        return reject("route_destination_invalid_floor");
-    if (std::fabs(floorZ - intent.Z) > 4.0f)
-        return reject("route_destination_invalid_z_transition");
-
     float segmentX = intent.X;
     float segmentY = intent.Y;
     float segmentZ = intent.Z;
@@ -56,6 +49,17 @@ bool BotWorldPopulationMgr::PlanMovementPath(
     bool segmentSelected = false;
     bool const progressiveStaticRoute = intent.AllowProgressiveSegments;
     bool const strictNativeDescent = intent.RequireCompletePath;
+    float const floorZ = bot->GetMap()->GetHeight(bot->GetPhaseShift(),
+        intent.X, intent.Y, intent.Z + 2.0f, true, 8.0f);
+    bool const targetFloorValid = floorZ > INVALID_HEIGHT;
+    // A progressive route can still make a validated local step when its
+    // final native runback target has no floor sample in the current map
+    // state.  Complete-path and strict-descent intents remain fail-closed at
+    // the target-floor gate.
+    if (!targetFloorValid && (!progressiveStaticRoute || strictNativeDescent))
+        return reject("route_destination_invalid_floor");
+    if (targetFloorValid && std::fabs(floorZ - intent.Z) > 4.0f)
+        return reject("route_destination_invalid_z_transition");
     float const currentGoalDistance = bot->GetExactDist(intent.X, intent.Y,
         intent.Z);
 
@@ -107,7 +111,7 @@ bool BotWorldPopulationMgr::PlanMovementPath(
     bool const pathOk = path.CalculatePath(intent.X, intent.Y, intent.Z,
         false);
     PathType const pathType = path.GetPathType();
-    if (pathOk && (pathType & PATHFIND_NORMAL)
+    if (targetFloorValid && pathOk && (pathType & PATHFIND_NORMAL)
         && !(pathType & PATHFIND_NOPATH)
         && !(pathType & PATHFIND_NOT_USING_PATH)
         && !(pathType & PATHFIND_SHORTCUT)
@@ -194,6 +198,8 @@ bool BotWorldPopulationMgr::PlanMovementPath(
     {
         if (strictNativeDescent && !bot->IsInCombat())
             return reject("native_descent_complete_path_required");
+        if (!targetFloorValid)
+            return reject("route_destination_invalid_floor");
         if (!pathOk || (pathType & PATHFIND_NOPATH))
             return reject("route_destination_unreachable");
         if (pathType & PATHFIND_NOT_USING_PATH)
