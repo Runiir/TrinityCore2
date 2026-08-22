@@ -110,6 +110,36 @@ def test_shadow_embrace_restores_canonical_all_ranks_native_proc_binding() -> No
     assert "AddAura(32389" not in migration
 
 
+def test_shadow_embrace_restores_rank_chain_with_native_proc_and_no_cheat_injection() -> None:
+    migration = (
+        ROOT
+        / "sql/custom/world/2026_08_23_02_affliction_shadow_embrace_native_proc.sql"
+    ).read_text()
+
+    assert (
+        "DELETE FROM `spell_ranks`\n"
+        "WHERE `first_spell_id` = 32385\n"
+        "   OR `spell_id` IN (32385, 32387, 32392);"
+    ) in migration
+    assert (
+        "INSERT INTO `spell_ranks` (`first_spell_id`, `spell_id`, `rank`) VALUES\n"
+        "    (32385, 32385, 1),\n"
+        "    (32385, 32387, 2),\n"
+        "    (32385, 32392, 3);"
+    ) in migration
+    assert "DELETE FROM `spell_proc` WHERE `SpellId` = -32385" in migration
+    assert "(-32385, 0, 5, 0x00000001, 0x00040000, 0, 0, 0, 2" in migration
+
+    for forbidden in (
+        "spell_script_names",
+        "bot_rotation_action",
+        "CastSpell",
+        "AddAura",
+        "LearnSpell",
+    ):
+        assert forbidden not in migration
+
+
 def test_pet_resource_contract_waits_for_native_regeneration_without_refilling() -> None:
     source = "\n".join(
         (
