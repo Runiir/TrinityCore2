@@ -29,6 +29,29 @@ except ModuleNotFoundError:
 ROOT = Path(__file__).resolve().parents[2]
 
 
+DEFAULT_MAX_REPEATED_DECISIONS = 20
+DEFAULT_MAX_DEATH_LOOPS = 3
+
+_WATCHDOG_DEATH_ACTIONS = {
+    "death",
+    "repeated_death",
+    "death_loop",
+    "raid_wipe",
+}
+_WATCHDOG_TRANSIENT_RECOVERY_RESULTS = {
+    "native_recovery_wait_hostile_activity",
+    "native_recovery_wait_native_reset",
+}
+_WATCHDOG_FAILURE_TOKENS = (
+    "invalid",
+    "unreachable",
+    "rejected",
+    "failed",
+    "failure",
+    "no_candidate",
+)
+
+
 def process_resource_sample(
     pid: int,
     *,
@@ -2328,8 +2351,9 @@ def semantic_progress_signature(status: dict[str, Any], diagnosis: dict[str, Any
 
     Timers, heartbeat counters, cumulative deaths and trace length are
     deliberately excluded. Boss health/phase, route state and native recovery
-    generations are included so a living but semantically wedged run can be
-    stopped for diagnosis without imposing a raid-duration deadline.
+    generations are excluded when they only describe death/revive churn. A
+    living but semantically wedged run can therefore be stopped for diagnosis
+    without imposing a raid-duration deadline.
     """
     runtime = status.get("raid_runtime") if isinstance(status.get("raid_runtime"), dict) else {}
     route = status.get("validation_route") if isinstance(status.get("validation_route"), dict) else {}
@@ -2351,9 +2375,6 @@ def semantic_progress_signature(status: dict[str, Any], diagnosis: dict[str, Any
                 "target": {key: target.get(key) for key in (
                     "guid", "entry", "hp_pct", "best_hp_pct",
                 )},
-                "combat_state": {key: state.get(key) for key in (
-                    "victim_guid", "bot_in_combat", "bot_casting",
-                )},
             })
     payload = {
         "route": {key: route.get(key) for key in (
@@ -2362,17 +2383,303 @@ def semantic_progress_signature(status: dict[str, Any], diagnosis: dict[str, Any
         )},
         "raid": {key: runtime.get(key) for key in (
             "map_id", "instance_id", "lockout_save_id", "strategy_id",
-            "assignment_generation", "boss_states", "encounter_phase",
-            "encounter_in_progress", "alive_size", "wipe_state", "recovery_state",
-            "wipe_generation", "boss_reset_generation", "recovery_generation",
+            "boss_states", "encounter_phase",
         )},
         "metrics": {key: status.get(key) for key in (
-            "kills", "raid_boss_kills", "instance_resets",
+            "kills", "raid_boss_kills",
         )},
         "bots": sorted(bot_progress, key=lambda row: int(row.get("bot_guid") or 0)),
     }
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
     return hashlib.sha256(canonical).hexdigest()
+
+
+def _watchdog_route_scope(value: dict[str, Any] | None) -> tuple[str, int]:
+    """Return the exact route node/generation scope carried by one payload."""
+
+    if not isinstance(value, dict):
+        return "", 0
+    route = value.get("validation_route")
+    if not isinstance(route, dict):
+        runtime = value.get("raid_runtime")
+        route = runtime.get("validation_route") if isinstance(runtime, dict) else None
+    if not isinstance(route, dict):
+        return "", 0
+    node_id = str(route.get("node_id") or "")
+    try:
+        generation = int(route.get("generation") or 0)
+    except (TypeError, ValueError):
+        generation = 0
+    return node_id, generation
+
+
+def _watchdog_entry_scope(
+    entry: dict[str, Any], current_scope: tuple[str, int],
+) -> tuple[str, int]:
+    """Bind a trace entry to its explicit route scope or the current status."""
+
+    try:
+        generation = int(entry.get("route_generation") or 0)
+    except (TypeError, ValueError):
+        generation = 0
+    node_id = str(entry.get("route_node_id") or "")
+    if node_id and generation > 0:
+        return node_id, generation
+    return current_scope
+
+
+def _watchdog_failure_outcome(entry: dict[str, Any]) -> str:
+    """Return the stable failure/result label for a decision trace entry."""
+
+    for field in ("recovery_result", "result", "reason", "reason_code"):
+        value = entry.get(field)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
+
+
+def _watchdog_is_repeated_decision(entry: dict[str, Any]) -> bool:
+    """Identify a failed route decision without counting normal wait churn."""
+
+    action = str(entry.get("action") or "")
+    outcome = _watchdog_failure_outcome(entry)
+    if not outcome:
+        return False
+    if outcome in _WATCHDOG_TRANSIENT_RECOVERY_RESULTS:
+        return False
+    lowered = outcome.lower()
+    if any(token in lowered for token in _WATCHDOG_FAILURE_TOKENS):
+        return True
+    # Native recovery entries with a non-transient result are route decisions
+    # even when a producer gives the result a neutral spelling.
+    return action == "validation_route_recovery"
+
+
+def _watchdog_scope_rejections(
+    status: dict[str, Any], *, profile_name: str,
+) -> list[str]:
+    """Require an exact active attempt before attributing a watchdog failure."""
+
+    runtime = status.get("raid_runtime")
+    if not isinstance(runtime, dict):
+        return ["watchdog_runtime_missing"]
+    checks = {
+        "watchdog_status_not_ok": status.get("ok") is True,
+        "watchdog_action_mismatch": status.get("action") == "botauto_status",
+        "watchdog_cohort_mismatch": status.get("cohort_id") == "default",
+        "watchdog_profile_mismatch": status.get("active_profile") == profile_name,
+        "watchdog_bot_count_mismatch": status.get("bots") == 10,
+        "watchdog_lease_count_mismatch": status.get("lease_count") == 10,
+        "watchdog_runtime_inactive": runtime.get("active") is True,
+        "watchdog_expected_size_mismatch": runtime.get("expected_size") == 10,
+        "watchdog_active_size_mismatch": runtime.get("active_size") == 10,
+        "watchdog_roster_incomplete": runtime.get("roster_complete") is True,
+        "watchdog_map_mismatch": runtime.get("map_id") == 669,
+        "watchdog_instance_missing": _positive_int(runtime.get("instance_id")),
+        "watchdog_attempt_missing": _positive_int(runtime.get("attempt_id")),
+        "watchdog_assignment_missing": _positive_int(runtime.get("assignment_generation")),
+        "watchdog_unique_leases_missing": runtime.get("unique_leases") is True,
+    }
+    reasons = [name for name, passed in checks.items() if not passed]
+    reasons.extend(f"watchdog_{item}" for item in _roster_rejections(runtime, profile_name))
+    return list(dict.fromkeys(reasons))
+
+
+def observe_capture_watchdog(
+    state: dict[str, Any],
+    status: dict[str, Any],
+    diagnosis: dict[str, Any] | None,
+    trace_rows: list[dict[str, Any]] | None = None,
+    *,
+    profile_name: str = "blackwing_descent_10n",
+    max_repeated_decisions: int = DEFAULT_MAX_REPEATED_DECISIONS,
+    max_death_loops: int = DEFAULT_MAX_DEATH_LOOPS,
+) -> dict[str, Any]:
+    """Observe scoped trace/diagnosis evidence for deterministic termination.
+
+    Only route failures and explicit death events can trip this watchdog. The
+    ordinary decision heartbeat, changing victims, casts, and native
+    death/revive lifecycle rows are retained as evidence but never count as
+    semantic route progress. The first threshold crossed in trace order wins,
+    which keeps the terminal reason deterministic when both counters grow.
+    """
+
+    if max_repeated_decisions <= 0 or max_death_loops <= 0:
+        raise ValueError("watchdog thresholds must be positive")
+
+    current_scope = _watchdog_route_scope(status)
+    report: dict[str, Any] = {
+        "detected": False,
+        "classification": None,
+        "failure_reason": None,
+        "scope": {
+            "route_node_id": current_scope[0],
+            "route_generation": current_scope[1],
+        },
+        "max_repeated_decisions": max_repeated_decisions,
+        "max_death_loops": max_death_loops,
+        "repeated_decision_count": 0,
+        "death_loop_count": 0,
+        "repeated_decision_outcome": None,
+        "rejections": [],
+    }
+    scope_rejections = _watchdog_scope_rejections(status, profile_name=profile_name)
+    report["rejections"] = scope_rejections
+    if scope_rejections or current_scope == ("", 0):
+        if current_scope == ("", 0) and "watchdog_route_scope_missing" not in scope_rejections:
+            scope_rejections.append("watchdog_route_scope_missing")
+        return report
+
+    repeated_counts = state.setdefault("repeated_decision_counts", {})
+    death_counts = state.setdefault("death_loop_counts", {})
+    scope_repeated_max = state.setdefault("scope_repeated_max", {})
+    trace_seen = state.setdefault("trace_seen", [])
+    trace_cursors = state.setdefault("trace_cursors", {})
+    terminal = state.get("terminal_failure")
+    scope_key = f"{current_scope[0]}:{current_scope[1]}"
+    report["repeated_decision_count"] = int(scope_repeated_max.get(scope_key) or 0)
+    report["death_loop_count"] = int(death_counts.get(scope_key) or 0)
+
+    def maybe_terminal(reason: str, *, outcome: str | None = None) -> bool:
+        nonlocal terminal
+        if terminal:
+            return True
+        terminal = {
+            "detected": True,
+            "classification": "gameplay_failure",
+            "failure_reason": reason,
+            "scope": {
+                "route_node_id": current_scope[0],
+                "route_generation": current_scope[1],
+            },
+            "outcome": outcome,
+        }
+        state["terminal_failure"] = terminal
+        return True
+
+    for trace_row in trace_rows or []:
+        if not isinstance(trace_row, dict) or trace_row.get("action") != "botauto_trace":
+            continue
+        for bot in trace_row.get("bots") or []:
+            if not isinstance(bot, dict):
+                continue
+            try:
+                bot_guid = int(bot.get("bot_guid") or 0)
+            except (TypeError, ValueError):
+                bot_guid = 0
+            cursor_key = str(bot_guid)
+            for entry in bot.get("entries") or []:
+                if not isinstance(entry, dict):
+                    continue
+                try:
+                    sequence = int(entry.get("sequence") or 0)
+                except (TypeError, ValueError):
+                    sequence = 0
+                entry_key = json.dumps(
+                    [cursor_key, sequence, entry.get("timestamp_ms"), entry.get("action")],
+                    separators=(",", ":"), sort_keys=True,
+                )
+                if entry_key in trace_seen:
+                    continue
+                trace_seen.append(entry_key)
+                if len(trace_seen) > 4096:
+                    del trace_seen[: len(trace_seen) - 4096]
+                if sequence > 0:
+                    previous = int(trace_cursors.get(cursor_key) or 0)
+                    if sequence <= previous:
+                        continue
+                    trace_cursors[cursor_key] = sequence
+                scope = _watchdog_entry_scope(entry, current_scope)
+                if scope != current_scope:
+                    continue
+                scope_key = f"{scope[0]}:{scope[1]}"
+                if entry.get("action") in _WATCHDOG_DEATH_ACTIONS:
+                    death_counts[scope_key] = int(death_counts.get(scope_key) or 0) + 1
+                    report["death_loop_count"] = death_counts[scope_key]
+                    if death_counts[scope_key] >= max_death_loops:
+                        maybe_terminal("death_loop_watchdog")
+                        break
+                if _watchdog_is_repeated_decision(entry):
+                    outcome = _watchdog_failure_outcome(entry)
+                    try:
+                        fingerprint = int(entry.get("fingerprint_hash") or 0)
+                    except (TypeError, ValueError):
+                        fingerprint = 0
+                    decision_key = json.dumps(
+                        [scope_key, str(entry.get("action") or ""), outcome, fingerprint],
+                        separators=(",", ":"),
+                    )
+                    repeated_counts[decision_key] = int(repeated_counts.get(decision_key) or 0) + 1
+                    scope_repeated_max[scope_key] = max(
+                        int(scope_repeated_max.get(scope_key) or 0),
+                        repeated_counts[decision_key],
+                    )
+                    report["repeated_decision_count"] = max(
+                        int(report["repeated_decision_count"]), repeated_counts[decision_key]
+                    )
+                    report["repeated_decision_outcome"] = outcome
+                    if repeated_counts[decision_key] >= max_repeated_decisions:
+                        maybe_terminal("repeated_decision_watchdog", outcome=outcome)
+                        break
+            if terminal:
+                break
+        if terminal:
+            break
+
+    if not terminal and isinstance(diagnosis, dict):
+        diagnosis_high_water = state.setdefault("diagnosis_repeat_high_water", {})
+        for bot in diagnosis.get("bots") or []:
+            if not isinstance(bot, dict):
+                continue
+            identity = bot.get("identity") if isinstance(bot.get("identity"), dict) else {}
+            snapshot = bot.get("snapshot") if isinstance(bot.get("snapshot"), dict) else {}
+            decision = snapshot.get("decision") if isinstance(snapshot.get("decision"), dict) else {}
+            route_progress = snapshot.get("route_progress") if isinstance(snapshot.get("route_progress"), dict) else {}
+            route = route_progress.get("route") if isinstance(route_progress.get("route"), dict) else {}
+            entry_scope = _watchdog_entry_scope(
+                {
+                    "route_node_id": route.get("node_id"),
+                    "route_generation": route.get("generation"),
+                }, current_scope,
+            )
+            if entry_scope != current_scope:
+                continue
+            action = str(decision.get("action") or "")
+            outcome = _watchdog_failure_outcome(decision)
+            bot_diagnosis = bot.get("diagnosis")
+            bot_diagnosis = bot_diagnosis if isinstance(bot_diagnosis, dict) else {}
+            diagnosis_code = str(bot_diagnosis.get("diagnosis_code") or "")
+            if not (
+                diagnosis_code == "repeated_decision_loop"
+                or _watchdog_is_repeated_decision({"action": action, "result": outcome})
+            ):
+                continue
+            try:
+                repeat_count = max(
+                    int(decision.get("fingerprint_repeat_count") or 0),
+                    int(decision.get("consecutive_same_decision_count") or 0),
+                )
+            except (TypeError, ValueError):
+                repeat_count = 0
+            if repeat_count <= 0:
+                continue
+            key = json.dumps(
+                [current_scope[0], current_scope[1], identity.get("bot_guid"), action, outcome],
+                separators=(",", ":"),
+            )
+            previous = int(diagnosis_high_water.get(key) or 0)
+            diagnosis_high_water[key] = max(previous, repeat_count)
+            report["repeated_decision_count"] = max(
+                int(report["repeated_decision_count"]), diagnosis_high_water[key]
+            )
+            report["repeated_decision_outcome"] = outcome or action
+            if diagnosis_high_water[key] >= max_repeated_decisions:
+                maybe_terminal("repeated_decision_watchdog", outcome=outcome or action)
+                break
+
+    if terminal:
+        report.update(terminal)
+    return report
 
 
 def observe_monotonic_semantic_progress(
@@ -2390,7 +2697,6 @@ def observe_monotonic_semantic_progress(
         "boss_death_evidence_count": len(route.get("boss_death_evidence") or []),
         "kills": int(status.get("kills") or 0),
         "raid_boss_kills": int(status.get("raid_boss_kills") or 0),
-        "instance_resets": int(status.get("instance_resets") or 0),
         "boss_done_count": sum(1 for value in runtime.get("boss_states") or [] if value == 3),
     }
     high_water = state.setdefault("high_water", {})
@@ -2401,10 +2707,11 @@ def observe_monotonic_semantic_progress(
             high_water[key] = value
 
     # Wipe/reset counters and aggregate native booleans are lifecycle churn,
-    # not objective progress.  Advance only when the current runtime contains
-    # an exact-roster, per-member, ordered native recovery proof.  The proof
-    # identity deliberately excludes recovery_generation so incrementing that
-    # counter cannot replay stale evidence as a new completion.
+    # not objective progress.  Record an exact-roster, per-member, ordered
+    # native recovery proof for evidence, but never let death/revive churn
+    # reset the semantic-progress clock. The proof identity deliberately
+    # excludes recovery_generation so incrementing that counter cannot replay
+    # stale evidence as a new completion.
     native = runtime.get("native_recovery") if isinstance(
         runtime.get("native_recovery"), dict
     ) else {}
@@ -2475,7 +2782,9 @@ def observe_monotonic_semantic_progress(
         completed_scopes = state.setdefault("accepted_native_recovery_scopes", [])
         if completion_scope not in completed_scopes:
             completed_scopes.append(completion_scope)
-            advanced = True
+            # A complete native death/revive cycle is retained for lifecycle
+            # evidence, but it is not route progress. Otherwise repeated
+            # recovery churn could keep an uncapped capture alive forever.
 
     if runtime.get("encounter_in_progress") is True and not state.get("engagement_observed"):
         state["engagement_observed"] = True
@@ -4040,6 +4349,16 @@ def main() -> int:
     parser.add_argument("--required-stable-statuses", type=int, default=3)
     parser.add_argument("--semantic-stall-sec", type=int, default=300)
     parser.add_argument("--semantic-stall-min-samples", type=int, default=12)
+    parser.add_argument(
+        "--max-repeated-decision-count", type=int,
+        default=DEFAULT_MAX_REPEATED_DECISIONS,
+        help="controller terminal threshold for one scoped failed decision fingerprint",
+    )
+    parser.add_argument(
+        "--max-death-loop-count", type=int,
+        default=DEFAULT_MAX_DEATH_LOOPS,
+        help="controller terminal threshold for scoped death/recovery events",
+    )
     parser.add_argument("--telemetry-timeout-sec", type=int, default=60)
     parser.add_argument(
         "--status-interval-sec", type=float, default=5.0,
@@ -4079,9 +4398,15 @@ def main() -> int:
         raise SystemExit("server log output already exists; phase1 artifacts are immutable")
     if not binary.is_file() or not config.is_file():
         raise SystemExit("binary and config must exist")
-    if args.observe_sec < 0 or 0 < args.observe_sec < 30 or args.required_stable_statuses < 2:
+    if (
+        args.observe_sec < 0
+        or 0 < args.observe_sec < 30
+        or args.required_stable_statuses < 2
+        or args.max_repeated_decision_count <= 0
+        or args.max_death_loop_count <= 0
+    ):
         raise SystemExit(
-            "observation must be uncapped (0) or at least 30 seconds and require at least two stable statuses"
+            "observation must be uncapped (0) or at least 30 seconds, require at least two stable statuses, and use positive watchdog thresholds"
         )
     if args.semantic_stall_sec < 60 or args.semantic_stall_min_samples < 3:
         raise SystemExit("semantic stall detection requires at least 60 seconds and three samples")
@@ -4252,6 +4577,17 @@ def main() -> int:
             last_semantic_progress_at = time.monotonic()
             unchanged_semantic_samples = 0
             semantic_stall: dict[str, Any] = {"detected": False}
+            controller_watchdog_state: dict[str, Any] = {}
+            controller_watchdog: dict[str, Any] = {
+                "detected": False,
+                "classification": None,
+                "failure_reason": None,
+                "max_repeated_decisions": args.max_repeated_decision_count,
+                "max_death_loops": args.max_death_loop_count,
+                "repeated_decision_count": 0,
+                "death_loop_count": 0,
+                "rejections": [],
+            }
             monitor_started_at = time.monotonic()
             telemetry_freshness: dict[str, dict[str, float | int]] = {}
             telemetry_abort: dict[str, Any] = {"detected": False}
@@ -4390,6 +4726,7 @@ def main() -> int:
                     process.stdin.flush()
                     time.sleep(1.0)
                     new_statuses: list[dict[str, Any]] = []
+                    new_trace_rows: list[dict[str, Any]] = []
                     for row in log_cursor.read_new_rows():
                         action = row.get("action")
                         if action == "botauto_status":
@@ -4399,6 +4736,7 @@ def main() -> int:
                             latest_diagnosis = row
                         elif action == "botauto_trace":
                             trace_count += 1
+                            new_trace_rows.append(row)
                     monitor_statuses.extend(new_statuses)
                     for status in new_statuses:
                         telemetry_scheduler.observe_status(status)
@@ -4451,6 +4789,53 @@ def main() -> int:
                             break
                     if terminal_failure.get("detected") is True:
                         break
+                    if monitor_statuses:
+                        controller_watchdog = observe_capture_watchdog(
+                            controller_watchdog_state,
+                            monitor_statuses[-1],
+                            latest_diagnosis,
+                            new_trace_rows,
+                            profile_name=profile_name,
+                            max_repeated_decisions=args.max_repeated_decision_count,
+                            max_death_loops=args.max_death_loop_count,
+                        )
+                        if controller_watchdog.get("detected") is True:
+                            forced_evidence_report = request_final_evidence(
+                                "controller_watchdog_failure"
+                            )
+                            terminal_failure = {
+                                "detected": True,
+                                "classification": "gameplay_failure",
+                                "failure_reason": controller_watchdog.get(
+                                    "failure_reason"
+                                ),
+                                "watchdog": controller_watchdog,
+                                "route": monitor_statuses[-1].get("validation_route"),
+                                "raid_runtime": monitor_statuses[-1].get("raid_runtime"),
+                                "elapsed_seconds": round(
+                                    time.monotonic() - monitor_started_at, 3
+                                ),
+                                "final_forced_evidence": forced_evidence_report.get(
+                                    "gate_passed"
+                                ) is True,
+                                "final_forced_evidence_report": forced_evidence_report,
+                            }
+                            if forced_evidence_report.get("gate_passed") is not True:
+                                telemetry_abort = {
+                                    "detected": True,
+                                    "classification": "infrastructure_abort",
+                                    "reason": "terminal_failure_forced_evidence_incomplete",
+                                    "missing_channels": forced_evidence_report.get(
+                                        "missing_channels", []
+                                    ),
+                                    "rejections": forced_evidence_report.get(
+                                        "rejections", []
+                                    ),
+                                    "elapsed_seconds": round(
+                                        time.monotonic() - monitor_started_at, 3
+                                    ),
+                                }
+                            break
                     telemetry_now = time.monotonic()
                     stale_channels = observe_telemetry_freshness(
                         telemetry_freshness,
@@ -4633,6 +5018,19 @@ def main() -> int:
     identity_stable = identity_before == identity_after
     process_return_code = process.returncode if process is not None else None
     semantic_stall = locals().get("semantic_stall", {"detected": False})
+    controller_watchdog = locals().get(
+        "controller_watchdog",
+        {
+            "detected": False,
+            "classification": None,
+            "failure_reason": None,
+            "max_repeated_decisions": args.max_repeated_decision_count,
+            "max_death_loops": args.max_death_loop_count,
+            "repeated_decision_count": 0,
+            "death_loop_count": 0,
+            "rejections": ["controller_watchdog_not_started"],
+        },
+    )
     telemetry_abort = locals().get("telemetry_abort", {"detected": False})
     resource_summary = summarize_process_resource_samples(
         resource_samples,
@@ -4770,12 +5168,18 @@ def main() -> int:
         },
         "watchdog": {
             "policy": "capture-process-heartbeat-terminal-gate-driven",
+            "controller_policy": "scoped-repeated-decision-or-death-loop-terminal",
             "heartbeat_rows": len(statuses) + len(diagnoses) + len(traces),
             "wall_clock_mode": "uncapped" if args.observe_sec == 0 else "bounded_diagnostic",
             "observe_window_seconds": args.observe_sec if args.observe_sec else None,
             "startup_timeout_seconds": args.startup_timeout_sec,
             "semantic_stall_seconds": args.semantic_stall_sec,
             "semantic_stall_min_samples": args.semantic_stall_min_samples,
+            "max_repeated_decisions": args.max_repeated_decision_count,
+            "max_death_loops": args.max_death_loop_count,
+            "max_repeated_decision_count": args.max_repeated_decision_count,
+            "max_death_loop_count": args.max_death_loop_count,
+            "controller_terminal": controller_watchdog,
             "telemetry_timeout_seconds": args.telemetry_timeout_sec,
             "telemetry_intervals_seconds": {
                 "status": args.status_interval_sec,

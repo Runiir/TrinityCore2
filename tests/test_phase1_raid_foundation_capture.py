@@ -26,6 +26,7 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     evidence_demux_rejections,
     semantic_progress_signature,
     observe_monotonic_semantic_progress,
+    observe_capture_watchdog,
     observe_telemetry_freshness,
     TelemetryScheduler,
     material_status_signature,
@@ -2403,6 +2404,26 @@ def test_semantic_progress_signature_tracks_boss_and_bot_decisions_not_heartbeat
     assert semantic_progress_signature(status, diagnosis) == baseline
     status["deaths"] += 99
     assert semantic_progress_signature(status, diagnosis) == baseline
+    status["raid_runtime"].update(
+        alive_size=2,
+        wipe_state="partial_deaths",
+        recovery_state="runback",
+        wipe_generation=4,
+        boss_reset_generation=8,
+        recovery_generation=12,
+        assignment_generation=99,
+        encounter_in_progress=True,
+    )
+    status["instance_resets"] = 99
+    diagnosis["bots"][0]["snapshot"]["route_progress"]["state"] = {
+        "victim_guid": 7777,
+        "bot_in_combat": True,
+        "bot_casting": True,
+    }
+    assert semantic_progress_signature(status, diagnosis) == baseline
+    status["raid_runtime"]["encounter_in_progress"] = False
+    status["raid_runtime"]["assignment_generation"] = 100
+    assert semantic_progress_signature(status, diagnosis) == baseline
     diagnosis["bots"][0]["snapshot"]["decision"]["action"] = "different_wrong_action"
     assert semantic_progress_signature(status, diagnosis) == baseline
     diagnosis["bots"][0]["snapshot"]["route_progress"]["target"]["hp_pct"] = 74.0
@@ -2485,8 +2506,111 @@ def test_monotonic_semantic_progress_rejects_cast_victim_and_hp_oscillation():
             for index in range(10)
         ],
     )
-    assert observe_monotonic_semantic_progress(state, status, diagnosis) is True
+    assert observe_monotonic_semantic_progress(state, status, diagnosis) is False
+    assert state["accepted_native_recovery_scopes"]
     status["raid_runtime"]["recovery_generation"] += 1
     assert observe_monotonic_semantic_progress(state, status, diagnosis) is False
     status["raid_runtime"]["boss_reset_generation"] += 1
     assert observe_monotonic_semantic_progress(state, status, diagnosis) is False
+
+
+def _watchdog_status() -> dict:
+    status = accepted_status()
+    status["cohort_id"] = "default"
+    status["active_profile"] = "blackwing_descent_10n"
+    status["validation_route"] = {
+        "node_id": "bwd.magmaw.drudges",
+        "generation": 3,
+        "manifest_index": 2,
+        "terminal_evidence": [],
+    }
+    return status
+
+
+def _watchdog_trace(entries: list[dict]) -> dict:
+    return {
+        "action": "botauto_trace",
+        "bots": [{"bot_guid": 1001, "entries": entries}],
+    }
+
+
+def test_capture_watchdog_stops_scoped_repeated_route_failures_and_deduplicates_trace_rows():
+    status = _watchdog_status()
+    state = {}
+    entries = [
+        {
+            "action": "validation_route_recovery",
+            "result": "route_destination_invalid_z_transition",
+            "recovery_result": "route_destination_invalid_z_transition",
+            "route_node_id": "bwd.magmaw.drudges",
+            "route_generation": 3,
+            "sequence": sequence,
+            "fingerprint_hash": 4242,
+        }
+        for sequence in range(1, 3)
+    ]
+
+    report = observe_capture_watchdog(
+        state, status, None, [_watchdog_trace(entries)],
+        max_repeated_decisions=3, max_death_loops=3,
+    )
+    assert report["detected"] is False
+    assert report["repeated_decision_count"] == 2
+
+    terminal = observe_capture_watchdog(
+        state,
+        status,
+        None,
+        [_watchdog_trace([dict(entries[-1], sequence=3)])],
+        max_repeated_decisions=3,
+        max_death_loops=3,
+    )
+    assert terminal["detected"] is True
+    assert terminal["classification"] == "gameplay_failure"
+    assert terminal["failure_reason"] == "repeated_decision_watchdog"
+    assert terminal["repeated_decision_outcome"] == "route_destination_invalid_z_transition"
+    duplicate = observe_capture_watchdog(
+        state, status, None, [_watchdog_trace([dict(entries[-1], sequence=3)])],
+        max_repeated_decisions=3, max_death_loops=3,
+    )
+    assert duplicate["repeated_decision_count"] == 3
+
+
+def test_capture_watchdog_classifies_excessive_scoped_deaths_as_gameplay_failure():
+    status = _watchdog_status()
+    trace = _watchdog_trace([
+        {
+            "action": "death",
+            "route_node_id": "bwd.magmaw.drudges",
+            "route_generation": 3,
+            "sequence": sequence,
+        }
+        for sequence in range(1, 4)
+    ])
+    report = observe_capture_watchdog(
+        {}, status, None, [trace], max_repeated_decisions=20, max_death_loops=3,
+    )
+    assert report["detected"] is True
+    assert report["classification"] == "gameplay_failure"
+    assert report["failure_reason"] == "death_loop_watchdog"
+    assert report["death_loop_count"] == 3
+
+
+def test_capture_watchdog_fails_closed_when_attempt_identity_is_not_exact():
+    status = _watchdog_status()
+    status["cohort_id"] = "foreign-cohort"
+    trace = _watchdog_trace([
+        {
+            "action": "validation_route_recovery",
+            "result": "route_destination_invalid_z_transition",
+            "route_node_id": "bwd.magmaw.drudges",
+            "route_generation": 3,
+            "sequence": sequence,
+        }
+        for sequence in range(1, 5)
+    ])
+    report = observe_capture_watchdog(
+        {}, status, None, [trace], max_repeated_decisions=3, max_death_loops=3,
+    )
+    assert report["detected"] is False
+    assert "watchdog_cohort_mismatch" in report["rejections"]
