@@ -56,3 +56,11 @@ Rules:
   false-fail on stray observations.
 - When the honest fix requires native changes or a new capture, stop at that
   edge and report it exactly; do not approximate it with a tools-side hack.
+- Static module tests never certify a native fix. Every native work unit ends
+  with a `runtime_verification_plan`: the exact console/telemetry evidence the
+  next live capture must produce for the fix to count as confirmed (log line,
+  status field, event name, expected values). After the coordinator runs the
+  capture, the same lane receives the resulting log excerpt and must return
+  `runtime_verdict: confirmed | refuted | inconclusive` with citations before
+  the unit is closed. A refuted verdict reopens the unit with the runtime
+  evidence attached; it does not go back to static-only iteration.
