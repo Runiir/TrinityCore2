@@ -1,0 +1,163 @@
+{
+  "schema": "cata_raid_phase1_failure_evidence_summary_v1",
+  "classification": "gameplay_failure",
+  "classification_detail": "gameplay_failure_with_evidence_demux_classification_defect",
+  "clear": false,
+  "source_report_classification": "infrastructure_abort",
+  "source_report_terminal_reason": "semantic_stall",
+  "capture_id": "cata_raid_phase1_blackwing_descent_10n_magmaw_diagnostic_v1",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
+  "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+  "started_at_utc": "2026-08-22T20:39:02Z",
+  "source_root": "/tmp/trinity-magmaw-902-live-OJD0fv/capture-actual",
+  "identity": {
+    "attempt_id": 2,
+    "instance_id": 13,
+    "lockout_save_id": 13,
+    "group_guid": 2256303413312618498,
+    "leader_guid": 30001,
+    "server_epoch": 5780423588037680,
+    "source_worktree": "/home/runiir/Games/trinity-cata-worktrees/phase1-foundation-build",
+    "commit": "902710a4ef45c63d9f735db75c39ed20aaf19d9b",
+    "tree": "04e7a1c5698cc4466dcf86ab45042240f86ab5be",
+    "identity_clean": true,
+    "binary_sha256": "d03f1dd227fed03ceb820216d612fc4e54e2da36fb9ee338c1848f11c15e8378",
+    "binary_size_bytes": 62930000,
+    "config_sha256": "fb5f37b3740b179f8c0d3ed63bbbcc25ccfd73c63ce7005c889a73cd7bbabdab",
+    "profile_content_hash": "99157A313CB89D2CD241E8BF67A04D0FD3F9F2800E546212472A6089A4A75039",
+    "route_manifest_sha256": "edee2fe5d1537a648340b72f4bc81988eab50d232b65e364270c1a8c005e2af0",
+    "route_sha256": "55d72fe950801a128de5fdafc2626e82cbeb161701131b22f7cf2872c323b0a3",
+    "canonical_identity_sha256": "da2bc3d5f8ca925f8c243574ff74abfa67c60f53cd1c4e96c8d6fc0fd9515fbd",
+    "canonical_roster_sha256": "2177d7cfb7f92d700d35bc42e50625b5653ab18bb498950a3c293a432f65f46b",
+    "build_receipt_file_sha256": "646704673fa7f7e0eb0e38e2946cf587c35ae8ba1acde6e55af0ebde11faa564",
+    "build_receipt_embedded_sha256": "a12a254e8d08a3d53b383cd2ae0d29d2b99ed3de97a7553b7a92c10fdbb1ca0c"
+  },
+  "terminal": {
+    "watchdog_policy": "capture-process-heartbeat-terminal-gate-driven",
+    "wall_clock_mode": "uncapped",
+    "semantic_stall_detected": true,
+    "semantic_stall_seconds": 303.005,
+    "semantic_stall_unchanged_samples": 77,
+    "semantic_stall_diagnosis_rows": 28,
+    "semantic_stall_trace_rows": 25,
+    "semantic_signature": "6a8eb91a1ed18ae00cf2feb7a50fb534fad02dd4a0a598f49cba063e27a576b0",
+    "final_forced_evidence_gate": true,
+    "boss_reached": false,
+    "boss_death_evidence": false
+  },
+  "route": {
+    "manifest_count": 4,
+    "manifest_index": 2,
+    "generation": 3,
+    "node_id": "bwd.magmaw.drudges",
+    "label": "Magmaw Drudge pair",
+    "kind": "trash",
+    "advance_mode": "terminal",
+    "manifest_complete": false,
+    "terminal_count": 2,
+    "terminal_evidence_sha256": "d3d4c49fcb54ca212282fe1bc60bdebd0bb2ad0f87594452b2a17c518f3b63d9",
+    "terminal_evidence": [
+      {
+        "capture_sequence": 4,
+        "bot_guid": 30002,
+        "sequence": 6,
+        "timestamp_ms": 1787431148304,
+        "route_node_id": "bwd.entry.regroup",
+        "route_generation": 1,
+        "result": "arrival",
+        "destination": {"map": 669, "x": -345.872, "y": -224.344, "z": 193.127}
+      },
+      {
+        "capture_sequence": 62,
+        "bot_guid": 30001,
+        "sequence": 240,
+        "timestamp_ms": 1787431316528,
+        "route_node_id": "bwd.magmaw.chainwielder",
+        "route_generation": 2,
+        "result": "trash_cluster_cleared",
+        "recovery_result": "native_movement_submitted",
+        "destination": {"map": 669, "x": -345.872, "y": -110, "z": 214.207}
+      }
+    ],
+    "high_water": {
+      "kills": 1,
+      "raid_boss_kills": 0,
+      "route_generation": 3,
+      "route_index": 2,
+      "route_terminal_count": 2,
+      "boss_death_evidence_count": 0,
+      "boss_done_count": 0
+    },
+    "lowest_target_hp": {"13:2:42649": 0.00717942, "13:3:42649": 0.00717942}
+  },
+  "invalid_z_recovery": {
+    "action": "validation_route_recovery",
+    "result": "route_destination_invalid_z_transition",
+    "deduplicated_event_count": 67,
+    "unique_event_count": 67,
+    "distinct_decision_count": 53,
+    "raw_string_occurrences": 214,
+    "event_identity_fields": ["sequence", "timestamp_ms", "route_node_id", "route_generation", "result", "recovery_result", "bot_guid"],
+    "events_sorted_by": ["sequence", "timestamp_ms", "bot_guid"],
+    "events_canonical_sha256": "8e2822ddc3fd3c7141f1d17c6fde90426273d27cd8a58e29646559fd2f11852e",
+    "sequence_range": [149, 565],
+    "timestamp_ms_range": [1787431280585, 1787431620034],
+    "route_node_counts": {
+      "bwd.magmaw.chainwielder": 9,
+      "bwd.magmaw.drudges": 58
+    },
+    "sample_bots": [30004, 30010]
+  },
+  "outcome": {
+    "final_duration_seconds": 476,
+    "final_alive_size_before_stop": 2,
+    "active_size_before_cleanup": 10,
+    "deaths": 8,
+    "death_event_count": 8,
+    "death_events_canonical_sha256": "0f4662ea022988a1132198b038f65e148c4ebbe17afdbf2cf2d9b42327a675e7",
+    "kills": 1,
+    "raid_boss_kills": 0,
+    "drudge_contract_accepted": false,
+    "native_recovery_accepted": true,
+    "native_recovery_outcome": "no_exact_roster_recovery_required_for_diagnostic_partition",
+    "forbidden_assistance_observed": false,
+    "worldserver_exit_code": 0
+  },
+  "evidence_demux": {
+    "gate_passed": false,
+    "classification_defect": "evidence_demux_required_action_missing:botauto_readycheck",
+    "retained_rows": 152,
+    "bound_rows": 152,
+    "rejected_rows": 0,
+    "unchecked_rows": 0,
+    "channels": {"cleanup": 1, "diagnosis": 28, "profile_selection": 1, "status": 97, "trace": 25},
+    "required_telemetry_gate_passed": true,
+    "do_not_relabel_as_clear": true
+  },
+  "cleanup": {
+    "gate_passed": true,
+    "stop_observed": true,
+    "stop_ok": true,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true,
+    "postflight_passed": true,
+    "process_overlap": []
+  },
+  "bundle": {
+    "dvc_output_directory": "artifacts/cata_raid_program/phase1_foundation_902710a4ef_magmaw_diagnostic_20260822",
+    "files": {
+      "raw.jsonl": {"bytes": 31444625, "sha256": "7a7a81158345ef3f9cd6a957b5f90992c16cfd8e30e25e2a61a9895d4042b0aa"},
+      "worldserver.log": {"bytes": 31459645, "sha256": "8f2cc3e6d073b06c536f757b194dd99f6869e520212236b2bcfeb25fb684e3ef"},
+      "report.json": {"bytes": 269153, "file_sha256": "186727107adb3a981d569adbfa81195b1e9268924fc5f5b1b9ae2a1883cc96f3", "canonical_report_sha256": "d6295a33118b0a3780fde311137844a59c3a5c58c6f4c1e22c2cb8a41d906463"},
+      "final-material-receipt.txt": {"bytes": 4424, "sha256": "d21b10b4dd68c4b69724d760e5d2d50b4d3793e21f24233a68bc144ab5fd1122"},
+      "build_receipt.json": {"bytes": 14538, "sha256": "646704673fa7f7e0eb0e38e2946cf587c35ae8ba1acde6e55af0ebde11faa564"},
+      "worldserver.validation.conf": {"bytes": 156809, "sha256": "fb5f37b3740b179f8c0d3ed63bbbcc25ccfd73c63ce7005c889a73cd7bbabdab"},
+      "validation_route_manifest.json": {"bytes": 42464, "sha256": "edee2fe5d1537a648340b72f4bc81988eab50d232b65e364270c1a8c005e2af0"},
+      "provisioning_verifier_strict.json": {"bytes": 147964, "sha256": "c151edde6d8354e041cfd7a5dd86fc998b59af82b1ac72fbe7815f1c40e0001b"},
+      "roster_readback.json": {"bytes": 22885, "sha256": "26db2b10d338413d86433279e10140e2a9bb89b96dbaf939f76ef01855b96f3d"},
+      "preparation_report.json": {"bytes": 48034, "sha256": "666b553cfdd0ea231b5a6d43500dd5ba66afe52dc1ac755148b9ee635d6e97c3"}
+    }
+  }
+}
