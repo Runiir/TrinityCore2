@@ -1,6 +1,10 @@
 import json
 from pathlib import Path
 
+import pytest
+
+from tools.bot_ml.build_phase8_evidence_identity_manifest import _profile_target
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 REQUEST_CATALOG = (
@@ -195,3 +199,17 @@ def test_evidence_identity_builder_can_bind_the_self_provided_server() -> None:
         "calibration_self_provided_baseline="
         "calibration_self_provided_baseline"
     ) in builder
+
+
+def test_evidence_identity_builder_selects_one_exact_profile_target() -> None:
+    catalog = json.loads(
+        (REPO_ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.json")
+        .read_text(encoding="utf-8")
+    )
+
+    target = _profile_target(catalog, "affliction_warlock")
+    assert target["class_id"] == 9
+    assert target["role"] == "dps"
+    assert target["runtime_join_key"] == "affliction_warlock"
+    with pytest.raises(RuntimeError, match="must resolve exactly once"):
+        _profile_target(catalog, "missing_spec")

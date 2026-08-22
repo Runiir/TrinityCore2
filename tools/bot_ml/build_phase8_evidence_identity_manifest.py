@@ -222,6 +222,17 @@ def _soap_payload(
     raise RuntimeError(f"failed to read live runtime identity: {action}")
 
 
+def _profile_target(catalog: Mapping[str, Any], target_spec: str | None) -> dict[str, Any]:
+    targets = [row for row in catalog.get("targets") or [] if isinstance(row, Mapping)]
+    if target_spec:
+        targets = [row for row in targets if row.get("spec_target_id") == target_spec]
+    if len(targets) != 1 and target_spec:
+        raise RuntimeError(f"profile target must resolve exactly once: {target_spec}")
+    if not targets:
+        raise RuntimeError("profile target catalog is empty")
+    return dict(targets[0])
+
+
 def build_manifest(
     *,
     worldserver: Path,
@@ -232,6 +243,7 @@ def build_manifest(
     soap_password: str,
     identity_config_dir: Path,
     calibration_self_provided_baseline: bool = False,
+    profile_target_spec: str | None = None,
 ) -> dict[str, Any]:
     initial_source_identity = _clean_source_identity(REPO_ROOT, worldserver)
     effective_config = write_validation_config(
@@ -297,7 +309,7 @@ def build_manifest(
         target_catalog = json.loads(
             (REPO_ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.json").read_text(encoding="utf-8")
         )
-        target = (target_catalog.get("targets") or [])[0]
+        target = _profile_target(target_catalog, profile_target_spec)
         dump_command = "botauto rotations dump {class_id} {spec_tag} {role}".format(
             class_id=int(target["class_id"]),
             spec_tag=str(target.get("rotation_spec_tag") or target["runtime_join_key"]),
@@ -363,6 +375,7 @@ def build_manifest(
         "build_identity": build_identity,
         "runtime_identity": {**server_identity, **profile_identity},
         "database_summary": database["summary"],
+        "rotation_profile_snapshot": dump_payload,
     }
     manifest["manifest_sha256"] = canonical_sha256(manifest)
     return validate_manifest(manifest)
@@ -384,6 +397,15 @@ def main() -> int:
             "combat-potion calibration config instead of full reference conditions."
         ),
     )
+    parser.add_argument(
+        "--profile-target-spec",
+        help="Exact all-spec target whose runtime rotation dump is retained.",
+    )
+    parser.add_argument(
+        "--profile-output",
+        type=Path,
+        help="Write the exact runtime rotation dump as a standalone review input.",
+    )
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     args = parser.parse_args()
     if not args.soap_user or not args.soap_password:
@@ -400,8 +422,11 @@ def main() -> int:
         calibration_self_provided_baseline=(
             args.calibration_self_provided_baseline
         ),
+        profile_target_spec=args.profile_target_spec,
     )
     write_json(output_path, manifest)
+    if args.profile_output:
+        write_json(args.profile_output.resolve(), manifest["rotation_profile_snapshot"])
     print(json.dumps({
         "schema": manifest["schema"],
         "output": str(args.output.resolve()),

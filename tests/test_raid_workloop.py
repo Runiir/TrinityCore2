@@ -186,6 +186,12 @@ def test_dps_work_unit_binds_all_duplicate_roster_slots() -> None:
         flags = pipeline["capture"]["required_runner_flags"]
         assert "--calibration-self-provided-baseline" in flags
         assert "--preserve-worldserver" in flags
+        assert "--profile-target-spec fire_mage" in pipeline["capture"][
+            "identity_manifest_command"
+        ]
+        assert "--profile-output <capture>/rotation-profile.json" in pipeline[
+            "capture"
+        ]["identity_manifest_command"]
         assert pipeline["rotation_review"]["owner_skill"] == (
             "raid-rotation-review"
         )

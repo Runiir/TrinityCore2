@@ -17,6 +17,15 @@ def build_canary_pipeline(
         "capture": {
             "owner_skill": "raid-shard-architecture",
             "mode": "capture_only_preserve_worldserver",
+            "identity_manifest_command": (
+                "pixi run python -m "
+                "tools.bot_ml.build_phase8_evidence_identity_manifest "
+                "--calibration-self-provided-baseline "
+                f"--profile-target-spec {spec} "
+                "--profile-output <capture>/rotation-profile.json "
+                "--output <capture>/identity-manifest.json"
+            ),
+            "runner_module": "tools.bot_ml.run_live_bot_validation",
             "validation_clock": {
                 "policy": "isolated_training_dummy_scoring_window",
                 "duration_seconds": 300,
