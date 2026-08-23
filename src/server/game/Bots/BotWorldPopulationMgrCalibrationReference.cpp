@@ -34,6 +34,7 @@ struct CalibrationExecuteHealthWindow
 };
 
 constexpr uint32 CalibrationSingleTargetDurationMs = 300000;
+constexpr uint64 CalibrationFoodAuraWaitMs = 30000;
 constexpr std::array<CalibrationExecuteHealthWindow, 5> CalibrationExecuteHealthWindows = {{
     { "above_90",       0,  30000, 95, 90, false, 100, true  },
     { "between_35_90", 30000, 195000, 50, 35, false,  90, true  },
@@ -167,6 +168,56 @@ bool BotWorldPopulationMgr::EnsureCalibrationSelfProvidedConsumables(
     initialize(metrics.CombatPotionConsumable,
         contract->CombatPotionItemId, contract->CombatPotionItemSpellId,
         "combat_potion_during_combat");
+
+    auto reconcilePendingFood = [&]()
+    {
+        CalibrationMetrics::NativeConsumableReceipt& food =
+            metrics.FoodConsumable;
+        if (!food.NativeUseAwaitingAura)
+            return false;
+
+        uint64 const nowMs = CalibrationNowMs();
+        if (bot->HasAura(contract->FoodAuraSpellId))
+        {
+            food.NativeUseAwaitingAura = false;
+            food.NativeUseFinishedSuccessfully = true;
+            food.NativeUseAuraObservedAtMs = nowMs;
+            food.NativeUseAuraDeadlineAtMs = 0;
+            food.NativeUseAuraTimedOutAtMs = 0;
+            food.NextRetryAtMs = nowMs + 1000;
+            ++food.SuccessfulUseCount;
+            metrics.LastPreScoreConsumableFinishedUpdateOrdinal =
+                metrics.WarmupUpdateOrdinal;
+            return true;
+        }
+
+        if (!food.NativeUseAuraDeadlineAtMs)
+            food.NativeUseAuraDeadlineAtMs = nowMs + CalibrationFoodAuraWaitMs;
+        if (nowMs < food.NativeUseAuraDeadlineAtMs)
+            return true;
+
+        // The native item was consumed, but the player-like eating outcome
+        // never appeared. Retire this attempt and leave one bounded retry
+        // window. Clearing the submitted identity prevents a stale finish
+        // callback from being attributed to the next native item use.
+        food.NativeUseAwaitingAura = false;
+        food.NativeUseFinishedSuccessfully = false;
+        food.NativeUseAuraTimedOutAtMs = nowMs;
+        food.NativeUseAuraDeadlineAtMs = 0;
+        food.SubmittedItemGuid.Clear();
+        food.FinishedItemGuid.Clear();
+        food.SubmittedAtMs = 0;
+        food.FinishedAtMs = 0;
+        food.PostUseItemCount = CountCalibrationConsumable(bot, food.ItemId);
+        food.NextRetryAtMs = nowMs + 1000;
+        return true;
+    };
+
+    // A food item can finish its initial native spell before the server
+    // applies Well Fed. Keep the bot in the native eating state and hold the
+    // setup barrier until the aura observation or bounded timeout above.
+    if (reconcilePendingFood())
+        return true;
 
     auto submit = [&](CalibrationMetrics::NativeConsumableReceipt& receipt)
     {

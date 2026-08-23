@@ -690,9 +690,17 @@ private:
             uint64 SubmittedAtMs = 0;
             uint64 FinishedAtMs = 0;
             uint64 NextRetryAtMs = 0;
+            // Food's native item spell can finish by starting the ordinary
+            // eating state before the Well Fed aura is applied. Keep that
+            // request pending until the aura is observed; a timeout is a
+            // bounded failed attempt, never an implicit success.
+            uint64 NativeUseAuraDeadlineAtMs = 0;
+            uint64 NativeUseAuraObservedAtMs = 0;
+            uint64 NativeUseAuraTimedOutAtMs = 0;
             ObjectGuid SubmittedItemGuid;
             ObjectGuid FinishedItemGuid;
             bool NativeUseFinishedSuccessfully = false;
+            bool NativeUseAwaitingAura = false;
             std::string Phase;
         };
 

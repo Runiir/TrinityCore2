@@ -28,6 +28,8 @@
 
 namespace
 {
+constexpr uint64 CalibrationFoodAuraWaitMs = 30000;
+
 uint64 NowMs()
 {
     return uint64(std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -247,18 +249,31 @@ void BotWorldPopulationMgr::NotifyBotItemSpellFinished(Player* caster,
                     receipt->FinishedItemGuid = castItemGuid;
                     receipt->PostUseItemCount = CountInventoryItem(caster,
                         receipt->ItemId);
-                    receipt->NativeUseFinishedSuccessfully = success;
+                    receipt->NativeUseAuraObservedAtMs = 0;
+                    receipt->NativeUseAuraTimedOutAtMs = 0;
+                    receipt->NativeUseAwaitingAura = success
+                        && receipt == &metrics.FoodConsumable;
+                    receipt->NativeUseAuraDeadlineAtMs =
+                        receipt->NativeUseAwaitingAura
+                            ? receipt->FinishedAtMs + CalibrationFoodAuraWaitMs
+                            : 0;
+                    // Food's item spell starts the native eating state. It is
+                    // not a successful calibration use until the expected
+                    // Well Fed aura is observed by the normal update path.
+                    // Other item spells retain their ordinary completion
+                    // semantics here.
+                    receipt->NativeUseFinishedSuccessfully = success
+                        && !receipt->NativeUseAwaitingAura;
                     if (success
-                        && receipt != &metrics.CombatPotionConsumable)
+                        && receipt != &metrics.CombatPotionConsumable
+                        && receipt != &metrics.FoodConsumable)
                         metrics.LastPreScoreConsumableFinishedUpdateOrdinal =
                             metrics.WarmupUpdateOrdinal;
-                    // Eating applies the native sitting state. A real client
-                    // stands before its next offensive request; complete that
-                    // transition before releasing the precombat barrier.
-                    if (success && receipt == &metrics.FoodConsumable)
-                        caster->SetStandState(UNIT_STAND_STATE_STAND);
-                    receipt->NextRetryAtMs = receipt->FinishedAtMs + 1000;
-                    if (success)
+                    receipt->NextRetryAtMs = receipt->NativeUseAwaitingAura
+                        ? receipt->NativeUseAuraDeadlineAtMs
+                        : receipt->FinishedAtMs + 1000;
+                    if (success
+                        && receipt != &metrics.FoodConsumable)
                         ++receipt->SuccessfulUseCount;
                     if (success && receipt == &metrics.CombatPotionConsumable
                         && Cohort().CalibrationScoredStartedMs

@@ -143,9 +143,12 @@ def test_native_item_completion_retains_consumed_item_identity() -> None:
     assert "receipt->SubmittedAtMs > receipt->FinishedAtMs" in completion
 
 
-def test_successful_food_completion_stands_before_precombat_release() -> None:
+def test_successful_food_completion_waits_for_native_food_aura() -> None:
     semantic = _source(
         "src/server/game/Bots/BotWorldPopulationMgrSemantic.cpp"
+    )
+    reference = _source(
+        "src/server/game/Bots/BotWorldPopulationMgrCalibrationReference.cpp"
     )
     completion = _between(
         semantic,
@@ -154,15 +157,34 @@ def test_successful_food_completion_stands_before_precombat_release() -> None:
     )
     food_completion = _between(
         completion,
-        "receipt->NativeUseFinishedSuccessfully = success;",
+        "receipt->NativeUseAwaitingAura = success",
         "break;",
     )
 
-    assert "if (success && receipt == &metrics.FoodConsumable)" in food_completion
-    assert "caster->SetStandState(UNIT_STAND_STATE_STAND);" in food_completion
-    assert food_completion.index(
-        "receipt->NativeUseFinishedSuccessfully = success;"
-    ) < food_completion.index("caster->SetStandState(UNIT_STAND_STATE_STAND);")
+    assert "receipt == &metrics.FoodConsumable" in food_completion
+    assert "receipt->NativeUseAuraDeadlineAtMs" in food_completion
+    assert "receipt->NativeUseFinishedSuccessfully = success" in food_completion
+    assert "SetStandState(UNIT_STAND_STATE_STAND)" not in food_completion
+    assert "NativeUseAwaitingAura" in reference
+    assert "bot->HasAura(contract->FoodAuraSpellId)" in reference
+
+
+def test_food_aura_wait_has_bounded_retry_and_no_spin() -> None:
+    reference = _source(
+        "src/server/game/Bots/BotWorldPopulationMgrCalibrationReference.cpp"
+    )
+    ensure = _between(
+        reference,
+        "bool BotWorldPopulationMgr::EnsureCalibrationSelfProvidedConsumables",
+        "std::pair<bool, bool> BotWorldPopulationMgr::ApplyCalibrationReferenceConditions",
+    )
+
+    assert "if (reconcilePendingFood())" in ensure
+    assert "food.NativeUseAuraDeadlineAtMs" in ensure
+    assert "food.NativeUseAuraTimedOutAtMs = nowMs" in ensure
+    assert "food.SubmittedItemGuid.Clear()" in ensure
+    assert "food.NextRetryAtMs = nowMs + 1000" in ensure
+    assert "return true;" in ensure[ensure.index("if (nowMs < food.NativeUseAuraDeadlineAtMs)") :]
 
 
 def test_consumable_completion_waits_for_a_later_warmup_update() -> None:
@@ -182,7 +204,7 @@ def test_consumable_completion_waits_for_a_later_warmup_update() -> None:
     )
     receipt_completion = _between(
         completion,
-        "receipt->NativeUseFinishedSuccessfully = success;",
+        "receipt->NativeUseFinishedSuccessfully = success\n",
         "break;",
     )
     update = calibration_bot[
