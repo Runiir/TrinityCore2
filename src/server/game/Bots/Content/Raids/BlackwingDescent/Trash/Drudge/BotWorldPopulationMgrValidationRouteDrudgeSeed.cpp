@@ -134,7 +134,7 @@ void DrudgeLaneContext::SuppressAllDrudgeOffense(Context const& context)
 }
 
 SeedCandidate DrudgeLaneContext::ResolveDrudgeSeedCandidate(
-    Context const& context, uint32 lane,
+    Context& context, uint32 lane,
     BotRaidDrudgeThreatSeed::State const& seedState)
 {
     using namespace BotRaidDrudgeThreatSeed;

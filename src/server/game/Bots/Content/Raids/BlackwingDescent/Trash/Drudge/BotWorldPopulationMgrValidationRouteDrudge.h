@@ -165,7 +165,7 @@ struct DrudgeLaneContext
     static bool ExactDrudgeAuthorityRoster(DrudgeLaneContext const& context);
     static void SuppressAllDrudgeOffense(DrudgeLaneContext const& context);
     static DrudgeSeedCandidate ResolveDrudgeSeedCandidate(
-        DrudgeLaneContext const& context, uint32 lane,
+        DrudgeLaneContext& context, uint32 lane,
         BotRaidDrudgeThreatSeed::State const& seedState);
     static void AppendDrudgeSeedEvidence(DrudgeLaneContext& context, uint32 lane,
         DrudgeSeedCandidate const& candidate, BotRaidDrudgeThreatSeed::Scope scope,
