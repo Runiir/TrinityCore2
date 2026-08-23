@@ -207,7 +207,7 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
 
     assert '#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeThreatSeedState.h"' in implementation
     assert '#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.h"' in lane
-    assert "RunDrudgeSeedCoordinator(*this)" in lane
+    assert "RunDrudgeSeedCoordinator()" in lane
     assert "PhaseResult RunDrudgeSeedCoordinator();" in drudge_header
     assert "DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunDrudgeSeedCoordinator()" in seed
     assert "DrudgeLaneContext::ExactDrudgeAuthorityRoster" in seed

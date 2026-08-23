@@ -541,7 +541,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions()
         return PhaseResult::Handled;
     }
 
-    if (RunDrudgeSeedCoordinator(*this) == PhaseResult::Handled)
+    if (RunDrudgeSeedCoordinator() == PhaseResult::Handled)
         return PhaseResult::Handled;
 
     auto rosterMemberForSlot = [this](uint32 slot) -> Player*
