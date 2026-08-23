@@ -4129,6 +4129,8 @@ def main() -> int:
     explicit_request = (
         _load_json(args.wowsims_request) if args.wowsims_request else None
     )
+    if apl is None and explicit_request is not None:
+        apl = find_wowsims_apl(explicit_request, args.wowsims_player_index)
     try:
         wowsims_request, request_source = _admit_wowsims_request(
             embedded_request=embedded_request,

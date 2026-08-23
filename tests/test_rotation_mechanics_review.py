@@ -1338,6 +1338,33 @@ def test_cli_admits_standalone_apl_with_explicit_request_and_records_provenance(
     assert review["wowsims_gear"]["manifest"]
 
 
+def test_cli_extracts_apl_from_exact_request_without_duplicate_argument(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    request, _ = _gear_fixture()
+    request["raid"]["parties"][0]["players"][0]["rotation"] = _apl()
+    request_path = tmp_path / "native-request.json"
+    output_path = tmp_path / "review.json"
+    request_path.write_text(json.dumps(request, indent=2))
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "review_rotation_mechanics",
+            "--wowsims-request",
+            str(request_path),
+            "--output",
+            str(output_path),
+        ],
+    )
+
+    assert main() == 0
+    review = json.loads(output_path.read_text())
+    assert review["wowsims"]["actions"]
+    assert review["wowsims"]["actions"][0]["identity"]["id"] == 48265
+
+
 def test_cli_rejects_conflicting_embedded_and_explicit_requests(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
