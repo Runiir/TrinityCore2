@@ -2,6 +2,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAdaptiveAtramedesStrategy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotAdaptiveChimaeronStrategy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotAdaptiveDrudgeStrategy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeActivationState.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotAdaptiveMaloriakStrategy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotAdaptiveNefarianStrategy.h"
@@ -250,6 +251,121 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
             context.AdaptiveDrudgeOwnsNode = drudgePlan.OwnsNode;
             context.AdaptiveDrudgeTankTargetGuid = drudgePlan.TankTarget;
             context.AdaptiveDrudgeMovement = std::move(drudgePlan.Movement);
+
+            bool const exactDrudgeProfile =
+                Cohort().Config.ValidationRouteMechanicProfile
+                    == "trash_two_tank_charge_lanes";
+            context.DrudgeCombatAuthorityAllowed =
+                !exactDrudgeProfile || !context.AdaptiveDrudgeOwnsNode;
+            if (exactDrudgeProfile && context.AdaptiveDrudgeOwnsNode)
+            {
+                auto exactTankRosterObserved = [this](auto const& observed)
+                {
+                    auto const& tankSlots =
+                        Cohort().Config.ValidationRouteSplitLaneTankSlots;
+                    if (tankSlots.size() != 2 || observed.size() != 2)
+                        return false;
+                    for (uint32 slot : tankSlots)
+                    {
+                        auto roster = std::find_if(Cohort().Raid.RosterByGuid.begin(),
+                            Cohort().Raid.RosterByGuid.end(),
+                            [slot](auto const& candidate)
+                            {
+                                return candidate.second.Active
+                                    && candidate.second.LeaseOwned
+                                    && candidate.second.Role == "tank"
+                                    && candidate.second.SlotIndex + 1 == slot;
+                            });
+                        if (roster == Cohort().Raid.RosterByGuid.end()
+                            || !observed.count(roster->first))
+                            return false;
+                    }
+                    return true;
+                };
+
+                auto const& party = Party();
+                bool const prepullStaged = party.ValidationRouteDrudgePrepullStaged
+                    && party.ValidationRouteDrudgePrepullAttemptId == Cohort().AttemptId
+                    && party.ValidationRouteDrudgePrepullWipeGeneration
+                        == Cohort().Raid.WipeGeneration
+                    && party.ValidationRouteDrudgePrepullRouteGeneration
+                        == party.ValidationRouteGeneration;
+                bool const seedScope =
+                    party.ValidationRouteDrudgeThreatSeedAttemptId == Cohort().AttemptId
+                    && party.ValidationRouteDrudgeThreatSeedWipeGeneration
+                        == Cohort().Raid.WipeGeneration
+                    && party.ValidationRouteDrudgeThreatSeedRouteGeneration
+                        == party.ValidationRouteGeneration;
+                bool seedLane0 = false;
+                bool seedLane1 = false;
+                if (seedScope)
+                    for (auto const& evidence :
+                        party.ValidationRouteDrudgeThreatSeedEvidenceRows)
+                        if (evidence.ActionSucceeded && evidence.ProfileActionValid
+                            && evidence.AttemptId == Cohort().AttemptId
+                            && evidence.WipeGeneration == Cohort().Raid.WipeGeneration
+                            && evidence.RouteGeneration == party.ValidationRouteGeneration)
+                        {
+                            if (evidence.SourceLane == 0)
+                                seedLane0 = true;
+                            else if (evidence.SourceLane == 1)
+                                seedLane1 = true;
+                        }
+                bool const seedProfileActionsAccepted = seedScope
+                    && party.ValidationRouteDrudgeThreatSeedComplete
+                    && !party.ValidationRouteDrudgeThreatSeedFailure
+                    && party.ValidationRouteDrudgeThreatSeedRosterGuids.size() == 2
+                    && seedLane0 && seedLane1;
+                bool const firstNativeRushObserved = std::any_of(
+                    party.ValidationRouteDrudgeChargeObservations.begin(),
+                    party.ValidationRouteDrudgeChargeObservations.end(),
+                    [this](auto const& observation)
+                    {
+                        return observation.AttemptId == Cohort().AttemptId
+                            && observation.WipeGeneration == Cohort().Raid.WipeGeneration
+                            && observation.RouteGeneration == Party().ValidationRouteGeneration
+                            && observation.Landed;
+                    });
+                bool const exactRosterReseparated =
+                    party.ValidationRouteDrudgeReseparatedRosterGuids.size()
+                    == Cohort().Raid.RosterByGuid.size()
+                    && !Cohort().Raid.RosterByGuid.empty()
+                    && std::all_of(Cohort().Raid.RosterByGuid.begin(),
+                        Cohort().Raid.RosterByGuid.end(),
+                        [&party](auto const& roster)
+                        {
+                            return roster.second.Active && roster.second.LeaseOwned
+                                && party.ValidationRouteDrudgeReseparatedRosterGuids
+                                    .count(roster.first);
+                        });
+                bool const profileActionAccepted =
+                    std::any_of(party.ValidationRouteDrudgeProfileActionRosterGuids.begin(),
+                        party.ValidationRouteDrudgeProfileActionRosterGuids.end(),
+                        [this](uint32 guid)
+                        {
+                            auto roster = Cohort().Raid.RosterByGuid.find(guid);
+                            return roster != Cohort().Raid.RosterByGuid.end()
+                                && roster->second.Active && roster->second.LeaseOwned;
+                        });
+
+                BotRaidDrudgeActivation::Input activationInput;
+                activationInput.ExactRouteProfile = true;
+                activationInput.ExactRosterPrepullStaged = prepullStaged;
+                activationInput.BothTankAnchorsAccepted =
+                    exactTankRosterObserved(
+                        party.ValidationRouteDrudgeOwnershipRosterGuids);
+                activationInput.BothTankVictimsAccepted =
+                    exactTankRosterObserved(
+                        party.ValidationRouteDrudgeTauntRosterGuids);
+                activationInput.SeedProfileActionsAccepted =
+                    seedProfileActionsAccepted;
+                activationInput.FirstNativeRushObserved = firstNativeRushObserved;
+                activationInput.ExactRosterReseparated = exactRosterReseparated;
+                activationInput.ProfileActionAccepted = profileActionAccepted;
+                context.DrudgeCombatAuthorityAllowed =
+                    BotRaidDrudgeActivation::Evaluate(activationInput)
+                        .CombatAuthorityAllowed;
+            }
 
             ObjectGuid const adaptiveTargetGuid = std::string(GetDungeonRole(context.Bot)) == "tank"
                 ? drudgePlan.TankTarget : drudgePlan.DamageTarget;

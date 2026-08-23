@@ -20,7 +20,16 @@ using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
 void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
     BotUpdateContext& context)
 {
-        if (context.AdaptiveDrudgeMovement && context.AdaptiveDrudgeMovement->ExpiresAtMs > context.DecisionNowMs)
+        bool const typedDrudgeValidationRoute =
+            Cohort().Config.ValidationRouteMechanicProfile
+                == "trash_two_tank_charge_lanes";
+        // The typed lane adapter owns exact Drudge geometry. Adaptive
+        // movement is therefore not allowed to mutate the pack's native
+        // acquisition window on this profile; generic encounters retain the
+        // existing adaptive movement candidate unchanged.
+        if (context.AdaptiveDrudgeMovement
+            && (!typedDrudgeValidationRoute || !context.AdaptiveDrudgeOwnsNode)
+            && context.AdaptiveDrudgeMovement->ExpiresAtMs > context.DecisionNowMs)
         {
             BotActionArbitration::Candidate movement;
             movement.Key = context.AdaptiveDrudgeMovement->Id.Key();
@@ -435,7 +444,9 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             context.State.DecisionKernel.Submit(std::move(interrupt));
         }
 
-        if (!context.AdaptiveDrudgeTankTargetGuid.IsEmpty())
+        if (!context.AdaptiveDrudgeTankTargetGuid.IsEmpty()
+            && (!typedDrudgeValidationRoute
+                || context.DrudgeCombatAuthorityAllowed))
         {
             BotActionArbitration::Candidate ownership;
             ownership.Key = "adaptive_drudge:taunt:"

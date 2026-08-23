@@ -403,6 +403,10 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             BotActionArbitration::Resource::Target);
         trash.Attempt = [&]()
         {
+            if (typedDrudgeValidationRoute && context.AdaptiveDrudgeOwnsNode
+                && !context.DrudgeCombatAuthorityAllowed)
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "drudge_activation_latch_closed");
             DungeonTrashActionResult& trashAction = context.TrashAction;
             if (!IsDungeonTrashContext(context.Bot, context.Target))
                 return BotActionArbitration::Outcome::NotApplicable(
@@ -509,6 +513,10 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             BotActionArbitration::Resource::Movement);
         combatRange.Attempt = [&]()
         {
+            if (typedDrudgeValidationRoute && context.AdaptiveDrudgeOwnsNode
+                && !context.DrudgeCombatAuthorityAllowed)
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "drudge_activation_latch_closed");
             Unit* const target = context.Target;
             Creature const* targetCreature = target ? target->ToCreature() : nullptr;
             bool const targetAlive = target && target->IsAlive();
@@ -564,6 +572,10 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             BotActionArbitration::Resource::Target);
         combat.Attempt = [&]()
         {
+            if (typedDrudgeValidationRoute && context.AdaptiveDrudgeOwnsNode
+                && !context.DrudgeCombatAuthorityAllowed)
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "drudge_activation_latch_closed");
             if (!context.Target || !context.Target->IsAlive())
                 return BotActionArbitration::Outcome::NotApplicable(
                     "no_live_combat_target");

@@ -41,6 +41,10 @@ struct BotWorldPopulationMgr::BotUpdateContext
     uint64 DecisionNowMs = 0;
 
     bool AdaptiveDrudgeOwnsNode = false;
+    // Exact typed Drudge lanes retain combat authority in the route adapter
+    // until its scoped native evidence edge is complete. Generic profiles
+    // outside that exact validation route remain unaffected.
+    bool DrudgeCombatAuthorityAllowed = true;
     bool AdaptiveAtramedesOwnsNode = false;
     bool AdaptiveChimaeronOwnsNode = false;
     bool AdaptiveChimaeronHealingDisabled = false;
