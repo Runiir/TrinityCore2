@@ -149,6 +149,11 @@ class ChunkedConsoleProcess:
         return None if self.chunks else 0
 
 
+class StalledChunkedConsoleProcess(ChunkedConsoleProcess):
+    def poll(self):
+        return None
+
+
 class FakeWorldDb:
     def __init__(self):
         self.closed = False
@@ -8929,7 +8934,15 @@ def test_upsert_trinity_config_normalizes_literal_newline_fragments():
 def test_read_until_console_prompt_waits_for_structured_marker_after_early_prompt(
     command, payload, monkeypatch
 ):
-    process = ChunkedConsoleProcess(["TC> ", payload, "TC> ", "next command output\n"])
+    process = ChunkedConsoleProcess(
+        [
+            "UNSOLICITED console text\nTC> ",
+            "delayed response chunk\n",
+            payload,
+            "TC> ",
+            "next command output\n",
+        ]
+    )
     module_globals = read_until_console_prompt.__globals__
     monkeypatch.setattr(module_globals["select"], "select", lambda fds, *_args: (fds if process.chunks else [], [], []))
     monkeypatch.setattr(module_globals["os"], "read", lambda _fd, _size: process.chunks.pop(0))
@@ -8947,18 +8960,50 @@ def test_read_until_console_prompt_waits_for_structured_marker_after_early_promp
 
 
 def test_read_until_console_prompt_fails_closed_when_structured_marker_is_missing(monkeypatch):
-    process = ChunkedConsoleProcess(["TC> ", '{"action":"botauto_status","duration_seconds":29}\n'])
+    process = StalledChunkedConsoleProcess(["UNSOLICITED response text\nTC> "])
     module_globals = read_until_console_prompt.__globals__
+    monkeypatch.setattr(module_globals["select"], "select", lambda fds, *_args: (fds if process.chunks else [], [], []))
+    monkeypatch.setattr(module_globals["os"], "read", lambda _fd, _size: process.chunks.pop(0))
+
+    started_at = time.monotonic()
+    output = read_until_console_prompt(
+        process,
+        started_at + 5,
+        module_globals["expected_command_output_marker"](".botauto status"),
+    )
+    elapsed = time.monotonic() - started_at
+
+    assert module_globals["expected_command_output_marker"](".botauto status") not in output
+    assert elapsed < 2.0
+
+
+def test_read_until_console_prompt_bounds_continuous_pre_marker_output(
+    monkeypatch,
+):
+    process = StalledChunkedConsoleProcess(
+        ["UNSOLICITED response text\nTC> ", *(["still streaming\n"] * 8), "later command output\n"]
+    )
+    module_globals = read_until_console_prompt.__globals__
+    clock = [0.0]
+
+    def monotonic():
+        clock[0] += 0.2
+        return clock[0]
+
+    monkeypatch.setattr(module_globals["time"], "monotonic", monotonic)
     monkeypatch.setattr(module_globals["select"], "select", lambda fds, *_args: (fds if process.chunks else [], [], []))
     monkeypatch.setattr(module_globals["os"], "read", lambda _fd, _size: process.chunks.pop(0))
 
     output = read_until_console_prompt(
         process,
-        time.monotonic() + 1,
+        100.0,
         module_globals["expected_command_output_marker"](".botauto status"),
     )
 
     assert module_globals["expected_command_output_marker"](".botauto status") not in output
+    assert "later command output" not in output
+    assert process.chunks
+    assert clock[0] < 3.0
 
 
 def test_read_until_console_prompt_does_not_complete_on_required_marker_alone(monkeypatch):

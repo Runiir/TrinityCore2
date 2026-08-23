@@ -64,6 +64,7 @@ DEFAULT_MAX_REPEATED_DECISIONS = 20
 DEFAULT_MAX_DEATH_LOOPS = 3
 DEFAULT_MAX_WORLDSERVER_OUTPUT_BYTES = 64 * 1024 * 1024
 MAX_WORLDSERVER_DRAIN_BYTES_PER_WAKE = 64 * 1024
+PRE_MARKER_PROMPT_GRACE_SEC = 1.0
 WORLDSERVER_OUTPUT_TRUNCATED_MARKER = "\n[worldserver_output_truncated]\n"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_COMBAT_CALIBRATION_REFERENCE = REPO_ROOT / "dataset/combat_calibration/wowsims_cata_p4.json"
@@ -3956,10 +3957,17 @@ def read_until_console_prompt(
         return ""
     output: list[str] = []
     fd = process.stdout.fileno()
+    pre_marker_prompt_at: float | None = None
     while process.poll() is None and time.monotonic() < deadline:
         remaining = max(0.0, deadline - time.monotonic())
         ready, _, _ = select.select([fd], [], [], min(1.0, remaining))
         if not ready:
+            if (
+                required_text
+                and pre_marker_prompt_at is not None
+                and time.monotonic() - pre_marker_prompt_at >= PRE_MARKER_PROMPT_GRACE_SEC
+            ):
+                break
             continue
         chunk = os.read(fd, 4096)
         if not chunk:
@@ -3980,9 +3988,14 @@ def read_until_console_prompt(
             # read returns incomplete output and the parser fails closed.
             if marker_index < 0:
                 prompt_positions = [match.start() for match in re.finditer("TC>", joined)]
-                if prompt_positions and (
-                    joined[:prompt_positions[0]].strip()
-                    or len(prompt_positions) > 1
+                if prompt_positions:
+                    if pre_marker_prompt_at is None:
+                        pre_marker_prompt_at = time.monotonic()
+                    elif len(prompt_positions) > 1:
+                        break
+                if (
+                    pre_marker_prompt_at is not None
+                    and time.monotonic() - pre_marker_prompt_at >= PRE_MARKER_PROMPT_GRACE_SEC
                 ):
                     break
         if not required_text and ("TC>" in text or "TC>" in joined[-16:]):
