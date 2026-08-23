@@ -349,6 +349,9 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
         state.DecisionTimer -= diff;
         return;
     }
+    uint32 const reactionTimeMs =
+        BotClassSpecActionProfileStore::ReactionTimeMsForSpec(
+            Cohort().CalibrationTargetSpec.c_str());
     bool const responsiveCalibration =
         Cohort().CalibrationMode == "healer_controlled_damage_300"
         || Cohort().CalibrationMode == "tank_threat_300"
@@ -359,11 +362,9 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
         // Match pinned fixtures that use a 100 ms reaction time. Hasted channels,
         // short Wrath casts, and sub-1.5-second GCDs otherwise lose a material
         // fraction of their throughput waiting for the generic polling tick.
-        || Cohort().CalibrationTargetSpec == "shadow_priest"
-        || Cohort().CalibrationTargetSpec == "balance_druid";
-    bool const fixtureReactionTime = Cohort().CalibrationTargetSpec == "shadow_priest"
-        || Cohort().CalibrationTargetSpec == "balance_druid";
-    state.DecisionTimer = fixtureReactionTime ? 100 : (responsiveCalibration ? 250 : 500);
+        || reactionTimeMs == 100;
+    bool const fixtureReactionTime = reactionTimeMs == 100;
+    state.DecisionTimer = fixtureReactionTime ? reactionTimeMs : (responsiveCalibration ? 250 : 500);
 
     if (!bot || Cohort().CalibrationWindowComplete)
         return;

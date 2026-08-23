@@ -829,6 +829,14 @@ BotClassSpecActionProfile BotClassSpecActionProfileStore::Build(Player const* bo
     return BuildForSpec(bot, roleHint, nullptr);
 }
 
+uint32 BotClassSpecActionProfileStore::ReactionTimeMsForSpec(char const* specTag)
+{
+    std::string const canonicalSpecTag = CanonicalSpecTag(specTag ? specTag : "");
+    return canonicalSpecTag == "affliction_warlock"
+        || canonicalSpecTag == "shadow_priest"
+        || canonicalSpecTag == "balance_druid" ? 100 : 500;
+}
+
 BotClassSpecActionProfile BotClassSpecActionProfileStore::BuildForSpec(
     Player const* bot, char const* roleHint, char const* specTag)
 {

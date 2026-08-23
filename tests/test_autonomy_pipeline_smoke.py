@@ -281,8 +281,8 @@ def test_decision_tick_caps_combat_and_validation_before_minimum_floor():
         update_bot,
         'uint32 decisionTickMs = sConfigMgr->GetIntDefault("BotWorld.DecisionTickMs", 3000);',
         "if (bot->IsInCombat() || Cohort().Config.ValidationRouteEnable)",
-        "decisionTickMs = std::min<uint32>(decisionTickMs, responsiveShadowCombat ? 100 : 1000);",
-        "state.DecisionTimer = std::max<uint32>(responsiveShadowCombat ? 100 : 500, decisionTickMs);",
+        "decisionTickMs = std::min<uint32>(decisionTickMs, responsiveSpecCombat ? reactionTimeMs : 1000);",
+        "state.DecisionTimer = std::max<uint32>(responsiveSpecCombat ? reactionTimeMs : 500, decisionTickMs);",
     )
 
 

@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
+#include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 #include "Bots/BotRaidAreaAuthority.h"
@@ -251,12 +252,14 @@ bool BotWorldPopulationMgr::PrepareBotUpdate(BotUpdateContext& context)
         return false;
     }
     uint32 decisionTickMs = sConfigMgr->GetIntDefault("BotWorld.DecisionTickMs", 3000);
-    bool const responsiveShadowCombat = context.Bot->IsInCombat() && context.Bot->HasAura(15473);
+    BotClassSpecActionProfile const cadenceProfile =
+        BotClassSpecActionProfileStore::Build(context.Bot, GetDungeonRole(context.Bot));
+    uint32 const reactionTimeMs = BotClassSpecActionProfileStore::ReactionTimeMsForSpec(
+        cadenceProfile.SpecTag.c_str());
+    bool const responsiveSpecCombat = context.Bot->IsInCombat() && reactionTimeMs == 100;
     if (context.Bot->IsInCombat() || Cohort().Config.ValidationRouteEnable)
-        decisionTickMs = std::min<uint32>(decisionTickMs, responsiveShadowCombat ? 100 : 1000);
-    // Keep production Shadow scheduling aligned with its pinned 100 ms reaction
-    // cadence; the hasted channel profile otherwise idles between actions.
-    context.State.DecisionTimer = std::max<uint32>(responsiveShadowCombat ? 100 : 500, decisionTickMs);
+        decisionTickMs = std::min<uint32>(decisionTickMs, responsiveSpecCombat ? reactionTimeMs : 1000);
+    context.State.DecisionTimer = std::max<uint32>(responsiveSpecCombat ? reactionTimeMs : 500, decisionTickMs);
 
     context.EnsureProgressionScored();
 
