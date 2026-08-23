@@ -1255,7 +1255,12 @@ def parse_json_objects(output: str) -> list[dict[str, Any]]:
     decoder = json.JSONDecoder()
     index = 0
     while index < len(output):
-        start = output.find("{", index)
+        starts = [
+            candidate
+            for candidate in (output.find("{", index), output.find("[", index))
+            if candidate >= 0
+        ]
+        start = min(starts) if starts else -1
         if start == -1:
             break
         try:
@@ -1263,10 +1268,18 @@ def parse_json_objects(output: str) -> list[dict[str, Any]]:
         except json.JSONDecodeError:
             index = start + 1
             continue
-        if isinstance(payload, dict):
+        if isinstance(payload, dict) and _is_telemetry_payload(payload):
             rows.append(payload)
         index = start + max(end, 1)
     return rows
+
+
+def _is_telemetry_payload(payload: Any) -> bool:
+    """Accept only envelopes whose optional action identifier is a string."""
+    if not isinstance(payload, dict):
+        return False
+    action = payload.get("action")
+    return action is None or isinstance(action, str)
 
 
 def strip_combat_log_chunks(output: str) -> str:
@@ -1409,6 +1422,7 @@ def combined_calibration_status(
 
 
 def classify_payloads(payloads: list[dict[str, Any]]) -> dict[str, Any]:
+    payloads = [row for row in payloads if _is_telemetry_payload(row)]
     status = next(
         (
             row

@@ -5,6 +5,7 @@ from tools.bot_ml.analyze_combat_log import analyze_combat_log
 from tools.bot_ml.run_live_bot_validation import (
     heartbeat_commands_from_script,
     live_validation_report,
+    parse_json_objects,
     strip_calibration_status_chunks,
     strip_combat_log_chunks,
 )
@@ -247,3 +248,42 @@ def test_live_validation_reassembles_bounded_calibration_status_chunks():
     corrupt = live_validation_report("\n".join(json.dumps(row) for row in rows))
     assert corrupt["combat_calibration"] == {}
     assert corrupt["combat_calibration_transport"]["reassembled"] is False
+
+
+def test_live_validation_ignores_nested_action_objects_but_keeps_combatlog_rows():
+    nested_payload = json.dumps([{"action": {"nested": "not-a-telemetry-action"}}])
+    direct_output = "\n".join([nested_payload, json.dumps(combat_log_fixture())])
+
+    assert parse_json_objects(direct_output) == [combat_log_fixture()]
+    direct_report = live_validation_report(direct_output)
+
+    assert direct_report["combat_log"]["event_count"] == 42
+
+    raw = json.dumps(combat_log_fixture(), separators=(",", ":")).encode()
+    chunk_size = 113
+    parts = [raw[index : index + chunk_size] for index in range(0, len(raw), chunk_size)]
+    chunk_rows = [
+        {
+            "action": "botauto_combatlog_chunk",
+            "combat_log_chunk_schema_version": 1,
+            "sequence": sequence,
+            "chunk_count": len(parts),
+            "encoding": "base64",
+            "data": base64.b64encode(part).decode(),
+        }
+        for sequence, part in enumerate(parts)
+    ]
+    chunk_rows.append(
+        {
+            "action": "botauto_combatlog_complete",
+            "combat_log_chunk_schema_version": 1,
+            "chunk_count": len(parts),
+            "total_bytes": len(raw),
+        }
+    )
+    chunk_output = "\n".join([nested_payload, *(json.dumps(row) for row in chunk_rows)])
+
+    chunk_report = live_validation_report(chunk_output)
+
+    assert chunk_report["combat_log"]["event_count"] == 42
+    assert chunk_report["combat_log_transport"]["reassembled"] is True
