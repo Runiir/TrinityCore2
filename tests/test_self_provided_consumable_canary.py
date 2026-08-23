@@ -165,6 +165,33 @@ def test_successful_food_completion_stands_before_precombat_release() -> None:
     ) < food_completion.index("caster->SetStandState(UNIT_STAND_STATE_STAND);")
 
 
+def test_successful_consumable_completion_refreshes_live_pet_scaling() -> None:
+    semantic = _source(
+        "src/server/game/Bots/BotWorldPopulationMgrSemantic.cpp"
+    )
+    completion = _between(
+        semantic,
+        "void BotWorldPopulationMgr::NotifyBotItemSpellFinished",
+        "void BotWorldPopulationMgr::FlushPendingHealCast",
+    )
+    receipt_completion = _between(
+        completion,
+        "receipt->NativeUseFinishedSuccessfully = success;",
+        "break;",
+    )
+
+    assert "if (success)" in receipt_completion
+    assert "if (Pet* pet = caster->GetPet())" in receipt_completion
+    assert "pet->UpdatePetScalingAuras();" in receipt_completion
+    assert "pet->UpdateAllStats();" in receipt_completion
+    assert receipt_completion.index("pet->UpdatePetScalingAuras();") < (
+        receipt_completion.index("pet->UpdateAllStats();")
+    )
+    assert receipt_completion.index("pet->UpdateAllStats();") < (
+        receipt_completion.index("++receipt->SuccessfulUseCount;")
+    )
+
+
 def test_prepot_runs_after_the_only_pre_score_cooldown_reset() -> None:
     reset = _source(
         "src/server/game/Bots/BotWorldPopulationMgrCalibrationReset.cpp"

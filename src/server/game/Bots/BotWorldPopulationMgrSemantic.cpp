@@ -12,6 +12,7 @@
 #include "Item.h"
 #include "Log.h"
 #include "ObjectAccessor.h"
+#include "Pet.h"
 #include "Player.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
@@ -239,6 +240,16 @@ void BotWorldPopulationMgr::NotifyBotItemSpellFinished(Player* caster,
                     receipt->PostUseItemCount = CountInventoryItem(caster,
                         receipt->ItemId);
                     receipt->NativeUseFinishedSuccessfully = success;
+                    // The ordinary player update refreshes owner-derived pet
+                    // scaling once per second. The calibration barrier can
+                    // observe this completion first, so refresh the live pet
+                    // now while the completed item's stat aura is active.
+                    if (success)
+                        if (Pet* pet = caster->GetPet())
+                        {
+                            pet->UpdatePetScalingAuras();
+                            pet->UpdateAllStats();
+                        }
                     // Eating applies the native sitting state. A real client
                     // stands before its next offensive request; complete that
                     // transition before releasing the precombat barrier.
