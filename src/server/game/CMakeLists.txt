@@ -19,6 +19,10 @@ list(APPEND PRIVATE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotClassSpecActionProfile.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotCombatActionCatalog.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotController.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotControllerCombat.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotControllerHealer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotControllerMovement.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotControllerRecording.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotDatasetEvent.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotEncounterMechanicCatalog.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotExperimentCoordinator.cpp
