@@ -3972,12 +3972,18 @@ def read_until_console_prompt(
                 terminal_marker or "TC>" in joined[marker_index + len(required_text):]
             ):
                 break
-            # A fresh console prompt is also an authoritative command boundary.
-            # Return the incomplete response immediately so the evidence parser
-            # can reject the missing marker; waiting until the cleanup deadline
-            # would turn a fail-closed diagnostic into a false liveness stall.
-            if not terminal_marker and "TC>" in joined:
-                break
+            # A prompt before the required marker can be the console echo for
+            # the command that is still streaming.  Ignore it and wait for a
+            # prompt after the marker so the next command cannot interleave
+            # with this response.  If the marker never arrives, the bounded
+            # read returns incomplete output and the parser fails closed.
+            if marker_index < 0:
+                prompt_positions = [match.start() for match in re.finditer("TC>", joined)]
+                if prompt_positions and (
+                    joined[:prompt_positions[0]].strip()
+                    or len(prompt_positions) > 1
+                ):
+                    break
         if not required_text and ("TC>" in text or "TC>" in joined[-16:]):
             break
     return "".join(output)

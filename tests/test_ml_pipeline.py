@@ -8850,15 +8850,60 @@ def test_upsert_trinity_config_normalizes_literal_newline_fragments():
     assert "BotWorld.ValidationRoute.Enable = 1" in generated
 
 
-def test_read_until_console_prompt_waits_for_prompt_after_required_marker(monkeypatch):
-    process = ChunkedConsoleProcess(["TC> ", 'CMD .botauto status\n{"target_bots": 1}\n', "TC> "])
+@pytest.mark.parametrize(
+    ("command", "payload"),
+    [
+        (
+            ".botauto status",
+            '{"action":"botauto_status","target_bots":1,"duration_seconds":29}\n',
+        ),
+        (
+            ".botauto diagnose all",
+            '{"action":"botauto_diagnose","diagnosis_schema_version":1,"bots":[]}\n',
+        ),
+        (
+            ".botauto trace all 20",
+            '{"action":"botauto_trace","trace_schema_version":1,"entries":[]}\n',
+        ),
+        (
+            ".botexp summary",
+            '{"summary_schema_version":1,"duration_minutes":1}\n',
+        ),
+    ],
+)
+def test_read_until_console_prompt_waits_for_structured_marker_after_early_prompt(
+    command, payload, monkeypatch
+):
+    process = ChunkedConsoleProcess(["TC> ", payload, "TC> ", "next command output\n"])
     module_globals = read_until_console_prompt.__globals__
     monkeypatch.setattr(module_globals["select"], "select", lambda fds, *_args: (fds if process.chunks else [], [], []))
     monkeypatch.setattr(module_globals["os"], "read", lambda _fd, _size: process.chunks.pop(0))
 
-    output = read_until_console_prompt(process, time.monotonic() + 1, '"target_bots"')
+    output = read_until_console_prompt(
+        process,
+        time.monotonic() + 1,
+        module_globals["expected_command_output_marker"](command),
+        module_globals["command_output_marker_is_terminal"](command),
+    )
 
+    assert module_globals["expected_command_output_marker"](command) in output
     assert output.endswith("TC> ")
+    assert "next command output" not in output
+
+
+def test_read_until_console_prompt_fails_closed_when_structured_marker_is_missing(monkeypatch):
+    process = ChunkedConsoleProcess(["TC> ", '{"action":"botauto_status","duration_seconds":29}\n'])
+    module_globals = read_until_console_prompt.__globals__
+    monkeypatch.setattr(module_globals["select"], "select", lambda fds, *_args: (fds if process.chunks else [], [], []))
+    monkeypatch.setattr(module_globals["os"], "read", lambda _fd, _size: process.chunks.pop(0))
+
+    output = read_until_console_prompt(
+        process,
+        time.monotonic() + 1,
+        module_globals["expected_command_output_marker"](".botauto status"),
+    )
+
+    assert module_globals["expected_command_output_marker"](".botauto status") not in output
 
 
 def test_read_until_console_prompt_does_not_complete_on_required_marker_alone(monkeypatch):
