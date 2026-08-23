@@ -29,6 +29,10 @@ list(APPEND PRIVATE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotExperienceLearningPolicy.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotLongTermProgressionBrain.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotMgr.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotMgrCleanup.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotMgrEconomy.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotMgrEvents.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotMgrLoading.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotProgressionGoalPolicy.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotRoleSaturationPolicy.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotTelemetryBuffer.cpp
