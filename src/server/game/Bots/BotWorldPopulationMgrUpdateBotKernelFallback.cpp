@@ -1,6 +1,8 @@
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
 #include "Bots/BotActionExecutor.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
+#include "Bots/BotRouteCombatTargetPolicy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotAdaptiveDrudgeStrategy.h"
 
 #include "Creature.h"
 #include "MotionMaster.h"
@@ -487,7 +489,18 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                 return BotActionArbitration::Outcome::NotApplicable(
                     "no_live_combat_target");
             char const* rejectReason = nullptr;
-            if (!context.Bot->IsInCombat() && !IsQuestRelevantTarget(context.Bot, context.Target)
+            Creature const* targetCreature = context.Target->ToCreature();
+            bool const ownedNativeRouteTarget = targetCreature
+                && BotRouteCombatTargetPolicy::IsOwnedNativeEncounterTarget(
+                    context.AdaptiveDrudgeOwnsNode,
+                    context.Target->IsAlive(),
+                    context.Bot->IsValidAttackTarget(context.Target),
+                    context.Target->GetMapId() == context.Bot->GetMapId(),
+                    context.Target->GetInstanceId() == context.Bot->GetInstanceId(),
+                    targetCreature->GetEntry(),
+                    BotEncounter::AdaptiveDrudgeStrategy::DrudgeEntry);
+            if (!context.Bot->IsInCombat() && !ownedNativeRouteTarget
+                && !IsQuestRelevantTarget(context.Bot, context.Target)
                 && !IsProgressionCombatTarget(context.Bot, context.Target, &rejectReason))
             {
                 context.State.LastRejectedTargetReason = rejectReason
