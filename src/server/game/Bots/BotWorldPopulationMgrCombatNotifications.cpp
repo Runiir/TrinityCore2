@@ -406,3 +406,32 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
     AddCombatLogEvent("damage", sourceActor ? sourceActor : targetActor, attacker, victim, spellId,
         damageType, schoolMask, damage, unmitigatedDamage, 0, nowMs);
 }
+
+void BotWorldPopulationMgr::NotifyCombatPeriodicOutcome(Unit* attacker,
+    Unit* victim, uint32 spellId, uint32 damage, bool critical,
+    float critChancePct)
+{
+    if (!Cohort().Active || !attacker || !victim || !damage
+        || Cohort().CalibrationMode != "single_target_300"
+        || Cohort().CalibrationWindowComplete
+        || Cohort().CalibrationFixtureTargetGuid.IsEmpty()
+        || victim->GetGUID() != Cohort().CalibrationFixtureTargetGuid)
+        return;
+
+    uint64 const nowMs = NowMs();
+    if (!Cohort().CalibrationScoredStartedMs
+        || nowMs < Cohort().CalibrationScoredStartedMs
+        || nowMs - Cohort().CalibrationScoredStartedMs
+            >= CalibrationSingleTargetDurationMs)
+        return;
+
+    Player* owner = CombatOwnerPlayer(attacker);
+    if (!owner)
+        return;
+    auto calibration = Cohort().CalibrationMetricsByGuid.find(
+        owner->GetGUID().GetCounter());
+    if (calibration == Cohort().CalibrationMetricsByGuid.end())
+        return;
+    ObserveAfflictionPeriodicOutcome(calibration->second, owner, spellId,
+        damage, critical, critChancePct);
+}
