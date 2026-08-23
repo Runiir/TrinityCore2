@@ -1,15 +1,19 @@
 from __future__ import annotations
 
+import hashlib
 import json
+import sys
 from pathlib import Path
 
 import pytest
 
 from tools.bot_ml.review_rotation_mechanics import (
     build_review,
+    canonical_sha256,
     compare_cast_mix,
     find_wowsims_apl,
     load_route_document,
+    main,
     normalize_wowsims_apl,
     normalize_wowsims_result,
     normalize_runtime_report,
@@ -1199,6 +1203,100 @@ def test_cli_exported_raid_request_rotation_can_be_found():
         }
     }
     assert find_wowsims_apl(request)["type"] == "TypeAPL"
+
+
+def test_cli_admits_standalone_apl_with_explicit_request_and_records_provenance(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    request, _ = _gear_fixture()
+    apl_path = tmp_path / "rotation.apl.json"
+    request_path = tmp_path / "native-request.json"
+    output_path = tmp_path / "review.json"
+    apl_path.write_text(json.dumps(_apl()))
+    request_path.write_text(json.dumps(request, indent=2))
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "review_rotation_mechanics",
+            "--wowsims-apl",
+            str(apl_path),
+            "--wowsims-request",
+            str(request_path),
+            "--output",
+            str(output_path),
+        ],
+    )
+
+    assert main() == 0
+    review = json.loads(output_path.read_text())
+    source = review["sources"]["wowsims_request"]
+    assert source["path"] == str(request_path)
+    assert source["sha256"] == hashlib.sha256(request_path.read_bytes()).hexdigest()
+    assert source["canonical_sha256"] == canonical_sha256(request)
+    assert review["wowsims_gear"]["manifest"]
+
+
+def test_cli_rejects_conflicting_embedded_and_explicit_requests(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    embedded, _ = _gear_fixture()
+    explicit, _ = _gear_fixture()
+    explicit["raid"]["parties"][0]["players"][0]["equipment"]["items"][0][
+        "id"
+    ] += 1
+    apl_path = tmp_path / "embedded-request.json"
+    request_path = tmp_path / "conflicting-request.json"
+    apl_path.write_text(json.dumps(embedded))
+    request_path.write_text(json.dumps(explicit))
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "review_rotation_mechanics",
+            "--wowsims-apl",
+            str(apl_path),
+            "--wowsims-request",
+            str(request_path),
+        ],
+    )
+
+    with pytest.raises(SystemExit) as error:
+        main()
+    assert error.value.code == 2
+
+
+def test_cli_allows_canonically_identical_embedded_and_explicit_requests(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    request, _ = _gear_fixture()
+    embedded_path = tmp_path / "embedded-request.json"
+    explicit_path = tmp_path / "same-request-different-order.json"
+    output_path = tmp_path / "review.json"
+    embedded_path.write_text(json.dumps(request, indent=2))
+    explicit_path.write_text(json.dumps(request, sort_keys=True, separators=(",", ":")))
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "review_rotation_mechanics",
+            "--wowsims-apl",
+            str(embedded_path),
+            "--wowsims-request",
+            str(explicit_path),
+            "--output",
+            str(output_path),
+        ],
+    )
+
+    assert main() == 0
+    review = json.loads(output_path.read_text())
+    assert review["sources"]["wowsims_request"]["canonical_sha256"] == canonical_sha256(
+        request
+    )
 
 
 def test_native_protojson_raid_request_snake_case_is_normalized():

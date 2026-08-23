@@ -462,6 +462,53 @@ def find_wowsims_apl(document: Any, player_index: int = 0) -> dict[str, Any]:
     raise ValueError("no WoWSims APL found in document")
 
 
+def _embedded_wowsims_request(document: Any) -> dict[str, Any] | None:
+    """Return a canonical embedded RaidSimRequest, when one is present."""
+    normalized_document = _camelize_json_keys(document)
+    if isinstance(normalized_document, dict) and isinstance(
+        normalized_document.get("raid"), dict
+    ):
+        return normalized_document
+    return None
+
+
+def _admit_wowsims_request(
+    *,
+    embedded_request: dict[str, Any] | None,
+    explicit_request: Any | None,
+    explicit_path: Path | None,
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+    """Admit one canonical request and its optional source provenance."""
+    canonical_explicit = (
+        _camelize_json_keys(explicit_request)
+        if explicit_path is not None
+        else None
+    )
+    if canonical_explicit is not None and not isinstance(canonical_explicit, dict):
+        raise ValueError("--wowsims-request must contain a JSON object")
+    if canonical_explicit is not None and not isinstance(
+        canonical_explicit.get("raid"), dict
+    ):
+        raise ValueError("--wowsims-request must contain a raid object")
+
+    if (
+        embedded_request is not None
+        and canonical_explicit is not None
+        and canonical_sha256(embedded_request) != canonical_sha256(canonical_explicit)
+    ):
+        raise ValueError(
+            "embedded WoWSims request in --wowsims-apl conflicts with "
+            "--wowsims-request"
+        )
+
+    request = canonical_explicit or embedded_request
+    source = None
+    if request is not None and explicit_path is not None:
+        source = _source_record(explicit_path)
+        source["canonical_sha256"] = canonical_sha256(request)
+    return request, source
+
+
 def normalize_wowsims_gear(
     document: Any, player_index: int = 0
 ) -> dict[str, Any] | None:
@@ -3842,6 +3889,7 @@ def main() -> int:
         description="Compare WoWSims APL, Trinity profile, runtime trace, and route mechanics."
     )
     parser.add_argument("--wowsims-apl", type=Path)
+    parser.add_argument("--wowsims-request", type=Path)
     parser.add_argument("--wowsims-player-index", type=int, default=0)
     parser.add_argument("--reference-class")
     parser.add_argument("--wowsims-result", type=Path)
@@ -3874,17 +3922,30 @@ def main() -> int:
             "database review requires --trinity-worldserver-conf, "
             "--trinity-class-id, and --trinity-spec-tag"
         )
-    if not any((args.wowsims_apl, args.wowsims_result, args.wowsims_debug_result, args.wowsims_compute_stats, args.trinity_profile, args.trinity_worldserver_conf, args.runtime_report, args.route_manifest)):
+    if not any((args.wowsims_apl, args.wowsims_request, args.wowsims_result, args.wowsims_debug_result, args.wowsims_compute_stats, args.trinity_profile, args.trinity_worldserver_conf, args.runtime_report, args.route_manifest)):
         parser.error("provide at least one review input")
 
     sources: dict[str, Any] = {}
     apl = None
-    wowsims_request = None
+    embedded_request = None
     if args.wowsims_apl:
         raw = _load_json(args.wowsims_apl)
         apl = find_wowsims_apl(raw, args.wowsims_player_index)
-        wowsims_request = raw if isinstance(raw.get("raid"), dict) else None
+        embedded_request = _embedded_wowsims_request(raw)
         sources["wowsims_apl"] = _source_record(args.wowsims_apl)
+    explicit_request = (
+        _load_json(args.wowsims_request) if args.wowsims_request else None
+    )
+    try:
+        wowsims_request, request_source = _admit_wowsims_request(
+            embedded_request=embedded_request,
+            explicit_request=explicit_request,
+            explicit_path=args.wowsims_request,
+        )
+    except ValueError as exc:
+        parser.error(str(exc))
+    if request_source is not None:
+        sources["wowsims_request"] = request_source
     wowsims_result = _load_json(args.wowsims_result) if args.wowsims_result else None
     if args.wowsims_result:
         sources["wowsims_result"] = _source_record(args.wowsims_result)
