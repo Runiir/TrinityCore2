@@ -165,9 +165,15 @@ def test_successful_food_completion_stands_before_precombat_release() -> None:
     ) < food_completion.index("caster->SetStandState(UNIT_STAND_STATE_STAND);")
 
 
-def test_successful_consumable_completion_refreshes_live_pet_scaling() -> None:
+def test_consumable_completion_waits_for_a_later_warmup_update() -> None:
     semantic = _source(
         "src/server/game/Bots/BotWorldPopulationMgrSemantic.cpp"
+    )
+    calibration_bot = _source(
+        "src/server/game/Bots/BotWorldPopulationMgrCalibrationBot.cpp"
+    )
+    reset = _source(
+        "src/server/game/Bots/BotWorldPopulationMgrCalibrationReset.cpp"
     )
     completion = _between(
         semantic,
@@ -179,16 +185,49 @@ def test_successful_consumable_completion_refreshes_live_pet_scaling() -> None:
         "receipt->NativeUseFinishedSuccessfully = success;",
         "break;",
     )
+    update = calibration_bot[
+        calibration_bot.index(
+            "void BotWorldPopulationMgr::UpdateCalibrationBot"
+        ) :
+    ]
 
-    assert "if (success)" in receipt_completion
-    assert "if (Pet* pet = caster->GetPet())" in receipt_completion
-    assert "pet->UpdatePetScalingAuras();" in receipt_completion
-    assert "pet->UpdateAllStats();" in receipt_completion
-    assert receipt_completion.index("pet->UpdatePetScalingAuras();") < (
-        receipt_completion.index("pet->UpdateAllStats();")
+    assert "UpdatePetScalingAuras" not in receipt_completion
+    assert "UpdateAllStats" not in receipt_completion
+    assert "receipt != &metrics.CombatPotionConsumable" in receipt_completion
+    assert "metrics.LastPreScoreConsumableFinishedUpdateOrdinal" in (
+        receipt_completion
     )
-    assert receipt_completion.index("pet->UpdateAllStats();") < (
-        receipt_completion.index("++receipt->SuccessfulUseCount;")
+    assert update.index("++metrics.WarmupUpdateOrdinal;") < update.index(
+        "if (state.DecisionTimer > diff)"
+    )
+    assert "metrics.WarmupUpdateOrdinal\n                    > " in reset
+    assert "metrics.LastPreScoreConsumableFinishedUpdateOrdinal;" in reset
+
+
+def test_final_pre_score_boundary_refreshes_pet_before_resource_observation() -> None:
+    reset = _source(
+        "src/server/game/Bots/BotWorldPopulationMgrCalibrationReset.cpp"
+    )
+    final_boundary = _between(
+        reset,
+        "bool consumablesSettled = true;",
+        'if (Cohort().CalibrationMode == "single_target_300")',
+    )
+    resource_reset = _between(
+        reset,
+        "void BotWorldPopulationMgr::ResetCalibrationInitialResources",
+        "void BotWorldPopulationMgr::ResetCalibrationScoredWindow",
+    )
+
+    assert final_boundary.index("pet->UpdatePetScalingAuras();") < (
+        final_boundary.index("pet->UpdateAllStats();")
+    )
+    assert final_boundary.index("pet->UpdateAllStats();") < (
+        final_boundary.index("ResetCalibrationInitialResources(bot, metrics);")
+    )
+    assert 'std::string_view(unitKind) != "pet"' in resource_reset
+    assert resource_reset.index("unit->GetMaxPower(power)") < (
+        resource_reset.index("metrics.InitialResourcesObservedAtMs = NowMs();")
     )
 
 

@@ -183,14 +183,16 @@ private:
     void EnsureValidationRaidAdmission(
         std::vector<RaidRosterPlanSlot> const& rosterPlan,
         uint32 expectedPopulation);
+    struct CalibrationMetrics;
     void EnsureCalibrationPopulation();
     void ResetCalibrationScoredWindow();
+    void ResetCalibrationInitialResources(Player* bot,
+        CalibrationMetrics& metrics);
     void UpdateCalibrationTargetHealthSchedule(uint64 nowMs);
     void UpdateCalibrationControlledDamage();
     void CompleteCalibrationScoredWindow();
     void DrainCalibrationPostWindowEffects();
     bool UpdateCalibrationHealer(WorldBotState& state, Player* healer);
-    struct CalibrationMetrics;
     bool IsSelfProvidedCalibrationBaseline() const;
     std::pair<bool, bool> ApplyCalibrationReferenceConditions(Player* bot, Unit* target) const;
     bool EnsureCalibrationSelfProvidedConsumables(WorldBotState& state,
@@ -849,6 +851,8 @@ private:
         uint32 Attempts = 0;
         uint32 Successes = 0;
         uint32 TickCount = 0;
+        uint64 WarmupUpdateOrdinal = 0;
+        uint64 LastPreScoreConsumableFinishedUpdateOrdinal = 0;
         uint32 RequiredPetReadyTicks = 0;
         uint32 PetSetupObservationSampleCount = 0;
         uint32 PetSetupReadySampleCount = 0;

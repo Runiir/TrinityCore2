@@ -332,6 +332,11 @@ bool LoadedBotMatchesPinnedHunterPet(Player const* bot, std::string const& class
 void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 diff)
 {
     Player* bot = GetBot(state);
+    CalibrationMetrics& metrics =
+        Cohort().CalibrationMetricsByGuid[state.Guid.GetCounter()];
+    if (bot && !Cohort().CalibrationScoredStartedMs
+        && !Cohort().CalibrationWindowComplete)
+        ++metrics.WarmupUpdateOrdinal;
     BeginMeleeAutoAttackDecision(state, bot);
     BotWorldPopulationMgrInternal::ReconcileOnScopeExit meleeAutoAttackReconcile{
         [this, &state, bot]()
@@ -367,7 +372,6 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
         && NowMs() >= Cohort().CalibrationScoredStartedMs
         && NowMs() - Cohort().CalibrationScoredStartedMs
             < CalibrationSingleTargetDurationMs;
-    CalibrationMetrics& metrics = Cohort().CalibrationMetricsByGuid[state.Guid.GetCounter()];
     if (!scored)
     {
         metrics.WarmupProfileActionsSuppressed = true;
