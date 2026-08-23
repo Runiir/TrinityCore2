@@ -102,6 +102,12 @@ BotController::BotController(ObjectGuid ownerGuid, ObjectGuid botGuid, BotRole r
 {
 }
 
+uint64 BotController::PlayerBotRunId()
+{
+    int32 runId = sConfigMgr->GetIntDefault("PlayerBot.RunId", 1);
+    return runId > 0 ? uint64(runId) : 0;
+}
+
 void BotController::SetMovementMode(BotMovementMode mode)
 {
     _movementMode = mode;

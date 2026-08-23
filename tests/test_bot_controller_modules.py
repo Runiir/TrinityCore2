@@ -58,3 +58,15 @@ def test_bot_controller_methods_are_not_left_in_the_lifecycle_module():
             continue
         for method in methods:
             assert f"{method}(" not in lifecycle
+
+
+def test_player_bot_run_id_is_owned_by_the_shared_controller():
+    header = (BOT_DIR / "BotController.h").read_text(encoding="utf-8")
+    lifecycle = MONOLITH.read_text(encoding="utf-8")
+    movement = (BOT_DIR / "BotControllerMovement.cpp").read_text(encoding="utf-8")
+    recording = (BOT_DIR / "BotControllerRecording.cpp").read_text(encoding="utf-8")
+
+    assert "static uint64 PlayerBotRunId();" in header
+    assert "uint64 BotController::PlayerBotRunId()" in lifecycle
+    assert "uint64 PlayerBotRunId()" not in movement
+    assert "uint64 PlayerBotRunId()" not in recording

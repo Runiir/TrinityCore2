@@ -67,12 +67,6 @@ uint64 PlayerBotNowMs()
     return uint64(std::chrono::duration_cast<std::chrono::milliseconds>(GameTime::GetGameTimeSystemPoint().time_since_epoch()).count());
 }
 
-uint64 PlayerBotRunId()
-{
-    int32 runId = sConfigMgr->GetIntDefault("PlayerBot.RunId", 1);
-    return runId > 0 ? uint64(runId) : 0;
-}
-
 std::string PlayerBotExperimentId()
 {
     std::string experimentId = sConfigMgr->GetStringDefault("PlayerBot.ExperimentId", "playerbot");

@@ -36,6 +36,7 @@ public:
     std::string GetStatus(Player const* owner, Player const* bot) const;
 
 private:
+    static uint64 PlayerBotRunId();
     HealerFrame BuildFrame(Player* owner, Player* bot, BotRecentEvents const& recentEvents) const;
     BotMovementFrame BuildMovementFrame(Player* owner, Player* bot, uint32 diff) const;
     BotCombatState BuildCombatState(Player* owner, Player* bot, BotRecentEvents const& recentEvents) const;
