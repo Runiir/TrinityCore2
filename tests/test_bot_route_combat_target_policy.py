@@ -115,3 +115,19 @@ def test_owned_drudge_range_candidate_is_movement_only_and_rechecks_profile_rang
     assert candidate.index("outsideLegalMaxRange") < candidate.index(
         "MoveBotToProfileRange"
     )
+
+
+def test_drudge_route_owns_target_before_boss_adapter_can_replace_it() -> None:
+    fallback = FALLBACK.read_text(encoding="utf-8")
+    start = fallback.index('boss.Key = "world.boss_mechanics"')
+    end = fallback.index('BotActionArbitration::Candidate trash;', start)
+    candidate = fallback[start:end]
+    guard_end = candidate.index("if (!IsBossContext")
+    guard = candidate[:guard_end]
+
+    assert "context.AdaptiveDrudgeOwnsNode" in guard
+    assert '"adaptive_drudge_owns_live_pack"' in guard
+    assert guard.index("context.AdaptiveDrudgeOwnsNode") < guard_end
+    assert candidate.index("context.AdaptiveDrudgeOwnsNode") < candidate.index(
+        "IsBossContext"
+    )

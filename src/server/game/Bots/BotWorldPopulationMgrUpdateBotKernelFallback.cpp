@@ -277,21 +277,24 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
         boss.Attempt = [&]()
         {
             BossMechanicActionResult& bossAction = context.BossAction;
-            if (context.AdaptiveMagmawOwnsNode || context.AdaptiveOmnotronOwnsNode
+            if (context.AdaptiveDrudgeOwnsNode || context.AdaptiveMagmawOwnsNode
+                || context.AdaptiveOmnotronOwnsNode
                 || context.AdaptiveMaloriakOwnsNode || context.AdaptiveChimaeronOwnsNode
                 || context.AdaptiveAtramedesOwnsNode || context.AdaptiveNefarianOwnsNode)
                 return BotActionArbitration::Outcome::NotApplicable(
-                    context.AdaptiveMagmawOwnsNode
-                        ? "adaptive_magmaw_owns_live_encounter"
-                        : (context.AdaptiveOmnotronOwnsNode
-                            ? "adaptive_omnotron_owns_live_encounter"
-                            : (context.AdaptiveMaloriakOwnsNode
-                                ? "adaptive_maloriak_owns_live_encounter"
-                                : (context.AdaptiveChimaeronOwnsNode
-                                    ? "adaptive_chimaeron_owns_live_encounter"
-                                    : (context.AdaptiveAtramedesOwnsNode
-                                        ? "adaptive_atramedes_owns_live_encounter"
-                                        : "adaptive_nefarian_owns_live_encounter")))));
+                    context.AdaptiveDrudgeOwnsNode
+                        ? "adaptive_drudge_owns_live_pack"
+                        : (context.AdaptiveMagmawOwnsNode
+                            ? "adaptive_magmaw_owns_live_encounter"
+                            : (context.AdaptiveOmnotronOwnsNode
+                                ? "adaptive_omnotron_owns_live_encounter"
+                                : (context.AdaptiveMaloriakOwnsNode
+                                    ? "adaptive_maloriak_owns_live_encounter"
+                                    : (context.AdaptiveChimaeronOwnsNode
+                                        ? "adaptive_chimaeron_owns_live_encounter"
+                                        : (context.AdaptiveAtramedesOwnsNode
+                                            ? "adaptive_atramedes_owns_live_encounter"
+                                            : "adaptive_nefarian_owns_live_encounter"))))));
             if (!IsBossContext(context.Bot, context.Target))
                 return BotActionArbitration::Outcome::NotApplicable(
                     "not_boss_context");
