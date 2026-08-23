@@ -50,6 +50,9 @@ enum WarlockSpells
     SPELL_WARLOCK_CREATE_HEALTHSTONE                = 34130,
     SPELL_WARLOCK_CORRUPTION_TRIGGERED              = 87389,
     SPELL_WARLOCK_CURSE_OF_DOOM_EFFECT              = 18662,
+    SPELL_WARLOCK_DARK_ARTS_R1                      = 18694,
+    SPELL_WARLOCK_DARK_ARTS_R2                      = 85283,
+    SPELL_WARLOCK_DARK_ARTS_R3                      = 85284,
     SPELL_WARLOCK_DEMONIC_CIRCLE_ALLOW_CAST         = 62388,
     SPELL_WARLOCK_DEMONIC_CIRCLE_SUMMON             = 48018,
     SPELL_WARLOCK_DEMONIC_CIRCLE_TELEPORT           = 48020,
@@ -596,8 +599,8 @@ class spell_warl_haunt_AuraScript : public AuraScript
 // 54049 - Shadow Bite
 // The Felhunter deals 30% additional damage for each of its owner's active
 // warlock damage-over-time effects on the victim.  The coefficient itself is
-// supplied through SpellInfoCorrections; this script preserves the native
-// damage pipeline and applies only the spell's target-state mechanic.
+// supplied through SpellInfoCorrections; Dark Arts and the owner's active
+// damage-over-time effects provide the native modifiers.
 class spell_warl_shadow_bite : public SpellScript
 {
     void CalculateDamage(Unit* victim, int32& /*damage*/, int32& /*flatMod*/, float& pctMod)
@@ -616,6 +619,15 @@ class spell_warl_shadow_bite : public SpellScript
         }
 
         AddPct(pctMod, int32(30 * activeDots.size()));
+
+        for (uint32 spellId : { SPELL_WARLOCK_DARK_ARTS_R3, SPELL_WARLOCK_DARK_ARTS_R2, SPELL_WARLOCK_DARK_ARTS_R1 })
+        {
+            if (AuraEffect const* darkArts = owner->GetAuraEffect(spellId, EFFECT_1))
+            {
+                AddPct(pctMod, darkArts->GetAmount());
+                break;
+            }
+        }
     }
 
     void Register() override

@@ -26,6 +26,22 @@ def test_shadow_bite_scales_from_owned_warlock_dots_without_damage_injection() -
     assert "SetHitDamage" not in source[source.index("class spell_warl_shadow_bite") : source.index("// 755 - Health Funnel")]
 
 
+def test_shadow_bite_uses_highest_active_dark_arts_rank_effect_amount() -> None:
+    source = (ROOT / "src/server/scripts/Spells/spell_warlock.cpp").read_text()
+    shadow_bite = source[source.index("class spell_warl_shadow_bite") : source.index("// 755 - Health Funnel")]
+
+    assert "SPELL_WARLOCK_DARK_ARTS_R1                      = 18694" in source
+    assert "SPELL_WARLOCK_DARK_ARTS_R2                      = 85283" in source
+    assert "SPELL_WARLOCK_DARK_ARTS_R3                      = 85284" in source
+    assert "for (uint32 spellId : { SPELL_WARLOCK_DARK_ARTS_R3, SPELL_WARLOCK_DARK_ARTS_R2, SPELL_WARLOCK_DARK_ARTS_R1 })" in shadow_bite
+    assert "owner->GetAuraEffect(spellId, EFFECT_1)" in shadow_bite
+    assert "AddPct(pctMod, darkArts->GetAmount())" in shadow_bite
+    assert shadow_bite.index("SPELL_WARLOCK_DARK_ARTS_R3") < shadow_bite.index("SPELL_WARLOCK_DARK_ARTS_R2") < shadow_bite.index("SPELL_WARLOCK_DARK_ARTS_R1")
+    assert "break;" in shadow_bite
+    assert "AddPct(pctMod, 15)" not in shadow_bite
+    assert "AddPct(pctMod, int32(30 * activeDots.size()))" in shadow_bite
+
+
 def test_shadow_bite_script_binding_is_idempotent() -> None:
     migration = (
         ROOT / "sql/custom/world/2026_08_16_02_warlock_native_damage_coefficients.sql"
