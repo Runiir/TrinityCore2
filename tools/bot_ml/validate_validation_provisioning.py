@@ -20,7 +20,7 @@ try:
         load_spell_item_enchantments,
         SPELL_ITEM_ENCHANTMENT_FMT,
     )
-    from .build_validation_provisioning import DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE, EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, account_commands, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, enchantment_source_item_map, equipment_cache, gem_item_enchant_map, item_limit_category_by_item_map, load_config_with_bwd_diagnostic_shards, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, talent_point_count
+    from .build_validation_provisioning import BONUS_ENCHANTMENT_FIELD_OFFSET, DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE, EQUIPMENT_SLOT_END, PRISMATIC_ENCHANTMENT_FIELD_OFFSET, REQUIRED_EQUIPMENT_SLOTS, account_commands, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, enchantment_source_item_map, equipment_cache, gem_item_enchant_map, item_limit_category_by_item_map, load_config_with_bwd_diagnostic_shards, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, talent_point_count
     from .common import stable_hash, write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 except ImportError:
@@ -36,7 +36,7 @@ except ImportError:
         load_spell_item_enchantments,
         SPELL_ITEM_ENCHANTMENT_FMT,
     )
-    from build_validation_provisioning import DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE, EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, account_commands, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, enchantment_source_item_map, equipment_cache, gem_item_enchant_map, item_limit_category_by_item_map, load_config_with_bwd_diagnostic_shards, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, talent_point_count
+    from build_validation_provisioning import BONUS_ENCHANTMENT_FIELD_OFFSET, DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE, EQUIPMENT_SLOT_END, PRISMATIC_ENCHANTMENT_FIELD_OFFSET, REQUIRED_EQUIPMENT_SLOTS, account_commands, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, enchantment_source_item_map, equipment_cache, gem_item_enchant_map, item_limit_category_by_item_map, load_config_with_bwd_diagnostic_shards, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, talent_point_count
     from common import stable_hash, write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 
@@ -597,7 +597,13 @@ def validate_database(
                 for slot, item_id in sorted(expected_by_slot.items())
                 if slot in expected_slots and int(actual_items.get(slot, {}).get("item_id") or 0) != item_id
             ]
-            modifier_offsets = (0, *SOCKET_ENCHANTMENT_FIELD_OFFSETS, 24)
+            modifier_offsets = (
+                0,
+                *SOCKET_ENCHANTMENT_FIELD_OFFSETS,
+                BONUS_ENCHANTMENT_FIELD_OFFSET,
+                PRISMATIC_ENCHANTMENT_FIELD_OFFSET,
+                24,
+            )
             wrong_modifiers = []
             for slot, expected_payload in sorted(expected_modifier_payload_by_slot.items()):
                 actual_payload = actual_items.get(slot, {}).get("enchantments", [])

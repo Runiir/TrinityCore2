@@ -10086,13 +10086,15 @@ def test_validation_provisioning_runtime_gear_verification_fails_wrong_modifiers
         encoding="utf-8",
     )
     equipment = [{
-        "slot": 0,
+        "slot": 5,
         "item_id": 7000,
-        "inventory_type": 1,
+        "inventory_type": 6,
         "durability": 100,
         "enchant_id": 4172,
-        "gem_item_ids": [68779, 52260],
-        "gem_enchant_ids": [4252, 4037],
+        "socket_colors": [2, 2, 0],
+        "socket_bonus_id": 4144,
+        "gem_item_ids": [71881, 71881, 71881],
+        "gem_enchant_ids": [4331, 4331, 4331],
         "reforge_id": 151,
     }]
     config = {"scenarios": [{"id": "stonecore_5n", "bots": [{"account": "A", "name": "Mage", "class": 8, "equipment": equipment}]}]}
@@ -10106,7 +10108,7 @@ def test_validation_provisioning_runtime_gear_verification_fails_wrong_modifiers
                 "guid": 1,
                 "talentTree": "0 0",
                 "equipmentCache": equipment_cache(equipment),
-                "items": {0: {"item_id": 7000, "durability": 100, "enchantments": [0] * 36}},
+                "items": {5: {"item_id": 7000, "durability": 100, "enchantments": [0] * 36}},
                 "glyphs": [],
                 "talent_spells": set(),
                 "known_spells": set(),
@@ -10118,11 +10120,14 @@ def test_validation_provisioning_runtime_gear_verification_fails_wrong_modifiers
 
     modifier_failure = next(failure for failure in failures if failure["check"] == "runtime_equipment_modifiers")
     assert modifier_failure["wrong_modifiers"] == [{
-        "slot": 0,
+        "slot": 5,
         "mismatches": [
             {"offset": 0, "expected": 4172, "actual": 0},
-            {"offset": 6, "expected": 4252, "actual": 0},
-            {"offset": 9, "expected": 4037, "actual": 0},
+            {"offset": 6, "expected": 4331, "actual": 0},
+            {"offset": 9, "expected": 4331, "actual": 0},
+            {"offset": 12, "expected": 4331, "actual": 0},
+            {"offset": 15, "expected": 4144, "actual": 0},
+            {"offset": 18, "expected": 3729, "actual": 0},
             {"offset": 24, "expected": 151, "actual": 0},
         ],
     }]
