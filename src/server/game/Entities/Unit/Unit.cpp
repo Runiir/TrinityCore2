@@ -7077,8 +7077,13 @@ float Unit::SpellCritChanceTaken(Unit const* caster, SpellInfo const* spellInfo,
                 crit_bonus += damage;
             break;
         default:
-            // Magic spells will simply deal 50% additional crit damage
-            crit_bonus += damage / 2;
+            // Magic spells normally deal 50% additional crit damage.  Keep
+            // the multiplier spell-specific so native corrections can model
+            // exceptions without changing the spell's damage class.
+            if (spellProto->CritDamageMultiplier == 1.5f)
+                crit_bonus += damage / 2;
+            else
+                crit_bonus += uint32(float(damage) * (spellProto->CritDamageMultiplier - 1.0f));
             break;
     }
 

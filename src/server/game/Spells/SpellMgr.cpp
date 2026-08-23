@@ -3025,6 +3025,7 @@ void SpellMgr::LoadSpellInfoCorrections()
     ApplySpellFix({ 54049 }, [](SpellInfo* spellInfo) // Shadow Bite
     {
         spellInfo->Effects[EFFECT_0].BonusMultiplier = 1.228f;
+        spellInfo->CritDamageMultiplier = 2.0f;
     });
 
     ApplySpellFix({

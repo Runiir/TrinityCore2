@@ -389,6 +389,10 @@ class TC_GAME_API SpellInfo
         uint32 SpellFamilyName;
         flag96 SpellFamilyFlags;
         uint32 DmgClass;
+        // Cataclysm magical spells normally deal 150% damage on a critical hit.
+        // Native spell corrections may override this total multiplier for an
+        // individual spell without changing its damage class.
+        float CritDamageMultiplier = 1.5f;
         uint32 PreventionType;
         uint32 MinFactionId;
         uint32 MinReputation;
