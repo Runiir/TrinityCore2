@@ -6,7 +6,7 @@ from tools.bot_ml.review_rotation_mechanics import normalize_runtime_report
 
 
 ROOT = Path(__file__).resolve().parents[1]
-HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
+HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h"
 NOTIFICATIONS = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp"
 JSON = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationBotJson.cpp"
 
