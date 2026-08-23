@@ -302,7 +302,18 @@ bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot
             if (!bot->IsInAreaTriggerRadius(entranceEntry))
             {
                 transition("moving_to_entrance");
-                if (noProgressExpired() && matchingNativeRecoveryPath()
+                bool const matchingRecoveryPath = matchingNativeRecoveryPath();
+                bool const recoveryPathStalled = noProgressExpired();
+                if (matchingRecoveryPath && !recoveryPathStalled)
+                {
+                    // The native generator already owns the exact scoped
+                    // recovery path. Re-submitting the same Move intent on
+                    // every death tick restarts that generator and can reduce
+                    // a corpse run to a few yards of progress per minute.
+                    result = "native_instance_runback_in_progress";
+                    return true;
+                }
+                if (recoveryPathStalled && matchingRecoveryPath
                     && state.NativeRecoveryMovementRetryCount == 0)
                 {
                     // The existing native generator has stalled. Invalidate
@@ -329,6 +340,8 @@ bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot
                     }
                     return terminal("native_runback_no_progress");
                 }
+                if (recoveryPathStalled && matchingRecoveryPath)
+                    return terminal("native_runback_no_progress");
                 BotActionArbitration::Outcome const moveOutcome =
                     ExecuteNativeActionIntent(state, bot,
                     BotNativeAction::Move{ entranceEntry->Pos.X,

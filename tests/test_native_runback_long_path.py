@@ -26,6 +26,17 @@ def _stalled_native_path(now_ms: int, last_progress_ms: int,
     return "wait", repath_count
 
 
+def _native_runback_submission(*, matching: bool, stalled: bool,
+                               repath_count: int) -> tuple[str, int]:
+    if matching and not stalled:
+        return "preserve", repath_count
+    if matching and repath_count == 0:
+        return "repath", 1
+    if matching:
+        return "terminal", repath_count
+    return "submit", repath_count
+
+
 def _matching_native_recovery_path(*, now_ms: int, expires_at_ms: int,
                                    owner: str = "Recovery", active: bool = True,
                                    traversal: str = "native_long_path",
@@ -238,6 +249,27 @@ def test_stalled_native_generator_gets_one_repath_then_terminal_bound() -> None:
     assert (decision, retries) == ("repath", 1)
     decision, retries = _stalled_native_path(60_000, 30_000, retries, True)
     assert (decision, retries) == ("terminal", 1)
+
+
+def test_active_native_runback_path_is_not_resubmitted_before_stall() -> None:
+    recovery = RECOVERY.read_text(encoding="utf-8")
+    preserve = recovery.index("if (matchingRecoveryPath && !recoveryPathStalled)")
+    in_progress = recovery.index('result = "native_instance_runback_in_progress";', preserve)
+    submit = recovery.index("BotActionArbitration::Outcome const moveOutcome", preserve)
+    assert preserve < in_progress < submit
+
+    assert _native_runback_submission(
+        matching=True, stalled=False, repath_count=0
+    ) == ("preserve", 0)
+    assert _native_runback_submission(
+        matching=True, stalled=True, repath_count=0
+    ) == ("repath", 1)
+    assert _native_runback_submission(
+        matching=True, stalled=True, repath_count=1
+    ) == ("terminal", 1)
+    assert _native_runback_submission(
+        matching=False, stalled=False, repath_count=0
+    ) == ("submit", 0)
 
 
 def test_repath_keeps_native_executor_and_no_cheat_boundaries() -> None:
