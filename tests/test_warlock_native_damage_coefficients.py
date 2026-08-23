@@ -2,9 +2,24 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+BOT_DIR = ROOT / "src/server/game/Bots"
 PROFILE_CANDIDATES = (
     ROOT / "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp"
 )
+
+
+def read_world_sources() -> str:
+    return "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in sorted(BOT_DIR.glob("BotWorldPopulationMgr*.cpp"))
+    )
+
+
+def read_world_headers() -> str:
+    return "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in sorted(BOT_DIR.glob("BotWorldPopulationMgr*.h"))
+    )
 
 
 def test_missing_cataclysm_warlock_coefficients_use_native_spell_info_corrections() -> None:
@@ -90,14 +105,8 @@ def test_affliction_soulburn_native_consumer_is_bound_and_one_charge() -> None:
 
 
 def test_affliction_modifier_diagnostics_observe_native_auras_without_applying_them() -> None:
-    source = "\n".join(
-        (
-            (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(),
-            (ROOT / "src/server/game/Bots/BotWorldPopulationMgrAffliction.cpp").read_text(),
-            (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationBot.cpp").read_text(),
-        )
-    )
-    header = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text()
+    source = read_world_sources()
+    header = read_world_headers()
 
     assert "AfflictionModifierObservationTicks" in header
     assert 'Cohort().CalibrationTargetSpec == "affliction_warlock"' in source
@@ -202,12 +211,7 @@ def test_shadow_embrace_restores_rank_chain_with_native_proc_and_no_cheat_inject
 
 
 def test_pet_resource_contract_waits_for_native_regeneration_without_refilling() -> None:
-    source = "\n".join(
-        (
-            (ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdate.cpp").read_text(),
-            (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationReset.cpp").read_text(),
-        )
-    )
+    source = read_world_sources()
 
     assert "fixtureContract->PetResourceRequired" in source
     assert 'std::string_view(power.UnitKind) != "pet"' in source

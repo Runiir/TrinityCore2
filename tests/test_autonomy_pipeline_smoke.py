@@ -6,20 +6,51 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+BOT_DIR = ROOT / "src/server/game/Bots"
+
+
+class SourceAggregate(str):
+    """Expose a deterministic, read-only view of split implementation modules."""
+
+    def __new__(cls, paths: tuple[Path, ...]):
+        value = "\n".join(path.read_text(encoding="utf-8") for path in paths)
+        instance = str.__new__(cls, value)
+        instance._paths = paths
+        return instance
+
+    def read_text(self, *, encoding: str = "utf-8") -> "SourceAggregate":
+        if encoding != "utf-8":
+            raise ValueError("SourceAggregate requires UTF-8 source files")
+        return type(self)(self._paths)
+
+
+def source_modules(pattern: str) -> SourceAggregate:
+    paths = tuple(sorted(BOT_DIR.glob(pattern)))
+    if not paths:
+        raise AssertionError(f"no source modules matched {pattern!r}")
+    return SourceAggregate(paths)
+
+
 BOT_COMMANDS = ROOT / "src/server/scripts/Commands/cs_healerbot.cpp"
 SERVER_COMMANDS = ROOT / "src/server/scripts/Commands/cs_server.cpp"
-BOT_MGR = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
-PLAYER_BOT_MGR = ROOT / "src/server/game/Bots/BotMgr.cpp"
-PLAYER_BOT_CONTROLLER = ROOT / "src/server/game/Bots/BotController.cpp"
+BOT_MGR = SourceAggregate(
+    tuple(sorted(
+        set(BOT_DIR.glob("BotWorldPopulationMgr*.cpp"))
+        | set((BOT_DIR / "Content").rglob("*.cpp"))
+    ))
+)
+PLAYER_BOT_MGR = source_modules("BotMgr*.cpp")
+PLAYER_BOT_CONTROLLER = source_modules("BotController*.cpp")
 PLAYER_BOT_TYPES = ROOT / "src/server/game/Bots/BotTypes.cpp"
 PLAYER_BOT_ACTION_PROFILE_MODULES = (
     ROOT / "src/server/game/Bots/BotClassSpecActionProfile.cpp",
     ROOT / "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
     ROOT / "src/server/game/Bots/BotClassSpecActionProfileDb.cpp",
+    ROOT / "src/server/game/Bots/BotClassSpecActionProfileInternal.h",
 )
 PLAYER_BOT_EXECUTOR = ROOT / "src/server/game/Bots/BotActionExecutor.cpp"
 MELEE_AUTO_ATTACK_INTENT = ROOT / "src/server/game/Bots/BotMeleeAutoAttackIntent.h"
-BOT_MGR_HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
+BOT_MGR_HEADER = source_modules("BotWorldPopulationMgr*.h")
 PET_CPP = ROOT / "src/server/game/Entities/Pet/Pet.cpp"
 STONECORE_ROTATION_SQL = ROOT / "sql/custom/world/2026_06_21_00_bot_rotation_profiles.sql"
 PRAYER_OF_MENDING_GUARD_SQL = ROOT / "sql/custom/world/2026_07_14_02_holy_priest_prayer_of_mending_aura_guard.sql"
@@ -1121,7 +1152,7 @@ def test_telemetry_policy_smoke_samples_normal_wander_and_keeps_critical_events(
 
 
 def test_bot_spawn_lifecycle_dummy_and_ability_objective_surface():
-    mgr_header = read(ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h")
+    mgr_header = read(BOT_MGR_HEADER)
     mgr = read(BOT_MGR)
     commands = read(BOT_COMMANDS)
     conf = read(WORLDSERVER_CONF)
@@ -1166,7 +1197,7 @@ def test_bot_spawn_lifecycle_dummy_and_ability_objective_surface():
 
 
 def test_quest_first_portfolio_routing_surface():
-    mgr_header = read(ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h")
+    mgr_header = read(BOT_MGR_HEADER)
     mgr = read(BOT_MGR)
     classify = function_body(mgr, "BotWorldPopulationMgr::QuestClassification BotWorldPopulationMgr::ClassifyQuestForBot")
     pickup_search = function_body(mgr, "bool BotWorldPopulationMgr::FindQuestPickupDestination")
@@ -2138,7 +2169,7 @@ def test_applied_ground_danger_spell_shape_contract():
 
 
 def test_botauto_diagnosis_and_trace_surface():
-    mgr_header = read(ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h")
+    mgr_header = read(BOT_MGR_HEADER)
     mgr = read(BOT_MGR)
     commands = read(BOT_COMMANDS)
     update_bot = function_body(mgr, "void BotWorldPopulationMgr::UpdateBot")
@@ -3277,7 +3308,7 @@ def test_export_smoke_lists_old_and_new_bot_experiment_tables():
 
 def test_extended_bot_memory_schema_and_decision_fingerprint_surface():
     schema = read(ROOT / "sql/updates/characters/4.3.4/2026_06_16_00_characters_bot_extended_memory.sql")
-    mgr_header = read(ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h")
+    mgr_header = read(BOT_MGR_HEADER)
     mgr = read(BOT_MGR)
     record_decision = function_body(mgr, "void BotWorldPopulationMgr::RecordDecision")
     fingerprint = function_body(mgr, "void BotWorldPopulationMgr::RecordDecisionFingerprintMemory")
@@ -3330,7 +3361,7 @@ def test_extended_bot_memory_schema_and_decision_fingerprint_surface():
 
 
 def test_policy_model_shadow_assist_uses_registered_artifact_and_safe_gate():
-    mgr_header = read(ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h")
+    mgr_header = read(BOT_MGR_HEADER)
     mgr = read(BOT_MGR)
     conf = read(WORLDSERVER_CONF)
     schema = read(ROOT / "sql/updates/characters/4.3.4/2026_06_14_00_characters_bot_policy_models.sql")
@@ -5223,11 +5254,11 @@ def test_density_action_taxonomy_and_stonecore_roster_profile_paths_are_explicit
 
 def test_healer_lifecycle_telemetry_is_cast_scoped_and_uses_actual_heal_info():
     root = Path(__file__).resolve().parents[1]
-    header = (root / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text()
-    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    header = read(BOT_MGR_HEADER)
+    manager = read(BOT_MGR)
     unit = (root / "src/server/game/Entities/Unit/Unit.cpp").read_text()
     spell = (root / "src/server/game/Spells/Spell.cpp").read_text()
-    controller = (root / "src/server/game/Bots/BotController.cpp").read_text()
+    controller = read(PLAYER_BOT_CONTROLLER)
 
     assert "struct PendingHealCast" in header
     assert "uint64 CastId" in header
@@ -5259,7 +5290,7 @@ def test_healer_lifecycle_telemetry_is_cast_scoped_and_uses_actual_heal_info():
 def test_healer_candidate_mask_is_db_driven_and_records_rejections():
     root = Path(__file__).resolve().parents[1]
     profile = read_profile_sources()
-    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    manager = read(BOT_MGR)
 
     assert '\\"valid\\":" << (candidate.RejectReason.empty() ? "true" : "false")' in profile
     assert 'candidate.RejectReason = allyTarget ? "missing_ally_target" : "missing_enemy_target"' in profile
@@ -5271,7 +5302,7 @@ def test_healer_candidate_mask_is_db_driven_and_records_rejections():
 
 def test_rerun145_protection_pickup_and_passive_swarm_repairs_are_bounded():
     root = Path(__file__).resolve().parents[1]
-    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    manager = read(BOT_MGR)
 
     assert '"consecration_healer_multi_trash_pickup"' in manager
     multi_consecration = manager.index('"consecration_healer_multi_trash_pickup"')
@@ -5294,7 +5325,7 @@ def test_rerun145_protection_pickup_and_passive_swarm_repairs_are_bounded():
 
 def test_rerun151_protection_remote_healer_cluster_uses_native_ranged_pickup():
     root = Path(__file__).resolve().parents[1]
-    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    manager = read(BOT_MGR)
 
     ranged_pickup = manager.index(
         '"avengers_shield_healer_multi_trash_pickup"'
@@ -5318,7 +5349,7 @@ def test_rerun151_protection_remote_healer_cluster_uses_native_ranged_pickup():
 
 def test_rerun162_protection_retention_and_passive_swarm_fallback_are_bounded():
     root = Path(__file__).resolve().parents[1]
-    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    manager = read(BOT_MGR)
 
     boss_marker = manager.index(
         "Rerun162 proved the same bounded Protection pickup cadence"
@@ -5360,7 +5391,7 @@ def test_rerun162_protection_retention_and_passive_swarm_fallback_are_bounded():
 
 def test_rerun162_post_death_safe_anchor_uses_route_movement_z_contract():
     root = Path(__file__).resolve().parents[1]
-    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    manager = read(BOT_MGR)
 
     marker = manager.index(
         "Rerun162 selected a remembered post-death anchor"
@@ -5376,7 +5407,7 @@ def test_rerun162_post_death_safe_anchor_uses_route_movement_z_contract():
 
 def test_rerun154_feral_high_density_charge_reselects_remote_wave_target():
     root = Path(__file__).resolve().parents[1]
-    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    manager = read(BOT_MGR)
 
     marker = manager.index(
         "Rerun154 exposed a declared 20-follower wave"
@@ -5407,7 +5438,7 @@ def test_rerun154_feral_high_density_charge_reselects_remote_wave_target():
 
 def test_rerun155_current_healer_threat_preempts_feral_secure_margin_approach():
     root = Path(__file__).resolve().parents[1]
-    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    manager = read(BOT_MGR)
 
     marker = manager.index(
         "Rerun155 recovered one of three healer-owned Flayers"
@@ -5433,7 +5464,7 @@ def test_rerun155_current_healer_threat_preempts_feral_secure_margin_approach():
 
 def test_rerun156_active_feral_wave_preempts_pending_swarm_preposition():
     root = Path(__file__).resolve().parents[1]
-    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    manager = read(BOT_MGR)
 
     marker = manager.index(
         "Rerun156 exposed a declared 60-follower Feral wave"
@@ -5460,7 +5491,7 @@ def test_rerun156_active_feral_wave_preempts_pending_swarm_preposition():
 
 def test_rerun156_boss_handoff_rebinds_within_original_healer_cluster():
     root = Path(__file__).resolve().parents[1]
-    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    manager = read(BOT_MGR)
 
     marker = manager.index(
         "Rerun156 proved the boss handoff discarded a still-valid Azil"
@@ -5767,8 +5798,8 @@ def test_rerun159_feral_hazard_retention_prefers_native_thrash_with_fallthrough(
 
 def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protection():
     root = Path(__file__).resolve().parents[1]
-    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
-    header = (root / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text()
+    manager = read(BOT_MGR)
+    header = read(BOT_MGR_HEADER)
     rotation_sql = (root / "sql/custom/world/2026_07_15_00_stonecore_complete_role_rotations.sql").read_text()
     emergency_threat_sql = read(EMERGENCY_ADD_THREAT_SQL)
     hunter_liveness_sql = (root / "sql/custom/world/2026_07_15_02_stonecore_hunter_rotation_liveness.sql").read_text()
@@ -5884,8 +5915,8 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
 
 def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     root = Path(__file__).resolve().parents[1]
-    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
-    header = (root / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text()
+    manager = read(BOT_MGR)
+    header = read(BOT_MGR_HEADER)
     commands = (root / "src/server/scripts/Commands/cs_healerbot.cpp").read_text()
     unit = (root / "src/server/game/Entities/Unit/Unit.cpp").read_text()
 
@@ -6085,7 +6116,7 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
 
 def test_rerun148_feral_pre_victim_cadence_and_charge_identity_are_bounded():
     root = Path(__file__).resolve().parents[1]
-    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    manager = read(BOT_MGR)
 
     assert "engagedAddCount >= 12 && densityHealer" in manager
     assert "observedListedAttackerCount(densityHealer) == 0" in manager
@@ -6097,7 +6128,7 @@ def test_rerun148_feral_pre_victim_cadence_and_charge_identity_are_bounded():
 
 def test_rerun148_hunter_spell_los_failure_forces_one_alternate_lane_search():
     root = Path(__file__).resolve().parents[1]
-    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    manager = read(BOT_MGR)
 
     assert "MoveBotToProfileRange(*state, bot, target, &action, true);" in manager
     assert "if (!forceRangedReposition && distance >= desiredRange - 1.0f" in manager
@@ -6105,7 +6136,7 @@ def test_rerun148_hunter_spell_los_failure_forces_one_alternate_lane_search():
 
 def test_rerun206_feral_dps_provisions_and_maintains_cat_form():
     root = Path(__file__).resolve().parents[1]
-    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    manager = read(BOT_MGR)
     catalogs = (root / "tools/bot_ml/build_all_spec_phase1_catalogs.py").read_text()
     targets = json.loads((root / "experiments/configs/all_spec_targets_cata_p4_v1.json").read_text())
     feral = next(row for row in targets["targets"] if row["spec_target_id"] == "feral_druid_dps")
@@ -6117,7 +6148,7 @@ def test_rerun206_feral_dps_provisions_and_maintains_cat_form():
 
 def test_rerun207_feral_dps_shred_repositions_behind_before_native_cast():
     root = Path(__file__).resolve().parents[1]
-    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    manager = read(BOT_MGR)
 
     movement = function_body(manager, "bool BotWorldPopulationMgr::MoveBotToProfileRange")
     execution = function_body(manager, "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction")

@@ -102,9 +102,9 @@ MELEE_INTENT = ROOT / "src/server/game/Bots/BotMeleeAutoAttackIntent.h"
 NATIVE_INTENT = ROOT / "src/server/game/Bots/BotNativeActionIntent.h"
 ACTION_ARBITER = ROOT / "src/server/game/Bots/BotActionArbiter.h"
 EXECUTOR = ROOT / "src/server/game/Bots/BotActionExecutor.cpp"
-BOT_MGR = ROOT / "src/server/game/Bots/BotMgr.cpp"
-BOT_CONTROLLER = ROOT / "src/server/game/Bots/BotController.cpp"
-BOT_PROFILE = ROOT / "src/server/game/Bots/BotClassSpecActionProfile.cpp"
+BOT_MGR = WorldSourceSet(tuple(sorted(BOT_DIR.glob("BotMgr*.cpp"))))
+BOT_CONTROLLER = WorldSourceSet(tuple(sorted(BOT_DIR.glob("BotController*.cpp"))))
+BOT_PROFILE = WorldSourceSet(tuple(sorted(BOT_DIR.glob("BotClassSpecActionProfile*.cpp"))))
 
 
 def function_body(

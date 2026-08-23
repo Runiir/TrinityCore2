@@ -18,6 +18,14 @@ from tools.bot_ml.review_rotation_mechanics import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+BOT_DIR = ROOT / "src/server/game/Bots"
+
+
+def read_world_headers() -> str:
+    return "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in sorted(BOT_DIR.glob("BotWorldPopulationMgr*.h"))
+    )
 
 
 def _apl() -> dict:
@@ -1101,11 +1109,11 @@ def test_runtime_report_reads_nested_persistent_setup_pet_execution_observation(
 
 
 def test_runtime_timeline_is_bounded_and_observation_only_in_native_source():
-    header = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text()
+    header = read_world_headers()
     source = "\n".join(
         path.read_text()
         for path in sorted(
-            (ROOT / "src/server/game/Bots").glob("BotWorldPopulationMgr*.cpp")
+            BOT_DIR.glob("BotWorldPopulationMgr*.cpp")
         )
     )
 
@@ -1376,7 +1384,7 @@ def test_canonical_route_jsonl_requires_and_applies_scenario_selection(tmp_path:
 
 def test_profile_dump_contract_exposes_executable_gates_for_review():
     source = (
-        ROOT / "src/server/game/Bots/BotClassSpecActionProfileDb.cpp"
+        BOT_DIR / "BotClassSpecActionProfileDb.cpp"
     ).read_text()
 
     for token in (
