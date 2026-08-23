@@ -340,12 +340,12 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "adaptive_route_authority_refresh"
+        "adaptive_route_authority_refresh_verification"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["owner_skill"] == "raid-bot-runtime-implementation"
+    assert active["owner_skill"] == "raid-shard-architecture"
     assert active["first_broken_edge"] == (
-        "adaptive_route_authority_refresh_before_native_combat"
+        "adaptive_route_authority_refresh_live_verification"
     )
     evidence = active["decisive_evidence"]
     assert evidence["source_commit"] == (
@@ -380,15 +380,19 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert evidence["evidence_demux_gate_passed"] is True
     assert active["implementation_budget"] == {
         "hypotheses": 1,
-        "matched_live_verification_runs": 1,
+        "matched_live_verification_runs": 0,
     }
     assert active["implementation_hypothesis"]["scope"] == (
         "refresh_current_route_combat_authority_before_adaptive_route_shortcut"
     )
+    assert active["implemented_fix"]["commit"] == (
+        "a4cde51ec11dabae0bf54f1085abd20987a38f80"
+    )
+    assert active["implemented_fix"]["status"] == "implemented_not_live_verified"
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
     assert active["runtime_verification_plan"]["identity"]["difficulty"] == "10N"
     assert active["runtime_verification_plan"]["fixed_success_timer_seconds"] is None
-    assert "do not force threat" in active["next_action"]
+    assert "do not force threat" in active["next_action"].lower()
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
@@ -484,7 +488,7 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     assert status["active_work_unit"]["descriptor_valid"] is True
     assert status["active_work_unit"]["ready_for_bounded_repair"] is True
     assert status["active_work_unit"]["first_broken_edge"] == (
-        "adaptive_route_authority_refresh_before_native_combat"
+        "adaptive_route_authority_refresh_live_verification"
     )
     assert status["active_work_unit"]["source_handoff"]["sha256"] == (
         workloop._file_sha256(
@@ -495,15 +499,15 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "adaptive_route_authority_refresh"
+        "adaptive_route_authority_refresh_verification"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
-        "raid-bot-runtime-implementation"
+        "raid-shard-architecture"
     )
     assert status["current_program_next_action"] == status["active_work_unit"][
         "next_action"
     ]
-    assert "do not force threat" in status["active_work_unit"]["next_action"]
+    assert "do not force threat" in status["active_work_unit"]["next_action"].lower()
     assert "legacy_program_next_action" not in status
 
 

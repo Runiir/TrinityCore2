@@ -1,14 +1,14 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:10N:adaptive_route_authority_refresh",
-  "owner_skill": "raid-bot-runtime-implementation",
+  "work_unit": "boss:blackwing_descent:magmaw:10N:adaptive_route_authority_refresh_verification",
+  "owner_skill": "raid-shard-architecture",
   "classification": "failed",
-  "observed_at_commit": "81c6986ec520240b6b2ba1577f345b3660c9cb31",
+  "observed_at_commit": "a4cde51ec11dabae0bf54f1085abd20987a38f80",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_drudge_tank_ownership_handoff_20260823.md",
-    "sha256": "decc4cdcbc345f9f6217f162d9d3579515b93e636ba3429b7b6f11864f84cc7d"
+    "sha256": "6d4c53d631264f3005640475966ba067b4df9fd63c50b2831bcedc6065369a4d"
   },
-  "first_broken_edge": "adaptive_route_authority_refresh_before_native_combat",
+  "first_broken_edge": "adaptive_route_authority_refresh_live_verification",
   "decisive_evidence": {
     "source_commit": "81c6986ec520240b6b2ba1577f345b3660c9cb31",
     "source_tree": "3e952f7b15e89176f42c2eacae021bf2a113217c",
@@ -45,7 +45,7 @@
   },
   "implementation_hypothesis": {
     "scope": "refresh_current_route_combat_authority_before_adaptive_route_shortcut",
-    "status": "ready_for_one_bounded_repair",
+    "status": "implemented_not_live_verified",
     "forbidden_shortcuts": [
       "forced_threat",
       "triggered_taunt",
@@ -54,6 +54,18 @@
       "forced_resurrection",
       "manufactured_encounter_outcome"
     ]
+  },
+  "implemented_fix": {
+    "commit": "a4cde51ec11dabae0bf54f1085abd20987a38f80",
+    "tree": "5251506cec6ee2801fd9c735faa184aa90b5de88",
+    "status": "implemented_not_live_verified",
+    "scope": "adaptive_route_combat_authority_refresh",
+    "changed_files": [
+      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
+      "tests/test_bot_route_combat_target_policy.py"
+    ],
+    "focused_test_count": 34,
+    "runtime_verification_required": true
   },
   "validation_clock": {
     "policy": "completion_watchdog",
@@ -70,11 +82,11 @@
   },
   "implementation_budget": {
     "hypotheses": 1,
-    "matched_live_verification_runs": 1
+    "matched_live_verification_runs": 0
   },
   "live_verification_owner_skill": "raid-shard-architecture",
   "runtime_verification_plan": {
-    "status": "required_after_implementation",
+    "status": "required",
     "identity": {
       "difficulty": "10N",
       "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
@@ -84,6 +96,8 @@
     },
     "required_clock_policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
+    "required_fix_commit": "a4cde51ec11dabae0bf54f1085abd20987a38f80",
+    "required_live_build_tree": "5251506cec6ee2801fd9c735faa184aa90b5de88",
     "must_observe": [
       "both tanks submit normal native taunts or trained threat actions on their assigned Drudge",
       "each live Drudge records its assigned tank as native victim",
@@ -96,5 +110,5 @@
       "native confirmation from deterministic tests alone"
     ]
   },
-  "next_action": "Repair one shared runtime edge: refresh current-route combat authority before an adaptive encounter owner skips legacy route handling, then run focused deterministic tests. Preserve terminal, recovery, contamination, future-target, and native spell gates. Return one exact completion-watchdog verification plan; do not force threat, trigger taunts, alter Drudge AI, teleport, revive, or manufacture an encounter result."
+  "next_action": "Build exact clean commit a4cde51ec11dabae0bf54f1085abd20987a38f80 through the queued coordinator, provision a fresh exact ten-player Magmaw roster, and run one completion-watchdog shard. Verify normal native tank taunts or trained threat actions establish one assigned Drudge victim per tank and the route clears the Drudges. Do not force threat, trigger taunts, alter Drudge AI, teleport, revive, or manufacture an encounter result."
 }

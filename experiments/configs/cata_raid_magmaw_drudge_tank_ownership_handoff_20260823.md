@@ -64,3 +64,31 @@ The live verifier remains completion-watchdog driven. It has no fixed success
 timer and must terminate only on clear, semantic no-progress, repeated
 decisions, excessive deaths, infrastructure loss, contamination, or explicit
 interruption.
+
+## Implemented repair
+
+Commit `a4cde51ec11dabae0bf54f1085abd20987a38f80` refreshes current-route
+combat authority before the decision kernel resolves an adaptive-owned node.
+The refresh removes an inherited all-offense hold and keeps the declared next
+encounter protected. Terminal and native-recovery holds return before this
+candidate-submission boundary.
+
+Changed runtime and regression files:
+
+- `src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp`
+- `tests/test_bot_route_combat_target_policy.py`
+
+The focused suite passed 34 tests:
+
+```text
+pixi run pytest -q tests/test_bot_route_combat_target_policy.py tests/test_bot_world_population_mgr_validation_authority_module.py tests/test_bot_action_arbitration.py tests/test_raid_workloop.py
+```
+
+The fallback module is 625 lines. No live build or shard has verified this
+native change yet. The next owner is `raid-shard-architecture`: build the exact
+clean commit through the queued coordinator, provision a fresh exact roster,
+and run one completion-watchdog shard. Confirm both assigned tanks submit
+normal native taunts or trained threat actions, each Drudge takes its assigned
+tank as victim, the Drudges clear, and the route advances. If the run reaches a
+later edge, route that new trace-backed edge rather than tuning this hypothesis
+again.
