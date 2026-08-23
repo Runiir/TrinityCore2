@@ -6,6 +6,37 @@
 // declaration order.
     struct CalibrationMetrics
     {
+        struct AfflictionDamageStageObservation
+        {
+            uint32 EventCount = 0;
+            uint32 DotEventCount = 0;
+            uint32 DirectEventCount = 0;
+            uint64 MeasuredDamage = 0;
+            uint64 UnmitigatedDamage = 0;
+            uint64 OwnerDamagePctDonePpmSum = 0;
+            uint32 OwnerDamagePctDonePpmMin = 0;
+            uint32 OwnerDamagePctDonePpmMax = 0;
+            uint64 TargetTakenMultiplierPpmSum = 0;
+            uint32 TargetTakenMultiplierPpmMin = 0;
+            uint32 TargetTakenMultiplierPpmMax = 0;
+            uint32 ShadowMasteryPresentEvents = 0;
+            uint32 ShadowMasteryAffectingEvents = 0;
+            int32 ShadowMasteryAmountMin = 0;
+            int32 ShadowMasteryAmountMax = 0;
+            uint32 PotentAfflictionsPresentEvents = 0;
+            uint32 PotentAfflictionsAffectingEvents = 0;
+            int32 PotentAfflictionsAmountMin = 0;
+            int32 PotentAfflictionsAmountMax = 0;
+            uint32 HauntPresentEvents = 0;
+            uint32 HauntAffectingEvents = 0;
+            int32 HauntModifierAmountMin = 0;
+            int32 HauntModifierAmountMax = 0;
+            uint32 ShadowEmbracePresentEvents = 0;
+            uint32 ShadowEmbraceAffectingEvents = 0;
+            int32 ShadowEmbraceModifierAmountMin = 0;
+            int32 ShadowEmbraceModifierAmountMax = 0;
+        };
+
         struct NativeConsumableReceipt
         {
             uint32 ItemId = 0;
@@ -361,6 +392,7 @@
         uint64 MaximumGearIdentityObservationGapMs = 0;
         std::map<uint32, uint64> SpellDamage;
         std::map<uint32, uint32> SpellDamageEvents;
+        std::map<uint32, AfflictionDamageStageObservation> AfflictionDamageStageBySpell;
         // The owner's primary pet damage is kept separate from the owner's
         // spell totals. This intentionally excludes other controlled units
         // such as guardians, which remain in the aggregate PetDamage value.

@@ -267,6 +267,9 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
             bool const primaryTargetDamage = isolatedSingleTarget
                 && !Cohort().CalibrationFixtureTargetGuid.IsEmpty()
                 && victim->GetGUID() == Cohort().CalibrationFixtureTargetGuid;
+            if (primaryTargetDamage)
+                ObserveAfflictionDamageStage(calibration->second, owner, victim,
+                    spellId, measuredDamage, unmitigatedDamage, damageType);
             if (primaryTargetDamage
                 && Cohort().RuntimeMode == BotWorldRuntimeMode::CalibrationFixture
                 && Cohort().NonCertifyingAssistance)

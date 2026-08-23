@@ -203,6 +203,9 @@ private:
         Player* bot, Unit* target, uint64 observedAtMs) const;
     static void ObserveAfflictionCalibrationModifiers(CalibrationMetrics& metrics,
         Player* bot, Creature* fixtureTarget);
+    static void ObserveAfflictionDamageStage(CalibrationMetrics& metrics,
+        Player* owner, Unit* victim, uint32 spellId, uint32 damage,
+        uint32 unmitigatedDamage, uint32 damageType);
     static std::string AppendAfflictionCalibrationJson(CalibrationMetrics const* metrics);
     void AppendCalibrationBotActionJson(std::ostringstream& json,
         CalibrationMetrics const* metrics) const;

@@ -95,6 +95,119 @@ void BotWorldPopulationMgr::ObserveAfflictionCalibrationModifiers(
     }
 }
 
+void BotWorldPopulationMgr::ObserveAfflictionDamageStage(
+    CalibrationMetrics& metrics, Player* owner, Unit* victim, uint32 spellId,
+    uint32 damage, uint32 unmitigatedDamage, uint32 damageType)
+{
+    if (!owner || !victim || owner->getClass() != CLASS_WARLOCK)
+        return;
+
+    switch (spellId)
+    {
+        case 172:   // Corruption
+        case 30108: // Unstable Affliction
+        case 48181: // Haunt
+        case 47897: // Shadowflame direct hit
+        case 47960: // Shadowflame periodic child
+        case 1120:  // Drain Soul
+            break;
+        default:
+            return;
+    }
+
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+    if (!spellInfo)
+        return;
+
+    CalibrationMetrics::AfflictionDamageStageObservation& observation =
+        metrics.AfflictionDamageStageBySpell[spellId];
+    bool const firstEvent = observation.EventCount == 0;
+    ++observation.EventCount;
+    if (damageType == uint32(DOT))
+        ++observation.DotEventCount;
+    else
+        ++observation.DirectEventCount;
+    observation.MeasuredDamage += damage;
+    observation.UnmitigatedDamage += unmitigatedDamage;
+
+    DamageEffectType const effectType = damageType == uint32(DOT)
+        ? DOT : SPELL_DIRECT_DAMAGE;
+    uint32 const ownerDamagePctDonePpm = uint32(std::max(0.0f,
+        owner->SpellDamagePctDone(victim, spellInfo, effectType)) * 1000000.0f);
+    int32 const targetTakenMultiplierPpm = std::max(0,
+        victim->SpellDamageBonusTaken(owner, spellInfo, 1000000, effectType));
+    observation.OwnerDamagePctDonePpmSum += ownerDamagePctDonePpm;
+    observation.TargetTakenMultiplierPpmSum += uint32(targetTakenMultiplierPpm);
+    if (firstEvent)
+    {
+        observation.OwnerDamagePctDonePpmMin = ownerDamagePctDonePpm;
+        observation.OwnerDamagePctDonePpmMax = ownerDamagePctDonePpm;
+        observation.TargetTakenMultiplierPpmMin = uint32(targetTakenMultiplierPpm);
+        observation.TargetTakenMultiplierPpmMax = uint32(targetTakenMultiplierPpm);
+    }
+    else
+    {
+        observation.OwnerDamagePctDonePpmMin = std::min(
+            observation.OwnerDamagePctDonePpmMin, ownerDamagePctDonePpm);
+        observation.OwnerDamagePctDonePpmMax = std::max(
+            observation.OwnerDamagePctDonePpmMax, ownerDamagePctDonePpm);
+        observation.TargetTakenMultiplierPpmMin = std::min(
+            observation.TargetTakenMultiplierPpmMin,
+            uint32(targetTakenMultiplierPpm));
+        observation.TargetTakenMultiplierPpmMax = std::max(
+            observation.TargetTakenMultiplierPpmMax,
+            uint32(targetTakenMultiplierPpm));
+    }
+
+    auto findAffectingEffect = [spellInfo](Aura const* aura) -> AuraEffect const*
+    {
+        if (!aura)
+            return nullptr;
+        for (uint8 effectIndex = 0; effectIndex < MAX_SPELL_EFFECTS; ++effectIndex)
+            if (AuraEffect const* effect = aura->GetEffect(effectIndex))
+                if (effect->IsAffectingSpell(spellInfo))
+                    return effect;
+        return nullptr;
+    };
+    auto observeAura = [&](Aura const* aura, uint32& presentEvents,
+        uint32& affectingEvents, int32& amountMin, int32& amountMax)
+    {
+        if (!aura)
+            return;
+        ++presentEvents;
+        AuraEffect const* effect = findAffectingEffect(aura);
+        if (!effect)
+            return;
+        ++affectingEvents;
+        if (affectingEvents == 1)
+        {
+            amountMin = effect->GetAmount();
+            amountMax = effect->GetAmount();
+        }
+        else
+        {
+            amountMin = std::min(amountMin, effect->GetAmount());
+            amountMax = std::max(amountMax, effect->GetAmount());
+        }
+    };
+
+    observeAura(owner->GetAura(87339), observation.ShadowMasteryPresentEvents,
+        observation.ShadowMasteryAffectingEvents,
+        observation.ShadowMasteryAmountMin, observation.ShadowMasteryAmountMax);
+    observeAura(owner->GetAura(77215), observation.PotentAfflictionsPresentEvents,
+        observation.PotentAfflictionsAffectingEvents,
+        observation.PotentAfflictionsAmountMin,
+        observation.PotentAfflictionsAmountMax);
+    observeAura(victim->GetAura(48181, owner->GetGUID()),
+        observation.HauntPresentEvents, observation.HauntAffectingEvents,
+        observation.HauntModifierAmountMin, observation.HauntModifierAmountMax);
+    observeAura(victim->GetAura(32389, owner->GetGUID()),
+        observation.ShadowEmbracePresentEvents,
+        observation.ShadowEmbraceAffectingEvents,
+        observation.ShadowEmbraceModifierAmountMin,
+        observation.ShadowEmbraceModifierAmountMax);
+}
+
 std::string BotWorldPopulationMgr::AppendAfflictionCalibrationJson(
     CalibrationMetrics const* metrics)
 {
@@ -129,6 +242,65 @@ std::string BotWorldPopulationMgr::AppendAfflictionCalibrationJson(
          << (metrics ? metrics->AfflictionMinimumCorruptionTakenMultiplierPpm : 0)
          << ",\"maximum_corruption_taken_multiplier_ppm\":"
          << (metrics ? metrics->AfflictionMaximumCorruptionTakenMultiplierPpm : 0)
-         << '}';
+         << ",\"damage_stage_by_spell\":[";
+    bool firstStage = true;
+    if (metrics)
+        for (auto const& [spellId, observation] : metrics->AfflictionDamageStageBySpell)
+        {
+            if (!firstStage)
+                json << ',';
+            firstStage = false;
+            json << "{\"spell_id\":" << spellId
+                 << ",\"event_count\":" << observation.EventCount
+                 << ",\"dot_event_count\":" << observation.DotEventCount
+                 << ",\"direct_event_count\":" << observation.DirectEventCount
+                 << ",\"measured_damage\":" << observation.MeasuredDamage
+                 << ",\"unmitigated_damage\":" << observation.UnmitigatedDamage
+                 << ",\"owner_damage_pct_done_ppm_sum\":"
+                 << observation.OwnerDamagePctDonePpmSum
+                 << ",\"owner_damage_pct_done_ppm_min\":"
+                 << observation.OwnerDamagePctDonePpmMin
+                 << ",\"owner_damage_pct_done_ppm_max\":"
+                 << observation.OwnerDamagePctDonePpmMax
+                 << ",\"target_taken_multiplier_ppm_sum\":"
+                 << observation.TargetTakenMultiplierPpmSum
+                 << ",\"target_taken_multiplier_ppm_min\":"
+                 << observation.TargetTakenMultiplierPpmMin
+                 << ",\"target_taken_multiplier_ppm_max\":"
+                 << observation.TargetTakenMultiplierPpmMax
+                 << ",\"shadow_mastery_present_events\":"
+                 << observation.ShadowMasteryPresentEvents
+                 << ",\"shadow_mastery_affecting_events\":"
+                 << observation.ShadowMasteryAffectingEvents
+                 << ",\"shadow_mastery_amount_min\":"
+                 << observation.ShadowMasteryAmountMin
+                 << ",\"shadow_mastery_amount_max\":"
+                 << observation.ShadowMasteryAmountMax
+                 << ",\"potent_afflictions_present_events\":"
+                 << observation.PotentAfflictionsPresentEvents
+                 << ",\"potent_afflictions_affecting_events\":"
+                 << observation.PotentAfflictionsAffectingEvents
+                 << ",\"potent_afflictions_amount_min\":"
+                 << observation.PotentAfflictionsAmountMin
+                 << ",\"potent_afflictions_amount_max\":"
+                 << observation.PotentAfflictionsAmountMax
+                 << ",\"haunt_present_events\":" << observation.HauntPresentEvents
+                 << ",\"haunt_affecting_events\":"
+                 << observation.HauntAffectingEvents
+                 << ",\"haunt_modifier_amount_min\":"
+                 << observation.HauntModifierAmountMin
+                 << ",\"haunt_modifier_amount_max\":"
+                 << observation.HauntModifierAmountMax
+                 << ",\"shadow_embrace_present_events\":"
+                 << observation.ShadowEmbracePresentEvents
+                 << ",\"shadow_embrace_affecting_events\":"
+                 << observation.ShadowEmbraceAffectingEvents
+                 << ",\"shadow_embrace_modifier_amount_min\":"
+                 << observation.ShadowEmbraceModifierAmountMin
+                 << ",\"shadow_embrace_modifier_amount_max\":"
+                 << observation.ShadowEmbraceModifierAmountMax
+                 << '}';
+        }
+    json << "]}";
     return json.str();
 }

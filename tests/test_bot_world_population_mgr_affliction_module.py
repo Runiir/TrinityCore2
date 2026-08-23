@@ -79,3 +79,30 @@ def test_affliction_inline_implementation_is_not_duplicated() -> None:
         r"Affliction(?:ModifierObservation|ShadowMastery|PotentAfflictions|HauntDebuff|ShadowEmbrace)ActiveTicks",
         source,
     )
+
+
+def test_affliction_damage_stage_receipt_covers_requested_native_events() -> None:
+    metrics = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h").read_text(
+        encoding="utf-8"
+    )
+    module = MODULE.read_text(encoding="utf-8")
+    notifications = (
+        ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp"
+    ).read_text(encoding="utf-8")
+
+    assert "AfflictionDamageStageObservation" in metrics
+    assert "AfflictionDamageStageBySpell" in metrics
+    assert "ObserveAfflictionDamageStage(calibration->second, owner, victim" in notifications
+    for spell_id in (172, 30108, 48181, 47897, 47960, 1120):
+        assert f"case {spell_id}:" in module
+    for field in (
+        "owner_damage_pct_done_ppm_sum",
+        "target_taken_multiplier_ppm_sum",
+        "shadow_mastery_affecting_events",
+        "potent_afflictions_affecting_events",
+        "haunt_affecting_events",
+        "shadow_embrace_affecting_events",
+    ):
+        assert f'\\"{field}\\"' in module
+    assert "SpellDamagePctDone(victim, spellInfo, effectType)" in module
+    assert "SpellDamageBonusTaken(owner, spellInfo, 1000000, effectType)" in module
