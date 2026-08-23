@@ -11,6 +11,10 @@
       "total_dps_ratio": {
         "minimum": 1.0
       },
+      "single_sample_dps_ratio": {
+        "minimum": 0.98,
+        "maximum": 1.02
+      },
       "overtuned_is_failure": false
     },
     "controlled_live_parity": {

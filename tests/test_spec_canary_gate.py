@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from copy import deepcopy
 
+import pytest
+
 from tools.bot_ml.spec_canary_gate import evaluate_canary
 
 
@@ -16,6 +18,7 @@ def _policy() -> dict:
             "self_provided_baseline": {
                 "requires_consumable_parity": True,
                 "total_dps_ratio": {"minimum": 1.0},
+                "single_sample_dps_ratio": {"minimum": 0.98, "maximum": 1.02},
                 "overtuned_is_failure": False,
             },
             "controlled_live_parity": {
@@ -77,7 +80,14 @@ def _review() -> dict:
         },
         "wowsims_result": {
             "avg_iteration_duration_seconds": 300,
-            "player_dps": {"avg": 1_000},
+            "iterations_done": 2_000,
+            "player_dps": {
+                "avg": 1_000,
+                "stdev": 25,
+                "min": 900,
+                "max": 1_100,
+                "aggregatorData": {"n": 2_000},
+            },
             "action_metrics": [
                 {
                     "source": {"kind": "player", "name": "Affliction"},
@@ -94,6 +104,16 @@ def _review() -> dict:
                     },
                 },
             ],
+        },
+        "wowsims_debug_result": {
+            "avg_iteration_duration_seconds": 300,
+            "first_iteration_duration_seconds": 300,
+            "iterations_done": 1,
+            "debug_log_present": True,
+            "player_dps": {
+                "avg": 1_000,
+                "aggregatorData": {"n": 1},
+            },
         },
     }
 
@@ -120,6 +140,81 @@ def test_self_provided_baseline_has_no_upper_dps_rejection() -> None:
     assert decision["status"] == "passed"
     assert decision["reference_class"] == "self_provided_baseline"
     assert decision["signals"]["total_dps_ratio"] == 1.35
+
+
+@pytest.mark.parametrize("runtime_dps", [29_465.74, 29_650.52666666667])
+def test_current_affliction_canaries_use_the_pinned_debug_sample(
+    runtime_dps: float,
+) -> None:
+    review = _review()
+    review["runtime"]["calibration_windows"][0]["dps"] = runtime_dps
+    review["wowsims_result"]["player_dps"] = {
+        "avg": 31_312.966894306235,
+        "stdev": 788.1759348903284,
+        "min": 29_143.19682362893,
+        "max": 33_998.228820330674,
+        "aggregatorData": {"n": 2_000},
+    }
+    review["wowsims_debug_result"]["player_dps"] = {
+        "avg": 29_623.938524220404,
+        "aggregatorData": {"n": 1},
+    }
+
+    decision = _evaluate(review)
+
+    assert decision["status"] == "passed"
+    assert decision["first_broken_edge"] is None
+    assert decision["signals"]["wowsims_aggregate_dps"] == {
+        "mean": 31_312.966894306235,
+        "stdev": 788.1759348903284,
+        "minimum": 29_143.19682362893,
+        "maximum": 33_998.228820330674,
+        "iterations": 2_000,
+    }
+    comparison = decision["signals"]["dps_comparison"]
+    assert comparison["denominator"] == "wowsims_debug_result.player_dps.avg"
+    assert comparison["debug_value"] == 29_623.938524220404
+    assert comparison["parity_band"] == {"minimum": 0.98, "maximum": 1.02}
+    assert comparison["upper_bound_enforced"] is False
+
+
+def test_single_sample_more_than_two_percent_low_fails_throughput_gate() -> None:
+    review = _review()
+    review["runtime"]["calibration_windows"][0]["dps"] = 979
+    decision = _evaluate(review)
+
+    assert decision["status"] == "failed"
+    assert decision["first_broken_edge"] == "native_owner_damage_model"
+    assert decision["signals"]["total_dps_ratio"] == pytest.approx(0.979)
+    total_gate = next(gate for gate in decision["gates"] if gate["name"] == "total_dps_ratio")
+    assert total_gate["status"] == "fail"
+    assert total_gate["expected"]["denominator"] == "wowsims_debug_result.player_dps.avg"
+
+
+def test_missing_debug_dps_reference_is_insufficient_data() -> None:
+    review = _review()
+    review.pop("wowsims_debug_result")
+
+    decision = _evaluate(review)
+
+    assert decision["status"] == "insufficient_data"
+    assert decision["first_broken_edge"] == "wowsims_debug_dps_reference"
+    assert decision["owner_skill"] == "raid-rotation-review"
+    assert decision["signals"]["wowsims_debug_dps"] is None
+    total_gate = next(gate for gate in decision["gates"] if gate["name"] == "total_dps_ratio")
+    assert total_gate["status"] == "insufficient_data"
+
+
+def test_multi_iteration_debug_dps_reference_is_insufficient_data() -> None:
+    review = _review()
+    review["wowsims_debug_result"]["iterations_done"] = 2
+    review["wowsims_debug_result"]["player_dps"]["aggregatorData"]["n"] = 2
+
+    decision = _evaluate(review)
+
+    assert decision["status"] == "insufficient_data"
+    assert decision["first_broken_edge"] == "wowsims_debug_dps_reference"
+    assert decision["signals"]["dps_comparison"]["debug_reference_valid"] is False
 
 
 def test_missing_native_prepot_routes_to_role_owner() -> None:

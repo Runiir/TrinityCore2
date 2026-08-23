@@ -120,6 +120,99 @@ def _pet_reference(result: Mapping[str, Any], names: set[str]) -> dict[str, floa
     return totals
 
 
+def _dps_distribution(
+    result: Mapping[str, Any],
+) -> dict[str, float | int | None]:
+    """Return aggregate WoWSims DPS statistics without collapsing the sample.
+
+    The aggregate result is a distribution over stochastic iterations.  Keep
+    its summary intact so reports can explain a single-run comparison without
+    treating the mean as a deterministic per-run floor.
+    """
+    player_dps = result.get("player_dps") or {}
+    if not isinstance(player_dps, Mapping):
+        player_dps = {}
+    aggregate_data = player_dps.get("aggregatorData") or {}
+    if not isinstance(aggregate_data, Mapping):
+        aggregate_data = {}
+    iterations = _number(aggregate_data.get("n"))
+    if iterations is None:
+        iterations = _number(result.get("iterations_done"))
+    return {
+        "mean": _number(player_dps.get("avg")),
+        "stdev": _number(player_dps.get("stdev")),
+        "minimum": _number(player_dps.get("min")),
+        "maximum": _number(player_dps.get("max")),
+        "iterations": (
+            int(iterations)
+            if iterations is not None and iterations.is_integer()
+            else iterations
+        ),
+    }
+
+
+def _debug_dps_reference(
+    debug_result: Mapping[str, Any] | None,
+    *,
+    required_duration_seconds: float | None,
+) -> dict[str, Any]:
+    """Validate the pinned one-iteration debug denominator for one canary.
+
+    Debug logs are trace evidence, not an aggregate throughput denominator.
+    For a single 300-second canary, however, their one-iteration DPS is the
+    matching stochastic sample to compare against.  Require both normalized
+    iteration counters so an aggregate result cannot be mistaken for debug
+    evidence.
+    """
+    result = debug_result if isinstance(debug_result, Mapping) else {}
+    player_dps = result.get("player_dps") or {}
+    if not isinstance(player_dps, Mapping):
+        player_dps = {}
+    aggregate_data = player_dps.get("aggregatorData") or {}
+    if not isinstance(aggregate_data, Mapping):
+        aggregate_data = {}
+    iterations_done = _number(result.get("iterations_done"))
+    aggregate_iterations = _number(aggregate_data.get("n"))
+    dps = _number(player_dps.get("avg"))
+    first_iteration_duration = _number(result.get("first_iteration_duration_seconds"))
+    avg_iteration_duration = _number(result.get("avg_iteration_duration_seconds"))
+    duration_pass = (
+        required_duration_seconds is None
+        or (
+            first_iteration_duration is not None
+            and avg_iteration_duration is not None
+            and first_iteration_duration >= required_duration_seconds
+            and avg_iteration_duration >= required_duration_seconds
+        )
+    )
+    valid = (
+        isinstance(debug_result, Mapping)
+        and iterations_done == 1
+        and aggregate_iterations == 1
+        and dps is not None
+        and dps > 0
+        and result.get("debug_log_present") is True
+        and duration_pass
+    )
+    return {
+        "valid": valid,
+        "iterations_done": (
+            int(iterations_done)
+            if iterations_done is not None and iterations_done.is_integer()
+            else iterations_done
+        ),
+        "aggregate_iterations": (
+            int(aggregate_iterations)
+            if aggregate_iterations is not None and aggregate_iterations.is_integer()
+            else aggregate_iterations
+        ),
+        "dps": dps,
+        "first_iteration_duration_seconds": first_iteration_duration,
+        "avg_iteration_duration_seconds": avg_iteration_duration,
+        "debug_log_present": result.get("debug_log_present") is True,
+    }
+
+
 def _next_work_unit(
     *,
     spec: str,
@@ -384,6 +477,42 @@ def evaluate_canary(
         expected_metric = "one completed deterministic calibration window"
         evidence_gap = True
 
+    single_300_canary = (
+        selected_reference_class == "self_provided_baseline"
+        and len(windows) == 1
+        and required_duration == 300.0
+        and observed_duration == 300.0
+        and runtime.get("calibration_complete") is True
+    )
+    debug_reference = _debug_dps_reference(
+        review.get("wowsims_debug_result"),
+        required_duration_seconds=required_duration,
+    )
+    debug_reference_required = single_300_canary
+    if debug_reference_required:
+        debug_reference_pass = debug_reference["valid"]
+        gates.append(
+            _gate(
+                "wowsims_debug_dps_reference",
+                debug_reference_pass,
+                debug_reference,
+                {
+                    "iterations_done": 1,
+                    "aggregate_iterations": 1,
+                    "debug_log_present": True,
+                    "minimum_duration_seconds": required_duration,
+                },
+            )
+        )
+        if edge is None and not debug_reference_pass:
+            edge = "wowsims_debug_dps_reference"
+            skill = "raid-rotation-review"
+            mode = "review_only"
+            expected_metric = (
+                "one pinned WoWSims debug iteration with a 300-second DPS sample"
+            )
+            evidence_gap = True
+
     overlap = _number(cast_mix.get("cast_mix_overlap")) if isinstance(cast_mix, Mapping) else None
     tvd = max(0.0, 1.0 - overlap) if overlap is not None else None
     max_delta = _number(cast_mix.get("maximum_absolute_share_delta")) if isinstance(cast_mix, Mapping) else None
@@ -411,19 +540,37 @@ def evaluate_canary(
     cast_behavior_failed = not mix_pass or not delta_pass or cadence_pass is not True
 
     runtime_dps = _number(window.get("dps"))
-    player_dps = result.get("player_dps") or {} if isinstance(result, Mapping) else {}
-    wowsims_dps = _number(player_dps.get("avg")) if isinstance(player_dps, Mapping) else None
-    total_dps_ratio = _ratio(runtime_dps, wowsims_dps)
-    total_limits = (
-        selected_reference_policy.get("total_dps_ratio")
-        or thresholds.get("total_dps_ratio")
-        or {}
-    )
-    total_dps_pass = (
-        _meets_limits(total_dps_ratio, total_limits)
-        if isinstance(total_limits, Mapping)
-        else None
-    )
+    aggregate_dps = _dps_distribution(result)
+    wowsims_dps = _number(aggregate_dps.get("mean"))
+    debug_dps = _number(debug_reference.get("dps"))
+    if debug_reference_required:
+        dps_denominator = debug_dps if debug_reference["valid"] else None
+        dps_denominator_name = "wowsims_debug_result.player_dps.avg"
+        total_limits = (
+            selected_reference_policy.get("single_sample_dps_ratio") or {}
+        )
+    else:
+        dps_denominator = wowsims_dps
+        dps_denominator_name = "wowsims_result.player_dps.avg"
+        total_limits = (
+            selected_reference_policy.get("total_dps_ratio")
+            or thresholds.get("total_dps_ratio")
+            or {}
+        )
+    total_dps_ratio = _ratio(runtime_dps, dps_denominator)
+    if not isinstance(total_limits, Mapping):
+        total_dps_pass = None
+    elif debug_reference_required and not debug_reference["valid"]:
+        total_dps_pass = None
+    elif selected_reference_policy.get("overtuned_is_failure") is False:
+        minimum = _number(total_limits.get("minimum"))
+        total_dps_pass = (
+            total_dps_ratio is not None
+            and minimum is not None
+            and total_dps_ratio >= minimum
+        )
+    else:
+        total_dps_pass = _meets_limits(total_dps_ratio, total_limits)
     total_dps_minimum = (
         _number(total_limits.get("minimum"))
         if isinstance(total_limits, Mapping)
@@ -529,7 +676,17 @@ def evaluate_canary(
         skill = "raid-role-implementation"
         expected_metric = "cast mix and cadence inside acceptance policy"
 
-    gates.append(_gate("total_dps_ratio", total_dps_pass, total_dps_ratio, total_limits))
+    total_dps_expected = {
+        "denominator": dps_denominator_name,
+        "limits": total_limits,
+        "upper_bound_enforced": (
+            not debug_reference_required
+            or selected_reference_policy.get("overtuned_is_failure") is True
+        ),
+    }
+    gates.append(
+        _gate("total_dps_ratio", total_dps_pass, total_dps_ratio, total_dps_expected)
+    )
     if edge is None and total_dps_ratio is None:
         edge = "total_dps_observation"
         skill = "raid-rotation-review"
@@ -613,6 +770,27 @@ def evaluate_canary(
             "total_dps_ratio": total_dps_ratio,
             "runtime_dps": runtime_dps,
             "wowsims_dps": wowsims_dps,
+            "wowsims_aggregate_dps": aggregate_dps,
+            "wowsims_debug_dps": debug_dps,
+            "dps_comparison": {
+                "denominator": dps_denominator_name,
+                "denominator_value": dps_denominator,
+                "aggregate_mean": aggregate_dps.get("mean"),
+                "aggregate_stdev": aggregate_dps.get("stdev"),
+                "aggregate_minimum": aggregate_dps.get("minimum"),
+                "aggregate_maximum": aggregate_dps.get("maximum"),
+                "aggregate_iterations": aggregate_dps.get("iterations"),
+                "debug_value": debug_dps,
+                "debug_iterations_done": debug_reference.get("iterations_done"),
+                "debug_aggregate_iterations": debug_reference.get("aggregate_iterations"),
+                "debug_reference_valid": debug_reference.get("valid"),
+                "single_sample_canary": single_300_canary,
+                "parity_band": total_limits if debug_reference_required else None,
+                "upper_bound_enforced": (
+                    debug_reference_required
+                    and selected_reference_policy.get("overtuned_is_failure") is True
+                ),
+            },
             "primary_pet": {
                 "runtime_damage": runtime_pet_damage,
                 "runtime_landed_events": runtime_pet_events,
