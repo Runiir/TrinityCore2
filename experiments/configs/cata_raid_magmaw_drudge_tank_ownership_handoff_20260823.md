@@ -92,3 +92,41 @@ normal native taunts or trained threat actions, each Drudge takes its assigned
 tank as victim, the Drudges clear, and the route advances. If the run reaches a
 later edge, route that new trace-backed edge rather than tuning this hypothesis
 again.
+
+## Authority verification and next edge
+
+The exact `a4cde51ec11dabae0bf54f1085abd20987a38f80` build was verified through
+the queued coordinator and exercised in
+`/tmp/trinity-magmaw-a4cde51ec1/run1`. The run proved the authority repair:
+the route reached the two Drudges, both remained ordinary native creatures,
+and live threat snapshots recorded `tank_owned_hostile_guids=[59,60]` with all
+ten bots alive. No target overwrite or forbidden assistance was observed.
+
+After combat, mage `30006` was dead and released as a ghost. The nine living
+members were out of combat and the Drudge creatures were no longer in the live
+pack, but the route never emitted its Drudge-clear terminal. The completion
+watchdog stopped the run after 180.745 seconds of semantic no-progress.
+Evidence demultiplexing bound 113 of 113 rows, cleanup left zero bots and zero
+leases, and the worldserver exited normally.
+
+The dead mage reported 45 recovery attempts with
+`native_instance_runback_moving`, but moved only about seven yards in 123
+seconds. Its movement-progress timestamp was stale for 123 seconds while its
+path-change timestamp was only 296 milliseconds old. `TryNativeCorpseRun()`
+was resubmitting the same typed native `Move` intent on every death tick even
+when the exact scoped native long path was already active, repeatedly
+restarting the generator.
+
+Commit `10370f0aa8` preserves a matching, non-stalled native recovery path,
+retains the existing single repath, and terminates after the bounded repath if
+progress still does not resume. It does not teleport, resurrect, stop combat,
+or alter encounter state. The recovery module is 652 lines. The focused
+recovery and no-cheat suite passed 28 tests. The legacy monolith-source test
+file remains inapplicable after the runtime split and is not a gate for this
+module.
+
+The next owner is `raid-shard-architecture`: build exact clean commit
+`10370f0aa8`, provision a fresh ten-player Magmaw roster, and run the same
+completion-watchdog shard. Require the native corpse run to progress without
+repeated path resubmission, the dead member to rejoin through ordinary native
+recovery, the Drudge node to emit its terminal, and the route to advance.

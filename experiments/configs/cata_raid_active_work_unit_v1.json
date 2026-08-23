@@ -1,26 +1,26 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:10N:adaptive_route_authority_refresh_verification",
+  "work_unit": "boss:blackwing_descent:magmaw:10N:native_runback_path_preservation_verification",
   "owner_skill": "raid-shard-architecture",
   "classification": "failed",
-  "observed_at_commit": "a4cde51ec11dabae0bf54f1085abd20987a38f80",
+  "observed_at_commit": "10370f0aa84ee67cb3bba2f9d66d512e4ccaf8d0",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_drudge_tank_ownership_handoff_20260823.md",
-    "sha256": "6d4c53d631264f3005640475966ba067b4df9fd63c50b2831bcedc6065369a4d"
+    "sha256": "932985a75df635d52dab56e1f6d9f1021393898512050dc12466dc585a4fd337"
   },
-  "first_broken_edge": "adaptive_route_authority_refresh_live_verification",
+  "first_broken_edge": "native_runback_repeated_move_submission",
   "decisive_evidence": {
-    "source_commit": "81c6986ec520240b6b2ba1577f345b3660c9cb31",
-    "source_tree": "3e952f7b15e89176f42c2eacae021bf2a113217c",
+    "source_commit": "a4cde51ec11dabae0bf54f1085abd20987a38f80",
+    "source_tree": "5251506cec6ee2801fd9c735faa184aa90b5de88",
     "source_worktree": "/home/runiir/Games/trinity-cata-worktrees/phase1-foundation-build",
-    "binary_sha256": "65a23111b6b51580f4198dfee369f2fe1ec19a943ebc6569323489bf3c9e4af7",
+    "binary_sha256": "1b36ab8d281ce81be6b77ad606b92bdf74bfb82853b660cd0683522f153bb6dd",
     "config_sha256": "8b20b393839886bfe9d5906dd198a6f56eeaadcf7d220b5f1d83d044dd7ea449",
-    "build_receipt_path": "/tmp/trinity-build-receipts-81c6986ec5/worldserver-build.json",
-    "build_receipt_file_sha256": "81904c32318bd6b2b23c3b5377d21e77f29d370d86df9d5a5f325939af19fb1a",
-    "report_path": "/tmp/trinity-magmaw-81c6986ec5/run2/report.json",
-    "report_sha256": "381361b372f1e6317de73df640c008b1fd5fbd72133180ea69162fc94ac453a3",
-    "report_file_sha256": "1f9f7111923f1ab65b11c9808534e60be60c22ebe9c4de57a16ef1f000d44bd3",
-    "normalized_trace_sha256": "b4103d909a98fc2318c320b14ad892682ea009d940017b9664032cfe0e2dff0e",
+    "build_receipt_path": "/tmp/trinity-build-receipts-a4cde51ec1/worldserver-build.json",
+    "build_receipt_file_sha256": "a73606f01532902ee972056a285e167ecaaead253e93375f5bdd21e30de3a881",
+    "report_path": "/tmp/trinity-magmaw-a4cde51ec1/run1/report.json",
+    "report_sha256": "015b8bdc2a461b89373c9b25d8cf7a2d02726ec18e05f639d8a6f90c574b2d7c",
+    "report_file_sha256": "8bb63f5ab061223cb9649f4507726da54b314d47bcee51ca59be9a3c2f7abc22",
+    "normalized_trace_sha256": "81bd1bb8add5b7eb6fc4dc2b5808e42702e90e0ee16b08062cc75244f4b9e99c",
     "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
     "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
     "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
@@ -29,11 +29,11 @@
     "route_node_index": 2,
     "route_node_id": "bwd.magmaw.drudges",
     "kills": 1,
-    "death_loop_count": 3,
-    "tank_owned_hostile_count": 0,
+    "death_loop_count": 1,
+    "tank_owned_hostile_count": 2,
     "drudge_target_guids": [59, 60],
     "tank_taunt_spell_ids": [62124, 56222],
-    "tank_taunt_native_result": "no_action",
+    "tank_taunt_native_result": "native_threat_established",
     "future_magmaw_target_observed": false,
     "boss_reached": false,
     "boss_death_evidence": false,
@@ -44,7 +44,7 @@
     "do_not_relabel_as_clear": true
   },
   "implementation_hypothesis": {
-    "scope": "refresh_current_route_combat_authority_before_adaptive_route_shortcut",
+    "scope": "preserve_matching_native_runback_path_until_progress_stalls",
     "status": "implemented_not_live_verified",
     "forbidden_shortcuts": [
       "forced_threat",
@@ -56,15 +56,15 @@
     ]
   },
   "implemented_fix": {
-    "commit": "a4cde51ec11dabae0bf54f1085abd20987a38f80",
-    "tree": "5251506cec6ee2801fd9c735faa184aa90b5de88",
+    "commit": "10370f0aa84ee67cb3bba2f9d66d512e4ccaf8d0",
+    "tree": "e369fef6c0a74383c542225581ab68488e2f8d8a",
     "status": "implemented_not_live_verified",
-    "scope": "adaptive_route_combat_authority_refresh",
+    "scope": "native_runback_path_preservation",
     "changed_files": [
-      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
-      "tests/test_bot_route_combat_target_policy.py"
+      "src/server/game/Bots/BotWorldPopulationMgrRecovery.cpp",
+      "tests/test_native_runback_long_path.py"
     ],
-    "focused_test_count": 34,
+    "focused_test_count": 28,
     "runtime_verification_required": true
   },
   "validation_clock": {
@@ -96,12 +96,12 @@
     },
     "required_clock_policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
-    "required_fix_commit": "a4cde51ec11dabae0bf54f1085abd20987a38f80",
-    "required_live_build_tree": "5251506cec6ee2801fd9c735faa184aa90b5de88",
+    "required_fix_commit": "10370f0aa84ee67cb3bba2f9d66d512e4ccaf8d0",
+    "required_live_build_tree": "e369fef6c0a74383c542225581ab68488e2f8d8a",
     "must_observe": [
-      "both tanks submit normal native taunts or trained threat actions on their assigned Drudge",
-      "each live Drudge records its assigned tank as native victim",
-      "the route clears the Drudges and advances without forbidden assistance",
+      "a matching active native corpse-run path is not resubmitted on every death tick",
+      "an isolated dead member advances through native release, runback, reentry, and resurrection",
+      "the Drudge route emits its terminal and advances without forbidden assistance",
       "cleanup leaves zero bots, zero leases, and no worldserver process"
     ],
     "must_not_claim": [
@@ -110,5 +110,5 @@
       "native confirmation from deterministic tests alone"
     ]
   },
-  "next_action": "Build exact clean commit a4cde51ec11dabae0bf54f1085abd20987a38f80 through the queued coordinator, provision a fresh exact ten-player Magmaw roster, and run one completion-watchdog shard. Verify normal native tank taunts or trained threat actions establish one assigned Drudge victim per tank and the route clears the Drudges. Do not force threat, trigger taunts, alter Drudge AI, teleport, revive, or manufacture an encounter result."
+  "next_action": "Build exact clean commit 10370f0aa84ee67cb3bba2f9d66d512e4ccaf8d0 through the queued coordinator, provision a fresh exact ten-player Magmaw roster, and run one completion-watchdog shard. Verify an active native corpse-run path progresses without repeated Move resubmission, the dead member rejoins through ordinary native recovery, and the Drudge route advances. Do not teleport, revive, stop combat, or manufacture an encounter result."
 }

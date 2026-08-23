@@ -340,25 +340,25 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "adaptive_route_authority_refresh_verification"
+        "native_runback_path_preservation_verification"
     )
     assert magmaw_25h["active_program_work_unit"] is None
     assert active["owner_skill"] == "raid-shard-architecture"
     assert active["first_broken_edge"] == (
-        "adaptive_route_authority_refresh_live_verification"
+        "native_runback_repeated_move_submission"
     )
     evidence = active["decisive_evidence"]
     assert evidence["source_commit"] == (
-        "81c6986ec520240b6b2ba1577f345b3660c9cb31"
+        "a4cde51ec11dabae0bf54f1085abd20987a38f80"
     )
     assert evidence["binary_sha256"] == (
-        "65a23111b6b51580f4198dfee369f2fe1ec19a943ebc6569323489bf3c9e4af7"
+        "1b36ab8d281ce81be6b77ad606b92bdf74bfb82853b660cd0683522f153bb6dd"
     )
     assert evidence["report_sha256"] == (
-        "381361b372f1e6317de73df640c008b1fd5fbd72133180ea69162fc94ac453a3"
+        "015b8bdc2a461b89373c9b25d8cf7a2d02726ec18e05f639d8a6f90c574b2d7c"
     )
     assert evidence["report_file_sha256"] == (
-        "1f9f7111923f1ab65b11c9808534e60be60c22ebe9c4de57a16ef1f000d44bd3"
+        "8bb63f5ab061223cb9649f4507726da54b314d47bcee51ca59be9a3c2f7abc22"
     )
     assert (
         evidence["route_generation"],
@@ -367,11 +367,11 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     ) == (3, 2, "bwd.magmaw.drudges")
     assert evidence["diagnostic_difficulty"] == "10N"
     assert evidence["kills"] == 1
-    assert evidence["death_loop_count"] == 3
-    assert evidence["tank_owned_hostile_count"] == 0
+    assert evidence["death_loop_count"] == 1
+    assert evidence["tank_owned_hostile_count"] == 2
     assert evidence["drudge_target_guids"] == [59, 60]
     assert evidence["tank_taunt_spell_ids"] == [62124, 56222]
-    assert evidence["tank_taunt_native_result"] == "no_action"
+    assert evidence["tank_taunt_native_result"] == "native_threat_established"
     assert evidence["future_magmaw_target_observed"] is False
     assert evidence["boss_reached"] is False
     assert evidence["forbidden_assistance_observed"] is False
@@ -383,16 +383,16 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
         "matched_live_verification_runs": 0,
     }
     assert active["implementation_hypothesis"]["scope"] == (
-        "refresh_current_route_combat_authority_before_adaptive_route_shortcut"
+        "preserve_matching_native_runback_path_until_progress_stalls"
     )
     assert active["implemented_fix"]["commit"] == (
-        "a4cde51ec11dabae0bf54f1085abd20987a38f80"
+        "10370f0aa84ee67cb3bba2f9d66d512e4ccaf8d0"
     )
     assert active["implemented_fix"]["status"] == "implemented_not_live_verified"
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
     assert active["runtime_verification_plan"]["identity"]["difficulty"] == "10N"
     assert active["runtime_verification_plan"]["fixed_success_timer_seconds"] is None
-    assert "do not force threat" in active["next_action"].lower()
+    assert "do not teleport" in active["next_action"].lower()
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
@@ -488,7 +488,7 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     assert status["active_work_unit"]["descriptor_valid"] is True
     assert status["active_work_unit"]["ready_for_bounded_repair"] is True
     assert status["active_work_unit"]["first_broken_edge"] == (
-        "adaptive_route_authority_refresh_live_verification"
+        "native_runback_repeated_move_submission"
     )
     assert status["active_work_unit"]["source_handoff"]["sha256"] == (
         workloop._file_sha256(
@@ -499,7 +499,7 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "adaptive_route_authority_refresh_verification"
+        "native_runback_path_preservation_verification"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
         "raid-shard-architecture"
@@ -507,7 +507,7 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     assert status["current_program_next_action"] == status["active_work_unit"][
         "next_action"
     ]
-    assert "do not force threat" in status["active_work_unit"]["next_action"].lower()
+    assert "do not teleport" in status["active_work_unit"]["next_action"].lower()
     assert "legacy_program_next_action" not in status
 
 
