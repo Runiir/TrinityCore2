@@ -6823,6 +6823,61 @@ def test_live_bot_validation_completion_watchdog_writes_heartbeats(tmp_path):
     assert report["completion_reason"] == "repeated_decision_watchdog"
 
 
+def test_completion_watchdog_drains_unsolicited_stdout_before_command_response(
+    tmp_path, monkeypatch
+):
+    fake_worldserver = tmp_path / "fake_worldserver.py"
+    fake_worldserver.write_text(
+        "#!/usr/bin/env python3\n"
+        "import sys\n"
+        "print('TC> ', flush=True)\n"
+        "sys.stdout.write(('UNSOLICITED ' + 'x' * 1024 + '\\n') * 512)\n"
+        "sys.stdout.flush()\n"
+        "for line in sys.stdin:\n"
+        "    command = line.strip()\n"
+        "    if command == '.botauto status':\n"
+        "        print('{\"action\":\"botauto_status\",\"target_bots\":1,\"duration_seconds\":29}', flush=True)\n"
+        "        print('TC> ', flush=True)\n"
+        "    elif command.startswith('server shutdown'):\n"
+        "        print('TC> ', flush=True)\n"
+        "        break\n"
+        "    else:\n"
+        "        print('TC> ', flush=True)\n",
+        encoding="utf-8",
+    )
+    fake_worldserver.chmod(0o755)
+    config = tmp_path / "worldserver.conf"
+    config.write_text("", encoding="utf-8")
+
+    monkeypatch.setattr(
+        "tools.bot_ml.run_live_bot_validation.rolling_heartbeat_report",
+        lambda *_args, **_kwargs: {"acceptable_final_evidence": True},
+    )
+
+    output, returncode, timed_out, _command = run_worldserver_completion_watchdog(
+        fake_worldserver,
+        config,
+        5,
+        ".botauto status\n",
+        tmp_path / "validation",
+        {},
+        {},
+        heartbeat_sec=1,
+    )
+
+    assert returncode == 0
+    assert timed_out is False
+    assert output.count("UNSOLICITED ") == 512
+    assert output.count("$ .botauto status\n") == 1
+    assert output.count('"action":"botauto_status"') == 1
+    assert output.index("UNSOLICITED ") < output.index("$ .botauto status\n")
+    assert output.index("$ .botauto status\n") < output.index('"action":"botauto_status"')
+    assert (
+        '{"action":"botauto_status","target_bots":1,"duration_seconds":29}\nTC> '
+        in output
+    )
+
+
 def test_process_completion_watchdog_stops_on_completed_calibration_window(
     tmp_path, monkeypatch
 ):

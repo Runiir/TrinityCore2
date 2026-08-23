@@ -63,6 +63,7 @@ DEFAULT_NO_PROGRESS_WINDOW_SEC = 180
 DEFAULT_MAX_REPEATED_DECISIONS = 20
 DEFAULT_MAX_DEATH_LOOPS = 3
 DEFAULT_MAX_WORLDSERVER_OUTPUT_BYTES = 64 * 1024 * 1024
+MAX_WORLDSERVER_DRAIN_BYTES_PER_WAKE = 64 * 1024
 WORLDSERVER_OUTPUT_TRUNCATED_MARKER = "\n[worldserver_output_truncated]\n"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_COMBAT_CALIBRATION_REFERENCE = REPO_ROOT / "dataset/combat_calibration/wowsims_cata_p4.json"
@@ -3989,6 +3990,45 @@ def read_until_console_prompt(
     return "".join(output)
 
 
+def drain_available_process_output(
+    process: subprocess.Popen[str],
+    output_parts: BoundedOutputParts,
+    *,
+    wait_sec: float = 0.0,
+    max_bytes: int = MAX_WORLDSERVER_DRAIN_BYTES_PER_WAKE,
+) -> int:
+    """Drain unsolicited child output without crossing a command boundary."""
+    if process.stdout is None or max_bytes <= 0:
+        return 0
+    try:
+        fd = process.stdout.fileno()
+        ready, _, _ = select.select([fd], [], [], max(0.0, wait_sec))
+    except (OSError, ValueError):
+        return 0
+    if not ready:
+        return 0
+
+    drained = 0
+    while drained < max_bytes:
+        try:
+            chunk = os.read(fd, min(4096, max_bytes - drained))
+        except (BlockingIOError, OSError):
+            break
+        if not chunk:
+            break
+        output_parts.append(chunk.decode(errors="replace"))
+        drained += len(chunk)
+        if drained >= max_bytes:
+            break
+        try:
+            ready, _, _ = select.select([fd], [], [], 0.0)
+        except (OSError, ValueError):
+            break
+        if not ready:
+            break
+    return drained
+
+
 def bounded_console_deadline(deadline: float, max_wait_sec: int | float) -> float:
     return min(deadline, time.monotonic() + max(1.0, float(max_wait_sec)))
 
@@ -4413,7 +4453,19 @@ def run_worldserver_completion_watchdog(
 
             sleep_until = min(deadline, time.monotonic() + max(1, heartbeat_sec))
             while process.poll() is None and time.monotonic() < sleep_until:
-                time.sleep(min(1.0, sleep_until - time.monotonic()))
+                remaining = max(0.0, sleep_until - time.monotonic())
+                if process.stdout is None:
+                    time.sleep(min(1.0, remaining))
+                else:
+                    drained = drain_available_process_output(
+                        process,
+                        output_parts,
+                        wait_sec=min(1.0, remaining),
+                    )
+                    if drained == 0:
+                        # A closed or temporarily unavailable descriptor must
+                        # not turn the bounded wait into a tight polling loop.
+                        time.sleep(min(0.05, remaining))
 
             heartbeat_index += 1
             if process.poll() is None:
@@ -4509,7 +4561,17 @@ def run_worldserver_completion_watchdog(
             process.stdin = None
         shutdown_deadline = min(time.monotonic() + 10, deadline + 10)
         while process.poll() is None and time.monotonic() < shutdown_deadline:
-            time.sleep(0.25)
+            remaining = max(0.0, shutdown_deadline - time.monotonic())
+            if process.stdout is None:
+                time.sleep(min(0.25, remaining))
+            else:
+                drained = drain_available_process_output(
+                    process,
+                    output_parts,
+                    wait_sec=min(0.25, remaining),
+                )
+                if drained == 0:
+                    time.sleep(min(0.05, remaining))
         if process.poll() is None:
             process.kill()
             timed_out = True
