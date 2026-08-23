@@ -132,6 +132,46 @@ void BotWorldPopulationMgr::ObserveAfflictionDamageStage(
 
     DamageEffectType const effectType = damageType == uint32(DOT)
         ? DOT : SPELL_DIRECT_DAMAGE;
+    int32 spellmodFlat = 0;
+    float spellmodMultiplier = 1.0f;
+    owner->GetSpellModValues(spellInfo,
+        effectType == DOT ? SpellModOp::PeriodicHealingAndDamage
+                          : SpellModOp::HealingAndDamage,
+        nullptr, 1000000.0f, &spellmodFlat, &spellmodMultiplier);
+    uint32 const spellmodMultiplierPpm = uint32(
+        std::max(0.0f, spellmodMultiplier) * 1000000.0f);
+    auto observeSpellmod = [&](uint32& count, int32& flatMin, int32& flatMax,
+        uint64& multiplierSum, uint32& multiplierMin, uint32& multiplierMax)
+    {
+        ++count;
+        multiplierSum += spellmodMultiplierPpm;
+        if (count == 1)
+        {
+            flatMin = spellmodFlat;
+            flatMax = spellmodFlat;
+            multiplierMin = spellmodMultiplierPpm;
+            multiplierMax = spellmodMultiplierPpm;
+            return;
+        }
+        flatMin = std::min(flatMin, spellmodFlat);
+        flatMax = std::max(flatMax, spellmodFlat);
+        multiplierMin = std::min(multiplierMin, spellmodMultiplierPpm);
+        multiplierMax = std::max(multiplierMax, spellmodMultiplierPpm);
+    };
+    if (effectType == DOT)
+        observeSpellmod(observation.PeriodicSpellmodObservationCount,
+            observation.PeriodicSpellmodFlatMin,
+            observation.PeriodicSpellmodFlatMax,
+            observation.PeriodicSpellmodMultiplierPpmSum,
+            observation.PeriodicSpellmodMultiplierPpmMin,
+            observation.PeriodicSpellmodMultiplierPpmMax);
+    else
+        observeSpellmod(observation.DirectSpellmodObservationCount,
+            observation.DirectSpellmodFlatMin,
+            observation.DirectSpellmodFlatMax,
+            observation.DirectSpellmodMultiplierPpmSum,
+            observation.DirectSpellmodMultiplierPpmMin,
+            observation.DirectSpellmodMultiplierPpmMax);
     uint32 const ownerDamagePctDonePpm = uint32(std::max(0.0f,
         owner->SpellDamagePctDone(victim, spellInfo, effectType)) * 1000000.0f);
     int32 const targetTakenMultiplierPpm = std::max(0,
@@ -268,6 +308,30 @@ std::string BotWorldPopulationMgr::AppendAfflictionCalibrationJson(
                  << observation.TargetTakenMultiplierPpmMin
                  << ",\"target_taken_multiplier_ppm_max\":"
                  << observation.TargetTakenMultiplierPpmMax
+                 << ",\"direct_spellmod_observation_count\":"
+                 << observation.DirectSpellmodObservationCount
+                 << ",\"direct_spellmod_flat_min\":"
+                 << observation.DirectSpellmodFlatMin
+                 << ",\"direct_spellmod_flat_max\":"
+                 << observation.DirectSpellmodFlatMax
+                 << ",\"direct_spellmod_multiplier_ppm_sum\":"
+                 << observation.DirectSpellmodMultiplierPpmSum
+                 << ",\"direct_spellmod_multiplier_ppm_min\":"
+                 << observation.DirectSpellmodMultiplierPpmMin
+                 << ",\"direct_spellmod_multiplier_ppm_max\":"
+                 << observation.DirectSpellmodMultiplierPpmMax
+                 << ",\"periodic_spellmod_observation_count\":"
+                 << observation.PeriodicSpellmodObservationCount
+                 << ",\"periodic_spellmod_flat_min\":"
+                 << observation.PeriodicSpellmodFlatMin
+                 << ",\"periodic_spellmod_flat_max\":"
+                 << observation.PeriodicSpellmodFlatMax
+                 << ",\"periodic_spellmod_multiplier_ppm_sum\":"
+                 << observation.PeriodicSpellmodMultiplierPpmSum
+                 << ",\"periodic_spellmod_multiplier_ppm_min\":"
+                 << observation.PeriodicSpellmodMultiplierPpmMin
+                 << ",\"periodic_spellmod_multiplier_ppm_max\":"
+                 << observation.PeriodicSpellmodMultiplierPpmMax
                  << ",\"shadow_mastery_present_events\":"
                  << observation.ShadowMasteryPresentEvents
                  << ",\"shadow_mastery_affecting_events\":"

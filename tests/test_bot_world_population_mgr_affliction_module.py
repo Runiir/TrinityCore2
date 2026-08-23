@@ -98,6 +98,10 @@ def test_affliction_damage_stage_receipt_covers_requested_native_events() -> Non
     for field in (
         "owner_damage_pct_done_ppm_sum",
         "target_taken_multiplier_ppm_sum",
+        "direct_spellmod_observation_count",
+        "direct_spellmod_multiplier_ppm_sum",
+        "periodic_spellmod_observation_count",
+        "periodic_spellmod_multiplier_ppm_sum",
         "shadow_mastery_affecting_events",
         "potent_afflictions_affecting_events",
         "haunt_affecting_events",
@@ -106,3 +110,6 @@ def test_affliction_damage_stage_receipt_covers_requested_native_events() -> Non
         assert f'\\"{field}\\"' in module
     assert "SpellDamagePctDone(victim, spellInfo, effectType)" in module
     assert "SpellDamageBonusTaken(owner, spellInfo, 1000000, effectType)" in module
+    assert "SpellModOp::PeriodicHealingAndDamage" in module
+    assert "SpellModOp::HealingAndDamage" in module
+    assert "GetSpellModValues(spellInfo" in module
