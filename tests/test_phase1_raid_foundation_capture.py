@@ -3210,6 +3210,74 @@ def test_capture_watchdog_resets_repeated_hazard_failures_on_monotonic_target_pr
     assert state["repeated_decision_counts"] == {}
 
 
+def test_capture_watchdog_does_not_inherit_native_count_from_successful_events():
+    status = _watchdog_status()
+    status["validation_route"].update(
+        node_id="bwd.magmaw.chainwielder", generation=2, kind="trash",
+    )
+    state = {}
+    fingerprint = 947707352
+    successful_movement = [
+        {
+            "action": "move_out_of_hazard",
+            "result": "ok",
+            "route_node_id": "bwd.magmaw.chainwielder",
+            "route_generation": 2,
+            "fingerprint_hash": fingerprint,
+            "consecutive_same_decision_count": sequence,
+            "sequence": sequence,
+            "timestamp_ms": sequence,
+        }
+        for sequence in range(1, 26)
+    ]
+    inherited_failure = {
+        "action": "validation_route_mechanic",
+        "result": "tactical_path_rejected",
+        "recovery_result": "higher_priority_movement_active",
+        "route_node_id": "bwd.magmaw.chainwielder",
+        "route_generation": 2,
+        "fingerprint_hash": fingerprint,
+        "consecutive_same_decision_count": 25,
+        "sequence": 26,
+        "timestamp_ms": 25,
+    }
+
+    report = observe_capture_watchdog(
+        state,
+        status,
+        None,
+        [_watchdog_trace([*successful_movement, inherited_failure])],
+        max_repeated_decisions=20,
+        max_death_loops=3,
+    )
+
+    assert report["detected"] is False
+    assert report["repeated_decision_count"] == 0
+
+    actual_failures = [
+        {
+            **inherited_failure,
+            "consecutive_same_decision_count": native_count,
+            "sequence": native_count + 1,
+            "timestamp_ms": native_count,
+        }
+        for native_count in range(26, 46)
+    ]
+    terminal = observe_capture_watchdog(
+        state,
+        status,
+        None,
+        [_watchdog_trace(actual_failures)],
+        max_repeated_decisions=20,
+        max_death_loops=3,
+    )
+
+    assert terminal["detected"] is True
+    assert terminal["failure_reason"] == "repeated_decision_watchdog"
+    assert terminal["repeated_decision_count"] == 20
+    assert terminal["repeated_decision_outcome"] == "tactical_path_rejected"
+
+
 def test_capture_watchdog_still_stops_flat_repeated_hazard_failures():
     status = _watchdog_status()
     status["validation_route"].update(
