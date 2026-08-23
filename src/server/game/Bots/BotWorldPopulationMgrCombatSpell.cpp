@@ -219,6 +219,11 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
             candidate.RejectReason = "target_health_gate";
             continue;
         }
+        if (!MeetsHostileTargetHealthGate(candidate.Profile, UnitHealthPct(target)))
+        {
+            candidate.RejectReason = "hostile_target_health_gate";
+            continue;
+        }
         float selfHealthPct = UnitHealthPct(bot);
         if (selfHealthPct < candidate.Profile.MinSelfHealthPct || selfHealthPct > candidate.Profile.MaxSelfHealthPct)
         {
@@ -360,4 +365,3 @@ void BotWorldPopulationMgr::MoveToWanderPoint(Player* bot, WorldBotState& state)
     Position fallback = bot->GetFirstCollisionPosition(4.0f, bot->GetAngle(Cohort().Config.CenterX, Cohort().Config.CenterY));
     MoveBotToPoint(state, bot, fallback.GetPositionX(), fallback.GetPositionY(), fallback.GetPositionZ());
 }
-

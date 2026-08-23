@@ -599,6 +599,11 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             candidate.RejectReason = "target_health_gate";
             continue;
         }
+        if (!MeetsHostileTargetHealthGate(candidate.Profile, UnitHealthPct(target)))
+        {
+            candidate.RejectReason = "hostile_target_health_gate";
+            continue;
+        }
         float selfHealthPct = UnitHealthPct(bot);
         if (selfHealthPct < candidate.Profile.MinSelfHealthPct || selfHealthPct > candidate.Profile.MaxSelfHealthPct)
         {

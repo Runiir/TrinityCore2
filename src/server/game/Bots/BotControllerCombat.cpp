@@ -300,6 +300,11 @@ BotActionCandidate const* BotController::SelectProfileCombatAction(Player* bot, 
             candidate.RejectReason = "target_health_gate";
             continue;
         }
+        if (!MeetsHostileTargetHealthGate(candidate.Profile, state.TargetHpPct))
+        {
+            candidate.RejectReason = "hostile_target_health_gate";
+            continue;
+        }
         if (state.SelfHpPct < candidate.Profile.MinSelfHealthPct || state.SelfHpPct > candidate.Profile.MaxSelfHealthPct)
         {
             candidate.RejectReason = "self_health_gate";

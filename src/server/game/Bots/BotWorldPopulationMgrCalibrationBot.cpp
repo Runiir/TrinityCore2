@@ -678,6 +678,7 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
                 || (candidate.Profile.MaxEnemies && hostileCount > candidate.Profile.MaxEnemies)
                 || candidateTargetHealth < candidate.Profile.MinTargetHealthPct
                 || candidateTargetHealth > candidate.Profile.MaxTargetHealthPct
+                || !MeetsHostileTargetHealthGate(candidate.Profile, UnitHealthPct(target))
                 || candidateSelfHealth < candidate.Profile.MinSelfHealthPct
                 || candidateSelfHealth > candidate.Profile.MaxSelfHealthPct
                 || (candidate.Profile.RequiresInterruptibleTarget && !target->IsNonMeleeSpellCast(false))

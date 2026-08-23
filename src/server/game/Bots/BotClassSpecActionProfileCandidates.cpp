@@ -486,6 +486,12 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
             candidate.RejectReason = "missing_or_depleted_item";
         else if (!conditionRejection.empty())
             candidate.RejectReason = conditionRejection;
+        else if (!MeetsHostileTargetHealthGate(
+                spell,
+                target && target->GetMaxHealth()
+                    ? float(target->GetHealth()) / float(target->GetMaxHealth())
+                    : 0.0f))
+            candidate.RejectReason = "hostile_target_health_gate";
         else if (profile.Role == "healer"
             && healerTriageInjuredPlayers
             && spell.DamageWeight > 0.0f

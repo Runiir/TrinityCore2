@@ -71,6 +71,7 @@ _TRINITY_GATE_COLUMNS = (
     "max_enemies",
     "min_target_health_pct",
     "max_target_health_pct",
+    "min_hostile_target_health_pct",
     "min_self_health_pct",
     "max_self_health_pct",
     "required_self_aura",

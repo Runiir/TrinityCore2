@@ -28,6 +28,10 @@ struct BotActionProfileSpell
     uint8 MaxEnemies = 0;
     float MinTargetHealthPct = 0.0f;
     float MaxTargetHealthPct = 1.0f;
+    // Exclusive lower bound for the hostile combat target.  This is separate
+    // from the action target so self-targeted resource actions can preserve
+    // the enemy-health predicate from the source APL.
+    float MinHostileTargetHealthPct = 0.0f;
     float MinSelfHealthPct = 0.0f;
     float MaxSelfHealthPct = 1.0f;
     uint32 RequiredSelfAura = 0;
@@ -77,6 +81,12 @@ struct BotActionProfileSpell
     uint32 TargetCreatureTypeMask = 0;
     bool RequiresGroundTarget = false;
 };
+
+inline bool MeetsHostileTargetHealthGate(BotActionProfileSpell const& spell, float hostileTargetHealthPct)
+{
+    return spell.MinHostileTargetHealthPct <= 0.0f
+        || hostileTargetHealthPct > spell.MinHostileTargetHealthPct;
+}
 
 struct BotActionCandidate
 {
