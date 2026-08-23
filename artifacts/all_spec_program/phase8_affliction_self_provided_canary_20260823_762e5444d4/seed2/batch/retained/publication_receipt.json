@@ -1,0 +1,29 @@
+{
+  "batch_id": "affliction-762e5444d4-seed2-2",
+  "batch_identity_sha256": "438a946a309e1a711a8d065d74cc495dab429cf0bbefb9b43ef323789d37c9c1",
+  "cache_scope": "batch_specific",
+  "compact_bundle_sha256": "4db9b74ad5bd680c2bed56823c5f8f98a8274f601ce911ab634570e9cb2adee0",
+  "pointers": [
+    {
+      "dvc_md5": "09b10157c5c23645fd2ede045f028500.dir",
+      "nfiles": 6,
+      "path": "artifacts/all_spec_program/phase8_affliction_self_provided_canary_20260823_762e5444d4/seed2/batch/raw.dvc",
+      "pointer_document": "outs:\n- md5: 09b10157c5c23645fd2ede045f028500.dir\n  size: 54734291\n  nfiles: 6\n  hash: md5\n  path: raw\n",
+      "pointer_sha256": "03c5027889c0c28b1e39aa4b7be07d658103b506edc4851edebe8cc956c2dbbb",
+      "size": 54734291
+    },
+    {
+      "dvc_md5": "0eb24cbee1ed99e882ff6b47afb1b5fd.dir",
+      "nfiles": 1,
+      "path": "artifacts/all_spec_program/phase8_affliction_self_provided_canary_20260823_762e5444d4/seed2/batch/compact.dvc",
+      "pointer_document": "outs:\n- md5: 0eb24cbee1ed99e882ff6b47afb1b5fd.dir\n  size: 4666\n  nfiles: 1\n  hash: md5\n  path: compact\n",
+      "pointer_sha256": "f38aff9828ea03efb2d83005acd4fe43f14be8924dc84a7feab6cdc2938df35d",
+      "size": 4666
+    }
+  ],
+  "raw_bundle_sha256": "e7ed88aee4d9d5766069c0b44214ef168f20b204e8dee9a92a138c990c06fe5c",
+  "receipt_sha256": "798931f08f772adbf85b4d2a21c57eba8216328abb0eb40b1f07dd1835b2faf7",
+  "remote_status_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "remote_verified": true,
+  "schema": "bot_immutable_batch_publication_receipt_v1"
+}

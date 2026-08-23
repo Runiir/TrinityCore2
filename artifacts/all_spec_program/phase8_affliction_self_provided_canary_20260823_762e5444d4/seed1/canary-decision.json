@@ -1,0 +1,283 @@
+{
+  "budgets": {
+    "capture_attempts_used": 1,
+    "fixes_used": 1,
+    "max_capture_attempts": 1,
+    "max_fix_attempts": 1
+  },
+  "decision_sha256": "7017356fa21d69f9a88d9f020c4ca3c2e446d121a3f721ef565d5ca0e27006ad",
+  "first_broken_edge": null,
+  "gates": [
+    {
+      "expected": "match",
+      "name": "gear_parity",
+      "observed": "match",
+      "status": "pass"
+    },
+    {
+      "expected": "match",
+      "name": "effective_stat_parity",
+      "observed": "match",
+      "status": "pass"
+    },
+    {
+      "expected": true,
+      "name": "dps_tuning_admission",
+      "observed": true,
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "combat_potion_native_use_during_combat": 1,
+        "flask_native_use_before_scoring": 1,
+        "food_native_use_before_scoring": 1,
+        "inventory_backed": true,
+        "prepot_native_use_before_combat": 1,
+        "static_aura_is_use_receipt": false,
+        "status": "match"
+      },
+      "name": "consumable_parity",
+      "observed": {
+        "checks": [
+          {
+            "expected_aura_observed": true,
+            "expected_item_id": 58086,
+            "inventory_count_after": 18,
+            "inventory_count_before": 19,
+            "kind": "flask",
+            "native_use_count": 1,
+            "observed_item_id": 58086,
+            "status": "match"
+          },
+          {
+            "expected_aura_observed": true,
+            "expected_item_id": 62671,
+            "inventory_count_after": 18,
+            "inventory_count_before": 19,
+            "kind": "food",
+            "native_use_count": 1,
+            "observed_item_id": 62671,
+            "status": "match"
+          },
+          {
+            "expected_aura_observed": true,
+            "expected_item_id": 58091,
+            "inventory_count_after": 19,
+            "inventory_count_before": 20,
+            "kind": "prepot",
+            "native_use_count": 1,
+            "observed_item_id": 58091,
+            "status": "match"
+          },
+          {
+            "expected_aura_observed": true,
+            "expected_item_id": 58091,
+            "inventory_count_after": 18,
+            "inventory_count_before": 19,
+            "kind": "combat_potion",
+            "native_use_count": 1,
+            "observed_item_id": 58091,
+            "status": "match"
+          },
+          {
+            "kind": "combat_potion_timing",
+            "observed": {
+              "blocked_sample_count": 2048,
+              "first_eligible_at_ms": 1787508313292,
+              "gate_passed": true,
+              "last_blocked_at_ms": 1787508313192,
+              "last_prepot_aura_blocked_at_ms": 1787508108302,
+              "policy": "execute_e25_or_remaining_le_26s_no_prepot_overlap",
+              "prepot_aura_active_at_submission": false,
+              "prepot_aura_blocked_sample_count": 198,
+              "remaining_ms_at_submission": 74699,
+              "required_execute_health_pct": 25,
+              "required_remaining_ms": 26000,
+              "scoring_started_at_ms": 1787508088291,
+              "target_health_pct_at_submission": 22
+            },
+            "policy": "execute_e25_or_remaining_le_26s_no_prepot_overlap",
+            "status": "match"
+          }
+        ],
+        "first_broken_edge": null,
+        "interpretation": "A fixture-added aura is not a native item-use receipt. Each configured item requires inventory provisioning, one native use in its phase, an item-count decrease, and the expected aura outcome.",
+        "inventory_backed": true,
+        "status": "match"
+      },
+      "status": "pass"
+    },
+    {
+      "expected": "no persistent warmup blocker",
+      "name": "calibration_pre_scoring_liveness",
+      "observed": null,
+      "status": "pass"
+    },
+    {
+      "expected": 300.0,
+      "name": "closed_calibration_window",
+      "observed": 300.0,
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "aggregate_iterations": 1,
+        "debug_log_present": true,
+        "iterations_done": 1,
+        "minimum_duration_seconds": 300.0
+      },
+      "name": "wowsims_debug_dps_reference",
+      "observed": {
+        "aggregate_iterations": 1,
+        "avg_iteration_duration_seconds": 300.0,
+        "debug_log_present": true,
+        "dps": 29623.938524220404,
+        "first_iteration_duration_seconds": 300.0,
+        "iterations_done": 1,
+        "valid": true
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "maximum": 0.08
+      },
+      "name": "cast_mix_total_variation",
+      "observed": 0.03834645758800004,
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "maximum": 0.05
+      },
+      "name": "maximum_cast_share_delta",
+      "observed": 0.021531339354,
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "maximum": 1.15,
+        "minimum": 0.85
+      },
+      "name": "cast_cadence_ratio",
+      "observed": 0.936095856215,
+      "status": "pass"
+    },
+    {
+      "expected": "owner primary pet separated from guardians",
+      "name": "primary_pet_attribution",
+      "observed": {
+        "runtime_damage": 1806482.0,
+        "runtime_landed_events": 224.0,
+        "wowsims_damage": 1724145.1296967766,
+        "wowsims_landed_events": 237.0
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "minimum": 0.95
+      },
+      "name": "pet_alive_ratio",
+      "observed": 1.0,
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "minimum": 0.95
+      },
+      "name": "pet_target_match_ratio",
+      "observed": 0.999,
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "minimum": 0.85
+      },
+      "name": "pet_landed_event_cadence_ratio",
+      "observed": 0.9451476793248945,
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "maximum": 1.1,
+        "minimum": 0.9,
+        "upper_bound_enforced": false
+      },
+      "name": "pet_damage_per_event_ratio",
+      "observed": 1.108562405967778,
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "denominator": "wowsims_debug_result.player_dps.avg",
+        "limits": {
+          "maximum": 1.02,
+          "minimum": 0.98
+        },
+        "upper_bound_enforced": false
+      },
+      "name": "total_dps_ratio",
+      "observed": 0.9800199246384312,
+      "status": "pass"
+    }
+  ],
+  "identities": {
+    "policy_sha256": "e008fd3a691a4eb412af1fa71cc2cd8caef649877eb6b96e8a64e55c241bfae7",
+    "review_sha256": "cb83d3e3168d7b5e003f26fad91a09345827a9d862c461c852079306f15fafd0"
+  },
+  "next_work_unit": null,
+  "owner_skill": null,
+  "reference_class": "self_provided_baseline",
+  "schema": "trinity_spec_canary_decision_v1",
+  "signals": {
+    "cast_cadence_ratio": 0.936095856215,
+    "cast_mix_total_variation_distance": 0.03834645758800004,
+    "dps_comparison": {
+      "aggregate_iterations": 2000,
+      "aggregate_maximum": 33998.228820330674,
+      "aggregate_mean": 31312.966894306235,
+      "aggregate_minimum": 29143.19682362893,
+      "aggregate_stdev": 788.1759348903284,
+      "debug_aggregate_iterations": 1,
+      "debug_iterations_done": 1,
+      "debug_reference_valid": true,
+      "debug_value": 29623.938524220404,
+      "denominator": "wowsims_debug_result.player_dps.avg",
+      "denominator_value": 29623.938524220404,
+      "parity_band": {
+        "maximum": 1.02,
+        "minimum": 0.98
+      },
+      "single_sample_canary": true,
+      "upper_bound_enforced": false
+    },
+    "maximum_cast_share_delta": 0.021531339354,
+    "primary_pet": {
+      "alive_ratio": 1.0,
+      "damage_per_event_ratio": 1.108562405967778,
+      "landed_event_cadence_ratio": 0.9451476793248945,
+      "runtime_damage": 1806482.0,
+      "runtime_landed_events": 224.0,
+      "target_match_ratio": 0.999,
+      "total_damage_ratio": 1.047755185387267,
+      "wowsims_damage": 1724145.1296967766,
+      "wowsims_landed_events": 237.0
+    },
+    "runtime_dps": 29032.05,
+    "total_dps_ratio": 0.9800199246384312,
+    "wowsims_aggregate_dps": {
+      "iterations": 2000,
+      "maximum": 33998.228820330674,
+      "mean": 31312.966894306235,
+      "minimum": 29143.19682362893,
+      "stdev": 788.1759348903284
+    },
+    "wowsims_debug_dps": 29623.938524220404,
+    "wowsims_dps": 31312.966894306235
+  },
+  "spec": "affliction_warlock",
+  "stage": "verification",
+  "status": "passed",
+  "terminal_reason": "verified_after_single_fix"
+}

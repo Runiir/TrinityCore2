@@ -1,0 +1,19 @@
+{
+  "accepted": true,
+  "discrepancies": [],
+  "fail_closed": false,
+  "recomputed": {
+    "accepted": true,
+    "all_stages_passed": true,
+    "authoritative_stonecore_boss_clear": false,
+    "facts_sha256": "611b520f9f8b43b7c409d9de0f96a3fa772e81517254ca5644e691ec8f069f87",
+    "failed_count": 0,
+    "manifest_complete": false,
+    "passed_count": 2,
+    "rejections": [],
+    "result_sha256": "fe930b4b0c5b7eb52d027446b04c0112ef391adbd25b178aeb204ac5ab85e028",
+    "role_quality_advisory": false,
+    "schema": "bot_live_acceptance_result_v1"
+  },
+  "schema": "bot_live_acceptance_verification_v1"
+}
