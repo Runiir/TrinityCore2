@@ -1446,6 +1446,33 @@ def test_cpp_reference_aura_universe_covers_every_fixture_setup_aura() -> None:
         | set(FLASK_ITEM_BY_AURA)
         | set(FOOD_ITEMS_BY_AURA)
     )
+    potion_aura_ids = {
+        int(
+            load_fixture_contract_binding(target_spec)["projection"][
+                "runtime_expected"
+            ]["prepot"]["observed_aura_spell_id"]
+        )
+        for target_spec in (
+            "affliction_warlock",
+            "arms_warrior",
+            "assassination_rogue",
+            "balance_druid",
+            "combat_rogue",
+            "demonology_warlock",
+            "elemental_shaman",
+            "feral_druid_dps",
+            "fire_mage",
+            "frost_death_knight",
+            "fury_warrior",
+            "marksmanship_hunter",
+            "retribution_paladin",
+            "shadow_priest",
+            "survival_hunter",
+            "unholy_death_knight",
+        )
+    }
+    assert potion_aura_ids == {79476, 79633, 79634}
+    expected_player_ids |= potion_aura_ids
     assert expected_player_ids <= set(producer_ids)
 
     target_match = re.search(

@@ -80,7 +80,7 @@ def test_warlock_fel_armor_is_native_persistent_setup_and_observed() -> None:
     assert '{ CLASS_WARLOCK, nullptr, nullptr, 28176, 28176, 0, "fel_armor" }' in setup
     assert "bot->HasSpell(buff.SpellId)" in setup
     assert "executor.ExecuteCombat(bot, bot, action)" in setup
-    assert "46> PlayerAuraUniverse" in source
+    assert "49> PlayerAuraUniverse" in source
     assert re.search(r"PlayerAuraUniverse\s*=\s*\{.*?\b28176\b", source, re.DOTALL)
 
 
