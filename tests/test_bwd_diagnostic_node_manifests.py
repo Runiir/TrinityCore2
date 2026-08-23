@@ -108,12 +108,13 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
     assert seed_distance + drudges["split_arrival_tolerance_yards"] <= 35.0
 
     # Slot 8 is both the source-250140 seed and its permanent recovery point.
-    # This static check proves only the configured range and restored-source
-    # clearance envelopes. Runtime still reconstructs native threat-list
-    # eligibility/farthest selection and requires a strict return path.
+    # Keep it near the verified lane-B floor while leaving a large margin from
+    # the opposite tank's native combat anchor. Runtime still reconstructs
+    # native threat-list eligibility/farthest selection and requires a strict
+    # return path.
     source_0 = (-295.608573, -52.851976, 212.2983)
     slot_8 = tuple(member_by_slot[8][axis] for axis in ("x", "y", "z"))
-    assert slot_8 == (-325.0, -64.0, 212.82)
+    assert slot_8 == (-311.5, -78.0, 213.5)
     assert math.dist(slot_8, source_0) + drudges["split_arrival_tolerance_yards"] <= 35.0
     restored_source_1 = (-314.887329, -48.970574, 212.2623)
     assert (
@@ -122,6 +123,18 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
         - drudges["split_tank_arrival_tolerance_yards"]
         >= drudges["minimum_distance_yards"]
     )
+    # Run9 showed that the live source-250141 return to the slot-2 combat
+    # anchor can approach the old slot-8 point within the 15-yard guard. The
+    # replacement point retains the hostile range contract and leaves a
+    # materially larger two-arrival-disk margin from that native position.
+    opposite_combat_anchor = (-322.858002, -48.286201)
+    opposite_margin = (
+        math.hypot(slot_8[0] - opposite_combat_anchor[0],
+                   slot_8[1] - opposite_combat_anchor[1])
+        - drudges["split_arrival_tolerance_yards"]
+        - drudges["split_tank_arrival_tolerance_yards"]
+    )
+    assert opposite_margin >= drudges["minimum_distance_yards"] + 10.0
     recovery_points = {
         slot: (row["x"], row["y"])
         for slot, row in recovery_by_slot.items()
@@ -285,6 +298,23 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
         False,
         "split_seed_candidate_contract",
     )
+
+
+def test_slot_eight_seed_anchor_is_bound_in_canonical_and_magmaw_diagnostic_routes():
+    config = _config()
+    expected = {"roster_slot": 8, "x": -311.5, "y": -78.0, "z": 213.5}
+    for scenario_id in (CANONICAL_ID, DIAGNOSTIC_IDS["magmaw"]):
+        scenario_pool = config["scenarios"] + config["diagnostic_scenarios"]
+        scenario = next(row for row in scenario_pool if row["id"] == scenario_id)
+        drudges = next(
+            row for row in scenario["route"]
+            if row.get("mechanic_profile") == "trash_two_tank_charge_lanes"
+        )
+        member_by_slot = {
+            row["roster_slot"]: row for row in drudges["split_member_anchors"]
+        }
+        assert member_by_slot[8] == expected
+        assert drudge_split_geometry_status(drudges) == (True, "")
 
 
 def test_chainwielder_wait_anchor_and_pull_guard_are_outside_future_drudge_pack():
