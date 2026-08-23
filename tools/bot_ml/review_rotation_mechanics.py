@@ -1613,6 +1613,8 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
     decision_timeline: list[dict[str, Any]] = []
     off_target_damage_events: list[dict[str, Any]] = []
     primary_pet_shadow_bite_events: list[dict[str, Any]] = []
+    affliction_landed_events: list[dict[str, Any]] = []
+    affliction_soulburn_decisions: list[dict[str, Any]] = []
     dragonwrath_copy_proc_observations: list[dict[str, Any]] = []
     will_of_unbinding_observations: list[dict[str, Any]] = []
 
@@ -1811,6 +1813,154 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
                     ),
                     "owner_cast_warlock_periodic_damage_aura_spell_ids": aura_spell_ids,
                     "owner_cast_warlock_periodic_damage_aura_count": aura_count,
+                }
+            )
+        for event in bot.get("affliction_landed_events") or []:
+            if not isinstance(event, dict):
+                continue
+            is_periodic = bool(event.get("is_periodic", False))
+            affliction_landed_events.append(
+                {
+                    "bot_guid": bot_guid,
+                    "elapsed_ms": int(event.get("elapsed_ms") or 0),
+                    "elapsed_available": bool(event.get("elapsed_available", False)),
+                    "event_spell_id": int(
+                        event.get("event_spell_id") or event.get("spell_id") or 0
+                    ),
+                    "actor_guid": int(event.get("actor_guid") or 0),
+                    "actor_entry": int(event.get("actor_entry") or 0),
+                    "actor_type_id": int(event.get("actor_type_id") or 0),
+                    "owner_guid": int(event.get("owner_guid") or bot_guid),
+                    "owner_entry": int(event.get("owner_entry") or 0),
+                    "owner_type_id": int(event.get("owner_type_id") or 0),
+                    "target_guid": int(event.get("target_guid") or 0),
+                    "target_entry": int(event.get("target_entry") or 0),
+                    "target_type_id": int(event.get("target_type_id") or 0),
+                    "root_spell_id": int(event.get("root_spell_id") or 0),
+                    "root_spell_identity_available": bool(
+                        event.get("root_spell_identity_available", False)
+                    ),
+                    "child_spell_id": int(event.get("child_spell_id") or 0),
+                    "child_spell_identity_available": bool(
+                        event.get("child_spell_identity_available", False)
+                    ),
+                    "is_periodic": is_periodic,
+                    "damage_kind": "periodic" if is_periodic else "direct",
+                    "raw_damage": int(event.get("raw_damage") or 0),
+                    "raw_damage_available": bool(
+                        event.get("raw_damage_available", False)
+                    ),
+                    "final_damage": int(event.get("final_damage") or 0),
+                    "final_damage_available": bool(
+                        event.get("final_damage_available", False)
+                    ),
+                    "measured_damage": int(
+                        event.get("measured_damage")
+                        or event.get("final_damage")
+                        or 0
+                    ),
+                    "measured_damage_available": bool(
+                        event.get("measured_damage_available", False)
+                    ),
+                    "critical": bool(event.get("critical", False)),
+                    "critical_outcome_available": bool(
+                        event.get("critical_outcome_available", False)
+                    ),
+                    "crit_chance_pct": float(event.get("crit_chance_pct") or 0.0),
+                    "crit_chance_available": bool(
+                        event.get("crit_chance_available", False)
+                    ),
+                    "actor_spell_power": int(event.get("actor_spell_power") or 0),
+                    "actor_spell_crit_pct": float(
+                        event.get("actor_spell_crit_pct") or 0.0
+                    ),
+                    "actor_stat_snapshot_available": bool(
+                        event.get("actor_stat_snapshot_available", False)
+                    ),
+                    "scoring_start_player_stats_available": bool(
+                        event.get("scoring_start_player_stats_available", False)
+                    ),
+                    "actor_damage_pct_done_ppm": int(
+                        event.get("actor_damage_pct_done_ppm") or 0
+                    ),
+                    "target_taken_multiplier_ppm": int(
+                        event.get("target_taken_multiplier_ppm") or 0
+                    ),
+                    "modifier_snapshot_available": bool(
+                        event.get("modifier_snapshot_available", False)
+                    ),
+                    "aura_snapshot_available": bool(
+                        event.get("aura_snapshot_available", False)
+                    ),
+                    "shadow_mastery_active": bool(
+                        event.get("shadow_mastery_active", False)
+                    ),
+                    "potent_afflictions_active": bool(
+                        event.get("potent_afflictions_active", False)
+                    ),
+                    "haunt_active": bool(event.get("haunt_active", False)),
+                    "haunt_modifier_amount": int(
+                        event.get("haunt_modifier_amount") or 0
+                    ),
+                    "shadow_embrace_active": bool(
+                        event.get("shadow_embrace_active", False)
+                    ),
+                    "shadow_embrace_stacks": int(
+                        event.get("shadow_embrace_stacks") or 0
+                    ),
+                    "shadow_embrace_modifier_amount": int(
+                        event.get("shadow_embrace_modifier_amount") or 0
+                    ),
+                    "shadow_embrace_caster_active": bool(
+                        event.get("shadow_embrace_caster_active", False)
+                    ),
+                    "shadow_embrace_caster_stacks": int(
+                        event.get("shadow_embrace_caster_stacks") or 0
+                    ),
+                    "proc_snapshot_available": bool(
+                        event.get("proc_snapshot_available", False)
+                    ),
+                }
+            )
+        for event in bot.get("affliction_soulburn_decisions") or []:
+            if not isinstance(event, dict):
+                continue
+            raw_rejections = event.get("candidate_rejections")
+            if isinstance(raw_rejections, str):
+                try:
+                    raw_rejections = json.loads(raw_rejections)
+                except json.JSONDecodeError:
+                    raw_rejections = []
+            candidate_rejections = [
+                {
+                    "spell_id": int(row.get("spell_id") or 0),
+                    "reason": str(row.get("reason") or ""),
+                }
+                for row in raw_rejections or []
+                if isinstance(row, dict)
+            ]
+            affliction_soulburn_decisions.append(
+                {
+                    "bot_guid": bot_guid,
+                    "elapsed_ms": int(event.get("elapsed_ms") or 0),
+                    "chosen_spell_id": int(event.get("chosen_spell_id") or 0),
+                    "soulburn_power_before": int(
+                        event.get("soulburn_power_before") or 0
+                    ),
+                    "soulburn_power_after": int(
+                        event.get("soulburn_power_after") or 0
+                    ),
+                    "soulburn_power_available": bool(
+                        event.get("soulburn_power_available", False)
+                    ),
+                    "soulburn_power_changed": bool(
+                        event.get("soulburn_power_changed", False)
+                    ),
+                    "candidate_observation_available": bool(
+                        event.get("candidate_observation_available", False)
+                    ),
+                    "result": str(event.get("result") or "unknown"),
+                    "candidate_rejections": candidate_rejections,
                 }
             )
         dragonwrath = bot.get("dragonwrath_copy_proc")
@@ -2087,6 +2237,92 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
     primary_pet_shadow_bite_events.sort(
         key=lambda event: (event["bot_guid"], event["elapsed_ms"])
     )
+    affliction_landed_events.sort(
+        key=lambda event: (
+            event["bot_guid"],
+            event["elapsed_ms"],
+            event["actor_guid"],
+            event["event_spell_id"],
+        )
+    )
+    affliction_soulburn_decisions.sort(
+        key=lambda event: (event["bot_guid"], event["elapsed_ms"])
+    )
+    affliction_landed_event_summary: dict[str, dict[str, Any]] = {}
+    for event in affliction_landed_events:
+        key = f'{event["bot_guid"]}:{event["event_spell_id"]}:{event["damage_kind"]}'
+        summary = affliction_landed_event_summary.setdefault(
+            key,
+            {
+                "bot_guid": event["bot_guid"],
+                "event_spell_id": event["event_spell_id"],
+                "damage_kind": event["damage_kind"],
+                "is_periodic": event["is_periodic"],
+                "event_count": 0,
+                "raw_damage": 0,
+                "final_damage": 0,
+                "measured_damage": 0,
+                "critical_outcome_count": 0,
+                "critical_count": 0,
+                "crit_chance_available_count": 0,
+                "root_identity_available_count": 0,
+                "child_identity_available_count": 0,
+                "actor_stat_snapshot_available_count": 0,
+                "aura_snapshot_available_count": 0,
+                "proc_snapshot_available_count": 0,
+                "first_elapsed_ms": event["elapsed_ms"],
+                "last_elapsed_ms": event["elapsed_ms"],
+                "actor_guids": [],
+            },
+        )
+        summary["event_count"] += 1
+        summary["raw_damage"] += event["raw_damage"]
+        summary["final_damage"] += event["final_damage"]
+        summary["measured_damage"] += event["measured_damage"]
+        summary["critical_outcome_count"] += int(
+            event["critical_outcome_available"]
+        )
+        summary["critical_count"] += int(
+            event["critical_outcome_available"] and event["critical"]
+        )
+        summary["crit_chance_available_count"] += int(
+            event["crit_chance_available"]
+        )
+        summary["root_identity_available_count"] += int(
+            event["root_spell_identity_available"]
+        )
+        summary["child_identity_available_count"] += int(
+            event["child_spell_identity_available"]
+        )
+        summary["actor_stat_snapshot_available_count"] += int(
+            event["actor_stat_snapshot_available"]
+        )
+        summary["aura_snapshot_available_count"] += int(
+            event["aura_snapshot_available"]
+        )
+        summary["proc_snapshot_available_count"] += int(
+            event["proc_snapshot_available"]
+        )
+        summary["first_elapsed_ms"] = min(
+            summary["first_elapsed_ms"], event["elapsed_ms"]
+        )
+        summary["last_elapsed_ms"] = max(
+            summary["last_elapsed_ms"], event["elapsed_ms"]
+        )
+        if event["actor_guid"] not in summary["actor_guids"]:
+            summary["actor_guids"].append(event["actor_guid"])
+    for summary in affliction_landed_event_summary.values():
+        event_count = summary["event_count"]
+        summary["raw_damage_per_event"] = (
+            summary["raw_damage"] / event_count if event_count else None
+        )
+        summary["final_damage_per_event"] = (
+            summary["final_damage"] / event_count if event_count else None
+        )
+        summary["measured_damage_per_event"] = (
+            summary["measured_damage"] / event_count if event_count else None
+        )
+        summary["actor_guids"].sort()
     for observation in will_of_unbinding_observations:
         observation["stack_transitions"].sort(
             key=lambda event: (
@@ -2158,6 +2394,9 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
         "decision_timeline": decision_timeline,
         "off_target_damage_events": off_target_damage_events,
         "primary_pet_shadow_bite_events": primary_pet_shadow_bite_events,
+        "affliction_landed_events": affliction_landed_events,
+        "affliction_landed_event_summary": affliction_landed_event_summary,
+        "affliction_soulburn_decisions": affliction_soulburn_decisions,
         "dragonwrath_copy_proc_observations": dragonwrath_copy_proc_observations,
         "will_of_unbinding_observations": will_of_unbinding_observations,
         "timeline_summary": {
@@ -3133,6 +3372,164 @@ def compare_cast_mix(
     }
 
 
+def _compare_affliction_landed_events(
+    wowsims_result: dict[str, Any], runtime: dict[str, Any]
+) -> dict[str, Any]:
+    """Compare bounded native Affliction events with WoWSims event metrics.
+
+    Direct events use WoWSims ``hits``. Periodic events use ``ticks`` plus
+    ``crit_ticks`` because those are the only stable per-iteration event
+    counts in the normalized simulator result. The native side keeps raw,
+    final, and measured damage separate; no missing root/proc context is
+    inferred here.
+    """
+    summaries = runtime.get("affliction_landed_event_summary") or {}
+    if not summaries:
+        return {
+            "status": "unavailable",
+            "reference_basis": "wowsims_action_metrics_hits_or_ticks_plus_crit_ticks",
+            "records": [],
+            "limitation": "runtime_affliction_landed_events_not_observed",
+        }
+
+    sim_rows_by_spell: dict[int, list[dict[str, Any]]] = {}
+    for row in wowsims_result.get("action_metrics") or []:
+        if not isinstance(row, dict) or bool(row.get("is_passive")):
+            continue
+        identity = row.get("identity") or {}
+        spell_id = identity.get("id")
+        if isinstance(spell_id, int):
+            sim_rows_by_spell.setdefault(spell_id, []).append(row)
+
+    sim_duration = next(
+        (
+            duration
+            for duration in (
+                _positive_duration(
+                    wowsims_result.get("first_iteration_duration_seconds")
+                ),
+                _positive_duration(
+                    wowsims_result.get("avg_iteration_duration_seconds")
+                ),
+            )
+            if duration is not None
+        ),
+        None,
+    )
+    runtime_duration = _runtime_window_duration(runtime)
+    records: list[dict[str, Any]] = []
+    for summary in summaries.values():
+        if not isinstance(summary, dict):
+            continue
+        spell_id = int(summary.get("event_spell_id") or 0)
+        periodic = bool(summary.get("is_periodic", False))
+        metric_rows = sim_rows_by_spell.get(spell_id, [])
+        metric_key = "ticks" if periodic else "hits"
+        sim_event_count = sum(
+            float(
+                (row.get("per_iteration_target_metric_sums") or {}).get(metric_key)
+                or 0.0
+            )
+            for row in metric_rows
+        )
+        if periodic:
+            sim_event_count += sum(
+                float(
+                    (row.get("per_iteration_target_metric_sums") or {}).get(
+                        "crit_ticks"
+                    )
+                    or 0.0
+                )
+                for row in metric_rows
+            )
+        sim_damage = sum(
+            float(
+                (row.get("per_iteration_target_metric_sums") or {}).get("damage")
+                or 0.0
+            )
+            for row in metric_rows
+        )
+        runtime_event_count = int(summary.get("event_count") or 0)
+        runtime_damage = int(summary.get("measured_damage") or 0)
+        runtime_final_damage = int(summary.get("final_damage") or 0)
+        runtime_raw_damage = int(summary.get("raw_damage") or 0)
+        sim_damage_per_event = (
+            sim_damage / sim_event_count if sim_event_count > 0 else None
+        )
+        runtime_damage_per_event = (
+            runtime_damage / runtime_event_count
+            if runtime_event_count > 0
+            else None
+        )
+        records.append(
+            {
+                "bot_guid": int(summary.get("bot_guid") or 0),
+                "event_spell_id": spell_id,
+                "damage_kind": "periodic" if periodic else "direct",
+                "is_periodic": periodic,
+                "wowsims_event_count": sim_event_count,
+                "wowsims_damage": sim_damage,
+                "wowsims_damage_per_event": sim_damage_per_event,
+                "runtime_event_count": runtime_event_count,
+                "runtime_measured_damage": runtime_damage,
+                "runtime_final_damage": runtime_final_damage,
+                "runtime_raw_damage": runtime_raw_damage,
+                "runtime_damage_per_event": runtime_damage_per_event,
+                "event_count_delta_runtime_minus_wowsims": (
+                    runtime_event_count - sim_event_count
+                    if sim_event_count > 0
+                    else None
+                ),
+                "event_count_ratio_runtime_to_wowsims": (
+                    runtime_event_count / sim_event_count
+                    if sim_event_count > 0
+                    else None
+                ),
+                "damage_per_event_ratio_runtime_to_wowsims": (
+                    runtime_damage_per_event / sim_damage_per_event
+                    if runtime_damage_per_event is not None
+                    and sim_damage_per_event
+                    else None
+                ),
+                "runtime_critical_outcome_count": int(
+                    summary.get("critical_outcome_count") or 0
+                ),
+                "runtime_critical_count": int(summary.get("critical_count") or 0),
+                "root_identity_available_count": int(
+                    summary.get("root_identity_available_count") or 0
+                ),
+                "child_identity_available_count": int(
+                    summary.get("child_identity_available_count") or 0
+                ),
+                "actor_stat_snapshot_available_count": int(
+                    summary.get("actor_stat_snapshot_available_count") or 0
+                ),
+                "aura_snapshot_available_count": int(
+                    summary.get("aura_snapshot_available_count") or 0
+                ),
+                "proc_snapshot_available_count": int(
+                    summary.get("proc_snapshot_available_count") or 0
+                ),
+                "reference_observed": bool(metric_rows),
+            }
+        )
+    return {
+        "status": "available" if records else "reference_not_observed",
+        "reference_basis": {
+            "direct": "wowsims_action_metrics_hits",
+            "periodic": "wowsims_action_metrics_ticks_plus_crit_ticks",
+        },
+        "wowsims_duration_seconds": sim_duration,
+        "trinity_runtime_duration_seconds": runtime_duration,
+        "records": records,
+        "limitation": (
+            "Native direct events do not expose a crit hit mask or triggering root; "
+            "native periodic events expose the matched pending outcome only. Proc "
+            "ownership remains unavailable."
+        ),
+    }
+
+
 def compare_simulated_to_trinity_runtime(
     wowsims_result: dict[str, Any],
     runtime: dict[str, Any],
@@ -3344,6 +3741,9 @@ def compare_simulated_to_trinity_runtime(
     return {
         "spec_identity": _spec_identity(trinity),
         "cast_mix": compare_cast_mix(wowsims, wowsims_result, runtime),
+        "affliction_landed_events": _compare_affliction_landed_events(
+            wowsims_result, runtime
+        ),
         "shared_observed_spell_ids": sorted(sim_spells & trinity_spells),
         "wowsims_only_observed_spell_ids": sorted(sim_spells - trinity_spells),
         "trinity_only_observed_spell_ids": sorted(trinity_spells - sim_spells),

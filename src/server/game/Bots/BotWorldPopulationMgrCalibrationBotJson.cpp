@@ -226,7 +226,9 @@ void BotWorldPopulationMgr::AppendCalibrationBotActionJson(
                     json << "],\"owner_cast_warlock_periodic_damage_aura_count\":"
                          << event.OwnerCastWarlockPeriodicDamageAuraSpellIds.size() << '}';
                 }
-            json << "],\"decision_timeline\":[";
+            json << ']';
+            json << AppendAfflictionLandedEventJson(metrics);
+            json << ",\"decision_timeline\":[";
             bool firstTimeline = true;
             if (metrics)
                 for (CalibrationMetrics::DecisionTimelineEntry const& entry : metrics->DecisionTimeline)

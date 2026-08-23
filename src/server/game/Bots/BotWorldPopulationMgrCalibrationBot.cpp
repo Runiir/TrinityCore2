@@ -837,6 +837,7 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     // selection remains disabled in this mode.
     bool const forbidArea = false;
     bool const allowMultidot = !strictSingleTarget;
+    uint32 const soulburnPowerBefore = bot->GetPower(POWER_SOUL_SHARDS);
     ResolvedCombatAction action = ResolveProfileCombatAction(
         bot, target, hostileCount, Cohort().CalibrationAoePhase, 0, false,
         false, forbidArea, allowMultidot, false, false,
@@ -887,6 +888,14 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
         forbidArea, allowMultidot);
     if (scored)
     {
+        auto rejectsItr = Party().LastCombatRejectsByBot.find(
+            bot->GetGUID().GetCounter());
+        ObserveAfflictionSoulburnDecision(metrics, bot, action.SpellId,
+            soulburnPowerBefore, bot->GetPower(POWER_SOUL_SHARDS),
+            ToString(result),
+            rejectsItr != Party().LastCombatRejectsByBot.end()
+                ? rejectsItr->second : "",
+            NowMs() - Cohort().CalibrationScoredStartedMs);
         ++metrics.ActiveTicks;
         ++metrics.ResultCounts[ToString(result)];
         if (result == BotActionResult::CastFailed && !state.LastCombatAttempt.Reason.empty())

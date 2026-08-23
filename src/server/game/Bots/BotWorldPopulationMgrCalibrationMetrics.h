@@ -288,6 +288,71 @@
             float PetSpellCritPct = 0.0f;
             std::vector<uint32> OwnerCastWarlockPeriodicDamageAuraSpellIds;
         };
+        struct AfflictionLandedEvent
+        {
+            // This is a bounded, post-resolution observation. It is never
+            // consumed by action selection, damage calculation, or scoring.
+            uint64 ElapsedMs = 0;
+            uint32 EventSpellId = 0;
+            uint32 ActorGuid = 0;
+            uint32 ActorEntry = 0;
+            uint8 ActorTypeId = 0;
+            uint32 OwnerGuid = 0;
+            uint32 OwnerEntry = 0;
+            uint8 OwnerTypeId = 0;
+            uint32 TargetGuid = 0;
+            uint32 TargetEntry = 0;
+            uint8 TargetTypeId = 0;
+            uint32 RootSpellId = 0;
+            uint32 ChildSpellId = 0;
+            uint32 RawDamage = 0;
+            uint32 FinalDamage = 0;
+            uint32 MeasuredDamage = 0;
+            int32 ActorSpellPower = 0;
+            float ActorSpellCritPct = 0.0f;
+            float CritChancePct = 0.0f;
+            int32 ActorDamagePctDonePpm = 0;
+            int32 TargetTakenMultiplierPpm = 0;
+            int32 HauntModifierAmount = 0;
+            int32 ShadowEmbraceModifierAmount = 0;
+            uint8 ShadowEmbraceStacks = 0;
+            uint8 ShadowEmbraceCasterStacks = 0;
+            bool RootSpellIdentityAvailable = false;
+            bool ChildSpellIdentityAvailable = false;
+            bool IsPeriodic = false;
+            bool RawDamageAvailable = false;
+            bool FinalDamageAvailable = false;
+            bool MeasuredDamageAvailable = false;
+            bool ElapsedAvailable = false;
+            bool Critical = false;
+            bool CriticalOutcomeAvailable = false;
+            bool CritChanceAvailable = false;
+            bool ActorStatSnapshotAvailable = false;
+            bool ScoringStartPlayerStatsAvailable = false;
+            bool ModifierSnapshotAvailable = false;
+            bool AuraSnapshotAvailable = false;
+            bool ShadowMasteryActive = false;
+            bool PotentAfflictionsActive = false;
+            bool HauntActive = false;
+            bool ShadowEmbraceActive = false;
+            bool ShadowEmbraceCasterActive = false;
+            bool ProcSnapshotAvailable = false;
+        };
+        struct AfflictionSoulburnDecision
+        {
+            // Captured at the calibration decision boundary, not used for
+            // selection. CandidateRejectionsJson is emitted by the existing
+            // resolver callback and remains bounded to the Soulburn window.
+            uint64 ElapsedMs = 0;
+            uint32 ChosenSpellId = 0;
+            uint32 SoulburnPowerBefore = 0;
+            uint32 SoulburnPowerAfter = 0;
+            bool SoulburnPowerAvailable = false;
+            bool SoulburnPowerChanged = false;
+            bool CandidateObservationAvailable = false;
+            std::string Result;
+            std::string CandidateRejectionsJson = "[]";
+        };
         uint64 WindowStartedMs = 0;
         uint64 WindowEndedMs = 0;
         uint64 Damage = 0;
@@ -493,6 +558,11 @@
         // Shadow Bite. It is captured after native damage has been resolved and
         // never participates in gameplay or scoring.
         std::vector<PrimaryPetShadowBiteEvent> PrimaryPetShadowBiteEvents;
+        // Bounded, post-resolution Affliction owner/pet event records. The
+        // native callback does not carry triggering-spell or proc context, so
+        // those unavailable dimensions are explicit in each record.
+        std::vector<AfflictionLandedEvent> AfflictionLandedEvents;
+        std::vector<AfflictionSoulburnDecision> AfflictionSoulburnDecisions;
         // Raw server observations for the isolated single-target fixture's
         // five WoWSims execute-threshold bands. Evidence reconstructs the
         // schedule from these integers; it does not trust an aggregate flag.

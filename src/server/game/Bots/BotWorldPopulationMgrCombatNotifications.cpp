@@ -208,6 +208,11 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
         && pending.SpellId == spellId
         && damageType == uint32(DOT)
         && pending.Critical;
+    bool const criticalOutcomeAvailable = pending.Armed
+        && pending.Attacker == attacker
+        && pending.Victim == victim
+        && pending.SpellId == spellId
+        && damageType == uint32(DOT);
     float const critChancePct = pending.Armed
         && pending.Attacker == attacker
         && pending.Victim == victim
@@ -307,6 +312,11 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
                 ObserveAfflictionDamageStage(calibration->second, owner, victim,
                     spellId, measuredDamage, unmitigatedDamage, damageType,
                     critical, critChancePct);
+            if (primaryTargetDamage)
+                ObserveAfflictionLandedEvent(calibration->second, attacker,
+                    owner, victim, spellId, damage, unmitigatedDamage,
+                    damageType, critical, criticalOutcomeAvailable,
+                    critChancePct, windowElapsedMs);
             if (primaryTargetDamage
                 && Cohort().RuntimeMode == BotWorldRuntimeMode::CalibrationFixture
                 && Cohort().NonCertifyingAssistance)

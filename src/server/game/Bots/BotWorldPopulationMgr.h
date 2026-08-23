@@ -211,7 +211,17 @@ private:
         Player* owner, Unit* victim, uint32 spellId, uint32 damage,
         uint32 unmitigatedDamage, uint32 damageType, bool critical,
         float critChancePct);
+    static void ObserveAfflictionLandedEvent(CalibrationMetrics& metrics,
+        Unit* attacker, Player* owner, Unit* victim, uint32 spellId,
+        uint32 damage, uint32 unmitigatedDamage, uint32 damageType,
+        bool critical, bool criticalOutcomeAvailable, float critChancePct,
+        uint64 elapsedMs);
+    static void ObserveAfflictionSoulburnDecision(CalibrationMetrics& metrics,
+        Player* bot, uint32 chosenSpellId, uint32 soulburnPowerBefore,
+        uint32 soulburnPowerAfter, char const* result,
+        std::string const& candidateRejectionsJson, uint64 elapsedMs);
     static std::string AppendAfflictionCalibrationJson(CalibrationMetrics const* metrics);
+    static std::string AppendAfflictionLandedEventJson(CalibrationMetrics const* metrics);
     void AppendCalibrationBotActionJson(std::ostringstream& json,
         CalibrationMetrics const* metrics) const;
     void AppendCalibrationReferenceConditionJson(std::ostringstream& json,
