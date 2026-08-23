@@ -119,9 +119,9 @@ def test_affliction_damage_stage_receipt_covers_requested_native_events() -> Non
     assert "SpellModOp::PeriodicHealingAndDamage" in module
     assert "SpellModOp::HealingAndDamage" in module
     assert "GetSpellModValues(spellInfo" in module
-    assert "NotifyCombatPeriodicOutcome" in notifications
+    assert "critical, critChancePct" in notifications
     aura_effects = (
         ROOT / "src/server/game/Spells/Auras/SpellAuraEffects.cpp"
     ).read_text(encoding="utf-8")
-    assert aura_effects.count("NotifyCombatPeriodicOutcome") == 2
+    assert aura_effects.count("critChancePct)") >= 2
     assert "critChancePct = GetCritChanceFor(caster, target)" in aura_effects

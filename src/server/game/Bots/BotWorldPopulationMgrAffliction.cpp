@@ -97,7 +97,8 @@ void BotWorldPopulationMgr::ObserveAfflictionCalibrationModifiers(
 
 void BotWorldPopulationMgr::ObserveAfflictionDamageStage(
     CalibrationMetrics& metrics, Player* owner, Unit* victim, uint32 spellId,
-    uint32 damage, uint32 unmitigatedDamage, uint32 damageType)
+    uint32 damage, uint32 unmitigatedDamage, uint32 damageType,
+    bool critical, float critChancePct)
 {
     if (!owner || !victim || owner->getClass() != CLASS_WARLOCK)
         return;
@@ -159,12 +160,40 @@ void BotWorldPopulationMgr::ObserveAfflictionDamageStage(
         multiplierMax = std::max(multiplierMax, spellmodMultiplierPpm);
     };
     if (effectType == DOT)
+    {
         observeSpellmod(observation.PeriodicSpellmodObservationCount,
             observation.PeriodicSpellmodFlatMin,
             observation.PeriodicSpellmodFlatMax,
             observation.PeriodicSpellmodMultiplierPpmSum,
             observation.PeriodicSpellmodMultiplierPpmMin,
             observation.PeriodicSpellmodMultiplierPpmMax);
+        uint32 const critChancePpm = uint32(
+            std::max(0.0f, critChancePct) * 10000.0f);
+        ++observation.PeriodicOutcomeCount;
+        observation.PeriodicCritChancePpmSum += critChancePpm;
+        if (observation.PeriodicOutcomeCount == 1)
+        {
+            observation.PeriodicCritChancePpmMin = critChancePpm;
+            observation.PeriodicCritChancePpmMax = critChancePpm;
+        }
+        else
+        {
+            observation.PeriodicCritChancePpmMin = std::min(
+                observation.PeriodicCritChancePpmMin, critChancePpm);
+            observation.PeriodicCritChancePpmMax = std::max(
+                observation.PeriodicCritChancePpmMax, critChancePpm);
+        }
+        if (critical)
+        {
+            ++observation.PeriodicCriticalCount;
+            observation.PeriodicCriticalDamage += damage;
+        }
+        else
+        {
+            ++observation.PeriodicNonCriticalCount;
+            observation.PeriodicNonCriticalDamage += damage;
+        }
+    }
     else
         observeSpellmod(observation.DirectSpellmodObservationCount,
             observation.DirectSpellmodFlatMin,
@@ -246,48 +275,6 @@ void BotWorldPopulationMgr::ObserveAfflictionDamageStage(
         observation.ShadowEmbraceAffectingEvents,
         observation.ShadowEmbraceModifierAmountMin,
         observation.ShadowEmbraceModifierAmountMax);
-}
-
-void BotWorldPopulationMgr::ObserveAfflictionPeriodicOutcome(
-    CalibrationMetrics& metrics, Player* owner, uint32 spellId,
-    uint32 damage, bool critical, float critChancePct)
-{
-    if (!owner || owner->getClass() != CLASS_WARLOCK || !damage)
-        return;
-
-    auto stage = metrics.AfflictionDamageStageBySpell.find(spellId);
-    if (stage == metrics.AfflictionDamageStageBySpell.end())
-        return;
-
-    CalibrationMetrics::AfflictionDamageStageObservation& observation =
-        stage->second;
-    uint32 const critChancePpm = uint32(
-        std::max(0.0f, critChancePct) * 10000.0f);
-    ++observation.PeriodicOutcomeCount;
-    observation.PeriodicCritChancePpmSum += critChancePpm;
-    if (observation.PeriodicOutcomeCount == 1)
-    {
-        observation.PeriodicCritChancePpmMin = critChancePpm;
-        observation.PeriodicCritChancePpmMax = critChancePpm;
-    }
-    else
-    {
-        observation.PeriodicCritChancePpmMin = std::min(
-            observation.PeriodicCritChancePpmMin, critChancePpm);
-        observation.PeriodicCritChancePpmMax = std::max(
-            observation.PeriodicCritChancePpmMax, critChancePpm);
-    }
-
-    if (critical)
-    {
-        ++observation.PeriodicCriticalCount;
-        observation.PeriodicCriticalDamage += damage;
-    }
-    else
-    {
-        ++observation.PeriodicNonCriticalCount;
-        observation.PeriodicNonCriticalDamage += damage;
-    }
 }
 
 std::string BotWorldPopulationMgr::AppendAfflictionCalibrationJson(

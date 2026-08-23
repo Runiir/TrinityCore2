@@ -769,7 +769,7 @@ bool Unit::HasBreakableByDamageCrowdControlAura(Unit* excludeCasterChannel) cons
     }
 }
 
-/*static*/ uint32 Unit::DealDamage(Unit* attacker, Unit* victim, uint32 damage, uint32 unmitigatedDamage, DamageEffectType damagetype, SpellSchoolMask damageSchoolMask, SpellInfo const* spellProto, bool durabilityLoss)
+/*static*/ uint32 Unit::DealDamage(Unit* attacker, Unit* victim, uint32 damage, uint32 unmitigatedDamage, DamageEffectType damagetype, SpellSchoolMask damageSchoolMask, SpellInfo const* spellProto, bool durabilityLoss, bool critical, float critChancePct)
 {
     uint32 const damageBeforeScriptAdjustment = damage;
     // Sparring Checks
@@ -913,7 +913,8 @@ bool Unit::HasBreakableByDamageCrowdControlAura(Unit* excludeCasterChannel) cons
 
     uint32 landedDamage = std::min(damage, health);
     sBotWorldPopulationMgr->NotifyCombatDamage(attacker, victim, spellProto ? spellProto->Id : 0,
-        landedDamage, unmitigatedDamage ? unmitigatedDamage : damageBeforeScriptAdjustment, uint32(damagetype), uint32(damageSchoolMask));
+        landedDamage, unmitigatedDamage ? unmitigatedDamage : damageBeforeScriptAdjustment,
+        uint32(damagetype), uint32(damageSchoolMask), critical, critChancePct);
 
     if (health <= damage)
     {
