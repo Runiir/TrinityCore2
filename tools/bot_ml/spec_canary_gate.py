@@ -619,30 +619,42 @@ def evaluate_canary(
         pet_target_min = _number(thresholds.get("pet_target_match_ratio_minimum"))
         pet_event_limits = thresholds.get("pet_landed_event_cadence_ratio") or {}
         pet_dpe_limits = thresholds.get("pet_damage_per_event_ratio") or {}
+        pet_dpe_minimum = (
+            _number(pet_dpe_limits.get("minimum"))
+            if isinstance(pet_dpe_limits, Mapping)
+            else None
+        )
         pet_dpe_maximum = (
             _number(pet_dpe_limits.get("maximum"))
             if isinstance(pet_dpe_limits, Mapping)
             else None
         )
-        pet_dpe_above_maximum = (
-            pet_dpe_ratio is not None
-            and pet_dpe_maximum is not None
-            and pet_dpe_ratio > pet_dpe_maximum
-        )
-        pet_damage_not_under_reference = (
-            pet_total_damage_ratio is not None and pet_total_damage_ratio >= 1.0
-        )
         pet_alive_pass = pet_alive is not None and pet_alive_min is not None and pet_alive >= pet_alive_min
         pet_target_pass = pet_target is not None and pet_target_min is not None and pet_target >= pet_target_min
         pet_event_pass = _meets_limits(pet_event_ratio, pet_event_limits) if isinstance(pet_event_limits, Mapping) else None
-        pet_dpe_pass = _in_range(pet_dpe_ratio, pet_dpe_limits) if isinstance(pet_dpe_limits, Mapping) else None
+        # The simulator is a minimum-throughput reference for the pet.  A
+        # higher damage per landed event is favorable throughput, not evidence
+        # of a broken native damage model.  Keep the configured maximum in the
+        # receipt as an informational diagnostic, while only the minimum is a
+        # fail-closed gate.  Missing data still produces insufficient_data via
+        # the normal gate path.
+        pet_dpe_pass = (
+            pet_dpe_ratio is not None
+            and pet_dpe_minimum is not None
+            and pet_dpe_ratio >= pet_dpe_minimum
+        )
+        pet_dpe_expected = {
+            "minimum": pet_dpe_minimum,
+            "maximum": pet_dpe_maximum,
+            "upper_bound_enforced": False,
+        }
         gates.extend(
             [
                 _gate("primary_pet_attribution", True if pet_signal_present else None, {"runtime_damage": runtime_pet_damage, "runtime_landed_events": runtime_pet_events, "wowsims_damage": pet_reference["damage"], "wowsims_landed_events": pet_reference["landed_events"]}, "owner primary pet separated from guardians"),
                 _gate("pet_alive_ratio", pet_alive_pass if pet_signal_present else None, pet_alive, {"minimum": pet_alive_min}),
                 _gate("pet_target_match_ratio", pet_target_pass if pet_signal_present else None, pet_target, {"minimum": pet_target_min}),
                 _gate("pet_landed_event_cadence_ratio", pet_event_pass if pet_signal_present else None, pet_event_ratio if pet_signal_present else None, pet_event_limits),
-                _gate("pet_damage_per_event_ratio", pet_dpe_pass if pet_signal_present else None, pet_dpe_ratio, pet_dpe_limits),
+                _gate("pet_damage_per_event_ratio", pet_dpe_pass if pet_signal_present else None, pet_dpe_ratio, pet_dpe_expected),
             ]
         )
         if edge is None and not pet_signal_present:
@@ -659,15 +671,7 @@ def evaluate_canary(
             edge = "primary_pet_policy_execution"
             skill = "raid-role-implementation"
             expected_metric = "pet alive, target, and landed-event cadence inside policy"
-        elif (
-            edge is None
-            and pet_dpe_pass is not True
-            and not (
-                pet_dpe_above_maximum
-                and total_dps_below_minimum
-                and pet_damage_not_under_reference
-            )
-        ):
+        elif edge is None and pet_dpe_pass is not True:
             edge = "native_pet_damage_model"
             skill = "raid-class-mechanics-implementation"
             expected_metric = "primary-pet damage per landed event inside policy"

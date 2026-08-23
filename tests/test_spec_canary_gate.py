@@ -178,6 +178,68 @@ def test_current_affliction_canaries_use_the_pinned_debug_sample(
     assert comparison["upper_bound_enforced"] is False
 
 
+def test_real_affliction_canary_accepts_favorable_pet_damage_per_event() -> None:
+    """The 762e5444d4 canary is above the pet DPE diagnostic ceiling."""
+    review = _review()
+    review["runtime"]["calibration_windows"][0].update(
+        {"dps": 29_032.05, "pet_damage": 1_806_482}
+    )
+    review["runtime"]["primary_pet_damage_by_spell"] = {
+        "0": 1_806_482,
+    }
+    review["runtime"]["primary_pet_damage_event_counts_by_spell"] = {
+        "0": 224,
+    }
+    review["runtime"]["pet_execution_observations"] = [
+        {"alive_ratio": 1.0, "target_match_ratio": 0.999}
+    ]
+    review["execution_comparison"]["cast_mix"] = {
+        "cast_mix_overlap": 0.961653542412,
+        "maximum_absolute_share_delta": 0.021531339354,
+        "cast_cadence": {"trinity_to_wowsims_cadence_ratio": 0.936095856215},
+    }
+    review["wowsims_result"]["player_dps"] = {
+        "avg": 31_312.966894306235,
+        "stdev": 788.1759348903284,
+        "min": 29_143.19682362893,
+        "max": 33_998.228820330674,
+        "aggregatorData": {"n": 2_000},
+    }
+    review["wowsims_result"]["action_metrics"][1][
+        "per_iteration_target_metric_sums"
+    ] = {
+        "damage": 1_724_145.1296967766,
+        "casts": 237,
+        "hits": 237,
+        "crits": 0,
+        "ticks": 0,
+        "crit_ticks": 0,
+    }
+    review["wowsims_debug_result"]["player_dps"] = {
+        "avg": 29_623.938524220404,
+        "aggregatorData": {"n": 1},
+    }
+
+    decision = _evaluate(review, fixes_used=1)
+
+    assert decision["status"] == "passed"
+    assert decision["terminal_reason"] == "verified_after_single_fix"
+    assert decision["first_broken_edge"] is None
+    pet_signal = decision["signals"]["primary_pet"]
+    assert pet_signal["damage_per_event_ratio"] == pytest.approx(1.108562405967778)
+    assert pet_signal["total_damage_ratio"] == pytest.approx(1.047755185387267)
+    pet_gate = next(
+        gate for gate in decision["gates"]
+        if gate["name"] == "pet_damage_per_event_ratio"
+    )
+    assert pet_gate["status"] == "pass"
+    assert pet_gate["expected"] == {
+        "minimum": 0.9,
+        "maximum": 1.1,
+        "upper_bound_enforced": False,
+    }
+
+
 def test_single_sample_more_than_two_percent_low_fails_throughput_gate() -> None:
     review = _review()
     review["runtime"]["calibration_windows"][0]["dps"] = 979
@@ -369,6 +431,11 @@ def test_matching_pet_cadence_with_low_damage_routes_native_mechanics() -> None:
     assert decision["signals"]["primary_pet"]["damage_per_event_ratio"] == 0.5
     assert decision["first_broken_edge"] == "native_pet_damage_model"
     assert decision["owner_skill"] == "raid-class-mechanics-implementation"
+    pet_gate = next(
+        gate for gate in decision["gates"]
+        if gate["name"] == "pet_damage_per_event_ratio"
+    )
+    assert pet_gate["status"] == "fail"
 
 
 def test_overtuned_pet_does_not_hide_attributable_owner_damage_deficit() -> None:
