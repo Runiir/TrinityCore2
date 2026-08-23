@@ -9,6 +9,7 @@
 #include "SpellAuraEffects.h"
 #include "SpellAuras.h"
 #include "SpellInfo.h"
+#include "SpellMgr.h"
 #include "Totem.h"
 #include "Unit.h"
 

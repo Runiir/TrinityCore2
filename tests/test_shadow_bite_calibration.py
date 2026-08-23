@@ -19,6 +19,7 @@ def test_shadow_bite_capture_is_bounded_and_observation_only():
     assert "struct PrimaryPetShadowBiteEvent" in header
     assert "std::vector<PrimaryPetShadowBiteEvent> PrimaryPetShadowBiteEvents;" in header
     assert "constexpr uint32 ShadowBiteSpellId = 54049;" in notifications
+    assert '#include "SpellMgr.h"' in notifications
     assert "exactPetDamage && spellId == ShadowBiteSpellId" in notifications
     assert "PrimaryPetShadowBiteEvents.size() < 128" in notifications
     assert "event.MeasuredDamage = measuredDamage;" in notifications
