@@ -12,7 +12,11 @@ BOT_MGR = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 PLAYER_BOT_MGR = ROOT / "src/server/game/Bots/BotMgr.cpp"
 PLAYER_BOT_CONTROLLER = ROOT / "src/server/game/Bots/BotController.cpp"
 PLAYER_BOT_TYPES = ROOT / "src/server/game/Bots/BotTypes.cpp"
-PLAYER_BOT_ACTION_PROFILE = ROOT / "src/server/game/Bots/BotClassSpecActionProfile.cpp"
+PLAYER_BOT_ACTION_PROFILE_MODULES = (
+    ROOT / "src/server/game/Bots/BotClassSpecActionProfile.cpp",
+    ROOT / "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
+    ROOT / "src/server/game/Bots/BotClassSpecActionProfileDb.cpp",
+)
 PLAYER_BOT_EXECUTOR = ROOT / "src/server/game/Bots/BotActionExecutor.cpp"
 MELEE_AUTO_ATTACK_INTENT = ROOT / "src/server/game/Bots/BotMeleeAutoAttackIntent.h"
 BOT_MGR_HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
@@ -39,6 +43,10 @@ AZIL_SCRIPT = ROOT / "src/server/scripts/Maelstrom/Stonecore/boss_high_priestess
 
 def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
+
+
+def read_profile_sources() -> str:
+    return "\n".join(read(path) for path in PLAYER_BOT_ACTION_PROFILE_MODULES)
 
 
 def test_prayer_of_mending_profile_uses_the_applied_aura_as_its_guard() -> None:
@@ -105,7 +113,7 @@ def test_frost_death_knight_uses_typed_player_observed_masterfrost_candidates() 
 
 def test_frost_observations_change_the_winning_typed_alternate() -> None:
     migration = read(FROST_PLAYER_OBSERVED_SQL)
-    profile = read(PLAYER_BOT_ACTION_PROFILE)
+    profile = read_profile_sources()
     manager = read(BOT_MGR)
 
     def authored_priority(spell_id: int, marker: str) -> tuple[float, int]:
@@ -152,7 +160,7 @@ def test_frost_observations_change_the_winning_typed_alternate() -> None:
 
 
 def test_frost_candidate_telemetry_observes_resources_procs_and_owned_diseases() -> None:
-    profile = read(PLAYER_BOT_ACTION_PROFILE)
+    profile = read_profile_sources()
 
     assert 'profile.SpecTag == "frost_death_knight"' in profile
     assert '\\"bot_action_observation_v1\\"' in profile
@@ -169,7 +177,7 @@ def test_frost_candidate_telemetry_observes_resources_procs_and_owned_diseases()
 
 
 def test_frost_free_rune_proc_uses_the_same_cost_modifiers_as_native_spell_checks() -> None:
-    profile = read(PLAYER_BOT_ACTION_PROFILE)
+    profile = read_profile_sources()
     executor = read(PLAYER_BOT_EXECUTOR)
 
     for source in (profile, executor):
@@ -414,7 +422,7 @@ def test_playerbot_runtime_roles_drive_universal_profile_combat():
     world_mgr = read(BOT_MGR)
     controller = read(PLAYER_BOT_CONTROLLER)
     role_types = read(PLAYER_BOT_TYPES)
-    profiles = read(PLAYER_BOT_ACTION_PROFILE)
+    profiles = read_profile_sources()
     executor = read(PLAYER_BOT_EXECUTOR)
 
     assert "SELECT cbp.guid, c.account, cbp.role, cbp.class_spec" in bot_mgr
@@ -865,7 +873,7 @@ def test_requested_wowhead_profiles_and_target_count_aware_misdirection_are_expl
         assert token in sql
     assert "`action`.`required_self_aura_stacks` = CASE" in sql
     assert "WHEN `action`.`spell_id` IN (403,421) THEN 5" in sql
-    assert "a.min_primary_power_pct, a.max_primary_power_pct" in read(PLAYER_BOT_ACTION_PROFILE)
+    assert "a.min_primary_power_pct, a.max_primary_power_pct" in read_profile_sources()
     assert "bool useAreaTransfer = trashThreatControl.EngagedCount >= 2;" in manager
     assert "bool useAreaTransfer = addCount >= 2;" in manager
     assert 'useAreaTransfer ? "misdirection_aoe_transfer" : "misdirection_single_target_transfer"' in manager
@@ -933,7 +941,7 @@ def test_dummy_calibration_followup_spreads_living_bomb_and_avoids_refresh_waste
 
 def test_dummy_calibration_uses_aura_refresh_threshold_for_serpent_sting():
     sql = read(ROOT / "sql/custom/world/2026_07_16_05_dummy_dps_aura_refresh.sql")
-    profile = read(PLAYER_BOT_ACTION_PROFILE)
+    profile = read_profile_sources()
     manager = read(BOT_MGR)
 
     assert "`action`.`maintain_aura_id`=1978" in sql
@@ -966,7 +974,7 @@ def test_stonecore_rotation_sql_declares_buffs_hunter_builder_and_aoe_gate():
 
 
 def test_action_profile_hard_masks_enforce_aura_prerequisites():
-    profile = read(PLAYER_BOT_ACTION_PROFILE)
+    profile = read_profile_sources()
 
     assert 'spell.RequiredSelfAura && !selfAura' in profile
     assert 'spell.ForbiddenSelfAura && bot->HasAura(spell.ForbiddenSelfAura)' in profile
@@ -5250,7 +5258,7 @@ def test_healer_lifecycle_telemetry_is_cast_scoped_and_uses_actual_heal_info():
 
 def test_healer_candidate_mask_is_db_driven_and_records_rejections():
     root = Path(__file__).resolve().parents[1]
-    profile = (root / "src/server/game/Bots/BotClassSpecActionProfile.cpp").read_text()
+    profile = read_profile_sources()
     manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
 
     assert '\\"valid\\":" << (candidate.RejectReason.empty() ? "true" : "false")' in profile

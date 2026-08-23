@@ -1375,7 +1375,9 @@ def test_canonical_route_jsonl_requires_and_applies_scenario_selection(tmp_path:
 
 
 def test_profile_dump_contract_exposes_executable_gates_for_review():
-    source = Path("src/server/game/Bots/BotClassSpecActionProfile.cpp").read_text()
+    source = (
+        ROOT / "src/server/game/Bots/BotClassSpecActionProfileDb.cpp"
+    ).read_text()
 
     for token in (
         r'\"dump_schema\":\"bot_db_rotation_profile_dump_v2\"',

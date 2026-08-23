@@ -2,6 +2,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+PROFILE_CANDIDATES = (
+    ROOT / "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp"
+)
 
 
 def test_missing_cataclysm_warlock_coefficients_use_native_spell_info_corrections() -> None:
@@ -53,7 +56,7 @@ def test_shadow_bite_script_binding_is_idempotent() -> None:
 
 def test_affliction_soulburn_window_consumes_once_and_requires_live_shards() -> None:
     profile_source = (
-        ROOT / "src/server/game/Bots/BotClassSpecActionProfile.cpp"
+        PROFILE_CANDIDATES
     ).read_text()
     native_source = (ROOT / "src/server/scripts/Spells/spell_warlock.cpp").read_text()
     migration = (
@@ -212,7 +215,7 @@ def test_isolated_single_target_allows_one_target_shadowflame_without_multidot()
 
 def test_profile_range_prefilter_preserves_native_combat_reach() -> None:
     profile_source = (
-        ROOT / "src/server/game/Bots/BotClassSpecActionProfile.cpp"
+        PROFILE_CANDIDATES
     ).read_text()
     world_source = (
         ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp"

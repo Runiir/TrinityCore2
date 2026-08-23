@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PROFILE_HEADER = ROOT / "src/server/game/Bots/BotClassSpecActionProfile.h"
-PROFILE = ROOT / "src/server/game/Bots/BotClassSpecActionProfile.cpp"
+PROFILE = ROOT / "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp"
 TYPES = ROOT / "src/server/game/Bots/BotTypes.h"
 RESOLVER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp"
 EXECUTOR = ROOT / "src/server/game/Bots/BotActionExecutor.cpp"
