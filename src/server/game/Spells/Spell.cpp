@@ -3189,7 +3189,13 @@ void Spell::DoSpellEffectHit(Unit* unit, uint8 effIndex, TargetInfo& hitInfo)
                                             period = effectPeriod;
 
                                 if (period != 0)
+                                {
                                     hitInfo.AuraDuration = std::clamp(origDuration / period * period, 1, origDuration);
+
+                                    // Shadowflame's periodic child uses the Cataclysm nearest-tick threshold.
+                                    if (hitInfo.AuraSpellInfo->Id == 47960 && origDuration % period >= (period / 2))
+                                        hitInfo.AuraDuration += period;
+                                }
 
                                 // if there is no periodic effect
                                 if (!hitInfo.AuraDuration)

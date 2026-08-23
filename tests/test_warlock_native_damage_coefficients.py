@@ -319,3 +319,30 @@ def test_shadowflame_uses_a_self_cast_with_a_hostile_range_anchor() -> None:
     assert "`action`.`target_selector` = 'enemy'" in short_lane_migration
     assert "`action`.`min_range` = 12" in short_lane_migration
     assert '\\\"movement_diagnostic\\\"' in source
+
+
+def test_shadowflame_periodic_child_rounds_to_the_nearest_haste_tick() -> None:
+    source = (ROOT / "src/server/game/Spells/Spell.cpp").read_text()
+    rounding = source[source.index("if (period != 0)") : source.index("// if there is no periodic effect")]
+
+    assert "hitInfo.AuraSpellInfo->Id == 47960" in rounding
+    assert "origDuration % period >= (period / 2)" in rounding
+
+    def duration_for_ticks(duration: int, period: int) -> int:
+        clamped = max(1, min(duration // period * period, duration))
+        if duration % period >= period // 2:
+            clamped += period
+        return clamped
+
+    # At the canary's 1.24 spell-speed multiplier, the 2s child period is
+    # about 1.612s. Floor-only clamping gives three ticks; nearest-tick
+    # rounding gives the four-tick WoWSims threshold.
+    original_duration = 6000
+    hasted_period = 1612
+    rounded_duration = duration_for_ticks(original_duration, hasted_period)
+    floor_duration = original_duration // hasted_period * hasted_period
+
+    assert floor_duration == 4836
+    assert rounded_duration == 6448
+    assert rounded_duration // hasted_period == 4
+    assert "hitInfo.AuraSpellInfo->Id == 47897" not in rounding
