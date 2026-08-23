@@ -176,6 +176,8 @@ void BotWorldPopulationMgr::AppendCombatCalibrationBotRowsJson(
             && petSetup.SummonSpellKnown
             && bot->HasSpell(petSetup.RequiredSummonSpellId)
             && !petSetup.NativeCastSubmittedAtMs
+            && (!petSetup.PreScoreResummonRequestedAtMs
+                || petSetup.PreScoreResummonObservedAtMs)
             && BotWorldPopulationMgrCalibrationIdentity::OrdinaryPersistentPetMatches(ordinaryPet,
                 petSetup.RequiredEntry, petSetup.RequiredFamilyId,
                 petSetup.RequiredPetType, petSetup.RequiredPowerType,
@@ -628,6 +630,34 @@ void BotWorldPopulationMgr::AppendCombatCalibrationBotRowsJson(
              << ",\"pet_native_cast_submitted_at_ms\":" << petSetup.NativeCastSubmittedAtMs
              << ",\"pet_native_cast_finished_at_ms\":" << petSetup.NativeCastFinishedAtMs
              << ",\"pet_native_cast_observed_at_ms\":" << petSetup.NativeCastObservedAtMs
+             << ",\"pet_pre_score_resummon\":{\"requested\":"
+             << (petSetup.PreScoreResummonRequestedAtMs ? "true" : "false")
+             << ",\"submitted\":"
+             << (petSetup.PreScoreResummonSubmittedAtMs ? "true" : "false")
+             << ",\"finished\":"
+             << (petSetup.PreScoreResummonFinishedAtMs ? "true" : "false")
+             << ",\"finished_successfully\":"
+             << (petSetup.PreScoreResummonFinishedSuccessfully ? "true" : "false")
+             << ",\"observed\":"
+             << (petSetup.PreScoreResummonObservedAtMs ? "true" : "false")
+             << ",\"failed\":"
+             << (petSetup.PreScoreResummonFailed ? "true" : "false")
+             << ",\"requested_at_ms\":"
+             << petSetup.PreScoreResummonRequestedAtMs
+             << ",\"submitted_at_ms\":"
+             << petSetup.PreScoreResummonSubmittedAtMs
+             << ",\"finished_at_ms\":"
+             << petSetup.PreScoreResummonFinishedAtMs
+             << ",\"observed_at_ms\":"
+             << petSetup.PreScoreResummonObservedAtMs
+             << ",\"resource_before\":"
+             << petSetup.PreScoreResourceBefore
+             << ",\"resource_maximum_before\":"
+             << petSetup.PreScoreResourceMaximumBefore
+             << ",\"resource_after\":"
+             << petSetup.PreScoreResourceAfter
+             << ",\"resource_maximum_after\":"
+             << petSetup.PreScoreResourceMaximumAfter << '}'
              << ",\"pet_guid\":" << ordinaryPet.Guid.GetCounter()
              << ",\"pet_id\":"
              << (hunterPetIdentityObserved

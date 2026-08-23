@@ -121,6 +121,16 @@ namespace BotWorldPopulationMgrBotState
             uint64 NativeCastFinishedAtMs = 0;
             bool NativeCastFinishedSuccessfully = false;
             uint64 NativeCastObservedAtMs = 0;
+            uint64 PreScoreResummonRequestedAtMs = 0;
+            uint64 PreScoreResummonSubmittedAtMs = 0;
+            uint64 PreScoreResummonFinishedAtMs = 0;
+            bool PreScoreResummonFinishedSuccessfully = false;
+            uint64 PreScoreResummonObservedAtMs = 0;
+            bool PreScoreResummonFailed = false;
+            uint32 PreScoreResourceBefore = 0;
+            uint32 PreScoreResourceMaximumBefore = 0;
+            uint32 PreScoreResourceAfter = 0;
+            uint32 PreScoreResourceMaximumAfter = 0;
         };
         // Pet classes use the ordinary learned summon and later reconcile the
         // resulting owned permanent pet. Submission, native spell finish, and

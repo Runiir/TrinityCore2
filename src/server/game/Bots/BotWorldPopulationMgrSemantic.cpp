@@ -177,6 +177,15 @@ void BotWorldPopulationMgr::NotifyBotSpellFinished(Player* caster, uint32 spellI
             petSetup.NativeCastFinishedAtMs = NowMs();
             petSetup.NativeCastFinishedSuccessfully = success;
             petSetup.NativeCastObservedAtMs = 0;
+            if (petSetup.PreScoreResummonRequestedAtMs
+                && petSetup.PreScoreResummonSubmittedAtMs
+                && !petSetup.PreScoreResummonObservedAtMs
+                && !petSetup.PreScoreResummonFailed)
+            {
+                petSetup.PreScoreResummonFinishedAtMs =
+                    petSetup.NativeCastFinishedAtMs;
+                petSetup.PreScoreResummonFinishedSuccessfully = success;
+            }
             petSetupReceiptRecorded = true;
             break;
         }

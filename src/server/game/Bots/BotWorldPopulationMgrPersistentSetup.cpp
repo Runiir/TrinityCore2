@@ -399,8 +399,57 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
             && petSetup.NativeCastFinishedSuccessfully
             && petSetup.NativeCastFinishedAtMs
                 >= petSetup.NativeCastSubmittedAtMs;
+        bool const preScoreResummonPending =
+            petSetup.PreScoreResummonRequestedAtMs
+            && !petSetup.PreScoreResummonObservedAtMs
+            && !petSetup.PreScoreResummonFailed;
+        auto failPreScoreResummon = [&](std::string const& reason)
+        {
+            petSetup.PreScoreResummonFailed = true;
+            if (Cohort().CalibrationActive
+                && !Cohort().CalibrationScoredStartedMs)
+            {
+                Cohort().LastPopulationFailureReason = reason;
+                Cohort().CalibrationFailureReason = reason;
+                Cohort().CalibrationWindowComplete = true;
+            }
+        };
+        if (preScoreResummonPending
+            && petSetup.PreScoreResummonFinishedAtMs
+            && !petSetup.PreScoreResummonFinishedSuccessfully)
+        {
+            std::string const reason =
+                "persistent_pre_score_pet_resummon_finish_failed";
+            failPreScoreResummon(reason);
+            ObserveBotCandidateFailure(state, bot,
+                "world.setup.native_pet:" + std::to_string(
+                    petSetup.RequiredSummonSpellId), reason,
+                1000, 15000, 1, 15000);
+            return true;
+        }
         if (nativeCastFinished && exactPetObserved)
         {
+            if (preScoreResummonPending)
+            {
+                // Spell finish and live-pet observation are separate edges.
+                if (nowMs <= petSetup.NativeCastFinishedAtMs)
+                    return true;
+                petSetup.PreScoreResourceAfter = observedPet.Power;
+                petSetup.PreScoreResourceMaximumAfter =
+                    observedPet.MaxPower;
+                if (observedPet.Power < observedPet.MaxPower)
+                {
+                    std::string const reason =
+                        "persistent_pre_score_pet_resummon_resource_mismatch";
+                    failPreScoreResummon(reason);
+                    ObserveBotCandidateFailure(state, bot,
+                        "world.setup.native_pet:" + std::to_string(
+                            petSetup.RequiredSummonSpellId), reason,
+                        1000, 15000, 1, 15000);
+                    return true;
+                }
+                petSetup.PreScoreResummonObservedAtMs = nowMs;
+            }
             if (petSetup.NativeCastObservedAtMs
                 < petSetup.NativeCastFinishedAtMs)
                 petSetup.NativeCastObservedAtMs = nowMs;
@@ -422,6 +471,7 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
             && petSetup.RequiredEntry == ENTRY_FELHUNTER
             && petSetup.SummonSpellKnown;
         if (exactPetObserved && !petSetup.NativeCastSubmittedAtMs
+            && !preScoreResummonPending
             && allowPreexistingAfflictionPet)
         {
             // Calibration may start from an already loaded ordinary Felhunter.
@@ -434,7 +484,8 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
             state.LastNoProgressReason.clear();
             return false;
         }
-        if (exactPetObserved && !petSetup.NativeCastSubmittedAtMs)
+        if (exactPetObserved && !petSetup.NativeCastSubmittedAtMs
+            && !preScoreResummonPending)
         {
             ObserveBotCandidateFailure(state, bot,
                 "world.setup.native_pet:" + std::to_string(
@@ -454,6 +505,18 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
         if (nativeCastFinished && !exactPetObserved
             && nowMs - petSetup.NativeCastFinishedAtMs < 3000)
             return true;
+        if (preScoreResummonPending && nativeCastFinished
+            && !exactPetObserved)
+        {
+            std::string const reason =
+                "persistent_pre_score_pet_resummon_observation_timeout";
+            failPreScoreResummon(reason);
+            ObserveBotCandidateFailure(state, bot,
+                "world.setup.native_pet:" + std::to_string(
+                    petSetup.RequiredSummonSpellId), reason,
+                1000, 15000, 1, 15000);
+            return true;
+        }
 
         std::string const attemptKey =
             "persistent_setup:native_pet:"
@@ -526,6 +589,12 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
         petSetup.NativeCastFinishedAtMs = 0;
         petSetup.NativeCastFinishedSuccessfully = false;
         petSetup.NativeCastObservedAtMs = 0;
+        if (preScoreResummonPending)
+        {
+            petSetup.PreScoreResummonSubmittedAtMs = nowMs;
+            petSetup.PreScoreResummonFinishedAtMs = 0;
+            petSetup.PreScoreResummonFinishedSuccessfully = false;
+        }
         BotActionResult const result = executor.Execute(
             bot, bot, nativeAction);
 
@@ -547,6 +616,21 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
         petSetup.NativeCastFinishedAtMs = 0;
         petSetup.NativeCastFinishedSuccessfully = false;
         petSetup.NativeCastObservedAtMs = 0;
+        if (preScoreResummonPending)
+        {
+            petSetup.PreScoreResummonSubmittedAtMs = 0;
+            std::string const reason =
+                "persistent_pre_score_pet_resummon_native_rejected_"
+                + std::string(ToString(result));
+            failPreScoreResummon(reason);
+            ObserveBotCandidateFailure(state, bot,
+                "world.setup.native_pet:" + std::to_string(
+                    petSetup.RequiredSummonSpellId), reason,
+                1000, 15000, 1, 15000);
+            RecordCombatAttempt(state, bot, bot, "persistent_setup",
+                &telemetryAction, result, reason.c_str());
+            return true;
+        }
         state.ReadinessRetryUntilMs[attemptKey] = nowMs + 1500;
         std::string const reason = "persistent_pet_native_submission_"
             + std::string(ToString(result));

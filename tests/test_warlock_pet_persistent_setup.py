@@ -14,6 +14,7 @@ UPDATE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdate.cpp"
 CALIBRATION_BOT = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationBot.cpp"
 CALIBRATION_BOT_JSON = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationBotJson.cpp"
 CALIBRATION_REFERENCE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationReference.cpp"
+CALIBRATION_RESET = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationReset.cpp"
 CALIBRATION_ROWS = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationRows.cpp"
 COMBAT_EXECUTION = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatExecution.cpp"
 COMBAT_NOTIFICATIONS = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp"
@@ -135,6 +136,71 @@ def test_warlock_pet_receipt_is_submit_finish_then_later_observation() -> None:
     assert "petSetup.NativeCastFinishedSuccessfully = success" in finished
     assert "petSetup.NativeCastObservedAtMs = nowMs" in setup
     assert "petSetup.NativeCastObservedAtMs\n                < petSetup.NativeCastFinishedAtMs" in setup
+
+
+def test_pre_score_resource_request_uses_one_real_native_resummon() -> None:
+    source = _source(
+        PERSISTENT_SETUP, SEMANTIC, BOT_STATE_HEADER, CALIBRATION_ROWS, UPDATE
+    )
+    setup = _function_body(
+        source, "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup"
+    )
+    native_pet = setup[
+        setup.index("if (petSetup.RequiredSummonSpellId)") : setup.index(
+            "// Mana Gem creation is optional consumable preparation"
+        )
+    ]
+    finished = _function_body(
+        source, "void BotWorldPopulationMgr::NotifyBotSpellFinished"
+    )
+
+    assert "preScoreResummonPending" in native_pet
+    assert native_pet.count("&& !preScoreResummonPending") == 2
+    assert "petSetup.PreScoreResummonSubmittedAtMs = nowMs;" in native_pet
+    assert native_pet.index(
+        "petSetup.PreScoreResummonSubmittedAtMs = nowMs;"
+    ) < native_pet.index("executor.Execute(\n            bot, bot, nativeAction)")
+    assert "petSetup.PreScoreResummonFinishedAtMs" in finished
+    assert "petSetup.PreScoreResummonObservedAtMs = nowMs;" in native_pet
+    assert "persistent_pre_score_pet_resummon_native_rejected_" in native_pet
+    assert source.count("|| petSetup.PreScoreResummonObservedAtMs)") == 2
+    assert "state.ReadinessRetryUntilMs[attemptKey]" in native_pet
+    assert native_pet.index(
+        "persistent_pre_score_pet_resummon_native_rejected_"
+    ) < native_pet.index("state.ReadinessRetryUntilMs[attemptKey]")
+    for key in (
+        r'\"pet_pre_score_resummon\"',
+        r'\"resource_before\"',
+        r'\"resource_maximum_before\"',
+        r'\"resource_after\"',
+        r'\"resource_maximum_after\"',
+    ):
+        assert key in source
+
+
+def test_final_resource_mismatch_requests_setup_without_submitting() -> None:
+    reset = _function_body(
+        CALIBRATION_RESET.read_text(),
+        "void BotWorldPopulationMgr::ResetCalibrationScoredWindow",
+    )
+    final_boundary = reset[
+        reset.index("bool consumablesSettled = true;") : reset.index(
+            'if (Cohort().CalibrationMode == "single_target_300")',
+            reset.index("bool consumablesSettled = true;"),
+        )
+    ]
+
+    assert final_boundary.index("pet->UpdatePetScalingAuras();") < (
+        final_boundary.index("ResetCalibrationInitialResources(bot, metrics);")
+    )
+    assert 'row.UnitKind == "pet"' in final_boundary
+    assert "row.ExpectedMaximum" in final_boundary
+    assert "row.ObservedNativeValue" in final_boundary
+    assert "row.ObservedMaximumNativeValue" in final_boundary
+    assert "petSetup.PreScoreResummonRequestedAtMs = NowMs();" in final_boundary
+    assert "petSetup.NativeCastSubmittedAtMs = 0;" in final_boundary
+    assert "persistentSetupRequested = true;" in final_boundary
+    assert "executor.Execute" not in final_boundary
 
 
 def test_affliction_calibration_accepts_exact_preexisting_felhunter_observation() -> None:

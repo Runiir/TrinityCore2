@@ -467,6 +467,17 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
             CalibrationMetrics& metrics =
                 Cohort().CalibrationMetricsByGuid[state.Guid.GetCounter()];
             metrics = CalibrationMetrics();
+            auto& petSetup = state.PersistentPetSetup;
+            petSetup.PreScoreResummonRequestedAtMs = 0;
+            petSetup.PreScoreResummonSubmittedAtMs = 0;
+            petSetup.PreScoreResummonFinishedAtMs = 0;
+            petSetup.PreScoreResummonFinishedSuccessfully = false;
+            petSetup.PreScoreResummonObservedAtMs = 0;
+            petSetup.PreScoreResummonFailed = false;
+            petSetup.PreScoreResourceBefore = 0;
+            petSetup.PreScoreResourceMaximumBefore = 0;
+            petSetup.PreScoreResourceAfter = 0;
+            petSetup.PreScoreResourceMaximumAfter = 0;
             state.DecisionTimer = 0;
         }
 
@@ -655,7 +666,8 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
         // boundary, after owner stats have settled. Rebuild the generic
         // resource observation afterward so pet maximum power and its native
         // current value are checked against the same refreshed state.
-        for (WorldBotState const& state : Party().CalibrationBots)
+        bool persistentSetupRequested = false;
+        for (WorldBotState& state : Party().CalibrationBots)
             if (Player* bot = GetLoadedBot(state))
             {
                 if (Pet* pet = bot->GetPet())
@@ -667,7 +679,46 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
                     Cohort().CalibrationMetricsByGuid[
                         state.Guid.GetCounter()];
                 ResetCalibrationInitialResources(bot, metrics);
+                auto missingPetMaximum = std::find_if(
+                    metrics.InitialPowerObservations.begin(),
+                    metrics.InitialPowerObservations.end(),
+                    [](CalibrationMetrics::InitialPowerObservation const& row)
+                    {
+                        return row.UnitKind == "pet"
+                            && row.ExpectedMaximum
+                            && row.ObservedNativeValue
+                                < row.ObservedMaximumNativeValue;
+                    });
+                auto& petSetup = state.PersistentPetSetup;
+                bool const requiredPetContract =
+                    metrics.InitialPetResourceRequired
+                    && petSetup.RequiredSummonSpellId
+                    && petSetup.RequiredCreatedBySpellId
+                    && petSetup.RequiredEntry;
+                if (missingPetMaximum
+                        != metrics.InitialPowerObservations.end()
+                    && requiredPetContract
+                    && !petSetup.PreScoreResummonObservedAtMs)
+                {
+                    if (!petSetup.PreScoreResummonRequestedAtMs)
+                    {
+                        petSetup.PreScoreResummonRequestedAtMs = NowMs();
+                        petSetup.PreScoreResourceBefore =
+                            missingPetMaximum->ObservedNativeValue;
+                        petSetup.PreScoreResourceMaximumBefore =
+                            missingPetMaximum->ObservedMaximumNativeValue;
+                        // This starts a new real setup receipt. Persistent
+                        // setup owns submission and native completion.
+                        petSetup.NativeCastSubmittedAtMs = 0;
+                        petSetup.NativeCastFinishedAtMs = 0;
+                        petSetup.NativeCastFinishedSuccessfully = false;
+                        petSetup.NativeCastObservedAtMs = 0;
+                    }
+                    persistentSetupRequested = true;
+                }
             }
+        if (persistentSetupRequested)
+            return;
     }
 
     if (Cohort().CalibrationMode == "single_target_300")

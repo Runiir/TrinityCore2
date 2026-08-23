@@ -329,6 +329,8 @@ void BotWorldPopulationMgr::Update(uint32 diff)
                     && petSetup.SummonSpellKnown
                     && calibrationBot->HasSpell(petSetup.RequiredSummonSpellId)
                     && !petSetup.NativeCastSubmittedAtMs
+                    && (!petSetup.PreScoreResummonRequestedAtMs
+                        || petSetup.PreScoreResummonObservedAtMs)
                     && OrdinaryPersistentPetMatches(
                         ObserveOrdinaryPetSetup(calibrationBot),
                         petSetup.RequiredEntry, petSetup.RequiredFamilyId,
@@ -424,4 +426,3 @@ void BotWorldPopulationMgr::Update(uint32 diff)
 
     MaybeAdvanceValidationRouteManifest();
 }
-
