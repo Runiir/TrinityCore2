@@ -179,6 +179,10 @@ bool BotWorldPopulationMgr::EnsureCalibrationSelfProvidedConsumables(
         uint64 const nowMs = CalibrationNowMs();
         if (bot->HasAura(contract->FoodAuraSpellId))
         {
+            // The native food aura is the completion boundary. Only after
+            // observing it may the player-like setup transition leave the
+            // seated eating state for the pre-pot and normal actions.
+            bot->SetStandState(UNIT_STAND_STATE_STAND);
             food.NativeUseAwaitingAura = false;
             food.NativeUseFinishedSuccessfully = true;
             food.NativeUseAuraObservedAtMs = nowMs;

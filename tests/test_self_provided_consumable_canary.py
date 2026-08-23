@@ -167,6 +167,14 @@ def test_successful_food_completion_waits_for_native_food_aura() -> None:
     assert "SetStandState(UNIT_STAND_STATE_STAND)" not in food_completion
     assert "NativeUseAwaitingAura" in reference
     assert "bot->HasAura(contract->FoodAuraSpellId)" in reference
+    ensure = _between(
+        reference,
+        "auto reconcilePendingFood = [&]()",
+        "auto submit = [&](CalibrationMetrics::NativeConsumableReceipt& receipt)",
+    )
+    assert ensure.index("bot->HasAura(contract->FoodAuraSpellId)") < ensure.index(
+        "bot->SetStandState(UNIT_STAND_STATE_STAND);"
+    )
 
 
 def test_food_aura_wait_has_bounded_retry_and_no_spin() -> None:
