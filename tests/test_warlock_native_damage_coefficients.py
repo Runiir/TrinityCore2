@@ -1,3 +1,5 @@
+import json
+import struct
 from pathlib import Path
 
 
@@ -33,7 +35,7 @@ def test_missing_cataclysm_warlock_coefficients_use_native_spell_info_correction
     assert "BonusMultiplier = 1.228f" in source
 
 
-def test_corruption_uses_warlock_owner_crit_multiplier_without_global_magic_override() -> None:
+def test_warlock_owner_crit_damage_uses_native_passive_without_spell_override() -> None:
     spell_info = (ROOT / "src/server/game/Spells/SpellInfo.h").read_text()
     unit = (ROOT / "src/server/game/Entities/Unit/Unit.cpp").read_text()
     spell_mgr = (ROOT / "src/server/game/Spells/SpellMgr.cpp").read_text()
@@ -41,15 +43,56 @@ def test_corruption_uses_warlock_owner_crit_multiplier_without_global_magic_over
     assert "float CritDamageMultiplier = 1.5f;" in spell_info
     assert "if (spellProto->CritDamageMultiplier == 1.5f)" in unit
     assert "crit_bonus += uint32(float(damage) * (spellProto->CritDamageMultiplier - 1.0f));" in unit
-
-    corruption_start = spell_mgr.index("ApplySpellFix({ 172 }")
-    corruption = spell_mgr[corruption_start : spell_mgr.index("    });", corruption_start) + len("    });")]
-    assert "spellInfo->CritDamageMultiplier = 2.0f;" in corruption
-    assert "DmgClass" not in corruption
+    assert "SPELL_AURA_MOD_CRIT_DAMAGE_BONUS" in unit
+    assert "ApplySpellFix({ 172 }" not in spell_mgr
 
     base_damage = 100
     assert base_damage + int(float(base_damage) * (1.5 - 1.0)) == 150
-    assert base_damage + int(float(base_damage) * (2.0 - 1.0)) == 200
+
+
+def _dbc_rows(path: Path) -> list[tuple[int, ...]]:
+    blob = path.read_bytes()
+    assert blob[:4] == b"WDBC"
+    record_count, field_count, record_size, _string_size = struct.unpack_from("<4I", blob, 4)
+    return [
+        struct.unpack_from(f"<{field_count}I", blob, 20 + index * record_size)
+        for index in range(record_count)
+    ]
+
+
+def test_warlock_crit_passive_is_in_dbc_and_all_validation_manifests() -> None:
+    actions = json.loads(
+        (ROOT / "experiments/configs/cata_434_action_profiles.json").read_text()
+    )
+    targets = json.loads(
+        (ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.json").read_text()
+    )
+    warlock_specs = {
+        "affliction_warlock",
+        "demonology_warlock",
+        "destruction_warlock",
+    }
+
+    assert 85801 in actions["action_profile_spells_by_class"]["9"]
+    for spec in warlock_specs:
+        assert 85801 in actions["action_profile_spells_by_spec"][spec]
+        target = next(row for row in targets["targets"] if row["spec_target_id"] == spec)
+        assert 85801 in target["action_profile_spell_ids"]
+
+    skill_rows = _dbc_rows(ROOT / "data/dbc/enUS/SkillLineAbility.dbc")
+    assert any(
+        row[1:5] == (802, 85801, 0, 256)
+        for row in skill_rows
+    )
+    effect_rows = _dbc_rows(ROOT / "data/dbc/enUS/SpellEffect.dbc")
+    assert any(
+        row[0] == 87174
+        and row[3] == 163
+        and row[5] == 33
+        and row[12] == 126
+        and row[24] == 85801
+        for row in effect_rows
+    )
 
 
 def test_shadow_bite_scales_from_owned_warlock_dots_without_damage_injection() -> None:

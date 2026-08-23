@@ -3028,16 +3028,6 @@ void SpellMgr::LoadSpellInfoCorrections()
         spellInfo->CritDamageMultiplier = 2.0f;
     });
 
-    // WoWSims models the Cataclysm warlock owner spell crit multiplier as
-    // 2.0x before the equipped meta-gem modifier.  Corruption is the first
-    // owner-only damage edge admitted by the affliction canary, so keep this
-    // correction scoped to its periodic damage rather than changing the
-    // global magic critical path.
-    ApplySpellFix({ 172 }, [](SpellInfo* spellInfo) // Corruption
-    {
-        spellInfo->CritDamageMultiplier = 2.0f;
-    });
-
     // Death's Embrace also increases Drain Soul shadow damage during execute.
     // The client class mask omits Drain Soul's 0x4000 family flag, so the
     // native done-percent stage otherwise misses this rank-scaled bonus.
