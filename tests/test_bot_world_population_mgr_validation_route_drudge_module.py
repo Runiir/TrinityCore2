@@ -41,6 +41,39 @@ def test_drudge_dispatch_keeps_movement_and_minimum_distance_order():
     assert movement < patrol < minimum < lanes
 
 
+def test_adaptive_drudge_owner_dispatches_typed_lane_contract_before_owner_skip():
+    fallback = (
+        ROOT / "src/server/game/Bots/"
+        "BotWorldPopulationMgrUpdateBotKernelFallback.cpp"
+    ).read_text(encoding="utf-8")
+    route_owner = fallback.index("auto routeOwnerReason")
+    route_dispatch_end = fallback.index("// Keep Movement out of the action", route_owner)
+    route_dispatch = fallback[route_owner:route_dispatch_end]
+    run_route = route_dispatch.index("auto runRoute")
+    owner_gate = route_dispatch.index(
+        "if (char const* ownerReason = routeOwnerReason(); ownerReason",
+        run_route,
+    )
+    objective = route_dispatch.index("TryValidationRouteObjective(", owner_gate)
+
+    # AdaptiveDrudgeOwnsNode remains the generic owner signal, but the exact
+    # typed Drudge profile must be allowed through the route adapter so its
+    # lane contract can execute.
+    assert "typedDrudgeValidationRoute" in route_dispatch
+    assert '== "trash_two_tank_charge_lanes"' in route_dispatch
+    assert "&& !typedDrudgeValidationRoute" in route_dispatch[owner_gate:objective]
+    assert owner_gate < objective
+
+    # The exception is local to the route candidate. Generic boss dispatch
+    # still rejects adaptive Drudge ownership and cannot replace the typed
+    # lane target or native action.
+    boss = fallback.index('boss.Key = "world.boss_mechanics"')
+    trash = fallback.index("BotActionArbitration::Candidate trash;", boss)
+    boss_candidate = fallback[boss:trash]
+    assert '"adaptive_drudge_owns_live_pack"' in boss_candidate
+    assert "context.AdaptiveDrudgeOwnsNode" in boss_candidate
+
+
 def test_drudge_contract_keeps_scope_evidence_and_native_lane_guards():
     geometry = GEOMETRY.read_text(encoding="utf-8")
     lanes = LANES.read_text(encoding="utf-8")

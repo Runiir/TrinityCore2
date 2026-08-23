@@ -53,6 +53,15 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             return nullptr;
         };
 
+        // The Drudge owner is still authoritative for generic candidates, but
+        // this route owns a typed lane adapter that must run before that
+        // generic-owner short circuit. Keep the exception bound to the exact
+        // declared mechanic profile so another adaptive owner cannot bypass
+        // its typed route contract.
+        bool const typedDrudgeValidationRoute =
+            Cohort().Config.ValidationRouteMechanicProfile
+                == "trash_two_tank_charge_lanes";
+
         // Adaptive encounter owners skip TryValidationRouteObjectiveGate(),
         // which normally refreshes the current route's offensive authority.
         // Clear a stale hold from the previous node before the kernel resolves
@@ -86,13 +95,15 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
         };
 
         auto runRoute = [this, &context, routeAttempt, routeOwnerReason,
-            routeActionIsMovementOnly]() -> BotActionArbitration::Outcome
+            routeActionIsMovementOnly, typedDrudgeValidationRoute]()
+            -> BotActionArbitration::Outcome
         {
             if (routeAttempt->Attempted)
                 return routeAttempt->RouteOutcome;
             routeAttempt->Attempted = true;
 
-            if (char const* ownerReason = routeOwnerReason())
+            if (char const* ownerReason = routeOwnerReason(); ownerReason
+                && !typedDrudgeValidationRoute)
             {
                 routeAttempt->RouteOutcome =
                     BotActionArbitration::Outcome::NotApplicable(ownerReason);
