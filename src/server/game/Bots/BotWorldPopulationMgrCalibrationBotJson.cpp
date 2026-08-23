@@ -129,6 +129,32 @@ void BotWorldPopulationMgr::AppendCalibrationBotActionJson(
                          << metrics->PrimaryPetSpellDamageEvents.at(spellId) << '}';
                 }
             }
+            json << "],\"primary_pet_shadow_bite_events\":[";
+            bool firstShadowBiteEvent = true;
+            if (metrics)
+                for (CalibrationMetrics::PrimaryPetShadowBiteEvent const& event
+                    : metrics->PrimaryPetShadowBiteEvents)
+                {
+                    if (!firstShadowBiteEvent)
+                        json << ',';
+                    firstShadowBiteEvent = false;
+                    json << "{\"elapsed_ms\":" << event.ElapsedMs
+                         << ",\"measured_damage\":" << event.MeasuredDamage
+                         << ",\"unmitigated_damage\":" << event.UnmitigatedDamage
+                         << ",\"pet_spell_power\":" << event.PetSpellPower
+                         << ",\"pet_spell_crit_pct\":" << event.PetSpellCritPct
+                         << ",\"owner_cast_warlock_periodic_damage_aura_spell_ids\":[";
+                    for (size_t index = 0;
+                        index < event.OwnerCastWarlockPeriodicDamageAuraSpellIds.size();
+                        ++index)
+                    {
+                        if (index)
+                            json << ',';
+                        json << event.OwnerCastWarlockPeriodicDamageAuraSpellIds[index];
+                    }
+                    json << "],\"owner_cast_warlock_periodic_damage_aura_count\":"
+                         << event.OwnerCastWarlockPeriodicDamageAuraSpellIds.size() << '}';
+                }
             json << "],\"decision_timeline\":[";
             bool firstTimeline = true;
             if (metrics)
@@ -199,4 +225,3 @@ void BotWorldPopulationMgr::AppendCalibrationBotActionJson(
                     json << "]}";
                 }
 }
-

@@ -839,6 +839,15 @@ private:
             bool VictimIsOwner = false;
             std::vector<PeriodicHealthAuraCandidate> PeriodicHealthAuraCandidates;
         };
+        struct PrimaryPetShadowBiteEvent
+        {
+            uint64 ElapsedMs = 0;
+            uint32 MeasuredDamage = 0;
+            uint32 UnmitigatedDamage = 0;
+            int32 PetSpellPower = 0;
+            float PetSpellCritPct = 0.0f;
+            std::vector<uint32> OwnerCastWarlockPeriodicDamageAuraSpellIds;
+        };
         uint64 WindowStartedMs = 0;
         uint64 WindowEndedMs = 0;
         uint64 Damage = 0;
@@ -1030,6 +1039,10 @@ private:
         // Attribute every non-primary damage event instead of exposing only an
         // unauditable aggregate collateral counter.
         std::vector<OffTargetDamageEvent> OffTargetDamageEvents;
+        // Bounded, observation-only landed-event evidence for the primary pet's
+        // Shadow Bite. It is captured after native damage has been resolved and
+        // never participates in gameplay or scoring.
+        std::vector<PrimaryPetShadowBiteEvent> PrimaryPetShadowBiteEvents;
         // Raw server observations for the isolated single-target fixture's
         // five WoWSims execute-threshold bands. Evidence reconstructs the
         // schedule from these integers; it does not trust an aggregate flag.

@@ -16,10 +16,12 @@
 #include <array>
 #include <chrono>
 #include <limits>
+#include <utility>
 
 namespace
 {
 constexpr uint32 CalibrationSingleTargetDurationMs = 300000;
+constexpr uint32 ShadowBiteSpellId = 54049;
 struct CalibrationExecuteHealthWindow
 {
     uint32 EndMs;
@@ -64,6 +66,39 @@ Player* CombatOwnerPlayer(Unit* unit)
             return player;
     }
     return nullptr;
+}
+
+std::vector<uint32> ObserveOwnerCastWarlockPeriodicDamageAuraSpellIds(
+    Player* owner, Unit* victim)
+{
+    std::vector<uint32> spellIds;
+    if (!owner || owner->getClass() != CLASS_WARLOCK || !victim)
+        return spellIds;
+
+    for (auto const& [_, application] : victim->GetAppliedAuras())
+    {
+        Aura const* aura = application ? application->GetBase() : nullptr;
+        SpellInfo const* spellInfo = aura ? aura->GetSpellInfo() : nullptr;
+        if (!spellInfo || aura->GetCasterGUID() != owner->GetGUID())
+            continue;
+
+        bool periodicDamage = false;
+        for (uint8 effectIndex = 0; effectIndex < MAX_SPELL_EFFECTS; ++effectIndex)
+        {
+            AuraType const auraType = AuraType(
+                spellInfo->Effects[effectIndex].ApplyAuraName);
+            if (auraType == SPELL_AURA_PERIODIC_DAMAGE)
+            {
+                periodicDamage = true;
+                break;
+            }
+        }
+        if (periodicDamage)
+            spellIds.push_back(spellInfo->Id);
+    }
+
+    std::sort(spellIds.begin(), spellIds.end());
+    return spellIds;
 }
 }
 
@@ -205,6 +240,27 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
             }
             uint32 measuredDamage = damage ? damage : unmitigatedDamage;
             bool const exactPetDamage = owner->GetPet() == attacker;
+            if (exactPetDamage && spellId == ShadowBiteSpellId
+                && calibration->second.PrimaryPetShadowBiteEvents.size() < 128)
+            {
+                CalibrationMetrics::PrimaryPetShadowBiteEvent event;
+                event.ElapsedMs = windowElapsedMs;
+                event.MeasuredDamage = measuredDamage;
+                event.UnmitigatedDamage = unmitigatedDamage;
+                // This notification receives resolved amounts, not the
+                // DamageInfo hit mask. Keep crit chance as an observation and
+                // do not infer a hit/crit outcome from the amounts.
+                if (Pet* pet = attacker->ToPet())
+                {
+                    event.PetSpellPower = pet->GetBonusDamage();
+                    if (SpellInfo const* shadowBite = sSpellMgr->GetSpellInfo(spellId))
+                        event.PetSpellCritPct = pet->SpellCritChanceDone(
+                            shadowBite, shadowBite->GetSchoolMask());
+                }
+                event.OwnerCastWarlockPeriodicDamageAuraSpellIds =
+                    ObserveOwnerCastWarlockPeriodicDamageAuraSpellIds(owner, victim);
+                calibration->second.PrimaryPetShadowBiteEvents.push_back(std::move(event));
+            }
             bool const isolatedSingleTarget =
                 Cohort().CalibrationMode == "single_target_300";
             bool const primaryTargetDamage = isolatedSingleTarget

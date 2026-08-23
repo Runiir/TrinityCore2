@@ -1557,6 +1557,7 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
     pre_scoring_blockers: list[dict[str, Any]] = []
     decision_timeline: list[dict[str, Any]] = []
     off_target_damage_events: list[dict[str, Any]] = []
+    primary_pet_shadow_bite_events: list[dict[str, Any]] = []
 
     trace_entries = ((document.get("trace") or {}).get("entries") or [])
     unique_attempts: set[tuple[int, int]] = set()
@@ -1724,6 +1725,37 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
                 if spell_id or spell.get("damage") or spell.get("event_count"):
                     pet_damage[spell_id] += int(spell.get("damage") or 0)
                     pet_damage_events[spell_id] += int(spell.get("event_count") or 0)
+        for event in bot.get("primary_pet_shadow_bite_events") or []:
+            if not isinstance(event, dict):
+                continue
+            aura_spell_ids = sorted(
+                int(spell_id or 0)
+                for spell_id in event.get(
+                    "owner_cast_warlock_periodic_damage_aura_spell_ids"
+                )
+                or []
+            )
+            aura_count = (
+                int(event["owner_cast_warlock_periodic_damage_aura_count"])
+                if "owner_cast_warlock_periodic_damage_aura_count" in event
+                else len(aura_spell_ids)
+            )
+            primary_pet_shadow_bite_events.append(
+                {
+                    "bot_guid": bot_guid,
+                    "elapsed_ms": int(event.get("elapsed_ms") or 0),
+                    "measured_damage": int(event.get("measured_damage") or 0),
+                    "unmitigated_damage": int(
+                        event.get("unmitigated_damage") or 0
+                    ),
+                    "pet_spell_power": int(event.get("pet_spell_power") or 0),
+                    "pet_spell_crit_pct": float(
+                        event.get("pet_spell_crit_pct") or 0.0
+                    ),
+                    "owner_cast_warlock_periodic_damage_aura_spell_ids": aura_spell_ids,
+                    "owner_cast_warlock_periodic_damage_aura_count": aura_count,
+                }
+            )
         aggregate_results = bot.get("result_counts")
         if isinstance(aggregate_results, dict):
             for result, count in aggregate_results.items():
@@ -1879,6 +1911,9 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
     off_target_damage_events.sort(
         key=lambda event: (event["bot_guid"], event["elapsed_ms"], event["victim_guid"])
     )
+    primary_pet_shadow_bite_events.sort(
+        key=lambda event: (event["bot_guid"], event["elapsed_ms"])
+    )
     health_ratios = [
         event["health"] / event["max_health"]
         for event in decision_timeline
@@ -1935,6 +1970,7 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
         ),
         "decision_timeline": decision_timeline,
         "off_target_damage_events": off_target_damage_events,
+        "primary_pet_shadow_bite_events": primary_pet_shadow_bite_events,
         "timeline_summary": {
             "sample_count": len(decision_timeline),
             "first_death_elapsed_ms": first_death["elapsed_ms"] if first_death else None,
