@@ -389,7 +389,11 @@ def test_normalize_runtime_preserves_explicit_movement_no_progress_blocker() -> 
     )
 
 
-def _debug_result_with_pet_stats() -> dict:
+def _debug_result_with_pet_stats(*, armor: float | None = None) -> dict:
+    pet_stats = '{"Strength":453.000,"SpellPower":6923.550,'
+    if armor is not None:
+        pet_stats += f'"Armor":{armor:.3f},'
+    pet_stats += '}'
     return {
         "raidMetrics": {
             "parties": [
@@ -411,7 +415,7 @@ def _debug_result_with_pet_stats() -> dict:
         "avgIterationDuration": 300,
         "logs": (
             '[0.00] [canary (#1) - Felhunter] Pet stats: '
-            '{"Strength":453.000,"SpellPower":6923.550,}\n'
+            f"{pet_stats}\n"
             '[0.00] [canary (#1) - Felhunter] Pet inherited stats: '
             '{"SpellPower":6923.550,}\n'
             '[0.00] [canary (#1) - Felhunter] Pet summoned\n'
@@ -569,6 +573,34 @@ def test_self_provided_baseline_uses_debug_result_and_allows_favorable_stats():
         if row["stat"] == "intellect"
     )
     assert intellect["status"] == "mismatch"
+
+
+def test_self_provided_baseline_allows_higher_pet_armor_but_not_lower():
+    runtime = _effective_stats_runtime()
+    runtime_pet = runtime["combat_calibration"]["previous_window"]["bots"][0][
+        "scoring_start_stats"
+    ]["pet"]
+    runtime_pet["armor"] = 19_671
+    debug_result = _debug_result_with_pet_stats(armor=10_254)
+
+    favorable = build_review(
+        wowsims_compute_stats=_compute_stats(),
+        wowsims_debug_result=debug_result,
+        runtime_report=runtime,
+        reference_class="self_provided_baseline",
+    )["effective_stat_parity"]
+    armor = next(row for row in favorable["pet"]["checks"] if row["stat"] == "armor")
+    assert armor["status"] == "favorable"
+
+    runtime_pet["armor"] = 9_000
+    lower = build_review(
+        wowsims_compute_stats=_compute_stats(),
+        wowsims_debug_result=debug_result,
+        runtime_report=runtime,
+        reference_class="self_provided_baseline",
+    )["effective_stat_parity"]
+    armor = next(row for row in lower["pet"]["checks"] if row["stat"] == "armor")
+    assert armor["status"] == "mismatch"
 
 
 def test_effective_stat_parity_names_pet_inheritance_as_first_broken_edge():

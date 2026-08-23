@@ -3562,6 +3562,7 @@ def compare_effective_stats(
                         "intellect",
                         "attack_power",
                         "spell_power",
+                        "armor",
                         "physical_hit_percent",
                         "spell_hit_percent",
                         "physical_crit_percent",
