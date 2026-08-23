@@ -2770,16 +2770,20 @@ def _watchdog_trace(entries: list[dict], *, bot_guid: int = 1001) -> dict:
 def _watchdog_diagnosis(
     *, bot_guid: int, action: str, result: str, repeat_count: int,
     diagnosis_code: str = "repeated_decision_loop",
+    consecutive_count: int | None = None,
 ) -> dict:
+    decision = {
+        "action": action,
+        "result": result,
+        "fingerprint_repeat_count": repeat_count,
+    }
+    if consecutive_count is not None:
+        decision["consecutive_same_decision_count"] = consecutive_count
     return {
         "bots": [{
             "identity": {"bot_guid": bot_guid},
             "snapshot": {
-                "decision": {
-                    "action": action,
-                    "result": result,
-                    "fingerprint_repeat_count": repeat_count,
-                },
+                "decision": decision,
                 "route_progress": {
                     "route": {
                         "node_id": "blackwing_descent_10n.node",
@@ -2972,6 +2976,105 @@ def test_capture_watchdog_diagnosis_counts_failed_route_decisions_per_bot():
     assert terminal["failure_reason"] == "repeated_decision_watchdog"
     assert terminal["repeated_decision_count"] == 3
     assert terminal["repeated_decision_outcome"] == "no_candidate_committed"
+
+
+def test_capture_watchdog_ignores_cumulative_fingerprint_when_native_run_is_one():
+    status = _generic_watchdog_status(
+        size=10, profile="blackwing_descent_10n", map_id=669,
+    )
+    state = {}
+    diagnosis = _watchdog_diagnosis(
+        bot_guid=1001,
+        action="wait_for_candidate_backoff",
+        result="failed",
+        repeat_count=158,
+        consecutive_count=1,
+    )
+
+    first = observe_capture_watchdog(
+        state, status, diagnosis, max_repeated_decisions=20, max_death_loops=3,
+    )
+    second = observe_capture_watchdog(
+        state, status, diagnosis, max_repeated_decisions=20, max_death_loops=3,
+    )
+
+    assert first["detected"] is False
+    assert second["detected"] is False
+    assert second["repeated_decision_count"] == 1
+    assert second["repeated_decision_outcome"] == "failed"
+
+
+def test_capture_watchdog_uses_native_run_across_intervening_success():
+    status = _watchdog_status()
+    state = {}
+    trace = _watchdog_trace([
+        {
+            "action": "wait_for_candidate_backoff",
+            "result": "failed",
+            "fingerprint_hash": 1225206246,
+            "fingerprint_repeat_count": 158,
+            "consecutive_same_decision_count": 1,
+            "route_node_id": "bwd.magmaw.drudges",
+            "route_generation": 3,
+            "sequence": 1,
+        },
+        {
+            "action": "attack",
+            "result": "ok",
+            "fingerprint_hash": 3531292137,
+            "consecutive_same_decision_count": 1,
+            "route_node_id": "bwd.magmaw.drudges",
+            "route_generation": 3,
+            "sequence": 2,
+        },
+        {
+            "action": "wait_for_candidate_backoff",
+            "result": "failed",
+            "fingerprint_hash": 1225206246,
+            "fingerprint_repeat_count": 159,
+            "consecutive_same_decision_count": 1,
+            "route_node_id": "bwd.magmaw.drudges",
+            "route_generation": 3,
+            "sequence": 3,
+        },
+    ])
+
+    report = observe_capture_watchdog(
+        state, status, None, [trace],
+        max_repeated_decisions=20, max_death_loops=3,
+    )
+
+    assert report["detected"] is False
+    assert report["repeated_decision_count"] == 1
+    assert list(state["repeated_decision_counts"].values()) == [1]
+
+
+def test_capture_watchdog_stops_true_native_consecutive_failure_run():
+    status = _watchdog_status()
+    state = {}
+    entries = [
+        {
+            "action": "wait_for_candidate_backoff",
+            "result": "failed",
+            "fingerprint_hash": 1225206246,
+            "fingerprint_repeat_count": 158 + sequence,
+            "consecutive_same_decision_count": sequence,
+            "route_node_id": "bwd.magmaw.drudges",
+            "route_generation": 3,
+            "sequence": sequence,
+        }
+        for sequence in range(1, 21)
+    ]
+
+    report = observe_capture_watchdog(
+        state, status, None, [_watchdog_trace(entries)],
+        max_repeated_decisions=20, max_death_loops=3,
+    )
+
+    assert report["detected"] is True
+    assert report["failure_reason"] == "repeated_decision_watchdog"
+    assert report["repeated_decision_outcome"] == "failed"
+    assert report["repeated_decision_count"] == 20
 
 
 def test_capture_watchdog_ignores_stale_recovery_on_successful_progressing_trace():

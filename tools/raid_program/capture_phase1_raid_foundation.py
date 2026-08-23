@@ -2552,6 +2552,25 @@ def _watchdog_failure_outcome(entry: dict[str, Any]) -> str:
     return ""
 
 
+def _watchdog_native_consecutive_count(entry: dict[str, Any]) -> int | None:
+    """Read the native consecutive counter without treating it as cumulative.
+
+    ``fingerprint_repeat_count`` is a lifetime counter for one fingerprint and
+    can stay large while successful decisions are interleaved.  The native
+    consecutive counter is the only trustworthy threshold signal when the
+    producer supplies it.  ``None`` means the older payload has no such field
+    and the controller may use its local fallback.
+    """
+
+    if "consecutive_same_decision_count" not in entry:
+        return None
+    try:
+        value = int(entry.get("consecutive_same_decision_count") or 0)
+    except (TypeError, ValueError):
+        return 0
+    return max(0, value)
+
+
 def _watchdog_is_repeated_decision(entry: dict[str, Any]) -> bool:
     """Identify a failed route decision without counting normal wait churn."""
 
@@ -2906,13 +2925,14 @@ def observe_capture_watchdog(
                 route_progress = entry.get("route_progress")
                 if isinstance(route_progress, dict):
                     reset_on_progress(scope, route_progress)
+                repeated_decision = _watchdog_is_repeated_decision(entry)
                 if entry.get("action") in _WATCHDOG_DEATH_ACTIONS:
                     death_counts[scope_key] = int(death_counts.get(scope_key) or 0) + 1
                     report["death_loop_count"] = death_counts[scope_key]
                     if death_counts[scope_key] >= max_death_loops:
                         maybe_terminal("death_loop_watchdog")
                         break
-                if _watchdog_is_repeated_decision(entry):
+                if repeated_decision:
                     # A cumulative diagnosis/trace repeat count is stale for
                     # this observation once the same route scope has shown
                     # objective progress.  Start counting again on the next
@@ -2929,16 +2949,30 @@ def observe_capture_watchdog(
                         [scope_key, cursor_key, str(entry.get("action") or ""), outcome, fingerprint],
                         separators=(",", ":"),
                     )
-                    repeated_counts[decision_key] = int(repeated_counts.get(decision_key) or 0) + 1
-                    scope_repeated_max[scope_key] = max(
-                        int(scope_repeated_max.get(scope_key) or 0),
-                        repeated_counts[decision_key],
-                    )
+                    native_count = _watchdog_native_consecutive_count(entry)
+                    previous_count = int(repeated_counts.get(decision_key) or 0)
+                    if native_count is not None:
+                        current_count = native_count
+                    else:
+                        current_count = previous_count + 1
+                    repeated_counts[decision_key] = current_count
+                    current_max = 0
+                    for key, value in repeated_counts.items():
+                        try:
+                            decoded = json.loads(key)
+                        except (TypeError, ValueError):
+                            continue
+                        if isinstance(decoded, list) and decoded and decoded[0] == scope_key:
+                            current_max = max(current_max, int(value or 0))
+                    if current_max:
+                        scope_repeated_max[scope_key] = current_max
+                    else:
+                        scope_repeated_max.pop(scope_key, None)
                     report["repeated_decision_count"] = max(
-                        int(report["repeated_decision_count"]), repeated_counts[decision_key]
+                        int(report["repeated_decision_count"]), current_count
                     )
                     report["repeated_decision_outcome"] = outcome
-                    if repeated_counts[decision_key] >= max_repeated_decisions:
+                    if current_count >= max_repeated_decisions:
                         maybe_terminal("repeated_decision_watchdog", outcome=outcome)
                         break
             if terminal:
@@ -2970,26 +3004,31 @@ def observe_capture_watchdog(
                 continue
             if f"{entry_scope[0]}:{entry_scope[1]}" in progress_reset_scopes:
                 continue
-            try:
-                repeat_count = max(
-                    int(decision.get("fingerprint_repeat_count") or 0),
-                    int(decision.get("consecutive_same_decision_count") or 0),
-                )
-            except (TypeError, ValueError):
-                repeat_count = 0
+            native_count = _watchdog_native_consecutive_count(decision)
+            if native_count is not None:
+                repeat_count = native_count
+            else:
+                try:
+                    repeat_count = int(decision.get("fingerprint_repeat_count") or 0)
+                except (TypeError, ValueError):
+                    repeat_count = 0
             if repeat_count <= 0:
                 continue
             key = json.dumps(
                 [current_scope[0], current_scope[1], identity.get("bot_guid"), action, outcome],
                 separators=(",", ":"),
             )
-            previous = int(diagnosis_high_water.get(key) or 0)
-            diagnosis_high_water[key] = max(previous, repeat_count)
+            # Native consecutive counts describe this exact snapshot.  Do
+            # not high-water them across snapshots, or an earlier cumulative
+            # fingerprint value can turn later count=1 observations into a
+            # false terminal.  The legacy fallback remains for payloads that
+            # predate the native field.
+            diagnosis_high_water[key] = repeat_count
             report["repeated_decision_count"] = max(
-                int(report["repeated_decision_count"]), diagnosis_high_water[key]
+                int(report["repeated_decision_count"]), repeat_count
             )
             report["repeated_decision_outcome"] = outcome or action
-            if diagnosis_high_water[key] >= max_repeated_decisions:
+            if repeat_count >= max_repeated_decisions:
                 maybe_terminal("repeated_decision_watchdog", outcome=outcome or action)
                 break
 
