@@ -2760,10 +2760,10 @@ def test_capture_watchdog_stays_armed_across_route_strategy_transition():
     assert second["repeated_decision_count"] == 1
 
 
-def _watchdog_trace(entries: list[dict]) -> dict:
+def _watchdog_trace(entries: list[dict], *, bot_guid: int = 1001) -> dict:
     return {
         "action": "botauto_trace",
-        "bots": [{"bot_guid": 1001, "entries": entries}],
+        "bots": [{"bot_guid": bot_guid, "entries": entries}],
     }
 
 
@@ -2807,6 +2807,84 @@ def test_capture_watchdog_stops_scoped_repeated_route_failures_and_deduplicates_
         max_repeated_decisions=3, max_death_loops=3,
     )
     assert duplicate["repeated_decision_count"] == 3
+
+
+def test_capture_watchdog_scopes_repeated_decisions_per_bot_at_threshold():
+    status = _watchdog_status()
+    common_entry = {
+        "action": "validation_route_recovery",
+        "result": "route_destination_invalid_z_transition",
+        "recovery_result": "route_destination_invalid_z_transition",
+        "route_node_id": "bwd.magmaw.drudges",
+        "route_generation": 3,
+        "fingerprint_hash": 4242,
+    }
+    different_bot_state = {}
+    different_bot_trace = {
+        "action": "botauto_trace",
+        "bots": [
+            {
+                "bot_guid": bot_guid,
+                "entries": [
+                    dict(common_entry, sequence=sequence, timestamp_ms=sequence)
+                    for sequence in range(1, 3)
+                ],
+            }
+            for bot_guid in range(1001, 1011)
+        ],
+    }
+
+    report = observe_capture_watchdog(
+        different_bot_state,
+        status,
+        None,
+        [different_bot_trace],
+        max_repeated_decisions=20,
+        max_death_loops=3,
+    )
+    assert report["detected"] is False
+    assert report["repeated_decision_count"] == 2
+    assert different_bot_state["repeated_decision_counts"]
+    assert set(different_bot_state["repeated_decision_counts"].values()) == {2}
+
+    single_bot_state = {}
+    below_threshold = _watchdog_trace(
+        [dict(common_entry, sequence=sequence, timestamp_ms=sequence) for sequence in range(1, 20)]
+    )
+    report = observe_capture_watchdog(
+        single_bot_state,
+        status,
+        None,
+        [below_threshold],
+        max_repeated_decisions=20,
+        max_death_loops=3,
+    )
+    assert report["detected"] is False
+    assert report["repeated_decision_count"] == 19
+
+    threshold_entry = dict(common_entry, sequence=20, timestamp_ms=20)
+    terminal = observe_capture_watchdog(
+        single_bot_state,
+        status,
+        None,
+        [_watchdog_trace([threshold_entry])],
+        max_repeated_decisions=20,
+        max_death_loops=3,
+    )
+    assert terminal["detected"] is True
+    assert terminal["failure_reason"] == "repeated_decision_watchdog"
+    assert terminal["repeated_decision_count"] == 20
+
+    duplicate = observe_capture_watchdog(
+        single_bot_state,
+        status,
+        None,
+        [_watchdog_trace([threshold_entry])],
+        max_repeated_decisions=20,
+        max_death_loops=3,
+    )
+    assert duplicate["repeated_decision_count"] == 20
+    assert list(single_bot_state["repeated_decision_counts"].values()) == [20]
 
 
 def test_capture_watchdog_classifies_excessive_scoped_deaths_as_gameplay_failure():

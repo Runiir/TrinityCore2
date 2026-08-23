@@ -2774,7 +2774,7 @@ def observe_capture_watchdog(
                     except (TypeError, ValueError):
                         fingerprint = 0
                     decision_key = json.dumps(
-                        [scope_key, str(entry.get("action") or ""), outcome, fingerprint],
+                        [scope_key, cursor_key, str(entry.get("action") or ""), outcome, fingerprint],
                         separators=(",", ":"),
                     )
                     repeated_counts[decision_key] = int(repeated_counts.get(decision_key) or 0) + 1
