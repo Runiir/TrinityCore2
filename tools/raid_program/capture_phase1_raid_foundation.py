@@ -2537,9 +2537,15 @@ def _watchdog_entry_scope(
 
 
 def _watchdog_failure_outcome(entry: dict[str, Any]) -> str:
-    """Return the stable failure/result label for a decision trace entry."""
+    """Return the current decision result before historical recovery state.
 
-    for field in ("recovery_result", "result", "reason", "reason_code"):
+    ``recovery_result`` is serialized on every trace row from the bot's
+    previous recovery state.  The decision ``result`` is the only field that
+    describes the row being classified, so a successful current decision must
+    not inherit a stale recovery failure token.
+    """
+
+    for field in ("result", "reason", "reason_code", "recovery_result"):
         value = entry.get(field)
         if isinstance(value, str) and value.strip():
             return value.strip()
@@ -2560,7 +2566,11 @@ def _watchdog_is_repeated_decision(entry: dict[str, Any]) -> bool:
         return True
     # Native recovery entries with a non-transient result are route decisions
     # even when a producer gives the result a neutral spelling.
-    return action == "validation_route_recovery"
+    # An explicit current result is authoritative, including ``ok``.  Only
+    # retain the legacy action-only fallback for rows without that field.
+    return action == "validation_route_recovery" and not (
+        isinstance(entry.get("result"), str) and entry.get("result", "").strip()
+    )
 
 
 def _watchdog_scope_rejections(

@@ -2974,6 +2974,89 @@ def test_capture_watchdog_diagnosis_counts_failed_route_decisions_per_bot():
     assert terminal["repeated_decision_outcome"] == "no_candidate_committed"
 
 
+def test_capture_watchdog_ignores_stale_recovery_on_successful_progressing_trace():
+    status = _watchdog_status()
+    status["validation_route"].update(
+        node_id="bwd.magmaw.chainwielder", generation=2, kind="trash",
+    )
+    route_progress = {
+        "route": {
+            "node_id": "bwd.magmaw.chainwielder",
+            "generation": 2,
+            "kind": "trash",
+        },
+        "target": {
+            "entry": 42649,
+            "guid": 27,
+            "hp_pct": 0.987513,
+            "best_hp_pct": 0.987513,
+        },
+        "no_progress": {
+            "count": 0,
+            "reason": "route_target_combat_progress",
+            "threshold": 20,
+        },
+        "state": {
+            "bot_casting": True,
+            "bot_in_combat": True,
+            "victim_guid": 30001,
+        },
+    }
+    diagnosis = {
+        "action": "botauto_diagnose",
+        "bots": [{
+            "identity": {"bot_guid": 1001},
+            "diagnosis": {"diagnosis_code": "normal_combat"},
+            "snapshot": {
+                "decision": {
+                    "action": "attack",
+                    "result": "ok",
+                    "fingerprint_hash": 1225206246,
+                    "fingerprint_repeat_count": 4,
+                },
+                "route_progress": route_progress,
+            },
+        }],
+    }
+    trace = _watchdog_trace([
+        {
+            "action": "wait_for_candidate_backoff",
+            "result": "ok",
+            "recovery_result": "no_candidate_committed",
+            "route_node_id": "bwd.magmaw.chainwielder",
+            "route_generation": 2,
+            "route_progress": route_progress,
+            "fingerprint_hash": 1225206246,
+            "sequence": sequence,
+            "timestamp_ms": sequence,
+        }
+        for sequence in range(1, 21)
+    ])
+
+    watchdog_state = {}
+    report = observe_capture_watchdog(
+        watchdog_state,
+        status,
+        diagnosis,
+        [trace],
+        max_repeated_decisions=20,
+        max_death_loops=3,
+    )
+
+    assert report["detected"] is False
+    assert report["repeated_decision_count"] == 0
+    assert report["repeated_decision_outcome"] is None
+    assert watchdog_state.get("repeated_decision_counts", {}) == {}
+
+    # The same sample carries objective route progress, so the separate
+    # monotonic clock also advances after the watchdog observes it.
+    progress_state = {}
+    assert observe_monotonic_semantic_progress(
+        progress_state, status, diagnosis,
+    ) is True
+    assert progress_state["lowest_target_hp"]
+
+
 def test_capture_watchdog_classifies_excessive_scoped_deaths_as_gameplay_failure():
     status = _watchdog_status()
     trace = _watchdog_trace([
