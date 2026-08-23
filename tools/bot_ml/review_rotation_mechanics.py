@@ -1552,6 +1552,7 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
     gear_identities: list[dict[str, Any]] = []
     pet_execution_observations: list[dict[str, Any]] = []
     consumable_execution_observations: list[dict[str, Any]] = []
+    initial_resource_failures: list[dict[str, Any]] = []
     pre_scoring_blockers: list[dict[str, Any]] = []
     decision_timeline: list[dict[str, Any]] = []
     off_target_damage_events: list[dict[str, Any]] = []
@@ -1594,6 +1595,41 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
 
     for bot in _iter_runtime_bots(document):
         bot_guid = int(bot.get("guid") or 0)
+        initial_resources = (
+            bot.get("initial_resources")
+            if isinstance(bot.get("initial_resources"), dict)
+            else {}
+        )
+        if (
+            initial_resources.get("matches_contract") is False
+            and int(initial_resources.get("observed_at_ms") or 0) > 0
+        ):
+            mismatches = [
+                dict(row)
+                for row in initial_resources.get("powers") or []
+                if isinstance(row, dict) and row.get("matches_contract") is False
+            ]
+            persistent_setup = (
+                bot.get("persistent_setup")
+                if isinstance(bot.get("persistent_setup"), dict)
+                else {}
+            )
+            initial_resource_failures.append(
+                {
+                    "bot_guid": bot_guid,
+                    "observed_at_ms": int(
+                        initial_resources.get("observed_at_ms") or 0
+                    ),
+                    "power_mismatches": mismatches,
+                    "pet_pre_score_resummon": dict(
+                        persistent_setup.get("pet_pre_score_resummon") or {}
+                    )
+                    if isinstance(
+                        persistent_setup.get("pet_pre_score_resummon"), dict
+                    )
+                    else {},
+                }
+            )
         gear_observation = bot.get("gear_profile_observation")
         if isinstance(gear_observation, dict):
             manifest = _canonical_runtime_gear(gear_observation.get("items"))
@@ -1858,6 +1894,12 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
             calibration.get("phase") or ""
         ) if isinstance(calibration, dict) else "",
         "calibration_complete": calibration_complete,
+        "calibration_terminal": {
+            "reason": str((calibration or {}).get("failure_reason") or ""),
+            "initial_resource_failures": initial_resource_failures,
+        }
+        if isinstance(calibration, dict) and calibration.get("failure_reason")
+        else None,
         "calibration_target_guid": int(
             (calibration or {}).get("target_guid") or document.get("target_guid") or 0
         ) if isinstance(calibration, dict) else int(document.get("target_guid") or 0),

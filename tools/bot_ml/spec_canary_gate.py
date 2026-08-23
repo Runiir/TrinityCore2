@@ -230,6 +230,13 @@ def evaluate_canary(
     )
 
     runtime = review.get("runtime") or {}
+    runtime_terminal = (
+        runtime.get("calibration_terminal")
+        if isinstance(runtime, Mapping)
+        and isinstance(runtime.get("calibration_terminal"), Mapping)
+        else {}
+    )
+    runtime_terminal_reason = str(runtime_terminal.get("reason") or "")
     blockers = runtime.get("pre_scoring_blockers") or [] if isinstance(runtime, Mapping) else []
     blocker = blockers[0] if blockers and isinstance(blockers[0], Mapping) else {}
     blocker_reason = str(blocker.get("reason") or "")
@@ -255,6 +262,29 @@ def evaluate_canary(
         mode = "capture_only"
         expected_metric = "gear_parity.status=match"
         evidence_gap = gear_status != "mismatch"
+    elif runtime_terminal_reason:
+        edge = runtime_terminal_reason
+        resource_failures = runtime_terminal.get("initial_resource_failures") or []
+        pet_resource_mismatch = any(
+            isinstance(failure, Mapping)
+            and any(
+                isinstance(row, Mapping)
+                and str(row.get("unit_kind") or "") == "pet"
+                and row.get("matches_contract") is False
+                for row in failure.get("power_mismatches") or []
+            )
+            for failure in resource_failures
+        )
+        skill = (
+            "raid-role-implementation"
+            if pet_resource_mismatch
+            else "raid-shard-architecture"
+        )
+        expected_metric = (
+            "required native pet setup reaches the initial-resource contract"
+            if pet_resource_mismatch
+            else "runtime terminal is cleared before one scored window"
+        )
     elif blocker_reason:
         edge = blocker_reason
         skill = (

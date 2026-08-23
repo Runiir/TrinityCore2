@@ -237,6 +237,71 @@ def test_normalize_runtime_preserves_pre_scoring_pet_setup_blocker() -> None:
     ]
 
 
+def test_normalize_runtime_preserves_initial_resource_terminal_details() -> None:
+    normalized = normalize_runtime_report(
+        {
+            "combat_calibration": {
+                "phase": "complete",
+                "window_complete": True,
+                "failure_reason": "calibration_initial_resource_contract_mismatch",
+                "bots": [
+                    {
+                        "guid": 1306,
+                        "initial_resources": {
+                            "matches_contract": False,
+                            "observed_at_ms": 1787446092768,
+                            "powers": [
+                                {
+                                    "unit_kind": "player",
+                                    "matches_contract": True,
+                                    "observed_native_value": 158374,
+                                    "observed_maximum_native_value": 158374,
+                                },
+                                {
+                                    "unit_kind": "pet",
+                                    "matches_contract": False,
+                                    "observed_native_value": 23422,
+                                    "observed_maximum_native_value": 127669,
+                                },
+                            ],
+                        },
+                        "persistent_setup": {
+                            "pet_pre_score_resummon": {
+                                "requested": False,
+                                "resource_before": 23422,
+                                "resource_maximum_before": 127669,
+                            }
+                        },
+                    }
+                ],
+            }
+        }
+    )
+
+    assert normalized["calibration_terminal"] == {
+        "reason": "calibration_initial_resource_contract_mismatch",
+        "initial_resource_failures": [
+            {
+                "bot_guid": 1306,
+                "observed_at_ms": 1787446092768,
+                "power_mismatches": [
+                    {
+                        "unit_kind": "pet",
+                        "matches_contract": False,
+                        "observed_native_value": 23422,
+                        "observed_maximum_native_value": 127669,
+                    }
+                ],
+                "pet_pre_score_resummon": {
+                    "requested": False,
+                    "resource_before": 23422,
+                    "resource_maximum_before": 127669,
+                },
+            }
+        ],
+    }
+
+
 def test_normalize_runtime_does_not_promote_successful_movement_from_partial_canary() -> None:
     normalized = normalize_runtime_report(
         {

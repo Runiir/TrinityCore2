@@ -229,6 +229,42 @@ def test_partial_successful_movement_routes_to_capture_before_stat_or_dps_tuning
     assert liveness_gate["status"] == "insufficient_data"
 
 
+def test_runtime_pet_resource_terminal_precedes_missing_scoring_stats() -> None:
+    review = _review()
+    review["runtime"]["calibration_complete"] = True
+    review["runtime"]["calibration_windows"] = []
+    review["runtime"]["calibration_terminal"] = {
+        "reason": "calibration_initial_resource_contract_mismatch",
+        "initial_resource_failures": [
+            {
+                "bot_guid": 1306,
+                "power_mismatches": [
+                    {
+                        "unit_kind": "pet",
+                        "matches_contract": False,
+                        "observed_native_value": 23422,
+                        "observed_maximum_native_value": 127669,
+                    }
+                ],
+            }
+        ],
+    }
+    review["effective_stat_parity"] = {
+        "status": "insufficient_data",
+        "reason": "missing_trinity_scoring_start_stats",
+    }
+    review["dps_tuning_gate"] = {"tuning_admitted": False}
+
+    decision = _evaluate(review)
+
+    assert decision["status"] == "failed"
+    assert decision["first_broken_edge"] == (
+        "calibration_initial_resource_contract_mismatch"
+    )
+    assert decision["owner_skill"] == "raid-role-implementation"
+    assert decision["next_work_unit"]["mode"] == "single_fix"
+
+
 def test_matching_pet_cadence_with_low_damage_routes_native_mechanics() -> None:
     review = _review()
     review["runtime"]["calibration_windows"][0]["dps"] = 700
