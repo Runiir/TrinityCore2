@@ -83,3 +83,34 @@ def test_warlock_pet_scaling_06_binds_owner_spell_crit_to_crit_effect():
         "DoEffectCalcAmount.Register(&spell_warl_pet_scaling_06::CalculateMeleeHasteAmount, "
         "EFFECT_0, SPELL_AURA_MOD_CRIT_PCT);"
     ) not in body
+
+
+def test_warlock_pet_passive_crit_callbacks_use_owner_spell_crit_sources():
+    passive_start = SOURCE.index("class spell_warl_pet_passive")
+    passive_end = SOURCE.index("class spell_sha_pet_scaling_04", passive_start)
+
+    def callback_body(method: str) -> str:
+        start = SOURCE.index(f"void {method}(", passive_start, passive_end)
+        next_method = SOURCE.find("\n    void ", start + 1, passive_end)
+        return SOURCE[start : next_method if next_method >= 0 else passive_end]
+
+    spell_body = callback_body("CalculateAmountCritSpell")
+    melee_body = callback_body("CalculateAmountCritMelee")
+    spell_crit_sources = (
+        "owner->GetSpellCritFromIntellect()",
+        "owner->GetTotalAuraModifier(SPELL_AURA_MOD_SPELL_CRIT_CHANCE)",
+        "owner->GetTotalAuraModifier(SPELL_AURA_MOD_CRIT_PCT)",
+        "owner->GetRatingBonusValue(CR_CRIT_SPELL)",
+    )
+
+    for source in spell_crit_sources:
+        assert spell_body.count(source) == 1
+        assert melee_body.count(source) == 1
+
+    assert "amount += CritSpell;" in melee_body
+    for melee_source in (
+        "owner->GetMeleeCritFromAgility()",
+        "owner->GetTotalAuraModifier(SPELL_AURA_MOD_WEAPON_CRIT_PERCENT)",
+        "owner->GetRatingBonusValue(CR_CRIT_MELEE)",
+    ):
+        assert melee_source not in melee_body

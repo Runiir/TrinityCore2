@@ -407,17 +407,17 @@ class spell_warl_pet_passive : public AuraScript
         if (Player* owner = GetCaster()->GetOwner()->ToPlayer())
         {
             // For others recalculate it from:
-            float CritMelee = 0.0f;
-            // Crit from Agility
-            CritMelee += owner->GetMeleeCritFromAgility();
-            // Increase crit from SPELL_AURA_MOD_WEAPON_CRIT_PERCENT
-            CritMelee += owner->GetTotalAuraModifier(SPELL_AURA_MOD_WEAPON_CRIT_PERCENT);
+            float CritSpell = 0.0f;
+            // Crit from Intellect
+            CritSpell += owner->GetSpellCritFromIntellect();
+            // Increase crit from SPELL_AURA_MOD_SPELL_CRIT_CHANCE
+            CritSpell += owner->GetTotalAuraModifier(SPELL_AURA_MOD_SPELL_CRIT_CHANCE);
             // Increase crit from SPELL_AURA_MOD_CRIT_PCT
-            CritMelee += owner->GetTotalAuraModifier(SPELL_AURA_MOD_CRIT_PCT);
-            // Increase crit melee from melee crit ratings
-            CritMelee += owner->GetRatingBonusValue(CR_CRIT_MELEE);
+            CritSpell += owner->GetTotalAuraModifier(SPELL_AURA_MOD_CRIT_PCT);
+            // Increase crit spell from spell crit ratings
+            CritSpell += owner->GetRatingBonusValue(CR_CRIT_SPELL);
 
-            amount += CritMelee;
+            amount += CritSpell;
         }
     }
 
