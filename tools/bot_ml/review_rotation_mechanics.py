@@ -1558,6 +1558,7 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
     decision_timeline: list[dict[str, Any]] = []
     off_target_damage_events: list[dict[str, Any]] = []
     primary_pet_shadow_bite_events: list[dict[str, Any]] = []
+    dragonwrath_copy_proc_observations: list[dict[str, Any]] = []
 
     trace_entries = ((document.get("trace") or {}).get("entries") or [])
     unique_attempts: set[tuple[int, int]] = set()
@@ -1754,6 +1755,34 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
                     ),
                     "owner_cast_warlock_periodic_damage_aura_spell_ids": aura_spell_ids,
                     "owner_cast_warlock_periodic_damage_aura_count": aura_count,
+                }
+            )
+        dragonwrath = bot.get("dragonwrath_copy_proc")
+        if isinstance(dragonwrath, dict):
+            dragonwrath_copy_proc_observations.append(
+                {
+                    "bot_guid": bot_guid,
+                    "aura_spell_id": int(dragonwrath.get("aura_spell_id") or 0),
+                    "copy_spell_id_semantics": str(
+                        dragonwrath.get("copy_spell_id_semantics") or ""
+                    ),
+                    "landed_damage_attribution_available": bool(
+                        dragonwrath.get("landed_damage_attribution_available", False)
+                    ),
+                    "landed_damage_attribution_limitation": str(
+                        dragonwrath.get("landed_damage_attribution_limitation") or ""
+                    ),
+                    "attempts": [
+                        {
+                            "original_spell_id": int(row.get("original_spell_id") or 0),
+                            "attempt_count": int(row.get("attempt_count") or 0),
+                            "accepted_count": int(row.get("accepted_count") or 0),
+                            "rejected_count": int(row.get("rejected_count") or 0),
+                            "last_cast_result": int(row.get("last_cast_result") or 0),
+                        }
+                        for row in dragonwrath.get("attempts") or []
+                        if isinstance(row, dict)
+                    ],
                 }
             )
         aggregate_results = bot.get("result_counts")
@@ -1971,6 +2000,7 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
         "decision_timeline": decision_timeline,
         "off_target_damage_events": off_target_damage_events,
         "primary_pet_shadow_bite_events": primary_pet_shadow_bite_events,
+        "dragonwrath_copy_proc_observations": dragonwrath_copy_proc_observations,
         "timeline_summary": {
             "sample_count": len(decision_timeline),
             "first_death_elapsed_ms": first_death["elapsed_ms"] if first_death else None,

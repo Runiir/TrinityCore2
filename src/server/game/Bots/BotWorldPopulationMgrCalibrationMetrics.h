@@ -175,6 +175,14 @@
             bool VictimIsOwner = false;
             std::vector<PeriodicHealthAuraCandidate> PeriodicHealthAuraCandidates;
         };
+        struct DragonwrathCopyProcObservation
+        {
+            uint32 OriginalSpellId = 0;
+            uint32 AttemptCount = 0;
+            uint32 AcceptedCount = 0;
+            uint32 RejectedCount = 0;
+            uint32 LastCastResult = 0;
+        };
         struct PrimaryPetShadowBiteEvent
         {
             uint64 ElapsedMs = 0;
@@ -375,6 +383,12 @@
         // Attribute every non-primary damage event instead of exposing only an
         // unauditable aggregate collateral counter.
         std::vector<OffTargetDamageEvent> OffTargetDamageEvents;
+        // Dragonwrath's native copy proc keeps the original triggering spell
+        // id. Record only the bounded proc submission outcome here. Landed
+        // copied damage remains unavailable without carrying spell context
+        // through Unit::DealDamage, which is intentionally outside this
+        // diagnostic slice.
+        std::map<uint32, DragonwrathCopyProcObservation> DragonwrathCopyProcs;
         // Bounded, observation-only landed-event evidence for the primary pet's
         // Shadow Bite. It is captured after native damage has been resolved and
         // never participates in gameplay or scoring.

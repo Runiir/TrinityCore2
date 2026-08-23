@@ -867,7 +867,10 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
     uint64 const startedMs = NowMs();
     Cohort().CalibrationScoredStartedMs = startedMs;
     for (auto& [guid, metrics] : Cohort().CalibrationMetricsByGuid)
+    {
+        metrics.DragonwrathCopyProcs.clear();
         metrics.WindowStartedMs = startedMs;
+    }
 
     // Read both the passive target and any required permanent pet at the exact
     // published scoring edge. Periodic observations and the final close sample

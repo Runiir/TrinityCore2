@@ -18,6 +18,7 @@
 #include "SpellAuraEffects.h"
 #include "Battlefield.h"
 #include "BattlefieldMgr.h"
+#include "Bots/BotWorldPopulationMgr.h"
 #include "Battleground.h"
 #include "CellImpl.h"
 #include "CharmInfo.h"
@@ -6312,6 +6313,7 @@ void AuraEffect::HandleProcTriggerSpellAuraProc(AuraApplication* aurApp, ProcEve
 
 void AuraEffect::HandleProcTriggerSpellCopyAuraProc(AuraApplication* aurApp, ProcEventInfo& eventInfo)
 {
+    constexpr uint32 DragonwrathAuraSpellId = 101056;
     Unit* triggerCaster = aurApp->GetTarget();
     Unit* triggerTarget = eventInfo.GetProcTarget();
     if (GetSpellInfo()->HasAttribute(SPELL_ATTR8_TARGET_PROCS_ON_CASTER) && eventInfo.GetTypeMask() & TAKEN_HIT_PROC_FLAG_MASK)
@@ -6322,9 +6324,13 @@ void AuraEffect::HandleProcTriggerSpellCopyAuraProc(AuraApplication* aurApp, Pro
         return;
 
     TC_LOG_DEBUG("spells", "AuraEffect::HandleProcTriggerSpellAuraProc: Triggering spell %u from aura %u proc", triggeredSpellInfo->Id, GetId());
-    triggerCaster->CastSpell(triggerTarget, triggeredSpellInfo->Id, CastSpellExtraArgs(this)
+    SpellCastResult const castResult = triggerCaster->CastSpell(triggerTarget, triggeredSpellInfo->Id, CastSpellExtraArgs(this)
         .SetTriggeringSpell(eventInfo.GetProcSpell())
         .SetTriggerFlags(TRIGGERED_FULL_MASK & ~(TRIGGERED_IGNORE_POWER_COST | TRIGGERED_IGNORE_REAGENT_COST)));
+    if (GetId() == DragonwrathAuraSpellId)
+        sBotWorldPopulationMgr->NotifyDragonwrathCopyProcAttempt(
+            triggerCaster, triggeredSpellInfo->Id, uint32(castResult),
+            castResult == SPELL_CAST_OK);
 }
 
 void AuraEffect::HandleProcTriggerSpellWithValueAuraProc(AuraApplication* aurApp, ProcEventInfo& eventInfo)

@@ -129,7 +129,28 @@ void BotWorldPopulationMgr::AppendCalibrationBotActionJson(
                          << metrics->PrimaryPetSpellDamageEvents.at(spellId) << '}';
                 }
             }
-            json << "],\"primary_pet_shadow_bite_events\":[";
+            json << "],\"dragonwrath_copy_proc\":{\"aura_spell_id\":101056"
+                 << ",\"copy_spell_id_semantics\":\"original_triggering_spell_id\""
+                 << ",\"landed_damage_attribution_available\":false"
+                 << ",\"landed_damage_attribution_limitation\":"
+                    "\"spell_context_not_carried_into_notify_combat_damage\""
+                 << ",\"attempts\":[";
+            bool firstDragonwrath = true;
+            if (metrics)
+                for (auto const& [originalSpellId, observation]
+                    : metrics->DragonwrathCopyProcs)
+                {
+                    if (!firstDragonwrath)
+                        json << ',';
+                    firstDragonwrath = false;
+                    json << "{\"original_spell_id\":" << originalSpellId
+                         << ",\"attempt_count\":" << observation.AttemptCount
+                         << ",\"accepted_count\":" << observation.AcceptedCount
+                         << ",\"rejected_count\":" << observation.RejectedCount
+                         << ",\"last_cast_result\":" << observation.LastCastResult
+                         << '}';
+                }
+            json << "]},\"primary_pet_shadow_bite_events\":[";
             bool firstShadowBiteEvent = true;
             if (metrics)
                 for (CalibrationMetrics::PrimaryPetShadowBiteEvent const& event
