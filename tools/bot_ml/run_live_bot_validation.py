@@ -4007,8 +4007,11 @@ def expected_command_output_marker(command_text: str) -> str:
 
 def command_output_marker_is_terminal(command_text: str) -> bool:
     return (
-        command_text.startswith(".botauto calibrate")
-        and command_text.split()[-1] == "status"
+        command_text.startswith(".botauto combatlog")
+        or (
+            command_text.startswith(".botauto calibrate")
+            and command_text.split()[-1] == "status"
+        )
     )
 
 

@@ -8921,6 +8921,30 @@ def test_read_until_console_prompt_waits_past_early_prompt_for_terminal_transpor
     assert "next command output" not in output
 
 
+def test_read_until_console_prompt_waits_for_chunked_combatlog_completion_marker(monkeypatch):
+    process = ChunkedConsoleProcess([
+        "TC> ",
+        '{"action":"botauto_combatlog_chunk","sequence":0}\n',
+        '{"action":"botauto_combatlog_complete","chunk_count":1}\n',
+        "next command output\n",
+    ])
+    module_globals = read_until_console_prompt.__globals__
+    monkeypatch.setattr(module_globals["select"], "select", lambda fds, *_args: (fds if process.chunks else [], [], []))
+    monkeypatch.setattr(module_globals["os"], "read", lambda _fd, _size: process.chunks.pop(0))
+    command = ".botauto combatlog"
+
+    output = read_until_console_prompt(
+        process,
+        time.monotonic() + 1,
+        module_globals["expected_command_output_marker"](command),
+        module_globals["command_output_marker_is_terminal"](command),
+    )
+
+    assert "botauto_combatlog_chunk" in output
+    assert "botauto_combatlog_complete" in output
+    assert "next command output" not in output
+
+
 def test_calibration_status_uses_completion_marker_as_terminal_boundary():
     module_globals = read_until_console_prompt.__globals__
 
@@ -8929,6 +8953,15 @@ def test_calibration_status_uses_completion_marker_as_terminal_boundary():
     )
     assert module_globals["command_output_marker_is_terminal"](".botauto calibrate status") is True
     assert module_globals["command_output_marker_is_terminal"](".botauto calibrate start single_target_300 affliction_warlock 1") is False
+
+
+def test_combatlog_completion_marker_is_terminal():
+    module_globals = read_until_console_prompt.__globals__
+
+    assert module_globals["expected_command_output_marker"](".botauto combatlog") == (
+        '"action":"botauto_combatlog_complete"'
+    )
+    assert module_globals["command_output_marker_is_terminal"](".botauto combatlog") is True
 
 
 def test_live_bot_validation_force_start_overrides_config_autostart(tmp_path, monkeypatch):
