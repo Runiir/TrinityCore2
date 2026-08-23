@@ -2767,6 +2767,31 @@ def _watchdog_trace(entries: list[dict], *, bot_guid: int = 1001) -> dict:
     }
 
 
+def _watchdog_diagnosis(
+    *, bot_guid: int, action: str, result: str, repeat_count: int,
+    diagnosis_code: str = "repeated_decision_loop",
+) -> dict:
+    return {
+        "bots": [{
+            "identity": {"bot_guid": bot_guid},
+            "snapshot": {
+                "decision": {
+                    "action": action,
+                    "result": result,
+                    "fingerprint_repeat_count": repeat_count,
+                },
+                "route_progress": {
+                    "route": {
+                        "node_id": "blackwing_descent_10n.node",
+                        "generation": 1,
+                    },
+                },
+            },
+            "diagnosis": {"diagnosis_code": diagnosis_code},
+        }],
+    }
+
+
 def test_capture_watchdog_stops_scoped_repeated_route_failures_and_deduplicates_trace_rows():
     status = _watchdog_status()
     state = {}
@@ -2885,6 +2910,68 @@ def test_capture_watchdog_scopes_repeated_decisions_per_bot_at_threshold():
     )
     assert duplicate["repeated_decision_count"] == 20
     assert list(single_bot_state["repeated_decision_counts"].values()) == [20]
+
+
+def test_capture_watchdog_ignores_non_failed_diagnosis_repeated_loop():
+    status = _generic_watchdog_status(size=10, profile="blackwing_descent_10n", map_id=669)
+    diagnosis = _watchdog_diagnosis(
+        bot_guid=1001,
+        action="validation_route_patrol_wait_for_safe_phase",
+        result="ok",
+        repeat_count=20,
+    )
+
+    report = observe_capture_watchdog(
+        {}, status, diagnosis,
+        max_repeated_decisions=3,
+        max_death_loops=3,
+    )
+
+    assert report["detected"] is False
+    assert report["repeated_decision_count"] == 0
+    assert report["failure_reason"] is None
+
+
+def test_capture_watchdog_diagnosis_counts_failed_route_decisions_per_bot():
+    status = _generic_watchdog_status(size=10, profile="blackwing_descent_10n", map_id=669)
+    state = {}
+    initial = {
+        "bots": [
+            _watchdog_diagnosis(
+                bot_guid=bot_guid,
+                action="validation_route_recovery",
+                result="no_candidate_committed",
+                repeat_count=2,
+            )["bots"][0]
+            for bot_guid in (1001, 1002)
+        ],
+    }
+
+    report = observe_capture_watchdog(
+        state, status, initial,
+        max_repeated_decisions=3,
+        max_death_loops=3,
+    )
+    assert report["detected"] is False
+    assert report["repeated_decision_count"] == 2
+    assert set(state["diagnosis_repeat_high_water"].values()) == {2}
+
+    terminal = observe_capture_watchdog(
+        state,
+        status,
+        _watchdog_diagnosis(
+            bot_guid=1001,
+            action="validation_route_recovery",
+            result="no_candidate_committed",
+            repeat_count=3,
+        ),
+        max_repeated_decisions=3,
+        max_death_loops=3,
+    )
+    assert terminal["detected"] is True
+    assert terminal["failure_reason"] == "repeated_decision_watchdog"
+    assert terminal["repeated_decision_count"] == 3
+    assert terminal["repeated_decision_outcome"] == "no_candidate_committed"
 
 
 def test_capture_watchdog_classifies_excessive_scoped_deaths_as_gameplay_failure():

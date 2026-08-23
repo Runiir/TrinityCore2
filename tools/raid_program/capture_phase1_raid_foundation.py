@@ -2814,13 +2814,7 @@ def observe_capture_watchdog(
                 continue
             action = str(decision.get("action") or "")
             outcome = _watchdog_failure_outcome(decision)
-            bot_diagnosis = bot.get("diagnosis")
-            bot_diagnosis = bot_diagnosis if isinstance(bot_diagnosis, dict) else {}
-            diagnosis_code = str(bot_diagnosis.get("diagnosis_code") or "")
-            if not (
-                diagnosis_code == "repeated_decision_loop"
-                or _watchdog_is_repeated_decision({"action": action, "result": outcome})
-            ):
+            if not _watchdog_is_repeated_decision({"action": action, "result": outcome}):
                 continue
             try:
                 repeat_count = max(
