@@ -340,29 +340,25 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "scoped_cross_map_native_recovery_admission_verification"
+        "adaptive_route_authority_refresh"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["owner_skill"] == "raid-shard-architecture"
+    assert active["owner_skill"] == "raid-bot-runtime-implementation"
     assert active["first_broken_edge"] == (
-        "scoped_cross_map_native_recovery_admission_live_verification"
+        "adaptive_route_authority_refresh_before_native_combat"
     )
     evidence = active["decisive_evidence"]
     assert evidence["source_commit"] == (
-        "902710a4ef45c63d9f735db75c39ed20aaf19d9b"
+        "81c6986ec520240b6b2ba1577f345b3660c9cb31"
     )
     assert evidence["binary_sha256"] == (
-        "d03f1dd227fed03ceb820216d612fc4e54e2da36fb9ee338c1848f11c15e8378"
-    )
-    assert evidence["report_dvc_pointer"] == (
-        "artifacts/cata_raid_program/"
-        "phase1_foundation_902710a4ef_magmaw_diagnostic_20260822.dvc"
+        "65a23111b6b51580f4198dfee369f2fe1ec19a943ebc6569323489bf3c9e4af7"
     )
     assert evidence["report_sha256"] == (
-        "d6295a33118b0a3780fde311137844a59c3a5c58c6f4c1e22c2cb8a41d906463"
+        "381361b372f1e6317de73df640c008b1fd5fbd72133180ea69162fc94ac453a3"
     )
     assert evidence["report_file_sha256"] == (
-        "186727107adb3a981d569adbfa81195b1e9268924fc5f5b1b9ae2a1883cc96f3"
+        "1f9f7111923f1ab65b11c9808534e60be60c22ebe9c4de57a16ef1f000d44bd3"
     )
     assert (
         evidence["route_generation"],
@@ -370,56 +366,29 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
         evidence["route_node_id"],
     ) == (3, 2, "bwd.magmaw.drudges")
     assert evidence["diagnostic_difficulty"] == "10N"
-    assert evidence["invalid_z_unique_event_count"] == 67
-    assert evidence["deaths"] == 8
-    assert evidence["final_alive_size_before_stop"] == 2
+    assert evidence["kills"] == 1
+    assert evidence["death_loop_count"] == 3
+    assert evidence["tank_owned_hostile_count"] == 0
+    assert evidence["drudge_target_guids"] == [59, 60]
+    assert evidence["tank_taunt_spell_ids"] == [62124, 56222]
+    assert evidence["tank_taunt_native_result"] == "no_action"
+    assert evidence["future_magmaw_target_observed"] is False
     assert evidence["boss_reached"] is False
-    assert evidence["semantic_stall_watchdog"] is True
     assert evidence["forbidden_assistance_observed"] is False
     assert evidence["cleanup_passed"] is True
     assert evidence["worldserver_exit_code"] == 0
-    assert evidence["evidence_demux_gate_passed"] is False
-    assert evidence["evidence_demux_classification_defect"] == (
-        "evidence_demux_required_action_missing:botauto_readycheck"
-    )
+    assert evidence["evidence_demux_gate_passed"] is True
     assert active["implementation_budget"] == {
         "hypotheses": 1,
-        "matched_live_verification_runs": 0,
+        "matched_live_verification_runs": 1,
     }
-    assert active["implemented_fix"]["commit"] == (
-        "f23b29f0f5a08f21e5044c16275ff235ed4d96a9"
-    )
-    assert active["implemented_fix"]["status"] == "implemented_not_live_verified"
-    assert active["implemented_fix"]["scope"] == (
-        "scoped_cross_map_native_recovery_admission"
+    assert active["implementation_hypothesis"]["scope"] == (
+        "refresh_current_route_combat_authority_before_adaptive_route_shortcut"
     )
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
     assert active["runtime_verification_plan"]["identity"]["difficulty"] == "10N"
     assert active["runtime_verification_plan"]["fixed_success_timer_seconds"] is None
-    verification = active["runtime_verification_plan"]
-    assert verification["required_fix_commit"] == (
-        "f23b29f0f5a08f21e5044c16275ff235ed4d96a9"
-    )
-    assert verification["required_fix_commit_relation"] == (
-        "must_be_ancestor_of_live_build_receipt_commit"
-    )
-    assert verification["required_live_build_commit"] == (
-        "fac4cbf944036b2d86b28aef00c08b73035963f8"
-    )
-    assert verification["required_live_build_tree"] == (
-        "d190177ccba42dd44cce825994dc60be361d4dd1"
-    )
-    assert verification["live_build_receipt_contract"] == {
-        "must_bind_exact_commit": True,
-        "must_be_clean": True,
-        "required_fix_commit_is_ancestor": True,
-        "required_commit": "fac4cbf944036b2d86b28aef00c08b73035963f8",
-    }
-    assert "not a new implementation" in active["next_action"]
-    assert "25H acceptance claim" in active["next_action"]
-    assert "as an ancestor" in active["next_action"]
-    assert "fac4cbf944036b2d86b28aef00c08b73035963f8" in active["next_action"]
-    assert "d190177ccba42dd44cce825994dc60be361d4dd1" in active["next_action"]
+    assert "do not force threat" in active["next_action"]
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
@@ -515,26 +484,26 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     assert status["active_work_unit"]["descriptor_valid"] is True
     assert status["active_work_unit"]["ready_for_bounded_repair"] is True
     assert status["active_work_unit"]["first_broken_edge"] == (
-        "scoped_cross_map_native_recovery_admission_live_verification"
+        "adaptive_route_authority_refresh_before_native_combat"
     )
     assert status["active_work_unit"]["source_handoff"]["sha256"] == (
         workloop._file_sha256(
             workloop.ROOT
-            / "experiments/configs/cata_raid_magmaw_convergence_handoff.md"
+            / "experiments/configs/"
+            "cata_raid_magmaw_drudge_tank_ownership_handoff_20260823.md"
         )
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "scoped_cross_map_native_recovery_admission_verification"
+        "adaptive_route_authority_refresh"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
-        "raid-shard-architecture"
+        "raid-bot-runtime-implementation"
     )
     assert status["current_program_next_action"] == status["active_work_unit"][
         "next_action"
     ]
-    assert "not a new implementation" in status["active_work_unit"]["next_action"]
-    assert "25H acceptance claim" in status["active_work_unit"]["next_action"]
+    assert "do not force threat" in status["active_work_unit"]["next_action"]
     assert "legacy_program_next_action" not in status
 
 

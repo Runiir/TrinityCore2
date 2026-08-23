@@ -16,6 +16,7 @@ def test_owned_route_target_gate_replays_safe_admission(tmp_path: Path) -> None:
         r'''
 #include "Bots/BotRouteCombatTargetPolicy.h"
 #include "Bots/BotActionArbiter.h"
+#include "Bots/BotRaidAreaAuthority.h"
 #include <cassert>
 
 int main()
@@ -29,6 +30,17 @@ int main()
     assert(!IsOwnedNativeEncounterTarget(true, true, true, true, false, 42362, 42362));
     assert(!IsOwnedNativeEncounterTarget(true, true, true, true, true, 42649, 42362));
     assert(!IsOwnedNativeEncounterTarget(true, true, true, true, true, 0, 42362));
+
+    // Entering an adaptive-owned route node refreshes a stale ordinary route
+    // hold without dropping the next encounter's target protection.
+    uint64 owner = 30001;
+    BotRaidAreaAuthority::SetAllOffenseSuppressed(owner, true);
+    BotRaidAreaAuthority::SetProtectedEncounterEntries(owner, { 41570 });
+    BotRaidAreaAuthority::SetAllOffenseSuppressed(owner, false);
+    assert(!BotRaidAreaAuthority::IsAllOffenseSuppressed(owner));
+    assert(BotRaidAreaAuthority::IsProtectedEncounterTarget(
+        owner, 41570, 0, 39));
+    BotRaidAreaAuthority::Clear(owner);
 
     // A range-closure candidate owns only movement, so a normal profile cast
     // can still commit during the same validation decision tick.
@@ -130,4 +142,17 @@ def test_drudge_route_owns_target_before_boss_adapter_can_replace_it() -> None:
     assert guard.index("context.AdaptiveDrudgeOwnsNode") < guard_end
     assert candidate.index("context.AdaptiveDrudgeOwnsNode") < candidate.index(
         "IsBossContext"
+    )
+
+
+def test_adaptive_route_refreshes_combat_authority_before_kernel_resolution() -> None:
+    fallback = FALLBACK.read_text(encoding="utf-8")
+    start = fallback.index("auto routeOwnerReason")
+    end = fallback.index("auto routeActionIsMovementOnly", start)
+    admission = fallback[start:end]
+
+    assert "if (routeOwnerReason())" in admission
+    assert "ConfigureValidationRouteCombatAuthority(context.Bot);" in admission
+    assert admission.index("if (routeOwnerReason())") < admission.index(
+        "ConfigureValidationRouteCombatAuthority(context.Bot);"
     )

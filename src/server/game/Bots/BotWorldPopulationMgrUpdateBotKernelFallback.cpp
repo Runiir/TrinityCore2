@@ -53,6 +53,15 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             return nullptr;
         };
 
+        // Adaptive encounter owners skip TryValidationRouteObjectiveGate(),
+        // which normally refreshes the current route's offensive authority.
+        // Clear a stale hold from the previous node before the kernel resolves
+        // normal native casts, while retaining the current node's declared
+        // future-encounter protections. Terminal and recovery holds return
+        // before candidate submission and cannot reach this refresh.
+        if (routeOwnerReason())
+            ConfigureValidationRouteCombatAuthority(context.Bot);
+
         auto routeActionIsMovementOnly = [](std::string const& action)
         {
             return action.empty()
