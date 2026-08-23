@@ -89,6 +89,7 @@ def test_affliction_damage_stage_receipt_covers_requested_native_events() -> Non
     notifications = (
         ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp"
     ).read_text(encoding="utf-8")
+    header = HEADER.read_text(encoding="utf-8")
 
     assert "AfflictionDamageStageObservation" in metrics
     assert "AfflictionDamageStageBySpell" in metrics
@@ -119,9 +120,14 @@ def test_affliction_damage_stage_receipt_covers_requested_native_events() -> Non
     assert "SpellModOp::PeriodicHealingAndDamage" in module
     assert "SpellModOp::HealingAndDamage" in module
     assert "GetSpellModValues(spellInfo" in module
-    assert "critical, critChancePct" in notifications
+    assert "PrepareCombatPeriodicOutcome" in header
+    assert "std::exchange(\n        PendingOutcome" in notifications
+    assert "pending.Attacker == attacker" in notifications
+    assert "pending.Victim == victim" in notifications
+    assert "pending.SpellId == spellId" in notifications
     aura_effects = (
         ROOT / "src/server/game/Spells/Auras/SpellAuraEffects.cpp"
     ).read_text(encoding="utf-8")
-    assert aura_effects.count("critChancePct)") >= 2
+    assert aura_effects.count("PrepareCombatPeriodicOutcome(") == 2
+    assert aura_effects.count("caster, target, GetId(), crit, critChancePct") == 2
     assert "critChancePct = GetCritChanceFor(caster, target)" in aura_effects

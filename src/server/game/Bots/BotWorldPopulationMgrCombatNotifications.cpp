@@ -23,6 +23,19 @@ namespace
 {
 constexpr uint32 CalibrationSingleTargetDurationMs = 300000;
 constexpr uint32 ShadowBiteSpellId = 54049;
+
+struct PendingPeriodicOutcome
+{
+    Unit* Attacker = nullptr;
+    Unit* Victim = nullptr;
+    uint32 SpellId = 0;
+    bool Critical = false;
+    float CritChancePct = 0.0f;
+    bool Armed = false;
+};
+
+thread_local PendingPeriodicOutcome PendingOutcome;
+
 struct CalibrationExecuteHealthWindow
 {
     uint32 EndMs;
@@ -178,10 +191,30 @@ void BotWorldPopulationMgr::NotifyCombatHeal(Unit* healer, Unit* target, uint32 
         0, 0, effectiveHeal, attemptedHeal, absorbedHeal, nowMs);
 }
 
-void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uint32 spellId, uint32 damage,
-    uint32 unmitigatedDamage, uint32 damageType, uint32 schoolMask,
-    bool critical, float critChancePct)
+void BotWorldPopulationMgr::PrepareCombatPeriodicOutcome(Unit* attacker,
+    Unit* victim, uint32 spellId, bool critical, float critChancePct)
 {
+    PendingOutcome = { attacker, victim, spellId, critical, critChancePct, true };
+}
+
+void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uint32 spellId, uint32 damage,
+    uint32 unmitigatedDamage, uint32 damageType, uint32 schoolMask)
+{
+    PendingPeriodicOutcome const pending = std::exchange(
+        PendingOutcome, PendingPeriodicOutcome{});
+    bool const critical = pending.Armed
+        && pending.Attacker == attacker
+        && pending.Victim == victim
+        && pending.SpellId == spellId
+        && damageType == uint32(DOT)
+        && pending.Critical;
+    float const critChancePct = pending.Armed
+        && pending.Attacker == attacker
+        && pending.Victim == victim
+        && pending.SpellId == spellId
+        && damageType == uint32(DOT)
+            ? pending.CritChancePct : 0.0f;
+
     if (!Cohort().Active || !attacker || !victim || (!damage && !unmitigatedDamage))
         return;
 
