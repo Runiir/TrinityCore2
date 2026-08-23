@@ -130,7 +130,8 @@ void BotWorldPopulationMgr::AppendCalibrationBotActionJson(
                 }
             }
             json << "],\"dragonwrath_copy_proc\":{\"aura_spell_id\":101056"
-                 << ",\"copy_spell_id_semantics\":\"original_triggering_spell_id\""
+                 << ",\"copy_spell_id_semantics\":\"direct_original_periodic_101085\""
+                 << ",\"periodic_copy_spell_id\":101085"
                  << ",\"landed_damage_attribution_available\":false"
                  << ",\"landed_damage_attribution_limitation\":"
                     "\"spell_context_not_carried_into_notify_combat_damage\""

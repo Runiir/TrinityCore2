@@ -435,11 +435,10 @@
         // Attribute every non-primary damage event instead of exposing only an
         // unauditable aggregate collateral counter.
         std::vector<OffTargetDamageEvent> OffTargetDamageEvents;
-        // Dragonwrath's native copy proc keeps the original triggering spell
-        // id. Record only the bounded proc submission outcome here. Landed
-        // copied damage remains unavailable without carrying spell context
-        // through Unit::DealDamage, which is intentionally outside this
-        // diagnostic slice.
+        // Dragonwrath direct copies keep the original triggering spell id;
+        // periodic copies use synthetic spell 101085. Record only the bounded
+        // proc submission outcome here. Landed copied damage remains
+        // unavailable without carrying spell context through Unit::DealDamage.
         std::map<uint32, DragonwrathCopyProcObservation> DragonwrathCopyProcs;
         // Bounded, observation-only landed-event evidence for the primary pet's
         // Shadow Bite. It is captured after native damage has been resolved and

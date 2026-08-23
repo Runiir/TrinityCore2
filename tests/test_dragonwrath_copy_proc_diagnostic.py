@@ -25,6 +25,13 @@ def test_native_diagnostic_is_bounded_registered_and_scoped_to_the_scored_bot():
     assert "GetId() == DragonwrathAuraSpellId" in aura
     assert "triggeredSpellInfo->Id" in aura
     assert "castResult == SPELL_CAST_OK" in aura
+    assert "damageInfo->GetDamageType() == DOT" in aura
+    assert "DragonwrathPeriodicCopySpellId = 101085" in aura
+    assert "args.AddSpellBP0" in aura
+    assert "copySpellId = DragonwrathPeriodicCopySpellId" in aura
+    assert "CastSpell(triggerTarget, copySpellId, args)" in aura
+    assert "TRIGGERED_FULL_MASK & ~(TRIGGERED_IGNORE_POWER_COST | TRIGGERED_IGNORE_REAGENT_COST)" in aura
+    assert "copySpellId = triggeredSpellInfo->Id" in aura
     for marker in (
         'Cohort().CalibrationMode != "single_target_300"',
         "Cohort().CalibrationScoredStartedMs",
@@ -49,6 +56,7 @@ def test_calibration_json_exposes_attempt_acceptance_and_landed_limit():
         "DragonwrathCopyProcObservation",
         "DragonwrathCopyProcs",
         "aura_spell_id",
+        "periodic_copy_spell_id",
         "original_spell_id",
         "attempt_count",
         "accepted_count",
@@ -57,6 +65,13 @@ def test_calibration_json_exposes_attempt_acceptance_and_landed_limit():
         "spell_context_not_carried_into_notify_combat_damage",
     ):
         assert marker in metrics or marker in rendered
+
+
+def test_native_diagnostic_rejects_aura_absent_casters_before_incrementing():
+    module = MODULE.read_text(encoding="utf-8")
+    aura_guard = "if (!bot || !bot->HasAura(DragonwrathAuraSpellId))"
+    assert aura_guard in module
+    assert module.index(aura_guard) < module.index("++observation.AttemptCount")
 
 
 def test_runtime_normalization_keeps_dragonwrath_rows_bound_to_each_bot():
@@ -69,7 +84,8 @@ def test_runtime_normalization_keeps_dragonwrath_rows_bound_to_each_bot():
                         "guid": 101,
                         "dragonwrath_copy_proc": {
                             "aura_spell_id": 101056,
-                            "copy_spell_id_semantics": "original_triggering_spell_id",
+                            "copy_spell_id_semantics": "direct_original_periodic_101085",
+                            "periodic_copy_spell_id": 101085,
                             "landed_damage_attribution_available": False,
                             "landed_damage_attribution_limitation": "spell_context_not_carried_into_notify_combat_damage",
                             "attempts": [
@@ -87,7 +103,8 @@ def test_runtime_normalization_keeps_dragonwrath_rows_bound_to_each_bot():
                         "guid": 202,
                         "dragonwrath_copy_proc": {
                             "aura_spell_id": 101056,
-                            "copy_spell_id_semantics": "original_triggering_spell_id",
+                            "copy_spell_id_semantics": "direct_original_periodic_101085",
+                            "periodic_copy_spell_id": 101085,
                             "landed_damage_attribution_available": False,
                             "landed_damage_attribution_limitation": "spell_context_not_carried_into_notify_combat_damage",
                             "attempts": [],
@@ -104,7 +121,8 @@ def test_runtime_normalization_keeps_dragonwrath_rows_bound_to_each_bot():
         {
             "bot_guid": 101,
             "aura_spell_id": 101056,
-            "copy_spell_id_semantics": "original_triggering_spell_id",
+            "copy_spell_id_semantics": "direct_original_periodic_101085",
+            "periodic_copy_spell_id": 101085,
             "landed_damage_attribution_available": False,
             "landed_damage_attribution_limitation": "spell_context_not_carried_into_notify_combat_damage",
             "attempts": [
@@ -120,7 +138,8 @@ def test_runtime_normalization_keeps_dragonwrath_rows_bound_to_each_bot():
         {
             "bot_guid": 202,
             "aura_spell_id": 101056,
-            "copy_spell_id_semantics": "original_triggering_spell_id",
+            "copy_spell_id_semantics": "direct_original_periodic_101085",
+            "periodic_copy_spell_id": 101085,
             "landed_damage_attribution_available": False,
             "landed_damage_attribution_limitation": "spell_context_not_carried_into_notify_combat_damage",
             "attempts": [],

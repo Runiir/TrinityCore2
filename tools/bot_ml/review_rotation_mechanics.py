@@ -1813,6 +1813,9 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
                     "copy_spell_id_semantics": str(
                         dragonwrath.get("copy_spell_id_semantics") or ""
                     ),
+                    "periodic_copy_spell_id": int(
+                        dragonwrath.get("periodic_copy_spell_id") or 0
+                    ),
                     "landed_damage_attribution_available": bool(
                         dragonwrath.get("landed_damage_attribution_available", False)
                     ),

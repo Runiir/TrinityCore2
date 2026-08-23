@@ -49,6 +49,7 @@
 #include "Weather.h"
 #include "WorldPacket.h"
 #include <G3D/g3dmath.h>
+#include <limits>
 #include <numeric>
 
 class Aura;
@@ -6329,6 +6330,7 @@ void AuraEffect::HandleProcTriggerSpellAuraProc(AuraApplication* aurApp, ProcEve
 void AuraEffect::HandleProcTriggerSpellCopyAuraProc(AuraApplication* aurApp, ProcEventInfo& eventInfo)
 {
     constexpr uint32 DragonwrathAuraSpellId = 101056;
+    constexpr uint32 DragonwrathPeriodicCopySpellId = 101085;
     Unit* triggerCaster = aurApp->GetTarget();
     Unit* triggerTarget = eventInfo.GetProcTarget();
     if (GetSpellInfo()->HasAttribute(SPELL_ATTR8_TARGET_PROCS_ON_CASTER) && eventInfo.GetTypeMask() & TAKEN_HIT_PROC_FLAG_MASK)
@@ -6338,10 +6340,24 @@ void AuraEffect::HandleProcTriggerSpellCopyAuraProc(AuraApplication* aurApp, Pro
     if (!triggeredSpellInfo)
         return;
 
-    TC_LOG_DEBUG("spells", "AuraEffect::HandleProcTriggerSpellAuraProc: Triggering spell %u from aura %u proc", triggeredSpellInfo->Id, GetId());
-    SpellCastResult const castResult = triggerCaster->CastSpell(triggerTarget, triggeredSpellInfo->Id, CastSpellExtraArgs(this)
-        .SetTriggeringSpell(eventInfo.GetProcSpell())
-        .SetTriggerFlags(TRIGGERED_FULL_MASK & ~(TRIGGERED_IGNORE_POWER_COST | TRIGGERED_IGNORE_REAGENT_COST)));
+    uint32 copySpellId = triggeredSpellInfo->Id;
+    CastSpellExtraArgs args(this);
+    args.SetTriggeringSpell(eventInfo.GetProcSpell())
+        .SetTriggerFlags(TRIGGERED_FULL_MASK & ~(TRIGGERED_IGNORE_POWER_COST | TRIGGERED_IGNORE_REAGENT_COST));
+
+    if (GetId() == DragonwrathAuraSpellId)
+    {
+        if (DamageInfo const* damageInfo = eventInfo.GetDamageInfo();
+            damageInfo && damageInfo->GetDamageType() == DOT && damageInfo->GetDamage() > 0)
+        {
+            copySpellId = DragonwrathPeriodicCopySpellId;
+            args.AddSpellBP0(static_cast<int32>(std::min<uint32>(
+                damageInfo->GetDamage(), std::numeric_limits<int32>::max())));
+        }
+    }
+
+    TC_LOG_DEBUG("spells", "AuraEffect::HandleProcTriggerSpellCopyAuraProc: Triggering spell %u from aura %u proc", copySpellId, GetId());
+    SpellCastResult const castResult = triggerCaster->CastSpell(triggerTarget, copySpellId, args);
     if (GetId() == DragonwrathAuraSpellId)
         sBotWorldPopulationMgr->NotifyDragonwrathCopyProcAttempt(
             triggerCaster, triggeredSpellInfo->Id, uint32(castResult),
