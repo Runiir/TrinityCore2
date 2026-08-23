@@ -103,7 +103,8 @@ the implemented scoped cross-map native recovery admission fix
 `blackwing_descent_10n_magmaw_diagnostic` scenario, runtime profile, pool tag,
 route manifest, frozen ten-member roster, assignment generation, source
 commit, and binary receipt. The live receipt must bind exact clean descendant
-`7f5acba803a61a6320836663421941175a38c451`, whose history contains the required
+`fac4cbf944036b2d86b28aef00c08b73035963f8` with source tree
+`d190177ccba42dd44cce825994dc60be361d4dd1`, whose history contains the required
 fix commit `f23b29f0f5a08f21e5044c16275ff235ed4d96a9` as an ancestor; do not treat
 f23 as the binary commit. Verify the Recovery-owner cross-map admission is
 bound to the exact attempt, wipe, route, death episode, cohort, and native
@@ -177,7 +178,8 @@ rows were bound, the required telemetry gate passed, and the run is not clear.
 The next verification must use the implemented native fix at
 `f23b29f0f5a08f21e5044c16275ff235ed4d96a9` as an ancestor, with its live build
 receipt bound to exact clean descendant
-`7f5acba803a61a6320836663421941175a38c451`. It remains unverified until a
+`fac4cbf944036b2d86b28aef00c08b73035963f8` and source tree
+`d190177ccba42dd44cce825994dc60be361d4dd1`. It remains unverified until a
 fresh exact 10N completion-watchdog capture binds that descendant receipt and
 produces the scoped cross-map recovery evidence described above.
 
