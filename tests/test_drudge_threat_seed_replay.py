@@ -12,6 +12,7 @@ def test_production_drudge_seed_transition_replays_native_event_orderings(tmp_pa
         r'''
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeThreatSeedState.h"
 #include <cassert>
+#include <string>
 
 using namespace BotRaidDrudgeThreatSeed;
 
@@ -129,6 +130,35 @@ int main()
     Result authorityRetry = Advance(authority.Next, ready(retryScope, 0));
     assert(authorityRetry.NextDecision == Decision::HoldClosed);
     assert(authorityRetry.Next.Failure && authorityRetry.Next.Closed);
+
+    // One typed route-coordinator tick evaluates both opposite lanes before
+    // returning. A lane is accepted only when its native action reports Ok.
+    CoordinatorInput bothTick;
+    bothTick.Identity = first;
+    bothTick.PrepullStaged = true;
+    bothTick.SourcesAlive = true;
+    bothTick.OwnershipSafe = true;
+    bothTick.SeparationSafe = true;
+    bothTick.FrozenLanesSafe = true;
+    bothTick.Lanes[0] = { true, true, true, true, RejectionGate::None };
+    bothTick.Lanes[1] = { true, true, true, true, RejectionGate::None };
+    CoordinatorResult both = AdvanceCoordinator(State{}, bothTick);
+    assert(both.BothLanesEvaluated);
+    assert(both.Lanes[0].ActionAttempted && both.Lanes[1].ActionAttempted);
+    assert(both.Next.SeededLanes[0] && both.Next.SeededLanes[1]);
+    assert(both.Next.Complete && !both.Next.Failure);
+
+    // A failed native lane preserves the exact rejection gate and cannot
+    // manufacture its lane's success from the other lane's cast.
+    CoordinatorInput rejectedTick = bothTick;
+    rejectedTick.Lanes[1].ActionSucceeded = false;
+    rejectedTick.Lanes[1].Rejection = RejectionGate::NativeAction;
+    CoordinatorResult rejected = AdvanceCoordinator(State{}, rejectedTick);
+    assert(rejected.BothLanesEvaluated);
+    assert(rejected.Next.SeededLanes[0] && !rejected.Next.SeededLanes[1]);
+    assert(!rejected.Next.Complete);
+    assert(rejected.Lanes[1].Rejection == RejectionGate::NativeAction);
+    assert(std::string(ToString(rejected.Lanes[1].Rejection)) == "native_action");
 }
 ''',
         encoding="utf-8",
@@ -161,52 +191,42 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
         / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/"
         "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp"
     ).read_text(encoding="utf-8")
+    seed = (
+        ROOT
+        / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/"
+        "BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp"
+    ).read_text(encoding="utf-8")
     callback = (
         ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatLog.cpp"
     ).read_text(encoding="utf-8")
 
     assert '#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeThreatSeedState.h"' in implementation
-    assert "BotRaidDrudgeThreatSeed::Result seedTransition =" in lane
-    assert "Advance(seedState, seedInput);" in lane
-    assert "seedInput.Type = Event::ActionResult;" in lane
-    seed_gate = lane.index("if (Sources[0]->IsAlive() && Sources[1]->IsAlive()")
-    seed_gate_end = lane.index("{", seed_gate)
-    assert "!Manager.Party().ValidationRouteDrudgeThreatSeedComplete" in lane[
-        seed_gate:seed_gate_end
-    ]
-    assert "!Manager.Party().ValidationRouteDrudgeThreatSeedClosed" in lane[
-        seed_gate:seed_gate_end
-    ]
-    assert "!Manager.Party().ValidationRouteDrudgeThreatSeedFailure" in lane[
-        seed_gate:seed_gate_end
-    ]
-    assert '"drudge_pre_first_rush_seed_closed"' in lane
+    assert '#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.h"' in lane
+    assert "RunDrudgeSeedCoordinator(*this)" in lane
+    assert "BotRaidDrudgeThreatSeed::CoordinatorResult const transition =" in seed
+    assert "AdvanceCoordinator(seedState, input);" in seed
+    assert "bothVictimsOwned" in seed
+    assert "context.OneBasedSlot != manager.Cohort().Config" in seed
+    assert "party.ValidationRouteDrudgeThreatSeedComplete" in seed
+    assert "party.ValidationRouteDrudgeThreatSeedClosed" in seed
+    assert "party.ValidationRouteDrudgeThreatSeedFailure" in seed
+    assert '"drudge_pre_first_rush_seed_rejected:"' in seed
+    assert '"native_action_rejected"' in seed
+    assert "candidates[lane].ActionAttempted" in seed
+    assert "for (uint32 lane = 0; lane < candidates.size(); ++lane)" in seed
     assert "Result const transition = Advance(seedState, rushInput);" in callback
-    assert "candidate, LaneSource, 1, false, 0, false, false, true, false, true" in lane
-    assert "selected, LaneSource, 1, false, 0, false, false, true, false, true" in lane
-    assert "1, false, 0, false, false, true, false, true" in lane
-    assert 'candidateAction.MovementDirective != "ranged"' in lane
-    assert "candidateAction.MaxRange <= 5.0f" in lane
-    assert 'candidateAction.AutoAttackMode == "ranged"' not in lane
+    assert "candidate, source, 1, false, 0, false, false, true, false, true" in seed
+    assert "candidates[lane].State, candidates[lane].Bot" in seed
+    assert "1, false, 0, false, false, true, false, true" in seed
+    assert 'selected.Action.MovementDirective != "ranged"' in seed
+    assert 'selected.Action.MaxRange <= 5.0f' in seed
+    assert 'selected.Action.AutoAttackMode == "ranged"' not in seed
 
-    roster_gate = lane.index("bool exactAuthorityRoster")
-    roster_hold = lane.index('"drudge_pre_first_rush_seed_roster_wait"', roster_gate)
-    assert "!member->IsInWorld() || !member->IsAlive()" in lane[roster_gate:roster_hold]
-    assert "!roster->second.Active || !roster->second.LeaseOwned" in lane[
-        roster_gate:roster_hold
-    ]
-    assert "authorityRosterGuids.size() != Manager.Cohort().Raid.RosterByGuid.size()" in lane[
-        roster_gate:roster_hold
-    ]
-    suppression = lane.index(
-        "for (WorldBotState const& memberState : Manager.Party().Bots)",
-        roster_hold,
-    )
-    release = lane.index(
-        "BotRaidAreaAuthority::SetAllOffenseSuppressed(\n"
-        "            selected->GetGUID().GetRawValue(), false)",
-        suppression,
-    )
+    roster_gate = seed.index("bool ExactAuthorityRoster")
+    assert "!member->IsInWorld() || !member->IsAlive()" in seed[roster_gate:]
+    assert "!roster->second.Active || !roster->second.LeaseOwned" in seed[roster_gate:]
+    suppression = seed.index("void SuppressAllOffense")
+    release = seed.index("SetAllOffenseSuppressed(guid, false)", suppression)
     assert suppression < release
 
     resolver = (

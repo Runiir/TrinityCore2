@@ -5,7 +5,7 @@
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeGeometryState.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeNativeRushState.h"
-#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeThreatSeedState.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 
@@ -20,11 +20,8 @@
 #include "Unit.h"
 
 #include <algorithm>
-#include <array>
 #include <chrono>
 #include <cmath>
-#include <limits>
-#include <set>
 #include <string>
 #include <vector>
 
@@ -544,224 +541,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions()
         return PhaseResult::Handled;
     }
 
-    // The native Rush selector is seeded only by the configured opposite-lane
-    // DPS slot. All other offense remains authority-suppressed until this
-    // evidence edge is accepted.
-    // The seed window ends at the first native Rush. An incomplete seed is
-    // deliberately retained as failure telemetry, but it must not keep the
-    // normal post-Rush action phases suppressed after that native clock edge.
-    if (Sources[0]->IsAlive() && Sources[1]->IsAlive()
-        && !Manager.Party().ValidationRouteDrudgeThreatSeedComplete
-        && !Manager.Party().ValidationRouteDrudgeThreatSeedClosed
-        && !Manager.Party().ValidationRouteDrudgeThreatSeedFailure)
-    {
-        using namespace BotRaidDrudgeThreatSeed;
-        Scope const seedScope{ Manager.Cohort().AttemptId,
-            Manager.Cohort().Raid.WipeGeneration,
-            Manager.Party().ValidationRouteGeneration };
-        BotRaidDrudgeThreatSeed::State seedState;
-        seedState.Identity = { Manager.Party().ValidationRouteDrudgeThreatSeedAttemptId,
-            Manager.Party().ValidationRouteDrudgeThreatSeedWipeGeneration,
-            Manager.Party().ValidationRouteDrudgeThreatSeedRouteGeneration };
-        seedState.Closed = Manager.Party().ValidationRouteDrudgeThreatSeedClosed;
-        seedState.Complete = Manager.Party().ValidationRouteDrudgeThreatSeedComplete;
-        seedState.Failure = Manager.Party().ValidationRouteDrudgeThreatSeedFailure;
-        for (auto const& evidence : Manager.Party().ValidationRouteDrudgeThreatSeedEvidenceRows)
-            if (evidence.ActionSucceeded && evidence.ProfileActionValid
-                && evidence.AttemptId == seedScope.AttemptId
-                && evidence.WipeGeneration == seedScope.WipeGeneration
-                && evidence.RouteGeneration == seedScope.RouteGeneration
-                && evidence.SourceLane < seedState.SeededLanes.size())
-                seedState.SeededLanes[evidence.SourceLane] = true;
-        auto applySeed = [this](BotRaidDrudgeThreatSeed::Result const& result)
-        {
-            if (result.ScopeReset)
-            {
-                Manager.Party().ValidationRouteDrudgeThreatSeedRosterGuids.clear();
-                Manager.Party().ValidationRouteDrudgeThreatSeedEvidenceRows.clear();
-            }
-            Manager.Party().ValidationRouteDrudgeThreatSeedAttemptId = result.Next.Identity.AttemptId;
-            Manager.Party().ValidationRouteDrudgeThreatSeedWipeGeneration = result.Next.Identity.WipeGeneration;
-            Manager.Party().ValidationRouteDrudgeThreatSeedRouteGeneration = result.Next.Identity.RouteGeneration;
-            Manager.Party().ValidationRouteDrudgeThreatSeedClosed = result.Next.Closed;
-            Manager.Party().ValidationRouteDrudgeThreatSeedComplete = result.Next.Complete;
-            Manager.Party().ValidationRouteDrudgeThreatSeedFailure = result.Next.Failure;
-        };
-        BotRaidDrudgeThreatSeed::Input seedInput;
-        seedInput.Identity = seedScope;
-        seedInput.SourceLane = LaneIndex;
-        seedInput.PrepullStaged = PrepullStaged;
-        seedInput.SourcesAlive = true;
-        seedInput.OwnershipSafe = laneOwnershipSafe;
-        seedInput.SeparationSafe = SourceSeparation >= LaneSeparation;
-        seedInput.FrozenLanesSafe = SourceOnFrozenLane(Sources[0], 0, nullptr)
-            && SourceOnFrozenLane(Sources[1], 1, nullptr);
-        seedInput.ChargeObserved = std::any_of(
-            Manager.Party().ValidationRouteDrudgeChargeObservations.begin(),
-            Manager.Party().ValidationRouteDrudgeChargeObservations.end(),
-            [this](ChargeObservation const& candidate)
-            {
-                return candidate.AttemptId == Manager.Cohort().AttemptId
-                    && candidate.WipeGeneration == Manager.Cohort().Raid.WipeGeneration
-                    && candidate.RouteGeneration == Manager.Party().ValidationRouteGeneration;
-            });
-        seedInput.CandidateAvailable = true;
-        seedInput.AuthoritySafe = true;
-        BotRaidDrudgeThreatSeed::Result seedTransition =
-            Advance(seedState, seedInput);
-        applySeed(seedTransition);
-        if (seedTransition.NextDecision == Decision::HoldWindow
-            || seedTransition.NextDecision == Decision::HoldClosed
-            || seedTransition.NextDecision == Decision::HoldSeededLane)
-        {
-            HoldOffense();
-            Record(LaneSource, seedTransition.NextDecision == Decision::HoldWindow
-                ? "drudge_pre_first_rush_seed_window_wait"
-                : (seedTransition.NextDecision == Decision::HoldClosed
-                    ? "drudge_pre_first_rush_seed_closed"
-                    : "drudge_pre_first_rush_seed_source_already_seeded"),
-                SourceSeparation, LaneIndex);
-            Target = LaneSource;
-            State.TargetGuid = LaneSource->GetGUID();
-            return PhaseResult::Handled;
-        }
-        uint32 const seedSlot = Manager.Cohort().Config.ValidationRouteSplitSeedRosterSlots[LaneIndex];
-        Player* selected = nullptr;
-        WorldBotState* selectedState = nullptr;
-        uint32 selectedSlot = std::numeric_limits<uint32>::max();
-        for (WorldBotState& candidateState : Manager.Party().Bots)
-        {
-            Player* candidate = Manager.GetLoadedBot(candidateState);
-            if (!candidate || !candidate->IsInWorld() || !candidate->IsAlive()
-                || candidate->GetMap() != Bot->GetMap())
-                continue;
-            auto roster = Manager.Cohort().Raid.RosterByGuid.find(
-                candidate->GetGUID().GetCounter());
-            if (roster == Manager.Cohort().Raid.RosterByGuid.end()
-                || roster->second.Role != "dps" || roster->second.SlotIndex + 1 != seedSlot
-                || Manager.Party().ValidationRouteDrudgeThreatSeedRosterGuids.count(
-                    candidate->GetGUID().GetCounter())
-                || !GroupPositionSafe(candidate))
-                continue;
-            ResolvedCombatAction candidateAction = Manager.ResolveProfileCombatAction(
-                candidate, LaneSource, 1, false, 0, false, false, true, false, true);
-            float const candidateDistance = candidate->GetExactDist(LaneSource);
-            if (!candidateAction.Valid || candidateAction.Type != "cast"
-                || !candidateAction.SpellId || candidateAction.TargetGuid != LaneSource->GetGUID()
-                || candidateAction.MovementDirective != "ranged"
-                || candidateAction.MaxRange <= 5.0f
-                || !candidate->IsWithinLOSInMap(LaneSource)
-                || candidateDistance > Manager.Cohort().Config.ValidationRouteSplitSeedMaxRangeYards
-                || (candidateAction.MinRange > 0.0f && candidateDistance < candidateAction.MinRange)
-                || (candidateAction.MaxRange > 0.0f && candidateDistance > candidateAction.MaxRange))
-                continue;
-            if (roster->second.SlotIndex + 1 < selectedSlot)
-            {
-                selected = candidate;
-                selectedState = &candidateState;
-                selectedSlot = roster->second.SlotIndex + 1;
-            }
-        }
-        if (!selected || !selectedState)
-        {
-            seedInput.CandidateAvailable = false;
-            applySeed(Advance(seedTransition.Next, seedInput));
-            HoldOffense();
-            Record(LaneSource, "drudge_pre_first_rush_seed_profile_unavailable",
-                SourceSeparation, LaneIndex);
-            Target = LaneSource;
-            State.TargetGuid = LaneSource->GetGUID();
-            return PhaseResult::Handled;
-        }
-        std::set<uint32> authorityRosterGuids;
-        bool exactAuthorityRoster = Manager.Party().Bots.size()
-            == Manager.Cohort().Raid.RosterByGuid.size();
-        for (WorldBotState const& memberState : Manager.Party().Bots)
-        {
-            Player* member = Manager.GetLoadedBot(memberState);
-            auto roster = member ? Manager.Cohort().Raid.RosterByGuid.find(
-                member->GetGUID().GetCounter())
-                : Manager.Cohort().Raid.RosterByGuid.end();
-            if (!member || !member->IsInWorld() || !member->IsAlive()
-                || member->GetMap() != Bot->GetMap()
-                || roster == Manager.Cohort().Raid.RosterByGuid.end()
-                || !roster->second.Active || !roster->second.LeaseOwned
-                || !authorityRosterGuids.insert(member->GetGUID().GetCounter()).second)
-                exactAuthorityRoster = false;
-        }
-        if (authorityRosterGuids.size() != Manager.Cohort().Raid.RosterByGuid.size())
-            exactAuthorityRoster = false;
-        if (!exactAuthorityRoster)
-        {
-            seedInput.SourcesAlive = false;
-            applySeed(Advance(seedTransition.Next, seedInput));
-            HoldOffense();
-            Record(LaneSource, "drudge_pre_first_rush_seed_roster_wait",
-                SourceSeparation, uint32(authorityRosterGuids.size()));
-            Target = LaneSource;
-            State.TargetGuid = LaneSource->GetGUID();
-            return PhaseResult::Handled;
-        }
-        for (WorldBotState const& memberState : Manager.Party().Bots)
-            if (Player* member = Manager.GetLoadedBot(memberState))
-            {
-                BotRaidAreaAuthority::SetAllOffenseSuppressed(
-                    member->GetGUID().GetRawValue(), true);
-                BotRaidAreaAuthority::Set(member->GetGUID().GetRawValue(), true);
-            }
-        BotRaidAreaAuthority::SetAllOffenseSuppressed(
-            selected->GetGUID().GetRawValue(), false);
-        BotRaidAreaAuthority::Set(selected->GetGUID().GetRawValue(), true);
-        ResolvedCombatAction selectedAction = Manager.ResolveProfileCombatAction(
-            selected, LaneSource, 1, false, 0, false, false, true, false, true);
-        BotActionResult const profileResult = Manager.ExecuteProfileCombatAction(
-            selectedState, selected, LaneSource, &selectedAction,
-            1, false, 0, false, false, true, false, true);
-        bool const succeeded = profileResult == BotActionResult::Ok
-            && selectedAction.Valid && selectedAction.Type == "cast"
-            && selectedAction.SpellId && selectedAction.TargetGuid == LaneSource->GetGUID();
-        seedInput.Type = Event::ActionResult;
-        seedInput.ActionSucceeded = succeeded;
-        seedInput.CandidateAvailable = true;
-        seedInput.AuthoritySafe = true;
-        applySeed(Advance(seedTransition.Next, seedInput));
-        BotRaidAreaAuthority::SetAllOffenseSuppressed(selected->GetGUID().GetRawValue(), true);
-        BotRaidAreaAuthority::Set(selected->GetGUID().GetRawValue(), true);
-        if (succeeded)
-            Manager.Party().ValidationRouteDrudgeThreatSeedRosterGuids.insert(
-                selected->GetGUID().GetCounter());
-        BotWorldPopulationMgrRouteState::ValidationRouteDrudgeThreatSeedEvidence evidence;
-        evidence.Sequence = ++Manager.Cohort().Raid.EvidenceSequence;
-        evidence.AttemptId = seedScope.AttemptId;
-        evidence.WipeGeneration = seedScope.WipeGeneration;
-        evidence.RouteGeneration = seedScope.RouteGeneration;
-        evidence.ObservedAtMs = NowMs();
-        evidence.MemberGuid = selected->GetGUID().GetCounter();
-        evidence.MemberSlot = selectedSlot;
-        evidence.MemberLane = 1 - LaneIndex;
-        evidence.SourceSpawnId = LaneSource == Sources[0] ? 250140 : 250141;
-        evidence.SourceGuid = LaneSource->GetGUID().GetCounter();
-        evidence.SourceLane = LaneIndex;
-        evidence.SpellId = selectedAction.SpellId;
-        evidence.SelectedDistance = selected->GetExactDist(LaneSource);
-        evidence.MinRange = selectedAction.MinRange;
-        evidence.MaxRange = selectedAction.MaxRange;
-        evidence.PositionSafe = true;
-        evidence.LineOfSight = selected->IsWithinLOSInMap(LaneSource);
-        evidence.InRange = evidence.LineOfSight;
-        evidence.ProfileActionValid = selectedAction.Valid;
-        evidence.ActionSucceeded = succeeded;
-        evidence.OtherOffenseSuppressed = true;
-        evidence.ActionDebugName = selectedAction.DebugName;
-        evidence.ActionResult = ToString(profileResult);
-        Manager.Party().ValidationRouteDrudgeThreatSeedEvidenceRows.push_back(evidence);
-        Record(LaneSource, succeeded ? "drudge_pre_first_rush_threat_seed"
-            : "drudge_pre_first_rush_seed_profile_hold", SourceSeparation,
-            selectedAction.SpellId);
-        Target = LaneSource;
-        State.TargetGuid = LaneSource->GetGUID();
+    if (RunDrudgeSeedCoordinator(*this) == PhaseResult::Handled)
         return PhaseResult::Handled;
-    }
 
     auto rosterMemberForSlot = [this](uint32 slot) -> Player*
     {

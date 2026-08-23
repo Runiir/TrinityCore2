@@ -9,6 +9,7 @@ CONTRACT = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Dru
 GEOMETRY = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
 LANES = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp"
 ACTIONS = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp"
+SEED = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp"
 
 
 def test_drudge_route_modules_are_bounded_and_registered():
@@ -16,12 +17,13 @@ def test_drudge_route_modules_are_bounded_and_registered():
     header = HEADER.read_text(encoding="utf-8")
     cmake = CMAKE.read_text(encoding="utf-8")
     assert len(header.splitlines()) <= 1000
-    for module in (CONTRACT, GEOMETRY, LANES, ACTIONS):
+    for module in (CONTRACT, GEOMETRY, LANES, ACTIONS, SEED):
         assert len(module.read_text(encoding="utf-8").splitlines()) <= 1000
     for name in (
         "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp",
+        "BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp",
     ):
         assert name in cmake
     assert "TryValidationRouteDrudgeChargeLanes" in header
@@ -78,6 +80,7 @@ def test_drudge_contract_keeps_scope_evidence_and_native_lane_guards():
     geometry = GEOMETRY.read_text(encoding="utf-8")
     lanes = LANES.read_text(encoding="utf-8")
     actions = ACTIONS.read_text(encoding="utf-8")
+    seed = SEED.read_text(encoding="utf-8")
     for marker in (
         "ValidationRouteDrudgeChargeObservations",
         "ReseparationRecorded",
@@ -106,7 +109,6 @@ def test_drudge_contract_keeps_scope_evidence_and_native_lane_guards():
         "SetAllOffenseSuppressed",
         "drudge_lane_native_taunt",
         "drudge_lane_native_taunt_approach",
-        "drudge_pre_first_rush_threat_seed",
         "BotRaidDrudgeNativeRush::Evaluate",
         "drudge_native_tank_threat_build",
         "drudge_first_source_death_observed",
@@ -116,3 +118,6 @@ def test_drudge_contract_keeps_scope_evidence_and_native_lane_guards():
         "TryGroupHeal",
     ):
         assert marker in actions
+    assert "drudge_pre_first_rush_threat_seed" in seed
+    assert "AdvanceCoordinator" in seed
+    assert "native_action_rejected" in seed

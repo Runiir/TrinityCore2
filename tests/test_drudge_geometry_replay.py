@@ -351,6 +351,9 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     actions = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp").read_text(
         encoding="utf-8"
     )
+    seed = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp").read_text(
+        encoding="utf-8"
+    )
 
     assert "TryValidationRouteDrudgeMinimumDistance" in implementation
     assert "TryValidationRouteDrudgeChargeLanes" in implementation
@@ -365,7 +368,7 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "SetAllOffenseSuppressed" in actions
     assert "SelectMemberRecoveryAction" in actions
     assert "drudge_lane_native_taunt" in actions
-    assert "drudge_pre_first_rush_threat_seed" in actions
+    assert "drudge_pre_first_rush_threat_seed" in seed
     assert "drudge_native_charge_reseparation_complete" in actions
 
 

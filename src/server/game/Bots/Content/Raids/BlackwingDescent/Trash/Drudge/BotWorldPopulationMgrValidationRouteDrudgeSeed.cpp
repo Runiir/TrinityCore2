@@ -1,0 +1,422 @@
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.h"
+
+#include "Bots/BotRaidAreaAuthority.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeThreatSeedState.h"
+#include "Bots/BotWorldPopulationMgr.h"
+
+#include "Creature.h"
+#include "GameTime.h"
+#include "Player.h"
+
+#include <algorithm>
+#include <array>
+#include <chrono>
+#include <limits>
+#include <set>
+#include <string>
+
+namespace
+{
+uint64 NowMs()
+{
+    return uint64(std::chrono::duration_cast<std::chrono::milliseconds>(
+        GameTime::GetGameTimeSystemPoint().time_since_epoch()).count());
+}
+
+using SeedGate = BotRaidDrudgeThreatSeed::RejectionGate;
+
+struct SeedCandidate
+{
+    Player* Bot = nullptr;
+    BotWorldPopulationMgrBotState::WorldBotState* State = nullptr;
+    ResolvedCombatAction Action;
+    uint32 MemberSlot = 0;
+    float Distance = 0.0f;
+    SeedGate Gate = SeedGate::CandidateUnavailable;
+    std::string Reason = "candidate_unavailable";
+    BotActionResult NativeResult = BotActionResult::NoAction;
+    bool Available = false;
+    bool ActionAttempted = false;
+    bool ActionSucceeded = false;
+    bool PositionSafe = false;
+    bool LineOfSight = false;
+};
+
+using Context = BotWorldPopulationMgrValidationRoute::DrudgeLaneContext;
+using WorldBotState = Context::WorldBotState;
+
+BotRaidDrudgeThreatSeed::Scope CurrentScope(Context const& context)
+{
+    return {
+        context.Manager.Cohort().AttemptId,
+        context.Manager.Cohort().Raid.WipeGeneration,
+        context.Manager.Party().ValidationRouteGeneration
+    };
+}
+
+BotRaidDrudgeThreatSeed::State ReadSeedState(Context const& context,
+    BotRaidDrudgeThreatSeed::Scope scope)
+{
+    auto const& party = context.Manager.Party();
+    BotRaidDrudgeThreatSeed::State state;
+    state.Identity = {
+        party.ValidationRouteDrudgeThreatSeedAttemptId,
+        party.ValidationRouteDrudgeThreatSeedWipeGeneration,
+        party.ValidationRouteDrudgeThreatSeedRouteGeneration
+    };
+    state.Closed = party.ValidationRouteDrudgeThreatSeedClosed;
+    state.Complete = party.ValidationRouteDrudgeThreatSeedComplete;
+    state.Failure = party.ValidationRouteDrudgeThreatSeedFailure;
+    for (auto const& evidence : party.ValidationRouteDrudgeThreatSeedEvidenceRows)
+        if (evidence.ActionSucceeded && evidence.ProfileActionValid
+            && evidence.AttemptId == scope.AttemptId
+            && evidence.WipeGeneration == scope.WipeGeneration
+            && evidence.RouteGeneration == scope.RouteGeneration
+            && evidence.SourceLane < state.SeededLanes.size())
+            state.SeededLanes[evidence.SourceLane] = true;
+    return state;
+}
+
+void ApplySeedState(Context& context, BotRaidDrudgeThreatSeed::CoordinatorResult const& result)
+{
+    auto& party = context.Manager.Party();
+    if (result.ScopeReset)
+    {
+        party.ValidationRouteDrudgeThreatSeedRosterGuids.clear();
+        party.ValidationRouteDrudgeThreatSeedEvidenceRows.clear();
+    }
+    party.ValidationRouteDrudgeThreatSeedAttemptId = result.Next.Identity.AttemptId;
+    party.ValidationRouteDrudgeThreatSeedWipeGeneration = result.Next.Identity.WipeGeneration;
+    party.ValidationRouteDrudgeThreatSeedRouteGeneration = result.Next.Identity.RouteGeneration;
+    party.ValidationRouteDrudgeThreatSeedClosed = result.Next.Closed;
+    party.ValidationRouteDrudgeThreatSeedComplete = result.Next.Complete;
+    party.ValidationRouteDrudgeThreatSeedFailure = result.Next.Failure;
+}
+
+bool ExactAuthorityRoster(Context const& context)
+{
+    auto const& manager = context.Manager;
+    std::set<uint32> authorityRosterGuids;
+    bool exact = manager.Party().Bots.size() == manager.Cohort().Raid.RosterByGuid.size();
+    for (WorldBotState const& memberState : manager.Party().Bots)
+    {
+        Player* member = manager.GetLoadedBot(memberState);
+        auto roster = member ? manager.Cohort().Raid.RosterByGuid.find(
+            member->GetGUID().GetCounter()) : manager.Cohort().Raid.RosterByGuid.end();
+        if (!member || !member->IsInWorld() || !member->IsAlive()
+            || member->GetMap() != context.Bot->GetMap()
+            || roster == manager.Cohort().Raid.RosterByGuid.end()
+            || !roster->second.Active || !roster->second.LeaseOwned
+            || !authorityRosterGuids.insert(member->GetGUID().GetCounter()).second)
+            exact = false;
+    }
+    return exact && authorityRosterGuids.size() == manager.Cohort().Raid.RosterByGuid.size();
+}
+
+void SuppressAllOffense(Context const& context)
+{
+    auto& manager = context.Manager;
+    for (WorldBotState const& memberState : manager.Party().Bots)
+        if (Player* member = manager.GetLoadedBot(memberState))
+        {
+            BotRaidAreaAuthority::SetAllOffenseSuppressed(
+                member->GetGUID().GetRawValue(), true);
+            BotRaidAreaAuthority::Set(member->GetGUID().GetRawValue(), true);
+        }
+}
+
+SeedCandidate ResolveCandidate(Context const& context, uint32 lane,
+    BotRaidDrudgeThreatSeed::State const& seedState)
+{
+    using namespace BotRaidDrudgeThreatSeed;
+    SeedCandidate selected;
+    if (lane >= context.Sources.size()
+        || context.Manager.Cohort().Config.ValidationRouteSplitSeedRosterSlots.size() != 2)
+    {
+        selected.Gate = SeedGate::CandidateUnavailable;
+        selected.Reason = "seed_slot_contract";
+        return selected;
+    }
+
+    uint32 const seedSlot = context.Manager.Cohort().Config
+        .ValidationRouteSplitSeedRosterSlots[lane];
+    uint32 selectedSlot = std::numeric_limits<uint32>::max();
+    Creature* source = context.Sources[lane];
+    auto const& manager = context.Manager;
+    for (WorldBotState& candidateState : manager.Party().Bots)
+    {
+        Player* candidate = manager.GetLoadedBot(candidateState);
+        if (!candidate || !candidate->IsInWorld() || !candidate->IsAlive()
+            || candidate->GetMap() != context.Bot->GetMap())
+            continue;
+        auto roster = manager.Cohort().Raid.RosterByGuid.find(
+            candidate->GetGUID().GetCounter());
+        if (roster == manager.Cohort().Raid.RosterByGuid.end()
+            || roster->second.Role != "dps"
+            || roster->second.SlotIndex + 1 != seedSlot)
+            continue;
+
+        selected.Bot = candidate;
+        selected.State = &candidateState;
+        selected.MemberSlot = roster->second.SlotIndex + 1;
+        selected.Distance = candidate->GetExactDist(source);
+        selected.PositionSafe = context.GroupPositionSafe(candidate);
+        if (!selected.PositionSafe)
+        {
+            selected.Gate = SeedGate::PositionUnsafe;
+            selected.Reason = "group_position_unsafe";
+            continue;
+        }
+
+        selected.Action = manager.ResolveProfileCombatAction(
+            candidate, source, 1, false, 0, false, false, true, false, true);
+        selected.LineOfSight = candidate->IsWithinLOSInMap(source);
+        if (!selected.Action.Valid || selected.Action.Type != "cast"
+            || !selected.Action.SpellId)
+        {
+            selected.Gate = SeedGate::ProfileActionUnavailable;
+            selected.Reason = "resolved_profile_action_unavailable";
+            continue;
+        }
+        if (selected.Action.TargetGuid != source->GetGUID())
+        {
+            selected.Gate = SeedGate::TargetContract;
+            selected.Reason = "resolved_profile_target_mismatch";
+            continue;
+        }
+        if (selected.Action.MovementDirective != "ranged")
+        {
+            selected.Gate = SeedGate::MovementContract;
+            selected.Reason = "resolved_profile_movement_not_ranged";
+            continue;
+        }
+        if (selected.Action.MaxRange <= 5.0f
+            || !selected.LineOfSight
+            || selected.Distance > manager.Cohort().Config.ValidationRouteSplitSeedMaxRangeYards
+            || (selected.Action.MinRange > 0.0f
+                && selected.Distance < selected.Action.MinRange)
+            || (selected.Action.MaxRange > 0.0f
+                && selected.Distance > selected.Action.MaxRange))
+        {
+            selected.Gate = !selected.LineOfSight ? SeedGate::LineOfSight
+                : SeedGate::RangeContract;
+            selected.Reason = !selected.LineOfSight ? "native_line_of_sight_unavailable"
+                : "native_seed_range_contract";
+            continue;
+        }
+
+        if (seedState.SeededLanes[lane]
+            || manager.Party().ValidationRouteDrudgeThreatSeedRosterGuids.count(
+                candidate->GetGUID().GetCounter()))
+        {
+            selected.Gate = SeedGate::CandidateUnavailable;
+            selected.Reason = "candidate_already_seeded";
+            continue;
+        }
+        selected.Available = true;
+        selected.Gate = SeedGate::None;
+        selected.Reason = "native_action_pending";
+        if (selected.MemberSlot < selectedSlot)
+            selectedSlot = selected.MemberSlot;
+    }
+
+    if (!selected.Bot)
+    {
+        selected.Gate = SeedGate::CandidateUnavailable;
+        selected.Reason = "configured_seed_actor_unavailable";
+    }
+    return selected;
+}
+
+void AppendEvidence(Context& context, uint32 lane, SeedCandidate const& candidate,
+    BotRaidDrudgeThreatSeed::Scope scope, uint64 observedAtMs)
+{
+    if (lane >= context.Sources.size())
+        return;
+    auto& manager = context.Manager;
+    auto& evidence = manager.Party().ValidationRouteDrudgeThreatSeedEvidenceRows.emplace_back();
+    Creature* source = context.Sources[lane];
+    evidence.Sequence = ++manager.Cohort().Raid.EvidenceSequence;
+    evidence.AttemptId = scope.AttemptId;
+    evidence.WipeGeneration = scope.WipeGeneration;
+    evidence.RouteGeneration = scope.RouteGeneration;
+    evidence.ObservedAtMs = observedAtMs;
+    evidence.MemberGuid = candidate.Bot ? candidate.Bot->GetGUID().GetCounter() : 0;
+    evidence.MemberSlot = candidate.MemberSlot;
+    evidence.MemberLane = 1 - lane;
+    evidence.SourceSpawnId = lane == 0 ? 250140 : 250141;
+    evidence.SourceGuid = source->GetGUID().GetCounter();
+    evidence.SourceLane = lane;
+    evidence.SpellId = candidate.Action.SpellId;
+    evidence.SelectedDistance = candidate.Distance;
+    evidence.MinRange = candidate.Action.MinRange;
+    evidence.MaxRange = candidate.Action.MaxRange;
+    evidence.PositionSafe = candidate.PositionSafe;
+    evidence.LineOfSight = candidate.LineOfSight;
+    evidence.InRange = candidate.LineOfSight && candidate.Gate != SeedGate::RangeContract;
+    evidence.ProfileActionValid = candidate.Action.Valid;
+    evidence.ActionSucceeded = candidate.ActionSucceeded;
+    evidence.SelectedOffenseUnsuppressed = candidate.ActionAttempted;
+    evidence.OtherOffenseSuppressed = true;
+    evidence.ActionDebugName = candidate.Action.DebugName;
+    evidence.ActionResult = candidate.Reason;
+    if (candidate.ActionAttempted && !candidate.ActionSucceeded)
+        evidence.ActionResult += ":" + std::string(ToString(candidate.NativeResult));
+}
+}
+
+namespace BotWorldPopulationMgrValidationRoute
+{
+DrudgeLaneContext::PhaseResult RunDrudgeSeedCoordinator(DrudgeLaneContext& context)
+{
+    auto& manager = context.Manager;
+    auto& party = manager.Party();
+    if (context.Sources.size() != 2 || !context.Sources[0] || !context.Sources[1]
+        || !context.Sources[0]->IsAlive() || !context.Sources[1]->IsAlive()
+        || party.ValidationRouteDrudgeThreatSeedComplete
+        || party.ValidationRouteDrudgeThreatSeedClosed
+        || party.ValidationRouteDrudgeThreatSeedFailure)
+        return DrudgeLaneContext::PhaseResult::Continue;
+
+    // Exactly one stable roster owner invokes the coordinator. Every other
+    // lane remains held until this same route tick has evaluated both lanes.
+    if (context.LaneIndex != 0
+        || context.OneBasedSlot != manager.Cohort().Config
+            .ValidationRouteSplitLaneTankSlots[0])
+    {
+        context.HoldOffense();
+        context.Record(context.LaneSource,
+            "drudge_pre_first_rush_seed_coordinator_wait", context.SourceSeparation);
+        context.Target = context.LaneSource;
+        context.State.TargetGuid = context.LaneSource->GetGUID();
+        return DrudgeLaneContext::PhaseResult::Handled;
+    }
+
+    BotRaidDrudgeThreatSeed::Scope const scope = CurrentScope(context);
+    BotRaidDrudgeThreatSeed::State const seedState = ReadSeedState(context, scope);
+    bool const bothVictimsOwned = context.LaneTank && context.OtherTank
+        && context.Sources[0]->GetVictim() == (context.LaneIndex == 0
+            ? context.LaneTank : context.OtherTank)
+        && context.Sources[1]->GetVictim() == (context.LaneIndex == 0
+            ? context.OtherTank : context.LaneTank);
+    bool const frozenLanesSafe = context.SourceOnFrozenLane(
+            context.Sources[0], 0, nullptr)
+        && context.SourceOnFrozenLane(context.Sources[1], 1, nullptr);
+    bool const chargeObserved = std::any_of(
+        party.ValidationRouteDrudgeChargeObservations.begin(),
+        party.ValidationRouteDrudgeChargeObservations.end(),
+        [&manager](auto const& candidate)
+        {
+            return candidate.AttemptId == manager.Cohort().AttemptId
+                && candidate.WipeGeneration == manager.Cohort().Raid.WipeGeneration
+                && candidate.RouteGeneration == manager.Party().ValidationRouteGeneration;
+        });
+
+    BotRaidDrudgeThreatSeed::CoordinatorInput input;
+    input.Identity = scope;
+    input.PrepullStaged = context.PrepullStaged;
+    input.SourcesAlive = true;
+    input.OwnershipSafe = bothVictimsOwned;
+    input.SeparationSafe = context.SourceSeparation >= context.LaneSeparation;
+    input.FrozenLanesSafe = frozenLanesSafe;
+    input.ChargeObserved = chargeObserved;
+
+    if (!input.PrepullStaged || !input.OwnershipSafe || !input.SeparationSafe
+        || !input.FrozenLanesSafe || input.ChargeObserved)
+    {
+        BotRaidDrudgeThreatSeed::CoordinatorResult const transition =
+            BotRaidDrudgeThreatSeed::AdvanceCoordinator(seedState, input);
+        ApplySeedState(context, transition);
+        context.HoldOffense();
+        char const* reason = !input.PrepullStaged ? "prepull_staging"
+            : !input.OwnershipSafe ? "tank_victim_ownership"
+            : !input.SeparationSafe ? "lane_separation"
+            : !input.FrozenLanesSafe ? "frozen_lane_geometry"
+            : "native_charge_observed";
+        std::string const result = std::string("drudge_pre_first_rush_seed_window_wait:")
+            + reason;
+        context.Record(context.LaneSource, result.c_str(), context.SourceSeparation);
+        context.Target = context.LaneSource;
+        context.State.TargetGuid = context.LaneSource->GetGUID();
+        return DrudgeLaneContext::PhaseResult::Handled;
+    }
+
+    bool const exactAuthorityRoster = ExactAuthorityRoster(context);
+    std::array<SeedCandidate, 2> candidates;
+    for (uint32 lane = 0; lane < candidates.size(); ++lane)
+        candidates[lane] = ResolveCandidate(context, lane, seedState);
+
+    SuppressAllOffense(context);
+    if (exactAuthorityRoster)
+        for (uint32 lane = 0; lane < candidates.size(); ++lane)
+            if (candidates[lane].Available && candidates[lane].Bot
+                && candidates[lane].State)
+            {
+                uint64 const guid = candidates[lane].Bot->GetGUID().GetRawValue();
+                BotRaidAreaAuthority::SetAllOffenseSuppressed(guid, false);
+                BotRaidAreaAuthority::Set(guid, true);
+                candidates[lane].ActionAttempted = true;
+                candidates[lane].NativeResult = manager.ExecuteProfileCombatAction(
+                    candidates[lane].State, candidates[lane].Bot,
+                    context.Sources[lane], &candidates[lane].Action,
+                    1, false, 0, false, false, true, false, true);
+                candidates[lane].ActionSucceeded =
+                    candidates[lane].NativeResult == BotActionResult::Ok
+                    && candidates[lane].Action.Valid
+                    && candidates[lane].Action.Type == "cast"
+                    && candidates[lane].Action.SpellId
+                    && candidates[lane].Action.TargetGuid
+                        == context.Sources[lane]->GetGUID();
+                if (!candidates[lane].ActionSucceeded)
+                {
+                    candidates[lane].Gate = SeedGate::NativeAction;
+                    candidates[lane].Reason = "native_action_rejected";
+                }
+                BotRaidAreaAuthority::SetAllOffenseSuppressed(guid, true);
+                BotRaidAreaAuthority::Set(guid, true);
+            }
+
+    for (uint32 lane = 0; lane < candidates.size(); ++lane)
+        if (!exactAuthorityRoster)
+        {
+            candidates[lane].Gate = SeedGate::AuthorityRoster;
+            candidates[lane].Reason = "exact_authority_roster_incomplete";
+            candidates[lane].Available = false;
+        }
+
+    for (uint32 lane = 0; lane < candidates.size(); ++lane)
+    {
+        input.Lanes[lane].CandidateAvailable = exactAuthorityRoster
+            ? candidates[lane].Available : true;
+        input.Lanes[lane].ActionAttempted = candidates[lane].ActionAttempted;
+        input.Lanes[lane].ActionSucceeded = candidates[lane].ActionSucceeded;
+        input.Lanes[lane].AuthoritySafe = exactAuthorityRoster;
+        input.Lanes[lane].Rejection = candidates[lane].Gate;
+    }
+    BotRaidDrudgeThreatSeed::CoordinatorResult const transition =
+        BotRaidDrudgeThreatSeed::AdvanceCoordinator(seedState, input);
+    ApplySeedState(context, transition);
+    uint64 const observedAtMs = NowMs();
+    for (uint32 lane = 0; lane < candidates.size(); ++lane)
+    {
+        if (candidates[lane].ActionSucceeded)
+            party.ValidationRouteDrudgeThreatSeedRosterGuids.insert(
+                candidates[lane].Bot->GetGUID().GetCounter());
+        if (!seedState.SeededLanes[lane])
+            AppendEvidence(context, lane, candidates[lane], scope, observedAtMs);
+        if (candidates[lane].ActionSucceeded)
+            context.Record(context.Sources[lane],
+                "drudge_pre_first_rush_threat_seed", context.SourceSeparation, lane);
+        else
+        {
+            std::string const result = std::string("drudge_pre_first_rush_seed_rejected:")
+                + candidates[lane].Reason;
+            context.Record(context.Sources[lane], result.c_str(),
+                context.SourceSeparation, lane);
+        }
+    }
+    context.Target = context.LaneSource;
+    context.State.TargetGuid = context.LaneSource->GetGUID();
+    return DrudgeLaneContext::PhaseResult::Handled;
+}
+}
