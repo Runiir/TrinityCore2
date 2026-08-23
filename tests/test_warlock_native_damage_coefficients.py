@@ -33,6 +33,25 @@ def test_missing_cataclysm_warlock_coefficients_use_native_spell_info_correction
     assert "BonusMultiplier = 1.228f" in source
 
 
+def test_corruption_uses_warlock_owner_crit_multiplier_without_global_magic_override() -> None:
+    spell_info = (ROOT / "src/server/game/Spells/SpellInfo.h").read_text()
+    unit = (ROOT / "src/server/game/Entities/Unit/Unit.cpp").read_text()
+    spell_mgr = (ROOT / "src/server/game/Spells/SpellMgr.cpp").read_text()
+
+    assert "float CritDamageMultiplier = 1.5f;" in spell_info
+    assert "if (spellProto->CritDamageMultiplier == 1.5f)" in unit
+    assert "crit_bonus += uint32(float(damage) * (spellProto->CritDamageMultiplier - 1.0f));" in unit
+
+    corruption_start = spell_mgr.index("ApplySpellFix({ 172 }")
+    corruption = spell_mgr[corruption_start : spell_mgr.index("    });", corruption_start) + len("    });")]
+    assert "spellInfo->CritDamageMultiplier = 2.0f;" in corruption
+    assert "DmgClass" not in corruption
+
+    base_damage = 100
+    assert base_damage + int(float(base_damage) * (1.5 - 1.0)) == 150
+    assert base_damage + int(float(base_damage) * (2.0 - 1.0)) == 200
+
+
 def test_shadow_bite_scales_from_owned_warlock_dots_without_damage_injection() -> None:
     source = (ROOT / "src/server/scripts/Spells/spell_warlock.cpp").read_text()
 
