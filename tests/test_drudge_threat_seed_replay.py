@@ -106,6 +106,9 @@ int main()
     Result late = Advance(failedRush.Next, ready(first, 1));
     assert(late.NextDecision == Decision::HoldClosed);
 
+    // The transition still rejects a late seed action, while production must
+    // bypass its pre-Rush hold branch once this closed failure is installed.
+
     // A real wipe generation creates a fresh scope rather than inheriting the
     // old completion/failure/lanes.
     Scope retryScope{7, 1, 3};
@@ -166,6 +169,18 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
     assert "BotRaidDrudgeThreatSeed::Result seedTransition =" in lane
     assert "Advance(seedState, seedInput);" in lane
     assert "seedInput.Type = Event::ActionResult;" in lane
+    seed_gate = lane.index("if (Sources[0]->IsAlive() && Sources[1]->IsAlive()")
+    seed_gate_end = lane.index("{", seed_gate)
+    assert "!Manager.Party().ValidationRouteDrudgeThreatSeedComplete" in lane[
+        seed_gate:seed_gate_end
+    ]
+    assert "!Manager.Party().ValidationRouteDrudgeThreatSeedClosed" in lane[
+        seed_gate:seed_gate_end
+    ]
+    assert "!Manager.Party().ValidationRouteDrudgeThreatSeedFailure" in lane[
+        seed_gate:seed_gate_end
+    ]
+    assert '"drudge_pre_first_rush_seed_closed"' in lane
     assert "Result const transition = Advance(seedState, rushInput);" in callback
     assert "candidate, LaneSource, 1, false, 0, false, false, true, false, true" in lane
     assert "selected, LaneSource, 1, false, 0, false, false, true, false, true" in lane

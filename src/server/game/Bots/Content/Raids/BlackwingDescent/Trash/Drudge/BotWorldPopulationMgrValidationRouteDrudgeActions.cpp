@@ -547,8 +547,13 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions()
     // The native Rush selector is seeded only by the configured opposite-lane
     // DPS slot. All other offense remains authority-suppressed until this
     // evidence edge is accepted.
+    // The seed window ends at the first native Rush. An incomplete seed is
+    // deliberately retained as failure telemetry, but it must not keep the
+    // normal post-Rush action phases suppressed after that native clock edge.
     if (Sources[0]->IsAlive() && Sources[1]->IsAlive()
-        && !Manager.Party().ValidationRouteDrudgeThreatSeedComplete)
+        && !Manager.Party().ValidationRouteDrudgeThreatSeedComplete
+        && !Manager.Party().ValidationRouteDrudgeThreatSeedClosed
+        && !Manager.Party().ValidationRouteDrudgeThreatSeedFailure)
     {
         using namespace BotRaidDrudgeThreatSeed;
         Scope const seedScope{ Manager.Cohort().AttemptId,
