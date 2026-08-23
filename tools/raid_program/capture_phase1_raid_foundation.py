@@ -2573,6 +2573,108 @@ def _watchdog_is_repeated_decision(entry: dict[str, Any]) -> bool:
     )
 
 
+def _watchdog_route_progress_scope(
+    route_progress: dict[str, Any] | None,
+    current_scope: tuple[str, int],
+) -> tuple[str, int]:
+    """Resolve the route scope carried by a bot route-progress snapshot."""
+
+    if not isinstance(route_progress, dict):
+        return current_scope
+    route = route_progress.get("route")
+    if not isinstance(route, dict):
+        return current_scope
+    return _watchdog_entry_scope(
+        {
+            "route_node_id": route.get("node_id"),
+            "route_generation": route.get("generation"),
+        },
+        current_scope,
+    )
+
+
+def _watchdog_target_progress(
+    state: dict[str, Any],
+    status: dict[str, Any],
+    scope: tuple[str, int],
+    route_progress: dict[str, Any] | None,
+) -> bool:
+    """Record a lower target high-water mark for one exact watchdog scope.
+
+    Route mechanics can report a failed hazard-exit decision while the party
+    is still damaging the target.  That is objective progress, even when the
+    decision outcome itself is repeated.  Keep this high-water mark separate
+    from the semantic-stall state because the watchdog must reset only the
+    repeated-decision counter for the scope that actually progressed.
+    """
+
+    if not isinstance(route_progress, dict) or scope == ("", 0):
+        return False
+    target = route_progress.get("target")
+    if not isinstance(target, dict):
+        return False
+    try:
+        target_id = int(target.get("entry") or target.get("guid") or 0)
+    except (TypeError, ValueError):
+        target_id = 0
+    if target_id <= 0:
+        return False
+    hp = target.get("best_hp_pct", target.get("hp_pct"))
+    if (
+        isinstance(hp, bool)
+        or not isinstance(hp, (int, float))
+        or not isfinite(float(hp))
+        or hp <= 0
+    ):
+        return False
+    runtime = status.get("raid_runtime")
+    runtime = runtime if isinstance(runtime, dict) else {}
+    key = json.dumps(
+        [int(runtime.get("instance_id") or 0), scope[0], scope[1], target_id],
+        separators=(",", ":"),
+    )
+    high_water = state.setdefault("watchdog_target_hp_high_water", {})
+    previous = high_water.get(key)
+    high_water[key] = float(hp) if previous is None else min(float(previous), float(hp))
+    return previous is not None and float(hp) < float(previous)
+
+
+def _watchdog_reset_repeated_scope(
+    state: dict[str, Any], scope_key: str,
+) -> None:
+    """Forget only repeated decisions invalidated by progress in one scope."""
+
+    repeated_counts = state.setdefault("repeated_decision_counts", {})
+    for key in list(repeated_counts):
+        try:
+            decoded = json.loads(key)
+        except (TypeError, ValueError):
+            continue
+        if isinstance(decoded, list) and decoded and decoded[0] == scope_key:
+            del repeated_counts[key]
+
+    scope_repeated_max = state.setdefault("scope_repeated_max", {})
+    scope_repeated_max.pop(scope_key, None)
+
+    diagnosis_high_water = state.setdefault("diagnosis_repeat_high_water", {})
+    for key in list(diagnosis_high_water):
+        try:
+            decoded = json.loads(key)
+        except (TypeError, ValueError):
+            continue
+        if (
+            isinstance(decoded, list)
+            and len(decoded) >= 2
+            and f"{decoded[0]}:{decoded[1]}" == scope_key
+        ):
+            del diagnosis_high_water[key]
+
+    state["watchdog_progress_reset_count"] = int(
+        state.get("watchdog_progress_reset_count") or 0
+    ) + 1
+    state["watchdog_progress_reset_scope"] = scope_key
+
+
 def _watchdog_scope_rejections(
     status: dict[str, Any], *, profile_name: str,
 ) -> list[str]:
@@ -2699,6 +2801,8 @@ def observe_capture_watchdog(
         "repeated_decision_count": 0,
         "death_loop_count": 0,
         "repeated_decision_outcome": None,
+        "progress_reset_count": int(state.get("watchdog_progress_reset_count") or 0),
+        "progress_reset_scope": state.get("watchdog_progress_reset_scope"),
         "rejections": [],
     }
     scope_rejections = _watchdog_scope_rejections(status, profile_name=profile_name)
@@ -2734,6 +2838,34 @@ def observe_capture_watchdog(
         }
         state["terminal_failure"] = terminal
         return True
+
+    progress_reset_scopes: set[str] = set()
+
+    def reset_on_progress(scope: tuple[str, int], route_progress: dict[str, Any] | None) -> None:
+        if not _watchdog_target_progress(state, status, scope, route_progress):
+            return
+        scope_key = f"{scope[0]}:{scope[1]}"
+        _watchdog_reset_repeated_scope(state, scope_key)
+        progress_reset_scopes.add(scope_key)
+        report["progress_reset_count"] = int(state["watchdog_progress_reset_count"])
+        report["progress_reset_scope"] = scope_key
+        report["repeated_decision_count"] = 0
+        report["repeated_decision_outcome"] = None
+
+    # Diagnose snapshots are the slower semantic channel.  Apply their
+    # objective progress before processing the faster trace delta so a lower
+    # target high-water mark cannot arrive after a threshold decision.
+    if isinstance(diagnosis, dict):
+        for bot in diagnosis.get("bots") or []:
+            if not isinstance(bot, dict):
+                continue
+            snapshot = bot.get("snapshot") if isinstance(bot.get("snapshot"), dict) else {}
+            route_progress = snapshot.get("route_progress")
+            if not isinstance(route_progress, dict):
+                continue
+            route_scope = _watchdog_route_progress_scope(route_progress, current_scope)
+            if route_scope == current_scope:
+                reset_on_progress(current_scope, route_progress)
 
     for trace_row in trace_rows or []:
         if not isinstance(trace_row, dict) or trace_row.get("action") != "botauto_trace":
@@ -2771,6 +2903,9 @@ def observe_capture_watchdog(
                 if scope != current_scope:
                     continue
                 scope_key = f"{scope[0]}:{scope[1]}"
+                route_progress = entry.get("route_progress")
+                if isinstance(route_progress, dict):
+                    reset_on_progress(scope, route_progress)
                 if entry.get("action") in _WATCHDOG_DEATH_ACTIONS:
                     death_counts[scope_key] = int(death_counts.get(scope_key) or 0) + 1
                     report["death_loop_count"] = death_counts[scope_key]
@@ -2778,6 +2913,13 @@ def observe_capture_watchdog(
                         maybe_terminal("death_loop_watchdog")
                         break
                 if _watchdog_is_repeated_decision(entry):
+                    # A cumulative diagnosis/trace repeat count is stale for
+                    # this observation once the same route scope has shown
+                    # objective progress.  Start counting again on the next
+                    # fresh watchdog sample, while death thresholds above
+                    # remain terminal even during progress.
+                    if scope_key in progress_reset_scopes:
+                        continue
                     outcome = _watchdog_failure_outcome(entry)
                     try:
                         fingerprint = int(entry.get("fingerprint_hash") or 0)
@@ -2825,6 +2967,8 @@ def observe_capture_watchdog(
             action = str(decision.get("action") or "")
             outcome = _watchdog_failure_outcome(decision)
             if not _watchdog_is_repeated_decision({"action": action, "result": outcome}):
+                continue
+            if f"{entry_scope[0]}:{entry_scope[1]}" in progress_reset_scopes:
                 continue
             try:
                 repeat_count = max(

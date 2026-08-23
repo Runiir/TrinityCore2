@@ -3057,6 +3057,117 @@ def test_capture_watchdog_ignores_stale_recovery_on_successful_progressing_trace
     assert progress_state["lowest_target_hp"]
 
 
+def test_capture_watchdog_resets_repeated_hazard_failures_on_monotonic_target_progress():
+    status = _watchdog_status()
+    status["validation_route"].update(
+        node_id="bwd.magmaw.chainwielder", generation=2, kind="trash",
+    )
+    state = {}
+    entries = []
+    for sequence in range(1, 21):
+        hp = 0.80 - (sequence * 0.01)
+        entries.append({
+            "action": "validation_route_mechanic",
+            "result": "hazard_exit_failed",
+            "route_node_id": "bwd.magmaw.chainwielder",
+            "route_generation": 2,
+            "fingerprint_hash": 1225206246,
+            "sequence": sequence,
+            "timestamp_ms": sequence,
+            "route_progress": {
+                "route": {
+                    "node_id": "bwd.magmaw.chainwielder",
+                    "generation": 2,
+                    "kind": "trash",
+                },
+                "target": {
+                    "entry": 42649,
+                    "guid": 27,
+                    "hp_pct": hp,
+                    "best_hp_pct": hp,
+                },
+                "no_progress": {"count": 0, "threshold": 20},
+            },
+        })
+
+    report = observe_capture_watchdog(
+        state,
+        status,
+        None,
+        [_watchdog_trace(entries)],
+        max_repeated_decisions=20,
+        max_death_loops=3,
+    )
+
+    assert report["detected"] is False
+    assert report["failure_reason"] is None
+    assert report["progress_reset_count"] == 19
+    assert report["progress_reset_scope"] == "bwd.magmaw.chainwielder:2"
+    assert report["repeated_decision_count"] == 0
+    assert state["repeated_decision_counts"] == {}
+
+
+def test_capture_watchdog_still_stops_flat_repeated_hazard_failures():
+    status = _watchdog_status()
+    status["validation_route"].update(
+        node_id="bwd.magmaw.chainwielder", generation=2, kind="trash",
+    )
+    state = {}
+    route_progress = {
+        "route": {
+            "node_id": "bwd.magmaw.chainwielder",
+            "generation": 2,
+            "kind": "trash",
+        },
+        "target": {"entry": 42649, "guid": 27, "hp_pct": 0.80, "best_hp_pct": 0.80},
+        "no_progress": {"count": 20, "threshold": 20},
+    }
+    baseline = {
+        "action": "wait_for_candidate_backoff",
+        "result": "ok",
+        "route_node_id": "bwd.magmaw.chainwielder",
+        "route_generation": 2,
+        "sequence": 1,
+        "timestamp_ms": 1,
+        "route_progress": route_progress,
+    }
+    assert observe_capture_watchdog(
+        state,
+        status,
+        None,
+        [_watchdog_trace([baseline])],
+        max_repeated_decisions=20,
+        max_death_loops=3,
+    )["detected"] is False
+
+    repeated = [
+        {
+            "action": "validation_route_mechanic",
+            "result": "hazard_exit_failed",
+            "route_node_id": "bwd.magmaw.chainwielder",
+            "route_generation": 2,
+            "fingerprint_hash": 1225206246,
+            "sequence": sequence,
+            "timestamp_ms": sequence,
+            "route_progress": route_progress,
+        }
+        for sequence in range(2, 22)
+    ]
+    report = observe_capture_watchdog(
+        state,
+        status,
+        None,
+        [_watchdog_trace(repeated)],
+        max_repeated_decisions=20,
+        max_death_loops=3,
+    )
+
+    assert report["detected"] is True
+    assert report["failure_reason"] == "repeated_decision_watchdog"
+    assert report["repeated_decision_outcome"] == "hazard_exit_failed"
+    assert report["repeated_decision_count"] == 20
+
+
 def test_capture_watchdog_classifies_excessive_scoped_deaths_as_gameplay_failure():
     status = _watchdog_status()
     trace = _watchdog_trace([
