@@ -180,6 +180,14 @@ def test_drain_soul_execute_multiplier_restores_combined_deaths_embrace_bonus() 
     assert abs(combined_multiplier(12.0) - 2.12) < 1e-9
 
 
+def test_deaths_embrace_done_mod_includes_drain_soul_family_flag() -> None:
+    source = (ROOT / "src/server/game/Spells/SpellMgr.cpp").read_text()
+    correction_start = source.index("ApplySpellFix({ 47198, 47199, 47200 }")
+    correction = source[correction_start : source.index("ApplySpellFix({", correction_start + 1)]
+
+    assert "Effects[EFFECT_1].SpellClassMask[0] |= 0x00004000;" in correction
+
+
 def test_shadow_embrace_restores_rank_chain_with_native_proc_and_no_cheat_injection() -> None:
     migration = (
         ROOT

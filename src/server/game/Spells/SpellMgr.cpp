@@ -3028,6 +3028,14 @@ void SpellMgr::LoadSpellInfoCorrections()
         spellInfo->CritDamageMultiplier = 2.0f;
     });
 
+    // Death's Embrace also increases Drain Soul shadow damage during execute.
+    // The client class mask omits Drain Soul's 0x4000 family flag, so the
+    // native done-percent stage otherwise misses this rank-scaled bonus.
+    ApplySpellFix({ 47198, 47199, 47200 }, [](SpellInfo* spellInfo)
+    {
+        spellInfo->Effects[EFFECT_1].SpellClassMask[0] |= 0x00004000;
+    });
+
     ApplySpellFix({
         82690, // Flame Orb
         84717  // Frostfire Orb
