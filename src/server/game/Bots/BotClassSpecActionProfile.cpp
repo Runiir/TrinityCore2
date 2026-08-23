@@ -933,6 +933,24 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
             itr->second = itr->second && ready;
     }
 
+    // A channel may be clipped only when the active channel is itself an
+    // explicitly tagged profile action.  Keep the active action's profile
+    // priority as the sole policy input; the resolver and executor carry the
+    // resulting decision as typed state instead of inferring it from a spell
+    // id or class.
+    Spell const* currentChanneledSpell = bot->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
+    uint32 currentChanneledSpellId = currentChanneledSpell && currentChanneledSpell->GetSpellInfo()
+        ? currentChanneledSpell->GetSpellInfo()->Id : 0;
+    BotActionProfileSpell const* currentChanneledProfileSpell = nullptr;
+    if (currentChanneledSpellId)
+        for (BotActionProfileSpell const& profileSpell : profile.Spells)
+            if (profileSpell.SpellId == currentChanneledSpellId
+                && HasMechanicTag(profileSpell.MechanicTags, "interruptible_channel"))
+            {
+                currentChanneledProfileSpell = &profileSpell;
+                break;
+            }
+
     for (BotActionProfileSpell const& spell : profile.Spells)
     {
         bool selfTarget = spell.TargetSelector == "self";
@@ -1023,6 +1041,10 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
         SpellInfo const* spellInfo = spell.SpellId ? sSpellMgr->GetSpellInfo(spell.SpellId) : nullptr;
         Unit const* comboTarget = selfTarget ? target : actionTarget;
         std::string conditionRejection = EvaluateCompiledConditions(bot, actionTarget, comboTarget, spell);
+        bool const interruptsCurrentChanneledSpell = currentChanneledProfileSpell
+            && spell.SpellId != currentChanneledSpellId
+            && spell.PriorityBucket < currentChanneledProfileSpell->PriorityBucket
+            && !bot->GetCurrentSpell(CURRENT_GENERIC_SPELL);
         if (!selfTarget && !actionTarget)
             candidate.RejectReason = allyTarget ? "missing_ally_target" : "missing_enemy_target";
         else if (spell.SpellId && !spellInfo)
@@ -1049,7 +1071,7 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
         else if (profile.Role == "healer" && spell.MaxInjuredPlayers
             && healerTriageInjuredPlayers > spell.MaxInjuredPlayers)
             candidate.RejectReason = "injured_player_count_too_high";
-        else if (bot->HasUnitState(UNIT_STATE_CASTING))
+        else if (bot->HasUnitState(UNIT_STATE_CASTING) && !interruptsCurrentChanneledSpell)
             candidate.RejectReason = "already_casting";
         else if (spellInfo && bot->GetSpellHistory()->HasGlobalCooldown(spellInfo))
             candidate.RejectReason = "global_cooldown";
@@ -1105,6 +1127,9 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
             candidate.RejectReason = "out_of_range";
         else if (spellInfo && !HasEnoughPowerForProfileSpell(bot, spellInfo))
             candidate.RejectReason = "insufficient_resource";
+
+        if (candidate.RejectReason.empty() && interruptsCurrentChanneledSpell)
+            candidate.InterruptCurrentChanneledSpell = true;
 
         candidates.push_back(candidate);
     }

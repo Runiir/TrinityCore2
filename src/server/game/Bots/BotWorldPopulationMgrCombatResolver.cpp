@@ -252,6 +252,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
                     ? livingBomb->Profile.MinRange : profile.MinRange;
                 action.MaxRange = livingBomb->Profile.MaxRange > 0.0f
                     ? livingBomb->Profile.MaxRange : profile.MaxRange;
+                action.InterruptCurrentChanneledSpell = livingBomb->InterruptCurrentChanneledSpell;
                 return action;
             }
         }
@@ -806,6 +807,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     action.DebugName = BotCombatActionCatalog::ToString(best->Category);
     action.MovementDirective = best->Profile.MovementDirective.empty() ? profile.MovementDirective : best->Profile.MovementDirective;
     action.AutoAttackMode = best->Profile.AutoAttackMode.empty() ? profile.AutoAttackMode : best->Profile.AutoAttackMode;
+    action.InterruptCurrentChanneledSpell = best->InterruptCurrentChanneledSpell;
     action.MinRange = selfTarget ? 0.0f : (best->Profile.MinRange > 0.0f ? best->Profile.MinRange : profile.MinRange);
     if (!selfTarget)
         action.MinRange = effectiveSpellMinRange(*best, action.MinRange);

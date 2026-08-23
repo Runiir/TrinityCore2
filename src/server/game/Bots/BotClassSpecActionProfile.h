@@ -98,6 +98,7 @@ struct BotActionCandidate
     // candidate was built.  Selection remains data-driven by the profile; the
     // observation makes the priority decision attributable to live state.
     std::string ObservationJson = "{}";
+    bool InterruptCurrentChanneledSpell = false;
     BotActionProfileSpell Profile;
 };
 

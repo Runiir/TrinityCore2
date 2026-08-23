@@ -381,7 +381,8 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
         return BotActionResult::Ok;
     }
 
-    BotActionResult check = CheckHostileSpell(owner, bot, target, action.SpellId);
+    BotActionResult check = CheckHostileSpell(owner, bot, target, action.SpellId,
+        action.InterruptCurrentChanneledSpell);
     if (check != BotActionResult::Ok)
     {
         if (!IsSchedulingResult(check))
@@ -413,6 +414,9 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
         bot->SetTarget(target->GetGUID());
 
     CastSpellExtraArgs castArgs(TRIGGERED_NONE);
+    if (action.InterruptCurrentChanneledSpell
+        && bot->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+        bot->InterruptSpell(CURRENT_CHANNELED_SPELL, false);
     SpellCastResult result = spellInfo && (spellInfo->GetExplicitTargetMask() & TARGET_FLAG_DEST_LOCATION)
         ? bot->CastSpell(Position{ target->GetPositionX(), target->GetPositionY(), target->GetPositionZ() }, action.SpellId, castArgs)
         : bot->CastSpell(target, action.SpellId, castArgs);
@@ -768,7 +772,8 @@ BotActionResult BotActionExecutor::CheckSpell(Player* owner, Player* bot, Unit* 
     return BotActionResult::Ok;
 }
 
-BotActionResult BotActionExecutor::CheckHostileSpell(Player* owner, Player* bot, Unit* target, uint32 spellId) const
+BotActionResult BotActionExecutor::CheckHostileSpell(Player* owner, Player* bot, Unit* target,
+    uint32 spellId, bool interruptCurrentChanneledSpell) const
 {
     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
     if (!spellInfo)
@@ -805,7 +810,10 @@ BotActionResult BotActionExecutor::CheckHostileSpell(Player* owner, Player* bot,
     // than recording a rejected cast.
     if (bot->HasUnitState(UNIT_STATE_CONTROLLED))
         return BotActionResult::Throttled;
-    if (bot->HasUnitState(UNIT_STATE_CASTING))
+    if (bot->HasUnitState(UNIT_STATE_CASTING)
+        && (!interruptCurrentChanneledSpell
+            || !bot->GetCurrentSpell(CURRENT_CHANNELED_SPELL)
+            || bot->GetCurrentSpell(CURRENT_GENERIC_SPELL)))
         return BotActionResult::Casting;
     if (bot->GetSpellHistory()->HasGlobalCooldown(spellInfo))
         return BotActionResult::GlobalCooldown;
