@@ -248,6 +248,77 @@ void BotWorldPopulationMgr::ObserveAfflictionDamageStage(
         observation.ShadowEmbraceModifierAmountMax);
 }
 
+void BotWorldPopulationMgr::ObserveAfflictionPeriodicOutcome(
+    CalibrationMetrics& metrics, Player* owner, uint32 spellId,
+    uint32 damage, bool critical, float critChancePct)
+{
+    if (!owner || owner->getClass() != CLASS_WARLOCK || !damage)
+        return;
+
+    auto stage = metrics.AfflictionDamageStageBySpell.find(spellId);
+    if (stage == metrics.AfflictionDamageStageBySpell.end())
+        return;
+
+    CalibrationMetrics::AfflictionDamageStageObservation& observation =
+        stage->second;
+    uint32 const critChancePpm = uint32(
+        std::max(0.0f, critChancePct) * 10000.0f);
+    ++observation.PeriodicOutcomeCount;
+    observation.PeriodicCritChancePpmSum += critChancePpm;
+    if (observation.PeriodicOutcomeCount == 1)
+    {
+        observation.PeriodicCritChancePpmMin = critChancePpm;
+        observation.PeriodicCritChancePpmMax = critChancePpm;
+    }
+    else
+    {
+        observation.PeriodicCritChancePpmMin = std::min(
+            observation.PeriodicCritChancePpmMin, critChancePpm);
+        observation.PeriodicCritChancePpmMax = std::max(
+            observation.PeriodicCritChancePpmMax, critChancePpm);
+    }
+
+    if (critical)
+    {
+        ++observation.PeriodicCriticalCount;
+        observation.PeriodicCriticalDamage += damage;
+    }
+    else
+    {
+        ++observation.PeriodicNonCriticalCount;
+        observation.PeriodicNonCriticalDamage += damage;
+    }
+}
+
+void BotWorldPopulationMgr::NotifyCombatPeriodicOutcome(Unit* attacker,
+    Unit* victim, uint32 spellId, uint32 damage, bool critical,
+    float critChancePct)
+{
+    if (!Cohort().Active || !attacker || !victim || !damage
+        || Cohort().CalibrationMode != "single_target_300"
+        || Cohort().CalibrationWindowComplete
+        || Cohort().CalibrationFixtureTargetGuid.IsEmpty()
+        || victim->GetGUID() != Cohort().CalibrationFixtureTargetGuid)
+        return;
+
+    uint64 const nowMs = NowMs();
+    if (!Cohort().CalibrationScoredStartedMs
+        || nowMs < Cohort().CalibrationScoredStartedMs
+        || nowMs - Cohort().CalibrationScoredStartedMs
+            >= CalibrationSingleTargetDurationMs)
+        return;
+
+    Player* owner = CombatOwnerPlayer(attacker);
+    if (!owner)
+        return;
+    auto calibration = Cohort().CalibrationMetricsByGuid.find(
+        owner->GetGUID().GetCounter());
+    if (calibration == Cohort().CalibrationMetricsByGuid.end())
+        return;
+    ObserveAfflictionPeriodicOutcome(calibration->second, owner, spellId,
+        damage, critical, critChancePct);
+}
+
 std::string BotWorldPopulationMgr::AppendAfflictionCalibrationJson(
     CalibrationMetrics const* metrics)
 {
@@ -332,6 +403,22 @@ std::string BotWorldPopulationMgr::AppendAfflictionCalibrationJson(
                  << observation.PeriodicSpellmodMultiplierPpmMin
                  << ",\"periodic_spellmod_multiplier_ppm_max\":"
                  << observation.PeriodicSpellmodMultiplierPpmMax
+                 << ",\"periodic_outcome_count\":"
+                 << observation.PeriodicOutcomeCount
+                 << ",\"periodic_critical_count\":"
+                 << observation.PeriodicCriticalCount
+                 << ",\"periodic_noncritical_count\":"
+                 << observation.PeriodicNonCriticalCount
+                 << ",\"periodic_critical_damage\":"
+                 << observation.PeriodicCriticalDamage
+                 << ",\"periodic_noncritical_damage\":"
+                 << observation.PeriodicNonCriticalDamage
+                 << ",\"periodic_crit_chance_ppm_sum\":"
+                 << observation.PeriodicCritChancePpmSum
+                 << ",\"periodic_crit_chance_ppm_min\":"
+                 << observation.PeriodicCritChancePpmMin
+                 << ",\"periodic_crit_chance_ppm_max\":"
+                 << observation.PeriodicCritChancePpmMax
                  << ",\"shadow_mastery_present_events\":"
                  << observation.ShadowMasteryPresentEvents
                  << ",\"shadow_mastery_affecting_events\":"

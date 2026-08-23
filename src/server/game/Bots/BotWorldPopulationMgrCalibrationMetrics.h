@@ -31,6 +31,14 @@
             uint64 PeriodicSpellmodMultiplierPpmSum = 0;
             uint32 PeriodicSpellmodMultiplierPpmMin = 0;
             uint32 PeriodicSpellmodMultiplierPpmMax = 0;
+            uint32 PeriodicOutcomeCount = 0;
+            uint32 PeriodicCriticalCount = 0;
+            uint32 PeriodicNonCriticalCount = 0;
+            uint64 PeriodicCriticalDamage = 0;
+            uint64 PeriodicNonCriticalDamage = 0;
+            uint64 PeriodicCritChancePpmSum = 0;
+            uint32 PeriodicCritChancePpmMin = 0;
+            uint32 PeriodicCritChancePpmMax = 0;
             uint32 ShadowMasteryPresentEvents = 0;
             uint32 ShadowMasteryAffectingEvents = 0;
             int32 ShadowMasteryAmountMin = 0;

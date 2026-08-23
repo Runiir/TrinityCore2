@@ -102,6 +102,12 @@ def test_affliction_damage_stage_receipt_covers_requested_native_events() -> Non
         "direct_spellmod_multiplier_ppm_sum",
         "periodic_spellmod_observation_count",
         "periodic_spellmod_multiplier_ppm_sum",
+        "periodic_outcome_count",
+        "periodic_critical_count",
+        "periodic_noncritical_count",
+        "periodic_critical_damage",
+        "periodic_noncritical_damage",
+        "periodic_crit_chance_ppm_sum",
         "shadow_mastery_affecting_events",
         "potent_afflictions_affecting_events",
         "haunt_affecting_events",
@@ -113,3 +119,9 @@ def test_affliction_damage_stage_receipt_covers_requested_native_events() -> Non
     assert "SpellModOp::PeriodicHealingAndDamage" in module
     assert "SpellModOp::HealingAndDamage" in module
     assert "GetSpellModValues(spellInfo" in module
+    assert "NotifyCombatPeriodicOutcome" in module
+    aura_effects = (
+        ROOT / "src/server/game/Spells/Auras/SpellAuraEffects.cpp"
+    ).read_text(encoding="utf-8")
+    assert aura_effects.count("NotifyCombatPeriodicOutcome") == 2
+    assert "critChancePct = GetCritChanceFor(caster, target)" in aura_effects

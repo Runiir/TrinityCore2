@@ -5835,9 +5835,13 @@ void AuraEffect::HandlePeriodicDamageAurasTick(Unit* target, Unit* caster) const
     damage = target->SpellDamageBonusTaken(caster, GetSpellInfo(), damage, DOT);
 
     bool crit = false;
+    float critChancePct = 0.0f;
 
     if (GetBase()->CanPeriodicTickCrit())
-        crit = roll_chance_f(GetCritChanceFor(caster, target));
+    {
+        critChancePct = GetCritChanceFor(caster, target);
+        crit = roll_chance_f(critChancePct);
+    }
 
     if (crit)
         damage = Unit::SpellCriticalDamageBonus(caster, m_spellInfo, damage, true);
@@ -5891,7 +5895,11 @@ void AuraEffect::HandlePeriodicDamageAurasTick(Unit* target, Unit* caster) const
     SpellPeriodicAuraLogInfo pInfo(this, damage, overkill, absorb, resist, 0.0f, crit);
     target->SendPeriodicAuraLog(&pInfo);
 
-    Unit::DealDamage(caster, target, damage, unmitigatedDamage, DOT, GetSpellInfo()->GetSchoolMask(), GetSpellInfo(), true);
+    uint32 const landedDamage = Unit::DealDamage(caster, target, damage,
+        unmitigatedDamage, DOT, GetSpellInfo()->GetSchoolMask(),
+        GetSpellInfo(), true);
+    sBotWorldPopulationMgr->NotifyCombatPeriodicOutcome(caster, target,
+        GetId(), landedDamage, crit, critChancePct);
 
     Unit::ProcSkillsAndAuras(caster, target, procAttacker, procVictim, PROC_SPELL_TYPE_DAMAGE, PROC_SPELL_PHASE_HIT, hitMask, nullptr, &damageInfo, nullptr);
 }
@@ -5924,9 +5932,13 @@ void AuraEffect::HandlePeriodicHealthLeechAuraTick(Unit* target, Unit* caster) c
     damage = target->SpellDamageBonusTaken(caster, GetSpellInfo(), damage, DOT);
 
     bool crit = false;
+    float critChancePct = 0.0f;
 
     if (GetBase()->CanPeriodicTickCrit())
-        crit = roll_chance_f(GetCritChanceFor(caster, target));
+    {
+        critChancePct = GetCritChanceFor(caster, target);
+        crit = roll_chance_f(critChancePct);
+    }
 
     if (crit)
         damage = Unit::SpellCriticalDamageBonus(caster, m_spellInfo, damage, true);
@@ -5976,6 +5988,8 @@ void AuraEffect::HandlePeriodicHealthLeechAuraTick(Unit* target, Unit* caster) c
     }
 
     int32 new_damage = Unit::DealDamage(caster, target, damage, unmitigatedDamage, DOT, GetSpellInfo()->GetSchoolMask(), GetSpellInfo(), false);
+    sBotWorldPopulationMgr->NotifyCombatPeriodicOutcome(caster, target,
+        GetId(), uint32(std::max(new_damage, 0)), crit, critChancePct);
     Unit::ProcSkillsAndAuras(caster, target, procAttacker, procVictim, PROC_SPELL_TYPE_DAMAGE, PROC_SPELL_PHASE_NONE, hitMask, nullptr, &damageInfo, nullptr);
 
     // process caster heal from now on (must be in world)

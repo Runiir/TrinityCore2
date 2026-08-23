@@ -116,6 +116,8 @@ public:
     void NotifyCombatAttackAttempt(Unit* attacker, Unit* victim);
     void NotifyCombatDamage(Unit* attacker, Unit* victim, uint32 spellId, uint32 damage, uint32 unmitigatedDamage,
         uint32 damageType, uint32 schoolMask);
+    void NotifyCombatPeriodicOutcome(Unit* attacker, Unit* victim,
+        uint32 spellId, uint32 damage, bool critical, float critChancePct);
     void NotifyDragonwrathCopyProcAttempt(Unit* caster, uint32 originalSpellId,
         uint32 castResult, bool accepted);
     uint64 NotifyNativeCreatureSpellStarted(Creature* caster, Unit* target, uint32 spellId);
@@ -206,6 +208,9 @@ private:
     static void ObserveAfflictionDamageStage(CalibrationMetrics& metrics,
         Player* owner, Unit* victim, uint32 spellId, uint32 damage,
         uint32 unmitigatedDamage, uint32 damageType);
+    static void ObserveAfflictionPeriodicOutcome(CalibrationMetrics& metrics,
+        Player* owner, uint32 spellId, uint32 damage, bool critical,
+        float critChancePct);
     static std::string AppendAfflictionCalibrationJson(CalibrationMetrics const* metrics);
     void AppendCalibrationBotActionJson(std::ostringstream& json,
         CalibrationMetrics const* metrics) const;
