@@ -80,6 +80,19 @@
             ObjectGuid FinishedItemGuid;
             bool NativeUseFinishedSuccessfully = false;
             bool NativeUseAwaitingAura = false;
+            // Affliction's combat potion is a policy action, not a generic
+            // "first combat tick" setup action. Keep the typed gate receipt
+            // beside the native item receipt so review can verify the
+            // execute/final-window predicate and pre-pot exclusion.
+            uint32 TimingGateBlockedSampleCount = 0;
+            uint32 TimingGatePrepotAuraBlockedSampleCount = 0;
+            uint64 TimingGateFirstEligibleAtMs = 0;
+            uint64 TimingGateLastBlockedAtMs = 0;
+            uint64 TimingGateLastPrepotAuraBlockedAtMs = 0;
+            uint32 TimingGateTargetHealthPctAtSubmission = 0;
+            uint32 TimingGateRemainingMsAtSubmission = 0;
+            bool TimingGatePassed = false;
+            bool TimingGatePrepotAuraClearAtSubmission = false;
             std::string Phase;
         };
 

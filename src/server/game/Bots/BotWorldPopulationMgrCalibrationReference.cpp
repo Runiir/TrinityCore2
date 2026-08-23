@@ -35,6 +35,8 @@ struct CalibrationExecuteHealthWindow
 
 constexpr uint32 CalibrationSingleTargetDurationMs = 300000;
 constexpr uint64 CalibrationFoodAuraWaitMs = 30000;
+constexpr uint32 AfflictionCombatPotionExecuteHealthPct = 25;
+constexpr uint32 AfflictionCombatPotionFinalWindowRemainingMs = 26000;
 constexpr std::array<CalibrationExecuteHealthWindow, 5> CalibrationExecuteHealthWindows = {{
     { "above_90",       0,  30000, 95, 90, false, 100, true  },
     { "between_35_90", 30000, 195000, 50, 35, false,  90, true  },
@@ -307,12 +309,60 @@ bool BotWorldPopulationMgr::EnsureCalibrationSelfProvidedConsumables(
 
     if (bot->IsInCombat() && !receiptReady(metrics.CombatPotionConsumable))
     {
-        if (submit(metrics.CombatPotionConsumable))
-            return true;
-        return metrics.CombatPotionConsumable.SubmittedAtMs
-                > metrics.CombatPotionConsumable.FinishedAtMs
-            && metrics.CombatPotionConsumable.NextRetryAtMs
-                > CalibrationNowMs();
+        CalibrationMetrics::NativeConsumableReceipt& combatPotion =
+            metrics.CombatPotionConsumable;
+        if (Cohort().CalibrationTargetSpec == "affliction_warlock")
+        {
+            uint64 const nowMs = CalibrationNowMs();
+            if (combatPotion.SubmittedAtMs > combatPotion.FinishedAtMs
+                && combatPotion.NextRetryAtMs > nowMs)
+                return true;
+            uint64 const elapsedMs = Cohort().CalibrationScoredStartedMs
+                && nowMs >= Cohort().CalibrationScoredStartedMs
+                ? nowMs - Cohort().CalibrationScoredStartedMs : 0;
+            uint64 const remainingMs = elapsedMs < CalibrationSingleTargetDurationMs
+                ? CalibrationSingleTargetDurationMs - elapsedMs : 0;
+            bool const executeEligible = target->GetHealthPct()
+                <= float(AfflictionCombatPotionExecuteHealthPct);
+            bool const finalWindowEligible = remainingMs
+                <= AfflictionCombatPotionFinalWindowRemainingMs;
+            bool const prepotAuraActive = contract->PrepotAuraSpellId
+                && bot->HasAura(contract->PrepotAuraSpellId);
+
+            if (prepotAuraActive)
+            {
+                ++combatPotion.TimingGatePrepotAuraBlockedSampleCount;
+                combatPotion.TimingGateLastPrepotAuraBlockedAtMs = nowMs;
+                // The timing gate is a non-GCD observation. Let the ordinary
+                // rotation continue while the pre-pot aura or execute/final
+                // window condition is not yet valid.
+                return false;
+            }
+            if (!executeEligible && !finalWindowEligible)
+            {
+                ++combatPotion.TimingGateBlockedSampleCount;
+                combatPotion.TimingGateLastBlockedAtMs = nowMs;
+                return false;
+            }
+            if (!combatPotion.TimingGateFirstEligibleAtMs)
+                combatPotion.TimingGateFirstEligibleAtMs = nowMs;
+            if (submit(combatPotion))
+            {
+                combatPotion.TimingGateTargetHealthPctAtSubmission = std::min(
+                    uint32(100), uint32(target->GetHealthPct()));
+                combatPotion.TimingGateRemainingMsAtSubmission = uint32(remainingMs);
+                combatPotion.TimingGatePrepotAuraClearAtSubmission = true;
+                combatPotion.TimingGatePassed = true;
+                return true;
+            }
+        }
+        else
+        {
+            if (submit(combatPotion))
+                return true;
+        }
+        return combatPotion.SubmittedAtMs > combatPotion.FinishedAtMs
+            && combatPotion.NextRetryAtMs > CalibrationNowMs();
     }
     return false;
 }

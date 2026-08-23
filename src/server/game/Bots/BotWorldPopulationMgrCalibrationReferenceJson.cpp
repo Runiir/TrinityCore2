@@ -238,6 +238,25 @@ void BotWorldPopulationMgr::AppendCalibrationReferenceConditionJson(
                      << ",\"finished_at_ms\":" << receipt.FinishedAtMs
                      << ",\"native_use_finished_successfully\":"
                      << (receipt.NativeUseFinishedSuccessfully ? "true" : "false")
+                     << ",\"timing_gate_passed\":"
+                     << (receipt.TimingGatePassed ? "true" : "false")
+                     << ",\"timing_gate_prepot_aura_clear_at_submission\":"
+                     << (receipt.TimingGatePrepotAuraClearAtSubmission
+                             ? "true" : "false")
+                     << ",\"timing_gate_blocked_sample_count\":"
+                     << receipt.TimingGateBlockedSampleCount
+                     << ",\"timing_gate_prepot_aura_blocked_sample_count\":"
+                     << receipt.TimingGatePrepotAuraBlockedSampleCount
+                     << ",\"timing_gate_first_eligible_at_ms\":"
+                     << receipt.TimingGateFirstEligibleAtMs
+                     << ",\"timing_gate_last_blocked_at_ms\":"
+                     << receipt.TimingGateLastBlockedAtMs
+                     << ",\"timing_gate_last_prepot_aura_blocked_at_ms\":"
+                     << receipt.TimingGateLastPrepotAuraBlockedAtMs
+                     << ",\"timing_gate_target_health_pct_at_submission\":"
+                     << receipt.TimingGateTargetHealthPctAtSubmission
+                     << ",\"timing_gate_remaining_ms_at_submission\":"
+                     << receipt.TimingGateRemainingMsAtSubmission
                      << ",\"submitted_item_guid\":"
                      << receipt.SubmittedItemGuid.GetCounter()
                      << ",\"finished_item_guid\":"
@@ -323,6 +342,38 @@ void BotWorldPopulationMgr::AppendCalibrationConsumableExecutionJson(
          << ",\"expected_aura_observed\":"
          << (auraObserved(fixtureSpecContract ? fixtureSpecContract->CombatPotionAuraSpellId : 0) ? "true" : "false")
          << ",\"submitted_at_ms\":" << observed.CombatPotionConsumable.SubmittedAtMs
-         << ",\"finished_at_ms\":" << observed.CombatPotionConsumable.FinishedAtMs << '}'
+         << ",\"finished_at_ms\":" << observed.CombatPotionConsumable.FinishedAtMs
+         << ",\"timing_gate\":{\"policy\":\""
+         << (Cohort().CalibrationTargetSpec == "affliction_warlock"
+                 ? "execute_e25_or_remaining_le_26s_no_prepot_overlap"
+                 : "not_required")
+         << "\",\"required_execute_health_pct\":"
+         << (Cohort().CalibrationTargetSpec == "affliction_warlock" ? 25 : 0)
+         << ",\"required_remaining_ms\":"
+         << (Cohort().CalibrationTargetSpec == "affliction_warlock" ? 26000 : 0)
+         << ",\"scoring_started_at_ms\":"
+         << Cohort().CalibrationScoredStartedMs
+         << ",\"gate_passed\":"
+         << (observed.CombatPotionConsumable.TimingGatePassed ? "true" : "false")
+         << ",\"prepot_aura_active_at_submission\":"
+         << (Cohort().CalibrationTargetSpec == "affliction_warlock"
+                 && !observed.CombatPotionConsumable.TimingGatePrepotAuraClearAtSubmission
+                 ? "true" : "false")
+         << ",\"blocked_sample_count\":"
+         << observed.CombatPotionConsumable.TimingGateBlockedSampleCount
+         << ",\"prepot_aura_blocked_sample_count\":"
+         << observed.CombatPotionConsumable.TimingGatePrepotAuraBlockedSampleCount
+         << ",\"first_eligible_at_ms\":"
+         << observed.CombatPotionConsumable.TimingGateFirstEligibleAtMs
+         << ",\"last_blocked_at_ms\":"
+         << observed.CombatPotionConsumable.TimingGateLastBlockedAtMs
+         << ",\"last_prepot_aura_blocked_at_ms\":"
+         << observed.CombatPotionConsumable.TimingGateLastPrepotAuraBlockedAtMs
+         << ",\"target_health_pct_at_submission\":"
+         << observed.CombatPotionConsumable.TimingGateTargetHealthPctAtSubmission
+         << ",\"remaining_ms_at_submission\":"
+         << observed.CombatPotionConsumable.TimingGateRemainingMsAtSubmission
+         << "}"
+         << '}'
          << '}';
 }

@@ -124,6 +124,35 @@ def test_native_self_provided_path_uses_inventory_without_injecting_auras() -> N
     assert "DestroyItem" not in use_item
 
 
+def test_affliction_combat_potion_gate_binds_execute_window_and_prepot_clear() -> None:
+    reference = _source(
+        "src/server/game/Bots/BotWorldPopulationMgrCalibrationReference.cpp"
+    )
+    ensure = _between(
+        reference,
+        "bool BotWorldPopulationMgr::EnsureCalibrationSelfProvidedConsumables",
+        "std::pair<bool, bool> BotWorldPopulationMgr::ApplyCalibrationReferenceConditions",
+    )
+    execution_json = _source(
+        "src/server/game/Bots/BotWorldPopulationMgrCalibrationReferenceJson.cpp"
+    )
+    metrics = _source(
+        "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h"
+    )
+
+    assert 'Cohort().CalibrationTargetSpec == "affliction_warlock"' in ensure
+    assert "target->GetHealthPct()" in ensure
+    assert "AfflictionCombatPotionExecuteHealthPct" in ensure
+    assert "AfflictionCombatPotionFinalWindowRemainingMs" in ensure
+    assert "bot->HasAura(contract->PrepotAuraSpellId)" in ensure
+    assert "TimingGatePrepotAuraBlockedSampleCount" in ensure
+    assert "TimingGateFirstEligibleAtMs" in ensure
+    assert "return false;" in ensure[ensure.index("if (prepotAuraActive)") :]
+    assert "execute_e25_or_remaining_le_26s_no_prepot_overlap" in execution_json
+    assert "timing_gate" in execution_json
+    assert "TimingGatePrepotAuraClearAtSubmission" in metrics
+
+
 def test_native_item_completion_retains_consumed_item_identity() -> None:
     spell = _source("src/server/game/Spells/Spell.cpp")
     header = _source("src/server/game/Spells/Spell.h")

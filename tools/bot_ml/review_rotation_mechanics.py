@@ -15,7 +15,7 @@ import json
 import re
 from collections import Counter
 from pathlib import Path
-from typing import Any, Iterable, Iterator
+from typing import Any, Iterable, Iterator, Mapping
 
 from .wowsims_gear_binding import canonical_wowsims_manifest
 
@@ -23,6 +23,13 @@ from .wowsims_gear_binding import canonical_wowsims_manifest
 SCHEMA = "trinity_wowsims_rotation_mechanics_review_v1"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 GEAR_PROFILES = REPO_ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json"
+
+
+def _numeric_value(value: Any) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return float(value)
+
 
 _NON_BLOCKING_MOVEMENT_RESULTS = {
     "native_movement_submitted",
@@ -2010,6 +2017,11 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
             calibration.get("phase") or ""
         ) if isinstance(calibration, dict) else "",
         "calibration_complete": calibration_complete,
+        "calibration_target_spec": str(
+            (calibration or {}).get("target_spec")
+            or document.get("target_spec")
+            or ""
+        ) if isinstance(calibration, dict) else str(document.get("target_spec") or ""),
         "calibration_terminal": {
             "reason": str((calibration or {}).get("failure_reason") or ""),
             "initial_resource_failures": initial_resource_failures,
@@ -3414,6 +3426,7 @@ def compare_consumable_execution(
     first_broken_edge: str | None = None
     missing = False
     mismatch = False
+    target_spec = str(runtime.get("calibration_target_spec") or "")
     for kind in ("flask", "food", "prepot", "combat_potion"):
         expected_item = int(
             ((wowsims_consumables.get(kind) or {}).get("item_id")) or 0
@@ -3456,6 +3469,64 @@ def compare_consumable_execution(
                 "inventory_count_before": inventory_before,
                 "inventory_count_after": inventory_after,
                 "expected_aura_observed": aura_observed,
+            }
+        )
+    if target_spec == "affliction_warlock" and int(
+        ((wowsims_consumables.get("combat_potion") or {}).get("item_id")) or 0
+    ) > 0:
+        combat_potion = observed.get("combat_potion") or {}
+        timing = combat_potion.get("timing_gate")
+        timing_status = "match"
+        timing_reason: str | None = None
+        if not isinstance(timing, Mapping):
+            timing_status = "missing"
+            timing_reason = "combat_potion_timing_gate_observation"
+        else:
+            policy = str(timing.get("policy") or "")
+            scoring_started = int(timing.get("scoring_started_at_ms") or 0)
+            submitted_at = int(combat_potion.get("submitted_at_ms") or 0)
+            finished_at = int(combat_potion.get("finished_at_ms") or 0)
+            first_eligible = int(timing.get("first_eligible_at_ms") or 0)
+            target_health_pct = _numeric_value(
+                timing.get("target_health_pct_at_submission")
+            )
+            remaining_ms = _numeric_value(timing.get("remaining_ms_at_submission"))
+            gate_passed = timing.get("gate_passed") is True
+            prepot_active = timing.get("prepot_aura_active_at_submission")
+            condition_observed = (
+                target_health_pct is not None
+                and remaining_ms is not None
+                and (
+                    target_health_pct <= 25.0
+                    or remaining_ms <= 26_000.0
+                )
+            )
+            timing_status = (
+                "match"
+                if policy == "execute_e25_or_remaining_le_26s_no_prepot_overlap"
+                and scoring_started > 0
+                and submitted_at >= scoring_started
+                and finished_at >= submitted_at
+                and first_eligible >= scoring_started
+                and gate_passed
+                and prepot_active is False
+                and condition_observed
+                else "mismatch"
+            )
+            if timing_status != "match":
+                timing_reason = "combat_potion_timing_gate"
+        mismatch = mismatch or timing_status == "mismatch"
+        missing = missing or timing_status == "missing"
+        if timing_reason and first_broken_edge is None:
+            first_broken_edge = timing_reason
+        checks.append(
+            {
+                "kind": "combat_potion_timing",
+                "status": timing_status,
+                "policy": (
+                    "execute_e25_or_remaining_le_26s_no_prepot_overlap"
+                ),
+                "observed": timing if isinstance(timing, Mapping) else None,
             }
         )
     status = "mismatch" if mismatch else "insufficient_data" if missing else "match"

@@ -694,6 +694,106 @@ def test_consumable_parity_requires_inventory_backed_native_uses() -> None:
     ]["required"]
 
 
+def test_affliction_combat_potion_parity_requires_execute_window_and_no_prepot_overlap() -> None:
+    request, _ = _gear_fixture()
+    request["raid"]["parties"][0]["players"][0]["consumes"] = {
+        "flaskId": 58086,
+        "foodId": 62671,
+        "prepotId": 58091,
+        "potId": 58091,
+    }
+    runtime = _effective_stats_runtime()
+    runtime["combat_calibration"]["target_spec"] = "affliction_warlock"
+    bot = runtime["combat_calibration"]["previous_window"]["bots"][0]
+    bot["consumable_execution_observation"] = {
+        "schema": "phase8_native_consumable_execution_v1",
+        "inventory_backed": True,
+        "flask": {
+            "item_id": 58086,
+            "native_use_count": 1,
+            "inventory_count_before": 1,
+            "inventory_count_after": 0,
+            "expected_aura_observed": True,
+        },
+        "food": {
+            "item_id": 62671,
+            "native_use_count": 1,
+            "inventory_count_before": 1,
+            "inventory_count_after": 0,
+            "expected_aura_observed": True,
+        },
+        "prepot": {
+            "item_id": 58091,
+            "native_use_count": 1,
+            "inventory_count_before": 2,
+            "inventory_count_after": 1,
+            "expected_aura_observed": True,
+        },
+        "combat_potion": {
+            "item_id": 58091,
+            "native_use_count": 1,
+            "inventory_count_before": 1,
+            "inventory_count_after": 0,
+            "expected_aura_observed": True,
+            "submitted_at_ms": 1_225_000,
+            "finished_at_ms": 1_225_001,
+            "timing_gate": {
+                "policy": "execute_e25_or_remaining_le_26s_no_prepot_overlap",
+                "scoring_started_at_ms": 1_000_000,
+                "gate_passed": True,
+                "prepot_aura_active_at_submission": False,
+                "first_eligible_at_ms": 1_225_000,
+                "target_health_pct_at_submission": 22,
+                "remaining_ms_at_submission": 75_000,
+            },
+        },
+    }
+    valid = build_review(
+        wowsims_apl=_apl(),
+        wowsims_request=request,
+        wowsims_compute_stats=_compute_stats(),
+        wowsims_result=_debug_result_with_pet_stats(),
+        runtime_report=runtime,
+        reference_class="self_provided_baseline",
+    )
+    assert valid["runtime"]["calibration_target_spec"] == "affliction_warlock"
+    assert valid["consumable_parity"]["status"] == "match"
+
+    missing = json.loads(json.dumps(runtime))
+    del missing["combat_calibration"]["previous_window"]["bots"][0][
+        "consumable_execution_observation"
+    ]["combat_potion"]["timing_gate"]
+    incomplete = build_review(
+        wowsims_apl=_apl(),
+        wowsims_request=request,
+        wowsims_compute_stats=_compute_stats(),
+        wowsims_result=_debug_result_with_pet_stats(),
+        runtime_report=missing,
+        reference_class="self_provided_baseline",
+    )
+    assert incomplete["consumable_parity"]["status"] == "insufficient_data"
+    assert incomplete["consumable_parity"]["first_broken_edge"] == (
+        "combat_potion_timing_gate_observation"
+    )
+
+    invalid = json.loads(json.dumps(runtime))
+    invalid["combat_calibration"]["previous_window"]["bots"][0][
+        "consumable_execution_observation"
+    ]["combat_potion"]["timing_gate"]["prepot_aura_active_at_submission"] = True
+    rejected = build_review(
+        wowsims_apl=_apl(),
+        wowsims_request=request,
+        wowsims_compute_stats=_compute_stats(),
+        wowsims_result=_debug_result_with_pet_stats(),
+        runtime_report=invalid,
+        reference_class="self_provided_baseline",
+    )
+    assert rejected["consumable_parity"]["status"] == "mismatch"
+    assert rejected["consumable_parity"]["first_broken_edge"] == (
+        "combat_potion_timing_gate"
+    )
+
+
 def test_static_consumable_aura_does_not_count_as_item_use() -> None:
     request, _ = _gear_fixture()
     request["raid"]["parties"][0]["players"][0]["consumes"] = {
