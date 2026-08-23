@@ -27,6 +27,9 @@ try:
     from .audit_role_efficiency import build_audit
     from .batch_evidence_lifecycle import append_heartbeat, capture_batch, finalize_heartbeat, publish_batch, validate_capture
     from .build_validation_provisioning import DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE, VALIDATION_FULL_STAT_SEED, VALIDATION_GHOST_AURA_ID, VALIDATION_GHOST_CHARACTER_FLAG, VALIDATION_RESURRECT_AT_LOGIN_FLAG, apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config_with_bwd_diagnostic_shards, load_gear_profiles
+    from .calibration_consumable_provisioning import (
+        prepare_calibration_consumables as _prepare_calibration_consumables,
+    )
     from .common import write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
     from .generate_bot_admission_identities import source_content_sha256 as admission_identity_source_sha256
@@ -40,6 +43,9 @@ except ImportError:
     from audit_role_efficiency import build_audit
     from batch_evidence_lifecycle import append_heartbeat, capture_batch, finalize_heartbeat, publish_batch, validate_capture
     from build_validation_provisioning import DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE, VALIDATION_FULL_STAT_SEED, VALIDATION_GHOST_AURA_ID, VALIDATION_GHOST_CHARACTER_FLAG, VALIDATION_RESURRECT_AT_LOGIN_FLAG, apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config_with_bwd_diagnostic_shards, load_gear_profiles
+    from calibration_consumable_provisioning import (
+        prepare_calibration_consumables as _prepare_calibration_consumables,
+    )
     from common import write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
     from generate_bot_admission_identities import source_content_sha256 as admission_identity_source_sha256
@@ -1100,6 +1106,27 @@ def prepare_validation_provisioning(
         report["executed_account_statements"] = execute_sql_text(auth_url, account_sql)
         report["executed_character_statements"] = execute_sql_text(character_url, character_sql)
     return report
+
+
+def prepare_calibration_consumables(
+    output_dir: Path,
+    worldserver_conf: Path,
+    target_spec: str,
+    target_catalog_path: Path,
+    apply: bool = False,
+) -> dict[str, Any]:
+    """Keep runner dependencies injectable while delegating restock policy."""
+    return _prepare_calibration_consumables(
+        output_dir,
+        worldserver_conf,
+        target_spec,
+        target_catalog_path,
+        apply,
+        connect_mysql_fn=connect_mysql,
+        database_name_fn=database_name,
+        database_url_from_conf_fn=database_url_from_worldserver_conf,
+        execute_sql_text_fn=execute_sql_text,
+    )
 
 
 def server_route_start_contract(route: dict[str, Any]) -> dict[str, Any]:
@@ -5230,6 +5257,31 @@ def run_reusable_validation_session(
                         apply=True,
                     ),
                 )
+            if args.calibration_only and getattr(
+                args, "calibration_self_provided_baseline", False
+            ):
+                # A reusable server keeps the candidate pool and its consumed
+                # item stacks across attempts. Reset both while the cohort is
+                # inactive, after any full provisioning and before calibration
+                # can claim a bot.
+                lifecycle["preparation"]["bot_pool_reset"] = prepare_bot_pool_reset(
+                    args.output_dir,
+                    args.config,
+                    bot_pool_tags,
+                    apply=True,
+                    reset_positions=not args.keep_bot_pool_position,
+                    reset_quests=not args.keep_bot_pool_quests,
+                    reset_memory=not args.keep_bot_pool_memory,
+                )
+                lifecycle["preparation"]["calibration_consumables"] = (
+                    prepare_calibration_consumables(
+                        args.output_dir,
+                        args.config,
+                        args.calibration_target_spec,
+                        args.all_spec_target_catalog.resolve(),
+                        apply=True,
+                    )
+                )
             if validation_route and int(validation_route.get("bot_start_map_id") or 0):
                 lifecycle["preparation"]["route_bot_start"] = (
                     server_route_start_contract(validation_route)
@@ -5613,6 +5665,11 @@ def main() -> int:
         raise SystemExit("--calibration-self-provided-baseline requires --calibration-only")
     if args.calibration_reference_conditions and args.calibration_self_provided_baseline:
         raise SystemExit("calibration reference conditions and self-provided baseline are mutually exclusive")
+    if args.calibration_self_provided_baseline and not args.reset_bot_pool:
+        raise SystemExit(
+            "--calibration-self-provided-baseline requires --reset-bot-pool "
+            "so each attempt receives fresh inventory-backed consumables"
+        )
     if args.session_runtime_dir and args.transport != "session":
         raise SystemExit("--session-runtime-dir requires --transport session")
     if args.preserve_worldserver and (
@@ -5826,6 +5883,24 @@ def main() -> int:
                 effective_config,
                 preparation["validation_provisioning"],
             )
+    if args.calibration_only and args.calibration_self_provided_baseline and args.transport != "session":
+        if "bot_pool_reset" not in preparation:
+            preparation["bot_pool_reset"] = prepare_bot_pool_reset(
+                args.output_dir,
+                args.config,
+                bot_pool_tags,
+                apply=not args.dry_run,
+                reset_positions=not args.keep_bot_pool_position,
+                reset_quests=not args.keep_bot_pool_quests,
+                reset_memory=not args.keep_bot_pool_memory,
+            )
+        preparation["calibration_consumables"] = prepare_calibration_consumables(
+            args.output_dir,
+            args.config,
+            args.calibration_target_spec,
+            args.all_spec_target_catalog.resolve(),
+            apply=not args.dry_run,
+        )
     if validation_route and int(validation_route.get("bot_start_map_id") or 0):
         preparation["route_bot_start"] = server_route_start_contract(validation_route)
 
