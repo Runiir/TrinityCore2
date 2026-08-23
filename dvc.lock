@@ -215,12 +215,12 @@ stages:
       nfiles: 3
     - path: experiments/configs/all_spec_targets_cata_p4_v1.json
       hash: md5
-      md5: 794ed92f2718fbd90e106bbec3cd05d6
-      size: 251977
+      md5: 2586f84c213380c21774108a5212fdbf
+      size: 252022
     - path: experiments/configs/cata_434_action_profiles.json
       hash: md5
-      md5: 2e19ad8340cd9b186df49f662dac8214
-      size: 20336
+      md5: d6001a3891ffb32fbeb51c7738c0af8d
+      size: 20388
     - path: experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json
       hash: md5
       md5: 0d54984b39f27dded3e636ebe46af2b0
@@ -248,8 +248,8 @@ stages:
     outs:
     - path: dataset/validation_provisioning
       hash: md5
-      md5: e974d345c209ff167df9b6606cbd62d9.dir
-      size: 3561022
+      md5: a8c3db4ce6f01df9884742b598d6f6da.dir
+      size: 3563606
       nfiles: 5
   validation_gear:
     cmd: python -m tools.bot_ml.build_validation_gear_profiles --config 
@@ -278,8 +278,8 @@ stages:
       size: 337263
     - path: experiments/configs/all_spec_targets_cata_p4_v1.json
       hash: md5
-      md5: 794ed92f2718fbd90e106bbec3cd05d6
-      size: 251977
+      md5: 2586f84c213380c21774108a5212fdbf
+      size: 252022
     - path: experiments/configs/cata_434_combat_loot_profiles.json
       hash: md5
       md5: 012afbc3288c3ec227a26114fd2fb962
@@ -345,17 +345,17 @@ stages:
       nfiles: 3
     - path: dataset/validation_provisioning
       hash: md5
-      md5: e974d345c209ff167df9b6606cbd62d9.dir
-      size: 3561022
+      md5: a8c3db4ce6f01df9884742b598d6f6da.dir
+      size: 3563606
       nfiles: 5
     - path: experiments/configs/all_spec_targets_cata_p4_v1.json
       hash: md5
-      md5: 794ed92f2718fbd90e106bbec3cd05d6
-      size: 251977
+      md5: 2586f84c213380c21774108a5212fdbf
+      size: 252022
     - path: experiments/configs/cata_434_action_profiles.json
       hash: md5
-      md5: 2e19ad8340cd9b186df49f662dac8214
-      size: 20336
+      md5: d6001a3891ffb32fbeb51c7738c0af8d
+      size: 20388
     - path: experiments/configs/cata_434_combat_loot_profiles.json
       hash: md5
       md5: 012afbc3288c3ec227a26114fd2fb962
@@ -399,7 +399,7 @@ stages:
     outs:
     - path: dataset/validation_provisioning_verification/report.json
       hash: md5
-      md5: f92fcc39ebf2d33120985d2618745238
+      md5: 3d29a2bb17fb4376b594eeb663749d9c
       size: 1651
   validation_scenarios:
     cmd: python -m tools.bot_ml.build_validation_scenario_manifests --config 
