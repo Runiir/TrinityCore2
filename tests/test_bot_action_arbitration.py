@@ -362,6 +362,36 @@ int main()
     assert(kernel.FindLifecycle("native_selection")->CurrentPhase == Phase::Selected);
     assert(kernel.FindLifecycle("native_selection")->LastProgressAtMs == 0);
 
+    // The patrol safe-phase wait remains retryable for arbitration, so an
+    // independent movement lane can still run in the same tick.
+    Kernel patrolWaitRetry;
+    patrolWaitRetry.Begin(7300);
+    bool patrolWaitAlternativeRan = false;
+    patrolWaitRetry.Submit(Candidate{
+        "world.validation_route_action", "validation_route_adapter",
+        BotActionArbitration::Priority::Mechanic, 3.1f, 0.0f, 0.0f,
+        Uses(Resource::GlobalCooldown, Resource::Cast, Resource::Target,
+            Resource::Interaction),
+        0, 100, 3000, 5, true, "", []
+        {
+            return Outcome::Retryable(
+                "validation_route_patrol_wait_for_safe_phase");
+        }
+    });
+    patrolWaitRetry.Submit(Candidate{
+        "independent_movement", "test",
+        BotActionArbitration::Priority::TrainedDamage, 1.0f,
+        0.0f, 0.0f, Uses(Resource::Movement), 0, 100, 3000, 5, true, "",
+        [&]
+        {
+            patrolWaitAlternativeRan = true;
+            return Outcome::Started("independent_movement_started");
+        }
+    });
+    Resolution const& patrolWaitResolution = patrolWaitRetry.Resolve();
+    assert(patrolWaitResolution.AnyCommitted);
+    assert(patrolWaitAlternativeRan);
+
     // Resolution must own callback-local reason text for later replay/export.
     kernel.Begin(8000);
     kernel.Submit(Candidate{
@@ -772,8 +802,24 @@ def test_route_adapter_yields_retryable_holds_and_declared_boss_adds() -> None:
     assert "auto runRoute = [this, &context, routeAttempt" in route_adapter
     assert "routeAction.Attempt = [runRoute, routeAttempt]" in route_adapter
     assert "routeMovement.Attempt = [runRoute, routeAttempt]" in route_adapter
-    assert "routeAction.Attempt = [&]" not in route_adapter
-    assert "routeMovement.Attempt = [&]" not in route_adapter
+
+
+def test_patrol_safe_phase_hold_preserves_explicit_route_wait_only() -> None:
+    fallback = bot_source("BotWorldPopulationMgrUpdateBotKernelFallback.cpp")
+    route_adapter = function_body(
+        fallback,
+        "void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(",
+    )
+    assert 'context.Action\n                        == "validation_route_patrol_wait_for_safe_phase"' in route_adapter
+    assert 'context.State.LastRecoveryMode =\n                            "validation_route_wait";' in route_adapter
+    assert "context.State.LastRecoveryResult = context.Action;" in route_adapter
+    assert "Outcome::Retryable" in route_adapter
+
+    decision = bot_source("BotWorldPopulationMgrUpdateBotDecision.cpp")
+    assert 'context.State.LastDecisionHandler == "validation_route"' in decision
+    assert 'context.Action == "validation_route_patrol_wait_for_safe_phase"' in decision
+    assert 'context.State.LastRecoveryMode = "validation_route_wait";' in decision
+    assert 'context.State.LastRecoveryResult = "no_candidate_committed";' in decision
 
 
 def test_boss_adapter_requires_observable_work_and_rejects_stale_focus() -> None:

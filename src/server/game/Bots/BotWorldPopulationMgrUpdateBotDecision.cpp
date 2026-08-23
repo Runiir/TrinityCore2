@@ -15,11 +15,24 @@ bool BotWorldPopulationMgr::RunBotDecisionKernel(BotUpdateContext& context)
         context.State.DecisionKernel.LastResolutionJson();
     if (!resolution.AnyCommitted)
     {
-        context.Situation = "decision_kernel_retry";
-        context.Action = "wait_for_candidate_backoff";
-        context.State.LastDecisionHandler = "decision_kernel";
-        context.State.LastRecoveryMode = "candidate_backoff";
-        context.State.LastRecoveryResult = "no_candidate_committed";
+        bool const validationRouteWait =
+            context.State.LastDecisionHandler == "validation_route"
+            && context.Action == "validation_route_patrol_wait_for_safe_phase";
+        if (validationRouteWait)
+        {
+            // Preserve the route contract's intentional hold after lower
+            // priority adapters have had a chance to find independent work.
+            context.State.LastRecoveryMode = "validation_route_wait";
+            context.State.LastRecoveryResult = context.Action;
+        }
+        else
+        {
+            context.Situation = "decision_kernel_retry";
+            context.Action = "wait_for_candidate_backoff";
+            context.State.LastDecisionHandler = "decision_kernel";
+            context.State.LastRecoveryMode = "candidate_backoff";
+            context.State.LastRecoveryResult = "no_candidate_committed";
+        }
     }
     return true;
 }

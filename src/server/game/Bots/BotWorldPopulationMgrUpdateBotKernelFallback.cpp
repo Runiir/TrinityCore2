@@ -191,6 +191,13 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                         context.Target = targetBeforeRoute;
                         context.State.TargetGuid = stateTargetBeforeRoute;
                     }
+                    if (context.Action
+                        == "validation_route_patrol_wait_for_safe_phase")
+                    {
+                        context.State.LastRecoveryMode =
+                            "validation_route_wait";
+                        context.State.LastRecoveryResult = context.Action;
+                    }
                     routeAttempt->RouteOutcome =
                         BotActionArbitration::Outcome::Retryable(
                             context.State.LastNoProgressReason.empty()
