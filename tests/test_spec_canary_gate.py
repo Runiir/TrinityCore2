@@ -276,6 +276,23 @@ def test_matching_pet_cadence_with_low_damage_routes_native_mechanics() -> None:
     assert decision["owner_skill"] == "raid-class-mechanics-implementation"
 
 
+def test_overtuned_pet_does_not_hide_attributable_owner_damage_deficit() -> None:
+    review = _review()
+    review["runtime"]["calibration_windows"][0]["dps"] = 900
+    review["runtime"]["primary_pet_damage_by_spell"] = {
+        "0": 24_000,
+        "54049": 48_000,
+    }
+
+    decision = _evaluate(review)
+
+    assert decision["signals"]["primary_pet"]["damage_per_event_ratio"] == 1.2
+    assert decision["signals"]["primary_pet"]["total_damage_ratio"] == 1.2
+    assert decision["signals"]["total_dps_ratio"] == 0.9
+    assert decision["first_broken_edge"] == "native_owner_damage_model"
+    assert decision["owner_skill"] == "raid-class-mechanics-implementation"
+
+
 def test_pet_landed_events_include_glancing_melee_outcomes() -> None:
     review = _review()
     pet_metrics = review["wowsims_result"]["action_metrics"][1][

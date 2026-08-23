@@ -410,6 +410,31 @@ def evaluate_canary(
         evidence_gap = True
     cast_behavior_failed = not mix_pass or not delta_pass or cadence_pass is not True
 
+    runtime_dps = _number(window.get("dps"))
+    player_dps = result.get("player_dps") or {} if isinstance(result, Mapping) else {}
+    wowsims_dps = _number(player_dps.get("avg")) if isinstance(player_dps, Mapping) else None
+    total_dps_ratio = _ratio(runtime_dps, wowsims_dps)
+    total_limits = (
+        selected_reference_policy.get("total_dps_ratio")
+        or thresholds.get("total_dps_ratio")
+        or {}
+    )
+    total_dps_pass = (
+        _meets_limits(total_dps_ratio, total_limits)
+        if isinstance(total_limits, Mapping)
+        else None
+    )
+    total_dps_minimum = (
+        _number(total_limits.get("minimum"))
+        if isinstance(total_limits, Mapping)
+        else None
+    )
+    total_dps_below_minimum = (
+        total_dps_ratio is not None
+        and total_dps_minimum is not None
+        and total_dps_ratio < total_dps_minimum
+    )
+
     pet_required = spec_policy.get("pet_required") is True
     pet_names = {str(value) for value in spec_policy.get("wowsims_primary_pet_names") or []}
     pet_spell_ids = {
@@ -434,6 +459,7 @@ def evaluate_canary(
     runtime_pet_dpe = _ratio(runtime_pet_damage, runtime_pet_events)
     reference_pet_dpe = _ratio(pet_reference["damage"], pet_reference["landed_events"])
     pet_dpe_ratio = _ratio(runtime_pet_dpe, reference_pet_dpe)
+    pet_total_damage_ratio = _ratio(runtime_pet_damage, pet_reference["damage"])
     if pet_required:
         pet_signal_present = (
             pet_reference["damage"] > 0
@@ -446,6 +472,19 @@ def evaluate_canary(
         pet_target_min = _number(thresholds.get("pet_target_match_ratio_minimum"))
         pet_event_limits = thresholds.get("pet_landed_event_cadence_ratio") or {}
         pet_dpe_limits = thresholds.get("pet_damage_per_event_ratio") or {}
+        pet_dpe_maximum = (
+            _number(pet_dpe_limits.get("maximum"))
+            if isinstance(pet_dpe_limits, Mapping)
+            else None
+        )
+        pet_dpe_above_maximum = (
+            pet_dpe_ratio is not None
+            and pet_dpe_maximum is not None
+            and pet_dpe_ratio > pet_dpe_maximum
+        )
+        pet_damage_not_under_reference = (
+            pet_total_damage_ratio is not None and pet_total_damage_ratio >= 1.0
+        )
         pet_alive_pass = pet_alive is not None and pet_alive_min is not None and pet_alive >= pet_alive_min
         pet_target_pass = pet_target is not None and pet_target_min is not None and pet_target >= pet_target_min
         pet_event_pass = _meets_limits(pet_event_ratio, pet_event_limits) if isinstance(pet_event_limits, Mapping) else None
@@ -473,7 +512,15 @@ def evaluate_canary(
             edge = "primary_pet_policy_execution"
             skill = "raid-role-implementation"
             expected_metric = "pet alive, target, and landed-event cadence inside policy"
-        elif edge is None and pet_dpe_pass is not True:
+        elif (
+            edge is None
+            and pet_dpe_pass is not True
+            and not (
+                pet_dpe_above_maximum
+                and total_dps_below_minimum
+                and pet_damage_not_under_reference
+            )
+        ):
             edge = "native_pet_damage_model"
             skill = "raid-class-mechanics-implementation"
             expected_metric = "primary-pet damage per landed event inside policy"
@@ -482,20 +529,6 @@ def evaluate_canary(
         skill = "raid-role-implementation"
         expected_metric = "cast mix and cadence inside acceptance policy"
 
-    runtime_dps = _number(window.get("dps"))
-    player_dps = result.get("player_dps") or {} if isinstance(result, Mapping) else {}
-    wowsims_dps = _number(player_dps.get("avg")) if isinstance(player_dps, Mapping) else None
-    total_dps_ratio = _ratio(runtime_dps, wowsims_dps)
-    total_limits = (
-        selected_reference_policy.get("total_dps_ratio")
-        or thresholds.get("total_dps_ratio")
-        or {}
-    )
-    total_dps_pass = (
-        _meets_limits(total_dps_ratio, total_limits)
-        if isinstance(total_limits, Mapping)
-        else None
-    )
     gates.append(_gate("total_dps_ratio", total_dps_pass, total_dps_ratio, total_limits))
     if edge is None and total_dps_ratio is None:
         edge = "total_dps_observation"
@@ -504,9 +537,24 @@ def evaluate_canary(
         expected_metric = "comparable Trinity and WoWSims total DPS"
         evidence_gap = True
     elif edge is None and total_dps_pass is not True:
-        edge = "native_class_damage_model"
+        owner_deficit_is_attributable = (
+            total_dps_below_minimum
+            and pet_required
+            and pet_total_damage_ratio is not None
+            and pet_total_damage_ratio >= 1.0
+            and not cast_behavior_failed
+        )
+        edge = (
+            "native_owner_damage_model"
+            if owner_deficit_is_attributable
+            else "native_class_damage_model"
+        )
         skill = "raid-class-mechanics-implementation"
-        expected_metric = "total DPS inside policy with unchanged cadence"
+        expected_metric = (
+            "owner damage closes the total DPS deficit with unchanged cadence and pet damage"
+            if owner_deficit_is_attributable
+            else "total DPS inside policy with unchanged cadence"
+        )
 
     passed = edge is None and all(row["status"] == "pass" for row in gates)
     next_work_unit: dict[str, Any] | None = None
@@ -572,6 +620,7 @@ def evaluate_canary(
                 "wowsims_landed_events": pet_reference["landed_events"],
                 "landed_event_cadence_ratio": pet_event_ratio,
                 "damage_per_event_ratio": pet_dpe_ratio,
+                "total_damage_ratio": pet_total_damage_ratio,
                 "alive_ratio": pet_alive,
                 "target_match_ratio": pet_target,
             },
