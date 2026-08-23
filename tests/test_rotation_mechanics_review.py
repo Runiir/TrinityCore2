@@ -237,6 +237,93 @@ def test_normalize_runtime_preserves_pre_scoring_pet_setup_blocker() -> None:
     ]
 
 
+def test_normalize_runtime_does_not_promote_successful_movement_from_partial_canary() -> None:
+    normalized = normalize_runtime_report(
+        {
+            "combat_calibration": {
+                "phase": "scored",
+                "window_seconds": 300,
+                "scored_seconds": 10.973,
+                "bots": [
+                    {
+                        "guid": 1306,
+                        "attempts": 9,
+                        "action_attempts": [
+                            {"spell_id": spell_id, "count": 1}
+                            for spell_id in range(1, 10)
+                        ],
+                        "result_counts": {"ok": 9},
+                        "elapsed_seconds": 10.973,
+                        "damage": 128591,
+                        "dps": 11718.86,
+                        "movement_diagnostic": {
+                            "active_path_traversal_mode": "native_complete_path",
+                            "active_path_valid": True,
+                            "last_recovery_result": "native_movement_submitted",
+                        },
+                        "persistent_setup": {
+                            "pet_present": True,
+                            "pet_spellbook_sha256": "a" * 64,
+                            "pet_admission_spellbook_sha256": "",
+                        },
+                        "decision_timeline": [
+                            {
+                                "elapsed_ms": index * 500,
+                                "result": "ok",
+                                "spell_id": index + 1,
+                                "target_distance": 7.56 if index else 8.0,
+                            }
+                            for index in range(9)
+                        ],
+                    }
+                ],
+            }
+        }
+    )
+
+    assert normalized["calibration_complete"] is False
+    assert normalized["pre_scoring_blockers"] == []
+    assert normalized["calibration_windows"] == [
+        {
+            "guid": 1306,
+            "elapsed_seconds": 10.973,
+            "damage": 128591,
+            "dps": 11718.86,
+            "pet_damage": 0,
+            "quality_metrics": {},
+        }
+    ]
+    assert normalized["result_counts"] == {"ok": 9}
+
+
+def test_normalize_runtime_preserves_explicit_movement_no_progress_blocker() -> None:
+    normalized = normalize_runtime_report(
+        {
+            "combat_calibration": {
+                "phase": "warmup",
+                "bots": [
+                    {
+                        "guid": 1306,
+                        "attempts": 0,
+                        "movement_diagnostic": {
+                            "last_recovery_result": "native_descent_no_progress_terminal"
+                        },
+                        "persistent_setup": {
+                            "pet_present": True,
+                            "pet_spellbook_sha256": "a" * 64,
+                            "pet_admission_spellbook_sha256": "a" * 64,
+                        },
+                    }
+                ],
+            }
+        }
+    )
+
+    assert normalized["pre_scoring_blockers"][0]["reason"] == (
+        "native_descent_no_progress_terminal"
+    )
+
+
 def _debug_result_with_pet_stats() -> dict:
     return {
         "raidMetrics": {

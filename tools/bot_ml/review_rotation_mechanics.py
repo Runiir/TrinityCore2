@@ -24,6 +24,37 @@ SCHEMA = "trinity_wowsims_rotation_mechanics_review_v1"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 GEAR_PROFILES = REPO_ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json"
 
+_NON_BLOCKING_MOVEMENT_RESULTS = {
+    "native_movement_submitted",
+    "higher_priority_movement_active",
+    "grounded_landing_and_onward_path_proven",
+}
+_EXPLICIT_MOVEMENT_BLOCKER_MARKERS = (
+    "reject",
+    "stuck",
+    "no_progress",
+    "no-progress",
+    "stall",
+    "repeated",
+    "unreachable",
+    "invalid_",
+    "_invalid",
+    "unsafe_native_path",
+    "no_fallback",
+)
+
+
+def _is_pre_scoring_blocker_result(result: str) -> bool:
+    """Keep successful movement evidence out of the warmup blocker ledger."""
+    normalized = result.strip().lower()
+    if not normalized:
+        return False
+    if normalized.startswith("persistent_setup_"):
+        return True
+    if normalized in _NON_BLOCKING_MOVEMENT_RESULTS:
+        return False
+    return any(marker in normalized for marker in _EXPLICIT_MOVEMENT_BLOCKER_MARKERS)
+
 _TRINITY_WEIGHT_COLUMNS = (
     "damage_weight",
     "healing_weight",
@@ -1596,7 +1627,7 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
             else {}
         )
         recovery_result = str(movement_diagnostic.get("last_recovery_result") or "")
-        if not calibration_complete and recovery_result:
+        if not calibration_complete and _is_pre_scoring_blocker_result(recovery_result):
             persistent_setup = (
                 bot.get("persistent_setup")
                 if isinstance(bot.get("persistent_setup"), dict)

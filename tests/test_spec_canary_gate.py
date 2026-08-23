@@ -197,6 +197,38 @@ def test_pre_scoring_pet_setup_blocker_precedes_missing_stats() -> None:
     assert decision["next_work_unit"]["mode"] == "single_fix"
 
 
+def test_partial_successful_movement_routes_to_capture_before_stat_or_dps_tuning() -> None:
+    review = _review()
+    review["runtime"]["calibration_complete"] = False
+    review["runtime"]["calibration_windows"] = [
+        {
+            "elapsed_seconds": 10.973,
+            "damage": 128591,
+            "pet_damage": 45685,
+            "dps": 11718.86,
+        }
+    ]
+    review["runtime"]["pre_scoring_blockers"] = []
+    review["effective_stat_parity"] = {
+        "status": "mismatch",
+        "first_broken_edge": "owner_effective_stat_application_before_rotation_execution",
+    }
+    decision = _evaluate(review)
+
+    assert decision["status"] == "insufficient_data"
+    assert decision["first_broken_edge"] == "calibration_pre_scoring_liveness"
+    assert decision["owner_skill"] == "raid-shard-architecture"
+    assert decision["next_work_unit"]["mode"] == "capture_only"
+    assert decision["next_work_unit"]["expected_metric"] == (
+        "one completed deterministic calibration window"
+    )
+    liveness_gate = next(
+        gate for gate in decision["gates"]
+        if gate["name"] == "calibration_pre_scoring_liveness"
+    )
+    assert liveness_gate["status"] == "insufficient_data"
+
+
 def test_matching_pet_cadence_with_low_damage_routes_native_mechanics() -> None:
     review = _review()
     review["runtime"]["calibration_windows"][0]["dps"] = 700

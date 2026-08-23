@@ -263,6 +263,15 @@ def evaluate_canary(
             else "raid-shard-architecture"
         )
         expected_metric = "calibration advances from warmup to one scored window"
+    elif not calibration_complete:
+        # An interrupted or partial window cannot establish stat, rotation, or
+        # DPS parity. Successful native movement is not a repair edge; ask for
+        # one clean capture before comparing downstream signals.
+        edge = "calibration_pre_scoring_liveness"
+        skill = "raid-shard-architecture"
+        mode = "capture_only"
+        expected_metric = "one completed deterministic calibration window"
+        evidence_gap = True
     elif stat_status != "match":
         reason = str((review.get("effective_stat_parity") or {}).get("reason") or "")
         if stat_status == "mismatch":
