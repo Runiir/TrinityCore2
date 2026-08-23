@@ -272,11 +272,13 @@ def test_final_pre_score_boundary_refreshes_pet_before_resource_observation() ->
         "bool consumablesSettled = true;",
         'if (Cohort().CalibrationMode == "single_target_300")',
     )
-    resource_reset = _between(
-        reset,
-        "void BotWorldPopulationMgr::ResetCalibrationInitialResources",
-        "void BotWorldPopulationMgr::ResetCalibrationScoredWindow",
+    resources = _source(
+        "src/server/game/Bots/BotWorldPopulationMgrCalibrationResourcesReset.cpp"
     )
+    resource_reset_start = resources.index(
+        "void BotWorldPopulationMgr::ResetCalibrationInitialResources"
+    )
+    resource_reset = resources[resource_reset_start:]
 
     assert final_boundary.index("pet->UpdatePetScalingAuras();") < (
         final_boundary.index("pet->UpdateAllStats();")
