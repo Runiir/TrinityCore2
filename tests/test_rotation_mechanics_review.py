@@ -1985,7 +1985,7 @@ def test_cast_cadence_separates_ordinary_starts_channel_starts_and_landed_events
         {
             "id": {"spellId": 1120, "tag": 0},
             "isPassive": False,
-            "targets": [{"unitIndex": 0, "casts": 2, "ticks": 4}],
+            "targets": [{"unitIndex": 0, "casts": 2, "ticks": 4, "critTicks": 2}],
         }
     )
     runtime = _cast_mix_runtime_with_duration(
@@ -2015,15 +2015,44 @@ def test_cast_cadence_separates_ordinary_starts_channel_starts_and_landed_events
     assert components["ordinary_cast_starts"]["trinity_per_second"] == 0.3
     assert components["channel_starts"]["wowsims_count"] == 2.0
     assert components["channel_starts"]["trinity_count"] == 2
-    assert components["channel_landed_events"]["wowsims_count"] == 4.0
+    assert components["channel_landed_events"]["wowsims_count"] == 6.0
     assert components["channel_landed_events"]["trinity_count"] == 4
+    assert components["channel_landed_events"]["wowsims_ticks_by_spell"] == {"1120": 4.0}
+    assert components["channel_landed_events"]["wowsims_crit_ticks_by_spell"] == {
+        "1120": 2.0
+    }
+    assert components["channel_landed_events"]["wowsims_counts_by_spell"] == {"1120": 6.0}
     assert (
         components["channel_landed_events"]["trinity_count_label"]
         == "runtime_spell_damage_event_count_not_proven_tick_equivalent"
     )
+    assert (
+        components["channel_landed_events"]["wowsims_count_label"]
+        == "aggregate_per_iteration_channel_landed_events_ticks_plus_crit_ticks"
+    )
     # The old aggregate remains available, but is explicitly not the ordinary rate.
     assert comparison["cast_cadence"]["wowsims_casts_per_second"] == 0.6
     assert comparison["cast_cadence_limitations"]
+
+
+def test_cast_cadence_keeps_non_channel_cast_starts_separate_from_tick_metrics():
+    result = _cast_mix_result(duration_seconds=10.0)
+    result["raidMetrics"]["parties"][0]["players"][0]["actions"][0]["targets"][0].update(
+        {"ticks": 10, "critTicks": 4}
+    )
+    comparison = build_review(
+        wowsims_apl=_cast_mix_apl(),
+        wowsims_result=result,
+        runtime_report=_cast_mix_runtime_with_duration([(100, "ok")], 10.0),
+    )["execution_comparison"]["cast_mix"]
+
+    components = comparison["cast_cadence_components"]
+    assert components["ordinary_cast_starts"]["wowsims_count"] == 4.0
+    assert components["ordinary_cast_starts"]["wowsims_counts_by_spell"] == {
+        "100": 3.0,
+        "200": 1.0,
+    }
+    assert components["channel_landed_events"]["wowsims_count"] == 0.0
 
 
 def test_cast_cadence_excludes_special_actions_without_equating_them_to_casts():

@@ -2589,7 +2589,9 @@ def _cast_cadence_components(
     The old aggregate cadence remains useful as a coarse scheduler signal, but
     it is not an ordinary-cast rate when a channel is present.  Only exact APL
     root identities are counted here; IDs appearing as both cast and channel
-    roots are excluded from both streams instead of being guessed.
+    roots are excluded from both streams instead of being guessed.  WoWSims
+    channel landed events are the sum of noncritical ``ticks`` and critical
+    ``critTicks`` metrics.
     """
     combat_rows = [row for row in wowsims.get("actions") or [] if row.get("phase") == "combat"]
     ordinary_rows = [row for row in combat_rows if row.get("action_kind") == "castSpell"]
@@ -2618,7 +2620,9 @@ def _cast_cadence_components(
 
     ordinary_counts: Counter[int] = Counter()
     channel_counts: Counter[int] = Counter()
+    channel_landed_event_counts: Counter[int] = Counter()
     channel_ticks: Counter[int] = Counter()
+    channel_crit_ticks: Counter[int] = Counter()
     for row in wowsims_result.get("action_metrics") or []:
         if not isinstance(row, dict):
             continue
@@ -2630,17 +2634,26 @@ def _cast_cadence_components(
             continue
         casts = float((row.get("per_iteration_target_metric_sums") or {}).get("casts") or 0.0)
         ticks = float((row.get("per_iteration_target_metric_sums") or {}).get("ticks") or 0.0)
+        crit_ticks = float(
+            (row.get("per_iteration_target_metric_sums") or {}).get("crit_ticks") or 0.0
+        )
         if spell_id in ordinary_ids and casts > 0 and _cast_mix_identity_matches_apl(
             identity,
             [item["identity"] for item in ordinary_rows],
         ):
             ordinary_counts[spell_id] += casts
-        if spell_id in channel_ids and (casts > 0 or ticks > 0) and _cast_mix_identity_matches_apl(
-            identity,
-            [item["identity"] for item in channel_rows],
+        if (
+            spell_id in channel_ids
+            and (casts > 0 or ticks > 0 or crit_ticks > 0)
+            and _cast_mix_identity_matches_apl(
+                identity,
+                [item["identity"] for item in channel_rows],
+            )
         ):
             channel_counts[spell_id] += casts
             channel_ticks[spell_id] += ticks
+            channel_crit_ticks[spell_id] += crit_ticks
+            channel_landed_event_counts[spell_id] += ticks + crit_ticks
 
     trinity_ordinary: Counter[int] = Counter()
     trinity_channels: Counter[int] = Counter()
@@ -2677,22 +2690,30 @@ def _cast_cadence_components(
     trinity_duration = _runtime_window_duration(runtime)
     ordinary_wowsims = sum(ordinary_counts.values())
     channel_wowsims = sum(channel_counts.values())
-    channel_wowsims_ticks = sum(channel_ticks.values())
+    channel_wowsims_landed_events = sum(channel_landed_event_counts.values())
     ordinary_trinity = sum(trinity_ordinary.values())
     channel_trinity = sum(trinity_channels.values())
     channel_trinity_events = sum(trinity_channel_events.values()) if event_counts_available else None
 
     channel_landed_events = _cadence_component(
-        wowsims_count=channel_wowsims_ticks,
+        wowsims_count=channel_wowsims_landed_events,
         trinity_count=channel_trinity_events,
         wowsims_duration=wowsims_duration,
         trinity_duration=trinity_duration,
-        wowsims_count_label="aggregate_per_iteration_channel_ticks",
+        wowsims_count_label="aggregate_per_iteration_channel_landed_events_ticks_plus_crit_ticks",
         trinity_count_label="runtime_spell_damage_event_count_not_proven_tick_equivalent",
     ) | {
         "wowsims_counts_by_spell": {
             str(spell_id): _stable_cast_mix_float(count)
+            for spell_id, count in sorted(channel_landed_event_counts.items())
+        },
+        "wowsims_ticks_by_spell": {
+            str(spell_id): _stable_cast_mix_float(count)
             for spell_id, count in sorted(channel_ticks.items())
+        },
+        "wowsims_crit_ticks_by_spell": {
+            str(spell_id): _stable_cast_mix_float(count)
+            for spell_id, count in sorted(channel_crit_ticks.items())
         },
         "trinity_counts_by_spell": {
             str(spell_id): int(count)
@@ -2760,8 +2781,9 @@ def _cast_cadence_components(
         },
         "interpretation": (
             "Ordinary cast starts and channel starts are separate streams. Channel landed "
-            "events are reported beside starts; runtime spell-damage event counts are not "
-            "declared tick-equivalent, and special/off-GCD actions remain excluded."
+            "events (WoWSims ticks plus critical ticks) are reported beside starts; runtime "
+            "spell-damage event counts are not declared tick-equivalent, and special/off-GCD "
+            "actions remain excluded."
         ),
     }
 
