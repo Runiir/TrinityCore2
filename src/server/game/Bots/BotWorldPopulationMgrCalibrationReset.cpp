@@ -902,6 +902,13 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
             bot, startedMs, metrics.ScoringStartPlayerStats);
         ObserveCalibrationEffectiveStats(
             bot->GetPet(), startedMs, metrics.ScoringStartPetStats);
+        metrics.WillOfUnbinding =
+            CalibrationMetrics::WillOfUnbindingObservation();
+        metrics.WillOfUnbinding.ScoringStartIntellect =
+            metrics.ScoringStartPlayerStats.Intellect;
+        metrics.WillOfUnbinding.ScoringStartSpellPower =
+            metrics.ScoringStartPlayerStats.SpellPower;
+        ObserveWillOfUnbinding(metrics, bot, startedMs);
         if (!metrics.InitialGearManifestSha256.empty())
         {
             std::vector<RaidRosterItemIdentity> observedGear;

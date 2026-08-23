@@ -334,6 +334,13 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     Player* bot = GetBot(state);
     CalibrationMetrics& metrics =
         Cohort().CalibrationMetricsByGuid[state.Guid.GetCounter()];
+    uint64 const observationNowMs = NowMs();
+    if (bot && Cohort().CalibrationScoredStartedMs
+        && !Cohort().CalibrationWindowComplete
+        && observationNowMs >= Cohort().CalibrationScoredStartedMs
+        && observationNowMs - Cohort().CalibrationScoredStartedMs
+            < CalibrationSingleTargetDurationMs)
+        ObserveWillOfUnbinding(metrics, bot, observationNowMs);
     if (bot && !Cohort().CalibrationScoredStartedMs
         && !Cohort().CalibrationWindowComplete)
         ++metrics.WarmupUpdateOrdinal;

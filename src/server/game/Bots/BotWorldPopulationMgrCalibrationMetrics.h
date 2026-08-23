@@ -247,6 +247,38 @@
             uint32 RejectedCount = 0;
             uint32 LastCastResult = 0;
         };
+        struct WillOfUnbindingStackTransition
+        {
+            uint64 ElapsedMs = 0;
+            uint8 PreviousStacks = 0;
+            uint8 CurrentStacks = 0;
+            float EffectiveIntellect = 0.0f;
+            int32 EffectiveSpellPower = 0;
+        };
+        struct WillOfUnbindingObservation
+        {
+            uint32 StackAuraSpellId = 109795;
+            uint32 ProcAuraSpellId = 109796;
+            uint32 ObservationSampleCount = 0;
+            uint32 StackTransitionCount = 0;
+            uint32 StackIncreaseCount = 0;
+            uint32 StackDecreaseCount = 0;
+            // The current calibration callback surface does not expose the
+            // proc event itself. Keep that limitation explicit; stack
+            // transitions remain useful landed-aura evidence and never feed
+            // gameplay or scoring.
+            bool ProcAttemptObservationAvailable = false;
+            bool ProcAcceptanceObservationAvailable = false;
+            uint32 ProcAttemptCount = 0;
+            uint32 ProcAcceptedCount = 0;
+            uint8 InitialStacks = 0;
+            uint8 LastObservedStacks = 0;
+            bool Initialized = false;
+            uint64 LastObservedAtMs = 0;
+            float ScoringStartIntellect = 0.0f;
+            int32 ScoringStartSpellPower = 0;
+            std::vector<WillOfUnbindingStackTransition> StackTransitions;
+        };
         struct PrimaryPetShadowBiteEvent
         {
             uint64 ElapsedMs = 0;
@@ -453,6 +485,10 @@
         // proc submission outcome here. Landed copied damage remains
         // unavailable without carrying spell context through Unit::DealDamage.
         std::map<uint32, DragonwrathCopyProcObservation> DragonwrathCopyProcs;
+        // Will of Unbinding is recorded as a bounded native aura observation.
+        // Proc attempts are intentionally reported unavailable until a native
+        // proc callback carries that context into the calibration receipt.
+        WillOfUnbindingObservation WillOfUnbinding;
         // Bounded, observation-only landed-event evidence for the primary pet's
         // Shadow Bite. It is captured after native damage has been resolved and
         // never participates in gameplay or scoring.

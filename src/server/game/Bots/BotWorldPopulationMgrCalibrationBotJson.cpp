@@ -151,6 +151,55 @@ void BotWorldPopulationMgr::AppendCalibrationBotActionJson(
                          << ",\"last_cast_result\":" << observation.LastCastResult
                          << '}';
                 }
+            json << "]},\"will_of_unbinding\":{\"schema\":\"trinity_will_of_unbinding_observation_v1\""
+                 << ",\"stack_aura_spell_id\":109795"
+                 << ",\"proc_aura_spell_id\":109796"
+                 << ",\"observation_sample_count\":"
+                 << (metrics ? metrics->WillOfUnbinding.ObservationSampleCount : 0)
+                 << ",\"stack_transition_count\":"
+                 << (metrics ? metrics->WillOfUnbinding.StackTransitionCount : 0)
+                 << ",\"stack_increase_count\":"
+                 << (metrics ? metrics->WillOfUnbinding.StackIncreaseCount : 0)
+                 << ",\"stack_decrease_count\":"
+                 << (metrics ? metrics->WillOfUnbinding.StackDecreaseCount : 0)
+                 << ",\"proc_attempt_observation_available\":"
+                 << (metrics && metrics->WillOfUnbinding.ProcAttemptObservationAvailable ? "true" : "false")
+                 << ",\"proc_acceptance_observation_available\":"
+                 << (metrics && metrics->WillOfUnbinding.ProcAcceptanceObservationAvailable ? "true" : "false")
+                 << ",\"proc_attempt_count\":"
+                 << (metrics ? metrics->WillOfUnbinding.ProcAttemptCount : 0)
+                 << ",\"proc_accepted_count\":"
+                 << (metrics ? metrics->WillOfUnbinding.ProcAcceptedCount : 0)
+                 << ",\"proc_observation_basis\":\"stack_transitions_only\""
+                 << ",\"initial_stacks\":"
+                 << (metrics ? uint32(metrics->WillOfUnbinding.InitialStacks) : 0)
+                 << ",\"last_observed_stacks\":"
+                 << (metrics ? uint32(metrics->WillOfUnbinding.LastObservedStacks) : 0)
+                 << ",\"last_observed_at_ms\":"
+                 << (metrics ? metrics->WillOfUnbinding.LastObservedAtMs : 0)
+                 << ",\"scoring_start_effective_intellect\":"
+                 << (metrics ? metrics->WillOfUnbinding.ScoringStartIntellect : 0.0f)
+                 << ",\"scoring_start_effective_spell_power\":"
+                 << (metrics ? metrics->WillOfUnbinding.ScoringStartSpellPower : 0)
+                 << ",\"stack_transitions\":[";
+            bool firstWillOfUnbindingTransition = true;
+            if (metrics)
+                for (CalibrationMetrics::WillOfUnbindingStackTransition const& transition
+                    : metrics->WillOfUnbinding.StackTransitions)
+                {
+                    if (!firstWillOfUnbindingTransition)
+                        json << ',';
+                    firstWillOfUnbindingTransition = false;
+                    json << "{\"elapsed_ms\":" << transition.ElapsedMs
+                         << ",\"previous_stacks\":"
+                         << uint32(transition.PreviousStacks)
+                         << ",\"current_stacks\":"
+                         << uint32(transition.CurrentStacks)
+                         << ",\"effective_intellect\":"
+                         << transition.EffectiveIntellect
+                         << ",\"effective_spell_power\":"
+                         << transition.EffectiveSpellPower << '}';
+                }
             json << "]},\"primary_pet_shadow_bite_events\":[";
             bool firstShadowBiteEvent = true;
             if (metrics)

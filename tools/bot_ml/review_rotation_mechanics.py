@@ -1614,6 +1614,7 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
     off_target_damage_events: list[dict[str, Any]] = []
     primary_pet_shadow_bite_events: list[dict[str, Any]] = []
     dragonwrath_copy_proc_observations: list[dict[str, Any]] = []
+    will_of_unbinding_observations: list[dict[str, Any]] = []
 
     trace_entries = ((document.get("trace") or {}).get("entries") or [])
     unique_attempts: set[tuple[int, int]] = set()
@@ -1843,6 +1844,91 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
                     ],
                 }
             )
+        will_of_unbinding = bot.get("will_of_unbinding")
+        if isinstance(will_of_unbinding, dict):
+            will_of_unbinding_observations.append(
+                {
+                    "bot_guid": bot_guid,
+                    "schema": str(will_of_unbinding.get("schema") or ""),
+                    "stack_aura_spell_id": int(
+                        will_of_unbinding.get("stack_aura_spell_id") or 0
+                    ),
+                    "proc_aura_spell_id": int(
+                        will_of_unbinding.get("proc_aura_spell_id") or 0
+                    ),
+                    "observation_sample_count": int(
+                        will_of_unbinding.get("observation_sample_count") or 0
+                    ),
+                    "stack_transition_count": int(
+                        will_of_unbinding.get("stack_transition_count") or 0
+                    ),
+                    "stack_increase_count": int(
+                        will_of_unbinding.get("stack_increase_count") or 0
+                    ),
+                    "stack_decrease_count": int(
+                        will_of_unbinding.get("stack_decrease_count") or 0
+                    ),
+                    "proc_attempt_observation_available": bool(
+                        will_of_unbinding.get(
+                            "proc_attempt_observation_available", False
+                        )
+                    ),
+                    "proc_acceptance_observation_available": bool(
+                        will_of_unbinding.get(
+                            "proc_acceptance_observation_available", False
+                        )
+                    ),
+                    "proc_attempt_count": int(
+                        will_of_unbinding.get("proc_attempt_count") or 0
+                    ),
+                    "proc_accepted_count": int(
+                        will_of_unbinding.get("proc_accepted_count") or 0
+                    ),
+                    "proc_observation_basis": str(
+                        will_of_unbinding.get("proc_observation_basis") or ""
+                    ),
+                    "initial_stacks": int(
+                        will_of_unbinding.get("initial_stacks") or 0
+                    ),
+                    "last_observed_stacks": int(
+                        will_of_unbinding.get("last_observed_stacks") or 0
+                    ),
+                    "last_observed_at_ms": int(
+                        will_of_unbinding.get("last_observed_at_ms") or 0
+                    ),
+                    "scoring_start_effective_intellect": float(
+                        will_of_unbinding.get(
+                            "scoring_start_effective_intellect", 0.0
+                        )
+                        or 0.0
+                    ),
+                    "scoring_start_effective_spell_power": int(
+                        will_of_unbinding.get(
+                            "scoring_start_effective_spell_power", 0
+                        )
+                        or 0
+                    ),
+                    "stack_transitions": [
+                        {
+                            "elapsed_ms": int(row.get("elapsed_ms") or 0),
+                            "previous_stacks": int(
+                                row.get("previous_stacks") or 0
+                            ),
+                            "current_stacks": int(
+                                row.get("current_stacks") or 0
+                            ),
+                            "effective_intellect": float(
+                                row.get("effective_intellect", 0.0) or 0.0
+                            ),
+                            "effective_spell_power": int(
+                                row.get("effective_spell_power") or 0
+                            ),
+                        }
+                        for row in will_of_unbinding.get("stack_transitions") or []
+                        if isinstance(row, dict)
+                    ],
+                }
+            )
         aggregate_results = bot.get("result_counts")
         if isinstance(aggregate_results, dict):
             for result, count in aggregate_results.items():
@@ -2001,6 +2087,15 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
     primary_pet_shadow_bite_events.sort(
         key=lambda event: (event["bot_guid"], event["elapsed_ms"])
     )
+    for observation in will_of_unbinding_observations:
+        observation["stack_transitions"].sort(
+            key=lambda event: (
+                event["elapsed_ms"],
+                event["previous_stacks"],
+                event["current_stacks"],
+            )
+        )
+    will_of_unbinding_observations.sort(key=lambda row: row["bot_guid"])
     health_ratios = [
         event["health"] / event["max_health"]
         for event in decision_timeline
@@ -2064,6 +2159,7 @@ def normalize_runtime_report(document: Any) -> dict[str, Any]:
         "off_target_damage_events": off_target_damage_events,
         "primary_pet_shadow_bite_events": primary_pet_shadow_bite_events,
         "dragonwrath_copy_proc_observations": dragonwrath_copy_proc_observations,
+        "will_of_unbinding_observations": will_of_unbinding_observations,
         "timeline_summary": {
             "sample_count": len(decision_timeline),
             "first_death_elapsed_ms": first_death["elapsed_ms"] if first_death else None,

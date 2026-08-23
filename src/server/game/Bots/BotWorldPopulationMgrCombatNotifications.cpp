@@ -240,6 +240,8 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
             bool const scored = Cohort().CalibrationScoredStartedMs && !Cohort().CalibrationWindowComplete
                 && nowMs >= Cohort().CalibrationScoredStartedMs
                 && windowElapsedMs < CalibrationSingleTargetDurationMs;
+            if (scored)
+                ObserveWillOfUnbinding(calibration->second, owner, nowMs);
             if (!scored)
             {
                 // The exact request is half-open [0, 300000). A map damage

@@ -203,6 +203,8 @@ private:
         Player* bot, Unit* target, bool scored);
     void ObserveCalibrationReferenceConditions(CalibrationMetrics& metrics,
         Player* bot, Unit* target, uint64 observedAtMs) const;
+    static void ObserveWillOfUnbinding(CalibrationMetrics& metrics,
+        Player* bot, uint64 observedAtMs);
     static void ObserveAfflictionCalibrationModifiers(CalibrationMetrics& metrics,
         Player* bot, Creature* fixtureTarget);
     static void ObserveAfflictionDamageStage(CalibrationMetrics& metrics,
