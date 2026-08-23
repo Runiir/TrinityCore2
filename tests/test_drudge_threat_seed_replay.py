@@ -196,6 +196,11 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
         / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/"
         "BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp"
     ).read_text(encoding="utf-8")
+    drudge_header = (
+        ROOT
+        / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/"
+        "BotWorldPopulationMgrValidationRouteDrudge.h"
+    ).read_text(encoding="utf-8")
     callback = (
         ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatLog.cpp"
     ).read_text(encoding="utf-8")
@@ -203,6 +208,11 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
     assert '#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeThreatSeedState.h"' in implementation
     assert '#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.h"' in lane
     assert "RunDrudgeSeedCoordinator(*this)" in lane
+    assert "PhaseResult RunDrudgeSeedCoordinator();" in drudge_header
+    assert "DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunDrudgeSeedCoordinator()" in seed
+    assert "DrudgeLaneContext::ExactDrudgeAuthorityRoster" in seed
+    assert "DrudgeLaneContext::ResolveDrudgeSeedCandidate" in seed
+    assert "bool ExactAuthorityRoster" not in seed
     assert "BotRaidDrudgeThreatSeed::CoordinatorResult const transition =" in seed
     assert "AdvanceCoordinator(seedState, input);" in seed
     assert "bothVictimsOwned" in seed
@@ -222,10 +232,10 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
     assert 'selected.Action.MaxRange <= 5.0f' in seed
     assert 'selected.Action.AutoAttackMode == "ranged"' not in seed
 
-    roster_gate = seed.index("bool ExactAuthorityRoster")
+    roster_gate = seed.index("bool DrudgeLaneContext::ExactDrudgeAuthorityRoster")
     assert "!member->IsInWorld() || !member->IsAlive()" in seed[roster_gate:]
     assert "!roster->second.Active || !roster->second.LeaseOwned" in seed[roster_gate:]
-    suppression = seed.index("void SuppressAllOffense")
+    suppression = seed.index("void DrudgeLaneContext::SuppressAllDrudgeOffense")
     release = seed.index("SetAllOffenseSuppressed(guid, false)", suppression)
     assert suppression < release
 

@@ -23,12 +23,16 @@ uint64 NowMs()
         GameTime::GetGameTimeSystemPoint().time_since_epoch()).count());
 }
 
+}
+
+namespace BotWorldPopulationMgrValidationRoute
+{
 using SeedGate = BotRaidDrudgeThreatSeed::RejectionGate;
 
-struct SeedCandidate
+struct DrudgeSeedCandidate
 {
     Player* Bot = nullptr;
-    BotWorldPopulationMgrBotState::WorldBotState* State = nullptr;
+    DrudgeLaneContext::WorldBotState* State = nullptr;
     ResolvedCombatAction Action;
     uint32 MemberSlot = 0;
     float Distance = 0.0f;
@@ -44,8 +48,10 @@ struct SeedCandidate
 
 using Context = BotWorldPopulationMgrValidationRoute::DrudgeLaneContext;
 using WorldBotState = Context::WorldBotState;
+using SeedCandidate = BotWorldPopulationMgrValidationRoute::DrudgeSeedCandidate;
 
-BotRaidDrudgeThreatSeed::Scope CurrentScope(Context const& context)
+BotRaidDrudgeThreatSeed::Scope DrudgeLaneContext::CurrentDrudgeSeedScope(
+    Context const& context)
 {
     return {
         context.Manager.Cohort().AttemptId,
@@ -54,7 +60,8 @@ BotRaidDrudgeThreatSeed::Scope CurrentScope(Context const& context)
     };
 }
 
-BotRaidDrudgeThreatSeed::State ReadSeedState(Context const& context,
+BotRaidDrudgeThreatSeed::State DrudgeLaneContext::ReadDrudgeSeedState(
+    Context const& context,
     BotRaidDrudgeThreatSeed::Scope scope)
 {
     auto const& party = context.Manager.Party();
@@ -77,7 +84,8 @@ BotRaidDrudgeThreatSeed::State ReadSeedState(Context const& context,
     return state;
 }
 
-void ApplySeedState(Context& context, BotRaidDrudgeThreatSeed::CoordinatorResult const& result)
+void DrudgeLaneContext::ApplyDrudgeSeedState(Context& context,
+    BotRaidDrudgeThreatSeed::CoordinatorResult const& result)
 {
     auto& party = context.Manager.Party();
     if (result.ScopeReset)
@@ -93,7 +101,7 @@ void ApplySeedState(Context& context, BotRaidDrudgeThreatSeed::CoordinatorResult
     party.ValidationRouteDrudgeThreatSeedFailure = result.Next.Failure;
 }
 
-bool ExactAuthorityRoster(Context const& context)
+bool DrudgeLaneContext::ExactDrudgeAuthorityRoster(Context const& context)
 {
     auto const& manager = context.Manager;
     std::set<uint32> authorityRosterGuids;
@@ -113,7 +121,7 @@ bool ExactAuthorityRoster(Context const& context)
     return exact && authorityRosterGuids.size() == manager.Cohort().Raid.RosterByGuid.size();
 }
 
-void SuppressAllOffense(Context const& context)
+void DrudgeLaneContext::SuppressAllDrudgeOffense(Context const& context)
 {
     auto& manager = context.Manager;
     for (WorldBotState const& memberState : manager.Party().Bots)
@@ -125,7 +133,8 @@ void SuppressAllOffense(Context const& context)
         }
 }
 
-SeedCandidate ResolveCandidate(Context const& context, uint32 lane,
+SeedCandidate DrudgeLaneContext::ResolveDrudgeSeedCandidate(
+    Context const& context, uint32 lane,
     BotRaidDrudgeThreatSeed::State const& seedState)
 {
     using namespace BotRaidDrudgeThreatSeed;
@@ -228,7 +237,8 @@ SeedCandidate ResolveCandidate(Context const& context, uint32 lane,
     return selected;
 }
 
-void AppendEvidence(Context& context, uint32 lane, SeedCandidate const& candidate,
+void DrudgeLaneContext::AppendDrudgeSeedEvidence(Context& context, uint32 lane,
+    SeedCandidate const& candidate,
     BotRaidDrudgeThreatSeed::Scope scope, uint64 observedAtMs)
 {
     if (lane >= context.Sources.size())
@@ -263,12 +273,9 @@ void AppendEvidence(Context& context, uint32 lane, SeedCandidate const& candidat
     if (candidate.ActionAttempted && !candidate.ActionSucceeded)
         evidence.ActionResult += ":" + std::string(ToString(candidate.NativeResult));
 }
-}
-
-namespace BotWorldPopulationMgrValidationRoute
+DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunDrudgeSeedCoordinator()
 {
-DrudgeLaneContext::PhaseResult RunDrudgeSeedCoordinator(DrudgeLaneContext& context)
-{
+    Context& context = *this;
     auto& manager = context.Manager;
     auto& party = manager.Party();
     if (context.Sources.size() != 2 || !context.Sources[0] || !context.Sources[1]
@@ -292,8 +299,8 @@ DrudgeLaneContext::PhaseResult RunDrudgeSeedCoordinator(DrudgeLaneContext& conte
         return DrudgeLaneContext::PhaseResult::Handled;
     }
 
-    BotRaidDrudgeThreatSeed::Scope const scope = CurrentScope(context);
-    BotRaidDrudgeThreatSeed::State const seedState = ReadSeedState(context, scope);
+    BotRaidDrudgeThreatSeed::Scope const scope = CurrentDrudgeSeedScope(*this);
+    BotRaidDrudgeThreatSeed::State const seedState = ReadDrudgeSeedState(*this, scope);
     bool const bothVictimsOwned = context.LaneTank && context.OtherTank
         && context.Sources[0]->GetVictim() == (context.LaneIndex == 0
             ? context.LaneTank : context.OtherTank)
@@ -326,7 +333,7 @@ DrudgeLaneContext::PhaseResult RunDrudgeSeedCoordinator(DrudgeLaneContext& conte
     {
         BotRaidDrudgeThreatSeed::CoordinatorResult const transition =
             BotRaidDrudgeThreatSeed::AdvanceCoordinator(seedState, input);
-        ApplySeedState(context, transition);
+        ApplyDrudgeSeedState(*this, transition);
         context.HoldOffense();
         char const* reason = !input.PrepullStaged ? "prepull_staging"
             : !input.OwnershipSafe ? "tank_victim_ownership"
@@ -341,12 +348,12 @@ DrudgeLaneContext::PhaseResult RunDrudgeSeedCoordinator(DrudgeLaneContext& conte
         return DrudgeLaneContext::PhaseResult::Handled;
     }
 
-    bool const exactAuthorityRoster = ExactAuthorityRoster(context);
+    bool const exactAuthorityRoster = ExactDrudgeAuthorityRoster(*this);
     std::array<SeedCandidate, 2> candidates;
     for (uint32 lane = 0; lane < candidates.size(); ++lane)
-        candidates[lane] = ResolveCandidate(context, lane, seedState);
+        candidates[lane] = ResolveDrudgeSeedCandidate(*this, lane, seedState);
 
-    SuppressAllOffense(context);
+    SuppressAllDrudgeOffense(*this);
     if (exactAuthorityRoster)
         for (uint32 lane = 0; lane < candidates.size(); ++lane)
             if (candidates[lane].Available && candidates[lane].Bot
@@ -372,6 +379,8 @@ DrudgeLaneContext::PhaseResult RunDrudgeSeedCoordinator(DrudgeLaneContext& conte
                     candidates[lane].Gate = SeedGate::NativeAction;
                     candidates[lane].Reason = "native_action_rejected";
                 }
+                else
+                    candidates[lane].Reason = "native_action_ok";
                 BotRaidAreaAuthority::SetAllOffenseSuppressed(guid, true);
                 BotRaidAreaAuthority::Set(guid, true);
             }
@@ -395,7 +404,7 @@ DrudgeLaneContext::PhaseResult RunDrudgeSeedCoordinator(DrudgeLaneContext& conte
     }
     BotRaidDrudgeThreatSeed::CoordinatorResult const transition =
         BotRaidDrudgeThreatSeed::AdvanceCoordinator(seedState, input);
-    ApplySeedState(context, transition);
+    ApplyDrudgeSeedState(*this, transition);
     uint64 const observedAtMs = NowMs();
     for (uint32 lane = 0; lane < candidates.size(); ++lane)
     {
@@ -403,7 +412,7 @@ DrudgeLaneContext::PhaseResult RunDrudgeSeedCoordinator(DrudgeLaneContext& conte
             party.ValidationRouteDrudgeThreatSeedRosterGuids.insert(
                 candidates[lane].Bot->GetGUID().GetCounter());
         if (!seedState.SeededLanes[lane])
-            AppendEvidence(context, lane, candidates[lane], scope, observedAtMs);
+            AppendDrudgeSeedEvidence(*this, lane, candidates[lane], scope, observedAtMs);
         if (candidates[lane].ActionSucceeded)
             context.Record(context.Sources[lane],
                 "drudge_pre_first_rush_threat_seed", context.SourceSeparation, lane);
@@ -418,5 +427,10 @@ DrudgeLaneContext::PhaseResult RunDrudgeSeedCoordinator(DrudgeLaneContext& conte
     context.Target = context.LaneSource;
     context.State.TargetGuid = context.LaneSource->GetGUID();
     return DrudgeLaneContext::PhaseResult::Handled;
+}
+
+DrudgeLaneContext::PhaseResult RunDrudgeSeedCoordinator(DrudgeLaneContext& context)
+{
+    return context.RunDrudgeSeedCoordinator();
 }
 }

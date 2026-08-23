@@ -5,6 +5,7 @@
 #include "Bots/BotWorldPopulationMgrConfig.h"
 #include "Bots/BotWorldPopulationMgrRouteState.h"
 #include "Bots/BotTypes.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeThreatSeedState.h"
 
 #include <functional>
 #include <string>
@@ -44,6 +45,8 @@ struct DrudgeLaneRequest
     float RouteArrivalRadius = 18.0f;
     DrudgeLaneCallbacks Callbacks;
 };
+
+struct DrudgeSeedCandidate;
 
 struct DrudgeLaneContext
 {
@@ -151,6 +154,22 @@ struct DrudgeLaneContext
     PhaseResult BuildAnchorPolicies();
     PhaseResult RunFormationActions();
     PhaseResult RunThreatAndEvidenceActions();
+    PhaseResult RunDrudgeSeedCoordinator();
+
+    static BotRaidDrudgeThreatSeed::Scope CurrentDrudgeSeedScope(
+        DrudgeLaneContext const& context);
+    static BotRaidDrudgeThreatSeed::State ReadDrudgeSeedState(
+        DrudgeLaneContext const& context, BotRaidDrudgeThreatSeed::Scope scope);
+    static void ApplyDrudgeSeedState(DrudgeLaneContext& context,
+        BotRaidDrudgeThreatSeed::CoordinatorResult const& result);
+    static bool ExactDrudgeAuthorityRoster(DrudgeLaneContext const& context);
+    static void SuppressAllDrudgeOffense(DrudgeLaneContext const& context);
+    static DrudgeSeedCandidate ResolveDrudgeSeedCandidate(
+        DrudgeLaneContext const& context, uint32 lane,
+        BotRaidDrudgeThreatSeed::State const& seedState);
+    static void AppendDrudgeSeedEvidence(DrudgeLaneContext& context, uint32 lane,
+        DrudgeSeedCandidate const& candidate, BotRaidDrudgeThreatSeed::Scope scope,
+        uint64 observedAtMs);
 
     void HoldOffense();
     void Record(Creature* source, char const* result,
