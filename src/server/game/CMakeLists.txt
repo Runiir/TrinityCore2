@@ -17,6 +17,8 @@ CollectSourceFiles(
 list(APPEND PRIVATE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotActionExecutor.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotClassSpecActionProfile.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotClassSpecActionProfileCandidates.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotClassSpecActionProfileDb.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotCombatActionCatalog.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotController.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotControllerCombat.cpp
