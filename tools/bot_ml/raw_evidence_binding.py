@@ -6,6 +6,7 @@ import json
 import math
 from decimal import Decimal, InvalidOperation
 from fractions import Fraction
+from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from .phase8_reference_conditions import (
@@ -32,7 +33,7 @@ SUPPORTED_EVIDENCE_KINDS = {
     "stonecore_5h",
 }
 DPS_HARD_REFERENCE_RATIO = 0.75
-DPS_OPTIMIZATION_REFERENCE_RATIO = 0.85
+DPS_OPTIMIZATION_REFERENCE_RATIO = 0.8
 DPS_SERIALIZED_DECIMAL_PLACES = 2
 DPS_SERIALIZED_ABSOLUTE_TOLERANCE = 0.005000001
 DERIVED_ACTIVE_DPS_ABSOLUTE_TOLERANCE = 0.000001
@@ -47,6 +48,11 @@ _DECISIVE_EVENT_ACTIONS = {
     "validation_route_terminal",
     "teacher_kill_assist",
 }
+
+DEFAULT_ROLE_CALIBRATION_POLICY = (
+    Path(__file__).resolve().parents[2]
+    / "experiments/configs/all_spec_role_calibration_policy_v1.json"
+)
 
 
 def canonical_sha256(value: Any) -> str:
@@ -162,6 +168,46 @@ def _exact_fraction(value: Any, *, field: str) -> Fraction:
     if not decimal_value.is_finite():
         raise RawEvidenceBindingError(f"{field} must be a finite number")
     return Fraction(decimal_value)
+
+
+def calibration_reference_thresholds(
+    policy_sha256: Any = None,
+) -> tuple[float, float, Fraction, Fraction]:
+    """Load and validate the DPS thresholds from the authoritative policy."""
+    try:
+        policy = json.loads(
+            DEFAULT_ROLE_CALIBRATION_POLICY.read_text(encoding="utf-8")
+        )
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RawEvidenceBindingError(
+            "calibration scoring policy is unavailable or invalid"
+        ) from exc
+    if not isinstance(policy, Mapping):
+        raise RawEvidenceBindingError("calibration scoring policy is not an object")
+    supplied_policy_sha256 = str(policy_sha256 or "")
+    if supplied_policy_sha256 and supplied_policy_sha256 != canonical_sha256(policy):
+        raise RawEvidenceBindingError(
+            "calibration scoring policy hash does not match the authoritative policy"
+        )
+    hard_fraction = _exact_fraction(
+        policy.get("hard_reference_ratio"), field="hard_reference_ratio"
+    )
+    optimization_fraction = _exact_fraction(
+        policy.get("optimization_reference_ratio"),
+        field="optimization_reference_ratio",
+    )
+    if not (
+        Fraction(0) < hard_fraction < optimization_fraction <= Fraction(1)
+    ):
+        raise RawEvidenceBindingError(
+            "calibration scoring policy thresholds are not strictly ordered"
+        )
+    return (
+        float(hard_fraction),
+        float(optimization_fraction),
+        hard_fraction,
+        optimization_fraction,
+    )
 
 
 def _fraction_projection(value: Fraction) -> dict[str, int]:
@@ -1128,9 +1174,15 @@ def _raw_target_scoring(
     reference_value = _number(reference_authority.get("reference_value"))
     hard_ratio = _number(contract.get("hard_reference_ratio"))
     optimization_ratio = _number(contract.get("optimization_reference_ratio"))
-    if hard_ratio != DPS_HARD_REFERENCE_RATIO or optimization_ratio != DPS_OPTIMIZATION_REFERENCE_RATIO:
+    (
+        policy_hard_ratio,
+        policy_optimization_ratio,
+        hard_ratio_fraction,
+        optimization_ratio_fraction,
+    ) = calibration_reference_thresholds(contract.get("policy_sha256"))
+    if hard_ratio != policy_hard_ratio or optimization_ratio != policy_optimization_ratio:
         raise RawEvidenceBindingError(
-            "calibration scoring contract does not pin the 75/85 policy"
+            "calibration scoring contract does not match the authoritative policy"
         )
     reference_fraction = _exact_fraction(
         reference_value, field="calibration reference_value"
@@ -1139,12 +1191,6 @@ def _raw_target_scoring(
         exact_elapsed_dps / reference_fraction
         if reference_fraction > 0
         else Fraction(0)
-    )
-    hard_ratio_fraction = _exact_fraction(
-        hard_ratio, field="hard_reference_ratio"
-    )
-    optimization_ratio_fraction = _exact_fraction(
-        optimization_ratio, field="optimization_reference_ratio"
     )
     fixture = _single_target_fixture_evaluation(calibration, target)
     reference_compatibility = _derive_raw_reference_compatibility(
@@ -1299,8 +1345,16 @@ def _reported_target_scoring(
         float(exact_reference_ratio), DERIVED_RATIO_SERIALIZED_DECIMAL_PLACES
     )
     reported_reference_ratio = _number(evaluation.get("reference_ratio"))
-    expected_hard_passed = exact_reference_ratio >= Fraction(3, 4)
-    expected_optimization_met = exact_reference_ratio >= Fraction(17, 20)
+    (
+        hard_ratio,
+        optimization_ratio,
+        hard_ratio_fraction,
+        optimization_ratio_fraction,
+    ) = calibration_reference_thresholds(
+        evaluation.get("policy_sha256") if record else None
+    )
+    expected_hard_passed = exact_reference_ratio >= hard_ratio_fraction
+    expected_optimization_met = exact_reference_ratio >= optimization_ratio_fraction
     if record:
         if (
             abs(reported_reference_ratio - serialized_reference_ratio)
@@ -1372,8 +1426,8 @@ def _reported_target_scoring(
         "reference_request_catalog_sha256": str(
             reference_authority["reference_request_catalog_sha256"]
         ),
-        "hard_reference_ratio": DPS_HARD_REFERENCE_RATIO,
-        "optimization_reference_ratio": DPS_OPTIMIZATION_REFERENCE_RATIO,
+        "hard_reference_ratio": hard_ratio,
+        "optimization_reference_ratio": optimization_ratio,
         "reference_ratio": serialized_reference_ratio,
         "exact_reference_ratio": _fraction_projection(exact_reference_ratio),
         "reference_ratio_arithmetic_contract": {

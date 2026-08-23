@@ -23,10 +23,9 @@ try:
         verify_report_acceptance,
     )
     from .raw_evidence_binding import (
-        DPS_HARD_REFERENCE_RATIO,
-        DPS_OPTIMIZATION_REFERENCE_RATIO,
         RawEvidenceBindingError,
         build_transport_receipt,
+        calibration_reference_thresholds,
         parse_json_objects as parse_raw_json_objects,
         projection_from_raw,
         projection_from_report,
@@ -41,10 +40,9 @@ except ImportError:
         verify_report_acceptance,
     )
     from raw_evidence_binding import (
-        DPS_HARD_REFERENCE_RATIO,
-        DPS_OPTIMIZATION_REFERENCE_RATIO,
         RawEvidenceBindingError,
         build_transport_receipt,
+        calibration_reference_thresholds,
         parse_json_objects as parse_raw_json_objects,
         projection_from_raw,
         projection_from_report,
@@ -280,13 +278,16 @@ def _calibration_scoring_contract(report: Mapping[str, Any]) -> dict[str, Any]:
     policy_sha256 = str(evaluation.get("policy_sha256") or "")
     if record and not re.fullmatch(r"[0-9a-f]{64}", policy_sha256):
         raise BatchLifecycleError("calibration evaluation has no exact policy hash")
+    hard_reference_ratio, optimization_reference_ratio, _, _ = (
+        calibration_reference_thresholds(policy_sha256 if record else None)
+    )
     return {
         "schema": "bot_calibration_scoring_contract_v1",
         "reference_value": reference_value,
         "reference_basis": str(metrics.get("reference_basis") or ""),
         "reference_id": str(identity.get("reference_id") or ""),
-        "hard_reference_ratio": DPS_HARD_REFERENCE_RATIO,
-        "optimization_reference_ratio": DPS_OPTIMIZATION_REFERENCE_RATIO,
+        "hard_reference_ratio": hard_reference_ratio,
+        "optimization_reference_ratio": optimization_reference_ratio,
         "record_sha256": record_sha256,
         "policy_sha256": policy_sha256,
         "reference_condition_contract": {

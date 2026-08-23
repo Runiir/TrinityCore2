@@ -24,6 +24,12 @@ from tools.bot_ml.run_live_bot_validation import (
 _REAL_GENERATED_REFERENCE_SCORING_AUTHORITY = (
     raw_binding._generated_reference_scoring_authority
 )
+_CALIBRATION_POLICY = json.loads(
+    (Path(__file__).parents[1] / "experiments/configs/all_spec_role_calibration_policy_v1.json").read_text(
+        encoding="utf-8"
+    )
+)
+_CALIBRATION_POLICY_SHA256 = lifecycle.canonical_sha256(_CALIBRATION_POLICY)
 
 
 def _test_generated_reference_authority(
@@ -281,7 +287,7 @@ def _attach_role_scoring(report: dict, calibration: dict) -> None:
         "hard_floor_passed": True,
         "optimization_target_met": True,
         "record_sha256": lifecycle.canonical_sha256(record),
-        "policy_sha256": "d" * 64,
+        "policy_sha256": _CALIBRATION_POLICY_SHA256,
     }
 
 
@@ -621,7 +627,7 @@ def test_two_decimal_server_dps_rounding_contract_is_deterministic(tmp_path: Pat
     }
 
 
-def test_serialized_dps_rounding_cannot_promote_exact_ratio_over_85_percent(
+def test_serialized_dps_rounding_cannot_promote_exact_ratio_over_policy_threshold(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ):
     monkeypatch.setattr(
@@ -633,10 +639,10 @@ def test_serialized_dps_rounding_cannot_promote_exact_ratio_over_85_percent(
     target = calibration["previous_window"]["bots"][0]
     target.update(
         {
-            "damage": 13_799_675,
-            "primary_target_damage": 13_799_675,
+            "damage": 12_987_500,
+            "primary_target_damage": 12_987_500,
             "elapsed_seconds": 300.0,
-            "dps": 45_998.92,
+            "dps": 43_291.67,
         }
     )
     target["quality_metrics"]["active_uptime_ratio"] = 1.0
@@ -645,17 +651,17 @@ def test_serialized_dps_rounding_cannot_promote_exact_ratio_over_85_percent(
     metrics.update(
         {
             "reference_value": 54_116.37374,
-            "measured_value": 45_998.92,
-            "elapsed_dps": 45_998.92,
-            "active_dps": 13_799_675 / 300,
+            "measured_value": 43_291.67,
+            "elapsed_dps": 43_291.67,
+            "active_dps": 12_987_500 / 300,
         }
     )
     evaluation = report["role_calibration_evaluation"]
     evaluation.update(
         {
-            "reference_ratio": 0.85,
+            "reference_ratio": 0.799974,
             "hard_floor_passed": True,
-            # Rounded emitted DPS is above 85%; exact damage/time is below it.
+            # Rounded emitted DPS is above the exact value, but exact ratio is below 80%.
             "optimization_target_met": True,
             "record_sha256": lifecycle.canonical_sha256(
                 report["role_calibration_record"]
@@ -679,13 +685,71 @@ def test_serialized_dps_rounding_cannot_promote_exact_ratio_over_85_percent(
         (tmp_path / "accepted/batch/raw/decisive_projection.json").read_text()
     )
     scoring = projection["decisive"]["selected_target_scoring"]
-    assert scoring["serialized_elapsed_dps"] == 45_998.92
-    assert scoring["elapsed_dps"] == pytest.approx(45_998.916666666664)
-    assert scoring["reference_ratio"] == 0.85
+    assert scoring["serialized_elapsed_dps"] == 43_291.67
+    assert scoring["elapsed_dps"] == pytest.approx(43_291.666666666664)
+    assert scoring["reference_ratio"] == 0.799974
     assert scoring["optimization_target_met"] is False
     assert scoring["reference_ratio_arithmetic_contract"][
         "threshold_comparison"
     ] == "exact_rational_before_serialization"
+
+
+def test_policy_ratio_between_eighty_and_eighty_five_binds_and_booleans_are_checked(
+    tmp_path: Path,
+):
+    calibration = _calibration_payload()
+    target = calibration["previous_window"]["bots"][0]
+    target.update(
+        {
+            "damage": 12_045_000,
+            "primary_target_damage": 12_045_000,
+            "elapsed_seconds": 300.0,
+            "dps": 40_150.0,
+        }
+    )
+    target["quality_metrics"]["active_uptime_ratio"] = 1.0
+    report = _calibration_report(calibration)
+    report["role_calibration_record"]["metrics"].update(
+        {
+            "measured_value": 40_150.0,
+            "elapsed_dps": 40_150.0,
+            "active_dps": 40_150.0,
+        }
+    )
+    report["role_calibration_evaluation"].update(
+        {
+            "reference_ratio": 0.803,
+            "hard_floor_passed": True,
+            "optimization_target_met": True,
+            "record_sha256": lifecycle.canonical_sha256(
+                report["role_calibration_record"]
+            ),
+        }
+    )
+
+    _capture_calibration(tmp_path / "accepted", report, [calibration, *_cleanup_payloads()])
+    projection = json.loads(
+        (tmp_path / "accepted/batch/raw/decisive_projection.json").read_text()
+    )
+    scoring = projection["decisive"]["selected_target_scoring"]
+    assert 0.80 < scoring["reference_ratio"] < 0.85
+    assert scoring["hard_reference_ratio"] == 0.75
+    assert scoring["optimization_reference_ratio"] == 0.8
+    assert scoring["hard_floor_passed"] is True
+    assert scoring["optimization_target_met"] is True
+
+    for field in ("hard_floor_passed", "optimization_target_met"):
+        tampered = copy.deepcopy(report)
+        tampered["role_calibration_evaluation"][field] = False
+        with pytest.raises(
+            lifecycle.BatchLifecycleError,
+            match=f"{field} does not match exact DPS ratio",
+        ):
+            _capture_calibration(
+                tmp_path / f"tampered-{field}",
+                tampered,
+                [calibration, *_cleanup_payloads()],
+            )
 
 
 def test_inconsistent_reported_active_dps_is_rejected(tmp_path: Path):
