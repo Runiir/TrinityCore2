@@ -64,6 +64,39 @@ int main()
         *gates[index] = true;
     }
 
+    // An incomplete seed is fail-closed before the native clock edge, but a
+    // scoped landed Rush plus closed/failed seed releases the existing
+    // post-Rush recovery fallback. This does not mark the seed successful.
+    Input failedSeed = exact;
+    failedSeed.SeedProfileActionsAccepted = false;
+    failedSeed.SeedWindowClosedOrFailed = true;
+    failedSeed.FirstNativeRushObserved = false;
+    Result beforeRush = Evaluate(failedSeed);
+    assert(!beforeRush.CombatAuthorityAllowed);
+    assert(beforeRush.BlockingEvidence == Blocker::FirstNativeRush);
+
+    failedSeed.FirstNativeRushObserved = true;
+    failedSeed.BothTankAnchorsAccepted = false;
+    failedSeed.BothTankVictimsAccepted = false;
+    failedSeed.ExactRosterReseparated = false;
+    failedSeed.ProfileActionAccepted = false;
+    Result postRushRecovery = Evaluate(failedSeed);
+    assert(postRushRecovery.CombatAuthorityAllowed);
+    assert(postRushRecovery.BlockingEvidence == Blocker::PostRushSeedRecovery);
+
+    // A complete seed never takes the escape edge: success remains gated by
+    // exact reseparation and a later accepted profile action.
+    Input successfulSeed = exact;
+    successfulSeed.ExactRosterReseparated = false;
+    Result beforeReseparation = Evaluate(successfulSeed);
+    assert(!beforeReseparation.CombatAuthorityAllowed);
+    assert(beforeReseparation.BlockingEvidence == Blocker::ExactRosterReseparation);
+    successfulSeed.ExactRosterReseparated = true;
+    successfulSeed.ProfileActionAccepted = false;
+    Result beforeProfile = Evaluate(successfulSeed);
+    assert(!beforeProfile.CombatAuthorityAllowed);
+    assert(beforeProfile.BlockingEvidence == Blocker::ProfileAction);
+
     // A generic/adaptive profile does not inherit this exact validation latch.
     Input generic = exact;
     generic.ExactRouteProfile = false;
@@ -106,6 +139,7 @@ def test_exact_drudge_candidates_fail_closed_behind_the_typed_route_latch():
 
     assert ACTIVATION.name in preparation
     assert "BotRaidDrudgeActivation::Evaluate(activationInput)" in preparation
+    assert "SeedWindowClosedOrFailed" in preparation
     assert "context.DrudgeCombatAuthorityAllowed" in candidates
     assert '"drudge_activation_latch_closed"' in fallback
     assert fallback.count('"drudge_activation_latch_closed"') == 3

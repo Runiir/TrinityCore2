@@ -316,6 +316,9 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                     && !party.ValidationRouteDrudgeThreatSeedFailure
                     && party.ValidationRouteDrudgeThreatSeedRosterGuids.size() == 2
                     && seedLane0 && seedLane1;
+                bool const seedWindowClosedOrFailed = seedScope
+                    && (party.ValidationRouteDrudgeThreatSeedClosed
+                        || party.ValidationRouteDrudgeThreatSeedFailure);
                 bool const firstNativeRushObserved = std::any_of(
                     party.ValidationRouteDrudgeChargeObservations.begin(),
                     party.ValidationRouteDrudgeChargeObservations.end(),
@@ -359,6 +362,8 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                         party.ValidationRouteDrudgeTauntRosterGuids);
                 activationInput.SeedProfileActionsAccepted =
                     seedProfileActionsAccepted;
+                activationInput.SeedWindowClosedOrFailed =
+                    seedWindowClosedOrFailed;
                 activationInput.FirstNativeRushObserved = firstNativeRushObserved;
                 activationInput.ExactRosterReseparated = exactRosterReseparated;
                 activationInput.ProfileActionAccepted = profileActionAccepted;

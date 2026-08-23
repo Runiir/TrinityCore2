@@ -14,6 +14,7 @@ struct Input
     bool BothTankAnchorsAccepted = false;
     bool BothTankVictimsAccepted = false;
     bool SeedProfileActionsAccepted = false;
+    bool SeedWindowClosedOrFailed = false;
     bool FirstNativeRushObserved = false;
     bool ExactRosterReseparated = false;
     bool ProfileActionAccepted = false;
@@ -28,6 +29,7 @@ enum class Blocker
     TankVictims,
     SeedProfileActions,
     FirstNativeRush,
+    PostRushSeedRecovery,
     ExactRosterReseparation,
     ProfileAction,
 };
@@ -42,6 +44,14 @@ inline Result Evaluate(Input const& input)
 {
     if (!input.ExactRouteProfile)
         return { true, Blocker::NotExactRoute };
+    if (!input.FirstNativeRushObserved)
+        return { false, Blocker::FirstNativeRush };
+    // A native Rush is the irreversible seed-window clock edge.  If the
+    // configured seed did not complete before that edge, release only the
+    // generic/adaptive combat fallback so the existing post-Rush recovery can
+    // run. The failed/closed seed evidence remains visible to the route.
+    if (!input.SeedProfileActionsAccepted && input.SeedWindowClosedOrFailed)
+        return { true, Blocker::PostRushSeedRecovery };
     if (!input.ExactRosterPrepullStaged)
         return { false, Blocker::ExactRosterPrepull };
     if (!input.BothTankAnchorsAccepted)
@@ -50,8 +60,6 @@ inline Result Evaluate(Input const& input)
         return { false, Blocker::TankVictims };
     if (!input.SeedProfileActionsAccepted)
         return { false, Blocker::SeedProfileActions };
-    if (!input.FirstNativeRushObserved)
-        return { false, Blocker::FirstNativeRush };
     if (!input.ExactRosterReseparated)
         return { false, Blocker::ExactRosterReseparation };
     if (!input.ProfileActionAccepted)
