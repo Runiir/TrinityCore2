@@ -20918,10 +20918,6 @@ bool Player::IsAffectedBySpellmod(SpellInfo const* spellInfo, SpellModifier cons
             if (spellInfo->GetDuration() == -1)
                 return false;
             break;
-        case SpellModOp::CritChance: // mod crit to spells that can't crit
-            if (!spellInfo->HasAttribute(SPELL_ATTR0_CU_CAN_CRIT))
-                return false;
-            break;
         case SpellModOp::PointsIndex0: // check if spell has any effect at that index
         case SpellModOp::Points:
             if (!spellInfo->Effects[EFFECT_0].IsEffect())

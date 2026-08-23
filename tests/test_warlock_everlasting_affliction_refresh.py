@@ -8,6 +8,8 @@ SQL = (
 )
 SPELL = ROOT / "src/server/scripts/Spells/spell_warlock.cpp"
 SPELL_MGR = ROOT / "src/server/game/Spells/SpellMgr.cpp"
+PLAYER = ROOT / "src/server/game/Entities/Player/Player.cpp"
+UNIT = ROOT / "src/server/game/Entities/Unit/Unit.cpp"
 
 
 def test_everlasting_affliction_trigger_spell_binding_is_idempotent() -> None:
@@ -68,3 +70,22 @@ def test_everlasting_affliction_ranks_route_to_corruption_class_mask() -> None:
 
     assert "ApplySpellFix({ 47201, 47202, 47203 }" in fix
     assert "spellInfo->Effects[EFFECT_1].SpellClassMask[0] |= 2;" in fix
+
+
+def test_periodic_crit_spellmods_are_not_filtered_by_direct_crit_gate() -> None:
+    player = PLAYER.read_text()
+    start = player.index("bool Player::IsAffectedBySpellmod")
+    end = player.index("template <class T>\nvoid Player::GetSpellModValues", start)
+    helper = player[start:end]
+
+    # Unit::SpellCritChanceDone owns the direct-spell legality check. Keeping a
+    # second check here prevents periodic auras, which explicitly pass
+    # isPeriodic=true, from receiving CritChance spellmods.
+    assert "case SpellModOp::CritChance" not in helper
+
+    unit = UNIT.read_text()
+    start = unit.index("float Unit::SpellCritChanceDone")
+    end = unit.index("float Unit::SpellCritChanceTaken", start)
+    crit_chance = unit[start:end]
+    assert "if (!isPeriodic && !spellInfo->HasAttribute(SPELL_ATTR0_CU_CAN_CRIT))" in crit_chance
+    assert "modOwner->ApplySpellMod(spellInfo, SpellModOp::CritChance, crit_chance);" in crit_chance
