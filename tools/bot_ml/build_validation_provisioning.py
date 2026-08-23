@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import json
 import re
@@ -42,11 +43,22 @@ VALIDATION_GHOST_AURA_ID = 8326
 SPELL_EFFECT_LEARN_GLYPH = 74
 ITEM_SPARSE_FMT = "niiiffiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiifiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiisssssiiiiiiiiiiiiiiiiiiiiiifiiifii"
 SPELL_ITEM_ENCHANTMENT_FMT = "nxiiiiiixxxiiisiiiiiiix"
+SOCKET_ENCHANTMENT_FIELD_OFFSETS = (6, 9, 12)
+BONUS_ENCHANTMENT_FIELD_OFFSET = 15
+PRISMATIC_ENCHANTMENT_FIELD_OFFSET = 18
+EBONSTEEL_BELT_BUCKLE_ENCHANT_ID = 3729
+ITEM_SPARSE_SOCKET_COLOR_FIELDS = (118, 119, 120)
+ITEM_SPARSE_SOCKET_BONUS_FIELD = 124
+HOTFIX_ITEM_SOCKET_COLOR_FIELDS = (119, 120, 121)
+HOTFIX_ITEM_SOCKET_BONUS_FIELD = 125
+HOTFIX_ITEM_TEMPLATE_SOURCE = REPO_ROOT / "sql/old/4.3.4/TDB00_to_TDB01_updates/world/096_item_template.sql"
 _GLYPH_ITEM_TO_PROPERTY_CACHE: dict[Path, dict[int, int]] = {}
 _GLYPH_PROPERTY_TYPE_CACHE: dict[Path, dict[int, int]] = {}
 _TALENT_DATA_CACHE: dict[Path, tuple[dict[int, list[Any]], dict[int, list[int]]]] = {}
 _MASTERY_SPELLS_BY_TREE_CACHE: dict[Path, dict[int, list[int]]] = {}
 _GEM_ITEM_ENCHANT_CACHE: dict[Path, dict[int, int]] = {}
+_GEM_ENCHANT_COLOR_CACHE: dict[Path, dict[int, int]] = {}
+_ITEM_SOCKET_METADATA_CACHE: dict[Path, dict[int, dict[str, Any]]] = {}
 _ENCHANTMENT_SOURCE_ITEM_CACHE: dict[Path, dict[int, int]] = {}
 _ITEM_LIMIT_CATEGORY_BY_ITEM_CACHE: dict[Path, dict[int, int]] = {}
 _ITEM_LIMIT_CATEGORY_QUANTITY_CACHE: dict[Path, dict[int, int]] = {}
@@ -327,6 +339,114 @@ def gem_item_enchant_map(dbc_dir: Path = DEFAULT_DBC_DIR) -> dict[int, int]:
     return mapping
 
 
+def gem_enchant_color_map(dbc_dir: Path = DEFAULT_DBC_DIR) -> dict[int, int]:
+    """Return the client gem color mask for each verified enchantment ID."""
+    dbc_dir = dbc_dir.resolve()
+    cached = _GEM_ENCHANT_COLOR_CACHE.get(dbc_dir)
+    if cached is not None:
+        return cached
+    properties_path = dbc_dir / "GemProperties.dbc"
+    if not properties_path.is_file():
+        _GEM_ENCHANT_COLOR_CACHE[dbc_dir] = {}
+        return {}
+    mapping: dict[int, int] = {}
+    for row in load_wdbc_values(properties_path, "nixxii"):
+        enchant_id = int(row[1])
+        color = int(row[4])
+        if enchant_id > 0 and color > 0:
+            mapping.setdefault(enchant_id, color)
+    _GEM_ENCHANT_COLOR_CACHE[dbc_dir] = mapping
+    return mapping
+
+
+def _socket_metadata_row(
+    item_id: int,
+    socket_colors: list[Any],
+    socket_bonus_id: Any,
+) -> dict[str, Any]:
+    return {
+        "item_id": int(item_id),
+        "socket_colors": [int(value or 0) for value in socket_colors[:3]],
+        "socket_bonus_id": int(socket_bonus_id or 0),
+    }
+
+
+def item_socket_metadata(dbc_dir: Path = DEFAULT_DBC_DIR) -> dict[int, dict[str, Any]]:
+    """Load native socket colors and socket-bonus enchantments from item data.
+
+    The client DB2 is authoritative for normal items.  A small set of
+    Cataclysm legendary/quest items is supplied by Trinity's checked-in
+    4.3.4 hotfix SQL instead of the client snapshot, so those rows fill only
+    missing IDs.  This keeps socket activation data item-driven and avoids
+    spec-specific gear exceptions in the provisioning path.
+    """
+    dbc_dir = dbc_dir.resolve()
+    cached = _ITEM_SOCKET_METADATA_CACHE.get(dbc_dir)
+    if cached is not None:
+        return cached
+
+    metadata: dict[int, dict[str, Any]] = {}
+    sparse_path = dbc_dir / "Item-sparse.db2"
+    if sparse_path.is_file():
+        for values in load_wdb2_values(sparse_path, ITEM_SPARSE_FMT):
+            item_id = int(values[0])
+            if item_id <= 0:
+                continue
+            metadata[item_id] = _socket_metadata_row(
+                item_id,
+                [values[index] for index in ITEM_SPARSE_SOCKET_COLOR_FIELDS],
+                values[ITEM_SPARSE_SOCKET_BONUS_FIELD],
+            )
+
+    if HOTFIX_ITEM_TEMPLATE_SOURCE.is_file():
+        for line in HOTFIX_ITEM_TEMPLATE_SOURCE.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if not stripped.startswith("(") or ")," not in stripped:
+                continue
+            try:
+                values = next(
+                    csv.reader(
+                        [stripped[1 : stripped.rfind("),")]],
+                        delimiter=",",
+                        quotechar="'",
+                        doublequote=True,
+                        skipinitialspace=True,
+                    )
+                )
+                item_id = int(values[0])
+                if item_id <= 0 or item_id in metadata:
+                    continue
+                metadata[item_id] = _socket_metadata_row(
+                    item_id,
+                    [values[index] for index in HOTFIX_ITEM_SOCKET_COLOR_FIELDS],
+                    values[HOTFIX_ITEM_SOCKET_BONUS_FIELD],
+                )
+            except (IndexError, ValueError):
+                continue
+
+    _ITEM_SOCKET_METADATA_CACHE[dbc_dir] = metadata
+    return metadata
+
+
+def socket_metadata_for_item(
+    item: dict[str, Any],
+    dbc_dir: Path = DEFAULT_DBC_DIR,
+) -> dict[str, Any]:
+    """Resolve explicit profile socket metadata, falling back to client data."""
+    has_explicit_colors = "socket_colors" in item
+    has_explicit_bonus = "socket_bonus_id" in item or "socket_bonus_enchant_id" in item
+    if has_explicit_colors or has_explicit_bonus:
+        return _socket_metadata_row(
+            int(item.get("item_id") or 0),
+            item.get("socket_colors") or [],
+            item.get("socket_bonus_id") or item.get("socket_bonus_enchant_id") or 0,
+        )
+    return item_socket_metadata(dbc_dir).get(
+        int(item.get("item_id") or 0),
+        _socket_metadata_row(int(item.get("item_id") or 0), [], 0),
+    )
+
+
 def item_limit_category_by_item_map(dbc_dir: Path = DEFAULT_DBC_DIR) -> dict[int, int]:
     dbc_dir = dbc_dir.resolve()
     cached = _ITEM_LIMIT_CATEGORY_BY_ITEM_CACHE.get(dbc_dir)
@@ -363,7 +483,11 @@ def item_limit_category_quantity_map(dbc_dir: Path = DEFAULT_DBC_DIR) -> dict[in
     return mapping
 
 
-def runtime_safe_enchantments(item: dict[str, Any], gem_mapping: dict[int, int] | None = None) -> str:
+def runtime_safe_enchantments(
+    item: dict[str, Any],
+    gem_mapping: dict[int, int] | None = None,
+    dbc_dir: Path = DEFAULT_DBC_DIR,
+) -> str:
     values = [0] * 45
     raw = str(item.get("enchantments") or "").split()
     for index, token in enumerate(raw[:45]):
@@ -384,11 +508,55 @@ def runtime_safe_enchantments(item: dict[str, Any], gem_mapping: dict[int, int] 
             for gem_item_id, gem_enchant_id in gem_pairs
         )
     if verified_socket_mapping:
-        for socket_offset, enchant_id in zip((6, 9, 12), gem_enchant_ids):
+        for socket_offset, enchant_id in zip(SOCKET_ENCHANTMENT_FIELD_OFFSETS, gem_enchant_ids):
             values[socket_offset] = int(enchant_id or 0)
     else:
-        for socket_offset in (6, 9, 12):
+        for socket_offset in SOCKET_ENCHANTMENT_FIELD_OFFSETS:
             values[socket_offset] = 0
+
+    socket_metadata = socket_metadata_for_item(item, dbc_dir)
+    socket_colors = [int(value or 0) for value in socket_metadata.get("socket_colors", [])]
+    socket_bonus_id = int(socket_metadata.get("socket_bonus_id") or 0)
+    if socket_colors or socket_bonus_id:
+        gem_colors = gem_enchant_color_map(dbc_dir)
+        first_prismatic = next(
+            (index for index, color in enumerate(socket_colors) if not color),
+            len(socket_colors),
+        )
+        native_sockets_fit = bool(socket_colors)
+        for index, socket_color in enumerate(socket_colors):
+            if not socket_color:
+                break
+            if index >= len(gem_enchant_ids) or not int(gem_enchant_ids[index] or 0):
+                native_sockets_fit = False
+                break
+            gem_color = gem_colors.get(int(gem_enchant_ids[index]), 0)
+            if not gem_color or not (gem_color & socket_color):
+                native_sockets_fit = False
+                break
+        if verified_socket_mapping and native_sockets_fit:
+            values[BONUS_ENCHANTMENT_FIELD_OFFSET] = socket_bonus_id
+        else:
+            values[BONUS_ENCHANTMENT_FIELD_OFFSET] = 0
+
+        extra_gem_indices = [
+            index
+            for index, enchant_id in enumerate(gem_enchant_ids)
+            if int(enchant_id or 0) and index >= first_prismatic
+        ]
+        explicit_prismatic_id = int(item.get("prismatic_enchant_id") or 0)
+        if explicit_prismatic_id:
+            values[PRISMATIC_ENCHANTMENT_FIELD_OFFSET] = explicit_prismatic_id
+        elif (
+            verified_socket_mapping
+            and int(item.get("slot", -1)) == 5
+            and extra_gem_indices == [first_prismatic]
+            and first_prismatic > 0
+            and first_prismatic < len(SOCKET_ENCHANTMENT_FIELD_OFFSETS)
+        ):
+            values[PRISMATIC_ENCHANTMENT_FIELD_OFFSET] = EBONSTEEL_BELT_BUCKLE_ENCHANT_ID
+        else:
+            values[PRISMATIC_ENCHANTMENT_FIELD_OFFSET] = 0
     if int(item.get("reforge_id") or 0):
         values[24] = int(item["reforge_id"])
     return " ".join(str(value) for value in values)
@@ -502,22 +670,22 @@ def load_gear_profiles(path: Path | None) -> dict[str, Any]:
                 for offset, enchant_id in zip((6, 9, 12), gem_enchant_ids):
                     enchantment_fields[offset] = enchant_id
                 enchantment_fields[24] = int(source_item.get("reforging") or 0)
-                equipment.append(
-                    {
-                        "slot": slot,
-                        "item_id": int(source_item["id"]),
-                        "enchant_id": int(source_item.get("enchant") or 0),
-                        "source_temp_enchant_id": int(source_item.get("temp_enchant") or 0),
-                        "temp_enchant_id": runtime_temp_enchant,
-                        "temp_enchant_duration_ms": runtime_temp_enchant_duration_ms,
-                        "gem_item_ids": gem_items,
-                        "gem_enchant_ids": gem_enchant_ids,
-                        "reforge_id": int(source_item.get("reforging") or 0),
-                        "enchantments": " ".join(str(value) for value in enchantment_fields),
-                        "inventory_type": inventory_types.get(slot, 0),
-                        "preserve_socket_enchantments": True,
-                    }
-                )
+                item = {
+                    "slot": slot,
+                    "item_id": int(source_item["id"]),
+                    "enchant_id": int(source_item.get("enchant") or 0),
+                    "source_temp_enchant_id": int(source_item.get("temp_enchant") or 0),
+                    "temp_enchant_id": runtime_temp_enchant,
+                    "temp_enchant_duration_ms": runtime_temp_enchant_duration_ms,
+                    "gem_item_ids": gem_items,
+                    "gem_enchant_ids": gem_enchant_ids,
+                    "reforge_id": int(source_item.get("reforging") or 0),
+                    "enchantments": " ".join(str(value) for value in enchantment_fields),
+                    "inventory_type": inventory_types.get(slot, 0),
+                    "preserve_socket_enchantments": True,
+                }
+                item["enchantments"] = runtime_safe_enchantments(item)
+                equipment.append(item)
             profiles[name] = {"equipment": equipment, "source": source_profile.get("source", {})}
     return profiles
 
@@ -699,6 +867,7 @@ def build_character_insert_sql(
     config: dict[str, Any],
     action_profiles: dict[str, Any] | None = None,
     gem_mapping: dict[int, int] | None = None,
+    dbc_dir: Path = DEFAULT_DBC_DIR,
 ) -> str:
     action_profiles = action_profiles or DEFAULT_ACTION_PROFILES
     lines = [
@@ -819,7 +988,7 @@ def build_character_insert_sql(
                 )
             for item in bot.get("equipment", []):
                 item_guid += 1
-                enchantments = runtime_safe_enchantments(item, gem_mapping)
+                enchantments = runtime_safe_enchantments(item, gem_mapping, dbc_dir)
                 lines.append(
                     "INSERT INTO `characters`.`item_instance` (`guid`, `itemEntry`, `owner_guid`, `creatorGuid`, `giftCreatorGuid`, `count`, `duration`, `charges`, `flags`, `enchantments`, `randomPropertyType`, `randomPropertyId`, `durability`, `creationTime`, `text`) "
                     f"SELECT {item_guid}, {int(item['item_id'])}, c.`guid`, 0, 0, 1, 0, '', 0, {sql_quote(enchantments)}, 0, 0, {int(item.get('durability', 100))}, UNIX_TIMESTAMP(), '' FROM `characters`.`characters` c WHERE c.`name` = {sql_quote(name)};"
@@ -980,6 +1149,21 @@ def main() -> int:
         load_gear_profiles(args.gear_profiles),
     )
     gem_mapping = gem_item_enchant_map(args.dbc_dir)
+    socket_metadata = item_socket_metadata(args.dbc_dir)
+    missing_socket_metadata = [
+        (str(bot.get("name") or ""), int(item.get("item_id") or 0))
+        for scenario in config.get("scenarios", [])
+        for bot in scenario.get("bots", [])
+        for item in bot.get("equipment", [])
+        if any(int(value or 0) for value in item.get("gem_item_ids", []))
+        and int(item.get("item_id") or 0) not in socket_metadata
+        and not ("socket_colors" in item or "socket_bonus_id" in item)
+    ]
+    if missing_socket_metadata:
+        raise ValueError(
+            "validation provisioning is missing deterministic socket metadata for "
+            + ", ".join(f"{name}:{item_id}" for name, item_id in missing_socket_metadata)
+        )
     invalid_gem_layouts = [
         (str(bot.get("name") or ""), int(item.get("item_id") or 0), len(gem_item_ids), len(gem_enchant_ids))
         for scenario in config.get("scenarios", [])
@@ -1034,7 +1218,7 @@ def main() -> int:
     args.output_dir.mkdir(parents=True, exist_ok=True)
     account_command_text = account_commands(config)
     account_sql = build_account_insert_sql(config)
-    character_sql = build_character_insert_sql(config, action_profiles, gem_mapping)
+    character_sql = build_character_insert_sql(config, action_profiles, gem_mapping, args.dbc_dir)
     (args.output_dir / "account_commands.txt").write_text(account_command_text, encoding="utf-8")
     (args.output_dir / "provision_accounts.sql").write_text(account_sql, encoding="utf-8")
     (args.output_dir / "provision_characters.sql").write_text(character_sql, encoding="utf-8")

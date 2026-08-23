@@ -852,7 +852,7 @@ def validate_generated_artifacts(config: dict[str, Any], provisioning_report_pat
     expected_payloads = {
         "account_commands.txt": account_commands(config).encode("utf-8"),
         "provision_accounts.sql": build_account_insert_sql(config).encode("utf-8"),
-        "provision_characters.sql": build_character_insert_sql(config, gem_mapping=gem_item_enchant_map(dbc_dir)).encode("utf-8"),
+        "provision_characters.sql": build_character_insert_sql(config, gem_mapping=gem_item_enchant_map(dbc_dir), dbc_dir=dbc_dir).encode("utf-8"),
         "report.json": (json.dumps(expected_report, indent=2, sort_keys=True, default=str) + "\n").encode("utf-8"),
     }
     manifest = load_json(output_dir / "manifest.json")

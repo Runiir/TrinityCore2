@@ -76,7 +76,7 @@ from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, h
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
 from tools.bot_ml.build_validation_gear_profiles import SHIELD_CLASSES, build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_item_limit_categories, load_spell_item_enchantments, select_gem
-from tools.bot_ml.build_validation_provisioning import VALIDATION_FULL_STAT_SEED, apply_gear_profiles, bot_known_spell_ids, bot_mastery_spell_ids, bot_primary_tree_spell_ids, bot_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, equipment_cache, glyph_item_to_property_map, glyph_property_type_map, load_config as load_validation_provisioning_config, load_config_with_bwd_diagnostic_shards, load_gear_profiles, main as provisioning_main, normalized_glyph_slots, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, srp6_registration_data, talent_point_count, validate_talent_manifest
+from tools.bot_ml.build_validation_provisioning import BONUS_ENCHANTMENT_FIELD_OFFSET, PRISMATIC_ENCHANTMENT_FIELD_OFFSET, VALIDATION_FULL_STAT_SEED, apply_gear_profiles, bot_known_spell_ids, bot_mastery_spell_ids, bot_primary_tree_spell_ids, bot_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, equipment_cache, glyph_item_to_property_map, glyph_property_type_map, load_config as load_validation_provisioning_config, load_config_with_bwd_diagnostic_shards, load_gear_profiles, main as provisioning_main, normalized_glyph_slots, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, srp6_registration_data, talent_point_count, validate_talent_manifest
 from tools.bot_ml.validate_validation_provisioning import REQUIRED_COLUMNS as PROVISIONING_REQUIRED_COLUMNS
 from tools.bot_ml.validate_validation_provisioning import build_report as provisioning_verify_report
 from tools.bot_ml.validate_validation_provisioning import main as provisioning_verify_main
@@ -9740,6 +9740,52 @@ def test_validation_provisioning_preserves_verified_gems_with_empty_socket():
 
     assert fields[6] == "4331"
     assert fields[9] == "0"
+
+
+def test_validation_provisioning_activates_item_socket_bonus_and_belt_buckle():
+    fields = runtime_safe_enchantments(
+        {
+            "slot": 5,
+            "item_id": 78391,
+            "gem_item_ids": [71881, 71881, 71881],
+            "gem_enchant_ids": [4331, 4331, 4331],
+        }
+    ).split()
+
+    assert fields[BONUS_ENCHANTMENT_FIELD_OFFSET] == "4144"
+    assert fields[PRISMATIC_ENCHANTMENT_FIELD_OFFSET] == "3729"
+
+
+def test_validation_provisioning_uses_checked_in_hotfix_socket_data_for_copied_item():
+    fields = runtime_safe_enchantments(
+        {
+            "slot": 15,
+            "item_id": 71086,
+            "gem_item_ids": [71881, 71881, 71881],
+            "gem_enchant_ids": [4331, 4331, 4331],
+        }
+    ).split()
+
+    assert fields[BONUS_ENCHANTMENT_FIELD_OFFSET] == "4150"
+    assert fields[PRISMATIC_ENCHANTMENT_FIELD_OFFSET] == "0"
+
+
+def test_validation_provisioning_affliction_overlay_restores_250_socket_intellect():
+    profile = load_gear_profiles(Path("dataset/validation_gear_profiles/profiles.json"))["affliction_warlock"]
+    bonus_intellect = {
+        4143: 10,
+        4144: 20,
+        4149: 20,
+        4150: 30,
+    }
+    payloads = [
+        list(map(int, runtime_safe_enchantments(item).split()))
+        for item in profile["equipment"]
+    ]
+
+    assert sum(bonus_intellect.get(payload[BONUS_ENCHANTMENT_FIELD_OFFSET], 0) for payload in payloads) == 250
+    belt = next(payload for item, payload in zip(profile["equipment"], payloads) if item["slot"] == 5)
+    assert belt[PRISMATIC_ENCHANTMENT_FIELD_OFFSET] == 3729
 
 
 def test_validation_provisioning_rejects_incomplete_gem_mapping():
