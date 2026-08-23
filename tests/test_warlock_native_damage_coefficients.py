@@ -156,6 +156,21 @@ def test_shadow_embrace_restores_canonical_all_ranks_native_proc_binding() -> No
     assert "AddAura(32389" not in migration
 
 
+def test_drain_soul_execute_multiplier_restores_combined_deaths_embrace_bonus() -> None:
+    source = (ROOT / "src/server/game/Spells/Auras/SpellAuraEffects.cpp").read_text()
+
+    assert "AddPct(damage, 25)" not in source
+    assert "IsScriptOverriden(GetSpellInfo(), script)" in source
+    assert "(200.0f + deathsEmbracePct) / (100.0f + deathsEmbracePct)" in source
+
+    def combined_multiplier(deaths_embrace_pct: float) -> float:
+        execute_ratio = (200.0 + deaths_embrace_pct) / (100.0 + deaths_embrace_pct)
+        return (1.0 + deaths_embrace_pct / 100.0) * execute_ratio
+
+    assert abs(combined_multiplier(0.0) - 2.0) < 1e-9
+    assert abs(combined_multiplier(12.0) - 2.12) < 1e-9
+
+
 def test_shadow_embrace_restores_rank_chain_with_native_proc_and_no_cheat_injection() -> None:
     migration = (
         ROOT

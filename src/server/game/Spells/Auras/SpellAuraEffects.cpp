@@ -5808,7 +5808,21 @@ void AuraEffect::HandlePeriodicDamageAurasTick(Unit* target, Unit* caster) const
                 // Drain Soul
                 if (GetSpellInfo()->SpellFamilyFlags[0] & 0x00004000)
                     if (target->GetHealthPct() <= 25.0f)
-                        AddPct(damage, 25);
+                    {
+                        int32 deathsEmbracePct = 0;
+                        if (caster)
+                        {
+                            Unit* owner = caster->GetOwner() ? caster->GetOwner() : caster;
+                            for (int32 script : { 6917, 6926, 6928 })
+                                if (AuraEffect* deathsEmbrace = owner->IsScriptOverriden(GetSpellInfo(), script))
+                                {
+                                    deathsEmbracePct = deathsEmbrace->GetAmount();
+                                    break;
+                                }
+                        }
+
+                        damage = CalculatePct(damage, 100.0f * (200.0f + deathsEmbracePct) / (100.0f + deathsEmbracePct));
+                    }
                 break;
             default:
                 break;
