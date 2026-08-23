@@ -882,6 +882,7 @@ def _normalize_action_metric(
         "dodges",
         "parries",
         "blocks",
+        "critBlocks",
         "glances",
         "damage",
         "healing",

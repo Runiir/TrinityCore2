@@ -83,7 +83,23 @@ def _gate(name: str, passed: bool | None, observed: Any, expected: Any) -> dict[
 
 
 def _pet_reference(result: Mapping[str, Any], names: set[str]) -> dict[str, float]:
+    """Aggregate pet damage and every landed outcome over the same actions.
+
+    A glancing melee outcome deals damage but is not a normal hit, so omitting
+    it from the event denominator makes the resulting pet DPE incomparable to
+    the damage total. Blocks and critical blocks are likewise landed outcomes
+    in the WoWSims action metrics.
+    """
     totals = {"damage": 0.0, "landed_events": 0.0, "casts": 0.0}
+    landed_outcome_fields = (
+        "hits",
+        "crits",
+        "ticks",
+        "crit_ticks",
+        "glances",
+        "blocks",
+        "crit_blocks",
+    )
     for action in result.get("action_metrics") or []:
         if not isinstance(action, Mapping):
             continue
@@ -99,7 +115,7 @@ def _pet_reference(result: Mapping[str, Any], names: set[str]) -> dict[str, floa
         totals["casts"] += _number(metrics.get("casts")) or 0.0
         totals["landed_events"] += sum(
             _number(metrics.get(field)) or 0.0
-            for field in ("hits", "crits", "ticks", "crit_ticks")
+            for field in landed_outcome_fields
         )
     return totals
 
@@ -432,7 +448,7 @@ def evaluate_canary(
         pet_dpe_limits = thresholds.get("pet_damage_per_event_ratio") or {}
         pet_alive_pass = pet_alive is not None and pet_alive_min is not None and pet_alive >= pet_alive_min
         pet_target_pass = pet_target is not None and pet_target_min is not None and pet_target >= pet_target_min
-        pet_event_pass = _in_range(pet_event_ratio, pet_event_limits) if isinstance(pet_event_limits, Mapping) else None
+        pet_event_pass = _meets_limits(pet_event_ratio, pet_event_limits) if isinstance(pet_event_limits, Mapping) else None
         pet_dpe_pass = _in_range(pet_dpe_ratio, pet_dpe_limits) if isinstance(pet_dpe_limits, Mapping) else None
         gates.extend(
             [

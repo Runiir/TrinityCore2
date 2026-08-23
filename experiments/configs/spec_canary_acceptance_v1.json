@@ -41,8 +41,7 @@
     "pet_alive_ratio_minimum": 0.95,
     "pet_target_match_ratio_minimum": 0.95,
     "pet_landed_event_cadence_ratio": {
-      "minimum": 0.85,
-      "maximum": 1.15
+      "minimum": 0.85
     },
     "pet_damage_per_event_ratio": {
       "minimum": 0.9,

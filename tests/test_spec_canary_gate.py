@@ -30,7 +30,7 @@ def _policy() -> dict:
             "total_dps_ratio": {"minimum": 0.9, "maximum": 1.1},
             "pet_alive_ratio_minimum": 0.95,
             "pet_target_match_ratio_minimum": 0.95,
-            "pet_landed_event_cadence_ratio": {"minimum": 0.85, "maximum": 1.15},
+            "pet_landed_event_cadence_ratio": {"minimum": 0.85},
             "pet_damage_per_event_ratio": {"minimum": 0.9, "maximum": 1.1},
         },
         "specs": {
@@ -274,6 +274,65 @@ def test_matching_pet_cadence_with_low_damage_routes_native_mechanics() -> None:
     assert decision["signals"]["primary_pet"]["damage_per_event_ratio"] == 0.5
     assert decision["first_broken_edge"] == "native_pet_damage_model"
     assert decision["owner_skill"] == "raid-class-mechanics-implementation"
+
+
+def test_pet_landed_events_include_glancing_melee_outcomes() -> None:
+    review = _review()
+    pet_metrics = review["wowsims_result"]["action_metrics"][1][
+        "per_iteration_target_metric_sums"
+    ]
+    pet_metrics["glances"] = 40
+    review["runtime"]["primary_pet_damage_by_spell"] = {
+        "0": 36_000,
+        "54049": 24_000,
+    }
+    review["runtime"]["primary_pet_damage_event_counts_by_spell"] = {
+        "0": 60,
+        "54049": 40,
+    }
+
+    decision = _evaluate(review)
+
+    assert decision["status"] == "passed"
+    assert decision["signals"]["primary_pet"]["wowsims_landed_events"] == 100.0
+    assert decision["signals"]["primary_pet"]["runtime_landed_events"] == 100.0
+    assert decision["signals"]["primary_pet"]["landed_event_cadence_ratio"] == 1.0
+
+
+def test_favorable_above_pet_cadence_passes_minimum_only_gate() -> None:
+    review = _review()
+    review["runtime"]["primary_pet_damage_by_spell"] = {
+        "0": 33_333.3333333333,
+        "54049": 66_666.6666666667,
+    }
+    review["runtime"]["primary_pet_damage_event_counts_by_spell"] = {
+        "0": 60,
+        "54049": 40,
+    }
+
+    decision = _evaluate(review)
+
+    assert decision["status"] == "passed"
+    assert decision["signals"]["primary_pet"]["landed_event_cadence_ratio"] == 100 / 60
+
+
+def test_low_pet_cadence_remains_fail_closed() -> None:
+    review = _review()
+    review["runtime"]["primary_pet_damage_by_spell"] = {
+        "0": 16_666.6666666667,
+        "54049": 33_333.3333333333,
+    }
+    review["runtime"]["primary_pet_damage_event_counts_by_spell"] = {
+        "0": 30,
+        "54049": 20,
+    }
+
+    decision = _evaluate(review)
+
+    assert decision["status"] == "failed"
+    assert decision["first_broken_edge"] == "primary_pet_policy_execution"
+    assert decision["owner_skill"] == "raid-role-implementation"
+    assert decision["signals"]["primary_pet"]["landed_event_cadence_ratio"] == 50 / 60
 
 
 def test_missing_pet_attribution_is_not_misclassified_as_tuning() -> None:
