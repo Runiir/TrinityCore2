@@ -151,7 +151,7 @@ SeedCandidate DrudgeLaneContext::ResolveDrudgeSeedCandidate(
         .ValidationRouteSplitSeedRosterSlots[lane];
     uint32 selectedSlot = std::numeric_limits<uint32>::max();
     Creature* source = context.Sources[lane];
-    auto const& manager = context.Manager;
+    auto& manager = context.Manager;
     for (WorldBotState& candidateState : manager.Party().Bots)
     {
         Player* candidate = manager.GetLoadedBot(candidateState);
