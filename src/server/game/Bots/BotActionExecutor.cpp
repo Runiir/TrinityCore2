@@ -414,9 +414,11 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
         bot->SetTarget(target->GetGUID());
 
     CastSpellExtraArgs castArgs(TRIGGERED_NONE);
-    if (action.InterruptCurrentChanneledSpell
-        && bot->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
-        bot->InterruptSpell(CURRENT_CHANNELED_SPELL, false);
+    // Let native Spell::prepare/Unit::SetCurrentCastSpell interrupt the
+    // channel only after the replacement cast has passed its checks.  The
+    // candidate is admitted immediately after a landed periodic tick, which
+    // matches WoWSims' tick-then-interruptIf ordering and avoids discarding a
+    // channel tick before a failed replacement submission.
     SpellCastResult result = spellInfo && (spellInfo->GetExplicitTargetMask() & TARGET_FLAG_DEST_LOCATION)
         ? bot->CastSpell(Position{ target->GetPositionX(), target->GetPositionY(), target->GetPositionZ() }, action.SpellId, castArgs)
         : bot->CastSpell(target, action.SpellId, castArgs);

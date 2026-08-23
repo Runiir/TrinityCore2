@@ -6,6 +6,7 @@
 #include "Item.h"
 #include "Pet.h"
 #include "Player.h"
+#include "SpellAuraEffects.h"
 #include "SpellAuras.h"
 #include "Spell.h"
 #include "SpellHistory.h"
@@ -55,6 +56,25 @@ bool HasMechanicTag(std::string const& tags, char const* required)
         start = end + 1;
     }
     return false;
+}
+
+bool IsPostPeriodicTickInterruptWindow(Player const* bot, Unit const* target,
+    uint32 channelSpellId, uint32 reactionWindowMs)
+{
+    if (!bot || !target || !channelSpellId)
+        return false;
+
+    AuraEffect const* channelEffect = target->GetAuraEffect(
+        channelSpellId, EFFECT_0, bot->GetGUID());
+    if (!channelEffect || !channelEffect->IsPeriodic()
+        || !channelEffect->GetTickNumber() || channelEffect->GetPeriod() <= 0)
+        return false;
+
+    // AuraEffect::Update lands the periodic tick before the bot manager runs.
+    // WoWSims evaluates interruptIf at that same boundary.  Keep the native
+    // channel alive between boundaries, and expose only the short post-tick
+    // window to the higher-priority action.
+    return channelEffect->GetPeriodicTimer() <= int32(reactionWindowMs);
 }
 
 Item* FindOnUseItemForSpell(Player const* player, uint32 spellId)
@@ -383,6 +403,10 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
                 break;
             }
 
+    bool const postChannelTickInterruptWindow = currentChanneledProfileSpell
+        && IsPostPeriodicTickInterruptWindow(bot, target, currentChanneledSpellId,
+            ReactionTimeMsForSpec(profile.SpecTag.c_str()));
+
     for (BotActionProfileSpell const& spell : profile.Spells)
     {
         bool selfTarget = spell.TargetSelector == "self";
@@ -473,7 +497,7 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
         SpellInfo const* spellInfo = spell.SpellId ? sSpellMgr->GetSpellInfo(spell.SpellId) : nullptr;
         Unit const* comboTarget = selfTarget ? target : actionTarget;
         std::string conditionRejection = EvaluateCompiledConditions(bot, actionTarget, comboTarget, spell);
-        bool const interruptsCurrentChanneledSpell = currentChanneledProfileSpell
+        bool const interruptsCurrentChanneledSpell = postChannelTickInterruptWindow
             && spell.SpellId != currentChanneledSpellId
             && spell.PriorityBucket < currentChanneledProfileSpell->PriorityBucket
             && !bot->GetCurrentSpell(CURRENT_GENERIC_SPELL);

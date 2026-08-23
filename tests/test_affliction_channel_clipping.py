@@ -19,14 +19,21 @@ def may_clip_channel(
     active_channel_priority: int,
     candidate_spell: int,
     candidate_priority: int,
+    channel_tick_number: int = 1,
+    periodic_timer_ms: int = 0,
+    period_ms: int = 2400,
+    reaction_window_ms: int = 100,
 ) -> bool:
-    """Mirror the declarative boundary used by BuildCandidates."""
+    """Mirror the tick-then-interrupt boundary used by BuildCandidates."""
 
     return bool(
         active_channel_spell
         and active_channel_is_tagged
         and candidate_spell != active_channel_spell
         and candidate_priority < active_channel_priority
+        and channel_tick_number > 0
+        and period_ms > 0
+        and 0 <= periodic_timer_ms <= reaction_window_ms
     )
 
 
@@ -37,12 +44,20 @@ def test_channel_clipping_boundaries_are_strict() -> None:
     assert not may_clip_channel(1120, True, 9, 77799, 10)
     assert not may_clip_channel(1120, False, 9, 77799, 8)
     assert not may_clip_channel(None, True, 9, 77799, 8)
+    assert not may_clip_channel(1120, True, 9, 77799, 8, channel_tick_number=0)
+    assert not may_clip_channel(1120, True, 9, 77799, 8, periodic_timer_ms=101)
+    assert may_clip_channel(1120, True, 9, 77799, 8, periodic_timer_ms=100)
 
 
 def test_build_candidates_uses_only_tagged_current_channel_and_strict_priority() -> None:
     source = PROFILE.read_text(encoding="utf-8")
 
+    assert '#include "SpellAuraEffects.h"' in source
     assert "GetCurrentSpell(CURRENT_CHANNELED_SPELL)" in source
+    assert "GetAuraEffect(\n        channelSpellId, EFFECT_0, bot->GetGUID())" in source
+    assert "GetTickNumber()" in source
+    assert "GetPeriodicTimer() <= int32(reactionWindowMs)" in source
+    assert "postChannelTickInterruptWindow" in source
     assert 'HasMechanicTag(profileSpell.MechanicTags, "interruptible_channel")' in source
     assert "spell.SpellId != currentChanneledSpellId" in source
     assert "spell.PriorityBucket < currentChanneledProfileSpell->PriorityBucket" in source
@@ -53,7 +68,7 @@ def test_build_candidates_uses_only_tagged_current_channel_and_strict_priority()
     assert "1120" not in source
 
 
-def test_channel_clip_is_typed_through_resolution_and_cancelled_before_native_cast() -> None:
+def test_channel_clip_is_typed_through_resolution_and_native_cast_owns_interrupt() -> None:
     profile_header = PROFILE_HEADER.read_text(encoding="utf-8")
     types = TYPES.read_text(encoding="utf-8")
     resolver = RESOLVER.read_text(encoding="utf-8")
@@ -78,11 +93,10 @@ def test_channel_clip_is_typed_through_resolution_and_cancelled_before_native_ca
         executor.index("CheckHostileSpell(owner, bot, target, action.SpellId") : preflight
     ]
 
-    cancel = executor.index("bot->InterruptSpell(CURRENT_CHANNELED_SPELL, false);")
     native_cast = executor.index("bot->CastSpell(target, action.SpellId, castArgs)")
-    assert "action.InterruptCurrentChanneledSpell" in executor[cancel - 120 : cancel]
-    assert executor.index("CheckHostileSpell(owner, bot, target, action.SpellId") < cancel
-    assert cancel < native_cast
+    native_submission = executor[executor.rfind("CastSpellExtraArgs", 0, native_cast) : native_cast]
+    assert "action.InterruptCurrentChanneledSpell" not in native_submission
+    assert "InterruptSpell(CURRENT_CHANNELED_SPELL, false);" not in native_submission
 
 
 def test_sql_tags_only_affliction_drain_soul() -> None:
