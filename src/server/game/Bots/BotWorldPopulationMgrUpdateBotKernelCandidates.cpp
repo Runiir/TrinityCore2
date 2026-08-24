@@ -6,6 +6,7 @@
 
 #include "ObjectAccessor.h"
 #include "CharmInfo.h"
+#include "MotionMaster.h"
 #include "Pet.h"
 #include "Player.h"
 #include "Unit.h"
@@ -538,10 +539,44 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             }
         }
 
+        // A native MotionMaster path is set-and-forget: the short movement
+        // lease can expire while the admitted path is still carrying the
+        // player. Keep the route scope check, but use the recorded path and
+        // native movement state rather than lease expiry as the heal gate.
+        auto activeNativeMovementPath = [&]()
+        {
+            if (!context.State.ActivePathValid)
+                return false;
+            if (Cohort().Config.ValidationRouteEnable
+                && (context.State.ActivePathAttemptId != Cohort().AttemptId
+                    || context.State.ActivePathWipeGeneration
+                        != Cohort().Raid.WipeGeneration
+                    || context.State.ActivePathRouteGeneration
+                        != Party().ValidationRouteGeneration
+                    || context.State.ActivePathRouteNodeId
+                        != Cohort().Config.ValidationRouteNodeId))
+                return false;
+
+            if (context.State.IsMoving || context.Bot->isMoving()
+                || context.Bot->HasUnitState(UNIT_STATE_MOVING))
+                return true;
+
+            MotionMaster* motion = context.Bot->GetMotionMaster();
+            if (!motion)
+                return false;
+            MovementGeneratorType const activeMotion =
+                motion->GetMotionSlotType(MOTION_SLOT_ACTIVE);
+            return activeMotion == POINT_MOTION_TYPE
+                || activeMotion == CHASE_MOTION_TYPE;
+        };
+
         // Healing is an independent candidate. A route wait or movement
         // transition must never suppress ordinary trained healing. While a
         // survival movement is active, select only an instant heal so the
-        // cast cannot cancel the player's dodge spline.
+        // cast cannot cancel the player's dodge spline. Re-evaluate the
+        // native path inside the attempt because the route adapter runs as a
+        // higher-priority candidate and may have submitted movement this
+        // tick after these candidates were assembled.
         if (Cohort().EncounterSnapshot && std::string(GetDungeonRole(context.Bot)) == "healer"
             && !context.AdaptiveChimaeronHealingDisabled)
         {
@@ -579,20 +614,51 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                         || !context.Bot->IsValidAssistTarget(healTarget))
                         return BotActionArbitration::Outcome::Retryable(
                             "heal_target_stale");
+                    bool const instantHealRequired =
+                        adaptiveHazardMovementProposed
+                        || activeNativeMovementPath();
                     uint32 const healSpell = SelectHealSpell(
-                        context.Bot, healTarget, adaptiveHazardMovementProposed);
+                        context.Bot, healTarget, instantHealRequired);
+                    ResolvedCombatAction healAction;
+                    healAction.Type = "cast";
+                    healAction.TargetGuid = healTarget->GetGUID();
+                    healAction.DebugName = "adaptive_raid_support";
                     if (!healSpell)
-                        return BotActionArbitration::Outcome::Retryable(
-                            adaptiveHazardMovementProposed
+                    {
+                        RecordCombatAttempt(
+                            context.State, context.Bot, healTarget,
+                            "adaptive_heal_resolve", &healAction,
+                            BotActionResult::NoAction,
+                            instantHealRequired
                                 ? "no_instant_heal_while_moving"
                                 : "no_trained_heal");
+                        return BotActionArbitration::Outcome::Retryable(
+                            instantHealRequired
+                                ? "no_instant_heal_while_moving"
+                                : "no_trained_heal");
+                    }
+                    healAction.Valid = true;
+                    healAction.SpellId = healSpell;
                     std::string failureReason;
                     if (!TryCastFriendlySpell(
                             context.Bot, healTarget, healSpell, &failureReason))
+                    {
+                        RecordCombatAttempt(
+                            context.State, context.Bot, healTarget,
+                            "adaptive_heal_cast", &healAction,
+                            BotActionResult::CastFailed,
+                            failureReason.empty()
+                                ? "heal_cast_retryable"
+                                : failureReason.c_str());
                         return BotActionArbitration::Outcome::Retryable(
                             failureReason.empty()
                                 ? std::string_view("heal_cast_retryable")
                                 : std::string_view(failureReason));
+                    }
+                    RecordCombatAttempt(
+                        context.State, context.Bot, healTarget,
+                        "adaptive_heal_cast", &healAction,
+                        BotActionResult::Ok);
 
                     std::string raw = BuildRawJson(context.Bot, healTarget);
                     std::string semantic = BuildSemanticJson(context.Bot, healTarget,

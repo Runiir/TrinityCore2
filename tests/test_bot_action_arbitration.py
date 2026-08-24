@@ -880,7 +880,22 @@ def test_raid_healing_is_independent_and_does_not_cancel_hazard_movement() -> No
     assert "Resource::GlobalCooldown" in support
     assert "Resource::Cast" in support
     assert "Resource::Movement" not in support
-    assert "SelectHealSpell(\n                        context.Bot, healTarget, adaptiveHazardMovementProposed)" in support
+    assert '#include "MotionMaster.h"' in candidates
+    assert "auto activeNativeMovementPath = [&]()" in candidates
+    assert "context.State.ActivePathValid" in candidates
+    assert "context.State.ActivePathAttemptId != Cohort().AttemptId" in candidates
+    assert "context.State.IsMoving || context.Bot->isMoving()" in candidates
+    assert "GetMotionSlotType(MOTION_SLOT_ACTIVE)" in candidates
+    assert "MovementLease.ExpiresAtMs" not in candidates[
+        candidates.index("auto activeNativeMovementPath = [&]()") : support_start
+    ]
+    assert "bool const instantHealRequired =" in support
+    assert "adaptiveHazardMovementProposed\n                        || activeNativeMovementPath()" in support
+    assert "SelectHealSpell(\n                        context.Bot, healTarget, instantHealRequired)" in support
+    assert support.index("activeNativeMovementPath()") < support.index("SelectHealSpell(")
+    assert '"adaptive_heal_resolve"' in support
+    assert '"adaptive_heal_cast"' in support
+    assert support.index("SelectHealSpell(") < support.index("TryCastFriendlySpell(")
     assert '"no_instant_heal_while_moving"' in support
 
     combat_support = bot_source("BotWorldPopulationMgrCombatSupport.cpp")
