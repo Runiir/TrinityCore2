@@ -6,7 +6,7 @@
   "observed_at_commit": "ff5af70c7c56a0cb5ff4cdc3a20fadaa5b469d3d",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_drudge_spacing_diagnostic_handoff_20260824.md",
-    "sha256": "629ae33efcae28487e11daba06648e373f504c8b0024104f1bf664541f04b032"
+    "sha256": "da5d2534221a0d2604e7607f1e164cfb00e874ad632ba5c8624d4da5946ee4ed"
   },
   "first_broken_edge": "drudge_dynamic_recovery_candidate_spacing_rejected_without_peer_identity",
   "decisive_evidence": {
@@ -73,12 +73,13 @@
     "runtime_verification_required": true
   },
   "implemented_diagnostic": {
-    "commit": "d47cb0d209b0b7a87d98307dfa46c90197af32e6",
-    "tree": "2dab62322817bf17684dfe650ab231c79a9724f6",
+    "commit": "49e8f8bff809e8d685653d127dcaed1d0bf2724e",
+    "tree": "f73b7acfd7c2d339148a6129d9b7faf42796eb34",
     "status": "implemented_not_live_verified",
     "scope": "first_scoped_drudge_spacing_and_reseparation_failure",
     "gameplay_behavior_changed": false,
-    "focused_test_count": 58
+    "focused_test_count": 58,
+    "supersedes_unbuildable_commit": "d47cb0d209b0b7a87d98307dfa46c90197af32e6"
   },
   "validation_clock": {
     "policy": "completion_watchdog",
@@ -109,8 +110,8 @@
     },
     "required_clock_policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
-    "required_fix_commit": "d47cb0d209b0b7a87d98307dfa46c90197af32e6",
-    "required_live_build_tree": "2dab62322817bf17684dfe650ab231c79a9724f6",
+    "required_fix_commit": "49e8f8bff809e8d685653d127dcaed1d0bf2724e",
+    "required_live_build_tree": "f73b7acfd7c2d339148a6129d9b7faf42796eb34",
     "must_observe": [
       "the first failed reseparation predicate is explicit",
       "a spacing rejection names member, candidate, peer, coordinate source, distance, and predicate booleans",
@@ -124,5 +125,5 @@
       "native confirmation from deterministic tests alone"
     ]
   },
-  "next_action": "Build exact clean commit d47cb0d209b0b7a87d98307dfa46c90197af32e6 through the queued coordinator, provision a fresh exact ten-player Magmaw roster, and run one completion-watchdog shard. Extract the first scoped spacing or reseparation failure with exact member, candidate, peer, coordinate source, distance, and predicate values, then route one behavior repair. Do not relabel this diagnostic run as a clear. Do not teleport, force movement or threat, revive, alter native encounter state, or manufacture an outcome."
+  "next_action": "Build exact clean commit 49e8f8bff809e8d685653d127dcaed1d0bf2724e through the queued coordinator, provision a fresh exact ten-player Magmaw roster, and run one completion-watchdog shard. Extract the first scoped spacing or reseparation failure with exact member, candidate, peer, coordinate source, distance, and predicate values, then route one behavior repair. Do not relabel this diagnostic run as a clear. Do not teleport, force movement or threat, revive, alter native encounter state, or manufacture an outcome."
 }
