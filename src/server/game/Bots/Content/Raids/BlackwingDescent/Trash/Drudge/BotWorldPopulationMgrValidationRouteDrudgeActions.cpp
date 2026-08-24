@@ -668,7 +668,11 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions()
                 && candidate.WipeGeneration == Manager.Cohort().Raid.WipeGeneration
                 && candidate.RouteGeneration == Manager.Party().ValidationRouteGeneration;
         });
-    bool const nativeRushAuthorityReady = laneReadiness.Ready && otherReadiness.Ready;
+    bool const nativeRushAuthorityReady =
+        BotRaidDrudgeNativeRush::AuthorityReady(
+            currentScopeHasNativeRush, laneReadiness)
+        && BotRaidDrudgeNativeRush::AuthorityReady(
+            currentScopeHasNativeRush, otherReadiness);
     if (Sources[0]->IsAlive() && Sources[1]->IsAlive()
         && Manager.Party().ValidationRouteDrudgeThreatSeedComplete
         && (!currentScopeHasNativeRush || !nativeRushAuthorityReady))

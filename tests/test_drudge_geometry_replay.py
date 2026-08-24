@@ -60,8 +60,14 @@ int main()
     assert(BotRaidDrudgeNativeRush::ShouldBuildTankThreat(false, ready));
     assert(!BotRaidDrudgeNativeRush::ShouldBuildTankThreat(true, ready));
     assert(BotRaidDrudgeNativeRush::ShouldBuildTankThreat(true, rejected855));
+    assert(BotRaidDrudgeNativeRush::AuthorityReady(false, ready));
+    assert(BotRaidDrudgeNativeRush::AuthorityReady(true, ready));
     readyRush.SeedDistance = 33.0f;
-    assert(!BotRaidDrudgeNativeRush::Evaluate(readyRush).SeedIsUniqueFarthest);
+    auto recoveredRoster = BotRaidDrudgeNativeRush::Evaluate(readyRush);
+    assert(!recoveredRoster.SeedIsUniqueFarthest);
+    assert(!BotRaidDrudgeNativeRush::AuthorityReady(false, recoveredRoster));
+    assert(BotRaidDrudgeNativeRush::AuthorityReady(true, recoveredRoster));
+    assert(!BotRaidDrudgeNativeRush::AuthorityReady(true, rejected855));
 
     assert(SelectMemberRecoveryAction(true, false, true)
         == MemberRecoveryAction::RecoverFormation);

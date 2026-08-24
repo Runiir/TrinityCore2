@@ -2447,6 +2447,7 @@ def test_raid_trash_uses_native_threat_headroom_and_declared_minimum_distance():
     assert "input.ThreatHeadroomMultiplier >= 1.3f" in DRUDGE_NATIVE_RUSH
     assert "input.TankThreat >= input.HighestOtherThreat" in DRUDGE_NATIVE_RUSH
     assert "ShouldBuildTankThreat" in drudge_actions
+    assert "AuthorityReady" in drudge_actions
     assert 'Cohort().Config.ValidationRouteKind != "boss"' in route_runtime
 
     generator = (ROOT / "tools/bot_ml/build_validation_scenario_manifests.py").read_text()

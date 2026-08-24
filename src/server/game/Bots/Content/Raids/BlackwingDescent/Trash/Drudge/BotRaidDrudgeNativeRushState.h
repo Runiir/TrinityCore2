@@ -66,6 +66,17 @@ inline bool ShouldBuildTankThreat(bool currentScopeHasNativeRush,
 {
     return !currentScopeHasNativeRush || !readiness.TankThreatSecure;
 }
+
+// The configured seed establishes one attributable native Rush. After that
+// proof exists, the recovered roster may choose any safe non-tank as the live
+// farthest target; retaining exact tank ownership and threat headroom is the
+// only source-level authority needed before normal profile actions resume.
+inline bool AuthorityReady(bool currentScopeHasNativeRush,
+    SourceResult const& readiness)
+{
+    return readiness.ExactTankVictim && readiness.TankThreatSecure
+        && (currentScopeHasNativeRush || readiness.SeedIsUniqueFarthest);
+}
 }
 
 #endif
