@@ -191,6 +191,8 @@ int main()
             -311.5f, -71.3f, 213.292f},
         {"30007_reposition", -295.0f, -82.0f, 213.8f,
             -292.5f, -69.1f, 214.024f},
+        {"minimum_distance_exit_retained", -288.8f, -72.289f, 213.473f,
+            -285.742f, -73.2144f, 213.473f},
         {"tank1_pull_away", -289.289093f, -57.7575f, 212.932236f,
             -288.8f, -43.0f, 212.301f},
         {"tank2_pull_away", -322.858002f, -48.286201f, 211.999359f,
@@ -244,6 +246,11 @@ int main()
             std::cout << " terminal=" << terminal[2] << ',' << terminal[0] << ',' << terminal[1]
                       << " end2d=" << std::hypot(terminal[2] - test.dx, terminal[0] - test.dy)
                       << " endz=" << std::fabs(terminal[1] - test.dz);
+            if (std::string(test.label) == "minimum_distance_exit_retained")
+                std::cout << '\n' << test.label << " actual_endpoint="
+                          << terminal[2] << ',' << terminal[0] << ',' << terminal[1]
+                          << " requested_end2d_miss="
+                          << std::hypot(terminal[2] - test.dx, terminal[0] - test.dy);
         }
         std::cout << '\n';
         for (int i = 0; i < straightSize; ++i)

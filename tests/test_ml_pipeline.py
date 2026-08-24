@@ -3720,13 +3720,15 @@ def test_run_to_completion_watchdog_stops_only_on_semantic_plateau(tmp_path, mon
 
 
 def test_live_bot_validation_command_script_and_output_parser():
-    script = command_script(selector="all", trace_limit=20, start=True, stop=True)
+    script = command_script(
+        selector="all", trace_limit=20, start=True, stop=True, trace_delta=True
+    )
 
     assert script.splitlines() == [
         ".botauto start",
         ".botauto status",
         ".botauto diagnose all",
-        ".botauto trace all 20",
+        ".botauto trace all 20 delta",
         ".botauto combatlog",
         ".botexp summary",
         ".botauto stop",
@@ -3734,7 +3736,7 @@ def test_live_bot_validation_command_script_and_output_parser():
     ]
     startup, heartbeat, cleanup = heartbeat_commands_from_script(script)
     assert startup == [".botauto start"]
-    assert heartbeat == [".botauto status", ".botauto diagnose all", ".botauto trace all 20", ".botexp summary"]
+    assert heartbeat == [".botauto status", ".botauto diagnose all", ".botauto trace all 20 delta", ".botexp summary"]
     assert cleanup == [".botauto combatlog", ".botauto stop"]
 
     output = """
@@ -8691,7 +8693,7 @@ def test_live_bot_validation_dry_run_writes_command_file(tmp_path, monkeypatch):
     report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
 
     assert ".botauto diagnose all" in commands
-    assert ".botauto trace all 7" in commands
+    assert ".botauto trace all 7 delta" in commands
     assert ".botauto start" not in commands
     assert "server shutdown force 0" in commands
     assert report["dry_run"] is True
@@ -8922,7 +8924,7 @@ def test_upsert_trinity_config_normalizes_literal_newline_fragments():
             '{"action":"botauto_diagnose","diagnosis_schema_version":1,"bots":[]}\n',
         ),
         (
-            ".botauto trace all 20",
+            ".botauto trace all 20 delta",
             '{"action":"botauto_trace","trace_schema_version":1,"entries":[]}\n',
         ),
         (
@@ -9126,7 +9128,7 @@ def test_live_bot_validation_force_start_overrides_config_autostart(tmp_path, mo
     report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
 
     assert ".botauto start" in commands
-    assert ".botauto trace all 128" in commands
+    assert ".botauto trace all 128 delta" in commands
     assert report["config_autostart"] is True
     assert report["start_command"] is True
 
@@ -12088,7 +12090,10 @@ def test_phase3_worldserver_output_is_bounded_and_fails_closed():
     rendered = "".join(output)
     report = live_validation_report(rendered, stages=["movement_smoke"])
     assert len(rendered.encode("utf-8")) <= 128
+    assert output.written_bytes == output.max_bytes == 128
     assert output.truncated is True
+    assert rendered.count("[worldserver_output_truncated]") == 1
+    assert rendered.endswith("\n[worldserver_output_truncated]\n")
     assert "worldserver_output_truncated" in report["failure_labels"]
     assert report["acceptable_final_evidence"] is False
 

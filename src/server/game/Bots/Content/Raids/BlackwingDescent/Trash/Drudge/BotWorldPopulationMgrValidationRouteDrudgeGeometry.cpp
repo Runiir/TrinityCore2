@@ -29,6 +29,7 @@ using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
 namespace
 {
 constexpr uint64 DrudgePathRetryHeartbeatMs = 5000;
+constexpr float DrudgeMinimumDistanceEndpointToleranceYards = 1.0f;
 
 uint64 NowMs()
 {
@@ -228,6 +229,11 @@ bool DrudgeLaneContext::TryMinimumDistance(bool specializedDrudgeRecovery)
         }
 
         PathGenerator path(Bot);
+        // Smooth-path generation may append an off-mesh destination when a
+        // one-poly corridor only reaches its nearest boundary.  The straight
+        // native query exposes that boundary so admission cannot bless the
+        // raw point that MotionMaster would otherwise receive.
+        path.SetUseStraightPath(true);
         bool pathOk = path.CalculatePath(candidateX, candidateY, candidateZ, false);
         PathType pathType = path.GetPathType();
         if (!pathOk || (pathType & PATHFIND_NOPATH)
@@ -237,6 +243,16 @@ bool DrudgeLaneContext::TryMinimumDistance(bool specializedDrudgeRecovery)
             || (pathType & PATHFIND_FARFROMPOLY))
             continue;
 
+        // A complete corridor can still end at the nearest navmesh point
+        // when the requested minimum-distance point is just beyond the
+        // platform. MovePoint would otherwise receive the unreachable raw
+        // destination and can send the bot off the platform.
+        G3D::Vector3 const& actualEnd = path.GetActualEndPosition();
+        if (std::hypot(actualEnd.x - candidateX, actualEnd.y - candidateY)
+                > DrudgeMinimumDistanceEndpointToleranceYards
+            || std::fabs(actualEnd.z - candidateZ) > 1.5f)
+            continue;
+
         bool unionSafe = true;
         for (Creature const* candidateSource : sources)
         {
@@ -244,6 +260,13 @@ bool DrudgeLaneContext::TryMinimumDistance(bool specializedDrudgeRecovery)
             float pathFloor = std::max(0.0f,
                 std::min(startDistance, minimumDistance) - 0.25f);
             if (Distance2d(candidateX, candidateY,
+                    candidateSource->GetPositionX(), candidateSource->GetPositionY())
+                < safeDistance)
+            {
+                unionSafe = false;
+                break;
+            }
+            if (Distance2d(actualEnd.x, actualEnd.y,
                     candidateSource->GetPositionX(), candidateSource->GetPositionY())
                 < safeDistance)
             {

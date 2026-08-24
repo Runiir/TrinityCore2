@@ -218,6 +218,103 @@ def preflight_calibration_reference_binding(
     )
 
 
+def preflight_validation_scenario_stage(
+    scenario_dir: Path,
+    scenario_id: str,
+    *,
+    profile_name: str = "",
+    pool_tag: str | None = None,
+    enabled: bool = True,
+) -> dict[str, Any]:
+    """Reject stale repository-backed route output before live preparation.
+
+    ``dataset/validation_scenarios`` is a DVC stage output.  A copied output
+    can still contain a syntactically valid route after the source scenario
+    config changes, so route/profile validation alone is not sufficient.  The
+    DVC stage status is checked without reproducing it.  Custom scenario
+    directories are deliberately exempt because tests and offline fixtures
+    own their bytes.
+    """
+    canonical_dir = (REPO_ROOT / "dataset/validation_scenarios").resolve()
+    selected_dir = (
+        (REPO_ROOT / scenario_dir) if not scenario_dir.is_absolute() else scenario_dir
+    ).resolve()
+    result: dict[str, Any] = {
+        "schema": "bot_live_validation_scenario_stage_preflight_v1",
+        "required": False,
+        "valid": True,
+        "scenario_id": scenario_id,
+        "profile_name": profile_name or scenario_id,
+        "scenario_dir": str(selected_dir),
+        "canonical_scenario_dir": str(canonical_dir),
+        "pool_tag": pool_tag,
+        "dvc_stage_current": False,
+    }
+    if not enabled:
+        result["reason"] = "not_a_live_route_preparation"
+        return result
+    if selected_dir != canonical_dir:
+        result["reason"] = "custom_scenario_dir"
+        return result
+    if not scenario_id:
+        result["reason"] = "scenario_id_not_selected"
+        return result
+
+    result["required"] = True
+    try:
+        # Keep the stage check read-only.  The route/profile contract is
+        # validated later against the selected scenario directory; this
+        # preflight only answers whether the repository-backed DVC output is
+        # current.  It must never repair the output with ``dvc repro``.
+        dvc_environment = os.environ.copy()
+        dvc_environment.pop("PIXI_PROJECT_MANIFEST", None)
+        dvc_result = subprocess.run(
+            ["pixi", "run", "dvc", "status", "validation_scenarios", "--json"],
+            cwd=REPO_ROOT,
+            env=dvc_environment,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            timeout=60,
+            check=False,
+        )
+        dvc_status = dvc_result.stdout.strip()
+        try:
+            dvc_payload = json.loads(dvc_status)
+        except (TypeError, ValueError):
+            dvc_payload = None
+        dvc_clean = (
+            dvc_result.returncode == 0
+            and isinstance(dvc_payload, dict)
+            and not dvc_payload
+        )
+        assets = {
+            "dvc_stage": "validation_scenarios",
+            "dvc_status": dvc_status,
+            "dvc_returncode": dvc_result.returncode,
+            "passed": dvc_clean,
+            "reasons": [] if dvc_clean else ["runtime_route_dvc_lineage_dirty"],
+        }
+    except Exception as exc:
+        assets = {
+            "passed": False,
+            "reasons": [f"validator_error:{type(exc).__name__}"],
+        }
+    result["assets"] = assets
+    result["valid"] = bool(assets.get("passed"))
+    if not result["valid"]:
+        reasons = sorted(
+            {str(reason) for reason in (assets.get("reasons") or []) if str(reason)}
+        ) or ["repository_validation_scenario_stage_invalid"]
+        result["reasons"] = reasons
+        raise SystemExit(
+            "validation scenario stage preflight failed: "
+            + json.dumps(result, sort_keys=True)
+        )
+    result["dvc_stage_current"] = True
+    return result
+
+
 @dataclass(frozen=True)
 class ValidationAttempt:
     cohort_id: str
@@ -402,6 +499,7 @@ class CohortAttemptWatchdog:
             calibration_target_spec=calibration_target_spec,
             calibration_seed=calibration_seed,
             calibration_only=calibration_only,
+            trace_delta=True,
         )
 
 
@@ -1218,6 +1316,7 @@ def command_script(
     calibration_target_spec: str = "protection_paladin",
     calibration_seed: int = 1,
     calibration_only: bool = False,
+    trace_delta: bool = False,
 ) -> str:
     if cohort_id and not re.fullmatch(r"[A-Za-z0-9._-]{1,64}", cohort_id):
         raise ValueError("invalid cohort_id")
@@ -1232,10 +1331,16 @@ def command_script(
         )
     commands.append(f".botauto status{scope}")
     if not calibration_only:
+        trace_suffix = " delta" if trace_delta else ""
         commands.extend(
             [
                 f".botauto diagnose{scope} {selector}",
-                f".botauto trace{scope} {selector} {trace_limit}",
+                # Completion-watchdog heartbeats repeat this command.  Export
+                # only the server-side trace cursor delta so a long route does
+                # not replay each bot's cumulative 128-entry ring into the
+                # bounded worldserver output buffer.  Status and diagnosis
+                # remain full snapshots for liveness and current decisions.
+                f".botauto trace{scope} {selector} {trace_limit}{trace_suffix}",
             ]
         )
     if combat_calibration:
@@ -5850,6 +5955,17 @@ def main() -> int:
         calibration_mode=args.calibration_mode,
         target_spec=args.calibration_target_spec,
     )
+    validation_scenario_stage_preflight = preflight_validation_scenario_stage(
+        args.validation_scenario_dir,
+        args.validation_scenario_id,
+        profile_name=args.session_profile or args.validation_scenario_id,
+        pool_tag=(
+            args.party_pool_tag
+            if exact_party_specs
+            else (args.bot_pool_tag[0] if len(args.bot_pool_tag) == 1 else None)
+        ),
+        enabled=route_validation_requested and not args.input_log,
+    )
 
     if args.run_to_completion:
         args.timeout_sec = None
@@ -5955,6 +6071,7 @@ def main() -> int:
         calibration_target_spec=args.calibration_target_spec,
         calibration_seed=args.calibration_seed,
         calibration_only=args.calibration_only,
+        trace_delta=args.duration_policy == "completion-watchdog",
     )
     (args.output_dir / "commands.txt").write_text(script, encoding="utf-8")
     preparation: dict[str, Any] = {}
@@ -6012,6 +6129,7 @@ def main() -> int:
             "validation_context": validation_context,
             "validation_route_manifest": validation_route_manifest,
             "pool_tags": bot_pool_tags,
+            "validation_scenario_stage_preflight": validation_scenario_stage_preflight,
             "preparation": preparation,
         }
         write_json(args.output_dir / "report.json", report)
@@ -6055,6 +6173,7 @@ def main() -> int:
             "calibration_reference_conditions": args.calibration_reference_conditions,
             "calibration_self_provided_baseline": args.calibration_self_provided_baseline,
             "calibration_reference_preflight": calibration_reference_preflight,
+            "validation_scenario_stage_preflight": validation_scenario_stage_preflight,
             "preparation": preparation,
             "scenario_reports": scenario_reports,
             "validation_context": validation_context,
@@ -6202,6 +6321,7 @@ def main() -> int:
     report["calibration_reference_conditions"] = args.calibration_reference_conditions
     report["calibration_self_provided_baseline"] = args.calibration_self_provided_baseline
     report["calibration_reference_preflight"] = calibration_reference_preflight
+    report["validation_scenario_stage_preflight"] = validation_scenario_stage_preflight
     report["preserve_worldserver_required"] = args.preserve_worldserver
     report["execution_policy"] = (
         "run_to_completion" if args.run_to_completion else "bounded_wall_clock"

@@ -85,6 +85,17 @@ def test_recorded_drudge_returns_match_native_navmesh(tmp_path):
         "start": [-295.0, -82.0, 213.8],
         "terminal": [-292.5, -69.1, 214.024],
     }
+    assert payload["validated_returns"]["minimum_distance_exit_retained"] == {
+        "actual_endpoint": [-288.8, -73.2144, 213.714],
+        "polygons": 1,
+        "requested": [-285.742, -73.2144, 213.473],
+        "requested_end2d_miss": 3.05804,
+        "requested_endz_delta": 0.240692,
+        "smooth_points": 2,
+        "smooth_terminal": [-285.742, -73.2144, 213.473],
+        "start": [-288.8, -72.289, 213.473],
+        "straight_points": 2,
+    }
     assert payload["validated_returns"]["tank1_pull_away"] == {
         "polygons": 4,
         "smooth_points": 6,

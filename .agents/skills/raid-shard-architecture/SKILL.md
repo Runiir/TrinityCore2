@@ -175,10 +175,26 @@ same first-broken edge and source-handoff hash. A stale or missing active
 descriptor blocks live mutation until the coordinator repairs it from the
 latest immutable handoff.
 
-1. Review and build one exact clean commit.
-2. Reprovision the exact shard roster and verify DB readback before starting a
+1. Reproduce the route assets before building or provisioning:
+
+   ```bash
+   pixi run dvc repro validation_scenarios
+   pixi run dvc status validation_scenarios --json
+   ```
+
+   Commit the resulting `dvc.lock` change with its source config. The generated
+   `dataset/validation_scenarios/` files are DVC outputs, not direct Git
+   additions. Fail closed if the targeted stage is dirty, its cache object is
+   missing, or the decisive source fields differ from the generated route.
+   For a geometry change, compare the exact affected anchor, tolerances, source
+   identities, and scenario in both the canonical and diagnostic generated
+   rows.
+2. Review and build that exact clean commit.
+3. Reprovision the exact shard roster and verify DB readback before starting a
    worldserver. Use the repository preparation path; do not assume an earlier
-   run left usable characters:
+   run left usable characters. Use a new empty preparation directory. After
+   preparation, compare its copied route-manifest hash and decisive fields to
+   the reproduced DVC output before launch:
 
    ```bash
    pixi run python -m tools.bot_ml.run_live_bot_validation \
@@ -201,10 +217,10 @@ latest immutable handoff.
    and power seeds and no group/instance/corpse/ghost residue. A failed
    provisioning preflight is an infrastructure result and consumes no gameplay
    attempt, but the capture process and its owned server must still terminate.
-3. Start one verified worldserver with the generated shard config.
-4. Confirm console/process readiness and active runtime identity.
-5. Only then attach the boss babysitter. The babysitter monitors; it does not silently repair or manufacture state.
-6. Keep route observation completion-driven. Terminate on success, explicit
+4. Start one verified worldserver with the generated shard config.
+5. Confirm console/process readiness and active runtime identity.
+6. Only then attach the boss babysitter. The babysitter monitors; it does not silently repair or manufacture state.
+7. Keep route observation completion-driven. Terminate on success, explicit
    user interruption, stale telemetry/infrastructure loss, a monotonic
    semantic/no-progress stall, repeated-decision watchdog, or excessive death
    loops—not an arbitrary fight deadline.
