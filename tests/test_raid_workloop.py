@@ -340,25 +340,25 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "native_runback_path_preservation_verification"
+        "drudge_latched_recovery_proof_verification"
     )
     assert magmaw_25h["active_program_work_unit"] is None
     assert active["owner_skill"] == "raid-shard-architecture"
     assert active["first_broken_edge"] == (
-        "native_runback_repeated_move_submission"
+        "drudge_tank_recovery_anchor_strict_path_rejected"
     )
     evidence = active["decisive_evidence"]
     assert evidence["source_commit"] == (
-        "a4cde51ec11dabae0bf54f1085abd20987a38f80"
+        "ae1cfe93184a3d623c35120e55bba2c488389aa6"
     )
     assert evidence["binary_sha256"] == (
-        "1b36ab8d281ce81be6b77ad606b92bdf74bfb82853b660cd0683522f153bb6dd"
+        "c0652761093c60b02ab0ac701fcca6bdd707ba29b6ab28d68c027c5b9d1ad97d"
     )
     assert evidence["report_sha256"] == (
-        "015b8bdc2a461b89373c9b25d8cf7a2d02726ec18e05f639d8a6f90c574b2d7c"
+        "492fbb091316f2ef19602340d56d585b004bcaf3feb35befd05d54355b1be919"
     )
     assert evidence["report_file_sha256"] == (
-        "8bb63f5ab061223cb9649f4507726da54b314d47bcee51ca59be9a3c2f7abc22"
+        "64add35053b9607c7d62e08ec28e50969d0cf7850cc9a97549d33d499db7cba1"
     )
     assert (
         evidence["route_generation"],
@@ -383,10 +383,10 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
         "matched_live_verification_runs": 0,
     }
     assert active["implementation_hypothesis"]["scope"] == (
-        "preserve_matching_native_runback_path_until_progress_stalls"
+        "consume_latched_drudge_recovery_proof_downstream"
     )
     assert active["implemented_fix"]["commit"] == (
-        "10370f0aa84ee67cb3bba2f9d66d512e4ccaf8d0"
+        "4975d73314deb3eb5b8f53bc6e3bbd4edfdfd6ec"
     )
     assert active["implemented_fix"]["status"] == "implemented_not_live_verified"
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
@@ -488,18 +488,18 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     assert status["active_work_unit"]["descriptor_valid"] is True
     assert status["active_work_unit"]["ready_for_bounded_repair"] is True
     assert status["active_work_unit"]["first_broken_edge"] == (
-        "native_runback_repeated_move_submission"
+        "drudge_tank_recovery_anchor_strict_path_rejected"
     )
     assert status["active_work_unit"]["source_handoff"]["sha256"] == (
         workloop._file_sha256(
             workloop.ROOT
             / "experiments/configs/"
-            "cata_raid_magmaw_drudge_tank_ownership_handoff_20260823.md"
+            "cata_raid_magmaw_drudge_recovery_latch_handoff_20260824.md"
         )
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "native_runback_path_preservation_verification"
+        "drudge_latched_recovery_proof_verification"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
         "raid-shard-architecture"

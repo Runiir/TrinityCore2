@@ -5,8 +5,8 @@
   "classification": "failed",
   "observed_at_commit": "4975d73314deb3eb5b8f53bc6e3bbd4edfdfd6ec",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_drudge_tank_ownership_handoff_20260823.md",
-    "sha256": "932985a75df635d52dab56e1f6d9f1021393898512050dc12466dc585a4fd337"
+    "path": "experiments/configs/cata_raid_magmaw_drudge_recovery_latch_handoff_20260824.md",
+    "sha256": "055d8fa692ec322bd9420057ed6f373633c4a0e6f0d0d8149f134e9444e28b96"
   },
   "first_broken_edge": "drudge_tank_recovery_anchor_strict_path_rejected",
   "decisive_evidence": {
@@ -16,7 +16,7 @@
     "binary_sha256": "c0652761093c60b02ab0ac701fcca6bdd707ba29b6ab28d68c027c5b9d1ad97d",
     "config_sha256": "9d96e4a52eace449b6e033fd663b7e48d78aaf7a4af51f37ccebff28614943bd",
     "build_receipt_path": "/tmp/trinity-magmaw-ae1cfe9318/build/worldserver-build-receipt-v8.json",
-    "build_receipt_file_sha256": "f7761a732583584b0b1417627cbe909bc1aae8ea1646518095b4a572a0415789",
+    "build_receipt_file_sha256": "453bcf304a29b4cbe6677067b4c2ed3d891acb1200f10f47f0fb6539e6ca3e04",
     "report_path": "/tmp/trinity-magmaw-ae1cfe9318/canary1/capture/report.json",
     "report_sha256": "492fbb091316f2ef19602340d56d585b004bcaf3feb35befd05d54355b1be919",
     "report_file_sha256": "64add35053b9607c7d62e08ec28e50969d0cf7850cc9a97549d33d499db7cba1",
@@ -101,7 +101,8 @@
     "must_observe": [
       "the latched two-tank recovery proof remains consumed by downstream action selection",
       "the exact native recovery formation advances without renewed strict-path rejection",
-      "the Drudge route emits its terminal and advances without forbidden assistance",
+      "exact-roster reseparation is recorded and the Drudge route advances without forbidden assistance",
+      "trace demultiplexing remains complete without a forced terminal delta gap",
       "cleanup leaves zero bots, zero leases, and no worldserver process"
     ],
     "must_not_claim": [
