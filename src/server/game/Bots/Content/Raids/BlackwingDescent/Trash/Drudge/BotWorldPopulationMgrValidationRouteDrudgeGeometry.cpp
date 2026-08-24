@@ -794,31 +794,21 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             bool const dynamicCandidate = (!tank && (IsDynamicGroupRecoveryActive()
                 || (!CombatTankStagingActive() && candidateIndex > 0)))
                 || landedTankRecovery;
-            float const candidateProjection =
-                (candidatePoint.X - MidpointX) * AxisX
-                + (candidatePoint.Y - MidpointY) * AxisY;
+            BotRaidDrudgeSpacing::CandidateResult const candidateSpacing =
+                EvaluateAndRecordCandidateSpacing(
+                    uint32(candidateIndex), candidatePoint.X, candidatePoint.Y,
+                    tank, dynamicCandidate, dynamicLaneProjection, nowMs);
             if ((dynamicCandidate || prepullTankFallback || !CombatTankStagingActive())
-                && (!BotRaidDrudgeRecoveryCandidates::LaneSafe(
-                        candidatePoint, recoveryConstraints)
-                    || LaneSign * candidateProjection < dynamicLaneProjection))
+                && !candidateSpacing.LaneSafe)
             {
                 State.LastPathRejectReason = "drudge_anchor_lane_unsafe";
                 State.LastRecoveryResult = State.LastPathRejectReason;
                 continue;
             }
             bool const dynamicSpacingSafe = !dynamicCandidate
-                || IsRecoveryCandidateSpacingSafe(
-                    candidates[candidateIndex].first,
-                    candidates[candidateIndex].second, tank);
+                || candidateSpacing.Spacing.Safe;
             bool const dynamicSourceSafe = !dynamicCandidate
-                || (Distance2d(candidates[candidateIndex].first,
-                        candidates[candidateIndex].second, Sources[0]->GetPositionX(),
-                        Sources[0]->GetPositionY())
-                    >= Manager.Cohort().Config.ValidationRouteMinimumDistanceYards
-                && Distance2d(candidates[candidateIndex].first,
-                        candidates[candidateIndex].second, Sources[1]->GetPositionX(),
-                        Sources[1]->GetPositionY())
-                    >= Manager.Cohort().Config.ValidationRouteMinimumDistanceYards);
+                || (candidateSpacing.Source0Safe && candidateSpacing.Source1Safe);
             BotRaidDrudgeGeometry::AnchorPathSearchDecision const pathSearch =
                 BotRaidDrudgeGeometry::SelectAnchorPathSearch(
                     State.ValidationRouteDrudgeAnchorSearchCooldownUntilMs,

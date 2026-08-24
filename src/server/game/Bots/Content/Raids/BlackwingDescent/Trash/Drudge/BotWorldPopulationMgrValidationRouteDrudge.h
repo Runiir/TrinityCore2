@@ -151,6 +151,11 @@ struct DrudgeLaneContext
     bool IsDynamicGroupRecoveryActive() const;
     bool TryMinimumDistance(bool specializedDrudgeRecovery);
     bool IsRecoveryCandidateSpacingSafe(float x, float y, bool tank) const;
+    BotRaidDrudgeSpacing::PeerResult EvaluateRecoveryCandidateSpacing(
+        float x, float y, bool tank) const;
+    BotRaidDrudgeSpacing::CandidateResult EvaluateAndRecordCandidateSpacing(
+        uint32 candidateIndex, float x, float y, bool tank,
+        bool dynamicCandidate, float dynamicLaneProjection, uint64 nowMs);
     bool ComputeStrictTankRecoveryPath(float x, float y, float z) const;
     bool ComputeRecoveryAnchorReached(uint32 slot) const;
     bool ComputeExactCombatTankPathsProven() const;

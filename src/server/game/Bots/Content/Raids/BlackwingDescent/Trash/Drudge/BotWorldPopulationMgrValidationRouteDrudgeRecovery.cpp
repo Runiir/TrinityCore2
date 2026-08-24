@@ -69,11 +69,12 @@ bool DrudgeLaneContext::RecoveryTankAnchorPending(uint32 slot) const
     return IsLandedRushPending() && !RecoveryAnchorReachedFor(slot);
 }
 
-bool DrudgeLaneContext::IsRecoveryCandidateSpacingSafe(
+BotRaidDrudgeSpacing::PeerResult DrudgeLaneContext::EvaluateRecoveryCandidateSpacing(
     float x, float y, bool tank) const
 {
+    BotRaidDrudgeSpacing::PeerResult result;
     if (tank)
-        return true;
+        return result;
     for (WorldBotState const& cohortState : Manager.Party().Bots)
     {
         Player* other = Manager.GetLoadedBot(cohortState);
@@ -94,6 +95,7 @@ bool DrudgeLaneContext::IsRecoveryCandidateSpacingSafe(
             continue;
         float otherX = other->GetPositionX();
         float otherY = other->GetPositionY();
+        char const* coordinateSource = "live";
         if (cohortState.ValidationRouteDrudgeAnchorValid
             && cohortState.ValidationRouteDrudgeAnchorAttemptId
                 == Manager.Cohort().AttemptId
@@ -104,15 +106,28 @@ bool DrudgeLaneContext::IsRecoveryCandidateSpacingSafe(
         {
             otherX = cohortState.ValidationRouteDrudgeAnchorX;
             otherY = cohortState.ValidationRouteDrudgeAnchorY;
+            coordinateSource = "cached";
         }
-        if (Distance2d(x, y, otherX, otherY)
-            < std::max(3.0f,
+        float const distance = Distance2d(x, y, otherX, otherY);
+        if (distance < std::max(3.0f,
                 Manager.Cohort().Config.ValidationRouteSplitNavigationMarginYards
                     + Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards
                         * 0.5f))
-            return false;
+        {
+            result.Safe = false;
+            result.PeerGuid = other->GetGUID().GetCounter();
+            result.PeerDistance = distance;
+            result.PeerCoordinateSource = coordinateSource;
+            return result;
+        }
     }
-    return true;
+    return result;
+}
+
+bool DrudgeLaneContext::IsRecoveryCandidateSpacingSafe(
+    float x, float y, bool tank) const
+{
+    return EvaluateRecoveryCandidateSpacing(x, y, tank).Safe;
 }
 
 bool DrudgeLaneContext::ComputeStrictTankRecoveryPath(

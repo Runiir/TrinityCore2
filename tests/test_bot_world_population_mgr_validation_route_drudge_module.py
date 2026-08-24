@@ -12,6 +12,7 @@ RECOVERY_HEADER = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Tr
 LANES = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp"
 ACTIONS = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp"
 SEED = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp"
+SPACING = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSpacing.cpp"
 
 
 def test_drudge_route_modules_are_bounded_and_registered():
@@ -19,7 +20,7 @@ def test_drudge_route_modules_are_bounded_and_registered():
     header = HEADER.read_text(encoding="utf-8")
     cmake = CMAKE.read_text(encoding="utf-8")
     assert len(header.splitlines()) <= 1000
-    for module in (CONTRACT, GEOMETRY, RECOVERY, RECOVERY_HEADER, LANES, ACTIONS, SEED):
+    for module in (CONTRACT, GEOMETRY, RECOVERY, RECOVERY_HEADER, LANES, ACTIONS, SEED, SPACING):
         assert len(module.read_text(encoding="utf-8").splitlines()) <= 1000
     for name in (
         "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp",
@@ -27,6 +28,7 @@ def test_drudge_route_modules_are_bounded_and_registered():
         "BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp",
+        "BotWorldPopulationMgrValidationRouteDrudgeSpacing.cpp",
     ):
         assert name in cmake
     assert "TryValidationRouteDrudgeChargeLanes" in header

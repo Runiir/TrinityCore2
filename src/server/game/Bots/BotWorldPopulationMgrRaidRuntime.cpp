@@ -664,7 +664,37 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
                  << ",\"same_lane_spacing_valid\":" << (geometry.SameLaneSpacingValid ? "true" : "false")
                  << "}";
         }
-        json << "]}"
+        json << "]"
+             << ",\"first_spacing_failure\":{"recorded\":"
+             << (observation.FirstSpacingFailure.Recorded ? "true" : "false")
+             << ",\"recorded_at_ms\":" << observation.FirstSpacingFailure.RecordedAtMs
+             << ",\"attempt_id\":" << observation.FirstSpacingFailure.Scope.AttemptId
+             << ",\"wipe_generation\":" << observation.FirstSpacingFailure.Scope.WipeGeneration
+             << ",\"route_generation\":" << observation.FirstSpacingFailure.Scope.RouteGeneration
+             << ",\"member_guid\":" << observation.FirstSpacingFailure.MemberGuid
+             << ",\"candidate_index\":" << observation.FirstSpacingFailure.CandidateIndex
+             << ",\"candidate_x\":" << observation.FirstSpacingFailure.CandidateX
+             << ",\"candidate_y\":" << observation.FirstSpacingFailure.CandidateY
+             << ",\"same_lane_peer_guid\":" << observation.FirstSpacingFailure.SameLanePeerGuid
+             << ",\"same_lane_peer_distance\":"
+             << observation.FirstSpacingFailure.SameLanePeerDistance
+             << ",\"peer_coordinate_source\":\""
+             << JsonEscape(observation.FirstSpacingFailure.PeerCoordinateSource) << "\""
+             << ",\"source0_safe\":"
+             << (observation.FirstSpacingFailure.Source0Safe ? "true" : "false")
+             << ",\"source1_safe\":"
+             << (observation.FirstSpacingFailure.Source1Safe ? "true" : "false")
+             << ",\"lane_safe\":"
+             << (observation.FirstSpacingFailure.LaneSafe ? "true" : "false")
+             << ",\"same_lane_spacing_safe\":"
+             << (observation.FirstSpacingFailure.SameLaneSpacingSafe ? "true" : "false")
+             << ",\"group_position_safe\":"
+             << (observation.FirstSpacingFailure.GroupPositionSafe ? "true" : "false")
+             << ",\"first_failed_predicate\":\""
+             << JsonEscape(observation.FirstSpacingFailure.FirstFailedPredicate) << "\""
+             << ",\"suppressed_count\":"
+             << observation.FirstSpacingFailure.SuppressedCount << "}"
+             << "}"
              << ",\"reseparated_roster_guids\":[";
         bool firstObservationGuid = true;
         for (uint32 guid : observation.ReseparatedRosterGuids)
