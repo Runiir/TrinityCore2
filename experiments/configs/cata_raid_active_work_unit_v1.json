@@ -1,26 +1,26 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_post_closure_gate_verification",
+  "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_spacing_diagnostic_verification",
   "owner_skill": "raid-shard-architecture",
   "classification": "failed",
-  "observed_at_commit": "4975d73314deb3eb5b8f53bc6e3bbd4edfdfd6ec",
+  "observed_at_commit": "ff5af70c7c56a0cb5ff4cdc3a20fadaa5b469d3d",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_drudge_post_latch_death_handoff_20260824.md",
-    "sha256": "2fbe4491af3165d2ab8a6be0be1b9a95557436791b02aeb57902c13e7d751959"
+    "path": "experiments/configs/cata_raid_magmaw_drudge_spacing_diagnostic_handoff_20260824.md",
+    "sha256": "629ae33efcae28487e11daba06648e373f504c8b0024104f1bf664541f04b032"
   },
-  "first_broken_edge": "drudge_landed_rush_closure_pending_after_recovery_barrier",
+  "first_broken_edge": "drudge_dynamic_recovery_candidate_spacing_rejected_without_peer_identity",
   "decisive_evidence": {
-    "source_commit": "4975d73314deb3eb5b8f53bc6e3bbd4edfdfd6ec",
-    "source_tree": "7c96409e7cf6ed6bfed0758359365dc6ec8315fa",
+    "source_commit": "ff5af70c7c56a0cb5ff4cdc3a20fadaa5b469d3d",
+    "source_tree": "36c57ad1b3b670168bda9b8ef1bce3e0e1db0247",
     "source_worktree": "/home/runiir/Games/trinity-cata-worktrees/phase1-foundation-build",
-    "binary_sha256": "c99ee8aa9fa31c9a7186906232562199fcfadc396d157e9325e1f9453359ef57",
-    "config_sha256": "cbaace9c9912789d71b13a09985c1ac0f46b492ffab968db8d619edb2c4aacd4",
-    "build_receipt_path": "/tmp/trinity-magmaw-4975d73314/build/worldserver-build-receipt-v8.json",
-    "build_receipt_file_sha256": "cb8ec8a2809fb6df875d6c9330786483fe186487c25067485738d88ed00276ae",
-    "report_path": "/tmp/trinity-magmaw-4975d73314/canary1/capture/report.json",
-    "report_sha256": "2eefff25c4bfbabc38b51495b8a3a84f82df3c8661e6ef6e2e6f003e95d15ca1",
-    "report_file_sha256": "56fe09db1a027b5a2fcf299300b5a50f61a3ce4379943f1d25a6e24d37218b25",
-    "normalized_trace_sha256": "8dc5a152fc28dff3f1d5a710aa2436fd13d389869fdbc8460d8a9322ccc18bcf",
+    "binary_sha256": "2a8fec4fa200e2fb6ccbc72d518a278de426fb7a0ed4c1aa3934a6db0fb34e9f",
+    "config_sha256": "cfb4e27add59ae87fbf72a0a51cda83563823a9f5fd7cb578f9f440b2db3a378",
+    "build_receipt_path": "/tmp/trinity-magmaw-ff5af70c7c/build/worldserver-build-receipt-v8.json",
+    "build_receipt_file_sha256": "44866254c8369994d910bb696bc61456272163cf0325754f42e67e60e01417b6",
+    "report_path": "/tmp/trinity-magmaw-ff5af70c7c/canary1/capture/report.json",
+    "report_sha256": "0d54373e4894ef3037a4d9d4382c8d28b7f0e287c540aeeb7c4d9cccb577c1ca",
+    "report_file_sha256": "8a227c7905ceb809b972d768c06e59063e8453a03024daab7ef190aba40c5dd8",
+    "normalized_trace_sha256": "720570d0e88f563c626a6e5e9b6a85aaabf49684051a7ebd141b0201db966862",
     "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
     "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
     "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
@@ -30,9 +30,9 @@
     "route_node_id": "bwd.magmaw.drudges",
     "kills": 1,
     "death_loop_count": 3,
-    "native_rush_delivered_count": 10,
-    "native_rush_per_source_count": 5,
-    "dead_roster_guids": [30003, 30004, 30006],
+    "native_rush_delivered_count": 8,
+    "native_rush_per_source_count": 4,
+    "dead_roster_guids": [30003, 30004, 30007, 30008],
     "profile_action_roster_guids": [],
     "health_sync_evaluated_roster_guids": [],
     "tank_owned_hostile_count": 2,
@@ -49,7 +49,7 @@
     "do_not_relabel_as_clear": true
   },
   "implementation_hypothesis": {
-    "scope": "close_each_landed_rush_after_exact_recovery_combat_return_and_roster_reseparation",
+    "scope": "identify_the_exact_first_spacing_or_reseparation_predicate_before_behavior_repair",
     "status": "implemented_not_live_verified",
     "forbidden_shortcuts": [
       "forced_threat",
@@ -71,6 +71,14 @@
     ],
     "focused_test_count": 60,
     "runtime_verification_required": true
+  },
+  "implemented_diagnostic": {
+    "commit": "d47cb0d209b0b7a87d98307dfa46c90197af32e6",
+    "tree": "2dab62322817bf17684dfe650ab231c79a9724f6",
+    "status": "implemented_not_live_verified",
+    "scope": "first_scoped_drudge_spacing_and_reseparation_failure",
+    "gameplay_behavior_changed": false,
+    "focused_test_count": 58
   },
   "validation_clock": {
     "policy": "completion_watchdog",
@@ -101,13 +109,12 @@
     },
     "required_clock_policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
-    "required_fix_commit": "ff5af70c7c56a0cb5ff4cdc3a20fadaa5b469d3d",
-    "required_live_build_tree": "36c57ad1b3b670168bda9b8ef1bce3e0e1db0247",
+    "required_fix_commit": "d47cb0d209b0b7a87d98307dfa46c90197af32e6",
+    "required_live_build_tree": "2dab62322817bf17684dfe650ab231c79a9724f6",
     "must_observe": [
-      "every landed Rush emits drudge_native_charge_reseparation_complete",
-      "all seven offensive slots appear in profile_action_roster_guids",
-      "exact tank health-sync evidence is recorded",
-      "the Drudge pair dies with no player death and the route advances without forbidden assistance",
+      "the first failed reseparation predicate is explicit",
+      "a spacing rejection names member, candidate, peer, coordinate source, distance, and predicate booleans",
+      "diagnostic repeats are bounded and scoped to attempt, wipe, and route",
       "trace demultiplexing remains complete without a forced terminal delta gap",
       "cleanup leaves zero bots, zero leases, and no worldserver process"
     ],
@@ -117,5 +124,5 @@
       "native confirmation from deterministic tests alone"
     ]
   },
-  "next_action": "Build exact clean commit ff5af70c7c56a0cb5ff4cdc3a20fadaa5b469d3d through the queued coordinator, provision a fresh exact ten-player Magmaw roster, and run one completion-watchdog shard. Verify every landed Rush closes, all seven offensive slots execute trained profiles, exact tank health-sync evidence appears, and the Drudge pair dies without player deaths before the route advances. Do not teleport, force movement or threat, revive, alter native encounter state, or manufacture an outcome."
+  "next_action": "Build exact clean commit d47cb0d209b0b7a87d98307dfa46c90197af32e6 through the queued coordinator, provision a fresh exact ten-player Magmaw roster, and run one completion-watchdog shard. Extract the first scoped spacing or reseparation failure with exact member, candidate, peer, coordinate source, distance, and predicate values, then route one behavior repair. Do not relabel this diagnostic run as a clear. Do not teleport, force movement or threat, revive, alter native encounter state, or manufacture an outcome."
 }
