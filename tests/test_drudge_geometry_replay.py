@@ -271,13 +271,24 @@ int main()
     assert(!oversizedNativeReach.NativeOwnershipAllowed);
     assert(!oversizedNativeReach.NativeEngagementAllowed);
 
-    // A native Rush invalidates the pre-Rush anchor proof once. Repeated bot
-    // ticks for the same pending observation preserve a successful reproof.
+    // An in-flight observation is not yet a displacement edge. It must keep
+    // the queue blocked without invalidating the prepull anchor proof.
     input.ChargePending = true;
+    input.ChargeQueueIdle = false;
+    input.ChargeLanded = false;
     input.ChargeSequence = 41;
     result.Next.PriorPathProofAvailable = true;
-    result = Advance(result.Next, input);
+    Result awaitingLanding = Advance(result.Next, input);
+    assert(!awaitingLanding.InvalidateAnchor);
+    assert(awaitingLanding.Next.LastChargeSequenceObserved == 0);
+    assert(awaitingLanding.Next.PriorPathProofAvailable);
+
+    // The first landed tick owns the one-shot invalidation edge. Repeated bot
+    // ticks for the same landed observation must not invalidate it again.
+    input.ChargeLanded = true;
+    result = Advance(awaitingLanding.Next, input);
     assert(result.InvalidateAnchor);
+    assert(result.Next.LastChargeSequenceObserved == 41);
     assert(result.Next.PriorPathProofAvailable);
 
     // The Rush did not move this tank/member. The exact scoped candidate is

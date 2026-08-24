@@ -254,7 +254,10 @@ inline Result Advance(State current, Input const& input)
         result.ScopeReset = true;
     }
 
-    if (input.ChargePending && input.ChargeSequence != 0
+    // The observation is queued before its native Rush lands.  Do not
+    // invalidate the prepull anchor during that in-flight window: the
+    // landing edge is the first authoritative displacement transition.
+    if (input.ChargePending && input.ChargeLanded && input.ChargeSequence != 0
         && result.Next.LastChargeSequenceObserved != input.ChargeSequence)
     {
         result.Next.LastChargeSequenceObserved = input.ChargeSequence;
