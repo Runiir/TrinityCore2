@@ -108,11 +108,34 @@ def canonical_sha256(value: Any) -> str:
 
 
 def static_contract(repository: Path = REPO_ROOT) -> dict[str, Any]:
-    source = (repository / "src/server/game/Bots/BotClassSpecActionProfile.cpp").read_text()
+    candidate_source = (
+        repository / "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp"
+    ).read_text()
+    db_source = (
+        repository / "src/server/game/Bots/BotClassSpecActionProfileDb.cpp"
+    ).read_text()
     header = (repository / "src/server/game/Bots/BotClassSpecActionProfile.h").read_text()
-    controller = (repository / "src/server/game/Bots/BotController.cpp").read_text()
+    controller = (repository / "src/server/game/Bots/BotControllerCombat.cpp").read_text()
     executor = (repository / "src/server/game/Bots/BotActionExecutor.cpp").read_text()
-    world_mgr = (repository / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    world_candidate_sources = "\n".join(
+        (
+            (
+                repository
+                / "src/server/game/Bots/BotWorldPopulationMgrCombatSpell.cpp"
+            ).read_text(),
+            (
+                repository
+                / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp"
+            ).read_text(),
+            (
+                repository
+                / "src/server/game/Bots/BotWorldPopulationMgrValidationGroupHeal.cpp"
+            ).read_text(),
+        )
+    )
+    world_resolver = (
+        repository / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp"
+    ).read_text()
     forward = (repository / "sql/custom/world/2026_07_19_00_phase4_rotation_snapshots.sql").read_text()
     normalize = (repository / "sql/custom/world/2026_07_19_01_phase4_rotation_category_normalization.sql").read_text()
     rollback = (repository / "sql/custom/rollback/world/2026_07_19_00_phase4_rotation_snapshots_rollback.sql").read_text()
@@ -120,18 +143,23 @@ def static_contract(repository: Path = REPO_ROOT) -> dict[str, Any]:
         (repository / "experiments/configs/all_spec_phase4_previous_profile_hashes_v1.json").read_text()
     )
 
-    compiled_conditions = source[
-        source.index("std::string EvaluateCompiledConditions") :
-        source.index("std::string SnapshotPayload")
+    compiled_conditions = candidate_source[
+        candidate_source.index("std::string EvaluateCompiledConditions") :
+        candidate_source.index(
+            "std::vector<BotActionCandidate> "
+            "BotClassSpecActionProfileStore::BuildCandidates"
+        )
     ]
-    candidate_scoring = source[
-        source.index("candidate.Score =") : source.index("candidate.Reason =")
+    candidate_scoring = candidate_source[
+        candidate_source.index("candidate.Score =") : candidate_source.index(
+            "candidate.Reason ="
+        )
     ]
     mechanic_tags_bounded_to_typed_resource_selection = (
         "MechanicTags" not in candidate_scoring
-        and "spell.MechanicTags = fields[14].GetString();" in source
-        and "spell.MechanicTags << '|'" in source
-        and source.count("HasMechanicTag(spell.MechanicTags,") == 5
+        and "spell.MechanicTags = fields[14].GetString();" in db_source
+        and "spell.MechanicTags << '|'" in db_source
+        and candidate_source.count("HasMechanicTag(spell.MechanicTags,") == 5
         and all(
             f'HasMechanicTag(spell.MechanicTags, "{tag}")' in compiled_conditions
             for tag in (
@@ -141,39 +169,39 @@ def static_contract(repository: Path = REPO_ROOT) -> dict[str, Any]:
                 "maintain_owned_aura",
             )
         )
-        and world_mgr.count("hasMechanicTag(candidate.Profile.MechanicTags") == 3
-        and 'hasMechanicTag(candidate.Profile.MechanicTags, "prepull")' in world_mgr
-        and 'hasMechanicTag(candidate.Profile.MechanicTags, "mana_recovery")' in world_mgr
-        and 'hasMechanicTag(candidate.Profile.MechanicTags, "resource_fallback")' in world_mgr
+        and world_resolver.count("hasMechanicTag(candidate.Profile.MechanicTags") == 3
+        and 'hasMechanicTag(candidate.Profile.MechanicTags, "prepull")' in world_resolver
+        and 'hasMechanicTag(candidate.Profile.MechanicTags, "mana_recovery")' in world_resolver
+        and 'hasMechanicTag(candidate.Profile.MechanicTags, "resource_fallback")' in world_resolver
     )
 
     checks = {
-        "canonical_key_count": source.count("CanonicalRotationKey, 31") == 1
+        "canonical_key_count": db_source.count("CanonicalRotationKey, 31") == 1
         and len(EXPECTED_KEYS) == 31,
         "immutable_active_previous_snapshots": (
-            "std::shared_ptr<DbRotationSnapshot const> g_activeDbRotationSnapshot" in source
-            and "std::shared_ptr<DbRotationSnapshot const> g_previousDbRotationSnapshot" in source
+            "std::shared_ptr<DbRotationSnapshot const> g_activeDbRotationSnapshot" in db_source
+            and "std::shared_ptr<DbRotationSnapshot const> g_previousDbRotationSnapshot" in db_source
         ),
         "whole_snapshot_failure_is_atomic": (
-            "return nullptr;" in source
-            and "g_previousDbRotationSnapshot = g_activeDbRotationSnapshot;" in source
-            and source.index("if (!invalidReasons.empty()")
-            < source.index("g_activeDbRotationSnapshot = snapshot;")
+            "return nullptr;" in db_source
+            and "g_previousDbRotationSnapshot = g_activeDbRotationSnapshot;" in db_source
+            and db_source.index("if (!invalidReasons.empty()")
+            < db_source.index("g_activeDbRotationSnapshot = snapshot;")
         ),
-        "monotonic_generation": "g_activeDbRotationSnapshot->Generation + 1" in source,
+        "monotonic_generation": "g_activeDbRotationSnapshot->Generation + 1" in db_source,
         "profile_copy_is_attempt_pinned": (
-            "profile = itr->second;" in source
+            "profile = itr->second;" in db_source
             and "SnapshotGeneration" in header
             and "SnapshotContentHash" in header
         ),
         "rollback_publishes_new_generation": (
-            "RollbackDbProfiles" in source
-            and "rollback->Generation = g_activeDbRotationSnapshot ? g_activeDbRotationSnapshot->Generation + 1 : 1" in source
+            "RollbackDbProfiles" in db_source
+            and "rollback->Generation = g_activeDbRotationSnapshot ? g_activeDbRotationSnapshot->Generation + 1 : 1" in db_source
         ),
         "full_catalog_reporting": (
-            '\\"immutable_full_catalog_snapshot\\"' in source
-            and '\\"missing_keys\\"' in source
-            and '\\"expected_profile_count\\"' in source
+            '\\"immutable_full_catalog_snapshot\\"' in db_source
+            and '\\"missing_keys\\"' in db_source
+            and '\\"expected_profile_count\\"' in db_source
         ),
         "deterministic_controller_selection": (
             "std::max_element(valid.begin(), valid.end()" in controller
@@ -187,8 +215,8 @@ def static_contract(repository: Path = REPO_ROOT) -> dict[str, Any]:
         "deterministic_world_selection_ties": (
             # Candidate arbitration was centralized; both remaining owners use
             # the same score/sort-order/action-id tie break.
-            world_mgr.count("candidate.Profile.SortOrder <") >= 2
-            and "spell.SortOrder < bestHeal->SortOrder" in world_mgr
+            world_candidate_sources.count("candidate.Profile.SortOrder <") >= 2
+            and "spell.SortOrder < bestHeal->SortOrder" in world_candidate_sources
         ),
         "mechanic_tags_bounded_to_typed_resource_selection": mechanic_tags_bounded_to_typed_resource_selection,
         "typed_columns_forward_and_rollback": all(

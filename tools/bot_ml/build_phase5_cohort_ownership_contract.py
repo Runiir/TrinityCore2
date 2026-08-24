@@ -19,16 +19,33 @@ def _sha256_json(payload: Any) -> str:
 
 
 def static_contract(repository: Path = REPO_ROOT) -> dict[str, Any]:
-    header = (repository / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text()
-    source = (repository / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    manager_header = (
+        repository / "src/server/game/Bots/BotWorldPopulationMgr.h"
+    ).read_text()
+    runtime_header = (
+        repository / "src/server/game/Bots/BotWorldPopulationMgrRuntimeContracts.h"
+    ).read_text()
+    header = manager_header + "\n" + runtime_header
+    cohort_source = (
+        repository / "src/server/game/Bots/BotWorldPopulationMgrCohort.cpp"
+    ).read_text()
+    validation_profile = (
+        repository
+        / "src/server/game/Bots/BotWorldPopulationMgrValidationProfile.cpp"
+    ).read_text()
+    roster_source = (
+        repository / "src/server/game/Bots/BotWorldPopulationMgrRoster.cpp"
+    ).read_text()
+    lifecycle_source = (
+        repository / "src/server/game/Bots/BotWorldPopulationMgrLifecycle.cpp"
+    ).read_text()
     commands = (repository / "src/server/scripts/Commands/cs_healerbot.cpp").read_text()
-    pool_reset = source[
-        source.index("bool BotWorldPopulationMgr::ResetValidationBotPool") :
-        source.index("std::string BotWorldPopulationMgr::RuntimeProfilesJson")
+    pool_reset = validation_profile[
+        validation_profile.index("bool BotWorldPopulationMgr::ResetValidationBotPool") :
     ]
-    cohort_start = source[
-        source.index("bool BotWorldPopulationMgr::StartAutonomyForCohort") :
-        source.index("std::string BotWorldPopulationMgr::StopAutonomyForCohort")
+    cohort_start = cohort_source[
+        cohort_source.index("bool BotWorldPopulationMgr::StartAutonomyForCohort") :
+        cohort_source.index("std::string BotWorldPopulationMgr::StopAutonomyForCohort")
     ]
 
     legacy_globals = (
@@ -75,7 +92,7 @@ def static_contract(repository: Path = REPO_ROOT) -> dict[str, Any]:
             )
         ),
         "owner_scoped_claim_and_release": all(
-            marker in source
+            marker in cohort_source
             for marker in (
                 "BotWorldPopulationMgr::ClaimBotGuid",
                 "BotWorldPopulationMgr::ReleaseBotGuid",
@@ -90,14 +107,15 @@ def static_contract(repository: Path = REPO_ROOT) -> dict[str, Any]:
             < cohort_start.index("++Cohort().AttemptId;")
         ),
         "exact_pool_tag_matching": (
-            "cbp.experiment_tags = '" in source
-            and "cbp.`experiment_tags` = '" in source
-            and "experiment_tags LIKE '%" not in source
+            "cbp.experiment_tags = '" in roster_source
+            and "cbp.`experiment_tags` = '" in validation_profile
+            and "experiment_tags LIKE '%" not in roster_source
+            and "experiment_tags LIKE '%" not in validation_profile
         ),
         "global_pool_reset_removed": (
-            "SET p.`in_use` = 0 WHERE " in source
-            and "poolPredicate" in source
-            and "ValidationProvisionOnPrepare" in source
+            "SET p.`in_use` = 0 WHERE " in validation_profile
+            and "poolPredicate" in validation_profile
+            and "ValidationProvisionOnPrepare" in validation_profile
         ),
         "pool_reset_holds_lease_guard": (
             "std::lock_guard<std::mutex> guard(_leaseMutex);" in pool_reset
@@ -106,7 +124,7 @@ def static_contract(repository: Path = REPO_ROOT) -> dict[str, Any]:
         ),
         "serial_limit_retained": "MaxActiveCohorts = 1" in header,
         "profile_snapshot_pinned_per_cohort": all(
-            marker in source
+            marker in lifecycle_source
             for marker in (
                 "Cohort().PinnedProfileGeneration = BotClassSpecActionProfileStore::ActiveDbGeneration()",
                 "Cohort().PinnedProfileContentHash = BotClassSpecActionProfileStore::ActiveDbContentHash()",
@@ -145,8 +163,8 @@ def static_contract(repository: Path = REPO_ROOT) -> dict[str, Any]:
             )
         ),
         "runtime_isolation_probe_exposed": (
-            "GetCohortIsolationContractJson" in source
-            and "botauto_ownership" in source
+            "GetCohortIsolationContractJson" in cohort_source
+            and "botauto_ownership" in cohort_source
         ),
     }
     return {"passed": all(checks.values()), "checks": checks}

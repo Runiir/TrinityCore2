@@ -8993,7 +8993,9 @@ def test_live_bot_validation_preserve_worldserver_session_excludes_shutdown(
 
 
 def test_scoring_start_stat_modifier_ledger_surface_is_deterministic():
-    header = Path("src/server/game/Bots/BotWorldPopulationMgr.h").read_text(
+    header = Path(
+        "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h"
+    ).read_text(
         encoding="utf-8"
     )
     ledger = Path(
@@ -11038,7 +11040,27 @@ def test_phase08_raid_smoke_configs_record_frames_and_metrics(tmp_path):
 
 def test_phase08_server_raid_telemetry_surface():
     header = Path("src/server/game/Bots/BotWorldPopulationMgr.h").read_text(encoding="utf-8")
-    impl = Path("src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(encoding="utf-8")
+    raid_mechanics = Path(
+        "src/server/game/Bots/BotWorldPopulationMgrBossMechanics.cpp"
+    ).read_text(encoding="utf-8")
+    raid_population = Path(
+        "src/server/game/Bots/BotWorldPopulationMgrPopulation.cpp"
+    ).read_text(encoding="utf-8")
+    raid_progression = Path(
+        "src/server/game/Bots/BotWorldPopulationMgrProgressionTelemetry.cpp"
+    ).read_text(encoding="utf-8")
+    raid_status = Path(
+        "src/server/game/Bots/BotWorldPopulationMgrStatus.cpp"
+    ).read_text(encoding="utf-8")
+    raid_state = Path(
+        "src/server/game/Bots/BotWorldPopulationMgrStateJson.cpp"
+    ).read_text(encoding="utf-8")
+    raid_outcomes = Path(
+        "src/server/game/Bots/BotWorldPopulationMgrValidationOutcomes.cpp"
+    ).read_text(encoding="utf-8")
+    raid_death = Path(
+        "src/server/game/Bots/BotWorldPopulationMgrUpdateDeath.cpp"
+    ).read_text(encoding="utf-8")
     conf = Path("src/server/worldserver/worldserver.conf.dist").read_text(encoding="utf-8")
 
     for symbol in [
@@ -11051,17 +11073,18 @@ def test_phase08_server_raid_telemetry_surface():
     ]:
         assert symbol in header
 
-    for event_type in [
-        "raid_role_assignment",
-        "raid_mechanic",
-        "raid_interrupt",
-        "raid_add_wave",
-        "raid_position_anchor",
-        "raid_boss_action",
-        "raid_boss_killed",
-        "raid_wipe",
-    ]:
-        assert event_type in impl
+    event_owners = {
+        "raid_role_assignment": raid_population,
+        "raid_mechanic": raid_mechanics,
+        "raid_interrupt": raid_mechanics,
+        "raid_add_wave": raid_mechanics,
+        "raid_position_anchor": raid_mechanics,
+        "raid_boss_action": raid_mechanics,
+        "raid_boss_killed": raid_outcomes,
+        "raid_wipe": raid_death,
+    }
+    for event_type, owner in event_owners.items():
+        assert event_type in owner
 
     for counter_name in [
         "role_assignments",
@@ -11074,17 +11097,18 @@ def test_phase08_server_raid_telemetry_surface():
         "recovery_events",
         "instance_resets",
     ]:
-        assert counter_name in impl
+        assert counter_name in raid_status
 
-    for semantic_key in [
-        "raid_role_assignment",
-        "raid_positioning_anchors",
-        "raid_mechanic_adapter",
-        "raid_gear_target_plan",
-        "heroic_raid_progression",
-        "gear_target_plan",
-    ]:
-        assert semantic_key in impl
+    semantic_owners = {
+        "raid_role_assignment": raid_progression,
+        "raid_positioning_anchors": raid_progression,
+        "raid_mechanic_adapter": raid_progression,
+        "raid_gear_target_plan": raid_state,
+        "heroic_raid_progression": raid_progression,
+        "gear_target_plan": raid_progression,
+    }
+    for semantic_key, owner in semantic_owners.items():
+        assert semantic_key in owner
 
     assert "BotProgression.TrackHeroicRaidProgression = 1" in conf
 
@@ -11092,8 +11116,21 @@ def test_phase08_server_raid_telemetry_surface():
 def test_phase12_bot_telemetry_importance_policy_surface():
     header = Path("src/server/game/Bots/BotTelemetryPolicy.h").read_text(encoding="utf-8")
     impl = Path("src/server/game/Bots/BotTelemetryPolicy.cpp").read_text(encoding="utf-8")
-    mgr_header = Path("src/server/game/Bots/BotWorldPopulationMgr.h").read_text(encoding="utf-8")
-    mgr_impl = Path("src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(encoding="utf-8")
+    config_header = Path(
+        "src/server/game/Bots/BotWorldPopulationMgrConfig.h"
+    ).read_text(encoding="utf-8")
+    config_impl = Path(
+        "src/server/game/Bots/BotWorldPopulationMgrConfig.cpp"
+    ).read_text(encoding="utf-8")
+    event_recording = Path(
+        "src/server/game/Bots/BotWorldPopulationMgrEventRecording.cpp"
+    ).read_text(encoding="utf-8")
+    progression = Path(
+        "src/server/game/Bots/BotWorldPopulationMgrProgressionTelemetry.cpp"
+    ).read_text(encoding="utf-8")
+    telemetry_replay = Path(
+        "src/server/game/Bots/BotWorldPopulationMgrTelemetryPolicy.cpp"
+    ).read_text(encoding="utf-8")
     conf = Path("src/server/worldserver/worldserver.conf.dist").read_text(encoding="utf-8")
     cmake = Path("src/server/game/CMakeLists.txt").read_text(encoding="utf-8")
 
@@ -11140,7 +11177,7 @@ def test_phase12_bot_telemetry_importance_policy_surface():
         "BotExperiment.MinReplayImportance",
     ]:
         assert config_key in conf
-        assert config_key in mgr_impl
+        assert config_key in config_impl
 
     for config_field in [
         "AlwaysRecordFailures",
@@ -11151,20 +11188,21 @@ def test_phase12_bot_telemetry_importance_policy_surface():
         "MinClipImportance",
         "MinReplayImportance",
     ]:
-        assert config_field in mgr_header
+        assert config_field in config_header
 
-    for call_site in [
-        "RecordEvent(WorldBotState& state",
-        "RecordQuestEvent(WorldBotState& state",
-        "RecordRaidTelemetry",
-        "RecordDecision",
-        "BotTelemetryPolicy::DecideEvent",
-        "BotTelemetryPolicy::DecideDecision",
-        "RecordPolicyReplay",
-        "MaybeCaptureTelemetryClip(bot, target, policyInput, policy",
-        "MaybeCaptureTelemetryClip(bot, boss, policyInput, policy",
-    ]:
-        assert call_site in mgr_impl
+    call_site_owners = {
+        "RecordEvent(WorldBotState& state": event_recording,
+        "RecordQuestEvent(WorldBotState& state": progression,
+        "RecordRaidTelemetry": progression,
+        "RecordDecision": event_recording,
+        "BotTelemetryPolicy::DecideEvent": event_recording,
+        "BotTelemetryPolicy::DecideDecision": event_recording,
+        "RecordPolicyReplay": telemetry_replay,
+        "MaybeCaptureTelemetryClip(bot, target, policyInput, policy": event_recording,
+        "MaybeCaptureTelemetryClip(bot, boss, policyInput, policy": progression,
+    }
+    for call_site, owner in call_site_owners.items():
+        assert call_site in owner
 
     assert "BotTelemetryPolicy.cpp" in cmake
 
@@ -11173,7 +11211,18 @@ def test_phase13_triggered_experiment_segments_surface():
     header = Path("src/server/game/Bots/BotExperimentCoordinator.h").read_text(encoding="utf-8")
     impl = Path("src/server/game/Bots/BotExperimentCoordinator.cpp").read_text(encoding="utf-8")
     mgr_header = Path("src/server/game/Bots/BotWorldPopulationMgr.h").read_text(encoding="utf-8")
-    mgr_impl = Path("src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(encoding="utf-8")
+    runtime_header = Path(
+        "src/server/game/Bots/BotWorldPopulationMgrRuntimeContracts.h"
+    ).read_text(encoding="utf-8")
+    event_recording = Path(
+        "src/server/game/Bots/BotWorldPopulationMgrEventRecording.cpp"
+    ).read_text(encoding="utf-8")
+    progression = Path(
+        "src/server/game/Bots/BotWorldPopulationMgrProgressionTelemetry.cpp"
+    ).read_text(encoding="utf-8")
+    status = Path(
+        "src/server/game/Bots/BotWorldPopulationMgrStatus.cpp"
+    ).read_text(encoding="utf-8")
     commands = Path("src/server/scripts/Commands/cs_healerbot.cpp").read_text(encoding="utf-8")
     cmake = Path("src/server/game/CMakeLists.txt").read_text(encoding="utf-8")
     schema = Path("sql/updates/characters/4.3.4/2026_06_12_01_characters_bot_experiment_segments.sql").read_text(encoding="utf-8")
@@ -11223,12 +11272,12 @@ def test_phase13_triggered_experiment_segments_surface():
     ]:
         assert column in schema
 
-    assert "BotExperimentCoordinator ExperimentCoordinator" in mgr_header
-    assert "Cohort().ExperimentCoordinator" in mgr_impl
+    assert "BotExperimentCoordinator ExperimentCoordinator" in runtime_header
+    assert "Cohort().ExperimentCoordinator" in progression
     assert "RecordExperimentSegmentEvent" in mgr_header
-    assert "RecordExperimentSegmentEvent(bot, eventType, result, questId" in mgr_impl
-    assert "RecordExperimentSegmentEvent(bot, eventType, result, 0" in mgr_impl
-    assert "segment_counts" in mgr_impl
+    assert "RecordExperimentSegmentEvent(bot, eventType, result, questId" in progression
+    assert "RecordExperimentSegmentEvent(bot, eventType, result, 0" in event_recording
+    assert "segment_counts" in status
     assert "experiment_bot_segments" in commands
     assert "experiment_bot_clips" in commands
     assert "experiment_bot_clip_frames" in commands
@@ -11280,7 +11329,9 @@ def test_phase14_telemetry_clip_storage_surface():
     assert "experiment_bot_telemetry_frames" not in commands
     assert "persisted_pre_frames" in buffer_header
     assert "persisted_post_frames" in buffer_header
-    assert "decision.reason.c_str()" in Path("src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(encoding="utf-8")
+    assert "decision.reason.c_str()" in Path(
+        "src/server/game/Bots/BotWorldPopulationMgrTelemetryPolicy.cpp"
+    ).read_text(encoding="utf-8")
     assert "INSERT INTO experiment_bot_clips" in buffer_impl
     assert "INSERT INTO experiment_bot_clip_frames" in buffer_impl
     assert "InsertFrameRows(clip.clip_id, clip.trigger_time_ms, clip.pre_frames, 0)" in buffer_impl
