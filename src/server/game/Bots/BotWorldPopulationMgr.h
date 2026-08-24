@@ -648,7 +648,7 @@ private:
     void PersistDecisionFingerprintDelta(WorldBotState& state, uint32 repeatDelta, uint32 failureDelta) const;
     void FlushDecisionFingerprintMemory(WorldBotState& state) const;
     void FlushPendingDecisionFingerprintMemory();
-    void RecordDecisionTrace(WorldBotState& state, char const* situation, char const* action, Unit const* target, uint32 questId, char const* result, char const* reasonCode);
+    void RecordDecisionTrace(WorldBotState& state, char const* situation, char const* action, Unit const* target, uint32 questId, char const* result, char const* reasonCode, bool coalesceRepeatable = false);
     void ResetTraceStreams();
     BotDiagnosis BuildBotDiagnosis(WorldBotState const& state, Player const* bot) const;
     std::string BuildBotDiagnosisObjectJson(WorldBotState const& state, Player const* bot) const;

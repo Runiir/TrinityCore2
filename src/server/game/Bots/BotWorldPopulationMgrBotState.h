@@ -573,6 +573,7 @@ namespace BotWorldPopulationMgrBotState
             uint32 IdleDecisionRepeatCount = 0;
             uint32 TargetChurnCount = 0;
             uint32 SuppressedRepeatableEventCount = 0;
+            uint32 SuppressedRepeatableDecisionCount = 0;
             uint32 EngagedHostileCount = 0;
             uint32 TankOwnedHostileCount = 0;
             uint32 HealerTargetingHostileCount = 0;

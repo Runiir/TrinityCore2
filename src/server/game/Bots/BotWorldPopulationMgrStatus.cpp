@@ -369,6 +369,7 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
                          << ",\"idle_decision_repeat_count\":" << itr->IdleDecisionRepeatCount
                          << ",\"target_churn_count\":" << itr->TargetChurnCount
                          << ",\"suppressed_repeatable_event_count\":" << itr->SuppressedRepeatableEventCount
+                         << ",\"suppressed_repeatable_decision_count\":" << itr->SuppressedRepeatableDecisionCount
                          << ",\"threat_snapshot\":{\"engaged_hostiles\":" << itr->EngagedHostileCount
                          << ",\"tank_owned_hostiles\":" << itr->TankOwnedHostileCount
                          << ",\"healer_targeting_hostiles\":" << itr->HealerTargetingHostileCount

@@ -69,6 +69,19 @@ uint64 NowMs()
     return uint64(std::chrono::duration_cast<std::chrono::milliseconds>(
         GameTime::GetGameTimeSystemPoint().time_since_epoch()).count());
 }
+
+bool IsRepeatableTraceDecision(bool failure, bool rare, char const* action)
+{
+    if (failure || rare || !action)
+        return false;
+
+    std::string const value(action);
+    return value.find("path_rejected") != std::string::npos
+        || value.find("anchor_move") != std::string::npos
+        || value.find("wait_for_") != std::string::npos
+        || value.rfind("hold_", 0) == 0
+        || value.find("_hold_") != std::string::npos;
+}
 }
 
 void BotWorldPopulationMgr::RecordEvent(WorldBotState& state, Player* bot, char const* eventType, Unit const* target, char const* result, char const* rawJson, char const* semanticJson, float valueFloat, uint32 valueInt, uint32 spellId)
@@ -311,7 +324,9 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
     auto chosenItr = Party().LastChosenCombatByBot.find(bot->GetGUID().GetCounter());
     state.LastChosenActionJson = chosenItr != Party().LastChosenCombatByBot.end() ? chosenItr->second : "{}";
     RecordDecisionFingerprintMemory(state, bot, situation, action, chosenActivity, failure);
-    RecordDecisionTrace(state, situation, action, target, state.LastDecisionQuestId, failure ? "failed" : "ok", failure ? "decision_failure" : "");
+    RecordDecisionTrace(state, situation, action, target, state.LastDecisionQuestId,
+        failure ? "failed" : "ok", failure ? "decision_failure" : "",
+        IsRepeatableTraceDecision(failure, rare, action));
 
     if (!Cohort().RunId || !Cohort().Config.RecordDecisions)
         return;
@@ -323,10 +338,10 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
     Cohort().TelemetryBuffer.Observe(bot, situation, action, rawJson, semanticJson);
 
     // An invalid profile resolver is a diagnostic state, not a gameplay
-    // transition. Preserve every decision in the in-memory trace and metrics,
-    // but avoid inserting an identical diagnostic row on every tick. The first
-    // edge and a heartbeat remain persisted with their suppressed count; all
-    // failures and rare/transition decisions bypass this gate.
+    // transition. Preserve every decision in counters, but avoid inserting an
+    // identical diagnostic row on every tick. The trace applies the same edge
+    // and five-second heartbeat rule to repeatable movement/hold decisions;
+    // failures and rare/transition decisions bypass that coalescing.
     uint32 suppressedDiagnosticDecisions = 0;
     bool const repeatableDiagnosticDecision = !failure && !rare
         && (state.LastCombatAttempt.Reason == "no_valid_profile_action"

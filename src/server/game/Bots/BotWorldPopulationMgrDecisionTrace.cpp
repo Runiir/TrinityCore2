@@ -178,8 +178,27 @@ void BotWorldPopulationMgr::RecordDecisionFingerprintMemory(WorldBotState& state
     PersistDecisionFingerprintDelta(state, repeatDelta, failureDelta);
 }
 
-void BotWorldPopulationMgr::RecordDecisionTrace(WorldBotState& state, char const* situation, char const* action, Unit const* target, uint32 questId, char const* result, char const* reasonCode)
+void BotWorldPopulationMgr::RecordDecisionTrace(WorldBotState& state, char const* situation, char const* action, Unit const* target, uint32 questId, char const* result, char const* reasonCode, bool coalesceRepeatable)
 {
+    if (coalesceRepeatable && !state.DecisionTrace.empty())
+    {
+        WorldBotState::DecisionTraceEntry& previous = state.DecisionTrace.back();
+        uint64 const nowMs = NowMs();
+        bool const sameDecision = previous.Situation == (situation ? situation : "unknown")
+            && previous.Action == (action ? action : "wait")
+            && previous.TargetGuid == (target ? target->GetGUID().GetCounter() : 0)
+            && previous.Result == (result ? result : "ok")
+            && previous.ReasonCode == (reasonCode ? reasonCode : "")
+            && previous.RouteNodeId == Cohort().Config.ValidationRouteNodeId
+            && previous.RouteGeneration == state.ValidationRouteGeneration;
+        if (sameDecision && nowMs >= previous.TimestampMs
+            && nowMs - previous.TimestampMs < 5000)
+        {
+            ++previous.SuppressedRepeatableDecisionCount;
+            return;
+        }
+    }
+
     WorldBotState::DecisionTraceEntry entry;
     entry.TimestampMs = NowMs();
     entry.Sequence = ++state.TraceSequence;
