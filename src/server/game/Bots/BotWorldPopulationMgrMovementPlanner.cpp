@@ -98,6 +98,11 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         return std::sqrt(dx * dx + dy * dy + dz * dz);
     };
 
+    auto nativePointFloorValid = [bot](G3D::Vector3 const& point)
+    {
+        return BotWorldMovement::NativePathPointFloorValid(bot, point);
+    };
+
     auto nativeEndpointFloorValid = [bot](PathGenerator const& candidatePath)
     {
         return BotWorldMovement::NativePathEndpointFloorValid(bot,
