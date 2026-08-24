@@ -390,7 +390,7 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     )
     assert active["implemented_fix"]["status"] == "live_verified_not_sufficient"
     assert active["implemented_diagnostic"]["commit"] == (
-        "72f8318c9ce12f2470ef387761ccc98885f75aa2"
+        "d9024ddb5cc9e213e9f0048444b66522cd4d005c"
     )
     assert active["implemented_diagnostic"]["gameplay_behavior_changed"] is False
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None

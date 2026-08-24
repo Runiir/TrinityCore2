@@ -6,7 +6,7 @@
   "observed_at_commit": "49e8f8bff809e8d685653d127dcaed1d0bf2724e",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_drudge_spacing_diagnostic_handoff_20260824.md",
-    "sha256": "c2ca877811dbaf04fec5d1d97d92286b1d0b79a319289649110a1115e33c3573"
+    "sha256": "933fc00a8dc2215d61a6e6feb37ededa559239e9ab087536a39effc4ddb2ca94"
   },
   "first_broken_edge": "drudge_reseparation_submission_missing_arrival_or_closure_binding",
   "decisive_evidence": {
@@ -78,10 +78,11 @@
   "implemented_diagnostic": {
     "commits": [
       "97718f44ed",
-      "72f8318c9ce12f2470ef387761ccc98885f75aa2"
+      "72f8318c9ce12f2470ef387761ccc98885f75aa2",
+      "d9024ddb5cc9e213e9f0048444b66522cd4d005c"
     ],
-    "commit": "72f8318c9ce12f2470ef387761ccc98885f75aa2",
-    "tree": "1f80f706c748b21fd3fbd218f1fd213951f6ba34",
+    "commit": "d9024ddb5cc9e213e9f0048444b66522cd4d005c",
+    "tree": "79dd9b4d2ee29e24074dd0cef3ebcc384065d376",
     "context_storage_commit": "e600346648",
     "status": "implemented_not_live_verified",
     "scope": "bounded_per_member_per_submission_reseparation_receipts",
@@ -117,8 +118,8 @@
     },
     "required_clock_policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
-    "required_fix_commit": "72f8318c9ce12f2470ef387761ccc98885f75aa2",
-    "required_live_build_tree": "1f80f706c748b21fd3fbd218f1fd213951f6ba34",
+    "required_fix_commit": "d9024ddb5cc9e213e9f0048444b66522cd4d005c",
+    "required_live_build_tree": "79dd9b4d2ee29e24074dd0cef3ebcc384065d376",
     "must_observe": [
       "each movement attempt has a distinct submission id",
       "the selected candidate and all safety predicates are bound to that submission",
@@ -133,5 +134,5 @@
       "native confirmation from deterministic tests alone"
     ]
   },
-  "next_action": "Build exact clean commit 72f8318c9ce12f2470ef387761ccc98885f75aa2 through the queued coordinator, provision a fresh exact ten-player Magmaw roster, and run one completion-watchdog diagnostic shard. Extract the first per-submission selection, arbitration, active-path, progress, arrival, or closure divergence, then route one behavior repair. Do not relabel this run as a clear. Do not teleport, force movement or threat, revive, alter native encounter state, or manufacture an outcome."
+  "next_action": "Build exact clean commit d9024ddb5cc9e213e9f0048444b66522cd4d005c through the queued coordinator, provision a fresh exact ten-player Magmaw roster, and run one completion-watchdog diagnostic shard. Extract the first per-submission selection, arbitration, active-path, progress, arrival, or closure divergence, then route one behavior repair. Do not relabel this run as a clear. Do not teleport, force movement or threat, revive, alter native encounter state, or manufacture an outcome."
 }
