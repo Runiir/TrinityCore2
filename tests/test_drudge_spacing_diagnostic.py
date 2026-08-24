@@ -6,9 +6,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 GEOMETRY = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
+ACTION = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp"
 RECOVERY = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeRecovery.cpp"
 RUNTIME = ROOT / "src/server/game/Bots/BotWorldPopulationMgrRaidRuntime.cpp"
 DIAGNOSTIC = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeSpacingDiagnostic.h"
+RECEIPT = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeReseparationReceipt.h"
 ROUTE_STATE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrRouteState.h"
 
 
@@ -85,12 +87,90 @@ int main()
     subprocess.run([str(binary)], check=True, cwd=ROOT)
 
 
+def test_reseparation_receipt_is_scoped_bounded_and_tracks_later_outcomes(tmp_path) -> None:
+    source = tmp_path / "drudge_reseparation_receipt.cpp"
+    binary = tmp_path / "drudge_reseparation_receipt"
+    source.write_text(
+        r'''
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeReseparationReceipt.h"
+
+#include <cassert>
+#include <vector>
+
+int main()
+{
+    using namespace BotRaidDrudgeGeometry;
+    using namespace BotRaidDrudgeSpacing;
+
+    Scope firstScope{11, 2, 7, 669, 14, 250140, 250141};
+    std::vector<ReseparationReceipt> receipts;
+    ReseparationReceipt& rejected = ObserveReseparationCandidate(
+        receipts, firstScope, 30008, 1, -303.3f, -49.9f, 12.0f,
+        true, true, true, false, false, false, "rejected",
+        "drudge_anchor_spacing_unsafe", 1000);
+    assert(rejected.MemberGuid == 30008);
+    assert(!rejected.CandidateSelected);
+    assert(rejected.PathRejectReason == "drudge_anchor_spacing_unsafe");
+    ReseparationReceipt& selected = ObserveReseparationCandidate(
+        receipts, firstScope, 30008, 1, -303.3f, -49.9f, 12.0f,
+        true, true, true, true, true, true, "selected_path_proven", "none",
+        1100);
+    assert(&selected == &rejected);
+    assert(selected.CandidateSelected);
+    selected.SubmissionId = 1;
+    selected.SubmissionAtMs = 1200;
+    selected.MoveAttempted = true;
+    selected.ArbitrationAccepted = true;
+    selected.MovementSubmitted = true;
+    selected.ActivePathValid = true;
+    selected.ActivePathScopeMatches = true;
+    selected.NativeActiveMotionType = 19;
+    selected.ProgressObserved = true;
+    selected.ArrivalObserved = true;
+    MarkReseparationClosure(receipts, firstScope, 1400, "reseparation_closed");
+    assert(selected.ClosureObserved);
+    assert(selected.ClosureAtMs == 1400);
+    for (unsigned index = 0; index < MaximumReseparationReceipts + 4; ++index)
+        ObserveReseparationCandidate(receipts, firstScope, 30000 + index,
+            index, float(index), 1.0f, 2.0f, true, true, true, true, true,
+            false, "rejected", "bounded", 1500 + index);
+    assert(receipts.size() == MaximumReseparationReceipts);
+    Scope secondScope{11, 3, 7, 669, 14, 250140, 250141};
+    ObserveReseparationCandidate(receipts, secondScope, 30008, 0, 1.0f,
+        2.0f, 3.0f, true, true, true, true, true, true, "selected", "none",
+        2000);
+    assert(receipts.size() == 1);
+    assert(receipts.front().Scope == secondScope);
+}
+''',
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [
+            "c++",
+            "-std=c++17",
+            "-I",
+            str(ROOT / "src/server/game"),
+            "-I",
+            str(ROOT / "src/common"),
+            str(source),
+            "-o",
+            str(binary),
+        ],
+        check=True,
+        cwd=ROOT,
+    )
+    subprocess.run([str(binary)], check=True, cwd=ROOT)
+
+
 def test_spacing_failure_reuses_charge_observation_trace_and_stays_bounded() -> None:
     geometry = GEOMETRY.read_text(encoding="utf-8")
+    action = ACTION.read_text(encoding="utf-8")
     recovery = RECOVERY.read_text(encoding="utf-8")
     spacing = (DIAGNOSTIC.parent / "BotWorldPopulationMgrValidationRouteDrudgeSpacing.cpp").read_text(encoding="utf-8")
     runtime = RUNTIME.read_text(encoding="utf-8")
     diagnostic = DIAGNOSTIC.read_text(encoding="utf-8")
+    receipt = RECEIPT.read_text(encoding="utf-8")
     route_state = ROUTE_STATE.read_text(encoding="utf-8")
     for field in (
         "member_guid",
@@ -112,8 +192,33 @@ def test_spacing_failure_reuses_charge_observation_trace_and_stays_bounded() -> 
     assert '<< ",\\"first_spacing_failure\\":{"recorded\\":"' not in runtime
     assert "EvaluateRecoveryCandidateSpacing" in recovery
     assert "EvaluateAndRecordCandidateSpacing" in geometry
+    assert "ObserveReseparationCandidate" in geometry
+    assert "recordMovementReceipt" in action
+    assert "GetMotionSlotType(MOTION_SLOT_ACTIVE)" in action
+    assert "MarkReseparationClosure" in action
     assert "RecordFirstFailure" in spacing
     assert "FirstSpacingFailure" in route_state
     assert "RecordFirstFailure" in diagnostic
+    for field in (
+        "reseparation_receipts",
+        "submission_id",
+        "arbitration_outcome",
+        "movement_submission_outcome",
+        "active_path_scope_matches",
+        "native_active_motion_type",
+        "progress_outcome",
+        "arrival_outcome",
+        "closure_outcome",
+    ):
+        assert field in runtime
+    for field in (
+        "ObserveReseparationCandidate",
+        "FindSelectedReseparationReceipt",
+        "MarkReseparationClosure",
+        "MaximumReseparationReceipts",
+    ):
+        assert field in receipt
+    assert "ReseparationReceipts" in route_state
     assert len(diagnostic.splitlines()) < 200
+    assert len(receipt.splitlines()) < 200
     assert len(GEOMETRY.read_text(encoding="utf-8").splitlines()) <= 999

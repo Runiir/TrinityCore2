@@ -13,6 +13,7 @@
 
 #include "Creature.h"
 #include "GameTime.h"
+#include "MotionMaster.h"
 #include "ObjectAccessor.h"
 #include "Pet.h"
 #include "Player.h"
@@ -140,6 +141,141 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         ? nullptr : &*observation;
     ChargeAwaitingLanding = Charge && !Charge->Landed;
     NativeChargePending = Charge && Charge->Landed;
+    auto receiptScope = [&]()
+    {
+        return BotRaidDrudgeGeometry::Scope{
+            Manager.Cohort().AttemptId,
+            Manager.Cohort().Raid.WipeGeneration,
+            Manager.Party().ValidationRouteGeneration,
+            Bot->GetMapId(), Bot->GetInstanceId(),
+            Sources[0]->GetGUID().GetRawValue(),
+            Sources[1]->GetGUID().GetRawValue() };
+    };
+    auto observeReceiptProgress = [&](uint64 nowMs)
+    {
+        if (!Charge)
+            return;
+        BotRaidDrudgeGeometry::Scope const scope = receiptScope();
+        MotionMaster* motion = Bot->GetMotionMaster();
+        uint32 const motionType = motion
+            ? uint32(motion->GetMotionSlotType(MOTION_SLOT_ACTIVE))
+            : uint32(MAX_MOTION_TYPE);
+        bool const pathScopeMatches = State.ActivePathAttemptId
+                == Manager.Cohort().AttemptId
+            && State.ActivePathWipeGeneration
+                == Manager.Cohort().Raid.WipeGeneration
+            && State.ActivePathRouteGeneration
+                == Manager.Party().ValidationRouteGeneration
+            && State.ActivePathRouteNodeId
+                == Manager.Cohort().Config.ValidationRouteNodeId;
+        for (BotRaidDrudgeSpacing::ReseparationReceipt& receipt :
+            Charge->ReseparationReceipts)
+        {
+            if (receipt.Scope != scope || receipt.MemberGuid
+                != Bot->GetGUID().GetCounter() || !receipt.MovementSubmitted)
+                continue;
+            if (!receipt.ActivePathCaptured)
+            {
+                receipt.ActivePathCaptured = true;
+                receipt.ActivePathValid = State.ActivePathValid;
+                receipt.ActivePathScopeMatches = pathScopeMatches;
+                receipt.ActivePathDestinationX = State.ActivePathToX;
+                receipt.ActivePathDestinationY = State.ActivePathToY;
+                receipt.ActivePathDestinationZ = State.ActivePathToZ;
+                receipt.NativeActiveMotionType = motionType;
+            }
+            if (!receipt.ProgressObserved && State.LastMovementProgressMs
+                > receipt.SubmissionAtMs)
+            {
+                receipt.ProgressObserved = true;
+                receipt.ProgressAtMs = State.LastMovementProgressMs;
+                receipt.ProgressOutcome = "native_progress_observed";
+            }
+            float const tolerance = AssignedTank
+                ? Manager.Cohort().Config.ValidationRouteSplitTankArrivalToleranceYards
+                : Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards;
+            if (!receipt.ArrivalObserved
+                && Bot->GetExactDist(receipt.CandidateX, receipt.CandidateY,
+                    receipt.CandidateZ) <= tolerance)
+            {
+                receipt.ArrivalObserved = true;
+                receipt.ArrivalAtMs = nowMs;
+                receipt.ArrivalOutcome = "candidate_arrival_observed";
+            }
+        }
+    };
+    auto recordMovementReceipt = [&](bool moved, uint64 nowMs)
+    {
+        if (!Charge)
+            return;
+        BotRaidDrudgeGeometry::Scope const scope = receiptScope();
+        BotRaidDrudgeSpacing::ReseparationReceipt* receipt =
+            BotRaidDrudgeSpacing::FindSelectedReseparationReceipt(
+                Charge->ReseparationReceipts, scope,
+                Bot->GetGUID().GetCounter(),
+                State.ValidationRouteDrudgeAnchorCandidateIndex,
+                State.ValidationRouteDrudgeAnchorX,
+                State.ValidationRouteDrudgeAnchorY);
+        if (!receipt)
+        {
+            BotRaidDrudgeSpacing::PeerResult const peer =
+                EvaluateRecoveryCandidateSpacing(
+                    State.ValidationRouteDrudgeAnchorX,
+                    State.ValidationRouteDrudgeAnchorY, AssignedTank);
+            float const projection =
+                (State.ValidationRouteDrudgeAnchorX - MidpointX) * AxisX
+                + (State.ValidationRouteDrudgeAnchorY - MidpointY) * AxisY;
+            bool const source0Safe = Distance2d(
+                State.ValidationRouteDrudgeAnchorX,
+                State.ValidationRouteDrudgeAnchorY,
+                Sources[0]->GetPositionX(), Sources[0]->GetPositionY())
+                >= Manager.Cohort().Config.ValidationRouteMinimumDistanceYards;
+            bool const source1Safe = Distance2d(
+                State.ValidationRouteDrudgeAnchorX,
+                State.ValidationRouteDrudgeAnchorY,
+                Sources[1]->GetPositionX(), Sources[1]->GetPositionY())
+                >= Manager.Cohort().Config.ValidationRouteMinimumDistanceYards;
+            bool const laneSafe = LaneSign * projection >= LaneSeparation * 0.25f;
+            BotRaidDrudgeSpacing::ObserveReseparationCandidate(
+                Charge->ReseparationReceipts, scope,
+                Bot->GetGUID().GetCounter(),
+                State.ValidationRouteDrudgeAnchorCandidateIndex,
+                State.ValidationRouteDrudgeAnchorX,
+                State.ValidationRouteDrudgeAnchorY,
+                State.ValidationRouteDrudgeAnchorZ, source0Safe, source1Safe,
+                laneSafe, peer.Safe,
+                BotRaidDrudgeGeometry::DynamicGroupPositionSafe(
+                    source0Safe, source1Safe, laneSafe, peer.Safe), true,
+                "cached_selected", "none", nowMs);
+            receipt = BotRaidDrudgeSpacing::FindSelectedReseparationReceipt(
+                Charge->ReseparationReceipts, scope,
+                Bot->GetGUID().GetCounter(),
+                State.ValidationRouteDrudgeAnchorCandidateIndex,
+                State.ValidationRouteDrudgeAnchorX,
+                State.ValidationRouteDrudgeAnchorY);
+        }
+        if (!receipt)
+            return;
+        if (!receipt->SubmissionId)
+        {
+            receipt->SubmissionId = Charge->NextReseparationReceiptId++;
+            receipt->SubmissionAtMs = nowMs;
+        }
+        else
+            ++receipt->SuppressedCount;
+        receipt->MoveAttempted = true;
+        receipt->ArbitrationAccepted = moved;
+        receipt->MovementSubmitted = moved;
+        receipt->ArbitrationOutcome = moved ? "accepted"
+            : (State.LastRecoveryResult.empty()
+                ? "rejected" : State.LastRecoveryResult);
+        receipt->MovementSubmissionOutcome = moved
+            ? "native_movement_submitted"
+            : (State.LastPathRejectReason.empty()
+                ? receipt->ArbitrationOutcome : State.LastPathRejectReason);
+        observeReceiptProgress(nowMs);
+    };
+    observeReceiptProgress(NowMs());
     if (Charge)
     {
         NativeChargeSource = NativeChargePending
@@ -457,6 +593,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         ExactRosterReSeparated()))
     {
         uint64 const proofAtMs = NowMs();
+        BotRaidDrudgeSpacing::MarkReseparationClosure(
+            Charge->ReseparationReceipts, receiptScope(), proofAtMs,
+            "reseparation_closed");
         BotRaidDrudgeObservationBacklog::CloseLandedThroughProof(
             Manager.Party().ValidationRouteDrudgeChargeObservations,
             Manager.Cohort().AttemptId, Manager.Cohort().Raid.WipeGeneration,
@@ -513,6 +652,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
                         State.ValidationRouteDrudgeAnchorZ, false,
                         BotMovementArbitration::Owner::Mechanic,
                         BotMovementArbitration::Priority::Mechanic);
+                    recordMovementReceipt(moved, NowMs());
                     if (!moved
                         && BotRaidDrudgeGeometry::ShouldInvalidateAnchorAfterPathRejection(
                             State.LastPathRejectReason,

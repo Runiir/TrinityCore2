@@ -43,40 +43,13 @@ uint64 NowMs()
 
 namespace BotWorldPopulationMgrValidationRoute
 {
-}
-
-bool BotWorldPopulationMgr::TryValidationRouteDrudgeMinimumDistance(
-    WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power,
-    BotProgressionStage stage, BotProgressionActivity activity,
-    std::string& situation, std::string& action, Unit*& target,
-    std::function<bool(Creature const*)> const& isValidationCohortCombatLinked,
-    bool specializedDrudgeRecovery)
-{
-    BotWorldPopulationMgrValidationRoute::DrudgeLaneRequest request;
-    request.Manager = this;
-    request.State = &state;
-    request.Bot = bot;
-    request.Power = &power;
-    request.Stage = stage;
-    request.Activity = activity;
-    request.Situation = &situation;
-    request.Action = &action;
-    request.Target = &target;
-    request.Callbacks.IsCombatLinked = isValidationCohortCombatLinked;
-    BotWorldPopulationMgrValidationRoute::DrudgeLaneContext context(request);
-    return context.TryMinimumDistance(specializedDrudgeRecovery);
-}
-
-namespace BotWorldPopulationMgrValidationRoute
-{
-
 bool DrudgeLaneContext::IsRecoveryFormationActive() const
 {
     if (Manager.Cohort().Config.ValidationRouteMechanicProfile
         != "trash_two_tank_charge_lanes")
         return false;
     // This is deliberately scoped to the landed Rush, not to the pending
-    // reseparation observation.  Once a source has moved, the prepull anchor
+    // reseparation observation. Once a source has moved, the prepull anchor
     // is no longer a safety proof for the remainder of this attempt; reverting
     // to it after RecordReseparationEvidence would reopen the stale-anchor
     // loop that this live contract repairs.
@@ -90,7 +63,6 @@ bool DrudgeLaneContext::IsRecoveryFormationActive() const
             return true;
     return false;
 }
-
 bool DrudgeLaneContext::TryMinimumDistance(bool specializedDrudgeRecovery)
 {
     bool const drudgeProfile = Manager.Cohort().Config.ValidationRouteMechanicProfile
@@ -113,13 +85,11 @@ bool DrudgeLaneContext::TryMinimumDistance(bool specializedDrudgeRecovery)
         != (minimumDistanceOwner
             == BotRaidDrudgeGeometry::MinimumDistanceOwner::LandedRushRecovery))
         return false;
-
     uint32 sourceEntry = Manager.Cohort().Config.ValidationRouteMinimumDistanceSourceEntry;
     float minimumDistance = Manager.Cohort().Config.ValidationRouteMinimumDistanceYards;
     if (!sourceEntry || minimumDistance <= 0.0f
         || std::string(Manager.GetDungeonRole(Bot)) == "tank")
         return false;
-
     BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(
         Bot, Manager.GetDungeonRole(Bot));
     bool rangeAssigned = std::string(Manager.GetDungeonRole(Bot)) == "healer"
@@ -127,7 +97,6 @@ bool DrudgeLaneContext::TryMinimumDistance(bool specializedDrudgeRecovery)
         || profile.MovementDirective == "healer_support";
     if (!rangeAssigned)
         return false;
-
     Creature* source = nullptr;
     float sourceDistance = std::numeric_limits<float>::max();
     std::vector<Creature*> sources;
@@ -155,7 +124,6 @@ bool DrudgeLaneContext::TryMinimumDistance(bool specializedDrudgeRecovery)
     }
     if (!source || sourceDistance >= minimumDistance)
         return false;
-
     // The contract distance is the exact native damaging radius. Search for
     // an exterior point against the union of every combat-linked source.
     float safeDistance = minimumDistance + 2.0f;
@@ -193,7 +161,6 @@ bool DrudgeLaneContext::TryMinimumDistance(bool specializedDrudgeRecovery)
             addDirection(-pairY, pairX);
             addDirection(pairY, -pairX);
         }
-
     bool moved = false;
     float safeX = Bot->GetPositionX();
     float safeY = Bot->GetPositionY();
@@ -225,7 +192,6 @@ bool DrudgeLaneContext::TryMinimumDistance(bool specializedDrudgeRecovery)
             if (floorZ > INVALID_HEIGHT && std::fabs(floorZ - candidateZ) <= 10.0f)
                 candidateZ = floorZ;
         }
-
         PathGenerator path(Bot);
         // Smooth-path generation may append an off-mesh destination when a
         // one-poly corridor only reaches its nearest boundary.  The straight
@@ -240,7 +206,6 @@ bool DrudgeLaneContext::TryMinimumDistance(bool specializedDrudgeRecovery)
             || (pathType & PATHFIND_SHORTCUT)
             || (pathType & PATHFIND_FARFROMPOLY))
             continue;
-
         // A complete corridor can still end at the nearest navmesh point
         // when the requested minimum-distance point is just beyond the
         // platform. MovePoint would otherwise receive the unreachable raw
@@ -775,6 +740,27 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
         State.ValidationRouteDrudgeAnchorValid = false;
         uint64 const nowMs = NowMs();
         bool const prepullTankFallback = tank && !CombatTankStagingActive();
+        auto observeCandidate = [&](uint32 candidateIndex, float candidateX,
+            float candidateY, float candidateZ,
+            BotRaidDrudgeSpacing::CandidateResult const& spacing,
+            bool selected, char const* outcome, char const* reject)
+        {
+            if (!Charge)
+                return;
+            BotRaidDrudgeGeometry::Scope const receiptScope{
+                Manager.Cohort().AttemptId,
+                Manager.Cohort().Raid.WipeGeneration,
+                Manager.Party().ValidationRouteGeneration,
+                Bot->GetMapId(), Bot->GetInstanceId(),
+                Sources[0]->GetGUID().GetRawValue(),
+                Sources[1]->GetGUID().GetRawValue() };
+            BotRaidDrudgeSpacing::ObserveReseparationCandidate(
+                Charge->ReseparationReceipts, receiptScope,
+                Bot->GetGUID().GetCounter(), candidateIndex, candidateX,
+                candidateY, candidateZ, spacing.Source0Safe,
+                spacing.Source1Safe, spacing.LaneSafe, spacing.Spacing.Safe,
+                spacing.GroupPositionSafe, selected, outcome, reject, nowMs);
+        };
         for (size_t candidateIndex = 0; candidateIndex < candidates.size(); ++candidateIndex)
         {
             MemberAnchor const* candidateAnchor = tank && IsRecoveryFormationActive()
@@ -803,6 +789,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             {
                 State.LastPathRejectReason = "drudge_anchor_lane_unsafe";
                 State.LastRecoveryResult = State.LastPathRejectReason;
+                observeCandidate(uint32(candidateIndex), candidatePoint.X, candidatePoint.Y,
+                    candidateAnchor->Z, candidateSpacing, false, "rejected",
+                    State.LastPathRejectReason.c_str());
                 continue;
             }
             bool const dynamicSpacingSafe = !dynamicCandidate
@@ -819,18 +808,27 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             {
                 State.LastPathRejectReason = "drudge_anchor_source_unsafe";
                 State.LastRecoveryResult = State.LastPathRejectReason;
+                observeCandidate(uint32(candidateIndex), candidatePoint.X, candidatePoint.Y,
+                    candidateAnchor->Z, candidateSpacing, false, "rejected",
+                    State.LastPathRejectReason.c_str());
                 continue;
             }
             if (pathSearch.SpacingBlocked)
             {
                 State.LastPathRejectReason = "drudge_anchor_spacing_unsafe";
                 State.LastRecoveryResult = State.LastPathRejectReason;
+                observeCandidate(uint32(candidateIndex), candidatePoint.X, candidatePoint.Y,
+                    candidateAnchor->Z, candidateSpacing, false, "rejected",
+                    State.LastPathRejectReason.c_str());
                 continue;
             }
             if (!pathSearch.NativePathSearchDue)
             {
                 State.LastPathRejectReason = "drudge_anchor_path_retry_cooldown";
                 State.LastRecoveryResult = State.LastPathRejectReason;
+                observeCandidate(uint32(candidateIndex), candidatePoint.X, candidatePoint.Y,
+                    candidateAnchor->Z, candidateSpacing, false, "rejected",
+                    State.LastPathRejectReason.c_str());
                 continue;
             }
             float candidateZ = candidateAnchor->Z;
@@ -841,6 +839,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             {
                 State.LastPathRejectReason = "drudge_anchor_floor_rejected";
                 State.LastRecoveryResult = State.LastPathRejectReason;
+                observeCandidate(uint32(candidateIndex), candidatePoint.X, candidatePoint.Y,
+                    candidateZ, candidateSpacing, false, "rejected",
+                    State.LastPathRejectReason.c_str());
                 continue;
             }
             std::string rejection;
@@ -854,6 +855,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
                 State.LastPathRejectReason = rejection.empty()
                     ? "drudge_anchor_native_path_rejected" : rejection;
                 State.LastRecoveryResult = State.LastPathRejectReason;
+                observeCandidate(uint32(candidateIndex), candidatePoint.X, candidatePoint.Y,
+                    candidateZ, candidateSpacing, false, "rejected",
+                    State.LastPathRejectReason.c_str());
                 continue;
             }
             if (landedTankRecovery
@@ -861,6 +865,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             {
                 State.LastPathRejectReason = "drudge_anchor_tank_path_geometry_rejected";
                 State.LastRecoveryResult = State.LastPathRejectReason;
+                observeCandidate(uint32(candidateIndex), candidatePoint.X, candidatePoint.Y,
+                    candidateZ, candidateSpacing, false, "rejected",
+                    State.LastPathRejectReason.c_str());
                 continue;
             }
             State.ValidationRouteDrudgeAnchorX = candidates[candidateIndex].first;
@@ -876,6 +883,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             State.ValidationRouteDrudgeAnchorInstanceId = Bot->GetInstanceId();
             State.ValidationRouteDrudgeAnchorSource0Identity = Sources[0]->GetGUID().GetRawValue();
             State.ValidationRouteDrudgeAnchorSource1Identity = Sources[1]->GetGUID().GetRawValue();
+            observeCandidate(uint32(candidateIndex), candidatePoint.X,
+                candidatePoint.Y, candidateZ, candidateSpacing, true,
+                "selected_path_proven", "none");
             if (landedTankRecovery)
             {
                 State.ValidationRouteDrudgeRecoveryAnchorPathProven = true;

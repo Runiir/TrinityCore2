@@ -2,6 +2,7 @@
 #define TRINITY_BOT_WORLD_POPULATION_MGR_ROUTE_STATE_H
 
 #include "Bots/BotWorldPopulationMgrConfig.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeReseparationReceipt.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeSpacingDiagnostic.h"
 #include "ObjectGuid.h"
 
@@ -370,6 +371,8 @@ namespace BotWorldPopulationMgrRouteState
         float ArrivalTolerance = 0.0f;
         float TankArrivalTolerance = 0.0f;
         BotRaidDrudgeSpacing::Failure FirstSpacingFailure;
+        uint64 NextReseparationReceiptId = 1;
+        std::vector<BotRaidDrudgeSpacing::ReseparationReceipt> ReseparationReceipts;
         std::vector<ValidationRouteDrudgeMemberGeometry> MemberGeometry;
         std::set<uint32> ReseparatedRosterGuids;
         std::vector<ValidationRouteDrudgeThreatCandidateEvidence> NativeThreatCandidates;

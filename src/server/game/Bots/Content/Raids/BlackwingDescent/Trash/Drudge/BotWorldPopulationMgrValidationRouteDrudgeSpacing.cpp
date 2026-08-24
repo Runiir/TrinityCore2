@@ -10,8 +10,46 @@
 
 using BotWorldPopulationMgrNativeHelpers::Distance2d;
 
+bool BotWorldPopulationMgr::TryValidationRouteDrudgeMinimumDistance(
+    WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power,
+    BotProgressionStage stage, BotProgressionActivity activity,
+    std::string& situation, std::string& action, Unit*& target,
+    std::function<bool(Creature const*)> const& isValidationCohortCombatLinked,
+    bool specializedDrudgeRecovery)
+{
+    BotWorldPopulationMgrValidationRoute::DrudgeLaneRequest request;
+    request.Manager = this;
+    request.State = &state;
+    request.Bot = bot;
+    request.Power = &power;
+    request.Stage = stage;
+    request.Activity = activity;
+    request.Situation = &situation;
+    request.Action = &action;
+    request.Target = &target;
+    request.Callbacks.IsCombatLinked = isValidationCohortCombatLinked;
+    BotWorldPopulationMgrValidationRoute::DrudgeLaneContext context(request);
+    return context.TryMinimumDistance(specializedDrudgeRecovery);
+}
+
 namespace BotWorldPopulationMgrValidationRoute
 {
+bool DrudgeLaneContext::IsRecoveryFormationActive() const
+{
+    if (Manager.Cohort().Config.ValidationRouteMechanicProfile
+        != "trash_two_tank_charge_lanes")
+        return false;
+    for (ChargeObservation const& observation :
+        Manager.Party().ValidationRouteDrudgeChargeObservations)
+        if (observation.Landed
+            && observation.AttemptId == Manager.Cohort().AttemptId
+            && observation.WipeGeneration == Manager.Cohort().Raid.WipeGeneration
+            && observation.RouteGeneration
+                == Manager.Party().ValidationRouteGeneration)
+            return true;
+    return false;
+}
+
 BotRaidDrudgeSpacing::CandidateResult DrudgeLaneContext::EvaluateAndRecordCandidateSpacing(
     uint32 candidateIndex, float x, float y, bool tank,
     bool dynamicCandidate, float dynamicLaneProjection, uint64 nowMs)

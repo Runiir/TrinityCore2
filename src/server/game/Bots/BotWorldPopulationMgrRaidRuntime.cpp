@@ -664,6 +664,83 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
                  << ",\"same_lane_spacing_valid\":" << (geometry.SameLaneSpacingValid ? "true" : "false")
                  << "}";
         }
+        json << "],\"reseparation_receipts\":[";
+        bool firstReseparationReceipt = true;
+        for (BotRaidDrudgeSpacing::ReseparationReceipt const& receipt :
+            observation.ReseparationReceipts)
+        {
+            if (!firstReseparationReceipt)
+                json << ',';
+            firstReseparationReceipt = false;
+            json << "{\"recorded\":" << (receipt.Recorded ? "true" : "false")
+                 << ",\"attempt_id\":" << receipt.Scope.AttemptId
+                 << ",\"wipe_generation\":" << receipt.Scope.WipeGeneration
+                 << ",\"route_generation\":" << receipt.Scope.RouteGeneration
+                 << ",\"map_id\":" << receipt.Scope.MapId
+                 << ",\"instance_id\":" << receipt.Scope.InstanceId
+                 << ",\"source0_identity\":" << receipt.Scope.Source0Identity
+                 << ",\"source1_identity\":" << receipt.Scope.Source1Identity
+                 << ",\"recorded_at_ms\":" << receipt.RecordedAtMs
+                 << ",\"submission_id\":" << receipt.SubmissionId
+                 << ",\"submission_at_ms\":" << receipt.SubmissionAtMs
+                 << ",\"member_guid\":" << receipt.MemberGuid
+                 << ",\"candidate_index\":" << receipt.CandidateIndex
+                 << ",\"candidate_x\":" << receipt.CandidateX
+                 << ",\"candidate_y\":" << receipt.CandidateY
+                 << ",\"candidate_z\":" << receipt.CandidateZ
+                 << ",\"source0_safe\":" << (receipt.Source0Safe ? "true" : "false")
+                 << ",\"source1_safe\":" << (receipt.Source1Safe ? "true" : "false")
+                 << ",\"lane_safe\":" << (receipt.LaneSafe ? "true" : "false")
+                 << ",\"same_lane_spacing_safe\":"
+                 << (receipt.SameLaneSpacingSafe ? "true" : "false")
+                 << ",\"group_position_safe\":"
+                 << (receipt.GroupPositionSafe ? "true" : "false")
+                 << ",\"candidate_selected\":"
+                 << (receipt.CandidateSelected ? "true" : "false")
+                 << ",\"candidate_selection_outcome\":\""
+                 << JsonEscape(receipt.CandidateSelectionOutcome) << "\""
+                 << ",\"path_reject_reason\":\""
+                 << JsonEscape(receipt.PathRejectReason) << "\""
+                 << ",\"move_attempted\":" << (receipt.MoveAttempted ? "true" : "false")
+                 << ",\"arbitration_accepted\":"
+                 << (receipt.ArbitrationAccepted ? "true" : "false")
+                 << ",\"movement_submitted\":"
+                 << (receipt.MovementSubmitted ? "true" : "false")
+                 << ",\"arbitration_outcome\":\""
+                 << JsonEscape(receipt.ArbitrationOutcome) << "\""
+                 << ",\"movement_submission_outcome\":\""
+                 << JsonEscape(receipt.MovementSubmissionOutcome) << "\""
+                 << ",\"active_path_captured\":"
+                 << (receipt.ActivePathCaptured ? "true" : "false")
+                 << ",\"active_path_valid\":"
+                 << (receipt.ActivePathValid ? "true" : "false")
+                 << ",\"active_path_scope_matches\":"
+                 << (receipt.ActivePathScopeMatches ? "true" : "false")
+                 << ",\"active_path_destination_x\":"
+                 << receipt.ActivePathDestinationX
+                 << ",\"active_path_destination_y\":"
+                 << receipt.ActivePathDestinationY
+                 << ",\"active_path_destination_z\":"
+                 << receipt.ActivePathDestinationZ
+                 << ",\"native_active_motion_type\":"
+                 << receipt.NativeActiveMotionType
+                 << ",\"progress_observed\":"
+                 << (receipt.ProgressObserved ? "true" : "false")
+                 << ",\"progress_at_ms\":" << receipt.ProgressAtMs
+                 << ",\"progress_outcome\":\""
+                 << JsonEscape(receipt.ProgressOutcome) << "\""
+                 << ",\"arrival_observed\":"
+                 << (receipt.ArrivalObserved ? "true" : "false")
+                 << ",\"arrival_at_ms\":" << receipt.ArrivalAtMs
+                 << ",\"arrival_outcome\":\""
+                 << JsonEscape(receipt.ArrivalOutcome) << "\""
+                 << ",\"closure_observed\":"
+                 << (receipt.ClosureObserved ? "true" : "false")
+                 << ",\"closure_at_ms\":" << receipt.ClosureAtMs
+                 << ",\"closure_outcome\":\""
+                 << JsonEscape(receipt.ClosureOutcome) << "\""
+                 << ",\"suppressed_count\":" << receipt.SuppressedCount << "}";
+        }
         json << "]"
              << ",\"first_spacing_failure\":{\"recorded\":"
              << (observation.FirstSpacingFailure.Recorded ? "true" : "false")

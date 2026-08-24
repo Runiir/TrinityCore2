@@ -5,6 +5,7 @@
 #include "Bots/BotWorldPopulationMgrConfig.h"
 #include "Bots/BotWorldPopulationMgrRouteState.h"
 #include "Bots/BotTypes.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeReseparationReceipt.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeThreatSeedState.h"
 
 #include <functional>
