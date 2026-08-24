@@ -80,6 +80,13 @@ int main()
         == MinimumDistanceOwner::GenericRouteSafety);
     assert(SelectMinimumDistanceOwner(true, true)
         == MinimumDistanceOwner::LandedRushRecovery);
+    assert(!ExactDrudgeLaneOwnsGroupMovement(false, true));
+    assert(!ExactDrudgeLaneOwnsGroupMovement(true, false));
+    assert(ExactDrudgeLaneOwnsGroupMovement(true, true));
+    assert(!DynamicGroupRecoveryActive(false, true, true));
+    assert(!DynamicGroupRecoveryActive(true, false, false));
+    assert(DynamicGroupRecoveryActive(true, true, false));
+    assert(DynamicGroupRecoveryActive(true, false, true));
 
     // Prepull staging and post-Rush reseparation share the same strict live
     // source, lane, and peer-spacing contract.  Only the prepull path adds
@@ -529,9 +536,9 @@ def test_drudge_reseparation_switches_from_cached_anchor_to_live_safety():
     assert "source1Safe" in group
     assert "sameLaneSpacingSafe" in group
     assert "DynamicGroupPositionSafe" in group
-    assert "prepullStaged && IsRecoveryFormationActive()" in group
+    assert "prepullStaged && IsDynamicGroupRecoveryActive()" in group
     recovery_gate = group.index(
-        "if (prepullStaged && IsRecoveryFormationActive())"
+        "if (prepullStaged && IsDynamicGroupRecoveryActive())"
     )
     exact_cache = group.index("CachedAnchorSafe", recovery_gate)
     assert recovery_gate < exact_cache
@@ -544,6 +551,17 @@ def test_drudge_reseparation_switches_from_cached_anchor_to_live_safety():
     recovery = geometry[recovery_start:recovery_end]
     assert "observation.Landed" in recovery
     assert "observation.ReseparationRecorded" not in recovery
+
+    minimum_distance_start = geometry.index(
+        "bool DrudgeLaneContext::TryMinimumDistance"
+    )
+    minimum_distance_end = geometry.index(
+        "DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies",
+        minimum_distance_start,
+    )
+    minimum_distance = geometry[minimum_distance_start:minimum_distance_end]
+    assert "ExactDrudgeLaneOwnsGroupMovement" in minimum_distance
+    assert "return false;" in minimum_distance
 
     # Formation, taunt approach, and the specialized safety exit retain an
     # explicit mechanic lease instead of falling through to combat movement.

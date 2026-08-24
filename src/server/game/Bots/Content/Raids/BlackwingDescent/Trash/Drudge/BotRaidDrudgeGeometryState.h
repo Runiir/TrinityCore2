@@ -125,6 +125,18 @@ inline MinimumDistanceOwner SelectMinimumDistanceOwner(
         : MinimumDistanceOwner::GenericRouteSafety;
 }
 
+inline bool ExactDrudgeLaneOwnsGroupMovement(
+    bool drudgeLaneProfile, bool exactPrepullStaged)
+{
+    return drudgeLaneProfile && exactPrepullStaged;
+}
+
+inline bool DynamicGroupRecoveryActive(
+    bool drudgeLaneProfile, bool exactPrepullStaged, bool landedRushPending)
+{
+    return drudgeLaneProfile && (exactPrepullStaged || landedRushPending);
+}
+
 // A landed Rush owns movement priority for every displaced exact-roster
 // member. Friendly support remains available while staging and after the
 // healer is geometrically safe, but it cannot starve the bounded return to the

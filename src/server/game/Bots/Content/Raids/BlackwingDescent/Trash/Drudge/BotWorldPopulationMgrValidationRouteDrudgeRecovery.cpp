@@ -16,6 +16,21 @@ using BotWorldPopulationMgrNativeHelpers::Distance2d;
 
 namespace BotWorldPopulationMgrValidationRoute
 {
+bool DrudgeLaneContext::IsDynamicGroupRecoveryActive() const
+{
+    auto const& party = Manager.Party();
+    bool const exactPrepullStaged = party.ValidationRouteDrudgePrepullStaged
+        && party.ValidationRouteDrudgePrepullAttemptId == Manager.Cohort().AttemptId
+        && party.ValidationRouteDrudgePrepullWipeGeneration
+            == Manager.Cohort().Raid.WipeGeneration
+        && party.ValidationRouteDrudgePrepullRouteGeneration
+            == party.ValidationRouteGeneration;
+    return BotRaidDrudgeGeometry::DynamicGroupRecoveryActive(
+        Manager.Cohort().Config.ValidationRouteMechanicProfile
+            == "trash_two_tank_charge_lanes",
+        exactPrepullStaged, IsLandedRushPending());
+}
+
 bool DrudgeLaneContext::IsRecoveryCandidateSpacingSafe(
     float x, float y, bool tank) const
 {

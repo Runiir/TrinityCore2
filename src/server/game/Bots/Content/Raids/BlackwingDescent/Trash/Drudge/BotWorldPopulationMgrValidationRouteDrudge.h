@@ -148,6 +148,7 @@ struct DrudgeLaneContext
     bool Run();
     bool IsLandedRushPending() const;
     bool IsRecoveryFormationActive() const;
+    bool IsDynamicGroupRecoveryActive() const;
     bool TryMinimumDistance(bool specializedDrudgeRecovery);
     bool IsRecoveryCandidateSpacingSafe(float x, float y, bool tank) const;
     bool ComputeStrictTankRecoveryPath(float x, float y, float z) const;

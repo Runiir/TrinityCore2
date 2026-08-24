@@ -103,7 +103,7 @@ def test_recovery_candidate_contract_is_landed_non_tank_only_and_native_strict()
     candidates = geometry[geometry.index("AnchorCandidatesFor ="):geometry.index(
         "AnchorCacheMatchesGeneration =", geometry.index("AnchorCandidatesFor =")
     )]
-    assert "!tankSlot && IsRecoveryFormationActive()" in candidates
+    assert "!tankSlot && IsDynamicGroupRecoveryActive()" in candidates
     assert "BotRaidDrudgeRecoveryCandidates::BuildCandidates" in candidates
     assert candidates.index("BuildCandidates") < candidates.index(
         "RecoveryAnchorReachedFor(slot)"
@@ -116,7 +116,7 @@ def test_recovery_candidate_contract_is_landed_non_tank_only_and_native_strict()
     assert "drudge_anchor_spacing_unsafe" in selector
     assert "drudge_anchor_lane_unsafe" in selector
     assert "StrictNativePath" in selector
-    assert "tank || IsRecoveryFormationActive()" in selector
+    assert "tank || IsDynamicGroupRecoveryActive()" in selector
     assert "IsRecoveryCandidateSpacingSafe" in selector
 
     cache = selector[selector.index("auto cacheUsable"):selector.index(

@@ -114,6 +114,17 @@ bool DrudgeLaneContext::TryMinimumDistance(bool specializedDrudgeRecovery)
 {
     bool const drudgeProfile = Manager.Cohort().Config.ValidationRouteMechanicProfile
         == "trash_two_tank_charge_lanes";
+    auto const& party = Manager.Party();
+    bool const exactPrepullStaged = party.ValidationRouteDrudgePrepullStaged
+        && party.ValidationRouteDrudgePrepullAttemptId == Manager.Cohort().AttemptId
+        && party.ValidationRouteDrudgePrepullWipeGeneration
+            == Manager.Cohort().Raid.WipeGeneration
+        && party.ValidationRouteDrudgePrepullRouteGeneration
+            == party.ValidationRouteGeneration;
+    if (!specializedDrudgeRecovery
+        && BotRaidDrudgeGeometry::ExactDrudgeLaneOwnsGroupMovement(
+            drudgeProfile, exactPrepullStaged))
+        return false;
     BotRaidDrudgeGeometry::MinimumDistanceOwner const minimumDistanceOwner =
         BotRaidDrudgeGeometry::SelectMinimumDistanceOwner(
             drudgeProfile, IsLandedRushPending());
@@ -428,7 +439,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.begin(),
             Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.end(), slot)
             != Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.end();
-        if (!tankSlot && IsRecoveryFormationActive() && Sources.size() == 2)
+        if (!tankSlot && IsDynamicGroupRecoveryActive() && Sources.size() == 2)
         {
             auto const recoveryCandidates =
                 BotRaidDrudgeRecoveryCandidates::BuildCandidates(
@@ -598,7 +609,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
                 == Manager.Cohort().Raid.WipeGeneration
             && Manager.Party().ValidationRouteDrudgePrepullRouteGeneration
                 == Manager.Party().ValidationRouteGeneration;
-        if (prepullStaged && IsRecoveryFormationActive())
+        if (prepullStaged && IsDynamicGroupRecoveryActive())
             return true;
         auto memberState = std::find_if(Manager.Party().Bots.begin(),
             Manager.Party().Bots.end(), [member](WorldBotState const& candidate)
@@ -660,7 +671,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             LaneSign, LaneSeparation * 0.25f };
         auto cacheUsable = [&]()
         {
-            bool const activeDynamicRecovery = !tank && IsRecoveryFormationActive();
+            bool const activeDynamicRecovery = !tank && IsDynamicGroupRecoveryActive();
             if (!AnchorCacheMatchesGeneration())
                 return false;
             if (!activeDynamicRecovery
@@ -850,7 +861,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             std::string rejection;
             if (!StrictNativePath(candidates[candidateIndex].first,
                 candidates[candidateIndex].second, candidateAnchor->Z,
-                    tank || IsRecoveryFormationActive(), &rejection))
+                    tank || IsDynamicGroupRecoveryActive(), &rejection))
             {
                 State.ValidationRouteDrudgeAnchorSearchCooldownUntilMs =
                     candidateIndex + 1 == candidates.size()
