@@ -91,11 +91,11 @@ def test_default_scheduler_reduces_heavy_payload_volume_without_dropping_channel
     scheduler = TelemetryScheduler()
     assert scheduler.status_interval_sec == 5.0
     assert scheduler.diagnose_interval_sec == 30.0
-    assert scheduler.trace_interval_sec == 20.0
+    assert scheduler.trace_interval_sec == 10.0
     commands = [command for now in range(0, 121) for command in scheduler.commands_due(float(now))]
     assert commands.count("botauto status") == 25
     assert commands.count("botauto diagnose all") == 5
-    assert commands.count("botauto trace all 128 delta") == 7
+    assert commands.count("botauto trace all 128 delta") == 13
     assert set(commands) == {
         "botauto status", "botauto diagnose all", "botauto trace all 128 delta",
     }
@@ -2432,7 +2432,7 @@ def test_canonical_capture_is_terminal_gate_driven_without_a_raid_duration_cap()
     assert 'parser.add_argument("--semantic-stall-sec", type=int, default=300)' in source
     assert 'parser.add_argument("--telemetry-timeout-sec", type=int, default=60)' in source
     assert '"--diagnose-interval-sec", type=float, default=30.0,' in source
-    assert '"--trace-interval-sec", type=float, default=20.0,' in source
+    assert '"--trace-interval-sec", type=float, default=10.0,' in source
     assert "capture_classification = _capture_classification(" in source
 
 

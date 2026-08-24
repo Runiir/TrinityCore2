@@ -3558,7 +3558,13 @@ class TelemetryScheduler:
     # request them immediately, so this is a volume reduction rather than an
     # evidence reduction.
     diagnose_interval_sec: float = 30.0
-    trace_interval_sec: float = 20.0
+    # The native decision trace is a 128-entry ring.  The Magmaw canary
+    # observed one bot producing roughly six trace entries per second while
+    # the other bots remained quiet; a 20-second poll therefore allowed the
+    # ring to overwrite the cursor before the next export.  Keep the delta
+    # cadence at ten seconds to leave deterministic headroom while retaining
+    # the bounded incremental payload.
+    trace_interval_sec: float = 10.0
     _next_status_at: float = 0.0
     _next_diagnose_at: float = 0.0
     _next_trace_at: float = 0.0
@@ -4838,7 +4844,7 @@ def main() -> int:
         help="steady-state full semantic diagnosis cadence",
     )
     parser.add_argument(
-        "--trace-interval-sec", type=float, default=20.0,
+        "--trace-interval-sec", type=float, default=10.0,
         help="append-only trace-delta export cadence",
     )
     parser.add_argument(
