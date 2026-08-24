@@ -2391,6 +2391,10 @@ def test_raid_trash_uses_native_threat_headroom_and_declared_minimum_distance():
         BOT_DIR
         / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
     ).read_text(encoding="utf-8")
+    recovery = (
+        BOT_DIR
+        / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeRecovery.cpp"
+    ).read_text(encoding="utf-8")
     lane_selection = (
         BOT_DIR
         / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp"
@@ -2417,9 +2421,9 @@ def test_raid_trash_uses_native_threat_headroom_and_declared_minimum_distance():
     assert "MinimumDistanceOwner::LandedRushRecovery" in minimum
     assert "specializedDrudgeRecovery" in minimum
     assert "if (TryMinimumDistance(true))" not in lane_selection
-    landed_owner = minimum[
-        minimum.index("bool DrudgeLaneContext::IsLandedRushPending() const"):
-        minimum.index("bool BotWorldPopulationMgr::TryValidationRouteDrudgeMinimumDistance")
+    landed_owner = recovery[
+        recovery.index("bool DrudgeLaneContext::IsLandedRushPending() const"):
+        recovery.index("bool DrudgeLaneContext::IsDynamicGroupRecoveryActive() const")
     ]
     assert "auto observation = std::find_if(" in landed_owner
     assert "&& observation->Landed" in landed_owner

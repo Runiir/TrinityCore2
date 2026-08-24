@@ -191,6 +191,7 @@ bool DrudgeLaneContext::ComputeExactRecoveryTankPathsProven() const
         MemberAnchor const* anchor = DeclaredRecoveryTankAnchorFor(slot);
         if (!anchor || !tankState->ValidationRouteDrudgeAnchorValid
             || !tankState->ValidationRouteDrudgeAnchorPathProven
+            || !tankState->ValidationRouteDrudgeRecoveryAnchorPathProven
             || tankState->ValidationRouteDrudgeAnchorAttemptId != Manager.Cohort().AttemptId
             || tankState->ValidationRouteDrudgeAnchorWipeGeneration
                 != Manager.Cohort().Raid.WipeGeneration
@@ -202,20 +203,25 @@ bool DrudgeLaneContext::ComputeExactRecoveryTankPathsProven() const
                 != Sources[0]->GetGUID().GetRawValue()
             || tankState->ValidationRouteDrudgeAnchorSource1Identity
                 != Sources[1]->GetGUID().GetRawValue()
-            || tankState->ValidationRouteDrudgeAnchorCandidateIndex != 0
             || Distance2d(tankState->ValidationRouteDrudgeAnchorX,
-                tankState->ValidationRouteDrudgeAnchorY, anchor->X, anchor->Y) > 0.01f
-            || std::fabs(tankState->ValidationRouteDrudgeAnchorZ - anchor->Z) > 0.01f)
+                tankState->ValidationRouteDrudgeAnchorY,
+                tankState->ValidationRouteDrudgeRecoveryAnchorX,
+                tankState->ValidationRouteDrudgeRecoveryAnchorY) > 0.01f
+            || std::fabs(tankState->ValidationRouteDrudgeAnchorZ
+                - tankState->ValidationRouteDrudgeRecoveryAnchorZ) > 0.01f)
             return false;
         uint32 const sourceIndex = slot == config.ValidationRouteSplitLaneTankSlots[0] ? 0 : 1;
-        float const projection = (anchor->X - MidpointX) * AxisX
-            + (anchor->Y - MidpointY) * AxisY;
+        float const projection =
+            (tankState->ValidationRouteDrudgeRecoveryAnchorX - MidpointX) * AxisX
+            + (tankState->ValidationRouteDrudgeRecoveryAnchorY - MidpointY) * AxisY;
         float const inset = config.ValidationRouteSplitNativeMeleeStopYards
             + config.ValidationRouteSplitTankArrivalToleranceYards;
         if ((sourceIndex == 0 ? -1.0f : 1.0f) * projection
             < LaneSeparation * 0.25f + inset)
             return false;
-        recoveryPoints[sourceIndex] = { anchor->X, anchor->Y };
+        recoveryPoints[sourceIndex] = {
+            tankState->ValidationRouteDrudgeRecoveryAnchorX,
+            tankState->ValidationRouteDrudgeRecoveryAnchorY };
         pointSeen[sourceIndex] = true;
     }
     if (!pointSeen[0] || !pointSeen[1])
@@ -277,11 +283,14 @@ bool DrudgeLaneContext::ComputeExactRecoveryTankAnchorsReached() const
                 != Sources[0]->GetGUID().GetRawValue()
             || tankState->ValidationRouteDrudgeAnchorSource1Identity
                 != Sources[1]->GetGUID().GetRawValue()
+            || !tankState->ValidationRouteDrudgeAnchorValid
+            || !tankState->ValidationRouteDrudgeAnchorPathProven
             || Distance2d(tankState->ValidationRouteDrudgeRecoveryAnchorX,
-                tankState->ValidationRouteDrudgeRecoveryAnchorY, anchor->X, anchor->Y)
-                > 0.01f
-            || std::fabs(tankState->ValidationRouteDrudgeRecoveryAnchorZ - anchor->Z)
-                > 0.01f)
+                tankState->ValidationRouteDrudgeRecoveryAnchorY,
+                tankState->ValidationRouteDrudgeAnchorX,
+                tankState->ValidationRouteDrudgeAnchorY) > 0.01f
+            || std::fabs(tankState->ValidationRouteDrudgeRecoveryAnchorZ
+                - tankState->ValidationRouteDrudgeAnchorZ) > 0.01f)
             return false;
     }
     return true;

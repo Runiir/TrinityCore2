@@ -152,6 +152,7 @@ struct DrudgeLaneContext
     bool TryMinimumDistance(bool specializedDrudgeRecovery);
     bool IsRecoveryCandidateSpacingSafe(float x, float y, bool tank) const;
     bool ComputeStrictTankRecoveryPath(float x, float y, float z) const;
+    bool ComputeRecoveryAnchorReached(uint32 slot) const;
     bool ComputeExactCombatTankPathsProven() const;
     bool ComputeExactRecoveryTankPathsProven() const;
     bool ComputeExactRecoveryTankAnchorsReached() const;

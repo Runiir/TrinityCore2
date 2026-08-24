@@ -97,7 +97,7 @@ int main()
     subprocess.run([str(binary)], check=True, cwd=ROOT)
 
 
-def test_recovery_candidate_contract_is_landed_non_tank_only_and_native_strict():
+def test_recovery_candidate_contract_is_landed_and_native_strict_for_tanks_and_members():
     geometry = GEOMETRY.read_text(encoding="utf-8")
     recovery = RECOVERY.read_text(encoding="utf-8")
     header = HEADER.read_text(encoding="utf-8")
@@ -108,7 +108,8 @@ def test_recovery_candidate_contract_is_landed_non_tank_only_and_native_strict()
     candidates = geometry[geometry.index("AnchorCandidatesFor ="):geometry.index(
         "AnchorCacheMatchesGeneration =", geometry.index("AnchorCandidatesFor =")
     )]
-    assert "!tankSlot && IsDynamicGroupRecoveryActive()" in candidates
+    assert "bool const landedTankRecovery = tankSlot && IsLandedRushPending()" in candidates
+    assert "(!tankSlot || landedTankRecovery) && IsDynamicGroupRecoveryActive()" in candidates
     assert "BotRaidDrudgeRecoveryCandidates::BuildCandidates" in candidates
     assert candidates.index("BuildCandidates") < candidates.index(
         "RecoveryAnchorReachedFor(slot)"
@@ -146,6 +147,7 @@ def test_recovery_candidate_contract_is_landed_non_tank_only_and_native_strict()
     assert "NativePathFloorsValid" in path_validation
 
     assert "ComputeStrictTankRecoveryPath" in recovery
+    assert "ComputeRecoveryAnchorReached" in recovery
     assert "RecoveryPathPreservesTankSeparation" in recovery
     assert "ValidationRouteSplitNavigationMarginYards" in recovery
     assert "ValidationRouteSplitArrivalToleranceYards" in recovery
@@ -164,7 +166,10 @@ def test_dynamic_fan_candidate_is_grounded_before_exact_native_path_admission():
     )]
 
     assert "ResolveDynamicCandidateZ" in selector
-    assert "!tank && IsDynamicGroupRecoveryActive() && candidateIndex > 0" in selector
+    assert "dynamicCandidate && candidateIndex > 0" in selector
+    assert "landedTankRecovery" in selector
+    assert "StrictTankRecoveryPath(candidatePoint.X, candidatePoint.Y, candidateZ)" in selector
+    assert '"drudge_anchor_tank_path_geometry_rejected"' in selector
     assert "StrictNativePath(candidatePoint.X, candidatePoint.Y, candidateZ" in selector
     assert "float candidateZ = candidateAnchor->Z;" in selector
     assert "State.ValidationRouteDrudgeAnchorZ = candidateZ" in geometry

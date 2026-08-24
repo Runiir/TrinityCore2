@@ -16,6 +16,26 @@ using BotWorldPopulationMgrNativeHelpers::Distance2d;
 
 namespace BotWorldPopulationMgrValidationRoute
 {
+bool DrudgeLaneContext::IsLandedRushPending() const
+{
+    if (Manager.Cohort().Config.ValidationRouteMechanicProfile
+        != "trash_two_tank_charge_lanes")
+        return false;
+    auto observation = std::find_if(
+        Manager.Party().ValidationRouteDrudgeChargeObservations.begin(),
+        Manager.Party().ValidationRouteDrudgeChargeObservations.end(),
+        [this](ChargeObservation const& candidate)
+        {
+            return !candidate.ReseparationRecorded
+                && candidate.AttemptId == Manager.Cohort().AttemptId
+                && candidate.WipeGeneration == Manager.Cohort().Raid.WipeGeneration
+                && candidate.RouteGeneration
+                    == Manager.Party().ValidationRouteGeneration;
+        });
+    return observation != Manager.Party().ValidationRouteDrudgeChargeObservations.end()
+        && observation->Landed;
+}
+
 bool DrudgeLaneContext::IsDynamicGroupRecoveryActive() const
 {
     auto const& party = Manager.Party();
@@ -100,5 +120,45 @@ bool DrudgeLaneContext::ComputeStrictTankRecoveryPath(
         AxisX, AxisY, LaneSign,
         -LaneSign * otherProjection,
         Manager.Cohort().Config.ValidationRouteSplitMinimumSeparationYards);
+}
+
+bool DrudgeLaneContext::ComputeRecoveryAnchorReached(uint32 slot) const
+{
+    MemberAnchor const* recovery = DeclaredRecoveryTankAnchorFor(slot);
+    if (!recovery)
+        return false;
+    for (auto const& [guid, roster] : Manager.Cohort().Raid.RosterByGuid)
+        if (roster.Active && roster.LeaseOwned && roster.Role == "tank"
+            && roster.SlotIndex + 1 == slot)
+            for (WorldBotState const& memberState : Manager.Party().Bots)
+                if (memberState.Guid.GetCounter() == guid)
+                    return memberState.ValidationRouteDrudgeRecoveryAnchorPathProven
+                        && memberState.ValidationRouteDrudgeRecoveryAnchorReached
+                        && memberState.ValidationRouteDrudgeAnchorAttemptId
+                            == Manager.Cohort().AttemptId
+                        && memberState.ValidationRouteDrudgeAnchorWipeGeneration
+                            == Manager.Cohort().Raid.WipeGeneration
+                        && memberState.ValidationRouteDrudgeAnchorRouteGeneration
+                            == Manager.Party().ValidationRouteGeneration
+                        && memberState.ValidationRouteDrudgeAnchorMapId == Bot->GetMapId()
+                        && memberState.ValidationRouteDrudgeAnchorInstanceId
+                            == Bot->GetInstanceId()
+                        && memberState.ValidationRouteDrudgeAnchorSource0Identity
+                            == Sources[0]->GetGUID().GetRawValue()
+                        && memberState.ValidationRouteDrudgeAnchorSource1Identity
+                            == Sources[1]->GetGUID().GetRawValue()
+                        && ((Distance2d(
+                                memberState.ValidationRouteDrudgeRecoveryAnchorX,
+                                memberState.ValidationRouteDrudgeRecoveryAnchorY,
+                                recovery->X, recovery->Y) <= 0.01f
+                            && std::fabs(memberState.ValidationRouteDrudgeRecoveryAnchorZ
+                                - recovery->Z) <= 0.01f)
+                            || (std::isfinite(
+                                    memberState.ValidationRouteDrudgeRecoveryAnchorX)
+                                && std::isfinite(
+                                    memberState.ValidationRouteDrudgeRecoveryAnchorY)
+                                && std::isfinite(
+                                    memberState.ValidationRouteDrudgeRecoveryAnchorZ)));
+    return false;
 }
 }

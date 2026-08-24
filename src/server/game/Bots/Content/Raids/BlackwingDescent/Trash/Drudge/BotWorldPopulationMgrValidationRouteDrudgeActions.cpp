@@ -262,10 +262,16 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
             return;
         MemberAnchor const* recovery = DeclaredRecoveryTankAnchorFor(OneBasedSlot);
         if (!recovery
+            || !State.ValidationRouteDrudgeRecoveryAnchorPathProven
             || Distance2d(State.ValidationRouteDrudgeAnchorX,
-                State.ValidationRouteDrudgeAnchorY, recovery->X, recovery->Y) > 0.01f
-            || std::fabs(State.ValidationRouteDrudgeAnchorZ - recovery->Z) > 0.01f
-            || Bot->GetExactDist(recovery->X, recovery->Y, recovery->Z)
+                State.ValidationRouteDrudgeAnchorY,
+                State.ValidationRouteDrudgeRecoveryAnchorX,
+                State.ValidationRouteDrudgeRecoveryAnchorY) > 0.01f
+            || std::fabs(State.ValidationRouteDrudgeAnchorZ
+                - State.ValidationRouteDrudgeRecoveryAnchorZ) > 0.01f
+            || Bot->GetExactDist(State.ValidationRouteDrudgeRecoveryAnchorX,
+                State.ValidationRouteDrudgeRecoveryAnchorY,
+                State.ValidationRouteDrudgeRecoveryAnchorZ)
                 > Manager.Cohort().Config.ValidationRouteSplitTankArrivalToleranceYards)
             return;
         State.ValidationRouteDrudgeRecoveryAnchorReached = true;
