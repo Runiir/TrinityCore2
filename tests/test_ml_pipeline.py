@@ -7416,16 +7416,50 @@ TC> {"duration_minutes":3,"decisions":480,"total_kills":3}
     assert "validation_route_stuck_loop" not in report["failure_labels"]
 
 
-def boss_health_entry(sequence, health, *, guid=85, node="corborus", generation=2, bot_guid=1):
-    return {
+def boss_health_entry(
+    sequence,
+    health,
+    *,
+    guid=85,
+    node="corborus",
+    generation=2,
+    bot_guid=1,
+    kind="boss",
+    target_entry=43438,
+    timestamp_ms=None,
+    action=None,
+):
+    entry = {
         "sequence": sequence,
         "bot_guid": bot_guid,
         "route_progress": {
-            "route": {"kind": "boss", "node_id": node, "generation": generation},
-            "target": {"entry": 43438, "guid": guid, "hp_pct": health},
-            "no_progress": {"reason": "boss_route_no_health_progress"},
+            "route": {"kind": kind, "node_id": node, "generation": generation},
+            "target": {"entry": target_entry, "guid": guid, "hp_pct": health},
+            "no_progress": {
+                "reason": "route_target_combat_progress" if kind == "trash" else "boss_route_no_health_progress"
+            },
         },
     }
+    if timestamp_ms is not None:
+        entry["timestamp_ms"] = timestamp_ms
+    if action is not None:
+        entry["action"] = action
+    return entry
+
+
+def trash_health_entry(sequence, health, *, timestamp_ms=None, action="validation_route_trash_action", **kwargs):
+    return boss_health_entry(
+        sequence,
+        health,
+        kind="trash",
+        node="bwd.magmaw.chainwielder",
+        generation=2,
+        guid=27,
+        target_entry=42649,
+        timestamp_ms=timestamp_ms,
+        action=action,
+        **kwargs,
+    )
 
 
 def test_boss_health_progress_counts_party_shared_strict_minima_only():
@@ -7520,6 +7554,59 @@ def test_run037_boss_health_regression_preserves_progress_across_wipe_and_new_sp
 
     assert report["evidence"]["validation_route_combat_progress_diagnoses"] == 5
     assert report["watchdog_state"]["semantic_progress_plateau"] is False
+
+
+def test_run12_trash_health_progress_advances_watchdog_and_prevents_plateau():
+    entries = [
+        trash_health_entry(74, 1.0, timestamp_ms=1787532741016),
+        trash_health_entry(75, 0.82, timestamp_ms=1787532742016),
+        trash_health_entry(76, 0.58, timestamp_ms=1787532743016),
+        trash_health_entry(77, 0.322273, timestamp_ms=1787532879255),
+        trash_health_entry(78, 0.322273, timestamp_ms=1787532880255),
+    ]
+    output = "\n".join(
+        [
+            'TC> {"active_bots":10,"target_bots":10,"decisions":3278}',
+            "TC> " + json.dumps({"trace_schema_version": 1, "entries": entries}),
+            'TC> {"duration_minutes":4,"decisions":3278}',
+        ]
+    )
+
+    report = live_validation_report(
+        output,
+        validation_context={
+            "route_kind": "trash",
+            "route_node_id": "bwd.magmaw.chainwielder",
+            "route_generation": 2,
+        },
+    )
+
+    assert report["evidence"]["validation_route_combat_progress_diagnoses"] == 3
+    assert report["watchdog_state"]["progress_total"] == 3
+    assert report["watchdog_state"]["semantic_progress_plateau"] is False
+    assert "semantic_progress_plateau" not in report["failure_labels"]
+
+
+def test_trash_health_progress_preserves_baseline_reset_and_full_health_safeguards():
+    entries = [
+        trash_health_entry(1, 1.0),
+        trash_health_entry(2, 0.8),
+        {"sequence": 3, "action": "raid_wipe", "route_node_id": "bwd.magmaw.chainwielder", "route_generation": 2},
+        trash_health_entry(4, 0.9),
+        trash_health_entry(5, 0.7),
+        trash_health_entry(6, 0.99),
+        trash_health_entry(7, 0.6),
+    ]
+
+    assert boss_route_health_progress([trash_health_entry(1, 1.0)]) == 0
+    assert boss_route_health_progress(entries) == 3
+
+
+def test_trash_health_progress_does_not_compare_partial_order_clock_domains():
+    timestamp_baseline = trash_health_entry(1, 1.0, timestamp_ms=100)
+    timestamp_baseline.pop("sequence")
+
+    assert boss_route_health_progress([timestamp_baseline, trash_health_entry(2, 0.5)]) == 0
 
 
 def route_death_loop_entry(sequence, *, action="repeated_death", node="corborus", generation=2, bot_guid=1):

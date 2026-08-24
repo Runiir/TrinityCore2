@@ -2197,18 +2197,30 @@ def route_failure(entry: dict[str, Any]) -> bool:
 
 BOSS_ATTEMPT_RESET_ACTIONS = {"death", "repeated_death", "raid_wipe", "instance_reset"}
 BOSS_HEALTH_PROGRESS_EPSILON = 1e-6
+ROUTE_HEALTH_PROGRESS_KINDS = {"boss", "trash"}
 
 
 def boss_attempt_reset(entry: dict[str, Any]) -> bool:
     return str(entry.get("action") or "") in BOSS_ATTEMPT_RESET_ACTIONS
 
 
-def boss_route_health_progress_entries(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    samples: list[tuple[dict[str, Any], tuple[str, int], tuple[str, int, int, int], float]] = []
+def route_health_progress_entries(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Return strictly ordered health decreases for boss and trash targets.
+
+    Samples are compared only within one route generation, target identity,
+    reset epoch, and monotonic clock domain. The first sample in each group is
+    a baseline, while a return to near-full health starts a fresh target
+    attempt without counting the reset itself as progress.
+    """
+    samples: list[tuple[dict[str, Any], tuple[str, int], tuple[str, str, int, int, int], float]] = []
     failures: list[tuple[dict[str, Any], tuple[str, int]]] = []
     for entry in entries:
         if boss_attempt_reset(entry):
             scope = route_scope(entry)
+            if scope == ("", 0):
+                route_progress = entry.get("route_progress") if isinstance(entry.get("route_progress"), dict) else {}
+                route = route_progress.get("route") if isinstance(route_progress.get("route"), dict) else {}
+                scope = (str(route.get("node_id") or ""), int(route.get("generation") or 0))
             if scope != ("", 0):
                 failures.append((entry, scope))
         route_progress = entry.get("route_progress") if isinstance(entry.get("route_progress"), dict) else {}
@@ -2217,13 +2229,14 @@ def boss_route_health_progress_entries(entries: list[dict[str, Any]]) -> list[di
         try:
             node_id = str(route.get("node_id") or "")
             generation = int(route.get("generation") or 0)
+            route_kind = str(route.get("kind") or "").lower()
             target_guid = int(target.get("guid") or 0)
             target_entry = int(target.get("entry") or 0)
             health = float(target.get("hp_pct"))
         except (TypeError, ValueError):
             continue
         if (
-            str(route.get("kind") or "") != "boss"
+            route_kind not in ROUTE_HEALTH_PROGRESS_KINDS
             or not node_id
             or generation <= 0
             or target_guid <= 0
@@ -2233,9 +2246,9 @@ def boss_route_health_progress_entries(entries: list[dict[str, Any]]) -> list[di
         ):
             continue
         scope = (node_id, generation)
-        samples.append((entry, scope, (node_id, generation, target_guid, target_entry), health))
+        samples.append((entry, scope, (route_kind, node_id, generation, target_guid, target_entry), health))
 
-    ordered_groups: dict[tuple[str, tuple[str, int, int, int], tuple[int, ...]], list[tuple[dict[str, Any], float]]] = {}
+    ordered_groups: dict[tuple[str, tuple[str, str, int, int, int], tuple[int, ...]], list[tuple[dict[str, Any], float]]] = {}
     for entry, scope, target_key, health in samples:
         timestamp = int(entry.get("timestamp_ms") or 0)
         sequence = int(entry.get("sequence") or 0)
@@ -2286,8 +2299,18 @@ def boss_route_health_progress_entries(entries: list[dict[str, Any]]) -> list[di
     return progress
 
 
+def boss_route_health_progress_entries(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Compatibility wrapper for the shared boss/trash health signal."""
+    return route_health_progress_entries(entries)
+
+
+def route_health_progress(entries: list[dict[str, Any]]) -> int:
+    return len(route_health_progress_entries(entries))
+
+
 def boss_route_health_progress(entries: list[dict[str, Any]]) -> int:
-    return len(boss_route_health_progress_entries(entries))
+    """Compatibility wrapper for the shared boss/trash health signal."""
+    return route_health_progress(entries)
 
 
 DEATH_LOOP_ACTIONS = {"repeated_death", "death_loop"}
