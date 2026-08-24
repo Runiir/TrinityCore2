@@ -340,25 +340,25 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_latched_recovery_proof_verification"
+        "drudge_landed_rush_closure_repair"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["owner_skill"] == "raid-shard-architecture"
+    assert active["owner_skill"] == "raid-bot-runtime-implementation"
     assert active["first_broken_edge"] == (
-        "drudge_tank_recovery_anchor_strict_path_rejected"
+        "drudge_landed_rush_closure_pending_after_recovery_barrier"
     )
     evidence = active["decisive_evidence"]
     assert evidence["source_commit"] == (
-        "ae1cfe93184a3d623c35120e55bba2c488389aa6"
+        "4975d73314deb3eb5b8f53bc6e3bbd4edfdfd6ec"
     )
     assert evidence["binary_sha256"] == (
-        "c0652761093c60b02ab0ac701fcca6bdd707ba29b6ab28d68c027c5b9d1ad97d"
+        "c99ee8aa9fa31c9a7186906232562199fcfadc396d157e9325e1f9453359ef57"
     )
     assert evidence["report_sha256"] == (
-        "492fbb091316f2ef19602340d56d585b004bcaf3feb35befd05d54355b1be919"
+        "2eefff25c4bfbabc38b51495b8a3a84f82df3c8661e6ef6e2e6f003e95d15ca1"
     )
     assert evidence["report_file_sha256"] == (
-        "64add35053b9607c7d62e08ec28e50969d0cf7850cc9a97549d33d499db7cba1"
+        "56fe09db1a027b5a2fcf299300b5a50f61a3ce4379943f1d25a6e24d37218b25"
     )
     assert (
         evidence["route_generation"],
@@ -367,7 +367,9 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     ) == (3, 2, "bwd.magmaw.drudges")
     assert evidence["diagnostic_difficulty"] == "10N"
     assert evidence["kills"] == 1
-    assert evidence["death_loop_count"] == 1
+    assert evidence["death_loop_count"] == 3
+    assert evidence["native_rush_delivered_count"] == 10
+    assert evidence["dead_roster_guids"] == [30003, 30004, 30006]
     assert evidence["tank_owned_hostile_count"] == 2
     assert evidence["drudge_target_guids"] == [59, 60]
     assert evidence["tank_taunt_spell_ids"] == [62124, 56222]
@@ -383,12 +385,9 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
         "matched_live_verification_runs": 0,
     }
     assert active["implementation_hypothesis"]["scope"] == (
-        "consume_latched_drudge_recovery_proof_downstream"
+        "close_each_landed_rush_after_exact_recovery_combat_return_and_roster_reseparation"
     )
-    assert active["implemented_fix"]["commit"] == (
-        "4975d73314deb3eb5b8f53bc6e3bbd4edfdfd6ec"
-    )
-    assert active["implemented_fix"]["status"] == "implemented_not_live_verified"
+    assert active["implemented_fix"] is None
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
     assert active["runtime_verification_plan"]["identity"]["difficulty"] == "10N"
     assert active["runtime_verification_plan"]["fixed_success_timer_seconds"] is None
@@ -488,21 +487,21 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     assert status["active_work_unit"]["descriptor_valid"] is True
     assert status["active_work_unit"]["ready_for_bounded_repair"] is True
     assert status["active_work_unit"]["first_broken_edge"] == (
-        "drudge_tank_recovery_anchor_strict_path_rejected"
+        "drudge_landed_rush_closure_pending_after_recovery_barrier"
     )
     assert status["active_work_unit"]["source_handoff"]["sha256"] == (
         workloop._file_sha256(
             workloop.ROOT
             / "experiments/configs/"
-            "cata_raid_magmaw_drudge_recovery_latch_handoff_20260824.md"
+            "cata_raid_magmaw_drudge_post_latch_death_handoff_20260824.md"
         )
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_latched_recovery_proof_verification"
+        "drudge_landed_rush_closure_repair"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
-        "raid-shard-architecture"
+        "raid-bot-runtime-implementation"
     )
     assert status["current_program_next_action"] == status["active_work_unit"][
         "next_action"

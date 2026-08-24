@@ -1,26 +1,26 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_latched_recovery_proof_verification",
-  "owner_skill": "raid-shard-architecture",
+  "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_landed_rush_closure_repair",
+  "owner_skill": "raid-bot-runtime-implementation",
   "classification": "failed",
   "observed_at_commit": "4975d73314deb3eb5b8f53bc6e3bbd4edfdfd6ec",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_drudge_recovery_latch_handoff_20260824.md",
-    "sha256": "055d8fa692ec322bd9420057ed6f373633c4a0e6f0d0d8149f134e9444e28b96"
+    "path": "experiments/configs/cata_raid_magmaw_drudge_post_latch_death_handoff_20260824.md",
+    "sha256": "2fbe4491af3165d2ab8a6be0be1b9a95557436791b02aeb57902c13e7d751959"
   },
-  "first_broken_edge": "drudge_tank_recovery_anchor_strict_path_rejected",
+  "first_broken_edge": "drudge_landed_rush_closure_pending_after_recovery_barrier",
   "decisive_evidence": {
-    "source_commit": "ae1cfe93184a3d623c35120e55bba2c488389aa6",
-    "source_tree": "398e380805da0838798bde87abe00e62d8e50b2b",
+    "source_commit": "4975d73314deb3eb5b8f53bc6e3bbd4edfdfd6ec",
+    "source_tree": "7c96409e7cf6ed6bfed0758359365dc6ec8315fa",
     "source_worktree": "/home/runiir/Games/trinity-cata-worktrees/phase1-foundation-build",
-    "binary_sha256": "c0652761093c60b02ab0ac701fcca6bdd707ba29b6ab28d68c027c5b9d1ad97d",
-    "config_sha256": "9d96e4a52eace449b6e033fd663b7e48d78aaf7a4af51f37ccebff28614943bd",
-    "build_receipt_path": "/tmp/trinity-magmaw-ae1cfe9318/build/worldserver-build-receipt-v8.json",
-    "build_receipt_file_sha256": "453bcf304a29b4cbe6677067b4c2ed3d891acb1200f10f47f0fb6539e6ca3e04",
-    "report_path": "/tmp/trinity-magmaw-ae1cfe9318/canary1/capture/report.json",
-    "report_sha256": "492fbb091316f2ef19602340d56d585b004bcaf3feb35befd05d54355b1be919",
-    "report_file_sha256": "64add35053b9607c7d62e08ec28e50969d0cf7850cc9a97549d33d499db7cba1",
-    "normalized_trace_sha256": "dae87ac33b393a3cc9388d7221e69df910becd7fbb912f50955fcd13f8fce4ac",
+    "binary_sha256": "c99ee8aa9fa31c9a7186906232562199fcfadc396d157e9325e1f9453359ef57",
+    "config_sha256": "cbaace9c9912789d71b13a09985c1ac0f46b492ffab968db8d619edb2c4aacd4",
+    "build_receipt_path": "/tmp/trinity-magmaw-4975d73314/build/worldserver-build-receipt-v8.json",
+    "build_receipt_file_sha256": "cb8ec8a2809fb6df875d6c9330786483fe186487c25067485738d88ed00276ae",
+    "report_path": "/tmp/trinity-magmaw-4975d73314/canary1/capture/report.json",
+    "report_sha256": "2eefff25c4bfbabc38b51495b8a3a84f82df3c8661e6ef6e2e6f003e95d15ca1",
+    "report_file_sha256": "56fe09db1a027b5a2fcf299300b5a50f61a3ce4379943f1d25a6e24d37218b25",
+    "normalized_trace_sha256": "8dc5a152fc28dff3f1d5a710aa2436fd13d389869fdbc8460d8a9322ccc18bcf",
     "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
     "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
     "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
@@ -29,7 +29,12 @@
     "route_node_index": 2,
     "route_node_id": "bwd.magmaw.drudges",
     "kills": 1,
-    "death_loop_count": 1,
+    "death_loop_count": 3,
+    "native_rush_delivered_count": 10,
+    "native_rush_per_source_count": 5,
+    "dead_roster_guids": [30003, 30004, 30006],
+    "profile_action_roster_guids": [],
+    "health_sync_evaluated_roster_guids": [],
     "tank_owned_hostile_count": 2,
     "drudge_target_guids": [59, 60],
     "tank_taunt_spell_ids": [62124, 56222],
@@ -44,8 +49,8 @@
     "do_not_relabel_as_clear": true
   },
   "implementation_hypothesis": {
-    "scope": "consume_latched_drudge_recovery_proof_downstream",
-    "status": "implemented_not_live_verified",
+    "scope": "close_each_landed_rush_after_exact_recovery_combat_return_and_roster_reseparation",
+    "status": "ready_for_bounded_repair",
     "forbidden_shortcuts": [
       "forced_threat",
       "triggered_taunt",
@@ -55,18 +60,7 @@
       "manufactured_encounter_outcome"
     ]
   },
-  "implemented_fix": {
-    "commit": "4975d73314deb3eb5b8f53bc6e3bbd4edfdfd6ec",
-    "tree": "7c96409e7cf6ed6bfed0758359365dc6ec8315fa",
-    "status": "implemented_not_live_verified",
-    "scope": "drudge_latched_recovery_proof_downstream",
-    "changed_files": [
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp",
-      "tests/test_drudge_geometry_replay.py"
-    ],
-    "focused_test_count": 26,
-    "runtime_verification_required": true
-  },
+  "implemented_fix": null,
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
@@ -86,7 +80,7 @@
   },
   "live_verification_owner_skill": "raid-shard-architecture",
   "runtime_verification_plan": {
-    "status": "required",
+    "status": "required_after_implementation",
     "identity": {
       "difficulty": "10N",
       "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
@@ -96,12 +90,13 @@
     },
     "required_clock_policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
-    "required_fix_commit": "4975d73314deb3eb5b8f53bc6e3bbd4edfdfd6ec",
-    "required_live_build_tree": "7c96409e7cf6ed6bfed0758359365dc6ec8315fa",
+    "required_fix_commit": null,
+    "required_live_build_tree": null,
     "must_observe": [
-      "the latched two-tank recovery proof remains consumed by downstream action selection",
-      "the exact native recovery formation advances without renewed strict-path rejection",
-      "exact-roster reseparation is recorded and the Drudge route advances without forbidden assistance",
+      "every landed Rush emits drudge_native_charge_reseparation_complete",
+      "all seven offensive slots appear in profile_action_roster_guids",
+      "exact tank health-sync evidence is recorded",
+      "the Drudge pair dies with no player death and the route advances without forbidden assistance",
       "trace demultiplexing remains complete without a forced terminal delta gap",
       "cleanup leaves zero bots, zero leases, and no worldserver process"
     ],
@@ -111,5 +106,5 @@
       "native confirmation from deterministic tests alone"
     ]
   },
-  "next_action": "Run one fresh exact clean commit 4975d73314deb3eb5b8f53bc6e3bbd4edfdfd6ec completion-watchdog shard with the frozen ten-player Magmaw roster. Verify the latched two-tank recovery proof is consumed downstream, the Drudge route emits its terminal and advances without renewed strict-path rejection, and cleanup leaves zero bots, zero leases, and no worldserver process. Do not teleport, revive, stop combat, or manufacture an encounter result."
+  "next_action": "Repair only the Drudge landed-Rush closure proof around LandedRushRecoveryComplete and CloseLandedThroughProof. Preserve exact native recovery, combat return, roster reseparation, Rush targeting, native timing, healer policies, native damage, and watchdog limits. Add deterministic replay coverage and return the exact commit for queued build and completion-watchdog verification. Do not teleport, force movement or threat, revive, alter native encounter state, or manufacture an outcome."
 }
