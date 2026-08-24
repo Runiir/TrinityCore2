@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
+#include "Bots/Content/Raids/Shared/Trash/BotAdaptiveRaidHazardPlanner.h"
 #include "Bots/Content/Raids/Shared/Trash/BotAdaptiveRaidTrashStrategy.h"
 
 #include "ObjectAccessor.h"
@@ -498,6 +499,19 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             BotEncounter::AdaptiveRaidTrashStrategy adaptiveTrash;
             std::optional<BotNativeAction::Candidate> hazard =
                 adaptiveTrash.ProposeHazardExit(*Cohort().EncounterSnapshot, context.Bot->GetGUID());
+            // Route-enrolled hazards retain their exact contract. The shared
+            // observer is a fallback for dynamic objects, traps, and
+            // non-selectable trigger units only when no exact route source is
+            // active. Live planning receives the loaded bot so strict native
+            // path admission cannot be bypassed.
+            if (!hazard)
+            {
+                BotEncounter::HazardPlan sharedHazard =
+                    BotEncounter::PlanSharedHazardExit(
+                        *Cohort().EncounterSnapshot, context.Bot->GetGUID(),
+                        context.Bot);
+                hazard = std::move(sharedHazard.Candidate);
+            }
             if (hazard && hazard->ExpiresAtMs > context.DecisionNowMs)
             {
                 adaptiveHazardMovementProposed = true;

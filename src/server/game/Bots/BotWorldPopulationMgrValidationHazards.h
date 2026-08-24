@@ -1,6 +1,7 @@
 #ifndef TRINITYCORE_BOT_WORLD_POPULATION_MGR_VALIDATION_HAZARDS_H
 #define TRINITYCORE_BOT_WORLD_POPULATION_MGR_VALIDATION_HAZARDS_H
 
+#include "Bots/BotEncounterBlackboard.h"
 #include "Define.h"
 
 #include <string>
@@ -39,6 +40,18 @@ std::vector<Active> FindActive(Player* bot,
 bool PositionOutside(Active const& hazard, float x, float y);
 bool PositionsOutside(std::vector<Active> const& hazards, float x, float y);
 bool PathOutside(Player* bot, std::vector<Active> const& hazards,
+    float x, float y, float z);
+
+// Snapshot geometry is used by the shared observer for dynamic objects,
+// area triggers, traps, and non-selectable trigger units.  It intentionally
+// shares the strict native PathGenerator admission and exit monotonicity
+// contract above, but does not retain raw world pointers across snapshots.
+bool PositionOutside(BotEncounter::SpatialRegion const& hazard,
+    float x, float y);
+bool PositionsOutside(std::vector<BotEncounter::SpatialRegion> const& hazards,
+    float x, float y);
+bool PathOutside(Player* bot,
+    std::vector<BotEncounter::SpatialRegion> const& hazards,
     float x, float y, float z);
 }
 

@@ -211,4 +211,104 @@ bool PathOutside(Player* bot, std::vector<Active> const& hazards,
     }
     return endpointOutside;
 }
+
+bool PositionOutside(BotEncounter::SpatialRegion const& hazard,
+    float x, float y)
+{
+    float const distance = Distance2d(x, y, hazard.Center.X, hazard.Center.Y);
+    bool inside = distance <= std::max(0.0f, hazard.Radius);
+    if (inside && hazard.Kind == BotEncounter::RegionKind::Cone
+        && hazard.HalfAngle > 0.0f)
+    {
+        float bearing = std::atan2(y - hazard.Center.Y,
+            x - hazard.Center.X);
+        float relative = bearing - hazard.Facing;
+        while (relative > float(M_PI))
+            relative -= float(2.0 * M_PI);
+        while (relative < -float(M_PI))
+            relative += float(2.0 * M_PI);
+        inside = std::fabs(relative) <= hazard.HalfAngle;
+    }
+    return !inside;
+}
+
+bool PositionsOutside(std::vector<BotEncounter::SpatialRegion> const& hazards,
+    float x, float y)
+{
+    for (BotEncounter::SpatialRegion const& hazard : hazards)
+        if (PositionOutside(hazard, x, y))
+            continue;
+        else
+            return false;
+    return true;
+}
+
+bool PathOutside(Player* bot,
+    std::vector<BotEncounter::SpatialRegion> const& hazards,
+    float x, float y, float z)
+{
+    if (!bot || hazards.empty())
+        return true;
+
+    PathGenerator path(bot);
+    if (!path.CalculatePath(x, y, z, false))
+        return false;
+    PathType const pathType = path.GetPathType();
+    if ((pathType & PATHFIND_NOPATH)
+        || (pathType & PATHFIND_NOT_USING_PATH)
+        || (pathType & PATHFIND_INCOMPLETE)
+        || (pathType & PATHFIND_SHORTCUT)
+        || (pathType & PATHFIND_FARFROMPOLY))
+        return false;
+
+    std::vector<float> previousDistances;
+    std::vector<bool> startedOutside;
+    std::vector<bool> exitedHazards;
+    previousDistances.reserve(hazards.size());
+    startedOutside.reserve(hazards.size());
+    exitedHazards.reserve(hazards.size());
+    for (BotEncounter::SpatialRegion const& hazard : hazards)
+    {
+        previousDistances.push_back(Distance2d(bot->GetPositionX(),
+            bot->GetPositionY(), hazard.Center.X, hazard.Center.Y));
+        startedOutside.push_back(PositionOutside(hazard,
+            bot->GetPositionX(), bot->GetPositionY()));
+        exitedHazards.push_back(false);
+    }
+
+    bool endpointOutside = false;
+    for (G3D::Vector3 const& point : path.GetPath())
+    {
+        endpointOutside = PositionsOutside(hazards, point.x, point.y);
+        for (size_t index = 0; index < hazards.size(); ++index)
+        {
+            BotEncounter::SpatialRegion const& hazard = hazards[index];
+            float const distance = Distance2d(point.x, point.y,
+                hazard.Center.X, hazard.Center.Y);
+            bool const outside = PositionOutside(hazard, point.x, point.y);
+            if (startedOutside[index])
+            {
+                if (!outside)
+                    return false;
+                continue;
+            }
+
+            // Match the exact route hazard contract: an already contaminated
+            // prefix may leave a strike, but it may never move closer to any
+            // active source and must remain outside after crossing its radius.
+            if (!exitedHazards[index])
+            {
+                if (distance + 0.5f < previousDistances[index])
+                    return false;
+                previousDistances[index] = std::max(previousDistances[index],
+                    distance);
+                if (distance > hazard.Radius)
+                    exitedHazards[index] = true;
+            }
+            else if (!outside)
+                return false;
+        }
+    }
+    return endpointOutside;
+}
 }

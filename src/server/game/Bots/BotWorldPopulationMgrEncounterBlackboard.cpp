@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotEncounterBlackboard.h"
+#include "Bots/BotWorldPopulationMgrEncounterHazards.h"
 
 #include "CellImpl.h"
 #include "Creature.h"
@@ -25,14 +26,16 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
         return;
 
     Player* observer = nullptr;
+    std::vector<Player*> hazardObservers;
     for (WorldBotState const& state : Party().Bots)
     {
         Player* candidate = GetLoadedBot(state);
-        if (candidate && candidate->IsInWorld())
-        {
+        if (!candidate || !candidate->IsInWorld())
+            continue;
+        if (!observer)
             observer = candidate;
-            break;
-        }
+        if (candidate->GetMap() == observer->GetMap())
+            hazardObservers.push_back(candidate);
     }
 
     if (!observer)
@@ -254,7 +257,12 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
     std::sort(snapshot->Summons.begin(), snapshot->Summons.end(), actorOrder);
     std::sort(snapshot->Interactables.begin(), snapshot->Interactables.end(), actorOrder);
 
+    // Generic hazards are observed into snapshot geometry rather than being
+    // inferred from the route's single enrolled source. Route-specific
+    // contracts remain owned by their exact route adapters and therefore keep
+    // higher confidence than this shared fallback.
+    BotEncounterHazards::Populate(*snapshot, hazardObservers, nowMs);
+
     Cohort().EncounterSnapshot = std::move(snapshot);
     Cohort().EncounterSnapshotNextRefreshMs = nowMs + 100;
 }
-
