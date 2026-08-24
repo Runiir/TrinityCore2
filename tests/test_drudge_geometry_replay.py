@@ -1,3 +1,4 @@
+import json
 import subprocess
 from pathlib import Path
 
@@ -408,6 +409,66 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "drudge_lane_native_taunt" in actions
     assert "drudge_pre_first_rush_threat_seed" in seed
     assert "drudge_native_charge_reseparation_complete" in actions
+
+
+def test_post_rush_recovery_replays_combat_anchor_transition_with_exact_xyz():
+    geometry_path = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
+    lanes_path = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp"
+    geometry = geometry_path.read_text(encoding="utf-8")
+    lanes = lanes_path.read_text(encoding="utf-8")
+    route = next(
+        json.loads(line)
+        for line in (ROOT / "dataset/validation_scenarios/validation_routes.jsonl")
+        .read_text(encoding="utf-8").splitlines()
+        if json.loads(line).get("route_node_id") == "bwd.magmaw.drudges"
+    )
+    anchors = {
+        key: {
+            row["roster_slot"]: (row["x"], row["y"], row["z"])
+            for row in route[key]
+        }
+        for key in (
+            "split_tank_navigation_anchors",
+            "split_tank_recovery_anchors",
+            "split_tank_combat_anchors",
+        )
+    }
+
+    # Run15's mixed-Z trace was the signature of selecting the recovery X/Y
+    # while retaining a later anchor's Z.  Replay the three legal phases from
+    # the sealed route data, then require the production selector to contain
+    # the same state transition.
+    def expected_anchor(slot, landed, recovery_reached):
+        if not landed:
+            return anchors["split_tank_navigation_anchors"][slot]
+        if not recovery_reached:
+            return anchors["split_tank_recovery_anchors"][slot]
+        return anchors["split_tank_combat_anchors"][slot]
+
+    assert expected_anchor(1, False, False) == (-289.289093, -57.7575, 212.932236)
+    assert expected_anchor(1, True, False) == (-288.8, -43.0, 212.301)
+    assert expected_anchor(1, True, True) == (-286.5, -58.0, 212.2983)
+    assert expected_anchor(2, True, True) == (-322.858, -48.2862, 212.2623)
+    assert expected_anchor(1, True, False)[2] != expected_anchor(1, True, True)[2]
+
+    selector_start = geometry.index("for (size_t candidateIndex = 0;")
+    selector_end = geometry.index(
+        "State.ValidationRouteDrudgeAnchorX =", selector_start
+    )
+    selector = geometry[selector_start:selector_end]
+    assert "RecoveryAnchorReachedFor(OneBasedSlot)" in selector
+    assert selector.index("DeclaredCombatTankAnchorFor(OneBasedSlot)") < selector.index(
+        "DeclaredRecoveryTankAnchorFor(OneBasedSlot)"
+    )
+    assert "candidateAnchor->Z" in selector
+
+    unique_anchor_start = geometry.index("UniqueGroupAnchor =")
+    unique_anchor_end = geometry.index("AnchorCandidatesFor =", unique_anchor_start)
+    unique_anchor = geometry[unique_anchor_start:unique_anchor_end]
+    assert "RecoveryAnchorReachedFor(slot)" in unique_anchor
+    assert "DeclaredCombatTankAnchorFor(slot)" in unique_anchor
+    assert "DeclaredRecoveryTankAnchorFor(slot)" in unique_anchor
+    assert "DeclaredCombatTankAnchorFor" in lanes
 
 
 def test_drudge_reseparation_switches_from_cached_anchor_to_live_safety():

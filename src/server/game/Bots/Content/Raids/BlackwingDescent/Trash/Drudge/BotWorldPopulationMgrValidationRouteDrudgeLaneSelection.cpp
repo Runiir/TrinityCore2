@@ -85,7 +85,9 @@ bool DrudgeLaneContext::ComputeExactCombatTankPathsProven() const
             || tankRoster == Manager.Cohort().Raid.RosterByGuid.end())
             return false;
         uint32 const slot = tankRoster->second.SlotIndex + 1;
-        MemberAnchor const* anchor = DeclaredNavigationTankAnchorFor(slot);
+        MemberAnchor const* anchor = IsRecoveryFormationActive()
+            ? DeclaredCombatTankAnchorFor(slot)
+            : DeclaredNavigationTankAnchorFor(slot);
         if (!anchor || !tankState->ValidationRouteDrudgeAnchorValid
             || !tankState->ValidationRouteDrudgeAnchorPathProven
             || tankState->ValidationRouteDrudgeAnchorAttemptId != Manager.Cohort().AttemptId
@@ -300,8 +302,10 @@ bool DrudgeLaneContext::ComputeExactCombatTankAnchorsReached() const
         if (tankState == Manager.Party().Bots.end()
             || tankRoster == Manager.Cohort().Raid.RosterByGuid.end())
             return false;
-        MemberAnchor const* anchor = DeclaredNavigationTankAnchorFor(
-            tankRoster->second.SlotIndex + 1);
+        uint32 const slot = tankRoster->second.SlotIndex + 1;
+        MemberAnchor const* anchor = IsRecoveryFormationActive()
+            ? DeclaredCombatTankAnchorFor(slot)
+            : DeclaredNavigationTankAnchorFor(slot);
         if (!anchor || !tankState->ValidationRouteDrudgeAnchorValid
             || !tankState->ValidationRouteDrudgeAnchorPathProven
             || tankState->ValidationRouteDrudgeAnchorAttemptId
@@ -846,6 +850,18 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildContract()
                 return candidate.RosterSlot == slot;
             });
         return anchor == Manager.Cohort().Config.ValidationRouteSplitTankNavigationAnchors.end()
+            ? nullptr : &*anchor;
+    };
+    DeclaredCombatTankAnchorFor = [this](uint32 slot) -> MemberAnchor const*
+    {
+        auto anchor = std::find_if(
+            Manager.Cohort().Config.ValidationRouteSplitTankCombatAnchors.begin(),
+            Manager.Cohort().Config.ValidationRouteSplitTankCombatAnchors.end(),
+            [slot](MemberAnchor const& candidate)
+            {
+                return candidate.RosterSlot == slot;
+            });
+        return anchor == Manager.Cohort().Config.ValidationRouteSplitTankCombatAnchors.end()
             ? nullptr : &*anchor;
     };
     DeclaredRecoveryTankAnchorFor = [this](uint32 slot) -> MemberAnchor const*

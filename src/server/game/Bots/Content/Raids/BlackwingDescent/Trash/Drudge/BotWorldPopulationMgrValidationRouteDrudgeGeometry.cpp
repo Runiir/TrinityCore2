@@ -432,8 +432,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.end(), slot)
             != Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.end();
         MemberAnchor const* anchor = tankSlot && IsRecoveryFormationActive()
-            && !RecoveryAnchorReachedFor(slot)
-            ? DeclaredRecoveryTankAnchorFor(slot)
+            ? (RecoveryAnchorReachedFor(slot)
+                ? DeclaredCombatTankAnchorFor(slot)
+                : DeclaredRecoveryTankAnchorFor(slot))
             : (tankSlot && CombatTankStagingActive()
                 ? DeclaredNavigationTankAnchorFor(slot) : DeclaredAnchorFor(slot));
         return anchor ? std::pair<float, float>{ anchor->X, anchor->Y }
@@ -805,7 +806,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
         for (size_t candidateIndex = 0; candidateIndex < candidates.size(); ++candidateIndex)
         {
             MemberAnchor const* candidateAnchor = tank && IsRecoveryFormationActive()
-                ? DeclaredRecoveryTankAnchorFor(OneBasedSlot)
+                ? (RecoveryAnchorReachedFor(OneBasedSlot)
+                    ? DeclaredCombatTankAnchorFor(OneBasedSlot)
+                    : DeclaredRecoveryTankAnchorFor(OneBasedSlot))
                 : (tank && CombatTankStagingActive()
                     ? DeclaredNavigationTankAnchorFor(OneBasedSlot)
                     : DeclaredAnchorFor(OneBasedSlot));
