@@ -415,7 +415,10 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
                             + (recoveryY - MidpointY) * AxisY;
                         if (LaneSign * projection >= Manager.Cohort().Config.ValidationRouteSplitMinimumSeparationYards * 0.5f
                             && StrictTankRecoveryPath(recoveryX, recoveryY, recoveryZ)
-                            && Manager.MoveBotToPoint(State, Bot, recoveryX, recoveryY, recoveryZ))
+                            && Manager.MoveBotToPoint(State, Bot, recoveryX, recoveryY,
+                                recoveryZ, false,
+                                BotMovementArbitration::Owner::Mechanic,
+                                BotMovementArbitration::Priority::Mechanic))
                         {
                             Record(LaneSource, "drudge_lane_native_taunt_approach",
                                 distance, candidate.SpellId);
@@ -478,7 +481,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
                     moved = Manager.MoveBotToPoint(State, Bot,
                         State.ValidationRouteDrudgeAnchorX,
                         State.ValidationRouteDrudgeAnchorY,
-                        State.ValidationRouteDrudgeAnchorZ);
+                        State.ValidationRouteDrudgeAnchorZ, false,
+                        BotMovementArbitration::Owner::Mechanic,
+                        BotMovementArbitration::Priority::Mechanic);
                     if (moved && AssignedTank && NativeChargePending
                         && State.ValidationRouteDrudgeRecoveryAnchorReached)
                         Record(LaneSource,

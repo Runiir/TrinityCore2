@@ -93,6 +93,11 @@ bool DrudgeLaneContext::IsRecoveryFormationActive() const
     if (Manager.Cohort().Config.ValidationRouteMechanicProfile
         != "trash_two_tank_charge_lanes")
         return false;
+    // This is deliberately scoped to the landed Rush, not to the pending
+    // reseparation observation.  Once a source has moved, the prepull anchor
+    // is no longer a safety proof for the remainder of this attempt; reverting
+    // to it after RecordReseparationEvidence would reopen the stale-anchor
+    // loop that this live contract repairs.
     for (ChargeObservation const& observation :
         Manager.Party().ValidationRouteDrudgeChargeObservations)
         if (observation.Landed
@@ -290,7 +295,9 @@ bool DrudgeLaneContext::TryMinimumDistance(bool specializedDrudgeRecovery)
         safeX = candidateX;
         safeY = candidateY;
         safeZ = candidateZ;
-        moved = Manager.MoveBotToPoint(State, Bot, safeX, safeY, safeZ);
+        moved = Manager.MoveBotToPoint(State, Bot, safeX, safeY, safeZ, false,
+            BotMovementArbitration::Owner::Mechanic,
+            BotMovementArbitration::Priority::Mechanic);
         if (moved)
             break;
     }
@@ -537,26 +544,20 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             return false;
         float const minimumSafeDistance =
             Manager.Cohort().Config.ValidationRouteMinimumDistanceYards;
-        if (Distance2d(member->GetPositionX(), member->GetPositionY(),
-                Sources[0]->GetPositionX(), Sources[0]->GetPositionY()) < minimumSafeDistance
-            || Distance2d(member->GetPositionX(), member->GetPositionY(),
-                Sources[1]->GetPositionX(), Sources[1]->GetPositionY()) < minimumSafeDistance)
-            return false;
+        bool const source0Safe = Distance2d(member->GetPositionX(),
+            member->GetPositionY(), Sources[0]->GetPositionX(),
+            Sources[0]->GetPositionY()) >= minimumSafeDistance;
+        bool const source1Safe = Distance2d(member->GetPositionX(),
+            member->GetPositionY(), Sources[1]->GetPositionX(),
+            Sources[1]->GetPositionY()) >= minimumSafeDistance;
         float const projection = (member->GetPositionX() - MidpointX) * AxisX
             + (member->GetPositionY() - MidpointY) * AxisY;
-        if ((laneA ? -1.0f : 1.0f) * projection < LaneSeparation * 0.25f)
-            return false;
-        auto memberState = std::find_if(Manager.Party().Bots.begin(),
-            Manager.Party().Bots.end(), [member](WorldBotState const& candidate)
-            {
-                return candidate.Guid == member->GetGUID();
-            });
-        if (memberState == Manager.Party().Bots.end()
-            || !CachedAnchorSafe(*memberState, member))
-            return false;
+        bool const laneSafe = (laneA ? -1.0f : 1.0f) * projection
+            >= LaneSeparation * 0.25f;
         float const sameLaneMinimum = std::max(3.0f,
             Manager.Cohort().Config.ValidationRouteSplitNavigationMarginYards
                 + Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards * 0.5f);
+        bool sameLaneSpacingSafe = true;
         for (WorldBotState const& cohortState : Manager.Party().Bots)
         {
             Player* other = Manager.GetLoadedBot(cohortState);
@@ -574,9 +575,35 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
                 otherRoster->second.SlotIndex + 1)
                 != Manager.Cohort().Config.ValidationRouteSplitLaneARosterSlots.end();
             if (otherLaneA == laneA && member->GetExactDist2d(other) < sameLaneMinimum)
-                return false;
+            {
+                sameLaneSpacingSafe = false;
+                break;
+            }
         }
-        return true;
+        if (!BotRaidDrudgeGeometry::DynamicGroupPositionSafe(
+                source0Safe, source1Safe, laneSafe, sameLaneSpacingSafe))
+            return false;
+        // Exact declared-anchor arrival is mandatory for prepull staging. A
+        // landed Rush may move the sources after that proof, so reseparation
+        // admits the same strict live geometry without requiring a stale
+        // coordinate that is now inside the native source radius.
+        bool const prepullStaged =
+            Manager.Party().ValidationRouteDrudgePrepullStaged
+            && Manager.Party().ValidationRouteDrudgePrepullAttemptId
+                == Manager.Cohort().AttemptId
+            && Manager.Party().ValidationRouteDrudgePrepullWipeGeneration
+                == Manager.Cohort().Raid.WipeGeneration
+            && Manager.Party().ValidationRouteDrudgePrepullRouteGeneration
+                == Manager.Party().ValidationRouteGeneration;
+        if (prepullStaged && IsRecoveryFormationActive())
+            return true;
+        auto memberState = std::find_if(Manager.Party().Bots.begin(),
+            Manager.Party().Bots.end(), [member](WorldBotState const& candidate)
+            {
+                return candidate.Guid == member->GetGUID();
+            });
+        return memberState != Manager.Party().Bots.end()
+            && CachedAnchorSafe(*memberState, member);
     };
     ExactRosterPrepullStaged = [this]
     {

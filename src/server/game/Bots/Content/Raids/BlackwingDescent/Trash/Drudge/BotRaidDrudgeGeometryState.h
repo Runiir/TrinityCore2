@@ -189,6 +189,17 @@ struct Point2d
     float Y = 0.0f;
 };
 
+// A landed Rush may move a source after the exact prepull anchors were
+// proven.  The live post-Rush member contract therefore remains strict about
+// source distance, lane placement, and peer spacing, without treating the
+// stale prepull coordinate as a safety proof.
+inline bool DynamicGroupPositionSafe(
+    bool source0Safe, bool source1Safe, bool laneSafe,
+    bool sameLaneSpacingSafe)
+{
+    return source0Safe && source1Safe && laneSafe && sameLaneSpacingSafe;
+}
+
 // Each tank's recovery path must remain entirely on its frozen half of the
 // lane axis.  Requiring both tanks (and every point of either path) to retain
 // at least half the minimum separation on opposite sides proves their

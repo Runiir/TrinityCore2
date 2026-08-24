@@ -80,6 +80,15 @@ int main()
     assert(SelectMinimumDistanceOwner(true, true)
         == MinimumDistanceOwner::LandedRushRecovery);
 
+    // Prepull staging and post-Rush reseparation share the same strict live
+    // source, lane, and peer-spacing contract.  Only the prepull path adds
+    // the exact cached-anchor arrival proof.
+    assert(DynamicGroupPositionSafe(true, true, true, true));
+    assert(!DynamicGroupPositionSafe(false, true, true, true));
+    assert(!DynamicGroupPositionSafe(true, false, true, true));
+    assert(!DynamicGroupPositionSafe(true, true, false, true));
+    assert(!DynamicGroupPositionSafe(true, true, true, false));
+
     // Run11's tank-2 recovery point is intentionally 23.8237 yards from its
     // source, while the declared navigation/combat point is exactly 15 yards.
     // The recovery leg must complete first, and the native return plus the
@@ -399,6 +408,45 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "drudge_lane_native_taunt" in actions
     assert "drudge_pre_first_rush_threat_seed" in seed
     assert "drudge_native_charge_reseparation_complete" in actions
+
+
+def test_drudge_reseparation_switches_from_cached_anchor_to_live_safety():
+    geometry = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp").read_text(
+        encoding="utf-8"
+    )
+    actions = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp").read_text(
+        encoding="utf-8"
+    )
+
+    group_start = geometry.index("GroupPositionSafe =")
+    group_end = geometry.index("ExactRosterPrepullStaged =", group_start)
+    group = geometry[group_start:group_end]
+    assert "source0Safe" in group
+    assert "source1Safe" in group
+    assert "sameLaneSpacingSafe" in group
+    assert "DynamicGroupPositionSafe" in group
+    assert "prepullStaged && IsRecoveryFormationActive()" in group
+    recovery_gate = group.index(
+        "if (prepullStaged && IsRecoveryFormationActive())"
+    )
+    exact_cache = group.index("CachedAnchorSafe", recovery_gate)
+    assert recovery_gate < exact_cache
+    recovery_start = geometry.index(
+        "bool DrudgeLaneContext::IsRecoveryFormationActive() const"
+    )
+    recovery_end = geometry.index(
+        "bool DrudgeLaneContext::TryMinimumDistance", recovery_start
+    )
+    recovery = geometry[recovery_start:recovery_end]
+    assert "observation.Landed" in recovery
+    assert "observation.ReseparationRecorded" not in recovery
+
+    # Formation, taunt approach, and the specialized safety exit retain an
+    # explicit mechanic lease instead of falling through to combat movement.
+    assert actions.count("BotMovementArbitration::Owner::Mechanic") >= 2
+    assert actions.count("BotMovementArbitration::Priority::Mechanic") >= 2
+    assert geometry.count("BotMovementArbitration::Owner::Mechanic") >= 1
+    assert geometry.count("BotMovementArbitration::Priority::Mechanic") >= 1
 
 
 def test_future_encounter_contamination_is_attempt_terminal_not_a_transient_hold():
