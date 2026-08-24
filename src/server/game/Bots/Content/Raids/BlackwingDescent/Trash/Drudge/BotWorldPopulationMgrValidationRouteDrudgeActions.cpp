@@ -5,6 +5,7 @@
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeGeometryState.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeNativeRushState.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeObservationBacklog.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
@@ -435,7 +436,15 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         ExactCombatTankPathsProven(), combatTankAnchorsReachedBeforeTick,
         ExactRosterReSeparated()))
     {
-        MarkAllRosterReseparated(*Charge);
+        uint64 const proofAtMs = NowMs();
+        BotRaidDrudgeObservationBacklog::CloseLandedThroughProof(
+            Manager.Party().ValidationRouteDrudgeChargeObservations,
+            Manager.Cohort().AttemptId, Manager.Cohort().Raid.WipeGeneration,
+            Manager.Party().ValidationRouteGeneration, proofAtMs,
+            [this](ChargeObservation& observation)
+            {
+                MarkAllRosterReseparated(observation);
+            });
         char const* result = NativeChargeTargetRoleViolation
             ? "drudge_native_charge_target_tank_reseparated"
             : (NativeChargeTargetLaneViolation
