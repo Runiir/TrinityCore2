@@ -340,10 +340,10 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_landed_rush_closure_repair"
+        "drudge_post_closure_gate_verification"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["owner_skill"] == "raid-bot-runtime-implementation"
+    assert active["owner_skill"] == "raid-shard-architecture"
     assert active["first_broken_edge"] == (
         "drudge_landed_rush_closure_pending_after_recovery_barrier"
     )
@@ -387,7 +387,10 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert active["implementation_hypothesis"]["scope"] == (
         "close_each_landed_rush_after_exact_recovery_combat_return_and_roster_reseparation"
     )
-    assert active["implemented_fix"] is None
+    assert active["implemented_fix"]["commit"] == (
+        "ff5af70c7c56a0cb5ff4cdc3a20fadaa5b469d3d"
+    )
+    assert active["implemented_fix"]["status"] == "implemented_not_live_verified"
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
     assert active["runtime_verification_plan"]["identity"]["difficulty"] == "10N"
     assert active["runtime_verification_plan"]["fixed_success_timer_seconds"] is None
@@ -498,10 +501,10 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_landed_rush_closure_repair"
+        "drudge_post_closure_gate_verification"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
-        "raid-bot-runtime-implementation"
+        "raid-shard-architecture"
     )
     assert status["current_program_next_action"] == status["active_work_unit"][
         "next_action"

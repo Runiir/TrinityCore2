@@ -1,7 +1,7 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_landed_rush_closure_repair",
-  "owner_skill": "raid-bot-runtime-implementation",
+  "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_post_closure_gate_verification",
+  "owner_skill": "raid-shard-architecture",
   "classification": "failed",
   "observed_at_commit": "4975d73314deb3eb5b8f53bc6e3bbd4edfdfd6ec",
   "source_handoff": {
@@ -50,7 +50,7 @@
   },
   "implementation_hypothesis": {
     "scope": "close_each_landed_rush_after_exact_recovery_combat_return_and_roster_reseparation",
-    "status": "ready_for_bounded_repair",
+    "status": "implemented_not_live_verified",
     "forbidden_shortcuts": [
       "forced_threat",
       "triggered_taunt",
@@ -60,7 +60,18 @@
       "manufactured_encounter_outcome"
     ]
   },
-  "implemented_fix": null,
+  "implemented_fix": {
+    "commit": "ff5af70c7c56a0cb5ff4cdc3a20fadaa5b469d3d",
+    "tree": "36c57ad1b3b670168bda9b8ef1bce3e0e1db0247",
+    "status": "implemented_not_live_verified",
+    "scope": "require_a_current_pending_landed_rush_before_recovery_formation_is_active",
+    "changed_files": [
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp",
+      "tests/test_drudge_observation_backlog.py"
+    ],
+    "focused_test_count": 60,
+    "runtime_verification_required": true
+  },
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
@@ -80,7 +91,7 @@
   },
   "live_verification_owner_skill": "raid-shard-architecture",
   "runtime_verification_plan": {
-    "status": "required_after_implementation",
+    "status": "required",
     "identity": {
       "difficulty": "10N",
       "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
@@ -90,8 +101,8 @@
     },
     "required_clock_policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
-    "required_fix_commit": null,
-    "required_live_build_tree": null,
+    "required_fix_commit": "ff5af70c7c56a0cb5ff4cdc3a20fadaa5b469d3d",
+    "required_live_build_tree": "36c57ad1b3b670168bda9b8ef1bce3e0e1db0247",
     "must_observe": [
       "every landed Rush emits drudge_native_charge_reseparation_complete",
       "all seven offensive slots appear in profile_action_roster_guids",
@@ -106,5 +117,5 @@
       "native confirmation from deterministic tests alone"
     ]
   },
-  "next_action": "Repair only the Drudge landed-Rush closure proof around LandedRushRecoveryComplete and CloseLandedThroughProof. Preserve exact native recovery, combat return, roster reseparation, Rush targeting, native timing, healer policies, native damage, and watchdog limits. Add deterministic replay coverage and return the exact commit for queued build and completion-watchdog verification. Do not teleport, force movement or threat, revive, alter native encounter state, or manufacture an outcome."
+  "next_action": "Build exact clean commit ff5af70c7c56a0cb5ff4cdc3a20fadaa5b469d3d through the queued coordinator, provision a fresh exact ten-player Magmaw roster, and run one completion-watchdog shard. Verify every landed Rush closes, all seven offensive slots execute trained profiles, exact tank health-sync evidence appears, and the Drudge pair dies without player deaths before the route advances. Do not teleport, force movement or threat, revive, alter native encounter state, or manufacture an outcome."
 }
