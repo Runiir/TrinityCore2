@@ -238,6 +238,96 @@ bool DrudgeLaneContext::ComputeExactRecoveryTankPathsProven() const
     return true;
 }
 
+bool DrudgeLaneContext::ComputeExactRecoveryTankAnchorsReached() const
+{
+    auto const& config = Manager.Cohort().Config;
+    if (!LaneTank || !OtherTank || Bot->GetInstanceId() == 0
+        || config.ValidationRouteSplitLaneTankSlots.size() != 2)
+        return false;
+    for (Player const* tank : { LaneTank, OtherTank })
+    {
+        auto tankState = std::find_if(Manager.Party().Bots.begin(),
+            Manager.Party().Bots.end(), [tank](WorldBotState const& candidate)
+            {
+                return candidate.Guid == tank->GetGUID();
+            });
+        auto tankRoster = Manager.Cohort().Raid.RosterByGuid.find(
+            tank->GetGUID().GetCounter());
+        if (tankState == Manager.Party().Bots.end()
+            || tankRoster == Manager.Cohort().Raid.RosterByGuid.end())
+            return false;
+        MemberAnchor const* anchor = DeclaredRecoveryTankAnchorFor(
+            tankRoster->second.SlotIndex + 1);
+        if (!anchor || !tankState->ValidationRouteDrudgeRecoveryAnchorPathProven
+            || !tankState->ValidationRouteDrudgeRecoveryAnchorReached
+            || tankState->ValidationRouteDrudgeAnchorAttemptId
+                != Manager.Cohort().AttemptId
+            || tankState->ValidationRouteDrudgeAnchorWipeGeneration
+                != Manager.Cohort().Raid.WipeGeneration
+            || tankState->ValidationRouteDrudgeAnchorRouteGeneration
+                != Manager.Party().ValidationRouteGeneration
+            || tankState->ValidationRouteDrudgeAnchorMapId != Bot->GetMapId()
+            || tankState->ValidationRouteDrudgeAnchorInstanceId != Bot->GetInstanceId()
+            || tankState->ValidationRouteDrudgeAnchorSource0Identity
+                != Sources[0]->GetGUID().GetRawValue()
+            || tankState->ValidationRouteDrudgeAnchorSource1Identity
+                != Sources[1]->GetGUID().GetRawValue()
+            || Distance2d(tankState->ValidationRouteDrudgeRecoveryAnchorX,
+                tankState->ValidationRouteDrudgeRecoveryAnchorY, anchor->X, anchor->Y)
+                > 0.01f
+            || std::fabs(tankState->ValidationRouteDrudgeRecoveryAnchorZ - anchor->Z)
+                > 0.01f)
+            return false;
+    }
+    return true;
+}
+
+bool DrudgeLaneContext::ComputeExactCombatTankAnchorsReached() const
+{
+    auto const& config = Manager.Cohort().Config;
+    if (!LaneTank || !OtherTank || Bot->GetInstanceId() == 0
+        || config.ValidationRouteSplitLaneTankSlots.size() != 2)
+        return false;
+    for (Player const* tank : { LaneTank, OtherTank })
+    {
+        auto tankState = std::find_if(Manager.Party().Bots.begin(),
+            Manager.Party().Bots.end(), [tank](WorldBotState const& candidate)
+            {
+                return candidate.Guid == tank->GetGUID();
+            });
+        auto tankRoster = Manager.Cohort().Raid.RosterByGuid.find(
+            tank->GetGUID().GetCounter());
+        if (tankState == Manager.Party().Bots.end()
+            || tankRoster == Manager.Cohort().Raid.RosterByGuid.end())
+            return false;
+        MemberAnchor const* anchor = DeclaredNavigationTankAnchorFor(
+            tankRoster->second.SlotIndex + 1);
+        if (!anchor || !tankState->ValidationRouteDrudgeAnchorValid
+            || !tankState->ValidationRouteDrudgeAnchorPathProven
+            || tankState->ValidationRouteDrudgeAnchorAttemptId
+                != Manager.Cohort().AttemptId
+            || tankState->ValidationRouteDrudgeAnchorWipeGeneration
+                != Manager.Cohort().Raid.WipeGeneration
+            || tankState->ValidationRouteDrudgeAnchorRouteGeneration
+                != Manager.Party().ValidationRouteGeneration
+            || tankState->ValidationRouteDrudgeAnchorMapId != Bot->GetMapId()
+            || tankState->ValidationRouteDrudgeAnchorInstanceId != Bot->GetInstanceId()
+            || tankState->ValidationRouteDrudgeAnchorSource0Identity
+                != Sources[0]->GetGUID().GetRawValue()
+            || tankState->ValidationRouteDrudgeAnchorSource1Identity
+                != Sources[1]->GetGUID().GetRawValue()
+            || tankState->ValidationRouteDrudgeAnchorCandidateIndex != 0
+            || Distance2d(tankState->ValidationRouteDrudgeAnchorX,
+                tankState->ValidationRouteDrudgeAnchorY, anchor->X, anchor->Y)
+                > 0.01f
+            || std::fabs(tankState->ValidationRouteDrudgeAnchorZ - anchor->Z) > 0.01f
+            || tank->GetExactDist(anchor->X, anchor->Y, anchor->Z)
+                > config.ValidationRouteSplitTankArrivalToleranceYards)
+            return false;
+    }
+    return true;
+}
+
 bool DrudgeLaneContext::ComputeExactLiveRecoveryTankPathsPreflighted() const
 {
     auto const& config = Manager.Cohort().Config;

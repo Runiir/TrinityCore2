@@ -515,6 +515,10 @@ namespace BotWorldPopulationMgrBotState
         // cache changes identity when a Rush lands, so it cannot also prove
         // that the recovery leg was valid before native combat was opened.
         bool ValidationRouteDrudgeRecoveryAnchorPathProven = false;
+        // A landed Rush must first be observed at the strictly validated
+        // recovery anchor.  Once latched, the same tank may request only its
+        // declared navigation/combat anchor for the native return leg.
+        bool ValidationRouteDrudgeRecoveryAnchorReached = false;
         float ValidationRouteDrudgeRecoveryAnchorX = 0.0f;
         float ValidationRouteDrudgeRecoveryAnchorY = 0.0f;
         float ValidationRouteDrudgeRecoveryAnchorZ = 0.0f;

@@ -62,6 +62,22 @@ enum class MemberRecoveryAction : std::uint8_t
     PreferFriendlySupport
 };
 
+// A landed Rush has two native movement legs.  The tank must arrive at its
+// separately validated recovery anchor before the selector may request the
+// declared combat/navigation anchor.  Completion remains gated until both
+// return legs and the existing exact roster contract are true.
+inline bool LandedRushRecoveryComplete(
+    bool landedRushPending,
+    bool allRecoveryAnchorsReached,
+    bool allCombatTankPathsProven,
+    bool allCombatTankAnchorsReached,
+    bool exactRosterReseparated)
+{
+    return landedRushPending && allRecoveryAnchorsReached
+        && allCombatTankPathsProven && allCombatTankAnchorsReached
+        && exactRosterReseparated;
+}
+
 enum class MinimumDistanceOwner : std::uint8_t
 {
     GenericRouteSafety,

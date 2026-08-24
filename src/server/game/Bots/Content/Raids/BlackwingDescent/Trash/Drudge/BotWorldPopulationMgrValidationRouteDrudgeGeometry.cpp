@@ -386,6 +386,38 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             -LaneSign * otherProjection,
             Manager.Cohort().Config.ValidationRouteSplitMinimumSeparationYards);
     };
+    RecoveryAnchorReachedFor = [this](uint32 slot)
+    {
+        MemberAnchor const* recovery = DeclaredRecoveryTankAnchorFor(slot);
+        if (!recovery)
+            return false;
+        for (auto const& [guid, roster] : Manager.Cohort().Raid.RosterByGuid)
+            if (roster.Active && roster.LeaseOwned && roster.Role == "tank"
+                && roster.SlotIndex + 1 == slot)
+                for (WorldBotState const& memberState : Manager.Party().Bots)
+                    if (memberState.Guid.GetCounter() == guid)
+                        return memberState.ValidationRouteDrudgeRecoveryAnchorPathProven
+                            && memberState.ValidationRouteDrudgeRecoveryAnchorReached
+                            && memberState.ValidationRouteDrudgeAnchorAttemptId
+                                == Manager.Cohort().AttemptId
+                            && memberState.ValidationRouteDrudgeAnchorWipeGeneration
+                                == Manager.Cohort().Raid.WipeGeneration
+                            && memberState.ValidationRouteDrudgeAnchorRouteGeneration
+                                == Manager.Party().ValidationRouteGeneration
+                            && memberState.ValidationRouteDrudgeAnchorMapId == Bot->GetMapId()
+                            && memberState.ValidationRouteDrudgeAnchorInstanceId
+                                == Bot->GetInstanceId()
+                            && memberState.ValidationRouteDrudgeAnchorSource0Identity
+                                == Sources[0]->GetGUID().GetRawValue()
+                            && memberState.ValidationRouteDrudgeAnchorSource1Identity
+                                == Sources[1]->GetGUID().GetRawValue()
+                            && Distance2d(memberState.ValidationRouteDrudgeRecoveryAnchorX,
+                                memberState.ValidationRouteDrudgeRecoveryAnchorY,
+                                recovery->X, recovery->Y) <= 0.01f
+                            && std::fabs(memberState.ValidationRouteDrudgeRecoveryAnchorZ
+                                - recovery->Z) <= 0.01f;
+        return false;
+    };
     UniqueGroupAnchor = [this](uint32 slot) -> std::pair<float, float>
     {
         bool const tankSlot = std::find(
@@ -393,6 +425,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.end(), slot)
             != Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.end();
         MemberAnchor const* anchor = tankSlot && IsRecoveryFormationActive()
+            && !RecoveryAnchorReachedFor(slot)
             ? DeclaredRecoveryTankAnchorFor(slot)
             : (tankSlot && CombatTankStagingActive()
                 ? DeclaredNavigationTankAnchorFor(slot) : DeclaredAnchorFor(slot));
@@ -909,6 +942,14 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
     ExactRecoveryTankPathsProven = [this]
     {
         return ComputeExactRecoveryTankPathsProven();
+    };
+    ExactRecoveryTankAnchorsReached = [this]
+    {
+        return ComputeExactRecoveryTankAnchorsReached();
+    };
+    ExactCombatTankAnchorsReached = [this]
+    {
+        return ComputeExactCombatTankAnchorsReached();
     };
     ExactCombatTankAnchorsSafe = [this]
     {

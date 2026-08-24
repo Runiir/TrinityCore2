@@ -13,6 +13,7 @@ def test_production_drudge_geometry_transition_replays_charge_edges_and_pull_ord
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeGeometryState.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeNativeRushState.h"
 #include <cassert>
+#include <cmath>
 
 using namespace BotRaidDrudgeGeometry;
 
@@ -78,6 +79,24 @@ int main()
         == MinimumDistanceOwner::GenericRouteSafety);
     assert(SelectMinimumDistanceOwner(true, true)
         == MinimumDistanceOwner::LandedRushRecovery);
+
+    // Run11's tank-2 recovery point is intentionally 23.8237 yards from its
+    // source, while the declared navigation/combat point is exactly 15 yards.
+    // The recovery leg must complete first, and the native return plus the
+    // existing roster contract must all be present before offense can reopen.
+    constexpr float sourceX = -307.913f;
+    constexpr float sourceY = -49.5694f;
+    constexpr float recoveryX = -321.5f;
+    constexpr float recoveryY = -30.0f;
+    constexpr float combatX = -322.858002f;
+    constexpr float combatY = -48.286201f;
+    assert(std::hypot(recoveryX - sourceX, recoveryY - sourceY) > 15.0f);
+    assert(std::hypot(combatX - sourceX, combatY - sourceY) <= 15.01f);
+    assert(!LandedRushRecoveryComplete(true, false, true, true, true));
+    assert(!LandedRushRecoveryComplete(true, true, false, true, true));
+    assert(!LandedRushRecoveryComplete(true, true, true, false, true));
+    assert(!LandedRushRecoveryComplete(true, true, true, true, false));
+    assert(LandedRushRecoveryComplete(true, true, true, true, true));
 
     // A landed Rush can occupy the sealed anchor for many ticks. Dynamic
     // source/spacing blocks never arm or preserve the expensive path retry;
@@ -367,6 +386,16 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "ValidationRouteSplitLaneARosterSlots" in lanes
     assert "SetAllOffenseSuppressed" in actions
     assert "SelectMemberRecoveryAction" in actions
+    assert "RecoveryAnchorReachedFor" in geometry
+    assert "ExactRecoveryTankAnchorsReached" in actions
+    assert "ExactCombatTankAnchorsReached" in actions
+    assert "LandedRushRecoveryComplete" in actions
+    assert "drudge_tank_recovery_anchor_reached" in actions
+    assert "drudge_tank_combat_anchor_return_started" in actions
+    assert '"drudge_native_charge_reseparation_wait"' in actions
+    assert actions.index("LandedRushRecoveryComplete") < actions.index(
+        '"drudge_native_charge_reseparation_complete"'
+    )
     assert "drudge_lane_native_taunt" in actions
     assert "drudge_pre_first_rush_threat_seed" in seed
     assert "drudge_native_charge_reseparation_complete" in actions

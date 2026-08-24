@@ -219,6 +219,7 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
             botState.ValidationRouteDrudgeAnchorValid = false;
             botState.ValidationRouteDrudgeAnchorPathProven = false;
             botState.ValidationRouteDrudgeRecoveryAnchorPathProven = false;
+            botState.ValidationRouteDrudgeRecoveryAnchorReached = false;
             botState.ValidationRouteDrudgeRecoveryAnchorX = 0.0f;
             botState.ValidationRouteDrudgeRecoveryAnchorY = 0.0f;
             botState.ValidationRouteDrudgeRecoveryAnchorZ = 0.0f;
@@ -423,6 +424,7 @@ void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
         state.ValidationRouteDrudgeAnchorValid = false;
         state.ValidationRouteDrudgeAnchorPathProven = false;
         state.ValidationRouteDrudgeRecoveryAnchorPathProven = false;
+        state.ValidationRouteDrudgeRecoveryAnchorReached = false;
         state.ValidationRouteDrudgeRecoveryAnchorX = 0.0f;
         state.ValidationRouteDrudgeRecoveryAnchorY = 0.0f;
         state.ValidationRouteDrudgeRecoveryAnchorZ = 0.0f;
@@ -654,4 +656,3 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
 
     return ApplyValidationRouteManifestNode(nextIndex, terminalReason.empty() ? "validation_route_terminal" : terminalReason.c_str());
 }
-

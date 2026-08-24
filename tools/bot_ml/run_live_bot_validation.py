@@ -2183,6 +2183,11 @@ ROUTE_PROGRESS_ACTIONS = {
 }
 ROUTE_PROGRESS_RESOLUTIONS = {"movement_progress", "route_target_combat_progress"}
 
+# These actions indicate that the group is actively engaging a boss.  A
+# validation_route_group_heal is useful role evidence, but it is support-only
+# activity and must not keep the semantic no-progress watchdog alive.
+BOSS_ENGAGEMENT_ACTIONS = {"boss_started", "boss_action", "validation_route_tank_boss"}
+
 
 def route_failure(entry: dict[str, Any]) -> bool:
     action = str(entry.get("action") or "")
@@ -3346,7 +3351,10 @@ def live_evidence(
         diagnosis_action_counts.get("instance_reset", 0),
     )
     active_decision_evidence = decisions > 0 or non_spawn_trace_entries > 0 or moved_diagnoses > 0 or non_wait_diagnoses > 0
-    boss_engagement_actions = sum(action_counts.get(action, 0) + legacy_diagnosis_action_counts.get(action, 0) for action in ["boss_started", "boss_action", "validation_route_tank_boss", "validation_route_group_heal"])
+    boss_engagement_actions = sum(
+        action_counts.get(action, 0) + legacy_diagnosis_action_counts.get(action, 0)
+        for action in BOSS_ENGAGEMENT_ACTIONS
+    )
     action_evidence_counts = {
         "party_formation": group_formation_evidence,
         "raid_formation": group_formation_evidence,

@@ -624,6 +624,7 @@ void BotWorldPopulationMgr::UpdateValidationCohortRaidRuntime(
                     botState.ValidationRouteDrudgeAnchorValid = false;
                     botState.ValidationRouteDrudgeAnchorPathProven = false;
                     botState.ValidationRouteDrudgeRecoveryAnchorPathProven = false;
+                    botState.ValidationRouteDrudgeRecoveryAnchorReached = false;
                     botState.ValidationRouteDrudgeRecoveryAnchorX = 0.0f;
                     botState.ValidationRouteDrudgeRecoveryAnchorY = 0.0f;
                     botState.ValidationRouteDrudgeRecoveryAnchorZ = 0.0f;

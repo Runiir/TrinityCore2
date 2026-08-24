@@ -37,6 +37,7 @@ uint64 NowMs()
 namespace BotWorldPopulationMgrValidationRoute
 {
 using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
+using BotWorldPopulationMgrNativeHelpers::Distance2d;
 void DrudgeLaneContext::HoldOffense()
 {
     uint64 const ownerGuid = Bot->GetGUID().GetRawValue();
@@ -235,12 +236,38 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
     State.ValidationRouteDrudgeAnchorPathProven =
         tankStage.Next.PriorPathProofAvailable;
     if (tankStage.InvalidateAnchor)
+    {
         State.ValidationRouteDrudgeAnchorValid = false;
+        State.ValidationRouteDrudgeRecoveryAnchorReached = false;
+    }
+
+    auto markRecoveryAnchorReached = [&]()
+    {
+        if (!AssignedTank || !NativeChargePending
+            || State.ValidationRouteDrudgeRecoveryAnchorReached
+            || !State.ValidationRouteDrudgeRecoveryAnchorPathProven
+            || !State.ValidationRouteDrudgeAnchorValid
+            || !State.ValidationRouteDrudgeAnchorPathProven)
+            return;
+        MemberAnchor const* recovery = DeclaredRecoveryTankAnchorFor(OneBasedSlot);
+        if (!recovery
+            || Distance2d(State.ValidationRouteDrudgeAnchorX,
+                State.ValidationRouteDrudgeAnchorY, recovery->X, recovery->Y) > 0.01f
+            || std::fabs(State.ValidationRouteDrudgeAnchorZ - recovery->Z) > 0.01f
+            || Bot->GetExactDist(recovery->X, recovery->Y, recovery->Z)
+                > Manager.Cohort().Config.ValidationRouteSplitTankArrivalToleranceYards)
+            return;
+        State.ValidationRouteDrudgeRecoveryAnchorReached = true;
+        Record(LaneSource, "drudge_tank_recovery_anchor_reached", SourceSeparation);
+    };
+    markRecoveryAnchorReached();
 
     bool const combatPathsProvenBeforeTick = PrepullStaged
         && !RecoveryFormationActive && ExactCombatTankPathsProven();
     bool const recoveryPathsProvenBeforeTick = PrepullStaged
         && RecoveryFormationActive && ExactRecoveryTankPathsProven();
+    bool const recoveryAnchorsReachedBeforeTick = PrepullStaged
+        && RecoveryFormationActive && ExactRecoveryTankAnchorsReached();
     bool const activePathsProvenBeforeTick = RecoveryFormationActive
         ? recoveryPathsProvenBeforeTick : combatPathsProvenBeforeTick;
     if (PrepullStaged && !NativeChargePending && !activePathsProvenBeforeTick)
@@ -269,7 +296,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         Action = result;
         return PhaseResult::Handled;
     }
-    if (NativeChargePending && !recoveryPathsProvenBeforeTick)
+    if (NativeChargePending && !recoveryAnchorsReachedBeforeTick
+        && !recoveryPathsProvenBeforeTick)
     {
         bool pathProven = AssignedTank && SelectPathableDrudgeAnchor(true);
         HoldOffense();
@@ -325,7 +353,11 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         State.TargetGuid = LaneSource->GetGUID();
         return PhaseResult::Handled;
     }
+    bool const combatTankAnchorsReachedBeforeTick = PrepullStaged
+        && NativeChargePending && ExactCombatTankAnchorsReached();
     if (AssignedTank && tankStage.NativeOwnershipAllowed
+        && (!NativeChargePending
+            || (recoveryAnchorsReachedBeforeTick && combatTankAnchorsReachedBeforeTick))
         && LaneSource->GetVictim() == Bot)
     {
         auto const insert = Manager.Party().ValidationRouteDrudgeOwnershipRosterGuids.insert(
@@ -334,6 +366,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
             Record(LaneSource, "drudge_lane_native_ownership", SourceSeparation);
     }
     if (AssignedTank && tankStage.NativeOwnershipAllowed
+        && (!NativeChargePending
+            || (recoveryAnchorsReachedBeforeTick && combatTankAnchorsReachedBeforeTick))
         && LaneSource->GetVictim() != Bot)
     {
         BotClassSpecActionProfile profile =
@@ -393,7 +427,10 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
                 }
             }
     }
-    if (NativeChargePending && ExactRosterReSeparated())
+    if (BotRaidDrudgeGeometry::LandedRushRecoveryComplete(
+        NativeChargePending, recoveryAnchorsReachedBeforeTick,
+        ExactCombatTankPathsProven(), combatTankAnchorsReachedBeforeTick,
+        ExactRosterReSeparated()))
     {
         MarkAllRosterReseparated(*Charge);
         char const* result = NativeChargeTargetRoleViolation
@@ -432,14 +469,21 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
             {
                 alreadySafe = AssignedTank ? CachedAnchorSafe(State, Bot)
                                             : GroupPositionSafe(Bot);
+                markRecoveryAnchorReached();
                 if (!alreadySafe && (!AssignedTank || !NativeChargePending
                     || StrictTankRecoveryPath(State.ValidationRouteDrudgeAnchorX,
                         State.ValidationRouteDrudgeAnchorY,
                         State.ValidationRouteDrudgeAnchorZ)))
+                {
                     moved = Manager.MoveBotToPoint(State, Bot,
                         State.ValidationRouteDrudgeAnchorX,
                         State.ValidationRouteDrudgeAnchorY,
                         State.ValidationRouteDrudgeAnchorZ);
+                    if (moved && AssignedTank && NativeChargePending
+                        && State.ValidationRouteDrudgeRecoveryAnchorReached)
+                        Record(LaneSource,
+                            "drudge_tank_combat_anchor_return_started", SourceSeparation);
+                }
             }
         };
         if (recoveryAction == BotRaidDrudgeGeometry::MemberRecoveryAction::RecoverFormation)
@@ -476,11 +520,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
     if (NativeChargePending)
     {
         HoldOffense();
-        State.LastValidationRouteDrudgeChargeGenerationHandled = Charge->Sequence;
-        Charge->ReseparatedRosterGuids.insert(Bot->GetGUID().GetCounter());
-        Manager.Party().ValidationRouteDrudgeReseparatedRosterGuids.insert(
-            Bot->GetGUID().GetCounter());
-        Record(NativeChargeSource, "drudge_native_charge_reseparation_complete",
+        Record(NativeChargeSource, "drudge_native_charge_reseparation_wait",
             SourceSeparation, NativeChargeTarget ? NativeChargeTarget->GetGUID().GetCounter() : 0);
         Target = LaneSource;
         State.TargetGuid = LaneSource->GetGUID();

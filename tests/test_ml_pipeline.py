@@ -3987,6 +3987,89 @@ TC> {"duration_minutes":2.0,"decisions":55,"total_kills":3,"quests_completed":0}
     assert report["evidence"]["kill_evidence"] == 3
 
 
+def test_live_bot_validation_group_heals_do_not_count_as_boss_engagement_progress():
+    output = "\n".join(
+        [
+            'TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":120}',
+            'TC> {"trace_schema_version":1,"entries":[{"action":"validation_route_group_heal","result":"assigned_lowest_ally","route_node_id":"magmaw","route_generation":1},{"action":"validation_route_group_heal","result":"assigned_lowest_ally","route_node_id":"magmaw","route_generation":1},{"action":"validation_route_group_heal","result":"assigned_lowest_ally","route_node_id":"magmaw","route_generation":1}]}',
+            'TC> {"duration_minutes":4,"decisions":120}',
+        ]
+    )
+
+    report = live_validation_report(output, validation_context={"route_kind": "boss"})
+
+    assert report["evidence"]["validation_route_actions"] == 3
+    assert report["evidence"]["healer_assignment_evidence"] == 3
+    assert report["evidence"]["boss_engagement_actions"] == 0
+    assert report["watchdog_state"]["progress_total"] == 0
+    assert report["watchdog_state"]["no_progress"] is True
+
+
+def test_completion_watchdog_terminates_repeated_group_heal_activity(tmp_path, monkeypatch):
+    output = "\n".join(
+        [
+            'TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":120}',
+            'TC> {"trace_schema_version":1,"entries":[{"action":"validation_route_group_heal","result":"assigned_lowest_ally","route_node_id":"magmaw","route_generation":1},{"action":"validation_route_group_heal","result":"assigned_lowest_ally","route_node_id":"magmaw","route_generation":1}]}',
+            'TC> {"duration_minutes":4,"decisions":120}',
+        ]
+    )
+    clock = iter(index * 0.5 for index in range(100))
+    monkeypatch.setattr(
+        "tools.bot_ml.run_live_bot_validation.time.monotonic",
+        lambda: next(clock),
+    )
+    commands: list[str] = []
+
+    def execute(command: str, _timeout: int):
+        commands.append(command)
+        return output, 0, False
+
+    _result, returncode, timed_out, _command = run_transport_completion_watchdog(
+        execute,
+        ["session"],
+        None,
+        command_script(start=False, exit_server=False),
+        tmp_path,
+        {},
+        {"scenario_id": "blackwing_descent_10n_magmaw", "route_kind": "boss"},
+        validation_route_manifest={
+            "schema": "bot_live_validation_route_manifest_v1",
+            "route_count": 2,
+        },
+        heartbeat_sec=1,
+        no_progress_window_sec=1,
+        sleep=lambda _seconds: None,
+    )
+    report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
+
+    assert returncode == 0
+    assert timed_out is False
+    assert commands
+    assert report["completion_reason"] == "semantic_progress_plateau_watchdog"
+    assert report["evidence"]["boss_engagement_actions"] == 0
+    assert report["watchdog_state"]["no_progress"] is True
+
+
+def test_live_bot_validation_keeps_real_boss_engagement_progress_separate_from_heals():
+    output = "\n".join(
+        [
+            'TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":120}',
+            'TC> {"trace_schema_version":1,"entries":[{"action":"validation_route_group_heal","result":"assigned_lowest_ally","route_node_id":"magmaw","route_generation":1},{"action":"boss_started","result":"ok","route_node_id":"magmaw","route_generation":1},{"action":"boss_action","result":"ok","route_node_id":"magmaw","route_generation":1}]}',
+            'TC> {"duration_minutes":4,"decisions":120}',
+        ]
+    )
+
+    report = live_validation_report(output, validation_context={"route_kind": "boss"})
+
+    assert report["evidence"]["healer_assignment_evidence"] == 1
+    assert report["evidence"]["boss_engagement_actions"] == 2
+    assert report["watchdog_state"]["progress_total"] == 0
+    assert report["watchdog_state"]["no_progress"] is True
+    active_attempt = watchdog_state(report["evidence"], [])
+    assert active_attempt["progress_total"] == 2
+    assert active_attempt["no_progress"] is False
+
+
 def test_live_bot_validation_counts_assist_target_movement_as_tank_positioning():
     output = """
 TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":20}

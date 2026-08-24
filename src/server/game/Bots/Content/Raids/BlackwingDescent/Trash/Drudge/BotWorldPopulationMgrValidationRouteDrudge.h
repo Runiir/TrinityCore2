@@ -108,6 +108,7 @@ struct DrudgeLaneContext
     std::function<bool()> CombatTankStagingActive;
     std::function<bool(float, float, float, bool, std::string*)> StrictNativePath;
     std::function<bool(float, float, float)> StrictTankRecoveryPath;
+    std::function<bool(uint32)> RecoveryAnchorReachedFor;
     std::function<std::pair<float, float>(uint32)> UniqueGroupAnchor;
     std::function<std::vector<std::pair<float, float>>(uint32)> AnchorCandidatesFor;
     std::function<bool()> AnchorCacheMatchesGeneration;
@@ -120,6 +121,8 @@ struct DrudgeLaneContext
     std::function<void(ChargeObservation&)> MarkAllRosterReseparated;
     std::function<bool()> ExactCombatTankPathsProven;
     std::function<bool()> ExactRecoveryTankPathsProven;
+    std::function<bool()> ExactRecoveryTankAnchorsReached;
+    std::function<bool()> ExactCombatTankAnchorsReached;
     std::function<bool()> ExactCombatTankAnchorsSafe;
     std::function<bool()> ExactLiveRecoveryTankPathsPreflighted;
     std::function<bool(Player const*, uint32)> TankOnFrozenLane;
@@ -147,6 +150,8 @@ struct DrudgeLaneContext
     bool TryMinimumDistance(bool specializedDrudgeRecovery);
     bool ComputeExactCombatTankPathsProven() const;
     bool ComputeExactRecoveryTankPathsProven() const;
+    bool ComputeExactRecoveryTankAnchorsReached() const;
+    bool ComputeExactCombatTankAnchorsReached() const;
     bool ComputeExactLiveRecoveryTankPathsPreflighted() const;
 
     PhaseResult BuildContract();
