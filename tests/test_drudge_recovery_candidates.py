@@ -7,6 +7,7 @@ DRUDGE = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudg
 GEOMETRY = DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
 RECOVERY = DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeRecovery.cpp"
 HEADER = DRUDGE / "BotRaidDrudgeRecoveryCandidates.h"
+NATIVE_ANCHOR = DRUDGE / "BotRaidDrudgeNativeAnchor.h"
 ACTIONS = DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp"
 
 
@@ -139,3 +140,25 @@ def test_recovery_candidate_contract_is_landed_non_tank_only_and_native_strict()
     assert "urand" not in header
     assert len(GEOMETRY.read_text(encoding="utf-8").splitlines()) <= 999
     assert len(recovery.splitlines()) <= 1000
+
+
+def test_dynamic_fan_candidate_is_grounded_before_exact_native_path_admission():
+    geometry = GEOMETRY.read_text(encoding="utf-8")
+    native_anchor = NATIVE_ANCHOR.read_text(encoding="utf-8")
+    selector = geometry[geometry.index("for (size_t candidateIndex = 0;"):geometry.index(
+        "State.ValidationRouteDrudgeAnchorX =", geometry.index(
+            "for (size_t candidateIndex = 0;"
+        )
+    )]
+
+    assert "ResolveDynamicCandidateZ" in selector
+    assert "!tank && IsDynamicGroupRecoveryActive() && candidateIndex > 0" in selector
+    assert "StrictNativePath(candidatePoint.X, candidatePoint.Y, candidateZ" in selector
+    assert "float candidateZ = candidateAnchor->Z;" in selector
+    assert "State.ValidationRouteDrudgeAnchorZ = candidateZ" in geometry
+    assert "candidateAnchor->Z, &candidateZ" in selector
+    assert "drudge_anchor_floor_rejected" in selector
+    assert "std::fabs(*candidateZ - declaredZ) <= 4.0f" in native_anchor
+    assert "hintZ + 2.0f" in native_anchor
+    assert "GetHeight(phaseShift, x, y" in native_anchor
+    assert "std::isfinite(resolved)" in native_anchor

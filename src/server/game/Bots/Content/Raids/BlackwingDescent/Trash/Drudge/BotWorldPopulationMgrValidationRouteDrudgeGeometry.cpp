@@ -1,6 +1,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudge.h"
 
 #include "Bots/BotClassSpecActionProfile.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeNativeAnchor.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeGeometryState.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeRecoveryCandidates.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeRecovery.h"
@@ -27,7 +28,6 @@
 
 using BotWorldPopulationMgrNativeHelpers::Distance2d;
 using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
-
 namespace
 {
 constexpr uint64 DrudgePathRetryHeartbeatMs = 5000;
@@ -858,9 +858,18 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
                 State.LastRecoveryResult = State.LastPathRejectReason;
                 continue;
             }
+            float candidateZ = candidateAnchor->Z;
+            if (!tank && IsDynamicGroupRecoveryActive() && candidateIndex > 0
+                && !BotRaidDrudgeNativeAnchor::ResolveDynamicCandidateZ(
+                    Bot->GetMap(), Bot->GetPhaseShift(), candidatePoint.X,
+                    candidatePoint.Y, candidateAnchor->Z, &candidateZ))
+            {
+                State.LastPathRejectReason = "drudge_anchor_floor_rejected";
+                State.LastRecoveryResult = State.LastPathRejectReason;
+                continue;
+            }
             std::string rejection;
-            if (!StrictNativePath(candidates[candidateIndex].first,
-                candidates[candidateIndex].second, candidateAnchor->Z,
+            if (!StrictNativePath(candidatePoint.X, candidatePoint.Y, candidateZ,
                     tank || IsDynamicGroupRecoveryActive(), &rejection))
             {
                 State.ValidationRouteDrudgeAnchorSearchCooldownUntilMs =
@@ -873,7 +882,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             }
             State.ValidationRouteDrudgeAnchorX = candidates[candidateIndex].first;
             State.ValidationRouteDrudgeAnchorY = candidates[candidateIndex].second;
-            State.ValidationRouteDrudgeAnchorZ = candidateAnchor->Z;
+            State.ValidationRouteDrudgeAnchorZ = candidateZ;
             State.ValidationRouteDrudgeAnchorCandidateIndex = uint32(candidateIndex);
             State.ValidationRouteDrudgeAnchorValid = true;
             State.ValidationRouteDrudgeAnchorPathProven = true;

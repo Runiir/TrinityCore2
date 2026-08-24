@@ -1338,7 +1338,7 @@ def test_drudge_anchor_fallback_is_generation_scoped_and_native_path_validated()
     assert "ValidationRouteDrudgeAnchorWipeGeneration" in source
     assert "ValidationRouteDrudgeAnchorRouteGeneration" in source
     assert "SelectAnchorPathSearch" in source
-    assert "StrictNativePath(candidates[candidateIndex].first" in source
+    assert "StrictNativePath(candidatePoint.X, candidatePoint.Y, candidateZ" in source
     assert "anchor_path_valid" in source
 
 
