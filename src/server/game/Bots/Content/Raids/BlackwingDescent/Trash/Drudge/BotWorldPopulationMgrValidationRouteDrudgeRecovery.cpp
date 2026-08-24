@@ -52,6 +52,23 @@ bool DrudgeLaneContext::IsDynamicGroupRecoveryActive() const
         exactPrepullStaged, IsLandedRushPending());
 }
 
+bool DrudgeLaneContext::RecoveryTankReturnBarrierOpen() const
+{
+    bool const allRecoveryAnchorsReached = ExactRecoveryTankAnchorsReached
+        && ExactRecoveryTankAnchorsReached();
+    if (!Charge)
+        return BotRaidDrudgeGeometry::RecoveryTankReturnBarrierOpen(
+            IsLandedRushPending(), allRecoveryAnchorsReached);
+    return BotRaidDrudgeGeometry::AdvanceRecoveryTankReturnBarrier(
+        Charge->RecoveryTankReturnBarrierOpened, IsLandedRushPending(),
+        allRecoveryAnchorsReached);
+}
+
+bool DrudgeLaneContext::RecoveryTankAnchorPending(uint32 slot) const
+{
+    return IsLandedRushPending() && !RecoveryAnchorReachedFor(slot);
+}
+
 bool DrudgeLaneContext::IsRecoveryCandidateSpacingSafe(
     float x, float y, bool tank) const
 {

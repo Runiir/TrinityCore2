@@ -85,7 +85,8 @@ bool DrudgeLaneContext::ComputeExactCombatTankPathsProven() const
             || tankRoster == Manager.Cohort().Raid.RosterByGuid.end())
             return false;
         uint32 const slot = tankRoster->second.SlotIndex + 1;
-        bool const combatCandidate = IsRecoveryFormationActive()
+        bool const combatCandidate = RecoveryTankReturnBarrierOpen()
+            && IsRecoveryFormationActive()
             && RecoveryAnchorReachedFor(slot)
             && tankState->ValidationRouteDrudgeAnchorCandidateIndex == 0;
         MemberAnchor const* anchor = combatCandidate
@@ -315,7 +316,8 @@ bool DrudgeLaneContext::ComputeExactCombatTankAnchorsReached() const
             || tankRoster == Manager.Cohort().Raid.RosterByGuid.end())
             return false;
         uint32 const slot = tankRoster->second.SlotIndex + 1;
-        bool const combatCandidate = IsRecoveryFormationActive()
+        bool const combatCandidate = RecoveryTankReturnBarrierOpen()
+            && IsRecoveryFormationActive()
             && RecoveryAnchorReachedFor(slot)
             && tankState->ValidationRouteDrudgeAnchorCandidateIndex == 0;
         MemberAnchor const* anchor = combatCandidate

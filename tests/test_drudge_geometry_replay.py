@@ -130,6 +130,21 @@ int main()
     assert(!LandedRushRecoveryComplete(true, true, true, true, false));
     assert(LandedRushRecoveryComplete(true, true, true, true, true));
 
+    // The first tank reaching its recovery anchor must not open the combat
+    // return for itself.  The selector may switch both tanks only after the
+    // exact scoped pair has reached recovery.
+    assert(!RecoveryTankReturnBarrierOpen(true, false));
+    assert(RecoveryTankReturnBarrierOpen(true, true));
+    assert(RecoveryTankReturnBarrierOpen(false, false));
+    assert(RecoveryTankReturnBarrierOpen(false, true));
+    bool recoveryBarrierOpened = false;
+    assert(!AdvanceRecoveryTankReturnBarrier(recoveryBarrierOpened, true, false));
+    assert(AdvanceRecoveryTankReturnBarrier(recoveryBarrierOpened, true, true));
+    // The first tank may now begin its combat return.  Its state change makes
+    // a fresh all-recovery observation false, but the same landed observation
+    // must keep the pair barrier open for the second tank's next tick.
+    assert(AdvanceRecoveryTankReturnBarrier(recoveryBarrierOpened, true, false));
+
     // A landed Rush can occupy the sealed anchor for many ticks. Dynamic
     // source/spacing blocks never arm or preserve the expensive path retry;
     // the first safe edge must attempt the native path immediately.
@@ -528,6 +543,27 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "drudge_native_charge_reseparation_complete" in actions
     assert "if (TryMinimumDistance(true))" not in lanes
     assert '&& !currentScopeHasNativeRush && Role == "dps"' in actions
+
+
+def test_landed_rush_recovery_latches_the_scoped_two_tank_return_barrier():
+    geometry = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp").read_text(
+        encoding="utf-8"
+    )
+    recovery = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeRecovery.cpp").read_text(
+        encoding="utf-8"
+    )
+    lanes = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp").read_text(
+        encoding="utf-8"
+    )
+    route_state = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrRouteState.h").read_text(
+        encoding="utf-8"
+    )
+
+    assert "RecoveryTankReturnBarrierOpen()" in geometry
+    assert "RecoveryTankAnchorPending(slot)" in geometry
+    assert "AdvanceRecoveryTankReturnBarrier" in recovery
+    assert "RecoveryTankReturnBarrierOpened" in route_state
+    assert "RecoveryTankReturnBarrierOpen()" in lanes
 
 
 def test_post_rush_recovery_replays_combat_anchor_transition_with_exact_xyz():

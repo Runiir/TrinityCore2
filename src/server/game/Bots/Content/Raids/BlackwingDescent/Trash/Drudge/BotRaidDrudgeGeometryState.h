@@ -79,6 +79,24 @@ inline bool LandedRushRecoveryComplete(
         && exactRosterReseparated;
 }
 
+// A tank that has reached its landed-Rush recovery anchor must hold that
+// native destination until the exact pair has reached their scoped recovery
+// anchors.  Opening the combat return for one tank early lets its selector
+// replace the recovery candidate before the other tank can finish its leg.
+inline bool RecoveryTankReturnBarrierOpen(
+    bool landedRushPending, bool allRecoveryAnchorsReached)
+{
+    return !landedRushPending || allRecoveryAnchorsReached;
+}
+
+inline bool AdvanceRecoveryTankReturnBarrier(bool& opened,
+    bool landedRushPending, bool allRecoveryAnchorsReached)
+{
+    if (landedRushPending && allRecoveryAnchorsReached)
+        opened = true;
+    return RecoveryTankReturnBarrierOpen(landedRushPending, opened);
+}
+
 enum class MinimumDistanceOwner : std::uint8_t
 {
     GenericRouteSafety,

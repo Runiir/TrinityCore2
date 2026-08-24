@@ -374,7 +374,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.end(), slot)
             != Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.end();
         MemberAnchor const* anchor = tankSlot && IsRecoveryFormationActive()
-            ? (RecoveryAnchorReachedFor(slot)
+            ? (RecoveryTankReturnBarrierOpen() && RecoveryAnchorReachedFor(slot)
                 ? DeclaredCombatTankAnchorFor(slot)
                 : DeclaredRecoveryTankAnchorFor(slot))
             : (tankSlot && CombatTankStagingActive()
@@ -392,6 +392,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             != Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.end();
         bool const landedTankRecovery = tankSlot && IsLandedRushPending();
         if (Sources.size() == 2 && (((!tankSlot || landedTankRecovery)
+                && (!tankSlot || RecoveryTankAnchorPending(slot))
                 && IsDynamicGroupRecoveryActive())
             || (!tankSlot && !CombatTankStagingActive())))
         {
@@ -409,7 +410,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
         if (tankSlot && !CombatTankStagingActive())
             if (MemberAnchor const* navigation = DeclaredNavigationTankAnchorFor(slot))
                 candidates.emplace_back(navigation->X, navigation->Y);
-        if (RecoveryAnchorReachedFor(slot))
+        if (RecoveryTankReturnBarrierOpen() && RecoveryAnchorReachedFor(slot))
             if (MemberAnchor const* navigation = DeclaredNavigationTankAnchorFor(slot))
                 if (Distance2d(x, y, navigation->X, navigation->Y) > 0.01f)
                     candidates.emplace_back(navigation->X, navigation->Y);
@@ -777,7 +778,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
         for (size_t candidateIndex = 0; candidateIndex < candidates.size(); ++candidateIndex)
         {
             MemberAnchor const* candidateAnchor = tank && IsRecoveryFormationActive()
-                ? (RecoveryAnchorReachedFor(OneBasedSlot)
+                ? (RecoveryTankReturnBarrierOpen() && RecoveryAnchorReachedFor(OneBasedSlot)
                     ? (candidateIndex ? DeclaredNavigationTankAnchorFor(OneBasedSlot)
                         : DeclaredCombatTankAnchorFor(OneBasedSlot))
                     : DeclaredRecoveryTankAnchorFor(OneBasedSlot))

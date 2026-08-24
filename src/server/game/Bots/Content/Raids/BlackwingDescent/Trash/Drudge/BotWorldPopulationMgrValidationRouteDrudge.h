@@ -158,6 +158,8 @@ struct DrudgeLaneContext
     bool ComputeExactRecoveryTankAnchorsReached() const;
     bool ComputeExactCombatTankAnchorsReached() const;
     bool ComputeExactLiveRecoveryTankPathsPreflighted() const;
+    bool RecoveryTankReturnBarrierOpen() const;
+    bool RecoveryTankAnchorPending(uint32 slot) const;
     PhaseResult BuildContract();
     PhaseResult ResolveSources();
     PhaseResult BuildAnchorPolicies();
