@@ -764,6 +764,9 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     geometry = (BOT_DIR / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp").read_text(
         encoding="utf-8"
     )
+    recovery = (BOT_DIR / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeRecovery.cpp").read_text(
+        encoding="utf-8"
+    )
     lane = (BOT_DIR / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp").read_text(
         encoding="utf-8"
     )
@@ -908,7 +911,7 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
         "ExactCombatTankAnchorsReached",
         "TryMinimumDistance",
     ):
-        assert token in geometry
+        assert token in geometry or token in recovery
 
     cast_hook = COMBAT_LOG[
         COMBAT_LOG.index("uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted"):

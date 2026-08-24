@@ -519,7 +519,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
             NativeChargeTarget ? NativeChargeTarget->GetGUID().GetCounter() : 0);
         Target = LaneSource;
         State.TargetGuid = LaneSource ? LaneSource->GetGUID() : ObjectGuid::Empty;
-        Action = moved || alreadySafe ? Action : "drudge_lane_native_path_rejected";
+        if (!moved && !alreadySafe)
+            Action = State.LastPathRejectReason.empty()
+                ? "drudge_lane_native_path_rejected" : State.LastPathRejectReason;
         return PhaseResult::Handled;
     }
     if (NativeChargePending)

@@ -68,13 +68,19 @@ ENCOUNTER_FILES = {
 
 DRUDGE_FILES = {
     "BotAdaptiveDrudgeStrategy.h",
+    "BotRaidDrudgeActivationState.h",
     "BotRaidDrudgeGeometryState.h",
     "BotRaidDrudgeNativeRushState.h",
+    "BotRaidDrudgeRecoveryCandidates.h",
     "BotRaidDrudgeThreatSeedState.h",
     "BotWorldPopulationMgrValidationRouteDrudge.h",
     "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp",
     "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp",
+    "BotWorldPopulationMgrValidationRouteDrudgeRecovery.cpp",
+    "BotWorldPopulationMgrValidationRouteDrudgeRecovery.h",
     "BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp",
+    "BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp",
+    "BotWorldPopulationMgrValidationRouteDrudgeSeed.h",
 }
 
 OLD_ROOT_FILES = {

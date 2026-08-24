@@ -7,6 +7,8 @@ HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
 CMAKE = ROOT / "src/server/game/CMakeLists.txt"
 CONTRACT = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudge.h"
 GEOMETRY = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
+RECOVERY = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeRecovery.cpp"
+RECOVERY_HEADER = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeRecovery.h"
 LANES = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp"
 ACTIONS = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp"
 SEED = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp"
@@ -17,10 +19,11 @@ def test_drudge_route_modules_are_bounded_and_registered():
     header = HEADER.read_text(encoding="utf-8")
     cmake = CMAKE.read_text(encoding="utf-8")
     assert len(header.splitlines()) <= 1000
-    for module in (CONTRACT, GEOMETRY, LANES, ACTIONS, SEED):
+    for module in (CONTRACT, GEOMETRY, RECOVERY, RECOVERY_HEADER, LANES, ACTIONS, SEED):
         assert len(module.read_text(encoding="utf-8").splitlines()) <= 1000
     for name in (
         "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp",
+        "BotWorldPopulationMgrValidationRouteDrudgeRecovery.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp",
@@ -80,6 +83,7 @@ def test_adaptive_drudge_owner_dispatches_typed_lane_contract_before_owner_skip(
 
 def test_drudge_contract_keeps_scope_evidence_and_native_lane_guards():
     geometry = GEOMETRY.read_text(encoding="utf-8")
+    recovery = RECOVERY.read_text(encoding="utf-8")
     lanes = LANES.read_text(encoding="utf-8")
     actions = ACTIONS.read_text(encoding="utf-8")
     seed = SEED.read_text(encoding="utf-8")
@@ -96,7 +100,7 @@ def test_drudge_contract_keeps_scope_evidence_and_native_lane_guards():
         "RecoveryPathPreservesTankSeparation",
         "TryMinimumDistance",
     ):
-        assert marker in geometry
+        assert marker in geometry or marker in recovery
     for marker in (
         "trash_two_tank_charge_lanes",
         "ValidationRouteSplitSourceGuids",

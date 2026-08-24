@@ -149,12 +149,13 @@ struct DrudgeLaneContext
     bool IsLandedRushPending() const;
     bool IsRecoveryFormationActive() const;
     bool TryMinimumDistance(bool specializedDrudgeRecovery);
+    bool IsRecoveryCandidateSpacingSafe(float x, float y, bool tank) const;
+    bool ComputeStrictTankRecoveryPath(float x, float y, float z) const;
     bool ComputeExactCombatTankPathsProven() const;
     bool ComputeExactRecoveryTankPathsProven() const;
     bool ComputeExactRecoveryTankAnchorsReached() const;
     bool ComputeExactCombatTankAnchorsReached() const;
     bool ComputeExactLiveRecoveryTankPathsPreflighted() const;
-
     PhaseResult BuildContract();
     PhaseResult ResolveSources();
     PhaseResult BuildAnchorPolicies();

@@ -386,6 +386,9 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     geometry = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp").read_text(
         encoding="utf-8"
     )
+    recovery = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeRecovery.cpp").read_text(
+        encoding="utf-8"
+    )
     lanes = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp").read_text(
         encoding="utf-8"
     )
@@ -401,7 +404,7 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "SelectMinimumDistanceOwner" in geometry
     assert "MinimumDistanceOwner::LandedRushRecovery" in geometry
     assert "ValidationRouteDrudgeChargeObservations" in geometry
-    assert "RecoveryPathPreservesTankSeparation" in geometry
+    assert "RecoveryPathPreservesTankSeparation" in recovery
     assert "ValidationRouteDrudgeAnchorSource0Identity" in geometry
     assert "ExactRosterPrepullStaged" in geometry
     assert "ValidationRouteSplitSourceGuids" in lanes
