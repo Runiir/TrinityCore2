@@ -117,19 +117,49 @@ int main()
         1100);
     assert(&selected == &rejected);
     assert(selected.CandidateSelected);
-    selected.SubmissionId = 1;
-    selected.SubmissionAtMs = 1200;
-    selected.MoveAttempted = true;
-    selected.ArbitrationAccepted = true;
-    selected.MovementSubmitted = true;
-    selected.ActivePathValid = true;
-    selected.ActivePathScopeMatches = true;
-    selected.NativeActiveMotionType = 19;
-    selected.ProgressObserved = true;
-    selected.ArrivalObserved = true;
+    std::uint64_t nextSubmissionId = 1;
+    ReseparationReceipt* firstSubmission = BeginReseparationSubmission(
+        receipts, firstScope, 30008, 1, -303.3f, -49.9f, nextSubmissionId,
+        1200);
+    assert(firstSubmission == &receipts.front());
+    assert(firstSubmission->SubmissionId == 1);
+    assert(firstSubmission->SubmissionAtMs == 1200);
+    firstSubmission->MoveAttempted = true;
+    firstSubmission->ArbitrationAccepted = true;
+    firstSubmission->MovementSubmitted = true;
+    firstSubmission->ActivePathValid = true;
+    firstSubmission->ActivePathScopeMatches = true;
+    firstSubmission->NativeActiveMotionType = 19;
+    firstSubmission->ProgressObserved = true;
+    firstSubmission->ArrivalObserved = true;
+    firstSubmission->ArbitrationOutcome = "accepted";
+    firstSubmission->MovementSubmissionOutcome = "native_movement_submitted";
+    ReseparationReceipt* secondSubmission = BeginReseparationSubmission(
+        receipts, firstScope, 30008, 1, -303.3f, -49.9f, nextSubmissionId,
+        1300);
+    assert(receipts.size() == 2);
+    assert(secondSubmission == &receipts.back());
+    assert(secondSubmission != &receipts.front());
+    assert(receipts.front().SubmissionId == 1);
+    assert(receipts.front().ArbitrationOutcome == "accepted");
+    assert(secondSubmission->SubmissionId == 2);
+    assert(secondSubmission->SubmissionAtMs == 1300);
+    assert(secondSubmission->ArbitrationOutcome == "not_attempted");
+    assert(secondSubmission->MovementSubmissionOutcome == "not_submitted");
+    secondSubmission->MoveAttempted = true;
+    secondSubmission->ArbitrationAccepted = false;
+    secondSubmission->MovementSubmitted = false;
+    secondSubmission->ArbitrationOutcome = "rejected";
+    secondSubmission->MovementSubmissionOutcome = "path_rejected";
+    ReseparationReceipt* newest = FindSelectedReseparationReceipt(
+        receipts, firstScope, 30008, 1, -303.3f, -49.9f);
+    assert(newest == secondSubmission);
+    assert(receipts.front().MovementSubmissionOutcome
+        == "native_movement_submitted");
+    assert(secondSubmission->MovementSubmissionOutcome == "path_rejected");
     MarkReseparationClosure(receipts, firstScope, 1400, "reseparation_closed");
-    assert(selected.ClosureObserved);
-    assert(selected.ClosureAtMs == 1400);
+    assert(receipts.front().ClosureObserved);
+    assert(receipts.front().ClosureAtMs == 1400);
     for (unsigned index = 0; index < MaximumReseparationReceipts + 4; ++index)
         ObserveReseparationCandidate(receipts, firstScope, 30000 + index,
             index, float(index), 1.0f, 2.0f, true, true, true, true, true,
@@ -214,6 +244,7 @@ def test_spacing_failure_reuses_charge_observation_trace_and_stays_bounded() -> 
     for field in (
         "ObserveReseparationCandidate",
         "FindSelectedReseparationReceipt",
+        "BeginReseparationSubmission",
         "MarkReseparationClosure",
         "MaximumReseparationReceipts",
     ):

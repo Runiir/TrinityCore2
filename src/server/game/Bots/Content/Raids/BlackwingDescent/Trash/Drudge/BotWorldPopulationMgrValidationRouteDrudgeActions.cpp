@@ -254,15 +254,15 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
                 State.ValidationRouteDrudgeAnchorX,
                 State.ValidationRouteDrudgeAnchorY);
         }
+        receipt = BotRaidDrudgeSpacing::BeginReseparationSubmission(
+            Charge->ReseparationReceipts, scope,
+            Bot->GetGUID().GetCounter(),
+            State.ValidationRouteDrudgeAnchorCandidateIndex,
+            State.ValidationRouteDrudgeAnchorX,
+            State.ValidationRouteDrudgeAnchorY,
+            Charge->NextReseparationReceiptId, nowMs);
         if (!receipt)
             return;
-        if (!receipt->SubmissionId)
-        {
-            receipt->SubmissionId = Charge->NextReseparationReceiptId++;
-            receipt->SubmissionAtMs = nowMs;
-        }
-        else
-            ++receipt->SuppressedCount;
         receipt->MoveAttempted = true;
         receipt->ArbitrationAccepted = moved;
         receipt->MovementSubmitted = moved;

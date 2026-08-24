@@ -1,18 +1,12 @@
 #ifndef TRINITY_BOT_RAID_DRUDGE_RESEPARATION_RECEIPT_H
 #define TRINITY_BOT_RAID_DRUDGE_RESEPARATION_RECEIPT_H
-
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeGeometryState.h"
-
 #include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
-
 namespace BotRaidDrudgeSpacing
 {
-// Diagnostic-only evidence for one Drudge member's selected reseparation
-// submission. It records native observations without changing admission or
-// movement behavior.
 struct ReseparationReceipt
 {
     bool Recorded = false;
@@ -56,9 +50,7 @@ struct ReseparationReceipt
     std::string ClosureOutcome = "not_observed";
     std::uint32_t SuppressedCount = 0;
 };
-
 constexpr std::size_t MaximumReseparationReceipts = 64;
-
 inline void ResetReseparationReceiptsForScope(
     std::vector<ReseparationReceipt>& receipts,
     BotRaidDrudgeGeometry::Scope const& scope)
@@ -66,23 +58,6 @@ inline void ResetReseparationReceiptsForScope(
     if (!receipts.empty() && receipts.front().Scope != scope)
         receipts.clear();
 }
-
-inline ReseparationReceipt* FindReseparationReceipt(
-    std::vector<ReseparationReceipt>& receipts,
-    BotRaidDrudgeGeometry::Scope const& scope, std::uint32_t memberGuid,
-    std::uint32_t candidateIndex, float candidateX, float candidateY,
-    bool submitted)
-{
-    for (ReseparationReceipt& receipt : receipts)
-        if (receipt.Scope == scope && receipt.MemberGuid == memberGuid
-            && receipt.CandidateIndex == candidateIndex
-            && receipt.CandidateX == candidateX
-            && receipt.CandidateY == candidateY
-            && receipt.MovementSubmitted == submitted)
-            return &receipt;
-    return nullptr;
-}
-
 inline ReseparationReceipt& ObserveReseparationCandidate(
     std::vector<ReseparationReceipt>& receipts,
     BotRaidDrudgeGeometry::Scope const& scope, std::uint32_t memberGuid,
@@ -93,8 +68,17 @@ inline ReseparationReceipt& ObserveReseparationCandidate(
     std::uint64_t nowMs)
 {
     ResetReseparationReceiptsForScope(receipts, scope);
-    ReseparationReceipt* existing = FindReseparationReceipt(receipts, scope,
-        memberGuid, candidateIndex, candidateX, candidateY, false);
+    ReseparationReceipt* existing = nullptr;
+    for (auto receipt = receipts.rbegin(); receipt != receipts.rend(); ++receipt)
+        if (receipt->Scope == scope && receipt->MemberGuid == memberGuid
+            && receipt->CandidateIndex == candidateIndex
+            && receipt->CandidateX == candidateX
+            && receipt->CandidateY == candidateY
+            && !receipt->MovementSubmitted)
+        {
+            existing = &*receipt;
+            break;
+        }
     if (!existing)
     {
         if (receipts.size() >= MaximumReseparationReceipts)
@@ -125,20 +109,76 @@ inline ReseparationReceipt& ObserveReseparationCandidate(
         ? pathRejectReason : "none";
     return *existing;
 }
-
 inline ReseparationReceipt* FindSelectedReseparationReceipt(
     std::vector<ReseparationReceipt>& receipts,
     BotRaidDrudgeGeometry::Scope const& scope, std::uint32_t memberGuid,
     std::uint32_t candidateIndex, float candidateX, float candidateY)
 {
-    for (ReseparationReceipt& receipt : receipts)
-        if (receipt.Scope == scope && receipt.MemberGuid == memberGuid
-            && receipt.CandidateIndex == candidateIndex
-            && receipt.CandidateX == candidateX
-            && receipt.CandidateY == candidateY
-            && receipt.CandidateSelected)
-            return &receipt;
+    for (auto receipt = receipts.rbegin(); receipt != receipts.rend(); ++receipt)
+        if (receipt->Scope == scope && receipt->MemberGuid == memberGuid
+            && receipt->CandidateIndex == candidateIndex
+            && receipt->CandidateX == candidateX
+            && receipt->CandidateY == candidateY
+            && receipt->CandidateSelected)
+            return &*receipt;
     return nullptr;
+}
+inline ReseparationReceipt* BeginReseparationSubmission(
+    std::vector<ReseparationReceipt>& receipts,
+    BotRaidDrudgeGeometry::Scope const& scope, std::uint32_t memberGuid,
+    std::uint32_t candidateIndex, float candidateX, float candidateY,
+    std::uint64_t& nextSubmissionId, std::uint64_t nowMs)
+{
+    ResetReseparationReceiptsForScope(receipts, scope);
+    ReseparationReceipt* latestSelected = nullptr;
+    ReseparationReceipt* latestUnattempted = nullptr;
+    for (auto receipt = receipts.rbegin(); receipt != receipts.rend(); ++receipt)
+        if (receipt->Scope == scope && receipt->MemberGuid == memberGuid
+            && receipt->CandidateIndex == candidateIndex
+            && receipt->CandidateX == candidateX
+            && receipt->CandidateY == candidateY
+            && receipt->CandidateSelected)
+        {
+            if (!latestSelected)
+                latestSelected = &*receipt;
+            if (!receipt->MoveAttempted && !receipt->SubmissionId)
+            {
+                latestUnattempted = &*receipt;
+                break;
+            }
+        }
+    if (latestUnattempted)
+    {
+        latestUnattempted->SubmissionId = nextSubmissionId++;
+        latestUnattempted->SubmissionAtMs = nowMs;
+        return latestUnattempted;
+    }
+    if (!latestSelected)
+        return nullptr;
+
+    ReseparationReceipt fresh;
+    fresh.Recorded = true;
+    fresh.Scope = latestSelected->Scope;
+    fresh.RecordedAtMs = nowMs;
+    fresh.MemberGuid = latestSelected->MemberGuid;
+    fresh.CandidateIndex = latestSelected->CandidateIndex;
+    fresh.CandidateX = latestSelected->CandidateX;
+    fresh.CandidateY = latestSelected->CandidateY;
+    fresh.CandidateZ = latestSelected->CandidateZ;
+    fresh.Source0Safe = latestSelected->Source0Safe;
+    fresh.Source1Safe = latestSelected->Source1Safe;
+    fresh.LaneSafe = latestSelected->LaneSafe;
+    fresh.SameLaneSpacingSafe = latestSelected->SameLaneSpacingSafe;
+    fresh.GroupPositionSafe = latestSelected->GroupPositionSafe;
+    fresh.CandidateSelected = latestSelected->CandidateSelected;
+    fresh.CandidateSelectionOutcome = latestSelected->CandidateSelectionOutcome;
+    fresh.PathRejectReason = latestSelected->PathRejectReason;
+    fresh.SubmissionId = nextSubmissionId++;
+    fresh.SubmissionAtMs = nowMs;
+    if (receipts.size() >= MaximumReseparationReceipts)
+        receipts.erase(receipts.begin());
+    receipts.push_back(fresh);
+    return &receipts.back();
 }
 
 inline void MarkReseparationClosure(
@@ -155,5 +195,4 @@ inline void MarkReseparationClosure(
         }
 }
 }
-
 #endif
