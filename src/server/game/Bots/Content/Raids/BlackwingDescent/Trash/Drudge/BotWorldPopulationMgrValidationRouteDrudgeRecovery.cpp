@@ -5,6 +5,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 
+#include "Creature.h"
 #include "PathGenerator.h"
 #include "Player.h"
 
