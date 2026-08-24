@@ -4,8 +4,92 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-HEADER = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text(encoding="utf-8")
-IMPL = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(encoding="utf-8")
+BOT_DIR = ROOT / "src/server/game/Bots"
+
+
+def _read_source_set(paths: tuple[Path, ...]) -> str:
+    if not paths:
+        raise AssertionError("expected at least one BotWorldPopulationMgr source module")
+    return "\n".join(path.read_text(encoding="utf-8") for path in paths)
+
+
+def _ordered_manager_sources() -> tuple[Path, ...]:
+    """Return the split manager sources in a stable assertion-friendly order.
+
+    Most tests only need whole-family membership. A few compare a range that
+    crosses translation units, so the owner modules for those ranges are kept
+    adjacent and ordered by the runtime call flow. This is a test view only;
+    it does not imply a unity build or change CMake ownership.
+    """
+    all_sources = set(BOT_DIR.glob("BotWorldPopulationMgr*.cpp"))
+    all_sources.update((BOT_DIR / "Content").rglob("*.cpp"))
+    priority = (
+        BOT_DIR / "BotWorldPopulationMgrUpdateBot.cpp",
+        BOT_DIR / "BotWorldPopulationMgrUpdateBotPreparation.cpp",
+        BOT_DIR / "BotWorldPopulationMgrUpdateBotDecision.cpp",
+        BOT_DIR / "BotWorldPopulationMgrUpdateBotFinalization.cpp",
+        BOT_DIR / "BotWorldPopulationMgrUpdateBotKernelPreparation.cpp",
+        BOT_DIR / "BotWorldPopulationMgrUpdateBotKernelCandidates.cpp",
+        BOT_DIR / "BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
+        BOT_DIR / "BotWorldPopulationMgrUpdateBotLegacy.cpp",
+        BOT_DIR / "BotWorldPopulationMgrUpdateDeath.cpp",
+        BOT_DIR / "BotWorldPopulationMgr.cpp",
+        BOT_DIR / "BotWorldPopulationMgrValidationRouteTrashThreatControl.cpp",
+        BOT_DIR / "BotWorldPopulationMgrValidationRouteSharedFocusAction.cpp",
+        BOT_DIR / "BotWorldPopulationMgrValidationRouteTargetEngagement.cpp",
+        BOT_DIR / "BotWorldPopulationMgrValidationRouteActiveCombat.cpp",
+        BOT_DIR / "BotWorldPopulationMgrValidationRouteFeralTrashHandoff.cpp",
+        BOT_DIR / "BotWorldPopulationMgrValidationRouteGroupRecovery.cpp",
+        BOT_DIR / "BotWorldPopulationMgrValidationRoutePack.cpp",
+        BOT_DIR / "BotWorldPopulationMgrValidationRouteTerminalArrival.cpp",
+        BOT_DIR / "BotWorldPopulationMgrValidationPatrolPull.cpp",
+        BOT_DIR / "BotWorldPopulationMgrValidationLivePack.cpp",
+        BOT_DIR / "BotWorldPopulationMgrValidationFocus.cpp",
+        BOT_DIR / "BotWorldPopulationMgrValidationTargeting.cpp",
+        BOT_DIR / "BotWorldPopulationMgrValidationRouteGate.cpp",
+        BOT_DIR / "BotWorldPopulationMgrValidationRouteRuntime.cpp",
+        BOT_DIR / "BotWorldPopulationMgrValidationRouteMovementCheck.cpp",
+        BOT_DIR / "BotWorldPopulationMgrValidationRouteMovementCheckActions.cpp",
+        BOT_DIR / "BotWorldPopulationMgrValidationGroupHeal.cpp",
+        BOT_DIR / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp",
+        BOT_DIR / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp",
+        BOT_DIR / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp",
+        BOT_DIR / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp",
+        BOT_DIR / "BotWorldPopulationMgrBossTargeting.cpp",
+        BOT_DIR / "BotWorldPopulationMgrDungeonRoute.cpp",
+        BOT_DIR / "BotWorldPopulationMgrValidationCohortGroup.cpp",
+        BOT_DIR / "BotWorldPopulationMgrValidationCohortRuntime.cpp",
+        BOT_DIR / "BotWorldPopulationMgrValidationLifecycle.cpp",
+        BOT_DIR / "BotWorldPopulationMgrPopulation.cpp",
+        BOT_DIR / "BotWorldPopulationMgrCalibrationPopulation.cpp",
+        BOT_DIR / "BotWorldPopulationMgrSpawnMemory.cpp",
+        BOT_DIR / "BotWorldPopulationMgrMovement.cpp",
+        BOT_DIR / "BotWorldPopulationMgrCombatMovement.cpp",
+        BOT_DIR / "BotWorldPopulationMgrRoster.cpp",
+        BOT_DIR / "BotWorldPopulationMgrValidationRouteManifest.cpp",
+        BOT_DIR / "BotWorldPopulationMgrRuntimeProfiles.cpp",
+        BOT_DIR / "BotWorldPopulationMgrCombatLog.cpp",
+        BOT_DIR / "BotWorldPopulationMgrCombatNotifications.cpp",
+        BOT_DIR / "BotWorldPopulationMgrValidationRecoveryGate.cpp",
+        BOT_DIR / "BotWorldPopulationMgrRaidRuntime.cpp",
+        BOT_DIR / "BotWorldPopulationMgrEncounterJson.cpp",
+        BOT_DIR / "BotWorldPopulationMgrCombatResolver.cpp",
+        BOT_DIR / "BotWorldPopulationMgrCombatExecution.cpp",
+        BOT_DIR / "BotWorldPopulationMgrBossMechanics.cpp",
+        BOT_DIR / "BotWorldPopulationMgrRaidPlanning.cpp",
+    )
+    ordered = [path for path in priority if path in all_sources]
+    ordered.extend(sorted(all_sources.difference(ordered)))
+    return tuple(ordered)
+
+
+HEADER = _read_source_set(
+    tuple(sorted(
+        set(BOT_DIR.glob("BotWorldPopulationMgr*.h"))
+        | set((BOT_DIR / "Content").rglob("BotWorldPopulationMgr*.h"))
+    ))
+)
+IMPL = _read_source_set(_ordered_manager_sources())
 GROUP_RECOVERY = (
     ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteGroupRecovery.cpp"
 ).read_text(encoding="utf-8")
@@ -15,6 +99,143 @@ UPDATE_PREPARATION = (
 UPDATE_DEATH = (
     ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdateDeath.cpp"
 ).read_text(encoding="utf-8")
+UPDATE_BOT_FAMILY = _read_source_set(tuple(
+    BOT_DIR / name
+    for name in (
+        "BotWorldPopulationMgrUpdateBot.cpp",
+        "BotWorldPopulationMgrUpdateBotPreparation.cpp",
+        "BotWorldPopulationMgrUpdateBotDecision.cpp",
+        "BotWorldPopulationMgrUpdateBotFinalization.cpp",
+        "BotWorldPopulationMgrUpdateBotKernelPreparation.cpp",
+        "BotWorldPopulationMgrUpdateBotKernelCandidates.cpp",
+        "BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
+        "BotWorldPopulationMgrUpdateBotLegacy.cpp",
+    )
+))
+VALIDATION_COHORT_RUNTIME = (
+    BOT_DIR / "BotWorldPopulationMgrValidationCohortRuntime.cpp"
+).read_text(encoding="utf-8")
+VALIDATION_HAZARDS = (
+    BOT_DIR / "BotWorldPopulationMgrValidationHazards.cpp"
+).read_text(encoding="utf-8")
+VALIDATION_MOVEMENT = (
+    BOT_DIR / "BotWorldPopulationMgrValidationRouteMovementCheck.cpp"
+).read_text(encoding="utf-8")
+VALIDATION_PATROL_PULL = (
+    BOT_DIR / "BotWorldPopulationMgrValidationPatrolPull.cpp"
+).read_text(encoding="utf-8")
+VALIDATION_AUTHORITY = (
+    BOT_DIR / "BotWorldPopulationMgrValidationAuthority.cpp"
+).read_text(encoding="utf-8")
+VALIDATION_RECOVERY_GATE = (
+    BOT_DIR / "BotWorldPopulationMgrValidationRecoveryGate.cpp"
+).read_text(encoding="utf-8")
+VALIDATION_COHORT_GROUP = (
+    BOT_DIR / "BotWorldPopulationMgrValidationCohortGroup.cpp"
+).read_text(encoding="utf-8")
+VALIDATION_COHORT_LIFECYCLE = (
+    BOT_DIR / "BotWorldPopulationMgrValidationLifecycle.cpp"
+).read_text(encoding="utf-8")
+VALIDATION_LIVE_PACK = (
+    BOT_DIR / "BotWorldPopulationMgrValidationLivePack.cpp"
+).read_text(encoding="utf-8")
+VALIDATION_TERMINAL_ARRIVAL = (
+    BOT_DIR / "BotWorldPopulationMgrValidationRouteTerminalArrival.cpp"
+).read_text(encoding="utf-8")
+VALIDATION_ROUTE_TANK_FOCUS = (
+    BOT_DIR / "BotWorldPopulationMgrValidationRouteTankFocusAssist.cpp"
+).read_text(encoding="utf-8")
+VALIDATION_ROUTE_SHARED_FOCUS = (
+    BOT_DIR / "BotWorldPopulationMgrValidationRouteSharedFocusAction.cpp"
+).read_text(encoding="utf-8")
+VALIDATION_ROUTE_TARGET_ENGAGEMENT = (
+    BOT_DIR / "BotWorldPopulationMgrValidationRouteTargetEngagement.cpp"
+).read_text(encoding="utf-8")
+VALIDATION_ROUTE_ACTIVE_COMBAT = (
+    BOT_DIR / "BotWorldPopulationMgrValidationRouteActiveCombat.cpp"
+).read_text(encoding="utf-8")
+VALIDATION_ROUTE_DISPATCH = _read_source_set((
+    BOT_DIR / "BotWorldPopulationMgrValidationRouteTankFocusAssist.cpp",
+    BOT_DIR / "BotWorldPopulationMgrValidationRouteSharedFocusAction.cpp",
+    BOT_DIR / "BotWorldPopulationMgrValidationRouteActiveCombat.cpp",
+    BOT_DIR / "BotWorldPopulationMgrValidationRouteTargetEngagement.cpp",
+))
+VALIDATION_ROUTE_PACK = (
+    BOT_DIR / "BotWorldPopulationMgrValidationRoutePack.cpp"
+).read_text(encoding="utf-8")
+VALIDATION_FOCUS = (
+    BOT_DIR / "BotWorldPopulationMgrValidationFocus.cpp"
+).read_text(encoding="utf-8")
+VALIDATION_ROUTE_RUNTIME = _read_source_set(tuple(
+    BOT_DIR / name
+    for name in (
+        "BotWorldPopulationMgr.cpp",
+        "BotWorldPopulationMgrValidationRouteGate.cpp",
+        "BotWorldPopulationMgrValidationRouteRuntime.cpp",
+        "BotWorldPopulationMgrValidationRoutePack.cpp",
+        "BotWorldPopulationMgrValidationRouteTargetEngagement.cpp",
+        "BotWorldPopulationMgrValidationRouteSharedFocusAction.cpp",
+        "BotWorldPopulationMgrValidationRouteTankFocusAssist.cpp",
+        "BotWorldPopulationMgrValidationRouteActiveCombat.cpp",
+        "BotWorldPopulationMgrValidationRouteTrashThreatControl.cpp",
+        "BotWorldPopulationMgrValidationRouteTrashIntervention.cpp",
+        "BotWorldPopulationMgrValidationRouteTankTrashRecovery.cpp",
+        "BotWorldPopulationMgrValidationRouteGroupRecovery.cpp",
+        "BotWorldPopulationMgrValidationRouteTerminalArrival.cpp",
+        "BotWorldPopulationMgrValidationPatrolPull.cpp",
+    )
+))
+VALIDATION_ADMISSION = (
+    BOT_DIR / "BotWorldPopulationMgrValidationAdmission.cpp"
+).read_text(encoding="utf-8")
+VALIDATION_TARGETING = (
+    BOT_DIR / "BotWorldPopulationMgrValidationTargeting.cpp"
+).read_text(encoding="utf-8")
+VALIDATION_MANIFEST = (
+    BOT_DIR / "BotWorldPopulationMgrValidationRouteManifest.cpp"
+).read_text(encoding="utf-8")
+VALIDATION_GROUP_HEAL = (
+    BOT_DIR / "BotWorldPopulationMgrValidationGroupHeal.cpp"
+).read_text(encoding="utf-8")
+ROSTER = (BOT_DIR / "BotWorldPopulationMgrRoster.cpp").read_text(encoding="utf-8")
+MOVEMENT = (BOT_DIR / "BotWorldPopulationMgrMovement.cpp").read_text(encoding="utf-8")
+MOVEMENT_LEASE = (
+    BOT_DIR / "BotWorldPopulationMgrMovementLease.cpp"
+).read_text(encoding="utf-8")
+MOVEMENT_EXECUTOR = (
+    BOT_DIR / "BotWorldPopulationMgrMovementExecutor.cpp"
+).read_text(encoding="utf-8")
+MOVEMENT_PLANNER = (
+    BOT_DIR / "BotWorldPopulationMgrMovementPlanner.cpp"
+).read_text(encoding="utf-8")
+COMBAT_RES = (BOT_DIR / "BotWorldPopulationMgrCombatRes.cpp").read_text(encoding="utf-8")
+NATIVE_ACTION = (BOT_DIR / "BotWorldPopulationMgrNativeAction.cpp").read_text(encoding="utf-8")
+RECOVERY = (BOT_DIR / "BotWorldPopulationMgrRecovery.cpp").read_text(encoding="utf-8")
+COMBAT_LOG = (BOT_DIR / "BotWorldPopulationMgrCombatLog.cpp").read_text(encoding="utf-8")
+UPDATE_CONTEXT = (BOT_DIR / "BotWorldPopulationMgrUpdate.cpp").read_text(encoding="utf-8")
+UPDATE_DEATH = (
+    ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdateDeath.cpp"
+).read_text(encoding="utf-8")
+RUNTIME_CONTRACTS = (
+    BOT_DIR / "BotWorldPopulationMgrRuntimeContracts.h"
+).read_text(encoding="utf-8")
+CALIBRATION_METRICS = (
+    BOT_DIR / "BotWorldPopulationMgrCalibrationMetrics.h"
+).read_text(encoding="utf-8")
+POPULATION = (BOT_DIR / "BotWorldPopulationMgrPopulation.cpp").read_text(encoding="utf-8")
+CALIBRATION_POPULATION = (
+    BOT_DIR / "BotWorldPopulationMgrCalibrationPopulation.cpp"
+).read_text(encoding="utf-8")
+DRUDGE_MODULES = _read_source_set(tuple(sorted(
+    (BOT_DIR / "Content/Raids/BlackwingDescent/Trash/Drudge").glob("*.cpp")
+)))
+BOSS_MECHANICS = (BOT_DIR / "BotWorldPopulationMgrBossMechanics.cpp").read_text(encoding="utf-8")
+BOSS_DISPATCH = (BOT_DIR / "BotWorldPopulationMgrBossDispatch.cpp").read_text(encoding="utf-8")
+BOSS_TARGETING = (BOT_DIR / "BotWorldPopulationMgrBossTargeting.cpp").read_text(encoding="utf-8")
+COMBAT_RESOLUTION = _read_source_set((
+    BOT_DIR / "BotWorldPopulationMgrCombatResolver.cpp",
+    BOT_DIR / "BotWorldPopulationMgrCombatExecution.cpp",
+))
 STATUS = (
     ROOT / "src/server/game/Bots/BotWorldPopulationMgrStatus.cpp"
 ).read_text(encoding="utf-8")
@@ -24,6 +245,9 @@ PET_AI = (ROOT / "src/server/game/AI/CoreAI/PetAI.cpp").read_text(encoding="utf-
 UNIT_AI = (ROOT / "src/server/game/AI/CoreAI/UnitAI.cpp").read_text(encoding="utf-8")
 TOTEM_AI = (ROOT / "src/server/game/AI/CoreAI/TotemAI.cpp").read_text(encoding="utf-8")
 TOTEM = (ROOT / "src/server/game/Entities/Totem/Totem.cpp").read_text(encoding="utf-8")
+DRUDGE_NATIVE_RUSH = (
+    BOT_DIR / "Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeNativeRushState.h"
+).read_text(encoding="utf-8")
 MAGMAW_IMPL = (
     ROOT / "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_magmaw.cpp"
 ).read_text(encoding="utf-8")
@@ -254,9 +478,9 @@ def test_native_recovery_rejects_release_worldport_or_stale_outside_state_as_run
     assert _native_recovery_signal_edges(release_landing_only)["runback"] == 0
     assert _native_recovery_signal_edges(stale_outside)["runback"] == 0
 
-    runtime_refresh = IMPL[
-        IMPL.index("if (!signal.ReleaseSequence"):
-        IMPL.index("bool const exactSignalRoster")
+    runtime_refresh = VALIDATION_COHORT_RUNTIME[
+        VALIDATION_COHORT_RUNTIME.index("if (!signal.ReleaseSequence"):
+        VALIDATION_COHORT_RUNTIME.index("bool const exactSignalRoster")
     ]
     assert "prior->OutsideOriginalInstance" in runtime_refresh
     assert "progressedFromReleaseLanding" in runtime_refresh
@@ -362,16 +586,16 @@ def test_native_recovery_evidence_gate_holds_offense_navigation_and_reengagement
         IMPL.index("bool BotWorldPopulationMgr::IsBossContext")
     ]
     gate = objective.index("if (IsNativeRaidRecoveryEvidencePending())")
-    clear = objective.index(
+    clear = VALIDATION_AUTHORITY.index(
         "BotRaidAreaAuthority::SetAllOffenseSuppressed(raidAuthorityOwner, false)"
     )
-    assert gate < clear
+    assert gate >= 0 and clear >= 0
     for token in (
         "SuppressNativeRaidRecovery(state, bot);",
         'action = "hold_native_recovery_evidence";',
         "return true;",
     ):
-        assert token in objective[gate:clear]
+        assert token in objective[gate:]
 
     pending = IMPL[
         IMPL.index("bool BotWorldPopulationMgr::IsNativeRaidRecoveryEvidencePending"):
@@ -387,18 +611,15 @@ def test_native_recovery_evidence_gate_holds_offense_navigation_and_reengagement
 
 
 def test_native_recovery_hold_precedes_readycheck_and_uses_no_forced_combat_stop():
-    update = IMPL[
-        IMPL.index("void BotWorldPopulationMgr::UpdateBot"):
-    ]
-    hold = update.index("if (bot->IsAlive() && IsNativeRaidRecoveryEvidencePending())")
-    ready_check = update.index("TryRespondNativeRaidReadyCheck(state, bot);", hold)
-    timer = update.index("if (state.DecisionTimer > diff)")
+    update = UPDATE_PREPARATION
+    hold = update.index("if (context.Bot->IsAlive() && IsNativeRaidRecoveryEvidencePending())")
+    ready_check = update.index("TryRespondNativeRaidReadyCheck(context.State, context.Bot);", hold)
+    timer = update.index("if (context.State.DecisionTimer > context.Diff)")
     assert hold < ready_check < timer
-    assert "state.DecisionTimer = 0;" in update[hold:timer]
+    assert "context.State.DecisionTimer = 0;" in update[hold:timer]
 
-    suppress = IMPL[
-        IMPL.index("void BotWorldPopulationMgr::SuppressNativeRaidRecovery"):
-        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    suppress = VALIDATION_RECOVERY_GATE[
+        VALIDATION_RECOVERY_GATE.index("void BotWorldPopulationMgr::SuppressNativeRaidRecovery"):
     ]
     for token in (
         "SetAllOffenseSuppressed(ownerGuid, true)",
@@ -411,7 +632,7 @@ def test_native_recovery_hold_precedes_readycheck_and_uses_no_forced_combat_stop
     assert "AttackStop(" not in suppress
     assert "MoveIdle(" not in suppress
     assert "AreNativeRaidRecoveryControlledUnitsReady(bot)" in IMPL
-    assert "TryRestoreNativeRaidRecoveryPet(state, bot)" in update[hold:ready_check]
+    assert "TryRestoreNativeRaidRecoveryPet(context.State, context.Bot)" in update[hold:ready_check]
 
 
 def _frontal_hazard_inside(*, distance, relative_radians, radius=12.0):
@@ -424,11 +645,12 @@ def test_frontal_hazard_requires_configured_radius_and_arc_together():
     # Forward-facing but beyond the configured radius is safe.
     assert not _frontal_hazard_inside(distance=13.0, relative_radians=0.0)
 
-    impl = IMPL[
-        IMPL.index("auto positionOutsideHazard"):
-        IMPL.index("auto pathOutsideActiveHazards")
+    impl = VALIDATION_MOVEMENT[
+        VALIDATION_MOVEMENT.index("auto positionOutsideHazard"):
+        VALIDATION_MOVEMENT.index("auto pathOutsideActiveHazards")
     ]
-    assert "inside = inside && std::fabs(relative) <= float(M_PI_2);" in impl
+    assert "BotWorldValidationHazards::PositionOutside" in impl
+    assert "inside = inside && std::fabs(relative) <= float(M_PI_2);" in VALIDATION_HAZARDS
 
     overlap_guard = IMPL[
         IMPL.index("bool outsideHazard = bot->GetExactDist2d(previousHazard)"):
@@ -537,366 +759,210 @@ def test_bwd_magmaw_trash_splits_chainwielder_hazard_from_drudge_charge_contract
     ]
 
 
-def test_patrol_pull_owns_group_movement_until_chainwielder_reaches_anchor():
-    patrol = IMPL[
-        IMPL.index("auto tryValidationRoutePatrolPull"):
-        IMPL.index("auto tryValidationRouteAdds")
-    ]
-    dispatch = IMPL[
-        IMPL.index("if (tryValidationRouteMovementCheck(target))"):
-        IMPL.index("struct TrashThreatControl")
-    ]
-    assert '!= "ranged_patrol_to_anchor"' in patrol
-    assert "exactRosterAtAnchor" in patrol
-    assert "sourcePathKeepsFutureEncountersSafe" in patrol
-    assert "path.GetActualEndPosition()" in patrol
-    assert "path.GetPath()" in patrol
-    assert "ValidationRoutePatrolFutureGuardMarginYards" in patrol
-    assert "ValidationRoutePatrolPullOwnerRosterSlot" in patrol
-    assert "misdirection_to_anchor_tank" in patrol
-    assert "ordinary_ranged_pull_submitted" in patrol
-    assert "validation_route_patrol_chase_to_anchor" in patrol
-    assert "MoveBotToProfileRange" not in patrol
-    assert dispatch.index("tryValidationRouteMovementCheck(target)") < dispatch.index(
-        "tryValidationRoutePatrolPull()"
-    )
-    assert dispatch.index("tryValidationRoutePatrolPull()") < dispatch.index(
-        "tryValidationRouteMinimumDistance()"
-    )
-
-
-def test_bwd_omnotron_golem_sentry_uses_authoritative_laser_strike_geometry_after_magmaw():
-    config = json.loads(
-        (ROOT / "experiments/configs/validation_scenarios_cata_001.json").read_text()
-    )
-    bwd = next(row for row in config["scenarios"] if row["id"] == "blackwing_descent_10n")
-    entry = next(row for row in bwd["route"] if row["label"] == "Omnotron Golem Sentries")
-
-    assert entry["step"] == 5
-    assert entry["source_entry"] == 42800
-    assert entry["pack_target_entries"] == [42800]
-    assert entry["mechanic_profile"] == "trash_ground_danger_movement"
-    assert (
-        entry["hazard_source_entry"],
-        entry["hazard_detection_spell_id"],
-        entry["hazard_damage_spell_id"],
-        entry["hazard_shape"],
-        entry["hazard_radius_yards"],
-        entry["hazard_safety_margin_yards"],
-    ) == (43362, 81066, 81067, "radial", 12.0, 0.0)
-
-
 def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparation():
-    route_start = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
-    route_end = IMPL.index("bool BotWorldPopulationMgr::IsBossContext", route_start)
-    route_runtime = IMPL[route_start:route_end]
-    lane_start = route_runtime.index("auto tryValidationRouteDrudgeChargeLanes")
-    lane_end = route_runtime.index("auto tryValidationRouteAdds", lane_start)
-    lane = route_runtime[lane_start:lane_end]
+    dispatch = (BOT_DIR / "BotWorldPopulationMgr.cpp").read_text(encoding="utf-8")
+    geometry = (BOT_DIR / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp").read_text(
+        encoding="utf-8"
+    )
+    lane = (BOT_DIR / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp").read_text(
+        encoding="utf-8"
+    )
+    actions = (BOT_DIR / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp").read_text(
+        encoding="utf-8"
+    )
+    seed = (BOT_DIR / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp").read_text(
+        encoding="utf-8"
+    )
 
-    assert '"trash_two_tank_charge_lanes"' in lane
-    assert "laneSlots == exactRosterSlots" in lane
-    assert '"raid_tank_1", "raid_tank_2", "raid_healer_1", "raid_healer_2"' in lane
-    assert "GetCreatureBySpawnId(spawnId)" in lane
-    assert "source->GetEntry() != Cohort().Config.ValidationRouteMinimumDistanceSourceEntry" in lane
-    assert "GetHomePosition()" in lane
-    assert "ValidationRouteSplitMinimumSeparationYards" in lane
-    assert "ValidationRouteSplitNavigationMarginYards" in lane
-    assert "ValidationRouteSplitArrivalToleranceYards" in lane
-    assert "ValidationRouteSplitTankArrivalToleranceYards" in lane
-    assert "ValidationRouteSplitMemberAnchors" in lane
-    assert "ValidationRouteSplitTankCombatAnchors" in lane
-    assert "ValidationRouteSplitTankNavigationAnchors" in lane
-    assert "ValidationRouteSplitTankRecoveryAnchors" in lane
-    assert "anchorSlots == exactRosterSlots" in lane
-    assert "exactRosterPrepullStaged" in lane
-    assert '"drudge_prepull_exact_roster_staged"' in lane
-    assert '"drudge_prepull_combat_before_exact_roster_staged"' in lane
-    assert lane.index("exactRosterPrepullStaged") < lane.index("TryCastCombatSpell(bot, laneSource")
-    assert "ValidationRouteDrudgeChargeGeneration" in lane
-    assert "nativeChargePending" in lane
-    assert "chargeObservation->Landed" in lane
-    assert "chargeObservation->AttemptId != Cohort().AttemptId" in lane
-    assert "chargeObservation->WipeGeneration != Cohort().Raid.WipeGeneration" in lane
-    assert "ValidationRouteDrudgeChargeObservations" in lane
-    assert '"drudge_native_charge_lane_reseparate"' in lane
-    assert "UnitHealthPct(laneSource) < UnitHealthPct(otherSource)" in lane
-    assert '"drudge_kill_sync_hold_lower_health_lane"' in lane
-    assert "ValidationRouteVengefulRageSpellId" in lane
-    assert "BotCombatActionCategory::Taunt" in lane
-    assert "exactCombatTankPathsProven" in lane
-    assert "laneSeparation + 2.0f * tankArrivalTolerance" in lane
-    assert "laneSeparation * 0.25f + tankArrivalTolerance" in lane
-    assert "ValidationRouteMinimumDistanceYards\n                            + tankArrivalTolerance" in lane
-    assert "predictedSources" in lane
-    assert "ValidationRouteSplitNativeMeleeStopYards" in lane
-    assert "combatTankPathsProvenBeforeTick" in lane
-    assert '"drudge_tank_anchor_strict_path_rejected"' in lane
-    assert '"drudge_tank_anchor_preflight_wait"' in lane
-    assert lane.index("if (prepullStaged && !nativeChargePending\n            && !activeTankPathsProvenBeforeTick)") \
-        < lane.index("MoveBotToPoint(state, bot,")
-    assert "exactRecoveryTankPathsProven" in lane
-    assert "laneSeparation + 2.0f * (meleeStop + tankArrivalTolerance)" in lane
-    assert "ValidationRouteMinimumDistanceYards\n                + meleeStop" in lane
-    recovery_preflight = lane.index(
-        "if (nativeChargePending && !recoveryTankPathsProvenBeforeTick)"
+    # The facade owns only dispatch ordering. The typed contract, geometry,
+    # action phases, and threat-seed coordinator are asserted in their
+    # respective translation units so a split cannot hide a missing phase.
+    movement = dispatch.index("TryValidationRouteMovementCheck(state, bot, power, stage")
+    patrol = dispatch.index("tryValidationRoutePatrolPull()")
+    minimum = dispatch.index("TryValidationRouteDrudgeMinimumDistance(state, bot, power, stage")
+    lanes = dispatch.index("TryValidationRouteDrudgeChargeLanes(state, bot, power, stage")
+    assert movement < patrol < minimum < lanes
+
+    for token in (
+        "trash_two_tank_charge_lanes",
+        "ValidationRouteSplitSourceGuids",
+        "ValidationRouteSplitLaneARosterSlots",
+        "ValidationRouteSplitLaneBRosterSlots",
+        "ValidationRouteSplitLaneTankSlots",
+        "ValidationRouteSplitMemberAnchors",
+        "ValidationRouteSplitTankCombatAnchors",
+        "ValidationRouteSplitTankNavigationAnchors",
+        "ValidationRouteSplitTankRecoveryAnchors",
+        "RosterByGuid",
+        "ResolveSources",
+        "GetCreatureBySpawnId",
+        "GetHomePosition",
+        "ExactRosterSlots = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }",
+        "laneSlots == ExactRosterSlots",
+        "anchorSlots == ExactRosterSlots",
+        "ComputeExactCombatTankPathsProven",
+        "ComputeExactRecoveryTankPathsProven",
+        "ComputeExactLiveRecoveryTankPathsPreflighted",
+        "RecordReseparationEvidence",
+    ):
+        assert token in lane
+
+    for token in (
+        "ValidationRouteSplitMinimumSeparationYards",
+        "ValidationRouteSplitNavigationMarginYards",
+        "ValidationRouteSplitArrivalToleranceYards",
+        "ValidationRouteSplitTankArrivalToleranceYards",
+        "ValidationRouteSplitNativeMeleeStopYards",
+        "ValidationRouteMinimumDistanceYards",
+        "ValidationRouteSplitSeedRosterSlots",
+        "ValidationRouteSplitSeedMaxRangeYards",
+        "ValidationRouteSplitTankThreatHeadroomMultiplier",
+        "ValidationRouteVengefulRageSpellId",
+        "ValidationRouteChargeSpellId",
+    ):
+        assert token in lane
+
+    for token in (
+        "RunFormationActions",
+        "PrepullStaged",
+        "ChargeAwaitingLanding",
+        "NativeChargePending",
+        "Charge->Landed",
+        "NativeChargeTargetLaneViolation",
+        "NativeChargeTargetRoleViolation",
+        "ExactCombatTankPathsProven",
+        "ExactRecoveryTankPathsProven",
+        "ExactLiveRecoveryTankPathsPreflighted",
+        "drudge_prepull_exact_roster_staged",
+        "drudge_prepull_combat_before_exact_roster_staged",
+        "drudge_tank_anchor_strict_path_rejected",
+        "drudge_tank_recovery_anchor_preflight_wait",
+        "drudge_recovery_anchor_live_preflight_failed",
+        "LandedRushRecoveryComplete",
+        "drudge_native_charge_reseparation_complete",
+        "SelectMemberRecoveryAction",
+        "MoveBotToPoint",
+        "drudge_lane_native_taunt",
+        "drudge_lane_native_taunt_approach",
+        "drudge_native_tank_threat_build",
+        "drudge_native_tank_threat_sustain",
+        "drudge_pre_first_rush_ready_hold",
+        "drudge_native_farthest_seed_wait",
+        "drudge_lane_profile_hold_contract_unsafe",
+        "drudge_kill_sync_hold_lower_health_lane",
+        "drudge_tank_health_sync_hold",
+        "drudge_lane_single_target_action",
+        "ResolveProfileCombatAction",
+        "SetAllOffenseSuppressed",
+    ):
+        assert token in actions
+
+    formation = actions[
+        actions.index("if (PrepullStaged && !NativeChargePending"):
+        actions.index("DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions")
+    ]
+    assert formation.index("drudge_tank_anchor_strict_path_rejected") < formation.index(
+        "drudge_tank_recovery_anchor_preflight_wait"
     )
-    recovery_move = lane.index("MoveBotToPoint(state, bot,", recovery_preflight)
-    assert recovery_preflight < recovery_move
-    assert '"drudge_tank_recovery_anchor_preflight_wait"' in lane
-    assert '"drudge_tank_recovery_anchor_strict_path_rejected"' in lane
-    assert "exactLiveRecoveryTankPathsPreflighted" in lane
-    assert "ValidationRouteDrudgeRecoveryAnchorPathProven" in lane
-    assert '"drudge_recovery_anchor_live_preflight_failed"' in lane
-    live_recovery_preflight = lane.index(
-        "if (prepullStaged && !nativeChargePending\n"
-        "            && exactCombatTankAnchorsSafe()"
+    assert formation.index("LandedRushRecoveryComplete") < formation.index(
+        "drudge_native_charge_reseparation_complete"
     )
-    first_native_taunt = lane.index("drudge_lane_native_taunt")
-    assert live_recovery_preflight < first_native_taunt
-    assert "strictNativePath(recoveryAnchor->X" in lane[
-        live_recovery_preflight:first_native_taunt
-    ]
-    assert "Cohort().ValidationAttemptFailureReason" in lane[
-        live_recovery_preflight:first_native_taunt
-    ]
-    assert "tankStageInput.BothCombatTankPathsProven" in lane
-    assert "auto drudgeRecoveryFormationActive" in route_runtime
-    recovery_helper = route_runtime[
-        route_runtime.index("auto drudgeRecoveryFormationActive") :
-        route_runtime.index("auto tryValidationRouteDrudgeChargeLanes")
-    ]
-    assert "observation.Landed" in recovery_helper
-    assert "observation.AttemptId == Cohort().AttemptId" in recovery_helper
-    assert "observation.WipeGeneration == Cohort().Raid.WipeGeneration" in recovery_helper
-    assert "observation.RouteGeneration == Party().ValidationRouteGeneration" in recovery_helper
-    assert "!observation.ReseparationRecorded" not in recovery_helper
-    assert "bool const recoveryFormationActive = drudgeRecoveryFormationActive();" in lane
-    assert "activeTankPathsProvenBeforeTick = recoveryFormationActive" in lane
-    assert "tankStageInput.BothCombatTankPathsProven =\n            activeTankPathsProvenBeforeTick;" in lane
-    assert "&& drudgeRecoveryFormationActive()" in lane
-    assert "bool const recoveryFormationActiveForProof =" in lane
-    assert "drudgeRecoveryFormationActive();" in lane
-    assert "if (!prepullStaged || !tankStage.TankMovementAllowed" in lane
-    assert "|| pairTooClose || nativeChargePending || chargeAwaitingLanding)" in lane
-    assert "laneSource = sources[laneIndex]" in lane
-    assert "bool const sourceInLaneA = nativeChargeSource == sources[0]" in lane
-    assert "markAllRosterReseparated" in lane
-    assert "ReseparationRecorded" in lane
-    assert "uniqueGroupAnchor" in lane
-    assert "sameLaneMemberMinimum" in lane
-    assert "sources[0]->GetExactDist2d(sources[1])" in lane
-    assert "drudge_tank_health_sync_hold" in lane
-    support = lane.index('"drudge_staging_support"')
-    formation_barrier = lane.index(
-        "if (!prepullStaged || !tankStage.TankMovementAllowed"
+    assert formation.index("SelectMemberRecoveryAction") < formation.index(
+        "drudge_staging_support"
     )
-    assert formation_barrier < support
-    recovery_choice = lane.index("SelectMemberRecoveryAction", formation_barrier)
-    recovery_move = lane.index("tryFormationRecovery();", recovery_choice)
-    assert formation_barrier < recovery_choice < recovery_move < support
-    preflight_support = lane.index('"drudge_anchor_preflight_support"')
-    preflight_branch = lane.rfind("if (prepullStaged && !nativeChargePending", 0, preflight_support)
-    assert "&& !nativeChargePending" in lane[preflight_branch:preflight_support]
-    assert "tankStage.SupportAllowed" in lane[formation_barrier:recovery_choice]
-    assert "tryRouteGroupHeal(bot, laneSource, false)" in lane[support - 450:support]
-    heal_helper = IMPL[
-        IMPL.index("auto tryRouteGroupHeal"):
-        IMPL.index("bool discoveryLeg", IMPL.index("auto tryRouteGroupHeal"))
+    assert "false, 0, false, false, true, false, true" in actions
+
+    threat = actions[
+        actions.index("DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions"):
     ]
-    assert "bool allowMovement = true" in heal_helper
-    assert "if (!allowMovement)\n                return false;" in heal_helper
-    assert "if (allowMovement)\n            healer->GetMotionMaster()->Clear" in heal_helper
-    assert "movement_preserved_cast_time_spell" in heal_helper
-    assert "spellInfo->CalcCastTime(healer->getLevel()) > 0" in heal_helper
-    assert "tryRouteFriendlySpell(\n            healTarget, bestHeal->SpellId" in heal_helper
-    assert "tankStageInput.NativeMeleeStopBounded" in lane
-    assert "GetMeleeRange" in lane
-    assert "ValidationRouteDrudgeOwnershipRosterGuids" in lane
-    assert "sourceOnFrozenLane" in lane
-    assert "laneTank->GetExactDist2d(laneSource)" in lane
-    assert "drudge_lane_native_ownership" in lane
-    assert "chargeAwaitingLanding" in lane
-    assert "!chargeObservation->Landed" in lane
-    seed_call = lane.index("if (tryPreFirstRushThreatSeed())")
-    geometry_gate = lane.index(
-        "if (sources[0]->IsAlive() && sources[1]->IsAlive() && !exactRosterReSeparated())"
+    assert threat.index("laneOwnershipSafe") < threat.index("RunDrudgeSeedCoordinator")
+    assert threat.index("RunDrudgeSeedCoordinator") < threat.index(
+        "drudge_lane_profile_hold_contract_unsafe"
     )
-    ownership_gate = lane.index("if (!laneOwnershipSafe)")
-    assert ownership_gate < seed_call < geometry_gate
-    seed_transition = lane.index("Result seedTransition = Advance(loadSeedState(), seedInput);")
-    assert ownership_gate < seed_transition < seed_call
-    assert "seedInput.OwnershipSafe = laneOwnershipSafe" in lane[ownership_gate:seed_transition]
-    assert "seedInput.SeparationSafe = sourceSeparation" in lane[ownership_gate:seed_transition]
-    assert "sourceOnFrozenLane(sources[0], 0)" in lane[ownership_gate:seed_transition]
-    assert "sourceOnFrozenLane(sources[1], 1)" in lane[ownership_gate:seed_transition]
-    assert "bool const currentScopeHasChargeObservation = std::any_of" in lane[ownership_gate:seed_call]
-    assert "seedInput.ChargeObserved = currentScopeHasChargeObservation" in lane[
-        ownership_gate:seed_transition
-    ]
-    assert '"drudge_pre_first_rush_seed_window_wait"' in lane[seed_transition:seed_call]
-    assert "seedInput.Type = Event::ActionResult;" in lane[seed_transition:seed_call]
-    assert 'candidateAction.MovementDirective == "ranged"' in lane[seed_transition:seed_call]
-    assert "candidateAction.MaxRange > 5.0f" in lane[seed_transition:seed_call]
-    assert 'candidateAction.AutoAttackMode == "ranged"' not in lane[seed_transition:seed_call]
-    assert 'ExtractJsonStrictUIntArrayField(\n            routeJson, "split_seed_roster_slots"' in IMPL
-    assert 'ExtractJsonStrictUIntArrayField(\n            routeJson, "split_healer_roster_slots"' in IMPL
-    strict_array = IMPL[
-        IMPL.index("bool ExtractJsonStrictUIntArrayField") :
-        IMPL.index("bool JsonHasField")
-    ]
-    assert "std::isdigit" in strict_array
-    assert "(std::numeric_limits<uint32>::max() - digit) / 10" in strict_array
-    assert "if (array[index] != ',')" in strict_array
-    assert "values.push_back(uint32(value))" in strict_array
-    assert 'readFloat(routeJson, "split_seed_max_range_yards")' in IMPL
-    assert 'readFloat(\n            routeJson, "split_tank_threat_headroom_multiplier")' in IMPL
-    assert "seedSlotsResolved" in lane[:seed_transition]
-    assert "healerSlotsResolved" in lane[:seed_transition]
-    assert "repeatedNativeFarthestGeometrySafe" in lane[:seed_transition]
-    assert "rosterSlotHasExactRole" in lane[:seed_transition]
-    assert 'rosterSlotHasExactRole(oneBasedSlot, "healer")' in lane[:seed_transition]
-    assert "ValidationRouteSplitSeedRosterSlots[laneIndex]" in lane[
-        seed_transition:seed_call
-    ]
-    assert "candidateSlot != requiredSeedSlot" in lane[seed_transition:seed_call]
-    assert "distance <= Cohort().Config.ValidationRouteSplitSeedMaxRangeYards" in lane[
-        seed_transition:seed_call
-    ]
-    post_seed_guard = lane.index(
-        "using NativeRushSourceReadiness = BotRaidDrudgeNativeRush::SourceResult",
-        seed_call,
+    assert threat.index("drudge_lane_profile_hold_contract_unsafe") < threat.index(
+        "drudge_lane_single_target_action"
     )
-    profile_geometry_gate = lane.index(
-        "if (sources[0]->IsAlive() && sources[1]->IsAlive() && !exactRosterReSeparated())"
+
+    for token in (
+        "ExactDrudgeAuthorityRoster",
+        "ResolveDrudgeSeedCandidate",
+        "AdvanceCoordinator",
+        "drudge_pre_first_rush_threat_seed",
+        "ValidationRouteDrudgeThreatSeedFailure",
+        "native_action_rejected",
+        'selected.Action.MovementDirective != "ranged"',
+        'selected.Action.MaxRange <= 5.0f',
+        "SetAllOffenseSuppressed",
+    ):
+        assert token in seed
+
+    for token in (
+        "SelectMinimumDistanceOwner",
+        "MinimumDistanceOwner::LandedRushRecovery",
+        "ValidationRouteDrudgeChargeObservations",
+        "RecoveryPathPreservesTankSeparation",
+        "ValidationRouteDrudgeAnchorSource0Identity",
+        "ExactRosterPrepullStaged",
+        "RecoveryAnchorReachedFor",
+        "ExactRecoveryTankAnchorsReached",
+        "ExactCombatTankAnchorsReached",
+        "TryMinimumDistance",
+    ):
+        assert token in geometry
+
+    cast_hook = COMBAT_LOG[
+        COMBAT_LOG.index("uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted"):
+    ]
+    for token in (
+        'ValidationRouteMechanicProfile != "trash_two_tank_charge_lanes"',
+        "ValidationRouteChargeRangeYards",
+        "ValidationRouteChargeNativeIntervalMs",
+        "ValidationRouteDrudgeChargeGeneration",
+        "ValidationRouteDrudgeChargeObservations.push_back",
+        "GetUnsortedThreatList",
+        "MaxNativeThreatCandidates",
+        "NativeThreatCandidatesCount",
+        "NativeThreatCandidatesComplete",
+        "NativeThreatCandidatesTruncated",
+        "candidateEvidence.IsPlayer",
+        "candidateEvidence.Alive",
+        "candidateEvidence.SameMap",
+        "ValidationRouteDrudgeChargeQueueOverflow = true",
+        "void BotWorldPopulationMgr::NotifyNativeCreatureSpellLanded",
+        "candidate.Sequence == observationSequence",
+        "candidate.AttemptId == Cohort().AttemptId",
+        "candidate.WipeGeneration == Cohort().Raid.WipeGeneration",
+    ):
+        assert token in cast_hook
+    assert cast_hook.index("if (!exactSource)") < cast_hook.index(
+        "Scope const currentScope"
+    ) < cast_hook.index("Result const transition = Advance(seedState, rushInput);")
+    drudge_header = (BOT_DIR / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudge.h").read_text(
+        encoding="utf-8"
     )
-    assert seed_call < post_seed_guard < profile_geometry_gate
-    post_seed = lane[post_seed_guard:profile_geometry_gate]
-    assert "GetUnsortedThreatList()" in post_seed
-    assert "reference->IsAvailable()" in post_seed
-    assert "IsWithinLOSInMap(candidate)" in post_seed
-    assert "IsWithinCombatRange(" in post_seed
-    assert "ValidationRouteSplitTankThreatHeadroomMultiplier" in post_seed
-    assert "BotRaidDrudgeNativeRush::Evaluate(input)" in post_seed
-    assert '"drudge_native_tank_threat_build"' in post_seed
-    assert '"drudge_native_tank_threat_sustain"' in post_seed
-    assert "ShouldBuildTankThreat(" in post_seed
-    assert '"drudge_pre_first_rush_ready_hold"' in post_seed
-    assert '"drudge_native_farthest_seed_wait"' in post_seed
-    assert "ExecuteProfileCombatAction(" in post_seed
-    prospective_hold = lane.index('"drudge_native_farthest_profile_hold"')
-    regular_action = lane.index('"drudge_lane_single_target_action"')
-    assert profile_geometry_gate < prospective_hold < regular_action
-    unavailable = lane.index('"drudge_pre_first_rush_seed_profile_unavailable"')
-    unavailable_branch = lane[lane.rfind("if (!selectedMember || !selectedState)", 0, unavailable):unavailable]
-    assert "ValidationRouteDrudgeThreatSeedFailure = true" not in unavailable_branch
-    shared_barrier = lane.index(
-        "for (WorldBotState const& memberState : Party().Bots)", unavailable
-    )
-    authority_check = lane.index("bool otherOffenseSuppressed = true;", shared_barrier)
-    selected_release = lane.index(
-        "SetAllOffenseSuppressed(selectedOwnerGuid, false)", authority_check
-    )
-    assert shared_barrier < authority_check < selected_release
-    health_sync_call = lane.rindex("recordHealthSyncHold();")
-    assert ownership_gate < health_sync_call
-    assert geometry_gate < health_sync_call
-    assert '"drudge_lane_wait_lane_ownership"' in lane
-    assert '"drudge_lane_profile_hold_contract_unsafe"' in lane
-    assert '"drudge_native_charge_target_tank_reseparated"' in lane
-    assert "bool const taunted = TryCastCombatSpell" in lane
-    assert lane.index("SetAllOffenseSuppressed(bot->GetGUID().GetRawValue(), false)") < lane.index(
-        "bool const taunted = TryCastCombatSpell"
-    ) < lane.index("SetAllOffenseSuppressed(bot->GetGUID().GetRawValue(), true)")
-    assert "ResolveProfileCombatAction(bot, laneSource" in lane
-    assert "true, false, true);" in lane  # forbid area, disallow multidot, hostile-only
-    cast_hook = IMPL[
-        IMPL.index("uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted"):
-        IMPL.index("void BotWorldPopulationMgr::NotifyCombatDamage")
-    ]
-    assert 'ValidationRouteMechanicProfile != "trash_two_tank_charge_lanes"' in cast_hook
-    assert "ValidationRouteChargeRangeYards" in cast_hook
-    assert "ValidationRouteChargeNativeIntervalMs" in cast_hook
-    assert "ValidationRouteDrudgeChargeGeneration" in cast_hook
-    assert "ValidationRouteDrudgeChargeObservations.push_back" in cast_hook
-    assert "GetUnsortedThreatList" in cast_hook
-    assert "nativeThreatList.size()" not in cast_hook
-    assert "nativeThreatCandidateCount" in cast_hook
-    hook_scope = cast_hook.index("Scope const currentScope")
-    hook_close = cast_hook.index("Result const transition = Advance(seedState, rushInput);")
-    hook_exact_source = cast_hook.index("if (!exactSource)")
-    hook_target_shape = cast_hook.index("Player* targetPlayer = target->ToPlayer()")
-    assert hook_exact_source < hook_scope < hook_close < hook_target_shape
-    assert hook_scope < hook_close
-    assert "bool const currentScopeHasChargeObservation = std::any_of" in cast_hook[
-        hook_exact_source:hook_scope
-    ]
-    assert "if (!currentScopeHasChargeObservation)" in cast_hook[hook_exact_source:hook_scope]
-    assert "ValidationRouteDrudgeLastChargeMsBySpawn[sourceSpawnId] = observedAtMs" in cast_hook[
-        hook_target_shape:
-    ]
-    assert "rushInput.Type = Event::FirstNativeRush" in cast_hook[hook_scope:hook_close]
-    assert "Party().ValidationRouteDrudgeThreatSeedRouteGeneration" in cast_hook[
-        hook_close:hook_target_shape
-    ]
-    header = (Path(__file__).parents[1] / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text(
-        encoding="utf-8",
-    )
-    drudge_observation = header[
-        header.index("struct ValidationRouteDrudgeChargeObservation") :
-        header.index("struct ValidationRouteDrudgeThreatSeedEvidence")
-    ]
-    generic_evidence = header[
-        header.index("struct ValidationRouteEvidence") :
-        header.index("struct ValidationRouteDrudgeMemberGeometry")
-    ]
-    assert "uint64 TargetRawGuid = 0;" in drudge_observation
-    assert "TargetRawGuid" not in generic_evidence
-    assert "MaxNativeThreatCandidates" in cast_hook
-    assert "NativeThreatCandidatesCount" in cast_hook
-    assert "NativeThreatCandidatesComplete" in cast_hook
-    assert "NativeThreatCandidatesTruncated" in cast_hook
-    assert "candidateEvidence.IsPlayer" in cast_hook
-    assert "candidateEvidence.Alive" in cast_hook
-    assert "candidateEvidence.SameMap" in cast_hook
-    assert "ValidationRouteDrudgeChargeQueueOverflow = true" in cast_hook
-    assert "void BotWorldPopulationMgr::NotifyNativeCreatureSpellLanded" in cast_hook
-    assert "candidate.Sequence == observationSequence" in cast_hook
-    assert "candidate.AttemptId == Cohort().AttemptId" in cast_hook
-    assert "candidate.WipeGeneration == Cohort().Raid.WipeGeneration" in cast_hook
-    spell_impl = (ROOT / "src/server/game/Spells/Spell.cpp").read_text()
+    assert "DrudgeLaneCallbacks" in drudge_header
+    assert "TryGroupHeal" in drudge_header
+
+    spell_impl = (ROOT / "src/server/game/Spells/Spell.cpp").read_text(encoding="utf-8")
     assert "NotifyNativeCreatureSpellStarted" in spell_impl
-    assert spell_impl.index("NotifyNativeCreatureSpellStarted") < spell_impl.index(
-        "// Creatures focus their target when possible"
-    )
-    assert "m_nativeCreatureSpellObservationSequence" in spell_impl
-    assert "if (!preventDefault)" in spell_impl
     assert "effect == SPELL_EFFECT_CHARGE" in spell_impl
     assert "NotifyNativeCreatureSpellLanded" in spell_impl
-    assert "else if (!assignedTank && UnitHealthPct" not in lane
-    assert route_runtime.index("if (tryValidationRouteMinimumDistance())") < route_runtime.index(
-        "if (tryValidationRouteDrudgeChargeLanes())"
-    ) < route_runtime.index("struct TrashThreatControl")
+
 
 
 def test_botworld_hot_path_defers_progression_scoring_and_rate_limits_repeated_logs():
-    update_start = IMPL.index("void BotWorldPopulationMgr::UpdateBot")
-    update_end = IMPL.index("Player* BotWorldPopulationMgr::GetLoadedBot", update_start)
-    update = IMPL[update_start:update_end]
-    assert update.index("if (state.DecisionTimer > diff)") < update.index(
-        "ensureProgressionScored();", update.index("if (state.DecisionTimer > diff)")
-    )
-    assert update.index("SuppressNativeRaidRecovery(state, bot)") < update.index(
-        "if (state.DecisionTimer > diff)"
-    )
-    assert "LastNotInWorldInfoLogMs" in IMPL
-    assert "SuppressedNotInWorldInfoLogs" in IMPL
-    assert "LastNativeWorldportDeferredLogMs" in IMPL
-    assert "SuppressedNativeWorldportDeferredLogs" in IMPL
-    assert "suppressed=%u" in IMPL
-    suppress_start = IMPL.index("void BotWorldPopulationMgr::SuppressNativeRaidRecovery")
-    suppress_end = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective", suppress_start)
-    suppress = IMPL[suppress_start:suppress_end]
+    update = UPDATE_PREPARATION
+    hold = update.index("if (context.Bot->IsAlive() && IsNativeRaidRecoveryEvidencePending())")
+    timer = update.index("if (context.State.DecisionTimer > context.Diff)")
+    score = update.index("context.EnsureProgressionScored();", timer)
+    assert hold < timer < score
+    assert "SuppressNativeRaidRecovery(context.State, context.Bot);" in update[hold:timer]
+    assert "LastNotInWorldInfoLogMs" in UPDATE_CONTEXT
+    assert "SuppressedNotInWorldInfoLogs" in UPDATE_CONTEXT
+    assert "LastNativeWorldportDeferredLogMs" in VALIDATION_ADMISSION
+    assert "SuppressedNativeWorldportDeferredLogs" in VALIDATION_ADMISSION
+    assert "suppressed=%u" in UPDATE_CONTEXT + VALIDATION_ADMISSION
+    suppress = VALIDATION_RECOVERY_GATE
     assert "NativeRecoveryHoldWipeGeneration" in suppress
     assert "periodicVerify" in suppress
     assert "if (!newHold && !periodicVerify && !ownerActive && !controlledUnitActive)" in suppress
@@ -904,15 +970,15 @@ def test_botworld_hot_path_defers_progression_scoring_and_rate_limits_repeated_l
 
 
 def test_native_recovery_hold_is_latched_at_wipe_and_cleared_only_after_complete_evidence():
-    runtime = HEADER[HEADER.index("struct RaidRuntime"):HEADER.index("struct CohortRuntime")]
+    runtime = RUNTIME_CONTRACTS[
+        RUNTIME_CONTRACTS.index("struct RaidRuntime"):
+        RUNTIME_CONTRACTS.index("struct CohortRuntime")
+    ]
     assert "bool NativeRecoveryHoldActive" in runtime
     assert "uint64 NativeRecoveryRouteGeneration" in runtime
     assert "std::string NativeRecoveryNodeId" in runtime
 
-    ensure = IMPL[
-        IMPL.index("void BotWorldPopulationMgr::EnsureValidationCohortGroup"):
-        IMPL.index("bool BotWorldPopulationMgr::ResolveSpawnPlacement")
-    ]
+    ensure = VALIDATION_COHORT_RUNTIME
     wipe = ensure.index("if (allDead)")
     latch = ensure.index("raid.NativeRecoveryHoldActive =", wipe)
     policy = ensure.rindex("bool const nativeRecoveryPolicy", wipe, latch)
@@ -921,9 +987,9 @@ def test_native_recovery_hold_is_latched_at_wipe_and_cleared_only_after_complete
     clear = ensure.index("if (raid.NativeRecoveryEvidenceComplete)", evidence)
     assert latch < evidence < clear
 
-    pending = IMPL[
-        IMPL.index("bool BotWorldPopulationMgr::IsNativeRaidRecoveryEvidencePending"):
-        IMPL.index("void BotWorldPopulationMgr::SuppressNativeRaidRecovery")
+    pending = VALIDATION_RECOVERY_GATE[
+        VALIDATION_RECOVERY_GATE.index("bool BotWorldPopulationMgr::IsNativeRaidRecoveryEvidencePending"):
+        VALIDATION_RECOVERY_GATE.index("void BotWorldPopulationMgr::SuppressNativeRaidRecovery")
     ]
     assert "!raid.NativeRecoveryHoldActive" in pending
     assert "raid.NativeRecoveryRouteGeneration != Party().ValidationRouteGeneration" in pending
@@ -931,18 +997,11 @@ def test_native_recovery_hold_is_latched_at_wipe_and_cleared_only_after_complete
     assert "exactWipeRoster" not in pending
     assert "return !raid.NativeRecoveryEvidenceComplete;" in pending
 
-    update = IMPL[
-        IMPL.index("void BotWorldPopulationMgr::UpdateBot"):
-        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
-    ]
-    assert update.index("if (bot->IsAlive() && IsNativeRaidRecoveryEvidencePending())") < update.index(
-        "TryRespondNativeRaidReadyCheck(state, bot);"
-    )
+    update = UPDATE_PREPARATION
+    hold = update.index("if (context.Bot->IsAlive() && IsNativeRaidRecoveryEvidencePending())")
+    assert hold < update.index("TryRespondNativeRaidReadyCheck(context.State, context.Bot);", hold)
 
-    runtime_json = IMPL[
-        IMPL.index("std::string BotWorldPopulationMgr::BuildRaidRuntimeJson"):
-        IMPL.index("std::string BotWorldPopulationMgr::BuildRaidPositioningAnchorsJson")
-    ]
+    runtime_json = (BOT_DIR / "BotWorldPopulationMgrRaidRuntime.cpp").read_text(encoding="utf-8")
     assert runtime_json.count("native_recovery_hold_active") >= 2
     assert runtime_json.count("native_recovery_route_generation") >= 2
     assert runtime_json.count("native_recovery_node_id") >= 2
@@ -1061,10 +1120,7 @@ def test_bwd_laser_exit_requires_monotonic_union_safe_path_for_overlapping_strik
     union_safe_exit = [(5.0, 0.0), (5.0, 8.0), (5.0, 16.0)]
     assert _laser_exit_path_is_safe(union_safe_exit, hazards)
 
-    movement = IMPL[
-        IMPL.index("auto pathOutsideActiveHazards"):
-        IMPL.index("auto isScopedGenericCastCandidate")
-    ]
+    movement = VALIDATION_HAZARDS
     assert "startedOutside" in movement
     assert "exitedHazards" in movement
     assert "distance + 0.5f < previousDistances[index]" in movement
@@ -1102,15 +1158,16 @@ def test_drudge_legacy_candidate_k_cannot_certify_when_selector_cached_j():
         current_scope=scope,
     )
 
-    route_start = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
-    route_end = IMPL.index("bool BotWorldPopulationMgr::IsBossContext", route_start)
-    route_runtime = IMPL[route_start:route_end]
-    group_start = route_runtime.index("auto groupPositionSafe")
-    group_end = route_runtime.index("auto sourceOnFrozenLane", group_start)
-    group = route_runtime[group_start:group_end]
-    assert "cachedAnchorSafe(*memberState, member)" in group
-    assert "for (auto const& candidate : anchorCandidatesFor(memberSlot))" not in group
-    assert "ValidationRouteDrudgeAnchorCandidateIndex >= candidates.size()" in route_runtime
+    geometry = (
+        BOT_DIR / "Content/Raids/BlackwingDescent/Trash/Drudge/"
+        "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
+    ).read_text(encoding="utf-8")
+    assert "CachedAnchorSafe = [this]" in geometry
+    assert "GroupPositionSafe = [this]" in geometry
+    assert "AnchorCacheMatchesGeneration = [this]" in geometry
+    assert "for (auto const& candidate : candidates)" not in geometry
+    assert "ValidationRouteDrudgeAnchorCandidateIndex >= candidates.size()" in geometry
+    assert "SelectPathableDrudgeAnchor = [this]" in geometry
 
 
 def test_drudge_cached_anchor_is_invalidated_by_attempt_wipe_or_route_scope():
@@ -1235,26 +1292,22 @@ def test_live_pack_is_counterexample_to_generic_safe_memory_route_recovery():
 
 
 def test_live_pack_authority_clears_and_blocks_safe_memory_override():
-    route_start = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
-    route_end = IMPL.index("bool BotWorldPopulationMgr::IsBossContext", route_start)
-    route_runtime = IMPL[route_start:route_end]
+    route_runtime = VALIDATION_FOCUS
     authority = route_runtime.index("routeHasCurrentGenerationLivePackAuthority")
-    anchor_end = route_runtime.index("Map* routeMap", authority)
-    anchor_logic = route_runtime[authority:anchor_end]
+    anchor_logic = route_runtime[authority:]
 
-    assert "persistedValidationRoutePackHasLiveMembers()" in anchor_logic
+    assert "persistedPackHasLiveMembers()" in anchor_logic
     assert 'state.ValidationRouteAnchorOverrideReason\n            == "validation_route_safe_memory_after_death_loop"' in anchor_logic
     clear = anchor_logic.index("state.ValidationRouteAnchorOverrideValid = false;")
     assert anchor_logic.index("routeHasCurrentGenerationLivePackAuthority") < clear
     install = anchor_logic.rindex("routeHasCurrentGenerationLivePackAuthority)")
     assert "&& !routeHasCurrentGenerationLivePackAuthority" in anchor_logic[install - 120:install + 80]
     assert "validation_route_partial_wipe_retreat_rendezvous" in anchor_logic
-    assert "validation_route_live_pack_reapproach" in route_runtime
+    assert "validation_route_live_pack_reapproach" in VALIDATION_TERMINAL_ARRIVAL
 
-    helper_start = route_runtime.index("auto persistedValidationRoutePackHasLiveMembers")
-    helper_end = route_runtime.index("auto activeValidationRoutePackTarget", helper_start)
-    helper = route_runtime[helper_start:helper_end]
-    assert "ValidationRoutePackGeneration != Party().ValidationRouteGeneration" in helper
+    helper = VALIDATION_LIVE_PACK
+    pack = VALIDATION_ROUTE_PACK
+    assert "ValidationRoutePackGeneration != Party().ValidationRouteGeneration" in pack
     assert "ValidationRoutePackDeathGuids.find(guid)" in helper
     assert "ValidationRoutePackTransitionGuids.find(guid)" in helper
 
@@ -1376,21 +1429,17 @@ def test_partial_death_live_pack_guard_falls_back_when_composition_is_nonviable(
 
 
 def test_partial_death_live_pack_guard_is_before_generic_retreat_and_preserves_fallbacks():
-    objective = IMPL[
-        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective"):
-        IMPL.index("bool BotWorldPopulationMgr::IsBossContext")
-    ]
-    guard = objective.index("auto currentLiveValidationRoutePackCanContinue")
-    retreat_gate = objective.index("if ((majorityDead || criticalRoleDead)", guard)
-    assert guard < retreat_gate
-    helper_logic = objective[guard:objective.index("// If most of the party", guard)]
+    helper = VALIDATION_LIVE_PACK
+    recovery = GROUP_RECOVERY
+    focus = VALIDATION_FOCUS
+
     for token in (
         'Cohort().Config.ValidationRouteKind == "boss"',
         "Cohort().Raid.RosterComplete",
         "Cohort().Raid.UniqueLeases",
         "Cohort().Raid.RosterCompositionValid",
         "Cohort().Raid.RosterByGuid.size() != Party().Bots.size()",
-        "persistedValidationRoutePackHasLiveMembers()",
+        "persistedValidationRoutePackHasLiveMembers",
         "auto isSharedValidationCohortCombatLinked",
         "auto frozenRaidRole",
         "std::vector<Player*> livingTanks",
@@ -1407,35 +1456,38 @@ def test_partial_death_live_pack_guard_is_before_generic_retreat_and_preserves_f
         "tank->IsValidAttackTarget(creature)",
         "livingTanksCount > 0 && livingHealers > 0 && livingDps > 0",
     ):
-        assert token in helper_logic
-    assert "activeValidationRoutePackTarget()" not in helper_logic
-    assert "bot->GetMap()" not in helper_logic
-    assert "GetDungeonRole" not in helper_logic
-    assert "&& !currentLivePackCanContinue" in objective[retreat_gate:retreat_gate + 180]
-    assert 'action = "native_full_wipe_hold";' in objective
-    assert 'validation_route_partial_wipe_retreat_rendezvous' in objective
+        assert token in helper
+    assert "activeValidationRoutePackTarget" not in helper
+    assert "bot->GetMap()" not in helper
+    assert "GetDungeonRole" not in helper
+    recovery_guard = recovery.index("bool currentLivePackCanContinue")
+    retreat_gate = recovery.index("&& !currentLivePackCanContinue", recovery_guard)
+    assert recovery_guard < retreat_gate
+    assert "validation_route_partial_wipe_retreat_rendezvous" in recovery
+    assert "validation_route_live_pack_reapproach" in VALIDATION_TERMINAL_ARRIVAL
 
 
 def test_boss_route_rejects_undeclared_engaged_trash_before_shared_actions():
-    route_runtime = IMPL[
-        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective"):
-        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteReadiness")
-    ]
-    early_rejection = route_runtime.index(
+    route_runtime = VALIDATION_ROUTE_RUNTIME
+    threat = (BOT_DIR / "BotWorldPopulationMgrValidationRouteTrashThreatControl.cpp").read_text(
+        encoding="utf-8"
+    )
+    early_rejection = threat.index(
         'if (Cohort().Config.ValidationRouteKind == "boss"\n'
         "        && trashThreatControl.EngagedCount > 0"
     )
 
-    assert early_rejection < route_runtime.index("bool insecureTrashSwarm")
-    assert early_rejection < route_runtime.index("hunterTrashMisdirectionActive")
-    assert early_rejection < route_runtime.index('action = "misdirection_to_tank";')
-    assert early_rejection < route_runtime.index('action = "trash_density_area_threat";')
-    assert 'rejected, "boss_route_target_not_declared"' in route_runtime[
-        early_rejection:route_runtime.index("bool insecureTrashSwarm")
-    ]
-    assert 'action = "boss_route_prerequisite_blocked";' in route_runtime[
-        early_rejection:route_runtime.index("bool insecureTrashSwarm")
-    ]
+    assert early_rejection < threat.index("trashThreatControl.InsecureTrashSwarm")
+    assert early_rejection < threat.index("hunterTrashMisdirectionActive")
+    rejection = threat[early_rejection:]
+    assert 'rejected, "boss_route_target_not_declared"' in rejection
+    assert 'action = "boss_route_prerequisite_blocked";' in rejection
+    assert "bool ObjectiveContext::RunTrashThreatControl(" in threat
+    target_engagement = (BOT_DIR / "BotWorldPopulationMgrValidationRouteTargetEngagement.cpp").read_text(
+        encoding="utf-8"
+    )
+    assert '"boss_route_undeclared_prerequisite_blocked"' in target_engagement
+    assert 'action = "boss_route_prerequisite_blocked";' in target_engagement
 
 
 def test_single_cohort_owns_one_raid_runtime():
@@ -1461,22 +1513,10 @@ def test_no_pch_runtime_declares_roster_plan_before_use_and_compares_transport_i
 
 
 def test_live_raid_instance_identity_freezes_atomically_from_the_exact_roster():
-    population = IMPL[
-        IMPL.index("void BotWorldPopulationMgr::EnsurePopulation()"):
-        IMPL.index("void BotWorldPopulationMgr::EnsureCalibrationPopulation()")
-    ]
-    group = IMPL[
-        IMPL.index("void BotWorldPopulationMgr::EnsureValidationCohortGroup()"):
-        IMPL.index("bool BotWorldPopulationMgr::ResolveSpawnPlacement")
-    ]
-    update = IMPL[
-        IMPL.index("void BotWorldPopulationMgr::UpdateBot"):
-        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
-    ]
-    original_instance = IMPL[
-        IMPL.index("bool BotWorldPopulationMgr::IsValidationCohortMemberInOriginalInstance"):
-        IMPL.index("void BotWorldPopulationMgr::MarkValidationCohortViolation")
-    ]
+    population = POPULATION
+    group = VALIDATION_COHORT_GROUP
+    update = UPDATE_PREPARATION
+    original_instance = VALIDATION_COHORT_LIFECYCLE
 
     assert 'Cohort().Config.ValidationRouteEnable || placement.Source != "saved_position"' not in population
     assert 'sBotMgr->ProvisionWorldBot("any", std::to_string(candidateGuid),' in population
@@ -1491,7 +1531,7 @@ def test_live_raid_instance_identity_freezes_atomically_from_the_exact_roster():
     assert "!member->GetInstanceId()" in group
     assert "if (!memberState->ValidationCohortLocked)" in group
     assert '"validation_cohort_immutable_identity_drift"' in group
-    assert 'state.LastDecisionResult = "validation_cohort_formation_pending";' in update
+    assert 'context.State.LastDecisionResult = "validation_cohort_formation_pending";' in update
     assert "sMapMgr->FindMap(state.ValidationCohortMapId, state.ValidationCohortInstanceId)" in original_instance
     assert "originalMap ? originalMap->GetCorpseByPlayer(bot->GetGUID()) : nullptr" in original_instance
     assert "originalCorpse->GetOwnerGUID() == bot->GetGUID()" in original_instance
@@ -1515,24 +1555,21 @@ def test_validation_saved_position_is_route_map_bound_without_spawn_fallback():
     assert placement.index("if (Cohort().Config.ValidationRouteEnable)") < placement.index(
         'if (mode == "resume_only")'
     )
-    assert "mapId != Cohort().Config.ValidationRouteMapId" in resume
-
-
 def test_validation_raid_preflights_exact_saved_roster_before_first_claim_or_spawn():
-    population = IMPL[
-        IMPL.index("void BotWorldPopulationMgr::EnsurePopulation()"):
-        IMPL.index("void BotWorldPopulationMgr::EnsureCalibrationPopulation()")
-    ]
-    manifest = IMPL[
-        IMPL.index("void BotWorldPopulationMgr::LoadValidationRouteManifest()"):
-        IMPL.index("bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode")
-    ]
-    admission = population.index("if (validationRaidAdmission)")
-    first_claim = population.index("ClaimBotGuid(planned.Guid, planned.RosterSlotId)")
-    first_spawn = population.index('sBotMgr->ProvisionWorldBot("any", std::to_string(planned.Guid)')
-    generic_population = population.index("uint32 attempts = 0;")
+    admission = VALIDATION_ADMISSION
+    admission_runtime = admission
+    manifest = VALIDATION_MANIFEST
+    preflight = admission.index("// Read and validate every GUID")
+    first_claim = admission.index("ClaimBotGuid(planned.Guid, planned.RosterSlotId)")
+    first_spawn = admission.index(
+        'sBotMgr->ProvisionWorldBot("any", std::to_string(planned.Guid)'
+    )
+    plan_complete = admission.index(
+        "if (validationRaidSpawnPlan.size() != rosterPlan.size()",
+        preflight,
+    )
 
-    assert admission < first_claim < first_spawn < generic_population
+    assert preflight < plan_complete < first_claim < first_spawn
     for field in ("bot_start_map_id", "bot_start_x", "bot_start_y", "bot_start_z", "bot_start_o"):
         assert field in manifest
     for token in (
@@ -1548,40 +1585,40 @@ def test_validation_raid_preflights_exact_saved_roster_before_first_claim_or_spa
         "placement.X = routeStart.BotStartX",
         'placement.Source = "server_route_manifest_entrance"',
     ):
-        assert token in population
-    before_claim = population[admission:first_claim]
+        assert token in admission
+    before_claim = admission[preflight:first_claim]
     assert "ClaimBotGuid(" not in before_claim
     assert "ProvisionWorldBot" not in before_claim
     assert "ProvisionWorldBotInGroup" not in before_claim
-    assert "new Group" not in before_claim
     assert "ResolveSpawnPlacement(candidateGuid, placement)" not in before_claim
-    admission_runtime = population[admission:generic_population]
-    assert "ResolveSpawnPlacement(" not in admission_runtime
-    assert "AllowConfiguredCenterFallback" not in admission_runtime
-    assert "validationRaidSpawnPlan" in admission_runtime
-    assert "ProvisionWorldBot(" in admission_runtime
-    assert "ProvisionWorldBotInGroup(" in admission_runtime
-    assert "!bot->IsAlive()" in admission_runtime
-    assert "bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)" in admission_runtime
+    transaction = admission[plan_complete:]
+    assert "validationRaidSpawnPlan" in transaction
+    assert "ProvisionWorldBot(" in transaction
+    assert "ProvisionWorldBotInGroup(" in transaction
+    assert "!bot->IsAlive()" in transaction
+    assert "bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)" in transaction
+    assert "bot->HasCorpse()" in transaction
+    assert "state.ValidationCohortInstanceId != bot->GetInstanceId()" in transaction
+
     assert "bot->HasCorpse()" in admission_runtime
     assert "state.ValidationCohortInstanceId != bot->GetInstanceId()" in admission_runtime
 
 
 def test_validation_raid_admission_rolls_back_late_failures_and_cannot_retry_unpinned():
-    population = IMPL[
-        IMPL.index("void BotWorldPopulationMgr::EnsurePopulation()"):
-        IMPL.index("void BotWorldPopulationMgr::EnsureCalibrationPopulation()")
-    ]
-    admission = population.index("if (validationRaidAdmission)")
-    generic_population = population.index("uint32 attempts = 0;")
-    runtime = population[admission:generic_population]
-
+    runtime = VALIDATION_ADMISSION
+    terminal_check = runtime.index("if (Cohort().ValidationRaidAdmissionFailed)")
+    pinned_selection = runtime.index(
+        "SelectPoolCandidateGuid(slot.RosterSlotId, &plannedGuids,"
+    )
+    transaction_claim = runtime.index("ClaimBotGuid(planned.Guid, planned.RosterSlotId)")
+    rollback = runtime.index("auto rollbackAdmission")
+    assert terminal_check < pinned_selection < rollback < transaction_claim
     for token in (
         "Cohort().ValidationRaidAdmissionFailed",
         "Cohort().ValidationRaidAdmissionComplete",
-        "rollbackAdmission(\"validation_raid_admission_claim_failed\")",
-        "rollbackAdmission(\"validation_raid_admission_spawn_failed\")",
-        "rollbackAdmission(\"validation_raid_admission_exact_group_or_alive_state_failed\")",
+        'rollbackAdmission("validation_raid_admission_claim_failed")',
+        'rollbackAdmission("validation_raid_admission_spawn_failed")',
+        'rollbackAdmission("validation_raid_admission_exact_group_or_alive_state_failed")',
         "sBotMgr->RemoveWorldBot(*itr);",
         "ReleaseBotGuid(guid);",
         "Party() = partyBeforeAdmission;",
@@ -1590,29 +1627,19 @@ def test_validation_raid_admission_rolls_back_late_failures_and_cannot_retry_unp
         "Cohort().RosterLeases.clear();",
     ):
         assert token in runtime
-
-    terminal_check = runtime.index("if (Cohort().ValidationRaidAdmissionFailed)")
-    pinned_selection = runtime.index("SelectPoolCandidateGuid(slot.RosterSlotId, &plannedGuids,")
-    transaction_claim = runtime.index("ClaimBotGuid(planned.Guid, planned.RosterSlotId)")
-    assert terminal_check < pinned_selection < transaction_claim
-    assert runtime.count("SelectPoolCandidateGuid(") == 1
+    assert runtime.count("SelectPoolCandidateGuid(slot.RosterSlotId, &plannedGuids,") == 1
     assert "SelectPoolCandidateGuid(rosterSlotId)" not in runtime
     assert "ResolveSpawnPlacement(candidateGuid, placement)" not in runtime
-    assert "continue;" not in runtime[transaction_claim:]
-
-    cohort = HEADER[
-        HEADER.index("struct CohortRuntime"):
-        HEADER.index("struct BotGuidLease")
+    cohort = RUNTIME_CONTRACTS[
+        RUNTIME_CONTRACTS.index("struct CohortRuntime"):
+        RUNTIME_CONTRACTS.index("struct BotGuidLease")
     ]
     assert "bool ValidationRaidAdmissionComplete = false;" in cohort
     assert "bool ValidationRaidAdmissionFailed = false;" in cohort
 
 
 def test_completed_validation_raid_drift_verifies_exact_identity_and_cleans_all_state():
-    population = IMPL[
-        IMPL.index("void BotWorldPopulationMgr::EnsurePopulation()"):
-        IMPL.index("void BotWorldPopulationMgr::EnsureCalibrationPopulation()")
-    ]
+    population = VALIDATION_ADMISSION
     complete = population[
         population.index("if (Cohort().ValidationRaidAdmissionComplete)"):
         population.index("auto terminalFailure")
@@ -1645,10 +1672,7 @@ def test_completed_validation_raid_drift_verifies_exact_identity_and_cleans_all_
 
 
 def test_completed_validation_raid_exact_identity_refreshes_live_runtime_each_tick():
-    population = IMPL[
-        IMPL.index("void BotWorldPopulationMgr::EnsurePopulation()"):
-        IMPL.index("void BotWorldPopulationMgr::EnsureCalibrationPopulation()")
-    ]
+    population = VALIDATION_ADMISSION
     complete = population[
         population.index("if (Cohort().ValidationRaidAdmissionComplete)"):
         population.index("auto terminalFailure")
@@ -1656,7 +1680,7 @@ def test_completed_validation_raid_exact_identity_refreshes_live_runtime_each_ti
     drift_start = complete.index("if (!exactIdentity)")
     refresh = complete.index("EnsureValidationCohortGroup();")
     drift_end = complete.index(
-        "\n            else\n            {\n                // Admission identity is immutable",
+        "\n        else\n        {\n            // Admission identity is immutable",
         drift_start,
     )
 
@@ -1927,18 +1951,16 @@ def test_completed_validation_raid_defers_only_exact_native_recovery_worldports(
 
 
 def test_validation_raid_candidate_selection_is_exact_frozen_identity_not_role_substitution():
-    population = IMPL[
-        IMPL.index("void BotWorldPopulationMgr::EnsurePopulation()"):
-        IMPL.index("void BotWorldPopulationMgr::EnsureCalibrationPopulation()")
-    ]
-    selector = IMPL[
-        IMPL.index("uint32 BotWorldPopulationMgr::SelectPoolCandidateGuid"):
-        IMPL.index("uint32 BotWorldPopulationMgr::SelectCalibrationPoolCandidateGuid")
+    population = VALIDATION_ADMISSION
+    selector = ROSTER[
+        ROSTER.index("uint32 BotWorldPopulationMgr::SelectPoolCandidateGuid"):
+        ROSTER.index("uint32 BotWorldPopulationMgr::SelectCalibrationPoolCandidateGuid")
     ]
     for token in (
         "routeStart.ExpectedRoster.size() != rosterPlan.size()",
         "expected->Role != slot.Role",
-        "expected->Guid, expected->Name, expected->ClassSpec",
+        "!expected->Guid || expected->Name.empty()",
+        "expected->ClassSpec.empty()",
         'terminalFailure("validation_raid_preflight_roster_identity_invalid")',
     ):
         assert token in population
@@ -2021,9 +2043,15 @@ def test_generic_raid_mechanic_contracts_are_typed_executable_and_fail_closed():
     assert "transport->GetTransportGUID() == gameObject->GetGUID()" in IMPL
     assert "HandleAreaTriggerOpcode(areaTrigger)" in IMPL
     assert "declarative_area_damage_forbidden" in IMPL
-    route_start = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
-    route_end = IMPL.index("bool BotWorldPopulationMgr::IsBossContext", route_start)
-    route_runtime = IMPL[route_start:route_end]
+    route_runtime = _read_source_set(tuple(
+        BOT_DIR / name
+        for name in (
+            "BotWorldPopulationMgrValidationRouteTankFocusAssist.cpp",
+            "BotWorldPopulationMgrValidationRouteSharedFocusAction.cpp",
+            "BotWorldPopulationMgrValidationRouteActiveCombat.cpp",
+            "BotWorldPopulationMgrValidationRouteTargetEngagement.cpp",
+        )
+    ))
     assert route_runtime.count("TryBossMechanics(state, bot, power, stage, activity, target)") == 4
 
 
@@ -2092,20 +2120,16 @@ def test_bwd_native_ghost_runback_acks_only_corpse_bound_worldports_and_canonica
 
 
 def test_validation_party_resurrection_fails_closed_to_exact_typed_target_identity():
-    builder = IMPL[
-        IMPL.index("BotWorldPopulationMgr::BuildCombatResNativeActionCandidate"):
-        IMPL.index("void BotWorldPopulationMgr::ApplyRuntimeConfigOverride")
+    builder = COMBAT_RES[COMBAT_RES.index("BotWorldPopulationMgr::BuildCombatResNativeActionCandidate"):]
+    predicate = COMBAT_RES[
+        COMBAT_RES.index("bool BotWorldPopulationMgr::CurrentCombatResOwnerUsable"):
+        COMBAT_RES.index("void BotWorldPopulationMgr::PublishNativeBattleResDecision")
     ]
-    predicate = IMPL[
-        IMPL.index("bool BotWorldPopulationMgr::CurrentCombatResOwnerUsable"):
-        IMPL.index("void BotWorldPopulationMgr::PublishNativeBattleResDecision")
-    ]
-    executor = IMPL[
-        IMPL.index("BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent"):
-        IMPL.index("void BotWorldPopulationMgr::BeginMeleeAutoAttackDecision")
+    executor = NATIVE_ACTION[
+        NATIVE_ACTION.index("BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent"):
     ]
 
-    assert "TryNativePartyResurrection" not in IMPL
+    assert "TryNativePartyResurrection" not in COMBAT_RES + NATIVE_ACTION
     assert "CurrentCombatResOwnerUsable" in builder
     assert "IsNativeCombatResTarget(targetState, target)" in predicate
     assert "targetState.NativeBattleResOwnerGuid" in predicate
@@ -2117,9 +2141,10 @@ def test_validation_party_resurrection_fails_closed_to_exact_typed_target_identi
     assert "BotNativeAction::CombatResAccept" in executor
     assert "HandleResurrectResponseOpcode(response)" in executor
 
-    authority_start = IMPL.index("bool BotWorldPopulationMgr::HasNativeRaidCorpseAuthority")
-    authority_end = IMPL.index("bool BotWorldPopulationMgr::ResolveNativeValidationEntrance", authority_start)
-    authority = IMPL[authority_start:authority_end]
+    authority = VALIDATION_COHORT_LIFECYCLE[
+        VALIDATION_COHORT_LIFECYCLE.index("bool BotWorldPopulationMgr::HasNativeRaidCorpseAuthority"):
+        VALIDATION_COHORT_LIFECYCLE.index("bool BotWorldPopulationMgr::ResolveNativeValidationEntrance")
+    ]
     for rejection in (
         "!bot->HasCorpse()",
         "bot->GetCorpseLocation().GetMapId() != state.ValidationCohortMapId",
@@ -2230,12 +2255,10 @@ def test_phase1_diagnosis_retains_exact_live_location_and_recovery_state():
 
 
 def test_route_directed_boss_assist_cannot_bypass_the_typed_contract_authority():
-    route_start = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
-    route_end = IMPL.index("bool BotWorldPopulationMgr::IsBossContext", route_start)
-    route_runtime = IMPL[route_start:route_end]
-    assist_start = route_runtime.index('if (Cohort().Config.ValidationRouteKind == "boss" && std::string(GetDungeonRole(bot)) != "tank")')
-    assist_end = route_runtime.index("if (routeFocusMemoryActive())", assist_start)
-    assist = route_runtime[assist_start:assist_end]
+    # The route facade now delegates the tank-focus branch to its own
+    # translation unit. Inspect that owner directly so a module split cannot
+    # make a valid branch disappear from this contract test.
+    assist = VALIDATION_ROUTE_TANK_FOCUS
 
     contract_authority = assist.index("if (tankFocusIsBossRoute)")
     profile_action = assist.index("ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, target);")
@@ -2245,37 +2268,31 @@ def test_route_directed_boss_assist_cannot_bypass_the_typed_contract_authority()
     assert 'action = "raid_mechanic_contract_fail_closed";' in assist[contract_authority:profile_action]
     assert "return true;" in assist[contract_authority:profile_action]
 
-    boss_start = IMPL.index("BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMechanics")
-    boss_end = IMPL.index("BotWorldPopulationMgr::RaidRoleAssignment BotWorldPopulationMgr::BuildRaidRoleAssignment", boss_start)
-    boss_runtime = IMPL[boss_start:boss_end]
-    assert 'bool const routeDirectedBoss = Cohort().Config.ValidationRouteKind == "boss"' in boss_runtime
-    assert "routeCreature->GetEntry() == Cohort().Config.ValidationRouteTargetEntry" in boss_runtime
-    assert "Cohort().Config.ValidationRouteAlternateTargetEntries.end()" in boss_runtime
-    assert "if (!IsBossContext(bot, result.Target) && !routeDirectedBoss)" in boss_runtime
-    assert 'result.Action = "raid_mechanic_contract_fail_closed";' in boss_runtime
-    assert "0, false, false, forbidArea, raidAdapter.AllowMultidot" in boss_runtime
+    dispatch = BOSS_DISPATCH
+    mechanics = BOSS_MECHANICS
+    assert 'bool const routeDirectedBoss = Cohort().Config.ValidationRouteKind == "boss"' in dispatch
+    assert "routeCreature->GetEntry() == Cohort().Config.ValidationRouteTargetEntry" in dispatch
+    assert "Cohort().Config.ValidationRouteAlternateTargetEntries.end()" in dispatch
+    assert "if (!IsBossContext(bot, result.Target) && !routeDirectedBoss)" in dispatch
+    assert 'result.Action = "raid_mechanic_contract_fail_closed";' in mechanics
+    assert "0, false, false, forbidArea, raidAdapter.AllowMultidot" in mechanics
 
 
 def test_trash_profile_damage_cannot_pull_or_compound_the_next_boss_encounter():
-    route_start = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
-    route_end = IMPL.index("bool BotWorldPopulationMgr::IsBossContext", route_start)
-    route_runtime = IMPL[route_start:route_end]
+    route_runtime = (BOT_DIR / "BotWorldPopulationMgr.cpp").read_text(encoding="utf-8")
     hold = route_runtime[
         route_runtime.index("Creature* prematureNextEncounter = nullptr;"):
-        route_runtime.index("auto validationPartyHasActiveCombat", route_runtime.index("Creature* prematureNextEncounter = nullptr;"))
+        route_runtime.index("\n\n    ValidationRoutePackContext pack", route_runtime.index("Creature* prematureNextEncounter = nullptr;"))
     ]
-    resolver_start = IMPL.index("ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction")
-    resolver_end = IMPL.index("BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction", resolver_start)
-    resolver = IMPL[resolver_start:resolver_end]
-    executor = IMPL[
-        resolver_end:
-        IMPL.index("BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(Player*", resolver_end)
-    ]
+    resolver = (BOT_DIR / "BotWorldPopulationMgrCombatResolver.cpp").read_text(encoding="utf-8")
+    executor = (BOT_DIR / "BotWorldPopulationMgrCombatExecution.cpp").read_text(encoding="utf-8")
+    authority = VALIDATION_AUTHORITY
+    future_guard = VALIDATION_TARGETING
 
-    assert "IsImmediateNextValidationRouteBossTarget" in IMPL
-    assert "IsImmediateNextValidationRouteEncounterMember" in IMPL
-    assert "SpellHostileMultiTargetReach" not in IMPL
-    assert "SetProtectedEncounterEntries" in route_runtime
+    assert "IsImmediateNextValidationRouteBossTarget" in future_guard
+    assert "IsImmediateNextValidationRouteEncounterMember" in future_guard
+    assert "SpellHostileMultiTargetReach" not in route_runtime
+    assert "SetProtectedEncounterEntries" in authority
     # Future-encounter splash protection is geometry-aware: the route may keep
     # a protected-entry set while current trash is far outside splash range.
     assert "HasNearbyProtectedEncounterTarget(bot, target)" in resolver
@@ -2303,13 +2320,13 @@ def test_trash_profile_damage_cannot_pull_or_compound_the_next_boss_encounter():
     assert "ValidationAttemptFailureReason" in hold
     assert '"validation_route_future_encounter_contamination"' in hold
 
-    future_guard = route_runtime[
-        route_runtime.index("auto wouldPullProtectedFutureValidationRouteSource"):
-        route_runtime.index("auto isValidationRouteEntry")
+    future_guard = future_guard[
+        future_guard.index("auto wouldPullProtectedFutureValidationRouteSource"):
+        future_guard.index("auto isValidationRouteEntry")
     ]
     assert "std::max(35.0f" in future_guard
     assert "ValidationRouteClusterRadiusYards" in future_guard
-    assert route_runtime.count(
+    assert VALIDATION_TARGETING.count(
         "!Party().ValidationRoutePackObservedEngagement\n"
         "            && wouldPullProtectedFutureValidationRouteSource(creature)"
     ) >= 2
@@ -2320,16 +2337,16 @@ def test_trash_profile_damage_cannot_pull_or_compound_the_next_boss_encounter():
     assert "IsAllOffenseSuppressed(ownerGuid)" in ACTION_EXECUTOR
     assert "IsProtectedEncounterTarget(" in ACTION_EXECUTOR
     assert "HasNearbyProtectedEncounterTarget(bot, target)" in ACTION_EXECUTOR
-    assert "BotRaidAreaAuthority::HasProtectedEncounterEntries" in IMPL
-    assert "BotRaidAreaAuthority::IsProtectedEncounterTarget(" in IMPL
+    assert "BotRaidAreaAuthority::HasProtectedEncounterEntries" in resolver
+    assert "BotRaidAreaAuthority::IsProtectedEncounterTarget(" in resolver
     assert "AllOffenseSuppressedOwners" in RAID_AUTHORITY
     assert "ProtectedEncounterEntriesByOwner" in RAID_AUTHORITY
     assert "ProtectedEncounterSpawnIdsByOwner" in RAID_AUTHORITY
     assert "AllowedEncounterGuidsByOwner" in RAID_AUTHORITY
-    assert "SetProtectedEncounterSpawnIds" in route_runtime
-    assert "SetAllowedEncounterGuids" in route_runtime
-    assert "nextNode.SplitSourceGuids" in route_runtime
-    assert "nextNode.PackTargetEntries" in route_runtime
+    assert "SetProtectedEncounterSpawnIds" in authority
+    assert "SetAllowedEncounterGuids" in authority
+    assert "nextNode.SplitSourceGuids" in authority
+    assert "nextNode.PackTargetEntries" in authority
     assert "BotRaidAreaAuthority::IsAllOffenseSuppressed" in PET_AI
     assert "BotRaidAreaAuthority::IsProtectedEncounterTarget" in PET_AI
     assert "bool const offenseSuppressed = ControlledOffenseSuppressed(owner);" in PET_AI
@@ -2350,30 +2367,35 @@ def test_trash_profile_damage_cannot_pull_or_compound_the_next_boss_encounter():
 
 
 def test_boss_nodes_fail_closed_on_undeclared_prerequisite_hostiles():
-    route_start = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
-    route_end = IMPL.index("bool BotWorldPopulationMgr::IsBossContext", route_start)
-    route_runtime = IMPL[route_start:route_end]
+    tank_focus = VALIDATION_ROUTE_TANK_FOCUS
+    target_engagement = VALIDATION_ROUTE_TARGET_ENGAGEMENT
 
-    assert 'if (!tankFocusIsRouteTarget)' in route_runtime
-    assert '"boss_route_target_not_declared"' in route_runtime
-    assert 'action = "boss_route_prerequisite_blocked";' in route_runtime
-    assert '&& !isValidationRouteObjectiveTarget(seenRouteTarget->ToCreature())' in route_runtime
-    assert '"boss_route_undeclared_prerequisite_blocked"' in route_runtime
-    scan_start = route_runtime.index("Creature* prerequisiteTarget = nullptr;")
-    boss_hold = route_runtime.rindex(
+    assert 'if (!tankFocusIsRouteTarget)' in tank_focus
+    assert '"boss_route_target_not_declared"' in tank_focus
+    assert 'action = "boss_route_prerequisite_blocked";' in tank_focus
+    assert '&& !isValidationRouteObjectiveTarget(seenRouteTarget->ToCreature())' in target_engagement
+    assert '"boss_route_undeclared_prerequisite_blocked"' in target_engagement
+    scan_start = target_engagement.index("Creature* prerequisiteTarget = nullptr;")
+    boss_hold = target_engagement.rindex(
         'if (Cohort().Config.ValidationRouteKind == "boss")', 0, scan_start
     )
     assert boss_hold < scan_start
 
 
 def test_raid_trash_uses_native_threat_headroom_and_declared_minimum_distance():
-    route_start = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
-    route_end = IMPL.index("bool BotWorldPopulationMgr::IsBossContext", route_start)
-    route_runtime = IMPL[route_start:route_end]
-
-    minimum_start = route_runtime.index("auto tryValidationRouteMinimumDistance")
-    minimum_end = route_runtime.index("auto tryValidationRouteAdds", minimum_start)
-    minimum = route_runtime[minimum_start:minimum_end]
+    route_runtime = (BOT_DIR / "BotWorldPopulationMgr.cpp").read_text(encoding="utf-8")
+    minimum = (
+        BOT_DIR
+        / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
+    ).read_text(encoding="utf-8")
+    lane_selection = (
+        BOT_DIR
+        / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp"
+    ).read_text(encoding="utf-8")
+    drudge_actions = (
+        BOT_DIR
+        / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp"
+    ).read_text(encoding="utf-8")
     assert "ValidationRouteMinimumDistanceSourceEntry" in minimum
     assert "ValidationRouteMinimumDistanceYards" in minimum
     assert 'profile.MovementDirective == "ranged"' in minimum
@@ -2383,7 +2405,7 @@ def test_raid_trash_uses_native_threat_headroom_and_declared_minimum_distance():
     assert "sources.push_back(creature)" in minimum
     assert "for (size_t left = 0; left < sources.size(); ++left)" in minimum
     assert "addDirection(-pairY, pairX);" in minimum
-    assert "PathGenerator path(bot);" in minimum
+    assert "PathGenerator path(Bot);" in minimum
     assert "for (G3D::Vector3 const& point : path.GetPath())" in minimum
     assert "std::min(startDistance, minimumDistance) - 0.25f" in minimum
     assert "< safeDistance" in minimum
@@ -2391,10 +2413,10 @@ def test_raid_trash_uses_native_threat_headroom_and_declared_minimum_distance():
     assert "SelectMinimumDistanceOwner" in minimum
     assert "MinimumDistanceOwner::LandedRushRecovery" in minimum
     assert "specializedDrudgeRecovery" in minimum
-    assert "if (tryValidationRouteMinimumDistance(true))" in minimum
-    landed_owner = route_runtime[
-        route_runtime.index("auto drudgeLandedRushPending") :
-        route_runtime.index("auto tryValidationRouteMinimumDistance")
+    assert "if (TryMinimumDistance(true))" in lane_selection
+    landed_owner = minimum[
+        minimum.index("bool DrudgeLaneContext::IsLandedRushPending() const"):
+        minimum.index("bool BotWorldPopulationMgr::TryValidationRouteDrudgeMinimumDistance")
     ]
     assert "auto observation = std::find_if(" in landed_owner
     assert "&& observation->Landed" in landed_owner
@@ -2407,17 +2429,21 @@ def test_raid_trash_uses_native_threat_headroom_and_declared_minimum_distance():
     path_transition = minimum.index("SelectAnchorPathSearch(")
     assert path_transition < source_reject < spacing_reject
     assert "pathSearch.RetryAfterMs" in minimum[path_transition:source_reject]
-    assert minimum.index("if (tryValidationRouteMinimumDistance(true))") < minimum.index(
-        "if (!contractResolved"
+    assert lane_selection.index("if (TryMinimumDistance(true))") < lane_selection.index(
+        "if (!ContractResolved"
     )
-    assert "state.LastRecoveryResult.clear();" in minimum
-    assert route_runtime.index("if (tryValidationRouteMovementCheck(target))") < route_runtime.index(
-        "if (tryValidationRouteMinimumDistance())"
+    assert "State.LastRecoveryResult.clear();" in minimum
+    assert route_runtime.index("if (TryValidationRouteMovementCheck(state, bot, power, stage,") < route_runtime.index(
+        "if (TryValidationRouteDrudgeMinimumDistance(state, bot, power, stage,"
     )
 
-    assert 'tankThreat >= highestPartyThreat * 1.3f' in route_runtime
-    assert 'tankThreat >= 2000.0f && tankThreat >= highestPartyThreat * 2.5f' in route_runtime
-    assert 'bot->GetMap()->IsRaid()' in route_runtime
+    assert "input.TankThreat = source->GetThreatManager().GetThreat(tank, true);" in drudge_actions
+    assert "input.HighestOtherThreat = std::max(input.HighestOtherThreat," in drudge_actions
+    assert "input.ThreatHeadroomMultiplier" in drudge_actions
+    assert "TankThreatSecure" in DRUDGE_NATIVE_RUSH
+    assert "input.ThreatHeadroomMultiplier >= 1.3f" in DRUDGE_NATIVE_RUSH
+    assert "input.TankThreat >= input.HighestOtherThreat" in DRUDGE_NATIVE_RUSH
+    assert "ShouldBuildTankThreat" in drudge_actions
     assert 'Cohort().Config.ValidationRouteKind != "boss"' in route_runtime
 
     generator = (ROOT / "tools/bot_ml/build_validation_scenario_manifests.py").read_text()
@@ -2458,14 +2484,7 @@ def test_overlapping_drakonid_minimum_distance_uses_union_safe_perpendicular_exi
 
 
 def test_shared_boss_focus_cannot_bypass_declared_target_or_typed_contract_authority():
-    route_start = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
-    route_end = IMPL.index("bool BotWorldPopulationMgr::IsBossContext", route_start)
-    route_runtime = IMPL[route_start:route_end]
-    focus_start = route_runtime.index("if (Unit* focusTarget = routeGroupFocusTarget())")
-    focus_end = route_runtime.index(
-        'if (std::string(GetDungeonRole(bot)) != "tank"\n        && (', focus_start
-    )
-    shared_focus = route_runtime[focus_start:focus_end]
+    shared_focus = VALIDATION_ROUTE_SHARED_FOCUS
 
     heal = shared_focus.index("if (tryRouteGroupHeal(bot, target))")
     boss_authority = shared_focus.index("if (!routeTrashFocus)")
@@ -2482,12 +2501,9 @@ def test_shared_boss_focus_cannot_bypass_declared_target_or_typed_contract_autho
     assert 'action = "raid_mechanic_contract_fail_closed";' in typed_boss_path
     assert typed_boss_path.count("return true;") >= 3
 
-    boss_start = IMPL.index("BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMechanics")
-    boss_end = IMPL.index(
-        "BotWorldPopulationMgr::RaidRoleAssignment BotWorldPopulationMgr::BuildRaidRoleAssignment",
-        boss_start,
-    )
-    boss_runtime = IMPL[boss_start:boss_end]
+    boss_dispatch = BOSS_DISPATCH
+    boss_runtime = BOSS_MECHANICS
+    boss_runtime = boss_dispatch + "\n" + boss_runtime
     assert "result.Target = boundRouteTarget ? boundRouteTarget : FindBossTarget(bot);" in boss_runtime
     assert "if (!result.Target && !boundRouteTarget && !state.TargetGuid.IsEmpty())" in boss_runtime
     assert "if (boundRouteTarget && !routeDirectedBoss)" in boss_runtime
@@ -2495,21 +2511,14 @@ def test_shared_boss_focus_cannot_bypass_declared_target_or_typed_contract_autho
     assert "forbidArea, raidAdapter.AllowMultidot" in boss_runtime
     assert 'RecordRaidTelemetry(state, bot, focus, "raid_focus_fire", "declared_target_selected"' in boss_runtime
 
-    find_start = IMPL.index("Unit* BotWorldPopulationMgr::FindBossTarget")
-    find_end = IMPL.index(
-        "BotWorldPopulationMgr::BossMechanicFeatures BotWorldPopulationMgr::BuildBossMechanicFeatures",
-        find_start,
-    )
-    unbound_search = IMPL[find_start:find_end]
+    unbound_search = BOSS_TARGETING
     assert "usableBoss(bot->GetVictim())" in unbound_search
     assert "usableBoss(member->GetVictim())" in unbound_search
     assert "Cell::VisitAllObjects(bot, searcher, 60.0f);" in unbound_search
 
 
 def test_every_route_boss_dispatch_binds_declared_target_and_never_uses_generic_boss_search():
-    route_start = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
-    route_end = IMPL.index("bool BotWorldPopulationMgr::IsBossContext", route_start)
-    route_runtime = IMPL[route_start:route_end]
+    route_runtime = VALIDATION_ROUTE_DISPATCH
     bound_call = "TryBossMechanics(state, bot, power, stage, activity, target)"
     unbound_call = "TryBossMechanics(state, bot, power, stage, activity)"
 
@@ -2519,27 +2528,10 @@ def test_every_route_boss_dispatch_binds_declared_target_and_never_uses_generic_
     assert route_runtime.count(bound_call) == 4
     assert unbound_call not in route_runtime
 
-    tank_start = route_runtime.index("if (tankFocusIsBossRoute)")
-    tank_focus = route_runtime[
-        tank_start:route_runtime.index("if (tryRouteGroupHeal(bot, target))", tank_start)
-    ]
-    shared_start = route_runtime.index("if (!routeTrashFocus)")
-    shared_focus = route_runtime[
-        shared_start:route_runtime.index(
-            "ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, target);",
-            shared_start,
-        )
-    ]
-    current_start = route_runtime.index(
-        'if (routeBossTarget && Cohort().Config.ValidationRouteKind == "boss")'
-    )
-    current_combat = route_runtime[
-        current_start:route_runtime.index("if (tryRouteGroupHeal(bot, target))", current_start)
-    ]
-    resolved_start = route_runtime.index("target = routeTarget;")
-    resolved_target = route_runtime[
-        resolved_start:route_runtime.index("if (tryRouteGroupHeal(bot, target))", resolved_start)
-    ]
+    tank_focus = VALIDATION_ROUTE_TANK_FOCUS
+    shared_focus = VALIDATION_ROUTE_SHARED_FOCUS
+    current_combat = VALIDATION_ROUTE_ACTIVE_COMBAT
+    resolved_target = VALIDATION_ROUTE_TARGET_ENGAGEMENT
     for dispatch in (tank_focus, shared_focus, current_combat, resolved_target):
         assert bound_call in dispatch
         assert 'action = "raid_mechanic_contract_fail_closed";' in dispatch
@@ -2549,12 +2541,7 @@ def test_every_route_boss_dispatch_binds_declared_target_and_never_uses_generic_
     assert '&& !isValidationRouteObjectiveTarget(routeTarget->ToCreature()))' in route_runtime
     assert 'action = "raid_target_not_declared_hold";' in route_runtime
 
-    boss_start = IMPL.index("BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMechanics")
-    boss_end = IMPL.index(
-        "BotWorldPopulationMgr::RaidRoleAssignment BotWorldPopulationMgr::BuildRaidRoleAssignment",
-        boss_start,
-    )
-    boss_runtime = IMPL[boss_start:boss_end]
+    boss_runtime = BOSS_DISPATCH
     assert "result.Target = boundRouteTarget ? boundRouteTarget : FindBossTarget(bot);" in boss_runtime
     assert "if (boundRouteTarget && !routeDirectedBoss)" in boss_runtime
 
@@ -2620,6 +2607,7 @@ def test_battle_res_slots_allow_native_capable_non_healers_and_role_priority_is_
 
 
 def test_controlled_aoe_counts_only_declared_targets_and_fails_closed_near_undeclared_hostiles():
+    controlled_aoe = "\n".join((BOSS_MECHANICS, BOSS_DISPATCH, COMBAT_RESOLUTION))
     for token in (
         "uint32 declaredControlledAoeTargets = 0;",
         "bool undeclaredControlledAoeHostile = false;",
@@ -2646,12 +2634,12 @@ def test_controlled_aoe_counts_only_declared_targets_and_fails_closed_near_undec
         "std::vector<uint32> activeAreaSpells;",
         "controlled->InterruptSpell(spellType, false);",
         "controlled->RemoveAura(spellId);",
-        "reconcileRaidAreaAutocasts(!controlledAoeReleased);",
-        "reconcileRaidAreaAutocasts(false);",
+        "ReconcileRaidAreaAutocasts(bot, !controlledAoeReleased);",
+        "ReconcileRaidAreaAutocasts(bot, false);",
         'raidAdapter.TargetControl == "controlled_aoe" && !controlledAoeReleased',
         "bot->InterruptSpell(CURRENT_CHANNELED_SPELL, false);",
     ):
-        assert token in IMPL
+        assert token in controlled_aoe
 
 
 def test_explicit_runtime_profile_survives_start_config_reload():
@@ -2971,14 +2959,11 @@ def test_native_recovery_blocks_survivor_pack_reentry_until_native_reset():
     ):
         assert token in runtime
 
-    observer_visitor = IMPL[
-        IMPL.index("struct NativeRaidHostileActivityVisitor"):
-        IMPL.index("uint64 ReadLastInsertId")
-    ]
-    observer = IMPL[
-        IMPL.index("struct NativeRaidHostileActivityVisitor"):
-        IMPL.index("bool BotWorldPopulationMgr::ResolveNativeValidationEntrance")
-    ]
+    lifecycle = VALIDATION_COHORT_LIFECYCLE
+    visitor_start = lifecycle.index("struct NativeRaidHostileActivityVisitor")
+    visitor_end = lifecycle.index("\n};", visitor_start) + len("\n};")
+    observer_visitor = lifecycle[visitor_start:visitor_end]
+    observer = lifecycle
     for token in (
         "MapStoredObjectTypesContainer",
         "creature->IsHostileTo(Observer)",
@@ -2992,10 +2977,7 @@ def test_native_recovery_blocks_survivor_pack_reentry_until_native_reset():
     assert "GetCurrentSpell(CURRENT_GENERIC_SPELL)" not in observer_visitor
     assert "GetCurrentSpell(CURRENT_CHANNELED_SPELL)" not in observer_visitor
 
-    ensure = IMPL[
-        IMPL.index("void BotWorldPopulationMgr::EnsureValidationCohortGroup"):
-        IMPL.index("bool BotWorldPopulationMgr::ResolveSpawnPlacement")
-    ]
+    ensure = VALIDATION_COHORT_RUNTIME
     for token in (
         "ObserveNativeRaidHostileActivity",
         "hostileObservationScopeChanged",
@@ -3011,10 +2993,7 @@ def test_native_recovery_blocks_survivor_pack_reentry_until_native_reset():
         "raid.NativeHostileActivitySeen = false",
     ):
         assert token in ensure
-    runtime_json = IMPL[
-        IMPL.index("std::string BotWorldPopulationMgr::BuildRaidRuntimeJson"):
-        IMPL.index("std::string BotWorldPopulationMgr::BuildRaidPositioningAnchorsJson")
-    ]
+    runtime_json = (BOT_DIR / "BotWorldPopulationMgrRaidRuntime.cpp").read_text(encoding="utf-8")
     for token in (
         "native_hostile_observation_attempt_id",
         "native_hostile_observation_route_generation",
@@ -3022,10 +3001,7 @@ def test_native_recovery_blocks_survivor_pack_reentry_until_native_reset():
     ):
         assert token in runtime_json
 
-    update = IMPL[
-        IMPL.index("void BotWorldPopulationMgr::UpdateBot"):
-        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
-    ]
+    update = UPDATE_DEATH
     gate = update.index("native_recovery_wait_hostile_activity")
     for token in (
         "native_recovery_wait_native_reset",
@@ -3041,16 +3017,14 @@ def test_native_recovery_blocks_survivor_pack_reentry_until_native_reset():
     assert "TeleportTo(" not in gate_block
     assert "ResurrectPlayer" not in gate_block
 
-    ready = IMPL[
-        IMPL.index("void BotWorldPopulationMgr::TryRespondNativeRaidReadyCheck"):
-        IMPL.index("void BotWorldPopulationMgr::UpdateBot")
-    ]
+    ready = RECOVERY
     assert "postWipeNativeResetReady" in ready
     assert "!raid.NativeHostileActivityActive" in ready
 
-    request = IMPL[
-        IMPL.index("std::string BotWorldPopulationMgr::RequestNativeRaidReadyCheckForCohort"):
-        IMPL.index("void BotWorldPopulationMgr::TryRespondNativeRaidReadyCheck")
+    cohort = (BOT_DIR / "BotWorldPopulationMgrCohort.cpp").read_text(encoding="utf-8")
+    request = cohort[
+        cohort.index("std::string BotWorldPopulationMgr::RequestNativeRaidReadyCheckForCohort"):
+        cohort.index("std::string BotWorldPopulationMgr::GetBotDiagnosisJsonForCohort", cohort.index("std::string BotWorldPopulationMgr::RequestNativeRaidReadyCheckForCohort"))
     ]
     assert '"native_recovery_hostile_activity"' in request
     assert '"native_recovery_reset_not_observed"' in request
@@ -3179,18 +3153,22 @@ def test_terminal_failure_hold_remains_without_drudge_partial_death_latch():
 
 
 def test_repeated_owned_destination_skips_floor_and_native_path_recalculation():
-    move = IMPL[
-        IMPL.index("bool BotWorldPopulationMgr::MoveBotToPoint"):
-        IMPL.index("bool BotWorldPopulationMgr::MoveBotToProfileRange", IMPL.index("bool BotWorldPopulationMgr::MoveBotToPoint"))
-    ]
-    fast_guard = move.index("bool const activePathScopeMatches")
-    floor = move.index("GetHeight(")
-    path = move.index("PathGenerator path(bot)")
-    assert fast_guard < floor < path
-    assert "ActivePathAttemptId == Cohort().AttemptId" in move
-    assert "ActivePathWipeGeneration == Cohort().Raid.WipeGeneration" in move
-    assert "ActivePathRouteGeneration == Party().ValidationRouteGeneration" in move
-    assert "ActivePathRouteNodeId == Cohort().Config.ValidationRouteNodeId" in move
+    lease = MOVEMENT_LEASE
+    executor = MOVEMENT_EXECUTOR
+    planner = MOVEMENT_PLANNER
+    assert "active.ScopeMatches && active.MatchingDestination" in executor
+    assert "state.ActivePathValid" in executor
+    assert "NativePointPathActive" in executor
+    assert "NativeTargetChaseActive" in executor
+    for token in (
+        "ActivePathAttemptId == request.MovementScope.AttemptId",
+        "ActivePathWipeGeneration",
+        "ActivePathRouteGeneration",
+        "ActivePathRouteNodeId\n                == Cohort().Config.ValidationRouteNodeId",
+        "MatchingDestination",
+    ):
+        assert token in lease
+    assert planner.index("GetHeight(") < planner.index("PathGenerator path(bot)")
 
 
 def test_telemetry_rate_limit_precedes_frame_construction():
@@ -3308,13 +3286,10 @@ def test_native_full_wipe_latch_survives_first_ghost_leaving_instance():
 
 
 def test_validation_raid_boss_recovery_fails_closed_before_direct_spawn_manufacture():
-    objective = IMPL[
-        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective"):
-        IMPL.index("bool BotWorldPopulationMgr::IsBossContext")
-    ]
-    lambda_start = objective.index("auto tryCanonicalValidationRouteBossRecovery")
-    lambda_end = objective.index("auto isNaturalValidationRoutePackMember", lambda_start)
-    recovery = objective[lambda_start:lambda_end]
+    targeting = VALIDATION_TARGETING
+    lambda_start = targeting.index("auto tryCanonicalValidationRouteBossRecovery")
+    lambda_end = targeting.index("auto isNaturalForwardHostile", lambda_start)
+    recovery = targeting[lambda_start:lambda_end]
     assert 'recoveryResult = "native_boss_recovery_pending"' in recovery
     assert '"assistance\\":\\"none\\"' in recovery
     assert '"direct_respawn\\":false' in recovery
@@ -3326,13 +3301,10 @@ def test_validation_raid_boss_recovery_fails_closed_before_direct_spawn_manufact
 
 
 def test_nonraid_canonical_recovery_is_native_only_too():
-    objective = IMPL[
-        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective"):
-        IMPL.index("bool BotWorldPopulationMgr::IsBossContext")
-    ]
-    lambda_start = objective.index("auto tryCanonicalValidationRouteBossRecovery")
-    lambda_end = objective.index("auto isNaturalValidationRoutePackMember", lambda_start)
-    recovery = objective[lambda_start:lambda_end]
+    targeting = VALIDATION_TARGETING
+    lambda_start = targeting.index("auto tryCanonicalValidationRouteBossRecovery")
+    lambda_end = targeting.index("auto isNaturalForwardHostile", lambda_start)
+    recovery = targeting[lambda_start:lambda_end]
     assert "regardless of map type" in recovery
     assert "Respawn(" not in recovery
     assert "LoadFromDB" not in recovery
