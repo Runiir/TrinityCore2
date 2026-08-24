@@ -108,6 +108,8 @@ def test_spacing_failure_reuses_charge_observation_trace_and_stays_bounded() -> 
     ):
         assert field in runtime
     assert "FirstSpacingFailure" in runtime
+    assert '<< ",\\"first_spacing_failure\\":{\\"recorded\\":"' in runtime
+    assert '<< ",\\"first_spacing_failure\\":{"recorded\\":"' not in runtime
     assert "EvaluateRecoveryCandidateSpacing" in recovery
     assert "EvaluateAndRecordCandidateSpacing" in geometry
     assert "RecordFirstFailure" in spacing

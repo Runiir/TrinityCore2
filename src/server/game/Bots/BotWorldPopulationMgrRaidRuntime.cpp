@@ -665,7 +665,7 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
                  << "}";
         }
         json << "]"
-             << ",\"first_spacing_failure\":{"recorded\":"
+             << ",\"first_spacing_failure\":{\"recorded\":"
              << (observation.FirstSpacingFailure.Recorded ? "true" : "false")
              << ",\"recorded_at_ms\":" << observation.FirstSpacingFailure.RecordedAtMs
              << ",\"attempt_id\":" << observation.FirstSpacingFailure.Scope.AttemptId
