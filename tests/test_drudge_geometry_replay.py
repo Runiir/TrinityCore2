@@ -380,6 +380,75 @@ int main()
     subprocess.run([str(binary)], check=True, cwd=ROOT)
 
 
+def test_drudge_rush_releases_only_one_matching_mechanic_lease(tmp_path):
+    source = tmp_path / "drudge_movement_lease_replay.cpp"
+    binary = tmp_path / "drudge_movement_lease_replay"
+    source.write_text(
+        r'''
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeMovementLease.h"
+#include <cassert>
+#include <initializer_list>
+
+int main()
+{
+    using namespace BotMovementArbitration;
+    using BotRaidDrudgeMovement::ReleaseInvalidatedMechanicLease;
+    Scope scope{7, 2, 9, 669, 41};
+    Lease mechanic{Owner::Mechanic, Priority::Mechanic, 1300, scope,
+        1.0f, 2.0f, 3.0f};
+    assert(ReleaseInvalidatedMechanicLease(mechanic, scope));
+    assert(mechanic.MovementOwner == Owner::None);
+    assert(!ReleaseInvalidatedMechanicLease(mechanic, scope));
+
+    for (auto const owner : {Owner::Route, Owner::CombatRange,
+             Owner::Hazard, Owner::Recovery})
+    {
+        Lease otherOwner{owner, Priority::Recovery, 1300, scope,
+            4.0f, 5.0f, 6.0f};
+        assert(!ReleaseInvalidatedMechanicLease(otherOwner, scope));
+        assert(otherOwner.MovementOwner == owner);
+    }
+
+    Lease elevatedMechanic{Owner::Mechanic, Priority::Recovery, 1300, scope,
+        4.0f, 5.0f, 6.0f};
+    assert(!ReleaseInvalidatedMechanicLease(elevatedMechanic, scope));
+    assert(elevatedMechanic.MovementOwner == Owner::Mechanic);
+
+    Scope differentScope = scope;
+    differentScope.RouteGeneration++;
+    Lease different{Owner::Mechanic, Priority::Mechanic, 1300,
+        differentScope, 7.0f, 8.0f, 9.0f};
+    assert(!ReleaseInvalidatedMechanicLease(different, scope));
+    assert(different.MovementOwner == Owner::Mechanic);
+    assert(different.MovementScope.RouteGeneration
+        == differentScope.RouteGeneration);
+}
+''',
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [
+            "c++",
+            "-std=c++17",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-I",
+            str(ROOT / "src/server/game"),
+            "-I",
+            str(ROOT / "src/server/shared"),
+            "-I",
+            str(ROOT / "src/common"),
+            str(source),
+            "-o",
+            str(binary),
+        ],
+        check=True,
+        cwd=ROOT,
+    )
+    subprocess.run([str(binary)], check=True, cwd=ROOT)
+
+
 def test_native_ownership_waits_for_both_combat_tanks_to_reach_their_anchors():
     production = (
         ROOT

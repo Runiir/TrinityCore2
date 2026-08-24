@@ -4,6 +4,7 @@
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeGeometryState.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeMovementLease.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeNativeRushState.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeObservationBacklog.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.h"
@@ -240,6 +241,15 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
     {
         State.ValidationRouteDrudgeAnchorValid = false;
         State.ValidationRouteDrudgeRecoveryAnchorReached = false;
+        BotMovementArbitration::Scope const drudgeScope{
+            Manager.Cohort().AttemptId,
+            uint32(Manager.Cohort().Raid.WipeGeneration),
+            Manager.Party().ValidationRouteGeneration,
+            Bot->GetMapId(), Bot->GetInstanceId() };
+        if (BotRaidDrudgeMovement::ReleaseInvalidatedMechanicLease(
+                State.MovementLease, drudgeScope))
+            Record(LaneSource, "drudge_rush_mechanic_lease_released",
+                SourceSeparation);
     }
 
     auto markRecoveryAnchorReached = [&]()
