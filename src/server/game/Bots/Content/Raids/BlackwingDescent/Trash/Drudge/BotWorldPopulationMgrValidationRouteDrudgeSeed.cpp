@@ -353,10 +353,33 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunDrudgeSeedCoordinator()
     for (uint32 lane = 0; lane < candidates.size(); ++lane)
         candidates[lane] = ResolveDrudgeSeedCandidate(*this, lane, seedState);
 
-    SuppressAllDrudgeOffense(*this);
-    if (exactAuthorityRoster)
+    for (uint32 lane = 0; lane < candidates.size(); ++lane)
+        if (!exactAuthorityRoster)
+        {
+            candidates[lane].Gate = SeedGate::AuthorityRoster;
+            candidates[lane].Reason = "exact_authority_roster_incomplete";
+            candidates[lane].Available = false;
+        }
+
+    std::array<bool, 2> candidateAvailability;
+    for (uint32 lane = 0; lane < candidateAvailability.size(); ++lane)
+        candidateAvailability[lane] = candidates[lane].Available;
+    bool const allPendingCandidatesReady = exactAuthorityRoster
+        && BotRaidDrudgeThreatSeed::AllPendingLanesReady(
+            seedState, candidateAvailability);
+    if (!allPendingCandidatesReady)
         for (uint32 lane = 0; lane < candidates.size(); ++lane)
-            if (candidates[lane].Available && candidates[lane].Bot
+            if (!seedState.SeededLanes[lane] && candidates[lane].Available)
+            {
+                candidates[lane].Gate = SeedGate::PendingLaneBarrier;
+                candidates[lane].Reason = "pending_lane_barrier";
+            }
+
+    SuppressAllDrudgeOffense(*this);
+    if (allPendingCandidatesReady)
+        for (uint32 lane = 0; lane < candidates.size(); ++lane)
+            if (!seedState.SeededLanes[lane] && candidates[lane].Available
+                && candidates[lane].Bot
                 && candidates[lane].State)
             {
                 uint64 const guid = candidates[lane].Bot->GetGUID().GetRawValue();
@@ -384,14 +407,6 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunDrudgeSeedCoordinator()
                 BotRaidAreaAuthority::SetAllOffenseSuppressed(guid, true);
                 BotRaidAreaAuthority::Set(guid, true);
             }
-
-    for (uint32 lane = 0; lane < candidates.size(); ++lane)
-        if (!exactAuthorityRoster)
-        {
-            candidates[lane].Gate = SeedGate::AuthorityRoster;
-            candidates[lane].Reason = "exact_authority_roster_incomplete";
-            candidates[lane].Available = false;
-        }
 
     for (uint32 lane = 0; lane < candidates.size(); ++lane)
     {

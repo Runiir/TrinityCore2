@@ -87,6 +87,7 @@ enum class RejectionGate : std::uint8_t
 {
     None,
     CandidateUnavailable,
+    PendingLaneBarrier,
     PositionUnsafe,
     ProfileActionUnavailable,
     TargetContract,
@@ -105,6 +106,8 @@ inline char const* ToString(RejectionGate gate)
             return "none";
         case RejectionGate::CandidateUnavailable:
             return "candidate_unavailable";
+        case RejectionGate::PendingLaneBarrier:
+            return "pending_lane_barrier";
         case RejectionGate::PositionUnsafe:
             return "position_unsafe";
         case RejectionGate::ProfileActionUnavailable:
@@ -146,6 +149,18 @@ struct CoordinatorInput
     bool ChargeObserved = false;
     std::array<CoordinatorLaneInput, 2> Lanes;
 };
+
+// A seed action is a cohort operation: every lane that still needs a seed
+// must have a valid candidate before any pending lane may submit native
+// offense. Already accepted lanes do not hold a later retry lane.
+inline bool AllPendingLanesReady(State const& state,
+    std::array<bool, 2> const& laneAvailable)
+{
+    for (std::size_t lane = 0; lane < state.SeededLanes.size(); ++lane)
+        if (!state.SeededLanes[lane] && !laneAvailable[lane])
+            return false;
+    return true;
+}
 
 struct CoordinatorLaneResult
 {

@@ -159,6 +159,40 @@ int main()
     assert(!rejected.Next.Complete);
     assert(rejected.Lanes[1].Rejection == RejectionGate::NativeAction);
     assert(std::string(ToString(rejected.Lanes[1].Rejection)) == "native_action");
+
+    // Native seed submission is a cohort barrier. If one pending lane has no
+    // candidate, the ready lane must not submit either, and no lane can be
+    // accepted from that partial tick. A later tick with both candidates
+    // executes and accepts both lanes.
+    State pending;
+    pending.Identity = first;
+    std::array<bool, 2> oneUnavailable = { true, false };
+    assert(!AllPendingLanesReady(pending, oneUnavailable));
+    CoordinatorInput heldTick;
+    heldTick.Identity = first;
+    heldTick.PrepullStaged = true;
+    heldTick.SourcesAlive = true;
+    heldTick.OwnershipSafe = true;
+    heldTick.SeparationSafe = true;
+    heldTick.FrozenLanesSafe = true;
+    heldTick.Lanes[0] = { true, false, false, true, RejectionGate::PendingLaneBarrier };
+    heldTick.Lanes[1] = { false, false, false, true, RejectionGate::PositionUnsafe };
+    CoordinatorResult held = AdvanceCoordinator(pending, heldTick);
+    assert(held.BothLanesEvaluated);
+    assert(!held.Lanes[0].ActionAttempted && !held.Lanes[1].ActionAttempted);
+    assert(!held.Next.SeededLanes[0] && !held.Next.SeededLanes[1]);
+    assert(!held.Next.Complete);
+    assert(held.Lanes[0].Rejection == RejectionGate::PendingLaneBarrier);
+
+    std::array<bool, 2> bothAvailable = { true, true };
+    assert(AllPendingLanesReady(held.Next, bothAvailable));
+    CoordinatorInput readyTick = heldTick;
+    readyTick.Lanes[0] = { true, true, true, true, RejectionGate::None };
+    readyTick.Lanes[1] = { true, true, true, true, RejectionGate::None };
+    CoordinatorResult accepted = AdvanceCoordinator(held.Next, readyTick);
+    assert(accepted.Lanes[0].ActionAttempted && accepted.Lanes[1].ActionAttempted);
+    assert(accepted.Next.SeededLanes[0] && accepted.Next.SeededLanes[1]);
+    assert(accepted.Next.Complete && !accepted.Next.Failure);
 }
 ''',
         encoding="utf-8",
@@ -231,6 +265,13 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
     assert 'selected.Action.MovementDirective != "ranged"' in seed
     assert 'selected.Action.MaxRange <= 5.0f' in seed
     assert 'selected.Action.AutoAttackMode == "ranged"' not in seed
+    assert "AllPendingLanesReady" in seed
+    assert "allPendingCandidatesReady" in seed
+    assert "SeedGate::PendingLaneBarrier" in seed
+    assert "if (allPendingCandidatesReady)" in seed
+    assert seed.index("if (allPendingCandidatesReady)") < seed.index(
+        "manager.ExecuteProfileCombatAction"
+    )
 
     roster_gate = seed.index("bool DrudgeLaneContext::ExactDrudgeAuthorityRoster")
     assert "!member->IsInWorld() || !member->IsAlive()" in seed[roster_gate:]
