@@ -191,7 +191,11 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         PrepullStaged = true;
         Record(nullptr, "drudge_prepull_exact_roster_staged");
     }
-    RecoveryFormationActive = IsRecoveryFormationActive();
+    // A closed landed observation is durable evidence, not a new recovery
+    // obligation.  Keep the recovery predicate tied to the current head so
+    // the post-closure tick can validate the ordinary combat anchors instead
+    // of reopening the already-finished recovery preflight.
+    RecoveryFormationActive = NativeChargePending && IsRecoveryFormationActive();
     FormationRequired = AssignedTank
         ? !CachedAnchorSafe(State, Bot) : !GroupPositionSafe(Bot);
     FormationRequiredMutable = FormationRequired;

@@ -95,3 +95,46 @@ def test_runtime_uses_backlog_closure_only_after_exact_recovery() -> None:
     assert "Manager.Cohort().AttemptId" in actions[closure:record]
     assert "Manager.Cohort().Raid.WipeGeneration" in actions[closure:record]
     assert "Manager.Party().ValidationRouteGeneration" in actions[closure:record]
+
+
+def test_post_closure_replay_returns_to_combat_path_gate(tmp_path) -> None:
+    actions = (HEADER.parent / "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp").read_text(
+        encoding="utf-8"
+    )
+    assert "RecoveryFormationActive = NativeChargePending && IsRecoveryFormationActive();" in actions
+
+    source = tmp_path / "post_closure_replay.cpp"
+    binary = tmp_path / "post_closure_replay"
+    source.write_text(
+        r'''
+#include <cassert>
+
+int main()
+{
+    // The historical landed observation remains visible to the formation
+    // helper, but the current head is no longer pending after closure.
+    bool const historicalLanded = true;
+    bool currentHeadLanded = true;
+    bool recoveryPathsProven = false;
+    bool combatPathsProven = true;
+
+    bool recoveryActive = currentHeadLanded && historicalLanded;
+    assert(recoveryActive);
+    assert(!(recoveryActive ? recoveryPathsProven : combatPathsProven));
+
+    currentHeadLanded = false;
+    recoveryActive = currentHeadLanded && historicalLanded;
+    bool const activePathsProven = recoveryActive
+        ? recoveryPathsProven : combatPathsProven;
+    assert(!recoveryActive);
+    assert(activePathsProven);
+}
+''',
+        encoding="utf-8",
+    )
+    subprocess.run(
+        ["c++", "-std=c++17", str(source), "-o", str(binary)],
+        check=True,
+        cwd=ROOT,
+    )
+    subprocess.run([str(binary)], check=True, cwd=ROOT)
