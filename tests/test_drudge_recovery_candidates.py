@@ -9,6 +9,8 @@ RECOVERY = DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeRecovery.cpp"
 HEADER = DRUDGE / "BotRaidDrudgeRecoveryCandidates.h"
 NATIVE_ANCHOR = DRUDGE / "BotRaidDrudgeNativeAnchor.h"
 ACTIONS = DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp"
+PLANNER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrMovementPlanner.cpp"
+PATH_VALIDATION = ROOT / "src/server/game/Bots/BotWorldPopulationMgrNativePathValidation.h"
 
 
 def test_recovery_candidates_replay_prefers_fixed_safe_and_stays_deterministic(tmp_path):
@@ -100,6 +102,8 @@ def test_recovery_candidate_contract_is_landed_non_tank_only_and_native_strict()
     recovery = RECOVERY.read_text(encoding="utf-8")
     header = HEADER.read_text(encoding="utf-8")
     actions = ACTIONS.read_text(encoding="utf-8")
+    planner = PLANNER.read_text(encoding="utf-8")
+    path_validation = PATH_VALIDATION.read_text(encoding="utf-8")
 
     candidates = geometry[geometry.index("AnchorCandidatesFor ="):geometry.index(
         "AnchorCacheMatchesGeneration =", geometry.index("AnchorCandidatesFor =")
@@ -132,6 +136,14 @@ def test_recovery_candidate_contract_is_landed_non_tank_only_and_native_strict()
 
     assert "State.LastPathRejectReason.empty()" in actions
     assert '"drudge_lane_native_path_rejected" : State.LastPathRejectReason' in actions
+    assert "ShouldInvalidateAnchorAfterPathRejection" in actions
+    assert "NativePathFloorsValid(Bot, path)" in geometry
+    assert "NativePathIsComplete(pathOk, path)" in geometry
+    assert "BotWorldPopulationMgrNativePathValidation.h" in planner
+    assert "NativePathFloorsValid(bot, candidatePath)" in planner
+    assert "NativePathIsComplete(pathOk, path)" in planner
+    assert "NativePathPointFloorValid" in path_validation
+    assert "NativePathFloorsValid" in path_validation
 
     assert "ComputeStrictTankRecoveryPath" in recovery
     assert "RecoveryPathPreservesTankSeparation" in recovery
