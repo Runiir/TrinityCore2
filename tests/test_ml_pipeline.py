@@ -648,6 +648,9 @@ def test_bt_masked_ga_combined_writes_offline_artifacts_and_baseline_comparison(
     assert report["metrics"]["cpp_runtime_files_changed"] == 0
     assert report["acceptance_gate"]["ready_for_cpp_runtime_integration"] is False
     assert report["stonecore_baseline_comparison"]["stonecore_regression"] is False
+    assert report["stonecore_baseline_comparison"]["functional_stonecore_clear"] is False
+    assert report["stonecore_baseline_comparison"]["accepted_stonecore_baseline"] is False
+    assert "missing_current_evidence_envelope" in report["stonecore_baseline_comparison"]["baseline_gate"]["rejections"]
     assert json.loads((output_dir / "diagnostics.json").read_text(encoding="utf-8"))["traces"][0]["masked_candidates"] == 1
     assert (output_dir / "dvclive" / "metrics.json").exists()
 

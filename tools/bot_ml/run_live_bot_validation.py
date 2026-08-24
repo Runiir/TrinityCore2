@@ -33,7 +33,7 @@ try:
     from .common import write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
     from .generate_bot_admission_identities import source_content_sha256 as admission_identity_source_sha256
-    from .live_validation_session import apply_acceptance_evaluation, build_evidence_envelope, build_session, canonical_sha256, ensure_healthy_matching_session, git_dirty_state_sha256, git_head, inspect_session, live_validation_lock, sha256_file, sha256_text
+    from .live_validation_session import apply_acceptance_evaluation, build_evidence_envelope, build_live_validation_standard_marker, build_session, canonical_sha256, ensure_healthy_matching_session, git_dirty_state_sha256, git_head, inspect_session, live_validation_lock, sha256_file, sha256_text
     from .phase8_calibration_adapter import Phase8CalibrationNormalizationError, canonical_gear_manifest, canonical_gear_profile_id, evaluate_runtime_calibration, expected_gear_manifest
     from .phase8_evidence_identity import validate_manifest as validate_phase8_evidence_manifest
     from .phase9_evidence_identity import validate_manifest as validate_phase9_evidence_manifest
@@ -49,7 +49,7 @@ except ImportError:
     from common import write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
     from generate_bot_admission_identities import source_content_sha256 as admission_identity_source_sha256
-    from live_validation_session import apply_acceptance_evaluation, build_evidence_envelope, build_session, canonical_sha256, ensure_healthy_matching_session, git_dirty_state_sha256, git_head, inspect_session, live_validation_lock, sha256_file, sha256_text
+    from live_validation_session import apply_acceptance_evaluation, build_evidence_envelope, build_live_validation_standard_marker, build_session, canonical_sha256, ensure_healthy_matching_session, git_dirty_state_sha256, git_head, inspect_session, live_validation_lock, sha256_file, sha256_text
     from phase8_calibration_adapter import Phase8CalibrationNormalizationError, canonical_gear_manifest, canonical_gear_profile_id, evaluate_runtime_calibration, expected_gear_manifest
     from phase8_evidence_identity import validate_manifest as validate_phase8_evidence_manifest
     from phase9_evidence_identity import validate_manifest as validate_phase9_evidence_manifest
@@ -579,6 +579,7 @@ def compact_published_report(report: Mapping[str, Any]) -> dict[str, Any]:
         "failure_labels",
         "all_passed",
         "acceptable_final_evidence",
+        "live_validation_standard",
         "acceptance_facts",
         "acceptance_verification",
         "evidence_envelope",
@@ -4947,7 +4948,7 @@ def route_sequence_report(
             complete_segments.append(str(validation_context.get("segment_id") or ""))
     expected_segments = [route_segment_output_name(route) for route in routes]
     missing_segments = [segment for segment in expected_segments if segment not in complete_segments]
-    return {
+    result = {
         "schema": "bot_live_validation_report_v1",
         "generated_at_unix": int(time.time()),
         "duration_policy": args.duration_policy,
@@ -4996,6 +4997,8 @@ def route_sequence_report(
         "runtime_ml_control": "offline_shadow_only",
         "control_eligible": False,
     }
+    result["live_validation_standard"] = build_live_validation_standard_marker(result, {})
+    return result
 
 
 def run_route_sequence(args: argparse.Namespace, routes: list[dict[str, Any]]) -> int:
@@ -5149,6 +5152,7 @@ def attempt_evidence_envelope(
         scopes,
         artifacts,
         freshness="current" if not incomplete else "current_unpublished",
+        live_validation_standard=report.get("live_validation_standard") if isinstance(report.get("live_validation_standard"), Mapping) else None,
     )
     envelope["identity_complete"] = not incomplete
     envelope["identity_incomplete_reasons"] = [f"missing_external_{name}" for name in incomplete]
@@ -6370,6 +6374,9 @@ def main() -> int:
             report["acceptable_final_evidence"] = False
             report["all_passed"] = False
     report["validation_context"] = validation_context
+    report["live_validation_standard"] = build_live_validation_standard_marker(
+        report, session_lifecycle
+    )
     if report.get("combat_log"):
         report["combat_analysis"] = analyze_combat_log(report["combat_log"])
         write_json(args.output_dir / "combat_log.json", report["combat_log"])

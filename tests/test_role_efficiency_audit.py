@@ -76,7 +76,24 @@ def test_role_audit_credits_passive_damage_uptime_during_spell_idle_ticks():
 
 def test_stonecore_role_profiles_include_runtime_efficiency_gates():
     root = Path(__file__).resolve().parents[1]
-    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    runtime_files = (
+        "BotWorldPopulationMgrCombatResolver.cpp",
+        "BotWorldPopulationMgrCombatSupport.cpp",
+        "BotWorldPopulationMgrCombatSpell.cpp",
+        "BotWorldPopulationMgrValidationGroupHeal.cpp",
+        "BotWorldPopulationMgrValidationRouteGroupRecovery.cpp",
+        "BotWorldPopulationMgrUpdateDeath.cpp",
+        "BotWorldPopulationMgrValidationRouteTankTrashRecovery.cpp",
+        "BotWorldPopulationMgrValidationRouteMovementCheckActions.cpp",
+        "BotWorldPopulationMgrValidationRoutePack.cpp",
+        "BotWorldPopulationMgrValidationRouteTrashIntervention.cpp",
+        "Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilTankThreatRecovery.cpp",
+        "Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilHighDensityPositioning.cpp",
+    )
+    manager = "\n".join(
+        (root / "src/server/game/Bots" / path).read_text(encoding="utf-8")
+        for path in runtime_files
+    )
     executor = (root / "src/server/game/Bots/BotActionExecutor.cpp").read_text()
     sql = (root / "sql/custom/world/2026_07_14_01_stonecore_role_efficiency.sql").read_text()
 

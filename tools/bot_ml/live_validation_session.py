@@ -28,6 +28,14 @@ _UNIT_PREFIX = "trinity-live-validation-"
 _SAFE_UNIT = re.compile(r"[^a-z0-9-]+")
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 
+# Bump this marker whenever the controller's certifying capture contract
+# changes.  It is copied into the report, acceptance facts, and evidence
+# envelope so an older report cannot become current merely by acquiring newer
+# summary fields later.
+LIVE_VALIDATION_STANDARD_SCHEMA = "bot_live_validation_standard_v1"
+LIVE_VALIDATION_STANDARD_ID = "trinity_completion_watchdog_v1"
+LIVE_VALIDATION_STANDARD_CONTROLLER = "tools.bot_ml.run_live_bot_validation"
+
 EVIDENCE_HASH_COMPONENTS = (
     "git_commit_sha256",
     "git_dirty_state_sha256",
@@ -102,6 +110,7 @@ class LiveValidationSession:
         """Return non-secret data suitable for a validation artifact."""
         return {
             "schema": "bot_live_validation_session_v2",
+            "live_validation_standard": LIVE_VALIDATION_STANDARD_ID,
             "session_fingerprint": self.fingerprint,
             "unit_name": self.unit_name,
             "repository_fingerprint": self.repository_fingerprint,
@@ -159,6 +168,34 @@ def sha256_file(path: Path) -> str:
 def canonical_sha256(payload: Any) -> str:
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str)
     return sha256_text(encoded)
+
+
+def build_live_validation_standard_marker(
+    report: Mapping[str, Any],
+    session_lifecycle: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Bind the certifying controller standard to one capture identity."""
+    lifecycle = session_lifecycle if isinstance(session_lifecycle, Mapping) else {}
+    binding = {
+        "schema": LIVE_VALIDATION_STANDARD_SCHEMA,
+        "standard_id": LIVE_VALIDATION_STANDARD_ID,
+        "controller": LIVE_VALIDATION_STANDARD_CONTROLLER,
+        "session_fingerprint": str(lifecycle.get("session_fingerprint") or ""),
+        "cohort_id": str(lifecycle.get("cohort_id") or ""),
+        "attempt_index": int(lifecycle.get("attempt_index") or 0),
+        "runtime_attempt_id": int(lifecycle.get("runtime_attempt_id") or 0),
+        "command_sha256": canonical_sha256(report.get("command") or []),
+        "generated_at_unix": int(report.get("generated_at_unix") or 0),
+        "validation_context_sha256": canonical_sha256(report.get("validation_context") or {}),
+        "route_manifest_sha256": canonical_sha256(report.get("validation_route_manifest") or {}),
+    }
+    return {
+        "schema": LIVE_VALIDATION_STANDARD_SCHEMA,
+        "standard_id": LIVE_VALIDATION_STANDARD_ID,
+        "controller": LIVE_VALIDATION_STANDARD_CONTROLLER,
+        "capture_binding": binding,
+        "capture_binding_sha256": canonical_sha256(binding),
+    }
 
 
 def _completed_text(
@@ -604,21 +641,25 @@ def build_evidence_envelope(
     *,
     freshness: str = "current",
     superseded_by: str | None = None,
+    live_validation_standard: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build the shared immutable identity used by runners, reports, and publishers."""
     components = _validated_hashes(component_hashes, EVIDENCE_HASH_COMPONENTS, "evidence component hashes")
     scopes = _validated_scope_ids(scope_ids)
     artifacts = _validated_hashes(artifact_hashes, EVIDENCE_ARTIFACT_HASHES, "evidence artifact hashes")
+    standard = dict(live_validation_standard) if isinstance(live_validation_standard, Mapping) else {}
     if freshness not in {"current", "stale", "superseded", "current_unpublished"}:
         raise LiveValidationSessionError(f"invalid evidence freshness state: {freshness}")
     compatibility_payload = {
         "component_hashes": components,
         "scope_ids": {key: scopes[key] for key in AGGREGATION_SCOPE_IDS},
+        "live_validation_standard": standard,
     }
     record_payload = {
         **compatibility_payload,
         "scope_ids": scopes,
         "artifact_hashes": artifacts,
+        "live_validation_standard": standard,
         "freshness": freshness,
         "superseded_by": superseded_by,
     }
@@ -627,6 +668,7 @@ def build_evidence_envelope(
         "component_hashes": components,
         "scope_ids": scopes,
         "artifact_hashes": artifacts,
+        "live_validation_standard": standard,
         "aggregation_identity_sha256": canonical_sha256(compatibility_payload),
         "attempt_identity_sha256": canonical_sha256(record_payload),
         "freshness": freshness,
@@ -768,6 +810,7 @@ def acceptance_facts_from_report(
     watchdog = report.get("watchdog_state") if isinstance(report.get("watchdog_state"), Mapping) else {}
     envelope = report.get("evidence_envelope") if isinstance(report.get("evidence_envelope"), Mapping) else {}
     session = report.get("session") if isinstance(report.get("session"), Mapping) else {}
+    live_validation_standard = report.get("live_validation_standard") if isinstance(report.get("live_validation_standard"), Mapping) else {}
     calibration = report.get("calibration_acceptance") if isinstance(report.get("calibration_acceptance"), Mapping) else {}
     role_audit = report.get("role_efficiency_audit") if isinstance(report.get("role_efficiency_audit"), Mapping) else {}
     return {
@@ -788,6 +831,7 @@ def acceptance_facts_from_report(
         "identity_complete": envelope.get("identity_complete") is True,
         "session_required": session_required,
         "session_closed": session.get("inactive_after_attempt") is True,
+        "live_validation_standard": dict(live_validation_standard),
     }
 
 
