@@ -505,7 +505,8 @@ namespace BotWorldPopulationMgrBotState
         // every decision tick.  Once the native path validator finds a
         // collision-safe member anchor, keep that exact fallback for the
         // current attempt/wipe/route generation and reuse it until the
-        // geometry is invalidated by a native charge or reset.
+        // geometry is invalidated by a native charge, failed native floor
+        // admission, or reset.
         bool ValidationRouteDrudgeAnchorValid = false;
         // A Rush can invalidate current dynamic geometry without invalidating
         // the earlier strict native path proof for the identical scoped point.

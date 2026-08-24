@@ -7,6 +7,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeRecovery.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
+#include "Bots/BotWorldPopulationMgrNativePathValidation.h"
 #include "Bots/BotRaidAreaAuthority.h"
 
 #include "CellImpl.h"
@@ -354,16 +355,14 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             return reject("drudge_anchor_floor_rejected");
         PathGenerator path(Bot);
         bool const pathOk = path.CalculatePath(x, y, z, false);
-        PathType const pathType = path.GetPathType();
-        bool const pathValid = pathOk
-            && !(pathType & PATHFIND_NOPATH)
-            && !(pathType & PATHFIND_NOT_USING_PATH)
-            && !(pathType & PATHFIND_INCOMPLETE)
-            && !(pathType & PATHFIND_SHORTCUT)
-            && !(pathType & PATHFIND_FARFROMPOLY);
-        if (!pathValid)
+        if (!BotWorldMovement::NativePathIsComplete(pathOk, path))
+        {
+            PathType const pathType = path.GetPathType();
             return reject("drudge_anchor_native_path_rejected:path_type="
                 + std::to_string(uint32(pathType)));
+        }
+        if (!BotWorldMovement::NativePathFloorsValid(Bot, path))
+            return reject("drudge_anchor_path_floor_gap");
         if (!requireExactEnd)
         {
             if (rejectionOut)

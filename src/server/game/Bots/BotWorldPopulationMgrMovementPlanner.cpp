@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
 #include "Bots/BotExperienceLearningPolicy.h"
+#include "Bots/BotWorldPopulationMgrNativePathValidation.h"
 #include "Bots/BotWorldPopulationMgrMovementPathSelection.h"
 #include "Map.h"
 #include "PathGenerator.h"
@@ -97,63 +98,26 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         return std::sqrt(dx * dx + dy * dy + dz * dz);
     };
 
-    auto nativePointFloorValid = [&](G3D::Vector3 const& point)
+    auto nativeEndpointFloorValid = [bot](PathGenerator const& candidatePath)
     {
-        float const pointFloorZ = bot->GetMap()->GetHeight(
-            bot->GetPhaseShift(), point.x, point.y, point.z + 2.0f,
-            true, 8.0f);
-        return pointFloorZ > INVALID_HEIGHT
-            && std::fabs(pointFloorZ - point.z) <= 1.5f;
+        return BotWorldMovement::NativePathEndpointFloorValid(bot,
+            candidatePath);
     };
 
-    auto nativeEndpointFloorValid = [&](PathGenerator const& candidatePath)
+    auto nativePathFloorsValid = [bot](PathGenerator const& candidatePath)
     {
-        return nativePointFloorValid(candidatePath.GetActualEndPosition());
-    };
-
-    auto nativePathFloorsValid = [&](PathGenerator const& candidatePath)
-    {
-        Movement::PointsArray const& points = candidatePath.GetPath();
-        if (points.empty())
-            return false;
-
-        G3D::Vector3 previous(bot->GetPositionX(), bot->GetPositionY(),
-            bot->GetPositionZ());
-        for (G3D::Vector3 const& point : points)
-        {
-            float const x = point.x - previous.x;
-            float const y = point.y - previous.y;
-            float const z = point.z - previous.z;
-            float const distance = std::sqrt(x * x + y * y + z * z);
-            uint32 const sampleCount = std::max<uint32>(1,
-                static_cast<uint32>(std::ceil(distance)));
-            for (uint32 sample = 1; sample <= sampleCount; ++sample)
-            {
-                float const fraction = float(sample) / float(sampleCount);
-                G3D::Vector3 const position(previous.x + x * fraction,
-                    previous.y + y * fraction, previous.z + z * fraction);
-                if (!nativePointFloorValid(position))
-                    return false;
-            }
-            previous = point;
-        }
-        return true;
+        return BotWorldMovement::NativePathFloorsValid(bot, candidatePath);
     };
 
     auto completeNativePathToPoint = [&](G3D::Vector3 const& point,
         G3D::Vector3& verifiedEndpoint)
     {
         PathGenerator proofPath(bot);
-        if (!proofPath.CalculatePath(point.x, point.y, point.z, false))
+        bool const pathOk = proofPath.CalculatePath(point.x, point.y,
+            point.z, false);
+        if (!BotWorldMovement::NativePathIsComplete(pathOk, proofPath))
             return false;
-        PathType const proofType = proofPath.GetPathType();
-        if (!(proofType & PATHFIND_NORMAL)
-            || (proofType & PATHFIND_NOPATH)
-            || (proofType & PATHFIND_NOT_USING_PATH)
-            || (proofType & PATHFIND_INCOMPLETE)
-            || (proofType & PATHFIND_SHORTCUT)
-            || (proofType & PATHFIND_FARFROMPOLY)
-            || !nativeEndpointFloorValid(proofPath)
+        if (!nativeEndpointFloorValid(proofPath)
             || !nativePathFloorsValid(proofPath))
             return false;
 
@@ -219,12 +183,8 @@ bool BotWorldPopulationMgr::PlanMovementPath(
     bool const pathOk = path.CalculatePath(intent.X, intent.Y, intent.Z,
         false);
     PathType const pathType = path.GetPathType();
-    if (targetFloorValid && pathOk && (pathType & PATHFIND_NORMAL)
-        && !(pathType & PATHFIND_NOPATH)
-        && !(pathType & PATHFIND_NOT_USING_PATH)
-        && !(pathType & PATHFIND_SHORTCUT)
-        && !(pathType & PATHFIND_FARFROMPOLY)
-        && !(pathType & PATHFIND_INCOMPLETE)
+    if (targetFloorValid
+        && BotWorldMovement::NativePathIsComplete(pathOk, path)
         && nativeEndpointFloorValid(path)
         && nativePathFloorsValid(path))
         segmentSelected = true;

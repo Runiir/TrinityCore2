@@ -503,6 +503,14 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
                         State.ValidationRouteDrudgeAnchorZ, false,
                         BotMovementArbitration::Owner::Mechanic,
                         BotMovementArbitration::Priority::Mechanic);
+                    if (!moved
+                        && BotRaidDrudgeGeometry::ShouldInvalidateAnchorAfterPathRejection(
+                            State.LastPathRejectReason,
+                            State.LastRecoveryResult))
+                    {
+                        State.ValidationRouteDrudgeAnchorValid = false;
+                        State.ValidationRouteDrudgeAnchorPathProven = false;
+                    }
                     if (moved && AssignedTank && NativeChargePending
                         && State.ValidationRouteDrudgeRecoveryAnchorReached)
                         Record(LaneSource,

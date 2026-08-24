@@ -2,6 +2,7 @@
 #define TRINITY_BOT_RAID_DRUDGE_GEOMETRY_STATE_H
 
 #include <cstdint>
+#include <string_view>
 #include <vector>
 
 namespace BotRaidDrudgeGeometry
@@ -135,6 +136,15 @@ inline bool DynamicGroupRecoveryActive(
     bool drudgeLaneProfile, bool exactPrepullStaged, bool landedRushPending)
 {
     return drudgeLaneProfile && (exactPrepullStaged || landedRushPending);
+}
+
+inline bool ShouldInvalidateAnchorAfterPathRejection(
+    std::string_view pathRejectReason, std::string_view recoveryResult)
+{
+    bool const floorRejected = pathRejectReason
+        == "route_destination_path_floor_gap"
+        || pathRejectReason == "drudge_anchor_path_floor_gap";
+    return floorRejected && recoveryResult == pathRejectReason;
 }
 
 // A landed Rush owns movement priority for every displaced exact-roster

@@ -93,6 +93,15 @@ int main()
     assert(!DynamicGroupRecoveryActive(true, false, false));
     assert(DynamicGroupRecoveryActive(true, true, false));
     assert(DynamicGroupRecoveryActive(true, false, true));
+    assert(ShouldInvalidateAnchorAfterPathRejection(
+        "route_destination_path_floor_gap",
+        "route_destination_path_floor_gap"));
+    assert(ShouldInvalidateAnchorAfterPathRejection(
+        "drudge_anchor_path_floor_gap", "drudge_anchor_path_floor_gap"));
+    assert(!ShouldInvalidateAnchorAfterPathRejection(
+        "route_destination_path_floor_gap", "higher_priority_movement_active"));
+    assert(!ShouldInvalidateAnchorAfterPathRejection(
+        "route_destination_unreachable", "route_destination_unreachable"));
 
     // Prepull staging and post-Rush reseparation share the same strict live
     // source, lane, and peer-spacing contract.  Only the prepull path adds
