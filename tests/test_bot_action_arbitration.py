@@ -889,6 +889,9 @@ def test_raid_healing_is_independent_and_does_not_cancel_hazard_movement() -> No
     assert "MovementLease.ExpiresAtMs" not in candidates[
         candidates.index("auto activeNativeMovementPath = [&]()") : support_start
     ]
+    support_capture = support.split("support.Attempt = ", 1)[1].split("()", 1)[0]
+    assert "activeNativeMovementPath" in support_capture
+    assert "&activeNativeMovementPath" not in support_capture
     assert "bool const instantHealRequired =" in support
     assert "adaptiveHazardMovementProposed\n                        || activeNativeMovementPath()" in support
     assert "SelectHealSpell(\n                        context.Bot, healTarget, instantHealRequired)" in support

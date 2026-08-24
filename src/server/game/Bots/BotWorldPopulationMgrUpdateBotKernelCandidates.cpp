@@ -607,7 +607,8 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                 support.RequiredResources = BotActionArbitration::Uses(
                     BotActionArbitration::Resource::GlobalCooldown,
                     BotActionArbitration::Resource::Cast);
-                support.Attempt = [&, healTargetGuid, adaptiveHazardMovementProposed]()
+                support.Attempt = [&, healTargetGuid, adaptiveHazardMovementProposed,
+                    activeNativeMovementPath]()
                 {
                     Unit* healTarget = ObjectAccessor::GetUnit(*context.Bot, healTargetGuid);
                     if (!healTarget || !healTarget->IsAlive()
