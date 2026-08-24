@@ -43,26 +43,6 @@ uint64 NowMs()
 
 namespace BotWorldPopulationMgrValidationRoute
 {
-bool DrudgeLaneContext::IsRecoveryFormationActive() const
-{
-    if (Manager.Cohort().Config.ValidationRouteMechanicProfile
-        != "trash_two_tank_charge_lanes")
-        return false;
-    // This is deliberately scoped to the landed Rush, not to the pending
-    // reseparation observation. Once a source has moved, the prepull anchor
-    // is no longer a safety proof for the remainder of this attempt; reverting
-    // to it after RecordReseparationEvidence would reopen the stale-anchor
-    // loop that this live contract repairs.
-    for (ChargeObservation const& observation :
-        Manager.Party().ValidationRouteDrudgeChargeObservations)
-        if (observation.Landed
-            && observation.AttemptId == Manager.Cohort().AttemptId
-            && observation.WipeGeneration == Manager.Cohort().Raid.WipeGeneration
-            && observation.RouteGeneration
-                == Manager.Party().ValidationRouteGeneration)
-            return true;
-    return false;
-}
 bool DrudgeLaneContext::TryMinimumDistance(bool specializedDrudgeRecovery)
 {
     bool const drudgeProfile = Manager.Cohort().Config.ValidationRouteMechanicProfile

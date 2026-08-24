@@ -222,6 +222,11 @@ def test_spacing_failure_reuses_charge_observation_trace_and_stays_bounded() -> 
     assert '<< ",\\"first_spacing_failure\\":{"recorded\\":"' not in runtime
     assert "EvaluateRecoveryCandidateSpacing" in recovery
     assert "EvaluateAndRecordCandidateSpacing" in geometry
+    assert (
+        geometry.count("bool DrudgeLaneContext::IsRecoveryFormationActive() const")
+        + spacing.count("bool DrudgeLaneContext::IsRecoveryFormationActive() const")
+        == 1
+    )
     assert "ObserveReseparationCandidate" in geometry
     assert "recordMovementReceipt" in action
     assert "GetMotionSlotType(MOTION_SLOT_ACTIVE)" in action
