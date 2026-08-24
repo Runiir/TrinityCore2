@@ -12,6 +12,7 @@
 #include "Spell.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
+#include "Unit.h"
 
 #include <algorithm>
 #include <cmath>
@@ -73,6 +74,38 @@ uint64 ExpiryFromSpell(uint64 observedAtMs, SpellInfo const* spellInfo,
 uint64 RegionGeneration(ObjectGuid guid, uint32 spellId)
 {
     return guid.GetRawValue() ^ (uint64(spellId) << 32);
+}
+
+bool IsKnownFriendlyToEveryObserver(WorldObject* source,
+    std::vector<Player*> const& observers)
+{
+    if (!source || observers.empty())
+        return false;
+
+    WorldObject* reactionSource = source;
+    Unit* owner = nullptr;
+    if (DynamicObject* dynamicObject = source->ToDynObject())
+        owner = dynamicObject->GetCaster();
+    else if (GameObject* gameObject = source->ToGameObject())
+        owner = gameObject->GetOwner();
+    else if (Creature* creature = source->ToCreature())
+        owner = creature->GetCharmerOrOwner();
+
+    if (owner)
+        reactionSource = owner;
+    else if (!source->ToCreature()
+        && (!source->ToGameObject() || !source->GetFaction()))
+        return false;
+
+    for (Player* observer : observers)
+    {
+        if (!observer || !observer->IsInWorld()
+            || observer->GetMap() != source->GetMap()
+            || !observer->IsFriendlyTo(reactionSource)
+            || !reactionSource->IsFriendlyTo(observer))
+            return false;
+    }
+    return true;
 }
 
 void AppendRegion(BotEncounter::Blackboard& board, WorldObject* source,
@@ -223,13 +256,22 @@ void Populate(BotEncounter::Blackboard& board,
             if (!object || object->GetMap() != observer->GetMap())
                 continue;
             if (DynamicObject* dynamicObject = object->ToDynObject())
-                AppendDynamicRegion(board, dynamicObject, observedAtMs);
+            {
+                if (!IsKnownFriendlyToEveryObserver(dynamicObject, observers))
+                    AppendDynamicRegion(board, dynamicObject, observedAtMs);
+            }
             else if (AreaTrigger* areaTrigger = object->ToAreaTrigger())
                 AppendAreaTriggerRegion(board, areaTrigger, observedAtMs);
             else if (GameObject* gameObject = object->ToGameObject())
-                AppendTrapRegion(board, gameObject, observedAtMs);
+            {
+                if (!IsKnownFriendlyToEveryObserver(gameObject, observers))
+                    AppendTrapRegion(board, gameObject, observedAtMs);
+            }
             else if (Creature* creature = object->ToCreature())
-                AppendTriggerRegion(board, creature, observedAtMs);
+            {
+                if (!IsKnownFriendlyToEveryObserver(creature, observers))
+                    AppendTriggerRegion(board, creature, observedAtMs);
+            }
         }
     }
 

@@ -56,6 +56,27 @@ def test_blackboard_passes_all_same_map_cohort_observers() -> None:
         blackboard.index("if (!observer)")]
 
 
+def test_shared_observer_filters_only_known_friendly_sources() -> None:
+    observer = OBSERVER.read_text(encoding="utf-8")
+    for marker in (
+        "IsKnownFriendlyToEveryObserver",
+        "dynamicObject->GetCaster()",
+        "gameObject->GetOwner()",
+        "creature->GetCharmerOrOwner()",
+        "observer->IsFriendlyTo(reactionSource)",
+        "reactionSource->IsFriendlyTo(observer)",
+    ):
+        assert marker in observer
+
+    dynamic_branch = observer[observer.index("if (DynamicObject* dynamicObject"):
+        observer.index("else if (AreaTrigger* areaTrigger")]
+    area_trigger_branch = observer[observer.index("else if (AreaTrigger* areaTrigger"):
+        observer.index("else if (GameObject* gameObject")]
+    assert "IsKnownFriendlyToEveryObserver" in dynamic_branch
+    # AreaTrigger has no stored caster in this core and must remain unknown.
+    assert "IsKnownFriendlyToEveryObserver" not in area_trigger_branch
+
+
 def test_shared_planner_uses_bounded_deterministic_fan_and_strict_path_gate() -> None:
     planner = PLANNER.read_text(encoding="utf-8")
     geometry = GEOMETRY.read_text(encoding="utf-8")
