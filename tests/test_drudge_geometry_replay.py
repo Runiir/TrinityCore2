@@ -144,6 +144,9 @@ int main()
     // a fresh all-recovery observation false, but the same landed observation
     // must keep the pair barrier open for the second tank's next tick.
     assert(AdvanceRecoveryTankReturnBarrier(recoveryBarrierOpened, true, false));
+    assert(!LandedRushRecoveryComplete(true, recoveryBarrierOpened, true, false, true));
+    assert(!LandedRushRecoveryComplete(true, recoveryBarrierOpened, true, true, false));
+    assert(LandedRushRecoveryComplete(true, recoveryBarrierOpened, true, true, true));
 
     // A landed Rush can occupy the sealed anchor for many ticks. Dynamic
     // source/spacing blocks never arm or preserve the expensive path retry;
@@ -529,7 +532,7 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "SetAllOffenseSuppressed" in actions
     assert "SelectMemberRecoveryAction" in actions
     assert "RecoveryAnchorReachedFor" in geometry
-    assert "ExactRecoveryTankAnchorsReached" in actions
+    assert "RecoveryTankReturnBarrierOpen" in actions
     assert "ExactCombatTankAnchorsReached" in actions
     assert "LandedRushRecoveryComplete" in actions
     assert "drudge_tank_recovery_anchor_reached" in actions
@@ -564,6 +567,12 @@ def test_landed_rush_recovery_latches_the_scoped_two_tank_return_barrier():
     assert "AdvanceRecoveryTankReturnBarrier" in recovery
     assert "RecoveryTankReturnBarrierOpened" in route_state
     assert "RecoveryTankReturnBarrierOpen()" in lanes
+
+    actions = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp").read_text(
+        encoding="utf-8"
+    )
+    assert "RecoveryFormationActive && RecoveryTankReturnBarrierOpen()" in actions
+    assert "recoveryAnchorsReachedBeforeTick" in actions
 
 
 def test_post_rush_recovery_replays_combat_anchor_transition_with_exact_xyz():

@@ -284,7 +284,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
     bool const recoveryPathsProvenBeforeTick = PrepullStaged
         && RecoveryFormationActive && ExactRecoveryTankPathsProven();
     bool const recoveryAnchorsReachedBeforeTick = PrepullStaged
-        && RecoveryFormationActive && ExactRecoveryTankAnchorsReached();
+        && RecoveryFormationActive && RecoveryTankReturnBarrierOpen();
     bool const activePathsProvenBeforeTick = RecoveryFormationActive
         ? recoveryPathsProvenBeforeTick : combatPathsProvenBeforeTick;
     if (PrepullStaged && !NativeChargePending && !activePathsProvenBeforeTick)
