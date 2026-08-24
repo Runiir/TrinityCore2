@@ -110,6 +110,28 @@ def test_recorded_drudge_returns_match_native_navmesh(tmp_path):
         "detour_nearest_terminal": [-321.5, -30.0, 211.513],
         "detour_nearest_requested_z_delta": 0.22937,
     }
+    assert payload["validated_returns"]["tank1_combat_anchor"] == {
+        "exact_endpoint": False,
+        "fallback": "tank1_navigation_anchor",
+        "polygons": 1,
+        "projected_terminal": [-289.289, -57.7575, 212.932],
+        "requested": [-286.5, -58.0, 212.2983],
+        "requested_end2d_miss": 2.79962,
+        "requested_endz_delta": 0.633942,
+        "start": [-289.289093, -57.7575, 212.932236],
+        "straight_points": 1,
+    }
+    assert payload["validated_returns"]["tank2_combat_anchor"] == {
+        "exact_endpoint": True,
+        "fallback": None,
+        "polygons": 1,
+        "projected_terminal": [-322.858, -48.2862, 212.262],
+        "requested": [-322.858, -48.2862, 212.2623],
+        "requested_end2d_miss": 0.0,
+        "requested_endz_delta": 0.0,
+        "start": [-322.858002, -48.286201, 211.999359],
+        "straight_points": 2,
+    }
     assert payload["validated_returns"]["chainwielder_patrol_pull"] == {
         "start": [-346.5827, -83.71657, 213.9893],
         "terminal": [-345.872, -110.0, 213.964],

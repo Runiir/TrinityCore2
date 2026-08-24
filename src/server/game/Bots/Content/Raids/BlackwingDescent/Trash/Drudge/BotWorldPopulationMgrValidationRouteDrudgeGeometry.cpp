@@ -30,7 +30,6 @@ namespace
 {
 constexpr uint64 DrudgePathRetryHeartbeatMs = 5000;
 constexpr float DrudgeMinimumDistanceEndpointToleranceYards = 1.0f;
-
 uint64 NowMs()
 {
     using namespace std::chrono;
@@ -291,7 +290,6 @@ bool DrudgeLaneContext::TryMinimumDistance(bool specializedDrudgeRecovery)
         }
         if (!unionSafe)
             continue;
-
         safeX = candidateX;
         safeY = candidateY;
         safeZ = candidateZ;
@@ -313,7 +311,6 @@ bool DrudgeLaneContext::TryMinimumDistance(bool specializedDrudgeRecovery)
     Action = moved ? "move_to_minimum_distance" : "hold_minimum_distance_exit_failed";
     return true;
 }
-
 DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
 {
     CombatTankStagingActive = [this]
@@ -443,7 +440,12 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
     AnchorCandidatesFor = [this](uint32 slot)
     {
         auto const [x, y] = UniqueGroupAnchor(slot);
-        return std::vector<std::pair<float, float>>{ { x, y } };
+        std::vector<std::pair<float, float>> candidates{ { x, y } };
+        if (RecoveryAnchorReachedFor(slot))
+            if (MemberAnchor const* navigation = DeclaredNavigationTankAnchorFor(slot))
+                if (Distance2d(x, y, navigation->X, navigation->Y) > 0.01f)
+                    candidates.emplace_back(navigation->X, navigation->Y);
+        return candidates;
     };
     AnchorCacheMatchesGeneration = [this]
     {
@@ -718,7 +720,6 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
         };
         if (cacheUsable())
             return true;
-
         bool const priorScopeMatches = State.ValidationRouteDrudgeAnchorPathProven
             && State.ValidationRouteDrudgeAnchorAttemptId == Manager.Cohort().AttemptId
             && State.ValidationRouteDrudgeAnchorWipeGeneration
@@ -800,14 +801,14 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             State.ValidationRouteDrudgeAnchorValid = true;
             return true;
         }
-
         State.ValidationRouteDrudgeAnchorValid = false;
         uint64 const nowMs = NowMs();
         for (size_t candidateIndex = 0; candidateIndex < candidates.size(); ++candidateIndex)
         {
             MemberAnchor const* candidateAnchor = tank && IsRecoveryFormationActive()
                 ? (RecoveryAnchorReachedFor(OneBasedSlot)
-                    ? DeclaredCombatTankAnchorFor(OneBasedSlot)
+                    ? (candidateIndex ? DeclaredNavigationTankAnchorFor(OneBasedSlot)
+                        : DeclaredCombatTankAnchorFor(OneBasedSlot))
                     : DeclaredRecoveryTankAnchorFor(OneBasedSlot))
                 : (tank && CombatTankStagingActive()
                     ? DeclaredNavigationTankAnchorFor(OneBasedSlot)
@@ -869,7 +870,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
                     tank, &rejection))
             {
                 State.ValidationRouteDrudgeAnchorSearchCooldownUntilMs =
-                    nowMs + DrudgePathRetryHeartbeatMs;
+                    candidateIndex + 1 == candidates.size()
+                        ? nowMs + DrudgePathRetryHeartbeatMs : 0;
                 State.LastPathRejectReason = rejection.empty()
                     ? "drudge_anchor_native_path_rejected" : rejection;
                 State.LastRecoveryResult = State.LastPathRejectReason;

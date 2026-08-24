@@ -33,6 +33,9 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     terminal_preflight_failure_reason,
     terminal_runtime_failure_reason,
     validate_forced_evidence_bundle,
+    _primary_gameplay_terminal,
+    _terminal_evidence_incomplete,
+    _capture_classification,
     bounded_native_shutdown,
     _frozen_drudge_member_anchors,
     process_resource_sample,
@@ -2430,7 +2433,7 @@ def test_canonical_capture_is_terminal_gate_driven_without_a_raid_duration_cap()
     assert 'parser.add_argument("--telemetry-timeout-sec", type=int, default=60)' in source
     assert '"--diagnose-interval-sec", type=float, default=30.0,' in source
     assert '"--trace-interval-sec", type=float, default=20.0,' in source
-    assert '"classification": "success" if success else (' in source
+    assert "capture_classification = _capture_classification(" in source
 
 
 def test_phase1_capture_uses_approved_fail_closed_taxonomy():
@@ -2438,17 +2441,97 @@ def test_phase1_capture_uses_approved_fail_closed_taxonomy():
         Path(__file__).resolve().parents[1]
         / "tools/raid_program/capture_phase1_raid_foundation.py"
     ).read_text(encoding="utf-8")
-    assert 'else "incomplete_evidence"' in source
-    assert '"diagnostic_only" if forbidden_entries' in source
-    assert '"infrastructure_abort" if (' in source
+    assert 'return "incomplete_evidence"' in source
+    assert 'return "diagnostic_only"' in source
+    assert 'return "infrastructure_abort"' in source
     for condition in (
         "process_return_code != 0",
         "not identity_stable",
-        "bool(demux_rejections)",
-        'not telemetry_envelopes["gate_passed"]',
+        "or demux_rejections",
+        'telemetry_envelopes.get("gate_passed") is not True',
     ):
         assert condition in source
     assert '"foundation_gate_failed"' not in source
+
+
+def test_gameplay_terminal_preserves_primary_classification_when_trace_evidence_is_incomplete():
+    terminal_failure = {
+        "detected": True,
+        "classification": "gameplay_failure",
+        "failure_reason": "death_loop_watchdog",
+    }
+    forced_evidence = {
+        "gate_passed": False,
+        "missing_channels": ["trace"],
+        "rejections": ["trace:forced_response_trace_delta_gap"],
+    }
+    telemetry_abort = {
+        "detected": True,
+        "classification": "infrastructure_abort",
+        "reason": "terminal_failure_forced_evidence_incomplete",
+    }
+    telemetry_envelopes = {
+        "gate_passed": False,
+        "rejections": ["evidence_demux_trace_delta_gap"],
+    }
+    demux_rejections = [
+        "evidence_demux_controller_terminal_forced_evidence_missing",
+        "evidence_demux_trace_delta_gap",
+        "evidence_demux_required_action_missing:botauto_readycheck",
+    ]
+
+    assert _primary_gameplay_terminal(terminal_failure, {"detected": False}) is True
+    assert _terminal_evidence_incomplete(
+        primary_gameplay_failure=True,
+        forced_evidence_report=forced_evidence,
+        telemetry_abort=telemetry_abort,
+        telemetry_envelopes=telemetry_envelopes,
+        demux_rejections=demux_rejections,
+    ) is True
+    # Evidence remains fail-closed for non-gameplay captures; the annotation
+    # never turns a missing terminal bundle into a gameplay result by itself.
+    assert _terminal_evidence_incomplete(
+        primary_gameplay_failure=False,
+        forced_evidence_report=forced_evidence,
+        telemetry_abort=telemetry_abort,
+        telemetry_envelopes=telemetry_envelopes,
+        demux_rejections=demux_rejections,
+    ) is False
+    assert _capture_classification(
+        success=False,
+        forbidden_entries=[],
+        primary_gameplay_failure=True,
+        operational_infrastructure_abort=False,
+        evidence_incomplete=True,
+    ) == "gameplay_failure"
+    assert _capture_classification(
+        success=False,
+        forbidden_entries=[],
+        primary_gameplay_failure=True,
+        operational_infrastructure_abort=True,
+        evidence_incomplete=True,
+    ) == "infrastructure_abort"
+    assert _capture_classification(
+        success=False,
+        forbidden_entries=[],
+        primary_gameplay_failure=False,
+        operational_infrastructure_abort=False,
+        evidence_incomplete=True,
+    ) == "infrastructure_abort"
+
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "tools/raid_program/capture_phase1_raid_foundation.py"
+    ).read_text(encoding="utf-8")
+    success = source[
+        source.index("success = ("):
+        source.index("report = {", source.index("success = ("))
+    ]
+    assert "capture_classification = _capture_classification(" in source
+    assert '"terminal_evidence_incomplete": terminal_evidence_incomplete' in source
+    assert "and not demux_rejections" in success
+    assert 'and telemetry_envelopes["gate_passed"]' in success
+    assert 'and forced_evidence_report.get("gate_passed") is True' in success
 
 
 def test_capture_interrupt_is_native_cleanup_backed_and_classified_without_traceback():
@@ -2486,9 +2569,9 @@ def test_every_terminal_capture_path_requests_a_fresh_full_evidence_bundle():
     success = source[source.index("success = ("):source.index("report = {", source.index("success = ("))]
     assert "operator_interrupt is False" in success
     assert 'forced_evidence_report.get("gate_passed") is True' in success
-    classification = source[source.index('"classification": "success"'):source.index('"started_at_utc"')]
-    assert "or operator_interrupt" in classification
-    assert 'forced_evidence_report.get("gate_passed") is not True' in classification
+    assert "capture_classification = _capture_classification(" in source
+    assert "operational_infrastructure_abort = bool(" in source
+    assert "evidence_incomplete = bool(" in source
     post_capture = source[source.index("def defer_post_capture_interrupt"):source.index("success = (")]
     assert "nonlocal operator_interrupt, startup_error" in post_capture
     assert 'startup_error = "KeyboardInterrupt:operator_interrupt"' in post_capture

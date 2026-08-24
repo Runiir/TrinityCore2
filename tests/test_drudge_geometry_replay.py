@@ -471,6 +471,34 @@ def test_post_rush_recovery_replays_combat_anchor_transition_with_exact_xyz():
     assert "DeclaredCombatTankAnchorFor" in lanes
 
 
+def test_post_rush_invalid_combat_projection_uses_nav_fallback_without_cooldown():
+    geometry_path = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
+    lanes_path = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp"
+    probe = (ROOT / "tools/raid_program/drudge_navmesh_recovery_probe.cpp").read_text(
+        encoding="utf-8"
+    )
+    geometry = geometry_path.read_text(encoding="utf-8")
+    lanes = lanes_path.read_text(encoding="utf-8")
+
+    # The sealed Detour replay projects tank 1's combat point back to its
+    # navigation point by 2.79962 yards.  Candidate 1 is therefore the
+    # already-preflighted navigation anchor; a failed candidate 0 must not
+    # arm the five-second retry before candidate 1 is attempted.
+    assert '"tank1_combat_anchor"' in probe
+    assert '"tank2_combat_anchor"' in probe
+    candidates = geometry[geometry.index("AnchorCandidatesFor ="):geometry.index(
+        "AnchorCacheMatchesGeneration =", geometry.index("AnchorCandidatesFor =")
+    )]
+    assert "candidates.emplace_back(navigation->X, navigation->Y)" in candidates
+    selector = geometry[geometry.index("for (size_t candidateIndex = 0;"):geometry.index(
+        "State.ValidationRouteDrudgeAnchorX =", geometry.index("for (size_t candidateIndex = 0;")
+    )]
+    assert "candidateIndex ? DeclaredNavigationTankAnchorFor" in selector
+    assert "candidateIndex + 1 == candidates.size()" in selector
+    assert "ValidationRouteDrudgeAnchorCandidateIndex > 1" in lanes
+    assert "bool const combatCandidate" in lanes
+
+
 def test_drudge_reseparation_switches_from_cached_anchor_to_live_safety():
     geometry = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp").read_text(
         encoding="utf-8"

@@ -57,6 +57,74 @@ _CONTROLLER_TERMINAL_FAILURE_REASONS = frozenset({
 })
 
 
+def _primary_gameplay_terminal(*terminals: dict[str, Any] | None) -> bool:
+    """Return whether a controller/native terminal established gameplay failure.
+
+    Evidence-integrity failures that occur while collecting the terminal bundle
+    must not erase this primary outcome.  The integrity gates still reject the
+    capture; this predicate only preserves the causal classification.
+    """
+
+    return any(
+        isinstance(terminal, dict)
+        and terminal.get("detected") is True
+        and terminal.get("classification") == "gameplay_failure"
+        for terminal in terminals
+    )
+
+
+def _terminal_evidence_incomplete(
+    *,
+    primary_gameplay_failure: bool,
+    forced_evidence_report: dict[str, Any],
+    telemetry_abort: dict[str, Any],
+    telemetry_envelopes: dict[str, Any],
+    demux_rejections: list[str],
+) -> bool:
+    """Expose incomplete terminal evidence without making it an acceptance.
+
+    Only a known gameplay terminal gets this causal annotation.  Other
+    incomplete captures remain infrastructure/incomplete evidence as before.
+    """
+
+    if not primary_gameplay_failure:
+        return False
+    return bool(
+        forced_evidence_report.get("gate_passed") is not True
+        or telemetry_abort.get("detected") is True
+        or telemetry_envelopes.get("gate_passed") is not True
+        or demux_rejections
+    )
+
+
+def _capture_classification(
+    *,
+    success: bool,
+    forbidden_entries: list[Any],
+    primary_gameplay_failure: bool,
+    operational_infrastructure_abort: bool,
+    evidence_incomplete: bool,
+) -> str:
+    """Classify a capture without letting evidence gaps erase causality.
+
+    Evidence gates remain independent from this label through ``success``.
+    An operational abort still takes precedence; otherwise a retained primary
+    gameplay terminal takes precedence over incomplete terminal evidence.
+    """
+
+    if success:
+        return "success"
+    if forbidden_entries:
+        return "diagnostic_only"
+    if operational_infrastructure_abort:
+        return "infrastructure_abort"
+    if primary_gameplay_failure:
+        return "gameplay_failure"
+    if evidence_incomplete:
+        return "infrastructure_abort"
+    return "incomplete_evidence"
+
+
 def process_resource_sample(
     pid: int,
     *,
@@ -5493,6 +5561,16 @@ def main() -> int:
     )
     demux_rejections = demux_report["rejections"]
     telemetry_abort = locals().get("telemetry_abort", {"detected": False})
+    primary_gameplay_failure = _primary_gameplay_terminal(
+        terminal_failure, semantic_stall,
+    )
+    terminal_evidence_incomplete = _terminal_evidence_incomplete(
+        primary_gameplay_failure=primary_gameplay_failure,
+        forced_evidence_report=forced_evidence_report,
+        telemetry_abort=telemetry_abort,
+        telemetry_envelopes=telemetry_envelopes,
+        demux_rejections=demux_rejections,
+    )
     resource_summary = summarize_process_resource_samples(
         resource_samples,
         tick_rate=resource_tick_rate,
@@ -5529,33 +5607,34 @@ def main() -> int:
         and bool(diagnoses)
         and bool(traces)
     )
+    evidence_incomplete = bool(
+        telemetry_abort.get("detected") is True
+        or demux_rejections
+        or telemetry_envelopes.get("gate_passed") is not True
+        or forced_evidence_report.get("gate_passed") is not True
+    )
+    operational_infrastructure_abort = bool(
+        startup_error
+        or operator_interrupt
+        or process_return_code != 0
+        or not process_absent
+        or not postflight["passed"]
+        or not cleanup_ok
+        or not identity_stable
+        or terminal_failure.get("classification") == "infrastructure_abort"
+    )
+    capture_classification = _capture_classification(
+        success=success,
+        forbidden_entries=forbidden_entries,
+        primary_gameplay_failure=primary_gameplay_failure,
+        operational_infrastructure_abort=operational_infrastructure_abort,
+        evidence_incomplete=evidence_incomplete,
+    )
     report = {
         "schema_version": 1,
         "capture_id": f"cata_raid_phase1_{profile_name}_v1",
-        "classification": "success" if success else (
-            "diagnostic_only" if forbidden_entries else (
-            "infrastructure_abort" if (
-                startup_error
-                or operator_interrupt
-                or process_return_code != 0
-                or telemetry_abort.get("detected")
-                or not process_absent
-                or not postflight["passed"]
-                or not cleanup_ok
-                or not identity_stable
-                or bool(demux_rejections)
-                or not telemetry_envelopes["gate_passed"]
-                or forced_evidence_report.get("gate_passed") is not True
-                or terminal_failure.get("classification") == "infrastructure_abort"
-            ) else (
-                "gameplay_failure"
-                if (
-                    terminal_failure.get("detected") is True
-                    or semantic_stall.get("detected") is True
-                )
-                else "incomplete_evidence"
-            ))
-        ),
+        "classification": capture_classification,
+        "terminal_evidence_incomplete": terminal_evidence_incomplete,
         "started_at_utc": started_utc,
         "identity": identity_before,
         "scenario_id": scenario_id,

@@ -85,7 +85,10 @@ bool DrudgeLaneContext::ComputeExactCombatTankPathsProven() const
             || tankRoster == Manager.Cohort().Raid.RosterByGuid.end())
             return false;
         uint32 const slot = tankRoster->second.SlotIndex + 1;
-        MemberAnchor const* anchor = IsRecoveryFormationActive()
+        bool const combatCandidate = IsRecoveryFormationActive()
+            && RecoveryAnchorReachedFor(slot)
+            && tankState->ValidationRouteDrudgeAnchorCandidateIndex == 0;
+        MemberAnchor const* anchor = combatCandidate
             ? DeclaredCombatTankAnchorFor(slot)
             : DeclaredNavigationTankAnchorFor(slot);
         if (!anchor || !tankState->ValidationRouteDrudgeAnchorValid
@@ -101,7 +104,7 @@ bool DrudgeLaneContext::ComputeExactCombatTankPathsProven() const
                 != Sources[0]->GetGUID().GetRawValue()
             || tankState->ValidationRouteDrudgeAnchorSource1Identity
                 != Sources[1]->GetGUID().GetRawValue()
-            || tankState->ValidationRouteDrudgeAnchorCandidateIndex != 0
+            || tankState->ValidationRouteDrudgeAnchorCandidateIndex > 1
             || Distance2d(tankState->ValidationRouteDrudgeAnchorX,
                 tankState->ValidationRouteDrudgeAnchorY, anchor->X, anchor->Y) > 0.01f
             || std::fabs(tankState->ValidationRouteDrudgeAnchorZ - anchor->Z) > 0.01f)
@@ -303,7 +306,10 @@ bool DrudgeLaneContext::ComputeExactCombatTankAnchorsReached() const
             || tankRoster == Manager.Cohort().Raid.RosterByGuid.end())
             return false;
         uint32 const slot = tankRoster->second.SlotIndex + 1;
-        MemberAnchor const* anchor = IsRecoveryFormationActive()
+        bool const combatCandidate = IsRecoveryFormationActive()
+            && RecoveryAnchorReachedFor(slot)
+            && tankState->ValidationRouteDrudgeAnchorCandidateIndex == 0;
+        MemberAnchor const* anchor = combatCandidate
             ? DeclaredCombatTankAnchorFor(slot)
             : DeclaredNavigationTankAnchorFor(slot);
         if (!anchor || !tankState->ValidationRouteDrudgeAnchorValid
@@ -320,7 +326,7 @@ bool DrudgeLaneContext::ComputeExactCombatTankAnchorsReached() const
                 != Sources[0]->GetGUID().GetRawValue()
             || tankState->ValidationRouteDrudgeAnchorSource1Identity
                 != Sources[1]->GetGUID().GetRawValue()
-            || tankState->ValidationRouteDrudgeAnchorCandidateIndex != 0
+            || tankState->ValidationRouteDrudgeAnchorCandidateIndex > 1
             || Distance2d(tankState->ValidationRouteDrudgeAnchorX,
                 tankState->ValidationRouteDrudgeAnchorY, anchor->X, anchor->Y)
                 > 0.01f
