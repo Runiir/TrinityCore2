@@ -985,7 +985,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
     };
     ExactCombatTankAnchorsSafe = [this]
     {
-        return ComputeExactCombatTankPathsProven();
+        return ComputeExactCombatTankAnchorsReached();
     };
     ExactLiveRecoveryTankPathsPreflighted = [this]
     {

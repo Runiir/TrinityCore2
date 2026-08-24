@@ -367,6 +367,18 @@ int main()
     subprocess.run([str(binary)], check=True, cwd=ROOT)
 
 
+def test_native_ownership_waits_for_both_combat_tanks_to_reach_their_anchors():
+    production = (
+        ROOT
+        / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/"
+        "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
+    ).read_text(encoding="utf-8")
+    binding = production.split("ExactCombatTankAnchorsSafe = [this]", 1)[1]
+    binding = binding.split("};", 1)[0]
+    assert "return ComputeExactCombatTankAnchorsReached();" in binding
+    assert "ComputeExactCombatTankPathsProven" not in binding
+
+
 def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier():
     implementation = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
         encoding="utf-8"
