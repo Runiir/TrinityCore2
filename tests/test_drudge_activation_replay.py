@@ -145,3 +145,30 @@ def test_exact_drudge_candidates_fail_closed_behind_the_typed_route_latch():
     assert fallback.count('"drudge_activation_latch_closed"') == 3
     assert "typedDrudgeValidationRoute" in fallback
     assert "context.AdaptiveDrudgeOwnsNode" in fallback
+
+
+def test_pending_drudge_recovery_reserves_the_route_movement_lane():
+    fallback = (
+        ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp"
+    ).read_text(encoding="utf-8")
+    resource_start = fallback.index(
+        "BotActionArbitration::ResourceMask routeActionResources"
+    )
+    resource_end = fallback.index(
+        "routeAction.Attempt =", resource_start
+    )
+    resource_block = fallback[resource_start:resource_end]
+
+    # Before exact reseparation, the route action owns Movement as well as
+    # cast/target resources. This prevents profile combat range from
+    # replacing the assigned tank's native recovery anchor with a chase.
+    assert "typedDrudgeValidationRoute" in resource_block
+    assert "context.AdaptiveDrudgeOwnsNode" in resource_block
+    assert "!context.DrudgeCombatAuthorityAllowed" in resource_block
+    assert "Resource::Movement" in resource_block
+    assert "routeAction.RequiredResources = routeActionResources" in resource_block
+
+    # The ordinary route keeps the original action/movement split, and the
+    # movement candidate remains independently declared for that path.
+    assert "routeMovement.RequiredResources = BotActionArbitration::Uses(" in fallback
+    assert fallback.count("Resource::Movement") >= 2

@@ -235,21 +235,27 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             return routeAttempt->RouteOutcome;
         };
 
-        // Keep Movement out of the action candidate's mask. The cached route
-        // attempt may submit a legal cast while also accepting movement, but
-        // only the paired movement candidate can claim that resource. The
-        // native movement arbiter therefore remains authoritative for any
-        // higher-priority movement lease already active on this bot.
+        // A pending exact Drudge recovery is a single movement contract. The
+        // route action must reserve that lane even when this tick also emits
+        // a legal cast; otherwise the generic combat-range candidate can
+        // submit a chase before the assigned tank reaches its anchor.
+        // Ordinary routes retain the paired movement candidate semantics.
         BotActionArbitration::Candidate routeAction;
         routeAction.Key = "world.validation_route_action";
         routeAction.Source = "validation_route_adapter";
         routeAction.ActionPriority = BotActionArbitration::Priority::Mechanic;
         routeAction.UtilityScore = 3.1f;
-        routeAction.RequiredResources = BotActionArbitration::Uses(
-            BotActionArbitration::Resource::GlobalCooldown,
-            BotActionArbitration::Resource::Cast,
-            BotActionArbitration::Resource::Target,
-            BotActionArbitration::Resource::Interaction);
+        BotActionArbitration::ResourceMask routeActionResources =
+            BotActionArbitration::Uses(
+                BotActionArbitration::Resource::GlobalCooldown,
+                BotActionArbitration::Resource::Cast,
+                BotActionArbitration::Resource::Target,
+                BotActionArbitration::Resource::Interaction);
+        if (typedDrudgeValidationRoute && context.AdaptiveDrudgeOwnsNode
+            && !context.DrudgeCombatAuthorityAllowed)
+            routeActionResources |= BotActionArbitration::Uses(
+                BotActionArbitration::Resource::Movement);
+        routeAction.RequiredResources = routeActionResources;
         routeAction.Attempt = [runRoute, routeAttempt]()
         {
             BotActionArbitration::Outcome const outcome = runRoute();

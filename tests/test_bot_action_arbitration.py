@@ -787,7 +787,9 @@ def test_route_adapter_yields_retryable_holds_and_declared_boss_adds() -> None:
     ):
         assert resource not in movement_resources
 
-    action_start = route_adapter.index("routeAction.RequiredResources")
+    action_start = route_adapter.index(
+        "BotActionArbitration::ResourceMask routeActionResources"
+    )
     action_end = route_adapter.index("routeAction.Attempt", action_start)
     action_resources = route_adapter[action_start:action_end]
     for resource in (
@@ -797,7 +799,12 @@ def test_route_adapter_yields_retryable_holds_and_declared_boss_adds() -> None:
         "Resource::Interaction",
     ):
         assert resource in action_resources
-    assert "Resource::Movement" not in action_resources
+    base_action_resources = action_resources[: action_resources.index(
+        "if (typedDrudgeValidationRoute"
+    )]
+    assert "Resource::Movement" not in base_action_resources
+    assert "!context.DrudgeCombatAuthorityAllowed" in action_resources
+    assert "Resource::Movement" in action_resources
     assert "std::shared_ptr<RouteAttempt>" in route_adapter
     assert "auto runRoute = [this, &context, routeAttempt" in route_adapter
     assert "routeAction.Attempt = [runRoute, routeAttempt]" in route_adapter

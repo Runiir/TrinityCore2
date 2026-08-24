@@ -49,7 +49,9 @@ def test_adaptive_drudge_owner_dispatches_typed_lane_contract_before_owner_skip(
         "BotWorldPopulationMgrUpdateBotKernelFallback.cpp"
     ).read_text(encoding="utf-8")
     route_owner = fallback.index("auto routeOwnerReason")
-    route_dispatch_end = fallback.index("// Keep Movement out of the action", route_owner)
+    route_dispatch_end = fallback.index(
+        "BotActionArbitration::Candidate routeAction;", route_owner
+    )
     route_dispatch = fallback[route_owner:route_dispatch_end]
     run_route = route_dispatch.index("auto runRoute")
     owner_gate = route_dispatch.index(
