@@ -1,3 +1,5 @@
+import json
+from math import hypot
 from pathlib import Path
 import subprocess
 
@@ -11,6 +13,7 @@ NATIVE_ANCHOR = DRUDGE / "BotRaidDrudgeNativeAnchor.h"
 ACTIONS = DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp"
 PLANNER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrMovementPlanner.cpp"
 PATH_VALIDATION = ROOT / "src/server/game/Bots/BotWorldPopulationMgrNativePathValidation.h"
+SCENARIO = ROOT / "experiments/configs/validation_scenarios_cata_001.json"
 
 
 def test_recovery_candidates_replay_prefers_fixed_safe_and_stays_deterministic(tmp_path):
@@ -109,7 +112,8 @@ def test_recovery_candidate_contract_is_landed_and_native_strict_for_tanks_and_m
         "AnchorCacheMatchesGeneration =", geometry.index("AnchorCandidatesFor =")
     )]
     assert "bool const landedTankRecovery = tankSlot && IsLandedRushPending()" in candidates
-    assert "(!tankSlot || landedTankRecovery) && IsDynamicGroupRecoveryActive()" in candidates
+    assert "(!tankSlot || landedTankRecovery)" in candidates
+    assert "!tankSlot && !CombatTankStagingActive()" in candidates
     assert "BotRaidDrudgeRecoveryCandidates::BuildCandidates" in candidates
     assert candidates.index("BuildCandidates") < candidates.index(
         "RecoveryAnchorReachedFor(slot)"
@@ -154,6 +158,57 @@ def test_recovery_candidate_contract_is_landed_and_native_strict_for_tanks_and_m
     assert "urand" not in header
     assert len(GEOMETRY.read_text(encoding="utf-8").splitlines()) <= 999
     assert len(recovery.splitlines()) <= 1000
+
+
+def test_prepull_tank_fallback_keeps_declared_then_navigation_anchor_contract():
+    geometry = GEOMETRY.read_text(encoding="utf-8")
+    candidates = geometry[geometry.index("AnchorCandidatesFor ="):geometry.index(
+        "AnchorCacheMatchesGeneration =", geometry.index("AnchorCandidatesFor =")
+    )]
+    selector = geometry[geometry.index("SelectPathableDrudgeAnchor ="):geometry.index(
+        "ExactRosterReSeparated =", geometry.index("SelectPathableDrudgeAnchor =")
+    )]
+    assert "if (tankSlot && !CombatTankStagingActive())" in candidates
+    assert candidates.index("candidates.emplace_back(navigation->X, navigation->Y)") \
+        < candidates.index("RecoveryAnchorReachedFor(slot)")
+    assert "bool const prepullTankFallback = tank && !CombatTankStagingActive();" in selector
+    assert "prepullTankFallback && candidateIndex" in selector
+    assert "dynamicCandidate || prepullTankFallback || !CombatTankStagingActive()" in selector
+    assert "!CombatTankStagingActive() && candidateIndex > 0" in selector
+    assert "State.ValidationRouteDrudgeAnchorCandidateIndex > 0" in selector
+    assert "ResolveDynamicCandidateZ" in selector
+    assert "StrictNativePath(candidatePoint.X, candidatePoint.Y, candidateZ" in selector
+
+    scenario = json.loads(SCENARIO.read_text(encoding="utf-8"))
+    drudges = next(
+        step for step in next(
+            scenario_row for scenario_row in scenario["scenarios"]
+            if scenario_row["id"] == "blackwing_descent_10n"
+        )["route"]
+        if step.get("mechanic_profile") == "trash_two_tank_charge_lanes"
+    )
+    homes = drudges["split_source_home_anchors"]
+    axis_x = homes[1]["x"] - homes[0]["x"]
+    axis_y = homes[1]["y"] - homes[0]["y"]
+    axis_length = hypot(axis_x, axis_y)
+    axis_x /= axis_length
+    axis_y /= axis_length
+    midpoint_x = (homes[0]["x"] + homes[1]["x"]) * 0.5
+    midpoint_y = (homes[0]["y"] + homes[1]["y"]) * 0.5
+    minimum = drudges["split_minimum_separation_yards"]
+    lane_separation = minimum + drudges["split_navigation_margin_yards"]
+    tanks = {
+        anchor["roster_slot"]: anchor
+        for anchor in drudges["split_tank_navigation_anchors"]
+    }
+    for slot, source_index, lane_sign in ((1, 0, -1.0), (2, 1, 1.0)):
+        anchor = tanks[slot]
+        distance = hypot(anchor["x"] - homes[source_index]["x"],
+                         anchor["y"] - homes[source_index]["y"])
+        projection = ((anchor["x"] - midpoint_x) * axis_x
+                      + (anchor["y"] - midpoint_y) * axis_y)
+        assert distance <= minimum
+        assert lane_sign * projection >= lane_separation * 0.25
 
 
 def test_dynamic_fan_candidate_is_grounded_before_exact_native_path_admission():

@@ -391,8 +391,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.end(), slot)
             != Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.end();
         bool const landedTankRecovery = tankSlot && IsLandedRushPending();
-        if ((!tankSlot || landedTankRecovery) && IsDynamicGroupRecoveryActive()
-            && Sources.size() == 2)
+        if (Sources.size() == 2 && (((!tankSlot || landedTankRecovery)
+                && IsDynamicGroupRecoveryActive())
+            || (!tankSlot && !CombatTankStagingActive())))
         {
             auto const recoveryCandidates =
                 BotRaidDrudgeRecoveryCandidates::BuildCandidates(
@@ -405,6 +406,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             for (auto const& candidate : recoveryCandidates)
                 candidates.emplace_back(candidate.Point.X, candidate.Point.Y);
         }
+        if (tankSlot && !CombatTankStagingActive())
+            if (MemberAnchor const* navigation = DeclaredNavigationTankAnchorFor(slot))
+                candidates.emplace_back(navigation->X, navigation->Y);
         if (RecoveryAnchorReachedFor(slot))
             if (MemberAnchor const* navigation = DeclaredNavigationTankAnchorFor(slot))
                 if (Distance2d(x, y, navigation->X, navigation->Y) > 0.01f)
@@ -632,7 +636,10 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
         auto cacheUsable = [&]()
         {
             bool const activeDynamicRecovery = (!tank
-                && IsDynamicGroupRecoveryActive()) || landedTankRecovery;
+                && (IsDynamicGroupRecoveryActive()
+                    || (!CombatTankStagingActive()
+                        && State.ValidationRouteDrudgeAnchorCandidateIndex > 0)))
+                || landedTankRecovery;
             if (!AnchorCacheMatchesGeneration())
                 return false;
             if (!activeDynamicRecovery
@@ -766,6 +773,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
         }
         State.ValidationRouteDrudgeAnchorValid = false;
         uint64 const nowMs = NowMs();
+        bool const prepullTankFallback = tank && !CombatTankStagingActive();
         for (size_t candidateIndex = 0; candidateIndex < candidates.size(); ++candidateIndex)
         {
             MemberAnchor const* candidateAnchor = tank && IsRecoveryFormationActive()
@@ -775,17 +783,20 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
                     : DeclaredRecoveryTankAnchorFor(OneBasedSlot))
                 : (tank && CombatTankStagingActive()
                     ? DeclaredNavigationTankAnchorFor(OneBasedSlot)
-                    : DeclaredAnchorFor(OneBasedSlot));
+                    : (prepullTankFallback && candidateIndex
+                        ? DeclaredNavigationTankAnchorFor(OneBasedSlot)
+                        : DeclaredAnchorFor(OneBasedSlot)));
             if (!candidateAnchor)
                 continue;
             BotRaidDrudgeRecoveryCandidates::Point2d const candidatePoint{
                 candidates[candidateIndex].first, candidates[candidateIndex].second };
-            bool const dynamicCandidate = (!tank && IsDynamicGroupRecoveryActive())
+            bool const dynamicCandidate = (!tank && (IsDynamicGroupRecoveryActive()
+                || (!CombatTankStagingActive() && candidateIndex > 0)))
                 || landedTankRecovery;
             float const candidateProjection =
                 (candidatePoint.X - MidpointX) * AxisX
                 + (candidatePoint.Y - MidpointY) * AxisY;
-            if (dynamicCandidate
+            if ((dynamicCandidate || prepullTankFallback || !CombatTankStagingActive())
                 && (!BotRaidDrudgeRecoveryCandidates::LaneSafe(
                         candidatePoint, recoveryConstraints)
                     || LaneSign * candidateProjection < dynamicLaneProjection))
@@ -843,7 +854,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             }
             std::string rejection;
             if (!StrictNativePath(candidatePoint.X, candidatePoint.Y, candidateZ,
-                    tank || IsDynamicGroupRecoveryActive(), &rejection))
+                    tank || IsDynamicGroupRecoveryActive()
+                        || (!CombatTankStagingActive() && candidateIndex > 0), &rejection))
             {
                 State.ValidationRouteDrudgeAnchorSearchCooldownUntilMs =
                     candidateIndex + 1 == candidates.size()
