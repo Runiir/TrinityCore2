@@ -1,26 +1,27 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_spacing_diagnostic_verification",
+  "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_reseparation_receipt_verification",
   "owner_skill": "raid-shard-architecture",
   "classification": "failed",
-  "observed_at_commit": "ff5af70c7c56a0cb5ff4cdc3a20fadaa5b469d3d",
+  "observed_at_commit": "49e8f8bff809e8d685653d127dcaed1d0bf2724e",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_drudge_spacing_diagnostic_handoff_20260824.md",
-    "sha256": "da5d2534221a0d2604e7607f1e164cfb00e874ad632ba5c8624d4da5946ee4ed"
+    "sha256": "c2ca877811dbaf04fec5d1d97d92286b1d0b79a319289649110a1115e33c3573"
   },
-  "first_broken_edge": "drudge_dynamic_recovery_candidate_spacing_rejected_without_peer_identity",
+  "first_broken_edge": "drudge_reseparation_submission_missing_arrival_or_closure_binding",
   "decisive_evidence": {
-    "source_commit": "ff5af70c7c56a0cb5ff4cdc3a20fadaa5b469d3d",
-    "source_tree": "36c57ad1b3b670168bda9b8ef1bce3e0e1db0247",
+    "source_commit": "49e8f8bff809e8d685653d127dcaed1d0bf2724e",
+    "source_tree": "f73b7acfd7c2d339148a6129d9b7faf42796eb34",
     "source_worktree": "/home/runiir/Games/trinity-cata-worktrees/phase1-foundation-build",
-    "binary_sha256": "2a8fec4fa200e2fb6ccbc72d518a278de426fb7a0ed4c1aa3934a6db0fb34e9f",
-    "config_sha256": "cfb4e27add59ae87fbf72a0a51cda83563823a9f5fd7cb578f9f440b2db3a378",
-    "build_receipt_path": "/tmp/trinity-magmaw-ff5af70c7c/build/worldserver-build-receipt-v8.json",
-    "build_receipt_file_sha256": "44866254c8369994d910bb696bc61456272163cf0325754f42e67e60e01417b6",
-    "report_path": "/tmp/trinity-magmaw-ff5af70c7c/canary1/capture/report.json",
-    "report_sha256": "0d54373e4894ef3037a4d9d4382c8d28b7f0e287c540aeeb7c4d9cccb577c1ca",
-    "report_file_sha256": "8a227c7905ceb809b972d768c06e59063e8453a03024daab7ef190aba40c5dd8",
-    "normalized_trace_sha256": "720570d0e88f563c626a6e5e9b6a85aaabf49684051a7ebd141b0201db966862",
+    "binary_sha256": "ba6850b989664f3539e66ac6649bd6f5c82ff227244be77dca51feadf63a61e3",
+    "config_sha256": "75fc9d6ba384d75a3cc8492ddd2c8c247204f9fa1a578237bad6607ddb9ebc08",
+    "build_receipt_path": "/tmp/trinity-magmaw-49e8f8bff8/build/worldserver-build-receipt-v8.json",
+    "build_receipt_sha256": "33428c4b2079aa76afda0cc537fb4d2181b2a2ff4f44ca89e31b09ece8d5aa3f",
+    "report_path": "/tmp/trinity-magmaw-49e8f8bff8/canary1r3/capture/report.json",
+    "report_sha256": "05eeb9822472df389d91b9979e47ffdb71c6f404dc2426f1b7cab2a059661ba6",
+    "report_file_sha256": "53b918d08ef17c638c8cffc22efff6756cca24f405f1e735105586e25fdbee6b",
+    "normalized_trace_sha256": "6f67e860d2af275077c1d042ce4020ddb931f33045c795a7562987f1c5b1d392",
+    "server_log_sha256": "527c52d90f767adb200a76536485ebcdfb5693336d7978cd4c94668182d78f25",
     "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
     "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
     "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
@@ -30,15 +31,23 @@
     "route_node_id": "bwd.magmaw.drudges",
     "kills": 1,
     "death_loop_count": 3,
-    "native_rush_delivered_count": 8,
-    "native_rush_per_source_count": 4,
-    "dead_roster_guids": [30003, 30004, 30007, 30008],
-    "profile_action_roster_guids": [],
-    "health_sync_evaluated_roster_guids": [],
-    "tank_owned_hostile_count": 2,
-    "drudge_target_guids": [59, 60],
-    "tank_taunt_spell_ids": [62124, 56222],
-    "tank_taunt_native_result": "native_threat_established",
+    "dead_roster_guids": [30003, 30006, 30007],
+    "native_movement_submitted_count": 487,
+    "first_spacing_failure": {
+      "member_guid": 30008,
+      "candidate_index": 0,
+      "candidate_x": -311.5,
+      "candidate_y": -78.0,
+      "source0_safe": false,
+      "source1_safe": true,
+      "lane_safe": true,
+      "same_lane_spacing_safe": true,
+      "group_position_safe": false,
+      "first_failed_predicate": "source0_safe",
+      "suppressed_count": 95
+    },
+    "first_spacing_failure_member_survived": true,
+    "per_submission_arrival_or_closure_bound": false,
     "future_magmaw_target_observed": false,
     "boss_reached": false,
     "boss_death_evidence": false,
@@ -49,8 +58,8 @@
     "do_not_relabel_as_clear": true
   },
   "implementation_hypothesis": {
-    "scope": "identify_the_exact_first_spacing_or_reseparation_predicate_before_behavior_repair",
-    "status": "implemented_not_live_verified",
+    "scope": "identify_the_first_per_submission_selection_to_arrival_or_closure_divergence_before_behavior_repair",
+    "status": "diagnostic_implemented_not_live_verified",
     "forbidden_shortcuts": [
       "forced_threat",
       "triggered_taunt",
@@ -62,24 +71,22 @@
   },
   "implemented_fix": {
     "commit": "ff5af70c7c56a0cb5ff4cdc3a20fadaa5b469d3d",
-    "tree": "36c57ad1b3b670168bda9b8ef1bce3e0e1db0247",
-    "status": "implemented_not_live_verified",
+    "status": "live_verified_not_sufficient",
     "scope": "require_a_current_pending_landed_rush_before_recovery_formation_is_active",
-    "changed_files": [
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp",
-      "tests/test_drudge_observation_backlog.py"
-    ],
-    "focused_test_count": 60,
-    "runtime_verification_required": true
+    "runtime_verification_required": false
   },
   "implemented_diagnostic": {
-    "commit": "49e8f8bff809e8d685653d127dcaed1d0bf2724e",
-    "tree": "f73b7acfd7c2d339148a6129d9b7faf42796eb34",
+    "commits": [
+      "97718f44ed",
+      "72f8318c9ce12f2470ef387761ccc98885f75aa2"
+    ],
+    "commit": "72f8318c9ce12f2470ef387761ccc98885f75aa2",
+    "tree": "1f80f706c748b21fd3fbd218f1fd213951f6ba34",
+    "context_storage_commit": "e600346648",
     "status": "implemented_not_live_verified",
-    "scope": "first_scoped_drudge_spacing_and_reseparation_failure",
+    "scope": "bounded_per_member_per_submission_reseparation_receipts",
     "gameplay_behavior_changed": false,
-    "focused_test_count": 58,
-    "supersedes_unbuildable_commit": "d47cb0d209b0b7a87d98307dfa46c90197af32e6"
+    "focused_test_count": 39
   },
   "validation_clock": {
     "policy": "completion_watchdog",
@@ -110,20 +117,21 @@
     },
     "required_clock_policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
-    "required_fix_commit": "49e8f8bff809e8d685653d127dcaed1d0bf2724e",
-    "required_live_build_tree": "f73b7acfd7c2d339148a6129d9b7faf42796eb34",
+    "required_fix_commit": "72f8318c9ce12f2470ef387761ccc98885f75aa2",
+    "required_live_build_tree": "1f80f706c748b21fd3fbd218f1fd213951f6ba34",
     "must_observe": [
-      "the first failed reseparation predicate is explicit",
-      "a spacing rejection names member, candidate, peer, coordinate source, distance, and predicate booleans",
-      "diagnostic repeats are bounded and scoped to attempt, wipe, and route",
-      "trace demultiplexing remains complete without a forced terminal delta gap",
+      "each movement attempt has a distinct submission id",
+      "the selected candidate and all safety predicates are bound to that submission",
+      "arbitration, active native path, progress, arrival, and closure are attributable to the same submission",
+      "diagnostic storage emits no context_json width errors",
       "cleanup leaves zero bots, zero leases, and no worldserver process"
     ],
     "must_not_claim": [
+      "a behavior repair from diagnostic instrumentation",
       "Magmaw completion before boss-death evidence",
       "25H acceptance",
       "native confirmation from deterministic tests alone"
     ]
   },
-  "next_action": "Build exact clean commit 49e8f8bff809e8d685653d127dcaed1d0bf2724e through the queued coordinator, provision a fresh exact ten-player Magmaw roster, and run one completion-watchdog shard. Extract the first scoped spacing or reseparation failure with exact member, candidate, peer, coordinate source, distance, and predicate values, then route one behavior repair. Do not relabel this diagnostic run as a clear. Do not teleport, force movement or threat, revive, alter native encounter state, or manufacture an outcome."
+  "next_action": "Build exact clean commit 72f8318c9ce12f2470ef387761ccc98885f75aa2 through the queued coordinator, provision a fresh exact ten-player Magmaw roster, and run one completion-watchdog diagnostic shard. Extract the first per-submission selection, arbitration, active-path, progress, arrival, or closure divergence, then route one behavior repair. Do not relabel this run as a clear. Do not teleport, force movement or threat, revive, alter native encounter state, or manufacture an outcome."
 }

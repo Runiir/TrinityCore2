@@ -340,25 +340,25 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_spacing_diagnostic_verification"
+        "drudge_reseparation_receipt_verification"
     )
     assert magmaw_25h["active_program_work_unit"] is None
     assert active["owner_skill"] == "raid-shard-architecture"
     assert active["first_broken_edge"] == (
-        "drudge_dynamic_recovery_candidate_spacing_rejected_without_peer_identity"
+        "drudge_reseparation_submission_missing_arrival_or_closure_binding"
     )
     evidence = active["decisive_evidence"]
     assert evidence["source_commit"] == (
-        "ff5af70c7c56a0cb5ff4cdc3a20fadaa5b469d3d"
+        "49e8f8bff809e8d685653d127dcaed1d0bf2724e"
     )
     assert evidence["binary_sha256"] == (
-        "2a8fec4fa200e2fb6ccbc72d518a278de426fb7a0ed4c1aa3934a6db0fb34e9f"
+        "ba6850b989664f3539e66ac6649bd6f5c82ff227244be77dca51feadf63a61e3"
     )
     assert evidence["report_sha256"] == (
-        "0d54373e4894ef3037a4d9d4382c8d28b7f0e287c540aeeb7c4d9cccb577c1ca"
+        "05eeb9822472df389d91b9979e47ffdb71c6f404dc2426f1b7cab2a059661ba6"
     )
     assert evidence["report_file_sha256"] == (
-        "8a227c7905ceb809b972d768c06e59063e8453a03024daab7ef190aba40c5dd8"
+        "53b918d08ef17c638c8cffc22efff6756cca24f405f1e735105586e25fdbee6b"
     )
     assert (
         evidence["route_generation"],
@@ -368,12 +368,10 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert evidence["diagnostic_difficulty"] == "10N"
     assert evidence["kills"] == 1
     assert evidence["death_loop_count"] == 3
-    assert evidence["native_rush_delivered_count"] == 8
-    assert evidence["dead_roster_guids"] == [30003, 30004, 30007, 30008]
-    assert evidence["tank_owned_hostile_count"] == 2
-    assert evidence["drudge_target_guids"] == [59, 60]
-    assert evidence["tank_taunt_spell_ids"] == [62124, 56222]
-    assert evidence["tank_taunt_native_result"] == "native_threat_established"
+    assert evidence["dead_roster_guids"] == [30003, 30006, 30007]
+    assert evidence["native_movement_submitted_count"] == 487
+    assert evidence["first_spacing_failure_member_survived"] is True
+    assert evidence["per_submission_arrival_or_closure_bound"] is False
     assert evidence["future_magmaw_target_observed"] is False
     assert evidence["boss_reached"] is False
     assert evidence["forbidden_assistance_observed"] is False
@@ -385,14 +383,14 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
         "matched_live_verification_runs": 0,
     }
     assert active["implementation_hypothesis"]["scope"] == (
-        "identify_the_exact_first_spacing_or_reseparation_predicate_before_behavior_repair"
+        "identify_the_first_per_submission_selection_to_arrival_or_closure_divergence_before_behavior_repair"
     )
     assert active["implemented_fix"]["commit"] == (
         "ff5af70c7c56a0cb5ff4cdc3a20fadaa5b469d3d"
     )
-    assert active["implemented_fix"]["status"] == "implemented_not_live_verified"
+    assert active["implemented_fix"]["status"] == "live_verified_not_sufficient"
     assert active["implemented_diagnostic"]["commit"] == (
-        "49e8f8bff809e8d685653d127dcaed1d0bf2724e"
+        "72f8318c9ce12f2470ef387761ccc98885f75aa2"
     )
     assert active["implemented_diagnostic"]["gameplay_behavior_changed"] is False
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
@@ -494,7 +492,7 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     assert status["active_work_unit"]["descriptor_valid"] is True
     assert status["active_work_unit"]["ready_for_bounded_repair"] is True
     assert status["active_work_unit"]["first_broken_edge"] == (
-        "drudge_dynamic_recovery_candidate_spacing_rejected_without_peer_identity"
+        "drudge_reseparation_submission_missing_arrival_or_closure_binding"
     )
     assert status["active_work_unit"]["source_handoff"]["sha256"] == (
         workloop._file_sha256(
@@ -505,7 +503,7 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_spacing_diagnostic_verification"
+        "drudge_reseparation_receipt_verification"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
         "raid-shard-architecture"
