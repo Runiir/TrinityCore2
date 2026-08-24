@@ -2416,7 +2416,7 @@ def test_raid_trash_uses_native_threat_headroom_and_declared_minimum_distance():
     assert "SelectMinimumDistanceOwner" in minimum
     assert "MinimumDistanceOwner::LandedRushRecovery" in minimum
     assert "specializedDrudgeRecovery" in minimum
-    assert "if (TryMinimumDistance(true))" in lane_selection
+    assert "if (TryMinimumDistance(true))" not in lane_selection
     landed_owner = minimum[
         minimum.index("bool DrudgeLaneContext::IsLandedRushPending() const"):
         minimum.index("bool BotWorldPopulationMgr::TryValidationRouteDrudgeMinimumDistance")
@@ -2432,7 +2432,7 @@ def test_raid_trash_uses_native_threat_headroom_and_declared_minimum_distance():
     path_transition = minimum.index("SelectAnchorPathSearch(")
     assert path_transition < source_reject < spacing_reject
     assert "pathSearch.RetryAfterMs" in minimum[path_transition:source_reject]
-    assert lane_selection.index("if (TryMinimumDistance(true))") < lane_selection.index(
+    assert lane_selection.index("ContractResolved =") < lane_selection.index(
         "if (!ContractResolved"
     )
     assert "State.LastRecoveryResult.clear();" in minimum

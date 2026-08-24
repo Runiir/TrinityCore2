@@ -437,6 +437,8 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "drudge_lane_native_taunt" in actions
     assert "drudge_pre_first_rush_threat_seed" in seed
     assert "drudge_native_charge_reseparation_complete" in actions
+    assert "if (TryMinimumDistance(true))" not in lanes
+    assert '&& !currentScopeHasNativeRush && Role == "dps"' in actions
 
 
 def test_post_rush_recovery_replays_combat_anchor_transition_with_exact_xyz():

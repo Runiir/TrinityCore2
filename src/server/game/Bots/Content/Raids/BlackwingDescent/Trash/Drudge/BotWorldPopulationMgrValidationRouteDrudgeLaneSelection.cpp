@@ -767,12 +767,6 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildContract()
         && Manager.Cohort().Config.ValidationRouteChargeNativeIntervalMs
         && Manager.Cohort().Config.ValidationRouteVengefulRageSpellId;
 
-    if (Bot->GetMap() && IsLandedRushPending())
-    {
-        HoldOffense();
-        if (TryMinimumDistance(true))
-            return PhaseResult::Handled;
-    }
     if (!ContractResolved || !Bot->GetMap() || !Manager.Cohort().Raid.RosterComplete
         || Manager.Cohort().Raid.RosterByGuid.size() != ExactRosterSlots.size())
     {
