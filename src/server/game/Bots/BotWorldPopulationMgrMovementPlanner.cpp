@@ -1,12 +1,14 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
 #include "Bots/BotExperienceLearningPolicy.h"
+#include "Bots/BotWorldPopulationMgrMovementPathSelection.h"
 #include "Map.h"
 #include "PathGenerator.h"
 #include "Player.h"
 #include "Unit.h"
 #include "Util.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 
@@ -95,14 +97,74 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         return std::sqrt(dx * dx + dy * dy + dz * dz);
     };
 
+    auto nativePointFloorValid = [&](G3D::Vector3 const& point)
+    {
+        float const pointFloorZ = bot->GetMap()->GetHeight(
+            bot->GetPhaseShift(), point.x, point.y, point.z + 2.0f,
+            true, 8.0f);
+        return pointFloorZ > INVALID_HEIGHT
+            && std::fabs(pointFloorZ - point.z) <= 1.5f;
+    };
+
     auto nativeEndpointFloorValid = [&](PathGenerator const& candidatePath)
     {
-        G3D::Vector3 const& endpoint = candidatePath.GetActualEndPosition();
-        float const endpointFloorZ = bot->GetMap()->GetHeight(
-            bot->GetPhaseShift(), endpoint.x, endpoint.y, endpoint.z + 2.0f,
-            true, 8.0f);
-        return endpointFloorZ > INVALID_HEIGHT
-            && std::fabs(endpointFloorZ - endpoint.z) <= 1.5f;
+        return nativePointFloorValid(candidatePath.GetActualEndPosition());
+    };
+
+    auto nativePathFloorsValid = [&](PathGenerator const& candidatePath)
+    {
+        Movement::PointsArray const& points = candidatePath.GetPath();
+        if (points.empty())
+            return false;
+
+        G3D::Vector3 previous(bot->GetPositionX(), bot->GetPositionY(),
+            bot->GetPositionZ());
+        for (G3D::Vector3 const& point : points)
+        {
+            float const x = point.x - previous.x;
+            float const y = point.y - previous.y;
+            float const z = point.z - previous.z;
+            float const distance = std::sqrt(x * x + y * y + z * z);
+            uint32 const sampleCount = std::max<uint32>(1,
+                static_cast<uint32>(std::ceil(distance)));
+            for (uint32 sample = 1; sample <= sampleCount; ++sample)
+            {
+                float const fraction = float(sample) / float(sampleCount);
+                G3D::Vector3 const position(previous.x + x * fraction,
+                    previous.y + y * fraction, previous.z + z * fraction);
+                if (!nativePointFloorValid(position))
+                    return false;
+            }
+            previous = point;
+        }
+        return true;
+    };
+
+    auto completeNativePathToPoint = [&](G3D::Vector3 const& point,
+        G3D::Vector3& verifiedEndpoint)
+    {
+        PathGenerator proofPath(bot);
+        if (!proofPath.CalculatePath(point.x, point.y, point.z, false))
+            return false;
+        PathType const proofType = proofPath.GetPathType();
+        if (!(proofType & PATHFIND_NORMAL)
+            || (proofType & PATHFIND_NOPATH)
+            || (proofType & PATHFIND_NOT_USING_PATH)
+            || (proofType & PATHFIND_INCOMPLETE)
+            || (proofType & PATHFIND_SHORTCUT)
+            || (proofType & PATHFIND_FARFROMPOLY)
+            || !nativeEndpointFloorValid(proofPath)
+            || !nativePathFloorsValid(proofPath))
+            return false;
+
+        G3D::Vector3 const& endpoint = proofPath.GetActualEndPosition();
+        float const x = endpoint.x - point.x;
+        float const y = endpoint.y - point.y;
+        float const z = endpoint.z - point.z;
+        if (std::sqrt(x * x + y * y + z * z) > 0.5f)
+            return false;
+        verifiedEndpoint = endpoint;
+        return true;
     };
 
     auto selectProgressEndpoint = [&](PathGenerator const& candidatePath,
@@ -117,24 +179,40 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         if (!(candidateType & (PATHFIND_NORMAL | PATHFIND_INCOMPLETE)))
             return false;
 
-        if (!nativeEndpointFloorValid(candidatePath))
-            return false;
+        auto acceptPoint = [&](G3D::Vector3 const& point)
+        {
+            float const pointTravel = bot->GetExactDist(point.x, point.y,
+                point.z);
+            float const pointGoalDistance = distanceToGoal(point.x, point.y,
+                point.z);
+            if (!nativePointFloorValid(point) || pointTravel < 1.5f
+                || pointGoalDistance + minimumProgress >= currentGoalDistance)
+                return false;
 
-        G3D::Vector3 const& endpoint = candidatePath.GetActualEndPosition();
-        float const endpointTravel = bot->GetExactDist(endpoint.x, endpoint.y,
-            endpoint.z);
-        float const endpointGoalDistance = distanceToGoal(endpoint.x,
-            endpoint.y, endpoint.z);
-        if (endpointTravel < 1.5f
-            || endpointGoalDistance + minimumProgress >= currentGoalDistance)
-            return false;
+            segmentX = point.x;
+            segmentY = point.y;
+            segmentZ = point.z;
+            traversalMode = candidateMode;
+            segmentSelected = true;
+            return true;
+        };
 
-        segmentX = endpoint.x;
-        segmentY = endpoint.y;
-        segmentZ = endpoint.z;
-        traversalMode = candidateMode;
-        segmentSelected = true;
-        return true;
+        if (candidateType & PATHFIND_INCOMPLETE)
+        {
+            constexpr float IncompleteEndpointClearance = 3.0f;
+            return BotWorldMovement::SelectIncompletePathBackoffCandidate(
+                candidatePath.GetPath(), candidatePath.GetActualEndPosition(),
+                IncompleteEndpointClearance,
+                [&](G3D::Vector3 const& point, float, float)
+                {
+                    G3D::Vector3 verifiedEndpoint;
+                    return completeNativePathToPoint(point, verifiedEndpoint)
+                        && acceptPoint(verifiedEndpoint);
+                });
+        }
+
+        return nativeEndpointFloorValid(candidatePath)
+            && acceptPoint(candidatePath.GetActualEndPosition());
     };
 
     PathGenerator path(bot);
@@ -147,11 +225,12 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         && !(pathType & PATHFIND_SHORTCUT)
         && !(pathType & PATHFIND_FARFROMPOLY)
         && !(pathType & PATHFIND_INCOMPLETE)
-        && nativeEndpointFloorValid(path))
+        && nativeEndpointFloorValid(path)
+        && nativePathFloorsValid(path))
         segmentSelected = true;
     else if (!strictNativeDescent && progressiveStaticRoute
         && pathOk && (pathType & PATHFIND_INCOMPLETE))
-        selectProgressEndpoint(path, "native_partial_path", 3.0f);
+        selectProgressEndpoint(path, "native_partial_path_backoff", 3.0f);
 
     // An incomplete route may still make deterministic local progress.  The
     // chosen endpoint is always mmap-validated and must reduce goal distance;
@@ -169,6 +248,7 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         float bestX = 0.0f;
         float bestY = 0.0f;
         float bestZ = 0.0f;
+        bool bestBackedOff = false;
         bool foundWalkableStep = false;
         for (float stepDistance : stepDistances)
         {
@@ -197,24 +277,44 @@ bool BotWorldPopulationMgr::PlanMovementPath(
                     || (stepType & PATHFIND_FARFROMPOLY)
                     || !(stepType & (PATHFIND_NORMAL | PATHFIND_INCOMPLETE)))
                     continue;
-                if (!nativeEndpointFloorValid(stepPath))
-                    continue;
+                auto considerStepPoint = [&](G3D::Vector3 const& point,
+                    bool backedOff)
+                {
+                    float const pointTravel = bot->GetExactDist(point.x,
+                        point.y, point.z);
+                    float const pointGoalDistance = distanceToGoal(point.x,
+                        point.y, point.z);
+                    if (!nativePointFloorValid(point) || pointTravel < 1.5f
+                        || pointGoalDistance + 2.0f >= currentGoalDistance
+                        || pointGoalDistance >= bestGoalDistance)
+                        return false;
 
-                G3D::Vector3 const& endpoint = stepPath.GetActualEndPosition();
-                float const endpointTravel = bot->GetExactDist(endpoint.x,
-                    endpoint.y, endpoint.z);
-                float const endpointGoalDistance = distanceToGoal(endpoint.x,
-                    endpoint.y, endpoint.z);
-                if (endpointTravel < 1.5f
-                    || endpointGoalDistance + 2.0f >= currentGoalDistance
-                    || endpointGoalDistance >= bestGoalDistance)
-                    continue;
+                    foundWalkableStep = true;
+                    bestGoalDistance = pointGoalDistance;
+                    bestX = point.x;
+                    bestY = point.y;
+                    bestZ = point.z;
+                    bestBackedOff = backedOff;
+                    return true;
+                };
 
-                foundWalkableStep = true;
-                bestGoalDistance = endpointGoalDistance;
-                bestX = endpoint.x;
-                bestY = endpoint.y;
-                bestZ = endpoint.z;
+                if (stepType & PATHFIND_INCOMPLETE)
+                {
+                    constexpr float IncompleteEndpointClearance = 3.0f;
+                    BotWorldMovement::SelectIncompletePathBackoffCandidate(
+                        stepPath.GetPath(), stepPath.GetActualEndPosition(),
+                        IncompleteEndpointClearance,
+                        [&](G3D::Vector3 const& point, float, float)
+                        {
+                            G3D::Vector3 verifiedEndpoint;
+                            return completeNativePathToPoint(point,
+                                verifiedEndpoint)
+                                && considerStepPoint(verifiedEndpoint, true);
+                        });
+                }
+                else if (nativeEndpointFloorValid(stepPath)
+                    && nativePathFloorsValid(stepPath))
+                    considerStepPoint(stepPath.GetActualEndPosition(), false);
             }
         }
         if (foundWalkableStep)
@@ -222,7 +322,9 @@ bool BotWorldPopulationMgr::PlanMovementPath(
             segmentX = bestX;
             segmentY = bestY;
             segmentZ = bestZ;
-            traversalMode = "native_walkable_step";
+            traversalMode = bestBackedOff
+                ? "native_walkable_step_backoff"
+                : "native_walkable_step";
             segmentSelected = true;
         }
     }
@@ -243,6 +345,9 @@ bool BotWorldPopulationMgr::PlanMovementPath(
             return reject("route_destination_shortcut_path");
         if (pathType & PATHFIND_FARFROMPOLY)
             return reject("route_destination_off_mesh");
+        if ((pathType & PATHFIND_NORMAL)
+            && !nativePathFloorsValid(path))
+            return reject("route_destination_path_floor_gap");
         return reject("route_destination_unreachable");
     }
 

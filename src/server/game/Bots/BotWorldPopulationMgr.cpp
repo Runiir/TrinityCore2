@@ -529,7 +529,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // rejected segment as diagnostic evidence without terminalizing the
         // route so the next observation can reconcile changed geometry.
         bool terminalOnFailure = Cohort().Config.ValidationRouteKind != "descent";
-        return MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ, terminalOnFailure);
+        return MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY,
+            routeAnchorZ, terminalOnFailure,
+            BotMovementArbitration::Owner::Route,
+            BotMovementArbitration::Priority::Route);
     };
     auto routeFocusTankOwned = [this, bot](Unit* focus) -> bool
     {
@@ -653,7 +656,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (TryValidationRouteMovementCheck(state, bot, power, stage, activity,
                 situation, action, target, movementCheckCallbacks))
             return true;
-        bool moved = MoveBotToPoint(state, bot, Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY, Cohort().Config.ValidationRouteZ, true);
+        bool moved = MoveBotToPoint(state, bot,
+            Cohort().Config.ValidationRouteX,
+            Cohort().Config.ValidationRouteY,
+            Cohort().Config.ValidationRouteZ, true,
+            BotMovementArbitration::Owner::Route,
+            BotMovementArbitration::Priority::Route);
         std::string raw = BuildRawJson(bot, nullptr);
         std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_regroup", &power, stage, activity);
         RecordEvent(state, bot, "validation_route_regroup", nullptr, moved ? "move_to_terminal_route_endpoint" : "terminal_route_endpoint_path_rejected", raw.c_str(), semantic.c_str(), routeDistance, Cohort().Config.ValidationRouteTargetEntry);

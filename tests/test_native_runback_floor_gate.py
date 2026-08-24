@@ -77,8 +77,11 @@ def test_floor_gate_defers_to_the_existing_validated_local_step() -> None:
         "        && (!progressiveStaticRoute || strictNativeDescent))"
     ) in planner
     assert "nativeEndpointFloorValid" in planner
+    assert "nativePathFloorsValid" in planner
     assert "&& nativeEndpointFloorValid(path)" in planner
-    assert "if (!nativeEndpointFloorValid(stepPath))" in planner
+    assert "&& nativePathFloorsValid(path)" in planner
+    assert "&& nativePathFloorsValid(stepPath)" in planner
+    assert 'reject("route_destination_path_floor_gap")' in planner
     assert "PATHFIND_FARFROMPOLY)" in planner
     assert "MovePoint" not in planner
     assert "Resurrect" not in planner

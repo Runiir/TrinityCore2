@@ -194,7 +194,9 @@ bool BotWorldPopulationMgr::TryValidationRoutePatrolPull(
             bool const moved = MoveBotToPoint(state, bot,
                 Cohort().Config.ValidationRouteX,
                 Cohort().Config.ValidationRouteY,
-                Cohort().Config.ValidationRouteZ, true);
+                Cohort().Config.ValidationRouteZ, true,
+                BotMovementArbitration::Owner::Route,
+                BotMovementArbitration::Priority::Route);
             return hold(moved ? "validation_route_patrol_anchor_move"
                               : "validation_route_patrol_anchor_path_rejected",
                 source);

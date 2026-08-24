@@ -2119,7 +2119,10 @@ def test_move_bot_to_point_only_terminalizes_strategic_route_failures():
     assert "float floorZ = routeMap->GetHeight(bot->GetPhaseShift(), routeAnchorX, routeAnchorY, routeAnchorZ + 2.0f, true, 8.0f);" in route_objective
     assert "if (floorZ > INVALID_HEIGHT && std::fabs(floorZ - routeAnchorZ) <= 8.0f)\n            routeAnchorZ = floorZ;" in route_objective
     assert 'bool terminalOnFailure = Cohort().Config.ValidationRouteKind != "descent";' in route_objective
-    assert "return MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ, terminalOnFailure);" in route_objective
+    assert "return MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY," in route_objective
+    assert "routeAnchorZ, terminalOnFailure," in route_objective
+    assert "BotMovementArbitration::Owner::Route" in route_objective
+    assert "BotMovementArbitration::Priority::Route" in route_objective
     assert "MoveBotToProfileRange(state, bot, target, &profileAction)" in route_objective
     assert "hold_tactical_path_rejected" in route_objective
     assert 'moved ? "approach_target" : "tactical_path_rejected"' in route_objective
@@ -2132,7 +2135,10 @@ def test_walkable_descent_uses_native_paths_while_unresolved_falls_stay_fail_clo
     arrival = read(TERMINAL_ARRIVAL)
 
     assert 'bool terminalOnFailure = Cohort().Config.ValidationRouteKind != "descent";' in anchor_move
-    assert "MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ, terminalOnFailure)" in anchor_move
+    assert "MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY," in anchor_move
+    assert "routeAnchorZ, terminalOnFailure," in anchor_move
+    assert "BotMovementArbitration::Owner::Route" in anchor_move
+    assert "BotMovementArbitration::Priority::Route" in anchor_move
     assert_ordered(
         arrival,
         'if (Manager.Cohort().Config.ValidationRouteKind == "descent"',
@@ -2148,8 +2154,9 @@ def test_walkable_descent_uses_native_paths_while_unresolved_falls_stay_fail_clo
     movement_adapter = read(BOT_DIR / "BotWorldPopulationMgrMovement.cpp")
     move_bot_to_point = read(MOVEMENT_PLANNER)
     for traversal_mode in (
-        '"native_partial_path"',
+        '"native_partial_path_backoff"',
         '"native_walkable_step"',
+        '"native_walkable_step_backoff"',
     ):
         assert traversal_mode in move_bot_to_point
     assert 'Cohort().Config.ValidationRouteDescentAction\n            == "native_walkable_descent"' in movement_adapter
@@ -2745,7 +2752,9 @@ def test_validation_route_cleared_trash_regroups_to_terminal_endpoint():
         regroup_block,
         "if (TryValidationRouteMovementCheck(state, bot, power, stage, activity,",
         "return true;",
-        "MoveBotToPoint(state, bot, Cohort().Config.ValidationRouteX,",
+        "MoveBotToPoint(state, bot,",
+        "Cohort().Config.ValidationRouteX,",
+        "BotMovementArbitration::Owner::Route,",
     )
     assert "move_to_terminal_route_endpoint" in regroup_block
 
@@ -3325,7 +3334,9 @@ def test_trash_terminal_uses_current_generation_truth_after_metric_restart():
         early_regroup_block,
         "if (TryValidationRouteMovementCheck(state, bot, power, stage, activity,",
         "return true;",
-        "MoveBotToPoint(state, bot, Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY, Cohort().Config.ValidationRouteZ, true)",
+        "MoveBotToPoint(state, bot,",
+        "Cohort().Config.ValidationRouteX,",
+        "BotMovementArbitration::Owner::Route,",
     )
 
     for forbidden_filter in [
