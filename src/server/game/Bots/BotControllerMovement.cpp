@@ -51,6 +51,38 @@ float ProfileFollowDistance(BotClassSpecActionProfile const& profile)
         return 18.0f;
     return 3.5f;
 }
+
+bool HasNativeMotion(MotionMaster* motion, MovementGeneratorType expected)
+{
+    if (!motion)
+        return false;
+
+    return motion->GetMotionSlotType(MOTION_SLOT_ACTIVE) == expected
+        || motion->GetCurrentMovementGeneratorType() == expected;
+}
+
+bool NativeMovementGeneratorActive(Player* bot, BotMovementMode mode)
+{
+    if (!bot)
+        return false;
+
+    MotionMaster* motion = bot->GetMotionMaster();
+    switch (mode)
+    {
+        case BotMovementMode::Follow:
+        case BotMovementMode::ReturnToGroup:
+        case BotMovementMode::MoveSafe:
+            return HasNativeMotion(motion, FOLLOW_MOTION_TYPE);
+        case BotMovementMode::MoveTo:
+        case BotMovementMode::Unstuck:
+            return HasNativeMotion(motion, POINT_MOTION_TYPE);
+        case BotMovementMode::Stay:
+        case BotMovementMode::Stop:
+            return HasNativeMotion(motion, IDLE_MOTION_TYPE);
+    }
+
+    return false;
+}
 }
 
 BotMovementFrame BotController::BuildMovementFrame(Player* owner, Player* bot, uint32 diff) const
@@ -132,6 +164,9 @@ bool BotController::ApplyMovementPolicy(BotActionExecutor& executor, Player* own
 {
     if (!bot || !bot->IsInWorld())
         return false;
+    if (_movementMode != BotMovementMode::Stop
+        && bot->HasUnitState(UNIT_STATE_CASTING))
+        return false;
 
     using namespace BotMovementArbitration;
     uint64 const nowMs = PlayerBotNowMs();
@@ -166,6 +201,7 @@ bool BotController::ApplyMovementPolicy(BotActionExecutor& executor, Player* own
         request.MovementPriority = Priority::Formation;
         if (owner)
         {
+            request.DynamicTargetGuid = owner->GetGUID().GetRawValue();
             request.X = owner->GetPositionX();
             request.Y = owner->GetPositionY();
             request.Z = owner->GetPositionZ();
@@ -177,6 +213,7 @@ bool BotController::ApplyMovementPolicy(BotActionExecutor& executor, Player* own
         request.MovementPriority = Priority::Hazard;
         if (owner)
         {
+            request.DynamicTargetGuid = owner->GetGUID().GetRawValue();
             request.X = owner->GetPositionX();
             request.Y = owner->GetPositionY();
             request.Z = owner->GetPositionZ();
@@ -196,15 +233,54 @@ bool BotController::ApplyMovementPolicy(BotActionExecutor& executor, Player* own
         request.MovementPriority = Priority::Mechanic;
     }
 
-    Decision const leaseDecision = Evaluate(_movementLease, request, nowMs);
+    // The lease is intentionally short, but the generator it admitted is
+    // native and set-and-forget. Reconcile that receipt before evaluating a
+    // fresh lease so expiry at the next decision cadence cannot resubmit the
+    // same path or let a lower-priority request replace active hazard motion.
+    bool const nativePathObserved = _nativeMovementPath.Active
+        && SameScope(_nativeMovementPath.Path.MovementScope,
+            request.MovementScope)
+        && NativeMovementGeneratorActive(bot, _nativeMovementMode);
+    if (_nativeMovementPath.Active && !nativePathObserved)
+        _nativeMovementPath.Active = false;
+
+    Lease arbitrationLease = _movementLease;
+    if (nativePathObserved)
+    {
+        arbitrationLease = _nativeMovementPath.Path;
+        arbitrationLease.ExpiresAtMs = request.ExpiresAtMs;
+    }
+
+    Decision const leaseDecision = Evaluate(arbitrationLease, request, nowMs);
     if (leaseDecision == Decision::RejectInvalid
         || leaseDecision == Decision::PreserveExisting)
         return false;
+
+    BotMovementMode const submittedMode = _movementMode;
+    if (nativePathObserved && MatchesNativePath(_nativeMovementPath, request))
+    {
+        Apply(_movementLease, request);
+        return true;
+    }
+
     Apply(_movementLease, request);
+    bool commandSubmitted = false;
+
+    auto rememberNativePath = [&]
+    {
+        _nativeMovementPath.Active = true;
+        Apply(_nativeMovementPath.Path, request);
+        // ExpiresAtMs belongs to the arbitration lease, not the native
+        // generator. Keep the receipt explicitly independent of that clock.
+        _nativeMovementPath.Path.ExpiresAtMs = 0;
+        _nativeMovementMode = submittedMode;
+    };
 
     if (movementFrame.StuckScore >= 1.0f || _movementMode == BotMovementMode::Unstuck)
     {
         executor.MoveUnstuck(owner, bot);
+        commandSubmitted = true;
+        rememberNativePath();
         _movementMode = BotMovementMode::Follow;
         return true;
     }
@@ -213,14 +289,29 @@ bool BotController::ApplyMovementPolicy(BotActionExecutor& executor, Player* own
     {
         BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, _runtimeRole.c_str());
         executor.MoveFollow(owner, bot, ProfileFollowDistance(profile));
+        commandSubmitted = true;
     }
     else if (_movementMode == BotMovementMode::Stay)
+    {
         executor.MoveStay(bot);
+        commandSubmitted = true;
+    }
     else if (_movementMode == BotMovementMode::Stop)
+    {
         executor.MoveStop(bot);
+        commandSubmitted = true;
+    }
     else if (_movementMode == BotMovementMode::MoveTo && _movementTarget.Active)
+    {
         executor.MoveTo(bot, _movementTarget.X, _movementTarget.Y, _movementTarget.Z);
+        commandSubmitted = true;
+    }
     else if (_movementMode == BotMovementMode::ReturnToGroup || _movementMode == BotMovementMode::MoveSafe)
+    {
         executor.MoveFollow(owner, bot);
+        commandSubmitted = true;
+    }
+    if (commandSubmitted)
+        rememberNativePath();
     return true;
 }

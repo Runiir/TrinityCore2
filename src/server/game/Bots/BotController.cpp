@@ -177,6 +177,7 @@ void BotController::Update(uint32 diff, BotActionExecutor& executor, Player* own
         ResolvedCombatAction combatAction;
         bool healerCommitted = false;
         bool combatAttempted = false;
+        bool castTimeMovementBlocked = false;
         _decisionKernel.Begin(PlayerBotNowMs());
 
         if (_runtimeRole == "healer")
@@ -189,7 +190,6 @@ void BotController::Update(uint32 diff, BotActionExecutor& executor, Player* own
             healer.RequiredResources = BotActionArbitration::Uses(
                 BotActionArbitration::Resource::GlobalCooldown,
                 BotActionArbitration::Resource::Cast,
-                BotActionArbitration::Resource::Movement,
                 BotActionArbitration::Resource::Target);
             healer.Attempt = [&]()
             {
@@ -212,7 +212,6 @@ void BotController::Update(uint32 diff, BotActionExecutor& executor, Player* own
         combat.RequiredResources = BotActionArbitration::Uses(
             BotActionArbitration::Resource::GlobalCooldown,
             BotActionArbitration::Resource::Cast,
-            BotActionArbitration::Resource::Movement,
             BotActionArbitration::Resource::Target);
         combat.Attempt = [&]()
         {
@@ -230,6 +229,13 @@ void BotController::Update(uint32 diff, BotActionExecutor& executor, Player* own
                     _queuedCombatActionMs = 1500;
                 }
             }
+            if ((combatResult == BotActionResult::Ok
+                    || combatResult == BotActionResult::Casting)
+                && combatAction.SpellId)
+            {
+                if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(combatAction.SpellId))
+                    castTimeMovementBlocked = spellInfo->CalcCastTime(bot->getLevel()) > 0;
+            }
             return BotActionArbitration::FromBotActionResult(combatResult);
         };
         _decisionKernel.Submit(std::move(combat));
@@ -243,9 +249,17 @@ void BotController::Update(uint32 diff, BotActionExecutor& executor, Player* own
             ? BotActionArbitration::Priority::Survival
             : BotActionArbitration::Priority::CombatMovement;
         movement.UtilityScore = movementFrame.NearbyHazard ? 3.0f : 0.5f;
+        // Movement owns only the command lane. MotionMaster continues the
+        // admitted native path independently, so instant profile actions can
+        // execute while this one-shot command is already in flight.
         movement.RequiredResources = BotActionArbitration::Uses(BotActionArbitration::Resource::Movement);
         movement.Attempt = [&]()
         {
+            if (castTimeMovementBlocked
+                || (_movementMode != BotMovementMode::Stop
+                    && bot->HasUnitState(UNIT_STATE_CASTING)))
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "cast_time_movement_gate");
             return ApplyMovementPolicy(executor, owner, bot, movementFrame)
                 ? BotActionArbitration::Outcome::Committed("movement_policy_applied")
                 : BotActionArbitration::Outcome::NotApplicable("movement_lease_preserved");
@@ -276,6 +290,8 @@ void BotController::Update(uint32 diff, BotActionExecutor& executor, Player* own
         ? BotActionArbitration::Priority::Survival
         : BotActionArbitration::Priority::RouteMovement;
     movement.UtilityScore = movementFrame.NearbyHazard ? 3.0f : 0.5f;
+    // The native generator is set-and-forget; this lane submits/reconciles
+    // its command without starving unrelated non-movement actions.
     movement.RequiredResources = BotActionArbitration::Uses(BotActionArbitration::Resource::Movement);
     movement.Attempt = [&]()
     {

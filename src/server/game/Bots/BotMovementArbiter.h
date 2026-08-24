@@ -67,6 +67,17 @@ struct Request
     uint64 DynamicTargetGuid = 0;
 };
 
+// A lease is a short arbitration promise.  Native MotionMaster movement is a
+// separate, set-and-forget generator and may outlive that promise by one or
+// more decision ticks.  Keep the admitted path identity without an expiry so
+// callers can reconcile an already-running generator before submitting a
+// duplicate command or allowing a lower-priority request to replace it.
+struct NativePathReceipt
+{
+    bool Active = false;
+    Lease Path;
+};
+
 enum class Decision : uint8
 {
     Acquire,
@@ -102,6 +113,15 @@ inline bool SameDestination(Lease const& lease, Request const& request, float ep
     return std::fabs(lease.X - request.X) <= epsilon
         && std::fabs(lease.Y - request.Y) <= epsilon
         && std::fabs(lease.Z - request.Z) <= epsilon;
+}
+
+inline bool MatchesNativePath(NativePathReceipt const& receipt,
+    Request const& request, float epsilon = 0.1f)
+{
+    return receipt.Active
+        && receipt.Path.MovementOwner == request.MovementOwner
+        && SameScope(receipt.Path.MovementScope, request.MovementScope)
+        && SameDestination(receipt.Path, request, epsilon);
 }
 
 constexpr bool ValidRequest(Request const& request, uint64 nowMs)

@@ -65,6 +65,8 @@ private:
     uint32 _queuedCombatActionMs = 0;
     BotActionArbitration::Kernel _decisionKernel;
     BotMovementArbitration::Lease _movementLease;
+    BotMovementArbitration::NativePathReceipt _nativeMovementPath;
+    BotMovementMode _nativeMovementMode = BotMovementMode::Follow;
     std::string _lastDecisionKernelTraceJson = "{}";
     uint32 _updateTimer = 0;
     bool _recording = false;
