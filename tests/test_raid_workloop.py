@@ -490,21 +490,21 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     status = workloop.build_status()
 
     assert status["active_work_unit"]["descriptor_valid"] is True
-    assert status["active_work_unit"]["ready_for_bounded_repair"] is False
-    assert status["active_work_unit"]["ready_for_live_verification"] is True
+    assert status["active_work_unit"]["ready_for_bounded_repair"] is True
+    assert status["active_work_unit"]["ready_for_live_verification"] is False
     assert status["active_work_unit"]["first_broken_edge"] == (
-        "drudge_recovery_admission_checks_live_sources_but_not_native_source_homes"
+        "drudge_source_union_path_requires_an_already_safe_origin_and_blocks_outward_escape"
     )
     assert status["active_work_unit"]["source_handoff"]["sha256"] == (
         workloop._file_sha256(
             workloop.ROOT
             / "experiments/configs/"
-            "cata_raid_magmaw_drudge_source_home_union_handoff_20260825.md"
+            "cata_raid_magmaw_drudge_escape_path_handoff_20260826.md"
         )
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_source_home_union_live_verification"
+        "drudge_source_union_escape_path"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
         "raid-shard-architecture"
