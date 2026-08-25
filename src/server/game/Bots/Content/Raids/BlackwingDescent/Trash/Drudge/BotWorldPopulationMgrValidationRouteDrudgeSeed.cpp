@@ -65,7 +65,6 @@ using SeedCandidate = BotWorldPopulationMgrValidationRoute::DrudgeSeedCandidate;
 bool IsSeedThreatCategory(BotCombatActionCategory category)
 {
     return category == BotCombatActionCategory::ThreatBuild
-        || category == BotCombatActionCategory::Taunt
         || category == BotCombatActionCategory::Builder
         || category == BotCombatActionCategory::Spender
         || category == BotCombatActionCategory::Dot
@@ -317,8 +316,8 @@ SeedCandidate DrudgeLaneContext::ResolveDrudgeSeedCandidate(
                 continue;
             uint32 const rank = actionCandidate.Category
                 == BotCombatActionCategory::ThreatBuild ? 0 : 1;
-            if (!bestFound || rank < bestRank
-                || (rank == bestRank && maxRange > bestRange)
+            if (!bestFound || maxRange > bestRange
+                || (maxRange == bestRange && rank < bestRank)
                 || (rank == bestRank && maxRange == bestRange
                     && actionCandidate.Profile.SortOrder < best.Profile.SortOrder))
             {

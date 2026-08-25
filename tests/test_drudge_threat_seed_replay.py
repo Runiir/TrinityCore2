@@ -280,7 +280,7 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
     assert "candidate.Distance <= candidate.Action.MaxRange" in seed
     assert "selected.Action.SuppressAreaDamage = true" in seed
     assert "selected.Action.MeleeAutoAttackExternallyReconciled = true" in seed
-    assert "category == BotCombatActionCategory::Taunt" in seed
+    assert "category == BotCombatActionCategory::Taunt" not in seed
     assert "category == BotCombatActionCategory::Cleave" not in seed
     assert 'roster->second.Role != "tank"' in seed
     assert "maxRange <= minimumSafeRange" in seed
@@ -289,6 +289,9 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
     assert "allPendingCandidatesReady" in seed
     assert "SeedGate::PendingLaneBarrier" in seed
     assert "if (allPendingCandidatesReady)" in seed
+    assert seed.index("maxRange > bestRange") < seed.index(
+        "maxRange == bestRange && rank < bestRank"
+    )
     assert seed.index("if (allPendingCandidatesReady)") < seed.index(
         "executor.ExecuteCombat"
     )
