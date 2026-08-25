@@ -340,10 +340,10 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "positive_self_range_runtime_repair"
+        "positive_self_range_live_verification"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["owner_skill"] == "raid-bot-runtime-implementation"
+    assert active["owner_skill"] == "raid-shard-architecture"
     assert active["first_broken_edge"] == (
         "positive_self_target_profile_actions_retain_a_hostile_range_envelope_"
         "after_resolution_so_combat_range_reconciliation_moves_a_safe_bot_"
@@ -388,11 +388,19 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
         "hypotheses": 1,
         "matched_live_verification_runs": 0,
     }
-    assert "resolved_action_self_target_range_contract" in (
-        active["implementation_hypothesis"]["allowed"]
-    )
+    assert active["implemented_repair"] == {
+        "commit": "8f916f9792e9c937204d5e09e93294c98957ae10",
+        "tree": "080a4adc5cef55f15c366fbbe56d962dff9d6bb3",
+        "status": "source_validated_pending_exact_build",
+        "scope": "preserve_hostile_range_only_for_native_hostile_self_centered_actions",
+        "focused_test_count": 34,
+        "combat_resolver_source_lines": 846,
+        "combat_range_header_lines": 18,
+        "source_line_limit_passed": True,
+    }
+    assert "queued_exact_worldserver_build" in active["repair_scope"]["allowed"]
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
-    assert "do not build" in active["next_action"].lower()
+    assert "canary31" in active["next_action"].lower()
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
@@ -486,8 +494,8 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     status = workloop.build_status()
 
     assert status["active_work_unit"]["descriptor_valid"] is True
-    assert status["active_work_unit"]["ready_for_bounded_repair"] is True
-    assert status["active_work_unit"]["ready_for_live_verification"] is False
+    assert status["active_work_unit"]["ready_for_bounded_repair"] is False
+    assert status["active_work_unit"]["ready_for_live_verification"] is True
     assert status["active_work_unit"]["first_broken_edge"] == (
         "positive_self_target_profile_actions_retain_a_hostile_range_envelope_"
         "after_resolution_so_combat_range_reconciliation_moves_a_safe_bot_"
@@ -502,15 +510,15 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "positive_self_range_runtime_repair"
+        "positive_self_range_live_verification"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
-        "raid-bot-runtime-implementation"
+        "raid-shard-architecture"
     )
     assert status["current_program_next_action"] == status["active_work_unit"][
         "next_action"
     ]
-    assert "do not build" in status["active_work_unit"]["next_action"].lower()
+    assert "canary31" in status["active_work_unit"]["next_action"].lower()
     assert "legacy_program_next_action" not in status
 
 
