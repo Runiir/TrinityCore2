@@ -952,8 +952,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions()
     }
     if (Sources[0]->IsAlive() && Sources[1]->IsAlive() && Role != "tank")
     {
-        Player* intendedSeed = rosterMemberForSlot(
-            Manager.Cohort().Config.ValidationRouteSplitSeedRosterSlots[LaneIndex]);
+        Player* intendedSeed = OtherTank;
         float const intendedDistance = intendedSeed
             ? LaneSource->GetExactDist(intendedSeed) : 0.0f;
         if (!intendedSeed || intendedSeed->GetMap() != LaneSource->GetMap()
