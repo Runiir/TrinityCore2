@@ -36,6 +36,14 @@ bool BotWorldPopulationMgr::TryValidationRouteGroupHeal(
         if (!healer || std::string(GetDungeonRole(healer)) != "healer")
             return false;
 
+        // The Drudge lane contract owns movement for the whole node. A
+        // generic heal may still cast from the sealed anchor, but approaching
+        // an ally can make that healer the native Rush's farthest target in
+        // the interval between readiness sampling and the spell cast.
+        if (Cohort().Config.ValidationRouteMechanicProfile
+            == "trash_two_tank_charge_lanes")
+            allowMovement = false;
+
         uint64 nowMs = NowMs();
         if (state.RouteHealSuppressedUntilMs <= nowMs)
         {

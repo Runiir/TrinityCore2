@@ -37,3 +37,15 @@ def test_validation_group_heal_keeps_native_triage_contract():
         "MaintainedProfileAuraBlocksRefresh",
     ):
         assert marker in text
+
+
+def test_drudge_lane_contract_blocks_generic_heal_approach_movement():
+    text = MODULE.read_text()
+    profile_gate = text.index(
+        '== "trash_two_tank_charge_lanes"'
+    )
+    movement_disable = text.index("allowMovement = false;", profile_gate)
+    friendly_spell = text.index("auto tryRouteFriendlySpell", movement_disable)
+    approach = text.index("MoveBotToPoint(state, healer", friendly_spell)
+
+    assert profile_gate < movement_disable < friendly_spell < approach
