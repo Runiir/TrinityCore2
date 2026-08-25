@@ -44,7 +44,21 @@ def test_recorded_drudge_returns_match_native_navmesh(tmp_path):
     )
     assert result.returncode == 0, result.stderr or result.stdout
     payload = json.loads(report.read_text(encoding="utf-8"))
-    assert payload["all_passed"] is True
+    # The probe is expected to fail closed while the declared tank-1 combat
+    # endpoint still projects 2.79962 yards back to its navigation anchor.
+    assert payload["all_passed"] is False
+    assert payload["required_combat_endpoints"] == {
+        "tank1_combat_anchor": {
+            "declared": True,
+            "exact_endpoint": False,
+            "passed": False,
+        },
+        "tank2_combat_anchor": {
+            "declared": True,
+            "exact_endpoint": True,
+            "passed": True,
+        },
+    }
     assert payload["map_id"] == 669
     assert payload["player_nav_include_flags"] == [
         "NAV_GROUND",

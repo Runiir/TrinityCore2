@@ -57,6 +57,11 @@ EXPECTED_OUTPUT = (
     "chainwielder_patrol_pull future_guard_minimums=58.2531,51.5885",
 )
 
+REQUIRED_COMBAT_ENDPOINTS = (
+    "tank1_combat_anchor",
+    "tank2_combat_anchor",
+)
+
 
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
@@ -147,17 +152,7 @@ def run_probe(root: Path = ROOT) -> dict[str, object]:
     root = root.resolve()
     assets = verify_assets(root)
     output = compile_and_run_probe(root)
-    return {
-        "all_passed": True,
-        "map_id": 669,
-        "asset_sha256": assets,
-        "player_nav_include_flags": ["NAV_GROUND", "NAV_WATER", "NAV_MAGMA_SLIME"],
-        "nearest_poly_extents": [3.0, 5.0, 3.0],
-        "nearest_poly_vertical_fallback": 50.0,
-        "corridor_cap": 74,
-        "smooth_step": 4.0,
-        "smooth_slop": 0.3,
-        "validated_returns": {
+    validated_returns = {
             "30003": {
                 "start": [-288.8, -86.483, 214.15],
                 "terminal": [-295.0, -71.5, 213.25],
@@ -252,7 +247,27 @@ def run_probe(root: Path = ROOT) -> dict[str, object]:
                 },
                 "required_future_guard_distance": 50.0,
             },
-        },
+    }
+    required_endpoint_checks = {
+        label: {
+            "declared": True,
+            "exact_endpoint": bool(validated_returns[label].get("exact_endpoint")),
+            "passed": bool(validated_returns[label].get("exact_endpoint")),
+        }
+        for label in REQUIRED_COMBAT_ENDPOINTS
+    }
+    return {
+        "all_passed": all(check["passed"] for check in required_endpoint_checks.values()),
+        "required_combat_endpoints": required_endpoint_checks,
+        "map_id": 669,
+        "asset_sha256": assets,
+        "player_nav_include_flags": ["NAV_GROUND", "NAV_WATER", "NAV_MAGMA_SLIME"],
+        "nearest_poly_extents": [3.0, 5.0, 3.0],
+        "nearest_poly_vertical_fallback": 50.0,
+        "corridor_cap": 74,
+        "smooth_step": 4.0,
+        "smooth_slop": 0.3,
+        "validated_returns": validated_returns,
         "raw_probe_sha256": hashlib.sha256(output.encode("utf-8")).hexdigest(),
     }
 
