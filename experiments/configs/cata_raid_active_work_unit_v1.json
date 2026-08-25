@@ -1,8 +1,8 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:10N:dynamic_floor_runtime_repair",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
+  "work_unit": "boss:blackwing_descent:magmaw:10N:dynamic_floor_live_verification",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "implementation_pending_live_verification",
   "observed_at_commit": "8f916f9792e9c937204d5e09e93294c98957ae10",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary31_dynamic_floor_handoff_20260826.md",
@@ -71,12 +71,25 @@
     "worldserver_exit_code": 0,
     "do_not_relabel_as_clear": true
   },
-  "implementation_hypothesis": {
+  "implemented_repair": {
+    "commit": "0df41fe555dead1878dc436bbf6ec7947d8b7a53",
+    "tree": "847f9ad150ae74a12faf1f61c34f27bebe029e85",
+    "status": "source_validated_pending_exact_build",
     "scope": "admit_a_declared_floor_fallback_only_through_complete_native_path_validation_when_height_lookup_selects_a_remote_collision_layer",
+    "focused_test_count": 117,
+    "native_floor_header_lines": 56,
+    "native_path_validation_header_lines": 96,
+    "drudge_native_anchor_header_lines": 46,
+    "drudge_geometry_source_lines": 986,
+    "source_line_limit_passed": true
+  },
+  "repair_scope": {
+    "status": "implemented_pending_live_verification",
     "allowed": [
-      "shared_dynamic_candidate_floor_admission_contract",
-      "declared_floor_fallback_guarded_by_complete_native_path",
-      "deterministic_near_remote_valid_and_remote_invalid_floor_tests"
+      "queued_exact_worldserver_build",
+      "fresh_exact_roster_provisioning",
+      "one_completion_watchdog_canary",
+      "trace_backed_routing_of_one_new_first_broken_edge"
     ],
     "must_preserve": [
       "complete_native_path_requirement",
@@ -115,5 +128,6 @@
     "hypotheses": 1,
     "matched_live_verification_runs": 0
   },
-  "next_action": "Implement one shared dynamic-floor admission repair. Preserve a near-declared native height, and allow the declared floor after a remote stacked-layer result only when the existing complete native-path, path-floor, source-union, and exact-end gates all pass. Add deterministic near-floor, remote-valid-fallback, and remote-invalid-fallback coverage, keep all C and C++ source/header files below 1,000 lines, and return the patch for coordinator review. Do not build or run a worldserver."
+  "live_verification_owner_skill": "raid-shard-architecture",
+  "next_action": "Build exact commit 0df41fe555dead1878dc436bbf6ec7947d8b7a53 through the queued coordinator, provision and verify a fresh exact ten-player Magmaw diagnostic roster, and run one completion-watchdog Canary32. Require remote stacked-layer height results to retain the declared floor only through complete native path, bounded path-floor envelope, source-union safety, and exact endpoint admission. If the route clears entrance, Chainwielder, Drudges, and Magmaw without forbidden assistance, repeat on a fresh roster. If it fails, retain the closed evidence and route only the first newly proven edge. Do not teleport, force movement or threat, revive bots, alter native encounter state, or manufacture an outcome."
 }

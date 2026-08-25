@@ -340,10 +340,10 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "dynamic_floor_runtime_repair"
+        "dynamic_floor_live_verification"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["owner_skill"] == "raid-bot-runtime-implementation"
+    assert active["owner_skill"] == "raid-shard-architecture"
     assert active["first_broken_edge"] == (
         "dynamic_drudge_recovery_candidates_are_rejected_when_map_height_"
         "selects_a_remote_collision_layer_even_though_the_candidate_is_group_"
@@ -398,11 +398,13 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
         "hypotheses": 1,
         "matched_live_verification_runs": 0,
     }
-    assert "shared_dynamic_candidate_floor_admission_contract" in (
-        active["implementation_hypothesis"]["allowed"]
+    assert active["implemented_repair"]["commit"] == (
+        "0df41fe555dead1878dc436bbf6ec7947d8b7a53"
     )
+    assert active["implemented_repair"]["source_line_limit_passed"] is True
+    assert "queued_exact_worldserver_build" in active["repair_scope"]["allowed"]
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
-    assert "do not build" in active["next_action"].lower()
+    assert "build exact commit" in active["next_action"].lower()
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
@@ -496,8 +498,8 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     status = workloop.build_status()
 
     assert status["active_work_unit"]["descriptor_valid"] is True
-    assert status["active_work_unit"]["ready_for_bounded_repair"] is True
-    assert status["active_work_unit"]["ready_for_live_verification"] is False
+    assert status["active_work_unit"]["ready_for_bounded_repair"] is False
+    assert status["active_work_unit"]["ready_for_live_verification"] is True
     assert status["active_work_unit"]["first_broken_edge"] == (
         "dynamic_drudge_recovery_candidates_are_rejected_when_map_height_"
         "selects_a_remote_collision_layer_even_though_the_candidate_is_group_"
@@ -512,15 +514,15 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "dynamic_floor_runtime_repair"
+        "dynamic_floor_live_verification"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
-        "raid-bot-runtime-implementation"
+        "raid-shard-architecture"
     )
     assert status["current_program_next_action"] == status["active_work_unit"][
         "next_action"
     ]
-    assert "do not build" in status["active_work_unit"]["next_action"].lower()
+    assert "build exact commit" in status["active_work_unit"]["next_action"].lower()
     assert "legacy_program_next_action" not in status
 
 
