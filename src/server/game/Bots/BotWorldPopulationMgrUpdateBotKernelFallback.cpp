@@ -88,6 +88,7 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                 || action.find("position") != std::string::npos
                 || action.find("density_escape") != std::string::npos
                 || action.find("side_hazard") != std::string::npos
+                || action.find("reseparate") != std::string::npos
                 || action.find("blocked") != std::string::npos
                 || action.find("pending") != std::string::npos
                 || action.find("retry") != std::string::npos

@@ -156,3 +156,26 @@ def test_adaptive_route_refreshes_combat_authority_before_kernel_resolution() ->
     assert admission.index("if (routeOwnerReason())") < admission.index(
         "ConfigureValidationRouteCombatAuthority(context.Bot);"
     )
+
+
+def test_drudge_reseparate_actions_stay_in_movement_lane_and_heal_is_independent() -> None:
+    fallback = FALLBACK.read_text(encoding="utf-8")
+    classifier_start = fallback.index("auto routeActionIsMovementOnly")
+    classifier_end = fallback.index("auto runRoute", classifier_start)
+    classifier = fallback[classifier_start:classifier_end]
+    assert 'action.find("reseparate") != std::string::npos' in classifier
+
+    route_start = fallback.index("BotActionArbitration::ResourceMask routeActionResources")
+    route_end = fallback.index("routeAction.Attempt", route_start)
+    route_resources = fallback[route_start:route_end]
+    assert "Resource::Movement" in route_resources
+    assert "!context.DrudgeCombatAuthorityAllowed" in route_resources
+
+    candidates = (
+        ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelCandidates.cpp"
+    ).read_text(encoding="utf-8")
+    support_start = candidates.index('support.Key = "raid.support.heal."')
+    support = candidates[support_start:]
+    assert "Resource::GlobalCooldown" in support
+    assert "Resource::Cast" in support
+    assert "Resource::Movement" not in support
