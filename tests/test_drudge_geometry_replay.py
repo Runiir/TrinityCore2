@@ -13,10 +13,12 @@ def test_production_drudge_geometry_transition_replays_charge_edges_and_pull_ord
         r'''
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeGeometryState.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeNativeRushState.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeOwnershipActionState.h"
 #include <cassert>
 #include <cmath>
 
 using namespace BotRaidDrudgeGeometry;
+using namespace BotRaidDrudgeOwnership;
 
 int main()
 {
@@ -102,9 +104,10 @@ int main()
         == MemberRecoveryAction::PreferFriendlySupport);
     assert(SelectMemberRecoveryAction(false, false, false)
         == MemberRecoveryAction::Continue);
-    assert(NativeOwnershipActionReady(false, false));
-    assert(!NativeOwnershipActionReady(true, false));
-    assert(NativeOwnershipActionReady(true, true));
+    assert(!NativeOwnershipActionReady(false, false, false));
+    assert(NativeOwnershipActionReady(false, false, true));
+    assert(!NativeOwnershipActionReady(true, false, false));
+    assert(NativeOwnershipActionReady(true, true, false));
 
     assert(SelectMinimumDistanceOwner(false, false)
         == MinimumDistanceOwner::GenericRouteSafety);

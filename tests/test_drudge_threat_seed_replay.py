@@ -265,12 +265,6 @@ int main()
     assert(accepted.Lanes[0].ActionAttempted && accepted.Lanes[1].ActionAttempted);
     assert(accepted.Next.SeededLanes[0] && accepted.Next.SeededLanes[1]);
     assert(accepted.Next.Complete && !accepted.Next.Failure);
-    assert(ImmediateOwnershipRestoreReady(held.Next, accepted));
-
-    // A partial or rejected seed tick can never authorize ownership restore.
-    assert(!ImmediateOwnershipRestoreReady(State{}, held));
-    assert(!ImmediateOwnershipRestoreReady(State{}, rejected));
-    assert(!ImmediateOwnershipRestoreReady(accepted.Next, accepted));
 }
 ''',
         encoding="utf-8",
@@ -353,15 +347,12 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
     assert "candidate.Distance <= candidate.Action.MaxRange" in seed
     assert "selected.Action.SuppressAreaDamage = true" in seed
     assert "selected.Action.MeleeAutoAttackExternallyReconciled = true" in seed
-    assert "candidate.Category != BotCombatActionCategory::Taunt" in seed
-    restore_gate = seed.index("ImmediateOwnershipRestoreReady")
-    restore_taunt = seed.index("manager.TryCastCombatSpell(", restore_gate)
-    evidence_loop = seed.index("uint64 const observedAtMs", restore_taunt)
-    assert restore_gate < restore_taunt < evidence_loop
-    assert '"drudge_seed_native_taunt"' in seed[restore_gate:evidence_loop]
-    assert "ValidationRouteDrudgeTauntRosterGuids.insert" in seed[
-        restore_gate:evidence_loop
+    seed_categories = seed[
+        seed.index("bool IsSeedThreatCategory") : seed.index("float EffectiveSeedMaxRange")
     ]
+    assert "BotCombatActionCategory::Taunt" not in seed_categories
+    assert "ImmediateOwnershipRestoreReady" not in seed
+    assert '"drudge_seed_native_taunt"' not in seed
     assert "category == BotCombatActionCategory::Cleave" not in seed
     assert 'roster->second.Role != "tank"' in seed
     assert "maxRange <= minimumSafeRange" in seed

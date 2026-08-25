@@ -621,68 +621,6 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunDrudgeSeedCoordinator()
         BotRaidDrudgeThreatSeed::AdvanceCoordinator(seedState, input);
     ApplyDrudgeSeedState(*this, transition);
 
-    // Both cross-lane seed spells start the native combat clock. Restore each
-    // Drudge to its assigned tank in this same coordinator tick so a source
-    // cannot spend several bot scheduler ticks chasing the opposite seed tank.
-    // These remain ordinary profile taunts through TryCastCombatSpell; a GCD,
-    // cooldown, range, LOS, or native cast rejection simply leaves ownership
-    // for the existing per-tank retry path below RunFormationActions.
-    if (BotRaidDrudgeThreatSeed::ImmediateOwnershipRestoreReady(
-            seedState, transition)
-        && manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.size()
-            == context.Sources.size())
-        for (uint32 lane = 0; lane < context.Sources.size(); ++lane)
-        {
-            Creature* source = context.Sources[lane];
-            uint32 const tankSlot = manager.Cohort().Config
-                .ValidationRouteSplitLaneTankSlots[lane];
-            Player* tank = nullptr;
-            for (WorldBotState const& memberState : manager.Party().Bots)
-            {
-                Player* member = manager.GetLoadedBot(memberState);
-                auto roster = member ? manager.Cohort().Raid.RosterByGuid.find(
-                    member->GetGUID().GetCounter())
-                    : manager.Cohort().Raid.RosterByGuid.end();
-                if (member && roster != manager.Cohort().Raid.RosterByGuid.end()
-                    && roster->second.Active && roster->second.LeaseOwned
-                    && roster->second.Role == "tank"
-                    && roster->second.SlotIndex + 1 == tankSlot)
-                {
-                    tank = member;
-                    break;
-                }
-            }
-            if (!source || !tank || !source->IsAlive() || !tank->IsAlive()
-                || source->GetMap() != tank->GetMap()
-                || source->GetVictim() == tank)
-                continue;
-
-            BotClassSpecActionProfile const profile =
-                BotClassSpecActionProfileStore::Build(tank, "tank");
-            for (BotActionCandidate const& candidate :
-                BotClassSpecActionProfileStore::BuildCandidates(
-                    tank, source, profile))
-            {
-                if (candidate.Category != BotCombatActionCategory::Taunt
-                    || !candidate.RejectReason.empty())
-                    continue;
-                uint64 const guid = tank->GetGUID().GetRawValue();
-                BotRaidAreaAuthority::SetAllOffenseSuppressed(guid, false);
-                bool const taunted = manager.TryCastCombatSpell(
-                    tank, source, candidate.SpellId);
-                BotRaidAreaAuthority::SetAllOffenseSuppressed(guid, true);
-                BotRaidAreaAuthority::Set(guid, true);
-                if (taunted)
-                {
-                    party.ValidationRouteDrudgeTauntRosterGuids.insert(
-                        tank->GetGUID().GetCounter());
-                    context.Record(source, "drudge_seed_native_taunt",
-                        context.SourceSeparation, candidate.SpellId);
-                }
-                break;
-            }
-        }
-
     uint64 const observedAtMs = NowMs();
     for (uint32 lane = 0; lane < candidates.size(); ++lane)
     {

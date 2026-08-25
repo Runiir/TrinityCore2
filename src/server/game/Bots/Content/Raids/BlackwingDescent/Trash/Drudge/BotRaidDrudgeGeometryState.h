@@ -187,12 +187,6 @@ inline MemberRecoveryAction SelectMemberRecoveryAction(
     return MemberRecoveryAction::Continue;
 }
 
-inline bool NativeOwnershipActionReady(
-    bool chargePending, bool recoveryAnchorsReached)
-{
-    return !chargePending || recoveryAnchorsReached;
-}
-
 struct Input
 {
     Scope Identity;

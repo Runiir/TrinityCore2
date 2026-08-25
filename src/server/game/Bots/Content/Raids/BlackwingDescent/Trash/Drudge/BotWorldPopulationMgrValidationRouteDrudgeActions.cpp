@@ -7,6 +7,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeMovementLease.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeNativeRushState.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeObservationBacklog.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeOwnershipActionState.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
@@ -518,8 +519,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
     if ((PrepullStaged || EarlyPullRecoveryActive)
         && RunDrudgeSeedCoordinator() == PhaseResult::Handled) return PhaseResult::Handled;
     if (AssignedTank && (tankStage.NativeOwnershipAllowed || earlyPullOwnershipWindow)
-        && BotRaidDrudgeGeometry::NativeOwnershipActionReady(
-            NativeChargePending, recoveryAnchorsReachedBeforeTick)
+        && BotRaidDrudgeOwnership::NativeOwnershipActionReady(
+            NativeChargePending, recoveryAnchorsReachedBeforeTick, earlyPullOwnershipWindow)
         && LaneSource->GetVictim() == Bot)
     {
         auto const insert = Manager.Party().ValidationRouteDrudgeOwnershipRosterGuids.insert(
@@ -528,8 +529,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
             Record(LaneSource, "drudge_lane_native_ownership", SourceSeparation);
     }
     if (AssignedTank && (tankStage.NativeOwnershipAllowed || earlyPullOwnershipWindow)
-        && BotRaidDrudgeGeometry::NativeOwnershipActionReady(
-            NativeChargePending, recoveryAnchorsReachedBeforeTick)
+        && BotRaidDrudgeOwnership::NativeOwnershipActionReady(
+            NativeChargePending, recoveryAnchorsReachedBeforeTick, earlyPullOwnershipWindow)
         && LaneSource->GetVictim() != Bot)
     {
         BotClassSpecActionProfile profile =
