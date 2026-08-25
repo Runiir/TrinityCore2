@@ -41,6 +41,25 @@ inline float DistanceSquared(Point2d const& left, Point2d const& right)
     return x * x + y * y;
 }
 
+// A member already inside a live source radius must be able to leave it.
+// Keep an unsafe start from moving materially closer, while preserving the
+// configured minimum (with the same small native-path tolerance) once the
+// member starts outside the radius.
+inline float PathDistanceFloor(float startDistance, float minimumDistance)
+{
+    return std::max(0.0f,
+        std::min(startDistance, minimumDistance) - 0.25f);
+}
+
+inline bool PathPointPreservesSourceDistance(
+    Point2d const& point, Point2d const& source,
+    float startDistance, float minimumDistance)
+{
+    float const floor = PathDistanceFloor(startDistance, minimumDistance);
+    return minimumDistance > 0.0f && std::isfinite(startDistance)
+        && DistanceSquared(point, source) >= floor * floor;
+}
+
 inline float Dot(Point2d const& left, Point2d const& right)
 {
     return left.X * right.X + left.Y * right.Y;

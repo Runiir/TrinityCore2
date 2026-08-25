@@ -9,6 +9,8 @@
 #include "PathGenerator.h"
 #include "Player.h"
 
+#include <array>
+
 using BotWorldPopulationMgrNativeHelpers::Distance2d;
 
 bool BotWorldPopulationMgr::TryValidationRouteDrudgeMinimumDistance(
@@ -76,6 +78,23 @@ bool DrudgeLaneContext::SourceUnionPathSafe(PathGenerator const& path) const
         || !SourceUnionSafe(path.GetActualEndPosition().x,
             path.GetActualEndPosition().y))
         return false;
+    float const minimum = Manager.Cohort().Config.ValidationRouteMinimumDistanceYards;
+    if (minimum <= 0.0f)
+        return false;
+    using BotRaidDrudgeRecoveryCandidates::Point2d;
+    std::array<Point2d, 4> const unionAnchors{
+        Point2d{ Sources[0]->GetPositionX(), Sources[0]->GetPositionY() },
+        Point2d{ Sources[1]->GetPositionX(), Sources[1]->GetPositionY() },
+        Point2d{ Sources[0]->GetHomePosition().GetPositionX(),
+            Sources[0]->GetHomePosition().GetPositionY() },
+        Point2d{ Sources[1]->GetHomePosition().GetPositionX(),
+            Sources[1]->GetHomePosition().GetPositionY() } };
+    Point2d const start{ Bot->GetPositionX(), Bot->GetPositionY() };
+    std::array<float, 4> startDistances{};
+    for (std::size_t index = 0; index < unionAnchors.size(); ++index)
+        startDistances[index] = std::sqrt(
+            BotRaidDrudgeRecoveryCandidates::DistanceSquared(
+                start, unionAnchors[index]));
     std::size_t firstPoint = 0;
     G3D::Vector3 const& first = path.GetPath().front();
     if (std::hypot(first.x - Bot->GetPositionX(), first.y - Bot->GetPositionY())
@@ -84,8 +103,13 @@ bool DrudgeLaneContext::SourceUnionPathSafe(PathGenerator const& path) const
     for (std::size_t index = firstPoint; index < path.GetPath().size(); ++index)
     {
         G3D::Vector3 const& point = path.GetPath()[index];
-        if (!SourceUnionSafe(point.x, point.y))
-            return false;
+        Point2d const pathPoint{ point.x, point.y };
+        for (std::size_t anchorIndex = 0;
+            anchorIndex < unionAnchors.size(); ++anchorIndex)
+            if (!BotRaidDrudgeRecoveryCandidates::PathPointPreservesSourceDistance(
+                    pathPoint, unionAnchors[anchorIndex],
+                    startDistances[anchorIndex], minimum))
+                return false;
     }
     return true;
 }

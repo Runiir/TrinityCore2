@@ -70,8 +70,14 @@ DRUDGE_FILES = {
     "BotAdaptiveDrudgeStrategy.h",
     "BotRaidDrudgeActivationState.h",
     "BotRaidDrudgeGeometryState.h",
+    "BotRaidDrudgeMovementLease.h",
+    "BotRaidDrudgeNativeAnchor.h",
     "BotRaidDrudgeNativeRushState.h",
+    "BotRaidDrudgeObservationBacklog.h",
     "BotRaidDrudgeRecoveryCandidates.h",
+    "BotRaidDrudgeRecoveryTelemetry.h",
+    "BotRaidDrudgeReseparationReceipt.h",
+    "BotRaidDrudgeSpacingDiagnostic.h",
     "BotRaidDrudgeThreatSeedState.h",
     "BotWorldPopulationMgrValidationRouteDrudge.h",
     "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp",
@@ -81,6 +87,8 @@ DRUDGE_FILES = {
     "BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp",
     "BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp",
     "BotWorldPopulationMgrValidationRouteDrudgeSeed.h",
+    "BotWorldPopulationMgrValidationRouteDrudgeSpacing.cpp",
+    "BotWorldPopulationMgrValidationRouteDrudgeTelemetry.cpp",
 }
 
 OLD_ROOT_FILES = {

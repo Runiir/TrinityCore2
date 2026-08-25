@@ -84,6 +84,17 @@ int main()
             || LaneSafe(candidate.Point, wrongLane);
     assert(!laneSafeCandidate);
 
+    assert(std::fabs(PathDistanceFloor(7.0f, 15.0f) - 6.75f) < 0.001f);
+    assert(std::fabs(PathDistanceFloor(20.0f, 15.0f) - 14.75f) < 0.001f);
+    assert(PathPointPreservesSourceDistance(
+        { 6.8f, 0.0f }, { 0.0f, 0.0f }, 7.0f, 15.0f));
+    assert(!PathPointPreservesSourceDistance(
+        { 6.0f, 0.0f }, { 0.0f, 0.0f }, 7.0f, 15.0f));
+    assert(PathPointPreservesSourceDistance(
+        { 14.8f, 0.0f }, { 0.0f, 0.0f }, 20.0f, 15.0f));
+    assert(!PathPointPreservesSourceDistance(
+        { 14.0f, 0.0f }, { 0.0f, 0.0f }, 20.0f, 15.0f));
+
     bool noSafeCandidate = false;
     for (Candidate const& candidate : overlapFan)
         noSafeCandidate = noSafeCandidate
