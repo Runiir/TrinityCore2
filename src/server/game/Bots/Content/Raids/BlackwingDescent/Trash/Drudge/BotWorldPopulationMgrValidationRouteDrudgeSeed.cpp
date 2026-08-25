@@ -586,21 +586,29 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunDrudgeSeedCoordinator()
                 BotRaidAreaAuthority::SetAllOffenseSuppressed(guid, false);
                 BotRaidAreaAuthority::Set(guid, true);
                 candidates[lane].ActionAttempted = true;
+                float const threatBefore = context.Sources[lane]
+                    ->GetThreatManager().GetThreat(candidates[lane].Bot, true);
                 BotActionExecutor executor;
                 candidates[lane].NativeResult = executor.ExecuteCombat(
                     candidates[lane].Bot, candidates[lane].Bot,
                     candidates[lane].Action);
+                float const threatAfter = context.Sources[lane]
+                    ->GetThreatManager().GetThreat(candidates[lane].Bot, true);
                 candidates[lane].ActionSucceeded =
                     candidates[lane].NativeResult == BotActionResult::Ok
                     && candidates[lane].Action.Valid
                     && candidates[lane].Action.Type == "cast"
                     && candidates[lane].Action.SpellId
                     && candidates[lane].Action.TargetGuid
-                        == context.Sources[lane]->GetGUID();
+                        == context.Sources[lane]->GetGUID()
+                    && BotRaidDrudgeSeedActionSelection::HasPositiveThreatDelta(
+                        threatBefore, threatAfter);
                 if (!candidates[lane].ActionSucceeded)
                 {
                     candidates[lane].Gate = SeedGate::NativeAction;
-                    candidates[lane].Reason = "native_action_rejected";
+                    candidates[lane].Reason = candidates[lane].NativeResult
+                        == BotActionResult::Ok ? "native_action_no_threat_delta"
+                        : "native_action_rejected";
                 }
                 else
                     candidates[lane].Reason = "native_action_ok";

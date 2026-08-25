@@ -774,6 +774,9 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     actions = (BOT_DIR / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp").read_text(
         encoding="utf-8"
     )
+    actions += (BOT_DIR / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeThreat.cpp").read_text(
+        encoding="utf-8"
+    )
     seed = (BOT_DIR / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp").read_text(
         encoding="utf-8"
     )

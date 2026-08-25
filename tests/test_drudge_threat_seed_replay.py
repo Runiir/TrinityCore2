@@ -171,6 +171,9 @@ int main()
     // cast-time action is not a synchronous seed candidate at all.
     assert(IsSynchronousSeedAction(0));
     assert(!IsSynchronousSeedAction(1500));
+    assert(!HasPositiveThreatDelta(0.0f, 0.0f));
+    assert(!HasPositiveThreatDelta(10.0f, 10.0f));
+    assert(HasPositiveThreatDelta(10.0f, 10.5f));
     assert(PreferSeedAction(true, 35.0f, 1, 90,
         30.0f, 0, 55));
     assert(!PreferSeedAction(true, 30.0f, 0, 55,
@@ -297,6 +300,11 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
         / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/"
         "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp"
     ).read_text(encoding="utf-8")
+    lane += (
+        ROOT
+        / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/"
+        "BotWorldPopulationMgrValidationRouteDrudgeThreat.cpp"
+    ).read_text(encoding="utf-8")
     seed = (
         ROOT
         / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/"
@@ -334,6 +342,7 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
     assert '"drudge_pre_first_rush_seed_rejected:"' in seed
     assert '"drudge_pre_first_rush_seed_approach"' in seed
     assert '"native_action_rejected"' in seed
+    assert '"native_action_no_threat_delta"' in seed
     assert "candidates[lane].ActionAttempted" in seed
     assert "for (uint32 lane = 0; lane < candidates.size(); ++lane)" in seed
     assert "Result const transition = Advance(seedState, rushInput);" in callback
@@ -372,6 +381,7 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
     assert "inline bool PreferSeedAction" in selection
     assert "if (allPendingCandidatesReady)" in seed
     assert "BotRaidDrudgeSeedActionSelection::IsSynchronousSeedAction(" in seed
+    assert "BotRaidDrudgeSeedActionSelection::HasPositiveThreatDelta(" in seed
     assert "BotRaidDrudgeSeedActionSelection::PreferSeedAction(" in seed
     assert "actionCandidate.CastTimeMs" in seed
     assert seed.index("if (allPendingCandidatesReady)") < seed.index(

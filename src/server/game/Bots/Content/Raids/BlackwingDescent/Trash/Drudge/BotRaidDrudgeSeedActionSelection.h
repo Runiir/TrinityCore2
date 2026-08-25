@@ -12,6 +12,11 @@ inline bool IsSynchronousSeedAction(std::uint32_t castTimeMs)
     return castTimeMs == 0;
 }
 
+inline bool HasPositiveThreatDelta(float threatBefore, float threatAfter)
+{
+    return threatAfter > threatBefore;
+}
+
 inline bool PreferSeedAction(bool candidateFound, float maxRange,
     std::uint32_t categoryRank, std::uint16_t sortOrder,
     float selectedMaxRange, std::uint32_t selectedCategoryRank,

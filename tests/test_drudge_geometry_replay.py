@@ -104,11 +104,12 @@ int main()
         == MemberRecoveryAction::PreferFriendlySupport);
     assert(SelectMemberRecoveryAction(false, false, false)
         == MemberRecoveryAction::Continue);
-    assert(!NativeOwnershipActionReady(false, false, false, false));
-    assert(NativeOwnershipActionReady(false, false, true, false));
-    assert(!NativeOwnershipActionReady(false, false, true, true));
-    assert(!NativeOwnershipActionReady(true, false, false, true));
-    assert(NativeOwnershipActionReady(true, true, false, true));
+    assert(!NativeOwnershipActionReady(false, false, false, false, false));
+    assert(NativeOwnershipActionReady(false, false, true, false, false));
+    assert(!NativeOwnershipActionReady(false, false, true, true, false));
+    assert(NativeOwnershipActionReady(false, false, true, true, true));
+    assert(!NativeOwnershipActionReady(true, false, false, true, false));
+    assert(NativeOwnershipActionReady(true, true, false, true, false));
 
     assert(SelectMinimumDistanceOwner(false, false)
         == MinimumDistanceOwner::GenericRouteSafety);
@@ -620,6 +621,9 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     actions = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp").read_text(
         encoding="utf-8"
     )
+    threat = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeThreat.cpp").read_text(
+        encoding="utf-8"
+    )
     seed = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp").read_text(
         encoding="utf-8"
     )
@@ -649,7 +653,7 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "drudge_pre_first_rush_threat_seed" in seed
     assert "drudge_native_charge_reseparation_complete" in actions
     assert "if (TryMinimumDistance(true))" not in lanes
-    assert '&& Role != "tank"' in actions
+    assert '&& Role != "tank"' in threat
 
 
 def test_landed_rush_recovery_latches_the_scoped_two_tank_return_barrier():

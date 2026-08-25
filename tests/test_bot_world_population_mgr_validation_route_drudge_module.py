@@ -13,6 +13,7 @@ RECOVERY = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Dru
 RECOVERY_HEADER = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeRecovery.h"
 LANES = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp"
 ACTIONS = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp"
+THREAT = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeThreat.cpp"
 SEED = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp"
 SPACING = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSpacing.cpp"
 ROUTES = ROOT / "dataset/validation_scenarios/validation_routes.jsonl"
@@ -23,13 +24,14 @@ def test_drudge_route_modules_are_bounded_and_registered():
     header = HEADER.read_text(encoding="utf-8")
     cmake = CMAKE.read_text(encoding="utf-8")
     assert len(header.splitlines()) <= 1000
-    for module in (CONTRACT, GEOMETRY, RECOVERY, RECOVERY_HEADER, LANES, ACTIONS, SEED, SPACING):
+    for module in (CONTRACT, GEOMETRY, RECOVERY, RECOVERY_HEADER, LANES, ACTIONS, THREAT, SEED, SPACING):
         assert len(module.read_text(encoding="utf-8").splitlines()) <= 1000
     for name in (
         "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeRecovery.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp",
+        "BotWorldPopulationMgrValidationRouteDrudgeThreat.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeSpacing.cpp",
     ):
@@ -132,7 +134,7 @@ def test_drudge_contract_keeps_scope_evidence_and_native_lane_guards():
     geometry = GEOMETRY.read_text(encoding="utf-8")
     recovery = RECOVERY.read_text(encoding="utf-8")
     lanes = LANES.read_text(encoding="utf-8")
-    actions = ACTIONS.read_text(encoding="utf-8")
+    actions = ACTIONS.read_text(encoding="utf-8") + THREAT.read_text(encoding="utf-8")
     seed = SEED.read_text(encoding="utf-8")
     for marker in (
         "ValidationRouteDrudgeChargeObservations",
