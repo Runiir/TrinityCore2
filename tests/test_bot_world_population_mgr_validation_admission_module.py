@@ -51,7 +51,9 @@ def test_validation_admission_seeds_raid_leader_before_map_entry():
     assert "ProvisionWorldBotRaidSeed" in text
     assert "placementMap->IsRaid()" in text
     bot_mgr = (
-        __import__("pathlib").Path("src/server/game/Bots/BotMgr.cpp").read_text()
+        __import__("pathlib").Path(
+            "src/server/game/Bots/BotMgrLoading.cpp"
+        ).read_text()
     )
     assert "PlayerBot raid seed group created" in bot_mgr
     assert "seedRaidLeader" in bot_mgr
@@ -60,7 +62,9 @@ def test_validation_admission_seeds_raid_leader_before_map_entry():
 
 def test_validation_admission_seed_divergence_fails_closed():
     bot_mgr = (
-        __import__("pathlib").Path("src/server/game/Bots/BotMgr.cpp").read_text()
+        __import__("pathlib").Path(
+            "src/server/game/Bots/BotMgrLoading.cpp"
+        ).read_text()
     )
     # After Group::Create the leader reference must still point at the seed;
     # divergence is logged with both guids and the seed is cleaned fail-closed.

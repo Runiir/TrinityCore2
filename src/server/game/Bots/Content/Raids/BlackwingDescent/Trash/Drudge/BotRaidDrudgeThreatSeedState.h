@@ -193,6 +193,18 @@ struct CoordinatorResult
     bool BothLanesEvaluated = false;
 };
 
+// Ownership restoration may begin only on the transition that proves both
+// opposite-lane native seed actions have been accepted. This keeps a partial
+// seed tick from pulling either Drudge toward the wrong tank while still
+// allowing the ordinary native taunts to run in the same scheduler boundary.
+inline bool ImmediateOwnershipRestoreReady(State const& previous,
+    CoordinatorResult const& result)
+{
+    return !previous.Complete && result.BothLanesEvaluated
+        && result.Next.Complete && !result.Next.Failure
+        && !result.Next.Closed;
+}
+
 inline CoordinatorResult AdvanceCoordinator(State current,
     CoordinatorInput const& input)
 {
