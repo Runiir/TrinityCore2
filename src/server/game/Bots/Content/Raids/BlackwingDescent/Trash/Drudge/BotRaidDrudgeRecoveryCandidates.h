@@ -69,12 +69,13 @@ inline Point2d Rotate(Point2d direction, float radians)
         direction.X * sine + direction.Y * cosine };
 }
 
+template <std::size_t SourceCount>
 inline float RequiredTravel(Point2d const& origin, Point2d const& direction,
-    Point2d const& source0, Point2d const& source1, float safeDistance)
+    std::array<Point2d, SourceCount> const& sources, float safeDistance)
 {
     float travel = 0.0f;
     float const safeDistanceSquared = safeDistance * safeDistance;
-    for (Point2d const& source : std::array<Point2d, 2>{ source0, source1 })
+    for (Point2d const& source : sources)
     {
         float const offsetX = origin.X - source.X;
         float const offsetY = origin.Y - source.Y;
@@ -91,11 +92,19 @@ inline float RequiredTravel(Point2d const& origin, Point2d const& direction,
     return travel + 0.5f;
 }
 
+inline float RequiredTravel(Point2d const& origin, Point2d const& direction,
+    Point2d const& source0, Point2d const& source1, float safeDistance)
+{
+    return RequiredTravel(origin, direction,
+        std::array<Point2d, 2>{ source0, source1 }, safeDistance);
+}
+
 // The declared point remains first. If a landed Rush makes it unsafe, the
-// remaining points are a fixed, deterministic fan from the live-source-away
+// remaining points are a fixed, deterministic fan from the source-away
 // direction. No random seed or live ordering participates in this list.
-inline std::vector<Candidate> BuildCandidates(
-    Point2d const& declared, Point2d const& source0, Point2d const& source1,
+template <std::size_t SourceCount>
+inline std::vector<Candidate> BuildCandidatesForSources(
+    Point2d const& declared, std::array<Point2d, SourceCount> const& sources,
     Point2d const& laneAxis, float laneSign, float minimumSourceDistance)
 {
     std::vector<Candidate> candidates;
@@ -105,13 +114,13 @@ inline std::vector<Candidate> BuildCandidates(
 
     candidates.push_back({ declared, 0 });
     Point2d const normalizedAxis = Normalize(laneAxis);
-    Point2d away{ declared.X - (source0.X + source1.X) * 0.5f,
-        declared.Y - (source0.Y + source1.Y) * 0.5f };
+    Point2d away{ declared.X - (sources[0].X + sources[1].X) * 0.5f,
+        declared.Y - (sources[0].Y + sources[1].Y) * 0.5f };
     away = Normalize(away);
     if (away.X == 0.0f && away.Y == 0.0f)
     {
-        Point2d pairPerpendicular{ source1.Y - source0.Y,
-            source0.X - source1.X };
+        Point2d pairPerpendicular{ sources[1].Y - sources[0].Y,
+            sources[0].X - sources[1].X };
         away = Normalize(pairPerpendicular);
         Point2d const laneDirection{ normalizedAxis.X * laneSign,
             normalizedAxis.Y * laneSign };
@@ -133,7 +142,7 @@ inline std::vector<Candidate> BuildCandidates(
     for (std::size_t index = 0; index < FanAnglesRadians.size(); ++index)
     {
         Point2d const direction = Rotate(away, FanAnglesRadians[index]);
-        float const travel = RequiredTravel(declared, direction, source0, source1,
+        float const travel = RequiredTravel(declared, direction, sources,
             minimumSourceDistance);
         if (!std::isfinite(travel))
             continue;
@@ -153,12 +162,43 @@ inline std::vector<Candidate> BuildCandidates(
     return candidates;
 }
 
+inline std::vector<Candidate> BuildCandidates(
+    Point2d const& declared, Point2d const& source0, Point2d const& source1,
+    Point2d const& laneAxis, float laneSign, float minimumSourceDistance)
+{
+    return BuildCandidatesForSources(
+        declared, std::array<Point2d, 2>{ source0, source1 }, laneAxis,
+        laneSign, minimumSourceDistance);
+}
+
+inline std::vector<Candidate> BuildCandidates(
+    Point2d const& declared, Point2d const& source0, Point2d const& source1,
+    Point2d const& source0Home, Point2d const& source1Home,
+    Point2d const& laneAxis, float laneSign, float minimumSourceDistance)
+{
+    return BuildCandidatesForSources(declared,
+        std::array<Point2d, 4>{ source0, source1, source0Home, source1Home },
+        laneAxis, laneSign, minimumSourceDistance);
+}
+
 inline bool SourceSafe(Point2d const& candidate, Constraints const& constraints)
 {
     float const minimum = constraints.MinimumSourceDistance;
     return minimum > 0.0f
         && DistanceSquared(candidate, constraints.Source0) >= minimum * minimum
         && DistanceSquared(candidate, constraints.Source1) >= minimum * minimum;
+}
+
+inline bool SourceSafeAgainstUnion(Point2d const& candidate,
+    Constraints const& constraints, Point2d const& source0Home,
+    Point2d const& source1Home)
+{
+    float const minimum = constraints.MinimumSourceDistance;
+    return minimum > 0.0f
+        && DistanceSquared(candidate, constraints.Source0) >= minimum * minimum
+        && DistanceSquared(candidate, constraints.Source1) >= minimum * minimum
+        && DistanceSquared(candidate, source0Home) >= minimum * minimum
+        && DistanceSquared(candidate, source1Home) >= minimum * minimum;
 }
 
 inline bool LaneSafe(Point2d const& candidate, Constraints const& constraints)

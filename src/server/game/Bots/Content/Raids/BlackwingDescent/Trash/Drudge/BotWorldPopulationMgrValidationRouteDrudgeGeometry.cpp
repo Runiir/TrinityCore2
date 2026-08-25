@@ -264,7 +264,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
                     == Manager.Party().ValidationRouteGeneration);
     };
     StrictNativePath = [this](float x, float y, float z,
-        bool requireExactEnd, std::string* rejectionOut) -> bool
+        bool requireExactEnd, bool requireSourceUnionSafety,
+        std::string* rejectionOut) -> bool
     {
         auto reject = [rejectionOut](std::string reason)
         {
@@ -288,6 +289,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
         }
         if (!BotWorldMovement::NativePathFloorsValid(Bot, path))
             return reject("drudge_anchor_path_floor_gap");
+        if (requireSourceUnionSafety && !SourceUnionPathSafe(path))
+            return reject("drudge_anchor_source_union_path_unsafe");
         if (!requireExactEnd)
         {
             if (rejectionOut)
@@ -341,11 +344,21 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
                 && IsDynamicGroupRecoveryActive())
             || (!tankSlot && !CombatTankStagingActive())))
         {
-            auto const recoveryCandidates =
-                BotRaidDrudgeRecoveryCandidates::BuildCandidates(
+            auto const recoveryCandidates = tankSlot
+                ? BotRaidDrudgeRecoveryCandidates::BuildCandidates(
                     { x, y },
                     { Sources[0]->GetPositionX(), Sources[0]->GetPositionY() },
                     { Sources[1]->GetPositionX(), Sources[1]->GetPositionY() },
+                    { AxisX, AxisY }, LaneSign,
+                    Manager.Cohort().Config.ValidationRouteMinimumDistanceYards)
+                : BotRaidDrudgeRecoveryCandidates::BuildCandidates(
+                    { x, y },
+                    { Sources[0]->GetPositionX(), Sources[0]->GetPositionY() },
+                    { Sources[1]->GetPositionX(), Sources[1]->GetPositionY() },
+                    { Sources[0]->GetHomePosition().GetPositionX(),
+                        Sources[0]->GetHomePosition().GetPositionY() },
+                    { Sources[1]->GetHomePosition().GetPositionX(),
+                        Sources[1]->GetHomePosition().GetPositionY() },
                     { AxisX, AxisY }, LaneSign,
                     Manager.Cohort().Config.ValidationRouteMinimumDistanceYards);
             candidates.clear();
@@ -423,14 +436,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
                 memberLaneA ? 0 : 1])
             return false;
         if (memberRoster->second.Role != "tank"
-            && (Distance2d(anchorState.ValidationRouteDrudgeAnchorX,
-                    anchorState.ValidationRouteDrudgeAnchorY,
-                    Sources[0]->GetPositionX(), Sources[0]->GetPositionY())
-                    < Manager.Cohort().Config.ValidationRouteMinimumDistanceYards
-                || Distance2d(anchorState.ValidationRouteDrudgeAnchorX,
-                    anchorState.ValidationRouteDrudgeAnchorY,
-                    Sources[1]->GetPositionX(), Sources[1]->GetPositionY())
-                    < Manager.Cohort().Config.ValidationRouteMinimumDistanceYards))
+            && !SourceUnionSafe(anchorState.ValidationRouteDrudgeAnchorX,
+                anchorState.ValidationRouteDrudgeAnchorY))
             return false;
         float const arrivalTolerance = memberRoster->second.Role == "tank"
             ? Manager.Cohort().Config.ValidationRouteSplitTankArrivalToleranceYards
@@ -459,14 +466,10 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             != Manager.Cohort().Config.ValidationRouteSplitLaneBRosterSlots.end();
         if (laneA == laneB)
             return false;
-        float const minimumSafeDistance =
-            Manager.Cohort().Config.ValidationRouteMinimumDistanceYards;
-        bool const source0Safe = Distance2d(member->GetPositionX(),
-            member->GetPositionY(), Sources[0]->GetPositionX(),
-            Sources[0]->GetPositionY()) >= minimumSafeDistance;
-        bool const source1Safe = Distance2d(member->GetPositionX(),
-            member->GetPositionY(), Sources[1]->GetPositionX(),
-            Sources[1]->GetPositionY()) >= minimumSafeDistance;
+        bool const source0Safe = SourceUnionSafeAt(
+            0, member->GetPositionX(), member->GetPositionY());
+        bool const source1Safe = SourceUnionSafeAt(
+            1, member->GetPositionX(), member->GetPositionY());
         float const projection = (member->GetPositionX() - MidpointX) * AxisX
             + (member->GetPositionY() - MidpointY) * AxisY;
         bool const laneSafe = (laneA ? -1.0f : 1.0f) * projection
@@ -602,8 +605,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             if (activeDynamicRecovery
                 && (!BotRaidDrudgeRecoveryCandidates::LaneSafe(
                         cachedPoint, recoveryConstraints)
-                    || !BotRaidDrudgeRecoveryCandidates::SourceSafe(
-                        cachedPoint, recoveryConstraints)
+                    || (!tank && !SourceUnionSafe(cachedPoint.X, cachedPoint.Y))
                     || !IsRecoveryCandidateSpacingSafe(
                         cachedPoint.X, cachedPoint.Y, tank)
                     || (landedTankRecovery
@@ -618,14 +620,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             if (LaneSign * projection < LaneSeparation * 0.25f)
                 return false;
             if (!tank && !activeDynamicRecovery && (!GroupPositionSafe(Bot)
-                || Distance2d(State.ValidationRouteDrudgeAnchorX,
-                    State.ValidationRouteDrudgeAnchorY, Sources[0]->GetPositionX(),
-                    Sources[0]->GetPositionY())
-                    < Manager.Cohort().Config.ValidationRouteMinimumDistanceYards
-                || Distance2d(State.ValidationRouteDrudgeAnchorX,
-                    State.ValidationRouteDrudgeAnchorY, Sources[1]->GetPositionX(),
-                    Sources[1]->GetPositionY())
-                    < Manager.Cohort().Config.ValidationRouteMinimumDistanceYards))
+                || !SourceUnionSafe(State.ValidationRouteDrudgeAnchorX,
+                    State.ValidationRouteDrudgeAnchorY)))
                 return false;
             if (activeDynamicRecovery)
                 return true;
@@ -672,15 +668,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
                         Sources[LaneIndex]->GetPositionX(),
                         Sources[LaneIndex]->GetPositionY())
                         <= Manager.Cohort().Config.ValidationRouteSplitMinimumSeparationYards)))
-            : (priorCandidateMatches
-                && Distance2d(State.ValidationRouteDrudgeAnchorX,
-                    State.ValidationRouteDrudgeAnchorY, Sources[0]->GetPositionX(),
-                    Sources[0]->GetPositionY())
-                    >= Manager.Cohort().Config.ValidationRouteMinimumDistanceYards
-                && Distance2d(State.ValidationRouteDrudgeAnchorX,
-                    State.ValidationRouteDrudgeAnchorY, Sources[1]->GetPositionX(),
-                    Sources[1]->GetPositionY())
-                    >= Manager.Cohort().Config.ValidationRouteMinimumDistanceYards);
+            : (priorCandidateMatches && SourceUnionSafe(
+                State.ValidationRouteDrudgeAnchorX,
+                State.ValidationRouteDrudgeAnchorY));
         bool const memberAtPriorAnchor = priorCandidateMatches
             && Bot->GetExactDist(State.ValidationRouteDrudgeAnchorX,
                 State.ValidationRouteDrudgeAnchorY,
@@ -827,7 +817,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             std::string rejection;
             if (!StrictNativePath(candidatePoint.X, candidatePoint.Y, candidateZ,
                     tank || IsDynamicGroupRecoveryActive()
-                        || (!CombatTankStagingActive() && candidateIndex > 0), &rejection))
+                        || (!CombatTankStagingActive() && candidateIndex > 0),
+                    dynamicCandidate && !tank, &rejection))
             {
                 State.ValidationRouteDrudgeAnchorSearchCooldownUntilMs =
                     candidateIndex + 1 == candidates.size()

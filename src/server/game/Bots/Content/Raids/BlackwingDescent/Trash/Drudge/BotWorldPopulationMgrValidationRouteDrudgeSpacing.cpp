@@ -6,6 +6,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeRecoveryCandidates.h"
 
 #include "Creature.h"
+#include "PathGenerator.h"
 #include "Player.h"
 
 using BotWorldPopulationMgrNativeHelpers::Distance2d;
@@ -50,6 +51,45 @@ bool DrudgeLaneContext::IsRecoveryFormationActive() const
     return false;
 }
 
+bool DrudgeLaneContext::SourceUnionSafeAt(
+    uint32 sourceIndex, float x, float y) const
+{
+    float const minimum = Manager.Cohort().Config.ValidationRouteMinimumDistanceYards;
+    if (sourceIndex >= Sources.size() || !Sources[sourceIndex] || minimum <= 0.0f)
+        return false;
+    Creature const* source = Sources[sourceIndex];
+    Position const& home = source->GetHomePosition();
+    return Distance2d(x, y, source->GetPositionX(), source->GetPositionY())
+            >= minimum
+        && Distance2d(x, y, home.GetPositionX(), home.GetPositionY()) >= minimum;
+}
+
+bool DrudgeLaneContext::SourceUnionSafe(float x, float y) const
+{
+    return Sources.size() == 2 && SourceUnionSafeAt(0, x, y)
+        && SourceUnionSafeAt(1, x, y);
+}
+
+bool DrudgeLaneContext::SourceUnionPathSafe(PathGenerator const& path) const
+{
+    if (!Bot || path.GetPath().empty()
+        || !SourceUnionSafe(path.GetActualEndPosition().x,
+            path.GetActualEndPosition().y))
+        return false;
+    std::size_t firstPoint = 0;
+    G3D::Vector3 const& first = path.GetPath().front();
+    if (std::hypot(first.x - Bot->GetPositionX(), first.y - Bot->GetPositionY())
+        <= 0.25f)
+        firstPoint = 1;
+    for (std::size_t index = firstPoint; index < path.GetPath().size(); ++index)
+    {
+        G3D::Vector3 const& point = path.GetPath()[index];
+        if (!SourceUnionSafe(point.x, point.y))
+            return false;
+    }
+    return true;
+}
+
 BotRaidDrudgeSpacing::CandidateResult DrudgeLaneContext::EvaluateAndRecordCandidateSpacing(
     uint32 candidateIndex, float x, float y, bool tank,
     bool dynamicCandidate, float dynamicLaneProjection, uint64 nowMs)
@@ -70,12 +110,8 @@ BotRaidDrudgeSpacing::CandidateResult DrudgeLaneContext::EvaluateAndRecordCandid
     if (dynamicCandidate)
     {
         result.Spacing = EvaluateRecoveryCandidateSpacing(x, y, tank);
-        result.Source0Safe = Distance2d(x, y, Sources[0]->GetPositionX(),
-            Sources[0]->GetPositionY())
-            >= Manager.Cohort().Config.ValidationRouteMinimumDistanceYards;
-        result.Source1Safe = Distance2d(x, y, Sources[1]->GetPositionX(),
-            Sources[1]->GetPositionY())
-            >= Manager.Cohort().Config.ValidationRouteMinimumDistanceYards;
+        result.Source0Safe = tank || SourceUnionSafeAt(0, x, y);
+        result.Source1Safe = tank || SourceUnionSafeAt(1, x, y);
         result.GroupPositionSafe = BotRaidDrudgeGeometry::DynamicGroupPositionSafe(
             result.Source0Safe, result.Source1Safe, result.LaneSafe,
             result.Spacing.Safe);

@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DRUDGE = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge"
 GEOMETRY = DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
 RECOVERY = DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeRecovery.cpp"
+SPACING = DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeSpacing.cpp"
 HEADER = DRUDGE / "BotRaidDrudgeRecoveryCandidates.h"
 NATIVE_ANCHOR = DRUDGE / "BotRaidDrudgeNativeAnchor.h"
 ACTIONS = DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp"
@@ -63,6 +64,18 @@ int main()
     for (std::size_t index = 1; index < overlapFan.size(); ++index)
         assert(SourceSafe(overlapFan[index].Point, overlapConstraints));
 
+    Point2d const source0Home{ 0.0f, 20.0f };
+    Point2d const source1Home{ 8.0f, 20.0f };
+    assert(!SourceSafeAgainstUnion({ 0.0f, 10.0f }, safeConstraints,
+        source0Home, source1Home));
+    auto unionFan = BuildCandidates(
+        declared, source0, source1, source0Home, source1Home,
+        { 1.0f, 0.0f }, -1.0f, 15.0f);
+    assert(!unionFan.empty());
+    for (Candidate const& candidate : unionFan)
+        assert(SourceSafeAgainstUnion(candidate.Point, safeConstraints,
+            source0Home, source1Home));
+
     Constraints wrongLane = safeConstraints;
     wrongLane.LaneSign = 1.0f;
     bool laneSafeCandidate = false;
@@ -103,6 +116,7 @@ int main()
 def test_recovery_candidate_contract_is_landed_and_native_strict_for_tanks_and_members():
     geometry = GEOMETRY.read_text(encoding="utf-8")
     recovery = RECOVERY.read_text(encoding="utf-8")
+    spacing = SPACING.read_text(encoding="utf-8")
     header = HEADER.read_text(encoding="utf-8")
     actions = ACTIONS.read_text(encoding="utf-8")
     planner = PLANNER.read_text(encoding="utf-8")
@@ -133,7 +147,7 @@ def test_recovery_candidate_contract_is_landed_and_native_strict_for_tanks_and_m
         "if (cacheUsable())", selector.index("auto cacheUsable")
     )]
     assert "activeDynamicRecovery" in cache
-    assert "SourceSafe" in cache
+    assert "SourceUnionSafe" in cache
     assert "LaneSafe" in cache
     assert "IsRecoveryCandidateSpacingSafe" in cache
     assert "CandidateIndex >= candidates.size()" in cache
@@ -143,12 +157,16 @@ def test_recovery_candidate_contract_is_landed_and_native_strict_for_tanks_and_m
     assert '"drudge_lane_native_path_rejected" : State.LastPathRejectReason' in actions
     assert "ShouldInvalidateAnchorAfterPathRejection" in actions
     assert "NativePathFloorsValid(Bot, path)" in geometry
+    assert "SourceUnionPathSafe(path)" in geometry
+    assert "dynamicCandidate && !tank" in selector
     assert "NativePathIsComplete(pathOk, path)" in geometry
     assert "BotWorldPopulationMgrNativePathValidation.h" in planner
     assert "NativePathFloorsValid(bot, candidatePath)" in planner
     assert "NativePathIsComplete(pathOk, path)" in planner
     assert "NativePathPointFloorValid" in path_validation
     assert "NativePathFloorsValid" in path_validation
+    assert "SourceUnionSafeAt" in spacing
+    assert "SourceUnionSafe" in spacing
 
     assert "ComputeStrictTankRecoveryPath" in recovery
     assert "ComputeRecoveryAnchorReached" in recovery

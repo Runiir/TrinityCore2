@@ -134,7 +134,7 @@ bool DrudgeLaneContext::ComputeStrictTankRecoveryPath(
     float x, float y, float z) const
 {
     if (!AssignedTank || !OtherTank || !Bot->GetMap()
-        || !StrictNativePath(x, y, z, true, nullptr))
+        || !StrictNativePath(x, y, z, true, false, nullptr))
         return false;
     PathGenerator path(Bot);
     if (!path.CalculatePath(x, y, z, false))

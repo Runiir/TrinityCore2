@@ -15,6 +15,7 @@
 
 class BotWorldPopulationMgr;
 class Creature;
+class PathGenerator;
 class Player;
 class Unit;
 
@@ -108,7 +109,7 @@ struct DrudgeLaneContext
     std::function<MemberAnchor const*(uint32)> DeclaredCombatTankAnchorFor;
     std::function<MemberAnchor const*(uint32)> DeclaredRecoveryTankAnchorFor;
     std::function<bool()> CombatTankStagingActive;
-    std::function<bool(float, float, float, bool, std::string*)> StrictNativePath;
+    std::function<bool(float, float, float, bool, bool, std::string*)> StrictNativePath;
     std::function<bool(float, float, float)> StrictTankRecoveryPath;
     std::function<bool(uint32)> RecoveryAnchorReachedFor;
     std::function<std::pair<float, float>(uint32)> UniqueGroupAnchor;
@@ -152,6 +153,9 @@ struct DrudgeLaneContext
     bool IsDynamicGroupRecoveryActive() const;
     bool TryMinimumDistance(bool specializedDrudgeRecovery);
     bool IsRecoveryCandidateSpacingSafe(float x, float y, bool tank) const;
+    bool SourceUnionSafeAt(uint32 sourceIndex, float x, float y) const;
+    bool SourceUnionSafe(float x, float y) const;
+    bool SourceUnionPathSafe(PathGenerator const& path) const;
     BotRaidDrudgeSpacing::PeerResult EvaluateRecoveryCandidateSpacing(
         float x, float y, bool tank) const;
     BotRaidDrudgeSpacing::CandidateResult EvaluateAndRecordCandidateSpacing(

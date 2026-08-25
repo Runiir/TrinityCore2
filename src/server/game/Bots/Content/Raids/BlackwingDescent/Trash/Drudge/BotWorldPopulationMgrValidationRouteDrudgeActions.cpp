@@ -226,16 +226,12 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
             float const projection =
                 (State.ValidationRouteDrudgeAnchorX - MidpointX) * AxisX
                 + (State.ValidationRouteDrudgeAnchorY - MidpointY) * AxisY;
-            bool const source0Safe = Distance2d(
-                State.ValidationRouteDrudgeAnchorX,
-                State.ValidationRouteDrudgeAnchorY,
-                Sources[0]->GetPositionX(), Sources[0]->GetPositionY())
-                >= Manager.Cohort().Config.ValidationRouteMinimumDistanceYards;
-            bool const source1Safe = Distance2d(
-                State.ValidationRouteDrudgeAnchorX,
-                State.ValidationRouteDrudgeAnchorY,
-                Sources[1]->GetPositionX(), Sources[1]->GetPositionY())
-                >= Manager.Cohort().Config.ValidationRouteMinimumDistanceYards;
+            bool const source0Safe = AssignedTank || SourceUnionSafeAt(
+                0, State.ValidationRouteDrudgeAnchorX,
+                State.ValidationRouteDrudgeAnchorY);
+            bool const source1Safe = AssignedTank || SourceUnionSafeAt(
+                1, State.ValidationRouteDrudgeAnchorX,
+                State.ValidationRouteDrudgeAnchorY);
             bool const laneSafe = LaneSign * projection >= LaneSeparation * 0.25f;
             BotRaidDrudgeSpacing::ObserveReseparationCandidate(
                 Charge->ReseparationReceipts, scope,
@@ -479,7 +475,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         {
             MemberAnchor const* anchor = DeclaredRecoveryTankAnchorFor(OneBasedSlot);
             pathProven = anchor && StrictNativePath(anchor->X, anchor->Y, anchor->Z,
-                true, &rejection);
+                true, false, &rejection);
             if (pathProven)
             {
                 State.ValidationRouteDrudgeRecoveryAnchorPathProven = true;
