@@ -1,5 +1,6 @@
 import json
 import struct
+import subprocess
 from pathlib import Path
 
 
@@ -362,6 +363,7 @@ def test_shadowflame_uses_a_self_cast_with_a_hostile_range_anchor() -> None:
         (
             (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatExecution.cpp").read_text(),
             (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp").read_text(),
+            (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatRange.h").read_text(),
             (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationRows.cpp").read_text(),
         )
     )
@@ -375,12 +377,51 @@ def test_shadowflame_uses_a_self_cast_with_a_hostile_range_anchor() -> None:
     assert "selfCenteredHostileRangeAction" in source
     assert '"self_centered_position_reconcile"' in source
     assert "bot->SetFacingToObject(target);" in source
-    assert "action.MaxRange = selfTarget" in source
+    assert "ResolveSelfCenteredHostileMaxRange" in source
+    assert "candidateSpellInfo &&" in source
+    assert "!candidateSpellInfo->IsPositive()" in source
+    assert "action.MaxRange = selfTarget\n        ? selfCenteredHostileMaxRange" in source
+    assert "action.MaxRange = selfTarget\n        ? best->Profile.MaxRange" not in source
     assert "'self', 'ranged', 'none', 0, 8" in migration
     assert "SET `action`.`min_range` = 0" in short_lane_migration
     assert "`action`.`target_selector` = 'enemy'" in short_lane_migration
     assert "`action`.`min_range` = 12" in short_lane_migration
     assert '\\\"movement_diagnostic\\\"' in source
+
+
+def test_self_centered_hostile_range_contract_has_compiled_positive_and_hostile_coverage(tmp_path) -> None:
+    source = tmp_path / "combat_range.cpp"
+    binary = tmp_path / "combat_range"
+    source.write_text(
+        r'''
+#include "Bots/BotWorldPopulationMgrCombatRange.h"
+#include <cassert>
+
+int main()
+{
+    using BotWorldPopulationMgrCombatRange::ResolveSelfCenteredHostileMaxRange;
+    assert(ResolveSelfCenteredHostileMaxRange(true, true, true, 8.0f) == 8.0f);
+    assert(ResolveSelfCenteredHostileMaxRange(true, true, false, 8.0f) == 0.0f);
+    assert(ResolveSelfCenteredHostileMaxRange(false, true, true, 8.0f) == 0.0f);
+    assert(ResolveSelfCenteredHostileMaxRange(true, false, true, 8.0f) == 0.0f);
+    assert(ResolveSelfCenteredHostileMaxRange(true, true, true, 0.0f) == 0.0f);
+}
+''',
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [
+            "c++",
+            "-std=c++17",
+            "-I",
+            str(ROOT / "src/server/game"),
+            str(source),
+            "-o",
+            str(binary),
+        ],
+        check=True,
+    )
+    subprocess.run([str(binary)], check=True)
 
 
 def test_shadowflame_periodic_child_rounds_to_the_nearest_haste_tick() -> None:

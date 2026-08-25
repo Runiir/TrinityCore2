@@ -114,7 +114,9 @@ def test_owned_drudge_range_candidate_is_movement_only_and_rechecks_profile_rang
     candidate = fallback[start:end]
     assert "BotRouteCombatTargetPolicy::IsOwnedNativeEncounterTarget" in candidate
     assert "ResolveProfileCombatAction" in candidate
+    assert "ResolvedCombatAction profileAction = ResolveProfileCombatAction(" in candidate
     assert "outsideLegalMaxRange" in candidate
+    assert "profileAction.MaxRange > 0.0f" in candidate
     assert "noLineOfSight" in candidate
     assert "MoveBotToProfileRange" in candidate
     assert "Resource::Movement" in candidate
@@ -126,6 +128,9 @@ def test_owned_drudge_range_candidate_is_movement_only_and_rechecks_profile_rang
         assert resource not in candidate
     assert candidate.index("outsideLegalMaxRange") < candidate.index(
         "MoveBotToProfileRange"
+    )
+    assert candidate.index("ResolveProfileCombatAction") < candidate.index(
+        "outsideLegalMaxRange"
     )
 
 

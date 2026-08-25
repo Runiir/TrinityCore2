@@ -3153,8 +3153,9 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "action.MinRange = effectiveSpellMinRange(*best, action.MinRange)",
         'bool selfTarget = best->Profile.TargetSelector == "self";',
         "action.MinRange = selfTarget ? 0.0f",
+        "ResolveSelfCenteredHostileMaxRange",
         "action.MaxRange = selfTarget",
-        "? best->Profile.MaxRange",
+        "? selfCenteredHostileMaxRange",
     ]:
         assert required in profile_action
     assert_ordered(

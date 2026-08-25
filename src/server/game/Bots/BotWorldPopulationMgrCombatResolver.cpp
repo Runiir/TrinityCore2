@@ -4,6 +4,7 @@
 #include "Bots/BotProgressionGoalPolicy.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/BotRoleSaturationPolicy.h"
+#include "Bots/BotWorldPopulationMgrCombatRange.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "CellImpl.h"
 #include "Creature.h"
@@ -580,9 +581,13 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         // naturally close, but must not run into melee for it and then retreat
         // for the rest of its rotation. WoWSims likewise treats an out-of-range
         // action as unavailable rather than simulating a movement excursion.
-        bool const selfCenteredHostileAction = selfTarget && target != bot
-            && candidate.Profile.MaxRange > 0.0f && candidateSpellInfo
+        bool const candidateSpellIsHostile = candidateSpellInfo
             && !candidateSpellInfo->IsPositive();
+        float const selfCenteredHostileMaxRange =
+            BotWorldPopulationMgrCombatRange::ResolveSelfCenteredHostileMaxRange(
+                selfTarget, target != bot, candidateSpellIsHostile,
+                candidate.Profile.MaxRange);
+        bool const selfCenteredHostileAction = selfCenteredHostileMaxRange > 0.0f;
         Unit* actionTarget = selfTarget ? static_cast<Unit*>(bot) : target;
         if (!selfTarget)
         {
@@ -818,11 +823,17 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         action.MinRange = effectiveSpellMinRange(*best, action.MinRange);
     // A self-centered hostile action can still have a player-positioning
     // envelope. Shadowflame and Holy Wrath are cast on the player, while the
-    // selected hostile remains the movement/facing anchor. Preserve an
-    // explicitly configured maximum for that generic action shape; the final
-    // native cast still targets self and validates its own spell contract.
+    // selected hostile remains the movement/facing anchor. Positive self-target
+    // actions have no hostile range envelope and therefore resolve to zero.
+    SpellInfo const* selectedSpellInfo = sSpellMgr->GetSpellInfo(best->SpellId);
+    bool const selectedSpellIsHostile = selectedSpellInfo
+        && !selectedSpellInfo->IsPositive();
+    float const selfCenteredHostileMaxRange =
+        BotWorldPopulationMgrCombatRange::ResolveSelfCenteredHostileMaxRange(
+            selfTarget, target != bot, selectedSpellIsHostile,
+            best->Profile.MaxRange);
     action.MaxRange = selfTarget
-        ? best->Profile.MaxRange
+        ? selfCenteredHostileMaxRange
         : (best->Profile.MaxRange > 0.0f
             ? best->Profile.MaxRange : profile.MaxRange);
     action.SuppressAreaDamage = forbidArea;
