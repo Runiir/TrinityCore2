@@ -187,6 +187,12 @@ inline MemberRecoveryAction SelectMemberRecoveryAction(
     return MemberRecoveryAction::Continue;
 }
 
+inline bool NativeOwnershipActionReady(
+    bool chargePending, bool recoveryAnchorsReached)
+{
+    return !chargePending || recoveryAnchorsReached;
+}
+
 struct Input
 {
     Scope Identity;
@@ -363,7 +369,7 @@ inline Result Advance(State current, Input const& input)
     bool const ownershipSafe = ownershipWindow
         && (initialOwnershipSafe || landedRecoverySafe || earlyPullRecovery)
         && input.SourcesAlive && input.TanksOnFrozenLanes
-        && (input.NativeMeleeStopBounded || earlyPullRecovery);
+        && (landedRecoverySafe || input.NativeMeleeStopBounded || earlyPullRecovery);
     result.NativeOwnershipAllowed = ownershipSafe && Valid(input.Identity);
 
     bool const dynamicEngagementSafe = input.ChargeQueueIdle && !input.ChargePending

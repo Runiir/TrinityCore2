@@ -518,8 +518,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
     if ((PrepullStaged || EarlyPullRecoveryActive)
         && RunDrudgeSeedCoordinator() == PhaseResult::Handled) return PhaseResult::Handled;
     if (AssignedTank && (tankStage.NativeOwnershipAllowed || earlyPullOwnershipWindow)
-        && (!NativeChargePending
-            || (recoveryAnchorsReachedBeforeTick && combatTankAnchorsReachedBeforeTick))
+        && BotRaidDrudgeGeometry::NativeOwnershipActionReady(
+            NativeChargePending, recoveryAnchorsReachedBeforeTick)
         && LaneSource->GetVictim() == Bot)
     {
         auto const insert = Manager.Party().ValidationRouteDrudgeOwnershipRosterGuids.insert(
@@ -528,8 +528,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
             Record(LaneSource, "drudge_lane_native_ownership", SourceSeparation);
     }
     if (AssignedTank && (tankStage.NativeOwnershipAllowed || earlyPullOwnershipWindow)
-        && (!NativeChargePending
-            || (recoveryAnchorsReachedBeforeTick && combatTankAnchorsReachedBeforeTick))
+        && BotRaidDrudgeGeometry::NativeOwnershipActionReady(
+            NativeChargePending, recoveryAnchorsReachedBeforeTick)
         && LaneSource->GetVictim() != Bot)
     {
         BotClassSpecActionProfile profile =

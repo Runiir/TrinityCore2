@@ -102,6 +102,9 @@ int main()
         == MemberRecoveryAction::PreferFriendlySupport);
     assert(SelectMemberRecoveryAction(false, false, false)
         == MemberRecoveryAction::Continue);
+    assert(NativeOwnershipActionReady(false, false));
+    assert(!NativeOwnershipActionReady(true, false));
+    assert(NativeOwnershipActionReady(true, true));
 
     assert(SelectMinimumDistanceOwner(false, false)
         == MinimumDistanceOwner::GenericRouteSafety);
@@ -352,6 +355,14 @@ int main()
     Result landed = Advance(result.Next, unsafe);
     assert(landed.NativeOwnershipAllowed);
     assert(!landed.NativeEngagementAllowed);
+    // Canary 17: both tanks completed the outward recovery barrier, but the
+    // displaced sources remained beyond the native melee-stop radius. That
+    // is exactly when the ordinary taunt/approach path must retain ownership.
+    unsafe.NativeMeleeStopBounded = false;
+    Result landedOutOfRange = Advance(result.Next, unsafe);
+    assert(landedOutOfRange.NativeOwnershipAllowed);
+    assert(!landedOutOfRange.NativeEngagementAllowed);
+    unsafe.NativeMeleeStopBounded = true;
     unsafe.BothCombatTankAnchorsSafe = false;
     Result displacedTank = Advance(result.Next, unsafe);
     assert(displacedTank.NativeOwnershipAllowed);
