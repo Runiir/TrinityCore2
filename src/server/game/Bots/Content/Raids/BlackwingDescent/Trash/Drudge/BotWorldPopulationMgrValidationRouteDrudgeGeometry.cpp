@@ -275,10 +275,15 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
         };
         if (!Bot || !Bot->GetMap())
             return reject("drudge_anchor_map_unavailable");
-        float floorZ = Bot->GetMap()->GetHeight(Bot->GetPhaseShift(), x, y,
+        float const resolvedZ = Bot->GetMap()->GetHeight(Bot->GetPhaseShift(), x, y,
             z + 2.0f, true, 8.0f);
-        if (floorZ <= INVALID_HEIGHT || std::fabs(floorZ - z) > 4.0f)
+        if (resolvedZ <= INVALID_HEIGHT)
             return reject("drudge_anchor_floor_rejected");
+        BotWorldMovement::NativeFloorResult const floorAdmission =
+            BotWorldMovement::AdmitResolvedHeight(resolvedZ, z);
+        if (!floorAdmission.Accepted())
+            return reject("drudge_anchor_floor_rejected");
+        z = floorAdmission.Z;
         PathGenerator path(Bot);
         bool const pathOk = path.CalculatePath(x, y, z, false);
         if (!BotWorldMovement::NativePathIsComplete(pathOk, path))
@@ -287,7 +292,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             return reject("drudge_anchor_native_path_rejected:path_type="
                 + std::to_string(uint32(pathType)));
         }
-        if (!BotWorldMovement::NativePathFloorsValid(Bot, path))
+        if (!BotWorldMovement::NativePathFloorsValid(Bot, path, z,
+                floorAdmission.UsesDeclaredFallback()))
             return reject("drudge_anchor_path_floor_gap");
         if (requireSourceUnionSafety && !SourceUnionPathSafe(path))
             return reject("drudge_anchor_source_union_path_unsafe");

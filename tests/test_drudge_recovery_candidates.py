@@ -11,6 +11,7 @@ RECOVERY = DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeRecovery.cpp"
 SPACING = DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeSpacing.cpp"
 HEADER = DRUDGE / "BotRaidDrudgeRecoveryCandidates.h"
 NATIVE_ANCHOR = DRUDGE / "BotRaidDrudgeNativeAnchor.h"
+NATIVE_FLOOR = ROOT / "src/server/game/Bots/BotWorldPopulationMgrNativeFloor.h"
 ACTIONS = DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp"
 PLANNER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrMovementPlanner.cpp"
 PATH_VALIDATION = ROOT / "src/server/game/Bots/BotWorldPopulationMgrNativePathValidation.h"
@@ -241,7 +242,7 @@ def test_recovery_candidate_contract_is_landed_and_native_strict_for_tanks_and_m
     assert "State.LastPathRejectReason.empty()" in actions
     assert '"drudge_lane_native_path_rejected" : State.LastPathRejectReason' in actions
     assert "ShouldInvalidateAnchorAfterPathRejection" in actions
-    assert "NativePathFloorsValid(Bot, path)" in geometry
+    assert "NativePathFloorsValid(Bot, path, z" in geometry
     assert "SourceUnionPathSafe(path)" in geometry
     assert "dynamicCandidate && !tank" in selector
     assert "NativePathIsComplete(pathOk, path)" in geometry
@@ -333,7 +334,58 @@ def test_dynamic_fan_candidate_is_grounded_before_exact_native_path_admission():
     assert "State.ValidationRouteDrudgeAnchorZ = candidateZ" in geometry
     assert "candidateAnchor->Z, &candidateZ" in selector
     assert "drudge_anchor_floor_rejected" in selector
-    assert "std::fabs(*candidateZ - declaredZ) <= 4.0f" in native_anchor
+    assert "AdmitResolvedHeight(*candidateZ, declaredZ)" in native_anchor
     assert "hintZ + 2.0f" in native_anchor
     assert "GetHeight(phaseShift, x, y" in native_anchor
     assert "std::isfinite(resolved)" in native_anchor
+
+
+def test_stacked_floor_admission_requires_declared_native_path_evidence(tmp_path):
+    source = tmp_path / "drudge_native_floor_replay.cpp"
+    binary = tmp_path / "drudge_native_floor_replay"
+    source.write_text(
+        r'''
+#include "Bots/BotWorldPopulationMgrNativeFloor.h"
+#include <cassert>
+#include <limits>
+
+using namespace BotWorldMovement;
+
+int main()
+{
+    NativeFloorResult const near = AdmitResolvedHeight(214.4f, 214.0f);
+    assert(near.Accepted());
+    assert(!near.UsesDeclaredFallback());
+    assert(near.Z == 214.4f);
+
+    NativeFloorResult const stacked = AdmitResolvedHeight(-138.287f, 214.0f);
+    assert(stacked.Accepted());
+    assert(stacked.UsesDeclaredFallback());
+    assert(stacked.Z == 214.0f);
+
+    assert(AdmitNativePathPoint(-138.287f, 214.2f, 214.0f, true));
+    assert(!AdmitNativePathPoint(-138.287f, 204.0f, 214.0f, true));
+    assert(!AdmitNativePathPoint(-138.287f, 214.2f, 214.0f, false));
+    assert(!AdmitNativePathPoint(std::numeric_limits<float>::quiet_NaN(),
+        214.0f, 214.0f, true));
+}
+''',
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [
+            "c++",
+            "-std=c++17",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-I",
+            str(ROOT / "src/server/game"),
+            str(source),
+            "-o",
+            str(binary),
+        ],
+        check=True,
+        cwd=ROOT,
+    )
+    subprocess.run([str(binary)], check=True, cwd=ROOT)

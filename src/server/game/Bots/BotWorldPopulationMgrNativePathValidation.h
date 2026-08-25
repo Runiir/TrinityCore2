@@ -1,6 +1,7 @@
 #ifndef TRINITY_BOT_WORLD_POPULATION_MGR_NATIVE_PATH_VALIDATION_H
 #define TRINITY_BOT_WORLD_POPULATION_MGR_NATIVE_PATH_VALIDATION_H
 
+#include "BotWorldPopulationMgrNativeFloor.h"
 #include "Map.h"
 #include "PathGenerator.h"
 
@@ -23,21 +24,34 @@ inline bool NativePathIsComplete(bool calculated, PathGenerator const& path)
 
 template <typename Actor>
 inline bool NativePathPointFloorValid(Actor const* actor,
-    G3D::Vector3 const& point)
+    G3D::Vector3 const& point, float referenceZ,
+    bool allowDeclaredFallback)
 {
     if (!actor || !actor->GetMap())
         return false;
     float const floorZ = actor->GetMap()->GetHeight(actor->GetPhaseShift(),
         point.x, point.y, point.z + 2.0f, true, 8.0f);
-    return floorZ > INVALID_HEIGHT && std::fabs(floorZ - point.z) <= 1.5f;
+    return floorZ > INVALID_HEIGHT && AdmitNativePathPoint(floorZ, point.z,
+        referenceZ, allowDeclaredFallback);
+}
+
+template <typename Actor>
+inline bool NativePathPointFloorValid(Actor const* actor,
+    G3D::Vector3 const& point)
+{
+    return NativePathPointFloorValid(actor, point, point.z, false);
 }
 
 template <typename Actor>
 inline bool NativePathFloorsValid(Actor const* actor,
-    PathGenerator const& path)
+    PathGenerator const& path, float referenceZ,
+    bool allowDeclaredFallback)
 {
     Movement::PointsArray const& points = path.GetPath();
     if (!actor || points.empty())
+        return false;
+    if (allowDeclaredFallback
+        && std::fabs(actor->GetPositionZ() - referenceZ) > NativeFloorTolerance)
         return false;
 
     G3D::Vector3 previous(actor->GetPositionX(), actor->GetPositionY(),
@@ -55,12 +69,20 @@ inline bool NativePathFloorsValid(Actor const* actor,
             float const fraction = float(sample) / float(sampleCount);
             G3D::Vector3 const position(previous.x + dx * fraction,
                 previous.y + dy * fraction, previous.z + dz * fraction);
-            if (!NativePathPointFloorValid(actor, position))
+            if (!NativePathPointFloorValid(actor, position, referenceZ,
+                    allowDeclaredFallback))
                 return false;
         }
         previous = point;
     }
     return true;
+}
+
+template <typename Actor>
+inline bool NativePathFloorsValid(Actor const* actor,
+    PathGenerator const& path)
+{
+    return NativePathFloorsValid(actor, path, 0.0f, false);
 }
 
 template <typename Actor>

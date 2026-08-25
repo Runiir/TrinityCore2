@@ -1,6 +1,7 @@
 #ifndef TRINITY_BOT_RAID_DRUDGE_NATIVE_ANCHOR_H
 #define TRINITY_BOT_RAID_DRUDGE_NATIVE_ANCHOR_H
 
+#include "BotWorldPopulationMgrNativeFloor.h"
 #include "Map.h"
 
 #include <cmath>
@@ -33,7 +34,12 @@ inline bool ResolveDynamicCandidateZ(Map* map, PhaseShift const& phaseShift,
     if (!ResolveFloorZ(map, phaseShift, candidateX, candidateY, declaredZ,
             candidateZ))
         return false;
-    return std::fabs(*candidateZ - declaredZ) <= 4.0f;
+    BotWorldMovement::NativeFloorResult const admission =
+        BotWorldMovement::AdmitResolvedHeight(*candidateZ, declaredZ);
+    if (!admission.Accepted())
+        return false;
+    *candidateZ = admission.Z;
+    return true;
 }
 }
 
