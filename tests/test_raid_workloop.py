@@ -340,27 +340,27 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_safe_member_role_concurrency_live_verification"
+        "positive_self_range_runtime_repair"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["owner_skill"] == "raid-shard-architecture"
+    assert active["owner_skill"] == "raid-bot-runtime-implementation"
     assert active["first_broken_edge"] == (
-        "landed_drudge_recovery_keeps_safe_members_in_route_handled_offense_"
-        "hold_until_the_next_20s_rush_reopens_the_queue_so_no_trained_single_"
-        "target_action_executes_and_healers_attrition_die"
+        "positive_self_target_profile_actions_retain_a_hostile_range_envelope_"
+        "after_resolution_so_combat_range_reconciliation_moves_a_safe_bot_"
+        "toward_the_drudge_and_reopens_lane_recovery"
     )
     evidence = active["decisive_evidence"]
     assert evidence["source_commit"] == (
-        "c7c6bb9f7f0c51265f1ae20ab96ef01a59af467a"
+        "53c1d427d27a4b58d9f0c0425f9cba210edac71f"
     )
     assert evidence["binary_sha256"] == (
-        "5208fd31a5179bec965f3ff64393bb17beade82cd0dc50b6a99ca7904475f990"
+        "0c30957fe8900ef48f45484ffa31a776d8ca80eca5aa03d22e32b6a757e130fc"
     )
     assert evidence["report_sha256"] == (
-        "180d60ed29a7cd87a7e199aafd0b9d45fbf45e4c667d8a790ecd0f19e2648a7c"
+        "7b5c72d6a178955e7e5f0cf38aa15303f43ca63d40e7dd5dd0bfb589656268a3"
     )
     assert evidence["report_file_sha256"] == (
-        "90a5837ba49be4f6a9032ac48acdc7d8772c93ab231320102653fb9d35f16b41"
+        "283ed6a9d609cbe4cd7d692589620abac26d313363b1ed2a7988f9d9830d009f"
     )
     assert (
         evidence["route_generation"],
@@ -370,13 +370,15 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert evidence["diagnostic_difficulty"] == "10N"
     assert evidence["kills"] == 1
     assert evidence["death_loop_count"] == 3
-    assert evidence["dead_roster_guids"] == [30003, 30004, 30005]
-    assert evidence["landed_charge_count"] == 20
-    assert evidence["last_complete_reseparation_sequence"] == 14
-    assert evidence["first_missing_reseparation_sequence"] == 15
-    assert evidence["trained_single_target_action_count"] == 0
-    assert evidence["maximum_observed_recovery_repeat_count"] == 1323
-    assert evidence["prior_displaced_origin_repair_verified"] is True
+    assert evidence["dead_roster_guids"] == [30004, 30008, 30010]
+    assert evidence["delivered_charge_count"] == 17
+    assert evidence["last_complete_reseparation_sequence"] == 6
+    assert evidence["first_missing_reseparation_sequence"] == 7
+    assert evidence["trained_single_target_action_count"] == 73
+    assert evidence["maximum_observed_recovery_repeat_count"] == 1294
+    assert evidence["positive_self_spell_id"] == 31842
+    assert evidence["positive_self_range_movement_observed"] is True
+    assert evidence["prior_safe_member_offense_repair_verified"] is True
     assert evidence["boss_reached"] is False
     assert evidence["forbidden_assistance_observed"] is False
     assert evidence["cleanup_passed"] is True
@@ -386,19 +388,11 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
         "hypotheses": 1,
         "matched_live_verification_runs": 0,
     }
-    assert active["repair_scope"]["status"] == (
-        "implemented_pending_live_verification"
+    assert "resolved_action_self_target_range_contract" in (
+        active["implementation_hypothesis"]["allowed"]
     )
-    assert "one_completion_watchdog_canary" in (
-        active["repair_scope"]["allowed"]
-    )
-    assert active["implemented_repair"]["commit"] == (
-        "53c1d427d27a4b58d9f0c0425f9cba210edac71f"
-    )
-    assert active["implemented_repair"]["source_line_limit_passed"] is True
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
-    assert active["live_verification_owner_skill"] == "raid-shard-architecture"
-    assert "do not teleport" in active["next_action"].lower()
+    assert "do not build" in active["next_action"].lower()
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
@@ -492,31 +486,31 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     status = workloop.build_status()
 
     assert status["active_work_unit"]["descriptor_valid"] is True
-    assert status["active_work_unit"]["ready_for_bounded_repair"] is False
-    assert status["active_work_unit"]["ready_for_live_verification"] is True
+    assert status["active_work_unit"]["ready_for_bounded_repair"] is True
+    assert status["active_work_unit"]["ready_for_live_verification"] is False
     assert status["active_work_unit"]["first_broken_edge"] == (
-        "landed_drudge_recovery_keeps_safe_members_in_route_handled_offense_"
-        "hold_until_the_next_20s_rush_reopens_the_queue_so_no_trained_single_"
-        "target_action_executes_and_healers_attrition_die"
+        "positive_self_target_profile_actions_retain_a_hostile_range_envelope_"
+        "after_resolution_so_combat_range_reconciliation_moves_a_safe_bot_"
+        "toward_the_drudge_and_reopens_lane_recovery"
     )
     assert status["active_work_unit"]["source_handoff"]["sha256"] == (
         workloop._file_sha256(
             workloop.ROOT
             / "experiments/configs/"
-            "cata_raid_magmaw_canary29_safe_member_offense_handoff_20260826.md"
+            "cata_raid_magmaw_canary30_positive_self_range_handoff_20260826.md"
         )
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_safe_member_role_concurrency_live_verification"
+        "positive_self_range_runtime_repair"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
-        "raid-shard-architecture"
+        "raid-bot-runtime-implementation"
     )
     assert status["current_program_next_action"] == status["active_work_unit"][
         "next_action"
     ]
-    assert "do not teleport" in status["active_work_unit"]["next_action"].lower()
+    assert "do not build" in status["active_work_unit"]["next_action"].lower()
     assert "legacy_program_next_action" not in status
 
 
