@@ -2745,17 +2745,6 @@ def _watchdog_reset_repeated_scope(
     scope_repeated_max = state.setdefault("scope_repeated_max", {})
     scope_repeated_max.pop(scope_key, None)
 
-    native_success_baselines = state.setdefault(
-        "native_repeat_success_baselines", {}
-    )
-    for key in list(native_success_baselines):
-        try:
-            decoded = json.loads(key)
-        except (TypeError, ValueError):
-            continue
-        if isinstance(decoded, list) and decoded and decoded[0] == scope_key:
-            del native_success_baselines[key]
-
     diagnosis_high_water = state.setdefault("diagnosis_repeat_high_water", {})
     for key in list(diagnosis_high_water):
         try:
@@ -2915,9 +2904,6 @@ def observe_capture_watchdog(
     repeated_counts = state.setdefault("repeated_decision_counts", {})
     death_counts = state.setdefault("death_loop_counts", {})
     scope_repeated_max = state.setdefault("scope_repeated_max", {})
-    native_success_baselines = state.setdefault(
-        "native_repeat_success_baselines", {}
-    )
     trace_seen = state.setdefault("trace_seen", [])
     trace_cursors = state.setdefault("trace_cursors", {})
     terminal = state.get("terminal_failure")
@@ -3015,21 +3001,6 @@ def observe_capture_watchdog(
                 except (TypeError, ValueError):
                     fingerprint = 0
                 native_count = _watchdog_native_consecutive_count(entry)
-                native_baseline_key = json.dumps(
-                    [scope_key, cursor_key, fingerprint],
-                    separators=(",", ":"),
-                )
-                if (
-                    not repeated_decision
-                    and native_count is not None
-                    and fingerprint > 0
-                ):
-                    # A native fingerprint can describe the underlying
-                    # decision tick while several successful event rows and
-                    # one failed adapter row are emitted for that tick.  Keep
-                    # the latest successful count as the failure baseline so
-                    # the failed row cannot inherit a long successful run.
-                    native_success_baselines[native_baseline_key] = native_count
                 if entry.get("action") in _WATCHDOG_DEATH_ACTIONS:
                     death_counts[scope_key] = int(death_counts.get(scope_key) or 0) + 1
                     report["death_loop_count"] = death_counts[scope_key]
@@ -3051,17 +3022,18 @@ def observe_capture_watchdog(
                     )
                     previous_count = int(repeated_counts.get(decision_key) or 0)
                     if native_count is not None:
-                        success_baseline = int(
-                            native_success_baselines.get(native_baseline_key) or 0
-                        )
-                        current_count = (
-                            native_count - success_baseline
-                            if native_count >= success_baseline
-                            else native_count
-                        )
+                        # The native counter belongs to the decision kernel,
+                        # while this row may be a failed adapter/event emitted
+                        # for that decision.  Count each deduplicated failed
+                        # row locally and use the native value only as an
+                        # upper bound when it reports a reset to a lower run.
+                        current_count = min(previous_count + 1, native_count)
                     else:
                         current_count = previous_count + 1
-                    repeated_counts[decision_key] = current_count
+                    if current_count > 0:
+                        repeated_counts[decision_key] = current_count
+                    else:
+                        repeated_counts.pop(decision_key, None)
                     current_max = 0
                     for key, value in repeated_counts.items():
                         try:
