@@ -148,21 +148,9 @@ int main()
     assert(both.Next.SeededLanes[0] && both.Next.SeededLanes[1]);
     assert(both.Next.Complete && !both.Next.Failure);
 
-    // The exact native lane anchors can be valid before either Drudge has a
-    // victim.  Admit one atomic cross-lane seed in that initial window; this
-    // preserves the ordinary same-lane tank taunts that establish ownership.
-    CoordinatorInput preOwnership = bothTick;
-    preOwnership.OwnershipSafe = false;
-    preOwnership.InitialSeedWindow = true;
-    CoordinatorResult preOwnershipResult = AdvanceCoordinator(State{}, preOwnership);
-    assert(preOwnershipResult.BothLanesEvaluated);
-    assert(preOwnershipResult.Lanes[0].ActionAttempted);
-    assert(preOwnershipResult.Lanes[1].ActionAttempted);
-    assert(preOwnershipResult.Next.SeededLanes[0]);
-    assert(preOwnershipResult.Next.SeededLanes[1]);
-    assert(preOwnershipResult.Next.Complete);
-
-    // Without the explicit initial window, ownership remains a real gate.
+    // The state machine keeps ownership as a real gate.  The route coordinator
+    // admits the bounded pre-taunt exception only after proving its local
+    // staged, empty-seed, no-Rush window and setting this input accordingly.
     CoordinatorInput noOwnership = bothTick;
     noOwnership.OwnershipSafe = false;
     CoordinatorResult noOwnershipResult = AdvanceCoordinator(State{}, noOwnership);

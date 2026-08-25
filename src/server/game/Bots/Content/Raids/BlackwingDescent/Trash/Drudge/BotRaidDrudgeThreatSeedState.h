@@ -63,7 +63,6 @@ struct Input
     bool PrepullStaged = false;
     bool SourcesAlive = false;
     bool OwnershipSafe = false;
-    bool InitialSeedWindow = false;
     bool SeparationSafe = false;
     bool FrozenLanesSafe = false;
     bool ChargeObserved = false;
@@ -146,7 +145,6 @@ struct CoordinatorInput
     bool RecoveryAuthorityReady = false;
     bool SourcesAlive = false;
     bool OwnershipSafe = false;
-    bool InitialSeedWindow = false;
     bool SeparationSafe = false;
     bool FrozenLanesSafe = false;
     bool ChargeObserved = false;
@@ -225,7 +223,7 @@ inline CoordinatorResult AdvanceCoordinator(State current,
     bool const setupAuthorityReady = input.PrepullStaged
         || input.RecoveryAuthorityReady;
     bool const windowReady = setupAuthorityReady && input.SourcesAlive
-        && (input.OwnershipSafe || input.InitialSeedWindow)
+        && input.OwnershipSafe
         && input.SeparationSafe && input.FrozenLanesSafe;
     if (!windowReady)
     {
@@ -250,7 +248,6 @@ inline CoordinatorResult AdvanceCoordinator(State current,
         transitionInput.PrepullStaged = setupAuthorityReady;
         transitionInput.SourcesAlive = input.SourcesAlive;
         transitionInput.OwnershipSafe = input.OwnershipSafe;
-        transitionInput.InitialSeedWindow = input.InitialSeedWindow;
         transitionInput.SeparationSafe = input.SeparationSafe;
         transitionInput.FrozenLanesSafe = input.FrozenLanesSafe;
         transitionInput.ChargeObserved = input.ChargeObserved;
@@ -308,7 +305,7 @@ inline Result Advance(State current, Input const& input)
     }
 
     bool const windowReady = input.PrepullStaged && input.SourcesAlive
-        && (input.OwnershipSafe || input.InitialSeedWindow)
+        && input.OwnershipSafe
         && input.SeparationSafe && input.FrozenLanesSafe;
     if (!windowReady)
     {

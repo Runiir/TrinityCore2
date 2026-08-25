@@ -500,15 +500,17 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunDrudgeSeedCoordinator()
                 && candidate.WipeGeneration == manager.Cohort().Raid.WipeGeneration
                 && candidate.RouteGeneration == manager.Party().ValidationRouteGeneration;
         });
+    bool const initialSeedOpportunity = (context.PrepullStaged
+        || context.EarlyPullRecoveryActive)
+        && !seedState.SeededLanes[0] && !seedState.SeededLanes[1]
+        && !chargeObserved;
 
     BotRaidDrudgeThreatSeed::CoordinatorInput input;
     input.Identity = scope;
     input.PrepullStaged = context.PrepullStaged;
     input.RecoveryAuthorityReady = context.EarlyPullRecoveryActive;
     input.SourcesAlive = true;
-    input.InitialSeedWindow = !context.Sources[0]->GetVictim()
-        && !context.Sources[1]->GetVictim();
-    input.OwnershipSafe = bothVictimsOwned;
+    input.OwnershipSafe = bothVictimsOwned || initialSeedOpportunity;
     input.SeparationSafe = context.SourceSeparation >= context.LaneSeparation;
     input.FrozenLanesSafe = frozenLanesSafe;
     input.ChargeObserved = chargeObserved;
