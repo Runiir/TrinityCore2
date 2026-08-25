@@ -5,6 +5,7 @@
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotCombatActionCatalog.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeGeometryState.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeSeedActionSelection.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeSeedApproach.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeThreatSeedState.h"
 #include "Bots/BotWorldPopulationMgr.h"
@@ -304,6 +305,8 @@ SeedCandidate DrudgeLaneContext::ResolveDrudgeSeedCandidate(
         {
             if (!IsSeedThreatCategory(actionCandidate.Category)
                 || actionCandidate.TargetGuid != source->GetGUID().GetCounter()
+                || !BotRaidDrudgeSeedActionSelection::IsSynchronousSeedAction(
+                    actionCandidate.CastTimeMs)
                 || (!actionCandidate.RejectReason.empty()
                     && actionCandidate.RejectReason != "out_of_range"))
                 continue;
@@ -316,10 +319,9 @@ SeedCandidate DrudgeLaneContext::ResolveDrudgeSeedCandidate(
                 continue;
             uint32 const rank = actionCandidate.Category
                 == BotCombatActionCategory::ThreatBuild ? 0 : 1;
-            if (!bestFound || maxRange > bestRange
-                || (maxRange == bestRange && rank < bestRank)
-                || (rank == bestRank && maxRange == bestRange
-                    && actionCandidate.Profile.SortOrder < best.Profile.SortOrder))
+            if (BotRaidDrudgeSeedActionSelection::PreferSeedAction(
+                    bestFound, maxRange, rank, actionCandidate.Profile.SortOrder,
+                    bestRange, bestRank, best.Profile.SortOrder))
             {
                 best = actionCandidate;
                 bestFound = true;

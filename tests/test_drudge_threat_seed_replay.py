@@ -11,10 +11,12 @@ def test_production_drudge_seed_transition_replays_native_event_orderings(tmp_pa
     source.write_text(
         r'''
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeThreatSeedState.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeSeedActionSelection.h"
 #include <cassert>
 #include <string>
 
 using namespace BotRaidDrudgeThreatSeed;
+using namespace BotRaidDrudgeSeedActionSelection;
 
 static Input ready(Scope scope, std::uint32_t lane)
 {
@@ -163,6 +165,16 @@ int main()
     assert(initialGeometry.Next.SeededLanes[0]
         && initialGeometry.Next.SeededLanes[1]);
     assert(initialGeometry.Next.Complete);
+
+    // Canary18: the longer-range cast-time Exorcism was accepted when its cast
+    // started, but no threat reference existed at the first native Rush. A
+    // cast-time action is not a synchronous seed candidate at all.
+    assert(IsSynchronousSeedAction(0));
+    assert(!IsSynchronousSeedAction(1500));
+    assert(PreferSeedAction(true, 35.0f, 1, 90,
+        30.0f, 0, 55));
+    assert(!PreferSeedAction(true, 30.0f, 0, 55,
+        35.0f, 1, 90));
 
     // The exception is fail-closed if a caller tries to reuse it after a
     // lane has already been accepted.
@@ -361,10 +373,16 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
     assert "InitialSeedGeometryReady" in seed
     assert "InitialSeedOpportunity" in seed_state
     assert "inline bool InitialSeedGeometryReady" in seed_state
+    selection = (
+        ROOT
+        / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeSeedActionSelection.h"
+    ).read_text(encoding="utf-8")
+    assert "inline bool IsSynchronousSeedAction" in selection
+    assert "inline bool PreferSeedAction" in selection
     assert "if (allPendingCandidatesReady)" in seed
-    assert seed.index("maxRange > bestRange") < seed.index(
-        "maxRange == bestRange && rank < bestRank"
-    )
+    assert "BotRaidDrudgeSeedActionSelection::IsSynchronousSeedAction(" in seed
+    assert "BotRaidDrudgeSeedActionSelection::PreferSeedAction(" in seed
+    assert "actionCandidate.CastTimeMs" in seed
     assert seed.index("if (allPendingCandidatesReady)") < seed.index(
         "executor.ExecuteCombat"
     )
