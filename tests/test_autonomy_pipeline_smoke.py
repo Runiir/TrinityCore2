@@ -332,11 +332,8 @@ def test_protection_paladin_prioritizes_multi_target_threat_actions() -> None:
 
 
 def test_protection_paladin_has_stationary_single_target_ranged_threat() -> None:
-    sql = read(STONECORE_ROTATION_SQL)
     upgrade = read(PALADIN_EXORCISM_SQL)
 
-    assert "55, 879, 'threat_build', 'exorcism,ranged,single_target,threat'" in sql
-    assert "p.`role` = 'tank' AND a.`spell_id` = 879" in sql
     assert "DELETE a FROM `bot_rotation_action`" in upgrade
     assert "55, 879, 'threat_build'" in upgrade
     assert "'enemy', 'ranged', 'none', 35, 1" in upgrade

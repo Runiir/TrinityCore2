@@ -117,18 +117,11 @@ INSERT INTO `bot_rotation_action` (`profile_id`, `sort_order`, `spell_id`, `cate
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=2 AND `spec_tag`='protection' AND `role`='tank'), 30, 498, 'defensive', 'divine_protection,defensive', 0, 0, 0, 0.90, 0.90, 1, 1, 0, 1, 0.55, 0, 0, 0, 0, 0),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=2 AND `spec_tag`='protection' AND `role`='tank'), 40, 53595, 'cleave', 'hammer_of_the_righteous,aoe,holy_power,threat', 0.84, 0, 1.05, 0, 0, 2, 2, 0, 1, 1, 0, 0, 0, 0, 1),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=2 AND `spec_tag`='protection' AND `role`='tank'), 50, 26573, 'aoe', 'consecration,aoe,threat', 0.76, 0, 1.05, 0, 0, 2, 2, 0, 1, 1, 0, 0, 0, 0, 0),
-((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=2 AND `spec_tag`='protection' AND `role`='tank'), 55, 879, 'threat_build', 'exorcism,ranged,single_target,threat', 0.82, 0, 0.90, 0, 0, 2, 1, 1, 1, 1, 0, 0, 0, 0, 0),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=2 AND `spec_tag`='protection' AND `role`='tank'), 60, 31935, 'threat_build', 'avengers_shield,ranged,shield,threat', 0.88, 0, 1.00, 0, 0, 2, 1, 0, 1, 1, 0, 0, 0, 0, 0),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=2 AND `spec_tag`='protection' AND `role`='tank'), 70, 53600, 'spender', 'shield_of_the_righteous,holy_power,threat', 0.86, 0, 1.00, 0, 0, 2, 1, 0, 1, 1, 0, 0, 0, 0, 1),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=2 AND `spec_tag`='protection' AND `role`='tank'), 80, 2812, 'aoe', 'holy_wrath,aoe,threat', 0.74, 0, 0.92, 0, 0, 3, 2, 0, 1, 1, 0, 0, 0, 0, 0),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=2 AND `spec_tag`='protection' AND `role`='tank'), 90, 35395, 'builder', 'crusader_strike,holy_power,threat,single_target', 0.76, 0, 0.65, 0, 0, 3, 1, 1, 1, 1, 0, 0, 0, 0, 1),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=2 AND `spec_tag`='protection' AND `role`='tank'), 100, 20271, 'builder', 'judgement,threat,requires_seal', 0.68, 0, 0.55, 0, 0, 4, 1, 0, 1, 1, 31801, 0, 0, 0, 0);
-
-UPDATE `bot_rotation_action` a
-JOIN `bot_rotation_profile` p ON p.`id` = a.`profile_id`
-SET a.`requires_stationary` = 1
-WHERE p.`class_id` = 2 AND p.`spec_tag` = 'protection'
-  AND p.`role` = 'tank' AND a.`spell_id` = 879;
 
 INSERT INTO `bot_rotation_action` (`profile_id`, `sort_order`, `spell_id`, `category`, `mechanic_tags`, `damage_weight`, `healing_weight`, `threat_weight`, `mitigation_weight`, `survival_weight`, `priority_bucket`, `min_enemies`, `max_enemies`, `max_target_health_pct`, `max_self_health_pct`, `forbidden_target_aura`, `target_selector`, `movement_directive`, `auto_attack_mode`, `max_range`, `maintain_aura_id`, `min_injured_players`, `injured_health_pct`, `min_mana_pct`, `max_mana_pct`, `min_attackers`, `requires_stationary`) VALUES
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='holy_priest' AND `role`='healer'), 10, 33076, 'heal_efficient', 'prayer_of_mending,tank,heal,maintenance', 0, 0.86, 0, 0, 0.70, 1, 1, 0, 0.98, 1.00, 0, 'tank', 'healer_support', 'none', 40, 33076, 1, 0.98, 0.05, 1, 0, 0),
