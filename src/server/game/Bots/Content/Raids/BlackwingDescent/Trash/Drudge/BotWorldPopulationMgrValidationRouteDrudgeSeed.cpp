@@ -506,6 +506,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunDrudgeSeedCoordinator()
     input.PrepullStaged = context.PrepullStaged;
     input.RecoveryAuthorityReady = context.EarlyPullRecoveryActive;
     input.SourcesAlive = true;
+    input.InitialSeedWindow = !context.Sources[0]->GetVictim()
+        && !context.Sources[1]->GetVictim();
     input.OwnershipSafe = bothVictimsOwned;
     input.SeparationSafe = context.SourceSeparation >= context.LaneSeparation;
     input.FrozenLanesSafe = frozenLanesSafe;

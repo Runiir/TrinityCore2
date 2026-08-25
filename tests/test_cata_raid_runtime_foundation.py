@@ -870,6 +870,9 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert formation.index("drudge_tank_anchor_strict_path_rejected") < formation.index(
         "drudge_tank_recovery_anchor_preflight_wait"
     )
+    assert formation.index("RunDrudgeSeedCoordinator") < formation.index(
+        "drudge_lane_native_taunt"
+    )
     assert formation.index("LandedRushRecoveryComplete") < formation.index(
         "drudge_native_charge_reseparation_complete"
     )
@@ -881,7 +884,7 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     threat = actions[
         actions.index("DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions"):
     ]
-    assert threat.index("laneOwnershipSafe") < threat.index("RunDrudgeSeedCoordinator")
+    assert threat.index("RunDrudgeSeedCoordinator") < threat.index("laneOwnershipSafe")
     assert threat.index("RunDrudgeSeedCoordinator") < threat.index(
         "drudge_lane_profile_hold_contract_unsafe"
     )
@@ -893,6 +896,7 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
         "ExactDrudgeAuthorityRoster",
         "ResolveDrudgeSeedCandidate",
         "AdvanceCoordinator",
+        "InitialSeedWindow",
         "drudge_pre_first_rush_threat_seed",
         "ValidationRouteDrudgeThreatSeedFailure",
         "native_action_rejected",

@@ -148,6 +148,29 @@ int main()
     assert(both.Next.SeededLanes[0] && both.Next.SeededLanes[1]);
     assert(both.Next.Complete && !both.Next.Failure);
 
+    // The exact native lane anchors can be valid before either Drudge has a
+    // victim.  Admit one atomic cross-lane seed in that initial window; this
+    // preserves the ordinary same-lane tank taunts that establish ownership.
+    CoordinatorInput preOwnership = bothTick;
+    preOwnership.OwnershipSafe = false;
+    preOwnership.InitialSeedWindow = true;
+    CoordinatorResult preOwnershipResult = AdvanceCoordinator(State{}, preOwnership);
+    assert(preOwnershipResult.BothLanesEvaluated);
+    assert(preOwnershipResult.Lanes[0].ActionAttempted);
+    assert(preOwnershipResult.Lanes[1].ActionAttempted);
+    assert(preOwnershipResult.Next.SeededLanes[0]);
+    assert(preOwnershipResult.Next.SeededLanes[1]);
+    assert(preOwnershipResult.Next.Complete);
+
+    // Without the explicit initial window, ownership remains a real gate.
+    CoordinatorInput noOwnership = bothTick;
+    noOwnership.OwnershipSafe = false;
+    CoordinatorResult noOwnershipResult = AdvanceCoordinator(State{}, noOwnership);
+    assert(noOwnershipResult.BothLanesEvaluated);
+    assert(!noOwnershipResult.Lanes[0].ActionAttempted);
+    assert(!noOwnershipResult.Lanes[1].ActionAttempted);
+    assert(!noOwnershipResult.Next.Complete);
+
     // A cohort-linked body-pull recovery gets the same native seed barrier
     // without claiming that historical prepull staging completed.
     CoordinatorInput recoveredTick = bothTick;

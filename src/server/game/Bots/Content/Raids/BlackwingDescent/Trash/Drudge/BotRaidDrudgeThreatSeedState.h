@@ -63,6 +63,7 @@ struct Input
     bool PrepullStaged = false;
     bool SourcesAlive = false;
     bool OwnershipSafe = false;
+    bool InitialSeedWindow = false;
     bool SeparationSafe = false;
     bool FrozenLanesSafe = false;
     bool ChargeObserved = false;
@@ -145,6 +146,7 @@ struct CoordinatorInput
     bool RecoveryAuthorityReady = false;
     bool SourcesAlive = false;
     bool OwnershipSafe = false;
+    bool InitialSeedWindow = false;
     bool SeparationSafe = false;
     bool FrozenLanesSafe = false;
     bool ChargeObserved = false;
@@ -223,7 +225,8 @@ inline CoordinatorResult AdvanceCoordinator(State current,
     bool const setupAuthorityReady = input.PrepullStaged
         || input.RecoveryAuthorityReady;
     bool const windowReady = setupAuthorityReady && input.SourcesAlive
-        && input.OwnershipSafe && input.SeparationSafe && input.FrozenLanesSafe;
+        && (input.OwnershipSafe || input.InitialSeedWindow)
+        && input.SeparationSafe && input.FrozenLanesSafe;
     if (!windowReady)
     {
         for (std::size_t lane = 0; lane < result.Lanes.size(); ++lane)
@@ -247,6 +250,7 @@ inline CoordinatorResult AdvanceCoordinator(State current,
         transitionInput.PrepullStaged = setupAuthorityReady;
         transitionInput.SourcesAlive = input.SourcesAlive;
         transitionInput.OwnershipSafe = input.OwnershipSafe;
+        transitionInput.InitialSeedWindow = input.InitialSeedWindow;
         transitionInput.SeparationSafe = input.SeparationSafe;
         transitionInput.FrozenLanesSafe = input.FrozenLanesSafe;
         transitionInput.ChargeObserved = input.ChargeObserved;
@@ -304,7 +308,8 @@ inline Result Advance(State current, Input const& input)
     }
 
     bool const windowReady = input.PrepullStaged && input.SourcesAlive
-        && input.OwnershipSafe && input.SeparationSafe && input.FrozenLanesSafe;
+        && (input.OwnershipSafe || input.InitialSeedWindow)
+        && input.SeparationSafe && input.FrozenLanesSafe;
     if (!windowReady)
     {
         // Geometry, ownership, and scheduler order may be transient before the

@@ -337,7 +337,6 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
             FormationRequiredMutable = !GroupPositionSafe(Bot);
     PairTooClose = Sources[0]->IsAlive() && Sources[1]->IsAlive()
         && SourceSeparation < LaneSeparation;
-
     BotRaidDrudgeGeometry::State geometryState;
     geometryState.Identity = {
         Manager.Cohort().AttemptId, Manager.Cohort().Raid.WipeGeneration,
@@ -516,6 +515,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
     bool const earlyPullOwnershipWindow = SourceCombatStarted && !PrepullStaged
         && CohortCombatLinked && !Charge && ExactCombatTankPathsProven()
         && TanksOnFrozenLanes();
+    if ((PrepullStaged || EarlyPullRecoveryActive)
+        && RunDrudgeSeedCoordinator() == PhaseResult::Handled) return PhaseResult::Handled;
     if (AssignedTank && (tankStage.NativeOwnershipAllowed || earlyPullOwnershipWindow)
         && (!NativeChargePending
             || (recoveryAnchorsReachedBeforeTick && combatTankAnchorsReachedBeforeTick))
@@ -760,6 +761,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions()
             Record(LaneSource, "drudge_native_vengeful_rage_observed", SourceSeparation);
         }
     }
+    if (RunDrudgeSeedCoordinator() == PhaseResult::Handled)
+        return PhaseResult::Handled;
     bool const laneOwnershipSafe = LaneSource->IsAlive()
         && LaneSource->GetVictim() == LaneTank
         && (!OtherSource->IsAlive() || OtherSource->GetVictim() == OtherTank);
@@ -771,9 +774,6 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions()
         State.TargetGuid = LaneSource ? LaneSource->GetGUID() : ObjectGuid::Empty;
         return PhaseResult::Handled;
     }
-
-    if (RunDrudgeSeedCoordinator() == PhaseResult::Handled)
-        return PhaseResult::Handled;
 
     auto rosterMemberForSlot = [this](uint32 slot) -> Player*
     {
