@@ -670,51 +670,6 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildContract()
         && rosterSlotHasExactRole(
             Manager.Cohort().Config.ValidationRouteSplitSeedRosterSlots[1], "tank");
 
-    auto repeatedNativeFarthestGeometrySafe = [this]() -> bool
-    {
-        if (Manager.Cohort().Config.ValidationRouteSplitSeedRosterSlots.size() != 2
-            || Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.size() != 2
-            || Manager.Cohort().Config.ValidationRouteSplitTankCombatAnchors.size() != 2
-            || Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards <= 0.0f)
-            return false;
-        auto findAnchor = [](std::vector<MemberAnchor> const& anchors,
-                              uint32 rosterSlot) -> MemberAnchor const*
-        {
-            auto const itr = std::find_if(anchors.begin(), anchors.end(),
-                [rosterSlot](MemberAnchor const& anchor)
-                {
-                    return anchor.RosterSlot == rosterSlot;
-                });
-            return itr == anchors.end() ? nullptr : &*itr;
-        };
-        for (uint32 sourceIndex = 0; sourceIndex < 2; ++sourceIndex)
-        {
-            uint32 const seedSlot =
-                Manager.Cohort().Config.ValidationRouteSplitSeedRosterSlots[sourceIndex];
-            MemberAnchor const* seed = findAnchor(
-                Manager.Cohort().Config.ValidationRouteSplitTankCombatAnchors, seedSlot);
-            if (!seed || sourceIndex >= Sources.size() || !Sources[sourceIndex])
-                return false;
-            float const sourceX = Sources[sourceIndex]->GetPositionX();
-            float const sourceY = Sources[sourceIndex]->GetPositionY();
-            float const seedDistance = Distance2d(sourceX, sourceY, seed->X, seed->Y);
-            for (MemberAnchor const& member :
-                Manager.Cohort().Config.ValidationRouteSplitMemberAnchors)
-            {
-                if (std::find(Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.begin(),
-                    Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.end(),
-                    member.RosterSlot)
-                    != Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.end())
-                    continue;
-                if (seedDistance + 0.0001f
-                    < Distance2d(sourceX, sourceY, member.X, member.Y)
-                        + 2.0f * Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards)
-                    return false;
-            }
-        }
-        return true;
-    };
-
     ContractResolved = Manager.Cohort().Config.ValidationRouteSplitSourceGuids.size() == 2
         && Manager.Cohort().Config.ValidationRouteSplitLaneARosterSlots.size() == 5
         && Manager.Cohort().Config.ValidationRouteSplitLaneBRosterSlots.size() == 5
@@ -736,7 +691,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildContract()
         && Manager.Cohort().Config.ValidationRouteSplitTankArrivalToleranceYards
             <= Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards
         && Manager.Cohort().Config.ValidationRouteSplitNativeMeleeStopYards > 0.0f
-        && healerSlotsResolved && seedSlotsResolved && repeatedNativeFarthestGeometrySafe()
+        && healerSlotsResolved && seedSlotsResolved
         && Manager.Cohort().Config.ValidationRouteSplitSeedMaxRangeYards > 0.0f
         && Manager.Cohort().Config.ValidationRouteSplitTankThreatHeadroomMultiplier >= 1.3f
         && Manager.Cohort().Config.ValidationRouteMinimumDistanceYards > 0.0f
@@ -956,6 +911,55 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::ResolveSources()
             LaneTank = member;
         else if (memberSlot == OtherTankSlot && memberRoster->second.Role == "tank")
             OtherTank = member;
+    }
+    auto findAnchor = [](std::vector<MemberAnchor> const& anchors,
+                          uint32 rosterSlot) -> MemberAnchor const*
+    {
+        auto const itr = std::find_if(anchors.begin(), anchors.end(),
+            [rosterSlot](MemberAnchor const& anchor)
+            {
+                return anchor.RosterSlot == rosterSlot;
+            });
+        return itr == anchors.end() ? nullptr : &*itr;
+    };
+    for (uint32 sourceIndex = 0; sourceIndex < Sources.size(); ++sourceIndex)
+    {
+        uint32 const seedSlot =
+            Manager.Cohort().Config.ValidationRouteSplitSeedRosterSlots[sourceIndex];
+        MemberAnchor const* seed = findAnchor(
+            Manager.Cohort().Config.ValidationRouteSplitTankCombatAnchors, seedSlot);
+        if (!seed)
+        {
+            HoldOffense();
+            Record(Sources[sourceIndex], "drudge_tank_farthest_anchor_missing",
+                0.0f, seedSlot);
+            Target = nullptr;
+            State.TargetGuid.Clear();
+            return PhaseResult::Handled;
+        }
+        float const sourceX = Sources[sourceIndex]->GetPositionX();
+        float const sourceY = Sources[sourceIndex]->GetPositionY();
+        float const seedDistance = Distance2d(sourceX, sourceY, seed->X, seed->Y);
+        for (MemberAnchor const& member :
+            Manager.Cohort().Config.ValidationRouteSplitMemberAnchors)
+        {
+            if (std::find(Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.begin(),
+                Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.end(),
+                member.RosterSlot)
+                != Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.end())
+                continue;
+            if (seedDistance + 0.0001f
+                < Distance2d(sourceX, sourceY, member.X, member.Y)
+                    + 2.0f * Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards)
+            {
+                HoldOffense();
+                Record(Sources[sourceIndex], "drudge_tank_farthest_geometry_unresolved",
+                    seedDistance, member.RosterSlot);
+                Target = nullptr;
+                State.TargetGuid.Clear();
+                return PhaseResult::Handled;
+            }
+        }
     }
     return PhaseResult::Continue;
 }

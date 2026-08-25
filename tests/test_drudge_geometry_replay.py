@@ -712,6 +712,23 @@ def test_drudge_reseparation_switches_from_cached_anchor_to_live_safety():
     assert geometry.count("BotMovementArbitration::Priority::Mechanic") >= 1
 
 
+def test_native_farthest_geometry_runs_only_after_sources_are_resolved():
+    lanes = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp").read_text(
+        encoding="utf-8"
+    )
+
+    run = lanes[lanes.index("bool DrudgeLaneContext::Run()"):
+                lanes.index("DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildContract()")]
+    assert run.index("ResolveSources()") < run.index("BuildAnchorPolicies()")
+    contract = lanes[lanes.index("DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildContract()"):
+                     lanes.index("DrudgeLaneContext::PhaseResult DrudgeLaneContext::ResolveSources()")]
+    assert "Sources[sourceIndex]" not in contract
+    sources = lanes[lanes.index("DrudgeLaneContext::PhaseResult DrudgeLaneContext::ResolveSources()") :]
+    assert sources.index("Sources.push_back(source)") < sources.index(
+        '"drudge_tank_farthest_geometry_unresolved"'
+    )
+
+
 def test_future_encounter_contamination_is_attempt_terminal_not_a_transient_hold():
     implementation = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
         encoding="utf-8"
