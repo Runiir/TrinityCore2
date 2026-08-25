@@ -61,6 +61,10 @@ struct Input
     Scope Identity;
     std::uint32_t SourceLane = 0;
     bool PrepullStaged = false;
+    // The bounded pre-taunt opportunity relies on the already latched exact
+    // roster/tank staging.  It may admit the real candidate checks before the
+    // pulled sources reach their final separated lanes.
+    bool InitialSeedOpportunity = false;
     bool SourcesAlive = false;
     bool OwnershipSafe = false;
     bool SeparationSafe = false;
@@ -143,6 +147,7 @@ struct CoordinatorInput
     Scope Identity;
     bool PrepullStaged = false;
     bool RecoveryAuthorityReady = false;
+    bool InitialSeedOpportunity = false;
     bool SourcesAlive = false;
     bool OwnershipSafe = false;
     bool SeparationSafe = false;
@@ -150,6 +155,16 @@ struct CoordinatorInput
     bool ChargeObserved = false;
     std::array<CoordinatorLaneInput, 2> Lanes;
 };
+
+// Before the first native Rush, exact roster/tank staging and the native
+// candidate checks are the safety proof.  Once that bounded opportunity is
+// over, both live source geometry predicates are required again.
+inline bool InitialSeedGeometryReady(bool initialSeedOpportunity,
+    bool sourceSeparationSafe, bool sourcesOnFrozenLanes)
+{
+    return initialSeedOpportunity
+        || (sourceSeparationSafe && sourcesOnFrozenLanes);
+}
 
 // A seed action is a cohort operation: every lane that still needs a seed
 // must have a valid candidate before any pending lane may submit native
@@ -222,9 +237,12 @@ inline CoordinatorResult AdvanceCoordinator(State current,
 
     bool const setupAuthorityReady = input.PrepullStaged
         || input.RecoveryAuthorityReady;
+    bool const initialSeedOpportunity = input.InitialSeedOpportunity
+        && !result.Next.SeededLanes[0] && !result.Next.SeededLanes[1];
     bool const windowReady = setupAuthorityReady && input.SourcesAlive
         && input.OwnershipSafe
-        && input.SeparationSafe && input.FrozenLanesSafe;
+        && InitialSeedGeometryReady(initialSeedOpportunity,
+            input.SeparationSafe, input.FrozenLanesSafe);
     if (!windowReady)
     {
         for (std::size_t lane = 0; lane < result.Lanes.size(); ++lane)
@@ -246,10 +264,16 @@ inline CoordinatorResult AdvanceCoordinator(State current,
         transitionInput.Identity = input.Identity;
         transitionInput.SourceLane = static_cast<std::uint32_t>(lane);
         transitionInput.PrepullStaged = setupAuthorityReady;
+        transitionInput.InitialSeedOpportunity = initialSeedOpportunity;
         transitionInput.SourcesAlive = input.SourcesAlive;
         transitionInput.OwnershipSafe = input.OwnershipSafe;
-        transitionInput.SeparationSafe = input.SeparationSafe;
-        transitionInput.FrozenLanesSafe = input.FrozenLanesSafe;
+        // The coordinator's one atomic tick evaluates both pending lanes from
+        // the same initial opportunity.  Carry its accepted geometry proof to
+        // the second lane even after the first lane marks itself seeded.
+        transitionInput.SeparationSafe = input.SeparationSafe
+            || initialSeedOpportunity;
+        transitionInput.FrozenLanesSafe = input.FrozenLanesSafe
+            || initialSeedOpportunity;
         transitionInput.ChargeObserved = input.ChargeObserved;
         transitionInput.CandidateAvailable = laneInput.CandidateAvailable;
         transitionInput.AuthoritySafe = laneInput.AuthoritySafe;
@@ -304,9 +328,12 @@ inline Result Advance(State current, Input const& input)
         return result;
     }
 
+    bool const initialSeedOpportunity = input.InitialSeedOpportunity
+        && !result.Next.SeededLanes[0] && !result.Next.SeededLanes[1];
     bool const windowReady = input.PrepullStaged && input.SourcesAlive
         && input.OwnershipSafe
-        && input.SeparationSafe && input.FrozenLanesSafe;
+        && InitialSeedGeometryReady(initialSeedOpportunity,
+            input.SeparationSafe, input.FrozenLanesSafe);
     if (!windowReady)
     {
         // Geometry, ownership, and scheduler order may be transient before the

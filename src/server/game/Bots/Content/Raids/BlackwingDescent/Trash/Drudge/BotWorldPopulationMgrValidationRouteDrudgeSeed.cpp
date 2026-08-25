@@ -514,11 +514,14 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunDrudgeSeedCoordinator()
     input.SeparationSafe = context.SourceSeparation >= context.LaneSeparation;
     input.FrozenLanesSafe = frozenLanesSafe;
     input.ChargeObserved = chargeObserved;
+    input.InitialSeedOpportunity = initialSeedOpportunity;
 
     bool const setupAuthorityReady = input.PrepullStaged
         || input.RecoveryAuthorityReady;
-    if (!setupAuthorityReady || !input.OwnershipSafe || !input.SeparationSafe
-        || !input.FrozenLanesSafe || input.ChargeObserved)
+    bool const seedGeometryReady = BotRaidDrudgeThreatSeed::InitialSeedGeometryReady(
+        input.InitialSeedOpportunity, input.SeparationSafe, input.FrozenLanesSafe);
+    if (!setupAuthorityReady || !input.OwnershipSafe || !seedGeometryReady
+        || input.ChargeObserved)
     {
         BotRaidDrudgeThreatSeed::CoordinatorResult const transition =
             BotRaidDrudgeThreatSeed::AdvanceCoordinator(seedState, input);

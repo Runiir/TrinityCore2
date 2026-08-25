@@ -148,6 +148,45 @@ int main()
     assert(both.Next.SeededLanes[0] && both.Next.SeededLanes[1]);
     assert(both.Next.Complete && !both.Next.Failure);
 
+    // The bounded initial seed opportunity does not need the sources to have
+    // reached their final separated/frozen lanes.  It still traverses the
+    // same typed candidate/action-result barrier.
+    CoordinatorInput initialGeometryGap = bothTick;
+    initialGeometryGap.InitialSeedOpportunity = true;
+    initialGeometryGap.SeparationSafe = false;
+    initialGeometryGap.FrozenLanesSafe = false;
+    CoordinatorResult initialGeometry = AdvanceCoordinator(
+        State{}, initialGeometryGap);
+    assert(initialGeometry.BothLanesEvaluated);
+    assert(initialGeometry.Lanes[0].ActionAttempted
+        && initialGeometry.Lanes[1].ActionAttempted);
+    assert(initialGeometry.Next.SeededLanes[0]
+        && initialGeometry.Next.SeededLanes[1]);
+    assert(initialGeometry.Next.Complete);
+
+    // The exception is fail-closed if a caller tries to reuse it after a
+    // lane has already been accepted.
+    State partiallySeeded;
+    partiallySeeded.Identity = first;
+    partiallySeeded.SeededLanes[0] = true;
+    CoordinatorResult staleInitial = AdvanceCoordinator(
+        partiallySeeded, initialGeometryGap);
+    assert(!staleInitial.Lanes[0].ActionAttempted
+        && !staleInitial.Lanes[1].ActionAttempted);
+    assert(!staleInitial.Next.Complete);
+
+    // Once the bounded opportunity is over, the live source geometry gates
+    // remain mandatory even when both candidates are otherwise ready.
+    CoordinatorInput afterInitialGeometryGap = bothTick;
+    afterInitialGeometryGap.SeparationSafe = false;
+    afterInitialGeometryGap.FrozenLanesSafe = false;
+    CoordinatorResult afterInitialGeometry = AdvanceCoordinator(
+        State{}, afterInitialGeometryGap);
+    assert(afterInitialGeometry.BothLanesEvaluated);
+    assert(!afterInitialGeometry.Lanes[0].ActionAttempted
+        && !afterInitialGeometry.Lanes[1].ActionAttempted);
+    assert(!afterInitialGeometry.Next.Complete);
+
     // The state machine keeps ownership as a real gate.  The route coordinator
     // admits the bounded pre-taunt exception only after proving its local
     // staged, empty-seed, no-Rush window and setting this input accordingly.
@@ -251,6 +290,11 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
         / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/"
         "BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp"
     ).read_text(encoding="utf-8")
+    seed_state = (
+        ROOT
+        / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/"
+        "BotRaidDrudgeThreatSeedState.h"
+    ).read_text(encoding="utf-8")
     drudge_header = (
         ROOT
         / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/"
@@ -299,6 +343,10 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
     assert "AllPendingLanesReady" in seed
     assert "allPendingCandidatesReady" in seed
     assert "SeedGate::PendingLaneBarrier" in seed
+    assert "input.InitialSeedOpportunity = initialSeedOpportunity" in seed
+    assert "InitialSeedGeometryReady" in seed
+    assert "InitialSeedOpportunity" in seed_state
+    assert "inline bool InitialSeedGeometryReady" in seed_state
     assert "if (allPendingCandidatesReady)" in seed
     assert seed.index("maxRange > bestRange") < seed.index(
         "maxRange == bestRange && rank < bestRank"
