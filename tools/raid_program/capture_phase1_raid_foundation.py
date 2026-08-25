@@ -38,6 +38,13 @@ _WATCHDOG_DEATH_ACTIONS = {
     "death_loop",
     "raid_wipe",
 }
+_WATCHDOG_SUCCESSFUL_NATIVE_ACTIONS = frozenset({
+    "spell_cast",
+    "cast_combat_spell",
+    "attack",
+    "move_out_of_hazard",
+    "trash_action",
+})
 _WATCHDOG_TRANSIENT_RECOVERY_RESULTS = {
     "native_recovery_wait_hostile_activity",
     "native_recovery_wait_native_reset",
@@ -2662,6 +2669,78 @@ def _watchdog_is_repeated_decision(entry: dict[str, Any]) -> bool:
     )
 
 
+def _watchdog_trace_group_key(entry: dict[str, Any]) -> tuple[str, int]:
+    """Identify one bot decision tick in a trace delta.
+
+    Native trace producers emit several rows for one decision: an adapter or
+    mechanic row can share the decision sequence with the native spell row.
+    Prefer that sequence when present.  Older payloads may have only the
+    per-entry sequence, with timestamp as the final compatibility fallback.
+    """
+
+    for field in ("decision_sequence", "decision_tick"):
+        try:
+            value = int(entry.get(field) or 0)
+        except (TypeError, ValueError):
+            value = 0
+        if value > 0:
+            return field, value
+    try:
+        sequence = int(entry.get("sequence") or 0)
+    except (TypeError, ValueError):
+        sequence = 0
+    if sequence > 0:
+        return "sequence", sequence
+    try:
+        timestamp = int(entry.get("timestamp_ms") or 0)
+    except (TypeError, ValueError):
+        timestamp = 0
+    return "timestamp_ms", max(0, timestamp)
+
+
+def _watchdog_is_successful_native_action(entry: dict[str, Any]) -> bool:
+    """Return whether a trace row is a successful primary bot action.
+
+    Validation-route mechanic/recovery rows are subordinate evidence.  A
+    successful native/brain row in the same decision tick proves that the bot
+    made progress through the primary action lane, so the subordinate failure
+    must not be attributed as a repeated-decision failure for that tick.
+    """
+
+    return (
+        entry.get("result") == "ok"
+        and str(entry.get("action") or "") in _WATCHDOG_SUCCESSFUL_NATIVE_ACTIONS
+    )
+
+
+def _watchdog_representative_repeated_failure(
+    entries: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    """Select one deterministic failed decision from a complete tick group."""
+
+    failures = [entry for entry in entries if _watchdog_is_repeated_decision(entry)]
+    if not failures:
+        return None
+
+    def sort_key(entry: dict[str, Any]) -> tuple[int, int, str, str, int]:
+        native_count = _watchdog_native_consecutive_count(entry) or 0
+        action = str(entry.get("action") or "")
+        outcome = _watchdog_failure_outcome(entry)
+        try:
+            sequence = int(entry.get("sequence") or 0)
+        except (TypeError, ValueError):
+            sequence = 0
+        return (
+            native_count,
+            int(action == "validation_route_mechanic"),
+            action,
+            outcome,
+            sequence,
+        )
+
+    return max(failures, key=sort_key)
+
+
 def _watchdog_route_progress_scope(
     route_progress: dict[str, Any] | None,
     current_scope: tuple[str, int],
@@ -2956,6 +3035,12 @@ def observe_capture_watchdog(
             if route_scope == current_scope:
                 reset_on_progress(current_scope, route_progress)
 
+    # A single native decision can emit several trace rows.  Collect complete
+    # per-bot decision-tick groups before classifying route failures so a
+    # subordinate adapter/event cannot trip the watchdog ahead of its primary
+    # native/brain action in the same group.
+    trace_groups: list[tuple[str, tuple[str, int], list[dict[str, Any]]]] = []
+    trace_group_indexes: dict[tuple[Any, ...], int] = {}
     for trace_row in trace_rows or []:
         if not isinstance(trace_row, dict) or trace_row.get("action") != "botauto_trace":
             continue
@@ -2991,70 +3076,86 @@ def observe_capture_watchdog(
                 scope = _watchdog_entry_scope(entry, current_scope)
                 if scope != current_scope:
                     continue
-                scope_key = f"{scope[0]}:{scope[1]}"
-                route_progress = entry.get("route_progress")
-                if isinstance(route_progress, dict):
-                    reset_on_progress(scope, route_progress)
-                repeated_decision = _watchdog_is_repeated_decision(entry)
-                try:
-                    fingerprint = int(entry.get("fingerprint_hash") or 0)
-                except (TypeError, ValueError):
-                    fingerprint = 0
-                native_count = _watchdog_native_consecutive_count(entry)
-                if entry.get("action") in _WATCHDOG_DEATH_ACTIONS:
-                    death_counts[scope_key] = int(death_counts.get(scope_key) or 0) + 1
-                    report["death_loop_count"] = death_counts[scope_key]
-                    if death_counts[scope_key] >= max_death_loops:
-                        maybe_terminal("death_loop_watchdog")
-                        break
-                if repeated_decision:
-                    # A cumulative diagnosis/trace repeat count is stale for
-                    # this observation once the same route scope has shown
-                    # objective progress.  Start counting again on the next
-                    # fresh watchdog sample, while death thresholds above
-                    # remain terminal even during progress.
-                    if scope_key in progress_reset_scopes:
-                        continue
-                    outcome = _watchdog_failure_outcome(entry)
-                    decision_key = json.dumps(
-                        [scope_key, cursor_key, str(entry.get("action") or ""), outcome, fingerprint],
-                        separators=(",", ":"),
-                    )
-                    previous_count = int(repeated_counts.get(decision_key) or 0)
-                    if native_count is not None:
-                        # The native counter belongs to the decision kernel,
-                        # while this row may be a failed adapter/event emitted
-                        # for that decision.  Count each deduplicated failed
-                        # row locally and use the native value only as an
-                        # upper bound when it reports a reset to a lower run.
-                        current_count = min(previous_count + 1, native_count)
-                    else:
-                        current_count = previous_count + 1
-                    if current_count > 0:
-                        repeated_counts[decision_key] = current_count
-                    else:
-                        repeated_counts.pop(decision_key, None)
-                    current_max = 0
-                    for key, value in repeated_counts.items():
-                        try:
-                            decoded = json.loads(key)
-                        except (TypeError, ValueError):
-                            continue
-                        if isinstance(decoded, list) and decoded and decoded[0] == scope_key:
-                            current_max = max(current_max, int(value or 0))
-                    if current_max:
-                        scope_repeated_max[scope_key] = current_max
-                    else:
-                        scope_repeated_max.pop(scope_key, None)
-                    report["repeated_decision_count"] = max(
-                        int(report["repeated_decision_count"]), current_count
-                    )
-                    report["repeated_decision_outcome"] = outcome
-                    if current_count >= max_repeated_decisions:
-                        maybe_terminal("repeated_decision_watchdog", outcome=outcome)
-                        break
-            if terminal:
+                group_key = (
+                    cursor_key,
+                    scope[0],
+                    scope[1],
+                    *_watchdog_trace_group_key(entry),
+                )
+                group_index = trace_group_indexes.get(group_key)
+                if group_index is None:
+                    trace_group_indexes[group_key] = len(trace_groups)
+                    trace_groups.append((cursor_key, scope, [entry]))
+                else:
+                    trace_groups[group_index][2].append(entry)
+
+    for cursor_key, scope, group_entries in trace_groups:
+        scope_key = f"{scope[0]}:{scope[1]}"
+        # Apply every progress row before classifying the group.  Death loops
+        # remain independent terminals even when the same group has a success.
+        for entry in group_entries:
+            route_progress = entry.get("route_progress")
+            if isinstance(route_progress, dict):
+                reset_on_progress(scope, route_progress)
+        for entry in group_entries:
+            if entry.get("action") not in _WATCHDOG_DEATH_ACTIONS:
+                continue
+            death_counts[scope_key] = int(death_counts.get(scope_key) or 0) + 1
+            report["death_loop_count"] = death_counts[scope_key]
+            if death_counts[scope_key] >= max_death_loops:
+                maybe_terminal("death_loop_watchdog")
                 break
+        if terminal:
+            break
+        if any(_watchdog_is_successful_native_action(entry) for entry in group_entries):
+            continue
+        # Several failed adapter rows may share the same native decision tick.
+        # They are one failed decision for watchdog purposes, not one count
+        # per serialized event.
+        entry = _watchdog_representative_repeated_failure(group_entries)
+        if entry is None or scope_key in progress_reset_scopes:
+            continue
+        outcome = _watchdog_failure_outcome(entry)
+        try:
+            fingerprint = int(entry.get("fingerprint_hash") or 0)
+        except (TypeError, ValueError):
+            fingerprint = 0
+        native_count = _watchdog_native_consecutive_count(entry)
+        decision_key = json.dumps(
+            [scope_key, cursor_key, str(entry.get("action") or ""), outcome, fingerprint],
+            separators=(",", ":"),
+        )
+        previous_count = int(repeated_counts.get(decision_key) or 0)
+        if native_count is not None:
+            # The native counter belongs to the decision kernel, while this
+            # row may be a failed adapter/event emitted for that decision.
+            # Count one representative group locally and use the native value
+            # only as an upper bound when it reports a reset to a lower run.
+            current_count = min(previous_count + 1, native_count)
+        else:
+            current_count = previous_count + 1
+        if current_count > 0:
+            repeated_counts[decision_key] = current_count
+        else:
+            repeated_counts.pop(decision_key, None)
+        current_max = 0
+        for key, value in repeated_counts.items():
+            try:
+                decoded = json.loads(key)
+            except (TypeError, ValueError):
+                continue
+            if isinstance(decoded, list) and decoded and decoded[0] == scope_key:
+                current_max = max(current_max, int(value or 0))
+        if current_max:
+            scope_repeated_max[scope_key] = current_max
+        else:
+            scope_repeated_max.pop(scope_key, None)
+        report["repeated_decision_count"] = max(
+            int(report["repeated_decision_count"]), current_count
+        )
+        report["repeated_decision_outcome"] = outcome
+        if current_count >= max_repeated_decisions:
+            maybe_terminal("repeated_decision_watchdog", outcome=outcome)
         if terminal:
             break
 

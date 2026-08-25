@@ -3295,6 +3295,152 @@ def test_capture_watchdog_resets_repeated_hazard_failures_on_monotonic_target_pr
     assert state["repeated_decision_counts"] == {}
 
 
+def test_capture_watchdog_groups_canary23_adapter_failure_with_successful_native_tick():
+    status = _watchdog_status()
+    status["validation_route"].update(
+        node_id="bwd.magmaw.chainwielder", generation=2, kind="trash",
+    )
+    state = {}
+    route_progress = {
+        "route": {
+            "node_id": "bwd.magmaw.chainwielder",
+            "generation": 2,
+            "kind": "trash",
+        },
+        "target": {
+            "entry": 42649,
+            "guid": 27,
+            "hp_pct": 0.70,
+            "best_hp_pct": 0.70,
+        },
+        "no_progress": {"count": 0, "reason": "route_target_combat_progress", "threshold": 20},
+    }
+
+    # Establish the target high-water mark and then its observed progress so
+    # the grouped tail is tested after progress, as in Canary23.
+    for hp in (0.80, 0.70):
+        progress = json.loads(json.dumps(route_progress))
+        progress["target"]["hp_pct"] = hp
+        progress["target"]["best_hp_pct"] = hp
+        observe_capture_watchdog(
+            state,
+            status,
+            None,
+            [_watchdog_trace([{
+                "action": "cast_combat_spell",
+                "result": "ok",
+                "route_node_id": "bwd.magmaw.chainwielder",
+                "route_generation": 2,
+                "route_progress": progress,
+                "sequence": int(hp * 100),
+                "timestamp_ms": int(hp * 100),
+                "decision_sequence": int(hp * 100),
+            }], bot_guid=30008)],
+            max_repeated_decisions=20,
+            max_death_loops=3,
+        )
+
+    entries = []
+    for tick in range(1, 21):
+        timestamp = 10_000 + tick
+        failure = {
+            "action": "validation_route_mechanic",
+            "result": "hazard_exit_failed",
+            "reason_code": "event_failure",
+            "recovery_result": "hazard_exit_no_union_safe_native_path",
+            "fingerprint_hash": 820785536,
+            "consecutive_same_decision_count": tick,
+            "route_node_id": "bwd.magmaw.chainwielder",
+            "route_generation": 2,
+            "route_progress": route_progress,
+            "sequence": 300 + (tick * 3),
+            "timestamp_ms": timestamp,
+            "decision_sequence": 800 + tick,
+        }
+        entries.extend([
+            failure,
+            {
+                **failure,
+                "action": "spell_cast",
+                "result": "ok",
+                "reason_code": "",
+                "recovery_result": "hazard_exit_no_union_safe_native_path",
+                "sequence": failure["sequence"] + 1,
+            },
+            {
+                **failure,
+                "action": "cast_combat_spell",
+                "result": "ok",
+                "reason_code": "",
+                "sequence": failure["sequence"] + 2,
+            },
+        ])
+
+    report = observe_capture_watchdog(
+        state,
+        status,
+        None,
+        [_watchdog_trace(entries, bot_guid=30008)],
+        max_repeated_decisions=20,
+        max_death_loops=3,
+    )
+
+    assert report["detected"] is False
+    assert report["failure_reason"] is None
+    assert report["repeated_decision_count"] == 0
+    assert state["repeated_decision_counts"] == {}
+
+
+def test_capture_watchdog_counts_failure_only_decision_tick_groups():
+    status = _watchdog_status()
+    status["validation_route"].update(
+        node_id="bwd.magmaw.chainwielder", generation=2, kind="trash",
+    )
+    failures = []
+    for tick in range(1, 4):
+        timestamp = 20_000 + tick
+        base = {
+            "result": "hazard_exit_failed",
+            "reason_code": "event_failure",
+            "recovery_result": "hazard_exit_no_union_safe_native_path",
+            "fingerprint_hash": 820785536,
+            "consecutive_same_decision_count": tick,
+            "route_node_id": "bwd.magmaw.chainwielder",
+            "route_generation": 2,
+            "sequence": tick * 2,
+            "timestamp_ms": timestamp,
+            "decision_sequence": 900 + tick,
+        }
+        failures.extend([
+            {**base, "action": "validation_route_mechanic"},
+            {**base, "action": "validation_route_recovery", "sequence": tick * 2 + 1},
+        ])
+
+    state = {}
+    first = observe_capture_watchdog(
+        state,
+        status,
+        None,
+        [_watchdog_trace(failures[:4], bot_guid=30008)],
+        max_repeated_decisions=3,
+        max_death_loops=3,
+    )
+    assert first["detected"] is False
+    assert first["repeated_decision_count"] == 2
+
+    terminal = observe_capture_watchdog(
+        state,
+        status,
+        None,
+        [_watchdog_trace(failures[4:], bot_guid=30008)],
+        max_repeated_decisions=3,
+        max_death_loops=3,
+    )
+    assert terminal["detected"] is True
+    assert terminal["failure_reason"] == "repeated_decision_watchdog"
+    assert terminal["repeated_decision_count"] == 3
+
+
 def test_capture_watchdog_does_not_inherit_native_count_from_successful_events():
     status = _watchdog_status()
     status["validation_route"].update(
