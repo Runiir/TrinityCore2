@@ -340,26 +340,25 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_sequence_9_geometry_lane_anchor_repair"
+        "drudge_source_home_union_live_verification"
     )
     assert magmaw_25h["active_program_work_unit"] is None
     assert active["owner_skill"] == "raid-shard-architecture"
     assert active["first_broken_edge"] == (
-        "drudge_reseparation_route_candidate_admission_fails_after_"
-        "landed_charge_sequence_8"
+        "drudge_recovery_admission_checks_live_sources_but_not_native_source_homes"
     )
     evidence = active["decisive_evidence"]
     assert evidence["source_commit"] == (
-        "d9024ddb5cc9e213e9f0048444b66522cd4d005c"
+        "9ce642a0f65721cf0868dcd9bc928592ebab010a"
     )
     assert evidence["binary_sha256"] == (
-        "73a669506fc1320608fdd917b4bb66548896b67735ae787c950185890bfb4264"
+        "8ae8f1cd0003b77bbbf75d34f496f2f75606ecb40782089b9fed851c2d760c7c"
     )
     assert evidence["report_sha256"] == (
-        "cf878046267b89b1b4173bb723c296670c3d2e2e2243bca8774e647158fafe21"
+        "9e8a6c5f4f3c1212a216b23f87bf4cb1e93353f5792b43e12eeb8cf2de3cbf60"
     )
     assert evidence["report_file_sha256"] == (
-        "686ca50b0529e4b7f2a5acba37496d8c6cbe3d2b8d903a7153cdbf229d11d416"
+        "37c004ed1b771f3810118fe778228ae017687cefa57b9fc1c1e94215503539cf"
     )
     assert (
         evidence["route_generation"],
@@ -369,14 +368,13 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert evidence["diagnostic_difficulty"] == "10N"
     assert evidence["kills"] == 1
     assert evidence["death_loop_count"] == 3
-    assert evidence["dead_roster_guids"] == [30003, 30004, 30007]
-    assert evidence["landed_charge_count"] == 14
-    assert evidence["last_complete_reseparation_sequence"] == 8
-    assert evidence["first_missing_reseparation_sequence"] == 9
-    assert evidence["first_missing_reseparation_spacing_member_guid"] == 30006
-    assert evidence["first_missing_reseparation_failed_predicate"] == (
-        "source0_safe"
-    )
+    assert evidence["dead_roster_guids"] == [30003, 30004, 30005, 30007]
+    assert evidence["landed_charge_count"] == 6
+    assert evidence["last_complete_reseparation_sequence"] == 2
+    assert evidence["first_unsafe_member_guid"] == 30003
+    assert evidence["first_unsafe_source_home_distance_yards"] == 12.36
+    assert evidence["configured_minimum_distance_yards"] == 15.0
+    assert evidence["prior_resource_classification_repair_verified"] is True
     assert evidence["boss_reached"] is False
     assert evidence["forbidden_assistance_observed"] is False
     assert evidence["cleanup_passed"] is True
@@ -387,13 +385,15 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
         "matched_live_verification_runs": 0,
     }
     assert active["repair_scope"]["status"] == (
-        "shared_runtime_rejected_and_route_owner_assigned"
+        "implemented_pending_live_verification"
     )
-    assert "drudge_route_candidate_geometry" in active["repair_scope"]["allowed"]
-    assert active["implemented_diagnostic"]["commit"] == (
-        "d9024ddb5cc9e213e9f0048444b66522cd4d005c"
+    assert "one_completion_watchdog_canary" in active["repair_scope"]["allowed"]
+    assert active["implemented_repair"]["commit"] == (
+        "b673f5f565052fbc5afd4a46fc8677cc1236fe34"
     )
-    assert active["implemented_diagnostic"]["gameplay_behavior_changed"] is False
+    assert active["implemented_repair"]["status"] == (
+        "built_pending_live_verification"
+    )
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
     assert active["live_verification_owner_skill"] == "raid-shard-architecture"
     assert "do not teleport" in active["next_action"].lower()
@@ -490,21 +490,21 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     status = workloop.build_status()
 
     assert status["active_work_unit"]["descriptor_valid"] is True
-    assert status["active_work_unit"]["ready_for_bounded_repair"] is True
+    assert status["active_work_unit"]["ready_for_bounded_repair"] is False
+    assert status["active_work_unit"]["ready_for_live_verification"] is True
     assert status["active_work_unit"]["first_broken_edge"] == (
-        "drudge_reseparation_route_candidate_admission_fails_after_"
-        "landed_charge_sequence_8"
+        "drudge_recovery_admission_checks_live_sources_but_not_native_source_homes"
     )
     assert status["active_work_unit"]["source_handoff"]["sha256"] == (
         workloop._file_sha256(
             workloop.ROOT
             / "experiments/configs/"
-            "cata_raid_magmaw_drudge_spacing_diagnostic_handoff_20260824.md"
+            "cata_raid_magmaw_drudge_source_home_union_handoff_20260825.md"
         )
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_sequence_9_geometry_lane_anchor_repair"
+        "drudge_source_home_union_live_verification"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
         "raid-shard-architecture"

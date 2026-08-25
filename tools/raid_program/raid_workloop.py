@@ -485,6 +485,8 @@ def active_work_unit_status(root: Path = ROOT) -> dict[str, Any]:
         **active,
         "descriptor_valid": not issues,
         "ready_for_bounded_repair": not issues and active.get("classification") == "failed",
+        "ready_for_live_verification": not issues
+        and active.get("classification") == "implementation_pending_live_verification",
         "issues": issues,
         "descriptor_path": ACTIVE_WORK_UNIT_PATH.as_posix(),
     }
