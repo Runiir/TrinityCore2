@@ -1,8 +1,8 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_source_union_escape_path",
+  "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_source_union_escape_path_live_verification",
   "owner_skill": "raid-shard-architecture",
-  "classification": "failed",
+  "classification": "implementation_pending_live_verification",
   "observed_at_commit": "b673f5f565052fbc5afd4a46fc8677cc1236fe34",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_drudge_escape_path_handoff_20260826.md",
@@ -52,12 +52,21 @@
     "worldserver_exit_code": 0,
     "do_not_relabel_as_clear": true
   },
+  "implemented_repair": {
+    "commit": "81ded72166532342311a9f4650d0dbed860fa7c5",
+    "tree": "edd1e4f9f271dacfd93387347015d2d70ec9bbf3",
+    "status": "source_validated_pending_exact_build",
+    "scope": "drudge_live_and_native_home_union_monotonic_outward_escape_path",
+    "focused_test_count": 47,
+    "source_line_limit_passed": true
+  },
   "repair_scope": {
-    "status": "bounded_implementation_required",
+    "status": "implemented_pending_live_verification",
     "allowed": [
-      "source_union_monotonic_escape_path_admission",
-      "focused_pure_replay_tests",
-      "queued_exact_worldserver_build_after_root_review"
+      "queued_exact_worldserver_build",
+      "fresh_exact_roster_provisioning",
+      "one_completion_watchdog_canary",
+      "trace_backed_routing_of_one_new_first_broken_edge"
     ],
     "forbidden_shortcuts": [
       "forced_threat",
@@ -83,7 +92,8 @@
   },
   "implementation_budget": {
     "hypotheses": 1,
-    "matched_live_verification_runs": 1
+    "matched_live_verification_runs": 0
   },
-  "next_action": "Implement one route-owned monotonic outward-escape rule for paths that begin inside a live or native-home Drudge radius while preserving strict safe endpoints and all current thresholds. Add focused replay coverage, review the patch, and use the queued build coordinator before one fresh exact-roster completion-watchdog canary. Do not teleport, force movement or threat, revive bots, alter native encounter state, or manufacture an outcome."
+  "live_verification_owner_skill": "raid-shard-architecture",
+  "next_action": "Build exact commit 81ded72166532342311a9f4650d0dbed860fa7c5 through the queued coordinator, provision and verify a fresh exact ten-player Magmaw diagnostic roster, and run one completion-watchdog Canary28. If it clears entrance, Chainwielder, Drudges, and Magmaw without forbidden assistance, repeat on a fresh roster. If it fails, retain the closed evidence and route only the first newly proven edge. Do not teleport, force movement or threat, revive bots, alter native encounter state, or manufacture an outcome."
 }
