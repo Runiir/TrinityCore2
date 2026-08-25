@@ -1,0 +1,71 @@
+{
+  "schema": "cata_raid_spec_canary_summary_v1",
+  "spec": "affliction_warlock",
+  "classification": "accepted_self_provided_baseline",
+  "terminal_reason": "baseline_within_policy",
+  "build": {
+    "git_commit": "d9024ddb5cc9e213e9f0048444b66522cd4d005c",
+    "git_tree": "79dd9b4d2ee29e24074dd0cef3ebcc384065d376",
+    "worldserver_binary_sha256": "73a669506fc1320608fdd917b4bb66548896b67735ae787c950185890bfb4264",
+    "source_tree_clean": true
+  },
+  "measurement": {
+    "mode": "single_target_300",
+    "scored_seconds": 300.0,
+    "duration_variation_seconds": 0,
+    "runtime_dps": 29419.38,
+    "wowsims_exact_seeded_dps": 29623.938524220404,
+    "wowsims_aggregate_mean_dps": 31312.966894306235,
+    "total_dps_ratio_against_exact_seed": 0.9930948234971134,
+    "cast_mix_total_variation_distance": 0.04034595222299997,
+    "maximum_cast_share_delta": 0.02174908568,
+    "cast_cadence_ratio": 0.947442472655
+  },
+  "parity": {
+    "gear": "match",
+    "effective_stats": "match",
+    "consumables": "match",
+    "external_raid_buffs": false,
+    "preapplied_target_debuffs": false,
+    "inventory_backed_consumables": {
+      "flask_item_id": 58086,
+      "food_item_id": 62671,
+      "prepot_item_id": 58091,
+      "combat_potion_item_id": 58091,
+      "native_uses_each": 1
+    }
+  },
+  "primary_pet": {
+    "runtime_damage": 1906362.0,
+    "wowsims_damage": 1724145.1296967766,
+    "runtime_landed_events": 224.0,
+    "wowsims_landed_events": 237.0,
+    "alive_ratio": 1.0,
+    "target_match_ratio": 0.999,
+    "landed_event_cadence_ratio": 0.9451476793248945,
+    "total_damage_ratio": 1.105685343515873
+  },
+  "decision": {
+    "status": "passed",
+    "first_broken_edge": null,
+    "owner_skill": null,
+    "fix_required": false,
+    "rotation_review_sha256": "3a142717a227a81e0c24f8ef48d141f7b432af0b33f9ba13141cd285271166cb",
+    "canary_decision_sha256": "39a2011b31c5b49f1e50c0e02f77fe8ea3152878053205888c54775b77147244"
+  },
+  "evidence": {
+    "batch_id": "affliction-canary-d9024ddb5c-1",
+    "batch_identity_sha256": "2e3ba047f529b79fd828581a29ff416d9d571be5a26a49631e5403e75e7b8b79",
+    "publication_receipt_sha256": "ec9e42ae3c538e6c4b2c314c2f812098d784e908b83ee12d127da2e37491c48c",
+    "remote_verified": true,
+    "raw_pointer": "artifacts/all_spec_program/phase8_affliction_self_provided_canary_20260825_d9024ddb5c/seed1/batch/raw.dvc",
+    "compact_pointer": "artifacts/all_spec_program/phase8_affliction_self_provided_canary_20260825_d9024ddb5c/seed1/batch/compact.dvc",
+    "analysis_pointer": "artifacts/all_spec_program/phase8_affliction_self_provided_canary_20260825_d9024ddb5c/seed1/analysis.dvc",
+    "published_raw_payloads_retained_locally": false
+  },
+  "cleanup": {
+    "calibration_cohort_stopped": true,
+    "temporary_soap_access_rows": 0,
+    "worldserver_preserved": true
+  }
+}

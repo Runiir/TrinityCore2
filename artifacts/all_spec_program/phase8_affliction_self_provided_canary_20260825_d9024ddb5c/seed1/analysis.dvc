@@ -1,0 +1,6 @@
+outs:
+- md5: e0013c7ec1c24fb28cb2df101c49d443.dir
+  size: 10322594
+  nfiles: 2
+  hash: md5
+  path: analysis
