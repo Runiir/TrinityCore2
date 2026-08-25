@@ -225,7 +225,7 @@ void DrudgeLaneContext::RecordRecoveryDiagnosticTick(
 void DrudgeLaneContext::RecordNativeTransition(Creature* source,
     char const* result, uint32 actionValue)
 {
-    if (!source || !result
+    if (!source || !result || Sources.size() != 2
         || (std::strcmp(result, "drudge_lane_native_ownership") != 0
             && std::strcmp(result, "drudge_lane_native_taunt") != 0
             && std::strcmp(result, "drudge_lane_native_taunt_approach") != 0
