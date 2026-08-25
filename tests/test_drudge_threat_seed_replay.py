@@ -354,6 +354,16 @@ int main()
     assert(std::fabs(ranged.DesiredDistance - 29.0f) < 0.001f);
     assert(ranged.Destination.X >= 3.75f);
 
+    Input blockedLos = paladin;
+    blockedLos.Actor = {18.0f, 0.0f, 2.0f};
+    blockedLos.Source = {-7.0f, 0.0f, 2.0f};
+    blockedLos.ActionMaxRange = 35.0f;
+    blockedLos.LineOfSightBlocked = true;
+    Result losStep = Plan(blockedLos);
+    assert(losStep.Needed && losStep.Safe);
+    assert(std::fabs(losStep.Travel - 3.0f) < 0.001f);
+    assert(std::fabs(losStep.DesiredDistance - 22.0f) < 0.001f);
+
     Input deathKnight = paladin;
     deathKnight.Actor = {18.0f, 4.0f, 2.0f};
     deathKnight.Source = {-12.0f, 4.0f, 2.0f};

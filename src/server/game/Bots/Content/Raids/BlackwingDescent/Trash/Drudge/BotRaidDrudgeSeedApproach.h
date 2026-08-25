@@ -25,6 +25,7 @@ struct Input
     float MinimumLaneProjection = 0.0f;
     float MinimumSourceDistance = 0.0f;
     float ActionMaxRange = 0.0f;
+    bool LineOfSightBlocked = false;
 };
 
 struct Result
@@ -47,6 +48,12 @@ inline Result Plan(Input const& input)
         input.ActionMaxRange - rangeInset);
     if (distance <= 0.001f || input.ActionMaxRange <= input.MinimumSourceDistance)
         return result;
+    // A legal spell range does not prove line of sight. Advance in bounded
+    // three-yard steps until native LOS opens, while retaining the same lane
+    // projection and minimum source distance checks as ordinary range repair.
+    if (input.LineOfSightBlocked && distance <= result.DesiredDistance)
+        result.DesiredDistance = std::max(input.MinimumSourceDistance,
+            distance - 3.0f);
     if (distance <= result.DesiredDistance)
     {
         result.Destination = input.Actor;

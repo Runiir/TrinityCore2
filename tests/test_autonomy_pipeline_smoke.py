@@ -330,6 +330,13 @@ def test_protection_paladin_prioritizes_multi_target_threat_actions() -> None:
     assert "`action`.`spell_id` IN (53595, 26573, 2812)" in migration
 
 
+def test_protection_paladin_has_stationary_single_target_ranged_threat() -> None:
+    sql = read(STONECORE_ROTATION_SQL)
+
+    assert "55, 879, 'threat_build', 'exorcism,ranged,single_target,threat'" in sql
+    assert "p.`role` = 'tank' AND a.`spell_id` = 879" in sql
+
+
 def test_profile_taunts_require_a_real_non_tank_victim() -> None:
     manager = read(BOT_MGR)
     assert manager.count("(!target->GetVictim() || target->GetVictim() == bot)") >= 2

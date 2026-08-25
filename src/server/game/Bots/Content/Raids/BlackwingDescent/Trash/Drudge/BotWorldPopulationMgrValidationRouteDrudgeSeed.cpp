@@ -120,6 +120,7 @@ bool PlanSeedApproach(Context& context, SeedCandidate& candidate,
     input.MinimumLaneProjection = context.LaneSeparation * 0.25f;
     input.MinimumSourceDistance = minimumDistance + arrivalTolerance;
     input.ActionMaxRange = std::min(candidate.Action.MaxRange, seedMaxRange);
+    input.LineOfSightBlocked = !candidate.LineOfSight;
     BotRaidDrudgeSeedApproach::Result const plan =
         BotRaidDrudgeSeedApproach::Plan(input);
     if (!plan.Needed || !plan.Safe)
