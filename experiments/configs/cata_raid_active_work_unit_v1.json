@@ -1,8 +1,8 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_displaced_origin_recovery_candidates",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
+  "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_displaced_origin_recovery_live_verification",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "implementation_pending_live_verification",
   "observed_at_commit": "81ded72166532342311a9f4650d0dbed860fa7c5",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary28_displaced_origin_handoff_20260826.md",
@@ -62,12 +62,23 @@
     "worldserver_exit_code": 0,
     "do_not_relabel_as_clear": true
   },
+  "implemented_repair": {
+    "commit": "c7c6bb9f7f0c51265f1ae20ab96ef01a59af467a",
+    "tree": "5e716728bd2abb1e8133ce3176a1eea97ff24d1b",
+    "status": "source_validated_pending_exact_build",
+    "scope": "non_tank_landed_rush_displaced_origin_candidate_fan",
+    "focused_test_count": 48,
+    "recovery_candidate_header_lines": 247,
+    "drudge_geometry_source_lines": 980,
+    "source_line_limit_passed": true
+  },
   "repair_scope": {
-    "status": "bounded_implementation_required",
+    "status": "implemented_pending_live_verification",
     "allowed": [
-      "non_tank_landed_rush_candidate_origin_selection",
-      "deterministic_displaced_origin_replay_tests",
-      "source_home_lane_spacing_floor_and_native_path_fail_closed_preservation"
+      "queued_exact_worldserver_build",
+      "fresh_exact_roster_provisioning",
+      "one_completion_watchdog_canary",
+      "trace_backed_routing_of_one_new_first_broken_edge"
     ],
     "must_preserve": [
       "stable_declared_anchor_for_safe_members_and_ordinary_staging",
@@ -102,5 +113,6 @@
     "hypotheses": 1,
     "matched_live_verification_runs": 0
   },
-  "next_action": "Implement one bounded Drudge recovery change so a non-tank displaced inside the live-plus-home source union builds its deterministic outward escape fan from its current position, while safe members retain stable declared-anchor behavior and tank recovery is unchanged. Add the exact slot-8 counterexample and nearby valid-state tests. Do not build or run the worldserver in the implementation worker. After root review, use the queued build coordinator and one fresh exact-roster completion-watchdog canary. Do not teleport, force movement or threat, revive bots, alter native encounter state, or manufacture an outcome."
+  "live_verification_owner_skill": "raid-shard-architecture",
+  "next_action": "Build exact commit c7c6bb9f7f0c51265f1ae20ab96ef01a59af467a through the queued coordinator, provision and verify a fresh exact ten-player Magmaw diagnostic roster, and run one completion-watchdog Canary29. Require observation 5 or later to close through a current-origin candidate without repeated no-candidate recovery. If the route clears entrance, Chainwielder, Drudges, and Magmaw without forbidden assistance, repeat on a fresh roster. If it fails, retain the closed evidence and route only the first newly proven edge. Do not teleport, force movement or threat, revive bots, alter native encounter state, or manufacture an outcome."
 }
