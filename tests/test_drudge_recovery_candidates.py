@@ -95,6 +95,77 @@ int main()
     assert(!PathPointPreservesSourceDistance(
         { 14.0f, 0.0f }, { 0.0f, 0.0f }, 20.0f, 15.0f));
 
+    // Canary28 exact slot-8 replay. The landed Rush displaced the member
+    // inside source 0 while its declared anchor remained stale.
+    Point2d const slot8Declared{ -311.5f, -78.0f };
+    Point2d const slot8Current{ -341.301f, -79.0869f };
+    Point2d const slot8Source0{ -328.567f, -74.655f };
+    Point2d const slot8Source1{ -297.355f, -80.0307f };
+    Point2d const slot8Home0{ -298.833f, -50.349f };
+    Point2d const slot8Home1{ -307.913f, -49.5694f };
+    Point2d const slot8Axis = Normalize({
+        slot8Home1.X - slot8Home0.X, slot8Home1.Y - slot8Home0.Y });
+    Point2d const slot8Midpoint{
+        (slot8Home0.X + slot8Home1.X) * 0.5f,
+        (slot8Home0.Y + slot8Home1.Y) * 0.5f };
+    Constraints const slot8Constraints{
+        slot8Source0, slot8Source1, slot8Midpoint, slot8Axis,
+        15.0f, 1.0f, 17.0f * 0.25f };
+    auto slot8UnionSafe = [&](Point2d const& point)
+    {
+        return SourceSafeAgainstUnion(point, slot8Constraints,
+            slot8Home0, slot8Home1);
+    };
+    auto slot8LaneSafe = [&](Point2d const& point)
+    {
+        return LaneSafe(point, slot8Constraints);
+    };
+    assert(!slot8UnionSafe(slot8Current));
+    assert(NearlyEqual(SelectOrigin(slot8Declared, slot8Current,
+        false, true, false), slot8Current));
+    Point2d const safeMember{ -350.0f, -79.0f };
+    assert(slot8UnionSafe(safeMember));
+    assert(NearlyEqual(SelectOrigin(slot8Declared, safeMember,
+        false, true, true), slot8Declared));
+    assert(NearlyEqual(SelectOrigin(slot8Declared, slot8Current,
+        false, false, false), slot8Declared));
+    assert(NearlyEqual(SelectOrigin(slot8Declared, slot8Current,
+        true, true, false), slot8Declared));
+
+    auto currentSlot8Fan = BuildCandidates(
+        SelectOrigin(slot8Declared, slot8Current, false, true, false),
+        slot8Source0, slot8Source1, slot8Home0, slot8Home1,
+        slot8Axis, 1.0f, 15.0f);
+    // The current-origin fan must include an outward, same-lane safe exit.
+    bool currentOriginHasSafeLaneExit = false;
+    for (Candidate const& candidate : currentSlot8Fan)
+        currentOriginHasSafeLaneExit = currentOriginHasSafeLaneExit
+            || (candidate.FanIndex > 0
+                && slot8UnionSafe(candidate.Point)
+                && slot8LaneSafe(candidate.Point));
+    assert(currentOriginHasSafeLaneExit);
+
+    // Rebuild from the stale declared origin to prove the old failure. The
+    // only declared-origin candidate that is both union-safe and same-lane is
+    // fan 5; its direct path immediately violates the recorded floor.
+    auto declaredSlot8Fan = BuildCandidates(
+        slot8Declared, slot8Source0, slot8Source1,
+        slot8Home0, slot8Home1, slot8Axis, 1.0f, 15.0f);
+    Candidate const* staleSafeCandidate = nullptr;
+    for (Candidate const& candidate : declaredSlot8Fan)
+        if (candidate.FanIndex == 5)
+            staleSafeCandidate = &candidate;
+    assert(staleSafeCandidate);
+    assert(slot8UnionSafe(staleSafeCandidate->Point));
+    assert(slot8LaneSafe(staleSafeCandidate->Point));
+    Point2d const firstStalePathPoint{
+        slot8Current.X + (staleSafeCandidate->Point.X - slot8Current.X) * 0.01f,
+        slot8Current.Y + (staleSafeCandidate->Point.Y - slot8Current.Y) * 0.01f };
+    float const slot8StartDistance = std::sqrt(
+        DistanceSquared(slot8Current, slot8Source0));
+    assert(!PathPointPreservesSourceDistance(firstStalePathPoint,
+        slot8Source0, slot8StartDistance, 15.0f));
+
     bool noSafeCandidate = false;
     for (Candidate const& candidate : overlapFan)
         noSafeCandidate = noSafeCandidate
@@ -139,6 +210,9 @@ def test_recovery_candidate_contract_is_landed_and_native_strict_for_tanks_and_m
     assert "bool const landedTankRecovery = tankSlot && IsLandedRushPending()" in candidates
     assert "(!tankSlot || landedTankRecovery)" in candidates
     assert "!tankSlot && !CombatTankStagingActive()" in candidates
+    assert "SelectOrigin" in candidates
+    assert "currentSourceUnionSafe" in candidates
+    assert "IsLandedRushPending()" in candidates
     assert "BotRaidDrudgeRecoveryCandidates::BuildCandidates" in candidates
     assert candidates.index("BuildCandidates") < candidates.index(
         "RecoveryAnchorReachedFor(slot)"

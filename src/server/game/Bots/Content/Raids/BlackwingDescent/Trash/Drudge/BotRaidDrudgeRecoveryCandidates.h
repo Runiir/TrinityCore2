@@ -34,6 +34,17 @@ struct Constraints
     float MinimumLaneProjection = 0.0f;
 };
 
+// A landed Rush can displace a non-tank while its declared formation anchor
+// remains valid for ordinary staging.  Only an unsafe non-tank in that
+// recovery state may switch the fan origin to its live position.  Tanks and
+// already-safe members retain the stable declared-anchor contract.
+inline Point2d SelectOrigin(Point2d const& declared, Point2d const& current,
+    bool tank, bool landedRushRecovery, bool currentSourceUnionSafe)
+{
+    return !tank && landedRushRecovery && !currentSourceUnionSafe
+        ? current : declared;
+}
+
 inline float DistanceSquared(Point2d const& left, Point2d const& right)
 {
     float const x = left.X - right.X;

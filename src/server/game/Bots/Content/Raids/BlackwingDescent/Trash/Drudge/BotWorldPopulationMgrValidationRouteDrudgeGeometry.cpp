@@ -344,15 +344,25 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
                 && IsDynamicGroupRecoveryActive())
             || (!tankSlot && !CombatTankStagingActive())))
         {
+            BotRaidDrudgeRecoveryCandidates::Point2d const declaredOrigin{
+                x, y };
+            BotRaidDrudgeRecoveryCandidates::Point2d const currentOrigin{
+                Bot->GetPositionX(), Bot->GetPositionY() };
+            bool const currentSourceUnionSafe = SourceUnionSafe(
+                currentOrigin.X, currentOrigin.Y);
+            BotRaidDrudgeRecoveryCandidates::Point2d const candidateOrigin =
+                BotRaidDrudgeRecoveryCandidates::SelectOrigin(
+                    declaredOrigin, currentOrigin, tankSlot,
+                    IsLandedRushPending(), currentSourceUnionSafe);
             auto const recoveryCandidates = tankSlot
                 ? BotRaidDrudgeRecoveryCandidates::BuildCandidates(
-                    { x, y },
+                    candidateOrigin,
                     { Sources[0]->GetPositionX(), Sources[0]->GetPositionY() },
                     { Sources[1]->GetPositionX(), Sources[1]->GetPositionY() },
                     { AxisX, AxisY }, LaneSign,
                     Manager.Cohort().Config.ValidationRouteMinimumDistanceYards)
                 : BotRaidDrudgeRecoveryCandidates::BuildCandidates(
-                    { x, y },
+                    candidateOrigin,
                     { Sources[0]->GetPositionX(), Sources[0]->GetPositionY() },
                     { Sources[1]->GetPositionX(), Sources[1]->GetPositionY() },
                     { Sources[0]->GetHomePosition().GetPositionX(),
