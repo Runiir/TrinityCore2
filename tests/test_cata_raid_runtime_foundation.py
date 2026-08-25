@@ -867,6 +867,12 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
         actions.index("if (PrepullStaged && !NativeChargePending"):
         actions.index("DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions")
     ]
+    early_pull_window = actions.index("bool const earlyPullOwnershipWindow =")
+    early_pull_recovery = actions.index("EarlyPullRecoveryActive =")
+    seed_coordinator = actions.index("RunDrudgeSeedCoordinator", early_pull_recovery)
+    taunt = actions.index("drudge_lane_native_taunt", seed_coordinator)
+    assert early_pull_window < early_pull_recovery < seed_coordinator < taunt
+    assert "|| earlyPullOwnershipWindow;" in actions[early_pull_recovery:seed_coordinator]
     assert formation.index("drudge_tank_anchor_strict_path_rejected") < formation.index(
         "drudge_tank_recovery_anchor_preflight_wait"
     )

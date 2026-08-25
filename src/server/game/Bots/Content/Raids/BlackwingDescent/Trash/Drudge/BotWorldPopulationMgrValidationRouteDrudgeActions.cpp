@@ -369,8 +369,11 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         && Sources[1 - LaneIndex]->GetMeleeRange(OtherTank)
             <= Manager.Cohort().Config.ValidationRouteSplitNativeMeleeStopYards;
     BotRaidDrudgeGeometry::Result const tankStage = BotRaidDrudgeGeometry::Advance(geometryState, input);
+    bool const earlyPullOwnershipWindow = SourceCombatStarted && !PrepullStaged
+        && CohortCombatLinked && !Charge && ExactCombatTankPathsProven() && TanksOnFrozenLanes();
     auto& party = Manager.Party();
-    EarlyPullRecoveryActive = party.ValidationRouteDrudgeEarlyPullRecoveryAccepted || (SourceCombatStarted && CohortCombatLinked && !PrepullStaged && !Charge && tankStage.NativeEngagementAllowed);
+    EarlyPullRecoveryActive = party.ValidationRouteDrudgeEarlyPullRecoveryAccepted || (SourceCombatStarted && CohortCombatLinked && !PrepullStaged && !Charge && tankStage.NativeEngagementAllowed)
+        || earlyPullOwnershipWindow;
     if (EarlyPullRecoveryActive && !party.ValidationRouteDrudgeEarlyPullRecoveryAccepted)
     {
         party.ValidationRouteDrudgeEarlyPullRecoveryAccepted = true;
@@ -512,9 +515,6 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
 
     bool const combatTankAnchorsReachedBeforeTick = recoveryAdmission
         && NativeChargePending && ExactCombatTankAnchorsReached();
-    bool const earlyPullOwnershipWindow = SourceCombatStarted && !PrepullStaged
-        && CohortCombatLinked && !Charge && ExactCombatTankPathsProven()
-        && TanksOnFrozenLanes();
     if ((PrepullStaged || EarlyPullRecoveryActive)
         && RunDrudgeSeedCoordinator() == PhaseResult::Handled) return PhaseResult::Handled;
     if (AssignedTank && (tankStage.NativeOwnershipAllowed || earlyPullOwnershipWindow)
