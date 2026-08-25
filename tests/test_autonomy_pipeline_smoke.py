@@ -230,7 +230,6 @@ MELEE_AUTO_ATTACK_INTENT = ROOT / "src/server/game/Bots/BotMeleeAutoAttackIntent
 BOT_MGR_HEADER = source_modules("BotWorldPopulationMgr*.h")
 PET_CPP = ROOT / "src/server/game/Entities/Pet/Pet.cpp"
 STONECORE_ROTATION_SQL = ROOT / "sql/custom/world/2026_06_21_00_bot_rotation_profiles.sql"
-PALADIN_EXORCISM_SQL = ROOT / "sql/custom/world/2026_08_25_00_protection_paladin_exorcism.sql"
 PRAYER_OF_MENDING_GUARD_SQL = ROOT / "sql/custom/world/2026_07_14_02_holy_priest_prayer_of_mending_aura_guard.sql"
 PALADIN_AOE_THREAT_SQL = ROOT / "sql/custom/world/2026_07_14_03_stonecore_paladin_aoe_threat_priority.sql"
 MARKSMAN_STATIONARY_SQL = ROOT / "sql/custom/world/2026_07_14_04_marksmanship_cast_time_stationary.sql"
@@ -329,14 +328,6 @@ def test_protection_paladin_prioritizes_multi_target_threat_actions() -> None:
     assert "`profile`.`spec_tag` = 'protection'" in migration
     assert "`action`.`spell_id` IN (53595, 26573) THEN 1" in migration
     assert "`action`.`spell_id` IN (53595, 26573, 2812)" in migration
-
-
-def test_protection_paladin_has_stationary_single_target_ranged_threat() -> None:
-    upgrade = read(PALADIN_EXORCISM_SQL)
-
-    assert "DELETE a FROM `bot_rotation_action`" in upgrade
-    assert "55, 879, 'threat_build'" in upgrade
-    assert "'enemy', 'ranged', 'none', 35, 1" in upgrade
 
 
 def test_profile_taunts_require_a_real_non_tank_victim() -> None:

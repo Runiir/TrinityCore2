@@ -254,15 +254,14 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
 {
     CombatTankStagingActive = [this]
     {
-        return BotRaidDrudgeGeometry::CombatTankStageLatched(
-            Manager.Party().ValidationRouteDrudgePrepullStaged
+        return SourceCombatStarted
+            || (Manager.Party().ValidationRouteDrudgePrepullStaged
                 && Manager.Party().ValidationRouteDrudgePrepullAttemptId
                     == Manager.Cohort().AttemptId
                 && Manager.Party().ValidationRouteDrudgePrepullWipeGeneration
                     == Manager.Cohort().Raid.WipeGeneration
                 && Manager.Party().ValidationRouteDrudgePrepullRouteGeneration
-                    == Manager.Party().ValidationRouteGeneration)
-            || (SourceCombatStarted && CohortCombatLinked);
+                    == Manager.Party().ValidationRouteGeneration);
     };
     StrictNativePath = [this](float x, float y, float z,
         bool requireExactEnd, std::string* rejectionOut) -> bool
@@ -324,7 +323,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
                 ? DeclaredCombatTankAnchorFor(slot)
                 : DeclaredRecoveryTankAnchorFor(slot))
             : (tankSlot && CombatTankStagingActive()
-                ? DeclaredCombatTankAnchorFor(slot) : DeclaredAnchorFor(slot));
+                ? DeclaredNavigationTankAnchorFor(slot) : DeclaredAnchorFor(slot));
         return anchor ? std::pair<float, float>{ anchor->X, anchor->Y }
                       : std::pair<float, float>{ 0.0f, 0.0f };
     };
@@ -472,8 +471,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             + (member->GetPositionY() - MidpointY) * AxisY;
         bool const laneSafe = (laneA ? -1.0f : 1.0f) * projection
             >= LaneSeparation * 0.25f;
-        float const sameLaneMinimum = std::max(0.5f,
-            Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards * 0.5f);
+        float const sameLaneMinimum = std::max(3.0f,
+            Manager.Cohort().Config.ValidationRouteSplitNavigationMarginYards
+                + Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards * 0.5f);
         bool sameLaneSpacingSafe = true;
         for (WorldBotState const& cohortState : Manager.Party().Bots)
         {
@@ -749,7 +749,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
                         : DeclaredCombatTankAnchorFor(OneBasedSlot))
                     : DeclaredRecoveryTankAnchorFor(OneBasedSlot))
                 : (tank && CombatTankStagingActive()
-                    ? DeclaredCombatTankAnchorFor(OneBasedSlot)
+                    ? DeclaredNavigationTankAnchorFor(OneBasedSlot)
                     : (prepullTankFallback && candidateIndex
                         ? DeclaredNavigationTankAnchorFor(OneBasedSlot)
                         : DeclaredAnchorFor(OneBasedSlot)));

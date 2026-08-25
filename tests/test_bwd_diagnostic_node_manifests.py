@@ -60,17 +60,7 @@ def _routes(manifests: dict, scenario_id: str) -> list[dict]:
     return [row for row in manifests["validation_routes"] if row["scenario_id"] == scenario_id]
 
 
-def _distance_to_segment(point, start, end):
-    dx, dy = end[0] - start[0], end[1] - start[1]
-    denominator = dx * dx + dy * dy
-    projection = 0.0 if denominator <= 0.0 else max(0.0, min(1.0,
-        ((point[0] - start[0]) * dx + (point[1] - start[1]) * dy) / denominator
-    ))
-    nearest = (start[0] + projection * dx, start[1] + projection * dy)
-    return math.dist(point, nearest)
-
-
-def test_drudge_combat_anchor_geometry_is_sql_bound_and_uses_opposite_tanks():
+def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_margin():
     config = _config()
     canonical = next(row for row in config["scenarios"] if row["id"] == CANONICAL_ID)
     drudges = next(
@@ -78,65 +68,146 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_uses_opposite_tanks():
         if row.get("mechanic_profile") == "trash_two_tank_charge_lanes"
     )
     assert drudge_split_geometry_status(drudges) == (True, "")
-    homes = drudges["split_source_home_anchors"]
-    tanks = drudges["split_tank_combat_anchors"]
-    axis_x = homes[1]["x"] - homes[0]["x"]
-    axis_y = homes[1]["y"] - homes[0]["y"]
-    axis_length = math.hypot(axis_x, axis_y)
-    axis_x, axis_y = axis_x / axis_length, axis_y / axis_length
-    legacy_axis_separation = axis_length + sum(
-        max(
-            0.0,
-            sign * (
-                (tank["x"] - home["x"]) * axis_x
-                + (tank["y"] - home["y"]) * axis_y
-            ) - drudges["split_native_melee_stop_yards"]
-            - drudges["split_tank_arrival_tolerance_yards"],
-        )
-        for sign, home, tank in zip((-1.0, 1.0), homes, tanks)
-    )
-    assert legacy_axis_separation < (
-        drudges["split_minimum_separation_yards"]
-        + drudges["split_navigation_margin_yards"]
-    )
-    assert drudges["split_seed_roster_slots"] == [2, 1]
+    assert drudges["split_seed_roster_slots"] == [8, 6]
     assert drudges["split_healer_roster_slots"] == [3, 4, 5]
     assert drudges["split_seed_max_range_yards"] == 35.0
     assert drudges["split_tank_threat_headroom_multiplier"] == 2.5
-
-    homes = [
-        (row["x"], row["y"])
-        for row in drudges["split_source_home_anchors"]
-    ]
-    tank_by_slot = {
-        row["roster_slot"]: (row["x"], row["y"])
-        for row in drudges["split_tank_combat_anchors"]
+    recovery_by_slot = {
+        row["roster_slot"]: row for row in drudges["split_tank_recovery_anchors"]
+    }
+    assert recovery_by_slot == {
+        1: {"roster_slot": 1, "x": -288.8, "y": -43.0, "z": 212.301},
+        2: {"roster_slot": 2, "x": -321.5, "y": -30.0, "z": 211.283429},
     }
     member_by_slot = {
-        row["roster_slot"]: (row["x"], row["y"])
-        for row in drudges["split_member_anchors"]
+        row["roster_slot"]: row for row in drudges["split_member_anchors"]
     }
-    non_tank_slots = set(member_by_slot) - set(drudges["split_lane_tank_slots"])
-    corridor = (
-        drudges["split_native_melee_stop_yards"]
-        + drudges["split_arrival_tolerance_yards"]
+    assert member_by_slot[3] == {
+        "roster_slot": 3, "x": -296.0, "y": -69.9, "z": 213.485,
+    }
+    assert member_by_slot[4] == {
+        "roster_slot": 4, "x": -298.8, "y": -71.5, "z": 213.461,
+    }
+    assert member_by_slot[5] == {
+        "roster_slot": 5, "x": -311.5, "y": -71.3, "z": 213.292,
+    }
+    assert member_by_slot[7] == {
+        "roster_slot": 7, "x": -292.5, "y": -69.1, "z": 214.024,
+    }
+    # Slot 6 is the source-250141 seed.  It must be farther than the adjacent
+    # healer at the declared formation while retaining its 35-yard hostile
+    # action envelope; native SMART_TARGET_FARTHEST remains untouched.
+    source_1 = (-314.887329, -48.970574, 212.2623)
+    seed_distance = math.dist(
+        tuple(member_by_slot[6][axis] for axis in ("x", "y", "z")), source_1,
     )
-    for source_index, seed_slot in enumerate(drudges["split_seed_roster_slots"]):
-        source = homes[source_index]
-        seed = tank_by_slot[seed_slot]
-        seed_near_edge = math.dist(source, seed) - drudges["split_tank_arrival_tolerance_yards"]
-        for slot in non_tank_slots:
-            member = member_by_slot[slot]
-            assert seed_near_edge >= (
-                math.dist(source, member) + drudges["split_arrival_tolerance_yards"]
-            )
-            assert _distance_to_segment(member, source, seed) >= corridor
+    healer_distance = math.dist(
+        tuple(member_by_slot[4][axis] for axis in ("x", "y", "z")), source_1,
+    )
+    assert seed_distance > healer_distance
+    assert seed_distance + drudges["split_arrival_tolerance_yards"] <= 35.0
 
-    wrong_seed_role = deepcopy(drudges)
-    wrong_seed_role["split_seed_roster_slots"] = [8, 6]
-    assert drudge_split_geometry_status(wrong_seed_role) == (
+    # Slot 8 is both the source-250140 seed and its permanent recovery point.
+    # Keep it near the verified lane-B floor while leaving a large margin from
+    # the opposite tank's native combat anchor. Runtime still reconstructs
+    # native threat-list eligibility/farthest selection and requires a strict
+    # return path.
+    source_0 = (-295.608573, -52.851976, 212.2983)
+    slot_8 = tuple(member_by_slot[8][axis] for axis in ("x", "y", "z"))
+    assert slot_8 == (-311.5, -78.0, 213.5)
+    assert math.dist(slot_8, source_0) + drudges["split_arrival_tolerance_yards"] <= 35.0
+    restored_source_1 = (-314.887329, -48.970574, 212.2623)
+    assert (
+        math.dist(slot_8, restored_source_1)
+        - drudges["split_arrival_tolerance_yards"]
+        - drudges["split_tank_arrival_tolerance_yards"]
+        >= drudges["minimum_distance_yards"]
+    )
+    # Run9 showed that the live source-250141 return to the slot-2 combat
+    # anchor can approach the old slot-8 point within the 15-yard guard. The
+    # replacement point retains the hostile range contract and leaves a
+    # materially larger two-arrival-disk margin from that native position.
+    opposite_combat_anchor = (-322.858002, -48.286201)
+    opposite_margin = (
+        math.hypot(slot_8[0] - opposite_combat_anchor[0],
+                   slot_8[1] - opposite_combat_anchor[1])
+        - drudges["split_arrival_tolerance_yards"]
+        - drudges["split_tank_arrival_tolerance_yards"]
+    )
+    assert opposite_margin >= drudges["minimum_distance_yards"] + 10.0
+    recovery_points = {
+        slot: (row["x"], row["y"])
+        for slot, row in recovery_by_slot.items()
+    }
+
+    # The first successful Rush moves each source back toward its sealed tank
+    # from the declared seed.  At that repeatable melee-stop point, the seed
+    # remains farther than every same-lane member and every healer, including
+    # both configured arrival disks.  This is the live invariant that prevents a
+    # later native cycle from selecting a same-lane DPS or healer.
+    lane_sets = [
+        set(drudges["split_lane_a_roster_slots"]),
+        set(drudges["split_lane_b_roster_slots"]),
+    ]
+    healer_slots = set(drudges["split_healer_roster_slots"])
+    for source_index, seed_slot in enumerate(drudges["split_seed_roster_slots"]):
+        recovery = recovery_points[source_index + 1]
+        seed = (member_by_slot[seed_slot]["x"], member_by_slot[seed_slot]["y"])
+        seed_ray = (seed[0] - recovery[0], seed[1] - recovery[1])
+        seed_ray_length = math.hypot(*seed_ray)
+        source = (
+            recovery[0] + seed_ray[0] * drudges["split_native_melee_stop_yards"] / seed_ray_length,
+            recovery[1] + seed_ray[1] * drudges["split_native_melee_stop_yards"] / seed_ray_length,
+        )
+        seed_distance = math.dist(source, seed)
+        for slot in (lane_sets[source_index] | healer_slots) - {seed_slot}:
+            peer = (member_by_slot[slot]["x"], member_by_slot[slot]["y"])
+            assert seed_distance >= (
+                math.dist(source, peer)
+                + 2.0 * drudges["split_arrival_tolerance_yards"]
+            )
+    # A returning Rush can approach the tank from any direction.  Prove the
+    # full melee-stop and arrival disks, rather than the initial radial chase.
+    worst_source_radius = (
+        drudges["split_native_melee_stop_yards"]
+        + drudges["split_tank_arrival_tolerance_yards"]
+    )
+    assert (
+        math.dist(recovery_points[1], recovery_points[2])
+        - 2.0 * worst_source_radius
+        >= drudges["split_minimum_separation_yards"]
+        + drudges["split_navigation_margin_yards"]
+    )
+    required_member_clearance = (
+        drudges["minimum_distance_yards"]
+        + drudges["split_native_melee_stop_yards"]
+        + drudges["split_arrival_tolerance_yards"]
+        + drudges["split_tank_arrival_tolerance_yards"]
+    )
+    for slot, anchor in member_by_slot.items():
+        if slot in (1, 2):
+            continue
+        point = (anchor["x"], anchor["y"])
+        assert all(
+            math.dist(point, recovery) >= required_member_clearance
+            for recovery in recovery_points.values()
+        )
+
+    unsafe = deepcopy(drudges)
+    unsafe["split_tank_combat_anchors"] = [
+        {"roster_slot": 1, "x": -294.904, "y": -50.6863, "z": 212.232},
+        {"roster_slot": 2, "x": -311.842, "y": -49.2321, "z": 212.129},
+    ]
+    assert drudge_split_geometry_status(unsafe) == (
         False,
-        "split_seed_candidate_contract",
+        "split_combat_anchor_insufficient_native_chase",
+    )
+
+    wrong_oracle = deepcopy(drudges)
+    wrong_oracle["split_source_home_anchors"][0]["x"] += 1.0
+    assert drudge_split_geometry_status(wrong_oracle) == (
+        False,
+        "split_source_home_oracle",
     )
 
     unsafe_member = deepcopy(drudges)
@@ -150,6 +221,77 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_uses_opposite_tanks():
         "split_member_anchor_source_unsafe",
     )
 
+    unsafe_member_high_z = deepcopy(unsafe_member)
+    unsafe_member_high_z["split_member_anchors"][2]["z"] += 100.0
+    assert drudge_split_geometry_status(unsafe_member_high_z) == (
+        False,
+        "split_member_anchor_source_unsafe",
+    )
+
+    unsafe_navigation = deepcopy(drudges)
+    unsafe_navigation["split_tank_navigation_anchors"] = [
+        {"roster_slot": 1, "x": -291.7762, "y": -56.0799, "z": 212.9},
+        {"roster_slot": 2, "x": -319.8744, "y": -48.5998, "z": 212.0},
+    ]
+    assert drudge_split_geometry_status(unsafe_navigation) == (
+        False,
+        "split_navigation_anchor_native_chase_unsafe",
+    )
+
+    inward_arrival_envelope = deepcopy(drudges)
+    inward_arrival_envelope["split_arrival_tolerance_yards"] = 2.0
+    inward_arrival_envelope["split_tank_arrival_tolerance_yards"] = 2.0
+    assert drudge_split_geometry_status(inward_arrival_envelope) == (
+        False,
+        "split_navigation_anchor_native_chase_unsafe",
+    )
+
+    unsafe_recovery_pair = deepcopy(drudges)
+    unsafe_recovery_pair["split_tank_recovery_anchors"][1].update(
+        x=-314.4, y=-20.5334, z=211.221,
+    )
+    assert drudge_split_geometry_status(unsafe_recovery_pair) == (
+        False,
+        "split_tank_recovery_source_separation_unsafe",
+    )
+
+    unsafe_recovery_member = deepcopy(drudges)
+    unsafe_recovery_member["split_tank_recovery_anchors"][0].update(
+        x=-289.289093, y=-57.7575, z=212.932236,
+    )
+    assert drudge_split_geometry_status(unsafe_recovery_member) == (
+        False,
+        "split_tank_recovery_member_unsafe",
+    )
+
+    seed_out_of_range = deepcopy(drudges)
+    seed_out_of_range["split_member_anchors"][7]["x"] -= 20.0
+    assert drudge_split_geometry_status(seed_out_of_range) == (
+        False,
+        "split_seed_candidate_range_unsafe",
+    )
+
+    seed_inside_source = deepcopy(drudges)
+    seed_inside_source["split_member_anchors"][7].update(
+        x=-314.887329, y=-48.970574
+    )
+    assert drudge_split_geometry_status(seed_inside_source) == (
+        False,
+        "split_member_anchor_source_unsafe",
+    )
+
+    old_repeat_geometry = deepcopy(drudges)
+    old_repeat_geometry["split_member_anchors"][4].update(
+        x=-343.508, y=-44.4466, z=211.947,
+    )
+    old_repeat_geometry["split_member_anchors"][6].update(
+        x=-295.0, y=-82.0, z=213.8,
+    )
+    assert drudge_split_geometry_status(old_repeat_geometry) == (
+        False,
+        "split_initial_native_farthest_unsafe",
+    )
+
     weak_native_threat_headroom = deepcopy(drudges)
     weak_native_threat_headroom["split_tank_threat_headroom_multiplier"] = 1.29
     assert drudge_split_geometry_status(weak_native_threat_headroom) == (
@@ -158,14 +300,9 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_uses_opposite_tanks():
     )
 
 
-def test_opposite_tank_contract_is_bound_in_canonical_and_magmaw_diagnostic_routes():
+def test_slot_eight_seed_anchor_is_bound_in_canonical_and_magmaw_diagnostic_routes():
     config = _config()
-    expected_non_tank_anchors = {
-        3: (-300.25, -65.5), 4: (-300.5, -66.25),
-        5: (-314.25, -63.5), 6: (-300.0, -66.0),
-        7: (-299.75, -65.5), 8: (-313.5, -64.25),
-        9: (-312.75, -65.0), 10: (-312.5, -64.0),
-    }
+    expected = {"roster_slot": 8, "x": -311.5, "y": -78.0, "z": 213.5}
     for scenario_id in (CANONICAL_ID, DIAGNOSTIC_IDS["magmaw"]):
         scenario_pool = config["scenarios"] + config["diagnostic_scenarios"]
         scenario = next(row for row in scenario_pool if row["id"] == scenario_id)
@@ -173,12 +310,10 @@ def test_opposite_tank_contract_is_bound_in_canonical_and_magmaw_diagnostic_rout
             row for row in scenario["route"]
             if row.get("mechanic_profile") == "trash_two_tank_charge_lanes"
         )
-        assert drudges["split_seed_roster_slots"] == [2, 1]
         member_by_slot = {
-            row["roster_slot"]: (row["x"], row["y"])
-            for row in drudges["split_member_anchors"]
+            row["roster_slot"]: row for row in drudges["split_member_anchors"]
         }
-        assert {slot: member_by_slot[slot] for slot in expected_non_tank_anchors} == expected_non_tank_anchors
+        assert member_by_slot[8] == expected
         assert drudge_split_geometry_status(drudges) == (True, "")
 
 

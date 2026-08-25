@@ -1,24 +1,12 @@
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.h"
 
 #include "Bots/BotRaidAreaAuthority.h"
-#include "Bots/BotActionExecutor.h"
-#include "Bots/BotClassSpecActionProfile.h"
-#include "Bots/BotCombatActionCatalog.h"
-#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeGeometryState.h"
-#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeSeedActionSelection.h"
-#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeSeedApproach.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeThreatSeedState.h"
 #include "Bots/BotWorldPopulationMgr.h"
-#include "Bots/BotWorldPopulationMgrNativePathValidation.h"
 
 #include "Creature.h"
 #include "GameTime.h"
-#include "Map.h"
-#include "PathGenerator.h"
 #include "Player.h"
-#include "Spell.h"
-#include "SpellInfo.h"
-#include "SpellMgr.h"
 
 #include <algorithm>
 #include <array>
@@ -54,7 +42,6 @@ struct DrudgeSeedCandidate
     bool Available = false;
     bool ActionAttempted = false;
     bool ActionSucceeded = false;
-    bool ApproachSubmitted = false;
     bool PositionSafe = false;
     bool LineOfSight = false;
 };
@@ -62,111 +49,6 @@ struct DrudgeSeedCandidate
 using Context = BotWorldPopulationMgrValidationRoute::DrudgeLaneContext;
 using WorldBotState = Context::WorldBotState;
 using SeedCandidate = BotWorldPopulationMgrValidationRoute::DrudgeSeedCandidate;
-
-bool IsSeedThreatCategory(BotCombatActionCategory category)
-{
-    return category == BotCombatActionCategory::ThreatBuild
-        || category == BotCombatActionCategory::Builder
-        || category == BotCombatActionCategory::Spender
-        || category == BotCombatActionCategory::Dot
-        || category == BotCombatActionCategory::Debuff
-        || category == BotCombatActionCategory::Execute;
-}
-
-float EffectiveSeedMaxRange(Player* bot, Unit* target,
-    BotActionCandidate const& candidate)
-{
-    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
-    if (!spellInfo)
-        return 0.0f;
-    float nativeRange = bot->GetSpellMaxRangeForTarget(target, spellInfo);
-    if (spellInfo->RangeEntry
-        && !(spellInfo->RangeEntry->Flags & SPELL_RANGE_MELEE))
-        nativeRange += bot->GetCombatReach() + target->GetCombatReach();
-    return candidate.Profile.MaxRange > 0.0f
-        ? std::min(candidate.Profile.MaxRange, nativeRange) : nativeRange;
-}
-
-float EffectiveSeedMinRange(Player* bot, Unit* target, SpellInfo const* spellInfo)
-{
-    if (!spellInfo)
-        return 0.0f;
-    float nativeRange = bot->GetSpellMinRangeForTarget(target, spellInfo);
-    if (spellInfo->RangeEntry
-        && (spellInfo->RangeEntry->Flags & SPELL_RANGE_RANGED))
-        nativeRange += bot->GetMeleeRange(target);
-    return nativeRange;
-}
-
-bool PlanSeedApproach(Context& context, SeedCandidate& candidate,
-    Creature* source, bool laneA, float minimumDistance, float arrivalTolerance,
-    float seedMaxRange, float minimumSeparation,
-    float& destinationX, float& destinationY, float& destinationZ)
-{
-    if (!candidate.Bot || !candidate.State || !source || !candidate.Action.Valid
-        || candidate.Action.MaxRange <= 0.0f || !candidate.Bot->GetMap())
-        return false;
-    float const laneSign = laneA ? -1.0f : 1.0f;
-    BotRaidDrudgeSeedApproach::Input input;
-    input.Actor = { candidate.Bot->GetPositionX(), candidate.Bot->GetPositionY(),
-        candidate.Bot->GetPositionZ() };
-    input.Source = { source->GetPositionX(), source->GetPositionY(),
-        source->GetPositionZ() };
-    input.MidpointX = context.MidpointX;
-    input.MidpointY = context.MidpointY;
-    input.AxisX = context.AxisX;
-    input.AxisY = context.AxisY;
-    input.LaneSign = laneSign;
-    input.MinimumLaneProjection = context.LaneSeparation * 0.25f;
-    input.MinimumSourceDistance = minimumDistance + arrivalTolerance;
-    input.ActionMaxRange = std::min(candidate.Action.MaxRange, seedMaxRange);
-    input.LineOfSightBlocked = !candidate.LineOfSight;
-    BotRaidDrudgeSeedApproach::Result const plan =
-        BotRaidDrudgeSeedApproach::Plan(input);
-    if (!plan.Needed || !plan.Safe)
-        return false;
-
-    destinationZ = plan.Destination.Z;
-    float const floorZ = candidate.Bot->GetMap()->GetHeight(
-        candidate.Bot->GetPhaseShift(), plan.Destination.X,
-        plan.Destination.Y, destinationZ + 2.0f, true, 8.0f);
-    if (floorZ <= INVALID_HEIGHT || std::fabs(floorZ - destinationZ) > 4.0f)
-        return false;
-    destinationZ = floorZ;
-    PathGenerator path(candidate.Bot);
-    bool const pathOk = path.CalculatePath(plan.Destination.X,
-        plan.Destination.Y, destinationZ, false);
-    if (!BotWorldMovement::NativePathIsComplete(pathOk, path)
-        || !BotWorldMovement::NativePathFloorsValid(candidate.Bot, path))
-        return false;
-    G3D::Vector3 const& actualEnd = path.GetActualEndPosition();
-    if (std::hypot(actualEnd.x - plan.Destination.X,
-            actualEnd.y - plan.Destination.Y) > 0.25f
-        || std::fabs(actualEnd.z - destinationZ) > 1.0f)
-        return false;
-
-    Player* otherTank = candidate.Bot == context.LaneTank
-        ? context.OtherTank : context.LaneTank;
-    if (!otherTank)
-        return false;
-    std::vector<BotRaidDrudgeGeometry::Point2d> points;
-    points.push_back({ candidate.Bot->GetPositionX(), candidate.Bot->GetPositionY() });
-    for (G3D::Vector3 const& point : path.GetPath())
-        points.push_back({ point.x, point.y });
-    points.push_back({ actualEnd.x, actualEnd.y });
-    float const otherProjection =
-        (otherTank->GetPositionX() - context.MidpointX) * context.AxisX
-        + (otherTank->GetPositionY() - context.MidpointY) * context.AxisY;
-    if (!BotRaidDrudgeGeometry::RecoveryPathPreservesTankSeparation(
-            points, context.MidpointX, context.MidpointY,
-            context.AxisX, context.AxisY, laneSign,
-            -laneSign * otherProjection,
-            minimumSeparation))
-        return false;
-    destinationX = plan.Destination.X;
-    destinationY = plan.Destination.Y;
-    return true;
-}
 
 BotRaidDrudgeThreatSeed::Scope DrudgeLaneContext::CurrentDrudgeSeedScope(
     Context const& context)
@@ -267,6 +149,7 @@ SeedCandidate DrudgeLaneContext::ResolveDrudgeSeedCandidate(
 
     uint32 const seedSlot = context.Manager.Cohort().Config
         .ValidationRouteSplitSeedRosterSlots[lane];
+    uint32 selectedSlot = std::numeric_limits<uint32>::max();
     Creature* source = context.Sources[lane];
     auto& manager = context.Manager;
     for (WorldBotState& candidateState : manager.Party().Bots)
@@ -278,7 +161,7 @@ SeedCandidate DrudgeLaneContext::ResolveDrudgeSeedCandidate(
         auto roster = manager.Cohort().Raid.RosterByGuid.find(
             candidate->GetGUID().GetCounter());
         if (roster == manager.Cohort().Raid.RosterByGuid.end()
-            || roster->second.Role != "tank"
+            || roster->second.Role != "dps"
             || roster->second.SlotIndex + 1 != seedSlot)
             continue;
 
@@ -286,7 +169,7 @@ SeedCandidate DrudgeLaneContext::ResolveDrudgeSeedCandidate(
         selected.State = &candidateState;
         selected.MemberSlot = roster->second.SlotIndex + 1;
         selected.Distance = candidate->GetExactDist(source);
-        selected.PositionSafe = context.TanksOnFrozenLanes();
+        selected.PositionSafe = context.GroupPositionSafe(candidate);
         if (!selected.PositionSafe)
         {
             selected.Gate = SeedGate::PositionUnsafe;
@@ -294,57 +177,8 @@ SeedCandidate DrudgeLaneContext::ResolveDrudgeSeedCandidate(
             continue;
         }
 
-        BotClassSpecActionProfile const profile =
-            BotClassSpecActionProfileStore::Build(candidate, "tank");
-        BotActionCandidate best;
-        bool bestFound = false;
-        float bestRange = 0.0f;
-        uint32 bestRank = std::numeric_limits<uint32>::max();
-        for (BotActionCandidate const& actionCandidate :
-            BotClassSpecActionProfileStore::BuildCandidates(candidate, source, profile))
-        {
-            if (!IsSeedThreatCategory(actionCandidate.Category)
-                || actionCandidate.TargetGuid != source->GetGUID().GetCounter()
-                || !BotRaidDrudgeSeedActionSelection::IsSynchronousSeedAction(
-                    actionCandidate.CastTimeMs)
-                || (!actionCandidate.RejectReason.empty()
-                    && actionCandidate.RejectReason != "out_of_range"))
-                continue;
-            float const maxRange = EffectiveSeedMaxRange(
-                candidate, source, actionCandidate);
-            float const minimumSafeRange = manager.Cohort().Config
-                .ValidationRouteMinimumDistanceYards
-                + manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards;
-            if (maxRange <= minimumSafeRange)
-                continue;
-            uint32 const rank = actionCandidate.Category
-                == BotCombatActionCategory::ThreatBuild ? 0 : 1;
-            if (BotRaidDrudgeSeedActionSelection::PreferSeedAction(
-                    bestFound, maxRange, rank, actionCandidate.Profile.SortOrder,
-                    bestRange, bestRank, best.Profile.SortOrder))
-            {
-                best = actionCandidate;
-                bestFound = true;
-                bestRange = maxRange;
-                bestRank = rank;
-            }
-        }
-        if (bestFound)
-        {
-            selected.Action.Valid = true;
-            selected.Action.Type = "cast";
-            selected.Action.SpellId = best.SpellId;
-            selected.Action.TargetGuid = source->GetGUID();
-            selected.Action.DebugName = BotCombatActionCatalog::ToString(best.Category);
-            selected.Action.MovementDirective = best.Profile.MovementDirective;
-            selected.Action.AutoAttackMode = best.Profile.AutoAttackMode;
-            selected.Action.MeleeAutoAttackExternallyReconciled = true;
-            selected.Action.SuppressAreaDamage = true;
-            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(best.SpellId);
-            selected.Action.MinRange = EffectiveSeedMinRange(
-                candidate, source, spellInfo);
-            selected.Action.MaxRange = bestRange;
-        }
+        selected.Action = manager.ResolveProfileCombatAction(
+            candidate, source, 1, false, 0, false, false, true, false, true);
         selected.LineOfSight = candidate->IsWithinLOSInMap(source);
         if (!selected.Action.Valid || selected.Action.Type != "cast"
             || !selected.Action.SpellId)
@@ -359,6 +193,12 @@ SeedCandidate DrudgeLaneContext::ResolveDrudgeSeedCandidate(
             selected.Reason = "resolved_profile_target_mismatch";
             continue;
         }
+        if (selected.Action.MovementDirective != "ranged")
+        {
+            selected.Gate = SeedGate::MovementContract;
+            selected.Reason = "resolved_profile_movement_not_ranged";
+            continue;
+        }
         if (selected.Action.MaxRange <= 5.0f
             || !selected.LineOfSight
             || selected.Distance > manager.Cohort().Config.ValidationRouteSplitSeedMaxRangeYards
@@ -371,30 +211,6 @@ SeedCandidate DrudgeLaneContext::ResolveDrudgeSeedCandidate(
                 : SeedGate::RangeContract;
             selected.Reason = !selected.LineOfSight ? "native_line_of_sight_unavailable"
                 : "native_seed_range_contract";
-            auto const& config = manager.Cohort().Config;
-            float destinationX = 0.0f;
-            float destinationY = 0.0f;
-            float destinationZ = 0.0f;
-            bool const laneA = std::find(
-                config.ValidationRouteSplitLaneARosterSlots.begin(),
-                config.ValidationRouteSplitLaneARosterSlots.end(),
-                selected.MemberSlot)
-                != config.ValidationRouteSplitLaneARosterSlots.end();
-            if (PlanSeedApproach(context, selected, source, laneA,
-                    config.ValidationRouteMinimumDistanceYards,
-                    config.ValidationRouteSplitArrivalToleranceYards,
-                    config.ValidationRouteSplitSeedMaxRangeYards,
-                    config.ValidationRouteSplitMinimumSeparationYards,
-                    destinationX, destinationY, destinationZ)
-                && manager.MoveBotToPoint(*selected.State, selected.Bot,
-                    destinationX, destinationY, destinationZ, false,
-                    BotMovementArbitration::Owner::Mechanic,
-                    BotMovementArbitration::Priority::Mechanic))
-            {
-                selected.ApproachSubmitted = true;
-                selected.Gate = SeedGate::MovementContract;
-                selected.Reason = "native_seed_approach_submitted";
-            }
             continue;
         }
 
@@ -409,6 +225,8 @@ SeedCandidate DrudgeLaneContext::ResolveDrudgeSeedCandidate(
         selected.Available = true;
         selected.Gate = SeedGate::None;
         selected.Reason = "native_action_pending";
+        if (selected.MemberSlot < selectedSlot)
+            selectedSlot = selected.MemberSlot;
     }
 
     if (!selected.Bot)
@@ -445,9 +263,7 @@ void DrudgeLaneContext::AppendDrudgeSeedEvidence(Context& context, uint32 lane,
     evidence.MaxRange = candidate.Action.MaxRange;
     evidence.PositionSafe = candidate.PositionSafe;
     evidence.LineOfSight = candidate.LineOfSight;
-    evidence.InRange = candidate.LineOfSight
-        && candidate.Distance >= candidate.Action.MinRange
-        && candidate.Distance <= candidate.Action.MaxRange;
+    evidence.InRange = candidate.LineOfSight && candidate.Gate != SeedGate::RangeContract;
     evidence.ProfileActionValid = candidate.Action.Valid;
     evidence.ActionSucceeded = candidate.ActionSucceeded;
     evidence.SelectedOffenseUnsuppressed = candidate.ActionAttempted;
@@ -502,34 +318,24 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunDrudgeSeedCoordinator()
                 && candidate.WipeGeneration == manager.Cohort().Raid.WipeGeneration
                 && candidate.RouteGeneration == manager.Party().ValidationRouteGeneration;
         });
-    bool const initialSeedOpportunity = (context.PrepullStaged
-        || context.EarlyPullRecoveryActive)
-        && !seedState.SeededLanes[0] && !seedState.SeededLanes[1]
-        && !chargeObserved;
 
     BotRaidDrudgeThreatSeed::CoordinatorInput input;
     input.Identity = scope;
     input.PrepullStaged = context.PrepullStaged;
-    input.RecoveryAuthorityReady = context.EarlyPullRecoveryActive;
     input.SourcesAlive = true;
-    input.OwnershipSafe = bothVictimsOwned || initialSeedOpportunity;
+    input.OwnershipSafe = bothVictimsOwned;
     input.SeparationSafe = context.SourceSeparation >= context.LaneSeparation;
     input.FrozenLanesSafe = frozenLanesSafe;
     input.ChargeObserved = chargeObserved;
-    input.InitialSeedOpportunity = initialSeedOpportunity;
 
-    bool const setupAuthorityReady = input.PrepullStaged
-        || input.RecoveryAuthorityReady;
-    bool const seedGeometryReady = BotRaidDrudgeThreatSeed::InitialSeedGeometryReady(
-        input.InitialSeedOpportunity, input.SeparationSafe, input.FrozenLanesSafe);
-    if (!setupAuthorityReady || !input.OwnershipSafe || !seedGeometryReady
-        || input.ChargeObserved)
+    if (!input.PrepullStaged || !input.OwnershipSafe || !input.SeparationSafe
+        || !input.FrozenLanesSafe || input.ChargeObserved)
     {
         BotRaidDrudgeThreatSeed::CoordinatorResult const transition =
             BotRaidDrudgeThreatSeed::AdvanceCoordinator(seedState, input);
         ApplyDrudgeSeedState(*this, transition);
         context.HoldOffense();
-        char const* reason = !setupAuthorityReady ? "setup_authority"
+        char const* reason = !input.PrepullStaged ? "prepull_staging"
             : !input.OwnershipSafe ? "tank_victim_ownership"
             : !input.SeparationSafe ? "lane_separation"
             : !input.FrozenLanesSafe ? "frozen_lane_geometry"
@@ -545,13 +351,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunDrudgeSeedCoordinator()
     bool const exactAuthorityRoster = ExactDrudgeAuthorityRoster(*this);
     std::array<SeedCandidate, 2> candidates;
     for (uint32 lane = 0; lane < candidates.size(); ++lane)
-    {
         candidates[lane] = ResolveDrudgeSeedCandidate(*this, lane, seedState);
-        if (candidates[lane].ApproachSubmitted)
-            context.Record(context.Sources[lane],
-                "drudge_pre_first_rush_seed_approach",
-                candidates[lane].Distance, candidates[lane].Action.SpellId);
-    }
 
     for (uint32 lane = 0; lane < candidates.size(); ++lane)
         if (!exactAuthorityRoster)
@@ -586,29 +386,21 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunDrudgeSeedCoordinator()
                 BotRaidAreaAuthority::SetAllOffenseSuppressed(guid, false);
                 BotRaidAreaAuthority::Set(guid, true);
                 candidates[lane].ActionAttempted = true;
-                float const threatBefore = context.Sources[lane]
-                    ->GetThreatManager().GetThreat(candidates[lane].Bot, true);
-                BotActionExecutor executor;
-                candidates[lane].NativeResult = executor.ExecuteCombat(
-                    candidates[lane].Bot, candidates[lane].Bot,
-                    candidates[lane].Action);
-                float const threatAfter = context.Sources[lane]
-                    ->GetThreatManager().GetThreat(candidates[lane].Bot, true);
+                candidates[lane].NativeResult = manager.ExecuteProfileCombatAction(
+                    candidates[lane].State, candidates[lane].Bot,
+                    context.Sources[lane], &candidates[lane].Action,
+                    1, false, 0, false, false, true, false, true);
                 candidates[lane].ActionSucceeded =
                     candidates[lane].NativeResult == BotActionResult::Ok
                     && candidates[lane].Action.Valid
                     && candidates[lane].Action.Type == "cast"
                     && candidates[lane].Action.SpellId
                     && candidates[lane].Action.TargetGuid
-                        == context.Sources[lane]->GetGUID()
-                    && BotRaidDrudgeSeedActionSelection::HasPositiveThreatDelta(
-                        threatBefore, threatAfter);
+                        == context.Sources[lane]->GetGUID();
                 if (!candidates[lane].ActionSucceeded)
                 {
                     candidates[lane].Gate = SeedGate::NativeAction;
-                    candidates[lane].Reason = candidates[lane].NativeResult
-                        == BotActionResult::Ok ? "native_action_no_threat_delta"
-                        : "native_action_rejected";
+                    candidates[lane].Reason = "native_action_rejected";
                 }
                 else
                     candidates[lane].Reason = "native_action_ok";
@@ -628,7 +420,6 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunDrudgeSeedCoordinator()
     BotRaidDrudgeThreatSeed::CoordinatorResult const transition =
         BotRaidDrudgeThreatSeed::AdvanceCoordinator(seedState, input);
     ApplyDrudgeSeedState(*this, transition);
-
     uint64 const observedAtMs = NowMs();
     for (uint32 lane = 0; lane < candidates.size(); ++lane)
     {

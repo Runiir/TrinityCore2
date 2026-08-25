@@ -67,15 +67,15 @@ inline bool ShouldBuildTankThreat(bool currentScopeHasNativeRush,
     return !currentScopeHasNativeRush || !readiness.TankThreatSecure;
 }
 
-// Every Rush must retain the configured opposite tank as the unique farthest
-// eligible player. A prior valid Rush cannot authorize a later healer or DPS
-// target after movement changes the live geometry.
+// The configured seed establishes one attributable native Rush. After that
+// proof exists, the recovered roster may choose any safe non-tank as the live
+// farthest target; retaining exact tank ownership and threat headroom is the
+// only source-level authority needed before normal profile actions resume.
 inline bool AuthorityReady(bool currentScopeHasNativeRush,
     SourceResult const& readiness)
 {
-    (void)currentScopeHasNativeRush;
     return readiness.ExactTankVictim && readiness.TankThreatSecure
-        && readiness.SeedIsUniqueFarthest;
+        && (currentScopeHasNativeRush || readiness.SeedIsUniqueFarthest);
 }
 }
 

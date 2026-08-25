@@ -1,5 +1,3 @@
-import json
-import math
 from pathlib import Path
 
 
@@ -13,10 +11,8 @@ RECOVERY = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Dru
 RECOVERY_HEADER = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeRecovery.h"
 LANES = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp"
 ACTIONS = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp"
-THREAT = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeThreat.cpp"
 SEED = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp"
 SPACING = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSpacing.cpp"
-ROUTES = ROOT / "dataset/validation_scenarios/validation_routes.jsonl"
 
 
 def test_drudge_route_modules_are_bounded_and_registered():
@@ -24,14 +20,13 @@ def test_drudge_route_modules_are_bounded_and_registered():
     header = HEADER.read_text(encoding="utf-8")
     cmake = CMAKE.read_text(encoding="utf-8")
     assert len(header.splitlines()) <= 1000
-    for module in (CONTRACT, GEOMETRY, RECOVERY, RECOVERY_HEADER, LANES, ACTIONS, THREAT, SEED, SPACING):
+    for module in (CONTRACT, GEOMETRY, RECOVERY, RECOVERY_HEADER, LANES, ACTIONS, SEED, SPACING):
         assert len(module.read_text(encoding="utf-8").splitlines()) <= 1000
     for name in (
         "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeRecovery.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp",
-        "BotWorldPopulationMgrValidationRouteDrudgeThreat.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeSpacing.cpp",
     ):
@@ -44,55 +39,13 @@ def test_drudge_route_modules_are_bounded_and_registered():
     assert "auto tryValidationRouteDrudgeChargeLanes" not in world
 
 
-def test_drudge_dispatch_claims_safe_approach_before_generic_terminal_movement():
+def test_drudge_dispatch_keeps_movement_and_minimum_distance_order():
     world = WORLD.read_text(encoding="utf-8")
-    recovery = world.index("TryValidationRouteGroupRecovery(state, bot, power, stage")
-    lanes = world.index("TryValidationRouteDrudgeChargeLanes(state, bot, power, stage")
-    terminal = world.index("terminalArrivalContext.Run()")
     movement = world.index("TryValidationRouteMovementCheck(state, bot, power, stage")
     minimum = world.index("TryValidationRouteDrudgeMinimumDistance(state, bot, power, stage")
+    lanes = world.index("TryValidationRouteDrudgeChargeLanes(state, bot, power, stage")
     patrol = world.index("tryValidationRoutePatrolPull()")
-    assert recovery < lanes < terminal < movement < patrol < minimum
-    assert world.count("TryValidationRouteDrudgeChargeLanes(state, bot, power, stage") == 1
-
-
-def test_drudge_farthest_contract_uses_stable_native_home_geometry():
-    lanes = LANES.read_text(encoding="utf-8")
-    start = lanes.index("for (uint32 sourceIndex = 0; sourceIndex < Sources.size();")
-    end = lanes.index("return PhaseResult::Continue;", start)
-    contract = lanes[start:end]
-    assert "GetHomePosition()" in contract
-    assert "sourceHome.GetPositionX()" in contract
-    assert "sourceHome.GetPositionY()" in contract
-    assert "Sources[sourceIndex]->GetPositionX()" not in contract
-    assert "Sources[sourceIndex]->GetPositionY()" not in contract
-
-    geometry = GEOMETRY.read_text(encoding="utf-8")
-    assert "tankSlot && CombatTankStagingActive()\n                ? DeclaredCombatTankAnchorFor(slot)" in geometry
-    assert "tank && CombatTankStagingActive()\n                    ? DeclaredCombatTankAnchorFor(OneBasedSlot)" in geometry
-
-    route = next(
-        json.loads(line)
-        for line in ROUTES.read_text(encoding="utf-8").splitlines()
-        if json.loads(line).get("route_node_id") == "bwd.magmaw.drudges"
-    )
-    homes = {row["source_guid"]: row for row in route["split_source_home_anchors"]}
-    combat = {row["roster_slot"]: row for row in route["split_tank_combat_anchors"]}
-    members = {row["roster_slot"]: row for row in route["split_member_anchors"]}
-    tanks = set(route["split_lane_tank_slots"])
-    margin = 2.0 * route["split_arrival_tolerance_yards"]
-    for source_guid, seed_slot in zip(
-        route["split_source_guids"], route["split_seed_roster_slots"]
-    ):
-        home = homes[source_guid]
-        seed = combat[seed_slot]
-        seed_distance = math.hypot(home["x"] - seed["x"], home["y"] - seed["y"])
-        farthest_non_tank = max(
-            math.hypot(home["x"] - anchor["x"], home["y"] - anchor["y"])
-            for slot, anchor in members.items()
-            if slot not in tanks
-        )
-        assert seed_distance >= farthest_non_tank + margin
+    assert movement < patrol < minimum < lanes
 
 
 def test_adaptive_drudge_owner_dispatches_typed_lane_contract_before_owner_skip():
@@ -134,7 +87,7 @@ def test_drudge_contract_keeps_scope_evidence_and_native_lane_guards():
     geometry = GEOMETRY.read_text(encoding="utf-8")
     recovery = RECOVERY.read_text(encoding="utf-8")
     lanes = LANES.read_text(encoding="utf-8")
-    actions = ACTIONS.read_text(encoding="utf-8") + THREAT.read_text(encoding="utf-8")
+    actions = ACTIONS.read_text(encoding="utf-8")
     seed = SEED.read_text(encoding="utf-8")
     for marker in (
         "ValidationRouteDrudgeChargeObservations",

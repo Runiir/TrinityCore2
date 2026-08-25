@@ -11,7 +11,6 @@ struct Input
 {
     bool ExactRouteProfile = false;
     bool ExactRosterPrepullStaged = false;
-    bool EarlyPullRecoveryAccepted = false;
     bool BothTankAnchorsAccepted = false;
     bool BothTankVictimsAccepted = false;
     bool SeedProfileActionsAccepted = false;
@@ -53,7 +52,7 @@ inline Result Evaluate(Input const& input)
     // run. The failed/closed seed evidence remains visible to the route.
     if (!input.SeedProfileActionsAccepted && input.SeedWindowClosedOrFailed)
         return { true, Blocker::PostRushSeedRecovery };
-    if (!input.ExactRosterPrepullStaged && !input.EarlyPullRecoveryAccepted)
+    if (!input.ExactRosterPrepullStaged)
         return { false, Blocker::ExactRosterPrepull };
     if (!input.BothTankAnchorsAccepted)
         return { false, Blocker::TankAnchors };

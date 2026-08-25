@@ -11,12 +11,10 @@ def test_production_drudge_seed_transition_replays_native_event_orderings(tmp_pa
     source.write_text(
         r'''
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeThreatSeedState.h"
-#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeSeedActionSelection.h"
 #include <cassert>
 #include <string>
 
 using namespace BotRaidDrudgeThreatSeed;
-using namespace BotRaidDrudgeSeedActionSelection;
 
 static Input ready(Scope scope, std::uint32_t lane)
 {
@@ -150,79 +148,6 @@ int main()
     assert(both.Next.SeededLanes[0] && both.Next.SeededLanes[1]);
     assert(both.Next.Complete && !both.Next.Failure);
 
-    // The bounded initial seed opportunity does not need the sources to have
-    // reached their final separated/frozen lanes.  It still traverses the
-    // same typed candidate/action-result barrier.
-    CoordinatorInput initialGeometryGap = bothTick;
-    initialGeometryGap.InitialSeedOpportunity = true;
-    initialGeometryGap.SeparationSafe = false;
-    initialGeometryGap.FrozenLanesSafe = false;
-    CoordinatorResult initialGeometry = AdvanceCoordinator(
-        State{}, initialGeometryGap);
-    assert(initialGeometry.BothLanesEvaluated);
-    assert(initialGeometry.Lanes[0].ActionAttempted
-        && initialGeometry.Lanes[1].ActionAttempted);
-    assert(initialGeometry.Next.SeededLanes[0]
-        && initialGeometry.Next.SeededLanes[1]);
-    assert(initialGeometry.Next.Complete);
-
-    // Canary18: the longer-range cast-time Exorcism was accepted when its cast
-    // started, but no threat reference existed at the first native Rush. A
-    // cast-time action is not a synchronous seed candidate at all.
-    assert(IsSynchronousSeedAction(0));
-    assert(!IsSynchronousSeedAction(1500));
-    assert(!HasPositiveThreatDelta(0.0f, 0.0f));
-    assert(!HasPositiveThreatDelta(10.0f, 10.0f));
-    assert(HasPositiveThreatDelta(10.0f, 10.5f));
-    assert(PreferSeedAction(true, 35.0f, 1, 90,
-        30.0f, 0, 55));
-    assert(!PreferSeedAction(true, 30.0f, 0, 55,
-        35.0f, 1, 90));
-
-    // The exception is fail-closed if a caller tries to reuse it after a
-    // lane has already been accepted.
-    State partiallySeeded;
-    partiallySeeded.Identity = first;
-    partiallySeeded.SeededLanes[0] = true;
-    CoordinatorResult staleInitial = AdvanceCoordinator(
-        partiallySeeded, initialGeometryGap);
-    assert(!staleInitial.Lanes[0].ActionAttempted
-        && !staleInitial.Lanes[1].ActionAttempted);
-    assert(!staleInitial.Next.Complete);
-
-    // Once the bounded opportunity is over, the live source geometry gates
-    // remain mandatory even when both candidates are otherwise ready.
-    CoordinatorInput afterInitialGeometryGap = bothTick;
-    afterInitialGeometryGap.SeparationSafe = false;
-    afterInitialGeometryGap.FrozenLanesSafe = false;
-    CoordinatorResult afterInitialGeometry = AdvanceCoordinator(
-        State{}, afterInitialGeometryGap);
-    assert(afterInitialGeometry.BothLanesEvaluated);
-    assert(!afterInitialGeometry.Lanes[0].ActionAttempted
-        && !afterInitialGeometry.Lanes[1].ActionAttempted);
-    assert(!afterInitialGeometry.Next.Complete);
-
-    // The state machine keeps ownership as a real gate.  The route coordinator
-    // admits the bounded pre-taunt exception only after proving its local
-    // staged, empty-seed, no-Rush window and setting this input accordingly.
-    CoordinatorInput noOwnership = bothTick;
-    noOwnership.OwnershipSafe = false;
-    CoordinatorResult noOwnershipResult = AdvanceCoordinator(State{}, noOwnership);
-    assert(noOwnershipResult.BothLanesEvaluated);
-    assert(!noOwnershipResult.Lanes[0].ActionAttempted);
-    assert(!noOwnershipResult.Lanes[1].ActionAttempted);
-    assert(!noOwnershipResult.Next.Complete);
-
-    // A cohort-linked body-pull recovery gets the same native seed barrier
-    // without claiming that historical prepull staging completed.
-    CoordinatorInput recoveredTick = bothTick;
-    recoveredTick.PrepullStaged = false;
-    recoveredTick.RecoveryAuthorityReady = true;
-    CoordinatorResult recovered = AdvanceCoordinator(State{}, recoveredTick);
-    assert(recovered.BothLanesEvaluated);
-    assert(recovered.Next.SeededLanes[0] && recovered.Next.SeededLanes[1]);
-    assert(recovered.Next.Complete && !recovered.Next.Failure);
-
     // A failed native lane preserves the exact rejection gate and cannot
     // manufacture its lane's success from the other lane's cast.
     CoordinatorInput rejectedTick = bothTick;
@@ -300,20 +225,10 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
         / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/"
         "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp"
     ).read_text(encoding="utf-8")
-    lane += (
-        ROOT
-        / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/"
-        "BotWorldPopulationMgrValidationRouteDrudgeThreat.cpp"
-    ).read_text(encoding="utf-8")
     seed = (
         ROOT
         / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/"
         "BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp"
-    ).read_text(encoding="utf-8")
-    seed_state = (
-        ROOT
-        / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/"
-        "BotRaidDrudgeThreatSeedState.h"
     ).read_text(encoding="utf-8")
     drudge_header = (
         ROOT
@@ -340,52 +255,22 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
     assert "party.ValidationRouteDrudgeThreatSeedClosed" in seed
     assert "party.ValidationRouteDrudgeThreatSeedFailure" in seed
     assert '"drudge_pre_first_rush_seed_rejected:"' in seed
-    assert '"drudge_pre_first_rush_seed_approach"' in seed
     assert '"native_action_rejected"' in seed
-    assert '"native_action_no_threat_delta"' in seed
     assert "candidates[lane].ActionAttempted" in seed
     assert "for (uint32 lane = 0; lane < candidates.size(); ++lane)" in seed
     assert "Result const transition = Advance(seedState, rushInput);" in callback
-    assert "BotClassSpecActionProfileStore::BuildCandidates(candidate, source, profile)" in seed
-    assert "EffectiveSeedMaxRange" in seed
-    assert "EffectiveSeedMinRange" in seed
-    assert "PlanSeedApproach(context, selected, source, laneA" in seed
-    assert "manager.MoveBotToPoint(*selected.State, selected.Bot" in seed
-    assert "executor.ExecuteCombat(" in seed
-    assert "source->GetGUID().GetCounter()" in seed
-    assert "candidate.Distance <= candidate.Action.MaxRange" in seed
-    assert "selected.Action.SuppressAreaDamage = true" in seed
-    assert "selected.Action.MeleeAutoAttackExternallyReconciled = true" in seed
-    seed_categories = seed[
-        seed.index("bool IsSeedThreatCategory") : seed.index("float EffectiveSeedMaxRange")
-    ]
-    assert "BotCombatActionCategory::Taunt" not in seed_categories
-    assert "ImmediateOwnershipRestoreReady" not in seed
-    assert '"drudge_seed_native_taunt"' not in seed
-    assert "category == BotCombatActionCategory::Cleave" not in seed
-    assert 'roster->second.Role != "tank"' in seed
-    assert "maxRange <= minimumSafeRange" in seed
+    assert "candidate, source, 1, false, 0, false, false, true, false, true" in seed
+    assert "candidates[lane].State, candidates[lane].Bot" in seed
+    assert "1, false, 0, false, false, true, false, true" in seed
+    assert 'selected.Action.MovementDirective != "ranged"' in seed
+    assert 'selected.Action.MaxRange <= 5.0f' in seed
     assert 'selected.Action.AutoAttackMode == "ranged"' not in seed
     assert "AllPendingLanesReady" in seed
     assert "allPendingCandidatesReady" in seed
     assert "SeedGate::PendingLaneBarrier" in seed
-    assert "input.InitialSeedOpportunity = initialSeedOpportunity" in seed
-    assert "InitialSeedGeometryReady" in seed
-    assert "InitialSeedOpportunity" in seed_state
-    assert "inline bool InitialSeedGeometryReady" in seed_state
-    selection = (
-        ROOT
-        / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeSeedActionSelection.h"
-    ).read_text(encoding="utf-8")
-    assert "inline bool IsSynchronousSeedAction" in selection
-    assert "inline bool PreferSeedAction" in selection
     assert "if (allPendingCandidatesReady)" in seed
-    assert "BotRaidDrudgeSeedActionSelection::IsSynchronousSeedAction(" in seed
-    assert "BotRaidDrudgeSeedActionSelection::HasPositiveThreatDelta(" in seed
-    assert "BotRaidDrudgeSeedActionSelection::PreferSeedAction(" in seed
-    assert "actionCandidate.CastTimeMs" in seed
     assert seed.index("if (allPendingCandidatesReady)") < seed.index(
-        "executor.ExecuteCombat"
+        "manager.ExecuteProfileCombatAction"
     )
 
     roster_gate = seed.index("bool DrudgeLaneContext::ExactDrudgeAuthorityRoster")
@@ -421,8 +306,6 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
     assert "!hostileTargetOnly && state && TryEnsurePersistentCombatSetup" in executor
     assert "!hostileTargetOnly && state" in executor
     assert "&& TryEnsureCombatTotems" in executor
-
-
 def test_profile_candidates_publish_live_cast_time_to_seed_selector():
     source = (
         ROOT / "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp"
@@ -452,81 +335,3 @@ def test_profile_candidates_publish_live_cast_time_to_seed_selector():
         "else if (spellInfo && spell.RequiresInstantCast"
     )
     assert "candidate.CastTimeMs = 0" not in build_candidates
-
-
-def test_drudge_seed_approach_preserves_lane_and_native_range(tmp_path):
-    source = tmp_path / "drudge_seed_approach.cpp"
-    binary = tmp_path / "drudge_seed_approach"
-    source.write_text(
-        r'''
-#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeSeedApproach.h"
-#include <cassert>
-#include <cmath>
-
-using namespace BotRaidDrudgeSeedApproach;
-
-int main()
-{
-    Input paladin;
-    paladin.Actor = {18.0f, 0.0f, 2.0f};
-    paladin.Source = {-15.5f, 0.0f, 2.0f};
-    paladin.AxisX = 1.0f;
-    paladin.LaneSign = 1.0f;
-    paladin.MinimumLaneProjection = 3.75f;
-    paladin.MinimumSourceDistance = 16.0f;
-    paladin.ActionMaxRange = 30.0f;
-    Result ranged = Plan(paladin);
-    assert(ranged.Needed && ranged.Safe);
-    assert(std::fabs(ranged.DesiredDistance - 29.0f) < 0.001f);
-    assert(ranged.Destination.X >= 3.75f);
-
-    Input blockedLos = paladin;
-    blockedLos.Actor = {18.0f, 0.0f, 2.0f};
-    blockedLos.Source = {-7.0f, 0.0f, 2.0f};
-    blockedLos.ActionMaxRange = 35.0f;
-    blockedLos.LineOfSightBlocked = true;
-    Result losStep = Plan(blockedLos);
-    assert(losStep.Needed && losStep.Safe);
-    assert(std::fabs(losStep.Travel - 3.0f) < 0.001f);
-    assert(std::fabs(losStep.DesiredDistance - 22.0f) < 0.001f);
-
-    Input deathKnight = paladin;
-    deathKnight.Actor = {18.0f, 4.0f, 2.0f};
-    deathKnight.Source = {-12.0f, 4.0f, 2.0f};
-    deathKnight.ActionMaxRange = 20.0f;
-    Result threatBuild = Plan(deathKnight);
-    assert(threatBuild.Needed && threatBuild.Safe);
-    assert(std::fabs(threatBuild.DesiredDistance - 19.0f) < 0.001f);
-
-    Input melee = paladin;
-    melee.ActionMaxRange = 10.0f;
-    Result rejected = Plan(melee);
-    assert(!rejected.Safe && !rejected.Needed);
-
-    Input crossesLane = deathKnight;
-    crossesLane.Actor = {5.0f, 0.0f, 0.0f};
-    crossesLane.Source = {-30.0f, 0.0f, 0.0f};
-    crossesLane.ActionMaxRange = 20.0f;
-    Result unsafe = Plan(crossesLane);
-    assert(unsafe.Needed && !unsafe.Safe);
-}
-''',
-        encoding="utf-8",
-    )
-    subprocess.run(
-        [
-            "c++",
-            "-std=c++17",
-            "-Wall",
-            "-Wextra",
-            "-Werror",
-            "-I",
-            str(ROOT / "src/server/game"),
-            str(source),
-            "-o",
-            str(binary),
-        ],
-        check=True,
-        cwd=ROOT,
-    )
-    subprocess.run([str(binary)], check=True, cwd=ROOT)

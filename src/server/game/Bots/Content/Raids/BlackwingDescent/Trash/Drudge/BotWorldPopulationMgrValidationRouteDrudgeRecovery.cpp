@@ -109,8 +109,10 @@ BotRaidDrudgeSpacing::PeerResult DrudgeLaneContext::EvaluateRecoveryCandidateSpa
             coordinateSource = "cached";
         }
         float const distance = Distance2d(x, y, otherX, otherY);
-        if (distance < std::max(0.5f,
-                Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards * 0.5f))
+        if (distance < std::max(3.0f,
+                Manager.Cohort().Config.ValidationRouteSplitNavigationMarginYards
+                    + Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards
+                        * 0.5f))
         {
             result.Safe = false;
             result.PeerGuid = other->GetGUID().GetCounter();

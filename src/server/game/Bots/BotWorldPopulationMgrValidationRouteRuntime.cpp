@@ -159,7 +159,6 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
         Party().ValidationRouteDrudgePrepullAttemptId = 0;
         Party().ValidationRouteDrudgePrepullWipeGeneration = 0;
         Party().ValidationRouteDrudgePrepullRouteGeneration = 0;
-        Party().ValidationRouteDrudgeEarlyPullRecoveryAccepted = false;
         Party().ValidationRouteDrudgeChargeGeneration = 0;
         Party().ValidationRouteDrudgeChargeLandedGeneration = 0;
         Party().ValidationRouteDrudgeChargeObservedAtMs = 0;

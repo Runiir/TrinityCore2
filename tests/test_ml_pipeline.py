@@ -10015,7 +10015,7 @@ def test_stonecore_role_specs_inherit_complete_dbc_legal_talent_and_action_profi
     config = load_validation_provisioning_config(Path("experiments/configs/validation_provisioning_cata_001.json"))
     action_profiles = load_action_profile_manifest()
     required = {
-        "protection_paladin": {879, 53595, 26573, 31935, 53600, 62124, 1022},
+        "protection_paladin": {53595, 26573, 31935, 53600, 62124, 1022},
         "fire_mage": {133, 2948, 44457, 92315, 11129},
         "marksmanship_hunter": {1978, 53209, 56641, 19434, 3045},
         "survival_hunter": {1978, 53301, 3674, 77767, 2643, 34477, 3045},

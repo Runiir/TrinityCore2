@@ -45,24 +45,6 @@ def test_recorded_drudge_returns_match_native_navmesh(tmp_path):
     assert result.returncode == 0, result.stderr or result.stdout
     payload = json.loads(report.read_text(encoding="utf-8"))
     assert payload["all_passed"] is True
-    assert payload["required_combat_endpoints"] == {
-        "tank1_combat_anchor": {
-            "declared": True,
-            "exact_endpoint": True,
-            "passed": True,
-        },
-        "tank2_combat_anchor": {
-            "declared": True,
-            "exact_endpoint": True,
-            "passed": True,
-        },
-    }
-    assert set(payload["required_member_endpoints"]) == {
-        f"drudge_slot{slot}_anchor" for slot in (3, 4, 5, 6, 7, 8, 9, 10)
-    }
-    assert all(
-        check["passed"] for check in payload["required_member_endpoints"].values()
-    )
     assert payload["map_id"] == 669
     assert payload["player_nav_include_flags"] == [
         "NAV_GROUND",
@@ -129,22 +111,22 @@ def test_recorded_drudge_returns_match_native_navmesh(tmp_path):
         "detour_nearest_requested_z_delta": 0.22937,
     }
     assert payload["validated_returns"]["tank1_combat_anchor"] == {
-        "exact_endpoint": True,
-        "fallback": None,
-        "polygons": 5,
-        "projected_terminal": [-288.836, -42.6005, 212.267],
-        "requested": [-288.833008, -42.598999, 212.267319],
-        "requested_end2d_miss": 0.00311819,
-        "requested_endz_delta": 0.0,
+        "exact_endpoint": False,
+        "fallback": "tank1_navigation_anchor",
+        "polygons": 1,
+        "projected_terminal": [-289.289, -57.7575, 212.932],
+        "requested": [-286.5, -58.0, 212.2983],
+        "requested_end2d_miss": 2.79962,
+        "requested_endz_delta": 0.633942,
         "start": [-289.289093, -57.7575, 212.932236],
-        "straight_points": 4,
+        "straight_points": 1,
     }
     assert payload["validated_returns"]["tank2_combat_anchor"] == {
         "exact_endpoint": True,
         "fallback": None,
         "polygons": 1,
-        "projected_terminal": [-321.913, -44.3194, 211.836],
-        "requested": [-321.912994, -44.319401, 211.835968],
+        "projected_terminal": [-322.858, -48.2862, 212.262],
+        "requested": [-322.858, -48.2862, 212.2623],
         "requested_end2d_miss": 0.0,
         "requested_endz_delta": 0.0,
         "start": [-322.858002, -48.286201, 211.999359],

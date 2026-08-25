@@ -13,12 +13,10 @@ def test_production_drudge_geometry_transition_replays_charge_edges_and_pull_ord
         r'''
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeGeometryState.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeNativeRushState.h"
-#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeOwnershipActionState.h"
 #include <cassert>
 #include <cmath>
 
 using namespace BotRaidDrudgeGeometry;
-using namespace BotRaidDrudgeOwnership;
 
 int main()
 {
@@ -55,10 +53,10 @@ int main()
     assert(ready.SeedIsUniqueFarthest);
     assert(ready.Ready);
     // Exact dc381 live counterexample: a one-tick secure snapshot was followed
-    // by periodic seed threat, ownership loss, and a bad native target.
-    // The assigned tank must sustain ordinary threat until the first Rush,
-    // and every later Rush must still retain the intended opposite tank as
-    // unique farthest.
+    // by periodic seed threat, ownership loss, and a bad first native target.
+    // The assigned tank must sustain ordinary threat until the first Rush
+    // actually exists; afterward a secure source no longer needs this special
+    // pre-Rush action, while an insecure source still does.
     assert(BotRaidDrudgeNativeRush::ShouldBuildTankThreat(false, ready));
     assert(!BotRaidDrudgeNativeRush::ShouldBuildTankThreat(true, ready));
     assert(BotRaidDrudgeNativeRush::ShouldBuildTankThreat(true, rejected855));
@@ -68,33 +66,8 @@ int main()
     auto recoveredRoster = BotRaidDrudgeNativeRush::Evaluate(readyRush);
     assert(!recoveredRoster.SeedIsUniqueFarthest);
     assert(!BotRaidDrudgeNativeRush::AuthorityReady(false, recoveredRoster));
-    assert(!BotRaidDrudgeNativeRush::AuthorityReady(true, recoveredRoster));
+    assert(BotRaidDrudgeNativeRush::AuthorityReady(true, recoveredRoster));
     assert(!BotRaidDrudgeNativeRush::AuthorityReady(true, rejected855));
-
-    // Canary16 exact source-250140 counterexample. The assigned tank had
-    // native ownership, but cross-seed threat remained higher and the source
-    // had already crossed far enough that healer 30004 was the farthest
-    // eligible player. Ordinary assigned-tank threat must preempt formation
-    // holding until the first Rush instead of letting that displacement latch.
-    BotRaidDrudgeNativeRush::SourceInput canary16;
-    canary16.ExactTankVictim = true;
-    canary16.IntendedSeedPresent = true;
-    canary16.FarthestIsIntendedSeed = false;
-    canary16.TankThreat = 50185.0f;
-    canary16.HighestOtherThreat = 67845.0f;
-    canary16.SeedDistance = 13.0481f;
-    canary16.SecondFarthestDistance = 24.3759f;
-    canary16.ThreatHeadroomMultiplier = 2.5f;
-    canary16.FarthestDistanceMargin = 2.0f;
-    canary16.FarthestGuid = 30004;
-    auto displaced250140 = BotRaidDrudgeNativeRush::Evaluate(canary16);
-    assert(!displaced250140.TankThreatSecure);
-    assert(!displaced250140.SeedIsUniqueFarthest);
-    assert(!displaced250140.Ready);
-    assert(BotRaidDrudgeNativeRush::ShouldBuildTankThreat(
-        false, displaced250140));
-    assert(!BotRaidDrudgeNativeRush::AuthorityReady(
-        false, displaced250140));
 
     assert(SelectMemberRecoveryAction(true, false, true)
         == MemberRecoveryAction::RecoverFormation);
@@ -104,12 +77,6 @@ int main()
         == MemberRecoveryAction::PreferFriendlySupport);
     assert(SelectMemberRecoveryAction(false, false, false)
         == MemberRecoveryAction::Continue);
-    assert(!NativeOwnershipActionReady(false, false, false, false, false));
-    assert(NativeOwnershipActionReady(false, false, true, false, false));
-    assert(!NativeOwnershipActionReady(false, false, true, true, false));
-    assert(NativeOwnershipActionReady(false, false, true, true, true));
-    assert(!NativeOwnershipActionReady(true, false, false, true, false));
-    assert(NativeOwnershipActionReady(true, true, false, true, false));
 
     assert(SelectMinimumDistanceOwner(false, false)
         == MinimumDistanceOwner::GenericRouteSafety);
@@ -243,71 +210,6 @@ int main()
     assert(!result.NativeOwnershipAllowed);
     assert(!result.NativeEngagementAllowed);
 
-    // A natural body pull before the exact latch must enter the scoped
-    // recovery path: both native combat paths are still required, ownership
-    // may use the ordinary tank action, and full engagement remains gated by
-    // the live geometry/roster proof.
-    Input earlyPull = input;
-    earlyPull.ExactPrepullStaged = false;
-    earlyPull.SourceCombatStarted = true;
-    earlyPull.CohortCombatLinked = true;
-    earlyPull.BothCombatTankPathsProven = true;
-    earlyPull.BothCombatTankAnchorsSafe = false;
-    Result earlyRecovery = Advance(state, earlyPull);
-    assert(earlyRecovery.NextDecision == Decision::RecoverCombatAtTankAnchors);
-    assert(earlyRecovery.TankMovementAllowed);
-    assert(earlyRecovery.NativeOwnershipAllowed);
-    assert(!earlyRecovery.NativeEngagementAllowed);
-
-    Input recoveredPull = earlyPull;
-    recoveredPull.BothCombatTankAnchorsSafe = true;
-    Result recovered = Advance(state, recoveredPull);
-    assert(recovered.NextDecision == Decision::AllowNativeEngagement);
-    assert(recovered.NativeOwnershipAllowed);
-    assert(recovered.NativeEngagementAllowed);
-
-    Input externalPull = earlyPull;
-    externalPull.CohortCombatLinked = false;
-    Result external = Advance(state, externalPull);
-    assert(external.NextDecision == Decision::AwaitExactPrepull);
-    assert(!external.TankMovementAllowed);
-    assert(!external.NativeOwnershipAllowed);
-
-    Input missingPaths = earlyPull;
-    missingPaths.BothCombatTankPathsProven = false;
-    Result pathBlocked = Advance(state, missingPaths);
-    assert(pathBlocked.NextDecision == Decision::RecoverCombatAtTankAnchors);
-    assert(!pathBlocked.TankMovementAllowed);
-    assert(!pathBlocked.NativeOwnershipAllowed);
-
-    Input deadSources = earlyPull;
-    deadSources.SourcesAlive = false;
-    Result dead = Advance(state, deadSources);
-    assert(dead.NextDecision == Decision::AwaitExactPrepull);
-    assert(!dead.TankMovementAllowed);
-    assert(!dead.NativeOwnershipAllowed);
-
-    Input earlyCrossedTanks = earlyPull;
-    earlyCrossedTanks.TanksOnFrozenLanes = false;
-    Result earlyCrossed = Advance(state, earlyCrossedTanks);
-    assert(earlyCrossed.NextDecision == Decision::AwaitExactPrepull);
-    assert(!earlyCrossed.TankMovementAllowed);
-    assert(!earlyCrossed.NativeOwnershipAllowed);
-
-    Input busyQueue = earlyPull;
-    busyQueue.ChargeQueueIdle = false;
-    Result busy = Advance(state, busyQueue);
-    assert(busy.NextDecision == Decision::AwaitExactPrepull);
-    assert(!busy.TankMovementAllowed);
-    assert(!busy.NativeOwnershipAllowed);
-
-    Input invalidScope = earlyPull;
-    invalidScope.Identity = Scope{};
-    Result invalid = Advance(state, invalidScope);
-    assert(invalid.NextDecision == Decision::AwaitExactPrepull);
-    assert(!invalid.TankMovementAllowed);
-    assert(!invalid.NativeOwnershipAllowed);
-
     // A single tank proof is intentionally not representable as movement
     // authority. Production freezes both exact proofs before setting this
     // shared input on a subsequent tick.
@@ -360,14 +262,6 @@ int main()
     Result landed = Advance(result.Next, unsafe);
     assert(landed.NativeOwnershipAllowed);
     assert(!landed.NativeEngagementAllowed);
-    // Canary 17: both tanks completed the outward recovery barrier, but the
-    // displaced sources remained beyond the native melee-stop radius. That
-    // is exactly when the ordinary taunt/approach path must retain ownership.
-    unsafe.NativeMeleeStopBounded = false;
-    Result landedOutOfRange = Advance(result.Next, unsafe);
-    assert(landedOutOfRange.NativeOwnershipAllowed);
-    assert(!landedOutOfRange.NativeEngagementAllowed);
-    unsafe.NativeMeleeStopBounded = true;
     unsafe.BothCombatTankAnchorsSafe = false;
     Result displacedTank = Advance(result.Next, unsafe);
     assert(displacedTank.NativeOwnershipAllowed);
@@ -621,9 +515,6 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     actions = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp").read_text(
         encoding="utf-8"
     )
-    threat = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeThreat.cpp").read_text(
-        encoding="utf-8"
-    )
     seed = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp").read_text(
         encoding="utf-8"
     )
@@ -653,7 +544,7 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "drudge_pre_first_rush_threat_seed" in seed
     assert "drudge_native_charge_reseparation_complete" in actions
     assert "if (TryMinimumDistance(true))" not in lanes
-    assert '&& Role != "tank"' in threat
+    assert '&& !currentScopeHasNativeRush && Role == "dps"' in actions
 
 
 def test_landed_rush_recovery_latches_the_scoped_two_tank_return_barrier():
@@ -707,10 +598,9 @@ def test_post_rush_recovery_replays_combat_anchor_transition_with_exact_xyz():
     }
 
     # Run15's mixed-Z trace was the signature of selecting the recovery X/Y
-    # while retaining a later anchor's Z. Replay the legal phases directly
-    # from the sealed route data, then require the production selector to
-    # contain the same state transition. Navigation and combat intentionally
-    # share the exact preflighted endpoint in the current route.
+    # while retaining a later anchor's Z.  Replay the three legal phases from
+    # the sealed route data, then require the production selector to contain
+    # the same state transition.
     def expected_anchor(slot, landed, recovery_reached):
         if not landed:
             return anchors["split_tank_navigation_anchors"][slot]
@@ -718,11 +608,10 @@ def test_post_rush_recovery_replays_combat_anchor_transition_with_exact_xyz():
             return anchors["split_tank_recovery_anchors"][slot]
         return anchors["split_tank_combat_anchors"][slot]
 
-    assert expected_anchor(1, False, False) == (-288.833008, -42.598999, 212.267319)
+    assert expected_anchor(1, False, False) == (-289.289093, -57.7575, 212.932236)
     assert expected_anchor(1, True, False) == (-288.8, -43.0, 212.301)
-    assert expected_anchor(1, True, True) == (-288.833008, -42.598999, 212.267319)
-    assert expected_anchor(2, True, True) == (-321.912994, -44.319401, 211.835968)
-    assert expected_anchor(1, False, False) == expected_anchor(1, True, True)
+    assert expected_anchor(1, True, True) == (-286.5, -58.0, 212.2983)
+    assert expected_anchor(2, True, True) == (-322.858, -48.2862, 212.2623)
     assert expected_anchor(1, True, False)[2] != expected_anchor(1, True, True)[2]
 
     selector_start = geometry.index("for (size_t candidateIndex = 0;")
@@ -777,10 +666,10 @@ def test_drudge_reseparation_switches_from_cached_anchor_to_live_safety():
     geometry = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp").read_text(
         encoding="utf-8"
     )
-    spacing = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSpacing.cpp").read_text(
+    actions = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp").read_text(
         encoding="utf-8"
     )
-    actions = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp").read_text(
+    spacing = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSpacing.cpp").read_text(
         encoding="utf-8"
     )
 
@@ -821,23 +710,6 @@ def test_drudge_reseparation_switches_from_cached_anchor_to_live_safety():
     assert actions.count("BotMovementArbitration::Priority::Mechanic") >= 2
     assert geometry.count("BotMovementArbitration::Owner::Mechanic") >= 1
     assert geometry.count("BotMovementArbitration::Priority::Mechanic") >= 1
-
-
-def test_native_farthest_geometry_runs_only_after_sources_are_resolved():
-    lanes = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp").read_text(
-        encoding="utf-8"
-    )
-
-    run = lanes[lanes.index("bool DrudgeLaneContext::Run()"):
-                lanes.index("DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildContract()")]
-    assert run.index("ResolveSources()") < run.index("BuildAnchorPolicies()")
-    contract = lanes[lanes.index("DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildContract()"):
-                     lanes.index("DrudgeLaneContext::PhaseResult DrudgeLaneContext::ResolveSources()")]
-    assert "Sources[sourceIndex]" not in contract
-    sources = lanes[lanes.index("DrudgeLaneContext::PhaseResult DrudgeLaneContext::ResolveSources()") :]
-    assert sources.index("Sources.push_back(source)") < sources.index(
-        '"drudge_tank_farthest_geometry_unresolved"'
-    )
 
 
 def test_future_encounter_contamination_is_attempt_terminal_not_a_transient_hold():

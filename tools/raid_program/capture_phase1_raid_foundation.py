@@ -1158,7 +1158,7 @@ def _validate_drudge_observation_geometry(
         "navigation_margin": 2.0,
         "lane_separation": 17.0,
         "minimum_distance": 15.0,
-        "minimum_member_spacing": 0.5,
+        "minimum_member_spacing": 3.0,
         "arrival_tolerance": 2.0,
         "tank_arrival_tolerance": 1.0,
     }
@@ -1491,20 +1491,15 @@ def accepted_drudge_contract(
     }
     if len(tank_guids) != 2 or len(offensive_guids) != 7:
         reasons.append("drudge_frozen_role_slots_invalid")
+    role_by_guid = {
+        row.get("guid"): row.get("role")
+        for row in roster
+        if isinstance(row, dict) and _positive_int(row.get("guid"))
+    }
     roster_by_guid = {
         row.get("guid"): row
         for row in roster
         if isinstance(row, dict) and _positive_int(row.get("guid"))
-    }
-    guid_by_slot = {
-        row.get("slot") + 1: row.get("guid")
-        for row in roster
-        if isinstance(row, dict) and isinstance(row.get("slot"), int)
-        and not isinstance(row.get("slot"), bool) and _positive_int(row.get("guid"))
-    }
-    expected_tank_guid_by_source = {
-        250140: guid_by_slot.get(2),
-        250141: guid_by_slot.get(1),
     }
     attempt_id = runtime.get("attempt_id")
     expected_observation_scope = (attempt_id, 0, 3)
@@ -1548,11 +1543,11 @@ def accepted_drudge_contract(
             if not isinstance(observation, dict) or observation.get("landed") is not True:
                 continue
             target_row = candidate_roles.get(observation.get("target_guid"))
+            if target_row and target_row.get("role") == "tank":
+                reasons.append("drudge_native_rush_target_tank")
             source = observation.get("source_spawn_id")
             if source not in {250140, 250141} or not target_row:
                 continue
-            if observation.get("target_guid") != expected_tank_guid_by_source[source]:
-                reasons.append("drudge_native_rush_target_not_opposite_tank")
             target_slot = target_row.get("slot")
             if not isinstance(target_slot, int) or isinstance(target_slot, bool):
                 continue
@@ -1612,8 +1607,12 @@ def accepted_drudge_contract(
             reconstructed[source]["source_guid"] = source_guid
         if row.get("target_guid") not in roster_guids:
             reasons.append("drudge_observation_target_not_in_roster")
-        if row.get("target_guid") != expected_tank_guid_by_source.get(source):
-            reasons.append("drudge_native_rush_target_not_opposite_tank")
+        # The native Drudge Rush is the farthest-player selector.  A tank
+        # target proves that the two non-tank lanes were not separated before
+        # the cast and would make the capture a formation failure rather than
+        # a valid two-group mechanic observation.
+        if role_by_guid.get(row.get("target_guid")) == "tank":
+            reasons.append("drudge_native_rush_target_tank")
         distance = row.get("selected_distance")
         source_reach = row.get("source_combat_reach")
         target_reach = row.get("target_combat_reach")
@@ -1849,8 +1848,7 @@ def accepted_drudge_contract(
                     and candidate.get("alive") is True
                     and candidate.get("same_map") is True
                     and expected_cross_lane
-                    and role == "tank"
-                    and guid == expected_tank_guid_by_source.get(source)
+                    and role != "tank"
                 )
                 if ((is_player and (not registered or candidate_runtime_row is None))
                         or (not is_player and (registered or candidate_runtime_row is not None))
@@ -2000,7 +1998,7 @@ def accepted_drudge_contract(
             )
             if (not _positive_int(member_guid) or member_guid not in roster_guids
                     or not isinstance(member_row, dict)
-                    or member_row.get("role") != "tank"):
+                    or member_row.get("role") != "dps"):
                 reasons.append("drudge_threat_seed_member_identity_invalid")
             elif member_row.get("slot") != (row.get("member_slot") or 0) - 1:
                 reasons.append("drudge_threat_seed_member_slot_invalid")
@@ -2059,7 +2057,7 @@ def accepted_drudge_contract(
                 reasons.append("drudge_native_threat_seed_member_missing_from_candidates")
                 continue
             if (member_guid not in native_candidate_eligible_guids_by_source.get(source, set())
-                    or candidate.get("role") != "tank"
+                    or candidate.get("role") != "dps"
                     or candidate.get("cross_lane") is not True):
                 reasons.append("drudge_native_threat_seed_member_ineligible")
             seed_time = row.get("observed_at_ms")

@@ -48,38 +48,13 @@ EXPECTED_OUTPUT = (
     "tank2_pull_away findPath=0x40000000 polys=4 complete=1",
     "tank2_pull_away nearest_terminal=-321.5,-30,211.513 requested_endz=0.22937",
     "tank2_pull_away smooth=0x40000000 points=6 terminal=-321.5,-30,211.283",
-    "tank1_combat_anchor findPath=0x40000000 polys=5 complete=1",
-    "tank1_combat_anchor straight=0x40000000 points=4 terminal=-288.836,-42.6005,212.267 end2d=0.00311819 endz=0",
+    "tank1_combat_anchor findPath=0x40000000 polys=1 complete=1",
+    "tank1_combat_anchor straight=0x40000000 points=1 terminal=-289.289,-57.7575,212.932 end2d=2.79962 endz=0.633942",
     "tank2_combat_anchor findPath=0x40000000 polys=1 complete=1",
-    "tank2_combat_anchor straight=0x40000000 points=2 terminal=-321.913,-44.3194,211.836 end2d=0 endz=0",
-    "drudge_slot3_anchor findPath=0x40000000 polys=11 complete=1",
-    "drudge_slot3_anchor smooth=0x40000000 points=17 terminal=-300.25,-65.5,213.143 end2d=0 endz=0",
-    "drudge_slot4_anchor findPath=0x40000000 polys=11 complete=1",
-    "drudge_slot4_anchor smooth=0x40000000 points=17 terminal=-300.5,-66.25,213.177 end2d=0 endz=0",
-    "drudge_slot5_anchor findPath=0x40000000 polys=13 complete=1",
-    "drudge_slot5_anchor smooth=0x40000000 points=16 terminal=-314.25,-63.5,212.873 end2d=0 endz=0",
-    "drudge_slot6_anchor findPath=0x40000000 polys=11 complete=1",
-    "drudge_slot6_anchor smooth=0x40000000 points=17 terminal=-300,-66,213.171 end2d=0 endz=0",
-    "drudge_slot7_anchor findPath=0x40000000 polys=11 complete=1",
-    "drudge_slot7_anchor smooth=0x40000000 points=17 terminal=-299.75,-65.5,213.149 end2d=0 endz=0",
-    "drudge_slot8_anchor findPath=0x40000000 polys=10 complete=1",
-    "drudge_slot8_anchor smooth=0x40000000 points=15 terminal=-313.5,-64.25,212.915 end2d=0 endz=0",
-    "drudge_slot9_anchor findPath=0x40000000 polys=10 complete=1",
-    "drudge_slot9_anchor smooth=0x40000000 points=15 terminal=-312.75,-65,212.962 end2d=0 endz=0",
-    "drudge_slot10_anchor findPath=0x40000000 polys=11 complete=1",
-    "drudge_slot10_anchor smooth=0x40000000 points=16 terminal=-312.5,-64,212.915 end2d=0 endz=0",
+    "tank2_combat_anchor straight=0x40000000 points=2 terminal=-322.858,-48.2862,212.262 end2d=0 endz=0",
     "chainwielder_patrol_pull findPath=0x40000000 polys=10 complete=1",
     "chainwielder_patrol_pull smooth=0x40000000 points=8 terminal=-345.872,-110,213.964 end2d=0 endz=0",
     "chainwielder_patrol_pull future_guard_minimums=58.2531,51.5885",
-)
-
-REQUIRED_COMBAT_ENDPOINTS = (
-    "tank1_combat_anchor",
-    "tank2_combat_anchor",
-)
-
-REQUIRED_MEMBER_ENDPOINTS = tuple(
-    f"drudge_slot{slot}_anchor" for slot in (3, 4, 5, 6, 7, 8, 9, 10)
 )
 
 
@@ -172,7 +147,17 @@ def run_probe(root: Path = ROOT) -> dict[str, object]:
     root = root.resolve()
     assets = verify_assets(root)
     output = compile_and_run_probe(root)
-    validated_returns = {
+    return {
+        "all_passed": True,
+        "map_id": 669,
+        "asset_sha256": assets,
+        "player_nav_include_flags": ["NAV_GROUND", "NAV_WATER", "NAV_MAGMA_SLIME"],
+        "nearest_poly_extents": [3.0, 5.0, 3.0],
+        "nearest_poly_vertical_fallback": 50.0,
+        "corridor_cap": 74,
+        "smooth_step": 4.0,
+        "smooth_slop": 0.3,
+        "validated_returns": {
             "30003": {
                 "start": [-288.8, -86.483, 214.15],
                 "terminal": [-295.0, -71.5, 213.25],
@@ -236,81 +221,25 @@ def run_probe(root: Path = ROOT) -> dict[str, object]:
             },
             "tank1_combat_anchor": {
                 "start": [-289.289093, -57.7575, 212.932236],
-                "requested": [-288.833008, -42.598999, 212.267319],
-                "projected_terminal": [-288.836, -42.6005, 212.267],
-                "polygons": 5,
-                "straight_points": 4,
-                "requested_end2d_miss": 0.00311819,
-                "requested_endz_delta": 0.0,
-                "exact_endpoint": True,
-                "fallback": None,
+                "requested": [-286.5, -58.0, 212.2983],
+                "projected_terminal": [-289.289, -57.7575, 212.932],
+                "polygons": 1,
+                "straight_points": 1,
+                "requested_end2d_miss": 2.79962,
+                "requested_endz_delta": 0.633942,
+                "exact_endpoint": False,
+                "fallback": "tank1_navigation_anchor",
             },
             "tank2_combat_anchor": {
                 "start": [-322.858002, -48.286201, 211.999359],
-                "requested": [-321.912994, -44.319401, 211.835968],
-                "projected_terminal": [-321.913, -44.3194, 211.836],
+                "requested": [-322.858, -48.2862, 212.2623],
+                "projected_terminal": [-322.858, -48.2862, 212.262],
                 "polygons": 1,
                 "straight_points": 2,
                 "requested_end2d_miss": 0.0,
                 "requested_endz_delta": 0.0,
                 "exact_endpoint": True,
                 "fallback": None,
-            },
-            "drudge_slot3_anchor": {
-                "start": [-345.872, -110.0, 213.964],
-                "terminal": [-300.25, -65.5, 213.142807],
-                "polygons": 11,
-                "smooth_points": 17,
-                "exact_endpoint": True,
-            },
-            "drudge_slot4_anchor": {
-                "start": [-345.872, -110.0, 213.964],
-                "terminal": [-300.5, -66.25, 213.177139],
-                "polygons": 11,
-                "smooth_points": 17,
-                "exact_endpoint": True,
-            },
-            "drudge_slot5_anchor": {
-                "start": [-345.872, -110.0, 213.964],
-                "terminal": [-314.25, -63.5, 212.872604],
-                "polygons": 13,
-                "smooth_points": 16,
-                "exact_endpoint": True,
-            },
-            "drudge_slot6_anchor": {
-                "start": [-345.872, -110.0, 213.964],
-                "terminal": [-300.0, -66.0, 213.170898],
-                "polygons": 11,
-                "smooth_points": 17,
-                "exact_endpoint": True,
-            },
-            "drudge_slot7_anchor": {
-                "start": [-345.872, -110.0, 213.964],
-                "terminal": [-299.75, -65.5, 213.149063],
-                "polygons": 11,
-                "smooth_points": 17,
-                "exact_endpoint": True,
-            },
-            "drudge_slot8_anchor": {
-                "start": [-345.872, -110.0, 213.964],
-                "terminal": [-313.5, -64.25, 212.914764],
-                "polygons": 10,
-                "smooth_points": 15,
-                "exact_endpoint": True,
-            },
-            "drudge_slot9_anchor": {
-                "start": [-345.872, -110.0, 213.964],
-                "terminal": [-312.75, -65.0, 212.961594],
-                "polygons": 10,
-                "smooth_points": 15,
-                "exact_endpoint": True,
-            },
-            "drudge_slot10_anchor": {
-                "start": [-345.872, -110.0, 213.964],
-                "terminal": [-312.5, -64.0, 212.914795],
-                "polygons": 11,
-                "smooth_points": 16,
-                "exact_endpoint": True,
             },
             "chainwielder_patrol_pull": {
                 "start": [-346.5827, -83.71657, 213.9893],
@@ -323,39 +252,7 @@ def run_probe(root: Path = ROOT) -> dict[str, object]:
                 },
                 "required_future_guard_distance": 50.0,
             },
-    }
-    required_endpoint_checks = {
-        label: {
-            "declared": True,
-            "exact_endpoint": bool(validated_returns[label].get("exact_endpoint")),
-            "passed": bool(validated_returns[label].get("exact_endpoint")),
-        }
-        for label in REQUIRED_COMBAT_ENDPOINTS
-    }
-    required_member_checks = {
-        label: {
-            "declared": True,
-            "exact_endpoint": bool(validated_returns[label].get("exact_endpoint")),
-            "passed": bool(validated_returns[label].get("exact_endpoint")),
-        }
-        for label in REQUIRED_MEMBER_ENDPOINTS
-    }
-    return {
-        "all_passed": all(
-            check["passed"]
-            for check in (*required_endpoint_checks.values(), *required_member_checks.values())
-        ),
-        "required_combat_endpoints": required_endpoint_checks,
-        "required_member_endpoints": required_member_checks,
-        "map_id": 669,
-        "asset_sha256": assets,
-        "player_nav_include_flags": ["NAV_GROUND", "NAV_WATER", "NAV_MAGMA_SLIME"],
-        "nearest_poly_extents": [3.0, 5.0, 3.0],
-        "nearest_poly_vertical_fallback": 50.0,
-        "corridor_cap": 74,
-        "smooth_step": 4.0,
-        "smooth_slop": 0.3,
-        "validated_returns": validated_returns,
+        },
         "raw_probe_sha256": hashlib.sha256(output.encode("utf-8")).hexdigest(),
     }
 

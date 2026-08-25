@@ -589,7 +589,6 @@ void BotWorldPopulationMgr::UpdateValidationCohortRaidRuntime(
                 Party().ValidationRouteDrudgePrepullAttemptId = 0;
                 Party().ValidationRouteDrudgePrepullWipeGeneration = 0;
                 Party().ValidationRouteDrudgePrepullRouteGeneration = 0;
-                Party().ValidationRouteDrudgeEarlyPullRecoveryAccepted = false;
                 Party().ValidationRouteDrudgeHealthSyncEvidenceAttemptId = 0;
                 Party().ValidationRouteDrudgeHealthSyncEvidenceWipeGeneration = 0;
                 Party().ValidationRouteDrudgeHealthSyncEvidenceRouteGeneration = 0;

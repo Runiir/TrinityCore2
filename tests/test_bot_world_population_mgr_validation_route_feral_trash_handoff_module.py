@@ -15,7 +15,7 @@ CMAKE = ROOT / "src/server/game/CMakeLists.txt"
 def test_feral_trash_handoff_module_is_bounded_and_registered():
     assert len(MODULE.read_text().splitlines()) <= 1000
     assert len(HEADER.read_text().splitlines()) <= 1000
-    assert len(MGR_HEADER.read_text().splitlines()) <= 1000
+    assert len(MGR_HEADER.read_text().splitlines()) == 1000
     assert "BotWorldPopulationMgrValidationRouteFeralTrashHandoff.cpp" in CMAKE.read_text()
     assert '#include "Bots/BotWorldPopulationMgr.h"' in MODULE.read_text()
     assert "FeralTrashHandoffCallbacks" in HEADER.read_text()

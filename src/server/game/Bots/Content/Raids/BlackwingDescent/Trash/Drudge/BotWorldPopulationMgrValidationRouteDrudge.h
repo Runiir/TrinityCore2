@@ -90,7 +90,6 @@ struct DrudgeLaneContext
     bool AssignedTank = false;
     std::string Role;
     bool SourceCombatStarted = false;
-    bool CohortCombatLinked = false;
     bool ContractResolved = false;
     float AxisX = 0.0f;
     float AxisY = 0.0f;
@@ -144,7 +143,6 @@ struct DrudgeLaneContext
     bool FormationRequiredMutable = false;
     bool PairTooClose = false;
     bool PrepullStaged = false;
-    bool EarlyPullRecoveryActive = false;
     bool RecoveryFormationActive = false;
 
     DrudgeLaneContext(DrudgeLaneRequest const& request);

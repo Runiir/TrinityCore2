@@ -739,18 +739,17 @@ def test_bwd_magmaw_trash_splits_chainwielder_hazard_from_drudge_charge_contract
     assert math.dist(
         (tank_anchors[1]["x"], tank_anchors[1]["y"]),
         (tank_anchors[2]["x"], tank_anchors[2]["y"]),
-    ) > 33.0
+    ) > 35.0
     navigation_anchors = {
         row["roster_slot"]: row for row in drudges["split_tank_navigation_anchors"]
     }
     assert set(navigation_anchors) == {1, 2}
-    assert navigation_anchors == tank_anchors
     assert drudges["split_arrival_tolerance_yards"] == 1.0
     assert drudges["split_tank_arrival_tolerance_yards"] == 1.0
     assert math.dist(
         (navigation_anchors[1]["x"], navigation_anchors[1]["y"]),
         (navigation_anchors[2]["x"], navigation_anchors[2]["y"]),
-    ) > 33.0
+    ) > 34.0
     assert (drudges["minimum_distance_source_entry"], drudges["minimum_distance_yards"]) == (42362, 15.0)
     assert (drudges["thunderclap_spell_id"], drudges["charge_spell_id"], drudges["charge_range_yards"]) == (79604, 79630, 80.0)
     assert drudges["charge_native_interval_ms"] == 20000
@@ -774,9 +773,6 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     actions = (BOT_DIR / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp").read_text(
         encoding="utf-8"
     )
-    actions += (BOT_DIR / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeThreat.cpp").read_text(
-        encoding="utf-8"
-    )
     seed = (BOT_DIR / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp").read_text(
         encoding="utf-8"
     )
@@ -784,12 +780,11 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     # The facade owns only dispatch ordering. The typed contract, geometry,
     # action phases, and threat-seed coordinator are asserted in their
     # respective translation units so a split cannot hide a missing phase.
-    terminal = dispatch.index("terminalArrivalContext.Run()")
-    lanes = dispatch.index("TryValidationRouteDrudgeChargeLanes(state, bot, power, stage")
     movement = dispatch.index("TryValidationRouteMovementCheck(state, bot, power, stage")
     patrol = dispatch.index("tryValidationRoutePatrolPull()")
     minimum = dispatch.index("TryValidationRouteDrudgeMinimumDistance(state, bot, power, stage")
-    assert lanes < terminal < movement < patrol < minimum
+    lanes = dispatch.index("TryValidationRouteDrudgeChargeLanes(state, bot, power, stage")
+    assert movement < patrol < minimum < lanes
 
     for token in (
         "trash_two_tank_charge_lanes",
@@ -842,8 +837,7 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
         "ExactRecoveryTankPathsProven",
         "ExactLiveRecoveryTankPathsPreflighted",
         "drudge_prepull_exact_roster_staged",
-        "earlyPullOwnershipWindow",
-        "drudge_prepull_early_combat_recovery",
+        "drudge_prepull_combat_before_exact_roster_staged",
         "drudge_tank_anchor_strict_path_rejected",
         "drudge_tank_recovery_anchor_preflight_wait",
         "drudge_recovery_anchor_live_preflight_failed",
@@ -870,23 +864,8 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
         actions.index("if (PrepullStaged && !NativeChargePending"):
         actions.index("DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions")
     ]
-    early_pull_window = actions.index("bool const earlyPullOwnershipWindow =")
-    early_pull_recovery = actions.index("EarlyPullRecoveryActive =")
-    seed_coordinator = actions.index("RunDrudgeSeedCoordinator", early_pull_recovery)
-    taunt = actions.index("drudge_lane_native_taunt", seed_coordinator)
-    assert early_pull_window < early_pull_recovery < seed_coordinator < taunt
-    assert "|| earlyPullOwnershipWindow;" in actions[early_pull_recovery:seed_coordinator]
     assert formation.index("drudge_tank_anchor_strict_path_rejected") < formation.index(
         "drudge_tank_recovery_anchor_preflight_wait"
-    )
-    assert formation.index("RunDrudgeSeedCoordinator") < formation.index(
-        "drudge_lane_native_taunt"
-    )
-    assert formation.index("drudge_native_tank_threat_sustain") < formation.index(
-        "bool const recoveryNeeded"
-    )
-    assert formation.index("!NativeChargePending && !ChargeAwaitingLanding") < formation.index(
-        "drudge_native_tank_threat_sustain"
     )
     assert formation.index("LandedRushRecoveryComplete") < formation.index(
         "drudge_native_charge_reseparation_complete"
@@ -899,7 +878,7 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     threat = actions[
         actions.index("DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions"):
     ]
-    assert threat.index("RunDrudgeSeedCoordinator") < threat.index("laneOwnershipSafe")
+    assert threat.index("laneOwnershipSafe") < threat.index("RunDrudgeSeedCoordinator")
     assert threat.index("RunDrudgeSeedCoordinator") < threat.index(
         "drudge_lane_profile_hold_contract_unsafe"
     )
@@ -911,14 +890,10 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
         "ExactDrudgeAuthorityRoster",
         "ResolveDrudgeSeedCandidate",
         "AdvanceCoordinator",
-        "initialSeedOpportunity",
-        "!seedState.SeededLanes[0] && !seedState.SeededLanes[1]",
-        "!chargeObserved",
-        "bothVictimsOwned || initialSeedOpportunity",
         "drudge_pre_first_rush_threat_seed",
         "ValidationRouteDrudgeThreatSeedFailure",
         "native_action_rejected",
-        'roster->second.Role != "tank"',
+        'selected.Action.MovementDirective != "ranged"',
         'selected.Action.MaxRange <= 5.0f',
         "SetAllOffenseSuppressed",
     ):
