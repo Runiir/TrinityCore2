@@ -265,22 +265,31 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
     assert "party.ValidationRouteDrudgeThreatSeedClosed" in seed
     assert "party.ValidationRouteDrudgeThreatSeedFailure" in seed
     assert '"drudge_pre_first_rush_seed_rejected:"' in seed
+    assert '"drudge_pre_first_rush_seed_approach"' in seed
     assert '"native_action_rejected"' in seed
     assert "candidates[lane].ActionAttempted" in seed
     assert "for (uint32 lane = 0; lane < candidates.size(); ++lane)" in seed
     assert "Result const transition = Advance(seedState, rushInput);" in callback
-    assert "candidate, source, 1, false, 0, false, false, true, false, true" in seed
-    assert "candidates[lane].State, candidates[lane].Bot" in seed
-    assert "1, false, 0, false, false, true, false, true" in seed
+    assert "BotClassSpecActionProfileStore::BuildCandidates(candidate, source, profile)" in seed
+    assert "EffectiveSeedMaxRange" in seed
+    assert "EffectiveSeedMinRange" in seed
+    assert "SubmitSeedApproach(context, selected, source)" in seed
+    assert "executor.ExecuteCombat(" in seed
+    assert "source->GetGUID().GetCounter()" in seed
+    assert "candidate.Distance <= candidate.Action.MaxRange" in seed
+    assert "selected.Action.SuppressAreaDamage = true" in seed
+    assert "selected.Action.MeleeAutoAttackExternallyReconciled = true" in seed
+    assert "category == BotCombatActionCategory::Taunt" in seed
+    assert "category == BotCombatActionCategory::Cleave" not in seed
     assert 'roster->second.Role != "tank"' in seed
-    assert 'selected.Action.MaxRange <= 5.0f' in seed
+    assert "maxRange <= minimumSafeRange" in seed
     assert 'selected.Action.AutoAttackMode == "ranged"' not in seed
     assert "AllPendingLanesReady" in seed
     assert "allPendingCandidatesReady" in seed
     assert "SeedGate::PendingLaneBarrier" in seed
     assert "if (allPendingCandidatesReady)" in seed
     assert seed.index("if (allPendingCandidatesReady)") < seed.index(
-        "manager.ExecuteProfileCombatAction"
+        "executor.ExecuteCombat"
     )
 
     roster_gate = seed.index("bool DrudgeLaneContext::ExactDrudgeAuthorityRoster")
@@ -316,3 +325,71 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
     assert "!hostileTargetOnly && state && TryEnsurePersistentCombatSetup" in executor
     assert "!hostileTargetOnly && state" in executor
     assert "&& TryEnsureCombatTotems" in executor
+
+
+def test_drudge_seed_approach_preserves_lane_and_native_range(tmp_path):
+    source = tmp_path / "drudge_seed_approach.cpp"
+    binary = tmp_path / "drudge_seed_approach"
+    source.write_text(
+        r'''
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeSeedApproach.h"
+#include <cassert>
+#include <cmath>
+
+using namespace BotRaidDrudgeSeedApproach;
+
+int main()
+{
+    Input paladin;
+    paladin.Actor = {18.0f, 0.0f, 2.0f};
+    paladin.Source = {-15.5f, 0.0f, 2.0f};
+    paladin.AxisX = 1.0f;
+    paladin.LaneSign = 1.0f;
+    paladin.MinimumLaneProjection = 3.75f;
+    paladin.MinimumSourceDistance = 16.0f;
+    paladin.ActionMaxRange = 30.0f;
+    Result ranged = Plan(paladin);
+    assert(ranged.Needed && ranged.Safe);
+    assert(std::fabs(ranged.DesiredDistance - 29.0f) < 0.001f);
+    assert(ranged.Destination.X >= 3.75f);
+
+    Input deathKnight = paladin;
+    deathKnight.Actor = {18.0f, 4.0f, 2.0f};
+    deathKnight.Source = {-12.0f, 4.0f, 2.0f};
+    deathKnight.ActionMaxRange = 20.0f;
+    Result threatBuild = Plan(deathKnight);
+    assert(threatBuild.Needed && threatBuild.Safe);
+    assert(std::fabs(threatBuild.DesiredDistance - 19.0f) < 0.001f);
+
+    Input melee = paladin;
+    melee.ActionMaxRange = 10.0f;
+    Result rejected = Plan(melee);
+    assert(!rejected.Safe && !rejected.Needed);
+
+    Input crossesLane = deathKnight;
+    crossesLane.Actor = {5.0f, 0.0f, 0.0f};
+    crossesLane.Source = {-30.0f, 0.0f, 0.0f};
+    crossesLane.ActionMaxRange = 20.0f;
+    Result unsafe = Plan(crossesLane);
+    assert(unsafe.Needed && !unsafe.Safe);
+}
+''',
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [
+            "c++",
+            "-std=c++17",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-I",
+            str(ROOT / "src/server/game"),
+            str(source),
+            "-o",
+            str(binary),
+        ],
+        check=True,
+        cwd=ROOT,
+    )
+    subprocess.run([str(binary)], check=True, cwd=ROOT)

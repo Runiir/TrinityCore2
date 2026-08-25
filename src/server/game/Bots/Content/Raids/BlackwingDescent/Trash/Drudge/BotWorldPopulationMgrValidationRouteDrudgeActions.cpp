@@ -370,8 +370,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         && Sources[1 - LaneIndex]->GetMeleeRange(OtherTank)
             <= Manager.Cohort().Config.ValidationRouteSplitNativeMeleeStopYards;
     BotRaidDrudgeGeometry::Result const tankStage = BotRaidDrudgeGeometry::Advance(geometryState, input);
-    EarlyPullRecoveryActive = SourceCombatStarted && CohortCombatLinked && !PrepullStaged && !Charge && tankStage.NativeEngagementAllowed;
     auto& party = Manager.Party();
+    EarlyPullRecoveryActive = party.ValidationRouteDrudgeEarlyPullRecoveryAccepted || (SourceCombatStarted && CohortCombatLinked && !PrepullStaged && !Charge && tankStage.NativeEngagementAllowed);
     if (EarlyPullRecoveryActive && !party.ValidationRouteDrudgeEarlyPullRecoveryAccepted)
     {
         party.ValidationRouteDrudgeEarlyPullRecoveryAccepted = true;
