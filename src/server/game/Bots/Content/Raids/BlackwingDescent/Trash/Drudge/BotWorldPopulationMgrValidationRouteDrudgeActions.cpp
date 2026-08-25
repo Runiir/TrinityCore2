@@ -620,16 +620,20 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         State.TargetGuid = LaneSource->GetGUID();
         return PhaseResult::Handled;
     }
-
+    bool alreadySafe = AssignedTank ? CachedAnchorSafe(State, Bot) : GroupPositionSafe(Bot);
+    bool const memberTankConstraintsSafe = !AssignedTank || tankStage.NativeOwnershipAllowed;
+    ContinueToThreatAndEvidence = BotRaidDrudgeGeometry::ShouldContinueToThreatAndEvidenceAfterLandedRush(
+            NativeChargePending, ChargeAwaitingLanding, PrepullStaged, alreadySafe,
+            FormationRequiredMutable, PairTooClose, tankStage.TankMovementAllowed,
+            memberTankConstraintsSafe, !NativeChargeContractViolation && !NativeChargeTargetLaneViolation
+                && !NativeChargeTargetRoleViolation);
     bool const recoveryNeeded = !PrepullStaged || !tankStage.TankMovementAllowed
         || !tankStage.NativeEngagementAllowed || FormationRequiredMutable
         || PairTooClose || NativeChargePending || ChargeAwaitingLanding;
-    if (recoveryNeeded)
+    if (recoveryNeeded && !ContinueToThreatAndEvidence)
     {
         HoldOffense();
         bool moved = false;
-        bool alreadySafe = AssignedTank ? CachedAnchorSafe(State, Bot)
-                                        : GroupPositionSafe(Bot);
         bool const supportAvailable = tankStage.SupportAllowed && Role == "healer";
         BotRaidDrudgeGeometry::MemberRecoveryAction const recoveryAction =
             BotRaidDrudgeGeometry::SelectMemberRecoveryAction(
@@ -703,7 +707,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
                 ? "drudge_lane_native_path_rejected" : State.LastPathRejectReason;
         return PhaseResult::Handled;
     }
-    if (NativeChargePending)
+    if (NativeChargePending && !ContinueToThreatAndEvidence)
     {
         HoldOffense();
         Record(NativeChargeSource, "drudge_native_charge_reseparation_wait",
@@ -895,7 +899,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions()
     }
 
     if (Sources[0]->IsAlive() && Sources[1]->IsAlive()
-        && !ExactRosterReSeparated())
+        && !ExactRosterReSeparated() && !ContinueToThreatAndEvidence)
     {
         HoldOffense();
         Record(LaneSource, "drudge_lane_profile_hold_contract_unsafe", SourceSeparation);

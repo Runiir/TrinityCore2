@@ -179,6 +179,30 @@ inline MemberRecoveryAction SelectMemberRecoveryAction(
     return MemberRecoveryAction::Continue;
 }
 
+// Formation remains the owner of an unsafe landed-Rush member.  A member that
+// is already safe may hand the decision to the existing threat/evidence phase
+// while its set-and-forget native movement remains active.  This is only a
+// phase transition: lane ownership, exact-roster, Rush, kill-sync,
+// seed-distance, and native action gates stay in RunThreatAndEvidenceActions.
+// ProfileActionAccepted is deliberately not an input because it is evidence
+// produced by that phase, not permission to enter it.
+inline bool ShouldContinueToThreatAndEvidenceAfterLandedRush(
+    bool landedRushRecoveryActive,
+    bool chargeAwaitingLanding,
+    bool exactPrepullStaged,
+    bool memberGeometrySafe,
+    bool formationRequired,
+    bool pairTooClose,
+    bool tankMovementAllowed,
+    bool memberTankConstraintsSafe,
+    bool nativeRushContractSafe = true)
+{
+    return landedRushRecoveryActive && !chargeAwaitingLanding
+        && exactPrepullStaged && memberGeometrySafe && !formationRequired
+        && !pairTooClose && tankMovementAllowed
+        && memberTankConstraintsSafe && nativeRushContractSafe;
+}
+
 struct Input
 {
     Scope Identity;

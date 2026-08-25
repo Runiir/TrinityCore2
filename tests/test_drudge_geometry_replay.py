@@ -78,6 +78,28 @@ int main()
     assert(SelectMemberRecoveryAction(false, false, false)
         == MemberRecoveryAction::Continue);
 
+    // A safe member may reach the existing threat/evidence phase during a
+    // landed Rush. Formation still owns unsafe members, pair-too-close
+    // geometry, and every tank constraint before that handoff.
+    assert(ShouldContinueToThreatAndEvidenceAfterLandedRush(
+        true, false, true, true, false, false, true, true));
+    assert(!ShouldContinueToThreatAndEvidenceAfterLandedRush(
+        true, false, true, false, false, false, true, true));
+    assert(!ShouldContinueToThreatAndEvidenceAfterLandedRush(
+        true, false, true, true, false, true, true, true));
+    assert(!ShouldContinueToThreatAndEvidenceAfterLandedRush(
+        true, false, true, true, false, false, false, true));
+    assert(!ShouldContinueToThreatAndEvidenceAfterLandedRush(
+        true, false, true, true, false, false, true, false));
+    assert(!ShouldContinueToThreatAndEvidenceAfterLandedRush(
+        false, false, true, true, false, false, true, true));
+    assert(!ShouldContinueToThreatAndEvidenceAfterLandedRush(
+        true, true, true, true, false, false, true, true));
+    assert(!ShouldContinueToThreatAndEvidenceAfterLandedRush(
+        true, false, false, true, false, false, true, true));
+    assert(!ShouldContinueToThreatAndEvidenceAfterLandedRush(
+        true, false, true, true, false, false, true, true, false));
+
     assert(SelectMinimumDistanceOwner(false, false)
         == MinimumDistanceOwner::GenericRouteSafety);
     assert(SelectMinimumDistanceOwner(false, true)
@@ -545,6 +567,18 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "drudge_native_charge_reseparation_complete" in actions
     assert "if (TryMinimumDistance(true))" not in lanes
     assert '&& !currentScopeHasNativeRush && Role == "dps"' in actions
+
+
+def test_safe_landed_rush_member_reaches_threat_phase_before_global_closure():
+    actions = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/"
+               "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp").read_text(
+                   encoding="utf-8")
+    normalized = " ".join(actions.split())
+    assert "&& !ExactRosterReSeparated() && !ContinueToThreatAndEvidence" in normalized
+    assert normalized.index("!ExactRosterReSeparated()") < normalized.index(
+        "!ContinueToThreatAndEvidence", normalized.index("!ExactRosterReSeparated()"))
+    assert normalized.index("ShouldContinueToThreatAndEvidenceAfterLandedRush") < normalized.index(
+        "DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions")
 
 
 def test_landed_rush_recovery_latches_the_scoped_two_tank_return_barrier():

@@ -145,6 +145,7 @@ struct DrudgeLaneContext
     bool PairTooClose = false;
     bool PrepullStaged = false;
     bool RecoveryFormationActive = false;
+    bool ContinueToThreatAndEvidence = false;
 
     DrudgeLaneContext(DrudgeLaneRequest const& request);
     bool Run();
