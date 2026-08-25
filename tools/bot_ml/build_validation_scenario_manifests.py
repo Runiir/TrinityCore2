@@ -174,30 +174,28 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
     for home, tank in zip(ordered_homes, ordered_tanks):
         if math.hypot(home[0] - float(tank["x"]), home[1] - float(tank["y"])) > minimum:
             return False, "split_combat_anchor_bound"
-    guaranteed_separation = home_separation + sum(
-        max(0.0, displacement - melee_stop - tank_arrival) for displacement in outward
-    )
-    if guaranteed_separation + 1e-6 < minimum + margin:
+    combat_chased_sources: list[tuple[float, float, float]] = []
+    for home, tank in zip(ordered_homes, ordered_tanks):
+        tank_x = float(tank["x"])
+        tank_y = float(tank["y"])
+        chase_x = tank_x - home[0]
+        chase_y = tank_y - home[1]
+        chase_distance = math.hypot(chase_x, chase_y)
+        travel = max(0.0, chase_distance - melee_stop)
+        scale = travel / chase_distance if chase_distance > 0.0 else 0.0
+        combat_chased_sources.append((
+            home[0] + chase_x * scale,
+            home[1] + chase_y * scale,
+            home[2],
+        ))
+    if math.hypot(
+        combat_chased_sources[1][0] - combat_chased_sources[0][0],
+        combat_chased_sources[1][1] - combat_chased_sources[0][1],
+    ) + 1e-6 < minimum + margin + 2.0 * tank_arrival:
         return False, "split_combat_anchor_insufficient_native_chase"
     member_by_slot = {int(row.get("roster_slot") or 0): row for row in members}
     if set(member_by_slot) != set(range(1, 11)):
         return False, "split_member_anchor_identity"
-    source_displacements = [
-        max(0.0, displacement - melee_stop - tank_arrival)
-        for displacement in outward
-    ]
-    chased_sources = [
-        (
-            ordered_homes[0][0] - axis_x * source_displacements[0],
-            ordered_homes[0][1] - axis_y * source_displacements[0],
-            ordered_homes[0][2],
-        ),
-        (
-            ordered_homes[1][0] + axis_x * source_displacements[1],
-            ordered_homes[1][1] + axis_y * source_displacements[1],
-            ordered_homes[1][2],
-        ),
-    ]
     ordered_navigation = [navigation_by_slot[slot] for slot in tank_slots]
     navigation_points = [
         (float(row["x"]), float(row["y"]), float(row["z"]))
@@ -249,8 +247,9 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
         if slot in tank_slots:
             continue
         anchor = tuple(float(member.get(axis) or 0.0) for axis in ("x", "y", "z"))
-        if any(math.hypot(anchor[0] - source[0], anchor[1] - source[1]) + 1e-6 < minimum
-               for source in chased_sources):
+        if any(math.hypot(anchor[0] - source[0], anchor[1] - source[1]) + 1e-6
+               < minimum + tank_arrival
+               for source in combat_chased_sources):
             return False, "split_member_anchor_source_unsafe"
         if any(math.hypot(anchor[0] - source[0], anchor[1] - source[1]) + 1e-6
                < minimum + tank_arrival

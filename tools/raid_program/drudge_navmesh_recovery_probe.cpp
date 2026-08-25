@@ -192,15 +192,19 @@ static bool ExactSearchPath(dtNavMeshQuery* query, SearchPoint const& start,
 
 static void RunBoundedSearch(dtNavMeshQuery* query)
 {
-    // The bounded grid covers a 12-yard square around each sealed navigation
-    // start.  Requested Z is grounded from the exact nearest Detour polygon;
+    // The bounded grid covers each source's complete legal 15-yard tank
+    // circle. Requested Z is grounded from the exact nearest Detour polygon;
     // this avoids accepting a coordinate on the wrong floor while preserving
     // the same include flags and nearest-poly extents as the parity probe.
     constexpr float step = 0.25f;
-    constexpr float radius = 12.0f;
+    constexpr float radius = 15.0f;
     SearchPoint const starts[] = {
         {-289.289093f, -57.7575f, 212.932236f},
         {-322.858002f, -48.286201f, 211.999359f},
+    };
+    SearchPoint const centers[] = {
+        {-298.833f, -50.349f, 212.2983f},
+        {-307.913f, -49.5694f, 212.2623f},
     };
     dtQueryFilter filter;
     filter.setIncludeFlags(0x1 | 0x4 | 0x8);
@@ -208,6 +212,7 @@ static void RunBoundedSearch(dtNavMeshQuery* query)
     for (unsigned tank = 0; tank < 2; ++tank)
     {
         SearchPoint const& start = starts[tank];
+        SearchPoint const& center = centers[tank];
         float startDetour[3] = {start.y, start.z, start.x};
         float extents[3] = {3.0f, 5.0f, 3.0f};
         dtPolyRef startRef = 0;
@@ -227,9 +232,9 @@ static void RunBoundedSearch(dtNavMeshQuery* query)
             for (int yi = -gridRadius; yi <= gridRadius; ++yi)
             {
                 SearchPoint requested{
-                    start.x + float(xi) * step,
-                    start.y + float(yi) * step,
-                    start.z };
+                    center.x + float(xi) * step,
+                    center.y + float(yi) * step,
+                    center.z };
                 float endDetour[3] = {requested.y, requested.z, requested.x};
                 float endClosest[3]{};
                 dtPolyRef endRef = 0;
@@ -261,6 +266,54 @@ static void RunBoundedSearch(dtNavMeshQuery* query)
                   << " start_valid=1 step=" << step << " radius=" << radius
                   << '\n';
     }
+}
+
+static void RunMemberSearch(dtNavMeshQuery* query)
+{
+    constexpr float step = 0.25f;
+    SearchPoint const start{-345.872f, -110.0f, 213.964f};
+    dtQueryFilter filter;
+    filter.setIncludeFlags(0x1 | 0x4 | 0x8);
+    filter.setExcludeFlags(0);
+    unsigned grounded = 0;
+    unsigned exact = 0;
+    for (float x = -330.0f; x <= -280.0f; x += step)
+        for (float y = -85.0f; y <= -25.0f; y += step)
+        {
+            SearchPoint requested{x, y, start.z};
+            float endDetour[3] = {requested.y, requested.z, requested.x};
+            float extents[3] = {3.0f, 5.0f, 3.0f};
+            float endClosest[3]{};
+            dtPolyRef endRef = 0;
+            dtStatus status = query->findNearestPoly(endDetour, extents,
+                &filter, &endRef, endClosest);
+            if (dtStatusFailed(status) || !endRef)
+                continue;
+            ++grounded;
+            SearchPoint const endpoint{x, y, endClosest[1]};
+            SearchPoint actual{};
+            int polygons = 0;
+            int straightPoints = 0;
+            float end2d = 0.0f;
+            float endz = 0.0f;
+            if (!ExactSearchPath(query, start, endpoint, actual, polygons,
+                    straightPoints, end2d, endz))
+                continue;
+            ++exact;
+            std::cout << std::fixed << std::setprecision(6)
+                      << "MEMBER_CANDIDATE x=" << endpoint.x
+                      << " y=" << endpoint.y << " z=" << endpoint.z
+                      << " actual_x=" << actual.x
+                      << " actual_y=" << actual.y
+                      << " actual_z=" << actual.z
+                      << " end2d=" << end2d << " endz=" << endz
+                      << " polygons=" << polygons
+                      << " straight_points=" << straightPoints << '\n';
+        }
+    std::cout << "MEMBER_SUMMARY candidates=" << exact
+              << " grounded_requests=" << grounded
+              << " step=" << step << " x_min=-330 x_max=-280"
+              << " y_min=-85 y_max=-25\n";
 }
 
 int main(int argc, char** argv)
@@ -308,6 +361,13 @@ int main(int argc, char** argv)
         dtFreeNavMesh(mesh);
         return 0;
     }
+    if (argc > 1 && std::string(argv[1]) == "--search-members")
+    {
+        RunMemberSearch(query);
+        dtFreeNavMeshQuery(query);
+        dtFreeNavMesh(mesh);
+        return 0;
+    }
     TestPoint tests[] = {
         {"30003", -288.800f, -86.483f, 214.150f, -295.0f, -71.5f, 213.25f},
         {"30008", -338.018f, -64.932f, 212.751f, -325.0f, -64.0f, 212.82f},
@@ -326,9 +386,25 @@ int main(int argc, char** argv)
         {"tank2_pull_away", -322.858002f, -48.286201f, 211.999359f,
             -321.5f, -30.0f, 211.283429f},
         {"tank1_combat_anchor", -289.289093f, -57.7575f, 212.932236f,
-            -286.5f, -58.0f, 212.2983f},
+            -288.833008f, -42.598999f, 212.267319f},
         {"tank2_combat_anchor", -322.858002f, -48.286201f, 211.999359f,
-            -322.858f, -48.2862f, 212.2623f},
+            -321.912994f, -44.319401f, 211.835968f},
+        {"drudge_slot3_anchor", -345.872f, -110.0f, 213.964f,
+            -300.25f, -65.5f, 213.142807f},
+        {"drudge_slot4_anchor", -345.872f, -110.0f, 213.964f,
+            -300.5f, -66.25f, 213.177139f},
+        {"drudge_slot5_anchor", -345.872f, -110.0f, 213.964f,
+            -314.25f, -63.5f, 212.872604f},
+        {"drudge_slot6_anchor", -345.872f, -110.0f, 213.964f,
+            -300.0f, -66.0f, 213.170898f},
+        {"drudge_slot7_anchor", -345.872f, -110.0f, 213.964f,
+            -299.75f, -65.5f, 213.149063f},
+        {"drudge_slot8_anchor", -345.872f, -110.0f, 213.964f,
+            -313.5f, -64.25f, 212.914764f},
+        {"drudge_slot9_anchor", -345.872f, -110.0f, 213.964f,
+            -312.75f, -65.0f, 212.961594f},
+        {"drudge_slot10_anchor", -345.872f, -110.0f, 213.964f,
+            -312.5f, -64.0f, 212.914795f},
         {"chainwielder_patrol_pull", -346.5827f, -83.71657f, 213.9893f,
             -345.872f, -110.0f, 213.964f}
     };

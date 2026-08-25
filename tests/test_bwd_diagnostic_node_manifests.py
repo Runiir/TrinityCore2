@@ -78,6 +78,27 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_uses_opposite_tanks():
         if row.get("mechanic_profile") == "trash_two_tank_charge_lanes"
     )
     assert drudge_split_geometry_status(drudges) == (True, "")
+    homes = drudges["split_source_home_anchors"]
+    tanks = drudges["split_tank_combat_anchors"]
+    axis_x = homes[1]["x"] - homes[0]["x"]
+    axis_y = homes[1]["y"] - homes[0]["y"]
+    axis_length = math.hypot(axis_x, axis_y)
+    axis_x, axis_y = axis_x / axis_length, axis_y / axis_length
+    legacy_axis_separation = axis_length + sum(
+        max(
+            0.0,
+            sign * (
+                (tank["x"] - home["x"]) * axis_x
+                + (tank["y"] - home["y"]) * axis_y
+            ) - drudges["split_native_melee_stop_yards"]
+            - drudges["split_tank_arrival_tolerance_yards"],
+        )
+        for sign, home, tank in zip((-1.0, 1.0), homes, tanks)
+    )
+    assert legacy_axis_separation < (
+        drudges["split_minimum_separation_yards"]
+        + drudges["split_navigation_margin_yards"]
+    )
     assert drudges["split_seed_roster_slots"] == [2, 1]
     assert drudges["split_healer_roster_slots"] == [3, 4, 5]
     assert drudges["split_seed_max_range_yards"] == 35.0
@@ -140,10 +161,10 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_uses_opposite_tanks():
 def test_opposite_tank_contract_is_bound_in_canonical_and_magmaw_diagnostic_routes():
     config = _config()
     expected_non_tank_anchors = {
-        3: (-300.5, -69.0), 4: (-300.5, -68.5),
-        5: (-311.0, -67.0), 6: (-300.0, -69.0),
-        7: (-300.0, -68.5), 8: (-311.0, -66.5),
-        9: (-310.5, -67.0), 10: (-310.5, -66.5),
+        3: (-300.25, -65.5), 4: (-300.5, -66.25),
+        5: (-314.25, -63.5), 6: (-300.0, -66.0),
+        7: (-299.75, -65.5), 8: (-313.5, -64.25),
+        9: (-312.75, -65.0), 10: (-312.5, -64.0),
     }
     for scenario_id in (CANONICAL_ID, DIAGNOSTIC_IDS["magmaw"]):
         scenario_pool = config["scenarios"] + config["diagnostic_scenarios"]

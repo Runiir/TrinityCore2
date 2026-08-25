@@ -739,17 +739,18 @@ def test_bwd_magmaw_trash_splits_chainwielder_hazard_from_drudge_charge_contract
     assert math.dist(
         (tank_anchors[1]["x"], tank_anchors[1]["y"]),
         (tank_anchors[2]["x"], tank_anchors[2]["y"]),
-    ) > 35.0
+    ) > 33.0
     navigation_anchors = {
         row["roster_slot"]: row for row in drudges["split_tank_navigation_anchors"]
     }
     assert set(navigation_anchors) == {1, 2}
+    assert navigation_anchors == tank_anchors
     assert drudges["split_arrival_tolerance_yards"] == 1.0
     assert drudges["split_tank_arrival_tolerance_yards"] == 1.0
     assert math.dist(
         (navigation_anchors[1]["x"], navigation_anchors[1]["y"]),
         (navigation_anchors[2]["x"], navigation_anchors[2]["y"]),
-    ) > 34.0
+    ) > 33.0
     assert (drudges["minimum_distance_source_entry"], drudges["minimum_distance_yards"]) == (42362, 15.0)
     assert (drudges["thunderclap_spell_id"], drudges["charge_spell_id"], drudges["charge_range_yards"]) == (79604, 79630, 80.0)
     assert drudges["charge_native_interval_ms"] == 20000
