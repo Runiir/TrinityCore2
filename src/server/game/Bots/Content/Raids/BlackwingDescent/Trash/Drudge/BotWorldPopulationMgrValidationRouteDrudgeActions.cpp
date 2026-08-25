@@ -422,14 +422,14 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         Record(LaneSource, "drudge_tank_recovery_anchor_reached", SourceSeparation);
     };
     markRecoveryAnchorReached();
-    bool const combatPathsProvenBeforeTick = PrepullStaged
-        && !RecoveryFormationActive && ExactCombatTankPathsProven();
-    bool const recoveryPathsProvenBeforeTick = PrepullStaged
+    bool const recoveryAdmission = PrepullStaged || EarlyPullRecoveryActive;
+    bool const combatPathsProvenBeforeTick = PrepullStaged && !RecoveryFormationActive && ExactCombatTankPathsProven();
+    bool const recoveryPathsProvenBeforeTick = recoveryAdmission
         && RecoveryFormationActive && ExactRecoveryTankPathsProven();
-    bool const recoveryAnchorsReachedBeforeTick = PrepullStaged
+    bool const recoveryAnchorsReachedBeforeTick = recoveryAdmission
         && RecoveryFormationActive && RecoveryTankReturnBarrierOpen();
     bool const combatPathsProvenForDiagnostic = ExactCombatTankPathsProven();
-    bool const combatAnchorsReachedForDiagnostic = PrepullStaged && NativeChargePending
+    bool const combatAnchorsReachedForDiagnostic = recoveryAdmission && NativeChargePending
         && ExactCombatTankAnchorsReached();
     bool const exactRosterReseparatedForDiagnostic = ExactRosterReSeparated();
     RecordRecoveryDiagnosticTick(NowMs(), recoveryAnchorsReachedBeforeTick, recoveryPathsProvenBeforeTick,
@@ -511,7 +511,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         return PhaseResult::Handled;
     }
 
-    bool const combatTankAnchorsReachedBeforeTick = PrepullStaged
+    bool const combatTankAnchorsReachedBeforeTick = recoveryAdmission
         && NativeChargePending && ExactCombatTankAnchorsReached();
     bool const earlyPullOwnershipWindow = SourceCombatStarted && !PrepullStaged
         && CohortCombatLinked && !Charge && ExactCombatTankPathsProven()

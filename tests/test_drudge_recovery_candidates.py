@@ -178,6 +178,10 @@ int main()
     assert "drudge_prepull_early_combat_recovery" in actions
     assert "(!PrepullStaged && !EarlyPullRecoveryActive)" in actions
     assert "tankStage.NativeEngagementAllowed" in actions
+    assert "recoveryAdmission = PrepullStaged || EarlyPullRecoveryActive" in actions
+    assert "recoveryPathsProvenBeforeTick = recoveryAdmission" in actions
+    assert "recoveryAnchorsReachedBeforeTick = recoveryAdmission" in actions
+    assert "combatTankAnchorsReachedBeforeTick = recoveryAdmission" in actions
 
 
 def test_recovery_candidate_contract_is_landed_and_native_strict_for_tanks_and_members():
