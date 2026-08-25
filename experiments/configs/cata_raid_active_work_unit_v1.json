@@ -1,8 +1,8 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_safe_member_role_concurrency_repair",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
+  "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_safe_member_role_concurrency_live_verification",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "implementation_pending_live_verification",
   "observed_at_commit": "c7c6bb9f7f0c51265f1ae20ab96ef01a59af467a",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary29_safe_member_offense_handoff_20260826.md",
@@ -54,12 +54,23 @@
     "worldserver_exit_code": 0,
     "do_not_relabel_as_clear": true
   },
+  "implemented_repair": {
+    "commit": "53c1d427d27a4b58d9f0c0425f9cba210edac71f",
+    "tree": "0b1e4ff2af431c532544f7b8d5a31fa54c5d5eae",
+    "status": "source_validated_pending_exact_build",
+    "scope": "safe_member_landed_rush_role_concurrency_handoff",
+    "focused_test_count": 32,
+    "drudge_actions_source_lines": 999,
+    "drudge_geometry_state_header_lines": 392,
+    "source_line_limit_passed": true
+  },
   "repair_scope": {
-    "status": "ready_for_one_bounded_repair",
+    "status": "implemented_pending_live_verification",
     "allowed": [
-      "one_safe_member_role_concurrency_policy_repair",
-      "focused_deterministic_policy_tests",
-      "source_line_limit_verification"
+      "queued_exact_worldserver_build",
+      "fresh_exact_roster_provisioning",
+      "one_completion_watchdog_canary",
+      "trace_backed_routing_of_one_new_first_broken_edge"
     ],
     "must_preserve": [
       "unsafe_member_mechanic_recovery_and_offense_hold",
@@ -96,5 +107,5 @@
     "matched_live_verification_runs": 0
   },
   "live_verification_owner_skill": "raid-shard-architecture",
-  "next_action": "Assign one Luna max raid-bot-runtime-implementation worker to repair only safe-member role concurrency during landed Drudge Rush recovery and add focused deterministic tests. Independently review the patch, keep every C and C++ file below 1,000 lines, build the exact commit through the queued coordinator, then provision a fresh exact roster and run completion-watchdog Canary30. Do not teleport, force movement or threat, revive bots, alter native encounter state, or manufacture an outcome."
+  "next_action": "Build exact commit 53c1d427d27a4b58d9f0c0425f9cba210edac71f through the queued coordinator, provision and verify a fresh exact ten-player Magmaw diagnostic roster, and run one completion-watchdog Canary30. Require safe members to execute trained single-target actions during an open landed-Rush recovery while unsafe members retain movement recovery and offense hold. If the route clears entrance, Chainwielder, Drudges, and Magmaw without forbidden assistance, repeat on a fresh roster. If it fails, retain the closed evidence and route only the first newly proven edge. Do not teleport, force movement or threat, revive bots, alter native encounter state, or manufacture an outcome."
 }

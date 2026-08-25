@@ -340,10 +340,10 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_safe_member_role_concurrency_repair"
+        "drudge_safe_member_role_concurrency_live_verification"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["owner_skill"] == "raid-bot-runtime-implementation"
+    assert active["owner_skill"] == "raid-shard-architecture"
     assert active["first_broken_edge"] == (
         "landed_drudge_recovery_keeps_safe_members_in_route_handled_offense_"
         "hold_until_the_next_20s_rush_reopens_the_queue_so_no_trained_single_"
@@ -387,11 +387,15 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
         "matched_live_verification_runs": 0,
     }
     assert active["repair_scope"]["status"] == (
-        "ready_for_one_bounded_repair"
+        "implemented_pending_live_verification"
     )
-    assert "one_safe_member_role_concurrency_policy_repair" in (
+    assert "one_completion_watchdog_canary" in (
         active["repair_scope"]["allowed"]
     )
+    assert active["implemented_repair"]["commit"] == (
+        "53c1d427d27a4b58d9f0c0425f9cba210edac71f"
+    )
+    assert active["implemented_repair"]["source_line_limit_passed"] is True
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
     assert active["live_verification_owner_skill"] == "raid-shard-architecture"
     assert "do not teleport" in active["next_action"].lower()
@@ -488,8 +492,8 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     status = workloop.build_status()
 
     assert status["active_work_unit"]["descriptor_valid"] is True
-    assert status["active_work_unit"]["ready_for_bounded_repair"] is True
-    assert status["active_work_unit"]["ready_for_live_verification"] is False
+    assert status["active_work_unit"]["ready_for_bounded_repair"] is False
+    assert status["active_work_unit"]["ready_for_live_verification"] is True
     assert status["active_work_unit"]["first_broken_edge"] == (
         "landed_drudge_recovery_keeps_safe_members_in_route_handled_offense_"
         "hold_until_the_next_20s_rush_reopens_the_queue_so_no_trained_single_"
@@ -504,10 +508,10 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_safe_member_role_concurrency_repair"
+        "drudge_safe_member_role_concurrency_live_verification"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
-        "raid-bot-runtime-implementation"
+        "raid-shard-architecture"
     )
     assert status["current_program_next_action"] == status["active_work_unit"][
         "next_action"
