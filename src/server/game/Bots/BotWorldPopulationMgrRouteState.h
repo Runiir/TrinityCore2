@@ -2,6 +2,7 @@
 #define TRINITY_BOT_WORLD_POPULATION_MGR_ROUTE_STATE_H
 
 #include "Bots/BotWorldPopulationMgrConfig.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeRecoveryTelemetry.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeReseparationReceipt.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeSpacingDiagnostic.h"
 #include "ObjectGuid.h"
@@ -373,6 +374,10 @@ namespace BotWorldPopulationMgrRouteState
         BotRaidDrudgeSpacing::Failure FirstSpacingFailure;
         uint64 NextReseparationReceiptId = 1;
         std::vector<BotRaidDrudgeSpacing::ReseparationReceipt> ReseparationReceipts;
+        // Diagnostic-only history for the unresolved landed head.  Both
+        // vectors are scope-reset and bounded by the receipt helpers.
+        std::vector<BotRaidDrudgeSpacing::RecoveryTick> RecoveryTicks;
+        std::vector<BotRaidDrudgeSpacing::NativeTransition> NativeTransitions;
         std::vector<ValidationRouteDrudgeMemberGeometry> MemberGeometry;
         std::set<uint32> ReseparatedRosterGuids;
         std::vector<ValidationRouteDrudgeThreatCandidateEvidence> NativeThreatCandidates;

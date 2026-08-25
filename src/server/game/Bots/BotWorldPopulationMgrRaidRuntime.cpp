@@ -741,6 +741,111 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
                  << JsonEscape(receipt.ClosureOutcome) << "\""
                  << ",\"suppressed_count\":" << receipt.SuppressedCount << "}";
         }
+        json << "],\"recovery_ticks\":[";
+        bool firstRecoveryTick = true;
+        for (BotRaidDrudgeSpacing::RecoveryTick const& tick : observation.RecoveryTicks)
+        {
+            if (!firstRecoveryTick)
+                json << ',';
+            firstRecoveryTick = false;
+            json << "{\"attempt_id\":" << tick.Scope.AttemptId
+                 << ",\"wipe_generation\":" << tick.Scope.WipeGeneration
+                 << ",\"route_generation\":" << tick.Scope.RouteGeneration
+                 << ",\"map_id\":" << tick.Scope.MapId
+                 << ",\"instance_id\":" << tick.Scope.InstanceId
+                 << ",\"source0_identity\":" << tick.Scope.Source0Identity
+                 << ",\"source1_identity\":" << tick.Scope.Source1Identity
+                 << ",\"sequence\":" << tick.Sequence
+                 << ",\"observed_at_ms\":" << tick.ObservedAtMs
+                 << ",\"landed_rush_pending\":" << (tick.LandedRushPending ? "true" : "false")
+                 << ",\"recovery_formation_active\":" << (tick.RecoveryFormationActive ? "true" : "false")
+                 << ",\"recovery_barrier_open\":" << (tick.RecoveryBarrierOpen ? "true" : "false")
+                 << ",\"source0_guid\":" << tick.Source0Guid
+                 << ",\"source0_x\":" << tick.Source0X << ",\"source0_y\":" << tick.Source0Y
+                 << ",\"source0_z\":" << tick.Source0Z
+                 << ",\"source0_alive\":" << (tick.Source0Alive ? "true" : "false")
+                 << ",\"source0_victim_guid\":" << tick.Source0VictimGuid
+                 << ",\"source1_guid\":" << tick.Source1Guid
+                 << ",\"source1_x\":" << tick.Source1X << ",\"source1_y\":" << tick.Source1Y
+                 << ",\"source1_z\":" << tick.Source1Z
+                 << ",\"source1_alive\":" << (tick.Source1Alive ? "true" : "false")
+                 << ",\"source1_victim_guid\":" << tick.Source1VictimGuid
+                 << ",\"all_recovery_anchors_reached\":" << (tick.AllRecoveryAnchorsReached ? "true" : "false")
+                 << ",\"all_recovery_tank_paths_proven\":" << (tick.AllRecoveryTankPathsProven ? "true" : "false")
+                 << ",\"all_combat_tank_paths_proven\":" << (tick.AllCombatTankPathsProven ? "true" : "false")
+                 << ",\"all_combat_tank_anchors_reached\":" << (tick.AllCombatTankAnchorsReached ? "true" : "false")
+                 << ",\"exact_roster_reseparated\":" << (tick.ExactRosterReseparated ? "true" : "false")
+                 << ",\"landed_rush_recovery_complete\":" << (tick.LandedRushRecoveryComplete ? "true" : "false")
+                 << ",\"members\":[";
+            bool firstRecoveryMember = true;
+            for (BotRaidDrudgeSpacing::RecoveryMemberDiagnostic const& member : tick.Members)
+            {
+                if (!firstRecoveryMember)
+                    json << ',';
+                firstRecoveryMember = false;
+                json << "{\"guid\":" << member.Guid
+                     << ",\"roster_slot\":" << member.RosterSlot
+                     << ",\"is_tank\":" << (member.IsTank ? "true" : "false")
+                     << ",\"in_world\":" << (member.InWorld ? "true" : "false")
+                     << ",\"alive\":" << (member.Alive ? "true" : "false")
+                     << ",\"same_map\":" << (member.SameMap ? "true" : "false")
+                     << ",\"active_lease\":" << (member.ActiveLease ? "true" : "false")
+                     << ",\"frozen_lane_safe\":" << (member.FrozenLaneSafe ? "true" : "false")
+                     << ",\"group_position_safe\":" << (member.GroupPositionSafe ? "true" : "false")
+                     << ",\"exact_roster_member_reseparated\":" << (member.ExactRosterMemberReseparated ? "true" : "false")
+                     << ",\"x\":" << member.X << ",\"y\":" << member.Y << ",\"z\":" << member.Z
+                     << ",\"source_distance\":" << member.SourceDistance
+                     << ",\"anchor_valid\":" << (member.AnchorValid ? "true" : "false")
+                     << ",\"anchor_path_proven\":" << (member.AnchorPathProven ? "true" : "false")
+                     << ",\"recovery_anchor_path_proven\":" << (member.RecoveryAnchorPathProven ? "true" : "false")
+                     << ",\"recovery_anchor_reached\":" << (member.RecoveryAnchorReached ? "true" : "false")
+                     << ",\"combat_anchor_path_proven\":" << (member.CombatAnchorPathProven ? "true" : "false")
+                     << ",\"combat_anchor_arrival_observed\":" << (member.CombatAnchorArrivalObserved ? "true" : "false")
+                     << ",\"active_path_valid\":" << (member.ActivePathValid ? "true" : "false")
+                     << ",\"active_path_scope_matches\":" << (member.ActivePathScopeMatches ? "true" : "false")
+                     << ",\"active_path_arrival_observed\":" << (member.ActivePathArrivalObserved ? "true" : "false")
+                     << ",\"anchor_candidate_index\":" << member.AnchorCandidateIndex
+                     << ",\"anchor_x\":" << member.AnchorX << ",\"anchor_y\":" << member.AnchorY
+                     << ",\"anchor_z\":" << member.AnchorZ
+                     << ",\"recovery_anchor_x\":" << member.RecoveryAnchorX
+                     << ",\"recovery_anchor_y\":" << member.RecoveryAnchorY
+                     << ",\"recovery_anchor_z\":" << member.RecoveryAnchorZ
+                     << ",\"active_path_destination_x\":" << member.ActivePathDestinationX
+                     << ",\"active_path_destination_y\":" << member.ActivePathDestinationY
+                     << ",\"active_path_destination_z\":" << member.ActivePathDestinationZ << "}";
+            }
+            json << "]}";
+        }
+        json << "],\"native_transitions\":[";
+        bool firstNativeTransition = true;
+        for (BotRaidDrudgeSpacing::NativeTransition const& transition : observation.NativeTransitions)
+        {
+            if (!firstNativeTransition)
+                json << ',';
+            firstNativeTransition = false;
+            json << "{\"attempt_id\":" << transition.Scope.AttemptId
+                 << ",\"wipe_generation\":" << transition.Scope.WipeGeneration
+                 << ",\"route_generation\":" << transition.Scope.RouteGeneration
+                 << ",\"map_id\":" << transition.Scope.MapId
+                 << ",\"instance_id\":" << transition.Scope.InstanceId
+                 << ",\"source0_identity\":" << transition.Scope.Source0Identity
+                 << ",\"source1_identity\":" << transition.Scope.Source1Identity
+                 << ",\"observed_at_ms\":" << transition.ObservedAtMs
+                 << ",\"bot_guid\":" << transition.BotGuid
+                 << ",\"source_guid\":" << transition.SourceGuid
+                 << ",\"source_spawn_id\":" << transition.SourceSpawnId
+                 << ",\"previous_victim_guid\":" << transition.PreviousVictimGuid
+                 << ",\"current_victim_guid\":" << transition.CurrentVictimGuid
+                 << ",\"assigned_tank_guid\":" << transition.AssignedTankGuid
+                 << ",\"action_value\":" << transition.ActionValue
+                 << ",\"victim_changed\":" << (transition.VictimChanged ? "true" : "false")
+                 << ",\"native_victim_owned\":" << (transition.NativeVictimOwned ? "true" : "false")
+                 << ",\"taunt_attempted\":" << (transition.TauntAttempted ? "true" : "false")
+                 << ",\"taunt_submitted\":" << (transition.TauntSubmitted ? "true" : "false")
+                 << ",\"taunt_outcome_observed\":" << (transition.TauntOutcomeObserved ? "true" : "false")
+                 << ",\"result\":\"" << JsonEscape(transition.Result)
+                 << "\",\"suppressed_count\":" << transition.SuppressedCount << "}";
+        }
         json << "]"
              << ",\"first_spacing_failure\":{\"recorded\":"
              << (observation.FirstSpacingFailure.Recorded ? "true" : "false")

@@ -191,6 +191,12 @@ struct DrudgeLaneContext
     void HoldOffense();
     void Record(Creature* source, char const* result,
         float value = 0.0f, uint32 value2 = 0);
+    void RecordRecoveryDiagnosticTick(uint64 observedAtMs,
+        bool allRecoveryAnchorsReached, bool allRecoveryTankPathsProven,
+        bool allCombatTankPathsProven, bool allCombatTankAnchorsReached,
+        bool exactRosterReseparated);
+    void RecordNativeTransition(Creature* source, char const* result,
+        uint32 actionValue);
     void RecordReseparationEvidence(ChargeObservation& observation);
 };
 

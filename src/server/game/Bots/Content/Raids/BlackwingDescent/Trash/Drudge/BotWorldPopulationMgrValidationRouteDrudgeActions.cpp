@@ -80,6 +80,7 @@ void DrudgeLaneContext::HoldOffense()
 void DrudgeLaneContext::Record(Creature* source, char const* result,
     float value, uint32 value2)
 {
+    RecordNativeTransition(source, result, value2);
     std::string raw = Manager.BuildRawJson(Bot, source);
     std::string semantic = Manager.BuildSemanticJson(Bot, source,
         "validation_route_mechanic", &Power, Stage, Activity);
@@ -418,13 +419,18 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         Record(LaneSource, "drudge_tank_recovery_anchor_reached", SourceSeparation);
     };
     markRecoveryAnchorReached();
-
     bool const combatPathsProvenBeforeTick = PrepullStaged
         && !RecoveryFormationActive && ExactCombatTankPathsProven();
     bool const recoveryPathsProvenBeforeTick = PrepullStaged
         && RecoveryFormationActive && ExactRecoveryTankPathsProven();
     bool const recoveryAnchorsReachedBeforeTick = PrepullStaged
         && RecoveryFormationActive && RecoveryTankReturnBarrierOpen();
+    bool const combatPathsProvenForDiagnostic = ExactCombatTankPathsProven();
+    bool const combatAnchorsReachedForDiagnostic = PrepullStaged && NativeChargePending
+        && ExactCombatTankAnchorsReached();
+    bool const exactRosterReseparatedForDiagnostic = ExactRosterReSeparated();
+    RecordRecoveryDiagnosticTick(NowMs(), recoveryAnchorsReachedBeforeTick, recoveryPathsProvenBeforeTick,
+        combatPathsProvenForDiagnostic, combatAnchorsReachedForDiagnostic, exactRosterReseparatedForDiagnostic);
     bool const activePathsProvenBeforeTick = RecoveryFormationActive
         ? recoveryPathsProvenBeforeTick : combatPathsProvenBeforeTick;
     if (PrepullStaged && !NativeChargePending && !activePathsProvenBeforeTick)
