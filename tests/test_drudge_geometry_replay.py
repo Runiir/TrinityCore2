@@ -210,6 +210,71 @@ int main()
     assert(!result.NativeOwnershipAllowed);
     assert(!result.NativeEngagementAllowed);
 
+    // A natural body pull before the exact latch must enter the scoped
+    // recovery path: both native combat paths are still required, ownership
+    // may use the ordinary tank action, and full engagement remains gated by
+    // the live geometry/roster proof.
+    Input earlyPull = input;
+    earlyPull.ExactPrepullStaged = false;
+    earlyPull.SourceCombatStarted = true;
+    earlyPull.CohortCombatLinked = true;
+    earlyPull.BothCombatTankPathsProven = true;
+    earlyPull.BothCombatTankAnchorsSafe = false;
+    Result earlyRecovery = Advance(state, earlyPull);
+    assert(earlyRecovery.NextDecision == Decision::RecoverCombatAtTankAnchors);
+    assert(earlyRecovery.TankMovementAllowed);
+    assert(earlyRecovery.NativeOwnershipAllowed);
+    assert(!earlyRecovery.NativeEngagementAllowed);
+
+    Input recoveredPull = earlyPull;
+    recoveredPull.BothCombatTankAnchorsSafe = true;
+    Result recovered = Advance(state, recoveredPull);
+    assert(recovered.NextDecision == Decision::AllowNativeEngagement);
+    assert(recovered.NativeOwnershipAllowed);
+    assert(recovered.NativeEngagementAllowed);
+
+    Input externalPull = earlyPull;
+    externalPull.CohortCombatLinked = false;
+    Result external = Advance(state, externalPull);
+    assert(external.NextDecision == Decision::AwaitExactPrepull);
+    assert(!external.TankMovementAllowed);
+    assert(!external.NativeOwnershipAllowed);
+
+    Input missingPaths = earlyPull;
+    missingPaths.BothCombatTankPathsProven = false;
+    Result pathBlocked = Advance(state, missingPaths);
+    assert(pathBlocked.NextDecision == Decision::RecoverCombatAtTankAnchors);
+    assert(!pathBlocked.TankMovementAllowed);
+    assert(!pathBlocked.NativeOwnershipAllowed);
+
+    Input deadSources = earlyPull;
+    deadSources.SourcesAlive = false;
+    Result dead = Advance(state, deadSources);
+    assert(dead.NextDecision == Decision::AwaitExactPrepull);
+    assert(!dead.TankMovementAllowed);
+    assert(!dead.NativeOwnershipAllowed);
+
+    Input earlyCrossedTanks = earlyPull;
+    earlyCrossedTanks.TanksOnFrozenLanes = false;
+    Result earlyCrossed = Advance(state, earlyCrossedTanks);
+    assert(earlyCrossed.NextDecision == Decision::AwaitExactPrepull);
+    assert(!earlyCrossed.TankMovementAllowed);
+    assert(!earlyCrossed.NativeOwnershipAllowed);
+
+    Input busyQueue = earlyPull;
+    busyQueue.ChargeQueueIdle = false;
+    Result busy = Advance(state, busyQueue);
+    assert(busy.NextDecision == Decision::AwaitExactPrepull);
+    assert(!busy.TankMovementAllowed);
+    assert(!busy.NativeOwnershipAllowed);
+
+    Input invalidScope = earlyPull;
+    invalidScope.Identity = Scope{};
+    Result invalid = Advance(state, invalidScope);
+    assert(invalid.NextDecision == Decision::AwaitExactPrepull);
+    assert(!invalid.TankMovementAllowed);
+    assert(!invalid.NativeOwnershipAllowed);
+
     // A single tank proof is intentionally not representable as movement
     // authority. Production freezes both exact proofs before setting this
     // shared input on a subsequent tick.
@@ -598,9 +663,10 @@ def test_post_rush_recovery_replays_combat_anchor_transition_with_exact_xyz():
     }
 
     # Run15's mixed-Z trace was the signature of selecting the recovery X/Y
-    # while retaining a later anchor's Z.  Replay the three legal phases from
-    # the sealed route data, then require the production selector to contain
-    # the same state transition.
+    # while retaining a later anchor's Z. Replay the legal phases directly
+    # from the sealed route data, then require the production selector to
+    # contain the same state transition. Navigation and combat intentionally
+    # share the exact preflighted endpoint in the current route.
     def expected_anchor(slot, landed, recovery_reached):
         if not landed:
             return anchors["split_tank_navigation_anchors"][slot]
@@ -608,10 +674,11 @@ def test_post_rush_recovery_replays_combat_anchor_transition_with_exact_xyz():
             return anchors["split_tank_recovery_anchors"][slot]
         return anchors["split_tank_combat_anchors"][slot]
 
-    assert expected_anchor(1, False, False) == (-289.289093, -57.7575, 212.932236)
+    assert expected_anchor(1, False, False) == (-288.833008, -42.598999, 212.267319)
     assert expected_anchor(1, True, False) == (-288.8, -43.0, 212.301)
-    assert expected_anchor(1, True, True) == (-286.5, -58.0, 212.2983)
-    assert expected_anchor(2, True, True) == (-322.858, -48.2862, 212.2623)
+    assert expected_anchor(1, True, True) == (-288.833008, -42.598999, 212.267319)
+    assert expected_anchor(2, True, True) == (-321.912994, -44.319401, 211.835968)
+    assert expected_anchor(1, False, False) == expected_anchor(1, True, True)
     assert expected_anchor(1, True, False)[2] != expected_anchor(1, True, True)[2]
 
     selector_start = geometry.index("for (size_t candidateIndex = 0;")

@@ -261,7 +261,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
                 && Manager.Party().ValidationRouteDrudgePrepullWipeGeneration
                     == Manager.Cohort().Raid.WipeGeneration
                 && Manager.Party().ValidationRouteDrudgePrepullRouteGeneration
-                    == Manager.Party().ValidationRouteGeneration);
+                    == Manager.Party().ValidationRouteGeneration)
+            || (SourceCombatStarted && CohortCombatLinked);
     };
     StrictNativePath = [this](float x, float y, float z,
         bool requireExactEnd, std::string* rejectionOut) -> bool

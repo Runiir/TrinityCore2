@@ -40,6 +40,7 @@
         uint64 ValidationRouteDrudgePrepullAttemptId = 0;
         uint32 ValidationRouteDrudgePrepullWipeGeneration = 0;
         uint64 ValidationRouteDrudgePrepullRouteGeneration = 0;
+        bool ValidationRouteDrudgeEarlyPullRecoveryAccepted = false;
         uint64 ValidationRouteDrudgeChargeGeneration = 0;
         uint64 ValidationRouteDrudgeChargeLandedGeneration = 0;
         uint64 ValidationRouteDrudgeChargeObservedAtMs = 0;

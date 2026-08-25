@@ -316,20 +316,23 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunDrudgeSeedCoordinator()
     BotRaidDrudgeThreatSeed::CoordinatorInput input;
     input.Identity = scope;
     input.PrepullStaged = context.PrepullStaged;
+    input.RecoveryAuthorityReady = context.EarlyPullRecoveryActive;
     input.SourcesAlive = true;
     input.OwnershipSafe = bothVictimsOwned;
     input.SeparationSafe = context.SourceSeparation >= context.LaneSeparation;
     input.FrozenLanesSafe = frozenLanesSafe;
     input.ChargeObserved = chargeObserved;
 
-    if (!input.PrepullStaged || !input.OwnershipSafe || !input.SeparationSafe
+    bool const setupAuthorityReady = input.PrepullStaged
+        || input.RecoveryAuthorityReady;
+    if (!setupAuthorityReady || !input.OwnershipSafe || !input.SeparationSafe
         || !input.FrozenLanesSafe || input.ChargeObserved)
     {
         BotRaidDrudgeThreatSeed::CoordinatorResult const transition =
             BotRaidDrudgeThreatSeed::AdvanceCoordinator(seedState, input);
         ApplyDrudgeSeedState(*this, transition);
         context.HoldOffense();
-        char const* reason = !input.PrepullStaged ? "prepull_staging"
+        char const* reason = !setupAuthorityReady ? "setup_authority"
             : !input.OwnershipSafe ? "tank_victim_ownership"
             : !input.SeparationSafe ? "lane_separation"
             : !input.FrozenLanesSafe ? "frozen_lane_geometry"

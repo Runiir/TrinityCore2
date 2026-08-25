@@ -36,6 +36,13 @@ int main()
     assert(open.CombatAuthorityAllowed);
     assert(open.BlockingEvidence == Blocker::None);
 
+    Input recovered = exact;
+    recovered.ExactRosterPrepullStaged = false;
+    recovered.EarlyPullRecoveryAccepted = true;
+    Result recoveredOpen = Evaluate(recovered);
+    assert(recoveredOpen.CombatAuthorityAllowed);
+    assert(recoveredOpen.BlockingEvidence == Blocker::None);
+
     // Every individual missing edge keeps adaptive/generic combat denied.
     bool* gates[] = {
         &exact.ExactRosterPrepullStaged,
@@ -140,6 +147,8 @@ def test_exact_drudge_candidates_fail_closed_behind_the_typed_route_latch():
     assert ACTIVATION.name in preparation
     assert "BotRaidDrudgeActivation::Evaluate(activationInput)" in preparation
     assert "SeedWindowClosedOrFailed" in preparation
+    assert "activationInput.EarlyPullRecoveryAccepted" in preparation
+    assert "party.ValidationRouteDrudgeEarlyPullRecoveryAccepted" in preparation
     assert "context.DrudgeCombatAuthorityAllowed" in candidates
     assert '"drudge_activation_latch_closed"' in fallback
     assert fallback.count('"drudge_activation_latch_closed"') == 3

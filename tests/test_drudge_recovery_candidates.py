@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DRUDGE = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge"
 GEOMETRY = DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
 RECOVERY = DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeRecovery.cpp"
+LANE_SELECTION = DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp"
 HEADER = DRUDGE / "BotRaidDrudgeRecoveryCandidates.h"
 NATIVE_ANCHOR = DRUDGE / "BotRaidDrudgeNativeAnchor.h"
 ACTIONS = DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp"
@@ -120,8 +121,9 @@ int main()
     Input sourceCombatBeforeLatch;
     sourceCombatBeforeLatch.Identity = scope;
     sourceCombatBeforeLatch.SourceCombatStarted = true;
+    sourceCombatBeforeLatch.CohortCombatLinked = true;
     sourceCombatBeforeLatch.BothCombatTankPathsProven = true;
-    sourceCombatBeforeLatch.BothCombatTankAnchorsSafe = true;
+    sourceCombatBeforeLatch.BothCombatTankAnchorsSafe = false;
     sourceCombatBeforeLatch.ChargeQueueIdle = true;
     sourceCombatBeforeLatch.SourcesAlive = true;
     sourceCombatBeforeLatch.SourcesSeparated = true;
@@ -130,10 +132,10 @@ int main()
     sourceCombatBeforeLatch.BoundTankSourceGeometrySafe = true;
     sourceCombatBeforeLatch.NativeMeleeStopBounded = true;
     auto held = Advance(state, sourceCombatBeforeLatch);
-    assert(held.NextDecision == Decision::AwaitExactPrepull);
-    assert(!held.SupportAllowed);
-    assert(!held.TankMovementAllowed);
-    assert(!held.NativeOwnershipAllowed);
+    assert(held.NextDecision == Decision::RecoverCombatAtTankAnchors);
+    assert(held.SupportAllowed);
+    assert(held.TankMovementAllowed);
+    assert(held.NativeOwnershipAllowed);
     assert(!held.NativeEngagementAllowed);
 }
 ''',
@@ -164,15 +166,24 @@ int main()
         )
     ]
     assert "CombatTankStageLatched" in staging
-    assert "SourceCombatStarted" not in staging
+    assert "SourceCombatStarted" in staging
+    assert "CohortCombatLinked" in staging
     assert "ValidationRouteDrudgePrepullAttemptId" in staging
     assert "ValidationRouteDrudgePrepullWipeGeneration" in staging
     assert "ValidationRouteDrudgePrepullRouteGeneration" in staging
+
+    actions = ACTIONS.read_text(encoding="utf-8")
+    assert "!SourceCombatStarted && ExactRosterPrepullStaged()" in actions
+    assert "drudge_prepull_combat_before_exact_roster_staged" not in actions
+    assert "drudge_prepull_early_combat_recovery" in actions
+    assert "(!PrepullStaged && !EarlyPullRecoveryActive)" in actions
+    assert "tankStage.NativeEngagementAllowed" in actions
 
 
 def test_recovery_candidate_contract_is_landed_and_native_strict_for_tanks_and_members():
     geometry = GEOMETRY.read_text(encoding="utf-8")
     recovery = RECOVERY.read_text(encoding="utf-8")
+    lane_selection = LANE_SELECTION.read_text(encoding="utf-8")
     header = HEADER.read_text(encoding="utf-8")
     actions = ACTIONS.read_text(encoding="utf-8")
     planner = PLANNER.read_text(encoding="utf-8")
@@ -223,7 +234,7 @@ def test_recovery_candidate_contract_is_landed_and_native_strict_for_tanks_and_m
     assert "ComputeStrictTankRecoveryPath" in recovery
     assert "ComputeRecoveryAnchorReached" in recovery
     assert "RecoveryPathPreservesTankSeparation" in recovery
-    assert "ValidationRouteSplitNavigationMarginYards" in recovery
+    assert "ValidationRouteSplitNavigationMarginYards" in lane_selection
     assert "ValidationRouteSplitArrivalToleranceYards" in recovery
     assert "urand" not in header
     assert len(GEOMETRY.read_text(encoding="utf-8").splitlines()) <= 999

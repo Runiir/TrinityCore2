@@ -318,7 +318,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
             == Manager.Cohort().Raid.WipeGeneration
         && Manager.Party().ValidationRouteDrudgePrepullRouteGeneration
             == Manager.Party().ValidationRouteGeneration;
-    if (!PrepullStaged && ExactRosterPrepullStaged())
+    if (!PrepullStaged && !SourceCombatStarted && ExactRosterPrepullStaged())
     {
         auto& party = Manager.Party();
         party.ValidationRouteDrudgePrepullStaged = true;
@@ -328,10 +328,6 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         PrepullStaged = true;
         Record(nullptr, "drudge_prepull_exact_roster_staged");
     }
-    // A closed landed observation is durable evidence, not a new recovery
-    // obligation.  Keep the recovery predicate tied to the current head so
-    // the post-closure tick can validate the ordinary combat anchors instead
-    // of reopening the already-finished recovery preflight.
     RecoveryFormationActive = NativeChargePending && IsRecoveryFormationActive();
     FormationRequired = AssignedTank
         ? !CachedAnchorSafe(State, Bot) : !GroupPositionSafe(Bot);
@@ -359,6 +355,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
     input.BothCombatTankPathsProven = ExactCombatTankPathsProven();
     input.BothCombatTankAnchorsSafe = ExactCombatTankAnchorsSafe();
     input.SourceCombatStarted = SourceCombatStarted;
+    input.CohortCombatLinked = CohortCombatLinked;
     input.ChargeQueueIdle = Charge == nullptr;
     input.ChargeLanded = NativeChargePending;
     input.SourcesAlive = Sources[0]->IsAlive() && Sources[1]->IsAlive();
@@ -372,8 +369,14 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
             <= Manager.Cohort().Config.ValidationRouteSplitNativeMeleeStopYards
         && Sources[1 - LaneIndex]->GetMeleeRange(OtherTank)
             <= Manager.Cohort().Config.ValidationRouteSplitNativeMeleeStopYards;
-    BotRaidDrudgeGeometry::Result const tankStage =
-        BotRaidDrudgeGeometry::Advance(geometryState, input);
+    BotRaidDrudgeGeometry::Result const tankStage = BotRaidDrudgeGeometry::Advance(geometryState, input);
+    EarlyPullRecoveryActive = SourceCombatStarted && CohortCombatLinked && !PrepullStaged && !Charge && tankStage.NativeEngagementAllowed;
+    auto& party = Manager.Party();
+    if (EarlyPullRecoveryActive && !party.ValidationRouteDrudgeEarlyPullRecoveryAccepted)
+    {
+        party.ValidationRouteDrudgeEarlyPullRecoveryAccepted = true;
+        Record(nullptr, "drudge_prepull_early_combat_recovery");
+    }
     State.LastValidationRouteDrudgeChargeGenerationObserved =
         tankStage.Next.LastChargeSequenceObserved;
     State.ValidationRouteDrudgeAnchorPathProven =
@@ -508,17 +511,12 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         return PhaseResult::Handled;
     }
 
-    if (SourceCombatStarted && !PrepullStaged)
-    {
-        HoldOffense();
-        Record(LaneSource, "drudge_prepull_combat_before_exact_roster_staged");
-        Target = LaneSource;
-        State.TargetGuid = LaneSource->GetGUID();
-        return PhaseResult::Handled;
-    }
     bool const combatTankAnchorsReachedBeforeTick = PrepullStaged
         && NativeChargePending && ExactCombatTankAnchorsReached();
-    if (AssignedTank && tankStage.NativeOwnershipAllowed
+    bool const earlyPullOwnershipWindow = SourceCombatStarted && !PrepullStaged
+        && CohortCombatLinked && !Charge && ExactCombatTankPathsProven()
+        && TanksOnFrozenLanes();
+    if (AssignedTank && (tankStage.NativeOwnershipAllowed || earlyPullOwnershipWindow)
         && (!NativeChargePending
             || (recoveryAnchorsReachedBeforeTick && combatTankAnchorsReachedBeforeTick))
         && LaneSource->GetVictim() == Bot)
@@ -528,7 +526,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         if (insert.second)
             Record(LaneSource, "drudge_lane_native_ownership", SourceSeparation);
     }
-    if (AssignedTank && tankStage.NativeOwnershipAllowed
+    if (AssignedTank && (tankStage.NativeOwnershipAllowed || earlyPullOwnershipWindow)
         && (!NativeChargePending
             || (recoveryAnchorsReachedBeforeTick && combatTankAnchorsReachedBeforeTick))
         && LaneSource->GetVictim() != Bot)
@@ -559,7 +557,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
                         return PhaseResult::Handled;
                     }
                 }
-                else if (NativeChargePending && candidate.RejectReason == "out_of_range")
+                else if ((NativeChargePending || earlyPullOwnershipWindow)
+                    && candidate.RejectReason == "out_of_range")
                 {
                     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
                     float const maxRange = spellInfo
@@ -625,7 +624,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         return PhaseResult::Handled;
     }
 
-    bool const recoveryNeeded = !PrepullStaged || !tankStage.TankMovementAllowed
+    bool const recoveryNeeded = (!PrepullStaged && !EarlyPullRecoveryActive)
+        || !tankStage.TankMovementAllowed
         || !tankStage.NativeEngagementAllowed || FormationRequiredMutable
         || PairTooClose || NativeChargePending || ChargeAwaitingLanding;
     if (recoveryNeeded)
@@ -694,7 +694,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
                     : (NativeChargeContractViolation
                         ? "drudge_native_charge_contract_violation_reseparate"
                         : "drudge_native_charge_lane_reseparate")))
-            : (!PrepullStaged ? "drudge_prepull_member_stage"
+            : (!PrepullStaged && !EarlyPullRecoveryActive
+                ? "drudge_prepull_member_stage"
                 : (AssignedTank ? "drudge_tank_lane_position"
                     : (alreadySafe ? "drudge_group_lane_position_already_safe"
                                    : "drudge_group_lane_position")));

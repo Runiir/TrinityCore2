@@ -142,6 +142,7 @@ struct CoordinatorInput
 {
     Scope Identity;
     bool PrepullStaged = false;
+    bool RecoveryAuthorityReady = false;
     bool SourcesAlive = false;
     bool OwnershipSafe = false;
     bool SeparationSafe = false;
@@ -219,7 +220,9 @@ inline CoordinatorResult AdvanceCoordinator(State current,
         return result;
     }
 
-    bool const windowReady = input.PrepullStaged && input.SourcesAlive
+    bool const setupAuthorityReady = input.PrepullStaged
+        || input.RecoveryAuthorityReady;
+    bool const windowReady = setupAuthorityReady && input.SourcesAlive
         && input.OwnershipSafe && input.SeparationSafe && input.FrozenLanesSafe;
     if (!windowReady)
     {
@@ -241,7 +244,7 @@ inline CoordinatorResult AdvanceCoordinator(State current,
             ? Event::ActionResult : Event::DecisionTick;
         transitionInput.Identity = input.Identity;
         transitionInput.SourceLane = static_cast<std::uint32_t>(lane);
-        transitionInput.PrepullStaged = input.PrepullStaged;
+        transitionInput.PrepullStaged = setupAuthorityReady;
         transitionInput.SourcesAlive = input.SourcesAlive;
         transitionInput.OwnershipSafe = input.OwnershipSafe;
         transitionInput.SeparationSafe = input.SeparationSafe;

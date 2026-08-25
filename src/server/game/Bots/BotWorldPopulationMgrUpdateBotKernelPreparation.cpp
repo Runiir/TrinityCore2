@@ -354,6 +354,8 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                 BotRaidDrudgeActivation::Input activationInput;
                 activationInput.ExactRouteProfile = true;
                 activationInput.ExactRosterPrepullStaged = prepullStaged;
+                activationInput.EarlyPullRecoveryAccepted =
+                    party.ValidationRouteDrudgeEarlyPullRecoveryAccepted;
                 activationInput.BothTankAnchorsAccepted =
                     exactTankRosterObserved(
                         party.ValidationRouteDrudgeOwnershipRosterGuids);

@@ -875,6 +875,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::ResolveSources()
 
     SourceCombatStarted = Sources[0]->IsInCombat() || Sources[1]->IsInCombat()
         || Sources[0]->GetVictim() || Sources[1]->GetVictim();
+    CohortCombatLinked = SourceCombatStarted && Callbacks.IsCombatLinked
+        && (Callbacks.IsCombatLinked(Sources[0])
+            || Callbacks.IsCombatLinked(Sources[1]));
     Position const& homeA = Sources[0]->GetHomePosition();
     Position const& homeB = Sources[1]->GetHomePosition();
     AxisX = homeB.GetPositionX() - homeA.GetPositionX();

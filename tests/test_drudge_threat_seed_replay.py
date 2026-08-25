@@ -148,6 +148,16 @@ int main()
     assert(both.Next.SeededLanes[0] && both.Next.SeededLanes[1]);
     assert(both.Next.Complete && !both.Next.Failure);
 
+    // A cohort-linked body-pull recovery gets the same native seed barrier
+    // without claiming that historical prepull staging completed.
+    CoordinatorInput recoveredTick = bothTick;
+    recoveredTick.PrepullStaged = false;
+    recoveredTick.RecoveryAuthorityReady = true;
+    CoordinatorResult recovered = AdvanceCoordinator(State{}, recoveredTick);
+    assert(recovered.BothLanesEvaluated);
+    assert(recovered.Next.SeededLanes[0] && recovered.Next.SeededLanes[1]);
+    assert(recovered.Next.Complete && !recovered.Next.Failure);
+
     // A failed native lane preserves the exact rejection gate and cannot
     // manufacture its lane's success from the other lane's cast.
     CoordinatorInput rejectedTick = bothTick;

@@ -196,6 +196,7 @@ struct Input
     bool BothCombatTankPathsProven = false;
     bool BothCombatTankAnchorsSafe = false;
     bool SourceCombatStarted = false;
+    bool CohortCombatLinked = false;
     bool ChargeQueueIdle = false;
     // The authoritative head observation has landed.  This is distinct from
     // ChargePending, which also covers the in-flight window.  After landing,
@@ -312,7 +313,16 @@ inline Result Advance(State current, Input const& input)
             && input.DynamicSourceSafe && input.DynamicSpacingSafe;
     }
 
-    if (!input.ExactPrepullStaged)
+    // A body pull before the exact latch is an honest recovery edge. Keep the
+    // exact scoped identity and require the native queue to be idle, but let
+    // the assigned tanks finish the declared combat geometry and reclaim
+    // ownership instead of deadlocking behind the prepull latch.
+    bool const earlyPullRecovery = input.SourceCombatStarted
+        && input.CohortCombatLinked && !input.ExactPrepullStaged
+        && input.ChargeQueueIdle
+        && input.SourcesAlive && input.TanksOnFrozenLanes
+        && Valid(input.Identity);
+    if (!input.ExactPrepullStaged && !earlyPullRecovery)
     {
         result.NextDecision = Decision::AwaitExactPrepull;
         return result;
@@ -351,9 +361,9 @@ inline Result Advance(State current, Input const& input)
     bool const landedRecoverySafe = input.ChargePending && input.ChargeLanded
         && input.TanksOnFrozenLanes;
     bool const ownershipSafe = ownershipWindow
-        && (initialOwnershipSafe || landedRecoverySafe)
+        && (initialOwnershipSafe || landedRecoverySafe || earlyPullRecovery)
         && input.SourcesAlive && input.TanksOnFrozenLanes
-        && input.NativeMeleeStopBounded;
+        && (input.NativeMeleeStopBounded || earlyPullRecovery);
     result.NativeOwnershipAllowed = ownershipSafe && Valid(input.Identity);
 
     bool const dynamicEngagementSafe = input.ChargeQueueIdle && !input.ChargePending
