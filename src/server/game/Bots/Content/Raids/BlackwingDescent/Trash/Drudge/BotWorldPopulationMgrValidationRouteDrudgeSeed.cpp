@@ -98,16 +98,14 @@ float EffectiveSeedMinRange(Player* bot, Unit* target, SpellInfo const* spellInf
     return nativeRange;
 }
 
-bool SubmitSeedApproach(Context& context, SeedCandidate& candidate,
-    Creature* source)
+bool PlanSeedApproach(Context& context, SeedCandidate& candidate,
+    Creature* source, bool laneA, float minimumDistance, float arrivalTolerance,
+    float seedMaxRange, float minimumSeparation,
+    float& destinationX, float& destinationY, float& destinationZ)
 {
     if (!candidate.Bot || !candidate.State || !source || !candidate.Action.Valid
         || candidate.Action.MaxRange <= 0.0f || !candidate.Bot->GetMap())
         return false;
-    auto const& config = context.Manager.Cohort().Config;
-    bool const laneA = std::find(config.ValidationRouteSplitLaneARosterSlots.begin(),
-        config.ValidationRouteSplitLaneARosterSlots.end(), candidate.MemberSlot)
-        != config.ValidationRouteSplitLaneARosterSlots.end();
     float const laneSign = laneA ? -1.0f : 1.0f;
     BotRaidDrudgeSeedApproach::Input input;
     input.Actor = { candidate.Bot->GetPositionX(), candidate.Bot->GetPositionY(),
@@ -120,16 +118,14 @@ bool SubmitSeedApproach(Context& context, SeedCandidate& candidate,
     input.AxisY = context.AxisY;
     input.LaneSign = laneSign;
     input.MinimumLaneProjection = context.LaneSeparation * 0.25f;
-    input.MinimumSourceDistance = config.ValidationRouteMinimumDistanceYards
-        + config.ValidationRouteSplitArrivalToleranceYards;
-    input.ActionMaxRange = std::min(candidate.Action.MaxRange,
-        config.ValidationRouteSplitSeedMaxRangeYards);
+    input.MinimumSourceDistance = minimumDistance + arrivalTolerance;
+    input.ActionMaxRange = std::min(candidate.Action.MaxRange, seedMaxRange);
     BotRaidDrudgeSeedApproach::Result const plan =
         BotRaidDrudgeSeedApproach::Plan(input);
     if (!plan.Needed || !plan.Safe)
         return false;
 
-    float destinationZ = plan.Destination.Z;
+    destinationZ = plan.Destination.Z;
     float const floorZ = candidate.Bot->GetMap()->GetHeight(
         candidate.Bot->GetPhaseShift(), plan.Destination.X,
         plan.Destination.Y, destinationZ + 2.0f, true, 8.0f);
@@ -164,14 +160,11 @@ bool SubmitSeedApproach(Context& context, SeedCandidate& candidate,
             points, context.MidpointX, context.MidpointY,
             context.AxisX, context.AxisY, laneSign,
             -laneSign * otherProjection,
-            config.ValidationRouteSplitMinimumSeparationYards))
+            minimumSeparation))
         return false;
-    candidate.ApproachSubmitted = context.Manager.MoveBotToPoint(
-        *candidate.State, candidate.Bot, plan.Destination.X,
-        plan.Destination.Y, destinationZ, false,
-        BotMovementArbitration::Owner::Mechanic,
-        BotMovementArbitration::Priority::Mechanic);
-    return candidate.ApproachSubmitted;
+    destinationX = plan.Destination.X;
+    destinationY = plan.Destination.Y;
+    return true;
 }
 
 BotRaidDrudgeThreatSeed::Scope DrudgeLaneContext::CurrentDrudgeSeedScope(
@@ -376,8 +369,27 @@ SeedCandidate DrudgeLaneContext::ResolveDrudgeSeedCandidate(
                 : SeedGate::RangeContract;
             selected.Reason = !selected.LineOfSight ? "native_line_of_sight_unavailable"
                 : "native_seed_range_contract";
-            if (SubmitSeedApproach(context, selected, source))
+            auto const& config = manager.Cohort().Config;
+            float destinationX = 0.0f;
+            float destinationY = 0.0f;
+            float destinationZ = 0.0f;
+            bool const laneA = std::find(
+                config.ValidationRouteSplitLaneARosterSlots.begin(),
+                config.ValidationRouteSplitLaneARosterSlots.end(),
+                selected.MemberSlot)
+                != config.ValidationRouteSplitLaneARosterSlots.end();
+            if (PlanSeedApproach(context, selected, source, laneA,
+                    config.ValidationRouteMinimumDistanceYards,
+                    config.ValidationRouteSplitArrivalToleranceYards,
+                    config.ValidationRouteSplitSeedMaxRangeYards,
+                    config.ValidationRouteSplitMinimumSeparationYards,
+                    destinationX, destinationY, destinationZ)
+                && manager.MoveBotToPoint(*selected.State, selected.Bot,
+                    destinationX, destinationY, destinationZ, false,
+                    BotMovementArbitration::Owner::Mechanic,
+                    BotMovementArbitration::Priority::Mechanic))
             {
+                selected.ApproachSubmitted = true;
                 selected.Gate = SeedGate::MovementContract;
                 selected.Reason = "native_seed_approach_submitted";
             }

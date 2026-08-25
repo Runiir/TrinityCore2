@@ -273,7 +273,8 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
     assert "BotClassSpecActionProfileStore::BuildCandidates(candidate, source, profile)" in seed
     assert "EffectiveSeedMaxRange" in seed
     assert "EffectiveSeedMinRange" in seed
-    assert "SubmitSeedApproach(context, selected, source)" in seed
+    assert "PlanSeedApproach(context, selected, source, laneA" in seed
+    assert "manager.MoveBotToPoint(*selected.State, selected.Bot" in seed
     assert "executor.ExecuteCombat(" in seed
     assert "source->GetGUID().GetCounter()" in seed
     assert "candidate.Distance <= candidate.Action.MaxRange" in seed
