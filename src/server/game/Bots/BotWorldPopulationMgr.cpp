@@ -619,6 +619,20 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     if (TryValidationRouteGroupRecovery(state, bot, power, stage, activity,
             situation, action, target, discoveryLeg, groupRecoveryCallbacks))
         return true;
+
+    // The Drudge formation must take ownership before the generic terminal
+    // approach reaches the midpoint between both sources. Approaching that
+    // midpoint first starts native combat and can fire Rush before the exact
+    // tanks have reached their declared anchors or seeded native threat.
+    if (Cohort().Config.ValidationRouteMechanicProfile
+            == "trash_two_tank_charge_lanes"
+        && TryValidationRouteDrudgeChargeLanes(state, bot, power, stage,
+            activity, situation, action, target, tryRouteGroupHeal,
+            isValidationCohortCombatLinked,
+            [&canonicalRouteDistance]() { return canonicalRouteDistance; },
+            routeArrivalRadius))
+        return true;
+
     BotWorldPopulationMgrValidationRoute::ObjectiveCallbacks terminalArrivalCallbacks;
     terminalArrivalCallbacks.PersistedPackHasLiveMembers =
         persistedValidationRoutePackHasLiveMembers;
@@ -688,13 +702,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             activity, situation, action, target,
             isValidationCohortCombatLinked))
         return true;
-    if (TryValidationRouteDrudgeChargeLanes(state, bot, power, stage,
-            activity, situation, action, target, tryRouteGroupHeal,
-            isValidationCohortCombatLinked,
-            [&canonicalRouteDistance]() { return canonicalRouteDistance; },
-            routeArrivalRadius))
-        return true;
-
     BotWorldPopulationMgrValidationRoute::TrashThreatControl trashThreatControl;
     BotWorldPopulationMgrValidationRoute::TrashThreatControlCallbacks
         trashThreatControlCallbacks;

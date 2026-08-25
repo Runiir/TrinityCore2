@@ -780,11 +780,12 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     # The facade owns only dispatch ordering. The typed contract, geometry,
     # action phases, and threat-seed coordinator are asserted in their
     # respective translation units so a split cannot hide a missing phase.
+    terminal = dispatch.index("terminalArrivalContext.Run()")
+    lanes = dispatch.index("TryValidationRouteDrudgeChargeLanes(state, bot, power, stage")
     movement = dispatch.index("TryValidationRouteMovementCheck(state, bot, power, stage")
     patrol = dispatch.index("tryValidationRoutePatrolPull()")
     minimum = dispatch.index("TryValidationRouteDrudgeMinimumDistance(state, bot, power, stage")
-    lanes = dispatch.index("TryValidationRouteDrudgeChargeLanes(state, bot, power, stage")
-    assert movement < patrol < minimum < lanes
+    assert lanes < terminal < movement < patrol < minimum
 
     for token in (
         "trash_two_tank_charge_lanes",

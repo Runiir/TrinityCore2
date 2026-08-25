@@ -323,7 +323,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
                 ? DeclaredCombatTankAnchorFor(slot)
                 : DeclaredRecoveryTankAnchorFor(slot))
             : (tankSlot && CombatTankStagingActive()
-                ? DeclaredNavigationTankAnchorFor(slot) : DeclaredAnchorFor(slot));
+                ? DeclaredCombatTankAnchorFor(slot) : DeclaredAnchorFor(slot));
         return anchor ? std::pair<float, float>{ anchor->X, anchor->Y }
                       : std::pair<float, float>{ 0.0f, 0.0f };
     };
@@ -748,7 +748,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
                         : DeclaredCombatTankAnchorFor(OneBasedSlot))
                     : DeclaredRecoveryTankAnchorFor(OneBasedSlot))
                 : (tank && CombatTankStagingActive()
-                    ? DeclaredNavigationTankAnchorFor(OneBasedSlot)
+                    ? DeclaredCombatTankAnchorFor(OneBasedSlot)
                     : (prepullTankFallback && candidateIndex
                         ? DeclaredNavigationTankAnchorFor(OneBasedSlot)
                         : DeclaredAnchorFor(OneBasedSlot)));

@@ -85,10 +85,12 @@ bool DrudgeLaneContext::ComputeExactCombatTankPathsProven() const
             || tankRoster == Manager.Cohort().Raid.RosterByGuid.end())
             return false;
         uint32 const slot = tankRoster->second.SlotIndex + 1;
-        bool const combatCandidate = RecoveryTankReturnBarrierOpen()
-            && IsRecoveryFormationActive()
-            && RecoveryAnchorReachedFor(slot)
-            && tankState->ValidationRouteDrudgeAnchorCandidateIndex == 0;
+        bool const combatCandidate =
+            (!IsRecoveryFormationActive() && CombatTankStagingActive())
+            || (RecoveryTankReturnBarrierOpen()
+                && IsRecoveryFormationActive()
+                && RecoveryAnchorReachedFor(slot)
+                && tankState->ValidationRouteDrudgeAnchorCandidateIndex == 0);
         MemberAnchor const* anchor = combatCandidate
             ? DeclaredCombatTankAnchorFor(slot)
             : DeclaredNavigationTankAnchorFor(slot);
@@ -316,10 +318,12 @@ bool DrudgeLaneContext::ComputeExactCombatTankAnchorsReached() const
             || tankRoster == Manager.Cohort().Raid.RosterByGuid.end())
             return false;
         uint32 const slot = tankRoster->second.SlotIndex + 1;
-        bool const combatCandidate = RecoveryTankReturnBarrierOpen()
-            && IsRecoveryFormationActive()
-            && RecoveryAnchorReachedFor(slot)
-            && tankState->ValidationRouteDrudgeAnchorCandidateIndex == 0;
+        bool const combatCandidate =
+            (!IsRecoveryFormationActive() && CombatTankStagingActive())
+            || (RecoveryTankReturnBarrierOpen()
+                && IsRecoveryFormationActive()
+                && RecoveryAnchorReachedFor(slot)
+                && tankState->ValidationRouteDrudgeAnchorCandidateIndex == 0);
         MemberAnchor const* anchor = combatCandidate
             ? DeclaredCombatTankAnchorFor(slot)
             : DeclaredNavigationTankAnchorFor(slot);
@@ -937,8 +941,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::ResolveSources()
             State.TargetGuid.Clear();
             return PhaseResult::Handled;
         }
-        float const sourceX = Sources[sourceIndex]->GetPositionX();
-        float const sourceY = Sources[sourceIndex]->GetPositionY();
+        Position const& sourceHome = Sources[sourceIndex]->GetHomePosition();
+        float const sourceX = sourceHome.GetPositionX();
+        float const sourceY = sourceHome.GetPositionY();
         float const seedDistance = Distance2d(sourceX, sourceY, seed->X, seed->Y);
         for (MemberAnchor const& member :
             Manager.Cohort().Config.ValidationRouteSplitMemberAnchors)
