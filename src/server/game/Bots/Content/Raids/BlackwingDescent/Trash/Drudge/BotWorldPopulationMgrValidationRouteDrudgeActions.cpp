@@ -1,5 +1,4 @@
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudge.h"
-
 #include "Bots/BotActionArbiter.h"
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotRaidAreaAuthority.h"
@@ -11,7 +10,6 @@
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
-
 #include "Creature.h"
 #include "GameTime.h"
 #include "MotionMaster.h"
@@ -22,13 +20,11 @@
 #include "SpellInfo.h"
 #include "SpellMgr.h"
 #include "Unit.h"
-
 #include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <string>
 #include <vector>
-
 namespace
 {
 uint64 NowMs()
@@ -518,9 +514,14 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         && NativeChargePending && ExactCombatTankAnchorsReached();
     if ((PrepullStaged || EarlyPullRecoveryActive)
         && RunDrudgeSeedCoordinator() == PhaseResult::Handled) return PhaseResult::Handled;
-    if (AssignedTank && (tankStage.NativeOwnershipAllowed || earlyPullOwnershipWindow)
-        && BotRaidDrudgeOwnership::NativeOwnershipActionReady(
-            NativeChargePending, recoveryAnchorsReachedBeforeTick, earlyPullOwnershipWindow)
+    bool const earlyPullOwnershipRecovery = earlyPullOwnershipWindow
+        && !party.ValidationRouteDrudgeThreatSeedComplete;
+    bool const nativeOwnershipActionReady =
+        BotRaidDrudgeOwnership::NativeOwnershipActionReady(
+            NativeChargePending, recoveryAnchorsReachedBeforeTick,
+            earlyPullOwnershipWindow, party.ValidationRouteDrudgeThreatSeedComplete);
+    if (AssignedTank && (tankStage.NativeOwnershipAllowed || earlyPullOwnershipRecovery)
+        && nativeOwnershipActionReady
         && LaneSource->GetVictim() == Bot)
     {
         auto const insert = Manager.Party().ValidationRouteDrudgeOwnershipRosterGuids.insert(
@@ -528,9 +529,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         if (insert.second)
             Record(LaneSource, "drudge_lane_native_ownership", SourceSeparation);
     }
-    if (AssignedTank && (tankStage.NativeOwnershipAllowed || earlyPullOwnershipWindow)
-        && BotRaidDrudgeOwnership::NativeOwnershipActionReady(
-            NativeChargePending, recoveryAnchorsReachedBeforeTick, earlyPullOwnershipWindow)
+    if (AssignedTank && (tankStage.NativeOwnershipAllowed || earlyPullOwnershipRecovery)
+        && nativeOwnershipActionReady
         && LaneSource->GetVictim() != Bot)
     {
         BotClassSpecActionProfile profile =

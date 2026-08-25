@@ -4,9 +4,11 @@
 namespace BotRaidDrudgeOwnership
 {
 inline bool NativeOwnershipActionReady(bool chargePending,
-    bool recoveryAnchorsReached, bool earlyPullRecovery)
+    bool recoveryAnchorsReached, bool earlyPullRecovery,
+    bool crossLaneSeedComplete)
 {
-    return earlyPullRecovery || (chargePending && recoveryAnchorsReached);
+    return (earlyPullRecovery && !crossLaneSeedComplete)
+        || (chargePending && recoveryAnchorsReached);
 }
 }
 

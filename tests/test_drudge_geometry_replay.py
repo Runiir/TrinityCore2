@@ -104,10 +104,11 @@ int main()
         == MemberRecoveryAction::PreferFriendlySupport);
     assert(SelectMemberRecoveryAction(false, false, false)
         == MemberRecoveryAction::Continue);
-    assert(!NativeOwnershipActionReady(false, false, false));
-    assert(NativeOwnershipActionReady(false, false, true));
-    assert(!NativeOwnershipActionReady(true, false, false));
-    assert(NativeOwnershipActionReady(true, true, false));
+    assert(!NativeOwnershipActionReady(false, false, false, false));
+    assert(NativeOwnershipActionReady(false, false, true, false));
+    assert(!NativeOwnershipActionReady(false, false, true, true));
+    assert(!NativeOwnershipActionReady(true, false, false, true));
+    assert(NativeOwnershipActionReady(true, true, false, true));
 
     assert(SelectMinimumDistanceOwner(false, false)
         == MinimumDistanceOwner::GenericRouteSafety);
