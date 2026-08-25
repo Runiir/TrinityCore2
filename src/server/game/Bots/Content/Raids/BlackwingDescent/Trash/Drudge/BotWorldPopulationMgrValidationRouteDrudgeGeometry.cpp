@@ -254,8 +254,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
 {
     CombatTankStagingActive = [this]
     {
-        return SourceCombatStarted
-            || (Manager.Party().ValidationRouteDrudgePrepullStaged
+        return BotRaidDrudgeGeometry::CombatTankStageLatched(
+            Manager.Party().ValidationRouteDrudgePrepullStaged
                 && Manager.Party().ValidationRouteDrudgePrepullAttemptId
                     == Manager.Cohort().AttemptId
                 && Manager.Party().ValidationRouteDrudgePrepullWipeGeneration

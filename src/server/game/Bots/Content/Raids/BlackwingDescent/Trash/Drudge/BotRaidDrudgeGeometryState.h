@@ -150,6 +150,14 @@ inline bool ExactDrudgeLaneOwnsGroupMovement(
     return drudgeLaneProfile && exactPrepullStaged;
 }
 
+// Combat anchors are the second prepull phase.  Native source combat is an
+// observed failure edge, not permission to reinterpret the exact member
+// anchors before the roster latch has been recorded.
+inline bool CombatTankStageLatched(bool exactPrepullStaged)
+{
+    return exactPrepullStaged;
+}
+
 inline bool DynamicGroupRecoveryActive(
     bool drudgeLaneProfile, bool exactPrepullStaged, bool landedRushPending)
 {
