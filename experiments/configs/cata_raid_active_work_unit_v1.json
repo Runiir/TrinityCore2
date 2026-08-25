@@ -1,7 +1,7 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_reseparation_route_geometry_repair",
-  "owner_skill": "raid-bot-runtime-implementation",
+  "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_sequence_9_geometry_lane_anchor_repair",
+  "owner_skill": "raid-shard-architecture",
   "classification": "failed",
   "observed_at_commit": "d9024ddb5cc9e213e9f0048444b66522cd4d005c",
   "source_handoff": {
@@ -60,7 +60,7 @@
     "gameplay_behavior_changed": false
   },
   "repair_scope": {
-    "status": "assigned",
+    "status": "shared_runtime_rejected_and_route_owner_assigned",
     "allowed": [
       "drudge_route_candidate_geometry",
       "drudge_lane_anchoring",

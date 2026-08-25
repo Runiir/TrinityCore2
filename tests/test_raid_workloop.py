@@ -340,10 +340,10 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_reseparation_route_geometry_repair"
+        "drudge_sequence_9_geometry_lane_anchor_repair"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["owner_skill"] == "raid-bot-runtime-implementation"
+    assert active["owner_skill"] == "raid-shard-architecture"
     assert active["first_broken_edge"] == (
         "drudge_reseparation_route_candidate_admission_fails_after_"
         "landed_charge_sequence_8"
@@ -386,7 +386,9 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
         "hypotheses": 1,
         "matched_live_verification_runs": 0,
     }
-    assert active["repair_scope"]["status"] == "assigned"
+    assert active["repair_scope"]["status"] == (
+        "shared_runtime_rejected_and_route_owner_assigned"
+    )
     assert "drudge_route_candidate_geometry" in active["repair_scope"]["allowed"]
     assert active["implemented_diagnostic"]["commit"] == (
         "d9024ddb5cc9e213e9f0048444b66522cd4d005c"
@@ -502,10 +504,10 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_reseparation_route_geometry_repair"
+        "drudge_sequence_9_geometry_lane_anchor_repair"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
-        "raid-bot-runtime-implementation"
+        "raid-shard-architecture"
     )
     assert status["current_program_next_action"] == status["active_work_unit"][
         "next_action"
