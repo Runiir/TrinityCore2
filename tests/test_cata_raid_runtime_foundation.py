@@ -879,6 +879,12 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     assert formation.index("RunDrudgeSeedCoordinator") < formation.index(
         "drudge_lane_native_taunt"
     )
+    assert formation.index("drudge_native_tank_threat_sustain") < formation.index(
+        "bool const recoveryNeeded"
+    )
+    assert formation.index("!NativeChargePending && !ChargeAwaitingLanding") < formation.index(
+        "drudge_native_tank_threat_sustain"
+    )
     assert formation.index("LandedRushRecoveryComplete") < formation.index(
         "drudge_native_charge_reseparation_complete"
     )

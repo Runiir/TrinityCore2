@@ -69,6 +69,31 @@ int main()
     assert(!BotRaidDrudgeNativeRush::AuthorityReady(true, recoveredRoster));
     assert(!BotRaidDrudgeNativeRush::AuthorityReady(true, rejected855));
 
+    // Canary16 exact source-250140 counterexample. The assigned tank had
+    // native ownership, but cross-seed threat remained higher and the source
+    // had already crossed far enough that healer 30004 was the farthest
+    // eligible player. Ordinary assigned-tank threat must preempt formation
+    // holding until the first Rush instead of letting that displacement latch.
+    BotRaidDrudgeNativeRush::SourceInput canary16;
+    canary16.ExactTankVictim = true;
+    canary16.IntendedSeedPresent = true;
+    canary16.FarthestIsIntendedSeed = false;
+    canary16.TankThreat = 50185.0f;
+    canary16.HighestOtherThreat = 67845.0f;
+    canary16.SeedDistance = 13.0481f;
+    canary16.SecondFarthestDistance = 24.3759f;
+    canary16.ThreatHeadroomMultiplier = 2.5f;
+    canary16.FarthestDistanceMargin = 2.0f;
+    canary16.FarthestGuid = 30004;
+    auto displaced250140 = BotRaidDrudgeNativeRush::Evaluate(canary16);
+    assert(!displaced250140.TankThreatSecure);
+    assert(!displaced250140.SeedIsUniqueFarthest);
+    assert(!displaced250140.Ready);
+    assert(BotRaidDrudgeNativeRush::ShouldBuildTankThreat(
+        false, displaced250140));
+    assert(!BotRaidDrudgeNativeRush::AuthorityReady(
+        false, displaced250140));
+
     assert(SelectMemberRecoveryAction(true, false, true)
         == MemberRecoveryAction::RecoverFormation);
     assert(SelectMemberRecoveryAction(true, true, true)
