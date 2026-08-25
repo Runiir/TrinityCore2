@@ -509,14 +509,19 @@ uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster,
             // SMART_TARGET_FARTHEST with playerOnly=1, range=80 and LOS=1
             // chooses from available player threat references regardless of
             // raid role or lane. Keep that native predicate distinct from the
-            // tactic's desired cross-lane non-tank seed/selection predicate.
+            // tactic's exact opposite-tank selection predicate.
             candidateEvidence.NativeSelectorEligible = candidateEvidence.IsPlayer
                 && candidateEvidence.Available && candidateEvidence.LineOfSight
                 && candidateEvidence.NativeCombatRange;
+            uint32 const intendedTankSlot = sourceLaneIndex
+                    < Cohort().Config.ValidationRouteSplitSeedRosterSlots.size()
+                ? Cohort().Config.ValidationRouteSplitSeedRosterSlots[sourceLaneIndex]
+                : 0;
             candidateEvidence.TacticCrossLaneEligible =
                 candidateEvidence.NativeSelectorEligible && registered && activeLease
                 && candidate->IsAlive() && candidate->GetMap() == caster->GetMap()
-                && candidateEvidence.CrossLane && candidateEvidence.Role != "tank";
+                && candidateEvidence.CrossLane && candidateEvidence.Role == "tank"
+                && candidateEvidence.Slot == intendedTankSlot;
             observation.NativeThreatCandidates.push_back(std::move(candidateEvidence));
             if (observation.NativeThreatCandidates.size() >= MaxNativeThreatCandidates)
                 break;

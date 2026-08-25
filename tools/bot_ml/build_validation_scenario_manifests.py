@@ -303,75 +303,37 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
             or len(set(seed_slots)) != 2
             or len(set(healer_slots)) != 3
             or any(slot not in member_by_slot or slot in tank_slots for slot in healer_slots)
-            or seed_slots[0] not in lane_b_slots
-            or seed_slots[1] not in lane_a_slots
-            or any(slot not in member_by_slot or slot in tank_slots for slot in seed_slots)):
+            or seed_slots != [tank_slots[1], tank_slots[0]]):
         return False, "split_seed_candidate_contract"
-    for source_index, slot in enumerate(seed_slots):
-        member = member_by_slot[slot]
-        anchor = (float(member["x"]), float(member["y"]))
-        source = navigation_chased_sources[source_index]
-        # The exact member can be anywhere inside its accepted arrival disk.
-        # Prove an ordinary hostile action remains within the trained range at
-        # the far edge, while the same disk remains outside both native source
-        # danger radii. Runtime still rechecks spell range, LOS, power,
-        # cooldown, and exact hostile target before the one seed submission.
-        if math.hypot(anchor[0] - source[0], anchor[1] - source[1]) \
-                + arrival > seed_max_range + 1e-6:
-            return False, "split_seed_candidate_range_unsafe"
-        if any(math.hypot(anchor[0] - peer[0], anchor[1] - peer[1]) + 1e-6
-               < minimum + arrival for peer in navigation_chased_sources):
-            return False, "split_seed_candidate_source_unsafe"
-
-        # Before the first Rush, hostile authority permits only the two
-        # declared seeds and their assigned tanks; healers can acquire native
-        # threat through ordinary support. Prove the seed's entire arrival
-        # disk stays farther than those production-eligible competitors at the
-        # nominal native chase point. Runtime independently inspects the real
-        # threat list and exact live positions before holding this phase ready.
-        seed_near_edge = math.hypot(
-            anchor[0] - source[0], anchor[1] - source[1]
-        ) - arrival
-        initial_forbidden_slots = set(healer_slots) | {tank_slots[source_index]}
-        if any(
-            seed_near_edge <= math.hypot(
-                float(member_by_slot[other_slot]["x"]) - source[0],
-                float(member_by_slot[other_slot]["y"]) - source[1],
-            ) + (tank_arrival if other_slot in tank_slots else arrival) + 1e-6
-            for other_slot in initial_forbidden_slots
-        ):
-            return False, "split_initial_native_farthest_unsafe"
-
-    # Once the first native Rush has landed, each assigned tank remains at its
-    # sealed recovery anchor.  Reconstruct the repeatable native melee-stop
-    # point on the tank-to-seed ray and prove that the configured cross-lane
-    # DPS remains farther than every same-lane member and every healer.  The
-    # two arrival disks are included so a merely nominal ordering cannot pass.
-    lane_sets = [lane_a_slots, lane_b_slots]
+    non_tank_slots = set(member_by_slot) - set(tank_slots)
+    charge_corridor = melee_stop + arrival
     for source_index, seed_slot in enumerate(seed_slots):
-        recovery = recovery_points[source_index]
-        seed = member_by_slot[seed_slot]
+        seed = tank_by_slot[seed_slot]
         seed_point = (float(seed["x"]), float(seed["y"]))
-        to_seed_x = seed_point[0] - recovery[0]
-        to_seed_y = seed_point[1] - recovery[1]
-        to_seed_distance = math.hypot(to_seed_x, to_seed_y)
-        if to_seed_distance <= melee_stop:
-            return False, "split_repeated_native_farthest_unsafe"
-        repeated_source = (
-            recovery[0] + to_seed_x * melee_stop / to_seed_distance,
-            recovery[1] + to_seed_y * melee_stop / to_seed_distance,
-        )
-        seed_distance = math.dist(repeated_source, seed_point)
-        forbidden_slots = (lane_sets[source_index] | set(healer_slots)) - {seed_slot}
-        if any(
-            seed_distance + 1e-6
-            < math.dist(
-                repeated_source,
-                tuple(float(member_by_slot[slot][axis]) for axis in ("x", "y")),
-            ) + 2.0 * arrival
-            for slot in forbidden_slots
-        ):
-            return False, "split_repeated_native_farthest_unsafe"
+        for source in (ordered_homes[source_index], navigation_chased_sources[source_index]):
+            seed_distance = math.dist(source[:2], seed_point)
+            if seed_distance + tank_arrival > seed_max_range + 1e-6:
+                return False, "split_seed_candidate_range_unsafe"
+            for slot in non_tank_slots:
+                member = member_by_slot[slot]
+                member_point = (float(member["x"]), float(member["y"]))
+                if seed_distance - tank_arrival + 1e-6 < (
+                    math.dist(source[:2], member_point) + arrival
+                ):
+                    return False, "split_tank_native_farthest_unsafe"
+                segment_x = seed_point[0] - source[0]
+                segment_y = seed_point[1] - source[1]
+                segment_length_sq = segment_x * segment_x + segment_y * segment_y
+                projection = 0.0 if segment_length_sq <= 0.0 else max(0.0, min(1.0,
+                    ((member_point[0] - source[0]) * segment_x
+                     + (member_point[1] - source[1]) * segment_y) / segment_length_sq
+                ))
+                nearest = (
+                    source[0] + projection * segment_x,
+                    source[1] + projection * segment_y,
+                )
+                if math.dist(member_point, nearest) + 1e-6 < charge_corridor:
+                    return False, "split_non_tank_charge_corridor_unsafe"
     return True, ""
 
 

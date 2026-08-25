@@ -53,10 +53,10 @@ int main()
     assert(ready.SeedIsUniqueFarthest);
     assert(ready.Ready);
     // Exact dc381 live counterexample: a one-tick secure snapshot was followed
-    // by periodic seed threat, ownership loss, and a bad first native target.
-    // The assigned tank must sustain ordinary threat until the first Rush
-    // actually exists; afterward a secure source no longer needs this special
-    // pre-Rush action, while an insecure source still does.
+    // by periodic seed threat, ownership loss, and a bad native target.
+    // The assigned tank must sustain ordinary threat until the first Rush,
+    // and every later Rush must still retain the intended opposite tank as
+    // unique farthest.
     assert(BotRaidDrudgeNativeRush::ShouldBuildTankThreat(false, ready));
     assert(!BotRaidDrudgeNativeRush::ShouldBuildTankThreat(true, ready));
     assert(BotRaidDrudgeNativeRush::ShouldBuildTankThreat(true, rejected855));
@@ -66,7 +66,7 @@ int main()
     auto recoveredRoster = BotRaidDrudgeNativeRush::Evaluate(readyRush);
     assert(!recoveredRoster.SeedIsUniqueFarthest);
     assert(!BotRaidDrudgeNativeRush::AuthorityReady(false, recoveredRoster));
-    assert(BotRaidDrudgeNativeRush::AuthorityReady(true, recoveredRoster));
+    assert(!BotRaidDrudgeNativeRush::AuthorityReady(true, recoveredRoster));
     assert(!BotRaidDrudgeNativeRush::AuthorityReady(true, rejected855));
 
     assert(SelectMemberRecoveryAction(true, false, true)
@@ -523,7 +523,6 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "TryValidationRouteDrudgeChargeLanes" in implementation
     assert "SelectMinimumDistanceOwner" in geometry
     assert "MinimumDistanceOwner::LandedRushRecovery" in geometry
-    assert "ValidationRouteDrudgeChargeObservations" in geometry
     assert "RecoveryPathPreservesTankSeparation" in recovery
     assert "ValidationRouteDrudgeAnchorSource0Identity" in geometry
     assert "ExactRosterPrepullStaged" in geometry
@@ -545,7 +544,7 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "drudge_pre_first_rush_threat_seed" in seed
     assert "drudge_native_charge_reseparation_complete" in actions
     assert "if (TryMinimumDistance(true))" not in lanes
-    assert '&& !currentScopeHasNativeRush && Role == "dps"' in actions
+    assert '&& Role != "tank"' in actions
 
 
 def test_landed_rush_recovery_latches_the_scoped_two_tank_return_barrier():
@@ -667,6 +666,9 @@ def test_drudge_reseparation_switches_from_cached_anchor_to_live_safety():
     geometry = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp").read_text(
         encoding="utf-8"
     )
+    spacing = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSpacing.cpp").read_text(
+        encoding="utf-8"
+    )
     actions = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp").read_text(
         encoding="utf-8"
     )
@@ -684,13 +686,10 @@ def test_drudge_reseparation_switches_from_cached_anchor_to_live_safety():
     )
     exact_cache = group.index("CachedAnchorSafe", recovery_gate)
     assert recovery_gate < exact_cache
-    recovery_start = geometry.index(
+    recovery_start = spacing.index(
         "bool DrudgeLaneContext::IsRecoveryFormationActive() const"
     )
-    recovery_end = geometry.index(
-        "bool DrudgeLaneContext::TryMinimumDistance", recovery_start
-    )
-    recovery = geometry[recovery_start:recovery_end]
+    recovery = spacing[recovery_start:]
     assert "observation.Landed" in recovery
     assert "observation.ReseparationRecorded" not in recovery
 

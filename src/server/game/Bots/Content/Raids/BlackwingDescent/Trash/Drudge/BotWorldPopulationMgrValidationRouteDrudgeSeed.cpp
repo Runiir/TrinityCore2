@@ -161,7 +161,7 @@ SeedCandidate DrudgeLaneContext::ResolveDrudgeSeedCandidate(
         auto roster = manager.Cohort().Raid.RosterByGuid.find(
             candidate->GetGUID().GetCounter());
         if (roster == manager.Cohort().Raid.RosterByGuid.end()
-            || roster->second.Role != "dps"
+            || roster->second.Role != "tank"
             || roster->second.SlotIndex + 1 != seedSlot)
             continue;
 
@@ -169,7 +169,7 @@ SeedCandidate DrudgeLaneContext::ResolveDrudgeSeedCandidate(
         selected.State = &candidateState;
         selected.MemberSlot = roster->second.SlotIndex + 1;
         selected.Distance = candidate->GetExactDist(source);
-        selected.PositionSafe = context.GroupPositionSafe(candidate);
+        selected.PositionSafe = context.ExactCombatTankAnchorsReached();
         if (!selected.PositionSafe)
         {
             selected.Gate = SeedGate::PositionUnsafe;
@@ -191,12 +191,6 @@ SeedCandidate DrudgeLaneContext::ResolveDrudgeSeedCandidate(
         {
             selected.Gate = SeedGate::TargetContract;
             selected.Reason = "resolved_profile_target_mismatch";
-            continue;
-        }
-        if (selected.Action.MovementDirective != "ranged")
-        {
-            selected.Gate = SeedGate::MovementContract;
-            selected.Reason = "resolved_profile_movement_not_ranged";
             continue;
         }
         if (selected.Action.MaxRange <= 5.0f

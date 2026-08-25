@@ -893,7 +893,7 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
         "drudge_pre_first_rush_threat_seed",
         "ValidationRouteDrudgeThreatSeedFailure",
         "native_action_rejected",
-        'selected.Action.MovementDirective != "ranged"',
+        'roster->second.Role != "tank"',
         'selected.Action.MaxRange <= 5.0f',
         "SetAllOffenseSuppressed",
     ):

@@ -816,7 +816,7 @@ def accepted_drudge_status() -> dict:
         "other_tank_x": tank1[0], "other_tank_y": tank1[1], "other_tank_guid": tank_guids[1],
         "other_tank_slot": 2, "other_tank_projection": projection(*tank1),
         "other_tank_source_distance": hypot(tank1[0] - source1[0], tank1[1] - source1[1]),
-        "minimum_member_spacing": 3.0, "arrival_tolerance": 2.0,
+        "minimum_member_spacing": 0.5, "arrival_tolerance": 2.0,
         "tank_arrival_tolerance": 1.0,
         "tank0_x": tank0[0], "tank0_y": tank0[1], "tank0_guid": tank_guids[0],
         "tank0_slot": 1, "tank0_projection": projection(*tank0),
@@ -829,10 +829,10 @@ def accepted_drudge_status() -> dict:
     observations = []
     sequence = 0
     # The native first-Rush snapshots below include the complete (bounded)
-    # threat list.  The seeded opposite-lane DPS is the farthest eligible
-    # candidate for each source. Tanks and same-lane players remain native
-    # selector candidates even though they are not tactic-eligible.
-    for source, target in ((250140, roster_guids[7]), (250141, roster_guids[5])):
+    # threat list. The opposite tank is the farthest eligible candidate for
+    # each source. Healers and DPS remain native selector candidates, but are
+    # not valid tactic targets.
+    for source, target in ((250140, roster_guids[1]), (250141, roster_guids[0])):
         for interval in (0, 20000):
             sequence += 1
             observations.append({
@@ -862,7 +862,7 @@ def accepted_drudge_status() -> dict:
             continue
         source = observation["source_spawn_id"]
         source_lane = 0 if source == 250140 else 1
-        farthest_guid = roster_guids[7] if source == 250140 else roster_guids[5]
+        farthest_guid = roster_guids[1] if source == 250140 else roster_guids[0]
         distances = {
             slot: (40.0 if guid == farthest_guid else 35.0 - abs(slot - 6) * 0.5)
             for slot, guid in ((row["slot"] + 1, row["guid"]) for row in runtime["roster"])
@@ -874,7 +874,9 @@ def accepted_drudge_status() -> dict:
             role = row["role"]
             cross_lane = lane != source_lane
             native_selector_eligible = True
-            tactic_cross_lane_eligible = cross_lane and role != "tank"
+            tactic_cross_lane_eligible = (
+                cross_lane and role == "tank" and row["guid"] == farthest_guid
+            )
             candidate_rows.append({
                 "guid": row["guid"],
                 "raw_guid": row["guid"],
@@ -948,7 +950,7 @@ def accepted_drudge_status() -> dict:
         "closed": True,
         "complete": True,
         "failure": False,
-        "roster_guids": [roster_guids[5], roster_guids[7]],
+        "roster_guids": [roster_guids[0], roster_guids[1]],
         "observations": [
             {
                 "sequence": 8,
@@ -956,8 +958,8 @@ def accepted_drudge_status() -> dict:
                 "wipe_generation": 0,
                 "route_generation": 3,
                 "observed_at_ms": 5000,
-                "member_guid": roster_guids[7],
-                "member_slot": 8,
+                "member_guid": roster_guids[1],
+                "member_slot": 2,
                 "member_lane": 1,
                 "source_spawn_id": 250140,
                 "source_guid": 255140,
@@ -982,8 +984,8 @@ def accepted_drudge_status() -> dict:
                 "wipe_generation": 0,
                 "route_generation": 3,
                 "observed_at_ms": 10000,
-                "member_guid": roster_guids[5],
-                "member_slot": 6,
+                "member_guid": roster_guids[0],
+                "member_slot": 1,
                 "member_lane": 0,
                 "source_spawn_id": 250141,
                 "source_guid": 255141,
@@ -1111,16 +1113,16 @@ def test_drudge_contract_rejects_prepared_only_stale_and_incomplete_tactics():
     assert accepted is False
     assert "drudge_health_sync_scope_attempt_mismatch" in reasons
 
-    tank_target = accepted_drudge_status()
-    tank_target["raid_runtime"]["drudge_charge"]["observations"][0]["target_guid"] = 1001
-    accepted, reasons = accepted_drudge_contract([tank_target])
+    non_tank_target = accepted_drudge_status()
+    non_tank_target["raid_runtime"]["drudge_charge"]["observations"][0]["target_guid"] = 1008
+    accepted, reasons = accepted_drudge_contract([non_tank_target])
     assert accepted is False
-    assert "drudge_native_rush_target_tank" in reasons
+    assert "drudge_native_rush_target_not_opposite_tank" in reasons
 
     same_lane = accepted_drudge_status()
-    # Source 250140 is lane A; roster slot 6 is also lane A.  A later clean
+    # Source 250140 is lane A; roster slot 1 is its same-lane tank. A later clean
     # snapshot must not erase this earlier native selector violation.
-    same_lane["raid_runtime"]["drudge_charge"]["observations"][0]["target_guid"] = 1006
+    same_lane["raid_runtime"]["drudge_charge"]["observations"][0]["target_guid"] = 1001
     clean = accepted_drudge_status()
     accepted, reasons = accepted_drudge_contract([same_lane, clean])
     assert accepted is False

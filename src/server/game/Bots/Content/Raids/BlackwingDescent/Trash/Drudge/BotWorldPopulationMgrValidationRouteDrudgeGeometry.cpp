@@ -471,9 +471,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             + (member->GetPositionY() - MidpointY) * AxisY;
         bool const laneSafe = (laneA ? -1.0f : 1.0f) * projection
             >= LaneSeparation * 0.25f;
-        float const sameLaneMinimum = std::max(3.0f,
-            Manager.Cohort().Config.ValidationRouteSplitNavigationMarginYards
-                + Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards * 0.5f);
+        float const sameLaneMinimum = std::max(0.5f,
+            Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards * 0.5f);
         bool sameLaneSpacingSafe = true;
         for (WorldBotState const& cohortState : Manager.Party().Bots)
         {

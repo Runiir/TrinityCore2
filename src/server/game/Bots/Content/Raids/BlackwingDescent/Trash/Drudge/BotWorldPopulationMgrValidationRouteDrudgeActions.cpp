@@ -949,8 +949,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions()
         State.TargetGuid = LaneSource->GetGUID();
         return PhaseResult::Handled;
     }
-    if (Sources[0]->IsAlive() && Sources[1]->IsAlive()
-        && !currentScopeHasNativeRush && Role == "dps")
+    if (Sources[0]->IsAlive() && Sources[1]->IsAlive() && Role != "tank")
     {
         Player* intendedSeed = rosterMemberForSlot(
             Manager.Cohort().Config.ValidationRouteSplitSeedRosterSlots[LaneIndex]);

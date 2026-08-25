@@ -262,7 +262,7 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
     assert "candidate, source, 1, false, 0, false, false, true, false, true" in seed
     assert "candidates[lane].State, candidates[lane].Bot" in seed
     assert "1, false, 0, false, false, true, false, true" in seed
-    assert 'selected.Action.MovementDirective != "ranged"' in seed
+    assert 'roster->second.Role != "tank"' in seed
     assert 'selected.Action.MaxRange <= 5.0f' in seed
     assert 'selected.Action.AutoAttackMode == "ranged"' not in seed
     assert "AllPendingLanesReady" in seed
