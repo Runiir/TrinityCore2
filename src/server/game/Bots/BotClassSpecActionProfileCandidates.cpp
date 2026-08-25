@@ -495,6 +495,7 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
         }
 
         SpellInfo const* spellInfo = spell.SpellId ? sSpellMgr->GetSpellInfo(spell.SpellId) : nullptr;
+        candidate.CastTimeMs = ProfileSpellCastTimeMs(bot, spellInfo);
         Unit const* comboTarget = selfTarget ? target : actionTarget;
         std::string conditionRejection = EvaluateCompiledConditions(bot, actionTarget, comboTarget, spell);
         bool const interruptsCurrentChanneledSpell = postChannelTickInterruptWindow

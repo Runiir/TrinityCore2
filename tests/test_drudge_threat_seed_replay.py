@@ -423,6 +423,37 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
     assert "&& TryEnsureCombatTotems" in executor
 
 
+def test_profile_candidates_publish_live_cast_time_to_seed_selector():
+    source = (
+        ROOT / "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp"
+    ).read_text(encoding="utf-8")
+    build_candidates = source[
+        source.index(
+            "std::vector<BotActionCandidate> "
+            "BotClassSpecActionProfileStore::BuildCandidates"
+        ) : source.index(
+            "std::string BotClassSpecActionProfileStore::CandidateMaskJson"
+        )
+    ]
+
+    spell_info = (
+        "SpellInfo const* spellInfo = spell.SpellId ? "
+        "sSpellMgr->GetSpellInfo(spell.SpellId) : nullptr;"
+    )
+    cast_time_assignment = (
+        "candidate.CastTimeMs = ProfileSpellCastTimeMs(bot, spellInfo);"
+    )
+    assert spell_info in build_candidates
+    assert build_candidates.count(cast_time_assignment) == 1
+    assert build_candidates.index(spell_info) < build_candidates.index(
+        cast_time_assignment
+    )
+    assert build_candidates.index(cast_time_assignment) < build_candidates.index(
+        "else if (spellInfo && spell.RequiresInstantCast"
+    )
+    assert "candidate.CastTimeMs = 0" not in build_candidates
+
+
 def test_drudge_seed_approach_preserves_lane_and_native_range(tmp_path):
     source = tmp_path / "drudge_seed_approach.cpp"
     binary = tmp_path / "drudge_seed_approach"
