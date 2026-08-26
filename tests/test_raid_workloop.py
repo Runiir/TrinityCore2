@@ -340,23 +340,22 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_native_taunt_confirmation_live_verification"
+        "post_rush_lane_local_offense_live_verification"
     )
     assert magmaw_25h["active_program_work_unit"] is None
     assert active["owner_skill"] == "raid-shard-architecture"
     assert active["first_broken_edge"] == (
-        "drudge_native_taunt_submission_is_recorded_before_assigned_tank_"
-        "victim_ownership_is_observed"
+        "post_rush_cross_lane_threat_gate_suppresses_eligible_lane_offense"
     )
     evidence = active["decisive_evidence"]
     assert evidence["source_commit"] == (
-        "c0c013e6d911c9c88b7c761869fb37d4531f700a"
+        "4277a2b6eebe0cf1e526bc97e3643622b70de6d5"
     )
     assert evidence["binary_sha256"] == (
-        "d0b8fc020c8d47fd0a87644bc4b1633395127f80dbeb6d4c319614b5b8128080"
+        "0ee99c5222b9eeddc5d9278d1b6c4c33530c35b6dc76854208b7d9fb2487958c"
     )
     assert evidence["report_file_sha256"] == (
-        "6dcec59459a63eaab17a49016674093d68e8058d1454c28fe95014ef066e9f27"
+        "e53f3b4d6187de61df13557f99d415b77312eba3700881ee597c9966f497fd95"
     )
     assert (
         evidence["route_generation"],
@@ -367,28 +366,27 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert evidence["kills"] == 1
     assert evidence["observed_death_trace_count"] == 3
     assert evidence["controller_terminal_alive_roster_count"] == 7
-    assert evidence["taunt_source_current_victim_guid"] == 30006
-    assert evidence["taunt_assigned_tank_guid"] == 30002
-    assert evidence["taunt_submitted"] is True
-    assert evidence["taunt_outcome_observed"] is False
-    assert evidence["native_victim_owned"] is False
-    assert evidence["prior_seed_envelope_repair_worked"] is True
+    assert evidence["native_rush_landed_count"] == 10
+    assert evidence["native_rush_per_source_count"] == 5
+    assert evidence["native_ownership_roster_guids"] == [30001, 30002]
+    assert evidence["single_target_action_count_before_first_death"] == 6
+    assert evidence["offense_wait_count_before_first_death"] == 1615
     assert evidence["boss_reached"] is False
     assert evidence["forbidden_assistance_observed"] is False
     assert evidence["cleanup_passed"] is True
     assert evidence["worldserver_exit_code"] == 0
-    assert evidence["evidence_demux_bound_rows"] == 132
+    assert evidence["evidence_demux_bound_rows"] == 123
     assert active["implementation_budget"] == {
         "hypotheses": 1,
         "matched_live_verification_runs": 0,
     }
     assert active["prior_repair_proof"]["commit"] == (
-        "c0c013e6d911c9c88b7c761869fb37d4531f700a"
-    )
-    assert active["prior_repair_proof"]["remote_seed_regression_observed"] is False
-    assert "native_victim_confirmation_after_taunt_submission" in active["repair_scope"]["allowed"]
-    assert active["implemented_repair"]["commit"] == (
         "4277a2b6eebe0cf1e526bc97e3643622b70de6d5"
+    )
+    assert active["prior_repair_proof"]["native_taunt_confirmed"] is True
+    assert "post_rush_lane_local_ownership_admission" in active["repair_scope"]["allowed"]
+    assert active["implemented_repair"]["commit"] == (
+        "bc755ada8410798c8319e168bdaaff09fc0847f4"
     )
     assert active["implemented_repair"]["source_line_limit_passed"] is True
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
@@ -489,19 +487,18 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     assert status["active_work_unit"]["ready_for_bounded_repair"] is False
     assert status["active_work_unit"]["ready_for_live_verification"] is True
     assert status["active_work_unit"]["first_broken_edge"] == (
-        "drudge_native_taunt_submission_is_recorded_before_assigned_tank_"
-        "victim_ownership_is_observed"
+        "post_rush_cross_lane_threat_gate_suppresses_eligible_lane_offense"
     )
     assert status["active_work_unit"]["source_handoff"]["sha256"] == (
         workloop._file_sha256(
             workloop.ROOT
             / "experiments/configs/"
-            "cata_raid_magmaw_canary36_taunt_confirmation_handoff_20260826.md"
+            "cata_raid_magmaw_canary37_lane_offense_handoff_20260826.md"
         )
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_native_taunt_confirmation_live_verification"
+        "post_rush_lane_local_offense_live_verification"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
         "raid-shard-architecture"
