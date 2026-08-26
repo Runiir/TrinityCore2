@@ -17,6 +17,7 @@ ACTIONS = DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp"
 PLANNER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrMovementPlanner.cpp"
 PATH_VALIDATION = ROOT / "src/server/game/Bots/BotWorldPopulationMgrNativePathValidation.h"
 SCENARIO = ROOT / "experiments/configs/validation_scenarios_cata_001.json"
+LANE_SELECTION = DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp"
 
 
 def test_recovery_candidates_replay_prefers_fixed_safe_and_stays_deterministic(tmp_path):
@@ -213,6 +214,51 @@ int main()
         cwd=ROOT,
     )
     subprocess.run([str(binary)], check=True, cwd=ROOT)
+
+
+def test_recovery_tank_proof_uses_recovery_members_and_keeps_stale_cache_guard():
+    lane_selection = LANE_SELECTION.read_text(encoding="utf-8")
+    proof_start = lane_selection.index(
+        "bool DrudgeLaneContext::ComputeExactRecoveryTankPathsProven() const"
+    )
+    proof_end = lane_selection.index(
+        "bool DrudgeLaneContext::ComputeExactRecoveryTankAnchorsReached() const",
+        proof_start,
+    )
+    proof = lane_selection[proof_start:proof_end]
+
+    # Normal and recovery member formations are intentionally different. The
+    # recovery clearance proof must inspect the active recovery formation, not
+    # accidentally bless the normal pull anchors.
+    scenario = json.loads(SCENARIO.read_text(encoding="utf-8"))
+    drudges = next(
+        step
+        for scenario_row in scenario["scenarios"]
+        if scenario_row["id"] == "blackwing_descent_10n"
+        for step in scenario_row["route"]
+        if step.get("mechanic_profile") == "trash_two_tank_charge_lanes"
+    )
+    normal_members = {
+        anchor["roster_slot"]: anchor for anchor in drudges["split_member_anchors"]
+    }
+    recovery_members = {
+        anchor["roster_slot"]: anchor
+        for anchor in drudges["split_recovery_member_anchors"]
+    }
+    assert set(normal_members) == set(recovery_members) == set(range(1, 11))
+    assert normal_members[3] != recovery_members[3]
+    assert "for (MemberAnchor const& anchor : config.ValidationRouteSplitRecoveryMemberAnchors)" in proof
+    assert "ValidationRouteSplitMemberAnchors" not in proof
+
+    geometry = GEOMETRY.read_text(encoding="utf-8")
+    selector_start = geometry.index("SelectPathableDrudgeAnchor =")
+    cache_start = geometry.index("auto cacheUsable", selector_start)
+    cache_end = geometry.index("if (cacheUsable())", cache_start)
+    cache = geometry[cache_start:cache_end]
+    # Commit 08c549's tankRecovery exception keeps stale candidate-index
+    # validation active for tank recovery while preserving dynamic retries.
+    assert "if ((!activeDynamicRecovery || tankRecovery)" in cache
+    assert "State.ValidationRouteDrudgeAnchorCandidateIndex >= candidates.size()" in cache
 
 
 def test_recovery_candidate_contract_is_persistent_and_native_strict_for_tanks_and_members():

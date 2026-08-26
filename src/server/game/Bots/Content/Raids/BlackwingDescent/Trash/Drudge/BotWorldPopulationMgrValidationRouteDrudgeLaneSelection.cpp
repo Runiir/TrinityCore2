@@ -235,7 +235,7 @@ bool DrudgeLaneContext::ComputeExactRecoveryTankPathsProven() const
         return false;
     float const memberClearance = config.ValidationRouteMinimumDistanceYards
         + meleeStop + config.ValidationRouteSplitArrivalToleranceYards + tankTolerance;
-    for (MemberAnchor const& anchor : config.ValidationRouteSplitMemberAnchors)
+    for (MemberAnchor const& anchor : config.ValidationRouteSplitRecoveryMemberAnchors)
     {
         if (std::find(config.ValidationRouteSplitLaneTankSlots.begin(),
                 config.ValidationRouteSplitLaneTankSlots.end(), anchor.RosterSlot)
