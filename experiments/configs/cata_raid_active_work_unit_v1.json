@@ -1,14 +1,14 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_recovery_formation",
+  "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_entrance_pull",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "implementation_ready_for_coordinator_build",
-  "observed_at_commit": "f1391aa8843e12e17514dcd4e640890d3b1b432e",
+  "classification": "implementation_pending_live_verification",
+  "observed_at_commit": "c2393bfd57b80a4e5ecd00cc37b78ec3c807b892",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_canary40_future_encounter_handoff_20260826.md",
-    "sha256": "3a3fa6500cb244a2ba7e803e2856b8e4980b644e93032c5c21bac72b93b120da"
+    "path": "experiments/configs/cata_raid_magmaw_canary41_entrance_pull_handoff_20260826.md",
+    "sha256": "c8f01010fdfd3e97717f1968a40156284b2dbbde6fcaae6f749cc38a999b7b93"
   },
-  "first_broken_edge": "single_drudge_formation_conflates_initial_pull_and_post_rush_recovery",
+  "first_broken_edge": "post_taunt_drudges_return_toward_magmaw_instead_of_persistent_entrance_formation",
   "decisive_evidence": {
     "source_commit": "8d6a453e4ed473cf0db496c45d73fd489785a34c",
     "binary_sha256": "619d44a5a8a4d8fff6a79ad9febd07b2e428f7dba56a608607c0db3dbd26590d",
@@ -61,9 +61,17 @@
     "native_ownership_retained": true
   },
   "implementation_checkpoint": {
-    "repair_commit": "f1391aa8843e12e17514dcd4e640890d3b1b432e",
-    "status": "root_verified_ready_for_exact_build",
-    "focused_tests_passed": 363,
+    "repair_commit": "c2393bfd57b80a4e5ecd00cc37b78ec3c807b892",
+    "status": "exact_build_verified_pending_canary41",
+    "focused_tests_passed": 82,
+    "wider_source_checks_passed": 355,
+    "luna_max_review_passed": true,
+    "configure_receipt_path": "/tmp/trinity-magmaw-c2393bfd57-canary41-build.VaMPD5/configure-receipt-v2.json",
+    "configure_receipt_sha256": "386642f33d2e7caebbf4bd7245af3a589a0bd1baa4b50fce53d05f85d85065ed",
+    "build_receipt_path": "/tmp/trinity-magmaw-c2393bfd57-canary41-build.VaMPD5/worldserver-build-receipt.json",
+    "build_receipt_sha256": "6d00a392d29292b172a44813ddb21df929520729bd446d69da9893c82f26865f",
+    "binary_sha256": "c59546e36953c476a8e557e5a52ab808bb40130c397d0d4d078b8e8da23e00fa",
+    "build_receipt_gate_bearing": true,
     "dvc_validation_scenarios_md5": "b2bb16f1fc6f72e9b6345c223b1f9d49.dir",
     "dvc_remote_verified": true,
     "all_ten_navmesh_paths_complete": true,
@@ -74,11 +82,11 @@
   "repair_scope": {
     "status": "trace_backed_repair_implemented",
     "allowed": [
-      "add_explicit_recovery_only_member_formation",
+      "latch_existing_recovery_formation_after_two_native_taunts",
+      "keep_tanks_and_members_at_entrance_formation",
+      "remove_post_recovery_boss_side_return_candidates",
       "preserve_initial_pull_member_and_seed_geometry",
-      "extend_native_detour_recovery_path_probe",
-      "reject_recovery_paths_inside_immediate_next_encounter_boundary",
-      "regenerate_canonical_route_manifest"
+      "reuse_frozen_navmesh_proven_recovery_anchors"
     ],
     "must_preserve": [
       "movement_before_same_tick_support",
@@ -120,11 +128,11 @@
   },
   "implementation_constraints": {
     "maximum_c_or_cpp_lines": 999,
-    "largest_drudge_cpp_current_lines": 999,
+    "largest_drudge_cpp_current_lines": 965,
     "extract_new_module_required_if_growth_exceeds_limit": true,
     "heavy_build_allowed": true,
-    "live_run_allowed": false,
+    "live_run_allowed": true,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "Commit this source-evidence checkpoint, obtain one exact coordinator worldserver build, verify its receipt and binary identity, then fresh-provision and run Canary41 under the completion watchdog."
+  "next_action": "Fresh-provision and verify the frozen 10N roster, then run exact-build Canary41 under the completion watchdog. If it clears entrance, Chainwielder, Drudges, and Magmaw without contamination or cheats, repeat from fresh state as Canary42 before DVC promotion."
 }

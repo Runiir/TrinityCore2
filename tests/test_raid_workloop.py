@@ -340,12 +340,13 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_recovery_formation"
+        "drudge_entrance_pull"
     )
     assert magmaw_25h["active_program_work_unit"] is None
     assert active["owner_skill"] == "raid-bot-runtime-implementation"
     assert active["first_broken_edge"] == (
-        "single_drudge_formation_conflates_initial_pull_and_post_rush_recovery"
+        "post_taunt_drudges_return_toward_magmaw_instead_of_"
+        "persistent_entrance_formation"
     )
     evidence = active["decisive_evidence"]
     assert evidence["source_commit"] == (
@@ -387,11 +388,11 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     )
     assert active["prior_repair_proof"]["alive_roster_count"] == 10
     assert (
-        "add_explicit_recovery_only_member_formation"
+        "latch_existing_recovery_formation_after_two_native_taunts"
         in active["repair_scope"]["allowed"]
     )
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
-    assert "future-encounter-safe" in active["next_action"].lower()
+    assert "canary41" in active["next_action"].lower()
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
@@ -485,21 +486,22 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     status = workloop.build_status()
 
     assert status["active_work_unit"]["descriptor_valid"] is True
-    assert status["active_work_unit"]["ready_for_bounded_repair"] is True
-    assert status["active_work_unit"]["ready_for_live_verification"] is False
+    assert status["active_work_unit"]["ready_for_bounded_repair"] is False
+    assert status["active_work_unit"]["ready_for_live_verification"] is True
     assert status["active_work_unit"]["first_broken_edge"] == (
-        "single_drudge_formation_conflates_initial_pull_and_post_rush_recovery"
+        "post_taunt_drudges_return_toward_magmaw_instead_of_"
+        "persistent_entrance_formation"
     )
     assert status["active_work_unit"]["source_handoff"]["sha256"] == (
         workloop._file_sha256(
             workloop.ROOT
             / "experiments/configs/"
-            "cata_raid_magmaw_canary40_future_encounter_handoff_20260826.md"
+            "cata_raid_magmaw_canary41_entrance_pull_handoff_20260826.md"
         )
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_recovery_formation"
+        "drudge_entrance_pull"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
         "raid-bot-runtime-implementation"
@@ -507,7 +509,7 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     assert status["current_program_next_action"] == status["active_work_unit"][
         "next_action"
     ]
-    assert "future-encounter-safe" in status["active_work_unit"]["next_action"].lower()
+    assert "canary41" in status["active_work_unit"]["next_action"].lower()
     assert "legacy_program_next_action" not in status
 
 
