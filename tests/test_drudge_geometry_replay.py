@@ -786,6 +786,72 @@ def test_drudge_reseparation_switches_from_cached_anchor_to_live_safety():
     assert geometry.count("BotMovementArbitration::Priority::Mechanic") >= 1
 
 
+def test_canary39_unsafe_healer_replays_native_recovery_before_same_tick_support():
+    actions = (
+        ROOT
+        / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/"
+        "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp"
+    ).read_text(encoding="utf-8")
+    normalized = " ".join(actions.split())
+    recovery_start = normalized.index("bool const formationRecoveryBeforeSupport")
+    recovery_end = normalized.index("char const* result", recovery_start)
+    recovery = normalized[recovery_start:recovery_end]
+
+    # Canary39's healer was unsafe against the live Drudge source geometry,
+    # but support selection returned PreferFriendlySupport before this route
+    # could reach the existing native movement submission.  The repair admits
+    # the set-and-forget movement first and keeps the instant heal in the same
+    # tick.
+    assert (
+        "MemberRecoveryAction::PreferFriendlySupport && !alreadySafe" in recovery
+    )
+    formation_before_support = recovery.index(
+        "if (formationRecoveryBeforeSupport) tryFormationRecovery();"
+    )
+    support = recovery.index("Callbacks.TryGroupHeal")
+    fallback_formation = recovery.index(
+        "if (!formationRecoveryBeforeSupport) tryFormationRecovery();"
+    )
+    assert formation_before_support < support < fallback_formation
+
+    # The first call still travels through the dynamic source-relative
+    # candidate and native submission edge rather than writing position state.
+    lambda_start = normalized.index("auto tryFormationRecovery =")
+    recovery_lambda = normalized[lambda_start:recovery_start]
+    assert "SelectPathableDrudgeAnchor(AssignedTank)" in recovery_lambda
+    assert "GroupPositionSafe(Bot)" in recovery_lambda
+    assert "MoveBotToPointWithReferenceFloor" in recovery_lambda
+
+    # Deterministic replay of the attributable Canary39 state.  Thunderclap's
+    # 15-yard exclusion is violated at the measured 13.2548-yard live-source
+    # distance, while NativeChargePending is false and healer support exists.
+    thunderclap_radius = 15.0
+    nearest_live_drudge_distance = 13.2548
+    member_geometry_safe = nearest_live_drudge_distance >= thunderclap_radius
+    native_charge_pending = False
+    support_available = True
+    selected_action = (
+        "RecoverFormation"
+        if native_charge_pending and not member_geometry_safe
+        else "PreferFriendlySupport"
+        if support_available
+        else "Continue"
+    )
+    assert selected_action == "PreferFriendlySupport"
+    events = []
+    formation_recovery_before_support = (
+        selected_action == "RecoverFormation"
+        or (selected_action == "PreferFriendlySupport" and not member_geometry_safe)
+    )
+    if formation_recovery_before_support:
+        events.append("native_formation_submission")
+    if selected_action == "PreferFriendlySupport":
+        events.append("same_tick_friendly_support")
+    if not formation_recovery_before_support:
+        events.append("native_formation_submission")
+    assert events == ["native_formation_submission", "same_tick_friendly_support"]
+
+
 def test_future_encounter_contamination_is_attempt_terminal_not_a_transient_hold():
     implementation = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
         encoding="utf-8"

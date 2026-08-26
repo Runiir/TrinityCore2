@@ -605,7 +605,16 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
                 }
             }
         };
-        if (recoveryAction == BotRaidDrudgeGeometry::MemberRecoveryAction::RecoverFormation)
+        // An unsafe healer may still have friendly support available while
+        // its live source-relative geometry needs a new formation path. Admit
+        // that set-and-forget native movement before the support cast; the
+        // cast remains available in this same tick and does not wait for
+        // arrival.
+        bool const formationRecoveryBeforeSupport =
+            recoveryAction == BotRaidDrudgeGeometry::MemberRecoveryAction::RecoverFormation
+            || (recoveryAction == BotRaidDrudgeGeometry::MemberRecoveryAction::PreferFriendlySupport
+                && !alreadySafe);
+        if (formationRecoveryBeforeSupport)
             tryFormationRecovery();
         if (recoveryAction == BotRaidDrudgeGeometry::MemberRecoveryAction::PreferFriendlySupport
             && Callbacks.TryGroupHeal(Bot, LaneSource, false, false))
@@ -615,7 +624,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
             State.TargetGuid = LaneSource->GetGUID();
             return PhaseResult::Handled;
         }
-        if (recoveryAction != BotRaidDrudgeGeometry::MemberRecoveryAction::RecoverFormation)
+        if (!formationRecoveryBeforeSupport)
             tryFormationRecovery();
         char const* result = NativeChargePending
             ? (NativeChargeTargetRoleViolation
