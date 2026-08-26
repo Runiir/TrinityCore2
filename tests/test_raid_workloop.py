@@ -345,18 +345,17 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert magmaw_25h["active_program_work_unit"] is None
     assert active["owner_skill"] == "raid-bot-runtime-implementation"
     assert active["first_broken_edge"] == (
-        "post_taunt_drudges_return_toward_magmaw_instead_of_"
-        "persistent_entrance_formation"
+        "sealed_recovery_reuses_pre_pull_dynamic_non_tank_anchor_cache"
     )
     evidence = active["decisive_evidence"]
     assert evidence["source_commit"] == (
-        "8d6a453e4ed473cf0db496c45d73fd489785a34c"
+        "08460bacf76fb3ca01fe6ef5f5b71702fd450cb4"
     )
     assert evidence["binary_sha256"] == (
-        "619d44a5a8a4d8fff6a79ad9febd07b2e428f7dba56a608607c0db3dbd26590d"
+        "4c7cda8d8d666853e8762a5ee1394a94c125c0282d7ec609d4c9359b851ca4ad"
     )
     assert evidence["report_file_sha256"] == (
-        "13a8d5ea4776dc16db5a9a14dce0f417333d6f1de0520b24b33fe6c0a904b6ad"
+        "29b6322c6cc0e81752562954daf471e2829cc03b8948f5a26460ea9c69fa73d8"
     )
     assert (
         evidence["route_generation"],
@@ -365,17 +364,13 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     ) == (3, 2, "bwd.magmaw.drudges")
     assert evidence["diagnostic_difficulty"] == "10N"
     assert evidence["kills"] == 1
-    assert evidence["controller_terminal_alive_roster_count"] == 10
-    assert evidence["terminal_failure_reason"] == (
-        "validation_route_future_encounter_contamination"
-    )
-    assert evidence["delivered_native_rushes"] == 16
-    assert evidence["final_drudge_health_fraction"] == [0.214466, 0.223511]
-    assert max(evidence["old_recovery_distance_to_magmaw_yards"]) < min(
-        evidence["live_safe_combat_distance_to_magmaw_yards"]
-    )
-    assert min(evidence["reusable_member_anchor_distance_to_magmaw_yards"]) > 37
-    assert evidence["boss_reached_prematurely"] is True
+    assert evidence["deaths"] == 4
+    assert evidence["terminal_failure_reason"] == "death_loop_watchdog"
+    assert evidence["death_loop_count"] == 3
+    assert evidence["delivered_native_rushes"] == 2
+    assert evidence["stale_non_tank_slots"] == [5, 6, 8]
+    assert evidence["tank_recovery_paths_proven"] is True
+    assert evidence["boss_reached"] is False
     assert evidence["forbidden_assistance_observed"] is False
     assert evidence["cleanup_passed"] is True
     assert evidence["worldserver_exit_code"] == 0
@@ -383,16 +378,12 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
         "hypotheses": 1,
         "matched_live_verification_runs": 1,
     }
-    assert active["prior_repair_proof"]["commit"] == (
-        "8d6a453e4ed473cf0db496c45d73fd489785a34c"
-    )
-    assert active["prior_repair_proof"]["alive_roster_count"] == 10
     assert (
-        "latch_existing_recovery_formation_after_two_native_taunts"
+        "invalidate_non_tank_dynamic_candidate_cache_when_recovery_formation_is_sealed"
         in active["repair_scope"]["allowed"]
     )
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
-    assert "canary41" in active["next_action"].lower()
+    assert "canary48" in active["next_action"].lower()
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
@@ -486,17 +477,16 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     status = workloop.build_status()
 
     assert status["active_work_unit"]["descriptor_valid"] is True
-    assert status["active_work_unit"]["ready_for_bounded_repair"] is False
-    assert status["active_work_unit"]["ready_for_live_verification"] is True
+    assert status["active_work_unit"]["ready_for_bounded_repair"] is True
+    assert status["active_work_unit"]["ready_for_live_verification"] is False
     assert status["active_work_unit"]["first_broken_edge"] == (
-        "post_taunt_drudges_return_toward_magmaw_instead_of_"
-        "persistent_entrance_formation"
+        "sealed_recovery_reuses_pre_pull_dynamic_non_tank_anchor_cache"
     )
     assert status["active_work_unit"]["source_handoff"]["sha256"] == (
         workloop._file_sha256(
             workloop.ROOT
             / "experiments/configs/"
-            "cata_raid_magmaw_canary41_entrance_pull_handoff_20260826.md"
+            "cata_raid_magmaw_canary47_stale_recovery_anchor_handoff_20260826.md"
         )
     )
     assert status["required_next_work_unit"]["work_unit"] == (
@@ -509,7 +499,7 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     assert status["current_program_next_action"] == status["active_work_unit"][
         "next_action"
     ]
-    assert "canary41" in status["active_work_unit"]["next_action"].lower()
+    assert "canary48" in status["active_work_unit"]["next_action"].lower()
     assert "legacy_program_next_action" not in status
 
 
