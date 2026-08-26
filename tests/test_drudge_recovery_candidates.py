@@ -242,7 +242,7 @@ def test_recovery_candidate_contract_is_landed_and_native_strict_for_tanks_and_m
     assert "State.LastPathRejectReason.empty()" in actions
     assert '"drudge_lane_native_path_rejected" : State.LastPathRejectReason' in actions
     assert "ShouldInvalidateAnchorAfterPathRejection" in actions
-    assert "NativePathFloorsValid(Bot, path, z" in geometry
+    assert "NativePathFloorsValid(Bot, path, z, true)" in geometry
     assert "SourceUnionPathSafe(path)" in geometry
     assert "dynamicCandidate && !tank" in selector
     assert "NativePathIsComplete(pathOk, path)" in geometry
@@ -366,6 +366,14 @@ int main()
     assert(AdmitNativePathPoint(-138.287f, 214.2f, 214.0f, true));
     assert(!AdmitNativePathPoint(-138.287f, 204.0f, 214.0f, true));
     assert(!AdmitNativePathPoint(-138.287f, 214.2f, 214.0f, false));
+    // A near-resolved endpoint must still admit a remote intermediate sample
+    // through the declared/reference-floor envelope.
+    assert(AdmitNativePathPoint(-138.287f, near.Z, 214.0f, true));
+    assert(!AdmitNativePathPoint(-138.287f, 218.01f, 214.0f, true));
+    assert(NativePathReferenceFloorValid(218.0f, 214.0f));
+    assert(!NativePathReferenceFloorValid(218.01f, 214.0f));
+    assert(!NativePathReferenceFloorValid(
+        std::numeric_limits<float>::quiet_NaN(), 214.0f));
     assert(!AdmitNativePathPoint(std::numeric_limits<float>::quiet_NaN(),
         214.0f, 214.0f, true));
 }

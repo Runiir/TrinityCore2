@@ -51,6 +51,12 @@ inline bool AdmitNativePathPoint(float resolvedZ, float pointZ,
     return allowDeclaredFallback
         && std::fabs(pointZ - referenceZ) <= NativeFloorTolerance;
 }
+
+inline bool NativePathReferenceFloorValid(float sampleZ, float referenceZ)
+{
+    return std::isfinite(sampleZ) && std::isfinite(referenceZ)
+        && std::fabs(sampleZ - referenceZ) <= NativeFloorTolerance;
+}
 }
 
 #endif

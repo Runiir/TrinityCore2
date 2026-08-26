@@ -50,8 +50,8 @@ inline bool NativePathFloorsValid(Actor const* actor,
     Movement::PointsArray const& points = path.GetPath();
     if (!actor || points.empty())
         return false;
-    if (allowDeclaredFallback
-        && std::fabs(actor->GetPositionZ() - referenceZ) > NativeFloorTolerance)
+    if (allowDeclaredFallback && !NativePathReferenceFloorValid(
+            actor->GetPositionZ(), referenceZ))
         return false;
 
     G3D::Vector3 previous(actor->GetPositionX(), actor->GetPositionY(),

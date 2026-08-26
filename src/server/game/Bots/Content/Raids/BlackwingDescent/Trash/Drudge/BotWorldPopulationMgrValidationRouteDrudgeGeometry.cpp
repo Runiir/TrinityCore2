@@ -292,8 +292,11 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             return reject("drudge_anchor_native_path_rejected:path_type="
                 + std::to_string(uint32(pathType)));
         }
-        if (!BotWorldMovement::NativePathFloorsValid(Bot, path, z,
-                floorAdmission.UsesDeclaredFallback()))
+        // The endpoint may resolve on the encounter floor while an
+        // intermediate sample sees a stacked collision layer.  The complete
+        // Drudge path still uses the declared/reference-floor envelope for
+        // that remote evidence; generic movement keeps its strict overload.
+        if (!BotWorldMovement::NativePathFloorsValid(Bot, path, z, true))
             return reject("drudge_anchor_path_floor_gap");
         if (requireSourceUnionSafety && !SourceUnionPathSafe(path))
             return reject("drudge_anchor_source_union_path_unsafe");
