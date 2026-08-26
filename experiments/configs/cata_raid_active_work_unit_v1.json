@@ -1,8 +1,8 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_seed_combat_envelope",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
+  "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_seed_combat_envelope_live_verification",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "implementation_pending_live_verification",
   "observed_at_commit": "988d5e8fdd044402d2e5c85766a9c0576e8177e8",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary35_combat_envelope_handoff_20260826.md",
@@ -57,8 +57,17 @@
     "matching_native_point_path_preserved": true,
     "safe_member_offense_observed": true
   },
+  "implemented_repair": {
+    "commit": "c0c013e6d911c9c88b7c761869fb37d4531f700a",
+    "tree": "4db06bb0cb636fccaee70d43b2c891577d11b1bc",
+    "status": "source_validated_pending_exact_build",
+    "scope": "configured_seed_members_must_remain_within_the_existing_thirty_five_yard_assigned_live_source_envelope_before_group_safety_cache_reuse_or_native_path_search",
+    "focused_test_count": 126,
+    "maximum_touched_cpp_lines": 923,
+    "source_line_limit_passed": true
+  },
   "repair_scope": {
-    "status": "bounded_implementation_ready",
+    "status": "implemented_pending_live_verification",
     "allowed": [
       "typed_configured_seed_member_assigned_lane_combat_envelope_predicate",
       "dynamic_group_safety_seed_combat_range_gate",
@@ -106,5 +115,5 @@
     "matched_live_verification_runs": 0
   },
   "live_verification_owner_skill": "raid-shard-architecture",
-  "next_action": "Implement only the trace-backed 35-yard configured seed-member Drudge combat envelope in group safety, candidate selection, and cache reuse; run focused deterministic tests; then route the reviewed source to an exact queued build and fresh completion-watchdog Canary36."
+  "next_action": "Build exact commit c0c013e6d911c9c88b7c761869fb37d4531f700a through the queued coordinator, provision and verify a fresh exact ten-player Magmaw diagnostic roster, and run completion-watchdog Canary36."
 }

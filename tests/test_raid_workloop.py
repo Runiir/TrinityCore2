@@ -340,10 +340,10 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_seed_combat_envelope"
+        "drudge_seed_combat_envelope_live_verification"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["owner_skill"] == "raid-bot-runtime-implementation"
+    assert active["owner_skill"] == "raid-shard-architecture"
     assert active["first_broken_edge"] == (
         "drudge_dynamic_group_safety_has_no_maximum_combat_envelope_and_"
         "accepts_rush_displaced_members_outside_line_of_sight_and_effective_range"
@@ -384,9 +384,13 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
         "988d5e8fdd044402d2e5c85766a9c0576e8177e8"
     )
     assert active["prior_repair_proof"]["route_destination_path_floor_gap_count"] == 0
+    assert active["implemented_repair"]["commit"] == (
+        "c0c013e6d911c9c88b7c761869fb37d4531f700a"
+    )
+    assert active["implemented_repair"]["source_line_limit_passed"] is True
     assert "dynamic_group_safety_seed_combat_range_gate" in active["repair_scope"]["allowed"]
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
-    assert "configured seed-member" in active["next_action"].lower()
+    assert "build exact commit" in active["next_action"].lower()
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
@@ -480,8 +484,8 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     status = workloop.build_status()
 
     assert status["active_work_unit"]["descriptor_valid"] is True
-    assert status["active_work_unit"]["ready_for_bounded_repair"] is True
-    assert status["active_work_unit"]["ready_for_live_verification"] is False
+    assert status["active_work_unit"]["ready_for_bounded_repair"] is False
+    assert status["active_work_unit"]["ready_for_live_verification"] is True
     assert status["active_work_unit"]["first_broken_edge"] == (
         "drudge_dynamic_group_safety_has_no_maximum_combat_envelope_and_"
         "accepts_rush_displaced_members_outside_line_of_sight_and_effective_range"
@@ -495,15 +499,15 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_seed_combat_envelope"
+        "drudge_seed_combat_envelope_live_verification"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
-        "raid-bot-runtime-implementation"
+        "raid-shard-architecture"
     )
     assert status["current_program_next_action"] == status["active_work_unit"][
         "next_action"
     ]
-    assert "configured seed-member" in status["active_work_unit"]["next_action"].lower()
+    assert "build exact commit" in status["active_work_unit"]["next_action"].lower()
     assert "legacy_program_next_action" not in status
 
 
