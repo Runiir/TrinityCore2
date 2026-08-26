@@ -252,6 +252,7 @@ def test_recovery_candidate_contract_is_persistent_and_native_strict_for_tanks_a
         "if (cacheUsable())", selector.index("auto cacheUsable")
     )]
     assert "activeDynamicRecovery" in cache
+    assert "(!activeDynamicRecovery || tankRecovery)" in cache
     assert "SourceUnionSafe" in cache
     assert "LaneSafe" in cache
     assert "IsRecoveryCandidateSpacingSafe" in cache

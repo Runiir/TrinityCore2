@@ -321,9 +321,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         PrepullStaged = true;
         Record(nullptr, "drudge_prepull_exact_roster_staged");
     }
-    // Once both native taunts are confirmed, keep the fight in the proven
-    // entrance-side formation. A landed Rush reuses the same formation and
-    // never sends the Drudges back toward Magmaw.
+    // Once both assigned tanks hold native lane ownership, keep the fight in
+    // the proven entrance-side formation. A landed Rush reuses the same
+    // formation and never sends the Drudges back toward Magmaw.
     RecoveryFormationActive = IsRecoveryFormationActive();
     FormationRequired = AssignedTank
         ? !CachedAnchorSafe(State, Bot) : !GroupPositionSafe(Bot);
