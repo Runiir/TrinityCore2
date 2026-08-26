@@ -85,6 +85,21 @@ def test_recorded_drudge_returns_match_native_navmesh(tmp_path):
         "start": [-295.0, -82.0, 213.8],
         "terminal": [-292.5, -69.1, 214.024],
     }
+    recovery = payload["validated_returns"]["recovery_formation"]
+    assert set(recovery) == {str(slot) for slot in range(1, 11)}
+    assert recovery["1"] == {
+        "start": [-289.289093, -57.7575, 212.932236],
+        "terminal": [-288.8, -86.483, 214.154],
+        "polygons": 9,
+        "smooth_points": 9,
+        "future_boss_minimum": 29.1912,
+    }
+    assert recovery["2"]["detour_nearest_requested_z_delta"] == 0.482346
+    assert recovery["2"]["future_boss_minimum"] == 26.2785
+    assert min(
+        row["future_boss_minimum"]
+        for slot, row in recovery.items() if slot not in {"1", "2"}
+    ) == 38.6956
     assert payload["validated_returns"]["minimum_distance_exit_retained"] == {
         "actual_endpoint": [-288.8, -73.2144, 213.714],
         "polygons": 1,

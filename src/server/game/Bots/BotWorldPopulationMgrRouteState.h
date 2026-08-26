@@ -191,6 +191,7 @@ namespace BotWorldPopulationMgrRouteState
         std::vector<uint32> SplitLaneBRosterSlots;
         std::vector<uint32> SplitLaneTankSlots;
         std::vector<ValidationRouteMemberAnchor> SplitMemberAnchors;
+        std::vector<ValidationRouteMemberAnchor> SplitRecoveryMemberAnchors;
         std::vector<ValidationRouteMemberAnchor> SplitTankCombatAnchors;
         std::vector<ValidationRouteMemberAnchor> SplitTankNavigationAnchors;
         std::vector<ValidationRouteMemberAnchor> SplitTankRecoveryAnchors;

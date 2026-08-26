@@ -661,6 +661,7 @@ def test_post_rush_recovery_replays_combat_anchor_transition_with_exact_xyz():
             for row in route[key]
         }
         for key in (
+            "split_recovery_member_anchors",
             "split_tank_navigation_anchors",
             "split_tank_recovery_anchors",
             "split_tank_combat_anchors",
@@ -679,7 +680,7 @@ def test_post_rush_recovery_replays_combat_anchor_transition_with_exact_xyz():
         return anchors["split_tank_combat_anchors"][slot]
 
     assert expected_anchor(1, False, False) == (-289.289093, -57.7575, 212.932236)
-    assert expected_anchor(1, True, False) == (-288.8, -43.0, 212.301)
+    assert expected_anchor(1, True, False) == (-288.8, -86.483, 214.154)
     assert expected_anchor(1, True, True) == (-286.5, -58.0, 212.2983)
     assert expected_anchor(2, True, True) == (-322.858, -48.2862, 212.2623)
     assert expected_anchor(1, True, False)[2] != expected_anchor(1, True, True)[2]
@@ -701,7 +702,17 @@ def test_post_rush_recovery_replays_combat_anchor_transition_with_exact_xyz():
     assert "RecoveryAnchorReachedFor(slot)" in unique_anchor
     assert "DeclaredCombatTankAnchorFor(slot)" in unique_anchor
     assert "DeclaredRecoveryTankAnchorFor(slot)" in unique_anchor
+    assert "DeclaredRecoveryMemberAnchorFor(slot)" in unique_anchor
+    assert "IsLandedRushPending()" in unique_anchor
+    assert "IsDynamicGroupRecoveryActive()" not in unique_anchor
     assert "DeclaredCombatTankAnchorFor" in lanes
+    assert "drudge_anchor_future_encounter_contract_unresolved" in geometry
+    assert "drudge_anchor_future_encounter_path_unsafe" in geometry
+    assert "ValidationRouteSplitTankCombatAnchors" in geometry
+
+    recovery_members = anchors["split_recovery_member_anchors"]
+    assert recovery_members[3] == (-297.339, -115.904, 214.552)
+    assert recovery_members[8] == (-311.5, -123.0, 214.034)
 
 
 def test_post_rush_invalid_combat_projection_uses_nav_fallback_without_cooldown():
@@ -732,7 +743,7 @@ def test_post_rush_invalid_combat_projection_uses_nav_fallback_without_cooldown(
     assert "bool const combatCandidate" in lanes
 
 
-def test_drudge_reseparation_switches_from_cached_anchor_to_live_safety():
+def test_drudge_reseparation_requires_live_safety_and_recovery_anchor_arrival():
     geometry = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp").read_text(
         encoding="utf-8"
     )
@@ -751,12 +762,14 @@ def test_drudge_reseparation_switches_from_cached_anchor_to_live_safety():
     assert "source1Safe" in group
     assert "sameLaneSpacingSafe" in group
     assert "DynamicGroupPositionSafe" in group
-    assert "prepullStaged && IsDynamicGroupRecoveryActive()" in group
-    recovery_gate = group.index(
-        "if (prepullStaged && IsDynamicGroupRecoveryActive())"
+    assert "prepullStaged && IsDynamicGroupRecoveryActive()" not in group
+    assert "CachedAnchorSafe(*memberState, member)" in group
+    assert "explicitRecoveryFormation || sameLaneSpacingSafe" in group
+    recovery_source = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeRecovery.cpp").read_text(
+        encoding="utf-8"
     )
-    exact_cache = group.index("CachedAnchorSafe", recovery_gate)
-    assert recovery_gate < exact_cache
+    assert "DeclaredRecoveryMemberAnchorFor(OneBasedSlot)" in recovery_source
+    assert "Distance2d(x, y, declared->X, declared->Y) <= 0.01f" in recovery_source
     wrapper_start = geometry.index("GroupPositionSafe =")
     wrapper_end = geometry.index("ExactRosterPrepullStaged =", wrapper_start)
     assert "ComputeGroupPositionSafe(member)" in geometry[wrapper_start:wrapper_end]

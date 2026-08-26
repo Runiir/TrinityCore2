@@ -191,6 +191,26 @@ int main()
             -311.5f, -71.3f, 213.292f},
         {"30007_reposition", -295.0f, -82.0f, 213.8f,
             -292.5f, -69.1f, 214.024f},
+        {"recovery_slot1", -289.289093f, -57.7575f, 212.932236f,
+            -288.8f, -86.483f, 214.154f},
+        {"recovery_slot2", -322.858002f, -48.286201f, 211.999359f,
+            -338.018f, -64.932f, 212.751f},
+        {"recovery_slot3", -296.0f, -69.9f, 213.485f,
+            -297.339f, -115.904f, 214.552f},
+        {"recovery_slot4", -298.8f, -71.5f, 213.461f,
+            -298.8f, -116.5f, 214.438f},
+        {"recovery_slot5", -311.5f, -71.3f, 213.292f,
+            -311.5f, -116.3f, 214.033f},
+        {"recovery_slot6", -295.0f, -75.0f, 213.45f,
+            -295.0f, -120.0f, 215.947f},
+        {"recovery_slot7", -292.5f, -69.1f, 214.024f,
+            -293.6f, -118.133f, 215.488f},
+        {"recovery_slot8", -311.5f, -78.0f, 213.5f,
+            -311.5f, -123.0f, 214.034f},
+        {"recovery_slot9", -344.021f, -50.4246f, 212.216f,
+            -344.021f, -95.4246f, 214.154f},
+        {"recovery_slot10", -340.293f, -53.7558f, 211.888f,
+            -340.293f, -95.0f, 214.154f},
         {"minimum_distance_exit_retained", -288.8f, -72.289f, 213.473f,
             -285.742f, -73.2144f, 213.473f},
         {"tank1_pull_away", -289.289093f, -57.7575f, 212.932236f,
@@ -287,6 +307,17 @@ int main()
             }
             std::cout << test.label << " future_guard_minimums="
                       << minimumSource0 << ',' << minimumSource1 << '\n';
+        }
+        if (std::string(test.label).rfind("recovery_slot", 0) == 0)
+        {
+            float minimumBossDistance = std::hypot(
+                test.x - -302.467f, test.y - -31.7101f);
+            for (int i = 0; i < smoothSize; ++i)
+                minimumBossDistance = std::min(minimumBossDistance,
+                    std::hypot(smooth[i * 3 + 2] - -302.467f,
+                        smooth[i * 3] - -31.7101f));
+            std::cout << test.label << " future_boss_minimum="
+                      << minimumBossDistance << '\n';
         }
     }
     dtFreeNavMeshQuery(query);

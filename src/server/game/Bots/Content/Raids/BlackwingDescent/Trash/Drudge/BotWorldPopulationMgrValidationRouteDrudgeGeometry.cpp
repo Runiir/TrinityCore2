@@ -299,6 +299,33 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
         // that remote evidence; generic movement keeps its strict overload.
         if (!BotWorldMovement::NativePathFloorsValid(Bot, path, z, true))
             return reject("drudge_anchor_path_floor_gap");
+        auto const& route = Manager.Party().ValidationRouteManifest;
+        size_t const nextIndex = Manager.Party().ValidationRouteManifestIndex + 1;
+        if (nextIndex >= route.size() || route[nextIndex].Kind != "boss"
+            || route[nextIndex].MapId != Bot->GetMapId()
+            || Manager.Cohort().Config.ValidationRouteSplitTankCombatAnchors.size() != 2)
+            return reject("drudge_anchor_future_encounter_contract_unresolved");
+        ValidationRouteManifestNode const& future = route[nextIndex];
+        float futureClearance = std::numeric_limits<float>::max();
+        for (MemberAnchor const& combat :
+            Manager.Cohort().Config.ValidationRouteSplitTankCombatAnchors)
+            futureClearance = std::min(futureClearance,
+                Distance2d(combat.X, combat.Y, future.X, future.Y));
+        auto futureSafe = [&future, futureClearance](float pointX, float pointY)
+        {
+            return Distance2d(pointX, pointY, future.X, future.Y) + 0.01f
+                >= futureClearance;
+        };
+        if (futureClearance <= 0.0f
+            || !futureSafe(Bot->GetPositionX(), Bot->GetPositionY())
+            || !futureSafe(path.GetActualEndPosition().x,
+                path.GetActualEndPosition().y)
+            || std::any_of(path.GetPath().begin(), path.GetPath().end(),
+                [&futureSafe](G3D::Vector3 const& point)
+                {
+                    return !futureSafe(point.x, point.y);
+                }))
+            return reject("drudge_anchor_future_encounter_path_unsafe");
         G3D::Vector3 const& actualEnd = path.GetActualEndPosition();
         float const end2d = std::hypot(actualEnd.x - x, actualEnd.y - y);
         float const endZ = std::fabs(actualEnd.z - z);
@@ -325,16 +352,31 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
     {
         return ComputeRecoveryAnchorReached(slot);
     };
+    DeclaredRecoveryMemberAnchorFor = [this](uint32 slot) -> MemberAnchor const*
+    {
+        auto const& anchors =
+            Manager.Cohort().Config.ValidationRouteSplitRecoveryMemberAnchors;
+        auto const anchor = std::find_if(anchors.begin(), anchors.end(),
+            [slot](MemberAnchor const& candidate)
+            {
+                return candidate.RosterSlot == slot;
+            });
+        return anchor == anchors.end() ? nullptr : &*anchor;
+    };
     UniqueGroupAnchor = [this](uint32 slot) -> std::pair<float, float>
     {
         bool const tankSlot = std::find(
             Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.begin(),
             Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.end(), slot)
             != Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.end();
-        MemberAnchor const* anchor = tankSlot && IsRecoveryFormationActive()
-            ? (RecoveryTankReturnBarrierOpen() && RecoveryAnchorReachedFor(slot)
-                ? DeclaredCombatTankAnchorFor(slot)
-                : DeclaredRecoveryTankAnchorFor(slot))
+        bool const dynamicRecovery = tankSlot ? IsRecoveryFormationActive()
+            : IsLandedRushPending();
+        MemberAnchor const* anchor = dynamicRecovery
+            ? (tankSlot ? (RecoveryTankReturnBarrierOpen()
+                    && RecoveryAnchorReachedFor(slot)
+                    ? DeclaredCombatTankAnchorFor(slot)
+                    : DeclaredRecoveryTankAnchorFor(slot))
+                : DeclaredRecoveryMemberAnchorFor(slot))
             : (tankSlot && CombatTankStagingActive()
                 ? DeclaredNavigationTankAnchorFor(slot) : DeclaredAnchorFor(slot));
         return anchor ? std::pair<float, float>{ anchor->X, anchor->Y }
@@ -686,11 +728,15 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
         };
         for (size_t candidateIndex = 0; candidateIndex < candidates.size(); ++candidateIndex)
         {
-            MemberAnchor const* candidateAnchor = tank && IsRecoveryFormationActive()
-                ? (RecoveryTankReturnBarrierOpen() && RecoveryAnchorReachedFor(OneBasedSlot)
-                    ? (candidateIndex ? DeclaredNavigationTankAnchorFor(OneBasedSlot)
-                        : DeclaredCombatTankAnchorFor(OneBasedSlot))
-                    : DeclaredRecoveryTankAnchorFor(OneBasedSlot))
+            bool const dynamicRecovery = tank ? IsRecoveryFormationActive()
+                : IsLandedRushPending();
+            MemberAnchor const* candidateAnchor = dynamicRecovery
+                ? (tank ? (RecoveryTankReturnBarrierOpen()
+                        && RecoveryAnchorReachedFor(OneBasedSlot)
+                        ? (candidateIndex ? DeclaredNavigationTankAnchorFor(OneBasedSlot)
+                            : DeclaredCombatTankAnchorFor(OneBasedSlot))
+                        : DeclaredRecoveryTankAnchorFor(OneBasedSlot))
+                    : DeclaredRecoveryMemberAnchorFor(OneBasedSlot))
                 : (tank && CombatTankStagingActive()
                     ? DeclaredNavigationTankAnchorFor(OneBasedSlot)
                     : (prepullTankFallback && candidateIndex

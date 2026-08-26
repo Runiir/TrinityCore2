@@ -110,6 +110,8 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     Cohort().Config.ValidationRouteSplitLaneTankSlots = node.SplitLaneTankSlots;
     Cohort().Config.ValidationRouteSplitHealerRosterSlots = node.SplitHealerRosterSlots;
     Cohort().Config.ValidationRouteSplitMemberAnchors = node.SplitMemberAnchors;
+    Cohort().Config.ValidationRouteSplitRecoveryMemberAnchors =
+        node.SplitRecoveryMemberAnchors;
     Cohort().Config.ValidationRouteSplitTankCombatAnchors = node.SplitTankCombatAnchors;
     Cohort().Config.ValidationRouteSplitTankNavigationAnchors =
         node.SplitTankNavigationAnchors;

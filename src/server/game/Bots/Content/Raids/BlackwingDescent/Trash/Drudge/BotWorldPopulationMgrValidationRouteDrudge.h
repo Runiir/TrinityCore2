@@ -105,6 +105,7 @@ struct DrudgeLaneContext
     std::function<bool(uint32)> DeclaredNavigationTankAnchorAvailable;
     std::function<bool(uint32)> DeclaredRecoveryTankAnchorAvailable;
     std::function<MemberAnchor const*(uint32)> DeclaredAnchorFor;
+    std::function<MemberAnchor const*(uint32)> DeclaredRecoveryMemberAnchorFor;
     std::function<MemberAnchor const*(uint32)> DeclaredNavigationTankAnchorFor;
     std::function<MemberAnchor const*(uint32)> DeclaredCombatTankAnchorFor;
     std::function<MemberAnchor const*(uint32)> DeclaredRecoveryTankAnchorFor;

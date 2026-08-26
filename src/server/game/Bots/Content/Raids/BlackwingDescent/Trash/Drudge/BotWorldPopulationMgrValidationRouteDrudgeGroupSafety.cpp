@@ -80,18 +80,11 @@ bool DrudgeLaneContext::ComputeGroupPositionSafe(Player const* member) const
             break;
         }
     }
+    bool const explicitRecoveryFormation = IsDynamicGroupRecoveryActive();
     if (!BotRaidDrudgeGeometry::DynamicGroupPositionSafe(
-            source0Safe, source1Safe, laneSafe, sameLaneSpacingSafe))
+            source0Safe, source1Safe, laneSafe,
+            explicitRecoveryFormation || sameLaneSpacingSafe))
         return false;
-    bool const prepullStaged = Manager.Party().ValidationRouteDrudgePrepullStaged
-        && Manager.Party().ValidationRouteDrudgePrepullAttemptId
-            == Manager.Cohort().AttemptId
-        && Manager.Party().ValidationRouteDrudgePrepullWipeGeneration
-            == Manager.Cohort().Raid.WipeGeneration
-        && Manager.Party().ValidationRouteDrudgePrepullRouteGeneration
-            == Manager.Party().ValidationRouteGeneration;
-    if (prepullStaged && IsDynamicGroupRecoveryActive())
-        return true;
     auto memberState = std::find_if(Manager.Party().Bots.begin(),
         Manager.Party().Bots.end(), [member](WorldBotState const& candidate)
         {

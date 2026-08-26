@@ -109,7 +109,9 @@ def _source_home_from_sql(source_sql: str, guid: int, entry: int) -> tuple[float
     return None
 
 
-def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
+def drudge_split_geometry_status(
+    step: dict[str, Any], next_step: dict[str, Any] | None = None
+) -> tuple[bool, str]:
     if step.get("mechanic_profile") != "trash_two_tank_charge_lanes":
         return True, ""
     source_guids = [int(value) for value in step.get("split_source_guids") or []]
@@ -118,13 +120,14 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
     navigation_tanks = list(step.get("split_tank_navigation_anchors") or [])
     recovery_tanks = list(step.get("split_tank_recovery_anchors") or [])
     members = list(step.get("split_member_anchors") or [])
+    recovery_members = list(step.get("split_recovery_member_anchors") or [])
     tank_slots = [int(value) for value in step.get("split_lane_tank_slots") or []]
     healer_slots = [int(value) for value in step.get("split_healer_roster_slots") or []]
     seed_slots = [int(value) for value in step.get("split_seed_roster_slots") or []]
     if (len(source_guids) != 2 or len(homes) != 2 or len(tanks) != 2
             or len(navigation_tanks) != 2 or len(recovery_tanks) != 2
             or len(tank_slots) != 2 or len(healer_slots) != 3 or len(seed_slots) != 2
-            or len(members) != 10):
+            or len(members) != 10 or len(recovery_members) != 10):
         return False, "split_combat_anchor_shape"
     home_by_guid = {int(row.get("source_guid") or 0): row for row in homes}
     tank_by_slot = {int(row.get("roster_slot") or 0): row for row in tanks}
@@ -182,6 +185,46 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
     member_by_slot = {int(row.get("roster_slot") or 0): row for row in members}
     if set(member_by_slot) != set(range(1, 11)):
         return False, "split_member_anchor_identity"
+    recovery_member_by_slot = {
+        int(row.get("roster_slot") or 0): row for row in recovery_members
+    }
+    if set(recovery_member_by_slot) != set(range(1, 11)):
+        return False, "split_recovery_member_anchor_identity"
+    recovery_non_tanks = [
+        row for slot, row in recovery_member_by_slot.items() if slot not in tank_slots
+    ]
+    if any(
+        math.dist(
+            (float(left["x"]), float(left["y"])),
+            (float(right["x"]), float(right["y"])),
+        ) + 1e-6 < float(step.get("split_arrival_tolerance_yards") or 0.0)
+        for index, left in enumerate(recovery_non_tanks)
+        for right in recovery_non_tanks[index + 1:]
+    ):
+        return False, "split_recovery_member_overlap"
+    for slot in tank_slots:
+        tank_anchor = recovery_by_slot[slot]
+        member_anchor = recovery_member_by_slot[slot]
+        if any(abs(float(tank_anchor[axis]) - float(member_anchor[axis])) > 0.001
+               for axis in ("x", "y", "z")):
+            return False, "split_recovery_member_tank_mismatch"
+    if next_step is not None:
+        if next_step.get("kind") != "boss":
+            return False, "split_future_encounter_identity"
+        future = (
+            float(next_step.get("x") or 0.0),
+            float(next_step.get("y") or 0.0),
+        )
+        safe_combat_distance = min(
+            math.dist(future, (float(row["x"]), float(row["y"])))
+            for row in tanks
+        )
+        if safe_combat_distance <= 0.0 or any(
+            math.dist(future, (float(row["x"]), float(row["y"]))) + 1e-6
+            < safe_combat_distance
+            for row in recovery_members
+        ):
+            return False, "split_recovery_future_encounter_unsafe"
     source_displacements = [
         max(0.0, displacement - melee_stop - tank_arrival)
         for displacement in outward
@@ -285,7 +328,7 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
         ):
             return False, "split_tank_recovery_source_lane_unsafe"
     recovery_member_clearance = minimum + melee_stop + arrival + tank_arrival
-    for slot, member in member_by_slot.items():
+    for slot, member in recovery_member_by_slot.items():
         if slot in tank_slots:
             continue
         anchor = (float(member["x"]), float(member["y"]))
@@ -350,7 +393,7 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
     lane_sets = [lane_a_slots, lane_b_slots]
     for source_index, seed_slot in enumerate(seed_slots):
         recovery = recovery_points[source_index]
-        seed = member_by_slot[seed_slot]
+        seed = recovery_member_by_slot[seed_slot]
         seed_point = (float(seed["x"]), float(seed["y"]))
         to_seed_x = seed_point[0] - recovery[0]
         to_seed_y = seed_point[1] - recovery[1]
@@ -367,7 +410,7 @@ def drudge_split_geometry_status(step: dict[str, Any]) -> tuple[bool, str]:
             seed_distance + 1e-6
             < math.dist(
                 repeated_source,
-                tuple(float(member_by_slot[slot][axis]) for axis in ("x", "y")),
+                tuple(float(recovery_member_by_slot[slot][axis]) for axis in ("x", "y")),
             ) + 2.0 * arrival
             for slot in forbidden_slots
         ):
@@ -710,8 +753,10 @@ def build_manifests(
         if not diagnostic_valid:
             missing.extend(diagnostic_missing)
         split_geometry_status = {
-            int(step.get("step") or 0): drudge_split_geometry_status(step)
-            for step in route_steps
+            int(step.get("step") or 0): drudge_split_geometry_status(
+                step, route_steps[index + 1] if index + 1 < len(route_steps) else None
+            )
+            for index, step in enumerate(route_steps)
         }
         patrol_pull_status = {
             int(step.get("step") or 0): patrol_pull_contract_status(step, route_steps)
@@ -864,6 +909,15 @@ def build_manifests(
                         "z": float(anchor.get("z") or 0.0),
                     }
                     for anchor in (step.get("split_member_anchors") or [])
+                ],
+                "split_recovery_member_anchors": [
+                    {
+                        "roster_slot": int(anchor.get("roster_slot") or 0),
+                        "x": float(anchor.get("x") or 0.0),
+                        "y": float(anchor.get("y") or 0.0),
+                        "z": float(anchor.get("z") or 0.0),
+                    }
+                    for anchor in (step.get("split_recovery_member_anchors") or [])
                 ],
                 "split_tank_combat_anchors": [
                     {

@@ -793,6 +793,16 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
             node.SplitMemberAnchors.push_back(anchor);
         }
         for (std::string const& anchorJson : ExtractJsonObjectArrayItems(
+            ExtractJsonArrayField(routeJson, "split_recovery_member_anchors")))
+        {
+            ValidationRouteMemberAnchor anchor;
+            anchor.RosterSlot = uint32(std::max(0, readInt(anchorJson, "roster_slot")));
+            anchor.X = readFloat(anchorJson, "x");
+            anchor.Y = readFloat(anchorJson, "y");
+            anchor.Z = readFloat(anchorJson, "z");
+            node.SplitRecoveryMemberAnchors.push_back(anchor);
+        }
+        for (std::string const& anchorJson : ExtractJsonObjectArrayItems(
             ExtractJsonArrayField(routeJson, "split_tank_combat_anchors")))
         {
             ValidationRouteMemberAnchor anchor;

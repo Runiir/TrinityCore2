@@ -75,6 +75,11 @@ BotRaidDrudgeSpacing::PeerResult DrudgeLaneContext::EvaluateRecoveryCandidateSpa
     BotRaidDrudgeSpacing::PeerResult result;
     if (tank)
         return result;
+    if (IsDynamicGroupRecoveryActive())
+        if (MemberAnchor const* declared =
+                DeclaredRecoveryMemberAnchorFor(OneBasedSlot))
+            if (Distance2d(x, y, declared->X, declared->Y) <= 0.01f)
+                return result;
     for (WorldBotState const& cohortState : Manager.Party().Bots)
     {
         Player* other = Manager.GetLoadedBot(cohortState);

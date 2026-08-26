@@ -631,6 +631,10 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildContract()
         Manager.Cohort().Config.ValidationRouteSplitMemberAnchors)
         anchorSlots.push_back(anchor.RosterSlot);
     std::sort(anchorSlots.begin(), anchorSlots.end());
+    std::vector<uint32> recoveryMemberAnchorSlots;
+    for (MemberAnchor const& anchor : Manager.Cohort().Config.ValidationRouteSplitRecoveryMemberAnchors)
+        recoveryMemberAnchorSlots.push_back(anchor.RosterSlot);
+    std::sort(recoveryMemberAnchorSlots.begin(), recoveryMemberAnchorSlots.end());
     std::vector<uint32> combatTankAnchorSlots;
     for (MemberAnchor const& anchor :
         Manager.Cohort().Config.ValidationRouteSplitTankCombatAnchors)
@@ -646,7 +650,6 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildContract()
         Manager.Cohort().Config.ValidationRouteSplitTankRecoveryAnchors)
         recoveryTankAnchorSlots.push_back(anchor.RosterSlot);
     std::sort(recoveryTankAnchorSlots.begin(), recoveryTankAnchorSlots.end());
-
     HealerSlots = Manager.Cohort().Config.ValidationRouteSplitHealerRosterSlots;
     std::sort(HealerSlots.begin(), HealerSlots.end());
     bool const healerSlotsResolved = HealerSlots.size() == 3
@@ -711,7 +714,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildContract()
             uint32 const seedSlot =
                 Manager.Cohort().Config.ValidationRouteSplitSeedRosterSlots[sourceIndex];
             MemberAnchor const* seed = findAnchor(
-                Manager.Cohort().Config.ValidationRouteSplitMemberAnchors, seedSlot);
+                Manager.Cohort().Config.ValidationRouteSplitRecoveryMemberAnchors, seedSlot);
             MemberAnchor const* recovery = findAnchor(
                 Manager.Cohort().Config.ValidationRouteSplitTankRecoveryAnchors,
                 Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots[sourceIndex]);
@@ -737,7 +740,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildContract()
                 if (forbiddenSlot == seedSlot)
                     continue;
                 MemberAnchor const* forbidden = findAnchor(
-                    Manager.Cohort().Config.ValidationRouteSplitMemberAnchors, forbiddenSlot);
+                    Manager.Cohort().Config.ValidationRouteSplitRecoveryMemberAnchors,
+                    forbiddenSlot);
                 if (!forbidden || seedDistance + 0.0001f
                     < Distance2d(sourceX, sourceY, forbidden->X, forbidden->Y)
                         + 2.0f * Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards)
@@ -752,6 +756,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildContract()
         && Manager.Cohort().Config.ValidationRouteSplitLaneBRosterSlots.size() == 5
         && Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.size() == 2
         && laneSlots == ExactRosterSlots && anchorSlots == ExactRosterSlots
+        && recoveryMemberAnchorSlots == ExactRosterSlots
         && combatTankAnchorSlots == std::vector<uint32>({ 1, 2 })
         && navigationTankAnchorSlots == std::vector<uint32>({ 1, 2 })
         && recoveryTankAnchorSlots == std::vector<uint32>({ 1, 2 })

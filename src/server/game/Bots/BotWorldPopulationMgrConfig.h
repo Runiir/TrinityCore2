@@ -128,6 +128,7 @@ struct BotWorldExperimentConfig
     std::vector<uint32> ValidationRouteSplitLaneTankSlots;
     std::vector<uint32> ValidationRouteSplitHealerRosterSlots;
     std::vector<ValidationRouteMemberAnchor> ValidationRouteSplitMemberAnchors;
+    std::vector<ValidationRouteMemberAnchor> ValidationRouteSplitRecoveryMemberAnchors;
     std::vector<ValidationRouteMemberAnchor> ValidationRouteSplitTankCombatAnchors;
     std::vector<ValidationRouteMemberAnchor> ValidationRouteSplitTankNavigationAnchors;
     std::vector<ValidationRouteMemberAnchor> ValidationRouteSplitTankRecoveryAnchors;

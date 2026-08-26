@@ -67,7 +67,8 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
         row for row in canonical["route"]
         if row.get("mechanic_profile") == "trash_two_tank_charge_lanes"
     )
-    assert drudge_split_geometry_status(drudges) == (True, "")
+    magmaw = canonical["route"][canonical["route"].index(drudges) + 1]
+    assert drudge_split_geometry_status(drudges, magmaw) == (True, "")
     assert drudges["split_seed_roster_slots"] == [8, 6]
     assert drudges["split_healer_roster_slots"] == [3, 4, 5]
     assert drudges["split_seed_max_range_yards"] == 35.0
@@ -76,8 +77,8 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
         row["roster_slot"]: row for row in drudges["split_tank_recovery_anchors"]
     }
     assert recovery_by_slot == {
-        1: {"roster_slot": 1, "x": -288.8, "y": -43.0, "z": 212.301},
-        2: {"roster_slot": 2, "x": -321.5, "y": -30.0, "z": 211.283429},
+        1: {"roster_slot": 1, "x": -288.8, "y": -86.483, "z": 214.154},
+        2: {"roster_slot": 2, "x": -338.018, "y": -64.932, "z": 212.751},
     }
     member_by_slot = {
         row["roster_slot"]: row for row in drudges["split_member_anchors"]
@@ -107,8 +108,8 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
     assert seed_distance > healer_distance
     assert seed_distance + drudges["split_arrival_tolerance_yards"] <= 35.0
 
-    # Slot 8 is both the source-250140 seed and its permanent recovery point.
-    # Keep it near the verified lane-B floor while leaving a large margin from
+    # Slot 8 is the source-250140 initial seed. Keep it near the verified
+    # lane-B floor while leaving a large margin from
     # the opposite tank's native combat anchor. Runtime still reconstructs
     # native threat-list eligibility/farthest selection and requires a strict
     # return path.
@@ -139,6 +140,13 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
         slot: (row["x"], row["y"])
         for slot, row in recovery_by_slot.items()
     }
+    recovery_member_by_slot = {
+        row["roster_slot"]: row
+        for row in drudges["split_recovery_member_anchors"]
+    }
+    assert set(recovery_member_by_slot) == set(range(1, 11))
+    assert recovery_member_by_slot[1] == recovery_by_slot[1]
+    assert recovery_member_by_slot[2] == recovery_by_slot[2]
 
     # The first successful Rush moves each source back toward its sealed tank
     # from the declared seed.  At that repeatable melee-stop point, the seed
@@ -152,7 +160,10 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
     healer_slots = set(drudges["split_healer_roster_slots"])
     for source_index, seed_slot in enumerate(drudges["split_seed_roster_slots"]):
         recovery = recovery_points[source_index + 1]
-        seed = (member_by_slot[seed_slot]["x"], member_by_slot[seed_slot]["y"])
+        seed = (
+            recovery_member_by_slot[seed_slot]["x"],
+            recovery_member_by_slot[seed_slot]["y"],
+        )
         seed_ray = (seed[0] - recovery[0], seed[1] - recovery[1])
         seed_ray_length = math.hypot(*seed_ray)
         source = (
@@ -161,7 +172,10 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
         )
         seed_distance = math.dist(source, seed)
         for slot in (lane_sets[source_index] | healer_slots) - {seed_slot}:
-            peer = (member_by_slot[slot]["x"], member_by_slot[slot]["y"])
+            peer = (
+                recovery_member_by_slot[slot]["x"],
+                recovery_member_by_slot[slot]["y"],
+            )
             assert seed_distance >= (
                 math.dist(source, peer)
                 + 2.0 * drudges["split_arrival_tolerance_yards"]
@@ -184,7 +198,7 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
         + drudges["split_arrival_tolerance_yards"]
         + drudges["split_tank_arrival_tolerance_yards"]
     )
-    for slot, anchor in member_by_slot.items():
+    for slot, anchor in recovery_member_by_slot.items():
         if slot in (1, 2):
             continue
         point = (anchor["x"], anchor["y"])
@@ -243,21 +257,48 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
     inward_arrival_envelope["split_tank_arrival_tolerance_yards"] = 2.0
     assert drudge_split_geometry_status(inward_arrival_envelope) == (
         False,
-        "split_navigation_anchor_native_chase_unsafe",
+        "split_recovery_member_overlap",
     )
 
     unsafe_recovery_pair = deepcopy(drudges)
     unsafe_recovery_pair["split_tank_recovery_anchors"][1].update(
-        x=-314.4, y=-20.5334, z=211.221,
+        x=-300.0, y=-86.0, z=214.15,
+    )
+    unsafe_recovery_pair["split_recovery_member_anchors"][1].update(
+        x=-300.0, y=-86.0, z=214.15,
     )
     assert drudge_split_geometry_status(unsafe_recovery_pair) == (
         False,
         "split_tank_recovery_source_separation_unsafe",
     )
 
+    mismatched_recovery_tank = deepcopy(drudges)
+    mismatched_recovery_tank["split_tank_recovery_anchors"][0]["x"] += 1.0
+    assert drudge_split_geometry_status(mismatched_recovery_tank) == (
+        False,
+        "split_recovery_member_tank_mismatch",
+    )
+
+    old_future_unsafe_recovery = deepcopy(drudges)
+    old_tank_recovery = (
+        (-288.8, -43.0, 212.301),
+        (-321.5, -30.0, 211.283429),
+    )
+    for index, point in enumerate(old_tank_recovery):
+        old_future_unsafe_recovery["split_tank_recovery_anchors"][index].update(
+            x=point[0], y=point[1], z=point[2]
+        )
+        old_future_unsafe_recovery["split_recovery_member_anchors"][index].update(
+            x=point[0], y=point[1], z=point[2]
+        )
+    assert drudge_split_geometry_status(old_future_unsafe_recovery, magmaw) == (
+        False,
+        "split_recovery_future_encounter_unsafe",
+    )
+
     unsafe_recovery_member = deepcopy(drudges)
-    unsafe_recovery_member["split_tank_recovery_anchors"][0].update(
-        x=-289.289093, y=-57.7575, z=212.932236,
+    unsafe_recovery_member["split_recovery_member_anchors"][2].update(
+        x=-288.8, y=-87.0, z=214.154,
     )
     assert drudge_split_geometry_status(unsafe_recovery_member) == (
         False,
