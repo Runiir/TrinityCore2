@@ -388,7 +388,7 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert active["prior_repair_proof"]["remote_seed_regression_observed"] is False
     assert "native_victim_confirmation_after_taunt_submission" in active["repair_scope"]["allowed"]
     assert active["implemented_repair"]["commit"] == (
-        "ffe7301ac90d81974b9099632e88d87a14723e0c"
+        "4277a2b6eebe0cf1e526bc97e3643622b70de6d5"
     )
     assert active["implemented_repair"]["source_line_limit_passed"] is True
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None

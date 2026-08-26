@@ -3,10 +3,10 @@
   "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_native_taunt_confirmation_live_verification",
   "owner_skill": "raid-shard-architecture",
   "classification": "implementation_pending_live_verification",
-  "observed_at_commit": "ffe7301ac90d81974b9099632e88d87a14723e0c",
+  "observed_at_commit": "4277a2b6eebe0cf1e526bc97e3643622b70de6d5",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary36_taunt_confirmation_handoff_20260826.md",
-    "sha256": "54dc1320995e87a5440f2d4efa6ae62eab3de7efc02e8f91f61d26f88ea7c142"
+    "sha256": "f570fafa2053eed88bd1b64f6befba3cbd842dd451e7887e67f4d75082cf30cf"
   },
   "first_broken_edge": "drudge_native_taunt_submission_is_recorded_before_assigned_tank_victim_ownership_is_observed",
   "decisive_evidence": {
@@ -107,8 +107,8 @@
     "matched_live_verification_runs": 0
   },
   "implemented_repair": {
-    "commit": "ffe7301ac90d81974b9099632e88d87a14723e0c",
-    "tree": "468add07d99c2feffaf0a0f2fa933bc37547f9cb",
+    "commit": "4277a2b6eebe0cf1e526bc97e3643622b70de6d5",
+    "tree": "71c8935e9ec33a824fca902c1a0a5f340a6050dc",
     "status": "source_validated_pending_exact_build",
     "scope": "exact_scope_native_taunt_submission_pending_confirmation_and_bounded_native_retry",
     "focused_test_count": 156,
@@ -123,5 +123,5 @@
     "live_run_allowed": false,
     "commit_allowed": false
   },
-  "next_action": "Build exact commit ffe7301ac90d81974b9099632e88d87a14723e0c through the queued coordinator, provision and verify a fresh exact ten-player Magmaw diagnostic roster, and run completion-watchdog Canary37."
+  "next_action": "Build exact commit 4277a2b6eebe0cf1e526bc97e3643622b70de6d5 through the queued coordinator, provision and verify a fresh exact ten-player Magmaw diagnostic roster, and run completion-watchdog Canary37."
 }
