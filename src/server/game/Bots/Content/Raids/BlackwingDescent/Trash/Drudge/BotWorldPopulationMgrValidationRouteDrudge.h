@@ -163,6 +163,8 @@ struct DrudgeLaneContext
         uint32 candidateIndex, float x, float y, bool tank,
         bool dynamicCandidate, float dynamicLaneProjection, uint64 nowMs);
     bool ComputeStrictTankRecoveryPath(float x, float y, float z) const;
+    bool SeedCombatEnvelopeSafe(uint32 slot, float x, float y) const;
+    bool ComputeGroupPositionSafe(Player const* member) const;
     bool ComputeRecoveryAnchorReached(uint32 slot) const;
     bool ComputeExactCombatTankPathsProven() const;
     bool ComputeExactRecoveryTankPathsProven() const;

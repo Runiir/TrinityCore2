@@ -700,6 +700,9 @@ def test_drudge_reseparation_switches_from_cached_anchor_to_live_safety():
     geometry = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp").read_text(
         encoding="utf-8"
     )
+    group_safety = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGroupSafety.cpp").read_text(
+        encoding="utf-8"
+    )
     actions = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp").read_text(
         encoding="utf-8"
     )
@@ -707,9 +710,7 @@ def test_drudge_reseparation_switches_from_cached_anchor_to_live_safety():
         encoding="utf-8"
     )
 
-    group_start = geometry.index("GroupPositionSafe =")
-    group_end = geometry.index("ExactRosterPrepullStaged =", group_start)
-    group = geometry[group_start:group_end]
+    group = group_safety[group_safety.index("ComputeGroupPositionSafe"):]
     assert "source0Safe" in group
     assert "source1Safe" in group
     assert "sameLaneSpacingSafe" in group
@@ -720,6 +721,9 @@ def test_drudge_reseparation_switches_from_cached_anchor_to_live_safety():
     )
     exact_cache = group.index("CachedAnchorSafe", recovery_gate)
     assert recovery_gate < exact_cache
+    wrapper_start = geometry.index("GroupPositionSafe =")
+    wrapper_end = geometry.index("ExactRosterPrepullStaged =", wrapper_start)
+    assert "ComputeGroupPositionSafe(member)" in geometry[wrapper_start:wrapper_end]
     recovery_start = spacing.index(
         "bool DrudgeLaneContext::IsRecoveryFormationActive() const"
     )

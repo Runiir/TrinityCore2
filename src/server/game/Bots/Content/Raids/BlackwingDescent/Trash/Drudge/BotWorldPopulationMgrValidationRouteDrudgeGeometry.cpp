@@ -466,84 +466,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             anchorState.ValidationRouteDrudgeAnchorY,
             anchorState.ValidationRouteDrudgeAnchorZ) <= arrivalTolerance;
     };
-    GroupPositionSafe = [this](Player const* member) -> bool
+    GroupPositionSafe = [this](Player const* member)
     {
-        if (!member)
-            return false;
-        auto memberRoster = Manager.Cohort().Raid.RosterByGuid.find(
-            member->GetGUID().GetCounter());
-        if (memberRoster == Manager.Cohort().Raid.RosterByGuid.end()
-            || memberRoster->second.Role == "tank")
-            return false;
-        uint32 const slot = memberRoster->second.SlotIndex + 1;
-        bool const laneA = std::find(
-            Manager.Cohort().Config.ValidationRouteSplitLaneARosterSlots.begin(),
-            Manager.Cohort().Config.ValidationRouteSplitLaneARosterSlots.end(), slot)
-            != Manager.Cohort().Config.ValidationRouteSplitLaneARosterSlots.end();
-        bool const laneB = std::find(
-            Manager.Cohort().Config.ValidationRouteSplitLaneBRosterSlots.begin(),
-            Manager.Cohort().Config.ValidationRouteSplitLaneBRosterSlots.end(), slot)
-            != Manager.Cohort().Config.ValidationRouteSplitLaneBRosterSlots.end();
-        if (laneA == laneB)
-            return false;
-        bool const source0Safe = SourceUnionSafeAt(
-            0, member->GetPositionX(), member->GetPositionY());
-        bool const source1Safe = SourceUnionSafeAt(
-            1, member->GetPositionX(), member->GetPositionY());
-        float const projection = (member->GetPositionX() - MidpointX) * AxisX
-            + (member->GetPositionY() - MidpointY) * AxisY;
-        bool const laneSafe = (laneA ? -1.0f : 1.0f) * projection
-            >= LaneSeparation * 0.25f;
-        float const sameLaneMinimum = std::max(3.0f,
-            Manager.Cohort().Config.ValidationRouteSplitNavigationMarginYards
-                + Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards * 0.5f);
-        bool sameLaneSpacingSafe = true;
-        for (WorldBotState const& cohortState : Manager.Party().Bots)
-        {
-            Player* other = Manager.GetLoadedBot(cohortState);
-            if (!other || other == member || !other->IsInWorld()
-                || !other->IsAlive() || other->GetMap() != Bot->GetMap())
-                continue;
-            auto otherRoster = Manager.Cohort().Raid.RosterByGuid.find(
-                other->GetGUID().GetCounter());
-            if (otherRoster == Manager.Cohort().Raid.RosterByGuid.end()
-                || otherRoster->second.Role == "tank")
-                continue;
-            bool const otherLaneA = std::find(
-                Manager.Cohort().Config.ValidationRouteSplitLaneARosterSlots.begin(),
-                Manager.Cohort().Config.ValidationRouteSplitLaneARosterSlots.end(),
-                otherRoster->second.SlotIndex + 1)
-                != Manager.Cohort().Config.ValidationRouteSplitLaneARosterSlots.end();
-            if (otherLaneA == laneA && member->GetExactDist2d(other) < sameLaneMinimum)
-            {
-                sameLaneSpacingSafe = false;
-                break;
-            }
-        }
-        if (!BotRaidDrudgeGeometry::DynamicGroupPositionSafe(
-                source0Safe, source1Safe, laneSafe, sameLaneSpacingSafe))
-            return false;
-        // Exact declared-anchor arrival is mandatory for prepull staging. A
-        // landed Rush may move the sources after that proof, so reseparation
-        // admits the same strict live geometry without requiring a stale
-        // coordinate that is now inside the native source radius.
-        bool const prepullStaged =
-            Manager.Party().ValidationRouteDrudgePrepullStaged
-            && Manager.Party().ValidationRouteDrudgePrepullAttemptId
-                == Manager.Cohort().AttemptId
-            && Manager.Party().ValidationRouteDrudgePrepullWipeGeneration
-                == Manager.Cohort().Raid.WipeGeneration
-            && Manager.Party().ValidationRouteDrudgePrepullRouteGeneration
-                == Manager.Party().ValidationRouteGeneration;
-        if (prepullStaged && IsDynamicGroupRecoveryActive())
-            return true;
-        auto memberState = std::find_if(Manager.Party().Bots.begin(),
-            Manager.Party().Bots.end(), [member](WorldBotState const& candidate)
-            {
-                return candidate.Guid == member->GetGUID();
-            });
-        return memberState != Manager.Party().Bots.end()
-            && CachedAnchorSafe(*memberState, member);
+        return ComputeGroupPositionSafe(member);
     };
     ExactRosterPrepullStaged = [this]
     {
@@ -622,6 +547,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             BotRaidDrudgeRecoveryCandidates::Point2d const cachedPoint{
                 State.ValidationRouteDrudgeAnchorX,
                 State.ValidationRouteDrudgeAnchorY };
+            if (!tank && !SeedCombatEnvelopeSafe(OneBasedSlot,
+                    cachedPoint.X, cachedPoint.Y))
+                return false;
             if (activeDynamicRecovery
                 && (!BotRaidDrudgeRecoveryCandidates::LaneSafe(
                         cachedPoint, recoveryConstraints)
@@ -774,6 +702,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
                 EvaluateAndRecordCandidateSpacing(
                     uint32(candidateIndex), candidatePoint.X, candidatePoint.Y,
                     tank, dynamicCandidate, dynamicLaneProjection, nowMs);
+            bool const combatEnvelopeSafe = tank || SeedCombatEnvelopeSafe(
+                OneBasedSlot, candidatePoint.X, candidatePoint.Y);
             if ((dynamicCandidate || prepullTankFallback || !CombatTankStagingActive())
                 && !candidateSpacing.LaneSafe)
             {
@@ -787,7 +717,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             bool const dynamicSpacingSafe = !dynamicCandidate
                 || candidateSpacing.Spacing.Safe;
             bool const dynamicSourceSafe = !dynamicCandidate
-                || (candidateSpacing.Source0Safe && candidateSpacing.Source1Safe);
+                || (candidateSpacing.Source0Safe && candidateSpacing.Source1Safe
+                    && combatEnvelopeSafe);
             BotRaidDrudgeGeometry::AnchorPathSearchDecision const pathSearch =
                 BotRaidDrudgeGeometry::SelectAnchorPathSearch(
                     State.ValidationRouteDrudgeAnchorSearchCooldownUntilMs,
@@ -796,7 +727,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
                 pathSearch.RetryAfterMs;
             if (pathSearch.SourceBlocked)
             {
-                State.LastPathRejectReason = "drudge_anchor_source_unsafe";
+                State.LastPathRejectReason = combatEnvelopeSafe
+                    ? "drudge_anchor_source_unsafe"
+                    : "drudge_anchor_combat_range_unsafe";
                 State.LastRecoveryResult = State.LastPathRejectReason;
                 observeCandidate(uint32(candidateIndex), candidatePoint.X, candidatePoint.Y,
                     candidateAnchor->Z, candidateSpacing, false, "rejected",
