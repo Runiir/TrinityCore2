@@ -3,6 +3,7 @@
 
 #include "Bots/BotMovementArbiter.h"
 
+#include <optional>
 #include <string>
 
 class Unit;
@@ -49,6 +50,9 @@ struct Intent
     float X = 0.0f;
     float Y = 0.0f;
     float Z = 0.0f;
+    // Only a caller with a completed mechanical path proof may provide this
+    // floor.  An absent value keeps the ordinary strict floor contract.
+    std::optional<float> ReferenceFloorZ;
     bool TerminalOnFailure = false;
     BotMovementArbitration::Owner Owner = BotMovementArbitration::Owner::None;
     BotMovementArbitration::Priority Priority = BotMovementArbitration::Priority::Idle;

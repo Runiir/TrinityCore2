@@ -109,8 +109,11 @@ bool BotWorldPopulationMgr::PlanMovementPath(
             candidatePath);
     };
 
-    auto nativePathFloorsValid = [bot](PathGenerator const& candidatePath)
+    auto nativePathFloorsValid = [bot, &intent](PathGenerator const& candidatePath)
     {
+        if (intent.ReferenceFloorZ)
+            return BotWorldMovement::NativePathFloorsValid(bot, candidatePath,
+                *intent.ReferenceFloorZ, true);
         return BotWorldMovement::NativePathFloorsValid(bot, candidatePath);
     };
 

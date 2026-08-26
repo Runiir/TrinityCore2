@@ -8,6 +8,18 @@ bool BotWorldPopulationMgr::MoveBotToPoint(
     BotMovementArbitration::Priority movementPriority, Unit* dynamicTarget,
     float dynamicTargetRange)
 {
+    return MoveBotToPointWithReferenceFloor(state, bot, x, y, z,
+        std::nullopt, terminalOnFailure, movementOwner, movementPriority,
+        dynamicTarget, dynamicTargetRange);
+}
+
+bool BotWorldPopulationMgr::MoveBotToPointWithReferenceFloor(
+    WorldBotState& state, Player* bot, float x, float y, float z,
+    std::optional<float> referenceFloorZ, bool terminalOnFailure,
+    BotMovementArbitration::Owner movementOwner,
+    BotMovementArbitration::Priority movementPriority, Unit* dynamicTarget,
+    float dynamicTargetRange)
+{
     if (!bot)
         return false;
 
@@ -37,6 +49,7 @@ bool BotWorldPopulationMgr::MoveBotToPoint(
     intent.X = x;
     intent.Y = y;
     intent.Z = z;
+    intent.ReferenceFloorZ = referenceFloorZ;
     intent.TerminalOnFailure = terminalOnFailure;
     intent.Owner = movementOwner;
     intent.Priority = movementPriority;

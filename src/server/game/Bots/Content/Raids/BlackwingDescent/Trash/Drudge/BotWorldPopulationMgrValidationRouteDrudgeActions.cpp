@@ -649,12 +649,11 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
                 markRecoveryAnchorReached();
                 if (!alreadySafe && (!AssignedTank || !NativeChargePending
                     || StrictTankRecoveryPath(State.ValidationRouteDrudgeAnchorX,
-                        State.ValidationRouteDrudgeAnchorY,
-                        State.ValidationRouteDrudgeAnchorZ)))
+                        State.ValidationRouteDrudgeAnchorY, State.ValidationRouteDrudgeAnchorZ)))
                 {
-                    moved = Manager.MoveBotToPoint(State, Bot,
-                        State.ValidationRouteDrudgeAnchorX,
-                        State.ValidationRouteDrudgeAnchorY,
+                    moved = Manager.MoveBotToPointWithReferenceFloor(State, Bot,
+                        State.ValidationRouteDrudgeAnchorX, State.ValidationRouteDrudgeAnchorY,
+                        State.ValidationRouteDrudgeAnchorZ,
                         State.ValidationRouteDrudgeAnchorZ, false,
                         BotMovementArbitration::Owner::Mechanic,
                         BotMovementArbitration::Priority::Mechanic);

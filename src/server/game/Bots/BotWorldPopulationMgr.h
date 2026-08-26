@@ -28,6 +28,7 @@
 #include <memory>
 #include <limits>
 #include <mutex>
+#include <optional>
 #include <set>
 #include <string>
 #include <tuple>
@@ -293,6 +294,12 @@ private:
         bool terminalOnFailure = false,
         BotMovementArbitration::Owner movementOwner = BotMovementArbitration::Owner::None,
         BotMovementArbitration::Priority movementPriority = BotMovementArbitration::Priority::Idle,
+        Unit* dynamicTarget = nullptr, float dynamicTargetRange = 0.0f);
+    bool MoveBotToPointWithReferenceFloor(
+        WorldBotState& state, Player* bot, float x, float y, float z,
+        std::optional<float> referenceFloorZ, bool terminalOnFailure,
+        BotMovementArbitration::Owner movementOwner,
+        BotMovementArbitration::Priority movementPriority,
         Unit* dynamicTarget = nullptr, float dynamicTargetRange = 0.0f);
     bool ExecuteMovementIntent(WorldBotState& state, Player* bot,
         BotWorldMovement::Intent const& intent);
