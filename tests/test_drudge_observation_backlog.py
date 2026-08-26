@@ -97,11 +97,15 @@ def test_runtime_uses_backlog_closure_only_after_exact_recovery() -> None:
     assert "Manager.Party().ValidationRouteGeneration" in actions[closure:record]
 
 
-def test_post_closure_replay_returns_to_combat_path_gate(tmp_path) -> None:
+def test_post_closure_replay_keeps_established_entrance_formation(tmp_path) -> None:
     actions = (HEADER.parent / "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp").read_text(
         encoding="utf-8"
     )
-    assert "RecoveryFormationActive = NativeChargePending && IsRecoveryFormationActive();" in actions
+    spacing = (HEADER.parent / "BotWorldPopulationMgrValidationRouteDrudgeSpacing.cpp").read_text(
+        encoding="utf-8"
+    )
+    assert "RecoveryFormationActive = IsRecoveryFormationActive();" in actions
+    assert "return IsEntrancePullEstablished() || IsLandedRushPending();" in spacing
 
     source = tmp_path / "post_closure_replay.cpp"
     binary = tmp_path / "post_closure_replay"
@@ -111,23 +115,20 @@ def test_post_closure_replay_returns_to_combat_path_gate(tmp_path) -> None:
 
 int main()
 {
-    // The historical landed observation remains visible to the formation
-    // helper, but the current head is no longer pending after closure.
-    bool const historicalLanded = true;
+    // Closing a Rush observation must not send an established entrance pull
+    // back toward the boss-side combat anchors.
+    bool const entrancePullEstablished = true;
     bool currentHeadLanded = true;
-    bool recoveryPathsProven = false;
-    bool combatPathsProven = true;
+    bool recoveryPathsProven = true;
 
-    bool recoveryActive = currentHeadLanded && historicalLanded;
+    bool recoveryActive = entrancePullEstablished || currentHeadLanded;
     assert(recoveryActive);
-    assert(!(recoveryActive ? recoveryPathsProven : combatPathsProven));
+    assert(recoveryPathsProven);
 
     currentHeadLanded = false;
-    recoveryActive = currentHeadLanded && historicalLanded;
-    bool const activePathsProven = recoveryActive
-        ? recoveryPathsProven : combatPathsProven;
-    assert(!recoveryActive);
-    assert(activePathsProven);
+    recoveryActive = entrancePullEstablished || currentHeadLanded;
+    assert(recoveryActive);
+    assert(recoveryPathsProven);
 }
 ''',
         encoding="utf-8",

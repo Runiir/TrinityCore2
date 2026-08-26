@@ -215,7 +215,7 @@ int main()
     subprocess.run([str(binary)], check=True, cwd=ROOT)
 
 
-def test_recovery_candidate_contract_is_landed_and_native_strict_for_tanks_and_members():
+def test_recovery_candidate_contract_is_persistent_and_native_strict_for_tanks_and_members():
     geometry = GEOMETRY.read_text(encoding="utf-8")
     recovery = RECOVERY.read_text(encoding="utf-8")
     spacing = SPACING.read_text(encoding="utf-8")
@@ -227,16 +227,15 @@ def test_recovery_candidate_contract_is_landed_and_native_strict_for_tanks_and_m
     candidates = geometry[geometry.index("AnchorCandidatesFor ="):geometry.index(
         "AnchorCacheMatchesGeneration =", geometry.index("AnchorCandidatesFor =")
     )]
-    assert "bool const landedTankRecovery = tankSlot && IsLandedRushPending()" in candidates
-    assert "(!tankSlot || landedTankRecovery)" in candidates
+    assert "bool const tankRecovery = tankSlot && IsRecoveryFormationActive()" in candidates
+    assert "(!tankSlot || tankRecovery)" in candidates
     assert "!tankSlot && !CombatTankStagingActive()" in candidates
     assert "SelectOrigin" in candidates
     assert "currentSourceUnionSafe" in candidates
     assert "IsLandedRushPending()" in candidates
     assert "BotRaidDrudgeRecoveryCandidates::BuildCandidates" in candidates
-    assert candidates.index("BuildCandidates") < candidates.index(
-        "RecoveryAnchorReachedFor(slot)"
-    )
+    assert "RecoveryAnchorReachedFor(slot)" not in candidates
+    assert "RecoveryTankReturnBarrierOpen() && RecoveryAnchorReachedFor(slot)" not in candidates
 
     selector = geometry[geometry.index("SelectPathableDrudgeAnchor ="):geometry.index(
         "ExactRosterReSeparated =", geometry.index("SelectPathableDrudgeAnchor =")
@@ -247,6 +246,7 @@ def test_recovery_candidate_contract_is_landed_and_native_strict_for_tanks_and_m
     assert "StrictNativePath" in selector
     assert "tank || IsDynamicGroupRecoveryActive()" in selector
     assert "IsRecoveryCandidateSpacingSafe" in selector
+    assert "bool const tankRecovery = tank && IsRecoveryFormationActive()" in selector
 
     cache = selector[selector.index("auto cacheUsable"):selector.index(
         "if (cacheUsable())", selector.index("auto cacheUsable")
@@ -272,6 +272,14 @@ def test_recovery_candidate_contract_is_landed_and_native_strict_for_tanks_and_m
     assert "NativePathFloorsValid" in path_validation
     assert "SourceUnionSafeAt" in spacing
     assert "SourceUnionSafe" in spacing
+
+    entrance = spacing[spacing.index("IsEntrancePullEstablished"):spacing.index(
+        "IsRecoveryFormationActive", spacing.index("IsEntrancePullEstablished")
+    )]
+    assert "member.Active && member.LeaseOwned && member.Role == \"tank\"" in entrance
+    assert "!taunted.count(guid)" in entrance
+    assert "exactTanks == 2" in entrance
+    assert "taunted.size() == exactTanks" in entrance
 
     assert "ComputeStrictTankRecoveryPath" in recovery
     assert "ComputeRecoveryAnchorReached" in recovery
@@ -329,8 +337,8 @@ def test_prepull_tank_fallback_keeps_declared_then_navigation_anchor_contract():
         "ExactRosterReSeparated =", geometry.index("SelectPathableDrudgeAnchor =")
     )]
     assert "if (tankSlot && !CombatTankStagingActive())" in candidates
-    assert candidates.index("candidates.emplace_back(navigation->X, navigation->Y)") \
-        < candidates.index("RecoveryAnchorReachedFor(slot)")
+    assert candidates.count("candidates.emplace_back(navigation->X, navigation->Y)") == 1
+    assert "RecoveryAnchorReachedFor(slot)" not in candidates
     assert "bool const prepullTankFallback = tank && !CombatTankStagingActive();" in selector
     assert "prepullTankFallback && candidateIndex" in selector
     assert "dynamicCandidate || prepullTankFallback || !CombatTankStagingActive()" in selector
@@ -382,7 +390,7 @@ def test_dynamic_fan_candidate_is_grounded_before_exact_native_path_admission():
 
     assert "ResolveDynamicCandidateZ" in selector
     assert "dynamicCandidate && candidateIndex > 0" in selector
-    assert "landedTankRecovery" in selector
+    assert "tankRecovery" in selector
     assert "StrictTankRecoveryPath(candidatePoint.X, candidatePoint.Y, candidateZ)" in selector
     assert '"drudge_anchor_tank_path_geometry_rejected"' in selector
     assert "StrictNativePath(candidatePoint.X, candidatePoint.Y, candidateZ" in selector

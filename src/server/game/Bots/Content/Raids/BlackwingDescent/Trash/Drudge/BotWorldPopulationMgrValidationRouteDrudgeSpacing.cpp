@@ -37,20 +37,27 @@ bool BotWorldPopulationMgr::TryValidationRouteDrudgeMinimumDistance(
 
 namespace BotWorldPopulationMgrValidationRoute
 {
+bool DrudgeLaneContext::IsEntrancePullEstablished() const
+{
+    auto const& roster = Manager.Cohort().Raid.RosterByGuid;
+    auto const& taunted = Manager.Party().ValidationRouteDrudgeTauntRosterGuids;
+    uint32 exactTanks = 0;
+    for (auto const& [guid, member] : roster)
+        if (member.Active && member.LeaseOwned && member.Role == "tank")
+        {
+            ++exactTanks;
+            if (!taunted.count(guid))
+                return false;
+        }
+    return exactTanks == 2 && taunted.size() == exactTanks;
+}
+
 bool DrudgeLaneContext::IsRecoveryFormationActive() const
 {
     if (Manager.Cohort().Config.ValidationRouteMechanicProfile
         != "trash_two_tank_charge_lanes")
         return false;
-    for (ChargeObservation const& observation :
-        Manager.Party().ValidationRouteDrudgeChargeObservations)
-        if (observation.Landed
-            && observation.AttemptId == Manager.Cohort().AttemptId
-            && observation.WipeGeneration == Manager.Cohort().Raid.WipeGeneration
-            && observation.RouteGeneration
-                == Manager.Party().ValidationRouteGeneration)
-            return true;
-    return false;
+    return IsEntrancePullEstablished() || IsLandedRushPending();
 }
 
 bool DrudgeLaneContext::SourceUnionSafeAt(

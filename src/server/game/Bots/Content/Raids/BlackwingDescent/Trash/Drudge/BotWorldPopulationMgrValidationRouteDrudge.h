@@ -151,6 +151,7 @@ struct DrudgeLaneContext
     DrudgeLaneContext(DrudgeLaneRequest const& request);
     bool Run();
     bool IsLandedRushPending() const;
+    bool IsEntrancePullEstablished() const;
     bool IsRecoveryFormationActive() const;
     bool IsDynamicGroupRecoveryActive() const;
     bool TryMinimumDistance(bool specializedDrudgeRecovery);

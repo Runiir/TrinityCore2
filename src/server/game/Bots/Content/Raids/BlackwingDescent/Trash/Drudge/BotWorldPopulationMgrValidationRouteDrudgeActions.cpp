@@ -321,11 +321,10 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         PrepullStaged = true;
         Record(nullptr, "drudge_prepull_exact_roster_staged");
     }
-    // A closed landed observation is durable evidence, not a new recovery
-    // obligation.  Keep the recovery predicate tied to the current head so
-    // the post-closure tick can validate the ordinary combat anchors instead
-    // of reopening the already-finished recovery preflight.
-    RecoveryFormationActive = NativeChargePending && IsRecoveryFormationActive();
+    // Once both native taunts are confirmed, keep the fight in the proven
+    // entrance-side formation. A landed Rush reuses the same formation and
+    // never sends the Drudges back toward Magmaw.
+    RecoveryFormationActive = IsRecoveryFormationActive();
     FormationRequired = AssignedTank
         ? !CachedAnchorSafe(State, Bot) : !GroupPositionSafe(Bot);
     FormationRequiredMutable = FormationRequired;
@@ -349,8 +348,10 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
     input.ChargeSequence = Charge ? Charge->Sequence : 0;
     input.ChargePending = Charge != nullptr;
     input.ExactPrepullStaged = PrepullStaged;
-    input.BothCombatTankPathsProven = ExactCombatTankPathsProven();
-    input.BothCombatTankAnchorsSafe = ExactCombatTankAnchorsSafe();
+    input.BothCombatTankPathsProven = RecoveryFormationActive
+        ? ExactRecoveryTankPathsProven() : ExactCombatTankPathsProven();
+    input.BothCombatTankAnchorsSafe = RecoveryFormationActive
+        ? ExactRecoveryTankAnchorsReached() : ExactCombatTankAnchorsSafe();
     input.SourceCombatStarted = SourceCombatStarted;
     input.ChargeQueueIdle = Charge == nullptr;
     input.ChargeLanded = NativeChargePending;
@@ -388,7 +389,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
 
     auto markRecoveryAnchorReached = [&]()
     {
-        if (!AssignedTank || !NativeChargePending
+        if (!AssignedTank || !RecoveryFormationActive
             || State.ValidationRouteDrudgeRecoveryAnchorReached
             || !State.ValidationRouteDrudgeRecoveryAnchorPathProven
             || !State.ValidationRouteDrudgeAnchorValid
@@ -418,9 +419,11 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         && RecoveryFormationActive && ExactRecoveryTankPathsProven();
     bool const recoveryAnchorsReachedBeforeTick = PrepullStaged
         && RecoveryFormationActive && RecoveryTankReturnBarrierOpen();
-    bool const combatPathsProvenForDiagnostic = ExactCombatTankPathsProven();
-    bool const combatAnchorsReachedForDiagnostic = PrepullStaged && NativeChargePending
-        && ExactCombatTankAnchorsReached();
+    bool const combatPathsProvenForDiagnostic = RecoveryFormationActive
+        ? ExactRecoveryTankPathsProven() : ExactCombatTankPathsProven();
+    bool const combatAnchorsReachedForDiagnostic = PrepullStaged
+        && (RecoveryFormationActive ? ExactRecoveryTankAnchorsReached()
+                                    : ExactCombatTankAnchorsReached());
     bool const exactRosterReseparatedForDiagnostic = ExactRosterReSeparated();
     RecordRecoveryDiagnosticTick(NowMs(), recoveryAnchorsReachedBeforeTick, recoveryPathsProvenBeforeTick,
         combatPathsProvenForDiagnostic, combatAnchorsReachedForDiagnostic, exactRosterReseparatedForDiagnostic);
@@ -463,7 +466,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         State.TargetGuid = LaneSource->GetGUID();
         return PhaseResult::Handled;
     }
-    if (PrepullStaged && !NativeChargePending && ExactCombatTankAnchorsSafe()
+    if (PrepullStaged && !NativeChargePending && !RecoveryFormationActive
+        && ExactCombatTankAnchorsSafe()
         && !ExactLiveRecoveryTankPathsPreflighted())
     {
         bool pathProven = false;
@@ -510,7 +514,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         return PhaseResult::Handled;
     }
     bool const combatTankAnchorsReachedBeforeTick = PrepullStaged
-        && NativeChargePending && ExactCombatTankAnchorsReached();
+        && (RecoveryFormationActive ? ExactRecoveryTankAnchorsReached()
+                                    : ExactCombatTankAnchorsReached());
     // Native taunt submission, drudge_lane_native_taunt_approach, and later
     // drudge_lane_native_taunt confirmation are isolated in the taunt module.
     // The taunt module uses BotMovementArbitration::Owner::Mechanic and
@@ -523,7 +528,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         return tauntResult;
     if (BotRaidDrudgeGeometry::LandedRushRecoveryComplete(
         NativeChargePending, recoveryAnchorsReachedBeforeTick,
-        ExactCombatTankPathsProven(), combatTankAnchorsReachedBeforeTick,
+        ExactRecoveryTankPathsProven(), ExactRecoveryTankAnchorsReached(),
         ExactRosterReSeparated()))
     {
         uint64 const proofAtMs = NowMs();
@@ -598,10 +603,6 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
                         State.ValidationRouteDrudgeAnchorValid = false;
                         State.ValidationRouteDrudgeAnchorPathProven = false;
                     }
-                    if (moved && AssignedTank && NativeChargePending
-                        && State.ValidationRouteDrudgeRecoveryAnchorReached)
-                        Record(LaneSource,
-                            "drudge_tank_combat_anchor_return_started", SourceSeparation);
                 }
             }
         };

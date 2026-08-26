@@ -49,13 +49,14 @@ bool DrudgeLaneContext::IsDynamicGroupRecoveryActive() const
     return BotRaidDrudgeGeometry::DynamicGroupRecoveryActive(
         Manager.Cohort().Config.ValidationRouteMechanicProfile
             == "trash_two_tank_charge_lanes",
-        exactPrepullStaged, IsLandedRushPending());
+        exactPrepullStaged, IsRecoveryFormationActive());
 }
 
 bool DrudgeLaneContext::RecoveryTankReturnBarrierOpen() const
 {
-    bool const allRecoveryAnchorsReached = ExactRecoveryTankAnchorsReached
-        && ExactRecoveryTankAnchorsReached();
+    bool const allRecoveryAnchorsReached = ExactRecoveryTankAnchorsReached();
+    if (IsEntrancePullEstablished())
+        return allRecoveryAnchorsReached;
     if (!Charge)
         return BotRaidDrudgeGeometry::RecoveryTankReturnBarrierOpen(
             IsLandedRushPending(), allRecoveryAnchorsReached);
@@ -66,7 +67,7 @@ bool DrudgeLaneContext::RecoveryTankReturnBarrierOpen() const
 
 bool DrudgeLaneContext::RecoveryTankAnchorPending(uint32 slot) const
 {
-    return IsLandedRushPending() && !RecoveryAnchorReachedFor(slot);
+    return IsRecoveryFormationActive() && !RecoveryAnchorReachedFor(slot);
 }
 
 BotRaidDrudgeSpacing::PeerResult DrudgeLaneContext::EvaluateRecoveryCandidateSpacing(

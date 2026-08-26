@@ -581,7 +581,8 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "ExactCombatTankAnchorsReached" in actions
     assert "LandedRushRecoveryComplete" in actions
     assert "drudge_tank_recovery_anchor_reached" in actions
-    assert "drudge_tank_combat_anchor_return_started" in actions
+    assert "RecoveryFormationActive = IsRecoveryFormationActive();" in actions
+    assert "drudge_tank_combat_anchor_return_started" not in actions
     assert '"drudge_native_charge_reseparation_wait"' in actions
     assert actions.index("LandedRushRecoveryComplete") < actions.index(
         '"drudge_native_charge_reseparation_complete"'
@@ -631,7 +632,7 @@ def test_landed_rush_recovery_latches_the_scoped_two_tank_return_barrier():
         encoding="utf-8"
     )
 
-    assert "RecoveryTankReturnBarrierOpen()" in geometry
+    assert "RecoveryTankReturnBarrierOpen() && RecoveryAnchorReachedFor" not in geometry
     assert "RecoveryTankAnchorPending(slot)" in geometry
     assert "AdvanceRecoveryTankReturnBarrier" in recovery
     assert "RecoveryTankReturnBarrierOpened" in route_state
@@ -644,7 +645,7 @@ def test_landed_rush_recovery_latches_the_scoped_two_tank_return_barrier():
     assert "recoveryAnchorsReachedBeforeTick" in actions
 
 
-def test_post_rush_recovery_replays_combat_anchor_transition_with_exact_xyz():
+def test_established_pull_stays_on_entrance_recovery_anchors_with_exact_xyz():
     geometry_path = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
     lanes_path = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp"
     geometry = geometry_path.read_text(encoding="utf-8")
@@ -668,44 +669,39 @@ def test_post_rush_recovery_replays_combat_anchor_transition_with_exact_xyz():
         )
     }
 
-    # Run15's mixed-Z trace was the signature of selecting the recovery X/Y
-    # while retaining a later anchor's Z.  Replay the three legal phases from
-    # the sealed route data, then require the production selector to contain
-    # the same state transition.
-    def expected_anchor(slot, landed, recovery_reached):
-        if not landed:
+    # The initial tank approach remains near the Drudges so both native taunts
+    # can land. Once both taunts are confirmed, the only legal combat endpoint
+    # is the proven entrance-side recovery anchor.
+    def expected_anchor(slot, entrance_pull_established):
+        if not entrance_pull_established:
             return anchors["split_tank_navigation_anchors"][slot]
-        if not recovery_reached:
-            return anchors["split_tank_recovery_anchors"][slot]
-        return anchors["split_tank_combat_anchors"][slot]
+        return anchors["split_tank_recovery_anchors"][slot]
 
-    assert expected_anchor(1, False, False) == (-289.289093, -57.7575, 212.932236)
-    assert expected_anchor(1, True, False) == (-288.8, -86.483, 214.154)
-    assert expected_anchor(1, True, True) == (-286.5, -58.0, 212.2983)
-    assert expected_anchor(2, True, True) == (-322.858, -48.2862, 212.2623)
-    assert expected_anchor(1, True, False)[2] != expected_anchor(1, True, True)[2]
+    assert expected_anchor(1, False) == (-289.289093, -57.7575, 212.932236)
+    assert expected_anchor(1, True) == (-288.8, -86.483, 214.154)
+    assert expected_anchor(2, True) == (-338.018, -64.932, 212.751)
+    assert expected_anchor(1, True) != anchors["split_tank_combat_anchors"][1]
+    assert expected_anchor(2, True) != anchors["split_tank_combat_anchors"][2]
 
     selector_start = geometry.index("for (size_t candidateIndex = 0;")
     selector_end = geometry.index(
         "State.ValidationRouteDrudgeAnchorX =", selector_start
     )
     selector = geometry[selector_start:selector_end]
-    assert "RecoveryAnchorReachedFor(OneBasedSlot)" in selector
-    assert selector.index("DeclaredCombatTankAnchorFor(OneBasedSlot)") < selector.index(
-        "DeclaredRecoveryTankAnchorFor(OneBasedSlot)"
-    )
+    assert "IsRecoveryFormationActive()" in selector
+    assert "DeclaredRecoveryTankAnchorFor(OneBasedSlot)" in selector
+    assert "DeclaredCombatTankAnchorFor(OneBasedSlot)" not in selector
     assert "candidateAnchor->Z" in selector
 
     unique_anchor_start = geometry.index("UniqueGroupAnchor =")
     unique_anchor_end = geometry.index("AnchorCandidatesFor =", unique_anchor_start)
     unique_anchor = geometry[unique_anchor_start:unique_anchor_end]
-    assert "RecoveryAnchorReachedFor(slot)" in unique_anchor
-    assert "DeclaredCombatTankAnchorFor(slot)" in unique_anchor
+    assert "IsRecoveryFormationActive()" in unique_anchor
+    assert "DeclaredCombatTankAnchorFor(slot)" not in unique_anchor
     assert "DeclaredRecoveryTankAnchorFor(slot)" in unique_anchor
     assert "DeclaredRecoveryMemberAnchorFor(slot)" in unique_anchor
-    assert "IsLandedRushPending()" in unique_anchor
     assert "IsDynamicGroupRecoveryActive()" not in unique_anchor
-    assert "DeclaredCombatTankAnchorFor" in lanes
+    assert "DeclaredCombatTankAnchorFor" in lanes  # initial taunt geometry only
     assert "drudge_anchor_future_encounter_contract_unresolved" in geometry
     assert "drudge_anchor_future_encounter_path_unsafe" in geometry
     assert "ValidationRouteSplitTankCombatAnchors" in geometry
@@ -715,7 +711,7 @@ def test_post_rush_recovery_replays_combat_anchor_transition_with_exact_xyz():
     assert recovery_members[8] == (-311.5, -123.0, 214.034)
 
 
-def test_post_rush_invalid_combat_projection_uses_nav_fallback_without_cooldown():
+def test_entrance_recovery_never_offers_a_magmaw_side_return_candidate():
     geometry_path = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
     lanes_path = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp"
     probe = (ROOT / "tools/raid_program/drudge_navmesh_recovery_probe.cpp").read_text(
@@ -724,20 +720,23 @@ def test_post_rush_invalid_combat_projection_uses_nav_fallback_without_cooldown(
     geometry = geometry_path.read_text(encoding="utf-8")
     lanes = lanes_path.read_text(encoding="utf-8")
 
-    # The sealed Detour replay projects tank 1's combat point back to its
-    # navigation point by 2.79962 yards.  Candidate 1 is therefore the
-    # already-preflighted navigation anchor; a failed candidate 0 must not
-    # arm the five-second retry before candidate 1 is attempted.
+    # Combat and navigation coordinates are retained for the initial native
+    # taunts. They must not be offered after the entrance formation activates.
     assert '"tank1_combat_anchor"' in probe
     assert '"tank2_combat_anchor"' in probe
     candidates = geometry[geometry.index("AnchorCandidatesFor ="):geometry.index(
         "AnchorCacheMatchesGeneration =", geometry.index("AnchorCandidatesFor =")
     )]
     assert "candidates.emplace_back(navigation->X, navigation->Y)" in candidates
+    assert "RecoveryTankReturnBarrierOpen() && RecoveryAnchorReachedFor(slot)" not in candidates
     selector = geometry[geometry.index("for (size_t candidateIndex = 0;"):geometry.index(
         "State.ValidationRouteDrudgeAnchorX =", geometry.index("for (size_t candidateIndex = 0;")
     )]
-    assert "candidateIndex ? DeclaredNavigationTankAnchorFor" in selector
+    dynamic_branch = selector[selector.index("bool const dynamicRecovery"):selector.index(
+        "if (!candidateAnchor)", selector.index("bool const dynamicRecovery")
+    )]
+    assert "DeclaredRecoveryTankAnchorFor(OneBasedSlot)" in dynamic_branch
+    assert "DeclaredCombatTankAnchorFor(OneBasedSlot)" not in dynamic_branch
     assert "candidateIndex + 1 == candidates.size()" in selector
     assert "ValidationRouteDrudgeAnchorCandidateIndex > 1" in lanes
     assert "bool const combatCandidate" in lanes
@@ -777,8 +776,8 @@ def test_drudge_reseparation_requires_live_safety_and_recovery_anchor_arrival():
         "bool DrudgeLaneContext::IsRecoveryFormationActive() const"
     )
     recovery = spacing[recovery_start:]
-    assert "observation.Landed" in recovery
-    assert "observation.ReseparationRecorded" not in recovery
+    assert "IsEntrancePullEstablished() || IsLandedRushPending()" in recovery
+    assert "ValidationRouteDrudgeChargeObservations" not in recovery
 
     minimum_distance_start = geometry.index(
         "bool DrudgeLaneContext::TryMinimumDistance"
