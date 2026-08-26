@@ -340,12 +340,12 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_future_encounter_exclusion"
+        "drudge_recovery_formation"
     )
     assert magmaw_25h["active_program_work_unit"] is None
     assert active["owner_skill"] == "raid-bot-runtime-implementation"
     assert active["first_broken_edge"] == (
-        "drudge_recovery_path_enters_next_boss_activation_envelope"
+        "single_drudge_formation_conflates_initial_pull_and_post_rush_recovery"
     )
     evidence = active["decisive_evidence"]
     assert evidence["source_commit"] == (
@@ -387,7 +387,7 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     )
     assert active["prior_repair_proof"]["alive_roster_count"] == 10
     assert (
-        "reject_recovery_paths_inside_immediate_next_encounter_boundary"
+        "add_explicit_recovery_only_member_formation"
         in active["repair_scope"]["allowed"]
     )
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
@@ -488,7 +488,7 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     assert status["active_work_unit"]["ready_for_bounded_repair"] is True
     assert status["active_work_unit"]["ready_for_live_verification"] is False
     assert status["active_work_unit"]["first_broken_edge"] == (
-        "drudge_recovery_path_enters_next_boss_activation_envelope"
+        "single_drudge_formation_conflates_initial_pull_and_post_rush_recovery"
     )
     assert status["active_work_unit"]["source_handoff"]["sha256"] == (
         workloop._file_sha256(
@@ -499,7 +499,7 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_future_encounter_exclusion"
+        "drudge_recovery_formation"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
         "raid-bot-runtime-implementation"

@@ -16,9 +16,19 @@ The recovery endpoints are only `17.7271` and `19.1097` yards from Magmaw's decl
 
 The exact damage or proximity callback that first engaged Magmaw was not serialized, so do not claim a specific spell. The causal boundary is sufficient: the native recovery movement reached the only newly introduced positions, then the next boss entered combat within about 1.5 seconds.
 
+## Frozen-navmesh follow-up
+
+The unchanged-formation repair is impossible on the real floor. A horizontal replay found that the current member formation forces tank 1's only otherwise-valid recovery region to the east platform edge. The best coarse pair was tank 1 `(-277.5, -47.5, 212.3)` and tank 2 `(-332.5, -27.5, 211.3)`. Tank 2 had a complete two-polygon Detour corridor with seven smooth points. Tank 1 returned an incomplete one-polygon corridor and projected to floor `z=164.241`, about 48 yards below the requested platform.
+
+A bounded `13 x 27` fine search tested all 351 points in tank 1's feasible horizontal region, `x [-279.5, -276.5]`, `y [-50.5, -44.0]`. It found zero native-floor-valid endpoints and zero complete corridors. The best projection, requested `(-276.5, -50.5, 212.3)`, landed at `z=165.42334`, `46.876663` yards below the intended floor.
+
+The first broken edge is therefore narrower than a bad coordinate: `single_drudge_formation_conflates_initial_pull_and_post_rush_recovery`. Initial members must remain near the Drudge homes for native seed range, while post-Rush members and tanks need a distinct recovery formation farther down the already traversed corridor. Do not continue nudging the old tank anchors or weaken the strict path, source, member-clearance, or future-encounter gates.
+
 ## Bounded repair contract
 
-- Reuse safe declared route geometry where possible. Prefer the existing tank member anchors over inventing new coordinates if the native Detour probe and full Drudge invariants accept them as recovery endpoints.
+- Add an explicit recovery-only member formation instead of reusing the initial-pull member anchors after a landed Rush.
+- Keep the initial member anchors and initial native seed geometry unchanged.
+- Prefer already observed main-floor positions for recovery endpoints, but admit them only after exact Detour path and floor proof.
 - Extend the deterministic navmesh parity probe so both replacement recovery paths must be complete, endpoint-exact, and floor-valid.
 - Add a deterministic next-encounter exclusion check derived from the current node and immediate next node. Recovery endpoints and paths must remain no closer to the next encounter than the already live-proven safe combat geometry.
 - Preserve two-tank separation, source-union safety, native Rush ownership, exact-roster reseparation, health sync, kill sync, same-tick healing, and independent set-and-forget movement.

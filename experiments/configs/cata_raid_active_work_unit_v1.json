@@ -1,14 +1,14 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_future_encounter_exclusion",
+  "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_recovery_formation",
   "owner_skill": "raid-bot-runtime-implementation",
   "classification": "failed",
   "observed_at_commit": "8d6a453e4ed473cf0db496c45d73fd489785a34c",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary40_future_encounter_handoff_20260826.md",
-    "sha256": "71a4af9640eeb60c86299239f1e41f8a060e4315215387c4b1439f8a0c8beef8"
+    "sha256": "031a591a476faa00871c0626c566d80be373a07a12346521c4f54cde8d02263c"
   },
-  "first_broken_edge": "drudge_recovery_path_enters_next_boss_activation_envelope",
+  "first_broken_edge": "single_drudge_formation_conflates_initial_pull_and_post_rush_recovery",
   "decisive_evidence": {
     "source_commit": "8d6a453e4ed473cf0db496c45d73fd489785a34c",
     "binary_sha256": "619d44a5a8a4d8fff6a79ad9febd07b2e428f7dba56a608607c0db3dbd26590d",
@@ -36,6 +36,9 @@
     "old_recovery_distance_to_magmaw_yards": [17.7271, 19.1097],
     "live_safe_combat_distance_to_magmaw_yards": [26.2785, 29.1912],
     "reusable_member_anchor_distance_to_magmaw_yards": [37.0501, 38.7855],
+    "unchanged_formation_navmesh_search_points": 351,
+    "unchanged_formation_pathable_endpoints": 0,
+    "best_failed_projection_z_error_yards": 46.876663,
     "boss_reached": true,
     "boss_reached_prematurely": true,
     "boss_death_evidence": false,
@@ -56,7 +59,8 @@
   "repair_scope": {
     "status": "trace_backed_repair_required",
     "allowed": [
-      "reuse_live_safe_declared_tank_geometry_for_recovery",
+      "add_explicit_recovery_only_member_formation",
+      "preserve_initial_pull_member_and_seed_geometry",
       "extend_native_detour_recovery_path_probe",
       "reject_recovery_paths_inside_immediate_next_encounter_boundary",
       "regenerate_canonical_route_manifest"
