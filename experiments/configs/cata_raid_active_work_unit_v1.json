@@ -1,8 +1,8 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:10N:source_union_signal_disambiguation",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
+  "work_unit": "boss:blackwing_descent:magmaw:10N:source_union_signal_live_verification",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "implementation_pending_live_verification",
   "observed_at_commit": "8e86e3761f8fb970b9b6f1d4682ebd6b35ad362d",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary33_source_union_signal_handoff_20260826.md",
@@ -64,12 +64,23 @@
     "worldserver_exit_code": 0,
     "do_not_relabel_as_clear": true
   },
+  "implemented_repair": {
+    "commit": "8d421ad45b495e7e52e0ef68e9fb359f63ce4fdf",
+    "tree": "f632f463cfcfd318a2aca1423b6e6250eb659b52",
+    "status": "source_validated_pending_exact_build",
+    "scope": "validate_required_exact_native_endpoint_before_lazily_evaluating_source_union_path_safety",
+    "focused_test_count": 48,
+    "drudge_geometry_source_lines": 990,
+    "native_path_decision_header_lines": 37,
+    "source_line_limit_passed": true
+  },
   "repair_scope": {
-    "status": "implementation_ready",
+    "status": "implemented_pending_live_verification",
     "allowed": [
-      "fail_closed_exact_endpoint_and_source_union_validation_ordering",
-      "distinct_exact_endpoint_and_intermediate_path_diagnostics",
-      "focused_deterministic_tests"
+      "queued_exact_worldserver_build",
+      "fresh_exact_roster_provisioning",
+      "one_completion_watchdog_canary",
+      "trace_backed_routing_of_one_disambiguated_gameplay_edge"
     ],
     "must_preserve": [
       "complete_native_path_requirement",
@@ -107,6 +118,6 @@
     "hypotheses": 1,
     "matched_live_verification_runs": 0
   },
-  "implementation_owner_skill": "raid-bot-runtime-implementation",
-  "next_action": "Implement the exact-end-before-source-union diagnostic ordering with focused deterministic tests, then route one exact queued Canary34 build and completion-watchdog run. Use the disambiguated first failure to implement the real path repair without weakening any safety gate."
+  "live_verification_owner_skill": "raid-shard-architecture",
+  "next_action": "Build exact commit 8d421ad45b495e7e52e0ef68e9fb359f63ce4fdf through the queued coordinator, provision and verify a fresh exact ten-player Magmaw diagnostic roster, and run one completion-watchdog Canary34. Route the disambiguated first gameplay edge without weakening any safety gate."
 }
