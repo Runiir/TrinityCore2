@@ -1,4 +1,5 @@
 import json
+import math
 import subprocess
 from pathlib import Path
 
@@ -726,7 +727,26 @@ def test_established_pull_stays_on_entrance_recovery_anchors_with_exact_xyz():
 
     recovery_members = anchors["split_recovery_member_anchors"]
     assert recovery_members[3] == (-297.339, -115.904, 214.552)
+    assert recovery_members[4] == (-301.5, -116.5, 214.438)
+    assert recovery_members[7] == (-299.0, -119.0, 215.488)
     assert recovery_members[8] == (-311.5, -123.0, 214.034)
+
+    lane_a = (1, 3, 4, 6, 7)
+    lane_b = (2, 5, 8, 9, 10)
+    same_lane_distances = {
+        f"{left}-{right}": math.dist(
+            recovery_members[left][:2],
+            recovery_members[right][:2],
+        )
+        for lane in (lane_a, lane_b)
+        for index, left in enumerate(lane)
+        for right in lane[index + 1:]
+    }
+    assert min(same_lane_distances.values()) >= 3.0
+    assert math.isclose(same_lane_distances["3-4"], 4.203, abs_tol=0.001)
+    assert math.isclose(same_lane_distances["3-7"], 3.513, abs_tol=0.001)
+    assert math.isclose(same_lane_distances["4-7"], 3.536, abs_tol=0.001)
+    assert math.isclose(same_lane_distances["6-7"], 4.123, abs_tol=0.001)
 
 
 def test_entrance_recovery_never_offers_a_magmaw_side_return_candidate():

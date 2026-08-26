@@ -257,7 +257,7 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
     inward_arrival_envelope["split_tank_arrival_tolerance_yards"] = 2.0
     assert drudge_split_geometry_status(inward_arrival_envelope) == (
         False,
-        "split_recovery_member_overlap",
+        "split_navigation_anchor_native_chase_unsafe",
     )
 
     unsafe_recovery_pair = deepcopy(drudges)
