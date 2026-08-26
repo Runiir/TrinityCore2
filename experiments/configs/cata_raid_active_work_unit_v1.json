@@ -2,11 +2,11 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_recovery_formation",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
-  "observed_at_commit": "8d6a453e4ed473cf0db496c45d73fd489785a34c",
+  "classification": "implementation_ready_for_coordinator_build",
+  "observed_at_commit": "f1391aa8843e12e17514dcd4e640890d3b1b432e",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary40_future_encounter_handoff_20260826.md",
-    "sha256": "12b4ddde4470a1b95195b8e2cee8be6e0186dd3118a3feded8957d40ec54ad89"
+    "sha256": "3a3fa6500cb244a2ba7e803e2856b8e4980b644e93032c5c21bac72b93b120da"
   },
   "first_broken_edge": "single_drudge_formation_conflates_initial_pull_and_post_rush_recovery",
   "decisive_evidence": {
@@ -60,8 +60,19 @@
     "movement_before_support_observed": true,
     "native_ownership_retained": true
   },
+  "implementation_checkpoint": {
+    "repair_commit": "f1391aa8843e12e17514dcd4e640890d3b1b432e",
+    "status": "root_verified_ready_for_exact_build",
+    "focused_tests_passed": 363,
+    "dvc_validation_scenarios_md5": "b2bb16f1fc6f72e9b6345c223b1f9d49.dir",
+    "dvc_remote_verified": true,
+    "all_ten_navmesh_paths_complete": true,
+    "minimum_tank_magmaw_path_distances_yards": [29.1912, 26.2785],
+    "minimum_non_tank_magmaw_path_distance_yards": 38.6956,
+    "live_clear_claimed": false
+  },
   "repair_scope": {
-    "status": "trace_backed_repair_required",
+    "status": "trace_backed_repair_implemented",
     "allowed": [
       "add_explicit_recovery_only_member_formation",
       "preserve_initial_pull_member_and_seed_geometry",
@@ -109,11 +120,11 @@
   },
   "implementation_constraints": {
     "maximum_c_or_cpp_lines": 999,
-    "largest_drudge_cpp_current_lines": 994,
+    "largest_drudge_cpp_current_lines": 999,
     "extract_new_module_required_if_growth_exceeds_limit": true,
-    "heavy_build_allowed": false,
+    "heavy_build_allowed": true,
     "live_run_allowed": false,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "Implement one bounded future-encounter-safe Drudge recovery geometry repair, prove it with the native Detour probe and focused replay tests, then return for root review before any build or Canary41 run."
+  "next_action": "Commit this source-evidence checkpoint, obtain one exact coordinator worldserver build, verify its receipt and binary identity, then fresh-provision and run Canary41 under the completion watchdog."
 }

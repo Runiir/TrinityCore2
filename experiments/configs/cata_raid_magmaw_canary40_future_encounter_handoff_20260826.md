@@ -83,3 +83,11 @@ After root review and focused tests, commit the bounded repair, build that exact
 - Cleanup: passed, worldserver exit code `0`, zero bots and leases
 
 This failed canary is diagnostic evidence only. Do not promote it as an accepted clear.
+
+## Canary41 implementation checkpoint
+
+Commit `f1391aa8843e12e17514dcd4e640890d3b1b432e` implements the bounded repair. The source and generated route now carry separate ten-slot initial and post-Rush formations. Runtime requires exact recovery slots `1..10`, keeps non-tanks on native recovery destinations until the landed observation closes, holds both tanks behind the recovery barrier, and then returns them to combat anchors. Every admitted path must remain at least as far from the immediate next boss as the minimum declared combat-tank clearance.
+
+The frozen map-669 probe proves all ten recovery paths, exact endpoints, the accepted tank-2 floor projection, and Magmaw-distance minima. The focused Drudge, no-cheat, workloop, runtime-foundation, and autonomy suites passed `363` tests. Python compilation and `git diff --check` passed. DVC stage `validation_scenarios` is `b2bb16f1fc6f72e9b6345c223b1f9d49.dir`, five files, `548068` bytes; it was pushed and remotely verified in sync.
+
+This is source evidence, not a live clear. The next gate is one exact coordinator build followed by fresh provisioning/readback and Canary41 under the completion watchdog. If Canary41 clears all four nodes, repeat from fresh state as Canary42 before promotion.
