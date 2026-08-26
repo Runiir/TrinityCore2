@@ -340,22 +340,22 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_dynamic_spacing_support_starvation"
+        "drudge_future_encounter_exclusion"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["owner_skill"] == "raid-shard-architecture"
+    assert active["owner_skill"] == "raid-bot-runtime-implementation"
     assert active["first_broken_edge"] == (
-        "unsafe_drudge_member_support_starves_dynamic_reposition"
+        "drudge_recovery_path_enters_next_boss_activation_envelope"
     )
     evidence = active["decisive_evidence"]
     assert evidence["source_commit"] == (
-        "40681de58fe8f2eedc3e05aa87eeddc8953402a7"
+        "8d6a453e4ed473cf0db496c45d73fd489785a34c"
     )
     assert evidence["binary_sha256"] == (
-        "a2cbc6caa40a33a8654c2508e6d2959405d526a2047c06ad9d61ff067dd2cf26"
+        "619d44a5a8a4d8fff6a79ad9febd07b2e428f7dba56a608607c0db3dbd26590d"
     )
     assert evidence["report_file_sha256"] == (
-        "676f286e46377b0bab3798289ab84287865c6d6d29efb6ffffa91983978a817d"
+        "13a8d5ea4776dc16db5a9a14dce0f417333d6f1de0520b24b33fe6c0a904b6ad"
     )
     assert (
         evidence["route_generation"],
@@ -364,36 +364,34 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     ) == (3, 2, "bwd.magmaw.drudges")
     assert evidence["diagnostic_difficulty"] == "10N"
     assert evidence["kills"] == 1
-    assert evidence["controller_terminal_alive_roster_count"] == 7
-    assert evidence["first_death_guid"] == 30003
-    assert evidence["first_death_spec"] == "restoration_druid"
-    assert evidence["first_live_unsafe_source_distance_yards"] == 14.8981
-    assert evidence["required_source_distance_yards"] == 15.0
-    assert evidence["first_death_rush_target"] is False
-    assert evidence["first_death_hostile_threat_owned"] is False
-    assert evidence["boss_reached"] is False
+    assert evidence["controller_terminal_alive_roster_count"] == 10
+    assert evidence["terminal_failure_reason"] == (
+        "validation_route_future_encounter_contamination"
+    )
+    assert evidence["delivered_native_rushes"] == 16
+    assert evidence["final_drudge_health_fraction"] == [0.214466, 0.223511]
+    assert max(evidence["old_recovery_distance_to_magmaw_yards"]) < min(
+        evidence["live_safe_combat_distance_to_magmaw_yards"]
+    )
+    assert min(evidence["reusable_member_anchor_distance_to_magmaw_yards"]) > 37
+    assert evidence["boss_reached_prematurely"] is True
     assert evidence["forbidden_assistance_observed"] is False
     assert evidence["cleanup_passed"] is True
     assert evidence["worldserver_exit_code"] == 0
-    assert evidence["evidence_demux_bound_rows"] == 142
     assert active["implementation_budget"] == {
         "hypotheses": 1,
-        "matched_live_verification_runs": 0,
+        "matched_live_verification_runs": 1,
     }
     assert active["prior_repair_proof"]["commit"] == (
-        "40681de58fe8f2eedc3e05aa87eeddc8953402a7"
-    )
-    assert active["prior_repair_proof"]["progressive_escape_completed"] is True
-    assert (
-        "submit_existing_dynamic_formation_recovery_before_friendly_support_return"
-        in active["repair_scope"]["allowed"]
-    )
-    assert active["implemented_repair"]["commit"] == (
         "8d6a453e4ed473cf0db496c45d73fd489785a34c"
     )
-    assert active["implemented_repair"]["source_line_limit_passed"] is True
+    assert active["prior_repair_proof"]["alive_roster_count"] == 10
+    assert (
+        "reject_recovery_paths_inside_immediate_next_encounter_boundary"
+        in active["repair_scope"]["allowed"]
+    )
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
-    assert "exact coordinator build" in active["next_action"].lower()
+    assert "future-encounter-safe" in active["next_action"].lower()
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
@@ -487,29 +485,29 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     status = workloop.build_status()
 
     assert status["active_work_unit"]["descriptor_valid"] is True
-    assert status["active_work_unit"]["ready_for_bounded_repair"] is False
-    assert status["active_work_unit"]["ready_for_live_verification"] is True
+    assert status["active_work_unit"]["ready_for_bounded_repair"] is True
+    assert status["active_work_unit"]["ready_for_live_verification"] is False
     assert status["active_work_unit"]["first_broken_edge"] == (
-        "unsafe_drudge_member_support_starves_dynamic_reposition"
+        "drudge_recovery_path_enters_next_boss_activation_envelope"
     )
     assert status["active_work_unit"]["source_handoff"]["sha256"] == (
         workloop._file_sha256(
             workloop.ROOT
             / "experiments/configs/"
-            "cata_raid_magmaw_canary39_dynamic_spacing_handoff_20260826.md"
+            "cata_raid_magmaw_canary40_future_encounter_handoff_20260826.md"
         )
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_dynamic_spacing_support_starvation"
+        "drudge_future_encounter_exclusion"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
-        "raid-shard-architecture"
+        "raid-bot-runtime-implementation"
     )
     assert status["current_program_next_action"] == status["active_work_unit"][
         "next_action"
     ]
-    assert "exact coordinator build" in status["active_work_unit"]["next_action"].lower()
+    assert "future-encounter-safe" in status["active_work_unit"]["next_action"].lower()
     assert "legacy_program_next_action" not in status
 
 
