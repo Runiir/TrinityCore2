@@ -25,7 +25,7 @@ def test_taunt_confirmation_transition_is_deterministic(tmp_path: Path) -> None:
 int main()
 {
     using namespace BotRaidDrudgeTauntConfirmation;
-    Scope scope{11, 2, 7, 669, 14, 250141, 250141, 30002};
+    Scope scope{11, 4294967297ULL, 7, 669, 14, 250141, 250141, 30002};
     State state;
 
     Submit(state, scope, 56222, 1000);
@@ -49,9 +49,15 @@ int main()
     assert(!state.Pending);
 
     Submit(state, scope, 56222, 6000);
+    Scope sameLowBits = scope;
+    sameLowBits.WipeGeneration = 1;
+    assert(Observe(state, sameLowBits, 30006, 6001) == Observation::ScopeReset);
+    assert(!state.Pending);
+
+    Submit(state, scope, 56222, 7000);
     Scope newTank = scope;
     newTank.TankGuid = 30001;
-    assert(Observe(state, newTank, 30006, 6001) == Observation::ScopeReset);
+    assert(Observe(state, newTank, 30006, 7001) == Observation::ScopeReset);
     assert(!state.Pending);
 }
 ''',

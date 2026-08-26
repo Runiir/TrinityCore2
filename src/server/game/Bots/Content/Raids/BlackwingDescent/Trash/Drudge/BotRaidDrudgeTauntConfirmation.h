@@ -11,7 +11,7 @@ namespace BotRaidDrudgeTauntConfirmation
 struct Scope
 {
     std::uint64_t AttemptId = 0;
-    std::uint32_t WipeGeneration = 0;
+    std::uint64_t WipeGeneration = 0;
     std::uint64_t RouteGeneration = 0;
     std::uint32_t MapId = 0;
     std::uint32_t InstanceId = 0;
