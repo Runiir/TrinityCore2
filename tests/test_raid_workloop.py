@@ -495,30 +495,30 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     status = workloop.build_status()
 
     assert status["active_work_unit"]["descriptor_valid"] is True
-    assert status["active_work_unit"]["ready_for_bounded_repair"] is False
-    assert status["active_work_unit"]["ready_for_live_verification"] is True
+    assert status["active_work_unit"]["ready_for_bounded_repair"] is True
+    assert status["active_work_unit"]["ready_for_live_verification"] is False
     assert status["active_work_unit"]["first_broken_edge"] == (
-        "drudge_source_union_rejection_conflates_an_unsafe_navmesh_projected_"
-        "endpoint_with_an_unsafe_intermediate_path"
+        "drudge_reference_floor_path_proof_is_discarded_by_generic_"
+        "movement_planner"
     )
     assert status["active_work_unit"]["source_handoff"]["sha256"] == (
         workloop._file_sha256(
             workloop.ROOT
             / "experiments/configs/"
-            "cata_raid_magmaw_canary33_source_union_signal_handoff_20260826.md"
+            "cata_raid_magmaw_canary34_reference_floor_intent_handoff_20260826.md"
         )
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "source_union_signal_live_verification"
+        "reference_floor_intent_handoff"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
-        "raid-shard-architecture"
+        "raid-bot-runtime-implementation"
     )
     assert status["current_program_next_action"] == status["active_work_unit"][
         "next_action"
     ]
-    assert "build exact commit" in status["active_work_unit"]["next_action"].lower()
+    assert "reference floor" in status["active_work_unit"]["next_action"].lower()
     assert "legacy_program_next_action" not in status
 
 
