@@ -690,9 +690,20 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions()
             Record(LaneSource, "drudge_native_vengeful_rage_observed", SourceSeparation);
         }
     }
-    bool const laneOwnershipSafe = LaneSource->IsAlive()
-        && LaneSource->GetVictim() == LaneTank
-        && (!OtherSource->IsAlive() || OtherSource->GetVictim() == OtherTank);
+    bool const currentScopeHasNativeRush = std::any_of(
+        Manager.Party().ValidationRouteDrudgeChargeObservations.begin(),
+        Manager.Party().ValidationRouteDrudgeChargeObservations.end(),
+        [this](ChargeObservation const& candidate)
+        {
+            return candidate.Landed
+                && candidate.AttemptId == Manager.Cohort().AttemptId
+                && candidate.WipeGeneration == Manager.Cohort().Raid.WipeGeneration
+                && candidate.RouteGeneration == Manager.Party().ValidationRouteGeneration;
+        });
+    bool const laneOwnershipSafe = BotRaidDrudgeNativeRush::LaneOwnershipSafe(
+        currentScopeHasNativeRush, LaneSource->IsAlive()
+            && LaneSource->GetVictim() == LaneTank,
+        OtherSource->IsAlive(), OtherSource->GetVictim() == OtherTank);
     if (!laneOwnershipSafe)
     {
         HoldOffense();
@@ -773,23 +784,22 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions()
     };
     auto const laneReadiness = rushReadiness(LaneIndex);
     auto const otherReadiness = rushReadiness(1 - LaneIndex);
-    bool const currentScopeHasNativeRush = std::any_of(
-        Manager.Party().ValidationRouteDrudgeChargeObservations.begin(),
-        Manager.Party().ValidationRouteDrudgeChargeObservations.end(),
-        [this](ChargeObservation const& candidate)
-        {
-            return candidate.AttemptId == Manager.Cohort().AttemptId
-                && candidate.WipeGeneration == Manager.Cohort().Raid.WipeGeneration
-                && candidate.RouteGeneration == Manager.Party().ValidationRouteGeneration;
-        });
     bool const nativeRushAuthorityReady =
-        BotRaidDrudgeNativeRush::AuthorityReady(
+        currentScopeHasNativeRush
+        ? BotRaidDrudgeNativeRush::AuthorityReady(
             currentScopeHasNativeRush, laneReadiness)
-        && BotRaidDrudgeNativeRush::AuthorityReady(
-            currentScopeHasNativeRush, otherReadiness);
+        : BotRaidDrudgeNativeRush::AuthorityReady(
+            currentScopeHasNativeRush, laneReadiness)
+            && BotRaidDrudgeNativeRush::AuthorityReady(
+                currentScopeHasNativeRush, otherReadiness);
+    bool const tankThreatNeedsBuild = AssignedTank
+        && LaneSource->GetVictim() == Bot
+        && BotRaidDrudgeNativeRush::ShouldBuildTankThreat(
+            currentScopeHasNativeRush, laneReadiness);
     if (Sources[0]->IsAlive() && Sources[1]->IsAlive()
         && Manager.Party().ValidationRouteDrudgeThreatSeedComplete
-        && (!currentScopeHasNativeRush || !nativeRushAuthorityReady))
+        && ((!currentScopeHasNativeRush || !nativeRushAuthorityReady)
+            || tankThreatNeedsBuild))
     {
         bool built = false;
         if (AssignedTank && LaneSource->GetVictim() == Bot
@@ -819,7 +829,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions()
             return PhaseResult::Handled;
         }
         HoldOffense();
-        char const* result = nativeRushAuthorityReady ? "drudge_pre_first_rush_ready_hold"
+        char const* result = tankThreatNeedsBuild && !laneReadiness.TankThreatSecure
+            ? "drudge_native_tank_threat_wait"
+            : nativeRushAuthorityReady ? "drudge_pre_first_rush_ready_hold"
             : (!laneReadiness.ExactTankVictim ? "drudge_native_tank_ownership_wait"
                 : (!laneReadiness.TankThreatSecure ? "drudge_native_tank_threat_wait"
                     : "drudge_native_farthest_seed_wait"));

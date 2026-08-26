@@ -57,25 +57,42 @@ inline SourceResult Evaluate(SourceInput const& input)
 }
 
 // Seed DoTs and required friendly support continue to create native threat
-// after a single readiness snapshot.  Until the first Rush is actually
-// observed, an assigned tank must therefore keep submitting ordinary
-// single-target profile actions even while the current headroom is secure.
-// After the first Rush, only rebuild when the live headroom has regressed.
+// after a single readiness snapshot.  Until the first scoped Rush is actually
+// observed, authority requires the exact tank victim, secure threat headroom,
+// and the unique intended seed.  After that native proof, exact live tank
+// ownership is sufficient to release the global offense barrier; the normal
+// lane ownership gate remains authoritative if the victim changes.
 inline bool ShouldBuildTankThreat(bool currentScopeHasNativeRush,
     SourceResult const& readiness)
 {
     return !currentScopeHasNativeRush || !readiness.TankThreatSecure;
 }
 
-// The configured seed establishes one attributable native Rush. After that
-// proof exists, the recovered roster may choose any safe non-tank as the live
-// farthest target; retaining exact tank ownership and threat headroom is the
-// only source-level authority needed before normal profile actions resume.
+// The configured seed establishes one attributable native Rush. The boolean
+// is supplied only by the caller's exact attempt/wipe/route observation scan.
+// Before that observation, retain all seed and threat predicates. After it,
+// retain only exact native tank ownership so a low-headroom snapshot cannot
+// suppress every safe lane action, while a wrong victim still blocks.
 inline bool AuthorityReady(bool currentScopeHasNativeRush,
     SourceResult const& readiness)
 {
-    return readiness.ExactTankVictim && readiness.TankThreatSecure
-        && (currentScopeHasNativeRush || readiness.SeedIsUniqueFarthest);
+    return readiness.ExactTankVictim
+        && (currentScopeHasNativeRush
+            || (readiness.TankThreatSecure && readiness.SeedIsUniqueFarthest));
+}
+
+// Before the first scoped Rush, both live lanes must retain their assigned
+// native victims.  After that proof, admission is lane-local: a wrong victim
+// suppresses only that lane while an exact peer lane may continue.  A dead
+// peer remains acceptable because the existing one-source rage/evidence path
+// owns that terminal transition.
+inline bool LaneOwnershipSafe(bool currentScopeHasNativeRush,
+    bool currentExactTankVictim, bool otherSourceAlive,
+    bool otherExactTankVictim)
+{
+    return currentExactTankVictim
+        && (!otherSourceAlive || currentScopeHasNativeRush
+            || otherExactTankVictim);
 }
 }
 

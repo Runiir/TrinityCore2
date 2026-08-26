@@ -62,12 +62,36 @@ int main()
     assert(BotRaidDrudgeNativeRush::ShouldBuildTankThreat(true, rejected855));
     assert(BotRaidDrudgeNativeRush::AuthorityReady(false, ready));
     assert(BotRaidDrudgeNativeRush::AuthorityReady(true, ready));
+    // After an exact native Rush, a scoped exact tank victim is enough even
+    // when the live headroom and seed-distance predicates are no longer true.
+    // A pending, same-scope observation must not unlock that post-Rush path;
+    // only the native landed edge may set the authority input.
+    struct ScopedRushObservation
+    {
+        bool SameScope;
+        bool Landed;
+    };
+    auto hasLandedScopedRush = [](ScopedRushObservation const& observation)
+    {
+        return observation.SameScope && observation.Landed;
+    };
+    assert(!BotRaidDrudgeNativeRush::AuthorityReady(
+        hasLandedScopedRush({true, false}), rejected855));
+    assert(BotRaidDrudgeNativeRush::AuthorityReady(
+        hasLandedScopedRush({true, true}), rejected855));
     readyRush.SeedDistance = 33.0f;
     auto recoveredRoster = BotRaidDrudgeNativeRush::Evaluate(readyRush);
     assert(!recoveredRoster.SeedIsUniqueFarthest);
     assert(!BotRaidDrudgeNativeRush::AuthorityReady(false, recoveredRoster));
     assert(BotRaidDrudgeNativeRush::AuthorityReady(true, recoveredRoster));
-    assert(!BotRaidDrudgeNativeRush::AuthorityReady(true, rejected855));
+    BotRaidDrudgeNativeRush::SourceInput wrongVictim = readyRush;
+    wrongVictim.ExactTankVictim = false;
+    auto wrongVictimReadiness = BotRaidDrudgeNativeRush::Evaluate(wrongVictim);
+    assert(!BotRaidDrudgeNativeRush::AuthorityReady(true, wrongVictimReadiness));
+    assert(BotRaidDrudgeNativeRush::LaneOwnershipSafe(true, true, true, false));
+    assert(!BotRaidDrudgeNativeRush::LaneOwnershipSafe(true, false, true, true));
+    assert(!BotRaidDrudgeNativeRush::LaneOwnershipSafe(false, true, true, false));
+    assert(BotRaidDrudgeNativeRush::LaneOwnershipSafe(true, true, false, false));
 
     assert(SelectMemberRecoveryAction(true, false, true)
         == MemberRecoveryAction::RecoverFormation);
@@ -567,6 +591,18 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "drudge_native_charge_reseparation_complete" in actions
     assert "if (TryMinimumDistance(true))" not in lanes
     assert '&& !currentScopeHasNativeRush && Role == "dps"' in actions
+    scope_start = actions.index("bool const currentScopeHasNativeRush")
+    scope_end = actions.index("bool const nativeRushAuthorityReady", scope_start)
+    scope_scan = actions[scope_start:scope_end]
+    assert "std::any_of" in scope_scan
+    for field in (
+        "candidate.Landed",
+        "candidate.AttemptId == Manager.Cohort().AttemptId",
+        "candidate.WipeGeneration == Manager.Cohort().Raid.WipeGeneration",
+        "candidate.RouteGeneration == Manager.Party().ValidationRouteGeneration",
+    ):
+        assert field in scope_scan
+    assert "return candidate.Landed &&" in " ".join(scope_scan.split())
 
 
 def test_safe_landed_rush_member_reaches_threat_phase_before_global_closure():
