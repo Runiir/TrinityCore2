@@ -6,7 +6,7 @@
   "observed_at_commit": "8d6a453e4ed473cf0db496c45d73fd489785a34c",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary40_future_encounter_handoff_20260826.md",
-    "sha256": "031a591a476faa00871c0626c566d80be373a07a12346521c4f54cde8d02263c"
+    "sha256": "12b4ddde4470a1b95195b8e2cee8be6e0186dd3118a3feded8957d40ec54ad89"
   },
   "first_broken_edge": "single_drudge_formation_conflates_initial_pull_and_post_rush_recovery",
   "decisive_evidence": {
@@ -39,6 +39,10 @@
     "unchanged_formation_navmesh_search_points": 351,
     "unchanged_formation_pathable_endpoints": 0,
     "best_failed_projection_z_error_yards": 46.876663,
+    "proven_recovery_tank_pair_distance_yards": 53.7295,
+    "proven_recovery_minimum_member_clearance_yards": 30.1539,
+    "proven_recovery_repeated_farthest_margins_yards": [3.4775, 2.6637],
+    "proven_recovery_minimum_non_tank_magmaw_path_distance_yards": 38.6956,
     "boss_reached": true,
     "boss_reached_prematurely": true,
     "boss_death_evidence": false,

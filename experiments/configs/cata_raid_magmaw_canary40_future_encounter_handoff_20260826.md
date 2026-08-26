@@ -24,6 +24,23 @@ A bounded `13 x 27` fine search tested all 351 points in tank 1's feasible horiz
 
 The first broken edge is therefore narrower than a bad coordinate: `single_drudge_formation_conflates_initial_pull_and_post_rush_recovery`. Initial members must remain near the Drudge homes for native seed range, while post-Rush members and tanks need a distinct recovery formation farther down the already traversed corridor. Do not continue nudging the old tank anchors or weaken the strict path, source, member-clearance, or future-encounter gates.
 
+## Proven recovery-only formation
+
+The following exact main-floor formation passes the frozen map 669 Detour probe from every current declared anchor. All ten corridors are complete and every endpoint is exact within `0.001` yard horizontally and vertically, except tank 2's already accepted `0.482346`-yard floor projection:
+
+- tank 1: `(-288.8, -86.483, 214.154)`, 9 polygons, 9 smooth points
+- tank 2: `(-338.018, -64.932, 212.751)`, 2 polygons, 7 smooth points
+- slot 3: `(-297.339, -115.904, 214.552)`, 14 polygons, 14 smooth points
+- slot 4: `(-298.8, -116.5, 214.438)`, 13 polygons, 13 smooth points
+- slot 5: `(-311.5, -116.3, 214.033)`, 7 polygons, 13 smooth points
+- slot 6: `(-295.0, -120.0, 215.947)`, 14 polygons, 14 smooth points
+- slot 7: `(-293.6, -118.133, 215.488)`, 17 polygons, 16 smooth points
+- slot 8: `(-311.5, -123.0, 214.034)`, 7 polygons, 13 smooth points
+- slot 9: `(-344.021, -95.4246, 214.154)`, 9 polygons, 13 smooth points
+- slot 10: `(-340.293, -95.0, 214.154)`, 4 polygons, 12 smooth points
+
+Minimum smooth-path distances to Magmaw are `29.1912` and `26.2785` yards for the tanks, exactly the live-proven safe combat-path minima, and at least `38.6956` yards for every non-tank. Horizontal reconstruction gives `53.7295` yards between tanks, `30.1539` yards minimum tank-to-non-tank clearance, and positive repeated-farthest margins of `3.4775` and `2.6637` yards for seeds 8 and 6. These values are the implementation oracle. Do not search for alternate coordinates.
+
 ## Bounded repair contract
 
 - Add an explicit recovery-only member formation instead of reusing the initial-pull member anchors after a landed Rush.
