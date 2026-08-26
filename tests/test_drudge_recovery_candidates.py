@@ -277,9 +277,10 @@ def test_recovery_candidate_contract_is_persistent_and_native_strict_for_tanks_a
         "IsRecoveryFormationActive", spacing.index("IsEntrancePullEstablished")
     )]
     assert "member.Active && member.LeaseOwned && member.Role == \"tank\"" in entrance
-    assert "!taunted.count(guid)" in entrance
+    assert "ValidationRouteDrudgeOwnershipRosterGuids" in entrance
+    assert "!owners.count(guid)" in entrance
     assert "exactTanks == 2" in entrance
-    assert "taunted.size() == exactTanks" in entrance
+    assert "owners.size() == exactTanks" in entrance
 
     assert "ComputeStrictTankRecoveryPath" in recovery
     assert "ComputeRecoveryAnchorReached" in recovery

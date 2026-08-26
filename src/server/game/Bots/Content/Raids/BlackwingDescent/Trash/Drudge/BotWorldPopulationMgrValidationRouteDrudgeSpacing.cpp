@@ -40,16 +40,17 @@ namespace BotWorldPopulationMgrValidationRoute
 bool DrudgeLaneContext::IsEntrancePullEstablished() const
 {
     auto const& roster = Manager.Cohort().Raid.RosterByGuid;
-    auto const& taunted = Manager.Party().ValidationRouteDrudgeTauntRosterGuids;
+    auto const& owners =
+        Manager.Party().ValidationRouteDrudgeOwnershipRosterGuids;
     uint32 exactTanks = 0;
     for (auto const& [guid, member] : roster)
         if (member.Active && member.LeaseOwned && member.Role == "tank")
         {
             ++exactTanks;
-            if (!taunted.count(guid))
+            if (!owners.count(guid))
                 return false;
         }
-    return exactTanks == 2 && taunted.size() == exactTanks;
+    return exactTanks == 2 && owners.size() == exactTanks;
 }
 
 bool DrudgeLaneContext::IsRecoveryFormationActive() const

@@ -669,9 +669,9 @@ def test_established_pull_stays_on_entrance_recovery_anchors_with_exact_xyz():
         )
     }
 
-    # The initial tank approach remains near the Drudges so both native taunts
-    # can land. Once both taunts are confirmed, the only legal combat endpoint
-    # is the proven entrance-side recovery anchor.
+    # The initial tank approach remains near the Drudges so both tanks can take
+    # native ownership. Once both lane sources have their assigned tank, the
+    # only legal combat endpoint is the proven entrance-side recovery anchor.
     def expected_anchor(slot, entrance_pull_established):
         if not entrance_pull_established:
             return anchors["split_tank_navigation_anchors"][slot]
@@ -721,7 +721,8 @@ def test_entrance_recovery_never_offers_a_magmaw_side_return_candidate():
     lanes = lanes_path.read_text(encoding="utf-8")
 
     # Combat and navigation coordinates are retained for the initial native
-    # taunts. They must not be offered after the entrance formation activates.
+    # ownership transition. They must not be offered after the entrance
+    # formation activates.
     assert '"tank1_combat_anchor"' in probe
     assert '"tank2_combat_anchor"' in probe
     candidates = geometry[geometry.index("AnchorCandidatesFor ="):geometry.index(
