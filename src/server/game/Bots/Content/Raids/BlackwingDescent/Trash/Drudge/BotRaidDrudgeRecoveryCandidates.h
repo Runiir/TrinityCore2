@@ -99,6 +99,92 @@ inline Point2d Rotate(Point2d direction, float radians)
         direction.X * sine + direction.Y * cosine };
 }
 
+inline Point2d SourceAwayDirection(Point2d const& origin,
+    Point2d const& source0, Point2d const& source1,
+    Point2d const& laneAxis, float laneSign)
+{
+    Point2d const normalizedAxis = Normalize(laneAxis);
+    Point2d away{ origin.X - (source0.X + source1.X) * 0.5f,
+        origin.Y - (source0.Y + source1.Y) * 0.5f };
+    away = Normalize(away);
+    if (away.X == 0.0f && away.Y == 0.0f)
+    {
+        Point2d pairPerpendicular{ source1.Y - source0.Y,
+            source0.X - source1.X };
+        away = Normalize(pairPerpendicular);
+        Point2d const laneDirection{ normalizedAxis.X * laneSign,
+            normalizedAxis.Y * laneSign };
+        if ((away.X != 0.0f || away.Y != 0.0f)
+            && Dot(away, laneDirection) < 0.0f)
+        {
+            away.X = -away.X;
+            away.Y = -away.Y;
+        }
+    }
+    if (away.X == 0.0f && away.Y == 0.0f)
+        away = { normalizedAxis.X * laneSign, normalizedAxis.Y * laneSign };
+    return away;
+}
+
+inline float MinimumLiveSourceDistance(Point2d const& point,
+    Point2d const& source0, Point2d const& source1)
+{
+    return std::min(std::hypot(point.X - source0.X, point.Y - source0.Y),
+        std::hypot(point.X - source1.X, point.Y - source1.Y));
+}
+
+inline bool BoundedEndpointMiss(Point2d const& requested,
+    Point2d const& actual, float maximumMiss)
+{
+    float const miss = std::hypot(requested.X - actual.X,
+        requested.Y - actual.Y);
+    return std::isfinite(miss) && maximumMiss > 0.0f
+        && miss > 0.25f && miss <= maximumMiss;
+}
+
+inline bool PreferEscapeEndpoint(bool bestAvailable, float bestDistance,
+    float candidateDistance)
+{
+    return std::isfinite(candidateDistance)
+        && (!bestAvailable || candidateDistance > bestDistance + 0.001f);
+}
+
+inline std::uint32_t EscapeCandidateIndex(std::uint32_t fanIndex)
+{
+    return 0x80000000u | fanIndex;
+}
+
+inline bool IsEscapeCandidateIndex(std::uint32_t candidateIndex)
+{
+    return (candidateIndex & 0x80000000u) != 0;
+}
+
+// A short escape step is admitted only when it makes measurable progress
+// away from both live sources.  The complete native path applies the same
+// per-source floor to every sampled point, so this check cannot authorize an
+// inward or repeated destination.
+inline bool EscapeEndpointProgresses(Point2d const& start,
+    Point2d const& endpoint, Point2d const& source0, Point2d const& source1,
+    float minimumSourceDistance)
+{
+    if (minimumSourceDistance <= 0.0f
+        || !std::isfinite(start.X) || !std::isfinite(start.Y)
+        || !std::isfinite(endpoint.X) || !std::isfinite(endpoint.Y))
+        return false;
+    float const start0 = std::hypot(start.X - source0.X, start.Y - source0.Y);
+    float const start1 = std::hypot(start.X - source1.X, start.Y - source1.Y);
+    float const end0 = std::hypot(endpoint.X - source0.X, endpoint.Y - source0.Y);
+    float const end1 = std::hypot(endpoint.X - source1.X, endpoint.Y - source1.Y);
+    constexpr float SourceDistanceTolerance = 0.25f;
+    constexpr float MinimumEscapeProgress = 0.5f;
+    return std::isfinite(start0) && std::isfinite(start1)
+        && std::isfinite(end0) && std::isfinite(end1)
+        && end0 + SourceDistanceTolerance >= start0
+        && end1 + SourceDistanceTolerance >= start1
+        && std::min(end0, end1)
+            >= std::min(start0, start1) + MinimumEscapeProgress;
+}
+
 template <std::size_t SourceCount>
 inline float RequiredTravel(Point2d const& origin, Point2d const& direction,
     std::array<Point2d, SourceCount> const& sources, float safeDistance)
@@ -143,26 +229,8 @@ inline std::vector<Candidate> BuildCandidatesForSources(
         return candidates;
 
     candidates.push_back({ declared, 0 });
-    Point2d const normalizedAxis = Normalize(laneAxis);
-    Point2d away{ declared.X - (sources[0].X + sources[1].X) * 0.5f,
-        declared.Y - (sources[0].Y + sources[1].Y) * 0.5f };
-    away = Normalize(away);
-    if (away.X == 0.0f && away.Y == 0.0f)
-    {
-        Point2d pairPerpendicular{ sources[1].Y - sources[0].Y,
-            sources[0].X - sources[1].X };
-        away = Normalize(pairPerpendicular);
-        Point2d const laneDirection{ normalizedAxis.X * laneSign,
-            normalizedAxis.Y * laneSign };
-        if ((away.X != 0.0f || away.Y != 0.0f)
-            && Dot(away, laneDirection) < 0.0f)
-        {
-            away.X = -away.X;
-            away.Y = -away.Y;
-        }
-    }
-    if (away.X == 0.0f && away.Y == 0.0f)
-        away = { normalizedAxis.X * laneSign, normalizedAxis.Y * laneSign };
+    Point2d const away = SourceAwayDirection(declared, sources[0], sources[1],
+        laneAxis, laneSign);
     if (away.X == 0.0f && away.Y == 0.0f)
         return candidates;
 

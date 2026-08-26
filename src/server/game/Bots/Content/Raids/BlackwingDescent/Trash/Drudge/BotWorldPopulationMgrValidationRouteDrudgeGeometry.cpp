@@ -536,6 +536,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
                 || landedTankRecovery;
             if (!AnchorCacheMatchesGeneration())
                 return false;
+            if (BotRaidDrudgeRecoveryCandidates::IsEscapeCandidateIndex(
+                    State.ValidationRouteDrudgeAnchorCandidateIndex))
+                return false;
             if (!activeDynamicRecovery
                 && (State.ValidationRouteDrudgeAnchorCandidateIndex >= candidates.size()
                     || Distance2d(State.ValidationRouteDrudgeAnchorX,
@@ -657,6 +660,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
         }
         State.ValidationRouteDrudgeAnchorValid = false;
         uint64 const nowMs = NowMs();
+        bool const nativeSearchDueAtEntry = nowMs
+            >= State.ValidationRouteDrudgeAnchorSearchCooldownUntilMs;
         bool const prepullTankFallback = tank && !CombatTankStagingActive();
         auto observeCandidate = [&](uint32 candidateIndex, float candidateX,
             float candidateY, float candidateZ,
@@ -821,6 +826,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             State.LastRecoveryResult.clear();
             return true;
         }
+        if (!tank && nativeSearchDueAtEntry
+            && SelectProgressiveDrudgeEscape(nowMs))
+            return true;
         State.ValidationRouteDrudgeAnchorValid = false;
         return false;
     };

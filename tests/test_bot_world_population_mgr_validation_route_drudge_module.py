@@ -7,6 +7,7 @@ HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
 CMAKE = ROOT / "src/server/game/CMakeLists.txt"
 CONTRACT = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudge.h"
 GEOMETRY = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
+ESCAPE = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeEscape.cpp"
 RECOVERY = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeRecovery.cpp"
 RECOVERY_HEADER = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeRecovery.h"
 LANES = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp"
@@ -20,10 +21,11 @@ def test_drudge_route_modules_are_bounded_and_registered():
     header = HEADER.read_text(encoding="utf-8")
     cmake = CMAKE.read_text(encoding="utf-8")
     assert len(header.splitlines()) <= 1000
-    for module in (CONTRACT, GEOMETRY, RECOVERY, RECOVERY_HEADER, LANES, ACTIONS, SEED, SPACING):
+    for module in (CONTRACT, GEOMETRY, ESCAPE, RECOVERY, RECOVERY_HEADER, LANES, ACTIONS, SEED, SPACING):
         assert len(module.read_text(encoding="utf-8").splitlines()) <= 1000
     for name in (
         "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp",
+        "BotWorldPopulationMgrValidationRouteDrudgeEscape.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeRecovery.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp",
@@ -85,6 +87,7 @@ def test_adaptive_drudge_owner_dispatches_typed_lane_contract_before_owner_skip(
 
 def test_drudge_contract_keeps_scope_evidence_and_native_lane_guards():
     geometry = GEOMETRY.read_text(encoding="utf-8")
+    escape = ESCAPE.read_text(encoding="utf-8")
     recovery = RECOVERY.read_text(encoding="utf-8")
     lanes = LANES.read_text(encoding="utf-8")
     actions = ACTIONS.read_text(encoding="utf-8")
@@ -129,3 +132,4 @@ def test_drudge_contract_keeps_scope_evidence_and_native_lane_guards():
     assert "drudge_pre_first_rush_threat_seed" in seed
     assert "AdvanceCoordinator" in seed
     assert "native_action_rejected" in seed
+    assert "!IsLandedRushPending()" in escape

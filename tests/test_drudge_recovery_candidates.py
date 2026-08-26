@@ -7,6 +7,7 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 DRUDGE = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge"
 GEOMETRY = DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
+ESCAPE = DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeEscape.cpp"
 RECOVERY = DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeRecovery.cpp"
 SPACING = DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeSpacing.cpp"
 HEADER = DRUDGE / "BotRaidDrudgeRecoveryCandidates.h"
@@ -95,6 +96,24 @@ int main()
         { 14.8f, 0.0f }, { 0.0f, 0.0f }, 20.0f, 15.0f));
     assert(!PathPointPreservesSourceDistance(
         { 14.0f, 0.0f }, { 0.0f, 0.0f }, 20.0f, 15.0f));
+
+    Point2d const escapeStart{ -5.0f, 0.0f };
+    Point2d const escapeEndpoint{ -5.5f, 0.0f };
+    assert(EscapeEndpointProgresses(escapeStart, escapeEndpoint,
+        source0, source1, 15.0f));
+    assert(!EscapeEndpointProgresses(escapeStart, { -5.49f, 0.0f },
+        source0, source1, 15.0f));
+    assert(!EscapeEndpointProgresses(escapeStart, { -4.5f, 0.0f },
+        source0, source1, 15.0f));
+    assert(BoundedEndpointMiss({ -6.478f, 0.0f }, escapeEndpoint, 2.0f));
+    assert(BoundedEndpointMiss({ -7.375f, 0.0f }, escapeEndpoint, 2.0f));
+    assert(!BoundedEndpointMiss({ -7.501f, 0.0f }, escapeEndpoint, 2.0f));
+    assert(!BoundedEndpointMiss({ -5.75f, 0.0f }, escapeEndpoint, 2.0f));
+    assert(PreferEscapeEndpoint(false, 0.0f, 5.5f));
+    assert(PreferEscapeEndpoint(true, 5.0f, 5.5f));
+    assert(!PreferEscapeEndpoint(true, 5.5f, 5.5f));
+    assert(!PreferEscapeEndpoint(true, 6.0f, 5.5f));
+    assert(IsEscapeCandidateIndex(EscapeCandidateIndex(3)));
 
     // Canary28 exact slot-8 replay. The landed Rush displaced the member
     // inside source 0 while its declared anchor remained stale.
@@ -262,6 +281,43 @@ def test_recovery_candidate_contract_is_landed_and_native_strict_for_tanks_and_m
     assert "urand" not in header
     assert len(GEOMETRY.read_text(encoding="utf-8").splitlines()) <= 999
     assert len(recovery.splitlines()) <= 1000
+
+
+def test_progressive_escape_uses_only_bounded_complete_native_endpoints():
+    geometry = GEOMETRY.read_text(encoding="utf-8")
+    escape = ESCAPE.read_text(encoding="utf-8")
+
+    assert "SelectProgressiveDrudgeEscape(nowMs)" in geometry
+    assert geometry.index("for (size_t candidateIndex = 0;") \
+        < geometry.index("SelectProgressiveDrudgeEscape(nowMs)")
+    assert "nativeSearchDueAtEntry" in geometry
+    assert "IsEscapeCandidateIndex" in geometry
+    for marker in (
+        "!Bot || AssignedTank",
+        "IsDynamicGroupRecoveryActive()",
+        "SourceUnionSafe(Bot->GetPositionX(), Bot->GetPositionY())",
+        "NativePathIsComplete(pathOk, path)",
+        "NativePathFloorsValid(",
+        "BoundedEndpointMiss(",
+        "EscapeEndpointProgresses(",
+        "PreservesUnionDistanceFloors(",
+        "EvaluateAndRecordCandidateSpacing(escapeIndex",
+        "endpointSpacing.LaneSafe",
+        "endpointSpacing.Spacing.Safe",
+        "SeedCombatEnvelopeSafe(",
+        "MinimumLiveSourceDistance(",
+        "PreferEscapeEndpoint(",
+        "State.ValidationRouteDrudgeAnchorX = bestEndpoint.X",
+        "State.ValidationRouteDrudgeAnchorY = bestEndpoint.Y",
+        "State.ValidationRouteDrudgeAnchorZ = bestZ",
+        '"selected_progressive_path_proven"',
+        "ObserveReseparationCandidate(",
+    ):
+        assert marker in escape
+    assert "PATHFIND_NOPATH" not in escape
+    assert "MovePoint" not in escape
+    assert "MotionMaster" not in escape
+    assert len(escape.splitlines()) <= 999
 
 
 def test_prepull_tank_fallback_keeps_declared_then_navigation_anchor_contract():

@@ -87,6 +87,7 @@ DRUDGE_FILES = {
     "BotRaidDrudgeTauntConfirmation.h",
     "BotWorldPopulationMgrValidationRouteDrudgeTaunt.cpp",
     "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp",
+    "BotWorldPopulationMgrValidationRouteDrudgeEscape.cpp",
     "BotWorldPopulationMgrValidationRouteDrudgeRecovery.cpp",
     "BotWorldPopulationMgrValidationRouteDrudgeRecovery.h",
     "BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp",
