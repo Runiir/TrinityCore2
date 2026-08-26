@@ -98,6 +98,7 @@ struct DrudgeLaneContext
     float MidpointY = 0.0f;
     float MidpointZ = 0.0f;
     float LaneSeparation = 0.0f;
+    float HomeLaneProjectionMinimum = 0.0f;
     float LaneSign = 0.0f;
     float SourceSeparation = 0.0f;
 

@@ -101,7 +101,7 @@ bool DrudgeLaneContext::SelectProgressiveDrudgeEscape(uint64 nowMs)
             candidates[index].second };
         BotRaidDrudgeSpacing::CandidateResult const requestedSpacing =
             EvaluateAndRecordCandidateSpacing(uint32(index), requested.X,
-                requested.Y, false, true, LaneSeparation * 0.25f, nowMs);
+                requested.Y, false, true, HomeLaneProjectionMinimum, nowMs);
         if (!requestedSpacing.Source0Safe || !requestedSpacing.Source1Safe
             || !requestedSpacing.LaneSafe || !requestedSpacing.Spacing.Safe
             || !SeedCombatEnvelopeSafe(OneBasedSlot, requested.X, requested.Y))
@@ -137,7 +137,7 @@ bool DrudgeLaneContext::SelectProgressiveDrudgeEscape(uint64 nowMs)
             BotRaidDrudgeRecoveryCandidates::EscapeCandidateIndex(uint32(index));
         BotRaidDrudgeSpacing::CandidateResult const endpointSpacing =
             EvaluateAndRecordCandidateSpacing(escapeIndex, endpoint.X,
-                endpoint.Y, false, true, LaneSeparation * 0.25f, nowMs);
+                endpoint.Y, false, true, HomeLaneProjectionMinimum, nowMs);
         if (!endpointSpacing.LaneSafe || !endpointSpacing.Spacing.Safe
             || !SeedCombatEnvelopeSafe(
                 OneBasedSlot, endpoint.X, endpoint.Y))

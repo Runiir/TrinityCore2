@@ -158,6 +158,24 @@ int main()
     assert(!DynamicGroupPositionSafe(true, true, false, true));
     assert(!DynamicGroupPositionSafe(true, true, true, false));
 
+    // Canary45 slot 8 is 0.429367 yards short of the frozen home-axis lane
+    // floor. Recovery may consume the existing one-yard non-tank arrival
+    // tolerance, while tanks and normal prepull remain strict.
+    constexpr float homeLaneProjectionMinimum = 2.278352f;
+    constexpr float slot8Projection = 1.848985f;
+    constexpr float arrivalTolerance = 1.0f;
+    float const recoveryMemberMinimum = ArrivalAdjustedLaneProjectionMinimum(
+        homeLaneProjectionMinimum, arrivalTolerance, true, false);
+    assert(slot8Projection + arrivalTolerance >= homeLaneProjectionMinimum);
+    assert(slot8Projection >= recoveryMemberMinimum);
+    assert(1.0f < recoveryMemberMinimum);
+    assert(ArrivalAdjustedLaneProjectionMinimum(
+        homeLaneProjectionMinimum, arrivalTolerance, true, true)
+        == homeLaneProjectionMinimum);
+    assert(ArrivalAdjustedLaneProjectionMinimum(
+        homeLaneProjectionMinimum, arrivalTolerance, false, false)
+        == homeLaneProjectionMinimum);
+
     // Run11's tank-2 recovery point is intentionally 23.8237 yards from its
     // source, while the declared navigation/combat point is exactly 15 yards.
     // The recovery leg must complete first, and the native return plus the

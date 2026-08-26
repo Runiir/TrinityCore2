@@ -484,7 +484,11 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
         float const projection =
             (anchorState.ValidationRouteDrudgeAnchorX - MidpointX) * AxisX
             + (anchorState.ValidationRouteDrudgeAnchorY - MidpointY) * AxisY;
-        if (memberLaneSign * projection < LaneSeparation * 0.25f)
+        if (memberLaneSign * projection <
+            BotRaidDrudgeGeometry::ArrivalAdjustedLaneProjectionMinimum(
+                HomeLaneProjectionMinimum,
+                Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards,
+                IsRecoveryFormationActive(), memberRoster->second.Role == "tank"))
             return false;
         if (memberRoster->second.Role == "tank"
             && memberSlot != Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots[
@@ -537,7 +541,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
         if (projectionOut)
             *projectionOut = projection;
         return (sourceIndex == 0 ? -1.0f : 1.0f) * projection
-            >= LaneSeparation * 0.25f;
+            >= HomeLaneProjectionMinimum;
     };
     SelectPathableDrudgeAnchor = [this](bool tank) -> bool
     {
@@ -549,15 +553,20 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             State.LastRecoveryResult = State.LastPathRejectReason;
             return false;
         }
+        bool const tankRecovery = tank && IsRecoveryFormationActive()
+            && !RecoveryAnchorReachedFor(OneBasedSlot);
+        float const laneProjectionMinimum =
+            BotRaidDrudgeGeometry::ArrivalAdjustedLaneProjectionMinimum(
+                HomeLaneProjectionMinimum,
+                Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards,
+                IsRecoveryFormationActive(), tank);
         BotRaidDrudgeRecoveryCandidates::Constraints const recoveryConstraints{
             { Sources[0]->GetPositionX(), Sources[0]->GetPositionY() },
             { Sources[1]->GetPositionX(), Sources[1]->GetPositionY() },
             { MidpointX, MidpointY }, { AxisX, AxisY },
             Manager.Cohort().Config.ValidationRouteMinimumDistanceYards,
-            LaneSign, LaneSeparation * 0.25f };
-        bool const tankRecovery = tank && IsRecoveryFormationActive()
-            && !RecoveryAnchorReachedFor(OneBasedSlot);
-        float const dynamicLaneProjection = LaneSeparation * 0.25f
+            LaneSign, laneProjectionMinimum };
+        float const dynamicLaneProjection = laneProjectionMinimum
             + (tankRecovery
                 ? Manager.Cohort().Config.ValidationRouteSplitNativeMeleeStopYards
                     + Manager.Cohort().Config.ValidationRouteSplitTankArrivalToleranceYards
@@ -603,7 +612,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             float const projection =
                 (State.ValidationRouteDrudgeAnchorX - MidpointX) * AxisX
                 + (State.ValidationRouteDrudgeAnchorY - MidpointY) * AxisY;
-            if (LaneSign * projection < LaneSeparation * 0.25f)
+            if (LaneSign * projection < laneProjectionMinimum)
                 return false;
             if (!tank && !activeDynamicRecovery && (!GroupPositionSafe(Bot)
                 || !SourceUnionSafe(State.ValidationRouteDrudgeAnchorX,
@@ -641,7 +650,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             (State.ValidationRouteDrudgeAnchorX - MidpointX) * AxisX
             + (State.ValidationRouteDrudgeAnchorY - MidpointY) * AxisY;
         bool const priorLaneSafe = priorCandidateMatches
-            && LaneSign * priorProjection >= LaneSeparation * 0.25f;
+            && LaneSign * priorProjection >= laneProjectionMinimum;
         bool const sourcesSeparated = Sources[0]->GetExactDist2d(Sources[1])
             >= LaneSeparation;
         bool const recoveryFormationActiveForProof = IsRecoveryFormationActive();
@@ -917,7 +926,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             != Manager.Cohort().Config.ValidationRouteSplitLaneARosterSlots.end();
         float const projection = (tank->GetPositionX() - MidpointX) * AxisX
             + (tank->GetPositionY() - MidpointY) * AxisY;
-        return (laneA ? -1.0f : 1.0f) * projection >= LaneSeparation * 0.25f;
+        return (laneA ? -1.0f : 1.0f) * projection
+            >= HomeLaneProjectionMinimum;
     };
     TanksOnFrozenLanes = [this]
     {

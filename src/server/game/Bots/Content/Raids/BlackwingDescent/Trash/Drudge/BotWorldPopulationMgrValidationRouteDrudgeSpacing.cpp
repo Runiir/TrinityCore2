@@ -127,18 +127,24 @@ BotRaidDrudgeSpacing::CandidateResult DrudgeLaneContext::EvaluateAndRecordCandid
     bool dynamicCandidate, float dynamicLaneProjection, uint64 nowMs)
 {
     BotRaidDrudgeSpacing::CandidateResult result;
+    float const laneProjectionMinimum =
+        BotRaidDrudgeGeometry::ArrivalAdjustedLaneProjectionMinimum(
+            HomeLaneProjectionMinimum,
+            Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards,
+            IsRecoveryFormationActive(), tank);
+    float const requiredLaneProjection = dynamicLaneProjection > laneProjectionMinimum
+        ? dynamicLaneProjection : laneProjectionMinimum;
     BotRaidDrudgeRecoveryCandidates::Constraints const constraints{
         { Sources[0]->GetPositionX(), Sources[0]->GetPositionY() },
         { Sources[1]->GetPositionX(), Sources[1]->GetPositionY() },
         { MidpointX, MidpointY }, { AxisX, AxisY },
         Manager.Cohort().Config.ValidationRouteMinimumDistanceYards,
-        LaneSign, LaneSeparation * 0.25f };
+        LaneSign, requiredLaneProjection };
     BotRaidDrudgeRecoveryCandidates::Point2d const candidate{x, y};
     float const projection = (x - MidpointX) * AxisX
         + (y - MidpointY) * AxisY;
     result.LaneSafe = BotRaidDrudgeRecoveryCandidates::LaneSafe(
-        candidate, constraints)
-        && LaneSign * projection >= dynamicLaneProjection;
+        candidate, constraints) && LaneSign * projection >= requiredLaneProjection;
     if (dynamicCandidate)
     {
         result.Spacing = EvaluateRecoveryCandidateSpacing(x, y, tank);

@@ -253,6 +253,18 @@ struct Point2d
     float Y = 0.0f;
 };
 
+// Lane membership is measured on the frozen source-home axis, not against
+// the live source safety separation. Only an active recovery formation may
+// consume the existing non-tank arrival tolerance; tanks and normal prepull
+// formation retain the strict home-axis floor.
+inline float ArrivalAdjustedLaneProjectionMinimum(
+    float homeAxisProjectionMinimum, float nonTankArrivalTolerance,
+    bool recoveryFormationActive, bool tank)
+{
+    return homeAxisProjectionMinimum
+        - (!tank && recoveryFormationActive ? nonTankArrivalTolerance : 0.0f);
+}
+
 // A landed Rush may move a source after the exact prepull anchors were
 // proven.  The live post-Rush member contract therefore remains strict about
 // source distance, lane placement, and peer spacing, without treating the

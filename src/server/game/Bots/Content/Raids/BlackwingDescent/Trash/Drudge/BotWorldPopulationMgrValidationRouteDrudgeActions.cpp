@@ -229,7 +229,11 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
             bool const source1Safe = AssignedTank || SourceUnionSafeAt(
                 1, State.ValidationRouteDrudgeAnchorX,
                 State.ValidationRouteDrudgeAnchorY);
-            bool const laneSafe = LaneSign * projection >= LaneSeparation * 0.25f;
+            bool const laneSafe = LaneSign * projection >=
+                BotRaidDrudgeGeometry::ArrivalAdjustedLaneProjectionMinimum(
+                    HomeLaneProjectionMinimum,
+                    Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards,
+                    RecoveryFormationActive, AssignedTank);
             BotRaidDrudgeSpacing::ObserveReseparationCandidate(
                 Charge->ReseparationReceipts, scope,
                 Bot->GetGUID().GetCounter(),

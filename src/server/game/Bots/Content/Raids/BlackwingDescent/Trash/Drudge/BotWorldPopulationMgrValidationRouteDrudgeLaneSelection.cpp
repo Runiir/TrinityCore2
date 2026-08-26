@@ -144,7 +144,7 @@ bool DrudgeLaneContext::ComputeExactCombatTankPathsProven() const
         float const projection = (predictedSources[sourceIndex].first - MidpointX) * AxisX
             + (predictedSources[sourceIndex].second - MidpointY) * AxisY;
         if ((sourceIndex == 0 ? -1.0f : 1.0f) * projection
-            < LaneSeparation * 0.25f + tankTolerance)
+            < HomeLaneProjectionMinimum + tankTolerance)
             return false;
     }
     if (Distance2d(predictedSources[0].first, predictedSources[0].second,
@@ -218,7 +218,7 @@ bool DrudgeLaneContext::ComputeExactRecoveryTankPathsProven() const
         float const inset = config.ValidationRouteSplitNativeMeleeStopYards
             + config.ValidationRouteSplitTankArrivalToleranceYards;
         if ((sourceIndex == 0 ? -1.0f : 1.0f) * projection
-            < LaneSeparation * 0.25f + inset)
+            < HomeLaneProjectionMinimum + inset)
             return false;
         recoveryPoints[sourceIndex] = {
             tankState->ValidationRouteDrudgeRecoveryAnchorX,
@@ -233,8 +233,7 @@ bool DrudgeLaneContext::ComputeExactRecoveryTankPathsProven() const
             recoveryPoints[1].first, recoveryPoints[1].second)
         < LaneSeparation + 2.0f * (meleeStop + tankTolerance))
         return false;
-    float const memberClearance = config.ValidationRouteMinimumDistanceYards
-        + meleeStop + config.ValidationRouteSplitArrivalToleranceYards + tankTolerance;
+    float const memberClearance = config.ValidationRouteMinimumDistanceYards + meleeStop + config.ValidationRouteSplitArrivalToleranceYards + tankTolerance;
     for (MemberAnchor const& anchor : config.ValidationRouteSplitRecoveryMemberAnchors)
     {
         if (std::find(config.ValidationRouteSplitLaneTankSlots.begin(),
@@ -388,7 +387,6 @@ bool DrudgeLaneContext::ComputeExactLiveRecoveryTankPathsPreflighted() const
     return true;
 }
 
-
 void DrudgeLaneContext::RecordReseparationEvidence(ChargeObservation& observation)
     {
         auto const& config = Manager.Cohort().Config;
@@ -495,7 +493,9 @@ void DrudgeLaneContext::RecordReseparationEvidence(ChargeObservation& observatio
                 config.ValidationRouteSplitLaneARosterSlots.end(), geometry.RosterSlot)
                 != config.ValidationRouteSplitLaneARosterSlots.end();
             geometry.LaneSideValid = (memberLaneA ? -1.0f : 1.0f)
-                * geometry.Projection >= LaneSeparation * 0.25f;
+                * geometry.Projection >= BotRaidDrudgeGeometry::ArrivalAdjustedLaneProjectionMinimum(
+                    HomeLaneProjectionMinimum, config.ValidationRouteSplitArrivalToleranceYards,
+                    IsRecoveryFormationActive(), roster->second.Role == "tank");
             auto candidates = AnchorCandidatesFor(geometry.RosterSlot);
             if (!candidates.empty())
             {
@@ -561,7 +561,6 @@ void DrudgeLaneContext::RecordReseparationEvidence(ChargeObservation& observatio
         for (WorldBotState& cohortState : Manager.Party().Bots)
             cohortState.LastValidationRouteDrudgeChargeGenerationHandled = observation.Sequence;
     }
-
 
 bool TryValidationRouteDrudgeChargeLanes(DrudgeLaneRequest const& request)
 {
@@ -973,6 +972,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::ResolveSources()
     MidpointZ = (homeA.GetPositionZ() + homeB.GetPositionZ()) * 0.5f;
     LaneSeparation = Manager.Cohort().Config.ValidationRouteSplitMinimumSeparationYards
         + Manager.Cohort().Config.ValidationRouteSplitNavigationMarginYards;
+    HomeLaneProjectionMinimum = axisLength * 0.25f;
     LaneSign = LaneIndex == 0 ? -1.0f : 1.0f;
     LaneSource = Sources[LaneIndex];
     OtherSource = Sources[1 - LaneIndex];

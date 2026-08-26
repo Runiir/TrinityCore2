@@ -261,6 +261,50 @@ def test_recovery_tank_proof_uses_recovery_members_and_keeps_stale_cache_guard()
     assert "State.ValidationRouteDrudgeAnchorCandidateIndex >= candidates.size()" in cache
 
 
+def test_recovery_lane_tolerance_uses_home_axis_floor_consistently():
+    geometry_state = (DRUDGE / "BotRaidDrudgeGeometryState.h").read_text(
+        encoding="utf-8"
+    )
+    geometry = GEOMETRY.read_text(encoding="utf-8")
+    group_safety = (
+        DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeGroupSafety.cpp"
+    ).read_text(encoding="utf-8")
+    spacing = (
+        DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeSpacing.cpp"
+    ).read_text(encoding="utf-8")
+    telemetry = (
+        DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeTelemetry.cpp"
+    ).read_text(encoding="utf-8")
+    actions = ACTIONS.read_text(encoding="utf-8")
+    escape = ESCAPE.read_text(encoding="utf-8")
+    lane_selection = LANE_SELECTION.read_text(encoding="utf-8")
+
+    assert "ArrivalAdjustedLaneProjectionMinimum" in geometry_state
+    assert "HomeLaneProjectionMinimum = axisLength * 0.25f;" in lane_selection
+    for source in (geometry, group_safety, spacing, telemetry, actions, lane_selection):
+        assert "ArrivalAdjustedLaneProjectionMinimum" in source or (
+            "HomeLaneProjectionMinimum" in source
+            and "tankTolerance" in source
+        )
+        assert "LaneSeparation * 0.25f" not in source
+    assert "HomeLaneProjectionMinimum" in escape
+    assert "HomeLaneProjectionMinimum" in geometry
+    assert "HomeLaneProjectionMinimum" in group_safety
+    assert "HomeLaneProjectionMinimum" in telemetry
+    assert "RecoveryFormationActive, AssignedTank" in actions
+    assert "IsRecoveryFormationActive(), false" in group_safety
+    assert "IsRecoveryFormationActive(), tank" in spacing
+
+    # The runtime value is the scenario's source-home axis length quarter.
+    # Recovery accepts slot 8's 0.429367-yard deficit, but a point whose
+    # deficit exceeds the configured one-yard tolerance remains rejected.
+    home_floor = 2.278352
+    slot8_projection = 1.848985
+    tolerance = 1.0
+    assert slot8_projection + tolerance >= home_floor
+    assert 1.0 + tolerance < home_floor
+
+
 def test_recovery_candidate_contract_is_persistent_and_native_strict_for_tanks_and_members():
     geometry = GEOMETRY.read_text(encoding="utf-8")
     recovery = RECOVERY.read_text(encoding="utf-8")
