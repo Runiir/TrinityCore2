@@ -63,3 +63,23 @@ Every touched C or C++ source/header must remain below 1,000 lines. Do not build
 - Cleanup: passed, worldserver exit code `0`, zero bots and leases
 
 This failed canary is diagnostic evidence only. Do not promote it as an accepted clear.
+
+## Canary39 implementation handoff
+
+Commit `40681de58f` implements the bounded repair and is pending exact live
+verification. The original declared anchor remains the first choice. Only an
+unsafe non-tank with a landed Rush may select a later native endpoint, and that
+endpoint must come from a complete path with valid floors, a bounded endpoint
+miss, at least 0.5 yard of outward progress, no material inward movement from
+either live Drudge or native home, valid lane and peer spacing, and the existing
+combat envelope. The selected actual native endpoint is submitted through the
+existing movement arbiter and is marked with a distinct high-bit candidate
+identity so it cannot be reused as an ordinary cached anchor.
+
+The implementation passed 280 focused movement, Drudge, no-cheat, autonomy,
+and module tests. Independent Luna review passed after an explicit
+`IsLandedRushPending()` guard was added. All affected C and C++ files remain
+below 1,000 lines; the new escape module is 202 lines and the largest Drudge
+module is 994 lines. No live result is claimed. The next action is an exact
+coordinator build of `40681de58f`, followed by fresh Canary39 under the
+completion watchdog.

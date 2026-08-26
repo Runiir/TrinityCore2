@@ -1,12 +1,12 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "boss:blackwing_descent:magmaw:10N:unsafe_drudge_member_escape",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
-  "observed_at_commit": "bc755ada8410798c8319e168bdaaff09fc0847f4",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "implementation_pending_live_verification",
+  "observed_at_commit": "40681de58fe8f2eedc3e05aa87eeddc8953402a7",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary38_escape_path_handoff_20260826.md",
-    "sha256": "04319abf0a5acfbbe38c13c3cee3657933b12b5a57b0b10a6661e06869e7ee5c"
+    "sha256": "a1ca52ca59899a9f1d3c7b054f05573fd98daad92c0f957e3ff615d8981a448e"
   },
   "first_broken_edge": "unsafe_drudge_member_escape_exhausts_native_candidates",
   "decisive_evidence": {
@@ -60,7 +60,7 @@
     "offensive_profile_roster_complete": true
   },
   "repair_scope": {
-    "status": "implementation_required",
+    "status": "implemented_pending_live_verification",
     "allowed": [
       "bounded_deterministic_outward_escape_candidates",
       "strict_native_complete_path_and_endpoint_admission",
@@ -105,21 +105,20 @@
     "matched_live_verification_runs": 0
   },
   "implemented_repair": {
-    "commit": "bc755ada8410798c8319e168bdaaff09fc0847f4",
-    "tree": "403bc4198f8bbcfc1f55095e5605e054c9e23b4d",
-    "status": "live_verified_closed",
-    "scope": "landed_exact_scope_post_rush_lane_local_offense_with_native_tank_threat_rebuild",
-    "focused_test_count": 153,
-    "maximum_touched_cpp_lines": 942,
+    "commit": "40681de58fe8f2eedc3e05aa87eeddc8953402a7",
+    "status": "pending_exact_build_and_canary39",
+    "scope": "landed_rush_bounded_complete_native_progressive_escape_endpoint",
+    "focused_test_count": 280,
+    "maximum_touched_cpp_lines": 994,
     "source_line_limit_passed": true
   },
   "implementation_constraints": {
     "maximum_c_or_cpp_lines": 999,
     "largest_drudge_cpp_current_lines": 994,
     "extract_new_module_required_if_growth_exceeds_limit": true,
-    "heavy_build_allowed": false,
-    "live_run_allowed": false,
+    "heavy_build_allowed": true,
+    "live_run_allowed": true,
     "commit_allowed": false
   },
-  "next_action": "Implement the bounded unsafe-origin Drudge escape-candidate repair with deterministic replay coverage, keep every C or C++ file below 1,000 lines, then root-review and queue an exact Canary39 build."
+  "next_action": "Queue an exact coordinator build of 40681de58f, verify the frozen 10N roster and runtime identity, then run Canary39 under the completion watchdog."
 }

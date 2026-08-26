@@ -343,7 +343,7 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
         "unsafe_drudge_member_escape"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["owner_skill"] == "raid-bot-runtime-implementation"
+    assert active["owner_skill"] == "raid-shard-architecture"
     assert active["first_broken_edge"] == (
         "unsafe_drudge_member_escape_exhausts_native_candidates"
     )
@@ -387,11 +387,11 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert active["prior_repair_proof"]["offensive_profile_roster_complete"] is True
     assert "bounded_deterministic_outward_escape_candidates" in active["repair_scope"]["allowed"]
     assert active["implemented_repair"]["commit"] == (
-        "bc755ada8410798c8319e168bdaaff09fc0847f4"
+        "40681de58fe8f2eedc3e05aa87eeddc8953402a7"
     )
     assert active["implemented_repair"]["source_line_limit_passed"] is True
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
-    assert "bounded unsafe-origin" in active["next_action"].lower()
+    assert "exact coordinator build" in active["next_action"].lower()
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
@@ -485,8 +485,8 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     status = workloop.build_status()
 
     assert status["active_work_unit"]["descriptor_valid"] is True
-    assert status["active_work_unit"]["ready_for_bounded_repair"] is True
-    assert status["active_work_unit"]["ready_for_live_verification"] is False
+    assert status["active_work_unit"]["ready_for_bounded_repair"] is False
+    assert status["active_work_unit"]["ready_for_live_verification"] is True
     assert status["active_work_unit"]["first_broken_edge"] == (
         "unsafe_drudge_member_escape_exhausts_native_candidates"
     )
@@ -502,12 +502,12 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
         "unsafe_drudge_member_escape"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
-        "raid-bot-runtime-implementation"
+        "raid-shard-architecture"
     )
     assert status["current_program_next_action"] == status["active_work_unit"][
         "next_action"
     ]
-    assert "bounded unsafe-origin" in status["active_work_unit"]["next_action"].lower()
+    assert "exact coordinator build" in status["active_work_unit"]["next_action"].lower()
     assert "legacy_program_next_action" not in status
 
 
