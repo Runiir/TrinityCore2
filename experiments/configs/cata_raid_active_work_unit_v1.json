@@ -1,8 +1,8 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_dynamic_spacing_support_starvation",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "implementation_pending_live_verification",
   "observed_at_commit": "40681de58fe8f2eedc3e05aa87eeddc8953402a7",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary39_dynamic_spacing_handoff_20260826.md",
@@ -63,7 +63,7 @@
     "native_ownership_retained": true
   },
   "repair_scope": {
-    "status": "trace_backed_repair_required",
+    "status": "implemented_pending_live_verification",
     "allowed": [
       "submit_existing_dynamic_formation_recovery_before_friendly_support_return",
       "retain_same_tick_instant_friendly_support",
@@ -106,13 +106,22 @@
     "hypotheses": 1,
     "matched_live_verification_runs": 0
   },
+  "implemented_repair": {
+    "commit": "8d6a453e4ed473cf0db496c45d73fd489785a34c",
+    "status": "pending_exact_build_and_canary40",
+    "scope": "unsafe_support_capable_member_native_movement_before_same_tick_instant_support",
+    "focused_test_count": 298,
+    "independent_review": "passed",
+    "maximum_touched_cpp_lines": 951,
+    "source_line_limit_passed": true
+  },
   "implementation_constraints": {
     "maximum_c_or_cpp_lines": 999,
     "largest_drudge_cpp_current_lines": 994,
     "extract_new_module_required_if_growth_exceeds_limit": true,
-    "heavy_build_allowed": false,
-    "live_run_allowed": false,
-    "commit_allowed_after_root_review": true
+    "heavy_build_allowed": true,
+    "live_run_allowed": true,
+    "commit_allowed": false
   },
-  "next_action": "Implement and review the bounded movement-before-support repair, run focused deterministic tests, then commit before any exact coordinator build or Canary40 run."
+  "next_action": "Queue an exact coordinator build of 8d6a453e4e, verify the frozen 10N roster and runtime identity, then run Canary40 under the completion watchdog."
 }
