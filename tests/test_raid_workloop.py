@@ -340,27 +340,26 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "path_floor_live_verification"
+        "source_union_signal_disambiguation"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["owner_skill"] == "raid-shard-architecture"
+    assert active["owner_skill"] == "raid-bot-runtime-implementation"
     assert active["first_broken_edge"] == (
-        "drudge_complete_native_paths_are_rejected_when_an_intermediate_height_"
-        "sample_selects_the_remote_stacked_collision_layer_but_the_endpoint_"
-        "height_was_near_the_declared_floor"
+        "drudge_source_union_rejection_conflates_an_unsafe_navmesh_projected_"
+        "endpoint_with_an_unsafe_intermediate_path"
     )
     evidence = active["decisive_evidence"]
     assert evidence["source_commit"] == (
-        "0df41fe555dead1878dc436bbf6ec7947d8b7a53"
+        "8e86e3761f8fb970b9b6f1d4682ebd6b35ad362d"
     )
     assert evidence["binary_sha256"] == (
-        "61d9260660d49c040a25883167e7a2967fc772cd5e8096a4555d6c51fb351256"
+        "5443408411b0cd01a6fbe59fb92dc8c781e46cd2cb812d4b28cabb74c0a886e2"
     )
     assert evidence["report_sha256"] == (
-        "be0debeb72cfb87516e07457a64c2af41277d4036a1ec698f23ff159940d6b39"
+        "7ab3db0d1f33329b4d6d1cc814e1fa1964b5123df977bd86563c7b4091ec1542"
     )
     assert evidence["report_file_sha256"] == (
-        "a4d39e7fc95436931b1c66f4c43b37a8dc79c02d10bd06fb914835ff7f37ccdc"
+        "bb8c67cf095872fa4c56fac18b0d49e981106bb4d8a453064ddbd886bb3bcc5d"
     )
     assert (
         evidence["route_generation"],
@@ -369,19 +368,23 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     ) == (3, 2, "bwd.magmaw.drudges")
     assert evidence["diagnostic_difficulty"] == "10N"
     assert evidence["kills"] == 1
-    assert evidence["death_loop_count"] == 0
-    assert evidence["alive_roster_count"] == 10
-    assert evidence["delivered_charge_count"] == 28
-    assert evidence["old_endpoint_floor_reject_count"] == 0
-    assert evidence["path_floor_gap_trace_count"] == 43
-    assert evidence["first_path_floor_gap_guid"] == 30007
-    assert evidence["group_safe_path_floor_reject_candidate"] == {
-        "guid": 30006,
-        "index": 3,
-        "x": -290.325,
-        "y": -96.5105,
-        "z": 213.45,
-        "path_reject_reason": "drudge_anchor_path_floor_gap",
+    assert evidence["deaths"] == 2
+    assert evidence["alive_roster_count"] == 8
+    assert evidence["source_union_path_reject_trace_count"] == 143
+    assert evidence["native_path_type_8_reject_trace_count"] == 31
+    assert evidence["first_source_union_reject_guid"] == 30007
+    assert evidence["group_safe_source_union_reject_candidate"] == {
+        "guid": 30007,
+        "index": 5,
+        "x": -294.915,
+        "y": -81.6731,
+        "z": 213.716,
+        "source0_safe": True,
+        "source1_safe": True,
+        "lane_safe": True,
+        "same_lane_spacing_safe": True,
+        "group_position_safe": True,
+        "path_reject_reason": "drudge_anchor_source_union_path_unsafe",
     }
     assert evidence["boss_reached"] is False
     assert evidence["forbidden_assistance_observed"] is False
@@ -392,13 +395,12 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
         "hypotheses": 1,
         "matched_live_verification_runs": 0,
     }
-    assert active["implemented_repair"]["commit"] == (
-        "8e86e3761f8fb970b9b6f1d4682ebd6b35ad362d"
+    assert (
+        "fail_closed_exact_endpoint_and_source_union_validation_ordering"
+        in active["repair_scope"]["allowed"]
     )
-    assert active["implemented_repair"]["source_line_limit_passed"] is True
-    assert "queued_exact_worldserver_build" in active["repair_scope"]["allowed"]
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
-    assert "build exact commit" in active["next_action"].lower()
+    assert "exact-end-before-source-union" in active["next_action"].lower()
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
@@ -492,31 +494,32 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     status = workloop.build_status()
 
     assert status["active_work_unit"]["descriptor_valid"] is True
-    assert status["active_work_unit"]["ready_for_bounded_repair"] is False
-    assert status["active_work_unit"]["ready_for_live_verification"] is True
+    assert status["active_work_unit"]["ready_for_bounded_repair"] is True
+    assert status["active_work_unit"]["ready_for_live_verification"] is False
     assert status["active_work_unit"]["first_broken_edge"] == (
-        "drudge_complete_native_paths_are_rejected_when_an_intermediate_height_"
-        "sample_selects_the_remote_stacked_collision_layer_but_the_endpoint_"
-        "height_was_near_the_declared_floor"
+        "drudge_source_union_rejection_conflates_an_unsafe_navmesh_projected_"
+        "endpoint_with_an_unsafe_intermediate_path"
     )
     assert status["active_work_unit"]["source_handoff"]["sha256"] == (
         workloop._file_sha256(
             workloop.ROOT
             / "experiments/configs/"
-            "cata_raid_magmaw_canary32_path_floor_handoff_20260826.md"
+            "cata_raid_magmaw_canary33_source_union_signal_handoff_20260826.md"
         )
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "path_floor_live_verification"
+        "source_union_signal_disambiguation"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
-        "raid-shard-architecture"
+        "raid-bot-runtime-implementation"
     )
     assert status["current_program_next_action"] == status["active_work_unit"][
         "next_action"
     ]
-    assert "build exact commit" in status["active_work_unit"]["next_action"].lower()
+    assert "exact-end-before-source-union" in status["active_work_unit"][
+        "next_action"
+    ].lower()
     assert "legacy_program_next_action" not in status
 
 
