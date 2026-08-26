@@ -3,6 +3,7 @@
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeNativeAnchor.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeGeometryState.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeNativePathDecision.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeRecoveryCandidates.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeRecovery.h"
 #include "Bots/BotWorldPopulationMgr.h"
@@ -298,20 +299,20 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
         // that remote evidence; generic movement keeps its strict overload.
         if (!BotWorldMovement::NativePathFloorsValid(Bot, path, z, true))
             return reject("drudge_anchor_path_floor_gap");
-        if (requireSourceUnionSafety && !SourceUnionPathSafe(path))
-            return reject("drudge_anchor_source_union_path_unsafe");
-        if (!requireExactEnd)
-        {
-            if (rejectionOut)
-                rejectionOut->clear();
-            return true;
-        }
         G3D::Vector3 const& actualEnd = path.GetActualEndPosition();
         float const end2d = std::hypot(actualEnd.x - x, actualEnd.y - y);
         float const endZ = std::fabs(actualEnd.z - z);
-        if (end2d > 0.25f || endZ > 1.0f)
+        BotRaidDrudgeNativePath::PostFloorDecision const postFloorDecision =
+            BotRaidDrudgeNativePath::EvaluatePostFloor(
+                requireExactEnd, requireSourceUnionSafety, end2d, endZ,
+                [this, &path]() { return SourceUnionPathSafe(path); });
+        if (postFloorDecision
+            == BotRaidDrudgeNativePath::PostFloorDecision::NativeEndpointRejected)
             return reject("drudge_anchor_native_end_rejected:end2d="
                 + std::to_string(end2d) + ":endz=" + std::to_string(endZ));
+        if (postFloorDecision
+            == BotRaidDrudgeNativePath::PostFloorDecision::SourceUnionRejected)
+            return reject("drudge_anchor_source_union_path_unsafe");
         if (rejectionOut)
             rejectionOut->clear();
         return true;
