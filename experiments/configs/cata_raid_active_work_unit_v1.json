@@ -1,12 +1,12 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_native_taunt_confirmation_repair",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
-  "observed_at_commit": "c0c013e6d911c9c88b7c761869fb37d4531f700a",
+  "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_native_taunt_confirmation_live_verification",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "implementation_pending_live_verification",
+  "observed_at_commit": "ffe7301ac90d81974b9099632e88d87a14723e0c",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary36_taunt_confirmation_handoff_20260826.md",
-    "sha256": "eec47b6c5b6f579ddd9860a2fed92a5f12d0e4fef9f7ea9efddb4caf6210418b"
+    "sha256": "54dc1320995e87a5440f2d4efa6ae62eab3de7efc02e8f91f61d26f88ea7c142"
   },
   "first_broken_edge": "drudge_native_taunt_submission_is_recorded_before_assigned_tank_victim_ownership_is_observed",
   "decisive_evidence": {
@@ -60,7 +60,7 @@
     "affliction_native_range_and_line_of_sight_observed": true
   },
   "repair_scope": {
-    "status": "diagnosed_pending_bounded_repair",
+    "status": "implemented_pending_live_verification",
     "allowed": [
       "typed_exact_scope_pending_taunt_state",
       "native_victim_confirmation_after_taunt_submission",
@@ -106,6 +106,15 @@
     "hypotheses": 1,
     "matched_live_verification_runs": 0
   },
+  "implemented_repair": {
+    "commit": "ffe7301ac90d81974b9099632e88d87a14723e0c",
+    "tree": "468add07d99c2feffaf0a0f2fa933bc37547f9cb",
+    "status": "source_validated_pending_exact_build",
+    "scope": "exact_scope_native_taunt_submission_pending_confirmation_and_bounded_native_retry",
+    "focused_test_count": 156,
+    "maximum_touched_cpp_lines": 930,
+    "source_line_limit_passed": true
+  },
   "implementation_constraints": {
     "maximum_c_or_cpp_lines": 999,
     "actions_cpp_current_lines": 998,
@@ -114,5 +123,5 @@
     "live_run_allowed": false,
     "commit_allowed": false
   },
-  "next_action": "Implement only the exact-scope native taunt confirmation and bounded retry repair with raid-bot-runtime-implementation, run focused pixi tests, and return the uncommitted source diff for coordinator review."
+  "next_action": "Build exact commit ffe7301ac90d81974b9099632e88d87a14723e0c through the queued coordinator, provision and verify a fresh exact ten-player Magmaw diagnostic roster, and run completion-watchdog Canary37."
 }

@@ -340,10 +340,10 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_native_taunt_confirmation_repair"
+        "drudge_native_taunt_confirmation_live_verification"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["owner_skill"] == "raid-bot-runtime-implementation"
+    assert active["owner_skill"] == "raid-shard-architecture"
     assert active["first_broken_edge"] == (
         "drudge_native_taunt_submission_is_recorded_before_assigned_tank_"
         "victim_ownership_is_observed"
@@ -387,8 +387,12 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     )
     assert active["prior_repair_proof"]["remote_seed_regression_observed"] is False
     assert "native_victim_confirmation_after_taunt_submission" in active["repair_scope"]["allowed"]
+    assert active["implemented_repair"]["commit"] == (
+        "ffe7301ac90d81974b9099632e88d87a14723e0c"
+    )
+    assert active["implemented_repair"]["source_line_limit_passed"] is True
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
-    assert "implement only" in active["next_action"].lower()
+    assert "build exact commit" in active["next_action"].lower()
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
@@ -482,8 +486,8 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     status = workloop.build_status()
 
     assert status["active_work_unit"]["descriptor_valid"] is True
-    assert status["active_work_unit"]["ready_for_bounded_repair"] is True
-    assert status["active_work_unit"]["ready_for_live_verification"] is False
+    assert status["active_work_unit"]["ready_for_bounded_repair"] is False
+    assert status["active_work_unit"]["ready_for_live_verification"] is True
     assert status["active_work_unit"]["first_broken_edge"] == (
         "drudge_native_taunt_submission_is_recorded_before_assigned_tank_"
         "victim_ownership_is_observed"
@@ -497,15 +501,15 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_native_taunt_confirmation_repair"
+        "drudge_native_taunt_confirmation_live_verification"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
-        "raid-bot-runtime-implementation"
+        "raid-shard-architecture"
     )
     assert status["current_program_next_action"] == status["active_work_unit"][
         "next_action"
     ]
-    assert "implement only" in status["active_work_unit"]["next_action"].lower()
+    assert "build exact commit" in status["active_work_unit"]["next_action"].lower()
     assert "legacy_program_next_action" not in status
 
 

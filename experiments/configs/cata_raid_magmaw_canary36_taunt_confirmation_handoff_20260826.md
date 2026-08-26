@@ -63,4 +63,8 @@ Do not force threat, assign a victim, modify enemy damage, widen spell range, gr
 - Forbidden-assistance gate: passed
 - Cleanup: passed, worldserver exit code `0`
 
-The next owner is `raid-bot-runtime-implementation`. It may implement this one trace-backed taunt-confirmation repair and run focused tests only. A separate coordinator must review and commit it, obtain a new exact queued build receipt, provision a fresh ten-player roster, and run Canary37 under the completion watchdog.
+## Accepted implementation checkpoint
+
+Luna max implemented the bounded repair and the coordinator accepted it at exact commit `ffe7301ac90d81974b9099632e88d87a14723e0c`, tree `468add07d99c2feffaf0a0f2fa933bc37547f9cb`. The change extracts taunt handling into a 175-line module, adds a 106-line exact-scope state helper, reduces the prior 998-line action file to 930 lines, and keeps every touched C/C++ file below 1,000 lines. Native-transition telemetry now distinguishes submitted-pending, pending, retry-backoff, and confirmed states. The complete Drudge-focused suite passes 156 tests and `git diff --check` passes.
+
+The next owner is `raid-shard-architecture`. It must obtain a new exact queued build receipt for `ffe7301ac90d81974b9099632e88d87a14723e0c`, provision and read back a fresh exact ten-player roster, and run Canary37 under the completion watchdog. Only a live result can verify the repair.
