@@ -2,8 +2,8 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_entrance_pull",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
-  "observed_at_commit": "08460bacf76fb3ca01fe6ef5f5b71702fd450cb4",
+  "classification": "implementation_pending_exact_build",
+  "observed_at_commit": "8c12c9ad8d1fc3125c89d548b888b5622c758101",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary47_stale_recovery_anchor_handoff_20260826.md",
     "sha256": "e9c51a395e5ba7d7e64f6b70b5be4a435ad0ad1d0e3da4ce32e37f569442f4b0"
@@ -42,7 +42,7 @@
     "do_not_relabel_as_clear": true
   },
   "repair_scope": {
-    "status": "trace_backed_repair_required",
+    "status": "trace_backed_repair_implemented",
     "allowed": [
       "invalidate_non_tank_dynamic_candidate_cache_when_recovery_formation_is_sealed",
       "select_declared_recovery_member_anchor_through_existing_native_path_admission",
@@ -86,13 +86,23 @@
     "hypotheses": 1,
     "matched_live_verification_runs": 1
   },
+  "implementation_checkpoint": {
+    "repair_commit": "8c12c9ad8d1fc3125c89d548b888b5622c758101",
+    "status": "root_verified_pending_exact_build",
+    "focused_and_broader_drudge_tests_passed": 52,
+    "geometry_cpp_lines": 976,
+    "largest_drudge_cpp_lines": 999,
+    "luna_max_implemented": true,
+    "root_review_passed": true,
+    "live_clear_claimed": false
+  },
   "implementation_constraints": {
     "maximum_c_or_cpp_lines": 999,
     "largest_drudge_cpp_current_lines": 999,
     "extract_new_module_required_if_growth_exceeds_limit": true,
-    "heavy_build_allowed": false,
+    "heavy_build_allowed": true,
     "live_run_allowed": false,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "Assign one Luna Max runtime worker to invalidate stale non-tank dynamic anchors only at the sealed-recovery transition, add focused tests, and return a commit for root verification before exact-build Canary48."
+  "next_action": "Use the queued build coordinator for the exact clean commit 8c12c9ad8d1fc3125c89d548b888b5622c758101, verify the gate-bearing receipt and binary identity, then fresh-provision Canary48 under the completion watchdog."
 }
