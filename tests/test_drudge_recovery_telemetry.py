@@ -120,4 +120,5 @@ def test_recovery_telemetry_is_observational_and_serialized() -> None:
     assert "SetAllOffenseSuppressed" not in implementation
     assert "RecordEvent" not in implementation
     assert "TauntSucceeded" not in implementation
-    assert "transition.TauntOutcomeObserved = false" in implementation
+    assert "transition.TauntOutcomeObserved =" in implementation
+    assert "transition.NativeVictimOwned" in implementation

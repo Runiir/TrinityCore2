@@ -228,6 +228,10 @@ void DrudgeLaneContext::RecordNativeTransition(Creature* source,
     if (!source || !result || Sources.size() != 2
         || (std::strcmp(result, "drudge_lane_native_ownership") != 0
             && std::strcmp(result, "drudge_lane_native_taunt") != 0
+            && std::strcmp(result, "drudge_lane_native_taunt_submitted_pending") != 0
+            && std::strcmp(result, "drudge_lane_native_taunt_confirmed") != 0
+            && std::strcmp(result, "drudge_lane_native_taunt_pending") != 0
+            && std::strcmp(result, "drudge_lane_native_taunt_unconfirmed_retry_backoff") != 0
             && std::strcmp(result, "drudge_lane_native_taunt_approach") != 0
             && std::strcmp(result, "drudge_lane_wait_lane_ownership") != 0))
         return;
@@ -283,12 +287,18 @@ void DrudgeLaneContext::RecordNativeTransition(Creature* source,
         && transition.AssignedTankGuid == transition.CurrentVictimGuid;
     transition.TauntAttempted = std::strcmp(result,
         "drudge_lane_native_taunt") == 0
+        || std::strcmp(result, "drudge_lane_native_taunt_submitted_pending") == 0
+        || std::strcmp(result, "drudge_lane_native_taunt_confirmed") == 0
+        || std::strcmp(result, "drudge_lane_native_taunt_unconfirmed_retry_backoff") == 0
         || std::strcmp(result, "drudge_lane_native_taunt_approach") == 0;
     transition.TauntSubmitted = std::strcmp(result,
-        "drudge_lane_native_taunt") == 0;
+        "drudge_lane_native_taunt") == 0
+        || std::strcmp(result, "drudge_lane_native_taunt_submitted_pending") == 0;
     // The caller's cast helper proves submission/acceptance only.  A native
     // victim observation is retained separately; do not label the cast landed.
-    transition.TauntOutcomeObserved = false;
+    transition.TauntOutcomeObserved = std::strcmp(result,
+        "drudge_lane_native_taunt_confirmed") == 0
+        && transition.NativeVictimOwned;
     transition.Result = result;
     BotRaidDrudgeSpacing::ObserveNativeTransition(
         observation->NativeTransitions, scope, std::move(transition));

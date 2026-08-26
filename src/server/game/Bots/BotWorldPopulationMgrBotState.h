@@ -6,6 +6,7 @@
 #include "Bots/BotMovementArbiter.h"
 #include "Bots/BotRoleSaturationPolicy.h"
 #include "Bots/BotTypes.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeTauntConfirmation.h"
 #include "ObjectGuid.h"
 
 #include <deque>
@@ -501,6 +502,7 @@ namespace BotWorldPopulationMgrBotState
         // for invalidation discarded every successful anchor reproof while a
         // charge remained pending.
         uint64 LastValidationRouteDrudgeChargeGenerationObserved = 0;
+        BotRaidDrudgeTauntConfirmation::State ValidationRouteDrudgeTaunt;
         // Drudge lane movement must not retry an unreachable derived point on
         // every decision tick.  Once the native path validator finds a
         // collision-safe member anchor, keep that exact fallback for the

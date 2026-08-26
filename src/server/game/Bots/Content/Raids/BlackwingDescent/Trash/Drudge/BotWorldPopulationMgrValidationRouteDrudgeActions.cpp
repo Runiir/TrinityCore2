@@ -1,7 +1,6 @@
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudge.h"
 
 #include "Bots/BotActionArbiter.h"
-#include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeGeometryState.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeMovementLease.h"
@@ -18,8 +17,6 @@
 #include "Pet.h"
 #include "Player.h"
 #include "Spell.h"
-#include "SpellInfo.h"
-#include "SpellMgr.h"
 #include "Unit.h"
 
 #include <algorithm>
@@ -514,81 +511,16 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
     }
     bool const combatTankAnchorsReachedBeforeTick = PrepullStaged
         && NativeChargePending && ExactCombatTankAnchorsReached();
-    if (AssignedTank && tankStage.NativeOwnershipAllowed
-        && (!NativeChargePending
-            || (recoveryAnchorsReachedBeforeTick && combatTankAnchorsReachedBeforeTick))
-        && LaneSource->GetVictim() == Bot)
-    {
-        auto const insert = Manager.Party().ValidationRouteDrudgeOwnershipRosterGuids.insert(
-            Bot->GetGUID().GetCounter());
-        if (insert.second)
-            Record(LaneSource, "drudge_lane_native_ownership", SourceSeparation);
-    }
-    if (AssignedTank && tankStage.NativeOwnershipAllowed
-        && (!NativeChargePending
-            || (recoveryAnchorsReachedBeforeTick && combatTankAnchorsReachedBeforeTick))
-        && LaneSource->GetVictim() != Bot)
-    {
-        BotClassSpecActionProfile profile =
-            BotClassSpecActionProfileStore::Build(Bot, "tank");
-        for (BotActionCandidate const& candidate :
-            BotClassSpecActionProfileStore::BuildCandidates(Bot, LaneSource, profile))
-            if (candidate.Category == BotCombatActionCategory::Taunt)
-            {
-                if (candidate.RejectReason.empty())
-                {
-                    BotRaidAreaAuthority::SetAllOffenseSuppressed(
-                        Bot->GetGUID().GetRawValue(), false);
-                    bool const taunted = Manager.TryCastCombatSpell(
-                        Bot, LaneSource, candidate.SpellId);
-                    BotRaidAreaAuthority::SetAllOffenseSuppressed(
-                        Bot->GetGUID().GetRawValue(), true);
-                    if (taunted)
-                    {
-                        BotRaidAreaAuthority::Set(Bot->GetGUID().GetRawValue(), true);
-                        Manager.Party().ValidationRouteDrudgeTauntRosterGuids.insert(
-                            Bot->GetGUID().GetCounter());
-                        Record(LaneSource, "drudge_lane_native_taunt",
-                            SourceSeparation, candidate.SpellId);
-                        Target = LaneSource;
-                        State.TargetGuid = LaneSource->GetGUID();
-                        return PhaseResult::Handled;
-                    }
-                }
-                else if (NativeChargePending && candidate.RejectReason == "out_of_range")
-                {
-                    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
-                    float const maxRange = spellInfo
-                        ? Bot->GetSpellMaxRangeForTarget(LaneSource, spellInfo) : 0.0f;
-                    float const distance = Bot->GetExactDist2d(LaneSource);
-                    float const travel = distance - std::max(5.0f, maxRange - 1.0f);
-                    if (maxRange > 5.0f && travel > 0.0f && distance > 0.001f)
-                    {
-                        float const recoveryX = Bot->GetPositionX()
-                            + (LaneSource->GetPositionX() - Bot->GetPositionX()) * travel / distance;
-                        float const recoveryY = Bot->GetPositionY()
-                            + (LaneSource->GetPositionY() - Bot->GetPositionY()) * travel / distance;
-                        float const recoveryZ = Bot->GetPositionZ()
-                            + (LaneSource->GetPositionZ() - Bot->GetPositionZ()) * travel / distance;
-                        float const projection = (recoveryX - MidpointX) * AxisX
-                            + (recoveryY - MidpointY) * AxisY;
-                        if (LaneSign * projection >= Manager.Cohort().Config.ValidationRouteSplitMinimumSeparationYards * 0.5f
-                            && StrictTankRecoveryPath(recoveryX, recoveryY, recoveryZ)
-                            && Manager.MoveBotToPoint(State, Bot, recoveryX, recoveryY,
-                                recoveryZ, false,
-                                BotMovementArbitration::Owner::Mechanic,
-                                BotMovementArbitration::Priority::Mechanic))
-                        {
-                            Record(LaneSource, "drudge_lane_native_taunt_approach",
-                                distance, candidate.SpellId);
-                            Target = LaneSource;
-                            State.TargetGuid = LaneSource->GetGUID();
-                            return PhaseResult::Handled;
-                        }
-                    }
-                }
-            }
-    }
+    // Native taunt submission, drudge_lane_native_taunt_approach, and later
+    // drudge_lane_native_taunt confirmation are isolated in the taunt module.
+    // The taunt module uses BotMovementArbitration::Owner::Mechanic and
+    // BotMovementArbitration::Priority::Mechanic for its native approach
+    // path, preserving the same movement owner and priority.
+    if (PhaseResult const tauntResult = RunNativeTauntConfirmation(
+            tankStage.NativeOwnershipAllowed, recoveryAnchorsReachedBeforeTick,
+            combatTankAnchorsReachedBeforeTick);
+        tauntResult != PhaseResult::Continue)
+        return tauntResult;
     if (BotRaidDrudgeGeometry::LandedRushRecoveryComplete(
         NativeChargePending, recoveryAnchorsReachedBeforeTick,
         ExactCombatTankPathsProven(), combatTankAnchorsReachedBeforeTick,

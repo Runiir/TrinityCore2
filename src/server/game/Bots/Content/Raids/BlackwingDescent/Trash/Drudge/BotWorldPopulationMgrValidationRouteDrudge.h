@@ -177,6 +177,9 @@ struct DrudgeLaneContext
     PhaseResult ResolveSources();
     PhaseResult BuildAnchorPolicies();
     PhaseResult RunFormationActions();
+    PhaseResult RunNativeTauntConfirmation(bool nativeOwnershipAllowed,
+        bool recoveryAnchorsReachedBeforeTick,
+        bool combatTankAnchorsReachedBeforeTick);
     PhaseResult RunThreatAndEvidenceActions();
     PhaseResult RunDrudgeSeedCoordinator();
 
