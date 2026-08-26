@@ -340,27 +340,27 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "dynamic_floor_live_verification"
+        "path_floor_repair"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["owner_skill"] == "raid-shard-architecture"
+    assert active["owner_skill"] == "raid-bot-runtime-implementation"
     assert active["first_broken_edge"] == (
-        "dynamic_drudge_recovery_candidates_are_rejected_when_map_height_"
-        "selects_a_remote_collision_layer_even_though_the_candidate_is_group_"
-        "safe_and_the_native_path_has_not_been_tested_at_the_declared_floor"
+        "drudge_complete_native_paths_are_rejected_when_an_intermediate_height_"
+        "sample_selects_the_remote_stacked_collision_layer_but_the_endpoint_"
+        "height_was_near_the_declared_floor"
     )
     evidence = active["decisive_evidence"]
     assert evidence["source_commit"] == (
-        "8f916f9792e9c937204d5e09e93294c98957ae10"
+        "0df41fe555dead1878dc436bbf6ec7947d8b7a53"
     )
     assert evidence["binary_sha256"] == (
-        "377f237c62fab767c5c7cb0ac8ec2ff2415aea57bbe2a36673f2335dad2d41e9"
+        "61d9260660d49c040a25883167e7a2967fc772cd5e8096a4555d6c51fb351256"
     )
     assert evidence["report_sha256"] == (
-        "af656af00a77166776e1800a9faaa6e7a3120f4b128506db9426d2998f110508"
+        "be0debeb72cfb87516e07457a64c2af41277d4036a1ec698f23ff159940d6b39"
     )
     assert evidence["report_file_sha256"] == (
-        "7ac7eaf942d9aefd0efd24a4ec03a81709750b31a1cedad1caaf535472c594e5"
+        "a4d39e7fc95436931b1c66f4c43b37a8dc79c02d10bd06fb914835ff7f37ccdc"
     )
     assert (
         evidence["route_generation"],
@@ -369,26 +369,20 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     ) == (3, 2, "bwd.magmaw.drudges")
     assert evidence["diagnostic_difficulty"] == "10N"
     assert evidence["kills"] == 1
-    assert evidence["death_loop_count"] == 3
-    assert evidence["dead_roster_guids"] == [30007, 30003, 30006]
-    assert evidence["delivered_charge_count"] == 20
-    assert evidence["last_complete_reseparation_sequence"] == 4
-    assert evidence["first_missing_reseparation_sequence"] == 5
-    assert evidence["first_death_guid"] == 30007
-    assert evidence["first_group_safe_floor_reject_candidate"] == {
-        "index": 1,
-        "x": -282.846,
-        "y": -68.2321,
-        "declared_floor_z": 214.024,
-        "resolved_remote_z": -138.287,
-        "path_reject_reason": "drudge_anchor_floor_rejected",
+    assert evidence["death_loop_count"] == 0
+    assert evidence["alive_roster_count"] == 10
+    assert evidence["delivered_charge_count"] == 28
+    assert evidence["old_endpoint_floor_reject_count"] == 0
+    assert evidence["path_floor_gap_trace_count"] == 43
+    assert evidence["first_path_floor_gap_guid"] == 30007
+    assert evidence["group_safe_path_floor_reject_candidate"] == {
+        "guid": 30006,
+        "index": 3,
+        "x": -290.325,
+        "y": -96.5105,
+        "z": 213.45,
+        "path_reject_reason": "drudge_anchor_path_floor_gap",
     }
-    assert evidence["dynamic_floor_reject_trace_count"] == 49
-    assert evidence["positive_self_spell_id"] == 31842
-    assert evidence["positive_self_native_range_event_count"] == 0
-    assert evidence["positive_self_native_path_reject_count"] == 0
-    assert evidence["prior_positive_self_range_repair_verified"] is True
-    assert evidence["prior_safe_member_offense_repair_verified"] is True
     assert evidence["boss_reached"] is False
     assert evidence["forbidden_assistance_observed"] is False
     assert evidence["cleanup_passed"] is True
@@ -398,13 +392,9 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
         "hypotheses": 1,
         "matched_live_verification_runs": 0,
     }
-    assert active["implemented_repair"]["commit"] == (
-        "0df41fe555dead1878dc436bbf6ec7947d8b7a53"
-    )
-    assert active["implemented_repair"]["source_line_limit_passed"] is True
-    assert "queued_exact_worldserver_build" in active["repair_scope"]["allowed"]
+    assert "specialized_drudge_path_floor_admission" in active["repair_scope"]["allowed"]
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
-    assert "build exact commit" in active["next_action"].lower()
+    assert "do not build" in active["next_action"].lower()
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
@@ -498,31 +488,31 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     status = workloop.build_status()
 
     assert status["active_work_unit"]["descriptor_valid"] is True
-    assert status["active_work_unit"]["ready_for_bounded_repair"] is False
-    assert status["active_work_unit"]["ready_for_live_verification"] is True
+    assert status["active_work_unit"]["ready_for_bounded_repair"] is True
+    assert status["active_work_unit"]["ready_for_live_verification"] is False
     assert status["active_work_unit"]["first_broken_edge"] == (
-        "dynamic_drudge_recovery_candidates_are_rejected_when_map_height_"
-        "selects_a_remote_collision_layer_even_though_the_candidate_is_group_"
-        "safe_and_the_native_path_has_not_been_tested_at_the_declared_floor"
+        "drudge_complete_native_paths_are_rejected_when_an_intermediate_height_"
+        "sample_selects_the_remote_stacked_collision_layer_but_the_endpoint_"
+        "height_was_near_the_declared_floor"
     )
     assert status["active_work_unit"]["source_handoff"]["sha256"] == (
         workloop._file_sha256(
             workloop.ROOT
             / "experiments/configs/"
-            "cata_raid_magmaw_canary31_dynamic_floor_handoff_20260826.md"
+            "cata_raid_magmaw_canary32_path_floor_handoff_20260826.md"
         )
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "dynamic_floor_live_verification"
+        "path_floor_repair"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
-        "raid-shard-architecture"
+        "raid-bot-runtime-implementation"
     )
     assert status["current_program_next_action"] == status["active_work_unit"][
         "next_action"
     ]
-    assert "build exact commit" in status["active_work_unit"]["next_action"].lower()
+    assert "do not build" in status["active_work_unit"]["next_action"].lower()
     assert "legacy_program_next_action" not in status
 
 
