@@ -1,8 +1,8 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:10N:path_floor_repair",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
+  "work_unit": "boss:blackwing_descent:magmaw:10N:path_floor_live_verification",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "implementation_pending_live_verification",
   "observed_at_commit": "0df41fe555dead1878dc436bbf6ec7947d8b7a53",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary32_path_floor_handoff_20260826.md",
@@ -56,11 +56,24 @@
     "worldserver_exit_code": 0,
     "do_not_relabel_as_clear": true
   },
+  "implemented_repair": {
+    "commit": "8e86e3761f8fb970b9b6f1d4682ebd6b35ad362d",
+    "tree": "78a06b5621844be7692c0a8ef20360dac396b003",
+    "status": "source_validated_pending_exact_build",
+    "scope": "use_the_declared_reference_floor_envelope_for_the_entire_specialized_drudge_complete_path_even_when_the_endpoint_height_resolves_near_the_declared_floor",
+    "focused_test_count": 44,
+    "native_floor_header_lines": 62,
+    "native_path_validation_header_lines": 96,
+    "drudge_geometry_source_lines": 989,
+    "source_line_limit_passed": true
+  },
   "repair_scope": {
-    "status": "implementation_pending",
+    "status": "implemented_pending_live_verification",
     "allowed": [
-      "specialized_drudge_path_floor_admission",
-      "focused_deterministic_tests"
+      "queued_exact_worldserver_build",
+      "fresh_exact_roster_provisioning",
+      "one_completion_watchdog_canary",
+      "trace_backed_routing_of_one_new_first_broken_edge"
     ],
     "must_preserve": [
       "generic_movement_planner_strict_floor_validation",
@@ -97,5 +110,5 @@
     "matched_live_verification_runs": 0
   },
   "live_verification_owner_skill": "raid-shard-architecture",
-  "next_action": "Implement only the specialized Drudge full-path declared-floor admission edge, run focused deterministic tests, and return the patch for coordinator review. Do not build or start a worldserver."
+  "next_action": "Build exact commit 8e86e3761f8fb970b9b6f1d4682ebd6b35ad362d through the queued coordinator, provision and verify a fresh exact ten-player Magmaw diagnostic roster, and run one completion-watchdog Canary33. If it clears entrance, Chainwielder, Drudges, and Magmaw without forbidden assistance, repeat on a fresh roster. If it fails, route only the first newly proven edge."
 }
