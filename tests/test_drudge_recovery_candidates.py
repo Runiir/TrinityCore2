@@ -257,7 +257,8 @@ def test_recovery_tank_proof_uses_recovery_members_and_keeps_stale_cache_guard()
     cache = geometry[cache_start:cache_end]
     # Commit 08c549's tankRecovery exception keeps stale candidate-index
     # validation active for tank recovery while preserving dynamic retries.
-    assert "if ((!activeDynamicRecovery || tankRecovery)" in cache
+    assert "if ((!activeDynamicRecovery || tankRecovery" in cache
+    assert "|| (!tank && IsRecoveryFormationActive()))" in cache
     assert "State.ValidationRouteDrudgeAnchorCandidateIndex >= candidates.size()" in cache
 
 
@@ -342,7 +343,8 @@ def test_recovery_candidate_contract_is_persistent_and_native_strict_for_tanks_a
         "if (cacheUsable())", selector.index("auto cacheUsable")
     )]
     assert "activeDynamicRecovery" in cache
-    assert "(!activeDynamicRecovery || tankRecovery)" in cache
+    assert "(!activeDynamicRecovery || tankRecovery" in cache
+    assert "|| (!tank && IsRecoveryFormationActive()))" in cache
     assert "SourceUnionSafe" in cache
     assert "LaneSafe" in cache
     assert "IsRecoveryCandidateSpacingSafe" in cache
@@ -469,6 +471,31 @@ def test_prepull_tank_fallback_keeps_declared_then_navigation_anchor_contract():
                       + (anchor["y"] - midpoint_y) * axis_y)
         assert distance <= minimum
         assert lane_sign * projection >= lane_separation * 0.25
+
+
+def test_dynamic_cached_fan_anchor_fallback_is_pre_pull_only():
+    geometry = GEOMETRY.read_text(encoding="utf-8")
+    selector = geometry[geometry.index("SelectPathableDrudgeAnchor ="):geometry.index(
+        "ExactRosterReSeparated =", geometry.index("SelectPathableDrudgeAnchor =")
+    )]
+    cache = selector[selector.index("auto cacheUsable"):selector.index(
+        "if (cacheUsable())", selector.index("auto cacheUsable")
+    )]
+
+    # Dynamic safety remains active for both phases, but sealed non-tank
+    # recovery independently requires the cache to match the current set.
+    assert "IsDynamicGroupRecoveryActive()" in cache
+    assert "&& (IsDynamicGroupRecoveryActive()" in cache
+    assert "(!CombatTankStagingActive()" in cache
+    assert "State.ValidationRouteDrudgeAnchorCandidateIndex > 0)))" in cache
+    assert (
+        "if ((!activeDynamicRecovery || tankRecovery\n"
+        "                || (!tank && IsRecoveryFormationActive()))" in cache
+    )
+
+    # The recovery exception remains limited to tanks; this predicate change
+    # must not alter tank recovery cache validation.
+    assert "|| tankRecovery;" in cache
 
 
 def test_dynamic_fan_candidate_is_grounded_before_exact_native_path_admission():

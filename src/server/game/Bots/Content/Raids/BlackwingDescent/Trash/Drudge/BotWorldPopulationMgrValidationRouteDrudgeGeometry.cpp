@@ -583,7 +583,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             if (BotRaidDrudgeRecoveryCandidates::IsEscapeCandidateIndex(
                     State.ValidationRouteDrudgeAnchorCandidateIndex))
                 return false;
-            if ((!activeDynamicRecovery || tankRecovery)
+            if ((!activeDynamicRecovery || tankRecovery
+                || (!tank && IsRecoveryFormationActive()))
                 && (State.ValidationRouteDrudgeAnchorCandidateIndex >= candidates.size()
                     || Distance2d(State.ValidationRouteDrudgeAnchorX,
                         State.ValidationRouteDrudgeAnchorY,
