@@ -1,8 +1,8 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:10N:reference_floor_intent_handoff",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
+  "work_unit": "boss:blackwing_descent:magmaw:10N:reference_floor_intent_live_verification",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "implementation_pending_live_verification",
   "observed_at_commit": "8d421ad45b495e7e52e0ef68e9fb359f63ce4fdf",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary34_reference_floor_intent_handoff_20260826.md",
@@ -48,8 +48,17 @@
     "worldserver_exit_code": 0,
     "do_not_relabel_as_clear": true
   },
+  "implemented_repair": {
+    "commit": "988d5e8fdd044402d2e5c85766a9c0576e8177e8",
+    "tree": "47a5a048ecdbc5c3a907a79939479510a694c73a",
+    "status": "source_validated_pending_exact_build",
+    "scope": "carry_one_prevalidated_drudge_reference_floor_through_the_typed_movement_intent_while_generic_movement_remains_strict",
+    "focused_test_count": 61,
+    "maximum_touched_cpp_lines": 998,
+    "source_line_limit_passed": true
+  },
   "repair_scope": {
-    "status": "implementation_pending",
+    "status": "implemented_pending_live_verification",
     "allowed": [
       "typed_optional_reference_floor_on_movement_intent",
       "scoped_planner_reference_floor_validation",
@@ -93,5 +102,6 @@
     "hypotheses": 1,
     "matched_live_verification_runs": 0
   },
-  "next_action": "Use raid-bot-runtime-implementation to propagate one optional prevalidated reference floor from the Drudge movement submission into the independent planner, preserve strict generic validation, and run focused tests only. Then review and route the exact implementation commit to Canary35."
+  "live_verification_owner_skill": "raid-shard-architecture",
+  "next_action": "Build exact commit 988d5e8fdd044402d2e5c85766a9c0576e8177e8 through the queued coordinator, provision and verify a fresh exact ten-player Magmaw diagnostic roster, and run one completion-watchdog Canary35. Route the first trace-backed gameplay edge without weakening any safety gate."
 }
