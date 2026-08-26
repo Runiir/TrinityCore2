@@ -2,7 +2,7 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "boss:blackwing_descent:magmaw:10N:drudge_entrance_pull",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "implementation_pending_exact_build",
+  "classification": "implementation_pending_live_verification",
   "observed_at_commit": "8c12c9ad8d1fc3125c89d548b888b5622c758101",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary47_stale_recovery_anchor_handoff_20260826.md",
@@ -88,21 +88,30 @@
   },
   "implementation_checkpoint": {
     "repair_commit": "8c12c9ad8d1fc3125c89d548b888b5622c758101",
-    "status": "root_verified_pending_exact_build",
+    "status": "exact_build_verified_pending_canary48",
     "focused_and_broader_drudge_tests_passed": 52,
     "geometry_cpp_lines": 976,
     "largest_drudge_cpp_lines": 999,
     "luna_max_implemented": true,
     "root_review_passed": true,
+    "configure_receipt_path": "/tmp/trinity-magmaw-8c12c9ad8d-canary48-build.2YhssC/configure-receipt-v2.json",
+    "configure_receipt_canonical_sha256": "74c2937b13cc44733b0dbcce636253547e4cd6dd5bff0d4ad7ba4571eca4513f",
+    "configure_receipt_file_sha256": "ce3e55a2ff9c799de05041ac9a983c60a79f65874c8891d0180e43b41c751785",
+    "build_receipt_path": "/tmp/trinity-magmaw-8c12c9ad8d-canary48-build.2YhssC/worldserver-build-receipt-v2.json",
+    "build_receipt_canonical_sha256": "9ca88b0655c75a9087c869492a9667864ebfcf8b2b966f6bc3d5bf1fa8421732",
+    "build_receipt_file_sha256": "8914413b0800483eee3661c922773c7312ad53384e1e2899cfe1e9735648e83d",
+    "binary_sha256": "e6cc24f50028f59fb9c66ddf63cf2ec0bc54c40a6347ebdad1bf3240394bbad0",
+    "build_receipts_gate_bearing": true,
+    "source_identity_stable": true,
     "live_clear_claimed": false
   },
   "implementation_constraints": {
     "maximum_c_or_cpp_lines": 999,
     "largest_drudge_cpp_current_lines": 999,
     "extract_new_module_required_if_growth_exceeds_limit": true,
-    "heavy_build_allowed": true,
-    "live_run_allowed": false,
+    "heavy_build_allowed": false,
+    "live_run_allowed": true,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "Use the queued build coordinator for the exact clean commit 8c12c9ad8d1fc3125c89d548b888b5622c758101, verify the gate-bearing receipt and binary identity, then fresh-provision Canary48 under the completion watchdog."
+  "next_action": "Fresh-provision and verify the frozen 10N roster, then run exact-build Canary48 under the completion watchdog. Require a normal entrance, Chainwielder, Drudges, and Magmaw clear before repeating from fresh state as Canary49."
 }
