@@ -102,6 +102,54 @@ def test_default_scheduler_reduces_heavy_payload_volume_without_dropping_channel
     }
 
 
+def test_trace_scheduler_shortens_after_ring_pressure_without_accepting_gaps():
+    scheduler = TelemetryScheduler(
+        status_interval_sec=5, diagnose_interval_sec=15, trace_interval_sec=10,
+    )
+    assert scheduler.commands_due(0.0) == [
+        "botauto status", "botauto trace all 128 delta", "botauto diagnose all",
+    ]
+
+    scheduler.observe_trace(
+        [{
+            "ok": True,
+            "action": "botauto_trace",
+            "bots": [{"entries": [{}] * 16, "gap": False}],
+        }],
+        observed_at=1.0,
+    )
+    state = scheduler.state()
+    assert state["trace_pressure_entries"] == 16
+    assert state["effective_trace_interval_seconds"] == 2.0
+    assert state["trace_gap_observed"] is False
+    assert scheduler.commands_due(2.9) == []
+    assert scheduler.commands_due(3.0) == ["botauto trace all 128 delta"]
+
+    # A gap only records the integrity observation. It does not make the
+    # response valid or reset/advance the native cursor on the controller's
+    # behalf; evidence_demux_report remains the rejecting authority.
+    scheduler.observe_trace(
+        [{
+            "ok": True,
+            "action": "botauto_trace",
+            "bots": [{"entries": [], "gap": True}],
+        }],
+        observed_at=4.0,
+    )
+    state = scheduler.state()
+    assert state["trace_gap_observed"] is True
+    assert state["effective_trace_interval_seconds"] == 2.0
+
+    gap_only = TelemetryScheduler(trace_interval_sec=10)
+    gap_only.commands_due(0.0)
+    gap_only.observe_trace(
+        [{"bots": [{"entries": [], "gap": True}]}], observed_at=1.0,
+    )
+    assert gap_only.state()["trace_gap_observed"] is True
+    assert gap_only.state()["effective_trace_interval_seconds"] == 10.0
+    assert gap_only.commands_due(2.0) == []
+
+
 def test_terminal_runtime_failure_is_exact_roster_bound_and_material():
     status = accepted_status()
     status["cohort_id"] = "default"

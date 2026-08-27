@@ -44,6 +44,16 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MAX_REPEATED_DECISIONS = 20
 DEFAULT_MAX_DEATH_LOOPS = 3
 
+# The native trace export is backed by a 128-entry per-bot ring.  A fixed
+# ten-second poll is normally cheap, but a busy bot can approach that ring's
+# capacity after a quiet interval.  Once a response reaches this conservative
+# watermark, switch to a bounded faster cadence so later exports retain
+# headroom.  This only changes collection frequency; a native ``gap`` is still
+# retained and rejected by the evidence gates.
+TRACE_RING_CAPACITY = 128
+TRACE_PRESSURE_WATERMARK = TRACE_RING_CAPACITY // 8
+TRACE_PRESSURE_INTERVAL_SEC = 2.0
+
 _WATCHDOG_DEATH_ACTIONS = {
     "death",
     "repeated_death",
@@ -3823,7 +3833,8 @@ class TelemetryScheduler:
     material status edge promotes the next loop to an immediate diagnose;
     callers can also force both heavy channels before terminating on a stall.
     ``commands_due`` advances each channel independently, so a delayed
-    diagnosis never delays status or causes a trace cursor gap.
+    diagnosis never delays status; ``observe_trace`` tightens polling when
+    retained deltas approach the native ring limit.
     """
 
     status_interval_sec: float = 5.0
@@ -3833,12 +3844,9 @@ class TelemetryScheduler:
     # request them immediately, so this is a volume reduction rather than an
     # evidence reduction.
     diagnose_interval_sec: float = 30.0
-    # The native decision trace is a 128-entry ring.  The Magmaw canary
-    # observed one bot producing roughly six trace entries per second while
-    # the other bots remained quiet; a 20-second poll therefore allowed the
-    # ring to overwrite the cursor before the next export.  Keep the delta
-    # cadence at ten seconds to leave deterministic headroom while retaining
-    # the bounded incremental payload.
+    # The native decision trace is a 128-entry ring.  Keep the normal delta
+    # cadence at ten seconds to limit payload volume; observe_trace switches
+    # to a bounded faster cadence when a response approaches ring pressure.
     trace_interval_sec: float = 10.0
     _next_status_at: float = 0.0
     _next_diagnose_at: float = 0.0
@@ -3846,6 +3854,9 @@ class TelemetryScheduler:
     _diagnose_forced: bool = True
     _trace_forced: bool = False
     _last_status_signature: str | None = None
+    _trace_interval_override_sec: float | None = None
+    _trace_pressure_entries: int = 0
+    _trace_gap_observed: bool = False
 
     def __post_init__(self) -> None:
         if self.status_interval_sec <= 0 or self.diagnose_interval_sec <= 0 or self.trace_interval_sec <= 0:
@@ -3868,6 +3879,50 @@ class TelemetryScheduler:
         if include_trace:
             self._trace_forced = True
 
+    def observe_trace(
+        self,
+        trace_rows: list[dict[str, Any]],
+        *,
+        observed_at: float | None = None,
+    ) -> None:
+        """Use retained delta size to bound the next trace-ring poll.
+
+        The response is advisory input to scheduling only.  In particular,
+        ``gap=true`` is remembered for diagnostics but never clears a cursor,
+        marks a channel valid, or otherwise relaxes the demux gate.  Malformed
+        rows cannot reduce the polling interval or create evidence.
+        """
+
+        pressure_entries = 0
+        for row in trace_rows:
+            if not isinstance(row, dict):
+                continue
+            bots = row.get("bots")
+            if not isinstance(bots, list):
+                continue
+            for bot_row in bots:
+                if not isinstance(bot_row, dict):
+                    continue
+                if bot_row.get("gap") is True:
+                    self._trace_gap_observed = True
+                entries = bot_row.get("entries")
+                if isinstance(entries, list):
+                    pressure_entries = max(pressure_entries, len(entries))
+
+        self._trace_pressure_entries = max(
+            self._trace_pressure_entries, pressure_entries,
+        )
+        if pressure_entries < TRACE_PRESSURE_WATERMARK:
+            return
+
+        # Keep the configured cadence as the upper bound.  A caller can pass
+        # a shorter interval for a diagnostic partition and it must not be
+        # made slower by this adaptive path.
+        hot_interval = min(self.trace_interval_sec, TRACE_PRESSURE_INTERVAL_SEC)
+        self._trace_interval_override_sec = hot_interval
+        if observed_at is not None:
+            self._next_trace_at = min(self._next_trace_at, observed_at + hot_interval)
+
     def commands_due(self, now: float) -> list[str]:
         """Return due console commands and advance only their own deadlines."""
         commands: list[str] = []
@@ -3876,7 +3931,8 @@ class TelemetryScheduler:
             self._next_status_at = now + self.status_interval_sec
         if now >= self._next_trace_at or self._trace_forced:
             commands.append("botauto trace all 128 delta")
-            self._next_trace_at = now + self.trace_interval_sec
+            trace_interval = self._trace_interval_override_sec or self.trace_interval_sec
+            self._next_trace_at = now + trace_interval
             self._trace_forced = False
         if now >= self._next_diagnose_at or self._diagnose_forced:
             commands.append("botauto diagnose all")
@@ -3893,6 +3949,11 @@ class TelemetryScheduler:
             "next_status_at": self._next_status_at,
             "next_diagnose_at": self._next_diagnose_at,
             "next_trace_at": self._next_trace_at,
+            "effective_trace_interval_seconds": (
+                self._trace_interval_override_sec or self.trace_interval_sec
+            ),
+            "trace_pressure_entries": self._trace_pressure_entries,
+            "trace_gap_observed": self._trace_gap_observed,
             "diagnose_forced": self._diagnose_forced,
             "trace_forced": self._trace_forced,
         }
@@ -5579,6 +5640,9 @@ def main() -> int:
                         elif action == "botauto_trace":
                             trace_count += 1
                             new_trace_rows.append(row)
+                    telemetry_scheduler.observe_trace(
+                        new_trace_rows, observed_at=time.monotonic(),
+                    )
                     monitor_statuses.extend(new_statuses)
                     for status in new_statuses:
                         telemetry_scheduler.observe_status(status)
