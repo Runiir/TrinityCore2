@@ -236,7 +236,7 @@ def test_entrance_pull_stacks_at_cleared_chainwielder_position() -> None:
     assert "-344.0f, -101.0f" in entrance
     assert "-352.0f, -110.0f" in entrance
     assert "config.ValidationRouteSplitRecoveryMemberAnchors" not in entrance
-    assert "DoorwayArrivalToleranceYards = 15.0f" in entrance
+    assert "DoorwayArrivalToleranceYards = 20.0f" in entrance
     assert entrance.count("DoorwayArrivalToleranceYards)") >= 4
     pull_started = entrance[entrance.index("if (pullStarted)"):]
     assert "IsLandedRushPending()" not in pull_started

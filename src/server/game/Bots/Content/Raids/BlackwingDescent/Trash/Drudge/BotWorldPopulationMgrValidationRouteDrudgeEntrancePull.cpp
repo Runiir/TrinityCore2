@@ -52,7 +52,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
             });
         return found == entranceAnchors.end() ? nullptr : &*found;
     };
-    constexpr float DoorwayArrivalToleranceYards = 15.0f;
+    constexpr float DoorwayArrivalToleranceYards = 20.0f;
     auto atAnchor = [&](Player const* member, MemberAnchor const* anchor,
         bool tank, float toleranceOverride = 0.0f)
     {
