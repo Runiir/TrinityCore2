@@ -309,6 +309,22 @@ void BotWorldPopulationMgr::ReconcileNativeBattleResDecisions(uint64 nowMs)
             if (InstanceScript* instance = observer->GetInstanceScript())
                 groupCombatActive = instance->IsEncounterInProgress();
 
+    RaidRuntime const& raid = Cohort().Raid;
+    // A cleared trash pack is no longer an encounter, but a live druid may
+    // still submit its ordinary native Rebirth to an unreleased corpse.  Keep
+    // this exception bound to the current observed route/attempt/node and to
+    // a real hostile inactivity/reset edge.  CurrentCombatResOwnerUsable()
+    // still enforces spell, cooldown, power, range, LOS, and path validity.
+    bool const nativeTrashRecoveryWindow = Cohort().Config.ValidationRouteKind == "trash"
+        && Cohort().Config.ValidationRouteBossRecovery
+            != ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly
+        && raid.NativeHostileObservationAttemptId == raid.AttemptId
+        && raid.NativeHostileObservationRouteGeneration == Party().ValidationRouteGeneration
+        && raid.NativeHostileObservationNodeId == Cohort().Config.ValidationRouteNodeId
+        && raid.NativeHostileInactivityObserved
+        && !raid.NativeHostileActivityActive
+        && raid.NativeHostileResetGeneration > raid.NativeHostileResetGenerationAtWipe;
+
     static constexpr uint64 CombatResReservationLifetimeMs = 8000;
     static constexpr uint64 CombatResDeclineObservationMs = 5000;
     auto applyDecision = [&](Member const& member, char const* decision,
@@ -335,7 +351,7 @@ void BotWorldPopulationMgr::ReconcileNativeBattleResDecisions(uint64 nowMs)
                     member.State->NativeBattleResSpellId);
         }
 
-    if (!groupCombatActive)
+    if (!groupCombatActive && !nativeTrashRecoveryWindow)
     {
         for (Member const& member : dead)
             if (member.State->NativeBattleResDecision != "reserved_cast_submitted")
@@ -595,4 +611,3 @@ BotWorldPopulationMgr::BuildCombatResNativeActionCandidate(
     }
     return candidate;
 }
-
