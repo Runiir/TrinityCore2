@@ -2,8 +2,8 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "boss:blackwing_descent:magmaw:10N:pillar_of_flame_ranged_escape",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
-  "observed_at_commit": "af1ff054dc1a46553880d91dc8049cd308b64f27",
+  "classification": "implementation_pending_live_verification",
+  "observed_at_commit": "eb6b821c7a1d5c31578aa3e61a134f9ee507cc34",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary91_pillar_death_handoff_20260828.md",
     "sha256": "b95cd4c6561b05d065a6c9cc45f42a1fe5e3348e363b89bfba9d3bd8dede8966"
@@ -35,7 +35,7 @@
     "worldserver_exit_code": 0
   },
   "repair_scope": {
-    "status": "trace_backed_repair_required",
+    "status": "trace_backed_repair_implemented",
     "allowed": [
       "submit_existing_pillar_hazard_escape_through_priority_queue",
       "preserve_mobile_damage_while_moving",
@@ -59,12 +59,25 @@
     "hypotheses": 1,
     "matched_live_verification_runs": 1
   },
+  "implementation_checkpoint": {
+    "gameplay_commit": "eb6b821c7a1d5c31578aa3e61a134f9ee507cc34",
+    "capture_commit": "3da4a42724",
+    "status": "focused_tests_passed_exact_build_pending",
+    "focused_tests_passed": 20,
+    "capture_tests_passed": 116,
+    "new_helper_ccn": 7,
+    "profile_resolver_ccn_before": 87,
+    "profile_resolver_ccn_after": 82,
+    "movement_executor_ccn_before": 28,
+    "movement_executor_ccn_after": 27,
+    "live_clear_claimed": false
+  },
   "implementation_constraints": {
     "maximum_c_or_cpp_lines": 999,
     "new_or_changed_helper_maximum_ccn": 15,
     "heavy_build_allowed": false,
-    "live_run_allowed": false,
+    "live_run_allowed": true,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "Implement and root-review the bounded Pillar of Flame ranged escape, run focused replay tests, obtain an exact coordinator build, then provision fresh state and run Canary92 under the completion watchdog."
+  "next_action": "Obtain an exact coordinator build for the implemented Pillar movement repair, then provision fresh state and run Canary92 under the completion watchdog."
 }
