@@ -446,7 +446,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         }
         HoldOffense();
         if (SourceCombatStarted && Role == "healer"
-            && Callbacks.TryGroupHeal(Bot, LaneSource, false, false))
+            && Callbacks.TryGroupHeal(
+                Bot, LaneSource, false, GroupPositionSafe(Bot)))
         {
             Record(LaneSource, "drudge_anchor_preflight_support", SourceSeparation);
             Target = LaneSource;
@@ -627,7 +628,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         if (formationRecoveryBeforeSupport)
             tryFormationRecovery();
         if (recoveryAction == BotRaidDrudgeGeometry::MemberRecoveryAction::PreferFriendlySupport
-            && Callbacks.TryGroupHeal(Bot, LaneSource, false, false))
+            && Callbacks.TryGroupHeal(Bot, LaneSource, false, alreadySafe))
         {
             Record(LaneSource, "drudge_staging_support", SourceSeparation);
             Target = LaneSource;
@@ -668,7 +669,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
     }
     if (Role == "healer")
     {
-        if (Callbacks.TryGroupHeal(Bot, LaneSource, true, false))
+        if (Callbacks.TryGroupHeal(Bot, LaneSource, false, true))
             return PhaseResult::Handled;
         HoldOffense();
         Record(LaneSource, "drudge_lane_healer_hold", SourceSeparation);

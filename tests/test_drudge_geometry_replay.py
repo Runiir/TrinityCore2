@@ -912,6 +912,29 @@ def test_canary39_unsafe_healer_replays_native_recovery_before_same_tick_support
     assert events == ["native_formation_submission", "same_tick_friendly_support"]
 
 
+def test_canary53_safe_drudge_healers_keep_stationary_cast_time_heals():
+    actions = (
+        ROOT
+        / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/"
+        "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp"
+    ).read_text(encoding="utf-8")
+    normalized = " ".join(actions.split())
+
+    # Generic healer movement remains disabled for this mechanic. Unsafe
+    # members therefore retain instant-only support while they finish their
+    # native escape, but an already-safe healer may use its ordinary
+    # stationary cast-time toolkit instead of starving the tanks.
+    assert (
+        "Callbacks.TryGroupHeal(Bot, LaneSource, false, alreadySafe)"
+        in normalized
+    )
+    assert "Callbacks.TryGroupHeal(Bot, LaneSource, false, true)" in normalized
+    assert (
+        "Callbacks.TryGroupHeal( Bot, LaneSource, false, GroupPositionSafe(Bot))"
+        in normalized
+    )
+
+
 def test_future_encounter_contamination_is_attempt_terminal_not_a_transient_hold():
     implementation = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
         encoding="utf-8"
