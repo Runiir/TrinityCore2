@@ -71,6 +71,7 @@ DRUDGE_FILES = {
     "BotRaidDrudgeActivationState.h",
     "BotRaidDrudgeCombatEnvelope.h",
     "BotRaidDrudgeGeometryState.h",
+    "BotRaidDrudgeHealthSync.h",
     "BotRaidDrudgeMovementLease.h",
     "BotRaidDrudgeNativeAnchor.h",
     "BotRaidDrudgeNativePathDecision.h",

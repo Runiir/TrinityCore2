@@ -3,6 +3,7 @@
 #include "Bots/BotActionArbiter.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeGeometryState.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeHealthSync.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeMovementLease.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeNativeRushState.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeObservationBacklog.h"
@@ -866,6 +867,10 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions()
         State.TargetGuid = LaneSource->GetGUID();
         return PhaseResult::Handled;
     }
+    float const laneHealthRatio = UnitHealthPct(LaneSource);
+    float const otherHealthRatio = UnitHealthPct(OtherSource);
+    bool const holdForHealthSync = BotRaidDrudgeHealthSync::ShouldHoldLowerLane(
+        laneHealthRatio, otherHealthRatio);
     if (Sources[0]->IsAlive() && Sources[1]->IsAlive() && AssignedTank)
     {
         auto& party = Manager.Party();
@@ -884,7 +889,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions()
         }
         party.ValidationRouteDrudgeHealthSyncEvaluatedRosterGuids.insert(
             Bot->GetGUID().GetCounter());
-        if (UnitHealthPct(LaneSource) < UnitHealthPct(OtherSource))
+        if (holdForHealthSync)
         {
             party.ValidationRouteDrudgeHealthSyncRosterGuids.insert(
                 Bot->GetGUID().GetCounter());
@@ -892,14 +897,13 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions()
                 LaneSource == Sources[0] ? 250140 : 250141;
             party.ValidationRouteDrudgeHealthSyncHoldTankGuid = LaneTank
                 ? LaneTank->GetGUID().GetCounter() : 0;
-            party.ValidationRouteDrudgeHealthSyncHoldLowerPct = UnitHealthPct(LaneSource);
-            party.ValidationRouteDrudgeHealthSyncHoldPeerPct = UnitHealthPct(OtherSource);
+            party.ValidationRouteDrudgeHealthSyncHoldLowerPct = laneHealthRatio;
+            party.ValidationRouteDrudgeHealthSyncHoldPeerPct = otherHealthRatio;
             party.ValidationRouteDrudgeHealthSyncHoldLowerAlive = LaneSource->IsAlive();
             party.ValidationRouteDrudgeHealthSyncHoldPeerAlive = OtherSource->IsAlive();
         }
     }
-    if (Sources[0]->IsAlive() && Sources[1]->IsAlive()
-        && UnitHealthPct(LaneSource) < UnitHealthPct(OtherSource))
+    if (Sources[0]->IsAlive() && Sources[1]->IsAlive() && holdForHealthSync)
     {
         HoldOffense();
         Record(LaneSource, AssignedTank ? "drudge_tank_health_sync_hold"
