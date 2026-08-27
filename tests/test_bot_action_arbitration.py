@@ -588,6 +588,39 @@ int main()
     assert(magmawPrepullPlan.SuppressOffense);
     assert(magmawPrepullPlan.DamageTarget.IsEmpty());
 
+    BotEncounter::Blackboard magmawNoReadyTank = magmaw;
+    magmawNoReadyTank.Players.front().Position = { 0.0f, 0.0f, 0.0f };
+    magmawNoReadyTank.Players[1].Position = { 60.0f, 0.0f, 0.0f };
+    auto magmawNoReadyDpsPlan = magmawStrategy.Propose(
+        magmawNoReadyTank, dps.Guid, "dps");
+    assert(magmawNoReadyDpsPlan.OwnsNode);
+    assert(magmawNoReadyDpsPlan.SuppressOffense);
+    assert(magmawNoReadyDpsPlan.DamageTarget.IsEmpty());
+    assert(!magmawNoReadyDpsPlan.Movement.has_value());
+
+    auto magmawPrepullTankPlan = magmawStrategy.Propose(
+        magmawNoReadyTank, tankA.Guid, "tank");
+    assert(magmawPrepullTankPlan.OwnsNode);
+    assert(magmawPrepullTankPlan.SuppressOffense);
+    assert(magmawPrepullTankPlan.DamageTarget.IsEmpty());
+    assert(magmawPrepullTankPlan.Movement.has_value());
+    assert(magmawPrepullTankPlan.Movement->Resources()
+        == Uses(Resource::Movement));
+    auto const* magmawPrepullMove = std::get_if<Move>(
+        &magmawPrepullTankPlan.Movement->Action);
+    assert(magmawPrepullMove);
+    assert(magmawPrepullMove->X == 16.0f);
+    assert(magmawPrepullMove->Y == magmawBoss.Position.Y);
+    assert(magmawPrepullMove->Z == tankA.Position.Z);
+
+    BotEncounter::Blackboard magmawNativeInProgress = magmawNoReadyTank;
+    magmawNativeInProgress.NativeBossState = "in_progress";
+    auto magmawNativeInProgressPlan = magmawStrategy.Propose(
+        magmawNativeInProgress, dps.Guid, "dps");
+    assert(magmawNativeInProgressPlan.OwnsNode);
+    assert(!magmawNativeInProgressPlan.SuppressOffense);
+    assert(magmawNativeInProgressPlan.DamageTarget == magmawHead.Guid);
+
     BotEncounter::Blackboard magmawInCombat = magmawPrepull;
     magmawInCombat.Hostiles.front().InCombat = true;
     magmawInCombat.Hostiles.front().VictimGuid = tankA.Guid;

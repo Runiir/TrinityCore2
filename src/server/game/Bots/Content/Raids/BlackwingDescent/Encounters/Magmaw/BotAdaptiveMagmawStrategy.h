@@ -34,6 +34,11 @@ public:
     static constexpr uint32 PincerLeftEntry = 41620;
     static constexpr uint32 PincerRightEntry = 41789;
     static constexpr uint32 SpikeEntry = 41767;
+    // Keep the native victim inside ordinary melee reach before the first
+    // offensive action.  The margin accounts for the boss's combat reach
+    // without treating a remote position as an engaged encounter.
+    static constexpr float PrepullMeleeReadyDistance = 8.0f;
+    static constexpr float PrepullMeleeOffsetDistance = 4.0f;
     static constexpr float HookInteractionDistance = 5.0f;
 
     AdaptiveMagmawPlan Propose(Blackboard const& board, ObjectGuid botGuid,
@@ -89,6 +94,47 @@ public:
         if (prepullHealthIncomplete)
         {
             plan.SuppressOffense = true;
+            return plan;
+        }
+        bool const tankMeleeReady = std::any_of(board.Players.begin(),
+            board.Players.end(), [boss](ActorSnapshot const& member)
+            {
+                return member.Alive && member.Role == "tank"
+                    && Distance2d(member.Position, boss->Position)
+                        <= PrepullMeleeReadyDistance;
+            });
+        bool const prepullTankNotReady = !bossEngaged
+            && board.NativeBossState != "in_progress"
+            && !tankMeleeReady;
+        if (prepullTankNotReady)
+        {
+            plan.SuppressOffense = true;
+            if (role == "tank")
+            {
+                float dx = bot->Position.X - boss->Position.X;
+                float dy = bot->Position.Y - boss->Position.Y;
+                float length = std::sqrt(dx * dx + dy * dy);
+                if (length < 0.01f)
+                {
+                    dx = std::cos(bot->Facing);
+                    dy = std::sin(bot->Facing);
+                    length = 1.0f;
+                }
+                BotNativeAction::Candidate candidate;
+                candidate.Id.ScopeKey = board.CurrentScope.Key();
+                candidate.Id.Strategy = "adaptive_magmaw";
+                candidate.Id.Mechanic = "prepull_melee_ready";
+                candidate.Id.Actor = boss->Guid;
+                candidate.Id.EventGeneration = board.Revision;
+                candidate.ActionPriority = BotActionArbitration::Priority::Mechanic;
+                candidate.Utility = 500.0f;
+                candidate.ExpiresAtMs = board.ObservedAtMs + 750;
+                candidate.Action = BotNativeAction::Move{
+                    boss->Position.X + dx / length * PrepullMeleeOffsetDistance,
+                    boss->Position.Y + dy / length * PrepullMeleeOffsetDistance,
+                    bot->Position.Z };
+                plan.Movement = std::move(candidate);
+            }
             return plan;
         }
         if (role == "tank")
