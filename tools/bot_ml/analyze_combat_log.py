@@ -227,6 +227,8 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
                 })
 
         actors.sort(key=lambda row: (-int(row["damage"]), int(row["actor_guid"])))
+        party_damage = sum(int(row["damage"]) for row in actors)
+        party_healing = sum(int(row["healing"]) for row in actors)
         encounters.append({
             "route_generation": generation,
             "route_node_id": node_id,
@@ -235,10 +237,12 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
             "last_at_ms": last_ms,
             "duration_sec": round(duration_sec, 3),
             "combat_duration_sec": combat_seconds,
-            "party_damage": sum(int(row["damage"]) for row in actors),
-            "party_dps": round(sum(int(row["damage"]) for row in actors) / combat_seconds, 3),
-            "elapsed_party_dps": round(sum(int(row["damage"]) for row in actors) / duration_sec, 3),
-            "party_healing": sum(int(row["healing"]) for row in actors),
+            "party_damage": party_damage,
+            "party_dps": round(party_damage / combat_seconds, 3),
+            "elapsed_party_dps": round(party_damage / duration_sec, 3),
+            "party_healing": party_healing,
+            "party_hps": round(party_healing / combat_seconds, 3),
+            "elapsed_party_hps": round(party_healing / duration_sec, 3),
             "party_damage_taken": sum(int(row["damage_taken"]) for row in actors),
             "actors": actors,
         })
