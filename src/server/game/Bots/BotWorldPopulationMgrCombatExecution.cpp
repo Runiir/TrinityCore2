@@ -26,7 +26,8 @@ uint64 NowMs()
 }
 
 bool HasMovementCompatibleLease(
-    WorldBotState const* state, Player const* bot, uint64 nowMs)
+    BotWorldPopulationMgrBotState::WorldBotState const* state,
+    Player const* bot, uint64 nowMs)
 {
     if (!state || !bot)
         return false;
