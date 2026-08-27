@@ -580,6 +580,25 @@ int main()
     assert(magmawPlan.DamageTarget == magmawHead.Guid);
     assert(magmawPlan.Movement.has_value());
     assert(magmawPlan.Movement->Resources() == Uses(Resource::Movement));
+    assert(magmawPlan.Movement->Id.ScopeKey == magmaw.CurrentScope.CohortId + ":"
+        + std::to_string(magmaw.CurrentScope.AttemptId) + ":"
+        + std::to_string(magmaw.CurrentScope.WipeGeneration) + ":"
+        + std::to_string(magmaw.CurrentScope.RouteGeneration) + ":"
+        + magmaw.CurrentScope.NodeId);
+    assert(magmawPlan.Movement->Id.Strategy == "adaptive_magmaw");
+    assert(magmawPlan.Movement->Id.Mechanic == "pillar_evade");
+    assert(magmawPlan.Movement->Id.Actor == pillar.Guid);
+    assert(magmawPlan.Movement->Id.EventGeneration == magmaw.Revision);
+    assert(magmawPlan.Movement->ActionPriority
+        == BotActionArbitration::Priority::Survival);
+    assert(magmawPlan.Movement->Utility == 499.0f);
+    assert(magmawPlan.Movement->ExpiresAtMs == magmaw.ObservedAtMs + 750);
+    auto const* magmawPillarMove = std::get_if<Move>(
+        &magmawPlan.Movement->Action);
+    assert(magmawPillarMove);
+    assert(magmawPillarMove->X == 16.0f);
+    assert(magmawPillarMove->Y == 0.0f);
+    assert(magmawPillarMove->Z == dps.Position.Z);
 
     BotEncounter::Blackboard magmawPrepull = magmaw;
     magmawPrepull.Players.front().HealthPct = 93.0f;
@@ -614,6 +633,138 @@ int main()
     assert(magmawPrepullMove->Y == magmawBoss.Position.Y);
     assert(magmawPrepullMove->Z == magmawBoss.Position.Z);
     assert(magmawPrepullMove->Z != magmawNoReadyTank.Players.front().Position.Z);
+    assert(magmawPrepullTankPlan.Movement->Id.ScopeKey
+        == magmawNoReadyTank.CurrentScope.Key());
+    assert(magmawPrepullTankPlan.Movement->Id.Strategy == "adaptive_magmaw");
+    assert(magmawPrepullTankPlan.Movement->Id.Mechanic
+        == "prepull_melee_ready");
+    assert(magmawPrepullTankPlan.Movement->Id.Actor == magmawBoss.Guid);
+    assert(magmawPrepullTankPlan.Movement->Id.EventGeneration
+        == magmawNoReadyTank.Revision);
+    assert(magmawPrepullTankPlan.Movement->ActionPriority
+        == BotActionArbitration::Priority::Mechanic);
+    assert(magmawPrepullTankPlan.Movement->Utility == 500.0f);
+    assert(magmawPrepullTankPlan.Movement->ExpiresAtMs
+        == magmawNoReadyTank.ObservedAtMs + 750);
+
+    // A nearer immediate hazard cannot replace a pillar movement proposal,
+    // while the fallback hazard candidate retains its source-relative identity.
+    BotEncounter::Blackboard magmawPillarPriority = magmaw;
+    BotEncounter::ActorSnapshot nearbyCrash = magmawBoss;
+    nearbyCrash.Guid = ObjectGuid(HighGuid::Unit, uint32(47330), uint32(73));
+    nearbyCrash.Entry = BotEncounter::AdaptiveMagmawStrategy::CrashEntry;
+    nearbyCrash.Position = { 1.5f, 0.0f, 0.0f };
+    magmawPillarPriority.Hostiles.push_back(nearbyCrash);
+    auto magmawPillarPriorityPlan = magmawStrategy.Propose(
+        magmawPillarPriority, dps.Guid, "dps");
+    assert(magmawPillarPriorityPlan.Movement.has_value());
+    assert(magmawPillarPriorityPlan.Movement->Id.Mechanic == "pillar_evade");
+    assert(magmawPillarPriorityPlan.Movement->Id.Actor == pillar.Guid);
+
+    BotEncounter::Blackboard magmawCrash = magmaw;
+    magmawCrash.Summons.clear();
+    BotEncounter::ActorSnapshot crash = magmawBoss;
+    crash.Guid = ObjectGuid(HighGuid::Unit, uint32(47330), uint32(74));
+    crash.Entry = BotEncounter::AdaptiveMagmawStrategy::CrashEntry;
+    crash.Position = { 2.0f, 0.0f, 0.0f };
+    magmawCrash.Hostiles = { magmawBoss, magmawHead, crash };
+    auto magmawCrashPlan = magmawStrategy.Propose(
+        magmawCrash, dps.Guid, "dps");
+    assert(magmawCrashPlan.Movement.has_value());
+    assert(magmawCrashPlan.Movement->Id.ScopeKey == magmawCrash.CurrentScope.Key());
+    assert(magmawCrashPlan.Movement->Id.Mechanic == "massive_crash_evade");
+    assert(magmawCrashPlan.Movement->Id.Actor == crash.Guid);
+    assert(magmawCrashPlan.Movement->Id.EventGeneration == magmawCrash.Revision);
+    assert(magmawCrashPlan.Movement->ActionPriority
+        == BotActionArbitration::Priority::Survival);
+    assert(magmawCrashPlan.Movement->Utility == 450.0f);
+    assert(magmawCrashPlan.Movement->ExpiresAtMs
+        == magmawCrash.ObservedAtMs + 750);
+    assert(magmawCrashPlan.Movement->Resources() == Uses(Resource::Movement));
+    auto const* magmawCrashMove = std::get_if<Move>(
+        &magmawCrashPlan.Movement->Action);
+    assert(magmawCrashMove);
+    assert(magmawCrashMove->X == -14.0f);
+    assert(magmawCrashMove->Y == 0.0f);
+    assert(magmawCrashMove->Z == dps.Position.Z);
+
+    // Hook users are sorted by raw GUID and only the first two may submit a
+    // native hook. Vehicle actions and free-pincer mounting remain separate
+    // interaction candidates with their original resource lanes.
+    BotEncounter::Blackboard magmawHook = magmaw;
+    magmawHook.NativeBossState = "in_progress";
+    magmawHook.Players.clear();
+    BotEncounter::ActorSnapshot hookBot = dps;
+    hookBot.Guid = ObjectGuid(HighGuid::Player, uint32(100));
+    hookBot.Role = "dps";
+    hookBot.VehicleGuid = ObjectGuid(HighGuid::Unit, uint32(41620), uint32(101));
+    BotEncounter::ActorSnapshot secondHookBot = hookBot;
+    secondHookBot.Guid = ObjectGuid(HighGuid::Player, uint32(200));
+    secondHookBot.VehicleGuid = ObjectGuid{};
+    BotEncounter::ActorSnapshot nonHookBot = hookBot;
+    nonHookBot.Guid = ObjectGuid(HighGuid::Player, uint32(300));
+    nonHookBot.Role = "healer";
+    magmawHook.Players = { secondHookBot, hookBot, nonHookBot };
+    magmawHook.Hostiles = { magmawBoss, magmawHead };
+    BotEncounter::ActorSnapshot leftPincer = magmawBoss;
+    leftPincer.Guid = ObjectGuid(HighGuid::Unit, uint32(41620), uint32(101));
+    leftPincer.Entry = BotEncounter::AdaptiveMagmawStrategy::PincerLeftEntry;
+    BotEncounter::ActorSnapshot spike = magmawBoss;
+    spike.Guid = ObjectGuid(HighGuid::Unit, uint32(41767), uint32(102));
+    spike.Entry = BotEncounter::AdaptiveMagmawStrategy::SpikeEntry;
+    magmawHook.Summons = { leftPincer, spike };
+    auto leftHookPlan = magmawStrategy.Propose(
+        magmawHook, hookBot.Guid, "dps");
+    assert(leftHookPlan.Interaction.has_value());
+    assert(leftHookPlan.Interaction->Id.ScopeKey == magmawHook.CurrentScope.Key());
+    assert(leftHookPlan.Interaction->Id.Strategy == "adaptive_magmaw");
+    assert(leftHookPlan.Interaction->Id.Mechanic == "launch_native_hook");
+    assert(leftHookPlan.Interaction->Id.Actor == spike.Guid);
+    assert(leftHookPlan.Interaction->Id.EventGeneration == magmawHook.Revision);
+    assert(leftHookPlan.Interaction->ActionPriority
+        == BotActionArbitration::Priority::Mechanic);
+    assert(leftHookPlan.Interaction->Utility == 400.0f);
+    assert(leftHookPlan.Interaction->ExpiresAtMs == magmawHook.ObservedAtMs + 500);
+    assert(leftHookPlan.Interaction->Resources()
+        == Uses(Resource::Cast, Resource::Target));
+    auto const* leftHook = std::get_if<VehicleAction>(
+        &leftHookPlan.Interaction->Action);
+    assert(leftHook && leftHook->SpellId == 77917u
+        && leftHook->Target == spike.Guid);
+
+    BotEncounter::Blackboard magmawRightHook = magmawHook;
+    magmawRightHook.Summons.front().Entry =
+        BotEncounter::AdaptiveMagmawStrategy::PincerRightEntry;
+    auto rightHookPlan = magmawStrategy.Propose(
+        magmawRightHook, hookBot.Guid, "dps");
+    assert(rightHookPlan.Interaction.has_value());
+    auto const* rightHook = std::get_if<VehicleAction>(
+        &rightHookPlan.Interaction->Action);
+    assert(rightHook && rightHook->SpellId == 77941u
+        && rightHook->Target == spike.Guid);
+    auto nonHookPlan = magmawStrategy.Propose(
+        magmawHook, nonHookBot.Guid, "healer");
+    assert(!nonHookPlan.Interaction.has_value());
+
+    BotEncounter::Blackboard magmawMount = magmawHook;
+    magmawMount.Summons.clear();
+    magmawMount.Hostiles.front().Interactable = true;
+    magmawMount.Players[1].VehicleGuid = ObjectGuid{};
+    magmawMount.Players[1].Position = { 24.0f, 0.0f, magmawBoss.Position.Z };
+    auto mountPlan = magmawStrategy.Propose(
+        magmawMount, hookBot.Guid, "dps");
+    assert(mountPlan.Interaction.has_value());
+    assert(mountPlan.Interaction->Id.ScopeKey == magmawMount.CurrentScope.Key());
+    assert(mountPlan.Interaction->Id.Mechanic == "mount_free_pincer");
+    assert(mountPlan.Interaction->Id.Actor == magmawBoss.Guid);
+    assert(mountPlan.Interaction->ActionPriority
+        == BotActionArbitration::Priority::Mechanic);
+    assert(mountPlan.Interaction->Utility == 350.0f);
+    assert(mountPlan.Interaction->ExpiresAtMs == magmawMount.ObservedAtMs + 500);
+    assert(mountPlan.Interaction->Resources() == Uses(Resource::Interaction));
+    auto const* mount = std::get_if<SpellClick>(
+        &mountPlan.Interaction->Action);
+    assert(mount && mount->Target == magmawBoss.Guid);
 
     BotEncounter::Blackboard magmawNonFiniteBot = magmawNoReadyTank;
     magmawNonFiniteBot.Players.front().Position.Z =
