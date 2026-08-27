@@ -6,6 +6,7 @@
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgrPolicyHelpers.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
+#include "Bots/BotWorldPopulationMgrValidationCohortReadiness.h"
 
 #include "CellImpl.h"
 #include "Creature.h"
@@ -629,21 +630,75 @@ bool ObjectiveContext::RunTargetEngagement(
                 validationPartyHasActiveCombat(!packHasLiveMobs);
             Unit* terminalCombatTarget = !packHasLiveMobs && partyHasActiveCombatUnit
                 ? findBoundedTerminalPartyCombatTarget() : nullptr;
-            bool fullCohortAtEndpoint = true;
-            uint32 loadedParticipants = 0;
+            ValidationCohortReadinessObservation cohortObservation;
+            cohortObservation.ExpectedMemberCount =
+                Cohort().Config.TargetPopulation
+                    ? Cohort().Config.TargetPopulation
+                    : uint32(Party().Bots.size());
+            cohortObservation.PackHasLiveMobs = packHasLiveMobs;
+            cohortObservation.PartyHasActiveCombat = partyHasActiveCombatUnit;
             for (WorldBotState const& cohortState : Party().Bots)
+            {
+                ValidationCohortMemberObservation memberObservation;
                 if (Player* member = GetLoadedBot(cohortState))
                 {
-                    ++loadedParticipants;
-                    if (!member->IsInWorld() || !member->IsAlive() || !IsValidationCohortMemberInOriginalInstance(cohortState, member)
-                        || member->GetExactDist(Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY, Cohort().Config.ValidationRouteZ) > routeArrivalRadius)
-                        fullCohortAtEndpoint = false;
+                    memberObservation.Accounted = true;
+                    memberObservation.Living = member->IsAlive();
+                    if (memberObservation.Living)
+                    {
+                        memberObservation.Valid = member->IsInWorld()
+                            && IsValidationCohortMemberInOriginalInstance(
+                                cohortState, member);
+                        memberObservation.AtEndpoint = memberObservation.Valid
+                            && member->GetExactDist(
+                                Cohort().Config.ValidationRouteX,
+                                Cohort().Config.ValidationRouteY,
+                                Cohort().Config.ValidationRouteZ)
+                                <= routeArrivalRadius;
+                    }
+                    else
+                    {
+                        ValidationCohortRecoveryObservation recovery;
+                        recovery.Alive = false;
+                        recovery.Ghost = member->HasFlag(
+                            PLAYER_FLAGS, PLAYER_FLAGS_GHOST);
+                        recovery.ReleaseRequested =
+                            cohortState.NativeReleaseRequested;
+                        recovery.NativeCorpseAuthority =
+                            Manager.HasNativeRaidCorpseAuthority(
+                                cohortState, member);
+                        recovery.EpisodeStartedMs =
+                            cohortState.NativeRecoveryEpisodeStartedMs;
+                        recovery.EpisodeAttemptId =
+                            cohortState.NativeRecoveryEpisodeAttemptId;
+                        recovery.EpisodeRouteGeneration =
+                            cohortState.NativeRecoveryEpisodeRouteGeneration;
+                        recovery.EpisodeWipeGeneration =
+                            cohortState.NativeRecoveryEpisodeWipeGeneration;
+                        recovery.EpisodeDeathOrdinal =
+                            cohortState.NativeRecoveryEpisodeDeathOrdinal;
+                        recovery.EpisodePhase =
+                            cohortState.NativeRecoveryEpisodePhase;
+                        recovery.AttemptId = Cohort().AttemptId;
+                        recovery.RouteGeneration =
+                            Party().ValidationRouteGeneration;
+                        recovery.WipeGeneration = Cohort().Raid.WipeGeneration;
+                        recovery.DeathOrdinal = cohortState.RecentDeathCount;
+                        memberObservation.KnownRecovering =
+                            IsKnownValidationRecovery(recovery);
+                        memberObservation.Valid =
+                            memberObservation.KnownRecovering;
+                    }
                 }
-            if ((Cohort().Config.TargetPopulation && loadedParticipants < Cohort().Config.TargetPopulation) || !loadedParticipants)
-                fullCohortAtEndpoint = false;
+                cohortObservation.ObserveMember(memberObservation);
+            }
+            ValidationCohortReadiness const cohortReadiness =
+                ClassifyValidationCohortReadiness(cohortObservation);
+            bool const fullCohortAtEndpoint =
+                cohortReadiness.FullRosterAtEndpoint;
             uint64 nowMs = NowMs();
             uint64& clearCandidateSinceMs = discoveryLeg ? Party().ValidationRouteNodeClearCandidateSinceMs : Party().ValidationRoutePackClearCandidateSinceMs;
-            if (packHasLiveMobs || partyHasActiveCombatUnit || !fullCohortAtEndpoint)
+            if (!cohortReadiness.TrashTerminalReady)
                 clearCandidateSinceMs = 0;
             else if (!clearCandidateSinceMs)
                 clearCandidateSinceMs = nowMs;
@@ -664,9 +719,7 @@ bool ObjectiveContext::RunTargetEngagement(
             else if (Cohort().Config.ValidationRouteAdvanceMode == "terminal"
                 && (discoveryLeg ? (Party().ValidationRouteCompletedPackCount > 0 || Party().ValidationRouteObservedDeadScriptTarget)
                     : (Party().ValidationRoutePackObservedEngagement || Party().ValidationRouteObservedDeadScriptTarget))
-                && !packHasLiveMobs
-                && !partyHasActiveCombatUnit
-                && fullCohortAtEndpoint
+                && cohortReadiness.TrashTerminalReady
                 && nowMs - clearCandidateSinceMs >= 2000)
             {
                 if (discoveryLeg)
@@ -684,7 +737,8 @@ bool ObjectiveContext::RunTargetEngagement(
             {
                 char const* holdReason = packHasLiveMobs ? "dynamic_pack_members_live_or_unobserved"
                     : partyHasActiveCombatUnit ? "trash_cluster_party_combat_active"
-                    : !fullCohortAtEndpoint ? "trash_cluster_cohort_not_at_endpoint"
+                    : !cohortReadiness.AllExpectedMembersAccounted ? "trash_cluster_cohort_not_accounted"
+                    : !cohortReadiness.AllLivingAtEndpoint ? "trash_cluster_living_cohort_not_at_endpoint"
                     : Cohort().Config.ValidationRouteAdvanceMode != "terminal" ? "trash_cluster_terminal_mode_required"
                     : "trash_cluster_clear_stability_pending";
                 std::ostringstream raw;
@@ -692,6 +746,30 @@ bool ObjectiveContext::RunTargetEngagement(
                     << ",\"terminal_hold\":{\"pack_has_live_mobs\":" << (packHasLiveMobs ? "true" : "false")
                     << ",\"party_has_active_combat\":" << (partyHasActiveCombatUnit ? "true" : "false")
                     << ",\"full_cohort_at_endpoint\":" << (fullCohortAtEndpoint ? "true" : "false")
+                    << ",\"cohort_readiness\":{"expected_members\":"
+                    << cohortObservation.ExpectedMemberCount
+                    << ",\"roster_members\":"
+                    << cohortObservation.RosterMemberCount
+                    << ",\"accounted_members\":"
+                    << cohortObservation.AccountedMemberCount
+                    << ",\"missing_members\":"
+                    << cohortObservation.MissingMemberCount
+                    << ",\"invalid_members\":"
+                    << cohortObservation.InvalidMemberCount
+                    << ",\"living_members\":"
+                    << cohortObservation.LivingMemberCount
+                    << ",\"living_at_endpoint\":"
+                    << cohortObservation.LivingAtEndpointCount
+                    << ",\"known_recovering_members\":"
+                    << cohortObservation.KnownRecoveringMemberCount
+                    << ",\"all_expected_members_accounted\":"
+                    << (cohortReadiness.AllExpectedMembersAccounted ? "true" : "false")
+                    << ",\"all_living_at_endpoint\":"
+                    << (cohortReadiness.AllLivingAtEndpoint ? "true" : "false")
+                    << ",\"full_roster_at_endpoint\":"
+                    << (cohortReadiness.FullRosterAtEndpoint ? "true" : "false")
+                    << ",\"trash_terminal_ready\":"
+                    << (cohortReadiness.TrashTerminalReady ? "true" : "false") << "}"
                     << ",\"quiet_elapsed_ms\":" << quietElapsedMs
                     << ",\"quiet_remaining_ms\":" << quietRemainingMs << "}"
                     << ",\"terminal_blocker\":";

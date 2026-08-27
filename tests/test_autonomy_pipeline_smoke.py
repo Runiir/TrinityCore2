@@ -2047,7 +2047,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "bool BotWorldPopulationMgr::MoveBotToPoint" in mgr
     movement_adapter = read(BOT_DIR / "BotWorldPopulationMgrMovement.cpp")
     movement_planner = read(MOVEMENT_PLANNER)
-    assert 'return reject("route_destination_recently_failed");' in movement_planner
+    assert 'return reject("route_destination_recently_failed",' in movement_planner
     assert "if (recentFailureMemory && !intent.AllowRecentFailureRetry)" in movement_planner
     assert "intent.AllowRecentFailureRetry = Cohort().Config.ValidationRouteEnable;" in movement_adapter
     assert "RecordEvent(state, bot, \"material_farming_source\"" in mgr
@@ -2162,7 +2162,7 @@ def test_walkable_descent_uses_native_paths_while_unresolved_falls_stay_fail_clo
     assert 'Cohort().Config.ValidationRouteDescentAction\n            == "native_walkable_descent"' in movement_adapter
     assert "else if (!strictNativeDescent && progressiveStaticRoute" in move_bot_to_point
     assert "if (!segmentSelected && progressiveStaticRoute && !strictNativeDescent)" in move_bot_to_point
-    assert 'return reject("native_descent_complete_path_required");' in move_bot_to_point
+    assert 'return reject("native_descent_complete_path_required",' in move_bot_to_point
     assert '"native_bounded_descent_jump"' not in move_bot_to_point
     assert "MoveJump(" not in move_bot_to_point
     assert "MoveFall(" not in move_bot_to_point
@@ -3166,7 +3166,8 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     )
     assert "!Party().ValidationRoutePackObservedEngagement" in route_objective
     assert "member->GetVictim() || !member->getAttackers().empty()" in route_objective
-    assert "&& !partyHasActiveCombatUnit" in route_objective
+    assert "cohortObservation.PartyHasActiveCombat = partyHasActiveCombatUnit" in route_objective
+    assert "&& cohortReadiness.TrashTerminalReady" in route_objective
     assert "nowMs - Party().ValidationRoutePackClearCandidateSinceMs < 2000" in route_objective
     assert "Party().ValidationRoutePackEngagedGuids.find(killedTarget->GetGUID())" in route_objective
     assert "bestAnchorTargetScore" not in route_objective
@@ -3196,13 +3197,13 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         route_objective,
         "routeDistance <= routeArrivalRadius && std::string(GetDungeonRole(bot)) == \"tank\"",
         "++state.ValidationRouteTargetSearchMissCount >= 2",
+        "ValidationCohortReadinessObservation cohortObservation;",
+        "ClassifyValidationCohortReadiness(cohortObservation);",
         "uint64& clearCandidateSinceMs = discoveryLeg ? Party().ValidationRouteNodeClearCandidateSinceMs : Party().ValidationRoutePackClearCandidateSinceMs;",
         "if (Cohort().Config.ValidationRouteAdvanceMode == \"terminal\"",
         "(discoveryLeg ? (Party().ValidationRouteCompletedPackCount > 0 || Party().ValidationRouteObservedDeadScriptTarget)",
         ": (Party().ValidationRoutePackObservedEngagement || Party().ValidationRouteObservedDeadScriptTarget))",
-        "&& !packHasLiveMobs",
-        "&& !partyHasActiveCombatUnit",
-        "&& fullCohortAtEndpoint",
+        "&& cohortReadiness.TrashTerminalReady",
         "&& nowMs - clearCandidateSinceMs >= 2000)",
         'markTrashClusterCleared("trash_cluster_cleared");',
     )
@@ -3249,10 +3250,11 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert "!IsValidationCohortMemberInOriginalInstance(state, loadedBot)" in advance_manifest
     assert "Cohort().Config.TargetPopulation && loadedParticipants < Cohort().Config.TargetPopulation" in advance_manifest
     assert "if (loadedParticipants && allLoadedArrived)" in advance_manifest
-    assert "cohortReadyForAdvance" in advance_manifest
+    assert "ValidationCohortReadinessObservation" in advance_manifest
+    assert "ClassifyValidationCohortReadiness(cohortObservation)" in advance_manifest
     assert "terminalCohortRadius" in advance_manifest
-    assert "loadedBot->GetExactDist(Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY, Cohort().Config.ValidationRouteZ) > terminalCohortRadius" in advance_manifest
-    assert "if (!cohortReadyForAdvance)\n            return false;" in advance_manifest
+    assert "<= terminalCohortRadius" in advance_manifest
+    assert "if (!cohortReadiness.FullRosterAtEndpoint)\n            return false;" in advance_manifest
     assert 'terminalReason = typedNativeDescent' in advance_manifest
     assert '? "native_descent_landed_path_proven" : "arrival";' in advance_manifest
     assert "bool successfulTerminal = state.ValidationRouteGeneration == Party().ValidationRouteGeneration" in advance_manifest
@@ -3306,8 +3308,9 @@ def test_trash_terminal_uses_current_generation_truth_after_metric_restart():
     assert "Party().ValidationRoutePackGeneration == Party().ValidationRouteGeneration" in terminal_block
     assert "Party().ValidationRoutePackObservedEngagement" in terminal_block
     assert "++state.ValidationRouteTargetSearchMissCount >= 2" in terminal_block
-    assert "!packHasLiveMobs" in terminal_block
-    assert "!partyHasActiveCombatUnit" in terminal_block
+    assert "cohortObservation.PackHasLiveMobs = packHasLiveMobs" in terminal_block
+    assert "cohortObservation.PartyHasActiveCombat = partyHasActiveCombatUnit" in terminal_block
+    assert "cohortReadiness.TrashTerminalReady" in terminal_block
     assert "fullCohortAtEndpoint" in terminal_block
     assert "nowMs - clearCandidateSinceMs >= 2000" in terminal_block
 
@@ -3352,6 +3355,10 @@ def test_trash_terminal_uses_current_generation_truth_after_metric_restart():
         "pack_has_live_mobs",
         "party_has_active_combat",
         "full_cohort_at_endpoint",
+        "all_expected_members_accounted",
+        "all_living_at_endpoint",
+        "full_roster_at_endpoint",
+        "trash_terminal_ready",
         "quiet_elapsed_ms",
         "quiet_remaining_ms",
     ]:
@@ -3359,7 +3366,8 @@ def test_trash_terminal_uses_current_generation_truth_after_metric_restart():
     for hold_reason in [
         "dynamic_pack_members_live_or_unobserved",
         "trash_cluster_party_combat_active",
-        "trash_cluster_cohort_not_at_endpoint",
+        "trash_cluster_cohort_not_accounted",
+        "trash_cluster_living_cohort_not_at_endpoint",
         "trash_cluster_terminal_mode_required",
         "trash_cluster_clear_stability_pending",
     ]:
@@ -3371,6 +3379,13 @@ def test_trash_terminal_uses_current_generation_truth_after_metric_restart():
         "else",
         'raw << "null";',
     )
+
+    route_runtime = read(BOT_DIR / "BotWorldPopulationMgrValidationRouteRuntime.cpp")
+    manifest_advance = function_body(
+        route_runtime, "bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest"
+    )
+    assert "ClassifyValidationCohortReadiness(cohortObservation)" in manifest_advance
+    assert "if (!cohortReadiness.FullRosterAtEndpoint)" in manifest_advance
 
 
 def test_clip_capture_smoke_persists_clip_row_with_pre_and_post_frames():

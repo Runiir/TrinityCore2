@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
+#include "Bots/BotWorldPopulationMgrValidationCohortReadiness.h"
 #include "Bots/BotWorldPopulationMgrValidationRouteDestination.h"
 
 #include "GameTime.h"
@@ -576,32 +577,42 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
     }
     else
     {
-        uint32 loadedParticipants = 0;
-        bool cohortReadyForAdvance = true;
         float terminalCohortRadius = Cohort().Config.ValidationRouteClusterRadiusYards > 1.0f
             ? std::min(Cohort().Config.ValidationRouteClusterRadiusYards, 90.0f)
             : 90.0f;
+        BotWorldPopulationMgrValidationRoute::ValidationCohortReadinessObservation
+            cohortObservation;
+        cohortObservation.ExpectedMemberCount =
+            Cohort().Config.TargetPopulation
+                ? Cohort().Config.TargetPopulation
+                : uint32(Party().Bots.size());
         for (WorldBotState const& state : Party().Bots)
         {
+            BotWorldPopulationMgrValidationRoute::ValidationCohortMemberObservation
+                memberObservation;
             Player* loadedBot = GetLoadedBot(state);
-            if (!loadedBot)
-                continue;
-
-            ++loadedParticipants;
-            if (!loadedBot->IsInWorld()
-                || !loadedBot->IsAlive()
-                || !IsValidationCohortMemberInOriginalInstance(state, loadedBot)
-                || loadedBot->GetExactDist(Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY, Cohort().Config.ValidationRouteZ) > terminalCohortRadius)
+            if (loadedBot)
             {
-                cohortReadyForAdvance = false;
-                break;
+                memberObservation.Accounted = true;
+                memberObservation.Living = loadedBot->IsAlive();
+                memberObservation.Valid = loadedBot->IsInWorld()
+                    && IsValidationCohortMemberInOriginalInstance(
+                        state, loadedBot);
+                memberObservation.AtEndpoint = memberObservation.Living
+                    && memberObservation.Valid
+                    && loadedBot->GetExactDist(
+                        Cohort().Config.ValidationRouteX,
+                        Cohort().Config.ValidationRouteY,
+                        Cohort().Config.ValidationRouteZ)
+                        <= terminalCohortRadius;
             }
+            cohortObservation.ObserveMember(memberObservation);
         }
 
-        if (Cohort().Config.TargetPopulation && loadedParticipants < Cohort().Config.TargetPopulation)
-            cohortReadyForAdvance = false;
-
-        if (!cohortReadyForAdvance)
+        BotWorldPopulationMgrValidationRoute::ValidationCohortReadiness const
+            cohortReadiness = BotWorldPopulationMgrValidationRoute::
+                ClassifyValidationCohortReadiness(cohortObservation);
+        if (!cohortReadiness.FullRosterAtEndpoint)
             return false;
 
         for (WorldBotState const& state : Party().Bots)
