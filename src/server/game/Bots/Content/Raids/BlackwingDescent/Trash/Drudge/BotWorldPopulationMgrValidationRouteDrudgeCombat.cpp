@@ -79,7 +79,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntranceCombat()
             SourceSeparation);
         Target = LaneSource;
         State.TargetGuid = LaneSource->GetGUID();
-        return PhaseResult::Handled;
+        // Tanks still need the ordinary role kernel for mitigation and
+        // survival actions. The area authority keeps hostile offense held.
+        return AssignedTank ? PhaseResult::Continue : PhaseResult::Handled;
     }
 
     if (Bot->GetVictim() && Bot->GetVictim() != combatTarget)
@@ -98,23 +100,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntranceCombat()
     BotRaidAreaAuthority::SetAllOffenseSuppressed(
         Bot->GetGUID().GetRawValue(), false);
     BotRaidAreaAuthority::Set(Bot->GetGUID().GetRawValue(), true);
-    ResolvedCombatAction action = Manager.ResolveProfileCombatAction(
-        Bot, combatTarget, 1, false, 0, false, false, true, false, true);
-    BotActionResult const result = Manager.ExecuteProfileCombatAction(
-        &State, Bot, combatTarget, &action,
-        1, false, 0, false, false, true, false, true);
-    bool const succeeded = action.Valid && action.Type == "cast" && action.SpellId
-        && action.TargetGuid == combatTarget->GetGUID()
-        && result == BotActionResult::Ok;
-    if (succeeded)
-        Manager.Party().ValidationRouteDrudgeProfileActionRosterGuids.insert(
-            Bot->GetGUID().GetCounter());
-    Record(combatTarget, succeeded ? "drudge_entrance_single_target_action"
-        : "drudge_entrance_single_target_hold", SourceSeparation,
-        action.SpellId);
     Target = combatTarget;
     State.TargetGuid = combatTarget->GetGUID();
     State.WasInCombat = combatTarget->IsInCombat();
-    return PhaseResult::Handled;
+    return PhaseResult::Continue;
 }
 }

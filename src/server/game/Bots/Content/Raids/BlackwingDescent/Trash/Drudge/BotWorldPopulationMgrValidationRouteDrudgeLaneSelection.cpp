@@ -595,7 +595,7 @@ bool DrudgeLaneContext::Run()
     // Once both tanks own their entrance Drudges, use ordinary native class
     // actions with only lane targeting and paired-health synchronization.
     if (IsEntrancePullEstablished())
-        return RunEntranceCombat() != PhaseResult::Abort;
+        return RunEntranceCombat() == PhaseResult::Handled;
 
     result = BuildAnchorPolicies();
     if (result == PhaseResult::Abort)

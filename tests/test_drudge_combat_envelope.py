@@ -175,13 +175,13 @@ def test_native_entrance_ownership_uses_simple_balanced_combat_and_safety_moveme
     release = lane_selection[lane_selection.index("result = ResolveSources();"):
                              lane_selection.index("result = BuildAnchorPolicies();")]
     assert "if (IsEntrancePullEstablished())" in release
-    assert "return RunEntranceCombat() != PhaseResult::Abort;" in release
+    assert "return RunEntranceCombat() == PhaseResult::Handled;" in release
     assert "ShouldHoldLowerLane" in combat
     assert "drudge_kill_sync_hold_lower_health_lane" in combat
     assert "split_lane_target_switch" in combat
-    assert "ResolveProfileCombatAction" in combat
-    assert "forbidArea" not in combat
-    assert "false, false, true, false, true" in combat
+    assert "AssignedTank ? PhaseResult::Continue" in combat
+    assert "ResolveProfileCombatAction" not in combat
+    assert "return PhaseResult::Continue;" in combat
     assert "ordinaryEntranceCombat = IsEntrancePullEstablished()" in geometry
     assert "specializedLaneMovement = drudgeProfile" in geometry
     assert "specializedLaneMovement, exactPrepullStaged" in geometry
