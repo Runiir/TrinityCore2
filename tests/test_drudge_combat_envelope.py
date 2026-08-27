@@ -172,11 +172,16 @@ def test_native_entrance_ownership_uses_simple_balanced_combat_and_safety_moveme
         DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
     ).read_text(encoding="utf-8")
 
-    release = lane_selection[lane_selection.index("result = ResolveSources();"):
-                             lane_selection.index("result = BuildAnchorPolicies();")]
-    assert "if (IsEntrancePullEstablished())" in release
-    assert release.index("RunEntrancePullActions()") < release.index("RunEntranceCombat()")
-    assert "return RunEntranceCombat() == PhaseResult::Handled;" in release
+    run = lane_selection[
+        lane_selection.index("bool DrudgeLaneContext::Run()"):
+        lane_selection.index("DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildContract()")
+    ]
+    build = run.index("result = BuildAnchorPolicies();")
+    established = run.index("if (IsEntrancePullEstablished())")
+    pull = run.index("result = RunEntrancePullActions();", established)
+    combat_branch = run.index("return RunEntranceCombat() == PhaseResult::Handled;", pull)
+    assert build < established < pull < combat_branch
+    assert "return RunEntranceCombat() == PhaseResult::Handled;" in run[established:]
     assert "ShouldHoldLowerLane" in combat
     assert "drudge_kill_sync_hold_lower_health_lane" in combat
     assert "split_lane_target_switch" in combat
@@ -192,6 +197,34 @@ def test_native_entrance_ownership_uses_simple_balanced_combat_and_safety_moveme
     assert "specializedLaneMovement = drudgeProfile" in geometry
     assert "specializedLaneMovement, exactPrepullStaged" in geometry
     assert "specializedLaneMovement, IsLandedRushPending()" in geometry
+
+
+def test_established_entrance_maintenance_has_its_native_callbacks_bound() -> None:
+    lane_selection = (
+        DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp"
+    ).read_text(encoding="utf-8")
+    entrance_pull = (
+        DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeEntrancePull.cpp"
+    ).read_text(encoding="utf-8")
+    geometry = (
+        DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
+    ).read_text(encoding="utf-8")
+
+    run = lane_selection[
+        lane_selection.index("bool DrudgeLaneContext::Run()"):
+        lane_selection.index("DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildContract()")
+    ]
+    established = run.index("if (IsEntrancePullEstablished())")
+    build = run.index("result = BuildAnchorPolicies();")
+
+    # Canary67 entered this branch after both tanks owned their Drudges. The
+    # maintenance path invokes these callbacks, so their setup must precede
+    # the branch and its first pull action.
+    assert build < established
+    assert "StrictNativePath(" in entrance_pull
+    assert "DeclaredAnchorFor(pullOwnerSlot)" in entrance_pull
+    assert geometry.index("StrictNativePath =") >= 0
+    assert lane_selection.index("DeclaredAnchorFor =") >= 0
 
 
 def test_drudge_cpp_files_remain_below_one_thousand_lines() -> None:

@@ -592,6 +592,12 @@ bool DrudgeLaneContext::Run()
     if (result == PhaseResult::Handled)
         return true;
 
+    result = BuildAnchorPolicies();
+    if (result == PhaseResult::Abort)
+        return false;
+    if (result == PhaseResult::Handled)
+        return true;
+
     // Once both tanks own their entrance Drudges, use ordinary native class
     // actions with fixed entrance anchors, lane targeting, and paired-health
     // synchronization. Re-run entrance maintenance so Rush cannot drag a
@@ -603,12 +609,6 @@ bool DrudgeLaneContext::Run()
             return true;
         return RunEntranceCombat() == PhaseResult::Handled;
     }
-
-    result = BuildAnchorPolicies();
-    if (result == PhaseResult::Abort)
-        return false;
-    if (result == PhaseResult::Handled)
-        return true;
 
     result = RunEntrancePullActions();
     if (result == PhaseResult::Abort)
