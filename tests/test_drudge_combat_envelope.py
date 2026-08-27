@@ -237,7 +237,8 @@ def test_entrance_pull_stacks_at_cleared_chainwielder_position() -> None:
     assert "-352.0f, -132.0f" in entrance
     assert "config.ValidationRouteSplitRecoveryMemberAnchors" not in entrance
     assert "TankDoorwayArrivalToleranceYards = 20.0f" in entrance
-    assert "RangedDoorwayArrivalToleranceYards = 3.0f" in entrance
+    assert "RangedDoorwayArrivalToleranceYards = 10.5f" in entrance
+    assert "RangedDoorwaySafeMaximumY = -121.0f" in entrance
     assert "doorwayToleranceFor(AssignedTank)" in entrance
     pull_started = entrance[entrance.index("if (pullStarted)"):]
     assert "IsLandedRushPending()" not in pull_started
