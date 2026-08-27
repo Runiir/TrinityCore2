@@ -234,7 +234,7 @@ def test_entrance_pull_stacks_at_cleared_chainwielder_position() -> None:
 
     assert "static std::array<MemberAnchor, 10> const entranceAnchors" in entrance
     assert "-342.0f, -104.0f" in entrance
-    assert "-352.0f, -132.0f" in entrance
+    assert "-344.0f, -132.0f" in entrance
     assert "config.ValidationRouteSplitRecoveryMemberAnchors" not in entrance
     assert "TankDoorwayArrivalToleranceYards = 20.0f" in entrance
     assert "RangedDoorwayArrivalToleranceYards = 10.5f" in entrance
