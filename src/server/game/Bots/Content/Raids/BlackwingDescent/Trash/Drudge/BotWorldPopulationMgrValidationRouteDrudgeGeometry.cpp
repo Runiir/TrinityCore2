@@ -52,6 +52,8 @@ bool DrudgeLaneContext::TryMinimumDistance(bool specializedDrudgeRecovery)
         && party.ValidationRouteDrudgePrepullRouteGeneration
             == party.ValidationRouteGeneration;
     bool const ordinaryEntranceCombat = IsEntrancePullEstablished();
+    if (ordinaryEntranceCombat)
+        return false;
     bool const specializedLaneMovement = drudgeProfile && !ordinaryEntranceCombat;
     if (!specializedDrudgeRecovery
         && BotRaidDrudgeGeometry::ExactDrudgeLaneOwnsGroupMovement(
@@ -240,13 +242,9 @@ bool DrudgeLaneContext::TryMinimumDistance(bool specializedDrudgeRecovery)
     std::string raw = Manager.BuildRawJson(Bot, source);
     std::string semantic = Manager.BuildSemanticJson(
         Bot, source, "validation_route_mechanic", &Power, Stage, Activity);
-    char const* outcome = moved ? "minimum_distance_exit_started"
-        : ordinaryEntranceCombat ? "minimum_distance_exit_deferred_to_lane_combat"
-                                 : "minimum_distance_exit_failed";
     Manager.RecordEvent(State, Bot, "validation_route_mechanic", source,
-        outcome, raw.c_str(), semantic.c_str(), sourceDistance, sourceEntry);
-    if (!moved && ordinaryEntranceCombat)
-        return false;
+        moved ? "minimum_distance_exit_started" : "minimum_distance_exit_failed",
+        raw.c_str(), semantic.c_str(), sourceDistance, sourceEntry);
     Target = source;
     State.TargetGuid = source->GetGUID();
     Situation = "validation_route_mechanic";

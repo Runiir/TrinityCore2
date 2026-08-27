@@ -175,6 +175,7 @@ def test_native_entrance_ownership_uses_simple_balanced_combat_and_safety_moveme
     release = lane_selection[lane_selection.index("result = ResolveSources();"):
                              lane_selection.index("result = BuildAnchorPolicies();")]
     assert "if (IsEntrancePullEstablished())" in release
+    assert release.index("RunEntrancePullActions()") < release.index("RunEntranceCombat()")
     assert "return RunEntranceCombat() == PhaseResult::Handled;" in release
     assert "ShouldHoldLowerLane" in combat
     assert "drudge_kill_sync_hold_lower_health_lane" in combat
@@ -185,6 +186,9 @@ def test_native_entrance_ownership_uses_simple_balanced_combat_and_safety_moveme
     assert "drudge_entrance_lane_action" in combat
     assert "return PhaseResult::Handled;" in combat
     assert "ordinaryEntranceCombat = IsEntrancePullEstablished()" in geometry
+    entrance_guard = geometry.index("if (ordinaryEntranceCombat)")
+    assert entrance_guard < geometry.index("moved = Manager.MoveBotToPoint")
+    assert "return false;" in geometry[entrance_guard:entrance_guard + 80]
     assert "specializedLaneMovement = drudgeProfile" in geometry
     assert "specializedLaneMovement, exactPrepullStaged" in geometry
     assert "specializedLaneMovement, IsLandedRushPending()" in geometry

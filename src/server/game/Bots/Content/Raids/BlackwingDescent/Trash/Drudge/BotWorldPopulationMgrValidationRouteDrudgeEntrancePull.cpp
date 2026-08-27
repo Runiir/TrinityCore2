@@ -128,15 +128,16 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
 
     if (pullStarted)
     {
-        if (IsLandedRushPending())
-            return PhaseResult::Continue;
         if (AssignedTank)
         {
+            bool const tankAtEntrance = atAnchor(Bot, entrance, true);
             PhaseResult const taunt = RunNativeTauntConfirmation(
-                true, false, false);
+                true, tankAtEntrance, tankAtEntrance);
             if (taunt == PhaseResult::Handled)
                 return taunt;
         }
+        if (IsLandedRushPending())
+            return PhaseResult::Continue;
         if (!atAnchor(Bot, entrance, AssignedTank))
             return holdOrMoveTo(entrance, "drudge_entrance_return_move",
                 "drudge_entrance_return_wait");
