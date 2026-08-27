@@ -67,6 +67,8 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
         state.ActivePathToX = intent.X;
         state.ActivePathToY = intent.Y;
         state.ActivePathToZ = intent.Z;
+        state.LastRecoveryMode = "native_active_path";
+        state.LastRecoveryResult = "native_movement_retained";
         BotMovementArbitration::Apply(state.MovementLease, request);
         return true;
     }

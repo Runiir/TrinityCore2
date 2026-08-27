@@ -75,12 +75,13 @@ def test_drudge_entrance_pull_holds_nonowners_then_returns_before_handoff():
 
     assert pull_started < owner < cast
     assert pull_started < early_taunt < puller_return < owner
-    landed_handoff = pull.index("if (IsLandedRushPending())", pull_started)
-    assert pull_started < early_taunt < landed_handoff < puller_return
-    assert "return PhaseResult::Continue;" in pull[landed_handoff:puller_return]
+    pack_link = pull.index("if (!packLinked)", pull_started)
+    assert puller_return < pack_link < owner
     assert "if (AssignedTank)" in pull[pull_started:early_taunt]
-    assert "tankAtEntrance" in pull[pull_started:landed_handoff]
-    assert "true, tankAtEntrance, tankAtEntrance" in pull[early_taunt:landed_handoff]
+    assert "tankAtEntrance" in pull[pull_started:puller_return]
+    assert "true, tankAtEntrance, tankAtEntrance" in pull[
+        early_taunt:puller_return
+    ]
     assert "AssignedTank && !NativeChargePending" not in pull
     assert "recoveryAnchorFor(OneBasedSlot)" in pull
     assert "exactRosterAtEntrance()" in pull
@@ -89,6 +90,22 @@ def test_drudge_entrance_pull_holds_nonowners_then_returns_before_handoff():
     assert '"drudge_entrance_native_pack_link_wait"' in pull
     assert "if (!packLinked)" in pull
     assert "return PhaseResult::Continue;" in pull[pull_started:owner]
+
+
+def test_drudge_linked_return_retains_movement_and_continues_combat():
+    pull = ENTRANCE_PULL.read_text(encoding="utf-8")
+    helper = pull[pull.index("auto moveTo ="):pull.index("if (pullStarted)")]
+    linked_return = pull[
+        pull.index('"drudge_entrance_return_move"'):
+        pull.index("if (!packLinked)")
+    ]
+
+    assert "MovementContinuation::HoldOffense" in helper
+    assert "MovementContinuation::ContinueCombat" in helper
+    assert '"drudge_entrance_native_path_retained"' in helper
+    assert "&& (arrived || moved)" in helper
+    assert "? PhaseResult::Continue : PhaseResult::Handled" in helper
+    assert "packLinked ? MovementContinuation::ContinueCombat" in linked_return
 
 
 def test_drudge_dispatch_keeps_movement_and_minimum_distance_order():

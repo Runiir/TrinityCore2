@@ -15,6 +15,12 @@ namespace
 {
 using Context = DrudgeLaneContext;
 
+enum class MovementContinuation
+{
+    HoldOffense,
+    ContinueCombat,
+};
+
 bool NativeEngaged(Context const& context, Creature const* source)
 {
     return source && source->IsAlive()
@@ -172,10 +178,13 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
         return PhaseResult::Handled;
     }
 
-    auto holdOrMoveTo = [&](MemberAnchor const* anchor,
-        char const* moveResult, char const* waitResult) -> PhaseResult
+    auto moveTo = [&](MemberAnchor const* anchor,
+        char const* moveResult, char const* waitResult,
+        MovementContinuation continuation =
+            MovementContinuation::HoldOffense) -> PhaseResult
     {
-        HoldOffense();
+        if (continuation == MovementContinuation::HoldOffense)
+            HoldOffense();
         float const tolerance = pullStarted && AssignedTank
             ? TankDoorwayCombatToleranceYards
             : doorwayToleranceFor(AssignedTank, OneBasedSlot);
@@ -194,15 +203,24 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
                 BotMovementArbitration::Priority::Mechanic);
         if (!arrived && !moved)
         {
+            if (continuation == MovementContinuation::ContinueCombat)
+                HoldOffense();
             State.LastPathRejectReason = rejection.empty()
                 ? "drudge_entrance_native_path_rejected" : rejection;
             State.LastRecoveryResult = State.LastPathRejectReason;
         }
-        Record(Sources[0], arrived ? waitResult : moveResult,
+        char const* result = arrived ? waitResult
+            : (moved && State.LastRecoveryResult == "native_movement_retained")
+                ? "drudge_entrance_native_path_retained"
+                : !moved ? "drudge_entrance_native_path_rejected"
+                         : moveResult;
+        Record(Sources[0], result,
             Bot->GetExactDist(anchor->X, anchor->Y, anchor->Z));
         Target = Sources[0];
         State.TargetGuid = Sources[0]->GetGUID();
-        return PhaseResult::Handled;
+        return continuation == MovementContinuation::ContinueCombat
+                && (arrived || moved)
+            ? PhaseResult::Continue : PhaseResult::Handled;
     };
 
     if (pullStarted)
@@ -225,8 +243,10 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
             : doorwayToleranceFor(false, OneBasedSlot);
         if (!safeBackline || !atAnchor(Bot, entrance, AssignedTank,
                 combatTolerance))
-            return holdOrMoveTo(entrance, "drudge_entrance_return_move",
-                "drudge_entrance_return_wait");
+            return moveTo(entrance, "drudge_entrance_return_move",
+                "drudge_entrance_return_wait",
+                packLinked ? MovementContinuation::ContinueCombat
+                           : MovementContinuation::HoldOffense);
         if (!packLinked)
         {
             HoldOffense();
@@ -245,7 +265,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
                 && rushBaitIsolationSafe(Bot, OneBasedSlot));
         if (!safeBackline || !atAnchor(Bot, entrance, AssignedTank,
                 doorwayToleranceFor(AssignedTank, OneBasedSlot)))
-            return holdOrMoveTo(entrance, "drudge_entrance_stage_move",
+            return moveTo(entrance, "drudge_entrance_stage_move",
                 "drudge_entrance_stage_wait");
         if (!exactRosterAtEntrance())
         {
@@ -273,7 +293,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
                 && rushBaitIsolationSafe(Bot, OneBasedSlot));
         if (!safeBackline || !atAnchor(Bot, entrance, AssignedTank,
                 doorwayToleranceFor(AssignedTank, OneBasedSlot)))
-            return holdOrMoveTo(entrance, "drudge_entrance_hold_move",
+            return moveTo(entrance, "drudge_entrance_hold_move",
                 "drudge_entrance_hold_wait");
         HoldOffense();
         Record(Sources[0], "drudge_entrance_pull_owner_wait");
@@ -293,7 +313,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
         return PhaseResult::Handled;
     }
     if (!atAnchor(Bot, pullAnchor, false))
-        return holdOrMoveTo(pullAnchor, "drudge_entrance_pull_owner_approach",
+        return moveTo(pullAnchor, "drudge_entrance_pull_owner_approach",
             "drudge_entrance_pull_owner_ready");
 
     Creature* source = Sources[0];

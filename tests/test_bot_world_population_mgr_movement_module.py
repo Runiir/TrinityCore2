@@ -92,6 +92,12 @@ def test_movement_boundary_is_intent_driven_and_nonblocking() -> None:
     assert "MovePoint" not in planner
     assert "MoveChase" not in planner
     assert "TryValidationRouteObjective" not in executor
+    retained = executor.index("active.ScopeMatches && active.MatchingDestination")
+    committed = executor.index("CommitMovementEvidence")
+    assert retained < committed
+    assert 'state.LastRecoveryResult = "native_movement_retained";' in executor[
+        retained:committed
+    ]
 
 
 def test_route_and_recovery_progressive_admission_is_bounded() -> None:
