@@ -75,9 +75,10 @@ def test_drudge_entrance_pull_holds_nonowners_then_returns_before_handoff():
 
     assert pull_started < owner < cast
     assert pull_started < early_taunt < puller_return < owner
-    assert "AssignedTank && !IsLandedRushPending()" in pull[
-        pull_started:puller_return
-    ]
+    landed_handoff = pull.index("if (IsLandedRushPending())", pull_started)
+    assert pull_started < landed_handoff < early_taunt
+    assert "return PhaseResult::Continue;" in pull[landed_handoff:early_taunt]
+    assert "if (AssignedTank)" in pull[landed_handoff:puller_return]
     assert "AssignedTank && !NativeChargePending" not in pull
     assert "true, false, false" in pull[early_taunt:puller_return]
     assert "recoveryAnchorFor(OneBasedSlot)" in pull
