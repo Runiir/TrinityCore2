@@ -320,7 +320,7 @@ void BotWorldPopulationMgr::ResetValidationRouteBossAddDensityState()
 
 void BotWorldPopulationMgr::ResetTraceStreams()
 {
-    MovementPlannerDiagnostics().ClearAll();
+    BotWorldMovement::MovementPlannerDiagnostics().ClearAll();
     Party().TraceExportCursorByGuid.clear();
     for (WorldBotState& state : Party().Bots)
     {

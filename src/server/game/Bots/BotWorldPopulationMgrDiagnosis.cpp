@@ -549,8 +549,10 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << ",\"distance_moved_since_last_decision\":" << state.LastDecisionDistanceMoved
          << ",\"time_since_last_progress_ms\":" << (state.LastMovementProgressMs ? nowMs - state.LastMovementProgressMs : 0)
          << ",\"time_since_last_path_change_ms\":" << (state.LastPathChangeMs ? nowMs - state.LastPathChangeMs : 0) << "}"
-         << ",\"movement_planner\":" << MovementPlannerObservationJson(
-                MovementPlannerDiagnostics().Latest(state.Guid.GetCounter()))
+         << ",\"movement_planner\":"
+         << BotWorldMovement::MovementPlannerObservationJson(
+                BotWorldMovement::MovementPlannerDiagnostics().Latest(
+                    state.Guid.GetCounter()))
          << ",\"validation_cohort\":{\"locked\":" << (state.ValidationCohortLocked ? "true" : "false")
          << ",\"leader_guid\":" << state.ValidationCohortLeaderGuid.GetCounter()
          << ",\"group_guid\":" << state.ValidationCohortGroupGuid.GetCounter()
@@ -745,8 +747,9 @@ std::string BotWorldPopulationMgr::BuildBotTraceEntriesJson(WorldBotState const&
              << ",\"z\":" << itr->NativePathFloor.Z
              << ",\"resolved_floor_z\":" << itr->NativePathFloor.ResolvedFloorZ
              << ",\"reference_z\":" << itr->NativePathFloor.ReferenceZ << "}"
-             << ",\"movement_planner\":" << MovementPlannerObservationJson(
-                    MovementPlannerDiagnostics().ForTrace(
+             << ",\"movement_planner\":"
+             << BotWorldMovement::MovementPlannerObservationJson(
+                    BotWorldMovement::MovementPlannerDiagnostics().ForTrace(
                         state.Guid.GetCounter(), itr->Sequence))
              << ",\"blocked_episode_id\":" << itr->BlockedEpisodeId
              << ",\"blocked_first_reason\":\"" << JsonEscape(itr->BlockedFirstReason) << "\""

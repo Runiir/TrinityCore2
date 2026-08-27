@@ -203,8 +203,8 @@ void BotWorldPopulationMgr::RecordDecisionTrace(WorldBotState& state, char const
     WorldBotState::DecisionTraceEntry entry;
     entry.TimestampMs = NowMs();
     entry.Sequence = ++state.TraceSequence;
-    MovementPlannerDiagnostics().AssociateTrace(state.Guid.GetCounter(),
-        entry.Sequence);
+    BotWorldMovement::MovementPlannerDiagnostics().AssociateTrace(
+        state.Guid.GetCounter(), entry.Sequence);
     entry.DecisionSequence = state.Sequence;
     entry.Situation = situation ? situation : "unknown";
     entry.Action = action ? action : "wait";

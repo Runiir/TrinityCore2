@@ -201,7 +201,8 @@ void BotWorldPopulationMgr::Update(uint32 diff)
             if (ReleaseBotGuid(prunedGuid.GetCounter()))
                 CharacterDatabase.DirectPExecute("UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", prunedGuid.GetCounter());
             Cohort().FailedSpawnGuids.insert(prunedGuid.GetCounter());
-            MovementPlannerDiagnostics().ClearBot(prunedGuid.GetCounter());
+            BotWorldMovement::MovementPlannerDiagnostics().ClearBot(
+                prunedGuid.GetCounter());
             itr = Party().Bots.erase(itr);
             Cohort().Metrics.ActiveBots = uint32(Party().Bots.size());
             continue;
@@ -247,7 +248,8 @@ void BotWorldPopulationMgr::Update(uint32 diff)
                 BotRaidAreaAuthority::Clear(prunedGuid.GetRawValue());
                 sBotMgr->RemoveWorldBot(prunedGuid);
                 Cohort().FailedSpawnGuids.erase(prunedGuid.GetCounter());
-                MovementPlannerDiagnostics().ClearBot(prunedGuid.GetCounter());
+                BotWorldMovement::MovementPlannerDiagnostics().ClearBot(
+                    prunedGuid.GetCounter());
                 Party().ValidationRouteFocusGuid.Clear();
                 Party().ValidationRouteFocusEntry = 0;
                 Party().ValidationRouteFocusMapId = 0;
@@ -419,7 +421,8 @@ void BotWorldPopulationMgr::Update(uint32 diff)
                 if (ReleaseBotGuid(guid.GetCounter()))
                     CharacterDatabase.DirectPExecute("UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", guid.GetCounter());
                 Cohort().CalibrationMetricsByGuid.erase(guid.GetCounter());
-                MovementPlannerDiagnostics().ClearBot(guid.GetCounter());
+                BotWorldMovement::MovementPlannerDiagnostics().ClearBot(
+                    guid.GetCounter());
                 itr = Party().CalibrationBots.erase(itr);
                 continue;
             }

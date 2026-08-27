@@ -95,7 +95,7 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
 
 void BotWorldPopulationMgr::Stop()
 {
-    MovementPlannerDiagnostics().ClearAll();
+    BotWorldMovement::MovementPlannerDiagnostics().ClearAll();
     ClearPendingHealCasts("run_stop");
     if (Cohort().CalibrationActive || !Party().CalibrationBots.empty())
         StopCombatCalibration();
@@ -208,7 +208,7 @@ bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overri
 
 void BotWorldPopulationMgr::StopAutonomy()
 {
-    MovementPlannerDiagnostics().ClearAll();
+    BotWorldMovement::MovementPlannerDiagnostics().ClearAll();
     ClearPendingHealCasts("autonomy_stop");
     if (Cohort().CalibrationActive || !Party().CalibrationBots.empty())
         StopCombatCalibration();
@@ -239,7 +239,7 @@ void BotWorldPopulationMgr::StopAutonomy()
 
 void BotWorldPopulationMgr::Shutdown()
 {
-    MovementPlannerDiagnostics().ClearAll();
+    BotWorldMovement::MovementPlannerDiagnostics().ClearAll();
     ClearPendingHealCasts("shutdown");
     if (Cohort().CalibrationActive || !Party().CalibrationBots.empty())
         StopCombatCalibration();

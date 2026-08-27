@@ -411,8 +411,9 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
                          << ",\"z\":" << itr->NativePathFloor.Z
                          << ",\"resolved_floor_z\":" << itr->NativePathFloor.ResolvedFloorZ
                          << ",\"reference_z\":" << itr->NativePathFloor.ReferenceZ << "}"
-                         << ",\"movement_planner\":" << MovementPlannerObservationJson(
-                                MovementPlannerDiagnostics().ForTrace(
+                         << ",\"movement_planner\":"
+                         << BotWorldMovement::MovementPlannerObservationJson(
+                                BotWorldMovement::MovementPlannerDiagnostics().ForTrace(
                                     state.Guid.GetCounter(), itr->Sequence))
                          << ",\"blocked_episode_id\":" << itr->BlockedEpisodeId
                          << ",\"blocked_first_reason\":\"" << JsonEscape(itr->BlockedFirstReason)
