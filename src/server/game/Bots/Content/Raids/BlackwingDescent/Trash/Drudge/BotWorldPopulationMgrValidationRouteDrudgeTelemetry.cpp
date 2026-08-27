@@ -138,7 +138,8 @@ void DrudgeLaneContext::RecordRecoveryDiagnosticTick(
                 >= BotRaidDrudgeGeometry::ArrivalAdjustedLaneProjectionMinimum(
                     HomeLaneProjectionMinimum,
                     config.ValidationRouteSplitArrivalToleranceYards,
-                    RecoveryFormationActive, memberDiagnostic.IsTank);
+                    RecoveryFormationActive, memberDiagnostic.IsTank,
+                    IsEntrancePullEstablished());
         if (memberDiagnostic.IsTank)
         {
             uint32 const expectedSlot = laneA

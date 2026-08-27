@@ -151,6 +151,29 @@ bool DrudgeLaneContext::ComputeStrictTankRecoveryPath(
         points.push_back({ point.x, point.y });
     points.push_back({ path.GetActualEndPosition().x,
         path.GetActualEndPosition().y });
+    if (IsEntrancePullEstablished())
+    {
+        MemberAnchor const* otherAnchor =
+            DeclaredRecoveryTankAnchorFor(OtherTankSlot);
+        float const minimum = Manager.Cohort().Config
+            .ValidationRouteSplitMinimumSeparationYards;
+        float const requiredAnchorSeparation = minimum
+            + Manager.Cohort().Config.ValidationRouteSplitNavigationMarginYards
+            + 2.0f * (Manager.Cohort().Config
+                    .ValidationRouteSplitNativeMeleeStopYards
+                + Manager.Cohort().Config
+                    .ValidationRouteSplitTankArrivalToleranceYards);
+        if (!otherAnchor || minimum <= 0.0f
+            || Distance2d(x, y, otherAnchor->X, otherAnchor->Y)
+                < requiredAnchorSeparation)
+            return false;
+        PathGenerator otherPath(OtherTank);
+        if (!otherPath.CalculatePath(otherAnchor->X, otherAnchor->Y,
+                otherAnchor->Z, false)
+            || OtherTank->GetExactDist2d(Bot) < minimum)
+            return false;
+        return true;
+    }
     float const otherProjection =
         (OtherTank->GetPositionX() - MidpointX) * AxisX
         + (OtherTank->GetPositionY() - MidpointY) * AxisY;

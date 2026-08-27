@@ -319,14 +319,9 @@ def drudge_split_geometry_status(
         minimum + margin + 2.0 * (melee_stop + tank_arrival)
     ):
         return False, "split_tank_recovery_source_separation_unsafe"
-    for index, recovery in enumerate(recovery_points):
-        projection = ((recovery[0] - midpoint_x) * axis_x
-                      + (recovery[1] - midpoint_y) * axis_y)
-        lane_sign = -1.0 if index == 0 else 1.0
-        if lane_sign * projection + 1e-6 < (
-            lane_threshold + melee_stop + tank_arrival
-        ):
-            return False, "split_tank_recovery_source_lane_unsafe"
+    # Once both tanks own their exact Drudges, recovery moves the pair to the
+    # cleared entrance footprint. The frozen home axis no longer describes
+    # that formation; pair separation and the declared anchors do.
     recovery_member_clearance = minimum + melee_stop + arrival + tank_arrival
     for slot, member in recovery_member_by_slot.items():
         if slot in tank_slots:

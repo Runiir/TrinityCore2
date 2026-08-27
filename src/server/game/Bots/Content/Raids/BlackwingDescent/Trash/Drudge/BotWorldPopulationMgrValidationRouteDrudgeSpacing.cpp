@@ -131,7 +131,7 @@ BotRaidDrudgeSpacing::CandidateResult DrudgeLaneContext::EvaluateAndRecordCandid
         BotRaidDrudgeGeometry::ArrivalAdjustedLaneProjectionMinimum(
             HomeLaneProjectionMinimum,
             Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards,
-            IsRecoveryFormationActive(), tank);
+            IsRecoveryFormationActive(), tank, IsEntrancePullEstablished());
     float const requiredLaneProjection = dynamicLaneProjection > laneProjectionMinimum
         ? dynamicLaneProjection : laneProjectionMinimum;
     BotRaidDrudgeRecoveryCandidates::Constraints const constraints{

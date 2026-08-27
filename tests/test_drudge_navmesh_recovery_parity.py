@@ -32,9 +32,9 @@ def test_capture_runs_navmesh_probe_before_worldserver_start():
 
 def test_navmesh_probe_is_locked_to_the_generated_route_anchors():
     anchors = verify_route_anchors(ROOT)
-    assert anchors["4"] == [-301.5, -116.5, 214.438]
-    assert anchors["5"] == [-320.0, -99.0, 214.033]
-    assert anchors["10"] == [-328.0, -97.0, 214.154]
+    assert anchors["4"] == [-318.0, -116.0, 214.0]
+    assert anchors["5"] == [-321.0, -115.0, 214.0]
+    assert anchors["10"] == [-316.0, -123.0, 214.0]
     source = (
         ROOT / "tools/raid_program/probe_drudge_navmesh_recovery.py"
     ).read_text(encoding="utf-8")
@@ -107,25 +107,27 @@ def test_recorded_drudge_returns_match_native_navmesh(tmp_path):
     }
     assert recovery["1"] == {
         "start": [-289.289093, -57.7575, 212.932236],
-        "terminal": [-288.8, -86.483, 214.154],
+        "terminal": [-330.0, -88.0, 214.0],
+        "detour_nearest_terminal": [-330.0, -88.0, 214.017],
+        "detour_nearest_requested_z_delta": 0.0167847,
         "polygons": 9,
-        "smooth_points": 9,
+        "smooth_points": 14,
         "future_boss_minimum": 29.1912,
     }
-    assert recovery["2"]["detour_nearest_requested_z_delta"] == 0.482346
+    assert recovery["2"]["detour_nearest_requested_z_delta"] == 0.818024
     assert recovery["2"]["future_boss_minimum"] == 26.2785
     assert recovery["4"] == {
         "start": [-298.8, -71.5, 213.461],
-        "terminal": [-301.5, -116.5, 214.438],
-        "polygons": 11,
-        "smooth_points": 13,
+        "terminal": [-318.0, -116.0, 214.0],
+        "polygons": 7,
+        "smooth_points": 14,
         "future_boss_minimum": 39.9585,
     }
     assert recovery["7"] == {
         "start": [-292.5, -69.1, 214.024],
-        "terminal": [-299.0, -119.0, 215.488],
-        "polygons": 14,
-        "smooth_points": 14,
+        "terminal": [-320.0, -120.0, 214.0],
+        "polygons": 11,
+        "smooth_points": 16,
         "future_boss_minimum": 38.6956,
     }
     assert min(

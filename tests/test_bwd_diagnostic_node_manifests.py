@@ -77,8 +77,8 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
         row["roster_slot"]: row for row in drudges["split_tank_recovery_anchors"]
     }
     assert recovery_by_slot == {
-        1: {"roster_slot": 1, "x": -288.8, "y": -86.483, "z": 214.154},
-        2: {"roster_slot": 2, "x": -338.018, "y": -64.932, "z": 212.751},
+        1: {"roster_slot": 1, "x": -330.0, "y": -88.0, "z": 214.0},
+        2: {"roster_slot": 2, "x": -348.0, "y": -120.0, "z": 214.0},
     }
     member_by_slot = {
         row["roster_slot"]: row for row in drudges["split_member_anchors"]
@@ -269,7 +269,7 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
 
     unsafe_recovery_member = deepcopy(drudges)
     unsafe_recovery_member["split_recovery_member_anchors"][2].update(
-        x=-288.8, y=-87.0, z=214.154,
+        x=-330.0, y=-100.0, z=214.0,
     )
     assert drudge_split_geometry_status(unsafe_recovery_member) == (
         False,
@@ -315,16 +315,16 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
 def test_compact_recovery_anchors_are_shared_and_bounded_in_both_drudge_routes():
     config = _config()
     expected_recovery = [
-        {"roster_slot": 1, "x": -288.8, "y": -86.483, "z": 214.154},
-        {"roster_slot": 2, "x": -338.018, "y": -64.932, "z": 212.751},
-        {"roster_slot": 3, "x": -297.339, "y": -115.904, "z": 214.552},
-        {"roster_slot": 4, "x": -301.5, "y": -116.5, "z": 214.438},
-        {"roster_slot": 5, "x": -320.0, "y": -99.0, "z": 214.033},
-        {"roster_slot": 6, "x": -295.0, "y": -120.0, "z": 215.947},
-        {"roster_slot": 7, "x": -299.0, "y": -119.0, "z": 215.488},
-        {"roster_slot": 8, "x": -328.0, "y": -100.0, "z": 214.034},
-        {"roster_slot": 9, "x": -333.0, "y": -99.0, "z": 214.154},
-        {"roster_slot": 10, "x": -328.0, "y": -97.0, "z": 214.154},
+        {"roster_slot": 1, "x": -330.0, "y": -88.0, "z": 214.0},
+        {"roster_slot": 2, "x": -348.0, "y": -120.0, "z": 214.0},
+        {"roster_slot": 3, "x": -324.0, "y": -113.0, "z": 214.0},
+        {"roster_slot": 4, "x": -318.0, "y": -116.0, "z": 214.0},
+        {"roster_slot": 5, "x": -321.0, "y": -115.0, "z": 214.0},
+        {"roster_slot": 6, "x": -312.0, "y": -119.0, "z": 214.0},
+        {"roster_slot": 7, "x": -320.0, "y": -120.0, "z": 214.0},
+        {"roster_slot": 8, "x": -315.0, "y": -118.0, "z": 214.0},
+        {"roster_slot": 9, "x": -309.0, "y": -121.0, "z": 214.0},
+        {"roster_slot": 10, "x": -316.0, "y": -123.0, "z": 214.0},
     ]
     scenarios = config["scenarios"] + config["diagnostic_scenarios"]
     selected = [

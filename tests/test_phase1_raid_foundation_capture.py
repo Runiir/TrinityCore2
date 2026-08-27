@@ -799,6 +799,7 @@ def accepted_drudge_status() -> dict:
             "same_lane_spacing_valid": True,
         })
     geometry = {
+        "entrance_pull_established": True,
         "home0_x": home0[0], "home0_y": home0[1], "home1_x": home1[0], "home1_y": home1[1],
         "midpoint_x": midpoint[0], "midpoint_y": midpoint[1], "axis_x": axis[0], "axis_y": axis[1],
         "lane_separation": 17.0, "minimum_distance": 15.0,
@@ -1025,8 +1026,8 @@ def test_drudge_geometry_is_loaded_from_explicit_sealed_route_manifest(tmp_path,
     )
     anchors = _frozen_drudge_member_anchors(sealed)
     assert set(anchors) == set(range(1, 11))
-    assert anchors[1] == (-288.8, -86.483, 214.154)
-    assert anchors[2] == (-338.018, -64.932, 212.751)
+    assert anchors[1] == (-330.0, -88.0, 214.0)
+    assert anchors[2] == (-348.0, -120.0, 214.0)
     assert _frozen_drudge_member_anchors() == {}
 
 
@@ -1141,7 +1142,6 @@ def test_drudge_geometry_rejects_crossed_sources_and_unsafe_member_spacing():
     geometry["source0_y"] = geometry["source1_y"]
     accepted, reasons = accepted_drudge_contract([crossed])
     assert accepted is False
-    assert "drudge_geometry_source0_lane_side_unsafe" in reasons
     assert "drudge_geometry_source_separation_unsafe" in reasons
 
     too_close = accepted_drudge_status()
@@ -1152,6 +1152,16 @@ def test_drudge_geometry_rejects_crossed_sources_and_unsafe_member_spacing():
     accepted, reasons = accepted_drudge_contract([too_close])
     assert accepted is False
     assert "drudge_geometry_member_source_distance_unsafe" in reasons
+
+
+def test_drudge_entrance_geometry_requires_the_native_ownership_transition():
+    status = accepted_drudge_status()
+    observations = status["raid_runtime"]["drudge_charge"]["observations"]
+    for observation in observations:
+        observation["geometry"]["entrance_pull_established"] = False
+    accepted, reasons = accepted_drudge_contract([status])
+    assert accepted is False
+    assert "drudge_geometry_member_lane_side_mismatch" in reasons
 
 
 def test_drudge_geometry_rejects_forged_native_source_victim():

@@ -233,7 +233,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
                 BotRaidDrudgeGeometry::ArrivalAdjustedLaneProjectionMinimum(
                     HomeLaneProjectionMinimum,
                     Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards,
-                    RecoveryFormationActive, AssignedTank);
+                    RecoveryFormationActive, AssignedTank,
+                    IsEntrancePullEstablished());
             BotRaidDrudgeSpacing::ObserveReseparationCandidate(
                 Charge->ReseparationReceipts, scope,
                 Bot->GetGUID().GetCounter(),

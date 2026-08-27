@@ -402,6 +402,7 @@ void DrudgeLaneContext::RecordReseparationEvidence(ChargeObservation& observatio
         Manager.Party().ValidationRouteDrudgeReseparatedRosterGuids =
             observation.ReseparatedRosterGuids;
         observation.ReseparationRecorded = true;
+        observation.EntrancePullEstablished = IsEntrancePullEstablished();
         float const groupOffset = config.ValidationRouteMinimumDistanceYards
             + config.ValidationRouteSplitNavigationMarginYards;
         observation.Home0X = Sources[0]->GetHomePosition().GetPositionX();
@@ -500,7 +501,8 @@ void DrudgeLaneContext::RecordReseparationEvidence(ChargeObservation& observatio
             geometry.LaneSideValid = (memberLaneA ? -1.0f : 1.0f)
                 * geometry.Projection >= BotRaidDrudgeGeometry::ArrivalAdjustedLaneProjectionMinimum(
                     HomeLaneProjectionMinimum, config.ValidationRouteSplitArrivalToleranceYards,
-                    IsRecoveryFormationActive(), roster->second.Role == "tank");
+                    IsRecoveryFormationActive(), roster->second.Role == "tank",
+                    IsEntrancePullEstablished());
             auto candidates = AnchorCandidatesFor(geometry.RosterSlot);
             if (!candidates.empty())
             {

@@ -176,6 +176,9 @@ int main()
     assert(ArrivalAdjustedLaneProjectionMinimum(
         homeLaneProjectionMinimum, arrivalTolerance, false, false)
         == homeLaneProjectionMinimum);
+    assert(ArrivalAdjustedLaneProjectionMinimum(
+        homeLaneProjectionMinimum, arrivalTolerance, true, true, true)
+        < -999999.0f);
 
     // Run11's tank-2 recovery point is intentionally 23.8237 yards from its
     // source, while the declared navigation/combat point is exactly 15 yards.
@@ -706,8 +709,8 @@ def test_established_pull_stays_on_entrance_recovery_anchors_with_exact_xyz():
         return anchors["split_tank_recovery_anchors"][slot]
 
     assert expected_anchor(1, False) == (-289.289093, -57.7575, 212.932236)
-    assert expected_anchor(1, True) == (-288.8, -86.483, 214.154)
-    assert expected_anchor(2, True) == (-338.018, -64.932, 212.751)
+    assert expected_anchor(1, True) == (-330.0, -88.0, 214.0)
+    assert expected_anchor(2, True) == (-348.0, -120.0, 214.0)
     assert expected_anchor(1, True) != anchors["split_tank_combat_anchors"][1]
     assert expected_anchor(2, True) != anchors["split_tank_combat_anchors"][2]
 
@@ -735,10 +738,10 @@ def test_established_pull_stays_on_entrance_recovery_anchors_with_exact_xyz():
     assert "ValidationRouteSplitTankCombatAnchors" in geometry
 
     recovery_members = anchors["split_recovery_member_anchors"]
-    assert recovery_members[3] == (-297.339, -115.904, 214.552)
-    assert recovery_members[4] == (-301.5, -116.5, 214.438)
-    assert recovery_members[7] == (-299.0, -119.0, 215.488)
-    assert recovery_members[8] == (-328.0, -100.0, 214.034)
+    assert recovery_members[3] == (-324.0, -113.0, 214.0)
+    assert recovery_members[4] == (-318.0, -116.0, 214.0)
+    assert recovery_members[7] == (-320.0, -120.0, 214.0)
+    assert recovery_members[8] == (-315.0, -118.0, 214.0)
 
     lane_a = (1, 3, 4, 6, 7)
     lane_b = (2, 5, 8, 9, 10)
@@ -752,10 +755,10 @@ def test_established_pull_stays_on_entrance_recovery_anchors_with_exact_xyz():
         for right in lane[index + 1:]
     }
     assert min(same_lane_distances.values()) >= 3.0
-    assert math.isclose(same_lane_distances["3-4"], 4.203, abs_tol=0.001)
-    assert math.isclose(same_lane_distances["3-7"], 3.513, abs_tol=0.001)
-    assert math.isclose(same_lane_distances["4-7"], 3.536, abs_tol=0.001)
-    assert math.isclose(same_lane_distances["6-7"], 4.123, abs_tol=0.001)
+    assert math.isclose(same_lane_distances["3-4"], 6.708, abs_tol=0.001)
+    assert math.isclose(same_lane_distances["3-7"], 8.062, abs_tol=0.001)
+    assert math.isclose(same_lane_distances["4-7"], 4.472, abs_tol=0.001)
+    assert math.isclose(same_lane_distances["6-7"], 8.062, abs_tol=0.001)
 
 
 def test_entrance_recovery_never_offers_a_magmaw_side_return_candidate():

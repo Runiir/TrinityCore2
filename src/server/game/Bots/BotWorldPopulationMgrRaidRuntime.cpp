@@ -585,7 +585,9 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
              << (observation.NativeThreatCandidatesComplete ? "true" : "false")
              << ",\"native_threat_candidates_truncated\":"
              << (observation.NativeThreatCandidatesTruncated ? "true" : "false")
-             << ",\"geometry\":{\"home0_x\":" << observation.Home0X
+             << ",\"geometry\":{\"entrance_pull_established\":"
+             << (observation.EntrancePullEstablished ? "true" : "false")
+             << ",\"home0_x\":" << observation.Home0X
              << ",\"home0_y\":" << observation.Home0Y
              << ",\"home1_x\":" << observation.Home1X
              << ",\"home1_y\":" << observation.Home1Y

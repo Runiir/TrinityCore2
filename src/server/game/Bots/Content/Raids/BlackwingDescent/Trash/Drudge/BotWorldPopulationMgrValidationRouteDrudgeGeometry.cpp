@@ -489,7 +489,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             BotRaidDrudgeGeometry::ArrivalAdjustedLaneProjectionMinimum(
                 HomeLaneProjectionMinimum,
                 Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards,
-                IsRecoveryFormationActive(), memberRoster->second.Role == "tank"))
+                IsRecoveryFormationActive(), memberRoster->second.Role == "tank",
+                IsEntrancePullEstablished()))
             return false;
         if (memberRoster->second.Role == "tank"
             && memberSlot != Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots[
@@ -535,12 +536,16 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
     SourceOnFrozenLane = [this](Creature const* source, uint32 sourceIndex,
         float* projectionOut) -> bool
     {
-        if (!source)
+        if (!source || sourceIndex >= Sources.size()
+            || source != Sources[sourceIndex])
             return false;
         float const projection = (source->GetPositionX() - MidpointX) * AxisX
             + (source->GetPositionY() - MidpointY) * AxisY;
         if (projectionOut)
             *projectionOut = projection;
+        if (IsEntrancePullEstablished())
+            return Sources[0]->IsAlive() && Sources[1]->IsAlive()
+                && Sources[0]->GetExactDist2d(Sources[1]) >= LaneSeparation;
         return (sourceIndex == 0 ? -1.0f : 1.0f) * projection
             >= HomeLaneProjectionMinimum;
     };
@@ -560,7 +565,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             BotRaidDrudgeGeometry::ArrivalAdjustedLaneProjectionMinimum(
                 HomeLaneProjectionMinimum,
                 Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards,
-                IsRecoveryFormationActive(), tank);
+                IsRecoveryFormationActive(), tank, IsEntrancePullEstablished());
         BotRaidDrudgeRecoveryCandidates::Constraints const recoveryConstraints{
             { Sources[0]->GetPositionX(), Sources[0]->GetPositionY() },
             { Sources[1]->GetPositionX(), Sources[1]->GetPositionY() },
@@ -922,6 +927,14 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
     {
         if (!tank)
             return false;
+        if (IsEntrancePullEstablished())
+        {
+            MemberAnchor const* entrance = DeclaredRecoveryTankAnchorFor(slot);
+            return entrance && tank->GetExactDist(
+                entrance->X, entrance->Y, entrance->Z)
+                    <= Manager.Cohort().Config
+                        .ValidationRouteSplitTankArrivalToleranceYards;
+        }
         bool const laneA = std::find(
             Manager.Cohort().Config.ValidationRouteSplitLaneARosterSlots.begin(),
             Manager.Cohort().Config.ValidationRouteSplitLaneARosterSlots.end(), slot)

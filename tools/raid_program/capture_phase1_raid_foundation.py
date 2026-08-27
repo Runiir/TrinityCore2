@@ -1091,6 +1091,7 @@ def _validate_drudge_observation_geometry(
     if not isinstance(geometry, dict):
         return ["drudge_observation_geometry_missing"]
     required = (
+        "entrance_pull_established",
         "home0_x", "home0_y", "home1_x", "home1_y", "midpoint_x", "midpoint_y",
         "axis_x", "axis_y", "lane_separation", "minimum_distance", "navigation_margin",
         "source0_x", "source0_y", "source0_projection", "source0_lane_side_valid",
@@ -1115,6 +1116,7 @@ def _validate_drudge_observation_geometry(
         return float(value)
 
     boolean_fields = {
+        "entrance_pull_established",
         "source0_lane_side_valid", "source1_lane_side_valid",
         "source0_alive", "source1_alive",
     }
@@ -1123,6 +1125,10 @@ def _validate_drudge_observation_geometry(
         for name in required
         if name not in boolean_fields and name != "members"
     }
+    entrance_pull_established = geometry.get("entrance_pull_established")
+    if not isinstance(entrance_pull_established, bool):
+        reasons.append("drudge_geometry_entrance_pull_established_invalid")
+        entrance_pull_established = False
     if any(value is None for value in values.values()):
         return sorted(set(reasons))
     tolerance = 0.05
@@ -1184,8 +1190,9 @@ def _validate_drudge_observation_geometry(
         source_projections.append(computed)
         if abs(values[f"{prefix}_projection"] - computed) > tolerance:
             reasons.append(f"drudge_geometry_{prefix}_projection_mismatch")
-        expected_side = ((-1.0 if index == 0 else 1.0) * computed
-                         >= lane_sep * 0.25)
+        expected_side = entrance_pull_established or (
+            (-1.0 if index == 0 else 1.0) * computed >= lane_sep * 0.25
+        )
         if geometry.get(f"{prefix}_lane_side_valid") is not expected_side:
             reasons.append(f"drudge_geometry_{prefix}_lane_side_mismatch")
         if not expected_side:
@@ -1287,8 +1294,9 @@ def _validate_drudge_observation_geometry(
                 if (not isinstance(observed, (int, float)) or isinstance(observed, bool)
                         or not isfinite(observed) or abs(float(observed) - expected) > tolerance):
                     reasons.append(f"drudge_geometry_{prefix}_member_{field}_mismatch")
-        if ((-1.0 if source_index == 0 else 1.0) * computed_projection
-                < lane_sep * 0.25):
+        if (not entrance_pull_established
+                and (-1.0 if source_index == 0 else 1.0) * computed_projection
+                    < lane_sep * 0.25):
             reasons.append(f"drudge_geometry_{prefix}_lane_side_invalid")
     if hypot(values["tank1_x"] - values["tank0_x"], values["tank1_y"] - values["tank0_y"]) < minimum_source_sep:
         reasons.append("drudge_geometry_tank_pair_separation_unsafe")
@@ -1328,8 +1336,10 @@ def _validate_drudge_observation_geometry(
         recovery_lane_minimum = max(
             0.0, home_lane_minimum - arrival_tolerance,
         )
-        side_valid = ((-1.0 if lane_a else 1.0) * computed_projection
-                      >= recovery_lane_minimum)
+        side_valid = entrance_pull_established or (
+            (-1.0 if lane_a else 1.0) * computed_projection
+            >= recovery_lane_minimum
+        )
         if member.get("lane_side_valid") is not side_valid:
             reasons.append("drudge_geometry_member_lane_side_mismatch")
         if not side_valid:

@@ -253,14 +253,16 @@ struct Point2d
     float Y = 0.0f;
 };
 
-// Lane membership is measured on the frozen source-home axis, not against
-// the live source safety separation. Only an active recovery formation may
-// consume the existing non-tank arrival tolerance; tanks and normal prepull
-// formation retain the strict home-axis floor.
+// Prepull lane membership is measured on the frozen source-home axis. After
+// both exact tanks have native ownership, the pull has moved to the reviewed
+// entrance formation and the configured anchors replace the room-side axis.
 inline float ArrivalAdjustedLaneProjectionMinimum(
     float homeAxisProjectionMinimum, float nonTankArrivalTolerance,
-    bool recoveryFormationActive, bool tank)
+    bool recoveryFormationActive, bool tank,
+    bool entrancePullEstablished = false)
 {
+    if (entrancePullEstablished)
+        return -1000000.0f;
     return homeAxisProjectionMinimum
         - (!tank && recoveryFormationActive ? nonTankArrivalTolerance : 0.0f);
 }

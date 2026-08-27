@@ -316,6 +316,7 @@ namespace BotWorldPopulationMgrRouteState
         bool Landed = false;
         bool RecoveryTankReturnBarrierOpened = false;
         bool ReseparationRecorded = false;
+        bool EntrancePullEstablished = false;
         float Home0X = 0.0f;
         float Home0Y = 0.0f;
         float Home1X = 0.0f;
