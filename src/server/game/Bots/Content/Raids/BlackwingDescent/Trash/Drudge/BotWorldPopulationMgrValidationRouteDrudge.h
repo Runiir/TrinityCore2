@@ -25,6 +25,8 @@ struct DrudgeLaneCallbacks
 {
     std::function<bool(Player*, Unit*, bool, bool)> TryGroupHeal;
     std::function<bool(Creature const*)> IsCombatLinked;
+    std::function<void(Creature const*, bool)> EnrollPackMember;
+    std::function<bool()> RecordDefeatedPackMembers;
     std::function<float()> CanonicalRouteDistance;
     std::function<bool(bool)> TryMinimumDistance;
 };

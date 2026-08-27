@@ -41,6 +41,8 @@ bool BotWorldPopulationMgr::TryValidationRouteDrudgeChargeLanes(
     std::string& situation, std::string& action, Unit*& target,
     std::function<bool(Player*, Unit*, bool, bool)> const& tryRouteGroupHeal,
     std::function<bool(Creature const*)> const& isValidationCohortCombatLinked,
+    std::function<void(Creature const*, bool)> const& enrollValidationRoutePackMember,
+    std::function<bool()> const& recordDefeatedValidationRoutePackMembers,
     std::function<float()> const& canonicalRouteDistance,
     float routeArrivalRadius)
 {
@@ -57,6 +59,9 @@ bool BotWorldPopulationMgr::TryValidationRouteDrudgeChargeLanes(
     request.RouteArrivalRadius = routeArrivalRadius;
     request.Callbacks.TryGroupHeal = tryRouteGroupHeal;
     request.Callbacks.IsCombatLinked = isValidationCohortCombatLinked;
+    request.Callbacks.EnrollPackMember = enrollValidationRoutePackMember;
+    request.Callbacks.RecordDefeatedPackMembers =
+        recordDefeatedValidationRoutePackMembers;
     request.Callbacks.CanonicalRouteDistance = canonicalRouteDistance;
     return BotWorldPopulationMgrValidationRoute::TryValidationRouteDrudgeChargeLanes(request);
 }
@@ -881,8 +886,23 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::ResolveSources()
         State.TargetGuid.Clear();
         return PhaseResult::Handled;
     }
+
+    for (Creature* source : Sources)
+    {
+        bool const nativeCombatObserved = source->IsAlive()
+            && (source->IsInCombat() || source->GetVictim()
+                || source->GetHealth() < source->GetMaxHealth()
+                || (Callbacks.IsCombatLinked
+                    && Callbacks.IsCombatLinked(source)));
+        if (Callbacks.EnrollPackMember)
+            Callbacks.EnrollPackMember(source, nativeCombatObserved);
+    }
     if (!Sources[0]->IsAlive() && !Sources[1]->IsAlive())
+    {
+        if (Callbacks.RecordDefeatedPackMembers)
+            Callbacks.RecordDefeatedPackMembers();
         return PhaseResult::Abort;
+    }
 
     SourceCombatStarted = Sources[0]->IsInCombat() || Sources[1]->IsInCombat()
         || Sources[0]->GetVictim() || Sources[1]->GetVictim();

@@ -409,7 +409,7 @@ private:
         BotProgressionActivity activity, std::string& situation,
         std::string& action, Unit*& target, bool discoveryLeg,
         ValidationRouteGroupRecoveryCallbacks const& callbacks);
-    bool TryValidationRouteDrudgeChargeLanes(WorldBotState&, Player*, BotRolePowerBreakdown const&, BotProgressionStage, BotProgressionActivity, std::string&, std::string&, Unit*&, std::function<bool(Player*, Unit*, bool, bool)> const&, std::function<bool(Creature const*)> const&, std::function<float()> const&, float);
+    bool TryValidationRouteDrudgeChargeLanes(WorldBotState&, Player*, BotRolePowerBreakdown const&, BotProgressionStage, BotProgressionActivity, std::string&, std::string&, Unit*&, std::function<bool(Player*, Unit*, bool, bool)> const&, std::function<bool(Creature const*)> const&, std::function<void(Creature const*, bool)> const&, std::function<bool()> const&, std::function<float()> const&, float);
     bool TryValidationRouteDrudgeMinimumDistance(WorldBotState&, Player*, BotRolePowerBreakdown const&, BotProgressionStage, BotProgressionActivity, std::string&, std::string&, Unit*&, std::function<bool(Creature const*)> const&, bool = false);
     bool TryValidationRouteFeralHazardHealerRoar(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action);
     bool TryValidationRouteFeralHazardLooseTaunt(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action);

@@ -691,6 +691,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     if (TryValidationRouteDrudgeChargeLanes(state, bot, power, stage,
             activity, situation, action, target, tryRouteGroupHeal,
             isValidationCohortCombatLinked,
+            enrollValidationRoutePackMember,
+            recordDefeatedValidationRoutePackMembers,
             [&canonicalRouteDistance]() { return canonicalRouteDistance; },
             routeArrivalRadius))
         return true;

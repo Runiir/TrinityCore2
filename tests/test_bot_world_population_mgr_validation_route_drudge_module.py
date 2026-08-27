@@ -136,9 +136,22 @@ def test_drudge_contract_keeps_scope_evidence_and_native_lane_guards():
 
 
 def test_drudge_runtime_targets_only_the_exact_pack_and_does_not_gate_on_post_rush_seed_order():
+    world = WORLD.read_text(encoding="utf-8")
+    contract = CONTRACT.read_text(encoding="utf-8")
     lanes = LANES.read_text(encoding="utf-8")
     resolve = lanes[lanes.index("DrudgeLaneContext::PhaseResult DrudgeLaneContext::ResolveSources()") :]
     assert "ValidationRouteSplitSourceGuids" in resolve
     assert "GetCreatureBySpawnId(spawnId)" in resolve
     assert "ValidationRouteMinimumDistanceSourceEntry" in resolve
+    assert "EnrollPackMember" in contract
+    assert "RecordDefeatedPackMembers" in contract
+    assert "Callbacks.EnrollPackMember(source, nativeCombatObserved)" in resolve
+    both_dead = resolve.index("if (!Sources[0]->IsAlive() && !Sources[1]->IsAlive())")
+    record_deaths = resolve.index("Callbacks.RecordDefeatedPackMembers()", both_dead)
+    generic_handoff = resolve.index("return PhaseResult::Abort;", record_deaths)
+    assert both_dead < record_deaths < generic_handoff
+    dispatch = world[world.index("TryValidationRouteDrudgeChargeLanes(state, bot, power, stage") :]
+    assert dispatch.index("enrollValidationRoutePackMember") < dispatch.index(
+        "recordDefeatedValidationRoutePackMembers"
+    )
     assert "repeatedNativeFarthestGeometrySafe" not in lanes
