@@ -32,7 +32,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
     // stretched the raid through Magmaw's room and made every native Rush a
     // new movement problem instead of an ordinary trash ability.
     static std::array<MemberAnchor, 10> const entranceAnchors = {{
-        { 1, -342.0f, -104.0f, 214.0f },
+        { 1, -328.0f, -104.0f, 214.0f },
         { 2, -348.0f, -104.0f, 214.0f },
         { 3, -342.0f, -128.0f, 214.0f },
         { 4, -340.0f, -128.0f, 214.0f },
@@ -53,11 +53,13 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
         return found == entranceAnchors.end() ? nullptr : &*found;
     };
     constexpr float TankDoorwayArrivalToleranceYards = 20.0f;
+    constexpr float TankDoorwayCombatToleranceYards = 4.0f;
     // The doorway navigation mesh converges ranged members on the same safe
-    // ledge instead of every requested per-slot point. Accept that small area,
-    // but never count a backline member north of the 17-yard Thunderclap line.
+    // ledge instead of every requested per-slot point. Accept that small area;
+    // live combat also checks each Drudge's actual Thunderclap distance.
     constexpr float RangedDoorwayArrivalToleranceYards = 10.5f;
     constexpr float RangedDoorwaySafeMaximumY = -121.0f;
+    constexpr float DrudgeThunderclapSafeDistanceYards = 18.0f;
     auto doorwayToleranceFor = [=](bool tank)
     {
         return tank ? TankDoorwayArrivalToleranceYards
@@ -118,6 +120,16 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
     bool const source1Engaged = NativeEngaged(*this, Sources[1]);
     bool const pullStarted = source0Engaged || source1Engaged;
     bool const packLinked = source0Engaged && source1Engaged;
+    auto outsideBothDrudges = [&](Player const* member)
+    {
+        return member && std::all_of(Sources.begin(), Sources.end(),
+            [member](Creature const* source)
+            {
+                return !source || !source->IsAlive()
+                    || member->GetExactDist2d(source)
+                        >= DrudgeThunderclapSafeDistanceYards;
+            });
+    };
     MemberAnchor const* entrance = recoveryAnchorFor(OneBasedSlot);
     if (!entrance)
     {
@@ -132,7 +144,13 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
         char const* moveResult, char const* waitResult) -> PhaseResult
     {
         HoldOffense();
-        bool const arrived = atAnchor(Bot, anchor, AssignedTank);
+        float const tolerance = pullStarted && AssignedTank
+            ? TankDoorwayCombatToleranceYards
+            : doorwayToleranceFor(AssignedTank);
+        bool const arrived = atAnchor(Bot, anchor, AssignedTank, tolerance)
+            && (AssignedTank || (Bot->GetPositionY()
+                    <= RangedDoorwaySafeMaximumY
+                && (!pullStarted || outsideBothDrudges(Bot))));
         bool moved = false;
         std::string rejection;
         if (!arrived && StrictNativePath(anchor->X, anchor->Y, anchor->Z,
@@ -159,16 +177,20 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
         if (AssignedTank)
         {
             bool const tankAtEntrance = atAnchor(Bot, entrance, true,
-                TankDoorwayArrivalToleranceYards);
+                TankDoorwayCombatToleranceYards);
             PhaseResult const taunt = RunNativeTauntConfirmation(
                 true, tankAtEntrance, tankAtEntrance);
             if (taunt == PhaseResult::Handled)
                 return taunt;
         }
         bool const safeBackline = AssignedTank
-            || Bot->GetPositionY() <= RangedDoorwaySafeMaximumY;
+            || (Bot->GetPositionY() <= RangedDoorwaySafeMaximumY
+                && outsideBothDrudges(Bot));
+        float const combatTolerance = AssignedTank
+            ? TankDoorwayCombatToleranceYards
+            : doorwayToleranceFor(false);
         if (!safeBackline || !atAnchor(Bot, entrance, AssignedTank,
-                doorwayToleranceFor(AssignedTank)))
+                combatTolerance))
             return holdOrMoveTo(entrance, "drudge_entrance_return_move",
                 "drudge_entrance_return_wait");
         if (!packLinked)
