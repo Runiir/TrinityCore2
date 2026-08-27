@@ -746,7 +746,7 @@ bool ObjectiveContext::RunTargetEngagement(
                     << ",\"terminal_hold\":{\"pack_has_live_mobs\":" << (packHasLiveMobs ? "true" : "false")
                     << ",\"party_has_active_combat\":" << (partyHasActiveCombatUnit ? "true" : "false")
                     << ",\"full_cohort_at_endpoint\":" << (fullCohortAtEndpoint ? "true" : "false")
-                    << ",\"cohort_readiness\":{"expected_members\":"
+                    << ",\"cohort_readiness\":{\"expected_members\":"
                     << cohortObservation.ExpectedMemberCount
                     << ",\"roster_members\":"
                     << cohortObservation.RosterMemberCount

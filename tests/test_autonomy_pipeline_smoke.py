@@ -3363,6 +3363,7 @@ def test_trash_terminal_uses_current_generation_truth_after_metric_restart():
         "quiet_remaining_ms",
     ]:
         assert f'\\\"{hold_field}\\\"' in terminal_block
+    assert '\\"cohort_readiness\\":{\\"expected_members\\":' in terminal_block
     for hold_reason in [
         "dynamic_pack_members_live_or_unobserved",
         "trash_cluster_party_combat_active",
