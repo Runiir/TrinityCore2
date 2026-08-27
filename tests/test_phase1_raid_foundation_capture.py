@@ -32,6 +32,7 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     material_status_signature,
     terminal_preflight_failure_reason,
     terminal_runtime_failure_reason,
+    validate_forced_combat_log_bundle,
     validate_forced_evidence_bundle,
     _primary_gameplay_terminal,
     _terminal_evidence_incomplete,
@@ -380,6 +381,44 @@ def test_final_forced_bundle_rejects_pre_request_and_cross_identity_rows():
     assert result["missing_channels"] == ["diagnosis", "trace"]
     assert "diagnosis:forced_response_before_request" in result["rejections"]
     assert "trace:forced_response_runtime_identity_unbound" in result["rejections"]
+
+
+def test_final_forced_combat_log_requires_contiguous_identity_bound_chunks():
+    chunks = [
+        {
+            "ok": True,
+            "action": "botauto_combatlog_chunk",
+            "cohort_id": "raid",
+            "combat_log_chunk_schema_version": 1,
+            "sequence": sequence,
+            "chunk_count": 2,
+            "encoding": "base64",
+            "data": "YQ==",
+        }
+        for sequence in range(2)
+    ]
+    complete = {
+        "ok": True,
+        "action": "botauto_combatlog_complete",
+        "cohort_id": "raid",
+        "combat_log_chunk_schema_version": 1,
+        "chunk_count": 2,
+        "total_bytes": 2,
+    }
+
+    accepted = validate_forced_combat_log_bundle([*chunks, complete], "raid")
+    assert accepted["gate_passed"] is True
+    assert accepted["received_chunks"] == 2
+
+    missing = validate_forced_combat_log_bundle([chunks[0], complete], "raid")
+    assert missing["gate_passed"] is False
+    assert "forced_combat_log_chunks_incomplete" in missing["rejections"]
+
+    cross_identity = json.loads(json.dumps(chunks))
+    cross_identity[1]["cohort_id"] = "other-raid"
+    rejected = validate_forced_combat_log_bundle([*cross_identity, complete], "raid")
+    assert rejected["gate_passed"] is False
+    assert "forced_combat_log_cohort_mismatch" in rejected["rejections"]
 
 
 def test_material_signature_schedules_hostile_and_per_guid_recovery_edges():

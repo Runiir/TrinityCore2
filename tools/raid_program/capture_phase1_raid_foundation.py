@@ -12,16 +12,28 @@ from pathlib import Path
 import re
 import signal
 import subprocess
+import sys
 import tempfile
 import time
 from typing import Any
 
 try:
+    from tools.bot_ml.analyze_combat_log import analyze_combat_log
+    from tools.bot_ml.run_live_bot_validation import (
+        combined_combat_log,
+        combat_log_transport_status,
+    )
     from tools.raid_program.capture_no_bots_baseline import process_sample as _baseline_process_sample
     from tools.raid_program.probe_drudge_navmesh_recovery import run_probe as _drudge_navmesh_probe
 except ModuleNotFoundError:
     # Direct execution places tools/raid_program, not the repository root, on
     # sys.path. Keep the CLI and imported test/module paths on the same sampler.
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from tools.bot_ml.analyze_combat_log import analyze_combat_log
+    from tools.bot_ml.run_live_bot_validation import (
+        combined_combat_log,
+        combat_log_transport_status,
+    )
     from capture_no_bots_baseline import process_sample as _baseline_process_sample
     from probe_drudge_navmesh_recovery import run_probe as _drudge_navmesh_probe
 
@@ -3746,6 +3758,62 @@ def validate_forced_evidence_bundle(
     }
 
 
+def validate_forced_combat_log_bundle(
+    rows: list[dict[str, Any]], expected_cohort: str | None,
+) -> dict[str, Any]:
+    """Require one complete, contiguous bounded combat-log export."""
+
+    chunks = [
+        row for row in rows
+        if isinstance(row, dict)
+        and row.get("action") == "botauto_combatlog_chunk"
+    ]
+    completions = [
+        row for row in rows
+        if isinstance(row, dict)
+        and row.get("action") == "botauto_combatlog_complete"
+    ]
+    completion = completions[-1] if completions else {}
+    expected_chunks = int(completion.get("chunk_count") or 0)
+    sequences = {
+        int(row.get("sequence"))
+        for row in chunks
+        if isinstance(row.get("sequence"), int)
+        and int(row.get("chunk_count") or 0) == expected_chunks
+    }
+    rejections: list[str] = []
+    if len(completions) != 1:
+        rejections.append("forced_combat_log_complete_marker_invalid")
+    if not expected_cohort or any(
+        row.get("cohort_id") != expected_cohort
+        for row in [*chunks, *completions]
+    ):
+        rejections.append("forced_combat_log_cohort_mismatch")
+    if completion.get("ok") is not True:
+        rejections.append("forced_combat_log_complete_not_ok")
+    if expected_chunks <= 0 or sequences != set(range(expected_chunks)):
+        rejections.append("forced_combat_log_chunks_incomplete")
+    if any(
+        row.get("ok") is not True
+        or row.get("encoding") != "base64"
+        or not isinstance(row.get("data"), str)
+        or not row.get("data")
+        for row in chunks
+    ):
+        rejections.append("forced_combat_log_chunk_invalid")
+    if int(completion.get("total_bytes") or 0) <= 0:
+        rejections.append("forced_combat_log_empty")
+    return {
+        "requested": True,
+        "complete_marker_count": len(completions),
+        "expected_chunks": expected_chunks,
+        "received_chunks": len(sequences),
+        "total_bytes": int(completion.get("total_bytes") or 0),
+        "rejections": rejections,
+        "gate_passed": not rejections,
+    }
+
+
 @dataclass
 class TelemetryScheduler:
     """Schedule independent evidence channels without losing transition edges.
@@ -4096,6 +4164,8 @@ def normalized_batch_payload(log_bytes: bytes) -> list[dict[str, Any]]:
         "botauto_status": "status",
         "botauto_diagnose": "diagnosis",
         "botauto_trace": "trace",
+        "botauto_combatlog_chunk": "combat_log",
+        "botauto_combatlog_complete": "combat_log",
         "botauto_profile": "profile_selection",
         "botauto_readycheck": "native_action",
         "botauto_stop": "cleanup",
@@ -4264,6 +4334,7 @@ def evidence_demux_report(
     reasons: list[str] = []
     known_actions = {
         "botauto_profile", "botauto_status", "botauto_diagnose", "botauto_trace",
+        "botauto_combatlog_chunk", "botauto_combatlog_complete",
         "botauto_readycheck", "botauto_stop",
     }
     canonical_identity: tuple[Any, ...] | None = None
@@ -4407,6 +4478,35 @@ def evidence_demux_report(
                 binding["state"] = "bound"
             continue
 
+        if action in {
+            "botauto_combatlog_chunk", "botauto_combatlog_complete",
+        }:
+            binding["scope"] = "active_runtime"
+            if stop_seen:
+                reject("evidence_demux_active_row_after_stop")
+            if payload.get("ok") is not True:
+                reject("evidence_demux_combat_log_not_ok")
+            if payload.get("cohort_id") != canonical_cohort:
+                reject("evidence_demux_cross_identity_row")
+            if payload.get("combat_log_chunk_schema_version") != 1:
+                reject("evidence_demux_combat_log_schema_invalid")
+            if action == "botauto_combatlog_chunk" and (
+                not isinstance(payload.get("sequence"), int)
+                or int(payload.get("chunk_count") or 0) <= 0
+                or payload.get("encoding") != "base64"
+                or not isinstance(payload.get("data"), str)
+                or not payload.get("data")
+            ):
+                reject("evidence_demux_combat_log_chunk_invalid")
+            if action == "botauto_combatlog_complete" and (
+                int(payload.get("chunk_count") or 0) <= 0
+                or int(payload.get("total_bytes") or 0) <= 0
+            ):
+                reject("evidence_demux_combat_log_complete_invalid")
+            if not row_reasons:
+                binding["state"] = "bound"
+            continue
+
         runtime_key = "raid_runtime_before_cleanup" if action == "botauto_stop" else "raid_runtime"
         runtime = payload.get(runtime_key)
         if action == "botauto_status" and isinstance(runtime, dict) and runtime.get("active") is False:
@@ -4495,7 +4595,15 @@ def evidence_demux_report(
     if not inactive_cleanup_seen:
         reasons.append("evidence_demux_inactive_cleanup_missing")
     reasons.extend(telemetry_envelopes["rejections"])
-    required_actions = known_actions - {"botauto_profile"}
+    # Historical/reconstructed captures predate the bounded combat-log export.
+    # Keep the generic demultiplexer compatible with those receipts. New live
+    # captures require combat-log transport and analysis through their explicit
+    # forced-evidence and success gates below.
+    required_actions = known_actions - {
+        "botauto_profile",
+        "botauto_combatlog_chunk",
+        "botauto_combatlog_complete",
+    }
     if terminal_failure_seen or controller_terminal_bound:
         # A recognized failed attempt never reaches the post-wipe ready-check
         # success gate.  Its exact terminal status plus forced diagnose/trace
@@ -5159,7 +5267,9 @@ def main() -> int:
     startup_error: str | None = None
     process: subprocess.Popen[bytes] | None = None
     telemetry_scheduler: TelemetryScheduler | None = None
-    telemetry_command_counts = {"status": 0, "diagnose": 0, "trace": 0}
+    telemetry_command_counts = {
+        "status": 0, "diagnose": 0, "trace": 0, "combat_log": 0,
+    }
     operator_interrupt = False
     shutdown_error: str | None = None
     stop_commands_sent = False
@@ -5378,6 +5488,56 @@ def main() -> int:
                     report["commands"] = commands
                     if report["gate_passed"]:
                         break
+                combat_log_started = time.monotonic()
+                process.stdin.write(b"botauto combatlog\n")
+                process.stdin.flush()
+                telemetry_command_counts["combat_log"] += 1
+                combat_log_rows: list[dict[str, Any]] = []
+                combat_log_deadline = combat_log_started + min(
+                    15.0, float(args.telemetry_timeout_sec)
+                )
+                combat_log_report = validate_forced_combat_log_bundle(
+                    combat_log_rows,
+                    expected_status.get("cohort_id")
+                    if isinstance(expected_status, dict) else None,
+                )
+                while time.monotonic() < combat_log_deadline:
+                    time.sleep(min(
+                        0.25,
+                        max(0.0, combat_log_deadline - time.monotonic()),
+                    ))
+                    observed_at = time.monotonic()
+                    for row in log_cursor.read_new_rows():
+                        action = row.get("action")
+                        if action in {
+                            "botauto_combatlog_chunk",
+                            "botauto_combatlog_complete",
+                        }:
+                            combat_log_rows.append(row)
+                        elif action == "botauto_diagnose":
+                            diagnosis_count += 1
+                            latest_diagnosis = row
+                            observations.append((row, observed_at))
+                        elif action == "botauto_trace":
+                            trace_count += 1
+                            observations.append((row, observed_at))
+                    combat_log_report = validate_forced_combat_log_bundle(
+                        combat_log_rows,
+                        expected_status.get("cohort_id")
+                        if isinstance(expected_status, dict) else None,
+                    )
+                    if combat_log_report["gate_passed"]:
+                        break
+                report["combat_log"] = combat_log_report
+                if combat_log_report["gate_passed"] is not True:
+                    report["gate_passed"] = False
+                    report.setdefault("missing_channels", []).append(
+                        "combat_log"
+                    )
+                    report.setdefault("rejections", []).extend(
+                        f"combat_log:{reason}"
+                        for reason in combat_log_report["rejections"]
+                    )
                 report["response_wait_seconds"] = round(time.monotonic() - request_started, 3)
                 return report
 
@@ -5725,6 +5885,22 @@ def main() -> int:
     ]
     diagnoses = action_payloads(normalized_rows, "botauto_diagnose")
     traces = action_payloads(normalized_rows, "botauto_trace")
+    combat_log_payloads = [
+        row["payload"] for row in normalized_rows
+        if row.get("action") in {
+            "botauto_combatlog_chunk", "botauto_combatlog_complete",
+        }
+        and isinstance(row.get("payload"), dict)
+    ]
+    combat_log_transport = combat_log_transport_status(combat_log_payloads)
+    combat_log = combined_combat_log(combat_log_payloads)
+    combat_analysis = analyze_combat_log(combat_log) if combat_log else {}
+    combat_log_transport["gate_passed"] = bool(
+        combat_log_transport.get("complete_marker")
+        and combat_log_transport.get("reassembled")
+        and combat_log
+        and combat_analysis
+    )
     profiles = action_payloads(normalized_rows, "botauto_profile")
     stop_rows = action_payloads(normalized_rows, "botauto_stop")
     recovery_accepted, recovery_rejections = (
@@ -5819,12 +5995,14 @@ def main() -> int:
         and forced_evidence_report.get("gate_passed") is True
         and bool(diagnoses)
         and bool(traces)
+        and combat_log_transport["gate_passed"] is True
     )
     evidence_incomplete = bool(
         telemetry_abort.get("detected") is True
         or demux_rejections
         or telemetry_envelopes.get("gate_passed") is not True
         or forced_evidence_report.get("gate_passed") is not True
+        or combat_log_transport.get("gate_passed") is not True
     )
     operational_infrastructure_abort = bool(
         startup_error
@@ -5895,12 +6073,16 @@ def main() -> int:
             "commands_sent": telemetry_command_counts,
             "scheduler_state": telemetry_scheduler.state() if telemetry_scheduler is not None else None,
             "material_status_diagnosis": "immediate",
-            "stall_bundle": "forced_diagnose_and_trace_delta_before_termination",
+            "stall_bundle": (
+                "forced_diagnose_trace_delta_and_bounded_combat_log_before_termination"
+            ),
             "final_forced_evidence": forced_evidence_report,
         },
         "accepted_raid_runtime": stable[-1].get("raid_runtime") if stable else None,
         "diagnose_observed": bool(diagnoses),
         "trace_observed": bool(traces),
+        "combat_log_transport": combat_log_transport,
+        "combat_analysis": combat_analysis,
         "required_telemetry_envelopes": telemetry_envelopes,
         "profile_selection_observed": len(profiles) == 1,
         "stop_observed": bool(stop_rows),
@@ -5944,7 +6126,9 @@ def main() -> int:
                 "trace": args.trace_interval_sec,
             },
             "telemetry_commands_sent": telemetry_command_counts,
-            "required_channels": ["status", "diagnosis", "trace"],
+            "required_channels": [
+                "status", "diagnosis", "trace", "combat_log",
+            ],
             "healthy": (
                 startup_error is None
                 and operator_interrupt is False
