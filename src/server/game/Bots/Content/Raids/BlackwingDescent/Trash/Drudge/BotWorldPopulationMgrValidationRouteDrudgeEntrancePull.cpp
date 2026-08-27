@@ -32,16 +32,16 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
     // stretched the raid through Magmaw's room and made every native Rush a
     // new movement problem instead of an ordinary trash ability.
     static std::array<MemberAnchor, 10> const entranceAnchors = {{
-        { 1, -328.0f, -104.0f, 214.0f },
-        { 2, -348.0f, -104.0f, 214.0f },
-        { 3, -342.0f, -128.0f, 214.0f },
-        { 4, -340.0f, -128.0f, 214.0f },
-        { 5, -338.0f, -128.0f, 214.0f },
-        { 6, -336.0f, -132.0f, 214.0f },
-        { 7, -338.0f, -132.0f, 214.0f },
-        { 8, -340.0f, -132.0f, 214.0f },
-        { 9, -342.0f, -132.0f, 214.0f },
-        { 10, -344.0f, -132.0f, 214.0f },
+        { 1, -320.0f, -120.0f, 214.0f },
+        { 2, -340.0f, -120.0f, 214.0f },
+        { 3, -324.0f, -95.0f, 214.0f },
+        { 4, -330.0f, -95.0f, 214.0f },
+        { 5, -336.0f, -95.0f, 214.0f },
+        { 6, -326.0f, -95.0f, 214.0f },
+        { 7, -330.0f, -95.0f, 214.0f },
+        { 8, -334.0f, -95.0f, 214.0f },
+        { 9, -338.0f, -95.0f, 214.0f },
+        { 10, -342.0f, -95.0f, 214.0f },
     }};
     auto recoveryAnchorFor = [&](uint32 slot) -> MemberAnchor const*
     {
@@ -58,7 +58,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
     // ledge instead of every requested per-slot point. Accept that small area;
     // live combat also checks each Drudge's actual Thunderclap distance.
     constexpr float RangedDoorwayArrivalToleranceYards = 10.5f;
-    constexpr float RangedDoorwaySafeMaximumY = -121.0f;
+    constexpr float RangedDoorwaySafeMaximumY = -90.0f;
     constexpr float DrudgeThunderclapSafeDistanceYards = 18.0f;
     auto doorwayToleranceFor = [=](bool tank)
     {
