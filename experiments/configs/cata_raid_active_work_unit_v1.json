@@ -2,8 +2,8 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "boss:blackwing_descent:magmaw:10N:chainwielder_hazard_floor",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
-  "observed_at_commit": "8ee767e42b5526c18c914e39432c5c4ad397d51b",
+  "classification": "implementation_pending_live_verification",
+  "observed_at_commit": "af1ff054dc1a46553880d91dc8049cd308b64f27",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary90_hazard_floor_handoff_20260828.md",
     "sha256": "a6b47bc7286e6ac5305cb5fa5f9fb59084a74f951e4e1ba786a666e809406898"
@@ -48,7 +48,7 @@
     "do_not_relabel_as_clear": true
   },
   "repair_scope": {
-    "status": "trace_backed_repair_required",
+    "status": "trace_backed_repair_implemented",
     "allowed": [
       "repair_shared_movement_planner_same_level_floor_selection",
       "add_recorded_same_level_bogus_lower_floor_regression",
@@ -89,27 +89,27 @@
     "matched_live_verification_runs": 1
   },
   "implementation_checkpoint": {
-    "tooling_commit": "8ee767e42b5526c18c914e39432c5c4ad397d51b",
-    "gameplay_commit": "7c13a3f89352c53b740820a1fe988a2796b2dc0c",
-    "status": "canary90_trace_backed_runtime_repair_pending",
-    "capture_tests_passed": 108,
-    "combat_analysis_tests_passed": 5,
+    "tooling_commit": "af1ff054dc1a46553880d91dc8049cd308b64f27",
+    "gameplay_commit": "3569720a0461f3032ba0df27c4ade789a4246b2f",
+    "status": "exact_build_verified_canary91_pending",
+    "capture_and_combat_tests_passed": 119,
     "combat_log_transport_passed": true,
-    "build_receipt_path": "/tmp/trinity-magmaw-7c13a3f893-build.DM02YT/worldserver-build-receipt-v2.json",
-    "build_receipt_file_sha256": "10a4580edd2f5f07871f9c14fb0c3164768fadc73e58b07a6da87b96f97bb147",
-    "build_receipt_semantic_sha256": "a5b9c497d00d36b48cfc44f45d0ee6bdf2f0a552e05d3e9a91f2cf5421a6a56d",
-    "binary_sha256": "c02a71618b616f6699b1504c66dc0d26fcd8efa14f33938afdaaf57da706cfba",
+    "diagnose_includes_dps_hps": true,
+    "build_receipt_path": "/tmp/trinity-magmaw-af1ff054dc-build.XyUZNU/worldserver-build-receipt.json",
+    "build_receipt_file_sha256": "d96b33a9bb7fc95a397d8d5341bd315880141e51ca71ebdd9861cdb7f736a496",
+    "build_receipt_semantic_sha256": "89c5733dfc1869c9cb317bcc2548d5da7226819319ad0c01232a2ab514665b91",
+    "binary_sha256": "a20479fa267568bbe3cc2780915c41399ff3fb699db5fbd2c5e87d9ac05faf02",
     "build_receipts_gate_bearing": true,
     "source_identity_stable": true,
     "live_clear_claimed": false
   },
   "implementation_constraints": {
     "maximum_c_or_cpp_lines": 999,
-    "largest_touched_cpp_current_lines": 0,
+    "largest_touched_cpp_current_lines": 639,
     "extract_new_module_required_if_growth_exceeds_limit": true,
     "heavy_build_allowed": false,
-    "live_run_allowed": false,
+    "live_run_allowed": true,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "Use raid-bot-runtime-implementation to repair the shared same-level hazard floor-selection edge with focused recorded and cross-floor regressions. Root-review the bounded patch, then obtain an exact coordinator build before another fresh canary."
+  "next_action": "Provision a fresh exact 10N roster and run Canary91 under the completion watchdog. Require the Chainwielder hazard exit to advance, verify diagnose combat_metrics DPS/HPS, and hand off only the next trace-backed causal edge."
 }
