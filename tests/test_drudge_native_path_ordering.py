@@ -21,7 +21,7 @@ def test_strict_native_path_keeps_complete_floor_gates_before_ordered_post_floor
     )]
 
     complete = strict_path.index("NativePathIsComplete(pathOk, path)")
-    floor = strict_path.index("NativePathFloorsValid(Bot, path, z, true)")
+    floor = strict_path.index("DiagnoseNativePathFloors(Bot, path,")
     endpoint = strict_path.index("EvaluatePostFloor")
     source_union = strict_path.index("SourceUnionPathSafe(path)")
     assert complete < floor < endpoint < source_union

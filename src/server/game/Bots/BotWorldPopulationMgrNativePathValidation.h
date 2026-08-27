@@ -43,19 +43,29 @@ inline bool NativePathPointFloorValid(Actor const* actor,
 }
 
 template <typename Actor>
-inline bool NativePathFloorsValid(Actor const* actor,
-    PathGenerator const& path, float referenceZ,
+inline NativePathFloorObservation DiagnoseNativePathFloors(
+    Actor const* actor, PathGenerator const& path, float referenceZ,
     bool allowDeclaredFallback)
 {
     Movement::PointsArray const& points = path.GetPath();
-    if (!actor || points.empty())
-        return false;
+    if (!actor || !actor->GetMap())
+        return MakeNativePathFloorObservation(
+            NativePathFloorFailure::ActorUnavailable, 0, 0, 0.0f, 0.0f,
+            0.0f, 0.0f, referenceZ);
+    if (points.empty())
+        return MakeNativePathFloorObservation(
+            NativePathFloorFailure::EmptyPath, 0, 0, actor->GetPositionX(),
+            actor->GetPositionY(), actor->GetPositionZ(), 0.0f, referenceZ);
     if (allowDeclaredFallback && !NativePathReferenceFloorValid(
             actor->GetPositionZ(), referenceZ))
-        return false;
+        return MakeNativePathFloorObservation(
+            NativePathFloorFailure::ActorReferenceGap, 0, 0,
+            actor->GetPositionX(), actor->GetPositionY(),
+            actor->GetPositionZ(), actor->GetPositionZ(), referenceZ);
 
     G3D::Vector3 previous(actor->GetPositionX(), actor->GetPositionY(),
         actor->GetPositionZ());
+    std::uint32_t segmentIndex = 0;
     for (G3D::Vector3 const& point : points)
     {
         float const dx = point.x - previous.x;
@@ -69,13 +79,34 @@ inline bool NativePathFloorsValid(Actor const* actor,
             float const fraction = float(sample) / float(sampleCount);
             G3D::Vector3 const position(previous.x + dx * fraction,
                 previous.y + dy * fraction, previous.z + dz * fraction);
-            if (!NativePathPointFloorValid(actor, position, referenceZ,
+            float const floorZ = actor->GetMap()->GetHeight(
+                actor->GetPhaseShift(), position.x, position.y,
+                position.z + 2.0f, true, 8.0f);
+            if (!(floorZ > INVALID_HEIGHT))
+                return MakeNativePathFloorObservation(
+                    NativePathFloorFailure::SampleFloorUnavailable,
+                    segmentIndex, sample, position.x, position.y,
+                    position.z, floorZ, referenceZ);
+            if (!AdmitNativePathPoint(floorZ, position.z, referenceZ,
                     allowDeclaredFallback))
-                return false;
+                return MakeNativePathFloorObservation(
+                    NativePathFloorFailure::SampleFloorGap, segmentIndex,
+                    sample, position.x, position.y, position.z, floorZ,
+                    referenceZ);
         }
         previous = point;
+        ++segmentIndex;
     }
-    return true;
+    return {};
+}
+
+template <typename Actor>
+inline bool NativePathFloorsValid(Actor const* actor,
+    PathGenerator const& path, float referenceZ,
+    bool allowDeclaredFallback)
+{
+    return DiagnoseNativePathFloors(actor, path, referenceZ,
+        allowDeclaredFallback).Accepted();
 }
 
 template <typename Actor>

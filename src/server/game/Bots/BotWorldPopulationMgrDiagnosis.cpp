@@ -644,6 +644,16 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << ",\"last_recovery_ms\":" << state.LastRecoveryMs
          << ",\"last_recovery_mode\":\"" << JsonEscape(state.LastRecoveryMode) << "\""
          << ",\"last_recovery_result\":\"" << JsonEscape(state.LastRecoveryResult) << "\""
+         << ",\"native_path_floor\":{\"failure\":\""
+         << BotWorldMovement::NativePathFloorFailureName(
+                state.LastNativePathFloorObservation.Failure)
+         << "\",\"segment_index\":" << state.LastNativePathFloorObservation.SegmentIndex
+         << ",\"sample_index\":" << state.LastNativePathFloorObservation.SampleIndex
+         << ",\"x\":" << state.LastNativePathFloorObservation.X
+         << ",\"y\":" << state.LastNativePathFloorObservation.Y
+         << ",\"z\":" << state.LastNativePathFloorObservation.Z
+         << ",\"resolved_floor_z\":" << state.LastNativePathFloorObservation.ResolvedFloorZ
+         << ",\"reference_z\":" << state.LastNativePathFloorObservation.ReferenceZ << "}"
          << ",\"blocked\":" << (state.Blocked ? "true" : "false")
          << ",\"blocked_episode_id\":" << state.BlockedEpisodeId
          << ",\"blocked_first_reason\":\"" << JsonEscape(state.BlockedFirstReason) << "\""
@@ -722,6 +732,16 @@ std::string BotWorldPopulationMgr::BuildBotTraceEntriesJson(WorldBotState const&
              << ",\"loop_guardrail_reason\":\"" << JsonEscape(itr->LoopGuardrailReason) << "\""
              << ",\"recovery_mode\":\"" << JsonEscape(itr->RecoveryMode) << "\""
              << ",\"recovery_result\":\"" << JsonEscape(itr->RecoveryResult) << "\""
+             << ",\"native_path_floor\":{\"failure\":\""
+             << BotWorldMovement::NativePathFloorFailureName(
+                    itr->NativePathFloor.Failure)
+             << "\",\"segment_index\":" << itr->NativePathFloor.SegmentIndex
+             << ",\"sample_index\":" << itr->NativePathFloor.SampleIndex
+             << ",\"x\":" << itr->NativePathFloor.X
+             << ",\"y\":" << itr->NativePathFloor.Y
+             << ",\"z\":" << itr->NativePathFloor.Z
+             << ",\"resolved_floor_z\":" << itr->NativePathFloor.ResolvedFloorZ
+             << ",\"reference_z\":" << itr->NativePathFloor.ReferenceZ << "}"
              << ",\"blocked_episode_id\":" << itr->BlockedEpisodeId
              << ",\"blocked_first_reason\":\"" << JsonEscape(itr->BlockedFirstReason) << "\""
              << ",\"blocked_current_reason\":\"" << JsonEscape(itr->BlockedCurrentReason) << "\""

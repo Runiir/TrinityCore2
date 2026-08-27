@@ -280,6 +280,7 @@ void BotWorldPopulationMgr::RecordDecisionTrace(WorldBotState& state, char const
     entry.LoopGuardrailReason = state.LastLoopGuardrailReason;
     entry.RecoveryMode = state.LastRecoveryMode;
     entry.RecoveryResult = state.LastRecoveryResult;
+    entry.NativePathFloor = state.LastNativePathFloorObservation;
     entry.BlockedEpisodeId = state.BlockedEpisodeId;
     entry.BlockedFirstReason = state.BlockedFirstReason;
     entry.BlockedCurrentReason = state.BlockedReason;

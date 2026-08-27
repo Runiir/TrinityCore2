@@ -4,6 +4,7 @@
 #include "Bots/BotActionArbiter.h"
 #include "Bots/BotMeleeAutoAttackIntent.h"
 #include "Bots/BotMovementArbiter.h"
+#include "Bots/BotWorldPopulationMgrNativeFloor.h"
 #include "Bots/BotRoleSaturationPolicy.h"
 #include "Bots/BotTypes.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeTauntConfirmation.h"
@@ -472,6 +473,7 @@ namespace BotWorldPopulationMgrBotState
         std::string LastLoopGuardrailReason;
         std::string LastRecoveryMode;
         std::string LastRecoveryResult;
+        BotWorldMovement::NativePathFloorObservation LastNativePathFloorObservation;
         uint64 LastRecoveryMs = 0;
         uint32 RecoveryAttemptCount = 0;
         bool Blocked = false;
@@ -588,6 +590,7 @@ namespace BotWorldPopulationMgrBotState
             std::string LoopGuardrailReason;
             std::string RecoveryMode;
             std::string RecoveryResult;
+            BotWorldMovement::NativePathFloorObservation NativePathFloor;
             uint32 BlockedEpisodeId = 0;
             std::string BlockedFirstReason;
             std::string BlockedCurrentReason;

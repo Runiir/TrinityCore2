@@ -400,7 +400,17 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
                          << "\",\"loop_guardrail_reason\":\"" << JsonEscape(itr->LoopGuardrailReason)
                          << "\",\"recovery_mode\":\"" << JsonEscape(itr->RecoveryMode)
                          << "\",\"recovery_result\":\"" << JsonEscape(itr->RecoveryResult)
-                         << "\",\"blocked_episode_id\":" << itr->BlockedEpisodeId
+                         << "\",\"native_path_floor\":{\"failure\":\""
+                         << BotWorldMovement::NativePathFloorFailureName(
+                                itr->NativePathFloor.Failure)
+                         << "\",\"segment_index\":" << itr->NativePathFloor.SegmentIndex
+                         << ",\"sample_index\":" << itr->NativePathFloor.SampleIndex
+                         << ",\"x\":" << itr->NativePathFloor.X
+                         << ",\"y\":" << itr->NativePathFloor.Y
+                         << ",\"z\":" << itr->NativePathFloor.Z
+                         << ",\"resolved_floor_z\":" << itr->NativePathFloor.ResolvedFloorZ
+                         << ",\"reference_z\":" << itr->NativePathFloor.ReferenceZ << "}"
+                         << ",\"blocked_episode_id\":" << itr->BlockedEpisodeId
                          << ",\"blocked_first_reason\":\"" << JsonEscape(itr->BlockedFirstReason)
                          << "\",\"blocked_current_reason\":\"" << JsonEscape(itr->BlockedCurrentReason)
                          << "\",\"blocked_resolution\":\"" << JsonEscape(itr->BlockedResolution)

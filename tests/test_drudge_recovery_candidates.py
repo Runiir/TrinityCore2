@@ -354,7 +354,7 @@ def test_recovery_candidate_contract_is_persistent_and_native_strict_for_tanks_a
     assert "State.LastPathRejectReason.empty()" in actions
     assert '"drudge_lane_native_path_rejected" : State.LastPathRejectReason' in actions
     assert "ShouldInvalidateAnchorAfterPathRejection" in actions
-    assert "NativePathFloorsValid(Bot, path, z, true)" in geometry
+    assert "DiagnoseNativePathFloors(Bot, path," in geometry
     assert "SourceUnionPathSafe(path)" in geometry
     assert "dynamicCandidate && !tank" in selector
     assert "NativePathIsComplete(pathOk, path)" in geometry

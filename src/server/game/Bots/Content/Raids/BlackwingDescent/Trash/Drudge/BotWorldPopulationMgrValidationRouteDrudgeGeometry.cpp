@@ -274,8 +274,10 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
                 *rejectionOut = std::move(reason);
             return false;
         };
+        State.LastNativePathFloorObservation = {};
         if (!Bot || !Bot->GetMap())
             return reject("drudge_anchor_map_unavailable");
+        float const declaredReferenceZ = z;
         float const resolvedZ = Bot->GetMap()->GetHeight(Bot->GetPhaseShift(), x, y,
             z + 2.0f, true, 8.0f);
         if (resolvedZ <= INVALID_HEIGHT)
@@ -293,11 +295,10 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             return reject("drudge_anchor_native_path_rejected:path_type="
                 + std::to_string(uint32(pathType)));
         }
-        // The endpoint may resolve on the encounter floor while an
-        // intermediate sample sees a stacked collision layer.  The complete
-        // Drudge path still uses the declared/reference-floor envelope for
-        // that remote evidence; generic movement keeps its strict overload.
-        if (!BotWorldMovement::NativePathFloorsValid(Bot, path, z, true))
+        State.LastNativePathFloorObservation =
+            BotWorldMovement::DiagnoseNativePathFloors(Bot, path,
+                declaredReferenceZ, true);
+        if (!State.LastNativePathFloorObservation.Accepted())
             return reject("drudge_anchor_path_floor_gap");
         auto const& route = Manager.Party().ValidationRouteManifest;
         size_t const nextIndex = Manager.Party().ValidationRouteManifestIndex + 1;
