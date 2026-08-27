@@ -52,14 +52,15 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
             });
         return found == entranceAnchors.end() ? nullptr : &*found;
     };
+    constexpr float DoorwayArrivalToleranceYards = 15.0f;
     auto atAnchor = [&](Player const* member, MemberAnchor const* anchor,
-        bool tank)
+        bool tank, float toleranceOverride = 0.0f)
     {
         if (!member || !anchor)
             return false;
-        float const tolerance = tank
-            ? config.ValidationRouteSplitTankArrivalToleranceYards
-            : config.ValidationRouteSplitArrivalToleranceYards;
+        float const tolerance = toleranceOverride > 0.0f ? toleranceOverride
+            : tank ? config.ValidationRouteSplitTankArrivalToleranceYards
+                   : config.ValidationRouteSplitArrivalToleranceYards;
         return member->GetExactDist(anchor->X, anchor->Y, anchor->Z) <= tolerance;
     };
     auto exactRosterAtEntrance = [&]
@@ -79,7 +80,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
                 return false;
             uint32 const slot = roster->second.SlotIndex + 1;
             if (!atAnchor(member, recoveryAnchorFor(slot),
-                    roster->second.Role == "tank"))
+                    roster->second.Role == "tank", DoorwayArrivalToleranceYards))
                 return false;
             ++reached;
         }
@@ -145,13 +146,15 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
     {
         if (AssignedTank)
         {
-            bool const tankAtEntrance = atAnchor(Bot, entrance, true);
+            bool const tankAtEntrance = atAnchor(Bot, entrance, true,
+                DoorwayArrivalToleranceYards);
             PhaseResult const taunt = RunNativeTauntConfirmation(
                 true, tankAtEntrance, tankAtEntrance);
             if (taunt == PhaseResult::Handled)
                 return taunt;
         }
-        if (!atAnchor(Bot, entrance, AssignedTank))
+        if (!atAnchor(Bot, entrance, AssignedTank,
+                DoorwayArrivalToleranceYards))
             return holdOrMoveTo(entrance, "drudge_entrance_return_move",
                 "drudge_entrance_return_wait");
         if (!packLinked)
@@ -167,7 +170,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
 
     if (!scopedEntranceStage)
     {
-        if (!atAnchor(Bot, entrance, AssignedTank))
+        if (!atAnchor(Bot, entrance, AssignedTank,
+                DoorwayArrivalToleranceYards))
             return holdOrMoveTo(entrance, "drudge_entrance_stage_move",
                 "drudge_entrance_stage_wait");
         if (!exactRosterAtEntrance())
@@ -191,7 +195,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
     uint32 const pullOwnerSlot = config.ValidationRouteSplitSeedRosterSlots.front();
     if (OneBasedSlot != pullOwnerSlot)
     {
-        if (!atAnchor(Bot, entrance, AssignedTank))
+        if (!atAnchor(Bot, entrance, AssignedTank,
+                DoorwayArrivalToleranceYards))
             return holdOrMoveTo(entrance, "drudge_entrance_hold_move",
                 "drudge_entrance_hold_wait");
         HoldOffense();
