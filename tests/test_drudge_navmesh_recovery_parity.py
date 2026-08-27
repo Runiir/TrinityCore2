@@ -5,7 +5,10 @@ from pathlib import Path
 
 import pytest
 
-from tools.raid_program.probe_drudge_navmesh_recovery import verify_assets
+from tools.raid_program.probe_drudge_navmesh_recovery import (
+    verify_assets,
+    verify_route_anchors,
+)
 
 
 ROOT = Path(__file__).parents[1]
@@ -25,6 +28,18 @@ def test_capture_runs_navmesh_probe_before_worldserver_start():
     process_start = source.index("subprocess.Popen(", preflight)
     assert preflight < process_start
     assert '"drudge_navmesh_preflight": drudge_navmesh_preflight' in source
+
+
+def test_navmesh_probe_is_locked_to_the_generated_route_anchors():
+    anchors = verify_route_anchors(ROOT)
+    assert anchors["4"] == [-301.5, -116.5, 214.438]
+    assert anchors["5"] == [-320.0, -99.0, 214.033]
+    assert anchors["10"] == [-328.0, -97.0, 214.154]
+    source = (
+        ROOT / "tools/raid_program/probe_drudge_navmesh_recovery.py"
+    ).read_text(encoding="utf-8")
+    assert 'dataset/validation_scenarios/validation_routes.jsonl' in source
+    assert "drudge_navmesh_materialized_route_anchor_mismatch" in source
 
 
 @pytest.mark.skipif(not MMAP.is_file(), reason="authoritative map-669 mmap assets unavailable")
@@ -87,6 +102,9 @@ def test_recorded_drudge_returns_match_native_navmesh(tmp_path):
     }
     recovery = payload["validated_returns"]["recovery_formation"]
     assert set(recovery) == {str(slot) for slot in range(1, 11)}
+    assert payload["route_recovery_anchors"] == {
+        slot: row["terminal"] for slot, row in recovery.items()
+    }
     assert recovery["1"] == {
         "start": [-289.289093, -57.7575, 212.932236],
         "terminal": [-288.8, -86.483, 214.154],

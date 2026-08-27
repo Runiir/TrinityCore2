@@ -24,6 +24,19 @@ EXPECTED_ASSETS = {
     "6693332.mmtile": "f91db1f81a7f95a824f9bd3c4eca6e665e3a80954cb4b472cab80214c19efbeb",
 }
 
+EXPECTED_RECOVERY_ANCHORS = {
+    1: [-288.8, -86.483, 214.154],
+    2: [-338.018, -64.932, 212.751],
+    3: [-297.339, -115.904, 214.552],
+    4: [-301.5, -116.5, 214.438],
+    5: [-320.0, -99.0, 214.033],
+    6: [-295.0, -120.0, 215.947],
+    7: [-299.0, -119.0, 215.488],
+    8: [-328.0, -100.0, 214.034],
+    9: [-333.0, -99.0, 214.154],
+    10: [-328.0, -97.0, 214.154],
+}
+
 EXPECTED_OUTPUT = (
     "loaded=7",
     "30003 findPath=0x40000000 polys=4 complete=1",
@@ -51,8 +64,8 @@ EXPECTED_OUTPUT = (
     "recovery_slot4 findPath=0x40000000 polys=11 complete=1",
     "recovery_slot4 smooth=0x40000000 points=13 terminal=-301.5,-116.5,214.438",
     "recovery_slot4 future_boss_minimum=39.9585",
-    "recovery_slot5 findPath=0x40000000 polys=7 complete=1",
-    "recovery_slot5 smooth=0x40000000 points=13 terminal=-311.5,-116.3,214.033",
+    "recovery_slot5 findPath=0x40000000 polys=3 complete=1",
+    "recovery_slot5 smooth=0x40000000 points=9 terminal=-320,-99,214.033",
     "recovery_slot5 future_boss_minimum=40.6073",
     "recovery_slot6 findPath=0x40000000 polys=14 complete=1",
     "recovery_slot6 smooth=0x40000000 points=14 terminal=-295,-120,215.947",
@@ -60,14 +73,14 @@ EXPECTED_OUTPUT = (
     "recovery_slot7 findPath=0x40000000 polys=14 complete=1",
     "recovery_slot7 smooth=0x40000000 points=14 terminal=-299,-119,215.488",
     "recovery_slot7 future_boss_minimum=38.6956",
-    "recovery_slot8 findPath=0x40000000 polys=7 complete=1",
-    "recovery_slot8 smooth=0x40000000 points=13 terminal=-311.5,-123,214.034",
+    "recovery_slot8 findPath=0x40000000 polys=4 complete=1",
+    "recovery_slot8 smooth=0x40000000 points=8 terminal=-328,-100,214.034",
     "recovery_slot8 future_boss_minimum=47.163",
-    "recovery_slot9 findPath=0x40000000 polys=9 complete=1",
-    "recovery_slot9 smooth=0x40000000 points=13 terminal=-344.021,-95.4246,214.154",
+    "recovery_slot9 findPath=0x40000000 polys=5 complete=1",
+    "recovery_slot9 smooth=0x40000000 points=14 terminal=-333,-99,214.154",
     "recovery_slot9 future_boss_minimum=45.5737",
-    "recovery_slot10 findPath=0x40000000 polys=4 complete=1",
-    "recovery_slot10 smooth=0x40000000 points=12 terminal=-340.293,-95,214.154",
+    "recovery_slot10 findPath=0x40000000 polys=3 complete=1",
+    "recovery_slot10 smooth=0x40000000 points=13 terminal=-328,-97,214.154",
     "recovery_slot10 future_boss_minimum=43.7815",
     "minimum_distance_exit_retained end_status=0x40000000 ref=100000000003b3 nearest=-288.8,-73.2144,213.714 distance=3.0675",
     "minimum_distance_exit_retained findPath=0x40000000 polys=1 complete=1",
@@ -117,6 +130,75 @@ def verify_assets(root: Path = ROOT) -> dict[str, str]:
                 f"drudge_navmesh_asset_hash_mismatch:{name}:"
                 f"expected={expected_hash}:actual={observed[name]}"
             )
+    return observed
+
+
+def verify_route_anchors(root: Path = ROOT) -> dict[str, list[float]]:
+    config = json.loads(
+        (root / "experiments/configs/validation_scenarios_cata_001.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    selected = [
+        scenario
+        for scenario in config["scenarios"] + config["diagnostic_scenarios"]
+        if scenario["id"] in {
+            "blackwing_descent_10n",
+            "blackwing_descent_10n_magmaw_diagnostic",
+        }
+    ]
+    if len(selected) != 2:
+        raise RuntimeError("drudge_navmesh_route_scenario_set_mismatch")
+    observed: dict[str, list[float]] | None = None
+    for scenario in selected:
+        node = next(
+            row for row in scenario["route"]
+            if row.get("node_id") == "bwd.magmaw.drudges"
+        )
+        anchors = {
+            str(int(row["roster_slot"])): [
+                float(row["x"]), float(row["y"]), float(row["z"])
+            ]
+            for row in node["split_recovery_member_anchors"]
+        }
+        if observed is None:
+            observed = anchors
+        elif anchors != observed:
+            raise RuntimeError("drudge_navmesh_route_anchor_scenarios_diverge")
+    expected = {
+        str(slot): terminal for slot, terminal in EXPECTED_RECOVERY_ANCHORS.items()
+    }
+    if observed != expected:
+        raise RuntimeError(
+            "drudge_navmesh_route_anchor_mismatch:"
+            f"expected={expected}:actual={observed}"
+        )
+    materialized_rows = [
+        json.loads(line)
+        for line in (
+            root / "dataset/validation_scenarios/validation_routes.jsonl"
+        ).read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    materialized = [
+        row for row in materialized_rows
+        if row.get("scenario_id") in {
+            "blackwing_descent_10n",
+            "blackwing_descent_10n_magmaw_diagnostic",
+        }
+        and row.get("route_node_id") == "bwd.magmaw.drudges"
+    ]
+    if len(materialized) != 2:
+        raise RuntimeError("drudge_navmesh_materialized_route_set_mismatch")
+    for row in materialized:
+        anchors = {
+            str(int(anchor["roster_slot"])): [
+                float(anchor["x"]), float(anchor["y"]), float(anchor["z"])
+            ]
+            for anchor in row["split_recovery_member_anchors"]
+        }
+        if anchors != observed:
+            raise RuntimeError("drudge_navmesh_materialized_route_anchor_mismatch")
     return observed
 
 
@@ -177,11 +259,13 @@ def compile_and_run_probe(root: Path = ROOT) -> str:
 def run_probe(root: Path = ROOT) -> dict[str, object]:
     root = root.resolve()
     assets = verify_assets(root)
+    route_anchors = verify_route_anchors(root)
     output = compile_and_run_probe(root)
     return {
         "all_passed": True,
         "map_id": 669,
         "asset_sha256": assets,
+        "route_recovery_anchors": route_anchors,
         "player_nav_include_flags": ["NAV_GROUND", "NAV_WATER", "NAV_MAGMA_SLIME"],
         "nearest_poly_extents": [3.0, 5.0, 3.0],
         "nearest_poly_vertical_fallback": 50.0,
@@ -230,12 +314,12 @@ def run_probe(root: Path = ROOT) -> dict[str, object]:
                 "2": {"start": [-322.858002, -48.286201, 211.999359], "terminal": [-338.018, -64.932, 212.751], "detour_nearest_terminal": [-338.018, -64.932, 213.233], "detour_nearest_requested_z_delta": 0.482346, "polygons": 2, "smooth_points": 7, "future_boss_minimum": 26.2785},
                 "3": {"start": [-296.0, -69.9, 213.485], "terminal": [-297.339, -115.904, 214.552], "polygons": 14, "smooth_points": 14, "future_boss_minimum": 38.7336},
                 "4": {"start": [-298.8, -71.5, 213.461], "terminal": [-301.5, -116.5, 214.438], "polygons": 11, "smooth_points": 13, "future_boss_minimum": 39.9585},
-                "5": {"start": [-311.5, -71.3, 213.292], "terminal": [-311.5, -116.3, 214.033], "polygons": 7, "smooth_points": 13, "future_boss_minimum": 40.6073},
+                "5": {"start": [-311.5, -71.3, 213.292], "terminal": [-320.0, -99.0, 214.033], "polygons": 3, "smooth_points": 9, "future_boss_minimum": 40.6073},
                 "6": {"start": [-295.0, -75.0, 213.45], "terminal": [-295.0, -120.0, 215.947], "polygons": 14, "smooth_points": 14, "future_boss_minimum": 43.9292},
                 "7": {"start": [-292.5, -69.1, 214.024], "terminal": [-299.0, -119.0, 215.488], "polygons": 14, "smooth_points": 14, "future_boss_minimum": 38.6956},
-                "8": {"start": [-311.5, -78.0, 213.5], "terminal": [-311.5, -123.0, 214.034], "polygons": 7, "smooth_points": 13, "future_boss_minimum": 47.163},
-                "9": {"start": [-344.021, -50.4246, 212.216], "terminal": [-344.021, -95.4246, 214.154], "polygons": 9, "smooth_points": 13, "future_boss_minimum": 45.5737},
-                "10": {"start": [-340.293, -53.7558, 211.888], "terminal": [-340.293, -95.0, 214.154], "polygons": 4, "smooth_points": 12, "future_boss_minimum": 43.7815},
+                "8": {"start": [-311.5, -78.0, 213.5], "terminal": [-328.0, -100.0, 214.034], "polygons": 4, "smooth_points": 8, "future_boss_minimum": 47.163},
+                "9": {"start": [-344.021, -50.4246, 212.216], "terminal": [-333.0, -99.0, 214.154], "polygons": 5, "smooth_points": 14, "future_boss_minimum": 45.5737},
+                "10": {"start": [-340.293, -53.7558, 211.888], "terminal": [-328.0, -97.0, 214.154], "polygons": 3, "smooth_points": 13, "future_boss_minimum": 43.7815},
             },
             "minimum_distance_exit_retained": {
                 "start": [-288.8, -72.289, 213.473],
