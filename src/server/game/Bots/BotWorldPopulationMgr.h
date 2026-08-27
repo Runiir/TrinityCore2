@@ -549,6 +549,14 @@ private:
     void ReconcileRaidAreaAutocasts(Player* bot, bool suppress) const;
     bool PrepareBossMechanicAction(WorldBotState& state, Player* bot,
         Unit* boundRouteTarget, BossMechanicActionResult& result);
+    bool TryBossHealer(WorldBotState& state, Player* bot, char const* role,
+        BossMechanicActionResult& result,
+        RaidRoleAssignment const& raidAssignment,
+        RaidPositioningAnchors const& raidAnchors,
+        RaidMechanicAdapter const& raidAdapter,
+        RaidGearTargetPlan const& raidGearPlan,
+        HeroicRaidProgression const& heroicProgression,
+        char const* rawJson, char const* semanticJson);
     BossMechanicActionResult TryBossMechanics(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, Unit* boundRouteTarget = nullptr);
     RaidRoleAssignment BuildRaidRoleAssignment(Player* bot) const;
     RaidPositioningAnchors BuildRaidPositioningAnchors(Player* bot, Unit const* boss, RaidRoleAssignment const& assignment, BossMechanicFeatures const& features) const;

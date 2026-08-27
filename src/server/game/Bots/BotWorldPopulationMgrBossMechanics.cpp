@@ -901,50 +901,9 @@ raid_cooldown_complete:
         }
     }
 
-    bool const assignedHealer = raidAdapter.HealerOwnerSlots.empty()
-        || std::find(raidAdapter.HealerOwnerSlots.begin(), raidAdapter.HealerOwnerSlots.end(),
-            raidAssignment.RoleIndex) != raidAdapter.HealerOwnerSlots.end();
-    if (std::string(role) == "healer" && assignedHealer)
-    {
-        Unit* healTarget = nullptr;
-        if (Group* group = bot->GetGroup())
-        {
-            float lowestHp = 2.0f;
-            for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
-            {
-                Player* member = itr->GetSource();
-                if (!member || !member->IsAlive() || member->GetMap() != bot->GetMap() || !bot->IsWithinLOSInMap(member))
-                    continue;
-                bool const tank = GetDungeonRole(member) == std::string("tank");
-                bool const sameSubgroup = group->GetMemberGroup(member->GetGUID()) == raidAssignment.SubGroup;
-                bool const owned = raidAdapter.HealerOwnership == "raid_triage"
-                    || (raidAdapter.HealerOwnership == "tank" && tank)
-                    || (raidAdapter.HealerOwnership == "subgroup" && sameSubgroup)
-                    || (raidAdapter.HealerOwnership == "tank_and_subgroup" && (tank || sameSubgroup));
-                if (!owned)
-                    continue;
-
-                float hp = UnitHealthPct(member);
-                if (hp < lowestHp)
-                {
-                    healTarget = member;
-                    lowestHp = hp;
-                }
-            }
-        }
-
-        uint32 healSpell = healTarget ? SelectHealSpell(bot, healTarget) : 0;
-        if (healSpell && UnitHealthPct(healTarget) < (result.Features.RaidDamage ? 0.9f : 0.75f) && TryCastFriendlySpell(bot, healTarget, healSpell))
-        {
-            result.Action = result.Features.RaidDamage ? "heal_raid_damage" : "heal_boss_damage";
-            result.SpellId = healSpell;
-            result.Target = healTarget;
-            RecordEvent(state, bot, "boss_heal", result.Target, "ok", raw.c_str(), semantic.c_str(), UnitHealthPct(healTarget), result.Features.CastSpellId, healSpell);
-            if (result.Features.RaidEncounter)
-                RecordRaidTelemetry(state, bot, result.Target, "raid_healer_cooldown", "ok", result.Features, raidAssignment, raidAnchors, raidAdapter, raidGearPlan, heroicProgression, raw.c_str(), semantic.c_str(), UnitHealthPct(healTarget), result.Features.CastSpellId, healSpell);
-            return result;
-        }
-    }
+    if (TryBossHealer(state, bot, role, result, raidAssignment, raidAnchors,
+        raidAdapter, raidGearPlan, heroicProgression, raw.c_str(), semantic.c_str()))
+        return result;
 
     ResolvedCombatAction profileAction;
     bool const forbidArea = raidAdapter.ContractResolved
