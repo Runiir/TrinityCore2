@@ -592,11 +592,10 @@ bool DrudgeLaneContext::Run()
     if (result == PhaseResult::Handled)
         return true;
 
-    // Once both entrance tanks own their Drudges, the pull is complete.
-    // Release the node to the normal role/profile combat path instead of
-    // suppressing damage for the diagnostic two-lane certification loop.
+    // Once both tanks own their entrance Drudges, use ordinary native class
+    // actions with only lane targeting and paired-health synchronization.
     if (IsEntrancePullEstablished())
-        return false;
+        return RunEntranceCombat() != PhaseResult::Abort;
 
     result = BuildAnchorPolicies();
     if (result == PhaseResult::Abort)

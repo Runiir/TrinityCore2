@@ -161,9 +161,12 @@ def test_prepull_keeps_non_tanks_at_entrance_and_guards_magmaw() -> None:
     assert "RunDrudgeSeedCoordinator()" not in actions
 
 
-def test_native_entrance_ownership_releases_normal_combat_and_safety_movement() -> None:
+def test_native_entrance_ownership_uses_simple_balanced_combat_and_safety_movement() -> None:
     lane_selection = (
         DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp"
+    ).read_text(encoding="utf-8")
+    combat = (
+        DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeCombat.cpp"
     ).read_text(encoding="utf-8")
     geometry = (
         DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
@@ -172,7 +175,13 @@ def test_native_entrance_ownership_releases_normal_combat_and_safety_movement() 
     release = lane_selection[lane_selection.index("result = ResolveSources();"):
                              lane_selection.index("result = BuildAnchorPolicies();")]
     assert "if (IsEntrancePullEstablished())" in release
-    assert "return false;" in release
+    assert "return RunEntranceCombat() != PhaseResult::Abort;" in release
+    assert "ShouldHoldLowerLane" in combat
+    assert "drudge_kill_sync_hold_lower_health_lane" in combat
+    assert "split_lane_target_switch" in combat
+    assert "ResolveProfileCombatAction" in combat
+    assert "forbidArea" not in combat
+    assert "false, false, true, false, true" in combat
     assert "ordinaryEntranceCombat = IsEntrancePullEstablished()" in geometry
     assert "specializedLaneMovement = drudgeProfile" in geometry
     assert "specializedLaneMovement, exactPrepullStaged" in geometry
