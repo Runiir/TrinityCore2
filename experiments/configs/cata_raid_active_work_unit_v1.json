@@ -3,7 +3,7 @@
   "work_unit": "boss:blackwing_descent:magmaw:10N:pillar_of_flame_ranged_escape",
   "owner_skill": "raid-bot-runtime-implementation",
   "classification": "implementation_pending_live_verification",
-  "observed_at_commit": "eb6b821c7a1d5c31578aa3e61a134f9ee507cc34",
+  "observed_at_commit": "44c2f2169a7a87bfda9d82ca919d2b064369c7f3",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary91_pillar_death_handoff_20260828.md",
     "sha256": "b95cd4c6561b05d065a6c9cc45f42a1fe5e3348e363b89bfba9d3bd8dede8966"
@@ -60,9 +60,9 @@
     "matched_live_verification_runs": 1
   },
   "implementation_checkpoint": {
-    "gameplay_commit": "eb6b821c7a1d5c31578aa3e61a134f9ee507cc34",
+    "gameplay_commit": "44c2f2169a7a87bfda9d82ca919d2b064369c7f3",
     "capture_commit": "3da4a42724",
-    "status": "focused_tests_passed_exact_build_pending",
+    "status": "focused_tests_passed_after_compile_fix_exact_build_pending",
     "focused_tests_passed": 20,
     "capture_tests_passed": 116,
     "new_helper_ccn": 7,
