@@ -128,7 +128,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
 
     if (pullStarted)
     {
-        if (AssignedTank && !NativeChargePending)
+        if (AssignedTank && !IsLandedRushPending())
         {
             PhaseResult const taunt = RunNativeTauntConfirmation(
                 true, false, false);
