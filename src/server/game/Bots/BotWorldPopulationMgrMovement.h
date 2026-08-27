@@ -34,6 +34,17 @@ constexpr bool AllowsNativeLongPath(
         && nativeRecoveryEntranceRequired;
 }
 
+// Only a corpse-authorized recovery entrance may use an aerial spline.  Keep
+// this as an intent/state gate so ordinary corpse runs and every other owner
+// continue through the existing ground movement executor.
+constexpr bool UsesNativeRecoveryGhostFlight(
+    BotMovementArbitration::Owner owner, bool allowNativeLongPath,
+    bool ghostFlightEnabled)
+{
+    return owner == BotMovementArbitration::Owner::Recovery
+        && allowNativeLongPath && ghostFlightEnabled;
+}
+
 // While a corpse-authorized recovery is crossing maps, only the recovery
 // owner may submit movement.  A route or combat callback can still run during
 // the worldport transition, but its stale instance destination must not be

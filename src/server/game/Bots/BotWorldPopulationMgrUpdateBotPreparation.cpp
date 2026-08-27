@@ -89,6 +89,12 @@ bool BotWorldPopulationMgr::PrepareBotUpdate(BotUpdateContext& context)
     {
         if (context.State.NativeRecoveryGhostFlightEnabled)
         {
+            if (context.State.NativeRecoveryGhostGravityDisabled)
+            {
+                if (context.Bot->IsGravityDisabled())
+                    context.Bot->SetDisableGravity(false);
+                context.State.NativeRecoveryGhostGravityDisabled = false;
+            }
             if (context.Bot->CanFly())
                 context.Bot->SetCanFly(false);
             context.State.NativeRecoveryGhostFlightEnabled = false;

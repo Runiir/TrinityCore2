@@ -176,6 +176,12 @@ bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot
     {
         if (!state.NativeRecoveryGhostFlightEnabled)
             return;
+        if (state.NativeRecoveryGhostGravityDisabled)
+        {
+            if (bot->IsGravityDisabled())
+                bot->SetDisableGravity(false);
+            state.NativeRecoveryGhostGravityDisabled = false;
+        }
         if (bot->CanFly())
             bot->SetCanFly(false);
         state.NativeRecoveryGhostFlightEnabled = false;

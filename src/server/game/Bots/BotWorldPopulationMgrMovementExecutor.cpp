@@ -116,7 +116,11 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
     }
 
     CommitMovementEvidence(state, bot, intent, plan, request, nowMs);
-    state.IsMoving = plan.DynamicTarget;
+    bool const aerialGhostRecovery = plan.NativeLongPath
+        && BotWorldMovement::UsesNativeRecoveryGhostFlight(
+            intent.Owner, intent.AllowNativeLongPath,
+            state.NativeRecoveryGhostFlightEnabled);
+    state.IsMoving = plan.DynamicTarget || aerialGhostRecovery;
 
     // MotionMaster is the independent, set-and-forget movement executor.
     // The caller may continue submitting combat or support intents while this
@@ -129,6 +133,30 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
                 intent.DynamicTargetRange);
         else
             bot->GetMotionMaster()->MoveChase(intent.DynamicTarget);
+    }
+    else if (aerialGhostRecovery)
+    {
+        if (!bot->CanFly())
+            bot->SetCanFly(true);
+        if (!bot->IsGravityDisabled())
+        {
+            bot->SetDisableGravity(true);
+            state.NativeRecoveryGhostGravityDisabled = true;
+        }
+        Position const aerialPath[2]{
+            Position(bot->GetPositionX(), bot->GetPositionY(),
+                bot->GetPositionZ(), bot->GetOrientation()),
+            Position(intent.X, intent.Y, intent.Z, bot->GetOrientation())
+        };
+        // The typed recovery flight uses Trinity's native spline protocol,
+        // but explicitly marks the spline as flying.  A ground PointMovement
+        // generator would silently ignore the ghost's aerial capability.
+        bot->GetMotionMaster()->MoveSmoothPath(0, aerialPath, 2, false, true);
+        RecordMovementPlannerExecutorOutcome(
+            MovementExecutorBotGuid(bot), MovementExecutorMapId(bot), intent,
+            "native_aerial_path_submission", "submitted",
+            "native_aerial_movement_submitted");
+        return true;
     }
     else if (plan.NativeLongPath)
         bot->GetMotionMaster()->MovePoint(0, intent.X, intent.Y, intent.Z,

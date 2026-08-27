@@ -675,6 +675,8 @@ std::string BotWorldPopulationMgr::BuildNativeRecoveryEpisodeJson(
          << (state && state->NativeRecoveryEntranceAvailable ? "true" : "false")
          << ",\"ghost_flight_enabled\":"
          << (state && state->NativeRecoveryGhostFlightEnabled ? "true" : "false")
+         << ",\"ghost_gravity_disabled\":"
+         << (state && state->NativeRecoveryGhostGravityDisabled ? "true" : "false")
          << "}";
     return json.str();
 }
