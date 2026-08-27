@@ -1,8 +1,6 @@
 #include "Bots/BotActionArbiter.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/BotWorldPopulationMgr.h"
-#include "Bots/BotWorldPopulationMgrNativeHelpers.h"
-#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeHealthSync.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudge.h"
 
 #include "Creature.h"
@@ -12,8 +10,6 @@
 
 namespace BotWorldPopulationMgrValidationRoute
 {
-using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
-
 DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntranceCombat()
 {
     Creature* combatTarget = LaneSource->IsAlive() ? LaneSource : OtherSource;
@@ -30,59 +26,6 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntranceCombat()
         return PhaseResult::Handled;
     }
 
-    bool const bothAlive = LaneSource->IsAlive() && OtherSource->IsAlive();
-    float const laneHealth = bothAlive ? UnitHealthPct(LaneSource) : 0.0f;
-    float const peerHealth = bothAlive ? UnitHealthPct(OtherSource) : 0.0f;
-    bool const hold = bothAlive && BotRaidDrudgeHealthSync::ShouldHoldLowerLane(
-        laneHealth, peerHealth);
-    if (bothAlive && AssignedTank)
-    {
-        auto& party = Manager.Party();
-        if (party.ValidationRouteDrudgeHealthSyncEvidenceAttemptId
-                != Manager.Cohort().AttemptId
-            || party.ValidationRouteDrudgeHealthSyncEvidenceWipeGeneration
-                != Manager.Cohort().Raid.WipeGeneration
-            || party.ValidationRouteDrudgeHealthSyncEvidenceRouteGeneration
-                != party.ValidationRouteGeneration)
-        {
-            party.ValidationRouteDrudgeHealthSyncRosterGuids.clear();
-            party.ValidationRouteDrudgeHealthSyncEvaluatedRosterGuids.clear();
-            party.ValidationRouteDrudgeHealthSyncEvidenceAttemptId =
-                Manager.Cohort().AttemptId;
-            party.ValidationRouteDrudgeHealthSyncEvidenceWipeGeneration =
-                Manager.Cohort().Raid.WipeGeneration;
-            party.ValidationRouteDrudgeHealthSyncEvidenceRouteGeneration =
-                party.ValidationRouteGeneration;
-        }
-        party.ValidationRouteDrudgeHealthSyncEvaluatedRosterGuids.insert(
-            Bot->GetGUID().GetCounter());
-        if (hold)
-        {
-            party.ValidationRouteDrudgeHealthSyncRosterGuids.insert(
-                Bot->GetGUID().GetCounter());
-            party.ValidationRouteDrudgeHealthSyncHoldSourceSpawnId =
-                LaneSource == Sources[0] ? 250140 : 250141;
-            party.ValidationRouteDrudgeHealthSyncHoldTankGuid = LaneTank
-                ? LaneTank->GetGUID().GetCounter() : 0;
-            party.ValidationRouteDrudgeHealthSyncHoldLowerPct = laneHealth;
-            party.ValidationRouteDrudgeHealthSyncHoldPeerPct = peerHealth;
-            party.ValidationRouteDrudgeHealthSyncHoldLowerAlive = true;
-            party.ValidationRouteDrudgeHealthSyncHoldPeerAlive = true;
-        }
-    }
-    if (hold)
-    {
-        HoldOffense();
-        Record(LaneSource, AssignedTank
-            ? "drudge_tank_health_sync_hold"
-            : "drudge_kill_sync_hold_lower_health_lane",
-            SourceSeparation);
-        Target = LaneSource;
-        State.TargetGuid = LaneSource->GetGUID();
-        if (!AssignedTank)
-            return PhaseResult::Handled;
-    }
-
     if (Bot->GetVictim() && Bot->GetVictim() != combatTarget)
         Manager.SubmitMeleeAutoAttackIntent(State,
             BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
@@ -96,9 +39,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntranceCombat()
         if (controlled && controlled->GetVictim()
             && controlled->GetVictim() != combatTarget)
             controlled->AttackStop();
-    if (!hold)
-        BotRaidAreaAuthority::SetAllOffenseSuppressed(
-            Bot->GetGUID().GetRawValue(), false);
+    BotRaidAreaAuthority::SetAllOffenseSuppressed(
+        Bot->GetGUID().GetRawValue(), false);
     BotRaidAreaAuthority::Set(Bot->GetGUID().GetRawValue(), true);
     ResolvedCombatAction action = Manager.ResolveProfileCombatAction(
         Bot, combatTarget, 1, false, 0, false, false, true, false, false);

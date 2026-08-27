@@ -182,10 +182,10 @@ def test_native_entrance_ownership_uses_simple_balanced_combat_and_safety_moveme
     combat_branch = run.index("return RunEntranceCombat() == PhaseResult::Handled;", pull)
     assert build < established < pull < combat_branch
     assert "return RunEntranceCombat() == PhaseResult::Handled;" in run[established:]
-    assert "ShouldHoldLowerLane" in combat
-    assert "drudge_kill_sync_hold_lower_health_lane" in combat
+    assert "ShouldHoldLowerLane" not in combat
+    assert "drudge_kill_sync_hold_lower_health_lane" not in combat
+    assert "drudge_tank_health_sync_hold" not in combat
     assert "split_lane_target_switch" in combat
-    assert "if (!AssignedTank)" in combat
     assert "ResolveProfileCombatAction" in combat
     assert "false, false, true, false, false" in combat
     assert "drudge_entrance_lane_action" in combat
@@ -225,6 +225,22 @@ def test_established_entrance_maintenance_has_its_native_callbacks_bound() -> No
     assert "DeclaredAnchorFor(pullOwnerSlot)" in entrance_pull
     assert geometry.index("StrictNativePath =") >= 0
     assert lane_selection.index("DeclaredAnchorFor =") >= 0
+
+
+def test_entrance_pull_stacks_at_cleared_chainwielder_position() -> None:
+    entrance = (
+        DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeEntrancePull.cpp"
+    ).read_text(encoding="utf-8")
+
+    assert "static std::array<MemberAnchor, 10> const entranceAnchors" in entrance
+    assert "-344.0f, -101.0f" in entrance
+    assert "-352.0f, -110.0f" in entrance
+    assert "config.ValidationRouteSplitRecoveryMemberAnchors" not in entrance
+    pull_started = entrance[entrance.index("if (pullStarted)"):]
+    assert "IsLandedRushPending()" not in pull_started
+    assert pull_started.index("drudge_entrance_return_move") < pull_started.index(
+        "drudge_entrance_native_pack_link_wait"
+    )
 
 
 def test_drudge_cpp_files_remain_below_one_thousand_lines() -> None:

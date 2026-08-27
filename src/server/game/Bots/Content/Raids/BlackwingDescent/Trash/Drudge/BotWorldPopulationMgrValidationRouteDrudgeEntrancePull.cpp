@@ -7,6 +7,7 @@
 #include "Player.h"
 
 #include <algorithm>
+#include <array>
 
 namespace BotWorldPopulationMgrValidationRoute
 {
@@ -27,15 +28,29 @@ bool NativeEngaged(Context const& context, Creature const* source)
 DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
 {
     auto const& config = Manager.Cohort().Config;
+    // Stack at the cleared Chainwielder doorway. The old recovery formation
+    // stretched the raid through Magmaw's room and made every native Rush a
+    // new movement problem instead of an ordinary trash ability.
+    static std::array<MemberAnchor, 10> const entranceAnchors = {{
+        { 1, -344.0f, -101.0f, 214.0f },
+        { 2, -348.0f, -101.0f, 214.0f },
+        { 3, -346.0f, -106.0f, 214.0f },
+        { 4, -342.0f, -106.0f, 214.0f },
+        { 5, -350.0f, -106.0f, 214.0f },
+        { 6, -340.0f, -110.0f, 214.0f },
+        { 7, -343.0f, -111.0f, 214.0f },
+        { 8, -346.0f, -112.0f, 214.0f },
+        { 9, -349.0f, -111.0f, 214.0f },
+        { 10, -352.0f, -110.0f, 214.0f },
+    }};
     auto recoveryAnchorFor = [&](uint32 slot) -> MemberAnchor const*
     {
-        auto const& anchors = config.ValidationRouteSplitRecoveryMemberAnchors;
-        auto const found = std::find_if(anchors.begin(), anchors.end(),
+        auto const found = std::find_if(entranceAnchors.begin(), entranceAnchors.end(),
             [slot](MemberAnchor const& anchor)
             {
                 return anchor.RosterSlot == slot;
             });
-        return found == anchors.end() ? nullptr : &*found;
+        return found == entranceAnchors.end() ? nullptr : &*found;
     };
     auto atAnchor = [&](Player const* member, MemberAnchor const* anchor,
         bool tank)
@@ -136,8 +151,6 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
             if (taunt == PhaseResult::Handled)
                 return taunt;
         }
-        if (IsLandedRushPending())
-            return PhaseResult::Continue;
         if (!atAnchor(Bot, entrance, AssignedTank))
             return holdOrMoveTo(entrance, "drudge_entrance_return_move",
                 "drudge_entrance_return_wait");
