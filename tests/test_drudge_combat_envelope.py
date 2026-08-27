@@ -234,14 +234,15 @@ def test_entrance_pull_stacks_at_cleared_chainwielder_position() -> None:
 
     assert "static std::array<MemberAnchor, 10> const entranceAnchors" in entrance
     assert "-320.0f, -120.0f" in entrance
-    assert "{ 3, -300.0f, -92.0f, 214.0f }" in entrance
-    assert "{ 10, -366.0f, -148.0f, 214.0f }" in entrance
+    assert "{ 6, -304.0f, -95.0f, 214.0f }" in entrance
+    assert "{ 10, -350.0f, -95.0f, 214.0f }" in entrance
     assert "config.ValidationRouteSplitRecoveryMemberAnchors" not in entrance
     assert "TankDoorwayArrivalToleranceYards = 20.0f" in entrance
-    assert "RangedDoorwayArrivalToleranceYards = 3.0f" in entrance
+    assert "RangedDoorwayArrivalToleranceYards = 10.5f" in entrance
+    assert "RushBaitArrivalToleranceYards = 3.0f" in entrance
     assert "RangedDoorwaySafeMaximumY = -90.0f" in entrance
     assert "DrudgeThunderclapSafeDistanceYards = 18.0f" in entrance
-    assert "doorwayToleranceFor(AssignedTank)" in entrance
+    assert "doorwayToleranceFor(AssignedTank, OneBasedSlot)" in entrance
     pull_started = entrance[entrance.index("if (pullStarted)"):]
     assert "IsLandedRushPending()" not in pull_started
     assert pull_started.index("drudge_entrance_return_move") < pull_started.index(
@@ -249,7 +250,7 @@ def test_entrance_pull_stacks_at_cleared_chainwielder_position() -> None:
     )
 
 
-def test_entrance_pull_isolates_every_native_rush_landing() -> None:
+def test_entrance_pull_isolates_each_native_rush_landing() -> None:
     entrance = (
         DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeEntrancePull.cpp"
     ).read_text(encoding="utf-8")
@@ -257,35 +258,39 @@ def test_entrance_pull_isolates_every_native_rush_landing() -> None:
     anchors = {
         1: (-320.0, -120.0),
         2: (-340.0, -120.0),
-        3: (-300.0, -92.0),
-        4: (-344.0, -92.0),
-        5: (-344.0, -148.0),
-        6: (-322.0, -92.0),
-        7: (-366.0, -92.0),
-        8: (-300.0, -148.0),
-        9: (-322.0, -148.0),
-        10: (-366.0, -148.0),
+        3: (-326.0, -95.0),
+        4: (-328.0, -95.0),
+        5: (-330.0, -95.0),
+        6: (-304.0, -95.0),
+        7: (-327.0, -99.0),
+        8: (-329.0, -99.0),
+        9: (-331.0, -95.0),
+        10: (-350.0, -95.0),
     }
     non_tanks = set(range(3, 11))
-    for member in non_tanks:
+    for bait in (6, 10):
         assert all(
-            math.dist(anchors[member], anchors[other]) >= 18.0
-            for other in non_tanks - {member}
-        )
-        assert all(
-            math.dist(anchors[member], anchors[tank]) >= 18.0
-            for tank in (1, 2)
+            math.dist(anchors[bait], anchors[other]) >= 18.0
+            for other in non_tanks - {bait}
         )
 
+    # Native Rush chooses the farthest eligible unit on the source's threat
+    # list. Each tank owns one lane, so the opposite lane gets one clear bait.
+    lane_a = {1, 3, 4, 6, 7}
+    lane_b = {2, 5, 8, 9, 10}
+    assert max(lane_a, key=lambda slot: math.dist(anchors[2], anchors[slot])) == 6
+    assert max(lane_b, key=lambda slot: math.dist(anchors[1], anchors[slot])) == 10
+
+    assert "return slot == 6 || slot == 10;" in entrance
     isolation = entrance[
-        entrance.index("auto nonTankIsolationSafe"):
+        entrance.index("auto rushBaitIsolationSafe"):
         entrance.index("auto exactRosterAtEntrance")
     ]
     assert "otherRoster->second.Role == \"tank\"" in isolation
-    assert "other == member" in isolation
+    assert "!isRushBaitSlot(slot) && !isRushBaitSlot(otherSlot)" in isolation
     assert "member->GetExactDist2d(other)" in isolation
     assert "< DrudgeThunderclapSafeDistanceYards" in isolation
-    assert entrance.count("nonTankIsolationSafe(Bot)") >= 3
+    assert entrance.count("rushBaitIsolationSafe(Bot, OneBasedSlot)") >= 3
     assert "route[nextIndex].TargetEntry != 41570" in (
         DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
     ).read_text(encoding="utf-8")

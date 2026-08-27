@@ -34,14 +34,14 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
     static std::array<MemberAnchor, 10> const entranceAnchors = {{
         { 1, -320.0f, -120.0f, 214.0f },
         { 2, -340.0f, -120.0f, 214.0f },
-        { 3, -300.0f, -92.0f, 214.0f },
-        { 4, -344.0f, -92.0f, 214.0f },
-        { 5, -344.0f, -148.0f, 214.0f },
-        { 6, -322.0f, -92.0f, 214.0f },
-        { 7, -366.0f, -92.0f, 214.0f },
-        { 8, -300.0f, -148.0f, 214.0f },
-        { 9, -322.0f, -148.0f, 214.0f },
-        { 10, -366.0f, -148.0f, 214.0f },
+        { 3, -326.0f, -95.0f, 214.0f },
+        { 4, -328.0f, -95.0f, 214.0f },
+        { 5, -330.0f, -95.0f, 214.0f },
+        { 6, -304.0f, -95.0f, 214.0f },
+        { 7, -327.0f, -99.0f, 214.0f },
+        { 8, -329.0f, -99.0f, 214.0f },
+        { 9, -331.0f, -95.0f, 214.0f },
+        { 10, -350.0f, -95.0f, 214.0f },
     }};
     auto recoveryAnchorFor = [&](uint32 slot) -> MemberAnchor const*
     {
@@ -57,13 +57,19 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
     // The doorway navigation mesh converges ranged members on the same safe
     // ledge instead of every requested per-slot point. Accept that small area;
     // live combat also checks each Drudge's actual Thunderclap distance.
-    constexpr float RangedDoorwayArrivalToleranceYards = 3.0f;
+    constexpr float RangedDoorwayArrivalToleranceYards = 10.5f;
+    constexpr float RushBaitArrivalToleranceYards = 3.0f;
     constexpr float RangedDoorwaySafeMaximumY = -90.0f;
     constexpr float DrudgeThunderclapSafeDistanceYards = 18.0f;
-    auto doorwayToleranceFor = [=](bool tank)
+    auto isRushBaitSlot = [](uint32 slot)
+    {
+        return slot == 6 || slot == 10;
+    };
+    auto doorwayToleranceFor = [=](bool tank, uint32 slot)
     {
         return tank ? TankDoorwayArrivalToleranceYards
-                    : RangedDoorwayArrivalToleranceYards;
+            : isRushBaitSlot(slot) ? RushBaitArrivalToleranceYards
+                                   : RangedDoorwayArrivalToleranceYards;
     };
     auto atAnchor = [&](Player const* member, MemberAnchor const* anchor,
         bool tank, float toleranceOverride = 0.0f)
@@ -75,7 +81,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
                    : config.ValidationRouteSplitArrivalToleranceYards;
         return member->GetExactDist(anchor->X, anchor->Y, anchor->Z) <= tolerance;
     };
-    auto nonTankIsolationSafe = [&](Player const* member)
+    auto rushBaitIsolationSafe = [&](Player const* member, uint32 slot)
     {
         if (!member)
             return false;
@@ -90,7 +96,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
             if (otherRoster == Manager.Cohort().Raid.RosterByGuid.end()
                 || !otherRoster->second.Active || !otherRoster->second.LeaseOwned)
                 return false;
-            if (other == member || otherRoster->second.Role == "tank")
+            uint32 const otherSlot = otherRoster->second.SlotIndex + 1;
+            if (otherSlot == slot || otherRoster->second.Role == "tank"
+                || (!isRushBaitSlot(slot) && !isRushBaitSlot(otherSlot)))
                 continue;
             if (member->GetExactDist2d(other)
                 < DrudgeThunderclapSafeDistanceYards)
@@ -116,9 +124,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
             uint32 const slot = roster->second.SlotIndex + 1;
             bool const tank = roster->second.Role == "tank";
             if ((!tank && member->GetPositionY() > RangedDoorwaySafeMaximumY)
-                || (!tank && !nonTankIsolationSafe(member))
+                || (!tank && !rushBaitIsolationSafe(member, slot))
                 || !atAnchor(member, recoveryAnchorFor(slot), tank,
-                    doorwayToleranceFor(tank)))
+                    doorwayToleranceFor(tank, slot)))
                 return false;
             ++reached;
         }
@@ -170,11 +178,11 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
         HoldOffense();
         float const tolerance = pullStarted && AssignedTank
             ? TankDoorwayCombatToleranceYards
-            : doorwayToleranceFor(AssignedTank);
+            : doorwayToleranceFor(AssignedTank, OneBasedSlot);
         bool const arrived = atAnchor(Bot, anchor, AssignedTank, tolerance)
             && (AssignedTank || (Bot->GetPositionY()
                     <= RangedDoorwaySafeMaximumY
-                && nonTankIsolationSafe(Bot)
+                && rushBaitIsolationSafe(Bot, OneBasedSlot)
                 && (!pullStarted || outsideBothDrudges(Bot))));
         bool moved = false;
         std::string rejection;
@@ -210,11 +218,11 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
         }
         bool const safeBackline = AssignedTank
             || (Bot->GetPositionY() <= RangedDoorwaySafeMaximumY
-                && nonTankIsolationSafe(Bot)
+                && rushBaitIsolationSafe(Bot, OneBasedSlot)
                 && outsideBothDrudges(Bot));
         float const combatTolerance = AssignedTank
             ? TankDoorwayCombatToleranceYards
-            : doorwayToleranceFor(false);
+            : doorwayToleranceFor(false, OneBasedSlot);
         if (!safeBackline || !atAnchor(Bot, entrance, AssignedTank,
                 combatTolerance))
             return holdOrMoveTo(entrance, "drudge_entrance_return_move",
@@ -234,9 +242,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
     {
         bool const safeBackline = AssignedTank
             || (Bot->GetPositionY() <= RangedDoorwaySafeMaximumY
-                && nonTankIsolationSafe(Bot));
+                && rushBaitIsolationSafe(Bot, OneBasedSlot));
         if (!safeBackline || !atAnchor(Bot, entrance, AssignedTank,
-                doorwayToleranceFor(AssignedTank)))
+                doorwayToleranceFor(AssignedTank, OneBasedSlot)))
             return holdOrMoveTo(entrance, "drudge_entrance_stage_move",
                 "drudge_entrance_stage_wait");
         if (!exactRosterAtEntrance())
@@ -262,9 +270,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
     {
         bool const safeBackline = AssignedTank
             || (Bot->GetPositionY() <= RangedDoorwaySafeMaximumY
-                && nonTankIsolationSafe(Bot));
+                && rushBaitIsolationSafe(Bot, OneBasedSlot));
         if (!safeBackline || !atAnchor(Bot, entrance, AssignedTank,
-                doorwayToleranceFor(AssignedTank)))
+                doorwayToleranceFor(AssignedTank, OneBasedSlot)))
             return holdOrMoveTo(entrance, "drudge_entrance_hold_move",
                 "drudge_entrance_hold_wait");
         HoldOffense();
