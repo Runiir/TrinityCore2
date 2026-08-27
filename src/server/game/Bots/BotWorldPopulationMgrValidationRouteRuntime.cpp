@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 #include "Bots/BotWorldPopulationMgrValidationRouteDestination.h"
 
 #include "GameTime.h"
@@ -318,6 +319,7 @@ void BotWorldPopulationMgr::ResetValidationRouteBossAddDensityState()
 
 void BotWorldPopulationMgr::ResetTraceStreams()
 {
+    MovementPlannerDiagnostics().ClearAll();
     Party().TraceExportCursorByGuid.clear();
     for (WorldBotState& state : Party().Bots)
     {

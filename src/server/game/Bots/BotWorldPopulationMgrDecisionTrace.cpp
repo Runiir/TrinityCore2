@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
 #include "Bots/BotLongTermProgressionBrain.h"
+#include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 #include "CellImpl.h"
 #include "Creature.h"
 #include "DatabaseEnv.h"
@@ -202,6 +203,8 @@ void BotWorldPopulationMgr::RecordDecisionTrace(WorldBotState& state, char const
     WorldBotState::DecisionTraceEntry entry;
     entry.TimestampMs = NowMs();
     entry.Sequence = ++state.TraceSequence;
+    MovementPlannerDiagnostics().AssociateTrace(state.Guid.GetCounter(),
+        entry.Sequence);
     entry.DecisionSequence = state.Sequence;
     entry.Situation = situation ? situation : "unknown";
     entry.Action = action ? action : "wait";

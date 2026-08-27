@@ -2,6 +2,7 @@
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotMgr.h"
 #include "Bots/BotRaidAreaAuthority.h"
+#include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 
 #include "Config.h"
 #include "DatabaseEnv.h"
@@ -94,6 +95,7 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
 
 void BotWorldPopulationMgr::Stop()
 {
+    MovementPlannerDiagnostics().ClearAll();
     ClearPendingHealCasts("run_stop");
     if (Cohort().CalibrationActive || !Party().CalibrationBots.empty())
         StopCombatCalibration();
@@ -206,6 +208,7 @@ bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overri
 
 void BotWorldPopulationMgr::StopAutonomy()
 {
+    MovementPlannerDiagnostics().ClearAll();
     ClearPendingHealCasts("autonomy_stop");
     if (Cohort().CalibrationActive || !Party().CalibrationBots.empty())
         StopCombatCalibration();
@@ -236,6 +239,7 @@ void BotWorldPopulationMgr::StopAutonomy()
 
 void BotWorldPopulationMgr::Shutdown()
 {
+    MovementPlannerDiagnostics().ClearAll();
     ClearPendingHealCasts("shutdown");
     if (Cohort().CalibrationActive || !Party().CalibrationBots.empty())
         StopCombatCalibration();
@@ -275,4 +279,3 @@ bool BotWorldPopulationMgr::SpawnAutonomyBots(uint32 count)
     EnsurePopulation();
     return true;
 }
-

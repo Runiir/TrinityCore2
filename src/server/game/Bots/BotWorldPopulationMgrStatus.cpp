@@ -13,6 +13,7 @@
 #include "ObjectAccessor.h"
 #include "Pet.h"
 #include "Player.h"
+#include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 #include "Quests/QuestDef.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
@@ -410,6 +411,9 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
                          << ",\"z\":" << itr->NativePathFloor.Z
                          << ",\"resolved_floor_z\":" << itr->NativePathFloor.ResolvedFloorZ
                          << ",\"reference_z\":" << itr->NativePathFloor.ReferenceZ << "}"
+                         << ",\"movement_planner\":" << MovementPlannerObservationJson(
+                                MovementPlannerDiagnostics().ForTrace(
+                                    state.Guid.GetCounter(), itr->Sequence))
                          << ",\"blocked_episode_id\":" << itr->BlockedEpisodeId
                          << ",\"blocked_first_reason\":\"" << JsonEscape(itr->BlockedFirstReason)
                          << "\",\"blocked_current_reason\":\"" << JsonEscape(itr->BlockedCurrentReason)

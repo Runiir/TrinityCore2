@@ -3,6 +3,7 @@
 #include "Bots/BotExperienceLearningPolicy.h"
 #include "Bots/BotWorldPopulationMgrNativePathValidation.h"
 #include "Bots/BotWorldPopulationMgrMovementPathSelection.h"
+#include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 #include "Map.h"
 #include "PathGenerator.h"
 #include "Player.h"
@@ -13,20 +14,40 @@
 #include <array>
 #include <cmath>
 
+namespace
+{
+uint64 PlannerBotGuid(Player* bot)
+{
+    return bot ? bot->GetGUID().GetCounter() : 0;
+}
+
+uint32 PlannerBotMapId(Player* bot)
+{
+    return bot ? bot->GetMapId() : 0;
+}
+}
+
 bool BotWorldPopulationMgr::PlanMovementPath(
     Player* bot, BotWorldMovement::Intent const& intent,
     BotWorldMovement::PathPlan& plan) const
 {
     plan = {};
 
-    auto reject = [&](char const* reason)
+    float sampledTargetFloorZ = 0.0f;
+    bool targetFloorSampled = false;
+    bool targetFloorValid = false;
+
+    auto reject = [&](char const* reason, char const* gate)
     {
         plan.RejectReason = reason ? reason : "route_destination_unreachable";
+        RecordMovementPlannerOutcome(PlannerBotGuid(bot), PlannerBotMapId(bot),
+            intent, targetFloorSampled, sampledTargetFloorZ, targetFloorValid,
+            gate, false, plan.RejectReason.c_str());
         return false;
     };
 
     if (!bot || !bot->IsInWorld() || !bot->GetMap())
-        return reject("route_destination_unreachable");
+        return reject("route_destination_unreachable", "actor_admission");
 
     bool const targetAwareChase = intent.DynamicTarget
         && intent.DynamicTarget->IsAlive()
@@ -42,6 +63,9 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         plan.SegmentZ = intent.Z;
         plan.TraversalMode = "native_target_chase";
         plan.Selected = true;
+        RecordMovementPlannerOutcome(PlannerBotGuid(bot), PlannerBotMapId(bot),
+            intent, targetFloorSampled, sampledTargetFloorZ, targetFloorValid,
+            "dynamic_target_chase", true, nullptr);
         return true;
     }
 
@@ -61,6 +85,9 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         plan.TraversalMode = "native_long_path";
         plan.NativeLongPath = true;
         plan.Selected = true;
+        RecordMovementPlannerOutcome(PlannerBotGuid(bot), PlannerBotMapId(bot),
+            intent, targetFloorSampled, sampledTargetFloorZ, targetFloorValid,
+            "native_long_path", true, nullptr);
         return true;
     }
 
@@ -73,19 +100,22 @@ bool BotWorldPopulationMgr::PlanMovementPath(
     bool const strictNativeDescent = intent.RequireCompletePath;
     float const floorZ = bot->GetMap()->GetHeight(bot->GetPhaseShift(),
         intent.X, intent.Y, intent.Z + 2.0f, true, 8.0f);
-    bool const targetFloorValid = floorZ > INVALID_HEIGHT;
+    targetFloorSampled = true;
+    sampledTargetFloorZ = floorZ;
+    targetFloorValid = floorZ > INVALID_HEIGHT;
     // A progressive route can still make a validated local step when its
     // final native runback target has no floor sample in the current map
     // state.  Complete-path and strict-descent intents remain fail-closed at
     // the target-floor gate.
     if (!targetFloorValid && (!progressiveStaticRoute || strictNativeDescent))
-        return reject("route_destination_invalid_floor");
+        return reject("route_destination_invalid_floor", "target_floor");
     // GetHeight can resolve the neighboring floor at a multi-level static
     // route waypoint.  Let native mmap admission arbitrate that mismatch for
     // progressive routes, while strict and ordinary movement stay fail-closed.
     if (targetFloorValid && std::fabs(floorZ - intent.Z) > 4.0f
         && (!progressiveStaticRoute || strictNativeDescent))
-        return reject("route_destination_invalid_z_transition");
+        return reject("route_destination_invalid_z_transition",
+            "target_z_transition");
     float const currentGoalDistance = bot->GetExactDist(intent.X, intent.Y,
         intent.Z);
 
@@ -300,23 +330,24 @@ bool BotWorldPopulationMgr::PlanMovementPath(
     if (!segmentSelected)
     {
         if (strictNativeDescent && !bot->IsInCombat())
-            return reject("native_descent_complete_path_required");
+            return reject("native_descent_complete_path_required",
+                "complete_path_required");
         if (!targetFloorValid)
-            return reject("route_destination_invalid_floor");
+            return reject("route_destination_invalid_floor", "target_floor");
         if (!pathOk || (pathType & PATHFIND_NOPATH))
-            return reject("route_destination_unreachable");
+            return reject("route_destination_unreachable", "path_admission");
         if (pathType & PATHFIND_NOT_USING_PATH)
-            return reject("route_destination_missing_mmap");
+            return reject("route_destination_missing_mmap", "path_admission");
         if (pathType & PATHFIND_INCOMPLETE)
-            return reject("route_destination_partial_path");
+            return reject("route_destination_partial_path", "path_admission");
         if (pathType & PATHFIND_SHORTCUT)
-            return reject("route_destination_shortcut_path");
+            return reject("route_destination_shortcut_path", "path_admission");
         if (pathType & PATHFIND_FARFROMPOLY)
-            return reject("route_destination_off_mesh");
+            return reject("route_destination_off_mesh", "path_admission");
         if ((pathType & PATHFIND_NORMAL)
             && !nativePathFloorsValid(path))
-            return reject("route_destination_path_floor_gap");
-        return reject("route_destination_unreachable");
+            return reject("route_destination_path_floor_gap", "path_floor");
+        return reject("route_destination_unreachable", "path_admission");
     }
 
     BotLearnedScore const pathScore = BotExperienceLearningPolicy::ScorePath(
@@ -328,12 +359,15 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         || pathScore.Penalty >= Cohort().LearningConfig.RecentFailurePenaltyWeight;
     plan.RecentFailure = recentFailureMemory;
     if (recentFailureMemory && !intent.AllowRecentFailureRetry)
-        return reject("route_destination_recently_failed");
+        return reject("route_destination_recently_failed", "recent_failure");
 
     plan.SegmentX = segmentX;
     plan.SegmentY = segmentY;
     plan.SegmentZ = segmentZ;
     plan.TraversalMode = traversalMode;
     plan.Selected = true;
+    RecordMovementPlannerOutcome(PlannerBotGuid(bot), PlannerBotMapId(bot),
+        intent, targetFloorSampled, sampledTargetFloorZ, targetFloorValid,
+        "path_admission", true, nullptr);
     return true;
 }
