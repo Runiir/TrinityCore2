@@ -1,11 +1,13 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
 #include "Bots/BotExperienceLearningPolicy.h"
+#include "Bots/BotWorldPopulationMgrGhostFlight.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Corpse.h"
 #include "DataStores/DBCStructure.h"
 #include "GameTime.h"
 #include "Group.h"
+#include "Map.h"
 #include "Pet.h"
 #include "Player.h"
 #include "SpellInfo.h"
@@ -144,6 +146,49 @@ bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot
         state.NativeRecoveryEntranceAvailable = false;
     }
 
+    bool const nativeCorpseAuthority =
+        Cohort().Config.ValidationRouteEnable
+        && state.ValidationCohortLocked
+        && HasNativeRaidCorpseAuthority(state, bot);
+    bool const certifyingCrossMapRecovery = nativeCorpseAuthority
+        && bot->GetMapId() != state.ValidationCohortMapId;
+    bool const nativeRecoveryEpisode = state.NativeRecoveryEpisodeStartedMs
+        && state.NativeRecoveryEpisodeAttemptId == Cohort().AttemptId
+        && state.NativeRecoveryEpisodeRouteGeneration == routeGeneration
+        && state.NativeRecoveryEpisodeWipeGeneration == wipeGeneration
+        && state.NativeRecoveryEpisodeDeathOrdinal == state.RecentDeathCount
+        && state.NativeRecoveryEpisodePhase != "none"
+        && state.NativeRecoveryEpisodePhase != "terminal";
+    BotWorldGhostFlight::Eligibility const ghostFlightEligibility{
+        bot->GetMapId(),
+        bot->GetZoneId(),
+        !bot->IsAlive() && bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST),
+        bot->IsInWorld(),
+        nativeRecoveryEpisode,
+        nativeCorpseAuthority,
+        certifyingCrossMapRecovery,
+        bot->IsOutdoors(),
+        bot->GetMap() && bot->GetMap()->IsDungeon(),
+        bot->GetTransport() != nullptr,
+        bot->IsInFlight()
+    };
+    auto clearGhostFlight = [&]()
+    {
+        if (!state.NativeRecoveryGhostFlightEnabled)
+            return;
+        if (bot->CanFly())
+            bot->SetCanFly(false);
+        state.NativeRecoveryGhostFlightEnabled = false;
+    };
+    if (BotWorldGhostFlight::IsEligible(ghostFlightEligibility))
+    {
+        if (!bot->CanFly())
+            bot->SetCanFly(true);
+        state.NativeRecoveryGhostFlightEnabled = true;
+    }
+    else
+        clearGhostFlight();
+
     auto transition = [&](char const* phase)
     {
         if (state.NativeRecoveryEpisodePhase == phase)
@@ -219,6 +264,7 @@ bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot
         state.LastRecoveryResult = reason;
         state.LastRecoveryMs = nowMs;
         state.LastNoProgressReason = reason;
+        clearGhostFlight();
         if (Cohort().Config.ValidationRouteEnable
             && state.ValidationCohortLocked)
             FailValidationAttemptOnce(state, bot, reason,
@@ -262,11 +308,6 @@ bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot
     }
 
     Corpse* corpse = bot->GetCorpse();
-    bool const certifyingCrossMapRecovery =
-        Cohort().Config.ValidationRouteEnable
-        && state.ValidationCohortLocked
-        && HasNativeRaidCorpseAuthority(state, bot)
-        && bot->GetMapId() != state.ValidationCohortMapId;
     bool const corpseCrossMap = corpse
         && corpse->GetMapId() != bot->GetMapId();
     if (!corpse || corpseCrossMap)

@@ -87,6 +87,12 @@ bool BotWorldPopulationMgr::PrepareBotUpdate(BotUpdateContext& context)
     // worldport as if it were the BWD runback.
     if (context.Bot->IsAlive())
     {
+        if (context.State.NativeRecoveryGhostFlightEnabled)
+        {
+            if (context.Bot->CanFly())
+                context.Bot->SetCanFly(false);
+            context.State.NativeRecoveryGhostFlightEnabled = false;
+        }
         context.State.NativeBattleResDecision = "unresolved";
         context.State.NativeBattleResOwnerGuid.Clear();
         context.State.NativeBattleResSpellId = 0;

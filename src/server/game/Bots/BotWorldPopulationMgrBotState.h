@@ -194,6 +194,7 @@ namespace BotWorldPopulationMgrBotState
         bool NativeRecoveryEntranceRequired = false;
         bool NativeRecoveryEntranceObserved = false;
         bool NativeRecoveryEntranceAvailable = false;
+        bool NativeRecoveryGhostFlightEnabled = false;
         uint64 NativeReadyCheckRequestGenerationResponded = 0;
         uint64 NativeReadyCheckStableGeneration = 0;
         uint64 NativeReadyCheckStableSinceMs = 0;
