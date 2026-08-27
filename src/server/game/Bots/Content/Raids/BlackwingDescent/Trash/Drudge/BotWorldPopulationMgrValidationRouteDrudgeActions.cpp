@@ -375,7 +375,11 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
         tankStage.Next.LastChargeSequenceObserved;
     State.ValidationRouteDrudgeAnchorPathProven =
         tankStage.Next.PriorPathProofAvailable;
-    if (tankStage.InvalidateAnchor)
+    // The reviewed entrance formation is a persistent hold, not a per-Rush
+    // escape target.  Rush may displace its native target, but it must not
+    // invalidate the fixed entrance anchors and suppress the raid until a
+    // moving-source distance puzzle is solved again.
+    if (tankStage.InvalidateAnchor && !RecoveryFormationActive)
     {
         State.ValidationRouteDrudgeAnchorValid = false;
         State.ValidationRouteDrudgeRecoveryAnchorReached = false;
@@ -562,11 +566,13 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunFormationActions()
     }
     bool alreadySafe = AssignedTank ? CachedAnchorSafe(State, Bot) : GroupPositionSafe(Bot);
     bool const memberTankConstraintsSafe = !AssignedTank || tankStage.NativeOwnershipAllowed;
+    bool const rushTargetContractSafe = RecoveryFormationActive
+        || (!NativeChargeContractViolation && !NativeChargeTargetLaneViolation
+            && !NativeChargeTargetRoleViolation);
     ContinueToThreatAndEvidence = BotRaidDrudgeGeometry::ShouldContinueToThreatAndEvidenceAfterLandedRush(
             NativeChargePending, ChargeAwaitingLanding, PrepullStaged, alreadySafe,
             FormationRequiredMutable, PairTooClose, tankStage.TankMovementAllowed,
-            memberTankConstraintsSafe, !NativeChargeContractViolation && !NativeChargeTargetLaneViolation
-                && !NativeChargeTargetRoleViolation);
+            memberTankConstraintsSafe, rushTargetContractSafe);
     bool const recoveryNeeded = !PrepullStaged || !tankStage.TankMovementAllowed
         || !tankStage.NativeEngagementAllowed || FormationRequiredMutable
         || PairTooClose || NativeChargePending || ChargeAwaitingLanding;

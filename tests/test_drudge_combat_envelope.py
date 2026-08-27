@@ -64,7 +64,7 @@ int main()
     subprocess.run([str(binary)], check=True, cwd=ROOT)
 
 
-def test_source_union_envelope_precedes_cache_and_native_path_admission() -> None:
+def test_room_side_home_envelope_precedes_cache_and_native_path_admission() -> None:
     geometry = (DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp").read_text(
         encoding="utf-8"
     )
@@ -74,7 +74,12 @@ def test_source_union_envelope_precedes_cache_and_native_path_admission() -> Non
     cmake = (ROOT / "src/server/game/CMakeLists.txt").read_text(encoding="utf-8")
 
     assert "NonTankEntranceEnvelopeSafe" in group
-    assert "laneA != laneB && SourceUnionSafe(x, y)" in group
+    envelope = group[group.index("NonTankEntranceEnvelopeSafe("):
+                     group.index("ComputeGroupPositionSafe(")]
+    assert "DeclaredRecoveryMemberAnchorFor(slot)" in envelope
+    assert "source->GetHomePosition()" in envelope
+    assert "pointDistance + tolerance < entranceDistance" in envelope
+    assert "SourceUnionSafe(x, y)" not in envelope
     assert "AcceptsConfiguredSeed" not in group
     assert group.index("NonTankEntranceEnvelopeSafe(") < group.index(
         "DynamicGroupPositionSafe("
@@ -91,6 +96,20 @@ def test_source_union_envelope_precedes_cache_and_native_path_admission() -> Non
         "StrictNativePath"
     )
     assert "BotWorldPopulationMgrValidationRouteDrudgeGroupSafety.cpp" in cmake
+
+
+def test_established_entrance_hold_survives_native_rush_displacement() -> None:
+    actions = (DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp").read_text(
+        encoding="utf-8"
+    )
+    group = (DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeGroupSafety.cpp").read_text(
+        encoding="utf-8"
+    )
+
+    assert "tankStage.InvalidateAnchor && !RecoveryFormationActive" in actions
+    assert "rushTargetContractSafe = RecoveryFormationActive" in actions
+    assert "entranceFormation || SourceUnionSafeAt(" in group
+    assert "NonTankEntranceEnvelopeSafe(" in group
 
 
 def test_prepull_keeps_non_tanks_at_entrance_and_guards_magmaw() -> None:
