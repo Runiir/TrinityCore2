@@ -667,6 +667,7 @@ private:
     void ResetTraceStreams();
     BotDiagnosis BuildBotDiagnosis(WorldBotState const& state, Player const* bot) const;
     std::string BuildBotDiagnosisObjectJson(WorldBotState const& state, Player const* bot) const;
+    std::string BuildCombatMetricsJson() const;
     std::string BuildBotDecisionSnapshotJson(WorldBotState const& state, Player const* bot) const;
     std::string BuildBotTraceEntriesJson(WorldBotState const& state, uint32 limit) const;
     void RecordCombatAttempt(WorldBotState& state, Player* bot, Unit* target, char const* phase, ResolvedCombatAction const* action, BotActionResult result, char const* reason = nullptr) const;

@@ -256,6 +256,7 @@ std::string BotWorldPopulationMgr::GetBotDiagnosisJson(std::string const& select
     }
 
     json << "]"
+         << ",\"combat_metrics\":" << BuildCombatMetricsJson()
          << ",\"raid_runtime\":" << BuildRaidRuntimeJson(true);
     if (!attemptFailure.empty())
         json << ",\"failure_reason\":\"" << JsonEscape(attemptFailure) << "\"";
