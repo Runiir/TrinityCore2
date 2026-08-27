@@ -1,5 +1,4 @@
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudge.h"
-
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeNativeAnchor.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeGeometryState.h"
@@ -10,7 +9,6 @@
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgrNativePathValidation.h"
 #include "Bots/BotRaidAreaAuthority.h"
-
 #include "CellImpl.h"
 #include "Creature.h"
 #include "GameTime.h"
@@ -20,14 +18,12 @@
 #include "Player.h"
 #include "Unit.h"
 #include "Object.h"
-
 #include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <limits>
 #include <string>
 #include <vector>
-
 using BotWorldPopulationMgrNativeHelpers::Distance2d;
 using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
 namespace
@@ -244,9 +240,13 @@ bool DrudgeLaneContext::TryMinimumDistance(bool specializedDrudgeRecovery)
     std::string raw = Manager.BuildRawJson(Bot, source);
     std::string semantic = Manager.BuildSemanticJson(
         Bot, source, "validation_route_mechanic", &Power, Stage, Activity);
+    char const* outcome = moved ? "minimum_distance_exit_started"
+        : ordinaryEntranceCombat ? "minimum_distance_exit_deferred_to_lane_combat"
+                                 : "minimum_distance_exit_failed";
     Manager.RecordEvent(State, Bot, "validation_route_mechanic", source,
-        moved ? "minimum_distance_exit_started" : "minimum_distance_exit_failed",
-        raw.c_str(), semantic.c_str(), sourceDistance, sourceEntry);
+        outcome, raw.c_str(), semantic.c_str(), sourceDistance, sourceEntry);
+    if (!moved && ordinaryEntranceCombat)
+        return false;
     Target = source;
     State.TargetGuid = source->GetGUID();
     Situation = "validation_route_mechanic";

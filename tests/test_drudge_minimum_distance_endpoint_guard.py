@@ -35,3 +35,20 @@ def test_minimum_distance_endpoint_guard_stays_in_the_drudge_module():
     source = DRUDGE_GEOMETRY.read_text(encoding="utf-8")
     assert len(source.splitlines()) < 1000
     assert "MovePoint(" not in source
+
+
+def test_established_entrance_combat_defers_failed_exit_to_lane_action():
+    source = DRUDGE_GEOMETRY.read_text(encoding="utf-8")
+
+    movement_attempt = source.index("moved = Manager.MoveBotToPoint")
+    deferred_outcome = source.index(
+        '"minimum_distance_exit_deferred_to_lane_combat"', movement_attempt
+    )
+    lane_fallback = source.index(
+        "if (!moved && ordinaryEntranceCombat)\n        return false;",
+        deferred_outcome,
+    )
+    target_override = source.index("Target = source;", lane_fallback)
+
+    assert movement_attempt < deferred_outcome < lane_fallback < target_override
+    assert '"minimum_distance_exit_failed"' in source[deferred_outcome:lane_fallback]
