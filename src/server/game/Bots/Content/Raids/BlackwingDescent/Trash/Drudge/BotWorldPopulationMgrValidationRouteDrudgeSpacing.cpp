@@ -58,7 +58,12 @@ bool DrudgeLaneContext::IsRecoveryFormationActive() const
     if (Manager.Cohort().Config.ValidationRouteMechanicProfile
         != "trash_two_tank_charge_lanes")
         return false;
-    return IsEntrancePullEstablished() || IsLandedRushPending();
+    return IsEntrancePullActive() || IsLandedRushPending();
+}
+
+bool DrudgeLaneContext::IsEntrancePullActive() const
+{
+    return SourceCombatStarted || IsEntrancePullEstablished();
 }
 
 bool DrudgeLaneContext::SourceUnionSafeAt(
@@ -131,7 +136,7 @@ BotRaidDrudgeSpacing::CandidateResult DrudgeLaneContext::EvaluateAndRecordCandid
         BotRaidDrudgeGeometry::ArrivalAdjustedLaneProjectionMinimum(
             HomeLaneProjectionMinimum,
             Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards,
-            IsRecoveryFormationActive(), tank, IsEntrancePullEstablished());
+            IsRecoveryFormationActive(), tank, IsEntrancePullActive());
     float const requiredLaneProjection = dynamicLaneProjection > laneProjectionMinimum
         ? dynamicLaneProjection : laneProjectionMinimum;
     BotRaidDrudgeRecoveryCandidates::Constraints const constraints{

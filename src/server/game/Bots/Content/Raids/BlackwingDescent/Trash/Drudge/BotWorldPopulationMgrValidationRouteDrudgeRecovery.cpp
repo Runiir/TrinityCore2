@@ -55,7 +55,7 @@ bool DrudgeLaneContext::IsDynamicGroupRecoveryActive() const
 bool DrudgeLaneContext::RecoveryTankReturnBarrierOpen() const
 {
     bool const allRecoveryAnchorsReached = ExactRecoveryTankAnchorsReached();
-    if (IsEntrancePullEstablished())
+    if (IsEntrancePullActive())
         return allRecoveryAnchorsReached;
     if (!Charge)
         return BotRaidDrudgeGeometry::RecoveryTankReturnBarrierOpen(
@@ -151,7 +151,7 @@ bool DrudgeLaneContext::ComputeStrictTankRecoveryPath(
         points.push_back({ point.x, point.y });
     points.push_back({ path.GetActualEndPosition().x,
         path.GetActualEndPosition().y });
-    if (IsEntrancePullEstablished())
+    if (IsEntrancePullActive())
     {
         MemberAnchor const* otherAnchor =
             DeclaredRecoveryTankAnchorFor(OtherTankSlot);

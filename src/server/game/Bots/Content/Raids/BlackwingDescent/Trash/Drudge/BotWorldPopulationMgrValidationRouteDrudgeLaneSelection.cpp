@@ -502,7 +502,7 @@ void DrudgeLaneContext::RecordReseparationEvidence(ChargeObservation& observatio
                 * geometry.Projection >= BotRaidDrudgeGeometry::ArrivalAdjustedLaneProjectionMinimum(
                     HomeLaneProjectionMinimum, config.ValidationRouteSplitArrivalToleranceYards,
                     IsRecoveryFormationActive(), roster->second.Role == "tank",
-                    IsEntrancePullEstablished());
+                    IsEntrancePullActive());
             auto candidates = AnchorCandidatesFor(geometry.RosterSlot);
             if (!candidates.empty())
             {
@@ -593,6 +593,12 @@ bool DrudgeLaneContext::Run()
         return true;
 
     result = BuildAnchorPolicies();
+    if (result == PhaseResult::Abort)
+        return false;
+    if (result == PhaseResult::Handled)
+        return true;
+
+    result = RunEntrancePullActions();
     if (result == PhaseResult::Abort)
         return false;
     if (result == PhaseResult::Handled)

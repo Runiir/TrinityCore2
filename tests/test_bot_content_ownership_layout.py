@@ -83,6 +83,7 @@ DRUDGE_FILES = {
     "BotRaidDrudgeSpacingDiagnostic.h",
     "BotRaidDrudgeThreatSeedState.h",
     "BotWorldPopulationMgrValidationRouteDrudge.h",
+    "BotWorldPopulationMgrValidationRouteDrudgeEntrancePull.cpp",
     "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp",
     "BotWorldPopulationMgrValidationRouteDrudgeGroupSafety.cpp",
     "BotRaidDrudgeTauntConfirmation.h",

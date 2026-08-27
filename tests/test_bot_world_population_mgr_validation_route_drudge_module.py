@@ -12,6 +12,7 @@ RECOVERY = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Dru
 RECOVERY_HEADER = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeRecovery.h"
 LANES = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp"
 ACTIONS = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp"
+ENTRANCE_PULL = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeEntrancePull.cpp"
 SEED = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp"
 SPACING = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSpacing.cpp"
 
@@ -21,13 +22,14 @@ def test_drudge_route_modules_are_bounded_and_registered():
     header = HEADER.read_text(encoding="utf-8")
     cmake = CMAKE.read_text(encoding="utf-8")
     assert len(header.splitlines()) <= 1000
-    for module in (CONTRACT, GEOMETRY, ESCAPE, RECOVERY, RECOVERY_HEADER, LANES, ACTIONS, SEED, SPACING):
+    for module in (CONTRACT, GEOMETRY, ESCAPE, RECOVERY, RECOVERY_HEADER, LANES, ENTRANCE_PULL, ACTIONS, SEED, SPACING):
         assert len(module.read_text(encoding="utf-8").splitlines()) <= 1000
     for name in (
         "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeEscape.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeRecovery.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp",
+        "BotWorldPopulationMgrValidationRouteDrudgeEntrancePull.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeSpacing.cpp",
@@ -39,6 +41,44 @@ def test_drudge_route_modules_are_bounded_and_registered():
     assert "auto tryValidationRouteMinimumDistance" not in world
     assert "auto drudgeRecoveryFormationActive" not in world
     assert "auto tryValidationRouteDrudgeChargeLanes" not in world
+
+
+def test_drudge_entrance_pull_is_single_owner_native_and_magmaw_excluding():
+    pull = ENTRANCE_PULL.read_text(encoding="utf-8")
+    lanes = LANES.read_text(encoding="utf-8")
+
+    assert lanes.index("RunEntrancePullActions()") < lanes.index("RunFormationActions()")
+    assert "ValidationRouteSplitSeedRosterSlots.front()" in pull
+    assert "if (OneBasedSlot != pullOwnerSlot)" in pull
+    assert "ValidationRouteSplitSourceGuids[0] != 250140" in pull
+    assert "ValidationRouteSplitSourceGuids[1] != 250141" in pull
+    assert "Creature* source = Sources[0];" in pull
+    assert "action.TargetGuid == source->GetGUID()" in pull
+    assert 'action.MovementDirective == "ranged"' in pull
+    assert "Bot->IsWithinLOSInMap(source)" in pull
+    assert "ValidationRouteSplitSeedMaxRangeYards" in pull
+    assert "ResolveProfileCombatAction" in pull
+    assert "ExecuteProfileCombatAction" in pull
+    assert "StrictNativePath" in pull
+    assert "MoveBotToPointWithReferenceFloor" in pull
+    assert "TeleportTo" not in pull
+    assert "41570" not in pull
+
+
+def test_drudge_entrance_pull_holds_nonowners_then_returns_before_handoff():
+    pull = ENTRANCE_PULL.read_text(encoding="utf-8")
+    pull_started = pull.index("if (pullStarted)")
+    owner = pull.index("uint32 const pullOwnerSlot")
+    cast = pull.index("ExecuteProfileCombatAction")
+
+    assert pull_started < owner < cast
+    assert "RecoveryAnchorFor(*this, OneBasedSlot)" in pull
+    assert "ExactRosterAtEntrance(*this)" in pull
+    assert '"drudge_entrance_pull_owner_wait"' in pull
+    assert '"drudge_entrance_return_move"' in pull
+    assert '"drudge_entrance_native_pack_link_wait"' in pull
+    assert "if (!packLinked)" in pull
+    assert "return PhaseResult::Continue;" in pull[pull_started:owner]
 
 
 def test_drudge_dispatch_keeps_movement_and_minimum_distance_order():

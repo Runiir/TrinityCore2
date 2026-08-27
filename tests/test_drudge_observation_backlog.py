@@ -105,7 +105,8 @@ def test_post_closure_replay_keeps_established_entrance_formation(tmp_path) -> N
         encoding="utf-8"
     )
     assert "RecoveryFormationActive = IsRecoveryFormationActive();" in actions
-    assert "return IsEntrancePullEstablished() || IsLandedRushPending();" in spacing
+    assert "return IsEntrancePullActive() || IsLandedRushPending();" in spacing
+    assert "return SourceCombatStarted || IsEntrancePullEstablished();" in spacing
 
     source = tmp_path / "post_closure_replay.cpp"
     binary = tmp_path / "post_closure_replay"

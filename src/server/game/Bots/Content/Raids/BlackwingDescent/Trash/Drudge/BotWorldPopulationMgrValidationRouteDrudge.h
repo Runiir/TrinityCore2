@@ -155,6 +155,7 @@ struct DrudgeLaneContext
     bool Run();
     bool IsLandedRushPending() const;
     bool IsEntrancePullEstablished() const;
+    bool IsEntrancePullActive() const;
     bool IsRecoveryFormationActive() const;
     bool IsDynamicGroupRecoveryActive() const;
     bool TryMinimumDistance(bool specializedDrudgeRecovery);
@@ -182,6 +183,7 @@ struct DrudgeLaneContext
     PhaseResult BuildContract();
     PhaseResult ResolveSources();
     PhaseResult BuildAnchorPolicies();
+    PhaseResult RunEntrancePullActions();
     PhaseResult RunFormationActions();
     PhaseResult RunNativeTauntConfirmation(bool nativeOwnershipAllowed,
         bool recoveryAnchorsReachedBeforeTick,

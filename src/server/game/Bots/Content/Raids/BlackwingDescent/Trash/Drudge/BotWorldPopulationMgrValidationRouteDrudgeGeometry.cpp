@@ -490,7 +490,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
                 HomeLaneProjectionMinimum,
                 Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards,
                 IsRecoveryFormationActive(), memberRoster->second.Role == "tank",
-                IsEntrancePullEstablished()))
+                IsEntrancePullActive()))
             return false;
         if (memberRoster->second.Role == "tank"
             && memberSlot != Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots[
@@ -543,7 +543,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             + (source->GetPositionY() - MidpointY) * AxisY;
         if (projectionOut)
             *projectionOut = projection;
-        if (IsEntrancePullEstablished())
+        if (IsEntrancePullActive())
             return Sources[0]->IsAlive() && Sources[1]->IsAlive()
                 && Sources[0]->GetExactDist2d(Sources[1]) >= LaneSeparation;
         return (sourceIndex == 0 ? -1.0f : 1.0f) * projection
@@ -565,7 +565,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             BotRaidDrudgeGeometry::ArrivalAdjustedLaneProjectionMinimum(
                 HomeLaneProjectionMinimum,
                 Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards,
-                IsRecoveryFormationActive(), tank, IsEntrancePullEstablished());
+                IsRecoveryFormationActive(), tank, IsEntrancePullActive());
         BotRaidDrudgeRecoveryCandidates::Constraints const recoveryConstraints{
             { Sources[0]->GetPositionX(), Sources[0]->GetPositionY() },
             { Sources[1]->GetPositionX(), Sources[1]->GetPositionY() },
@@ -927,7 +927,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
     {
         if (!tank)
             return false;
-        if (IsEntrancePullEstablished())
+        if (IsEntrancePullActive())
         {
             MemberAnchor const* entrance = DeclaredRecoveryTankAnchorFor(slot);
             return entrance && tank->GetExactDist(

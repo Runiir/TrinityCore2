@@ -77,7 +77,7 @@ bool DrudgeLaneContext::ComputeGroupPositionSafe(Player const* member) const
         >= BotRaidDrudgeGeometry::ArrivalAdjustedLaneProjectionMinimum(
             HomeLaneProjectionMinimum,
             config.ValidationRouteSplitArrivalToleranceYards,
-            IsRecoveryFormationActive(), false, IsEntrancePullEstablished());
+            IsRecoveryFormationActive(), false, IsEntrancePullActive());
     float const sameLaneMinimum = std::max(3.0f,
         config.ValidationRouteSplitNavigationMarginYards
             + config.ValidationRouteSplitArrivalToleranceYards * 0.5f);

@@ -827,7 +827,8 @@ def test_drudge_reseparation_requires_live_safety_and_recovery_anchor_arrival():
         "bool DrudgeLaneContext::IsRecoveryFormationActive() const"
     )
     recovery = spacing[recovery_start:]
-    assert "IsEntrancePullEstablished() || IsLandedRushPending()" in recovery
+    assert "IsEntrancePullActive() || IsLandedRushPending()" in recovery
+    assert "return SourceCombatStarted || IsEntrancePullEstablished();" in recovery
     assert "ValidationRouteDrudgeChargeObservations" not in recovery
 
     minimum_distance_start = geometry.index(

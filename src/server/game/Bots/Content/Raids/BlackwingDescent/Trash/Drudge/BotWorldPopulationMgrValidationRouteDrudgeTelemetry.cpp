@@ -139,7 +139,7 @@ void DrudgeLaneContext::RecordRecoveryDiagnosticTick(
                     HomeLaneProjectionMinimum,
                     config.ValidationRouteSplitArrivalToleranceYards,
                     RecoveryFormationActive, memberDiagnostic.IsTank,
-                    IsEntrancePullEstablished());
+                    IsEntrancePullActive());
         if (memberDiagnostic.IsTank)
         {
             uint32 const expectedSlot = laneA
