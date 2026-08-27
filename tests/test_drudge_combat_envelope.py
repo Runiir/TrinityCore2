@@ -179,9 +179,11 @@ def test_native_entrance_ownership_uses_simple_balanced_combat_and_safety_moveme
     assert "ShouldHoldLowerLane" in combat
     assert "drudge_kill_sync_hold_lower_health_lane" in combat
     assert "split_lane_target_switch" in combat
-    assert "AssignedTank ? PhaseResult::Continue" in combat
-    assert "ResolveProfileCombatAction" not in combat
-    assert "return PhaseResult::Continue;" in combat
+    assert "if (!AssignedTank)" in combat
+    assert "ResolveProfileCombatAction" in combat
+    assert "false, false, true, false, false" in combat
+    assert "drudge_entrance_lane_action" in combat
+    assert "return PhaseResult::Handled;" in combat
     assert "ordinaryEntranceCombat = IsEntrancePullEstablished()" in geometry
     assert "specializedLaneMovement = drudgeProfile" in geometry
     assert "specializedLaneMovement, exactPrepullStaged" in geometry
