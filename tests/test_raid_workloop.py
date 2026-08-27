@@ -340,36 +340,23 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_entrance_pull"
+        "pillar_of_flame_ranged_escape"
     )
     assert magmaw_25h["active_program_work_unit"] is None
     assert active["owner_skill"] == "raid-bot-runtime-implementation"
     assert active["first_broken_edge"] == (
-        "trash_terminal_requires_full_roster_endpoint_during_known_native_recovery"
+        "ranged_bot_remains_inside_pillar_of_flame_until_lethal_second_hit"
     )
     evidence = active["decisive_evidence"]
-    assert evidence["source_commit"] == (
-        "47e8a48e6dd42557d6937d7abb95d2fac1f1fe3a"
-    )
-    assert evidence["binary_sha256"] == (
-        "13f4b07a66597896e688c8a32ef5c14ea0b0a9c316a969d40e3c4c70292c07e2"
-    )
-    assert evidence["report_file_sha256"] == (
-        "3832300ada2fe3e913888aa7bed84b8eb33d15dba20c2fe3a340a8f9a889542d"
-    )
-    assert (
-        evidence["route_generation"],
-        evidence["route_node_index"],
-        evidence["route_node_id"],
-    ) == (3, 2, "bwd.magmaw.drudges")
-    assert evidence["diagnostic_difficulty"] == "10N"
-    assert evidence["kills"] == 3
-    assert evidence["deaths"] == 1
-    assert evidence["terminal_failure_reason"] == "repeated_decision_watchdog"
-    assert evidence["repeated_decision_count"] == 20
-    assert evidence["known_recovering_guid"] == 30008
-    assert evidence["both_drudges_dead"] is True
-    assert evidence["boss_reached"] is False
+    assert evidence["route_node_id"] == "bwd.magmaw.encounter"
+    assert evidence["first_dead_guid"] == 30009
+    assert evidence["hazard_spell_id"] == 77971
+    assert evidence["terminal_failure_reason"] == "death_loop_watchdog"
+    assert evidence["chainwielder_cleared"] is True
+    assert evidence["drudges_cleared"] is True
+    assert evidence["magmaw_reached"] is True
+    assert evidence["magmaw_killed"] is False
+    assert evidence["diagnose_includes_dps_hps"] is True
     assert evidence["forbidden_assistance_observed"] is False
     assert evidence["cleanup_passed"] is True
     assert evidence["worldserver_exit_code"] == 0
@@ -378,11 +365,11 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
         "matched_live_verification_runs": 1,
     }
     assert (
-        "separate_trash_pack_terminal_from_full_roster_endpoint_readiness"
+        "submit_existing_pillar_hazard_escape_through_priority_queue"
         in active["repair_scope"]["allowed"]
     )
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
-    assert "canary89" in active["next_action"].lower()
+    assert "canary92" in active["next_action"].lower()
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
@@ -476,21 +463,21 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     status = workloop.build_status()
 
     assert status["active_work_unit"]["descriptor_valid"] is True
-    assert status["active_work_unit"]["ready_for_bounded_repair"] is False
-    assert status["active_work_unit"]["ready_for_live_verification"] is True
+    assert status["active_work_unit"]["ready_for_bounded_repair"] is True
+    assert status["active_work_unit"]["ready_for_live_verification"] is False
     assert status["active_work_unit"]["first_broken_edge"] == (
-        "trash_terminal_requires_full_roster_endpoint_during_known_native_recovery"
+        "ranged_bot_remains_inside_pillar_of_flame_until_lethal_second_hit"
     )
     assert status["active_work_unit"]["source_handoff"]["sha256"] == (
         workloop._file_sha256(
             workloop.ROOT
             / "experiments/configs/"
-            "cata_raid_magmaw_canary88_terminal_rejoin_handoff_20260827.md"
+            "cata_raid_magmaw_canary91_pillar_death_handoff_20260828.md"
         )
     )
     assert status["required_next_work_unit"]["work_unit"] == (
         "boss:blackwing_descent:magmaw:10N:"
-        "drudge_entrance_pull"
+        "pillar_of_flame_ranged_escape"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
         "raid-bot-runtime-implementation"
@@ -498,7 +485,7 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     assert status["current_program_next_action"] == status["active_work_unit"][
         "next_action"
     ]
-    assert "canary89" in status["active_work_unit"]["next_action"].lower()
+    assert "canary92" in status["active_work_unit"]["next_action"].lower()
     assert "legacy_program_next_action" not in status
 
 

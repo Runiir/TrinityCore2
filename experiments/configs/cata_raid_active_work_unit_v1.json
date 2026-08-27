@@ -1,115 +1,70 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:10N:chainwielder_hazard_floor",
+  "work_unit": "boss:blackwing_descent:magmaw:10N:pillar_of_flame_ranged_escape",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "implementation_pending_live_verification",
+  "classification": "failed",
   "observed_at_commit": "af1ff054dc1a46553880d91dc8049cd308b64f27",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_canary90_hazard_floor_handoff_20260828.md",
-    "sha256": "a6b47bc7286e6ac5305cb5fa5f9fb59084a74f951e4e1ba786a666e809406898"
+    "path": "experiments/configs/cata_raid_magmaw_canary91_pillar_death_handoff_20260828.md",
+    "sha256": "b95cd4c6561b05d065a6c9cc45f42a1fe5e3348e363b89bfba9d3bd8dede8966"
   },
-  "first_broken_edge": "hazard_exit_samples_unrelated_lower_floor_and_repeats_invalid_z_transition",
+  "first_broken_edge": "ranged_bot_remains_inside_pillar_of_flame_until_lethal_second_hit",
   "decisive_evidence": {
-    "source_commit": "7c13a3f89352c53b740820a1fe988a2796b2dc0c",
-    "binary_sha256": "c02a71618b616f6699b1504c66dc0d26fcd8efa14f33938afdaaf57da706cfba",
-    "report_path": "/tmp/trinity-magmaw-7c13a3f893-canary90.zkpUEi/canary90-report.json",
-    "report_canonical_sha256": "b5c669b7b14d2c46c79b0e6202691a8e58d7998f171165e5a2aea3aa09fcd89b",
-    "report_file_sha256": "d39d486eee21d8f918338d690c5fec86f87417fd0dbe4fcfc5e9ced9febcaea5",
     "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
-    "diagnostic_difficulty": "10N",
-    "attempt_id": 1,
-    "route_generation": 2,
-    "route_node_index": 1,
-    "route_node_id": "bwd.magmaw.chainwielder",
-    "elapsed_seconds": 143.573,
-    "kills": 0,
-    "deaths_at_watchdog": 0,
-    "terminal_failure_reason": "repeated_decision_watchdog",
-    "repeated_bot_guid": 30008,
-    "repeated_action": "validation_route_mechanic",
-    "repeated_outcome": "hazard_exit_failed",
-    "repeated_count": 20,
-    "planner_rejection": "route_destination_invalid_z_transition",
-    "requested_z": 213.665,
-    "sampled_floor_z": -91.5379,
-    "absolute_z_delta": 305.203,
-    "both_drudges_dead": false,
-    "boss_reached": false,
-    "boss_death_evidence": false,
-    "combat_log_requested": true,
-    "combat_analysis_available": true,
-    "combat_log_chunks": "29/29",
-    "party_dps": 35027.484,
-    "party_hps": 4074.145,
+    "route_node_id": "bwd.magmaw.encounter",
+    "first_dead_guid": 30009,
+    "first_dead_name": "Mgwdpsd",
+    "death_at_ms": 1787871985853,
+    "hazard_entry": 41843,
+    "hazard_spell_id": 77971,
+    "hazard_spell_name": "Pillar of Flame",
+    "hazard_first_hit_at_ms": 1787871985349,
+    "hazard_last_hit_at_ms": 1787871985852,
+    "hazard_damage": 123434,
+    "hazard_distance": 0.132,
+    "chainwielder_cleared": true,
+    "drudges_cleared": true,
+    "magmaw_reached": true,
+    "magmaw_killed": false,
+    "terminal_failure_reason": "death_loop_watchdog",
+    "party_dps": 174092.801,
+    "party_hps": 32710.783,
+    "diagnose_includes_dps_hps": true,
     "forbidden_assistance_observed": false,
-    "final_forced_evidence_passed": true,
     "cleanup_passed": true,
-    "worldserver_exit_code": 0,
-    "do_not_relabel_as_clear": true
+    "worldserver_exit_code": 0
   },
   "repair_scope": {
-    "status": "trace_backed_repair_implemented",
+    "status": "trace_backed_repair_required",
     "allowed": [
-      "repair_shared_movement_planner_same_level_floor_selection",
-      "add_recorded_same_level_bogus_lower_floor_regression",
-      "preserve_genuine_cross_floor_rejection",
-      "bound_invalid_hazard_exit_retry_or_select_safe_alternate_bearing"
-    ],
-    "must_preserve": [
-      "priority_candidate_arbitration_and_native_submission",
-      "native_pathfinding_collision_and_arrival_checks",
-      "movement_owner_and_hazard_priority",
-      "fail_closed_genuine_cross_floor_destination",
-      "completion_watchdog_and_trace_attribution"
+      "submit_existing_pillar_hazard_escape_through_priority_queue",
+      "preserve_mobile_damage_while_moving",
+      "retain_ranged_add_focus",
+      "add_inside_outside_melee_tank_regressions"
     ],
     "forbidden_shortcuts": [
-      "affliction_or_recorded_xy_special_case",
-      "forced_movement_or_teleport",
-      "shrink_native_hazard_radius",
-      "enemy_damage_or_health_tuning",
+      "teleport_or_forced_movement",
+      "forced_target_or_success",
+      "enemy_health_or_damage_tuning",
+      "hazard_radius_reduction",
       "watchdog_suppression",
-      "manufactured_encounter_outcome"
+      "guid_or_recorded_coordinate_special_case"
     ]
   },
   "validation_clock": {
     "policy": "completion_watchdog",
-    "fixed_success_timer_seconds": null,
-    "terminal_conditions": [
-      "normal_clear",
-      "semantic_no_progress",
-      "repeated_decisions",
-      "excessive_death_loop",
-      "infrastructure_loss",
-      "contamination",
-      "explicit_interruption"
-    ]
+    "fixed_success_timer_seconds": null
   },
   "implementation_budget": {
     "hypotheses": 1,
     "matched_live_verification_runs": 1
   },
-  "implementation_checkpoint": {
-    "tooling_commit": "af1ff054dc1a46553880d91dc8049cd308b64f27",
-    "gameplay_commit": "3569720a0461f3032ba0df27c4ade789a4246b2f",
-    "status": "exact_build_verified_canary91_pending",
-    "capture_and_combat_tests_passed": 119,
-    "combat_log_transport_passed": true,
-    "diagnose_includes_dps_hps": true,
-    "build_receipt_path": "/tmp/trinity-magmaw-af1ff054dc-build.XyUZNU/worldserver-build-receipt.json",
-    "build_receipt_file_sha256": "d96b33a9bb7fc95a397d8d5341bd315880141e51ca71ebdd9861cdb7f736a496",
-    "build_receipt_semantic_sha256": "89c5733dfc1869c9cb317bcc2548d5da7226819319ad0c01232a2ab514665b91",
-    "binary_sha256": "a20479fa267568bbe3cc2780915c41399ff3fb699db5fbd2c5e87d9ac05faf02",
-    "build_receipts_gate_bearing": true,
-    "source_identity_stable": true,
-    "live_clear_claimed": false
-  },
   "implementation_constraints": {
     "maximum_c_or_cpp_lines": 999,
-    "largest_touched_cpp_current_lines": 639,
-    "extract_new_module_required_if_growth_exceeds_limit": true,
+    "new_or_changed_helper_maximum_ccn": 15,
     "heavy_build_allowed": false,
-    "live_run_allowed": true,
+    "live_run_allowed": false,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "Provision a fresh exact 10N roster and run Canary91 under the completion watchdog. Require the Chainwielder hazard exit to advance, verify diagnose combat_metrics DPS/HPS, and hand off only the next trace-backed causal edge."
+  "next_action": "Implement and root-review the bounded Pillar of Flame ranged escape, run focused replay tests, obtain an exact coordinator build, then provision fresh state and run Canary92 under the completion watchdog."
 }
