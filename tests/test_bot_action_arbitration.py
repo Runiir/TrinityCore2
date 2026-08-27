@@ -46,6 +46,7 @@ def test_action_and_movement_arbiters_compile_and_replay(tmp_path: Path) -> None
 #include "Bots/BotMeleeAutoAttackIntent.h"
 #include "Bots/BotNativeActionIntent.h"
 #include <cassert>
+#include <limits>
 #include <string>
 
 int main()
@@ -560,7 +561,7 @@ int main()
     BotEncounter::ActorSnapshot magmawBoss = sourceA;
     magmawBoss.Guid = ObjectGuid(HighGuid::Unit, uint32(41570), uint32(70));
     magmawBoss.Entry = 41570;
-    magmawBoss.Position = { 20.0f, 0.0f, 0.0f };
+    magmawBoss.Position = { 20.0f, 0.0f, 210.8483f };
     BotEncounter::ActorSnapshot magmawHead = magmawBoss;
     magmawHead.Guid = ObjectGuid(HighGuid::Unit, uint32(42347), uint32(71));
     magmawHead.Entry = 42347;
@@ -589,7 +590,7 @@ int main()
     assert(magmawPrepullPlan.DamageTarget.IsEmpty());
 
     BotEncounter::Blackboard magmawNoReadyTank = magmaw;
-    magmawNoReadyTank.Players.front().Position = { 0.0f, 0.0f, 0.0f };
+    magmawNoReadyTank.Players.front().Position = { 0.0f, 0.0f, 213.87f };
     magmawNoReadyTank.Players[1].Position = { 60.0f, 0.0f, 0.0f };
     auto magmawNoReadyDpsPlan = magmawStrategy.Propose(
         magmawNoReadyTank, dps.Guid, "dps");
@@ -611,7 +612,26 @@ int main()
     assert(magmawPrepullMove);
     assert(magmawPrepullMove->X == 16.0f);
     assert(magmawPrepullMove->Y == magmawBoss.Position.Y);
-    assert(magmawPrepullMove->Z == tankA.Position.Z);
+    assert(magmawPrepullMove->Z == magmawBoss.Position.Z);
+    assert(magmawPrepullMove->Z != magmawNoReadyTank.Players.front().Position.Z);
+
+    BotEncounter::Blackboard magmawNonFiniteBot = magmawNoReadyTank;
+    magmawNonFiniteBot.Players.front().Position.Z =
+        std::numeric_limits<float>::quiet_NaN();
+    auto magmawNonFiniteBotPlan = magmawStrategy.Propose(
+        magmawNonFiniteBot, tankA.Guid, "tank");
+    assert(magmawNonFiniteBotPlan.OwnsNode);
+    assert(magmawNonFiniteBotPlan.SuppressOffense);
+    assert(!magmawNonFiniteBotPlan.Movement.has_value());
+
+    BotEncounter::Blackboard magmawNonFiniteBoss = magmawNoReadyTank;
+    magmawNonFiniteBoss.Hostiles.front().Position.Z =
+        std::numeric_limits<float>::quiet_NaN();
+    auto magmawNonFiniteBossPlan = magmawStrategy.Propose(
+        magmawNonFiniteBoss, tankA.Guid, "tank");
+    assert(magmawNonFiniteBossPlan.OwnsNode);
+    assert(magmawNonFiniteBossPlan.SuppressOffense);
+    assert(!magmawNonFiniteBossPlan.Movement.has_value());
 
     BotEncounter::Blackboard magmawNativeInProgress = magmawNoReadyTank;
     magmawNativeInProgress.NativeBossState = "in_progress";

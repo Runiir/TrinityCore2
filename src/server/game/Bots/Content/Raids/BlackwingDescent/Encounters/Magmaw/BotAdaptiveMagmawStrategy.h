@@ -12,6 +12,11 @@
 
 namespace BotEncounter
 {
+struct PrepullMeleeEndpoint
+{
+    Vector3 Position;
+};
+
 struct AdaptiveMagmawPlan
 {
     bool OwnsNode = false;
@@ -111,29 +116,25 @@ public:
             plan.SuppressOffense = true;
             if (role == "tank")
             {
-                float dx = bot->Position.X - boss->Position.X;
-                float dy = bot->Position.Y - boss->Position.Y;
-                float length = std::sqrt(dx * dx + dy * dy);
-                if (length < 0.01f)
+                std::optional<PrepullMeleeEndpoint> endpoint =
+                    BuildPrepullMeleeEndpoint(bot->Position, boss->Position,
+                        bot->Facing);
+                if (endpoint)
                 {
-                    dx = std::cos(bot->Facing);
-                    dy = std::sin(bot->Facing);
-                    length = 1.0f;
+                    BotNativeAction::Candidate candidate;
+                    candidate.Id.ScopeKey = board.CurrentScope.Key();
+                    candidate.Id.Strategy = "adaptive_magmaw";
+                    candidate.Id.Mechanic = "prepull_melee_ready";
+                    candidate.Id.Actor = boss->Guid;
+                    candidate.Id.EventGeneration = board.Revision;
+                    candidate.ActionPriority = BotActionArbitration::Priority::Mechanic;
+                    candidate.Utility = 500.0f;
+                    candidate.ExpiresAtMs = board.ObservedAtMs + 750;
+                    candidate.Action = BotNativeAction::Move{
+                        endpoint->Position.X, endpoint->Position.Y,
+                        endpoint->Position.Z };
+                    plan.Movement = std::move(candidate);
                 }
-                BotNativeAction::Candidate candidate;
-                candidate.Id.ScopeKey = board.CurrentScope.Key();
-                candidate.Id.Strategy = "adaptive_magmaw";
-                candidate.Id.Mechanic = "prepull_melee_ready";
-                candidate.Id.Actor = boss->Guid;
-                candidate.Id.EventGeneration = board.Revision;
-                candidate.ActionPriority = BotActionArbitration::Priority::Mechanic;
-                candidate.Utility = 500.0f;
-                candidate.ExpiresAtMs = board.ObservedAtMs + 750;
-                candidate.Action = BotNativeAction::Move{
-                    boss->Position.X + dx / length * PrepullMeleeOffsetDistance,
-                    boss->Position.Y + dy / length * PrepullMeleeOffsetDistance,
-                    bot->Position.Z };
-                plan.Movement = std::move(candidate);
             }
             return plan;
         }
@@ -278,6 +279,42 @@ public:
     }
 
 private:
+    static std::optional<PrepullMeleeEndpoint> BuildPrepullMeleeEndpoint(
+        Vector3 const& botPosition, Vector3 const& bossPosition,
+        float botFacing)
+    {
+        if (!std::isfinite(botPosition.X) || !std::isfinite(botPosition.Y)
+            || !std::isfinite(botPosition.Z)
+            || !std::isfinite(bossPosition.X)
+            || !std::isfinite(bossPosition.Y)
+            || !std::isfinite(bossPosition.Z))
+            return std::nullopt;
+
+        float dx = botPosition.X - bossPosition.X;
+        float dy = botPosition.Y - bossPosition.Y;
+        float length = std::sqrt(dx * dx + dy * dy);
+        if (!std::isfinite(length))
+            return std::nullopt;
+        if (length < 0.01f)
+        {
+            if (!std::isfinite(botFacing))
+                return std::nullopt;
+            dx = std::cos(botFacing);
+            dy = std::sin(botFacing);
+            length = 1.0f;
+        }
+
+        PrepullMeleeEndpoint endpoint{ {
+            bossPosition.X + dx / length * PrepullMeleeOffsetDistance,
+            bossPosition.Y + dy / length * PrepullMeleeOffsetDistance,
+            bossPosition.Z } };
+        if (!std::isfinite(endpoint.Position.X)
+            || !std::isfinite(endpoint.Position.Y)
+            || !std::isfinite(endpoint.Position.Z))
+            return std::nullopt;
+        return endpoint;
+    }
+
     static bool HasAura(ActorSnapshot const& actor, uint32 spellId)
     {
         return std::any_of(actor.Auras.begin(), actor.Auras.end(),
