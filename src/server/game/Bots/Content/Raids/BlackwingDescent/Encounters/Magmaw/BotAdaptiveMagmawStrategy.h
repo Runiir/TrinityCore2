@@ -12,11 +12,6 @@
 
 namespace BotEncounter
 {
-struct PrepullMeleeEndpoint
-{
-    Vector3 Position;
-};
-
 struct AdaptiveMagmawPlan
 {
     bool OwnsNode = false;
@@ -39,11 +34,6 @@ public:
     static constexpr uint32 PincerLeftEntry = 41620;
     static constexpr uint32 PincerRightEntry = 41789;
     static constexpr uint32 SpikeEntry = 41767;
-    // Keep the native victim inside ordinary melee reach before the first
-    // offensive action.  The margin accounts for the boss's combat reach
-    // without treating a remote position as an engaged encounter.
-    static constexpr float PrepullMeleeReadyDistance = 8.0f;
-    static constexpr float PrepullMeleeOffsetDistance = 4.0f;
     static constexpr float HookInteractionDistance = 5.0f;
 
     AdaptiveMagmawPlan Propose(Blackboard const& board, ObjectGuid botGuid,
@@ -61,12 +51,10 @@ public:
             return plan;
 
         plan.OwnsNode = true;
-        PrepullDecision prepull = EvaluatePrepull(board, *bot, *observed.Boss,
-            role);
+        PrepullDecision prepull = EvaluatePrepull(board, *observed.Boss);
         if (prepull.Disposition == PrepullDisposition::HoldOffense)
         {
             plan.SuppressOffense = true;
-            plan.Movement = std::move(prepull.Movement);
             return plan;
         }
 
@@ -95,7 +83,6 @@ private:
     struct PrepullDecision
     {
         PrepullDisposition Disposition = PrepullDisposition::NotApplicable;
-        std::optional<BotNativeAction::Candidate> Movement;
     };
 
     struct MagmawHazardObservation
@@ -155,8 +142,7 @@ private:
     }
 
     static PrepullDecision EvaluatePrepull(Blackboard const& board,
-        ActorSnapshot const& bot, ActorSnapshot const& boss,
-        std::string_view role)
+        ActorSnapshot const& boss)
     {
         PrepullDecision decision;
         if (!IsPrepull(board, boss))
@@ -172,40 +158,9 @@ private:
             decision.Disposition = PrepullDisposition::HoldOffense;
             return decision;
         }
-
-        bool const tankMeleeReady = std::any_of(board.Players.begin(),
-            board.Players.end(), [&boss](ActorSnapshot const& member)
-            {
-                return member.Alive && member.Role == "tank"
-                    && Distance2d(member.Position, boss.Position)
-                        <= PrepullMeleeReadyDistance;
-            });
-        if (tankMeleeReady)
-            return decision;
-
-        decision.Disposition = PrepullDisposition::HoldOffense;
-        if (role == "tank")
-        {
-            std::optional<PrepullMeleeEndpoint> endpoint =
-                BuildPrepullMeleeEndpoint(bot.Position, boss.Position,
-                    bot.Facing);
-            if (endpoint)
-            {
-                BotNativeAction::Candidate candidate;
-                candidate.Id.ScopeKey = board.CurrentScope.Key();
-                candidate.Id.Strategy = "adaptive_magmaw";
-                candidate.Id.Mechanic = "prepull_melee_ready";
-                candidate.Id.Actor = boss.Guid;
-                candidate.Id.EventGeneration = board.Revision;
-                candidate.ActionPriority = BotActionArbitration::Priority::Mechanic;
-                candidate.Utility = 500.0f;
-                candidate.ExpiresAtMs = board.ObservedAtMs + 750;
-                candidate.Action = BotNativeAction::Move{
-                    endpoint->Position.X, endpoint->Position.Y,
-                    endpoint->Position.Z };
-                decision.Movement = std::move(candidate);
-            }
-        }
+        // A tank may begin the pull from range.  Normal combat movement owns
+        // melee closure after Magmaw is engaged; prepull suppression is only
+        // for an injured cohort that still needs health recovery.
         return decision;
     }
 
@@ -421,42 +376,6 @@ private:
                 <= HookInteractionDistance)
             return BuildMountCandidate(board, boss);
         return std::nullopt;
-    }
-
-    static std::optional<PrepullMeleeEndpoint> BuildPrepullMeleeEndpoint(
-        Vector3 const& botPosition, Vector3 const& bossPosition,
-        float botFacing)
-    {
-        if (!std::isfinite(botPosition.X) || !std::isfinite(botPosition.Y)
-            || !std::isfinite(botPosition.Z)
-            || !std::isfinite(bossPosition.X)
-            || !std::isfinite(bossPosition.Y)
-            || !std::isfinite(bossPosition.Z))
-            return std::nullopt;
-
-        float dx = botPosition.X - bossPosition.X;
-        float dy = botPosition.Y - bossPosition.Y;
-        float length = std::sqrt(dx * dx + dy * dy);
-        if (!std::isfinite(length))
-            return std::nullopt;
-        if (length < 0.01f)
-        {
-            if (!std::isfinite(botFacing))
-                return std::nullopt;
-            dx = std::cos(botFacing);
-            dy = std::sin(botFacing);
-            length = 1.0f;
-        }
-
-        PrepullMeleeEndpoint endpoint{ {
-            bossPosition.X + dx / length * PrepullMeleeOffsetDistance,
-            bossPosition.Y + dy / length * PrepullMeleeOffsetDistance,
-            bossPosition.Z } };
-        if (!std::isfinite(endpoint.Position.X)
-            || !std::isfinite(endpoint.Position.Y)
-            || !std::isfinite(endpoint.Position.Z))
-            return std::nullopt;
-        return endpoint;
     }
 
     static bool HasAura(ActorSnapshot const& actor, uint32 spellId)

@@ -608,44 +608,29 @@ int main()
     assert(magmawPrepullPlan.SuppressOffense);
     assert(magmawPrepullPlan.DamageTarget.IsEmpty());
 
-    BotEncounter::Blackboard magmawNoReadyTank = magmaw;
-    magmawNoReadyTank.Players.front().Position = { 0.0f, 0.0f, 213.87f };
-    magmawNoReadyTank.Players[1].Position = { 60.0f, 0.0f, 0.0f };
-    auto magmawNoReadyDpsPlan = magmawStrategy.Propose(
-        magmawNoReadyTank, dps.Guid, "dps");
-    assert(magmawNoReadyDpsPlan.OwnsNode);
-    assert(magmawNoReadyDpsPlan.SuppressOffense);
-    assert(magmawNoReadyDpsPlan.DamageTarget.IsEmpty());
-    assert(!magmawNoReadyDpsPlan.Movement.has_value());
+    // Magmaw can be pulled by a full-health tank from range.  Melee closure
+    // belongs to normal post-pull combat movement, not prepull readiness.
+    BotEncounter::Blackboard magmawRangedTank = magmaw;
+    magmawRangedTank.Summons.clear();
+    magmawRangedTank.Players.front().Position = { 0.0f, 0.0f, 213.87f };
+    magmawRangedTank.Players[1].Position = { 60.0f, 0.0f, 0.0f };
+    auto magmawRangedTankPlan = magmawStrategy.Propose(
+        magmawRangedTank, tankA.Guid, "tank");
+    assert(magmawRangedTankPlan.OwnsNode);
+    assert(!magmawRangedTankPlan.SuppressOffense);
+    assert(magmawRangedTankPlan.DamageTarget == magmawBoss.Guid);
+    assert(!magmawRangedTankPlan.Movement.has_value());
 
-    auto magmawPrepullTankPlan = magmawStrategy.Propose(
-        magmawNoReadyTank, tankA.Guid, "tank");
-    assert(magmawPrepullTankPlan.OwnsNode);
-    assert(magmawPrepullTankPlan.SuppressOffense);
-    assert(magmawPrepullTankPlan.DamageTarget.IsEmpty());
-    assert(magmawPrepullTankPlan.Movement.has_value());
-    assert(magmawPrepullTankPlan.Movement->Resources()
-        == Uses(Resource::Movement));
-    auto const* magmawPrepullMove = std::get_if<Move>(
-        &magmawPrepullTankPlan.Movement->Action);
-    assert(magmawPrepullMove);
-    assert(magmawPrepullMove->X == 16.0f);
-    assert(magmawPrepullMove->Y == magmawBoss.Position.Y);
-    assert(magmawPrepullMove->Z == magmawBoss.Position.Z);
-    assert(magmawPrepullMove->Z != magmawNoReadyTank.Players.front().Position.Z);
-    assert(magmawPrepullTankPlan.Movement->Id.ScopeKey
-        == magmawNoReadyTank.CurrentScope.Key());
-    assert(magmawPrepullTankPlan.Movement->Id.Strategy == "adaptive_magmaw");
-    assert(magmawPrepullTankPlan.Movement->Id.Mechanic
-        == "prepull_melee_ready");
-    assert(magmawPrepullTankPlan.Movement->Id.Actor == magmawBoss.Guid);
-    assert(magmawPrepullTankPlan.Movement->Id.EventGeneration
-        == magmawNoReadyTank.Revision);
-    assert(magmawPrepullTankPlan.Movement->ActionPriority
-        == BotActionArbitration::Priority::Mechanic);
-    assert(magmawPrepullTankPlan.Movement->Utility == 500.0f);
-    assert(magmawPrepullTankPlan.Movement->ExpiresAtMs
-        == magmawNoReadyTank.ObservedAtMs + 750);
+    // Health readiness remains a hard prepull gate even when the tank is
+    // already close enough to pull.
+    BotEncounter::Blackboard magmawInjuredRangedTank = magmawRangedTank;
+    magmawInjuredRangedTank.Players[2].HealthPct = 93.0f;
+    auto magmawInjuredRangedTankPlan = magmawStrategy.Propose(
+        magmawInjuredRangedTank, tankA.Guid, "tank");
+    assert(magmawInjuredRangedTankPlan.OwnsNode);
+    assert(magmawInjuredRangedTankPlan.SuppressOffense);
+    assert(magmawInjuredRangedTankPlan.DamageTarget.IsEmpty());
+    assert(!magmawInjuredRangedTankPlan.Movement.has_value());
 
     // A nearer immediate hazard cannot replace a pillar movement proposal,
     // while the fallback hazard candidate retains its source-relative identity.
@@ -797,25 +782,7 @@ int main()
         &mountPlan.Interaction->Action);
     assert(mount && mount->Target == magmawBoss.Guid);
 
-    BotEncounter::Blackboard magmawNonFiniteBot = magmawNoReadyTank;
-    magmawNonFiniteBot.Players.front().Position.Z =
-        std::numeric_limits<float>::quiet_NaN();
-    auto magmawNonFiniteBotPlan = magmawStrategy.Propose(
-        magmawNonFiniteBot, tankA.Guid, "tank");
-    assert(magmawNonFiniteBotPlan.OwnsNode);
-    assert(magmawNonFiniteBotPlan.SuppressOffense);
-    assert(!magmawNonFiniteBotPlan.Movement.has_value());
-
-    BotEncounter::Blackboard magmawNonFiniteBoss = magmawNoReadyTank;
-    magmawNonFiniteBoss.Hostiles.front().Position.Z =
-        std::numeric_limits<float>::quiet_NaN();
-    auto magmawNonFiniteBossPlan = magmawStrategy.Propose(
-        magmawNonFiniteBoss, tankA.Guid, "tank");
-    assert(magmawNonFiniteBossPlan.OwnsNode);
-    assert(magmawNonFiniteBossPlan.SuppressOffense);
-    assert(!magmawNonFiniteBossPlan.Movement.has_value());
-
-    BotEncounter::Blackboard magmawNativeInProgress = magmawNoReadyTank;
+    BotEncounter::Blackboard magmawNativeInProgress = magmawRangedTank;
     magmawNativeInProgress.NativeBossState = "in_progress";
     auto magmawNativeInProgressPlan = magmawStrategy.Propose(
         magmawNativeInProgress, dps.Guid, "dps");
@@ -1174,12 +1141,12 @@ def test_magmaw_movement_adapter_maps_typed_leases_and_fails_closed() -> None:
     )
     helper = candidates[helper_start:helper_end]
 
-    prepull_start = helper.index('if (mechanic == "prepull_melee_ready")')
     hazard_start = helper.index('if (mechanic == "pillar_evade"')
-    prepull = helper[prepull_start:hazard_start]
     hazard = helper[hazard_start:]
-    assert "Owner::Mechanic" in prepull
-    assert "Priority::Mechanic" in prepull
+    assert '"prepull_melee_ready"' not in helper
+    assert "prepull_health_suppress" in bot_source(
+        "BotWorldPopulationMgrUpdateBotKernelCandidates.cpp"
+    )
     for mechanic in (
         "pillar_evade",
         "massive_crash_evade",

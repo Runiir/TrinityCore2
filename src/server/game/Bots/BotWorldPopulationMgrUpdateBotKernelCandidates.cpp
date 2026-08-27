@@ -30,10 +30,6 @@ struct AdaptiveMagmawMovementLease
 std::optional<AdaptiveMagmawMovementLease> AdaptiveMagmawMovementLeaseFor(
     std::string_view mechanic)
 {
-    if (mechanic == "prepull_melee_ready")
-        return AdaptiveMagmawMovementLease{
-            BotMovementArbitration::Owner::Mechanic,
-            BotMovementArbitration::Priority::Mechanic};
     if (mechanic == "pillar_evade"
         || mechanic == "massive_crash_evade"
         || mechanic == "parasite_contact_evade")
