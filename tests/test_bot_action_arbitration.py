@@ -688,6 +688,37 @@ int main()
     assert(magmawCrashMove->Y == 0.0f);
     assert(magmawCrashMove->Z == dps.Position.Z);
 
+    BotEncounter::Blackboard magmawParasite = magmaw;
+    magmawParasite.Summons.clear();
+    BotEncounter::ActorSnapshot parasite = magmawBoss;
+    parasite.Guid = ObjectGuid(HighGuid::Unit, uint32(41806), uint32(75));
+    parasite.Entry = BotEncounter::AdaptiveMagmawStrategy::ParasiteEntry;
+    parasite.Position = { 2.0f, 0.0f, 0.0f };
+    magmawParasite.Hostiles = { magmawBoss, magmawHead, parasite };
+    auto magmawParasitePlan = magmawStrategy.Propose(
+        magmawParasite, dps.Guid, "dps");
+    assert(magmawParasitePlan.Movement.has_value());
+    assert(magmawParasitePlan.Movement->Id.ScopeKey
+        == magmawParasite.CurrentScope.Key());
+    assert(magmawParasitePlan.Movement->Id.Mechanic
+        == "parasite_contact_evade");
+    assert(magmawParasitePlan.Movement->Id.Actor == parasite.Guid);
+    assert(magmawParasitePlan.Movement->Id.EventGeneration
+        == magmawParasite.Revision);
+    assert(magmawParasitePlan.Movement->ActionPriority
+        == BotActionArbitration::Priority::Survival);
+    assert(magmawParasitePlan.Movement->Utility == 450.0f);
+    assert(magmawParasitePlan.Movement->ExpiresAtMs
+        == magmawParasite.ObservedAtMs + 750);
+    assert(magmawParasitePlan.Movement->Resources()
+        == Uses(Resource::Movement));
+    auto const* magmawParasiteMove = std::get_if<Move>(
+        &magmawParasitePlan.Movement->Action);
+    assert(magmawParasiteMove);
+    assert(magmawParasiteMove->X == -14.0f);
+    assert(magmawParasiteMove->Y == 0.0f);
+    assert(magmawParasiteMove->Z == dps.Position.Z);
+
     // Hook users are sorted by raw GUID and only the first two may submit a
     // native hook. Vehicle actions and free-pincer mounting remain separate
     // interaction candidates with their original resource lanes.
@@ -1132,6 +1163,60 @@ def test_raid_healing_is_independent_and_does_not_cancel_hazard_movement() -> No
     )
     assert "instantOnly" in heal
     assert 'candidate.RejectReason = "movement_requires_instant_heal"' in heal
+
+
+def test_magmaw_movement_adapter_maps_typed_leases_and_fails_closed() -> None:
+    candidates = bot_source("BotWorldPopulationMgrUpdateBotKernelCandidates.cpp")
+    helper_start = candidates.index("struct AdaptiveMagmawMovementLease")
+    helper_end = candidates.index(
+        "void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates",
+        helper_start,
+    )
+    helper = candidates[helper_start:helper_end]
+
+    prepull_start = helper.index('if (mechanic == "prepull_melee_ready")')
+    hazard_start = helper.index('if (mechanic == "pillar_evade"')
+    prepull = helper[prepull_start:hazard_start]
+    hazard = helper[hazard_start:]
+    assert "Owner::Mechanic" in prepull
+    assert "Priority::Mechanic" in prepull
+    for mechanic in (
+        "pillar_evade",
+        "massive_crash_evade",
+        "parasite_contact_evade",
+    ):
+        assert f'"{mechanic}"' in hazard
+    assert "Owner::Hazard" in hazard
+    assert "Priority::Hazard" in hazard
+    assert "return std::nullopt;" in hazard
+
+    movement_start = candidates.index(
+        "if (context.AdaptiveMagmawMovement"
+    )
+    movement_end = candidates.index(
+        "if (context.AdaptiveMagmawInteraction", movement_start
+    )
+    movement = candidates[movement_start:movement_end]
+    assert "AdaptiveMagmawMovementLeaseFor(intent.Id.Mechanic)" in movement
+    assert "if (movementLease)" in movement
+    assert "lease = *movementLease" in movement
+    assert "mechanic = intent.Id.Mechanic" in movement
+    assert "lease.Owner" in movement
+    assert "lease.Priority" in movement
+    assert "context.Action = mechanic;" in movement
+    assert 'context.Action = "pillar_evade"' not in movement
+    for assignment in (
+        "movement.Key = intent.Id.Key();",
+        "movement.Source = intent.Id.Strategy;",
+        "movement.ActionPriority = intent.ActionPriority;",
+        "movement.UtilityScore = intent.Utility;",
+        "movement.RequiredResources = intent.Resources();",
+        "movement.ExpiresAtMs = intent.ExpiresAtMs;",
+    ):
+        assert assignment in movement
+    assert movement.index("if (movementLease)") < movement.index(
+        "context.State.DecisionKernel.Submit(std::move(movement));"
+    )
 
 
 def test_native_route_interactions_use_player_handlers_and_observed_postconditions() -> None:
