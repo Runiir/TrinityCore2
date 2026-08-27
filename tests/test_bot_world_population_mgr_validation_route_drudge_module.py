@@ -72,8 +72,8 @@ def test_drudge_entrance_pull_holds_nonowners_then_returns_before_handoff():
     cast = pull.index("ExecuteProfileCombatAction")
 
     assert pull_started < owner < cast
-    assert "RecoveryAnchorFor(*this, OneBasedSlot)" in pull
-    assert "ExactRosterAtEntrance(*this)" in pull
+    assert "recoveryAnchorFor(OneBasedSlot)" in pull
+    assert "exactRosterAtEntrance()" in pull
     assert '"drudge_entrance_pull_owner_wait"' in pull
     assert '"drudge_entrance_return_move"' in pull
     assert '"drudge_entrance_native_pack_link_wait"' in pull

@@ -13,56 +13,6 @@ namespace BotWorldPopulationMgrValidationRoute
 namespace
 {
 using Context = DrudgeLaneContext;
-using WorldBotState = Context::WorldBotState;
-using MemberAnchor = Context::MemberAnchor;
-
-MemberAnchor const* RecoveryAnchorFor(Context const& context, uint32 slot)
-{
-    auto const& anchors = context.Manager.Cohort().Config
-        .ValidationRouteSplitRecoveryMemberAnchors;
-    auto const found = std::find_if(anchors.begin(), anchors.end(),
-        [slot](MemberAnchor const& anchor)
-        {
-            return anchor.RosterSlot == slot;
-        });
-    return found == anchors.end() ? nullptr : &*found;
-}
-
-bool AtAnchor(Context const& context, Player const* member,
-    MemberAnchor const* anchor, bool tank)
-{
-    if (!member || !anchor)
-        return false;
-    float const tolerance = tank
-        ? context.Manager.Cohort().Config.ValidationRouteSplitTankArrivalToleranceYards
-        : context.Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards;
-    return member->GetExactDist(anchor->X, anchor->Y, anchor->Z) <= tolerance;
-}
-
-bool ExactRosterAtEntrance(Context const& context)
-{
-    auto const& manager = context.Manager;
-    if (manager.Party().Bots.size() != manager.Cohort().Raid.RosterByGuid.size())
-        return false;
-    uint32 reached = 0;
-    for (WorldBotState const& state : manager.Party().Bots)
-    {
-        Player* member = manager.GetLoadedBot(state);
-        auto const roster = member ? manager.Cohort().Raid.RosterByGuid.find(
-            member->GetGUID().GetCounter()) : manager.Cohort().Raid.RosterByGuid.end();
-        if (!member || !member->IsInWorld() || !member->IsAlive()
-            || member->GetMap() != context.Bot->GetMap()
-            || roster == manager.Cohort().Raid.RosterByGuid.end()
-            || !roster->second.Active || !roster->second.LeaseOwned)
-            return false;
-        uint32 const slot = roster->second.SlotIndex + 1;
-        if (!AtAnchor(context, member, RecoveryAnchorFor(context, slot),
-                roster->second.Role == "tank"))
-            return false;
-        ++reached;
-    }
-    return reached == manager.Cohort().Raid.RosterByGuid.size();
-}
 
 bool NativeEngaged(Context const& context, Creature const* source)
 {
@@ -77,6 +27,49 @@ bool NativeEngaged(Context const& context, Creature const* source)
 DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
 {
     auto const& config = Manager.Cohort().Config;
+    auto recoveryAnchorFor = [&](uint32 slot) -> MemberAnchor const*
+    {
+        auto const& anchors = config.ValidationRouteSplitRecoveryMemberAnchors;
+        auto const found = std::find_if(anchors.begin(), anchors.end(),
+            [slot](MemberAnchor const& anchor)
+            {
+                return anchor.RosterSlot == slot;
+            });
+        return found == anchors.end() ? nullptr : &*found;
+    };
+    auto atAnchor = [&](Player const* member, MemberAnchor const* anchor,
+        bool tank)
+    {
+        if (!member || !anchor)
+            return false;
+        float const tolerance = tank
+            ? config.ValidationRouteSplitTankArrivalToleranceYards
+            : config.ValidationRouteSplitArrivalToleranceYards;
+        return member->GetExactDist(anchor->X, anchor->Y, anchor->Z) <= tolerance;
+    };
+    auto exactRosterAtEntrance = [&]
+    {
+        if (Manager.Party().Bots.size() != Manager.Cohort().Raid.RosterByGuid.size())
+            return false;
+        uint32 reached = 0;
+        for (WorldBotState const& state : Manager.Party().Bots)
+        {
+            Player* member = Manager.GetLoadedBot(state);
+            auto const roster = member ? Manager.Cohort().Raid.RosterByGuid.find(
+                member->GetGUID().GetCounter()) : Manager.Cohort().Raid.RosterByGuid.end();
+            if (!member || !member->IsInWorld() || !member->IsAlive()
+                || member->GetMap() != Bot->GetMap()
+                || roster == Manager.Cohort().Raid.RosterByGuid.end()
+                || !roster->second.Active || !roster->second.LeaseOwned)
+                return false;
+            uint32 const slot = roster->second.SlotIndex + 1;
+            if (!atAnchor(member, recoveryAnchorFor(slot),
+                    roster->second.Role == "tank"))
+                return false;
+            ++reached;
+        }
+        return reached == Manager.Cohort().Raid.RosterByGuid.size();
+    };
     if (Sources.size() != 2 || !Sources[0] || !Sources[1]
         || !Sources[0]->IsAlive() || !Sources[1]->IsAlive()
         || config.ValidationRouteSplitSourceGuids.size() != 2
@@ -97,7 +90,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
     bool const source1Engaged = NativeEngaged(*this, Sources[1]);
     bool const pullStarted = source0Engaged || source1Engaged;
     bool const packLinked = source0Engaged && source1Engaged;
-    MemberAnchor const* entrance = RecoveryAnchorFor(*this, OneBasedSlot);
+    MemberAnchor const* entrance = recoveryAnchorFor(OneBasedSlot);
     if (!entrance)
     {
         HoldOffense();
@@ -111,22 +104,22 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
         char const* moveResult, char const* waitResult) -> PhaseResult
     {
         HoldOffense();
-        bool const atAnchor = AtAnchor(*this, Bot, anchor, AssignedTank);
+        bool const arrived = atAnchor(Bot, anchor, AssignedTank);
         bool moved = false;
         std::string rejection;
-        if (!atAnchor && StrictNativePath(anchor->X, anchor->Y, anchor->Z,
+        if (!arrived && StrictNativePath(anchor->X, anchor->Y, anchor->Z,
                 true, false, &rejection))
             moved = Manager.MoveBotToPointWithReferenceFloor(State, Bot,
                 anchor->X, anchor->Y, anchor->Z, anchor->Z, false,
                 BotMovementArbitration::Owner::Mechanic,
                 BotMovementArbitration::Priority::Mechanic);
-        if (!atAnchor && !moved)
+        if (!arrived && !moved)
         {
             State.LastPathRejectReason = rejection.empty()
                 ? "drudge_entrance_native_path_rejected" : rejection;
             State.LastRecoveryResult = State.LastPathRejectReason;
         }
-        Record(Sources[0], atAnchor ? waitResult : moveResult,
+        Record(Sources[0], arrived ? waitResult : moveResult,
             Bot->GetExactDist(anchor->X, anchor->Y, anchor->Z));
         Target = Sources[0];
         State.TargetGuid = Sources[0]->GetGUID();
@@ -135,7 +128,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
 
     if (pullStarted)
     {
-        if (!AtAnchor(*this, Bot, entrance, AssignedTank))
+        if (!atAnchor(Bot, entrance, AssignedTank))
             return holdOrMoveTo(entrance, "drudge_entrance_return_move",
                 "drudge_entrance_return_wait");
         if (!packLinked)
@@ -151,10 +144,10 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
 
     if (!scopedEntranceStage)
     {
-        if (!AtAnchor(*this, Bot, entrance, AssignedTank))
+        if (!atAnchor(Bot, entrance, AssignedTank))
             return holdOrMoveTo(entrance, "drudge_entrance_stage_move",
                 "drudge_entrance_stage_wait");
-        if (!ExactRosterAtEntrance(*this))
+        if (!exactRosterAtEntrance())
         {
             HoldOffense();
             Record(Sources[0], "drudge_entrance_exact_roster_stage_wait");
@@ -175,7 +168,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
     uint32 const pullOwnerSlot = config.ValidationRouteSplitSeedRosterSlots.front();
     if (OneBasedSlot != pullOwnerSlot)
     {
-        if (!AtAnchor(*this, Bot, entrance, AssignedTank))
+        if (!atAnchor(Bot, entrance, AssignedTank))
             return holdOrMoveTo(entrance, "drudge_entrance_hold_move",
                 "drudge_entrance_hold_wait");
         HoldOffense();
@@ -195,7 +188,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
         State.TargetGuid = Sources[0]->GetGUID();
         return PhaseResult::Handled;
     }
-    if (!AtAnchor(*this, Bot, pullAnchor, false))
+    if (!atAnchor(Bot, pullAnchor, false))
         return holdOrMoveTo(pullAnchor, "drudge_entrance_pull_owner_approach",
             "drudge_entrance_pull_owner_ready");
 
