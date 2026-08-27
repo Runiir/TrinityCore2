@@ -161,6 +161,24 @@ def test_prepull_keeps_non_tanks_at_entrance_and_guards_magmaw() -> None:
     assert "RunDrudgeSeedCoordinator()" not in actions
 
 
+def test_native_entrance_ownership_releases_normal_combat_and_safety_movement() -> None:
+    lane_selection = (
+        DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp"
+    ).read_text(encoding="utf-8")
+    geometry = (
+        DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
+    ).read_text(encoding="utf-8")
+
+    release = lane_selection[lane_selection.index("result = ResolveSources();"):
+                             lane_selection.index("result = BuildAnchorPolicies();")]
+    assert "if (IsEntrancePullEstablished())" in release
+    assert "return false;" in release
+    assert "ordinaryEntranceCombat = IsEntrancePullEstablished()" in geometry
+    assert "specializedLaneMovement = drudgeProfile" in geometry
+    assert "specializedLaneMovement, exactPrepullStaged" in geometry
+    assert "specializedLaneMovement, IsLandedRushPending()" in geometry
+
+
 def test_drudge_cpp_files_remain_below_one_thousand_lines() -> None:
     for path in DRUDGE.glob("*.[ch]*"):
         if path.suffix in {".c", ".cc", ".cpp", ".h", ".hpp"}:

@@ -55,13 +55,15 @@ bool DrudgeLaneContext::TryMinimumDistance(bool specializedDrudgeRecovery)
             == Manager.Cohort().Raid.WipeGeneration
         && party.ValidationRouteDrudgePrepullRouteGeneration
             == party.ValidationRouteGeneration;
+    bool const ordinaryEntranceCombat = IsEntrancePullEstablished();
+    bool const specializedLaneMovement = drudgeProfile && !ordinaryEntranceCombat;
     if (!specializedDrudgeRecovery
         && BotRaidDrudgeGeometry::ExactDrudgeLaneOwnsGroupMovement(
-            drudgeProfile, exactPrepullStaged))
+            specializedLaneMovement, exactPrepullStaged))
         return false;
     BotRaidDrudgeGeometry::MinimumDistanceOwner const minimumDistanceOwner =
         BotRaidDrudgeGeometry::SelectMinimumDistanceOwner(
-            drudgeProfile, IsLandedRushPending());
+            specializedLaneMovement, IsLandedRushPending());
     if (specializedDrudgeRecovery
         != (minimumDistanceOwner
             == BotRaidDrudgeGeometry::MinimumDistanceOwner::LandedRushRecovery))
