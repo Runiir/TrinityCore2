@@ -62,12 +62,18 @@ constexpr bool ShouldSubmitNativeMovement(bool arrived,
 }
 
 // A pack-linked pull may keep its ordinary combat lane while native movement
-// is already doing the work. Rejected and same-anchor/no-progress states must
-// keep offense suppressed so the route watchdog receives a truthful blocker.
-constexpr bool ContinuePackCombat(Outcome outcome, bool packLinked)
+// is already doing the work. A same-anchor no-progress observation can still
+// continue combat when the bot is physically at its declared anchor; the
+// tactical arrival predicate may be false only because a Drudge entered the
+// safety radius. A rejected native path remains fail-closed.
+constexpr bool ContinuePackCombat(Outcome outcome, bool packLinked,
+    bool physicallyAtAnchor = false)
 {
     if (!packLinked)
         return false;
+
+    if (outcome == Outcome::NoProgress)
+        return physicallyAtAnchor;
 
     return outcome == Outcome::Arrived
         || outcome == Outcome::ActivePathRetained

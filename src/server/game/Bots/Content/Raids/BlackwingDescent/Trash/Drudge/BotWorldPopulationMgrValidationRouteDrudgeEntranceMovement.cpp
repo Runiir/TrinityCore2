@@ -56,7 +56,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntranceMovement(
         State.LastRecoveryResult = State.LastNoProgressReason;
     }
 
-    bool const continueCombat = ContinuePackCombat(outcome, packLinked);
+    bool const continueCombat = ContinuePackCombat(outcome, packLinked,
+        !HasMeaningfulDistance(distance));
     if (!continueCombat)
         HoldOffense();
 

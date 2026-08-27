@@ -99,14 +99,19 @@ def test_drudge_entrance_pull_holds_nonowners_then_returns_before_handoff():
 def test_drudge_linked_return_retains_movement_and_continues_combat():
     pull = ENTRANCE_PULL.read_text(encoding="utf-8")
     movement = ENTRANCE_MOVEMENT.read_text(encoding="utf-8")
+    movement_contract = HEADER.parent / (
+        "Content/Raids/BlackwingDescent/Trash/Drudge/"
+        "BotWorldPopulationMgrValidationRouteDrudgeEntranceMovement.h"
+    )
+    movement_contract_text = movement_contract.read_text(encoding="utf-8")
     linked_return = pull[
         pull.index("return RunEntranceMovement(entrance,"):
         pull.index("if (!packLinked)")
     ]
 
-    assert "Outcome::ActivePathRetained" in movement
+    assert "Outcome::ActivePathRetained" in movement_contract_text
     assert "ContinuePackCombat" in movement
-    assert '"drudge_entrance_native_path_retained"' in movement
+    assert '"drudge_entrance_native_path_retained"' in movement_contract_text
     assert "ShouldSubmitNativeMovement" in movement
     assert "return continueCombat ? PhaseResult::Continue : PhaseResult::Handled;" in movement
     assert "return RunEntranceMovement(entrance," in linked_return

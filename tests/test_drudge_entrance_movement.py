@@ -84,7 +84,13 @@ int main()
     assert(ContinuePackCombat(Outcome::Submitted, true));
     assert(ContinuePackCombat(Outcome::HigherPriorityPending, true));
     assert(!ContinuePackCombat(Outcome::Rejected, true));
-    assert(!ContinuePackCombat(Outcome::NoProgress, true));
+    // Canary86 reached the fixed anchor physically while tactical arrival was
+    // false only because a Drudge entered the safety radius. Keep the typed
+    // no-progress observation, but do not suppress linked-pack offense when
+    // no movement is actually needed.
+    assert(ContinuePackCombat(Outcome::NoProgress, true, true));
+    assert(!ContinuePackCombat(Outcome::NoProgress, true, false));
+    assert(!ContinuePackCombat(Outcome::Rejected, true, true));
     assert(!ContinuePackCombat(Outcome::Submitted, false));
 }
 ''',
