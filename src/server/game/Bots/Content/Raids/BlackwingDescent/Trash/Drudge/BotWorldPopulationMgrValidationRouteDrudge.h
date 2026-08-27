@@ -184,6 +184,9 @@ struct DrudgeLaneContext
     PhaseResult ResolveSources();
     PhaseResult BuildAnchorPolicies();
     PhaseResult RunEntrancePullActions();
+    PhaseResult RunEntranceMovement(MemberAnchor const* anchor,
+        char const* moveResult, char const* waitResult,
+        bool packLinked, bool arrived);
     PhaseResult RunEntranceCombat();
     PhaseResult RunFormationActions();
     PhaseResult RunNativeTauntConfirmation(bool nativeOwnershipAllowed,

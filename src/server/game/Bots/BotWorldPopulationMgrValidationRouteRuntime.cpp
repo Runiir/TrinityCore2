@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotWorldPopulationMgrValidationRouteDestination.h"
 
 #include "GameTime.h"
 #include "Player.h"
@@ -40,6 +41,13 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     }
 
     ValidationRouteManifestNode const& node = Party().ValidationRouteManifest[index];
+    BotValidationRouteDestination::Result const routeDestination =
+        BotValidationRouteDestination::Resolve({
+            node.MapId,
+            node.NavigationAnchorX,
+            node.NavigationAnchorY,
+            node.NavigationAnchorZ,
+        });
     Party().ValidationRouteManifestIndex = index;
     Party().ValidationRouteGeneration = index + 1;
     Cohort().Config.ValidationRouteEnable = true;
@@ -265,6 +273,21 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
         Cohort().Config.TargetPopulation = node.ExpectedBotCount;
 
     ResetValidationRouteRuntimeState(reason ? reason : "manifest_route_apply");
+    // Adaptive owners intentionally skip the generic route objective gate.
+    // Seed the state from the newly installed node before that owner runs so
+    // route recovery cannot submit the prior node's coordinates.  The result
+    // only supplies a legal native destination; MotionMaster/path admission
+    // remains owned by the movement executor.
+    for (WorldBotState& state : Party().Bots)
+    {
+        state.QuestRouteDestination.Valid = routeDestination.Valid;
+        state.QuestRouteDestination.MapId = routeDestination.MapId;
+        state.QuestRouteDestination.X = routeDestination.X;
+        state.QuestRouteDestination.Y = routeDestination.Y;
+        state.QuestRouteDestination.Z = routeDestination.Z;
+        state.QuestRouteDestination.QuestId = 0;
+        state.QuestRouteDestination.Reason = routeDestination.Reason;
+    }
     Party().ValidationRouteProgressBaselineKills = Cohort().Metrics.Kills;
     return true;
 }

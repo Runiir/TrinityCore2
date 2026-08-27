@@ -13,6 +13,7 @@ RECOVERY_HEADER = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Tr
 LANES = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp"
 ACTIONS = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeActions.cpp"
 ENTRANCE_PULL = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeEntrancePull.cpp"
+ENTRANCE_MOVEMENT = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeEntranceMovement.cpp"
 SEED = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp"
 SPACING = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSpacing.cpp"
 
@@ -22,7 +23,7 @@ def test_drudge_route_modules_are_bounded_and_registered():
     header = HEADER.read_text(encoding="utf-8")
     cmake = CMAKE.read_text(encoding="utf-8")
     assert len(header.splitlines()) <= 1000
-    for module in (CONTRACT, GEOMETRY, ESCAPE, RECOVERY, RECOVERY_HEADER, LANES, ENTRANCE_PULL, ACTIONS, SEED, SPACING):
+    for module in (CONTRACT, GEOMETRY, ESCAPE, RECOVERY, RECOVERY_HEADER, LANES, ENTRANCE_PULL, ENTRANCE_MOVEMENT, ACTIONS, SEED, SPACING):
         assert len(module.read_text(encoding="utf-8").splitlines()) <= 1000
     for name in (
         "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp",
@@ -30,6 +31,7 @@ def test_drudge_route_modules_are_bounded_and_registered():
         "BotWorldPopulationMgrValidationRouteDrudgeRecovery.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeLaneSelection.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeEntrancePull.cpp",
+        "BotWorldPopulationMgrValidationRouteDrudgeEntranceMovement.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeSeed.cpp",
         "BotWorldPopulationMgrValidationRouteDrudgeSpacing.cpp",
@@ -45,7 +47,9 @@ def test_drudge_route_modules_are_bounded_and_registered():
 
 def test_drudge_entrance_pull_is_single_owner_native_and_magmaw_excluding():
     pull = ENTRANCE_PULL.read_text(encoding="utf-8")
+    movement = ENTRANCE_MOVEMENT.read_text(encoding="utf-8")
     lanes = LANES.read_text(encoding="utf-8")
+    native = pull + "\n" + movement
 
     assert lanes.index("RunEntrancePullActions()") < lanes.index("RunFormationActions()")
     assert "ValidationRouteSplitSeedRosterSlots.front()" in pull
@@ -60,7 +64,7 @@ def test_drudge_entrance_pull_is_single_owner_native_and_magmaw_excluding():
     assert "ResolveProfileCombatAction" in pull
     assert "ExecuteProfileCombatAction" in pull
     assert "StrictNativePath" in pull
-    assert "MoveBotToPointWithReferenceFloor" in pull
+    assert "MoveBotToPointWithReferenceFloor" in native
     assert "TeleportTo" not in pull
     assert "41570" not in pull
 
@@ -94,18 +98,19 @@ def test_drudge_entrance_pull_holds_nonowners_then_returns_before_handoff():
 
 def test_drudge_linked_return_retains_movement_and_continues_combat():
     pull = ENTRANCE_PULL.read_text(encoding="utf-8")
-    helper = pull[pull.index("auto moveTo ="):pull.index("if (pullStarted)")]
+    movement = ENTRANCE_MOVEMENT.read_text(encoding="utf-8")
     linked_return = pull[
-        pull.index('"drudge_entrance_return_move"'):
+        pull.index("return RunEntranceMovement(entrance,"):
         pull.index("if (!packLinked)")
     ]
 
-    assert "MovementContinuation::HoldOffense" in helper
-    assert "MovementContinuation::ContinueCombat" in helper
-    assert '"drudge_entrance_native_path_retained"' in helper
-    assert "&& (arrived || moved)" in helper
-    assert "? PhaseResult::Continue : PhaseResult::Handled" in helper
-    assert "packLinked ? MovementContinuation::ContinueCombat" in linked_return
+    assert "Outcome::ActivePathRetained" in movement
+    assert "ContinuePackCombat" in movement
+    assert '"drudge_entrance_native_path_retained"' in movement
+    assert "ShouldSubmitNativeMovement" in movement
+    assert "return continueCombat ? PhaseResult::Continue : PhaseResult::Handled;" in movement
+    assert "return RunEntranceMovement(entrance," in linked_return
+    assert "packLinked," in linked_return
 
 
 def test_drudge_dispatch_keeps_movement_and_minimum_distance_order():
