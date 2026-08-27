@@ -74,6 +74,7 @@ def test_floor_gate_defers_to_the_existing_validated_local_step() -> None:
     assert gate < local_fallback < final_floor_rejection
     assert (
         "if (targetFloorValid && std::fabs(floorZ - intent.Z) > 4.0f\n"
+        "        && !sameLevelDeclaredFloorFallback\n"
         "        && (!progressiveStaticRoute || strictNativeDescent))"
     ) in planner
     assert "nativeEndpointFloorValid" in planner
@@ -81,7 +82,7 @@ def test_floor_gate_defers_to_the_existing_validated_local_step() -> None:
     assert "&& nativeEndpointFloorValid(path)" in planner
     assert "&& nativePathFloorsValid(path)" in planner
     assert "&& nativePathFloorsValid(stepPath)" in planner
-    assert 'reject("route_destination_path_floor_gap")' in planner
+    assert 'reject("route_destination_path_floor_gap", "path_floor")' in planner
     assert "PATHFIND_FARFROMPOLY)" in planner
     assert "MovePoint" not in planner
     assert "Resurrect" not in planner

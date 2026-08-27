@@ -109,6 +109,19 @@ inline bool NativePathReferenceFloorValid(float sampleZ, float referenceZ)
     return std::isfinite(sampleZ) && std::isfinite(referenceZ)
         && std::fabs(sampleZ - referenceZ) <= NativeFloorTolerance;
 }
+
+// Multi-level VMAP queries can return a different floor even when both the
+// actor and the native path request remain on one coherent level. This only
+// admits the declared level as a reference for the later full native-path
+// proof; it does not accept a path or a cross-floor destination by itself.
+inline bool AdmitSameLevelDeclaredFloorFallback(float actorZ,
+    float requestedZ, float resolvedFloorZ)
+{
+    return std::isfinite(actorZ) && std::isfinite(requestedZ)
+        && std::isfinite(resolvedFloorZ)
+        && std::fabs(actorZ - requestedZ) <= NativeFloorTolerance
+        && std::fabs(resolvedFloorZ - requestedZ) > NativeFloorTolerance;
+}
 }
 
 #endif

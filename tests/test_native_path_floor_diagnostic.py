@@ -49,6 +49,17 @@ int main()
     assert(std::strcmp(NativePathFloorFailureName(actorGap.Failure),
         "actor_reference_gap") == 0);
     assert(NativePathFloorObservation{}.Accepted());
+
+    // Canary90: actor and request are on the upper room level while a VMAP
+    // query resolves an unrelated floor far below.
+    assert(AdmitSameLevelDeclaredFloorFallback(
+        213.939f, 213.665f, -91.5379f));
+    // A genuine cross-floor request remains ineligible for this fallback.
+    assert(!AdmitSameLevelDeclaredFloorFallback(
+        213.939f, -91.5379f, -91.5379f));
+    // A normal valid native sample does not need declared fallback.
+    assert(!AdmitSameLevelDeclaredFloorFallback(
+        213.939f, 213.665f, 213.7f));
 }
 ''',
         encoding="utf-8",
@@ -79,6 +90,24 @@ def test_drudge_uses_declared_floor_as_reference_after_endpoint_resolution():
     assert "DiagnoseNativePathFloors(Bot, path,\n                declaredReferenceZ, true)" in geometry
     assert "NativePathFloorFailure::SampleFloorGap" in validation
     assert "NativePathFloorFailure::ActorReferenceGap" in validation
+
+
+def test_planner_same_level_fallback_still_requires_native_path_proof():
+    planner = (
+        ROOT / "src/server/game/Bots/BotWorldPopulationMgrMovementPlanner.cpp"
+    ).read_text(encoding="utf-8")
+    movement = (
+        ROOT / "src/server/game/Bots/"
+        "BotWorldPopulationMgrValidationRouteMovementCheck.cpp"
+    ).read_text(encoding="utf-8")
+
+    assert "AdmitSameLevelDeclaredFloorFallback" in planner
+    assert "&& !sameLevelDeclaredFloorFallback" in planner
+    assert "NativePathPointFloorValid(bot," in planner
+    assert "*pathReferenceFloorZ,\n                true" in planner
+    assert "NativePathFloorsValid(bot, candidatePath," in planner
+    assert 'action = "hold_hazard_exit_retry_backoff"' in movement
+    assert '== "hazard_exit_no_union_safe_native_path"' in movement
 
 
 def test_native_path_floor_diagnostic_header_stays_small():

@@ -377,6 +377,23 @@ bool BotWorldPopulationMgr::TryValidationRouteMovementCheck(
         if (!caster || !castSpell)
             return false;
 
+        // A rejected configured-hazard fan arms one bounded retry window.
+        // Honor it instead of resubmitting the same five native path requests
+        // on every bot tick. The next retry rotates the deterministic bearing;
+        // no destination, hazard radius, or watchdog threshold is changed.
+        if (configuredHazard
+            && state.ValidationRouteDodgeCasterGuid == caster->GetGUID()
+            && state.ValidationRouteDodgeSpellId == castSpell->Id
+            && state.ValidationRouteDodgeUntilMs > nowMs
+            && !state.ActivePathValid
+            && state.LastPathRejectReason
+                == "hazard_exit_no_union_safe_native_path")
+        {
+            situation = "validation_route_mechanic";
+            action = "hold_hazard_exit_retry_backoff";
+            return true;
+        }
+
         // A generic cast is one dodge window, not a movement command on every
         // AI tick. Exact configured hazards use the active exit/hold logic
         // above because they may remain dangerous after the cast completes.

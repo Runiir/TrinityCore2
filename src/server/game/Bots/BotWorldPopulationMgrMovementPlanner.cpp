@@ -103,6 +103,12 @@ bool BotWorldPopulationMgr::PlanMovementPath(
     targetFloorSampled = true;
     sampledTargetFloorZ = floorZ;
     targetFloorValid = floorZ > INVALID_HEIGHT;
+    bool const sameLevelDeclaredFloorFallback = targetFloorValid
+        && BotWorldMovement::AdmitSameLevelDeclaredFloorFallback(
+            bot->GetPositionZ(), intent.Z, floorZ);
+    std::optional<float> pathReferenceFloorZ = intent.ReferenceFloorZ;
+    if (!pathReferenceFloorZ && sameLevelDeclaredFloorFallback)
+        pathReferenceFloorZ = bot->GetPositionZ();
     // A progressive route can still make a validated local step when its
     // final native runback target has no floor sample in the current map
     // state.  Complete-path and strict-descent intents remain fail-closed at
@@ -113,6 +119,7 @@ bool BotWorldPopulationMgr::PlanMovementPath(
     // route waypoint.  Let native mmap admission arbitrate that mismatch for
     // progressive routes, while strict and ordinary movement stay fail-closed.
     if (targetFloorValid && std::fabs(floorZ - intent.Z) > 4.0f
+        && !sameLevelDeclaredFloorFallback
         && (!progressiveStaticRoute || strictNativeDescent))
         return reject("route_destination_invalid_z_transition",
             "target_z_transition");
@@ -133,17 +140,23 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         return BotWorldMovement::NativePathPointFloorValid(bot, point);
     };
 
-    auto nativeEndpointFloorValid = [bot](PathGenerator const& candidatePath)
+    auto nativeEndpointFloorValid = [bot, &pathReferenceFloorZ](
+        PathGenerator const& candidatePath)
     {
+        if (pathReferenceFloorZ)
+            return BotWorldMovement::NativePathPointFloorValid(bot,
+                candidatePath.GetActualEndPosition(), *pathReferenceFloorZ,
+                true);
         return BotWorldMovement::NativePathEndpointFloorValid(bot,
             candidatePath);
     };
 
-    auto nativePathFloorsValid = [bot, &intent](PathGenerator const& candidatePath)
+    auto nativePathFloorsValid = [bot, &pathReferenceFloorZ](
+        PathGenerator const& candidatePath)
     {
-        if (intent.ReferenceFloorZ)
+        if (pathReferenceFloorZ)
             return BotWorldMovement::NativePathFloorsValid(bot, candidatePath,
-                *intent.ReferenceFloorZ, true);
+                *pathReferenceFloorZ, true);
         return BotWorldMovement::NativePathFloorsValid(bot, candidatePath);
     };
 
