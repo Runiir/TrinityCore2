@@ -15,6 +15,7 @@ namespace BotEncounter
 struct AdaptiveMagmawPlan
 {
     bool OwnsNode = false;
+    bool SuppressOffense = false;
     ObjectGuid DamageTarget;
     std::optional<BotNativeAction::Candidate> Movement;
     std::optional<BotNativeAction::Candidate> Interaction;
@@ -77,6 +78,19 @@ public:
             return plan;
 
         plan.OwnsNode = true;
+        bool const bossEngaged = boss->InCombat || !boss->VictimGuid.IsEmpty();
+        bool const prepullHealthIncomplete = !bossEngaged
+            && board.NativeBossState != "in_progress"
+            && std::any_of(board.Players.begin(), board.Players.end(),
+                [](ActorSnapshot const& member)
+                {
+                    return member.Alive && member.HealthPct < 94.0f;
+                });
+        if (prepullHealthIncomplete)
+        {
+            plan.SuppressOffense = true;
+            return plan;
+        }
         if (role == "tank")
             plan.DamageTarget = boss->Guid;
         else if (head)

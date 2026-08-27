@@ -49,6 +49,7 @@ struct BotWorldPopulationMgr::BotUpdateContext
     bool AdaptiveChimaeronOwnsNode = false;
     bool AdaptiveChimaeronHealingDisabled = false;
     bool AdaptiveMagmawOwnsNode = false;
+    bool AdaptiveMagmawSuppressOffense = false;
     bool AdaptiveMaloriakOwnsNode = false;
     bool AdaptiveNefarianOwnsNode = false;
     bool AdaptiveOmnotronOwnsNode = false;

@@ -524,6 +524,9 @@ int main()
     dps.Guid = ObjectGuid(HighGuid::Player, uint32(103));
     dps.Role = "dps";
     dps.Position = { 1.0f, 0.0f, 0.0f };
+    tankA.HealthPct = 100.0f;
+    tankB.HealthPct = 100.0f;
+    dps.HealthPct = 100.0f;
     drudges.Players = { tankA, tankB, dps };
     BotEncounter::ActorSnapshot sourceA;
     sourceA.Guid = ObjectGuid(HighGuid::Unit, uint32(42362), uint32(59));
@@ -572,9 +575,27 @@ int main()
     BotEncounter::AdaptiveMagmawStrategy magmawStrategy;
     auto magmawPlan = magmawStrategy.Propose(magmaw, dps.Guid, "dps");
     assert(magmawPlan.OwnsNode);
+    assert(!magmawPlan.SuppressOffense);
     assert(magmawPlan.DamageTarget == magmawHead.Guid);
     assert(magmawPlan.Movement.has_value());
     assert(magmawPlan.Movement->Resources() == Uses(Resource::Movement));
+
+    BotEncounter::Blackboard magmawPrepull = magmaw;
+    magmawPrepull.Players.front().HealthPct = 93.0f;
+    auto magmawPrepullPlan = magmawStrategy.Propose(
+        magmawPrepull, dps.Guid, "dps");
+    assert(magmawPrepullPlan.OwnsNode);
+    assert(magmawPrepullPlan.SuppressOffense);
+    assert(magmawPrepullPlan.DamageTarget.IsEmpty());
+
+    BotEncounter::Blackboard magmawInCombat = magmawPrepull;
+    magmawInCombat.Hostiles.front().InCombat = true;
+    magmawInCombat.Hostiles.front().VictimGuid = tankA.Guid;
+    auto magmawInCombatPlan = magmawStrategy.Propose(
+        magmawInCombat, dps.Guid, "dps");
+    assert(magmawInCombatPlan.OwnsNode);
+    assert(!magmawInCombatPlan.SuppressOffense);
+    assert(magmawInCombatPlan.DamageTarget == magmawHead.Guid);
 
     // Omnotron uses observed shield/cast state: a shielded construct is not
     // selected for damage, Arcane Annihilator remains independently

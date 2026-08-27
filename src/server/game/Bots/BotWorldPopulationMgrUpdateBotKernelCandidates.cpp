@@ -107,6 +107,43 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             context.State.DecisionKernel.Submit(std::move(mechanic));
         }
 
+        if (context.AdaptiveMagmawSuppressOffense)
+        {
+            BotActionArbitration::Candidate suppress;
+            suppress.Key = "adaptive_magmaw:prepull_health_suppress:"
+                + std::to_string(Party().ValidationRouteGeneration);
+            suppress.Source = "adaptive_magmaw";
+            suppress.ActionPriority = BotActionArbitration::Priority::Mechanic;
+            suppress.UtilityScore = 100.0f;
+            suppress.RequiredResources = BotActionArbitration::Uses(
+                BotActionArbitration::Resource::Pet);
+            suppress.Attempt = [&]()
+            {
+                bool const submitted = SubmitMeleeAutoAttackIntent(context.State,
+                    BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                    BotMeleeAutoAttack::Owner::Mechanic,
+                    BotActionArbitration::Priority::Mechanic,
+                    "adaptive_magmaw_prepull_health_suppress");
+                if (Pet* pet = context.Bot->GetPet(); pet && pet->GetCharmInfo())
+                    ExecuteNativeActionIntent(context.State, context.Bot,
+                        BotNativeAction::PetCommand{ pet->GetGUID(),
+                            context.Bot->GetGUID(), COMMAND_FOLLOW },
+                        BotMovementArbitration::Owner::Mechanic,
+                        BotMovementArbitration::Priority::Mechanic);
+                context.State.TargetGuid.Clear();
+                context.Target = nullptr;
+                context.Situation = "adaptive_magmaw";
+                context.Action = "prepull_health_recovery";
+                context.State.LastDecisionHandler = "adaptive_magmaw";
+                return submitted
+                    ? BotActionArbitration::Outcome::Committed(
+                        "melee_autoattack_suppression_submitted")
+                    : BotActionArbitration::Outcome::Retryable(
+                        "melee_autoattack_suppression_rejected");
+            };
+            context.State.DecisionKernel.Submit(std::move(suppress));
+        }
+
         if (context.AdaptiveOmnotronMovement
             && context.AdaptiveOmnotronMovement->ExpiresAtMs > context.DecisionNowMs)
         {
