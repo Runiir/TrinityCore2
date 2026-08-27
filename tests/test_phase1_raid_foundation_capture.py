@@ -3016,6 +3016,88 @@ def test_capture_watchdog_scopes_repeated_decisions_per_bot_at_threshold():
     assert list(single_bot_state["repeated_decision_counts"].values()) == [20]
 
 
+def test_capture_watchdog_canary82_replay_keeps_stuck_drudge_scope_after_healthy_progress():
+    status = _watchdog_status()
+    state = {}
+    healthy_entries = []
+    for sequence in range(1, 21):
+        hp = 0.80 - (sequence * 0.01)
+        healthy_entries.append({
+            "action": "cast_combat_spell",
+            "result": "ok",
+            "route_node_id": "bwd.magmaw.drudges",
+            "route_generation": 3,
+            "sequence": sequence,
+            "timestamp_ms": sequence,
+            "route_progress": {
+                "route": {
+                    "node_id": "bwd.magmaw.drudges",
+                    "generation": 3,
+                },
+                "target": {
+                    "entry": 42649,
+                    "guid": 27,
+                    "hp_pct": hp,
+                    "best_hp_pct": hp,
+                },
+                "no_progress": {"reason": "route_target_combat_progress"},
+            },
+        })
+    stuck_entries = []
+    for sequence in range(1, 21):
+        stuck_entries.append({
+            "action": "validation_route_regroup",
+            "result": "hold_anchor_no_focus",
+            "route_node_id": "bwd.magmaw.drudges",
+            "route_generation": 3,
+            "fingerprint_hash": 3237198174,
+            "consecutive_same_decision_count": 1,
+            "sequence": 100 + sequence,
+            "timestamp_ms": 100 + sequence,
+            "route_progress": {
+                "route": {
+                    "node_id": "bwd.magmaw.drudges",
+                    "generation": 3,
+                },
+                "target": {
+                    "entry": 42649,
+                    "guid": 27,
+                    "hp_pct": 0.80,
+                    "best_hp_pct": 0.80,
+                },
+            },
+        })
+
+    report = observe_capture_watchdog(
+        state,
+        status,
+        None,
+        [
+            _watchdog_trace(healthy_entries, bot_guid=30009),
+            _watchdog_trace(stuck_entries, bot_guid=30008),
+        ],
+        max_repeated_decisions=20,
+        max_death_loops=3,
+    )
+
+    assert report["detected"] is True
+    assert report["failure_reason"] == "repeated_decision_watchdog"
+    assert report["scope"] == {
+        "route_node_id": "bwd.magmaw.drudges",
+        "route_generation": 3,
+    }
+    assert report["repeated_decision_count"] == 20
+    assert report["repeated_decision_outcome"] == "hold_anchor_no_focus"
+    assert report["death_loop_count"] == 0
+    assert report["progress_reset_scope"] == "bwd.magmaw.drudges:3"
+    assert report["progress_reset_bot_guid"] == 30009
+    assert report["progress_reset_reason"] == "route_target_combat_progress"
+    assert len(report["last_10_repeated_decisions"]) == 10
+    assert {
+        row["bot_guid"] for row in report["last_10_repeated_decisions"]
+    } == {30008}
+
+
 def test_capture_watchdog_ignores_non_failed_diagnosis_repeated_loop():
     status = _generic_watchdog_status(size=10, profile="blackwing_descent_10n", map_id=669)
     diagnosis = _watchdog_diagnosis(

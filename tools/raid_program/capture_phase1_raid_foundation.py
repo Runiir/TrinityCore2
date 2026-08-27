@@ -57,6 +57,10 @@ _WATCHDOG_FAILURE_TOKENS = (
     "failure",
     "no_candidate",
 )
+_WATCHDOG_NO_PROGRESS_DECISIONS = frozenset({
+    ("validation_route_regroup", "hold_anchor_no_focus"),
+    ("validation_route_hold_anchor", "hold_anchor_no_focus"),
+})
 _CONTROLLER_TERMINAL_FAILURE_REASONS = frozenset({
     "semantic_stall",
     "repeated_decision_watchdog",
@@ -2687,6 +2691,8 @@ def _watchdog_is_repeated_decision(entry: dict[str, Any]) -> bool:
     lowered = outcome.lower()
     if any(token in lowered for token in _WATCHDOG_FAILURE_TOKENS):
         return True
+    if (action, outcome) in _WATCHDOG_NO_PROGRESS_DECISIONS:
+        return True
     # Native recovery entries with a non-transient result are route decisions
     # even when a producer gives the result a neutral spelling.
     # An explicit current result is authoritative, including ``ok``.  Only
@@ -2694,6 +2700,21 @@ def _watchdog_is_repeated_decision(entry: dict[str, Any]) -> bool:
     return action == "validation_route_recovery" and not (
         isinstance(entry.get("result"), str) and entry.get("result", "").strip()
     )
+
+
+def _watchdog_is_local_no_progress_decision(entry: dict[str, Any]) -> bool:
+    """Identify route no-progress rows whose native count is another lane.
+
+    The regroup event is emitted before the final hold-anchor decision.  Its
+    native consecutive counter can therefore remain at one even when the
+    same no-focus event is repeated.  Count this exact pair locally, while
+    retaining native consecutive semantics for ordinary failure rows.
+    """
+
+    return (
+        str(entry.get("action") or ""),
+        _watchdog_failure_outcome(entry),
+    ) in _WATCHDOG_NO_PROGRESS_DECISIONS
 
 
 def _watchdog_trace_group_key(entry: dict[str, Any]) -> tuple[str, int]:
@@ -2793,6 +2814,8 @@ def _watchdog_target_progress(
     status: dict[str, Any],
     scope: tuple[str, int],
     route_progress: dict[str, Any] | None,
+    *,
+    bot_key: str = "",
 ) -> bool:
     """Record a lower target high-water mark for one exact watchdog scope.
 
@@ -2825,7 +2848,7 @@ def _watchdog_target_progress(
     runtime = status.get("raid_runtime")
     runtime = runtime if isinstance(runtime, dict) else {}
     key = json.dumps(
-        [int(runtime.get("instance_id") or 0), scope[0], scope[1], target_id],
+        [int(runtime.get("instance_id") or 0), scope[0], scope[1], bot_key, target_id],
         separators=(",", ":"),
     )
     high_water = state.setdefault("watchdog_target_hp_high_water", {})
@@ -2834,10 +2857,18 @@ def _watchdog_target_progress(
     return previous is not None and float(hp) < float(previous)
 
 
+def _watchdog_progress_reset_reason(route_progress: dict[str, Any] | None) -> str:
+    """Return the producer reason attached to objective target progress."""
+
+    no_progress = route_progress.get("no_progress") if isinstance(route_progress, dict) else None
+    reason = no_progress.get("reason") if isinstance(no_progress, dict) else None
+    return str(reason).strip() if isinstance(reason, str) and reason.strip() else "target_hp_decrease"
+
+
 def _watchdog_reset_repeated_scope(
-    state: dict[str, Any], scope_key: str,
-) -> None:
-    """Forget only repeated decisions invalidated by progress in one scope."""
+    state: dict[str, Any], scope_key: str, *, bot_key: str = "",
+) -> int:
+    """Forget repeated decisions invalidated by one bot's progress."""
 
     repeated_counts = state.setdefault("repeated_decision_counts", {})
     for key in list(repeated_counts):
@@ -2845,11 +2876,27 @@ def _watchdog_reset_repeated_scope(
             decoded = json.loads(key)
         except (TypeError, ValueError):
             continue
-        if isinstance(decoded, list) and decoded and decoded[0] == scope_key:
+        if (
+            isinstance(decoded, list)
+            and len(decoded) >= 2
+            and decoded[0] == scope_key
+            and (not bot_key or str(decoded[1]) == bot_key)
+        ):
             del repeated_counts[key]
 
     scope_repeated_max = state.setdefault("scope_repeated_max", {})
-    scope_repeated_max.pop(scope_key, None)
+    remaining_max = 0
+    for key, value in repeated_counts.items():
+        try:
+            decoded = json.loads(key)
+        except (TypeError, ValueError):
+            continue
+        if isinstance(decoded, list) and decoded and decoded[0] == scope_key:
+            remaining_max = max(remaining_max, int(value or 0))
+    if remaining_max:
+        scope_repeated_max[scope_key] = remaining_max
+    else:
+        scope_repeated_max.pop(scope_key, None)
 
     diagnosis_high_water = state.setdefault("diagnosis_repeat_high_water", {})
     for key in list(diagnosis_high_water):
@@ -2859,8 +2906,9 @@ def _watchdog_reset_repeated_scope(
             continue
         if (
             isinstance(decoded, list)
-            and len(decoded) >= 2
+            and len(decoded) >= 3
             and f"{decoded[0]}:{decoded[1]}" == scope_key
+            and (not bot_key or str(decoded[2]) == bot_key)
         ):
             del diagnosis_high_water[key]
 
@@ -2868,6 +2916,8 @@ def _watchdog_reset_repeated_scope(
         state.get("watchdog_progress_reset_count") or 0
     ) + 1
     state["watchdog_progress_reset_scope"] = scope_key
+    state["watchdog_progress_reset_bot_guid"] = bot_key or None
+    return remaining_max
 
 
 def _watchdog_scope_rejections(
@@ -2998,6 +3048,11 @@ def observe_capture_watchdog(
         "repeated_decision_outcome": None,
         "progress_reset_count": int(state.get("watchdog_progress_reset_count") or 0),
         "progress_reset_scope": state.get("watchdog_progress_reset_scope"),
+        "progress_reset_bot_guid": state.get("watchdog_progress_reset_bot_guid"),
+        "progress_reset_reason": state.get("watchdog_progress_reset_reason"),
+        "last_10_repeated_decisions": list(
+            state.get("last_10_repeated_decisions") or []
+        ),
         "rejections": [],
     }
     scope_rejections = _watchdog_scope_rejections(status, profile_name=profile_name)
@@ -3034,18 +3089,31 @@ def observe_capture_watchdog(
         state["terminal_failure"] = terminal
         return True
 
-    progress_reset_scopes: set[str] = set()
+    progress_reset_keys: set[tuple[str, str]] = set()
 
-    def reset_on_progress(scope: tuple[str, int], route_progress: dict[str, Any] | None) -> None:
-        if not _watchdog_target_progress(state, status, scope, route_progress):
-            return
+    def reset_on_progress(
+        scope: tuple[str, int], route_progress: dict[str, Any] | None, *,
+        bot_key: str,
+    ) -> bool:
+        if not _watchdog_target_progress(
+            state, status, scope, route_progress, bot_key=bot_key,
+        ):
+            return False
         scope_key = f"{scope[0]}:{scope[1]}"
-        _watchdog_reset_repeated_scope(state, scope_key)
-        progress_reset_scopes.add(scope_key)
+        remaining_max = _watchdog_reset_repeated_scope(
+            state, scope_key, bot_key=bot_key,
+        )
+        progress_reset_keys.add((scope_key, bot_key))
         report["progress_reset_count"] = int(state["watchdog_progress_reset_count"])
         report["progress_reset_scope"] = scope_key
-        report["repeated_decision_count"] = 0
-        report["repeated_decision_outcome"] = None
+        report["progress_reset_bot_guid"] = int(bot_key) if bot_key.isdigit() else bot_key or None
+        reset_reason = _watchdog_progress_reset_reason(route_progress)
+        state["watchdog_progress_reset_reason"] = reset_reason
+        report["progress_reset_reason"] = reset_reason
+        report["repeated_decision_count"] = remaining_max
+        if not remaining_max:
+            report["repeated_decision_outcome"] = None
+        return True
 
     # Diagnose snapshots are the slower semantic channel.  Apply their
     # objective progress before processing the faster trace delta so a lower
@@ -3060,7 +3128,12 @@ def observe_capture_watchdog(
                 continue
             route_scope = _watchdog_route_progress_scope(route_progress, current_scope)
             if route_scope == current_scope:
-                reset_on_progress(current_scope, route_progress)
+                identity = bot.get("identity") if isinstance(bot.get("identity"), dict) else {}
+                try:
+                    bot_key = str(int(identity.get("bot_guid") or 0))
+                except (TypeError, ValueError):
+                    bot_key = "0"
+                reset_on_progress(current_scope, route_progress, bot_key=bot_key)
 
     # A single native decision can emit several trace rows.  Collect complete
     # per-bot decision-tick groups before classifying route failures so a
@@ -3120,10 +3193,13 @@ def observe_capture_watchdog(
         scope_key = f"{scope[0]}:{scope[1]}"
         # Apply every progress row before classifying the group.  Death loops
         # remain independent terminals even when the same group has a success.
+        group_progress_reset = False
         for entry in group_entries:
             route_progress = entry.get("route_progress")
             if isinstance(route_progress, dict):
-                reset_on_progress(scope, route_progress)
+                group_progress_reset = reset_on_progress(
+                    scope, route_progress, bot_key=cursor_key,
+                ) or group_progress_reset
         for entry in group_entries:
             if entry.get("action") not in _WATCHDOG_DEATH_ACTIONS:
                 continue
@@ -3140,7 +3216,7 @@ def observe_capture_watchdog(
         # They are one failed decision for watchdog purposes, not one count
         # per serialized event.
         entry = _watchdog_representative_repeated_failure(group_entries)
-        if entry is None or scope_key in progress_reset_scopes:
+        if entry is None or group_progress_reset:
             continue
         outcome = _watchdog_failure_outcome(entry)
         try:
@@ -3153,7 +3229,9 @@ def observe_capture_watchdog(
             separators=(",", ":"),
         )
         previous_count = int(repeated_counts.get(decision_key) or 0)
-        if native_count is not None:
+        if _watchdog_is_local_no_progress_decision(entry):
+            current_count = previous_count + 1
+        elif native_count is not None:
             # The native counter belongs to the decision kernel, while this
             # row may be a failed adapter/event emitted for that decision.
             # Count one representative group locally and use the native value
@@ -3181,6 +3259,18 @@ def observe_capture_watchdog(
             int(report["repeated_decision_count"]), current_count
         )
         report["repeated_decision_outcome"] = outcome
+        recent = state.setdefault("last_10_repeated_decisions", [])
+        recent.append({
+            "route_node_id": scope[0],
+            "route_generation": scope[1],
+            "bot_guid": int(cursor_key) if cursor_key.isdigit() else cursor_key,
+            "action": str(entry.get("action") or ""),
+            "outcome": outcome,
+            "fingerprint_hash": fingerprint,
+            "sequence": int(entry.get("sequence") or 0),
+        })
+        del recent[:-10]
+        report["last_10_repeated_decisions"] = list(recent)
         if current_count >= max_repeated_decisions:
             maybe_terminal("repeated_decision_watchdog", outcome=outcome)
         if terminal:
@@ -3208,7 +3298,11 @@ def observe_capture_watchdog(
             outcome = _watchdog_failure_outcome(decision)
             if not _watchdog_is_repeated_decision({"action": action, "result": outcome}):
                 continue
-            if f"{entry_scope[0]}:{entry_scope[1]}" in progress_reset_scopes:
+            try:
+                bot_key = str(int(identity.get("bot_guid") or 0))
+            except (TypeError, ValueError):
+                bot_key = "0"
+            if (f"{entry_scope[0]}:{entry_scope[1]}", bot_key) in progress_reset_keys:
                 continue
             native_count = _watchdog_native_consecutive_count(decision)
             if native_count is not None:
@@ -3234,6 +3328,17 @@ def observe_capture_watchdog(
                 int(report["repeated_decision_count"]), repeat_count
             )
             report["repeated_decision_outcome"] = outcome or action
+            recent = state.setdefault("last_10_repeated_decisions", [])
+            recent.append({
+                "route_node_id": entry_scope[0],
+                "route_generation": entry_scope[1],
+                "bot_guid": int(bot_key) if bot_key.isdigit() else bot_key,
+                "action": action,
+                "outcome": outcome or action,
+                "fingerprint_hash": int(decision.get("fingerprint_hash") or 0),
+            })
+            del recent[:-10]
+            report["last_10_repeated_decisions"] = list(recent)
             if repeat_count >= max_repeated_decisions:
                 maybe_terminal("repeated_decision_watchdog", outcome=outcome or action)
                 break
