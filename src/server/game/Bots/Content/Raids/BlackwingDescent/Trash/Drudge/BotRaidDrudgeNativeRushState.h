@@ -68,17 +68,14 @@ inline bool ShouldBuildTankThreat(bool currentScopeHasNativeRush,
     return !currentScopeHasNativeRush || !readiness.TankThreatSecure;
 }
 
-// The configured seed establishes one attributable native Rush. The boolean
-// is supplied only by the caller's exact attempt/wipe/route observation scan.
-// Before that observation, retain all seed and threat predicates. After it,
-// retain only exact native tank ownership so a low-headroom snapshot cannot
-// suppress every safe lane action, while a wrong victim still blocks.
+// Entrance pulling does not script which player the first native Rush picks.
+// Before that Rush, exact tank ownership and ordinary threat headroom are the
+// only offense gates. After it, the live victim remains authoritative.
 inline bool AuthorityReady(bool currentScopeHasNativeRush,
     SourceResult const& readiness)
 {
     return readiness.ExactTankVictim
-        && (currentScopeHasNativeRush
-            || (readiness.TankThreatSecure && readiness.SeedIsUniqueFarthest));
+        && (currentScopeHasNativeRush || readiness.TankThreatSecure);
 }
 
 // Before the first scoped Rush, both live lanes must retain their assigned

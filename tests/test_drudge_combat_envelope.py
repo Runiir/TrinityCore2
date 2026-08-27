@@ -64,7 +64,7 @@ int main()
     subprocess.run([str(binary)], check=True, cwd=ROOT)
 
 
-def test_seed_envelope_precedes_cache_and_native_path_admission() -> None:
+def test_source_union_envelope_precedes_cache_and_native_path_admission() -> None:
     geometry = (DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp").read_text(
         encoding="utf-8"
     )
@@ -73,12 +73,14 @@ def test_seed_envelope_precedes_cache_and_native_path_admission() -> None:
     )
     cmake = (ROOT / "src/server/game/CMakeLists.txt").read_text(encoding="utf-8")
 
-    assert "SeedCombatEnvelopeSafe" in group
-    assert group.index("SeedCombatEnvelopeSafe(") < group.index(
+    assert "NonTankEntranceEnvelopeSafe" in group
+    assert "laneA != laneB && SourceUnionSafe(x, y)" in group
+    assert "AcceptsConfiguredSeed" not in group
+    assert group.index("NonTankEntranceEnvelopeSafe(") < group.index(
         "DynamicGroupPositionSafe("
     )
     cache = geometry[geometry.index("auto cacheUsable"):geometry.index("if (cacheUsable())")]
-    assert "SeedCombatEnvelopeSafe" in cache
+    assert "NonTankEntranceEnvelopeSafe" in cache
     selector = geometry[
         geometry.index("for (size_t candidateIndex = 0;"):
         geometry.index("State.ValidationRouteDrudgeAnchorX =")
@@ -89,6 +91,24 @@ def test_seed_envelope_precedes_cache_and_native_path_admission() -> None:
         "StrictNativePath"
     )
     assert "BotWorldPopulationMgrValidationRouteDrudgeGroupSafety.cpp" in cmake
+
+
+def test_prepull_keeps_non_tanks_at_entrance_and_guards_magmaw() -> None:
+    geometry = (DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp").read_text(
+        encoding="utf-8"
+    )
+    actions = (DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeActions.cpp").read_text(
+        encoding="utf-8"
+    )
+
+    anchor = geometry[geometry.index("UniqueGroupAnchor ="):geometry.index(
+        "AnchorCandidatesFor ="
+    )]
+    assert "dynamicRecovery || !tankSlot" in anchor
+    assert "DeclaredRecoveryMemberAnchorFor(slot)" in anchor
+    assert "DeclaredNavigationTankAnchorFor(slot)" in anchor
+    assert "route[nextIndex].TargetEntry != 41570" in geometry
+    assert "RunDrudgeSeedCoordinator()" not in actions
 
 
 def test_drudge_cpp_files_remain_below_one_thousand_lines() -> None:

@@ -740,7 +740,7 @@ def accepted_drudge_status() -> dict:
     drudges = next(row for row in scenario["route"] if row.get("mechanic_profile") == "trash_two_tank_charge_lanes")
     anchors = {
         row["roster_slot"]: (row["x"], row["y"])
-        for row in drudges["split_member_anchors"]
+        for row in drudges["split_recovery_member_anchors"]
     }
     anchors.update({
         row["roster_slot"]: (row["x"], row["y"])
@@ -1025,8 +1025,8 @@ def test_drudge_geometry_is_loaded_from_explicit_sealed_route_manifest(tmp_path,
     )
     anchors = _frozen_drudge_member_anchors(sealed)
     assert set(anchors) == set(range(1, 11))
-    assert anchors[1] == (-288.8, -43.0, 212.301)
-    assert anchors[2] == (-321.5, -30.0, 211.283429)
+    assert anchors[1] == (-288.8, -86.483, 214.154)
+    assert anchors[2] == (-338.018, -64.932, 212.751)
     assert _frozen_drudge_member_anchors() == {}
 
 
@@ -1118,13 +1118,20 @@ def test_drudge_contract_rejects_prepared_only_stale_and_incomplete_tactics():
     assert "drudge_native_rush_target_tank" in reasons
 
     same_lane = accepted_drudge_status()
-    # Source 250140 is lane A; roster slot 6 is also lane A.  A later clean
-    # snapshot must not erase this earlier native selector violation.
-    same_lane["raid_runtime"]["drudge_charge"]["observations"][0]["target_guid"] = 1006
-    clean = accepted_drudge_status()
-    accepted, reasons = accepted_drudge_contract([same_lane, clean])
-    assert accepted is False
-    assert "drudge_native_rush_lane_target_invalid" in reasons
+    # The core farthest-player selector may legitimately choose a same-lane
+    # non-tank. Entrance pulling observes that result instead of scripting it.
+    for observation in same_lane["raid_runtime"]["drudge_charge"]["observations"]:
+        if observation["source_spawn_id"] != 250140:
+            continue
+        observation["target_guid"] = 1006
+        observation["target_raw_guid"] = 1006
+        observation["selected_distance"] = 45.0
+        for candidate in observation.get("native_threat_candidates", []):
+            if candidate["guid"] == 1006:
+                candidate["distance"] = 45.0
+    accepted, reasons = accepted_drudge_contract([same_lane])
+    assert accepted is True
+    assert reasons == []
 
 
 def test_drudge_geometry_rejects_crossed_sources_and_unsafe_member_spacing():
@@ -1166,26 +1173,26 @@ def test_drudge_geometry_rejects_unverified_path_fallback():
     assert "drudge_geometry_member_anchor_path_unverified" in reasons
 
 
-def test_drudge_threat_seed_rejects_same_lane_or_unsuppressed_offense():
+def test_drudge_threat_seed_is_diagnostic_for_entrance_pull():
     same_lane = accepted_drudge_status()
     same_lane["raid_runtime"]["drudge_threat_seed"]["observations"][0]["member_lane"] = 0
     accepted, reasons = accepted_drudge_contract([same_lane])
-    assert accepted is False
-    assert "drudge_threat_seed_cross_lane_invalid" in reasons
+    assert accepted is True
+    assert reasons == []
 
     unsuppressed = accepted_drudge_status()
     unsuppressed["raid_runtime"]["drudge_threat_seed"]["observations"][1][
         "other_offense_suppressed"
     ] = False
     accepted, reasons = accepted_drudge_contract([unsuppressed])
-    assert accepted is False
-    assert "drudge_threat_seed_safety_evidence_invalid" in reasons
+    assert accepted is True
+    assert reasons == []
 
     late = accepted_drudge_status()
     late["raid_runtime"]["drudge_threat_seed"]["observations"][0]["observed_at_ms"] = 20000
     accepted, reasons = accepted_drudge_contract([late])
-    assert accepted is False
-    assert "drudge_threat_seed_not_pre_first_rush" in reasons
+    assert accepted is True
+    assert reasons == []
 
 
 def test_drudge_native_threat_evidence_fails_closed_when_candidate_list_is_missing_or_truncated():
@@ -1318,8 +1325,8 @@ def test_drudge_native_threat_ignores_ordinary_pre_rush_snapshot_until_complete(
     forged_seed = accepted_drudge_status()
     forged_seed["raid_runtime"]["drudge_threat_seed"]["observations"][0]["source_guid"] = 999999
     accepted, reasons = accepted_drudge_contract([forged_seed])
-    assert accepted is False
-    assert "drudge_threat_seed_source_identity_invalid" in reasons
+    assert accepted is True
+    assert reasons == []
 
 
 def test_drudge_anchor_fallback_is_generation_scoped_and_native_path_validated():

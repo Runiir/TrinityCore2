@@ -83,7 +83,7 @@ int main()
     readyRush.SeedDistance = 33.0f;
     auto recoveredRoster = BotRaidDrudgeNativeRush::Evaluate(readyRush);
     assert(!recoveredRoster.SeedIsUniqueFarthest);
-    assert(!BotRaidDrudgeNativeRush::AuthorityReady(false, recoveredRoster));
+    assert(BotRaidDrudgeNativeRush::AuthorityReady(false, recoveredRoster));
     assert(BotRaidDrudgeNativeRush::AuthorityReady(true, recoveredRoster));
     BotRaidDrudgeNativeRush::SourceInput wrongVictim = readyRush;
     wrongVictim.ExactTankVictim = false;
@@ -610,7 +610,10 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     assert "drudge_pre_first_rush_threat_seed" in seed
     assert "drudge_native_charge_reseparation_complete" in actions
     assert "if (TryMinimumDistance(true))" not in lanes
-    assert '&& !currentScopeHasNativeRush && Role == "dps"' in actions
+    assert '&& !currentScopeHasNativeRush && Role == "dps"' not in actions
+    assert "currentScopeHasNativeRush || readiness.TankThreatSecure" in (
+        ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeNativeRushState.h"
+    ).read_text(encoding="utf-8")
     scope_start = actions.index("bool const currentScopeHasNativeRush")
     scope_end = actions.index("bool const nativeRushAuthorityReady", scope_start)
     scope_scan = actions[scope_start:scope_end]

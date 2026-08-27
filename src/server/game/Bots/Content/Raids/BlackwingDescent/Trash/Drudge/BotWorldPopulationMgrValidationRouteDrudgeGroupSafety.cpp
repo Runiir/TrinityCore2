@@ -1,7 +1,6 @@
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudge.h"
 
 #include "Bots/BotWorldPopulationMgr.h"
-#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeCombatEnvelope.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeGeometryState.h"
 
 #include "Creature.h"
@@ -11,19 +10,19 @@
 
 namespace BotWorldPopulationMgrValidationRoute
 {
-bool DrudgeLaneContext::SeedCombatEnvelopeSafe(
+bool DrudgeLaneContext::NonTankEntranceEnvelopeSafe(
     uint32 slot, float x, float y) const
 {
     auto const& config = Manager.Cohort().Config;
     if (Sources.size() != 2 || !Sources[0] || !Sources[1])
         return false;
-    return BotRaidDrudgeCombatEnvelope::AcceptsConfiguredSeed(
-        slot, config.ValidationRouteSplitSeedRosterSlots,
-        config.ValidationRouteSplitLaneARosterSlots,
-        config.ValidationRouteSplitLaneBRosterSlots,
-        { Sources[0]->GetPositionX(), Sources[0]->GetPositionY() },
-        { Sources[1]->GetPositionX(), Sources[1]->GetPositionY() },
-        config.ValidationRouteSplitSeedMaxRangeYards, { x, y });
+    bool const laneA = std::find(config.ValidationRouteSplitLaneARosterSlots.begin(),
+        config.ValidationRouteSplitLaneARosterSlots.end(), slot)
+        != config.ValidationRouteSplitLaneARosterSlots.end();
+    bool const laneB = std::find(config.ValidationRouteSplitLaneBRosterSlots.begin(),
+        config.ValidationRouteSplitLaneBRosterSlots.end(), slot)
+        != config.ValidationRouteSplitLaneBRosterSlots.end();
+    return laneA != laneB && SourceUnionSafe(x, y);
 }
 
 bool DrudgeLaneContext::ComputeGroupPositionSafe(Player const* member) const
@@ -43,8 +42,7 @@ bool DrudgeLaneContext::ComputeGroupPositionSafe(Player const* member) const
     bool const laneB = std::find(config.ValidationRouteSplitLaneBRosterSlots.begin(),
         config.ValidationRouteSplitLaneBRosterSlots.end(), slot)
         != config.ValidationRouteSplitLaneBRosterSlots.end();
-    if (laneA == laneB || !SeedCombatEnvelopeSafe(
-            slot, member->GetPositionX(), member->GetPositionY()))
+    if (laneA == laneB)
         return false;
     bool const source0Safe = SourceUnionSafeAt(
         0, member->GetPositionX(), member->GetPositionY());

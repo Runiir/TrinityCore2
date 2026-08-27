@@ -104,7 +104,7 @@ bool DrudgeLaneContext::SelectProgressiveDrudgeEscape(uint64 nowMs)
                 requested.Y, false, true, HomeLaneProjectionMinimum, nowMs);
         if (!requestedSpacing.Source0Safe || !requestedSpacing.Source1Safe
             || !requestedSpacing.LaneSafe || !requestedSpacing.Spacing.Safe
-            || !SeedCombatEnvelopeSafe(OneBasedSlot, requested.X, requested.Y))
+            || !NonTankEntranceEnvelopeSafe(OneBasedSlot, requested.X, requested.Y))
             continue;
 
         float requestedZ = declared->Z;
@@ -139,7 +139,7 @@ bool DrudgeLaneContext::SelectProgressiveDrudgeEscape(uint64 nowMs)
             EvaluateAndRecordCandidateSpacing(escapeIndex, endpoint.X,
                 endpoint.Y, false, true, HomeLaneProjectionMinimum, nowMs);
         if (!endpointSpacing.LaneSafe || !endpointSpacing.Spacing.Safe
-            || !SeedCombatEnvelopeSafe(
+            || !NonTankEntranceEnvelopeSafe(
                 OneBasedSlot, endpoint.X, endpoint.Y))
             continue;
 

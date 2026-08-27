@@ -6,7 +6,6 @@
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeMovementLease.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeNativeRushState.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeObservationBacklog.h"
-#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeSeed.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 
@@ -727,9 +726,6 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions()
         return PhaseResult::Handled;
     }
 
-    if (RunDrudgeSeedCoordinator() == PhaseResult::Handled)
-        return PhaseResult::Handled;
-
     auto rosterMemberForSlot = [this](uint32 slot) -> Player*
     {
         for (auto const& [guid, roster] : Manager.Cohort().Raid.RosterByGuid)
@@ -811,7 +807,6 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions()
         && BotRaidDrudgeNativeRush::ShouldBuildTankThreat(
             currentScopeHasNativeRush, laneReadiness);
     if (Sources[0]->IsAlive() && Sources[1]->IsAlive()
-        && Manager.Party().ValidationRouteDrudgeThreatSeedComplete
         && ((!currentScopeHasNativeRush || !nativeRushAuthorityReady)
             || tankThreatNeedsBuild))
     {
@@ -905,25 +900,6 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions()
         Target = LaneSource;
         State.TargetGuid = LaneSource->GetGUID();
         return PhaseResult::Handled;
-    }
-    if (Sources[0]->IsAlive() && Sources[1]->IsAlive()
-        && !currentScopeHasNativeRush && Role == "dps")
-    {
-        Player* intendedSeed = rosterMemberForSlot(
-            Manager.Cohort().Config.ValidationRouteSplitSeedRosterSlots[LaneIndex]);
-        float const intendedDistance = intendedSeed
-            ? LaneSource->GetExactDist(intendedSeed) : 0.0f;
-        if (!intendedSeed || intendedSeed->GetMap() != LaneSource->GetMap()
-            || intendedDistance < Bot->GetExactDist(LaneSource)
-                + 2.0f * Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards)
-        {
-            HoldOffense();
-            Record(LaneSource, "drudge_native_farthest_profile_hold",
-                intendedDistance, Bot->GetGUID().GetCounter());
-            Target = LaneSource;
-            State.TargetGuid = LaneSource->GetGUID();
-            return PhaseResult::Handled;
-        }
     }
     if (Bot->GetVictim() && Bot->GetVictim() != LaneSource)
         Manager.SubmitMeleeAutoAttackIntent(State, BotMeleeAutoAttack::Kind::Suppress,

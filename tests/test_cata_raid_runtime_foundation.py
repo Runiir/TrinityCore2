@@ -850,7 +850,6 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
         "drudge_native_tank_threat_build",
         "drudge_native_tank_threat_sustain",
         "drudge_pre_first_rush_ready_hold",
-        "drudge_native_farthest_seed_wait",
         "drudge_lane_profile_hold_contract_unsafe",
         "drudge_kill_sync_hold_lower_health_lane",
         "drudge_tank_health_sync_hold",
@@ -878,8 +877,8 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     threat = actions[
         actions.index("DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunThreatAndEvidenceActions"):
     ]
-    assert threat.index("laneOwnershipSafe") < threat.index("RunDrudgeSeedCoordinator")
-    assert threat.index("RunDrudgeSeedCoordinator") < threat.index(
+    assert "RunDrudgeSeedCoordinator" not in threat
+    assert threat.index("laneOwnershipSafe") < threat.index(
         "drudge_lane_profile_hold_contract_unsafe"
     )
     assert threat.index("drudge_lane_profile_hold_contract_unsafe") < threat.index(

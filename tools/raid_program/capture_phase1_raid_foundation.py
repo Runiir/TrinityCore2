@@ -264,7 +264,7 @@ def _frozen_drudge_member_anchors(
                 int(row["roster_slot"]): (
                     float(row["x"]), float(row["y"]), float(row["z"])
                 )
-                for row in node.get("split_member_anchors", [])
+                for row in node.get("split_recovery_member_anchors", [])
             }
             combat_tank_anchors = {
                 int(row["roster_slot"]): (
@@ -294,9 +294,9 @@ def _frozen_drudge_member_anchors(
             # terminals and therefore own the live tank arrival evidence.
             if set(recovery_tank_anchors) != {1, 2}:
                 return {}
-            # Completed post-Rush geometry is certified at the sealed
-            # pull-away tank anchors.  The initial navigation anchors remain
-            # the pre-Rush ownership/seed geometry only.
+            # Drudges are fought at the sealed entrance formation. Only the
+            # two tanks use the initial navigation anchors long enough to gain
+            # native ownership and pull the pair away from Magmaw.
             anchors.update(recovery_tank_anchors)
             by_scenario.append(anchors)
         return by_scenario[0] if by_scenario[0] == by_scenario[1] else {}
@@ -1321,8 +1321,15 @@ def _validate_drudge_observation_geometry(
             reasons.append("drudge_geometry_member_projection_mismatch")
         slot_one = expected_slot
         lane_a = slot_one in lane_a_slots
+        home_lane_minimum = hypot(
+            values["home1_x"] - values["home0_x"],
+            values["home1_y"] - values["home0_y"],
+        ) * 0.25
+        recovery_lane_minimum = max(
+            0.0, home_lane_minimum - arrival_tolerance,
+        )
         side_valid = ((-1.0 if lane_a else 1.0) * computed_projection
-                      >= lane_sep * 0.25)
+                      >= recovery_lane_minimum)
         if member.get("lane_side_valid") is not side_valid:
             reasons.append("drudge_geometry_member_lane_side_mismatch")
         if not side_valid:
@@ -2167,6 +2174,18 @@ def accepted_drudge_contract(
     if profile_actions != offensive_guids:
         reasons.append("drudge_trained_single_target_profile_missing")
 
+    # Entrance pulling deliberately leaves the native Rush target to the core
+    # selector. Seed and cross-lane-target rows remain useful diagnostics, but
+    # they no longer gate a valid exact-Drudge pull, tank-ownership proof,
+    # reseparation, kill synchronization, or trained-profile execution.
+    non_gating = {
+        "drudge_native_rush_lane_target_invalid",
+        "drudge_native_threat_selected_target_not_cross_lane_tactic",
+    }
+    reasons = [reason for reason in reasons
+               if reason not in non_gating
+               and not reason.startswith("drudge_threat_seed_")
+               and not reason.startswith("drudge_native_threat_seed_")]
     return not reasons, sorted(set(reasons))
 
 

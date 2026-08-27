@@ -406,7 +406,7 @@ def test_progressive_escape_uses_only_bounded_complete_native_endpoints():
         "EvaluateAndRecordCandidateSpacing(escapeIndex",
         "endpointSpacing.LaneSafe",
         "endpointSpacing.Spacing.Safe",
-        "SeedCombatEnvelopeSafe(",
+        "NonTankEntranceEnvelopeSafe(",
         "MinimumLiveSourceDistance(",
         "PreferEscapeEndpoint(",
         "State.ValidationRouteDrudgeAnchorX = bestEndpoint.X",
