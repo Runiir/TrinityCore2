@@ -233,11 +233,12 @@ def test_entrance_pull_stacks_at_cleared_chainwielder_position() -> None:
     ).read_text(encoding="utf-8")
 
     assert "static std::array<MemberAnchor, 10> const entranceAnchors" in entrance
-    assert "-344.0f, -101.0f" in entrance
-    assert "-352.0f, -110.0f" in entrance
+    assert "-342.0f, -104.0f" in entrance
+    assert "-352.0f, -132.0f" in entrance
     assert "config.ValidationRouteSplitRecoveryMemberAnchors" not in entrance
-    assert "DoorwayArrivalToleranceYards = 20.0f" in entrance
-    assert entrance.count("DoorwayArrivalToleranceYards)") >= 4
+    assert "TankDoorwayArrivalToleranceYards = 20.0f" in entrance
+    assert "RangedDoorwayArrivalToleranceYards = 3.0f" in entrance
+    assert "doorwayToleranceFor(AssignedTank)" in entrance
     pull_started = entrance[entrance.index("if (pullStarted)"):]
     assert "IsLandedRushPending()" not in pull_started
     assert pull_started.index("drudge_entrance_return_move") < pull_started.index(

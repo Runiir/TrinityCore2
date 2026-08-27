@@ -32,16 +32,16 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
     // stretched the raid through Magmaw's room and made every native Rush a
     // new movement problem instead of an ordinary trash ability.
     static std::array<MemberAnchor, 10> const entranceAnchors = {{
-        { 1, -344.0f, -101.0f, 214.0f },
-        { 2, -348.0f, -101.0f, 214.0f },
-        { 3, -346.0f, -106.0f, 214.0f },
-        { 4, -342.0f, -106.0f, 214.0f },
-        { 5, -350.0f, -106.0f, 214.0f },
-        { 6, -340.0f, -110.0f, 214.0f },
-        { 7, -343.0f, -111.0f, 214.0f },
-        { 8, -346.0f, -112.0f, 214.0f },
-        { 9, -349.0f, -111.0f, 214.0f },
-        { 10, -352.0f, -110.0f, 214.0f },
+        { 1, -342.0f, -104.0f, 214.0f },
+        { 2, -348.0f, -104.0f, 214.0f },
+        { 3, -342.0f, -128.0f, 214.0f },
+        { 4, -346.0f, -128.0f, 214.0f },
+        { 5, -350.0f, -128.0f, 214.0f },
+        { 6, -336.0f, -132.0f, 214.0f },
+        { 7, -340.0f, -132.0f, 214.0f },
+        { 8, -344.0f, -132.0f, 214.0f },
+        { 9, -348.0f, -132.0f, 214.0f },
+        { 10, -352.0f, -132.0f, 214.0f },
     }};
     auto recoveryAnchorFor = [&](uint32 slot) -> MemberAnchor const*
     {
@@ -52,7 +52,13 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
             });
         return found == entranceAnchors.end() ? nullptr : &*found;
     };
-    constexpr float DoorwayArrivalToleranceYards = 20.0f;
+    constexpr float TankDoorwayArrivalToleranceYards = 20.0f;
+    constexpr float RangedDoorwayArrivalToleranceYards = 3.0f;
+    auto doorwayToleranceFor = [=](bool tank)
+    {
+        return tank ? TankDoorwayArrivalToleranceYards
+                    : RangedDoorwayArrivalToleranceYards;
+    };
     auto atAnchor = [&](Player const* member, MemberAnchor const* anchor,
         bool tank, float toleranceOverride = 0.0f)
     {
@@ -79,8 +85,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
                 || !roster->second.Active || !roster->second.LeaseOwned)
                 return false;
             uint32 const slot = roster->second.SlotIndex + 1;
-            if (!atAnchor(member, recoveryAnchorFor(slot),
-                    roster->second.Role == "tank", DoorwayArrivalToleranceYards))
+            bool const tank = roster->second.Role == "tank";
+            if (!atAnchor(member, recoveryAnchorFor(slot), tank,
+                    doorwayToleranceFor(tank)))
                 return false;
             ++reached;
         }
@@ -147,14 +154,14 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
         if (AssignedTank)
         {
             bool const tankAtEntrance = atAnchor(Bot, entrance, true,
-                DoorwayArrivalToleranceYards);
+                TankDoorwayArrivalToleranceYards);
             PhaseResult const taunt = RunNativeTauntConfirmation(
                 true, tankAtEntrance, tankAtEntrance);
             if (taunt == PhaseResult::Handled)
                 return taunt;
         }
         if (!atAnchor(Bot, entrance, AssignedTank,
-                DoorwayArrivalToleranceYards))
+                doorwayToleranceFor(AssignedTank)))
             return holdOrMoveTo(entrance, "drudge_entrance_return_move",
                 "drudge_entrance_return_wait");
         if (!packLinked)
@@ -171,7 +178,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
     if (!scopedEntranceStage)
     {
         if (!atAnchor(Bot, entrance, AssignedTank,
-                DoorwayArrivalToleranceYards))
+                doorwayToleranceFor(AssignedTank)))
             return holdOrMoveTo(entrance, "drudge_entrance_stage_move",
                 "drudge_entrance_stage_wait");
         if (!exactRosterAtEntrance())
@@ -196,7 +203,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
     if (OneBasedSlot != pullOwnerSlot)
     {
         if (!atAnchor(Bot, entrance, AssignedTank,
-                DoorwayArrivalToleranceYards))
+                doorwayToleranceFor(AssignedTank)))
             return holdOrMoveTo(entrance, "drudge_entrance_hold_move",
                 "drudge_entrance_hold_wait");
         HoldOffense();
