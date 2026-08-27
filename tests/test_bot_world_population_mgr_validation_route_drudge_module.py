@@ -68,10 +68,15 @@ def test_drudge_entrance_pull_is_single_owner_native_and_magmaw_excluding():
 def test_drudge_entrance_pull_holds_nonowners_then_returns_before_handoff():
     pull = ENTRANCE_PULL.read_text(encoding="utf-8")
     pull_started = pull.index("if (pullStarted)")
+    early_taunt = pull.index("RunNativeTauntConfirmation(", pull_started)
+    puller_return = pull.index('"drudge_entrance_return_move"', pull_started)
     owner = pull.index("uint32 const pullOwnerSlot")
     cast = pull.index("ExecuteProfileCombatAction")
 
     assert pull_started < owner < cast
+    assert pull_started < early_taunt < puller_return < owner
+    assert "AssignedTank && !NativeChargePending" in pull[pull_started:puller_return]
+    assert "true, false, false" in pull[early_taunt:puller_return]
     assert "recoveryAnchorFor(OneBasedSlot)" in pull
     assert "exactRosterAtEntrance()" in pull
     assert '"drudge_entrance_pull_owner_wait"' in pull
