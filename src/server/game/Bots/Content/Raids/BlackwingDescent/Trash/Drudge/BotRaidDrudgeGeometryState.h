@@ -378,10 +378,14 @@ inline Result Advance(State current, Input const& input)
     // at those anchors throughout would make the pull-back impossible.
     bool const landedRecoverySafe = input.ChargePending && input.ChargeLanded
         && input.TanksOnFrozenLanes;
+    bool const landedRecovery = input.ChargePending && input.ChargeLanded;
     bool const ownershipSafe = ownershipWindow
         && (initialOwnershipSafe || landedRecoverySafe)
         && input.SourcesAlive && input.TanksOnFrozenLanes
-        && input.NativeMeleeStopBounded;
+        // A landed Rush is exactly the case where the source may be outside
+        // melee range.  The native taunt path owns range, LOS, and bounded
+        // approach checks; requiring melee range here made recovery circular.
+        && (landedRecovery || input.NativeMeleeStopBounded);
     result.NativeOwnershipAllowed = ownershipSafe && Valid(input.Identity);
 
     bool const dynamicEngagementSafe = input.ChargeQueueIdle && !input.ChargePending

@@ -684,72 +684,6 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildContract()
         && rosterSlotHasExactRole(
             Manager.Cohort().Config.ValidationRouteSplitSeedRosterSlots[1], "dps");
 
-    auto repeatedNativeFarthestGeometrySafe = [this]() -> bool
-    {
-        if (Manager.Cohort().Config.ValidationRouteSplitSeedRosterSlots.size() != 2
-            || Manager.Cohort().Config.ValidationRouteSplitLaneARosterSlots.size() != 5
-            || Manager.Cohort().Config.ValidationRouteSplitLaneBRosterSlots.size() != 5
-            || Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots.size() != 2
-            || Manager.Cohort().Config.ValidationRouteSplitTankRecoveryAnchors.size() != 2
-            || Manager.Cohort().Config.ValidationRouteSplitNativeMeleeStopYards <= 0.0f
-            || Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards <= 0.0f)
-            return false;
-        auto findAnchor = [](std::vector<MemberAnchor> const& anchors,
-                              uint32 rosterSlot) -> MemberAnchor const*
-        {
-            auto const itr = std::find_if(anchors.begin(), anchors.end(),
-                [rosterSlot](MemberAnchor const& anchor)
-                {
-                    return anchor.RosterSlot == rosterSlot;
-                });
-            return itr == anchors.end() ? nullptr : &*itr;
-        };
-        std::array<std::vector<uint32> const*, 2> const laneSets = {
-            &Manager.Cohort().Config.ValidationRouteSplitLaneARosterSlots,
-            &Manager.Cohort().Config.ValidationRouteSplitLaneBRosterSlots,
-        };
-        for (uint32 sourceIndex = 0; sourceIndex < 2; ++sourceIndex)
-        {
-            uint32 const seedSlot =
-                Manager.Cohort().Config.ValidationRouteSplitSeedRosterSlots[sourceIndex];
-            MemberAnchor const* seed = findAnchor(
-                Manager.Cohort().Config.ValidationRouteSplitRecoveryMemberAnchors, seedSlot);
-            MemberAnchor const* recovery = findAnchor(
-                Manager.Cohort().Config.ValidationRouteSplitTankRecoveryAnchors,
-                Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots[sourceIndex]);
-            if (!seed || !recovery)
-                return false;
-            float const toSeedX = seed->X - recovery->X;
-            float const toSeedY = seed->Y - recovery->Y;
-            float const toSeedDistance = std::hypot(toSeedX, toSeedY);
-            float const meleeStop =
-                Manager.Cohort().Config.ValidationRouteSplitNativeMeleeStopYards;
-            if (toSeedDistance <= meleeStop)
-                return false;
-            float const sourceX = recovery->X + toSeedX * meleeStop / toSeedDistance;
-            float const sourceY = recovery->Y + toSeedY * meleeStop / toSeedDistance;
-            float const seedDistance = Distance2d(sourceX, sourceY, seed->X, seed->Y);
-            std::vector<uint32> forbiddenSlots = *laneSets[sourceIndex];
-            forbiddenSlots.insert(forbiddenSlots.end(), HealerSlots.begin(), HealerSlots.end());
-            std::sort(forbiddenSlots.begin(), forbiddenSlots.end());
-            forbiddenSlots.erase(std::unique(forbiddenSlots.begin(), forbiddenSlots.end()),
-                forbiddenSlots.end());
-            for (uint32 forbiddenSlot : forbiddenSlots)
-            {
-                if (forbiddenSlot == seedSlot)
-                    continue;
-                MemberAnchor const* forbidden = findAnchor(
-                    Manager.Cohort().Config.ValidationRouteSplitRecoveryMemberAnchors,
-                    forbiddenSlot);
-                if (!forbidden || seedDistance + 0.0001f
-                    < Distance2d(sourceX, sourceY, forbidden->X, forbidden->Y)
-                        + 2.0f * Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards)
-                    return false;
-            }
-        }
-        return true;
-    };
-
     ContractResolved = Manager.Cohort().Config.ValidationRouteSplitSourceGuids.size() == 2
         && Manager.Cohort().Config.ValidationRouteSplitLaneARosterSlots.size() == 5
         && Manager.Cohort().Config.ValidationRouteSplitLaneBRosterSlots.size() == 5
@@ -772,7 +706,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildContract()
         && Manager.Cohort().Config.ValidationRouteSplitTankArrivalToleranceYards
             <= Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards
         && Manager.Cohort().Config.ValidationRouteSplitNativeMeleeStopYards > 0.0f
-        && healerSlotsResolved && seedSlotsResolved && repeatedNativeFarthestGeometrySafe()
+        && healerSlotsResolved && seedSlotsResolved
         && Manager.Cohort().Config.ValidationRouteSplitSeedMaxRangeYards > 0.0f
         && Manager.Cohort().Config.ValidationRouteSplitTankThreatHeadroomMultiplier >= 1.3f
         && Manager.Cohort().Config.ValidationRouteMinimumDistanceYards > 0.0f

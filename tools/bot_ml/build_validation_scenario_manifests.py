@@ -385,36 +385,11 @@ def drudge_split_geometry_status(
         ):
             return False, "split_initial_native_farthest_unsafe"
 
-    # Once the first native Rush has landed, each assigned tank remains at its
-    # sealed recovery anchor.  Reconstruct the repeatable native melee-stop
-    # point on the tank-to-seed ray and prove that the configured cross-lane
-    # DPS remains farther than every same-lane member and every healer.  The
-    # two arrival disks are included so a merely nominal ordering cannot pass.
-    lane_sets = [lane_a_slots, lane_b_slots]
-    for source_index, seed_slot in enumerate(seed_slots):
-        recovery = recovery_points[source_index]
-        seed = recovery_member_by_slot[seed_slot]
-        seed_point = (float(seed["x"]), float(seed["y"]))
-        to_seed_x = seed_point[0] - recovery[0]
-        to_seed_y = seed_point[1] - recovery[1]
-        to_seed_distance = math.hypot(to_seed_x, to_seed_y)
-        if to_seed_distance <= melee_stop:
-            return False, "split_repeated_native_farthest_unsafe"
-        repeated_source = (
-            recovery[0] + to_seed_x * melee_stop / to_seed_distance,
-            recovery[1] + to_seed_y * melee_stop / to_seed_distance,
-        )
-        seed_distance = math.dist(repeated_source, seed_point)
-        forbidden_slots = (lane_sets[source_index] | set(healer_slots)) - {seed_slot}
-        if any(
-            seed_distance + 1e-6
-            < math.dist(
-                repeated_source,
-                tuple(float(recovery_member_by_slot[slot][axis]) for axis in ("x", "y")),
-            ) + 2.0 * arrival
-            for slot in forbidden_slots
-        ):
-            return False, "split_repeated_native_farthest_unsafe"
+    # Once a native Rush has landed, its target is evidence rather than a
+    # formation gate.  The entrance pull only requires exact tank ownership,
+    # safe recovery envelopes, and support range; requiring a particular
+    # farthest player here would reject the compact entrance formation that
+    # keeps the tanks healable.
     return True, ""
 
 

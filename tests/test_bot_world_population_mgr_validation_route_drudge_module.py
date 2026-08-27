@@ -133,3 +133,12 @@ def test_drudge_contract_keeps_scope_evidence_and_native_lane_guards():
     assert "AdvanceCoordinator" in seed
     assert "native_action_rejected" in seed
     assert "!IsLandedRushPending()" in escape
+
+
+def test_drudge_runtime_targets_only_the_exact_pack_and_does_not_gate_on_post_rush_seed_order():
+    lanes = LANES.read_text(encoding="utf-8")
+    resolve = lanes[lanes.index("DrudgeLaneContext::PhaseResult DrudgeLaneContext::ResolveSources()") :]
+    assert "ValidationRouteSplitSourceGuids" in resolve
+    assert "GetCreatureBySpawnId(spawnId)" in resolve
+    assert "ValidationRouteMinimumDistanceSourceEntry" in resolve
+    assert "repeatedNativeFarthestGeometrySafe" not in lanes

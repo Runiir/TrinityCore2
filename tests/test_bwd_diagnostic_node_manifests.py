@@ -136,10 +136,6 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
         - drudges["split_tank_arrival_tolerance_yards"]
     )
     assert opposite_margin >= drudges["minimum_distance_yards"] + 10.0
-    recovery_points = {
-        slot: (row["x"], row["y"])
-        for slot, row in recovery_by_slot.items()
-    }
     recovery_member_by_slot = {
         row["roster_slot"]: row
         for row in drudges["split_recovery_member_anchors"]
@@ -148,44 +144,19 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
     assert recovery_member_by_slot[1] == recovery_by_slot[1]
     assert recovery_member_by_slot[2] == recovery_by_slot[2]
 
-    # The first successful Rush moves each source back toward its sealed tank
-    # from the declared seed.  At that repeatable melee-stop point, the seed
-    # remains farther than every same-lane member and every healer, including
-    # both configured arrival disks.  This is the live invariant that prevents a
-    # later native cycle from selecting a same-lane DPS or healer.
-    lane_sets = [
-        set(drudges["split_lane_a_roster_slots"]),
-        set(drudges["split_lane_b_roster_slots"]),
-    ]
-    healer_slots = set(drudges["split_healer_roster_slots"])
-    for source_index, seed_slot in enumerate(drudges["split_seed_roster_slots"]):
-        recovery = recovery_points[source_index + 1]
-        seed = (
-            recovery_member_by_slot[seed_slot]["x"],
-            recovery_member_by_slot[seed_slot]["y"],
-        )
-        seed_ray = (seed[0] - recovery[0], seed[1] - recovery[1])
-        seed_ray_length = math.hypot(*seed_ray)
-        source = (
-            recovery[0] + seed_ray[0] * drudges["split_native_melee_stop_yards"] / seed_ray_length,
-            recovery[1] + seed_ray[1] * drudges["split_native_melee_stop_yards"] / seed_ray_length,
-        )
-        seed_distance = math.dist(source, seed)
-        for slot in (lane_sets[source_index] | healer_slots) - {seed_slot}:
-            peer = (
-                recovery_member_by_slot[slot]["x"],
-                recovery_member_by_slot[slot]["y"],
-            )
-            assert seed_distance >= (
-                math.dist(source, peer)
-                + 2.0 * drudges["split_arrival_tolerance_yards"]
-            )
+    # After the first native Rush, target selection is diagnostic. The compact
+    # entrance hold is instead proven by the recovery clearance, lane-side,
+    # healing-range, and future-Magmaw checks below.
     # A returning Rush can approach the tank from any direction.  Prove the
     # full melee-stop and arrival disks, rather than the initial radial chase.
     worst_source_radius = (
         drudges["split_native_melee_stop_yards"]
         + drudges["split_tank_arrival_tolerance_yards"]
     )
+    recovery_points = {
+        slot: (row["x"], row["y"])
+        for slot, row in recovery_by_slot.items()
+    }
     assert (
         math.dist(recovery_points[1], recovery_points[2])
         - 2.0 * worst_source_radius
@@ -339,6 +310,70 @@ def test_drudge_combat_anchor_geometry_is_sql_bound_and_requires_native_chase_ma
         False,
         "split_seed_candidate_contract",
     )
+
+
+def test_compact_recovery_anchors_are_shared_and_bounded_in_both_drudge_routes():
+    config = _config()
+    expected_recovery = [
+        {"roster_slot": 1, "x": -288.8, "y": -86.483, "z": 214.154},
+        {"roster_slot": 2, "x": -338.018, "y": -64.932, "z": 212.751},
+        {"roster_slot": 3, "x": -301.0, "y": -110.0, "z": 214.552},
+        {"roster_slot": 4, "x": -294.0, "y": -114.0, "z": 214.438},
+        {"roster_slot": 5, "x": -320.0, "y": -99.0, "z": 214.033},
+        {"roster_slot": 6, "x": -298.0, "y": -111.0, "z": 215.947},
+        {"roster_slot": 7, "x": -302.0, "y": -113.0, "z": 215.488},
+        {"roster_slot": 8, "x": -328.0, "y": -100.0, "z": 214.034},
+        {"roster_slot": 9, "x": -333.0, "y": -99.0, "z": 214.154},
+        {"roster_slot": 10, "x": -328.0, "y": -97.0, "z": 214.154},
+    ]
+    scenarios = config["scenarios"] + config["diagnostic_scenarios"]
+    selected = [
+        next(row for row in scenarios if row["id"] == scenario_id)
+        for scenario_id in (CANONICAL_ID, DIAGNOSTIC_IDS["magmaw"])
+    ]
+    for scenario in selected:
+        drudges = next(
+            row for row in scenario["route"]
+            if row.get("mechanic_profile") == "trash_two_tank_charge_lanes"
+        )
+        magmaw = scenario["route"][scenario["route"].index(drudges) + 1]
+        assert drudge_split_geometry_status(drudges, magmaw) == (True, "")
+        assert drudges["split_recovery_member_anchors"] == expected_recovery
+
+        tank_by_slot = {
+            row["roster_slot"]: (row["x"], row["y"])
+            for row in drudges["split_tank_recovery_anchors"]
+        }
+        recovery_by_slot = {
+            row["roster_slot"]: (row["x"], row["y"])
+            for row in expected_recovery
+        }
+        lane_a = {3, 4, 6, 7}
+        lane_b = {5, 8, 9, 10}
+        for slot in lane_a | lane_b:
+            point = recovery_by_slot[slot]
+            assert all(
+                math.dist(point, tank) >= 25.0
+                for tank in tank_by_slot.values()
+            )
+            assigned_tank = tank_by_slot[1 if slot in lane_a else 2]
+            assert math.dist(point, assigned_tank) <= 40.0
+        for lane in (lane_a, lane_b):
+            assert min(
+                math.dist(recovery_by_slot[left], recovery_by_slot[right])
+                for index, left in enumerate(sorted(lane))
+                for right in sorted(lane)[index + 1:]
+            ) >= 3.0
+
+        magmaw_point = (magmaw["x"], magmaw["y"])
+        combat_safe_distance = min(
+            math.dist(magmaw_point, (row["x"], row["y"]))
+            for row in drudges["split_tank_combat_anchors"]
+        )
+        assert all(
+            math.dist(magmaw_point, point) > combat_safe_distance
+            for point in recovery_by_slot.values()
+        )
 
 
 def test_slot_eight_seed_anchor_is_bound_in_canonical_and_magmaw_diagnostic_routes():
