@@ -612,6 +612,7 @@ int main()
     // belongs to normal post-pull combat movement, not prepull readiness.
     BotEncounter::Blackboard magmawRangedTank = magmaw;
     magmawRangedTank.Summons.clear();
+    magmawRangedTank.Hostiles = { magmawBoss };
     magmawRangedTank.Players.front().Position = { 0.0f, 0.0f, 213.87f };
     magmawRangedTank.Players[1].Position = { 60.0f, 0.0f, 0.0f };
     auto magmawRangedTankPlan = magmawStrategy.Propose(
@@ -631,6 +632,43 @@ int main()
     assert(magmawInjuredRangedTankPlan.SuppressOffense);
     assert(magmawInjuredRangedTankPlan.DamageTarget.IsEmpty());
     assert(!magmawInjuredRangedTankPlan.Movement.has_value());
+
+    BotEncounter::Blackboard magmawDeadMember = magmawRangedTank;
+    magmawDeadMember.Players[2].Alive = false;
+    auto magmawDeadMemberPlan = magmawStrategy.Propose(
+        magmawDeadMember, tankA.Guid, "tank");
+    assert(magmawDeadMemberPlan.SuppressOffense);
+    assert(magmawDeadMemberPlan.DamageTarget.IsEmpty());
+    assert(!magmawDeadMemberPlan.Movement.has_value());
+
+    // The pull remains suppressed until every living ranged DPS and healer is
+    // staged at the deterministic back-room stack. Tanks wait in place while
+    // the ranged member receives a typed movement candidate.
+    BotEncounter::Blackboard magmawStage = magmawRangedTank;
+    magmawStage.CurrentScope.AttemptId = 3;
+    magmawStage.Route.NavigationHints = {
+        { magmawBoss.Position.X - 5.0f, magmawBoss.Position.Y,
+            magmawBoss.Position.Z + 1.0f } };
+    magmawStage.Players[2].Position = magmawBoss.Position;
+    auto rangedStagePlan = magmawStrategy.Propose(
+        magmawStage, dps.Guid, "dps");
+    auto tankStageWaitPlan = magmawStrategy.Propose(
+        magmawStage, tankA.Guid, "tank");
+    assert(rangedStagePlan.SuppressOffense);
+    assert(rangedStagePlan.Movement.has_value());
+    assert(rangedStagePlan.Movement->Id.Mechanic
+        == "prepull_ranged_stage");
+    assert(tankStageWaitPlan.SuppressOffense);
+    assert(!tankStageWaitPlan.Movement.has_value());
+    auto const* rangedStageMove = std::get_if<Move>(
+        &rangedStagePlan.Movement->Action);
+    assert(rangedStageMove);
+    magmawStage.Players[2].Position = {
+        rangedStageMove->X, rangedStageMove->Y, rangedStageMove->Z };
+    auto stagedTankPullPlan = magmawStrategy.Propose(
+        magmawStage, tankA.Guid, "tank");
+    assert(!stagedTankPullPlan.SuppressOffense);
+    assert(stagedTankPullPlan.DamageTarget == magmawBoss.Guid);
 
     // A nearer immediate hazard cannot replace a pillar movement proposal,
     // while the fallback hazard candidate retains its source-relative identity.
@@ -704,6 +742,51 @@ int main()
     assert(magmawParasiteMove->Y == 0.0f);
     assert(magmawParasiteMove->Z == dps.Position.Z);
 
+    // Every observed parasite outranks the boss for ranged damage even beyond
+    // the old 30-yard cutoff. During the exposed-head window tanks also use
+    // the vulnerable head instead of continuing on Magmaw's armored body.
+    BotEncounter::Blackboard magmawDistantParasite = magmaw;
+    magmawDistantParasite.Summons.clear();
+    parasite.Position = { 80.0f, 0.0f, 0.0f };
+    magmawDistantParasite.Hostiles = { magmawBoss, magmawHead, parasite };
+    auto distantParasitePlan = magmawStrategy.Propose(
+        magmawDistantParasite, dps.Guid, "dps");
+    auto exposedHeadTankPlan = magmawStrategy.Propose(
+        magmawDistantParasite, tankA.Guid, "tank");
+    assert(distantParasitePlan.DamageTarget == parasite.Guid);
+    assert(exposedHeadTankPlan.DamageTarget == magmawHead.Guid);
+
+    // Ranged players switch to the back-room stack farthest from Pillar, then
+    // restore the nearest legal stack after an unrelated displacement.
+    BotEncounter::Blackboard magmawRangedPillar = magmawStage;
+    magmawRangedPillar.NativeBossState = "in_progress";
+    magmawRangedPillar.Hostiles.front().InCombat = true;
+    magmawRangedPillar.Hostiles.front().VictimGuid = tankA.Guid;
+    magmawRangedPillar.Summons = { pillar };
+    magmawRangedPillar.Summons.front().Position =
+        magmawRangedPillar.Players[2].Position;
+    auto rangedPillarPlan = magmawStrategy.Propose(
+        magmawRangedPillar, dps.Guid, "dps");
+    assert(rangedPillarPlan.Movement.has_value());
+    assert(rangedPillarPlan.Movement->Id.Mechanic
+        == "pillar_bait_switch");
+    auto const* rangedPillarMove = std::get_if<Move>(
+        &rangedPillarPlan.Movement->Action);
+    assert(rangedPillarMove);
+    assert(std::hypot(rangedPillarMove->X
+            - magmawRangedPillar.Summons.front().Position.X,
+        rangedPillarMove->Y
+            - magmawRangedPillar.Summons.front().Position.Y) > 12.0f);
+
+    BotEncounter::Blackboard magmawFormationRestore = magmawRangedPillar;
+    magmawFormationRestore.Summons.clear();
+    magmawFormationRestore.Players[2].Position = magmawBoss.Position;
+    auto restorePlan = magmawStrategy.Propose(
+        magmawFormationRestore, dps.Guid, "dps");
+    assert(restorePlan.Movement.has_value());
+    assert(restorePlan.Movement->Id.Mechanic
+        == "ranged_formation_restore");
+
     // Hook users are sorted by raw GUID and only the first two may submit a
     // native hook. Vehicle actions and free-pincer mounting remain separate
     // interaction candidates with their original resource lanes.
@@ -762,6 +845,30 @@ int main()
         magmawHook, nonHookBot.Guid, "healer");
     assert(!nonHookPlan.Interaction.has_value());
 
+    // Assigned hook users approach the native spell-click window before
+    // mounting; ordinary ranged formation cannot keep them at the back wall.
+    BotEncounter::Blackboard magmawHookApproach = magmawHook;
+    magmawHookApproach.Route.NavigationHints = {
+        { magmawBoss.Position.X - 5.0f, magmawBoss.Position.Y,
+            magmawBoss.Position.Z + 1.0f } };
+    magmawHookApproach.Summons.clear();
+    magmawHookApproach.Hostiles.front().Interactable = true;
+    magmawHookApproach.Players[1].VehicleGuid = ObjectGuid{};
+    magmawHookApproach.Players[1].Position = {
+        magmawBoss.Position.X - 30.0f, magmawBoss.Position.Y,
+        magmawBoss.Position.Z };
+    auto hookApproachPlan = magmawStrategy.Propose(
+        magmawHookApproach, hookBot.Guid, "dps");
+    assert(!hookApproachPlan.Interaction.has_value());
+    assert(hookApproachPlan.Movement.has_value());
+    assert(hookApproachPlan.Movement->Id.Mechanic == "pincer_approach");
+    auto const* hookApproachMove = std::get_if<Move>(
+        &hookApproachPlan.Movement->Action);
+    assert(hookApproachMove);
+    assert(std::hypot(hookApproachMove->X - magmawBoss.Position.X,
+        hookApproachMove->Y - magmawBoss.Position.Y)
+        < BotEncounter::AdaptiveMagmawStrategy::HookInteractionDistance);
+
     BotEncounter::Blackboard magmawMount = magmawHook;
     magmawMount.Summons.clear();
     magmawMount.Hostiles.front().Interactable = true;
@@ -784,6 +891,7 @@ int main()
 
     BotEncounter::Blackboard magmawNativeInProgress = magmawRangedTank;
     magmawNativeInProgress.NativeBossState = "in_progress";
+    magmawNativeInProgress.Hostiles = { magmawBoss, magmawHead };
     auto magmawNativeInProgressPlan = magmawStrategy.Propose(
         magmawNativeInProgress, dps.Guid, "dps");
     assert(magmawNativeInProgressPlan.OwnsNode);
@@ -1141,14 +1249,25 @@ def test_magmaw_movement_adapter_maps_typed_leases_and_fails_closed() -> None:
     )
     helper = candidates[helper_start:helper_end]
 
+    mechanic_start = helper.index('if (mechanic == "prepull_ranged_stage"')
+    mechanic = helper[mechanic_start:]
+    for mechanic_name in (
+        "prepull_ranged_stage",
+        "ranged_formation_restore",
+        "pincer_approach",
+    ):
+        assert f'"{mechanic_name}"' in mechanic
+    assert "Owner::Mechanic" in mechanic
+    assert "Priority::Mechanic" in mechanic
+
     hazard_start = helper.index('if (mechanic == "pillar_evade"')
     hazard = helper[hazard_start:]
-    assert '"prepull_melee_ready"' not in helper
     assert "prepull_health_suppress" in bot_source(
         "BotWorldPopulationMgrUpdateBotKernelCandidates.cpp"
     )
     for mechanic in (
         "pillar_evade",
+        "pillar_bait_switch",
         "massive_crash_evade",
         "parasite_contact_evade",
     ):

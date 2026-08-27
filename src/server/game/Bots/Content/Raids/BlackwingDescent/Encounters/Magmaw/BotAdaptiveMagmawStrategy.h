@@ -35,6 +35,9 @@ public:
     static constexpr uint32 PincerRightEntry = 41789;
     static constexpr uint32 SpikeEntry = 41767;
     static constexpr float HookInteractionDistance = 5.0f;
+    static constexpr float RangedStackDistance = 30.0f;
+    static constexpr float RangedStackLateralOffset = 8.0f;
+    static constexpr float RangedStackTolerance = 4.0f;
 
     AdaptiveMagmawPlan Propose(Blackboard const& board, ObjectGuid botGuid,
         std::string_view role) const
@@ -58,10 +61,33 @@ public:
             return plan;
         }
 
+        if (IsPrepull(board, *observed.Boss))
+        {
+            std::optional<MagmawRangedAnchors> const anchors =
+                ResolveRangedAnchors(board, *observed.Boss);
+            if (anchors && !RangedGroupStaged(board, *anchors))
+            {
+                plan.SuppressOffense = true;
+                if (role != "tank")
+                    plan.Movement = BuildPointMovement(board, *bot,
+                        PrepullAnchor(board, *anchors),
+                        "prepull_ranged_stage",
+                        BotActionArbitration::Priority::Mechanic, 325.0f);
+                return plan;
+            }
+        }
+
         plan.DamageTarget = SelectDamageTarget(observed, role);
-        plan.Movement = ProposeHazardMovement(board, *bot);
         plan.Interaction = ProposeHookInteraction(board, *bot, *observed.Boss,
             botGuid);
+        plan.Movement = ProposeHazardMovement(board, *bot, *observed.Boss,
+            role);
+        if (!plan.Movement)
+            plan.Movement = ProposeHookApproach(board, *bot, *observed.Boss,
+                botGuid);
+        if (!plan.Movement)
+            plan.Movement = ProposeRangedFormationRestore(board, *bot,
+                *observed.Boss, role);
         return plan;
     }
 
@@ -97,6 +123,12 @@ private:
         bool Assigned = false;
         ActorSnapshot const* Vehicle = nullptr;
         ActorSnapshot const* Spike = nullptr;
+    };
+
+    struct MagmawRangedAnchors
+    {
+        Vector3 Left;
+        Vector3 Right;
     };
 
     static bool IsParasiteEntry(uint32 entry)
@@ -151,7 +183,7 @@ private:
         bool const prepullHealthIncomplete = std::any_of(board.Players.begin(),
             board.Players.end(), [](ActorSnapshot const& member)
             {
-                return member.Alive && member.HealthPct < 94.0f;
+                return !member.Alive || member.HealthPct < 94.0f;
             });
         if (prepullHealthIncomplete)
         {
@@ -167,14 +199,84 @@ private:
     static ObjectGuid SelectDamageTarget(MagmawActorObservation const& observed,
         std::string_view role)
     {
-        if (role == "tank")
-            return observed.Boss->Guid;
+        // Parasites multiply when they touch a player, so the ranged damage
+        // group clears every observed parasite before returning to Magmaw.
+        if (role != "tank" && observed.NearestParasite)
+            return observed.NearestParasite->Guid;
+        // The exposed head takes the encounter's native vulnerability bonus.
+        // Tanks can attack it too; keeping them on the armored body discards
+        // the entire burn window for no threat benefit while Magmaw is pinned.
         if (observed.Head)
             return observed.Head->Guid;
-        if (observed.NearestParasite
-            && observed.NearestParasiteDistance <= 30.0f)
-            return observed.NearestParasite->Guid;
         return observed.Boss->Guid;
+    }
+
+    static bool Finite(Vector3 const& point)
+    {
+        return std::isfinite(point.X) && std::isfinite(point.Y)
+            && std::isfinite(point.Z);
+    }
+
+    static std::optional<MagmawRangedAnchors> ResolveRangedAnchors(
+        Blackboard const& board, ActorSnapshot const& boss)
+    {
+        if (board.Route.NavigationHints.empty()
+            || !Finite(board.Route.NavigationHints.front())
+            || !Finite(boss.Position))
+            return std::nullopt;
+
+        Vector3 const& roomSide = board.Route.NavigationHints.front();
+        float dx = roomSide.X - boss.Position.X;
+        float dy = roomSide.Y - boss.Position.Y;
+        float const length = std::sqrt(dx * dx + dy * dy);
+        if (length < 1.0f)
+            return std::nullopt;
+        dx /= length;
+        dy /= length;
+        float const centerX = boss.Position.X + dx * RangedStackDistance;
+        float const centerY = boss.Position.Y + dy * RangedStackDistance;
+        float const lateralX = -dy * RangedStackLateralOffset;
+        float const lateralY = dx * RangedStackLateralOffset;
+        return MagmawRangedAnchors{
+            { centerX + lateralX, centerY + lateralY, roomSide.Z },
+            { centerX - lateralX, centerY - lateralY, roomSide.Z } };
+    }
+
+    static Vector3 const& PrepullAnchor(Blackboard const& board,
+        MagmawRangedAnchors const& anchors)
+    {
+        return board.CurrentScope.AttemptId % 2 ? anchors.Left : anchors.Right;
+    }
+
+    static bool RangedGroupStaged(Blackboard const& board,
+        MagmawRangedAnchors const& anchors)
+    {
+        Vector3 const& anchor = PrepullAnchor(board, anchors);
+        return std::all_of(board.Players.begin(), board.Players.end(),
+            [&anchor](ActorSnapshot const& member)
+            {
+                return !member.Alive || member.Role == "tank"
+                    || Distance2d(member.Position, anchor)
+                        <= RangedStackTolerance;
+            });
+    }
+
+    static BotNativeAction::Candidate BuildPointMovement(
+        Blackboard const& board, ActorSnapshot const& bot,
+        Vector3 const& point, std::string mechanic,
+        BotActionArbitration::Priority priority, float utility)
+    {
+        BotNativeAction::Candidate candidate;
+        candidate.Id.ScopeKey = board.CurrentScope.Key();
+        candidate.Id.Strategy = "adaptive_magmaw";
+        candidate.Id.Mechanic = std::move(mechanic);
+        candidate.Id.EventGeneration = board.Revision;
+        candidate.ActionPriority = priority;
+        candidate.Utility = utility;
+        candidate.ExpiresAtMs = board.ObservedAtMs + 750;
+        candidate.Action = BotNativeAction::Move{ point.X, point.Y,
+            bot.Position.Z };
+        return candidate;
     }
 
     static ActorSnapshot const* FindFirstAliveActorByEntry(
@@ -264,13 +366,33 @@ private:
     }
 
     static std::optional<BotNativeAction::Candidate> ProposeHazardMovement(
-        Blackboard const& board, ActorSnapshot const& bot)
+        Blackboard const& board, ActorSnapshot const& bot,
+        ActorSnapshot const& boss, std::string_view role)
     {
         MagmawHazardObservation const observed = ObserveHazards(board, bot);
         if (observed.Pillar)
+        {
+            if (role != "tank")
+                if (std::optional<MagmawRangedAnchors> const anchors =
+                        ResolveRangedAnchors(board, boss))
+                {
+                    Vector3 const& destination =
+                        Distance2d(anchors->Left, observed.Pillar->Position)
+                            >= Distance2d(anchors->Right,
+                                observed.Pillar->Position)
+                        ? anchors->Left : anchors->Right;
+                    if (Distance2d(bot.Position, destination)
+                        > RangedStackTolerance)
+                        return BuildPointMovement(board, bot, destination,
+                            "pillar_bait_switch",
+                            BotActionArbitration::Priority::Survival,
+                            500.0f);
+                    return std::nullopt;
+                }
             if (std::optional<BotNativeAction::Candidate> pillar =
                     BuildPillarEvade(board, bot, *observed.Pillar))
                 return pillar;
+        }
 
         if (observed.NearestImmediateHazard
             && observed.NearestImmediateHazardDistance <= 12.0f)
@@ -279,6 +401,28 @@ private:
                     ? "massive_crash_evade" : "parasite_contact_evade",
                 16.0f);
         return std::nullopt;
+    }
+
+    static std::optional<BotNativeAction::Candidate>
+    ProposeRangedFormationRestore(Blackboard const& board,
+        ActorSnapshot const& bot, ActorSnapshot const& boss,
+        std::string_view role)
+    {
+        if (role == "tank")
+            return std::nullopt;
+        std::optional<MagmawRangedAnchors> const anchors =
+            ResolveRangedAnchors(board, boss);
+        if (!anchors)
+            return std::nullopt;
+        Vector3 const& destination =
+            Distance2d(bot.Position, anchors->Left)
+                <= Distance2d(bot.Position, anchors->Right)
+            ? anchors->Left : anchors->Right;
+        if (Distance2d(bot.Position, destination) <= RangedStackTolerance)
+            return std::nullopt;
+        return BuildPointMovement(board, bot, destination,
+            "ranged_formation_restore",
+            BotActionArbitration::Priority::Mechanic, 275.0f);
     }
 
     static std::vector<ObjectGuid> BuildHookUsers(Blackboard const& board)
@@ -376,6 +520,37 @@ private:
                 <= HookInteractionDistance)
             return BuildMountCandidate(board, boss);
         return std::nullopt;
+    }
+
+    static std::optional<BotNativeAction::Candidate> ProposeHookApproach(
+        Blackboard const& board, ActorSnapshot const& bot,
+        ActorSnapshot const& boss, ObjectGuid botGuid)
+    {
+        MagmawHookAssignment const assignment = ResolveHookAssignment(board,
+            bot, botGuid);
+        if (!assignment.Assigned || assignment.Vehicle || !boss.Interactable
+            || Distance2d(bot.Position, boss.Position)
+                <= HookInteractionDistance)
+            return std::nullopt;
+
+        std::optional<MagmawRangedAnchors> const anchors =
+            ResolveRangedAnchors(board, boss);
+        if (!anchors)
+            return std::nullopt;
+        float dx = anchors->Left.X + anchors->Right.X
+            - 2.0f * boss.Position.X;
+        float dy = anchors->Left.Y + anchors->Right.Y
+            - 2.0f * boss.Position.Y;
+        float const length = std::sqrt(dx * dx + dy * dy);
+        if (length < 0.01f)
+            return std::nullopt;
+        Vector3 const destination{
+            boss.Position.X + dx / length * 4.0f,
+            boss.Position.Y + dy / length * 4.0f,
+            bot.Position.Z };
+        return BuildPointMovement(board, bot, destination,
+            "pincer_approach", BotActionArbitration::Priority::Mechanic,
+            375.0f);
     }
 
     static bool HasAura(ActorSnapshot const& actor, uint32 spellId)

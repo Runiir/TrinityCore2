@@ -92,21 +92,23 @@ bool BotWorldPopulationMgr::TryValidationRouteMovementCheck(
         auto isScopedGenericCastCandidate = [this, &hazardDefinitionFor, &callbacks,
             currentNodeHasConfiguredHazard](Unit* candidate) -> bool
         {
-            if (!currentNodeHasConfiguredHazard)
-                return true;
-
             Creature* creature = candidate ? candidate->ToCreature() : nullptr;
-            if (!creature || hazardDefinitionFor(creature->GetEntry(), 0)
-                || Party().ValidationRoutePackGeneration != Party().ValidationRouteGeneration
-                || Party().ValidationRoutePackMemberGuids.find(creature->GetGUID())
-                    == Party().ValidationRoutePackMemberGuids.end()
-                || Party().ValidationRoutePackDeathGuids.find(creature->GetGUID())
-                    != Party().ValidationRoutePackDeathGuids.end()
-                || Party().ValidationRoutePackTransitionGuids.find(creature->GetGUID())
-                    != Party().ValidationRoutePackTransitionGuids.end())
+            if (!creature)
                 return false;
 
-            return callbacks.IsCombatLinked(creature);
+            return BotRaidHazard::ShouldInspectGenericCastCandidate(
+                currentNodeHasConfiguredHazard, creature->GetEntry(),
+                Cohort().Config.ValidationRouteTargetEntry,
+                hazardDefinitionFor(creature->GetEntry(), 0) != nullptr,
+                Party().ValidationRoutePackGeneration
+                    == Party().ValidationRouteGeneration,
+                Party().ValidationRoutePackMemberGuids.find(creature->GetGUID())
+                    != Party().ValidationRoutePackMemberGuids.end(),
+                Party().ValidationRoutePackDeathGuids.find(creature->GetGUID())
+                    != Party().ValidationRoutePackDeathGuids.end(),
+                Party().ValidationRoutePackTransitionGuids.find(creature->GetGUID())
+                    != Party().ValidationRoutePackTransitionGuids.end(),
+                callbacks.IsCombatLinked(creature));
         };
         uint64 const nowMs = NowMs();
         // Refresh immediately before the state guard so a newly spawned or

@@ -29,6 +29,31 @@ inline uint8_t RotatedBearingBucket(uint32_t guidCounter, uint8_t attempt)
 {
     return uint8_t((guidCounter % 5u + attempt % 5u) % 5u);
 }
+
+// A route with an exact native hazard marker must not also turn the owning
+// creature's cast telegraph into a generic raid-wide dodge. For example, the
+// Chainwielder casts Overhead Smash, then entry 42690 marks the actual
+// 20-yard danger. Moving for both interrupts every ranged cast and makes the
+// whole raid run on each telegraph. Keep generic detection for a different
+// enrolled pack member so a secondary, undeclared ground cast still receives
+// the normal fail-closed response.
+inline bool ShouldInspectGenericCastCandidate(
+    bool currentNodeHasConfiguredHazard, uint32_t candidateEntry,
+    uint32_t routeSourceEntry, bool candidateIsConfiguredHazardSource,
+    bool packGenerationCurrent, bool enrolledPackMember,
+    bool deadPackMember, bool transitionedPackMember, bool combatLinked)
+{
+    if (!currentNodeHasConfiguredHazard)
+        return true;
+
+    if (!candidateEntry || candidateIsConfiguredHazardSource
+        || (routeSourceEntry && candidateEntry == routeSourceEntry)
+        || !packGenerationCurrent || !enrolledPackMember
+        || deadPackMember || transitionedPackMember)
+        return false;
+
+    return combatLinked;
+}
 }
 
 #endif

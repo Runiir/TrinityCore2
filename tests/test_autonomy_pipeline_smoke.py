@@ -2356,13 +2356,15 @@ def test_validation_route_exact_hazards_scope_secondary_generic_cast_dodges_to_c
         movement.index("auto isScopedGenericCastCandidate"):
         movement.index("uint64 const nowMs")
     ]
-    assert "if (!currentNodeHasConfiguredHazard)" in scoped_candidate
-    assert "hazardDefinitionFor(creature->GetEntry(), 0)" in scoped_candidate
-    assert "Party().ValidationRoutePackGeneration != Party().ValidationRouteGeneration" in scoped_candidate
+    assert "BotRaidHazard::ShouldInspectGenericCastCandidate" in scoped_candidate
+    assert "Cohort().Config.ValidationRouteTargetEntry" in scoped_candidate
+    assert "hazardDefinitionFor(creature->GetEntry(), 0) != nullptr" in scoped_candidate
+    assert "Party().ValidationRoutePackGeneration" in scoped_candidate
+    assert "== Party().ValidationRouteGeneration" in scoped_candidate
     assert "Party().ValidationRoutePackMemberGuids.find(creature->GetGUID())" in scoped_candidate
     assert "Party().ValidationRoutePackDeathGuids.find(creature->GetGUID())" in scoped_candidate
     assert "Party().ValidationRoutePackTransitionGuids.find(creature->GetGUID())" in scoped_candidate
-    assert "return callbacks.IsCombatLinked(creature);" in scoped_candidate
+    assert "callbacks.IsCombatLinked(creature)" in scoped_candidate
     assert "isScopedGenericCastCandidate(preferredTarget)" in movement
     assert "isScopedGenericCastCandidate(candidate) && inspectCaster(candidate)" in movement
     assert "if (!caster && !currentNodeHasConfiguredHazard && profileAllowsGenericCastMovement)" not in movement

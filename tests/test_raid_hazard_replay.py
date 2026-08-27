@@ -48,6 +48,31 @@ int main()
         assert(RotatedBearingBucket(30009, attempt)
             == ((4 + attempt) % 5));
     }
+
+    // An exact marker contract owns the route source's cast. Do not also
+    // apply the generic eight-yard dodge to the source telegraph.
+    assert(!ShouldInspectGenericCastCandidate(
+        true, 42649, 42649, false, true, true, false, false, true));
+    assert(!ShouldInspectGenericCastCandidate(
+        true, 42690, 42649, true, true, true, false, false, true));
+
+    // A different active pack member can still contribute a second ground
+    // danger, while stale, dead, transitioned, or unlinked members cannot.
+    assert(ShouldInspectGenericCastCandidate(
+        true, 99999, 42649, false, true, true, false, false, true));
+    assert(!ShouldInspectGenericCastCandidate(
+        true, 99999, 42649, false, false, true, false, false, true));
+    assert(!ShouldInspectGenericCastCandidate(
+        true, 99999, 42649, false, true, true, true, false, true));
+    assert(!ShouldInspectGenericCastCandidate(
+        true, 99999, 42649, false, true, true, false, true, true));
+    assert(!ShouldInspectGenericCastCandidate(
+        true, 99999, 42649, false, true, true, false, false, false));
+
+    // Routes without an exact marker retain the existing generic movement
+    // behavior; scope filtering is not applied in that mode.
+    assert(ShouldInspectGenericCastCandidate(
+        false, 42649, 42649, false, false, false, true, true, false));
     return 0;
 }
 '''
