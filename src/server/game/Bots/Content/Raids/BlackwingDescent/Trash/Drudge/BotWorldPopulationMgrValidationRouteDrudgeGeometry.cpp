@@ -496,10 +496,17 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies()
             && memberSlot != Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots[
                 memberLaneA ? 0 : 1])
             return false;
-        if (memberRoster->second.Role != "tank"
-            && !SourceUnionSafe(anchorState.ValidationRouteDrudgeAnchorX,
-                anchorState.ValidationRouteDrudgeAnchorY))
-            return false;
+        if (memberRoster->second.Role != "tank")
+        {
+            bool const cachedAnchorSafe = IsRecoveryFormationActive()
+                ? NonTankEntranceEnvelopeSafe(memberSlot,
+                    anchorState.ValidationRouteDrudgeAnchorX,
+                    anchorState.ValidationRouteDrudgeAnchorY)
+                : SourceUnionSafe(anchorState.ValidationRouteDrudgeAnchorX,
+                    anchorState.ValidationRouteDrudgeAnchorY);
+            if (!cachedAnchorSafe)
+                return false;
+        }
         float const arrivalTolerance = memberRoster->second.Role == "tank"
             ? Manager.Cohort().Config.ValidationRouteSplitTankArrivalToleranceYards
             : Manager.Cohort().Config.ValidationRouteSplitArrivalToleranceYards;

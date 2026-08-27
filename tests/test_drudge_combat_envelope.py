@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import subprocess
 from pathlib import Path
 
@@ -110,6 +111,36 @@ def test_established_entrance_hold_survives_native_rush_displacement() -> None:
     assert "rushTargetContractSafe = RecoveryFormationActive" in actions
     assert "entranceFormation || SourceUnionSafeAt(" in group
     assert "NonTankEntranceEnvelopeSafe(" in group
+
+
+def test_cached_non_tank_anchor_replays_rush_against_home_envelope() -> None:
+    geometry = (DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp").read_text(
+        encoding="utf-8"
+    )
+    cached = geometry[geometry.index("CachedAnchorSafe = [this]"):geometry.index(
+        "GroupPositionSafe = [this]"
+    )]
+
+    # Canary59 replay: a landed Rush can stand on slot 8's fixed entrance
+    # anchor. The live source union rejects that point, while the reviewed
+    # source-home envelope accepts it at the same distance as the anchor.
+    homes = [(-298.833, -50.349), (-307.913, -49.5694)]
+    entrance = (-315.0, -118.0)
+    live_sources = [homes[0], entrance]
+    stable_home_envelope = lambda point: all(
+        math.dist(point, home) + 2.0 >= math.dist(entrance, home)
+        for home in homes
+    )
+    assert any(math.dist(entrance, source) < 15.0 for source in live_sources)
+    assert stable_home_envelope(entrance)
+    assert not stable_home_envelope((-315.0, -100.0))
+
+    assert 'if (memberRoster->second.Role != "tank")' in cached
+    assert "bool const cachedAnchorSafe = IsRecoveryFormationActive()" in cached
+    recovery = cached.index("NonTankEntranceEnvelopeSafe(memberSlot,")
+    live = cached.index("SourceUnionSafe(anchorState.ValidationRouteDrudgeAnchorX")
+    assert recovery < live
+    assert "route[nextIndex].TargetEntry != 41570" in geometry
 
 
 def test_prepull_keeps_non_tanks_at_entrance_and_guards_magmaw() -> None:
