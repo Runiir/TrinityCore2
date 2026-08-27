@@ -100,6 +100,28 @@ def test_movement_boundary_is_intent_driven_and_nonblocking() -> None:
     ]
 
 
+def test_point_hazard_submission_keeps_same_tick_damage_movement_compatible():
+    executor = EXECUTOR.read_text(encoding="utf-8")
+    combat = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatExecution.cpp").read_text(
+        encoding="utf-8"
+    )
+    commit = executor.index("CommitMovementEvidence(state, bot, intent, plan")
+    moving = executor.index("state.IsMoving = true;", commit)
+    motion_submit = executor.index("bot->GetMotionMaster()->Clear", moving)
+    assert commit < moving < motion_submit
+    assert "A point spline is already the bot's native movement state" in executor
+
+    helper_start = combat.index("bool HasMovementCompatibleLease")
+    callsite = combat.index("bool const movementCompatibleOnly", helper_start)
+    movement_helper = combat[helper_start:callsite]
+    assert "state->IsMoving" in movement_helper
+    assert "bot->isMoving()" in movement_helper
+    assert "bot->HasUnitState(UNIT_STATE_MOVING)" in movement_helper
+    assert "state->MovementLease.ExpiresAtMs > nowMs" in movement_helper
+    assert "Priority::Combat" in movement_helper
+    assert "HasMovementCompatibleLease(state, bot, nowMs);" in combat[callsite:]
+
+
 def test_route_and_recovery_progressive_admission_is_bounded() -> None:
     header = HELPER_HEADER.read_text(encoding="utf-8")
     adapter = MODULE.read_text(encoding="utf-8")

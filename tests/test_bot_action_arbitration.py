@@ -600,6 +600,60 @@ int main()
     assert(magmawPillarMove->Y == 0.0f);
     assert(magmawPillarMove->Z == dps.Position.Z);
 
+    // An actor inside Pillar keeps the survival escape candidate while the
+    // ordinary target channel still selects the nearest parasite add.
+    BotEncounter::Blackboard magmawPillarAdd = magmaw;
+    BotEncounter::ActorSnapshot pillarAdd = pillar;
+    BotEncounter::ActorSnapshot parasiteAtPillar = magmawBoss;
+    parasiteAtPillar.Guid = ObjectGuid(HighGuid::Unit, uint32(41806), uint32(76));
+    parasiteAtPillar.Entry = BotEncounter::AdaptiveMagmawStrategy::ParasiteEntry;
+    parasiteAtPillar.Position = { 2.0f, 0.0f, 0.0f };
+    magmawPillarAdd.Hostiles = { magmawBoss, magmawHead, parasiteAtPillar };
+    magmawPillarAdd.Summons = { pillarAdd };
+    auto magmawPillarAddPlan = magmawStrategy.Propose(
+        magmawPillarAdd, dps.Guid, "dps");
+    assert(magmawPillarAddPlan.DamageTarget == parasiteAtPillar.Guid);
+    assert(magmawPillarAddPlan.Movement.has_value());
+    assert(magmawPillarAddPlan.Movement->Id.Mechanic == "pillar_evade");
+    assert(magmawPillarAddPlan.Movement->ActionPriority
+        == BotActionArbitration::Priority::Survival);
+
+    // Pillar movement owns only Movement, so an independent trained damage
+    // action remains committable during the native escape.
+    Kernel magmawHazardDps;
+    magmawHazardDps.Begin(9050);
+    BotActionArbitration::Candidate magmawHazardCandidate;
+    magmawHazardCandidate.Key = "magmaw_pillar_escape";
+    magmawHazardCandidate.Source = magmawPlan.Movement->Id.Strategy;
+    magmawHazardCandidate.ActionPriority = magmawPlan.Movement->ActionPriority;
+    magmawHazardCandidate.UtilityScore = magmawPlan.Movement->Utility;
+    magmawHazardCandidate.RequiredResources = magmawPlan.Movement->Resources();
+    magmawHazardCandidate.ExpiresAtMs = magmawPlan.Movement->ExpiresAtMs;
+    magmawHazardCandidate.Attempt = []
+    {
+        return Outcome::Submitted("pillar_escape_submitted");
+    };
+    magmawHazardDps.Submit(std::move(magmawHazardCandidate));
+    bool magmawDamageRan = false;
+    BotActionArbitration::Candidate magmawDamageCandidate;
+    magmawDamageCandidate.Key = "magmaw_profile_damage";
+    magmawDamageCandidate.Source = "profile";
+    magmawDamageCandidate.ActionPriority =
+        BotActionArbitration::Priority::TrainedDamage;
+    magmawDamageCandidate.UtilityScore = 1.0f;
+    magmawDamageCandidate.RequiredResources = Uses(
+        Resource::GlobalCooldown, Resource::Cast, Resource::Target);
+    magmawDamageCandidate.ExpiresAtMs = 10000;
+    magmawDamageCandidate.Attempt = [&]
+    {
+        magmawDamageRan = true;
+        return Outcome::Submitted("instant_damage_submitted");
+    };
+    magmawHazardDps.Submit(std::move(magmawDamageCandidate));
+    Resolution const& magmawHazardDpsResolution = magmawHazardDps.Resolve();
+    assert(magmawDamageRan);
+    assert(magmawHazardDpsResolution.CommittedCandidates.size() == 2);
+
     BotEncounter::Blackboard magmawPrepull = magmaw;
     magmawPrepull.Players.front().HealthPct = 93.0f;
     auto magmawPrepullPlan = magmawStrategy.Propose(
@@ -777,6 +831,27 @@ int main()
             - magmawRangedPillar.Summons.front().Position.X,
         rangedPillarMove->Y
             - magmawRangedPillar.Summons.front().Position.Y) > 12.0f);
+
+    // Once the ranged actor is already at the selected safe anchor, the
+    // observed Pillar must not churn a matching movement request.
+    magmawRangedPillar.Players[2].Position = {
+        rangedPillarMove->X, rangedPillarMove->Y, rangedPillarMove->Z };
+    auto rangedPillarStablePlan = magmawStrategy.Propose(
+        magmawRangedPillar, dps.Guid, "dps");
+    assert(!rangedPillarStablePlan.Movement.has_value());
+
+    // Tank handling remains source-relative and does not inherit ranged
+    // anchor switching. A tank placed inside Pillar still gets its existing
+    // survival movement candidate.
+    BotEncounter::Blackboard magmawTankPillar = magmawRangedPillar;
+    magmawTankPillar.Players[0].Position =
+        magmawTankPillar.Summons.front().Position;
+    auto tankPillarPlan = magmawStrategy.Propose(
+        magmawTankPillar, tankA.Guid, "tank");
+    assert(tankPillarPlan.Movement.has_value());
+    assert(tankPillarPlan.Movement->Id.Mechanic == "pillar_evade");
+    assert(tankPillarPlan.Movement->ActionPriority
+        == BotActionArbitration::Priority::Survival);
 
     BotEncounter::Blackboard magmawFormationRestore = magmawRangedPillar;
     magmawFormationRestore.Summons.clear();

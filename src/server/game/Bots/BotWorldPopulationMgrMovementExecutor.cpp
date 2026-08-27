@@ -120,7 +120,11 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
         && BotWorldMovement::UsesNativeRecoveryGhostFlight(
             intent.Owner, intent.AllowNativeLongPath,
             state.NativeRecoveryGhostFlightEnabled);
-    state.IsMoving = plan.DynamicTarget || aerialGhostRecovery;
+    // A point spline is already the bot's native movement state as soon as it
+    // is submitted.  Keep that same-tick observation visible to the combat
+    // resolver so a cast-time spender cannot cancel a newly admitted hazard
+    // escape before Trinity reports UNIT_STATE_MOVING on the next update.
+    state.IsMoving = true;
 
     // MotionMaster is the independent, set-and-forget movement executor.
     // The caller may continue submitting combat or support intents while this

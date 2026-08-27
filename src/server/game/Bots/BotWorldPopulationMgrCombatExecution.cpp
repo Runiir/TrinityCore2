@@ -24,6 +24,21 @@ uint64 NowMs()
     return uint64(std::chrono::duration_cast<std::chrono::milliseconds>(
         GameTime::GetGameTimeSystemPoint().time_since_epoch()).count());
 }
+
+bool HasMovementCompatibleLease(
+    WorldBotState const* state, Player const* bot, uint64 nowMs)
+{
+    if (!state || !bot)
+        return false;
+
+    if (!state->IsMoving && !bot->isMoving()
+        && !bot->HasUnitState(UNIT_STATE_MOVING))
+        return false;
+
+    return state->MovementLease.ExpiresAtMs > nowMs
+        && uint8(state->MovementLease.MovementPriority)
+            >= uint8(BotMovementArbitration::Priority::Combat);
+}
 }
 
 bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* bot, Unit* target, uint32 hostileCount) const
@@ -169,11 +184,7 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
         && state->ProfileCastSuppressedTargetGuid == target->GetGUID())
         excludedSpellId = state->ProfileCastSuppressedSpellId;
 
-    bool const movementCompatibleOnly = state && bot
-        && (bot->isMoving() || bot->HasUnitState(UNIT_STATE_MOVING))
-        && state->MovementLease.ExpiresAtMs > nowMs
-        && uint8(state->MovementLease.MovementPriority)
-            >= uint8(BotMovementArbitration::Priority::Combat);
+    bool const movementCompatibleOnly = HasMovementCompatibleLease(state, bot, nowMs);
     ResolvedCombatAction action = ResolveProfileCombatAction(
         bot, target, hostileCount, densityOnly, excludedSpellId, areaOnly,
         selfCenteredOnly, forbidArea, allowMultidot && !forbidArea,
@@ -371,4 +382,3 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(Player* bot, U
         hostileCount, densityOnly, excludedSpellId, areaOnly,
         selfCenteredOnly, forbidArea, allowMultidot, hostileTargetOnly);
 }
-
