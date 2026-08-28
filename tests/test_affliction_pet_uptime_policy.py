@@ -29,7 +29,9 @@ def test_affliction_pet_attack_is_an_independent_native_candidate() -> None:
     assert "BotActionArbitration::Resource::Pet" in candidate
     resources = candidate.split("petAttack.Attempt", 1)[0]
     assert "Resource::Target" not in resources
-    assert "!context.Bot->IsInCombat() && !context.Target->IsInCombat()" in candidate
+    gate = candidate.split("ObjectGuid const petTargetGuid", 1)[0]
+    assert "!context.Target->IsInCombat() && !context.Target->GetVictim()" in gate
+    assert "context.Bot->IsInCombat()" not in gate
     assert "BotNativeAction::PetCommand" in candidate
     assert "ExecuteNativeActionIntent" in candidate
     for marker in (

@@ -19,7 +19,7 @@ void BotWorldPopulationMgr::SubmitAfflictionPetAttackCandidate(
             GetDungeonRole(context.Bot));
     if (profile.SpecTag != "affliction_warlock"
         || !context.Target || !context.Target->IsAlive()
-        || (!context.Bot->IsInCombat() && !context.Target->IsInCombat()))
+        || (!context.Target->IsInCombat() && !context.Target->GetVictim()))
         return;
 
     ObjectGuid const petTargetGuid = context.Target->GetGUID();
