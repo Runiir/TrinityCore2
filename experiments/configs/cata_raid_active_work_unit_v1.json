@@ -2,7 +2,7 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "runtime:blackwing_descent:magmaw:chainwielder_central_future_pack_movement_guard",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "authorized_for_implementation",
+  "classification": "pending_live_verification",
   "observed_at_commit": "e06bccb086c9808669f753e25e84ca0c91cfc3d0",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_e06bccb086_canary102_central_movement_guard_handoff_20260829.md",
@@ -51,5 +51,6 @@
     "live_run_allowed": false,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "Luna implements the shared destination hard mask; root reviews, tests, commits, builds the exact commit, and runs one fresh completion-watchdog canary."
+  "implementation_commit": "f7ed2769d2161f92cdb34283057a04512536389d",
+  "next_action": "Root builds the exact implementation commit under the guarded fast4 policy and runs one fresh completion-watchdog canary. Generation 2 must contain no entry-42362 damage, then both Drudges must clear and Magmaw must be reached."
 }
