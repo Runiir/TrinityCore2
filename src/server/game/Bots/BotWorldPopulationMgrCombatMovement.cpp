@@ -189,8 +189,7 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
 
     auto patrolCombatPointSafe = [&](float x, float y, float z)
     {
-        return (action && action->AutoAttackMode == "melee")
-            || IsValidationRoutePatrolCombatPointSafe(reference, x, y, z);
+        return IsValidationRoutePatrolCombatPointSafe(reference, x, y, z);
     };
     auto moveToTerrainProjectedPoint = [&](float x, float y, float z)
     {
@@ -271,6 +270,11 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
         // player chase without inventing a point or teleporting.
         float const targetX = reference->GetPositionX();
         float const targetY = reference->GetPositionY();
+        // The dynamic chase may bypass the static floor probe, but it still
+        // owns a concrete route destination. Keep future-pack admission
+        // closed while allowing normal melee closing inside the current pack.
+        if (!patrolCombatPointSafe(targetX, targetY, bot->GetPositionZ()))
+            return false;
         return MoveBotToPoint(state, bot, targetX, targetY,
             bot->GetPositionZ(), false,
             BotMovementArbitration::Owner::CombatRange,
