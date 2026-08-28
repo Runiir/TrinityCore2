@@ -2,8 +2,8 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "runtime:blackwing_descent:magmaw:bloodlust_stale_cohort_candidate",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "implementation_authorized",
-  "observed_at_commit": "93fd8308b0043a730086a856a898a97a135d57d7",
+  "classification": "pending_live_verification",
+  "observed_at_commit": "d5458eb6ce0a9310415241998b7962e4416d025d",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_93fd8308b0_canary101_bloodlust_stale_cohort_handoff_20260829.md",
     "sha256": "35558e5b614917970720a2f5da19f2f9d5aa21becac32b70d9d536a2c1e8b901"
@@ -51,8 +51,9 @@
   "implementation_constraints": {
     "maximum_c_or_cpp_lines": 999,
     "heavy_build_allowed": false,
-    "live_run_allowed": false,
+    "live_run_allowed": true,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "A Luna max runtime specialist should repair the exact deferred Bloodlust candidate boundary and return focused tests for root review."
+  "implementation_commit": "d5458eb6ce0a9310415241998b7962e4416d025d",
+  "next_action": "Root should build the exact implementation commit, then run one fresh clean completion-watchdog canary without a debugger."
 }
