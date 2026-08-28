@@ -55,3 +55,23 @@ def test_unsubmitted_movement_yields_instead_of_claiming_a_postcondition() -> No
     pending = kernel.index('"route_handled_pending_postcondition"')
 
     assert retry < pending
+
+
+def test_exact_drudge_position_wait_commits_the_typed_movement_lane() -> None:
+    kernel = _route_kernel(FALLBACK.read_text(encoding="utf-8"))
+    assert "IsExactDrudgePositionHold(context.Action)" in kernel
+    assert "routeAttempt->PositionHold" in kernel
+    assert '"drudge_entrance_position_hold"' in kernel
+    hold = kernel[kernel.index("routeAttempt->PositionHold") :]
+    assert "typedDrudgeValidationRoute" in hold
+    assert "context.AdaptiveDrudgeOwnsNode" in hold
+    assert "!context.DrudgeCombatAuthorityAllowed" in hold
+    route_action = kernel[
+        kernel.index('routeAction.Attempt = '):
+        kernel.index("context.State.DecisionKernel.Submit(std::move(routeAction))")
+    ]
+    assert "routeAttempt->PositionHold" in route_action
+    assert "Resource::Movement" in kernel[
+        kernel.index("BotActionArbitration::ResourceMask routeActionResources"):
+        kernel.index("routeAction.RequiredResources")
+    ]

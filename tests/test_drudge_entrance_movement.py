@@ -79,6 +79,12 @@ int main()
     assert(!ShouldSubmitNativeMovement(false, false, 0.1f));
     assert(!ShouldSubmitNativeMovement(false, false, 0.0f));
 
+    assert(IsExactDrudgePositionHold(
+        "drudge_entrance_exact_roster_stage_wait"));
+    assert(IsExactDrudgePositionHold("drudge_entrance_pull_owner_wait"));
+    assert(!IsExactDrudgePositionHold("drudge_entrance_stage_wait"));
+    assert(!IsExactDrudgePositionHold("drudge_entrance_native_path_rejected"));
+
     assert(ContinuePackCombat(Outcome::Arrived, true));
     assert(ContinuePackCombat(Outcome::ActivePathRetained, true));
     assert(ContinuePackCombat(Outcome::Submitted, true));

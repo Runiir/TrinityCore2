@@ -2,6 +2,7 @@
 #define TRINITY_BOT_WORLD_POPULATION_MGR_VALIDATION_ROUTE_DRUDGE_ENTRANCE_MOVEMENT_H
 
 #include <cstdint>
+#include <string_view>
 
 namespace BotRaidDrudgeEntranceMovement
 {
@@ -59,6 +60,17 @@ constexpr bool ShouldSubmitNativeMovement(bool arrived,
 {
     return !arrived && !activePathRetained
         && HasMeaningfulDistance(distance, epsilon);
+}
+
+// These waits are position contracts, not failed movement attempts. During
+// exact pre-pull staging the member is already at its declared anchor and must
+// retain the route movement lane while another roster member catches up.
+// Keep the classifier exact so ordinary combat/formation waits remain eligible
+// for their normal movement arbitration.
+constexpr bool IsExactDrudgePositionHold(std::string_view action)
+{
+    return action == "drudge_entrance_exact_roster_stage_wait"
+        || action == "drudge_entrance_pull_owner_wait";
 }
 
 // A pack-linked pull may keep its ordinary combat lane while native movement

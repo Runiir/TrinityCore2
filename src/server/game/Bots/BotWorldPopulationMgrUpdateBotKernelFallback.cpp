@@ -3,6 +3,7 @@
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotRouteCombatTargetPolicy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotAdaptiveDrudgeStrategy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeEntranceMovement.h"
 
 #include "Creature.h"
 #include "MotionMaster.h"
@@ -16,6 +17,7 @@
 #include <utility>
 
 using BotWorldPopulationMgrNativeHelpers::IsNativeCombatObserved;
+using BotRaidDrudgeEntranceMovement::IsExactDrudgePositionHold;
 
 void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
     BotUpdateContext& context)
@@ -27,6 +29,7 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             bool MovementSubmitted = false;
             bool CombatAttempted = false;
             bool ActionSubmitted = false;
+            bool PositionHold = false;
             BotActionArbitration::Outcome RouteOutcome;
         };
         std::shared_ptr<RouteAttempt> routeAttempt =
@@ -145,6 +148,10 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             routeAttempt->MovementSubmitted =
                 context.State.LastPathChangeMs > previousPathChangeMs
                 && context.State.ActivePathValid;
+            routeAttempt->PositionHold = typedDrudgeValidationRoute
+                && context.AdaptiveDrudgeOwnsNode
+                && !context.DrudgeCombatAuthorityAllowed
+                && IsExactDrudgePositionHold(context.Action);
             // MotionMaster paths are set-and-forget. A matching native path
             // can be retained without changing LastPathChangeMs; preserve
             // its movement lane so the route candidate cannot claim cast
@@ -202,6 +209,10 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                                 : std::string_view(
                                     context.State.LastCombatAttempt.Reason));
             }
+            else if (routeAttempt->PositionHold)
+                routeAttempt->RouteOutcome =
+                    BotActionArbitration::Outcome::Submitted(
+                        "drudge_entrance_position_hold");
             else if (routeAttempt->ActionSubmitted)
                 routeAttempt->RouteOutcome =
                     BotActionArbitration::Outcome::Started(
@@ -277,7 +288,8 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
         {
             BotActionArbitration::Outcome const outcome = runRoute();
             if (outcome.Result == BotActionArbitration::Disposition::Terminal
-                || routeAttempt->ActionSubmitted)
+                || routeAttempt->ActionSubmitted
+                || routeAttempt->PositionHold)
                 return outcome;
             return BotActionArbitration::Outcome::NotApplicable(
                 routeAttempt->MovementSubmitted
