@@ -51,12 +51,60 @@ def test_hunter_patrol_pull_resolves_a_live_same_group_tank():
         "member->IsInWorld()",
         "member->IsAlive()",
         "bot->GetGroup()",
-        "member->GetGroup() == bot->GetGroup()",
-        "member->GetMap() == bot->GetMap()",
-        "member != bot",
-        'memberRoster->second.Role == \"tank\"',
     ):
         assert marker in selector
+    assert "member != bot" in selector or "member == bot" in selector
+    assert (
+        "member->GetGroup() == bot->GetGroup()" in selector
+        or "member->GetGroup() != bot->GetGroup()" in selector
+    )
+    assert (
+        "member->GetMap() == bot->GetMap()" in selector
+        or "member->GetMap() != bot->GetMap()" in selector
+    )
+    assert (
+        'memberRoster->second.Role == "tank"' in selector
+        or 'memberRoster->second.Role != "tank"' in selector
+    )
+
+
+def test_missing_selected_tank_roster_fails_closed_without_map_at():
+    text = MODULE.read_text()
+    tank_selection = text.index("Player* tank = nullptr;")
+    hunter_preparation = text.index("if (hunterPullOwner", tank_selection)
+    selector = text[tank_selection:hunter_preparation]
+
+    assert ".at(" not in selector
+    assert "tankRosterSlotIndex = memberRoster->second.SlotIndex" in selector
+    assert "selectedTankRoster = Cohort().Raid.RosterByGuid.find(" in selector
+    missing = selector.index("selectedTankRoster == Cohort().Raid.RosterByGuid.end()")
+    assert selector.index("patrol_pull_selected_tank_roster_missing", missing) > missing
+    missing_absolute = tank_selection + missing
+    assert text.index("return hold(", missing_absolute) < hunter_preparation
+
+
+def test_missing_source_victim_roster_fails_closed_without_map_at():
+    text = MODULE.read_text()
+    victim = text.index("Player* sourceVictim = source->GetVictim()")
+    bot_roster = text.index("auto const botRoster", victim)
+    engaged_handoff = text[victim:bot_roster]
+
+    assert ".at(" not in engaged_handoff
+    assert "sourceVictimRoster = sourceVictim" in engaged_handoff
+    missing = engaged_handoff.index(
+        "sourceVictimRoster == Cohort().Raid.RosterByGuid.end()")
+    assert engaged_handoff.index("patrol_pull_source_victim_roster_missing", missing) > missing
+    assert engaged_handoff.index("return hold(", missing) < len(engaged_handoff)
+
+
+def test_patrol_valid_roster_uses_captured_slots_and_roles():
+    text = MODULE.read_text()
+
+    assert ".at(" not in text
+    assert "memberRoster->second.SlotIndex >= tankRosterSlotIndex" in text
+    assert "sourceVictimRoster->second.Role == \"tank\"" in text
+    assert "validation_route_patrol_wait_for_tank_threat" in text
+    assert "validation_route_patrol_misdirection" in text
 
 
 def test_hunter_patrol_observes_growl_off_before_misdirection_and_pull():

@@ -266,29 +266,47 @@ bool BotWorldPopulationMgr::TryValidationRoutePatrolPull(
                 return hold("validation_route_patrol_wait_for_puller", source);
 
             Player* tank = nullptr;
+            uint32 tankRosterSlotIndex = 0;
             for (WorldBotState const& cohortState : Party().Bots)
             {
                 Player* member = GetLoadedBot(cohortState);
                 auto const memberRoster = Cohort().Raid.RosterByGuid.find(
                     cohortState.Guid.GetCounter());
-                if (member && member->IsInWorld() && member->IsAlive()
-                    && member->GetHealth() && bot->GetGroup()
-                    && member->GetGroup() == bot->GetGroup()
-                    && member->GetMap() == bot->GetMap()
-                    && IsValidationCohortMemberInOriginalInstance(
+                if (!member || !member->IsInWorld() || !member->IsAlive()
+                    || !member->GetHealth() || !bot->GetGroup()
+                    || member->GetGroup() != bot->GetGroup()
+                    || member->GetMap() != bot->GetMap()
+                    || !IsValidationCohortMemberInOriginalInstance(
                         cohortState, member)
-                    && member != bot
-                    && memberRoster != Cohort().Raid.RosterByGuid.end()
-                    && memberRoster->second.Active
-                    && memberRoster->second.LeaseOwned
-                    && memberRoster->second.Role == "tank"
-                    && (!tank || memberRoster->second.SlotIndex
-                        < Cohort().Raid.RosterByGuid.at(
-                            tank->GetGUID().GetCounter()).SlotIndex))
-                    tank = member;
+                    || member == bot
+                    || memberRoster == Cohort().Raid.RosterByGuid.end()
+                    || !memberRoster->second.Active
+                    || !memberRoster->second.LeaseOwned
+                    || memberRoster->second.Role != "tank")
+                    continue;
+
+                if (tank && memberRoster->second.SlotIndex >= tankRosterSlotIndex)
+                    continue;
+
+                tank = member;
+                tankRosterSlotIndex = memberRoster->second.SlotIndex;
             }
             if (!tank)
                 return hold("validation_route_patrol_puller_no_tank", source);
+
+            // The selected pointer and roster identity must remain paired. A
+            // missing entry is a recoverable contract failure, not an
+            // exception that can terminate the worldserver.
+            auto const selectedTankRoster = Cohort().Raid.RosterByGuid.find(
+                tank->GetGUID().GetCounter());
+            if (selectedTankRoster == Cohort().Raid.RosterByGuid.end())
+            {
+                state.LastNoProgressReason =
+                    "patrol_pull_selected_tank_roster_missing";
+                return hold(
+                    "validation_route_patrol_selected_tank_roster_missing",
+                    source);
+            }
 
             if (hunterPullOwner
                 && !bot->HasAura(HUNTER_MISDIRECTION_SPELL_ID))
@@ -368,13 +386,24 @@ bool BotWorldPopulationMgr::TryValidationRoutePatrolPull(
             > Cohort().Config.ValidationRoutePatrolEngageRadiusYards)
             return hold("validation_route_patrol_chase_to_anchor", source);
 
-        bool const tankOwned = source->GetVictim()
-            && source->GetVictim()->ToPlayer()
-            && Cohort().Raid.RosterByGuid.find(
-                source->GetVictim()->GetGUID().GetCounter())
-                != Cohort().Raid.RosterByGuid.end()
-            && Cohort().Raid.RosterByGuid.at(
-                source->GetVictim()->GetGUID().GetCounter()).Role == "tank";
+        Player* sourceVictim = source->GetVictim()
+            ? source->GetVictim()->ToPlayer() : nullptr;
+        auto const sourceVictimRoster = sourceVictim
+            ? Cohort().Raid.RosterByGuid.find(
+                sourceVictim->GetGUID().GetCounter())
+            : Cohort().Raid.RosterByGuid.end();
+        if (sourceVictim
+            && sourceVictimRoster == Cohort().Raid.RosterByGuid.end())
+        {
+            state.LastNoProgressReason =
+                "patrol_pull_source_victim_roster_missing";
+            return hold(
+                "validation_route_patrol_source_victim_roster_missing",
+                source);
+        }
+        bool const tankOwned = sourceVictim && sourceVictimRoster
+            != Cohort().Raid.RosterByGuid.end()
+            && sourceVictimRoster->second.Role == "tank";
         auto const botRoster = Cohort().Raid.RosterByGuid.find(
             bot->GetGUID().GetCounter());
         bool const botIsTank = botRoster != Cohort().Raid.RosterByGuid.end()
