@@ -49,32 +49,44 @@ bool BotWorldPopulationMgr::IsImmediateNextValidationRouteEncounterMember(Creatu
     size_t nextIndex = Party().ValidationRouteManifestIndex + 1;
     if (nextIndex >= Party().ValidationRouteManifest.size())
         return false;
-    ValidationRouteManifestNode const& nextNode = Party().ValidationRouteManifest[nextIndex];
-    if (nextNode.Kind != "boss" && nextNode.Kind != "trash")
-        return false;
-
     uint32 const entry = creature->GetEntry();
-    bool const nextEntry = entry == nextNode.TargetEntry
-        || entry == nextNode.OpenerTargetEntry
-        || std::find(nextNode.TargetEntries.begin(), nextNode.TargetEntries.end(), entry)
-            != nextNode.TargetEntries.end()
-        || std::find(nextNode.AlternateTargetEntries.begin(),
-            nextNode.AlternateTargetEntries.end(), entry)
-            != nextNode.AlternateTargetEntries.end()
-        || std::find(nextNode.AddTargetEntries.begin(),
-            nextNode.AddTargetEntries.end(), entry)
-            != nextNode.AddTargetEntries.end()
-        || std::find(nextNode.PackTargetEntries.begin(),
-            nextNode.PackTargetEntries.end(), entry)
-            != nextNode.PackTargetEntries.end()
-        || std::find(nextNode.ScriptedEventEntries.begin(),
-            nextNode.ScriptedEventEntries.end(), entry)
-            != nextNode.ScriptedEventEntries.end();
-    bool const nextSpawn = (nextNode.TargetSpawnId
-            && creature->GetSpawnId() == nextNode.TargetSpawnId)
-        || std::find(nextNode.SplitSourceGuids.begin(),
-            nextNode.SplitSourceGuids.end(), creature->GetSpawnId())
-            != nextNode.SplitSourceGuids.end();
+    bool nextEntry = false;
+    bool nextSpawn = false;
+    // The current non-boss node owns the whole remainder of the route.  A
+    // visible later trash pack or boss must not be pulled by a direct cast,
+    // auto-attack, pet, multidot/AoE candidate, or range chase.  Keep this
+    // identity check manifest-owned instead of adding encounter-specific
+    // exceptions for Magmaw or any other boss two nodes ahead.
+    for (size_t routeIndex = nextIndex;
+        routeIndex < Party().ValidationRouteManifest.size(); ++routeIndex)
+    {
+        ValidationRouteManifestNode const& nextNode =
+            Party().ValidationRouteManifest[routeIndex];
+        if (nextNode.Kind != "boss" && nextNode.Kind != "trash")
+            continue;
+
+        nextEntry = nextEntry || entry == nextNode.TargetEntry
+            || entry == nextNode.OpenerTargetEntry
+            || std::find(nextNode.TargetEntries.begin(), nextNode.TargetEntries.end(), entry)
+                != nextNode.TargetEntries.end()
+            || std::find(nextNode.AlternateTargetEntries.begin(),
+                nextNode.AlternateTargetEntries.end(), entry)
+                != nextNode.AlternateTargetEntries.end()
+            || std::find(nextNode.AddTargetEntries.begin(),
+                nextNode.AddTargetEntries.end(), entry)
+                != nextNode.AddTargetEntries.end()
+            || std::find(nextNode.PackTargetEntries.begin(),
+                nextNode.PackTargetEntries.end(), entry)
+                != nextNode.PackTargetEntries.end()
+            || std::find(nextNode.ScriptedEventEntries.begin(),
+                nextNode.ScriptedEventEntries.end(), entry)
+                != nextNode.ScriptedEventEntries.end();
+        uint32 const spawnId = creature->GetSpawnId();
+        nextSpawn = nextSpawn || (nextNode.TargetSpawnId && spawnId == nextNode.TargetSpawnId)
+            || std::find(nextNode.SplitSourceGuids.begin(),
+                nextNode.SplitSourceGuids.end(), spawnId)
+                != nextNode.SplitSourceGuids.end();
+    }
 
     // A live member already enrolled in the current route generation is
     // authoritative even when the current and next nodes reuse an entry or a
