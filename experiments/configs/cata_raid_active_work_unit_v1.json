@@ -63,9 +63,12 @@
     "matched_live_verification_runs": 1
   },
   "implementation_checkpoint": {
-    "gameplay_commit": null,
+    "gameplay_commit": "05f82884bc653f207aa1d4cb5eac27fc81f17bfc",
     "capture_commit": "3da4a42724",
-    "status": "implementation_not_started",
+    "status": "focused_tests_passed_exact_build_pending",
+    "focused_tests_passed": 3,
+    "new_spell_module_lines": 57,
+    "loader_lines": 480,
     "canary92_runtime_commit": "5fb925eca7f4e49378edb6e70f7d81db951a7178",
     "canary92_report_sha256": "a2c7dd5d92c5713fb179b34d9946d96bec5e1117b7469e992977446afa7963ad",
     "canary92_raw_sha256": "31156b85b928361d2493e2025492cad43cd6b6fa1e5db6630cad02a34d9ce7bc",
@@ -78,9 +81,9 @@
   "implementation_constraints": {
     "maximum_c_or_cpp_lines": 999,
     "new_or_changed_helper_maximum_ccn": 15,
-    "heavy_build_allowed": false,
+    "heavy_build_allowed": true,
     "live_run_allowed": false,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "Implement the explicit-target Magma Spit missile filter in a separate sub-1000-line encounter module with loader, SQL, and focused tests."
+  "next_action": "Obtain an exact coordinator build for gameplay commit 05f82884bc653f207aa1d4cb5eac27fc81f17bfc, then update the checkpoint before fresh Canary93 provisioning."
 }
