@@ -2,6 +2,7 @@
 #include "Bots/BotActionExecutor.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotRouteCombatTargetPolicy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotAdaptiveDrudgeStrategy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeEntranceMovement.h"
 
@@ -100,6 +101,81 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                 || action.find("retry") != std::string::npos
                 || action.find("failed") != std::string::npos;
         };
+
+        // Adaptive Magmaw owns mechanics, movement, and target selection.  It
+        // must not own the route's observation edge as well: the route needs
+        // the same engagement/priority evidence as the generic path, while
+        // no generic boss cast or movement may be invoked a second time.
+        auto observeAdaptiveMagmawRoute = [this, &context]()
+            -> BotActionArbitration::Outcome
+        {
+            if (!context.AdaptiveMagmawOwnsNode
+                || Cohort().Config.ValidationRouteKind != "boss"
+                || Cohort().Config.ValidationRouteNodeId
+                    != "bwd.magmaw.encounter")
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "magmaw_route_observation_not_owned");
+
+            Unit* target = context.Target;
+            Creature const* creature = target ? target->ToCreature() : nullptr;
+            if (!target || !creature || !target->IsAlive()
+                || !context.Bot->IsValidAttackTarget(target)
+                || !IsNativeCombatObserved(context.Bot, target))
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "magmaw_route_observation_wait_for_native_combat");
+
+            uint32 const entry = creature->GetEntry();
+            bool const declaredMagmawTarget = entry
+                == BotEncounter::AdaptiveMagmawStrategy::BossEntry
+                || entry == BotEncounter::AdaptiveMagmawStrategy::HeadEntry
+                || entry == BotEncounter::AdaptiveMagmawStrategy::ParasiteEntry
+                || entry == BotEncounter::AdaptiveMagmawStrategy::ParasiteAltEntry;
+            if (!declaredMagmawTarget)
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "magmaw_route_observation_target_not_declared");
+
+            bool const targetChanged = context.State.LastDecisionTargetGuid
+                != target->GetGUID();
+            bool const firstEngagement = !context.State.WasInCombat;
+            if (!targetChanged && !firstEngagement)
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "magmaw_route_observation_already_recorded");
+
+            // This candidate is observation-only. The adaptive encounter
+            // owner already selected the target and owns movement/action
+            // submission; never rewrite either target or focus state here.
+            Party().ValidationRouteObservedEngagement = true;
+            std::string raw = BuildRawJson(context.Bot, target);
+            std::string semantic = BuildSemanticJson(context.Bot, target,
+                "adaptive_magmaw", &context.Power, context.Stage,
+                context.ChosenActivity.Activity);
+            RecordEvent(context.State, context.Bot, "validation_target_priority",
+                target, "native_combat_observed", raw.c_str(), semantic.c_str(),
+                context.Bot->GetExactDist(target),
+                Cohort().Config.ValidationRouteTargetEntry, 0);
+            RecordEvent(context.State, context.Bot, "boss_action", target,
+                "native_combat_observed", raw.c_str(), semantic.c_str(),
+                context.Bot->GetExactDist(target),
+                Cohort().Config.ValidationRouteTargetEntry, 0);
+            if (firstEngagement)
+                RecordEvent(context.State, context.Bot, "boss_started", target,
+                    "native_combat_observed",
+                    raw.c_str(), semantic.c_str(), context.Bot->GetExactDist(target),
+                    Cohort().Config.ValidationRouteTargetEntry, 0);
+            context.State.WasInCombat = true;
+            return BotActionArbitration::Outcome::NotApplicable(
+                "adaptive_magmaw_route_observation_recorded");
+        };
+
+        BotActionArbitration::Candidate magmawObservation;
+        magmawObservation.Key = "world.validation_route_magmaw_observation";
+        magmawObservation.Source = "validation_route_observer";
+        magmawObservation.ActionPriority = BotActionArbitration::Priority::Mechanic;
+        magmawObservation.UtilityScore = 0.0f;
+        magmawObservation.RequiredResources = BotActionArbitration::Uses(
+            BotActionArbitration::Resource::None);
+        magmawObservation.Attempt = observeAdaptiveMagmawRoute;
+        context.State.DecisionKernel.Submit(std::move(magmawObservation));
 
         auto runRoute = [this, &context, routeAttempt, routeOwnerReason,
             routeActionIsMovementOnly, typedDrudgeValidationRoute]()

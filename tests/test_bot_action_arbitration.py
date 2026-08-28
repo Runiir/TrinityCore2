@@ -1728,6 +1728,43 @@ def test_boss_adapter_requires_observable_work_and_rejects_stale_focus() -> None
     assert "targeting.IsScriptTarget" not in focus_filter
 
 
+def test_adaptive_magmaw_observation_records_native_combat_without_actions() -> None:
+    fallback = bot_source("BotWorldPopulationMgrUpdateBotKernelFallback.cpp")
+    observation_start = fallback.index(
+        "// Adaptive Magmaw owns mechanics, movement, and target selection."
+    )
+    observation_end = fallback.index("auto runRoute", observation_start)
+    observation = fallback[observation_start:observation_end]
+
+    assert 'Cohort().Config.ValidationRouteKind != "boss"' in observation
+    assert 'ValidationRouteNodeId\n                    != "bwd.magmaw.encounter"' in observation
+    assert "IsNativeCombatObserved(context.Bot, target)" in observation
+    assert "context.State.WasInCombat" in observation
+    assert "context.State.WasInCombat = true;" in observation
+    assert "Party().ValidationRouteObservedEngagement = true;" in observation
+    assert observation.count('"native_combat_observed"') == 3
+    for event in (
+        "validation_target_priority",
+        "boss_action",
+        "boss_started",
+    ):
+        assert f'"{event}"' in observation
+    assert observation.count(", 0);") == 3
+
+    # The observation candidate cannot become a second encounter owner or
+    # silently rewrite the adaptive target/focus selected upstream.
+    for forbidden in (
+        "RememberValidationRouteFocus",
+        "TryBossMechanics(",
+        "MoveBotTo",
+        "ExecuteProfileCombatAction",
+        "SubmitMeleeAutoAttackIntent",
+        "context.Target =",
+        "context.State.TargetGuid =",
+    ):
+        assert forbidden not in observation
+
+
 def test_trash_adapter_requires_observable_work_and_yields_passive_waits() -> None:
     fallback = bot_source("BotWorldPopulationMgrUpdateBotKernelFallback.cpp")
     start = fallback.index('trash.Key = "world.dungeon_trash"')
