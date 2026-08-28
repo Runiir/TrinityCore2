@@ -1,36 +1,40 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "boss:blackwing_descent:magmaw:10N:magma_spit_target_outcome",
-  "owner_skill": "raid-encounter-implementation",
+  "work_unit": "runtime:blackwing_descent:magmaw:10N:pincer_movement_ownership",
+  "owner_skill": "raid-bot-runtime-implementation",
   "classification": "implementation_required",
-  "observed_at_commit": "5fb925eca7f4e49378edb6e70f7d81db951a7178",
+  "observed_at_commit": "4c061723ec2d88ca56dfcc250eaab5fde1bcb1d2",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_canary92_magma_spit_handoff_20260828.md",
-    "sha256": "f0a5ff66ce27019ae94d49bb6619b8330416090820ba51fc7245a946e2e50730"
+    "path": "experiments/configs/cata_raid_magmaw_canary93_pincer_handoff_20260828.md",
+    "sha256": "39194b726232a84eff1dabd0f70fa52e84f8e2c41f8cbfc69f26a39cd97cfaf3"
   },
-  "first_broken_edge": "each_selected_magma_spit_missile_damages_the_entire_stacked_ranged_group",
+  "first_broken_edge": "assigned_hook_users_oscillate_between_pincer_approach_and_hazard_movement_until_mangle_kills_the_tank",
   "decisive_evidence": {
     "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
     "route_node_id": "bwd.magmaw.encounter",
-    "magma_spit_targeting_spell_id": 95280,
-    "magma_spit_missile_spell_id": 78359,
-    "normal_10_player_selected_targets": 3,
-    "first_volley_landed_damage_events": 24,
-    "first_volley_distinct_non_tank_targets": 8,
-    "first_volley_approximate_damage": 709000,
-    "simultaneous_dead_guids": [30007, 30008, 30009, 30010],
     "chainwielder_cleared": true,
     "drudges_cleared": true,
     "magmaw_reached": true,
     "magmaw_killed": false,
-    "pillar_of_flame_observed": false,
+    "first_dead_guid": 30002,
+    "first_death_last_spell_id": 89773,
+    "first_death_mangle_ticks": 8,
+    "second_dead_guid": 30001,
+    "second_death_last_spell_id": 89773,
+    "second_death_mangle_ticks": 8,
+    "native_pincer_mounts_observed": 0,
+    "native_hook_launches_observed": 0,
+    "later_pillar_death_guid": 30003,
+    "later_pillar_hits_within_one_second": 3,
     "terminal_failure_reason": "death_loop_watchdog",
-    "party_dps": 294473.294,
-    "party_hps": 14010.0,
-    "affliction_dps": 54136.412,
-    "affliction_hps": 329.412,
-    "affliction_pet_damage": 215037,
-    "affliction_pet_damage_share": 0.233655,
+    "party_dps": 266392.434,
+    "party_hps": 22059.522,
+    "affliction_dps": 41677.916,
+    "affliction_hps": 365.774,
+    "affliction_pet_damage": 2625009,
+    "affliction_pet_damage_share": 0.278687,
+    "magma_spit_max_retained_unique_victims_per_volley": 3,
+    "magma_spit_prior_first_volley_landed_hits": 24,
     "diagnose_includes_dps_hps": true,
     "forbidden_assistance_observed": false,
     "cleanup_passed": true,
@@ -39,17 +43,17 @@
   "repair_scope": {
     "status": "trace_backed_repair_authorized",
     "allowed": [
-      "filter_magma_spit_missile_destination_area_to_explicit_target",
-      "preserve_native_three_or_eight_target_selection",
-      "preserve_native_spell_damage",
-      "add_loader_sql_and_focused_regressions"
+      "retain_pincer_approach_for_assigned_hook_users_during_native_interaction_window",
+      "prevent_already_landed_crash_parasite_or_formation_movement_from_oscillating_the_pincer_path",
+      "preserve_immediate_local_pillar_escape",
+      "add_focused_competing_hazard_regression"
     ],
     "forbidden_shortcuts": [
-      "change_magma_spit_damage",
-      "reduce_magma_spit_selected_target_count",
-      "spread_ranged_to_mask_the_encounter_bug",
-      "increase_healer_power",
-      "force_survival_or_success",
+      "remove_or_reduce_mangle",
+      "reduce_encounter_damage",
+      "extend_native_pincer_window",
+      "teleport_players",
+      "force_vehicle_occupancy_or_boss_state",
       "watchdog_suppression",
       "guid_or_recorded_coordinate_special_case"
     ]
@@ -63,33 +67,15 @@
     "matched_live_verification_runs": 1
   },
   "implementation_checkpoint": {
-    "gameplay_commit": "27e956156b2c4c3a91dfbe387cab9a6c67f31a43",
-    "capture_commit": "3da4a42724",
-    "status": "compile_verified_final_receipt_bound_build_pending",
-    "focused_tests_passed": 3,
-    "build_attempt_failures": [
-      "distinct_world_object_and_unit_pointer_comparison",
-      "incomplete_unit_type_prevented_base_pointer_conversion"
-    ],
-    "new_spell_module_lines": 57,
-    "loader_lines": 480,
-    "compile_verification_commit": "389c55a94352d50663fbea9794afba30210bb5ca",
-    "compile_verification_receipt_path": "/tmp/trinity-magmaw-cb03-canary93-build.8zwyJK/worldserver-build-389c55-v8-receipt.json",
-    "compile_verification_receipt_sha256": "5c3b8b7c48800b88c8c11e598d8846291738c20f53a4ec0f1089f29cc4a38c1f",
-    "compile_verification_receipt_semantic_sha256": "c091534e02c1b0b01419ad3ea7229d895b5b9672d97b34beeaa4400ab574e650",
-    "compile_verification_binary_sha256": "d62466e971bb9db2699f8216c9eee939df51931b4354779712cd6ed6ad907adf",
-    "world_database_binding": {
-      "spell_id": 78359,
-      "script_name": "spell_magmaw_magma_spit_missile",
-      "readback_verified": true
-    },
-    "canary92_runtime_commit": "5fb925eca7f4e49378edb6e70f7d81db951a7178",
-    "canary92_report_sha256": "a2c7dd5d92c5713fb179b34d9946d96bec5e1117b7469e992977446afa7963ad",
-    "canary92_raw_sha256": "31156b85b928361d2493e2025492cad43cd6b6fa1e5db6630cad02a34d9ce7bc",
-    "canary92_log_sha256": "ab52d9f6ee751a6d2d6e2bb2f0e4467b6d7f89da448257a4c221c79601b176bd",
-    "canary92_evidence_demux_passed": true,
-    "canary92_combat_log_transport_passed": true,
-    "pending_pillar_repair_live_status": "not_exercised",
+    "canary93_runtime_commit": "4c061723ec2d88ca56dfcc250eaab5fde1bcb1d2",
+    "canary93_report_sha256": "f2340b48e46b84acc07b46440c5d734f84687349037fa444db2ec43dccd7de44",
+    "canary93_raw_sha256": "378fd3d45b16127d12f3e5bc080cfa3cc85df724501b4431031067e05522654b",
+    "canary93_log_sha256": "bb6b435d59a68ae3c1d9bde8224cad1d1cc6999385ad8bbdb78a339319d20fc0",
+    "canary93_combat_log_chunks": 307,
+    "canary93_evidence_demux_passed": true,
+    "canary93_combat_log_transport_passed": true,
+    "magma_spit_behaviorally_accepted": true,
+    "magma_spit_exact_cast_receipt_pending": true,
     "live_clear_claimed": false
   },
   "implementation_constraints": {
@@ -99,5 +85,5 @@
     "live_run_allowed": true,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "Commit this live authorization, obtain the final exact receipt-bound worldserver, freshly provision Canary93, and verify exactly three Magma Spit landed outcomes in a 10-player volley before classifying any later edge."
+  "next_action": "Implement the stable native pincer movement ownership seam, run focused tests, commit the bounded patch and handoff, obtain an exact coordinator build receipt, then freshly provision and run Canary94."
 }
