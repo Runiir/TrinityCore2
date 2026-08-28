@@ -707,6 +707,10 @@ int main()
     magmawStage.Route.NavigationHints = {
         { magmawBoss.Position.X - 5.0f, magmawBoss.Position.Y,
             magmawBoss.Position.Z + 1.0f } };
+    BotEncounter::ActorSnapshot stageMarks = dps;
+    stageMarks.Guid = ObjectGuid(HighGuid::Player, uint32(109));
+    stageMarks.ClassSpec = "marksmanship_hunter";
+    magmawStage.Players.push_back(stageMarks);
     magmawStage.Players[2].Position = magmawBoss.Position;
     magmawStage.Players[2].HealthPct = 93.0f;
     auto rangedStagePlan = magmawStrategy.Propose(
@@ -748,6 +752,8 @@ int main()
     auto const* rangedStageMove = std::get_if<Move>(
         &rangedStagePlan.Movement->Action);
     assert(rangedStageMove);
+    magmawStage.Players[3].Position = {
+        rangedStageMove->X, rangedStageMove->Y, rangedStageMove->Z };
     magmawStage.Players[2].Position = {
         rangedStageMove->X, rangedStageMove->Y, rangedStageMove->Z };
     auto stagedInjuredDpsPlan = magmawStrategy.Propose(
@@ -877,6 +883,76 @@ int main()
     magmawRangedPillar.Summons = { pillar };
     magmawRangedPillar.Summons.front().Position =
         magmawRangedPillar.Players[2].Position;
+
+    // A scoped hazard lease retains one safe parasite destination while the
+    // pack moves; it is replaced only after that destination becomes unsafe.
+    BotEncounter::Blackboard parasiteLeaseBoard = magmawRangedPillar;
+    parasiteLeaseBoard.Summons.clear();
+    parasiteLeaseBoard.Players[2].Position = { 0.0f, 0.0f, 0.0f };
+    BotEncounter::ActorSnapshot leaseParasite = parasite;
+    leaseParasite.Position = { 2.0f, 0.0f, 0.0f };
+    parasiteLeaseBoard.Hostiles = { magmawBoss, leaseParasite };
+    BotMovementArbitration::Lease parasiteLease;
+    parasiteLease.MovementOwner = BotMovementArbitration::Owner::Hazard;
+    parasiteLease.MovementPriority = BotMovementArbitration::Priority::Hazard;
+    parasiteLease.MovementScope = {
+        parasiteLeaseBoard.CurrentScope.AttemptId,
+        parasiteLeaseBoard.CurrentScope.WipeGeneration,
+        parasiteLeaseBoard.CurrentScope.RouteGeneration,
+        parasiteLeaseBoard.CurrentScope.MapId,
+        parasiteLeaseBoard.CurrentScope.InstanceId };
+    parasiteLease.X = -10.0f;
+    parasiteLease.Y = 15.0f;
+    auto retainedParasitePlan = magmawStrategy.Propose(
+        parasiteLeaseBoard, dps.Guid, "dps", &parasiteLease);
+    auto const* retainedParasiteMove = retainedParasitePlan.Movement
+        ? std::get_if<Move>(&retainedParasitePlan.Movement->Action) : nullptr;
+    assert(retainedParasiteMove);
+    assert(retainedParasiteMove->X == parasiteLease.X);
+    assert(retainedParasiteMove->Y == parasiteLease.Y);
+    BotEncounter::Blackboard movedParasiteBoard = parasiteLeaseBoard;
+    movedParasiteBoard.Hostiles[1].Position = { 8.0f, 8.0f, 0.0f };
+    auto movedParasitePlan = magmawStrategy.Propose(
+        movedParasiteBoard, dps.Guid, "dps", &parasiteLease);
+    auto const* movedParasiteMove = movedParasitePlan.Movement
+        ? std::get_if<Move>(&movedParasitePlan.Movement->Action) : nullptr;
+    assert(movedParasiteMove);
+    assert(movedParasiteMove->X == retainedParasiteMove->X);
+    assert(movedParasiteMove->Y == retainedParasiteMove->Y);
+    BotEncounter::Blackboard unsafeParasiteBoard = movedParasiteBoard;
+    unsafeParasiteBoard.Players[2].Position = {
+        parasiteLease.X - 3.0f, parasiteLease.Y - 4.0f, 0.0f };
+    unsafeParasiteBoard.Hostiles[1].Position = {
+        parasiteLease.X, parasiteLease.Y, parasiteLease.Z };
+    auto unsafeParasitePlan = magmawStrategy.Propose(
+        unsafeParasiteBoard, dps.Guid, "dps", &parasiteLease);
+    auto const* unsafeParasiteMove = unsafeParasitePlan.Movement
+        ? std::get_if<Move>(&unsafeParasitePlan.Movement->Action) : nullptr;
+    assert(unsafeParasiteMove);
+    assert(unsafeParasiteMove->X != parasiteLease.X
+        || unsafeParasiteMove->Y != parasiteLease.Y);
+
+    // A live parasite pack or an in-flight hazard path owns movement until
+    // clearance and native arrival; formation restore resumes afterwards.
+    BotEncounter::Blackboard parasiteRestore = parasiteLeaseBoard;
+    parasiteRestore.Players[2].Position = magmawBoss.Position;
+    BotEncounter::ActorSnapshot remoteParasite = leaseParasite;
+    remoteParasite.Position = { 80.0f, 0.0f, 0.0f };
+    parasiteRestore.Hostiles = { magmawBoss, remoteParasite };
+    auto parasiteRestorePlan = magmawStrategy.Propose(
+        parasiteRestore, dps.Guid, "dps");
+    assert(!parasiteRestorePlan.Movement.has_value());
+    BotEncounter::Blackboard inFlightRestore = parasiteRestore;
+    inFlightRestore.Hostiles = { magmawBoss };
+    auto inFlightRestorePlan = magmawStrategy.Propose(
+        inFlightRestore, dps.Guid, "dps", &parasiteLease, true, true);
+    assert(!inFlightRestorePlan.Movement.has_value());
+    auto completedRestorePlan = magmawStrategy.Propose(
+        inFlightRestore, dps.Guid, "dps", &parasiteLease, false, false);
+    assert(completedRestorePlan.Movement.has_value());
+    assert(completedRestorePlan.Movement->Id.Mechanic
+        == "ranged_formation_restore");
+
     auto rangedPillarPlan = magmawStrategy.Propose(
         magmawRangedPillar, dps.Guid, "dps");
     assert(rangedPillarPlan.Movement.has_value());
@@ -969,6 +1045,11 @@ int main()
     fixedBaiters.Players.push_back(thirdDps);
     fixedBaiters.Players.push_back(healer);
     fixedBaiters.Players[2].Alive = false;
+    BotEncounter::AssignmentLease broadKite;
+    broadKite.Kind = BotEncounter::AssignmentKind::Kite;
+    broadKite.AssigneeGuid = healer.Guid;
+    broadKite.ExpiresAtMs = fixedBaiters.ObservedAtMs + 1000;
+    fixedBaiters.Assignments.push_back(broadKite);
     auto thirdDpsPlan = magmawStrategy.Propose(
         fixedBaiters, thirdDps.Guid, "dps");
     auto healerPillarPlan = magmawStrategy.Propose(
@@ -977,6 +1058,16 @@ int main()
         || thirdDpsPlan.Movement->Id.Mechanic != "pillar_bait_switch");
     assert(!healerPillarPlan.Movement.has_value()
         || healerPillarPlan.Movement->Id.Mechanic != "pillar_bait_switch");
+
+    // A missing preferred class does not silently promote another DPS into
+    // the two-person bait team.
+    BotEncounter::Blackboard noMarksRoster = magmawRangedPillar;
+    noMarksRoster.Players[2].ClassSpec = "fire_mage";
+    noMarksRoster.Players[3].ClassSpec = "elemental_shaman";
+    auto noMarksPlan = magmawStrategy.Propose(
+        noMarksRoster, dps.Guid, "dps");
+    assert(!noMarksPlan.Movement.has_value()
+        || noMarksPlan.Movement->Id.Mechanic != "pillar_bait_switch");
 
     // With the frozen five-DPS roster, one Marks hunter and one Fire mage own
     // the mobile bait lane. Affliction, Elemental, and the second Fire mage
@@ -1227,6 +1318,7 @@ int main()
     // prepositioning and never turns into a mechanic-owned move.
     BotEncounter::Blackboard noPincerWarning = magmawPincerPreposition;
     noPincerWarning.Players[2].Auras.clear();
+    noPincerWarning.Players[1].Position = { 10.0f, 0.0f, 0.0f };
     auto noWarningPlan = magmawStrategy.Propose(
         noPincerWarning, hookBot.Guid, "dps");
     assert(noWarningPlan.Movement.has_value());

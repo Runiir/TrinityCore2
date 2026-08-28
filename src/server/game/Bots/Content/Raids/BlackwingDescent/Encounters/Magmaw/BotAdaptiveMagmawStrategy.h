@@ -2,6 +2,7 @@
 #define TRINITY_BOT_ADAPTIVE_MAGMAW_STRATEGY_H
 
 #include "Bots/BotEncounterBlackboard.h"
+#include "Bots/BotMovementArbiter.h"
 #include "Bots/BotNativeActionIntent.h"
 #include <algorithm>
 #include <cmath>
@@ -35,23 +36,17 @@ public:
     static constexpr uint32 PincerRightEntry = 41789;
     static constexpr uint32 SpikeEntry = 41767;
     static constexpr float HookInteractionDistance = 5.0f;
-    // Magmaw prefers Pillar targets at least combat-reach + 15 yards away.
-    // Its configured combat reach is 15 yards, so only the fixed mobile-DPS
-    // bait team belongs outside 30 yards.  Healers and ordinary ranged DPS
-    // use the support stack inside that preference boundary.
     static constexpr float RangedStackDistance = 30.0f;
     static constexpr float SupportStackDistance = 22.0f;
     static constexpr float RangedStackLateralOffset = 12.0f;
     static constexpr float RangedStackTolerance = 4.0f;
     static constexpr float ParasiteKiteLeadDistance = 22.0f;
-    // Keep a remote parasite from replacing the encounter target.  The
-    // native spell/range/LOS gates remain authoritative; this is only the
-    // strategy's actionable ranged envelope so a failed add cannot suppress
-    // ordinary damage indefinitely.
     static constexpr float RangedParasiteTargetDistance = 35.0f;
 
     AdaptiveMagmawPlan Propose(Blackboard const& board, ObjectGuid botGuid,
-        std::string_view role) const
+        std::string_view role,
+        BotMovementArbitration::Lease const* movementLease = nullptr,
+        bool activePathValid = false, bool moving = false) const
     {
         AdaptiveMagmawPlan plan;
         if (board.Route.NodeId != "bwd.magmaw.encounter")
@@ -68,9 +63,6 @@ public:
         PrepullDecision prepull = EvaluatePrepull(board, *observed.Boss);
         if (IsPrepull(board, *observed.Boss))
         {
-            // Formation/catch-up must remain actionable before the health
-            // gate settles: an injured straggler cannot rejoin the support
-            // anchor while its cohort is held in place.
             std::optional<MagmawRangedAnchors> const anchors =
                 ResolveRangedAnchors(board, *observed.Boss);
             if (anchors && !RangedGroupStaged(board, *anchors))
@@ -88,9 +80,6 @@ public:
                 plan.SuppressOffense = true;
                 return plan;
             }
-            // Only the deterministic main tank may create Magmaw's first
-            // offensive action. Other profiles stay suppressed until native
-            // combat state or a victim proves that the tank pull landed.
             if (!IsDesignatedPullTank(board, botGuid, role))
             {
                 plan.SuppressOffense = true;
@@ -107,7 +96,7 @@ public:
         plan.Interaction = ProposeHookInteraction(board, *bot, *observed.Boss,
             botGuid);
         plan.Movement = ProposeHazardMovement(board, *bot, *observed.Boss,
-            pincerWindow, pincerWarning);
+            pincerWindow, pincerWarning, movementLease);
         if (!plan.Movement)
             plan.Movement = ProposeHookPreposition(board, *bot,
                 *observed.Boss, botGuid);
@@ -115,7 +104,10 @@ public:
             plan.Movement = ProposeHookApproach(board, *bot, *observed.Boss,
                 botGuid);
         if (!plan.Movement && !pincerWindow
-            && !(IsPillarBaiter(board, botGuid) && HasActivePillar(board)))
+            && !(IsPillarBaiter(board, botGuid) && HasActivePillar(board))
+            && !HasLivingParasite(board)
+            && !HasActiveHazardPath(board, movementLease, activePathValid,
+                moving))
             plan.Movement = ProposeRangedFormationRestore(board, *bot,
                 *observed.Boss, role);
         return plan;
@@ -211,12 +203,6 @@ private:
             return left->Guid.GetRawValue() < right->Guid.GetRawValue();
         });
 
-        // The frozen Magmaw roster uses one Marks hunter and one Fire mage as
-        // its mobile Pillar/add team. Prefer those exact capabilities over
-        // roster order so Affliction, Elemental, and the second Fire mage can
-        // keep full boss uptime. Explicit Kite assignments still override
-        // this deterministic fallback.
-        constexpr size_t BaiterCount = 2;
         std::vector<ObjectGuid> baiters;
         for (std::string_view const spec : {
                 std::string_view("marksmanship_hunter"),
@@ -227,14 +213,10 @@ private:
                 {
                     return member->ClassSpec == spec;
                 });
-            if (preferred != dps.end())
-                baiters.push_back((*preferred)->Guid);
+            if (preferred == dps.end())
+                return std::nullopt;
+            baiters.push_back((*preferred)->Guid);
         }
-        for (ActorSnapshot const* member : dps)
-            if (baiters.size() < BaiterCount
-                && std::find(baiters.begin(), baiters.end(), member->Guid)
-                    == baiters.end())
-                baiters.push_back(member->Guid);
 
         auto const baiter = std::find(baiters.begin(), baiters.end(), botGuid);
         if (baiter == baiters.end())
@@ -244,11 +226,6 @@ private:
 
     static bool IsPillarBaiter(Blackboard const& board, ObjectGuid botGuid)
     {
-        for (AssignmentLease const& assignment : board.Assignments)
-            if (assignment.Kind == AssignmentKind::Kite
-                && assignment.AssigneeGuid == botGuid
-                && assignment.ExpiresAtMs > board.ObservedAtMs)
-                return true;
         return PillarBaiterRank(board, botGuid).has_value();
     }
 
@@ -299,15 +276,8 @@ private:
         MagmawActorObservation const& observed, ObjectGuid botGuid,
         std::string_view role)
     {
-        // The exposed head takes the encounter's native vulnerability bonus.
-        // Tanks can attack it too; keeping them on the armored body discards
-        // the entire burn window for no threat benefit while Magmaw is pinned.
         if (observed.Head)
             return observed.Head->Guid;
-        // Only the fixed mobile team owns parasites. Moving every ranged DPS
-        // and healer onto the add pack destroys boss uptime and drags the
-        // parasites through the support stack. A remote add must not hold a
-        // mobile profile on a target that native range/LOS gates reject.
         if (role == "dps" && IsPillarBaiter(board, botGuid)
             && observed.NearestParasite
             && observed.NearestParasiteDistance
@@ -521,20 +491,8 @@ private:
         BotNativeAction::Candidate candidate = BuildPointMovement(
             board, bot, destination, "pillar_bait_switch",
             BotActionArbitration::Priority::Survival, 500.0f);
-        // Keep one survival action identity for the complete native Pillar
-        // movement.  A board revision is an observation, not a new Pillar;
-        // using it here discarded the kernel retry state and allowed a
-        // rejected/stale path to fall back to profile movement on the next
-        // tick.  The summon GUID is stable for this warning and changes when
-        // the next Pillar is selected.
         candidate.Id.Actor = pillar.Guid;
         candidate.Id.EventGeneration = pillar.Guid.GetRawValue();
-        // A Pillar bait path is a fixed native point movement.  Do not use
-        // the bot's changing current Z as the request's destination: while
-        // the spline is in flight that made every tick look like a new path
-        // and allowed the impact to land before the baiter reached safety.
-        // Keep the route-proven anchor Z stable so the movement lease can be
-        // refreshed until native arrival or a bounded planner retry.
         if (BotNativeAction::Move* move =
                 std::get_if<BotNativeAction::Move>(&candidate.Action))
         {
@@ -587,51 +545,108 @@ private:
         return clearance;
     }
 
+    static bool SameMovementScope(Blackboard const& board,
+        BotMovementArbitration::Lease const& lease)
+    {
+        auto const& scope = lease.MovementScope;
+        auto const& current = board.CurrentScope;
+        return scope.AttemptId == current.AttemptId
+            && scope.WipeGeneration == current.WipeGeneration
+            && scope.RouteGeneration == current.RouteGeneration
+            && scope.MapId == current.MapId
+            && scope.InstanceId == current.InstanceId;
+    }
+
+    static std::optional<Vector3> RetainedParasiteDestination(
+        Blackboard const& board,
+        BotMovementArbitration::Lease const* movementLease)
+    {
+        if (!movementLease
+            || movementLease->MovementOwner
+                != BotMovementArbitration::Owner::Hazard
+            || movementLease->MovementPriority
+                != BotMovementArbitration::Priority::Hazard
+            || movementLease->DynamicTargetGuid
+            || !SameMovementScope(board, *movementLease))
+            return std::nullopt;
+        Vector3 const destination{ movementLease->X, movementLease->Y,
+            movementLease->Z };
+        constexpr float SafeClearance = 16.0f;
+        if (!Finite(destination)
+            || ParasiteClearance(board, destination) < SafeClearance)
+            return std::nullopt;
+        return destination;
+    }
+
+    static bool HasLivingParasite(Blackboard const& board)
+    {
+        return !ParasitePackIdentity(board).IsEmpty();
+    }
+
+    static bool HasActiveHazardPath(Blackboard const& board,
+        BotMovementArbitration::Lease const* movementLease,
+        bool activePathValid, bool moving)
+    {
+        return activePathValid && moving && movementLease
+            && movementLease->MovementOwner
+                == BotMovementArbitration::Owner::Hazard
+            && movementLease->MovementPriority
+                == BotMovementArbitration::Priority::Hazard
+            && SameMovementScope(board, *movementLease);
+    }
+
     static std::optional<BotNativeAction::Candidate> BuildParasiteEscape(
         Blackboard const& board, ActorSnapshot const& bot,
-        ActorSnapshot const& boss, ActorSnapshot const& parasite)
+        ActorSnapshot const& boss, ActorSnapshot const& parasite,
+        BotMovementArbitration::Lease const* movementLease)
     {
         std::optional<MagmawRangedAnchors> const anchors =
             ResolveRangedAnchors(board, boss);
-        if (!anchors)
+        std::optional<Vector3> destination = RetainedParasiteDestination(
+            board, movementLease);
+        if (!destination && !anchors)
             return MoveAway(board, bot, parasite,
                 "parasite_contact_evade", 16.0f);
 
-        std::vector<Vector3 const*> destinations = {
-            &anchors->Support, &anchors->Left, &anchors->Right };
-        auto closest = std::min_element(destinations.begin(),
-            destinations.end(), [&bot](Vector3 const* left,
-                Vector3 const* right)
-            {
-                return Distance2d(bot.Position, *left)
-                    < Distance2d(bot.Position, *right);
-            });
-        Vector3 const* destination = *closest;
-        constexpr float SafeClearance = 16.0f;
-        if (ParasiteClearance(board, *destination) < SafeClearance)
-            destination = *std::max_element(destinations.begin(),
-                destinations.end(), [&board](Vector3 const* left,
+        if (!destination)
+        {
+            std::vector<Vector3 const*> destinations = {
+                &anchors->Support, &anchors->Left, &anchors->Right };
+            auto closest = std::min_element(destinations.begin(),
+                destinations.end(), [&bot](Vector3 const* left,
                     Vector3 const* right)
                 {
-                    return ParasiteClearance(board, *left)
-                        < ParasiteClearance(board, *right);
+                    return Distance2d(bot.Position, *left)
+                        < Distance2d(bot.Position, *right);
                 });
+            Vector3 const* selected = *closest;
+            constexpr float SafeClearance = 16.0f;
+            if (ParasiteClearance(board, *selected) < SafeClearance)
+                selected = *std::max_element(destinations.begin(),
+                    destinations.end(), [&board](Vector3 const* left,
+                        Vector3 const* right)
+                    {
+                        return ParasiteClearance(board, *left)
+                            < ParasiteClearance(board, *right);
+                    });
+            destination = *selected;
+        }
 
         if (Distance2d(bot.Position, *destination) <= RangedStackTolerance)
             return std::nullopt;
         BotNativeAction::Candidate candidate = BuildPointMovement(board, bot,
             *destination, "parasite_contact_evade",
             BotActionArbitration::Priority::Survival, 450.0f);
-        // Keep one movement lease for the living pack rather than rebidding
-        // whenever another parasite becomes nearest. This lets the baiter
-        // finish a safe path before reassessing the next pack.
         candidate.Id.Actor = ParasitePackIdentity(board);
         if (candidate.Id.Actor.IsEmpty())
             candidate.Id.Actor = parasite.Guid;
         candidate.Id.EventGeneration = candidate.Id.Actor.GetRawValue();
         if (BotNativeAction::Move* move =
                 std::get_if<BotNativeAction::Move>(&candidate.Action))
+        {
+            move->Z = destination->Z;
             move->IntentReason = "parasite_contact_evade";
+        }
         return candidate;
     }
 
@@ -686,13 +701,12 @@ private:
 
     static std::optional<BotNativeAction::Candidate> ProposeHazardMovement(
         Blackboard const& board, ActorSnapshot const& bot,
-        ActorSnapshot const& boss, bool pincerWindow, bool pincerWarning)
+        ActorSnapshot const& boss, bool pincerWindow, bool pincerWarning,
+        BotMovementArbitration::Lease const* movementLease)
     {
         MagmawHazardObservation const observed = ObserveHazards(board, bot);
         if (observed.Pillar)
         {
-            // An assigned hook user keeps the native pincer window unless the
-            // user is already standing in the pillar.
             if (pincerWindow)
             {
                 if (std::optional<BotNativeAction::Candidate> const pillar =
@@ -710,8 +724,6 @@ private:
             }
         }
 
-        // Massive Crash and parasites are lower value than completing an
-        // already-open native pincer, except for an immediate Crash escape.
         if (pincerWindow)
         {
             if (std::optional<BotNativeAction::Candidate> const crash =
@@ -733,7 +745,7 @@ private:
                     *observed.NearestImmediateHazard,
                     "massive_crash_evade", 16.0f);
             return BuildParasiteEscape(board, bot, boss,
-                *observed.NearestImmediateHazard);
+                *observed.NearestImmediateHazard, movementLease);
         }
 
         if (pincerWarning && !HasMangleAura(bot))
@@ -869,11 +881,6 @@ private:
             && IsPincerVehicle(*assignment.Vehicle))
             return BuildHookCandidate(board, *assignment.Vehicle,
                 *assignment.Spike);
-        // Let the native spell-click handler own the effective interaction
-        // range. Magmaw's combat reach makes a player-like click valid beyond
-        // the strategy's center-distance approach threshold; an out-of-range
-        // click remains a retryable native result while the approach candidate
-        // is still proposed below.
         if (boss.Interactable && bot.VehicleGuid.IsEmpty())
             return BuildMountCandidate(board, boss);
         return std::nullopt;

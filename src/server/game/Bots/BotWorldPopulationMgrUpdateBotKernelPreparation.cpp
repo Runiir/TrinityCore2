@@ -395,7 +395,9 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
 
             BotEncounter::AdaptiveMagmawStrategy magmawStrategy;
             BotEncounter::AdaptiveMagmawPlan magmawPlan = magmawStrategy.Propose(
-                *Cohort().EncounterSnapshot, context.Bot->GetGUID(), GetDungeonRole(context.Bot));
+                *Cohort().EncounterSnapshot, context.Bot->GetGUID(),
+                GetDungeonRole(context.Bot), &context.State.MovementLease,
+                context.State.ActivePathValid, context.State.IsMoving);
             context.AdaptiveMagmawOwnsNode = magmawPlan.OwnsNode;
             context.AdaptiveMagmawSuppressOffense = magmawPlan.SuppressOffense;
             context.AdaptiveMagmawMovement = std::move(magmawPlan.Movement);
