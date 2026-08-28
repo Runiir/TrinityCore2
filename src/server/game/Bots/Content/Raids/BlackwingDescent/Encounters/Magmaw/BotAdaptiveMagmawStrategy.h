@@ -200,22 +200,45 @@ private:
     static std::optional<size_t> PillarBaiterRank(
         Blackboard const& board, ObjectGuid botGuid)
     {
-        std::vector<ObjectGuid> dps;
+        std::vector<ActorSnapshot const*> dps;
         for (ActorSnapshot const& member : board.Players)
             if (member.Role == "dps")
-                dps.push_back(member.Guid);
-        std::sort(dps.begin(), dps.end(), [](ObjectGuid left, ObjectGuid right)
+                dps.push_back(&member);
+        std::sort(dps.begin(), dps.end(), [](ActorSnapshot const* left,
+            ActorSnapshot const* right)
         {
-            return left.GetRawValue() < right.GetRawValue();
+            return left->Guid.GetRawValue() < right->Guid.GetRawValue();
         });
-        auto const baiter = std::find(dps.begin(), dps.end(), botGuid);
+
+        // The frozen Magmaw roster uses one Marks hunter and one Fire mage as
+        // its mobile Pillar/add team. Prefer those exact capabilities over
+        // roster order so Affliction, Elemental, and the second Fire mage can
+        // keep full boss uptime. Explicit Kite assignments still override
+        // this deterministic fallback.
         constexpr size_t BaiterCount = 2;
-        if (baiter == dps.end())
+        std::vector<ObjectGuid> baiters;
+        for (std::string_view const spec : {
+                std::string_view("marksmanship_hunter"),
+                std::string_view("fire_mage") })
+        {
+            auto const preferred = std::find_if(dps.begin(), dps.end(),
+                [spec](ActorSnapshot const* member)
+                {
+                    return member->ClassSpec == spec;
+                });
+            if (preferred != dps.end())
+                baiters.push_back((*preferred)->Guid);
+        }
+        for (ActorSnapshot const* member : dps)
+            if (baiters.size() < BaiterCount
+                && std::find(baiters.begin(), baiters.end(), member->Guid)
+                    == baiters.end())
+                baiters.push_back(member->Guid);
+
+        auto const baiter = std::find(baiters.begin(), baiters.end(), botGuid);
+        if (baiter == baiters.end())
             return std::nullopt;
-        size_t const rank = size_t(std::distance(dps.begin(), baiter));
-        if (rank >= std::min(BaiterCount, dps.size()))
-            return std::nullopt;
-        return rank;
+        return size_t(std::distance(baiters.begin(), baiter));
     }
 
     static bool IsPillarBaiter(Blackboard const& board, ObjectGuid botGuid)

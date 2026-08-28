@@ -165,14 +165,17 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
         if (!bot || !bot->IsInWorld() || bot->GetMap() != observer->GetMap())
             continue;
         BotEncounter::ActorSnapshot player = buildUnit(bot, BotEncounter::ActorKind::Player);
-        player.Role = GetDungeonRole(bot);
+        auto roster = Cohort().Raid.RosterByGuid.find(bot->GetGUID().GetCounter());
+        player.Role = roster != Cohort().Raid.RosterByGuid.end()
+            ? roster->second.Role : GetDungeonRole(bot);
+        player.ClassSpec = roster != Cohort().Raid.RosterByGuid.end()
+            ? roster->second.ClassSpec : GetBotClassSpec(bot);
         snapshot->Players.push_back(std::move(player));
         seenUnits.insert(bot->GetGUID());
 
         BotEncounter::TargetChannels channels;
         channels.DamageTarget = state.TargetGuid;
         channels.MechanicTarget = Party().ValidationRouteFocusGuid;
-        auto roster = Cohort().Raid.RosterByGuid.find(bot->GetGUID().GetCounter());
         if (roster != Cohort().Raid.RosterByGuid.end() && roster->second.Role == "tank")
             channels.TankAssignment = state.TargetGuid;
         snapshot->BotTargets.emplace(bot->GetGUID(), channels);

@@ -99,6 +99,7 @@ struct ActorSnapshot
     uint32 Entry = 0;
     ActorKind Kind = ActorKind::Hostile;
     std::string Role;
+    std::string ClassSpec;
     Vector3 Position;
     float Facing = 0.0f;
     uint64 Health = 0;

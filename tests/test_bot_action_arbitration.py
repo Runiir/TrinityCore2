@@ -524,6 +524,7 @@ int main()
     BotEncounter::ActorSnapshot dps = botActor;
     dps.Guid = ObjectGuid(HighGuid::Player, uint32(103));
     dps.Role = "dps";
+    dps.ClassSpec = "fire_mage";
     dps.Position = { 1.0f, 0.0f, 0.0f };
     tankA.HealthPct = 100.0f;
     tankB.HealthPct = 100.0f;
@@ -976,6 +977,46 @@ int main()
         || thirdDpsPlan.Movement->Id.Mechanic != "pillar_bait_switch");
     assert(!healerPillarPlan.Movement.has_value()
         || healerPillarPlan.Movement->Id.Mechanic != "pillar_bait_switch");
+
+    // With the frozen five-DPS roster, one Marks hunter and one Fire mage own
+    // the mobile bait lane. Affliction, Elemental, and the second Fire mage
+    // remain on the boss unless their own position becomes lethal.
+    BotEncounter::Blackboard mobileBaiters = magmawRangedPillar;
+    BotEncounter::ActorSnapshot secondFire = dps;
+    secondFire.Guid = ObjectGuid(HighGuid::Player, uint32(104));
+    BotEncounter::ActorSnapshot affliction = dps;
+    affliction.Guid = ObjectGuid(HighGuid::Player, uint32(105));
+    affliction.ClassSpec = "affliction_warlock";
+    BotEncounter::ActorSnapshot marks = dps;
+    marks.Guid = ObjectGuid(HighGuid::Player, uint32(106));
+    marks.ClassSpec = "marksmanship_hunter";
+    BotEncounter::ActorSnapshot elemental = dps;
+    elemental.Guid = ObjectGuid(HighGuid::Player, uint32(107));
+    elemental.ClassSpec = "elemental_shaman";
+    mobileBaiters.Players = {
+        tankA, tankB, dps, secondFire, affliction, marks, elemental };
+    for (BotEncounter::ActorSnapshot& member : mobileBaiters.Players)
+        member.Position = mobileBaiters.Summons.front().Position;
+    auto firstFireBait = magmawStrategy.Propose(
+        mobileBaiters, dps.Guid, "dps");
+    auto secondFireBoss = magmawStrategy.Propose(
+        mobileBaiters, secondFire.Guid, "dps");
+    auto marksBait = magmawStrategy.Propose(
+        mobileBaiters, marks.Guid, "dps");
+    auto afflictionBoss = magmawStrategy.Propose(
+        mobileBaiters, affliction.Guid, "dps");
+    auto elementalBoss = magmawStrategy.Propose(
+        mobileBaiters, elemental.Guid, "dps");
+    assert(firstFireBait.Movement.has_value());
+    assert(firstFireBait.Movement->Id.Mechanic == "pillar_bait_switch");
+    assert(marksBait.Movement.has_value());
+    assert(marksBait.Movement->Id.Mechanic == "pillar_bait_switch");
+    assert(secondFireBoss.Movement.has_value());
+    assert(secondFireBoss.Movement->Id.Mechanic == "pillar_evade");
+    assert(afflictionBoss.Movement.has_value());
+    assert(afflictionBoss.Movement->Id.Mechanic == "pillar_evade");
+    assert(elementalBoss.Movement.has_value());
+    assert(elementalBoss.Movement->Id.Mechanic == "pillar_evade");
 
     // Tank handling remains source-relative and does not inherit ranged
     // anchor switching. A tank placed inside Pillar still gets its existing
