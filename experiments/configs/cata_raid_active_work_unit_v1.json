@@ -1,40 +1,37 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:blackwing_descent:magmaw:bloodlust_stale_cohort_candidate",
+  "work_unit": "runtime:blackwing_descent:magmaw:chainwielder_central_future_pack_movement_guard",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "pending_live_verification",
-  "observed_at_commit": "b3150f52f3660f50e725c8189d35deda18a9b959",
+  "classification": "authorized_for_implementation",
+  "observed_at_commit": "e06bccb086c9808669f753e25e84ca0c91cfc3d0",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_93fd8308b0_canary101_bloodlust_stale_cohort_handoff_20260829.md",
-    "sha256": "35558e5b614917970720a2f5da19f2f9d5aa21becac32b70d9d536a2c1e8b901"
+    "path": "experiments/configs/cata_raid_magmaw_e06bccb086_canary102_central_movement_guard_handoff_20260829.md",
+    "sha256": "8e3d564ee449842316b3fe9cfcfdd849c21440b148ebf4e99332e2a6093634fb"
   },
-  "first_broken_edge": "deferred_magmaw_bloodlust_candidate_calls_party_through_stale_selected_cohort",
+  "first_broken_edge": "shared_movement_executor_admits_chainwielder_destination_inside_future_drudge_envelope",
   "decisive_evidence": {
     "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
-    "route_generation": 4,
-    "current_node": "bwd.magmaw.encounter",
-    "chainwielder_killed": true,
-    "drudges_killed": true,
-    "generation_2_drudge_contamination": 0,
-    "magmaw_engaged": true,
-    "bot_deaths": 0,
-    "alive_at_exit": 10,
-    "party_damage": 13230593,
-    "debugger_stop": "std::__throw_out_of_range",
-    "throwing_caller": "SubmitMagmawBloodlustCandidate::Attempt -> Party -> Cohort",
-    "report_sha256": "339b9fc5d13d00078a4185d81e7b86b4d193530fceee0762fcff4a88b4a7a26f",
-    "worldserver_log_sha256": "4404a089df68156a2db8d33f79c7915a46364542be11d6c0e2a094296c16801c"
+    "route_generation": 2,
+    "current_node": "bwd.magmaw.chainwielder",
+    "chainwielder_alive_when_contaminated": true,
+    "first_drudge_melee_timestamp_ms": 1787952753550,
+    "tank_position": [-334.058, -65.336, 212.502],
+    "drudge_position": [-327.242, -62.874, 212.253],
+    "distance_yards": 7.251,
+    "bot_deaths": 10,
+    "report_sha256": "6b3a7e0aa8d8a3369e7dfd3bfc73ebf4a913f483d36e2749c0515a1541fd6fde",
+    "combat_log_sha256": "fdbc7a09c842fa750e592ab24c6fac257512d6ea13416a7032dfa0ac29f17856"
   },
   "repair_scope": {
     "allowed": [
-      "repair_only_the_deferred_magmaw_bloodlust_candidate_cohort_boundary",
-      "fail_closed_if_the_original_context_is_no_longer_current",
-      "add_one_focused_stale_selection_counterexample"
+      "centralize_existing_future_trash_destination_admission_at_shared_movement_executor",
+      "preserve_safe_chainwielder_destinations",
+      "add_focused_unsafe_and_safe_destination_counterexamples"
     ],
     "forbidden_shortcuts": [
-      "change_class_rotation_or_damage",
-      "change_encounter_mechanics_route_coordinates_or_movement_policy",
-      "generalize_cohort_or_party_access_without_separate_evidence",
+      "change_route_coordinates_or_creature_aggro",
+      "change_class_rotation_damage_or_encounter_mechanics",
+      "add_more_caller_specific_movement_branches",
       "weaken_watchdog_or_acceptance",
       "run_a_live_shard_inside_the_specialist_work_unit"
     ]
@@ -51,9 +48,8 @@
   "implementation_constraints": {
     "maximum_c_or_cpp_lines": 999,
     "heavy_build_allowed": false,
-    "live_run_allowed": true,
+    "live_run_allowed": false,
     "commit_allowed_after_root_review": true
   },
-  "implementation_commit": "b3150f52f3660f50e725c8189d35deda18a9b959",
-  "next_action": "Root should build the exact implementation commit, then run one fresh clean completion-watchdog canary without a debugger."
+  "next_action": "Luna implements the shared destination hard mask; root reviews, tests, commits, builds the exact commit, and runs one fresh completion-watchdog canary."
 }
