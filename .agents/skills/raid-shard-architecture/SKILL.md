@@ -20,6 +20,12 @@ Require one exact tuple across config, generated route, runtime status, capture,
 
 `scenario_id + runtime_profile_id + pool_tag + route_manifest + frozen roster + assignment generation`
 
+Complete all receipt-bound setup before admission: exact gear,
+talents/glyphs, ordinary-pet row and spellbook/autocast, group/difficulty,
+roster leases, and initial map/instance. Once bot actions are enabled, verify
+these fields by observation only. A post-admission mutation is a terminal shard
+identity failure even if the gameplay intent was otherwise valid.
+
 - Give each boss a distinct scenario, runtime profile, pool tag, ten-character roster, evidence namespace, and route.
 - Require the selected profile to own the selected route manifest. Reject empty, foreign, or substituted manifests.
 - Never inherit Stonecore, canonical BWD, or another boss profile as a fallback.

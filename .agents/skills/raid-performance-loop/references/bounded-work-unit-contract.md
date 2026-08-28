@@ -40,6 +40,17 @@ outside the owned files is allowed only to resolve the admitted edge.
   reviewed boss phase that releases it; shard architecture validates the
   resulting bag item, cast, aura, target, and timing receipts. Do not duplicate
   the reservation or release policy in a class rotation or route fixture.
+- Treat an admission receipt as a mutation boundary. Gear, talents, glyphs,
+  pet row/spellbook/autocast state, roster leases, group identity, difficulty,
+  map, and instance identity must reach their declared state before the
+  receipt commits. After commit, decision and route code may observe them but
+  must not repair or normalize them. A legitimate native gameplay transition
+  must be represented explicitly in the receipt contract before it is allowed;
+  never silence an identity-drift diagnostic to accommodate a late mutation.
+- Keep each receipt-bound observer and canonicalizer in one shared production
+  owner. Do not copy pet, gear, roster, or instance identity logic into
+  calibration, route, and runtime functions. If multiple consumers need it,
+  extract a value-only helper and test all consumers against the same result.
 
 ## Return a bounded handoff
 

@@ -111,6 +111,13 @@ release phase in a class rotation. Shared reservation belongs to
 `raid-encounter-implementation`. Emergency defensive and healing cooldowns are
 not withheld merely because the current route node is trash.
 
+Pet autocast configuration is persistent setup, not a combat-priority action.
+Declare the class-correct initial autocast state for provisioning/admission;
+after the receipt commits, role code may issue ordinary pet attack/follow and
+rank pet actions but must not toggle receipt-bound autocast or rewrite the pet
+spellbook. Return late setup to `raid-bot-runtime-implementation` with the
+identity-drift reason rather than suppressing the receipt check.
+
 Do not tune from final DPS alone. A diagnostic-only edit needs one observed
 first-broken edge and one metric expected to move; run one before/after check
 and stop. Permit at most one implementation plus one matched verification run

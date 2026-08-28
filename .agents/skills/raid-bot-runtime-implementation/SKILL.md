@@ -65,6 +65,20 @@ Extract or reuse a deterministic C++ transition boundary when practical. Add
 focused tests for the recorded counterexample and nearby valid states. A
 source-shape test alone does not confirm native behavior.
 
+Before changing a live decision path, inventory every state it mutates and
+compare that list with the active admission receipt. Receipt-bound pet
+spellbook/autocast, gear, talents/glyphs, roster leases, group/difficulty, and
+map/instance state are pre-admission setup, not route recovery. Runtime after
+admission is observation-only for those identities. Move required setup before
+receipt commit and preserve the drift failure; do not weaken, refresh, or
+rewrite the receipt after actions start.
+
+Search for duplicate identity observers before adding another local check.
+The 2026-08-28 audit found `ObserveActiveOrdinaryHunterPet` duplicated across
+six validation/calibration translation units. A bounded repair should reuse one
+shared value-only observer when that duplication touches the admitted edge;
+do not broaden an unrelated repair into a repository-wide cleanup.
+
 For set-and-forget native movement, distinguish the short arbitration lease
 from the native generator it admitted. A lease may expire exactly at the next
 decision cadence while the receipt-bound `MotionMaster` path is still active.
