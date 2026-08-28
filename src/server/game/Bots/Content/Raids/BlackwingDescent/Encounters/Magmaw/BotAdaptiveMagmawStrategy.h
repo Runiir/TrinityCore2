@@ -43,6 +43,7 @@ public:
     static constexpr float SupportStackDistance = 22.0f;
     static constexpr float RangedStackLateralOffset = 12.0f;
     static constexpr float RangedStackTolerance = 4.0f;
+    static constexpr float ParasiteKiteLeadDistance = 22.0f;
     // Keep a remote parasite from replacing the encounter target.  The
     // native spell/range/LOS gates remain authoritative; this is only the
     // strategy's actionable ranged envelope so a failed add cannot suppress
@@ -552,6 +553,23 @@ private:
             });
     }
 
+    static ObjectGuid ParasitePackIdentity(Blackboard const& board)
+    {
+        ObjectGuid identity;
+        auto inspect = [&identity](ActorSnapshot const& actor)
+        {
+            if (actor.Alive && IsParasiteEntry(actor.Entry)
+                && (identity.IsEmpty()
+                    || actor.Guid.GetRawValue() < identity.GetRawValue()))
+                identity = actor.Guid;
+        };
+        for (ActorSnapshot const& actor : board.Hostiles)
+            inspect(actor);
+        for (ActorSnapshot const& actor : board.Summons)
+            inspect(actor);
+        return identity;
+    }
+
     static float ParasiteClearance(Blackboard const& board,
         Vector3 const& point)
     {
@@ -604,7 +622,16 @@ private:
         BotNativeAction::Candidate candidate = BuildPointMovement(board, bot,
             *destination, "parasite_contact_evade",
             BotActionArbitration::Priority::Survival, 450.0f);
-        candidate.Id.Actor = parasite.Guid;
+        // Keep one movement lease for the living pack rather than rebidding
+        // whenever another parasite becomes nearest. This lets the baiter
+        // finish a safe path before reassessing the next pack.
+        candidate.Id.Actor = ParasitePackIdentity(board);
+        if (candidate.Id.Actor.IsEmpty())
+            candidate.Id.Actor = parasite.Guid;
+        candidate.Id.EventGeneration = candidate.Id.Actor.GetRawValue();
+        if (BotNativeAction::Move* move =
+                std::get_if<BotNativeAction::Move>(&candidate.Action))
+            move->IntentReason = "parasite_contact_evade";
         return candidate;
     }
 
@@ -694,8 +721,12 @@ private:
             return std::nullopt;
         }
 
+        float const immediateDistance = observed.NearestImmediateHazard
+                && IsParasiteEntry(observed.NearestImmediateHazard->Entry)
+                && IsPillarBaiter(board, bot.Guid)
+            ? ParasiteKiteLeadDistance : 12.0f;
         if (observed.NearestImmediateHazard
-            && observed.NearestImmediateHazardDistance <= 12.0f)
+            && observed.NearestImmediateHazardDistance <= immediateDistance)
         {
             if (IsCrashHazard(*observed.NearestImmediateHazard))
                 return MoveAway(board, bot,

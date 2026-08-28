@@ -1781,13 +1781,24 @@ def test_magmaw_pillar_bait_uses_summon_lease_and_bounded_replan() -> None:
     )
     movement = candidates[movement_start:movement_end]
     retry_start = movement.index(
-        'if (intent.Id.Mechanic == "pillar_bait_switch")'
+        'if (intent.Id.Mechanic == "pillar_bait_switch"'
     )
     retry = movement[retry_start:movement.index("movement.Attempt", retry_start)]
     assert "movement.RetryBaseMs = 250;" in retry
     assert "movement.RetryMaxMs = 2000;" in retry
     assert "movement.EscalateAfter = 4;" in retry
-    assert "native movement" in retry
+    assert "movement receipts" in retry
+
+    assert "ParasiteKiteLeadDistance = 22.0f" in strategy
+    parasite_start = strategy.index(
+        "static std::optional<BotNativeAction::Candidate> BuildParasiteEscape("
+    )
+    parasite_end = strategy.index("static bool IsCrashHazard", parasite_start)
+    parasite = strategy[parasite_start:parasite_end]
+    assert "candidate.Id.Actor = ParasitePackIdentity(board);" in parasite
+    assert "candidate.Id.EventGeneration = candidate.Id.Actor.GetRawValue();" in parasite
+    assert 'move->IntentReason = "parasite_contact_evade";' in parasite
+    assert '|| intent.Id.Mechanic == "parasite_contact_evade"' in candidates
 
 
 def test_native_route_interactions_use_player_handlers_and_observed_postconditions() -> None:

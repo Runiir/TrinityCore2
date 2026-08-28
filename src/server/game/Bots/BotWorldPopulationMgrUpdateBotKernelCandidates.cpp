@@ -103,12 +103,13 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                 movement.UtilityScore = intent.Utility;
                 movement.RequiredResources = intent.Resources();
                 movement.ExpiresAtMs = intent.ExpiresAtMs;
-                if (intent.Id.Mechanic == "pillar_bait_switch")
+                if (intent.Id.Mechanic == "pillar_bait_switch"
+                    || intent.Id.Mechanic == "parasite_contact_evade")
                 {
-                    // Keep failed Pillar paths retryable without churning the
-                    // stable summon-scoped candidate.  The native movement
-                    // receipt remains the authority for completion; this is
-                    // only the bounded planner retry cadence.
+                    // Keep failed encounter paths retryable without churning
+                    // their stable summon- or pack-scoped candidate. Native
+                    // movement receipts remain the authority for completion;
+                    // this is only the bounded planner retry cadence.
                     movement.RetryBaseMs = 250;
                     movement.RetryMaxMs = 2000;
                     movement.EscalateAfter = 4;
