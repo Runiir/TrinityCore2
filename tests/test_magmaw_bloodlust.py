@@ -77,7 +77,7 @@ def test_first_exposed_head_and_all_raid_lockouts_are_pure_observations() -> Non
 
     for spell_id in (2825, 32182, 80353, 90355, 57723, 57724, 80354, 95809):
         assert str(spell_id) in helper
-    assert "FindRaidLockout(board)" in text(MODULE)
+    assert "FindRaidLockout(*encounterSnapshot)" in text(MODULE)
     assert "ObservedBloodlustAura(board" in text(MODULE)
     assert "TimingEvidence" in helper
     assert "no_wcl_verification" in helper
@@ -96,7 +96,7 @@ def test_bloodlust_is_one_native_cast_with_normal_readiness_and_telemetry() -> N
     assert "MagmawBloodlustOwnerGuid" in runtime
     assert "MagmawBloodlustHeadGuid" in runtime
 
-    assert "TryCastFriendlySpell(context.Bot, context.Bot, BloodlustSpell" in body
+    assert "TryCastFriendlySpell(originalBot, originalBot, BloodlustSpell" in body
     assert '"submitted_native_spell_2825"' in body
     assert '"observed_aura_2825"' in body
     assert '"blocked_" + reason' in body
@@ -127,6 +127,21 @@ def test_bloodlust_is_one_native_cast_with_normal_readiness_and_telemetry() -> N
     assert "SubmitMagmawBloodlustCandidate(context);" in text(CANDIDATES)
     assert "BotWorldPopulationMgrMagmawBloodlust.cpp" in text(CMAKE)
     assert 'observedEvent == "magmaw_bloodlust"' in text(EVENTS)
+
+    attempt = body[body.index("bloodlust.Attempt =") :]
+    assert "Cohort()" not in attempt
+    assert "Party()" not in attempt
+    assert "std::string const cohortId = _runningCohortId" in body
+    assert "FindCohort(cohortId) != cohort" in body
+    assert "magmaw_bloodlust_stale_context_attempt" in body
+    assert "magmaw_bloodlust_stale_context_wipe" in body
+    assert "magmaw_bloodlust_stale_context_route" in body
+    assert "magmaw_bloodlust_stale_context_snapshot" in body
+    assert "currentMagmawBloodlustContextReason," in attempt
+    assert "recordBloodlustEvent, findNativeRaidLockout" in attempt
+    assert "&currentMagmawBloodlustContextReason" not in attempt
+    assert "&recordBloodlustEvent" not in attempt
+    assert "&findNativeRaidLockout" not in attempt
 
     for path in (HELPER, MODULE, MANAGER, RUNTIME, CANDIDATES, EVENTS):
         assert len(text(path).splitlines()) < 1000, path
