@@ -2,6 +2,7 @@
 #include "Bots/BotWorldPopulationMgrConsumables.h"
 #include "Bots/BotWorldPopulationMgrRaidConsumables.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
+#include "Bots/BotWorldPopulationMgrUpdateContext.h"
 
 #include "GameTime.h"
 #include "Item.h"
