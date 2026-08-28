@@ -82,7 +82,7 @@ bool BotWorldPopulationMgr::IsValidationRoutePatrolCombatPointSafe(
         ValidationRouteManifestNode const& futureNode =
             Party().ValidationRouteManifest[routeIndex];
         if (futureNode.Kind != "trash" || !futureNode.TargetSpawnId
-            || futureNode.MapId != target->GetMapId())
+            || futureNode.MapId != mapId)
             continue;
 
         std::vector<ObjectGuid::LowType> sourceIds = {

@@ -102,3 +102,13 @@ def test_recorded_future_drudge_destination_is_rejected_and_anchor_is_admitted()
             chain["patrol_combat_anchor"]["y"])
     assert min(math.dist(unsafe, home) for home in homes) <= guard_clearance
     assert min(math.dist(safe, home) for home in homes) > guard_clearance
+
+
+def test_target_independent_guard_uses_its_captured_map_identity():
+    formation = FORMATION.read_text(encoding="utf-8")
+    helper = formation[
+        formation.index("Map* map, uint32 mapId"):
+        formation.index("bool BotWorldPopulationMgr::TryValidationRoutePatrolCombatAnchor")
+    ]
+    assert "futureNode.MapId != mapId" in helper
+    assert "target->GetMapId()" not in helper
