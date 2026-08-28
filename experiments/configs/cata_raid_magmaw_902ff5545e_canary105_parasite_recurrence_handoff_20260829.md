@@ -18,17 +18,19 @@ raid reached Magmaw, dealt `14,762,649` damage, and wiped. Magmaw active-window
 throughput was `79,798.103` DPS and `11,841.059` HPS. The final report records
 12 cumulative deaths and no boss kill.
 
-The Canary104 same-level wrong-floor rejection did not recur in the exercised
-Magmaw movement receipts. This is provisional evidence only because the route
-did not clear.
+The Canary104 same-level path rejection also recurred. Final forced traces
+contain 92 rejected requested-intent receipts: 63 partial-path and 29 floor-gap
+rejections. This is occurrence 2 of
+`same_level_encounter_hazard_path_rejection`, not closure evidence.
 
 ## First recurring encounter edge
 
 Player parasite control failed again. Fire mage `Mgwdpsa` first received
 Parasitic Infection at `1787957617758`; `Mgwdpsb` followed 242 ms later.
 Ultimately nine of ten players took Parasitic Infection or Infectious Vomit:
-all five DPS, all three healers, and the Blood DK. The infection/vomit damage
-recorded in the normalized analysis totals `772,449`.
+all five DPS, all three healers, and the Blood DK. The deduplicated
+damage-taken aggregates contain 50 Parasitic Infection events for `362,857`
+damage and 15 Infectious Vomit events for `204,796`, totaling `567,653`.
 
 This is occurrence 9 of the stable causal signature
 `magmaw_parasite_control_allows_player_infection` in

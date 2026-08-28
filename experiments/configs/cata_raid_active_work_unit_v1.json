@@ -6,12 +6,12 @@
   "observed_at_commit": "902ff5545e4a3fc37966c3ae7c37ca1a02eebd8e",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_902ff5545e_canary105_parasite_recurrence_handoff_20260829.md",
-    "sha256": "62c6ffc12f0169737af9067309aca6c701f2d45e21eb7051dbb6aa522900dad5"
+    "sha256": "c1eacf2bc922750c65070266796183faeebd853f549083e6f60e97d1c9d3dfbe"
   },
   "prior_work_unit_result": {
     "work_unit": "runtime:blackwing_descent:magmaw:same_level_hazard_path_admission",
-    "classification": "provisional_absent_on_matched_canary",
-    "proof": "Canary105 exercised Magmaw movement without the Canary104 unrelated-lower-floor rejection, but did not clear the route."
+    "classification": "failed_matched_canary_recurred",
+    "proof": "Canary105 final traces contain 63 partial-path and 29 floor-gap rejected mechanic moves. The blocker remains open at occurrence 2."
   },
   "first_broken_edge": "fixed_mobile_bait_team_reactively_reenters_parasites_and_allows_player_infection",
   "causal_signature": "magmaw_parasite_control_allows_player_infection",
@@ -33,7 +33,9 @@
     "magmaw_active_hps": 11841.059,
     "bot_deaths": 12,
     "infected_player_count": 9,
-    "infection_and_vomit_damage": 772449,
+    "infection_and_vomit_damage": 567653,
+    "rejected_mechanic_partial_paths": 63,
+    "rejected_mechanic_floor_gaps": 29,
     "first_infection_timestamp_ms": 1787957617758,
     "report_sha256": "a0bd929d3ef033b5acb4d1c914a6f83816533612fa27d17ae79c42b416ad3b7d",
     "combat_analysis_sha256": "19d51d6fdca6fe3874b5a91c40692bd092e34939395628044a474123f4bc15ad",

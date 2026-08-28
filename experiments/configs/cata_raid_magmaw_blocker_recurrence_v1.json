@@ -112,10 +112,10 @@
       "blockers": {
         "magmaw_parasite_control_allows_player_infection": "occurred",
         "chainwielder_future_drudge_contamination": "absent",
-        "same_level_encounter_hazard_path_rejection": "absent"
+        "same_level_encounter_hazard_path_rejection": "occurred"
       },
       "combat_analysis_sha256": "19d51d6fdca6fe3874b5a91c40692bd092e34939395628044a474123f4bc15ad",
-      "note": "nine of ten players took Parasitic Infection or Infectious Vomit; Magmaw not killed"
+      "note": "nine of ten players took Parasitic Infection or Infectious Vomit; 63 partial-path and 29 floor-gap mechanic moves were rejected; Magmaw not killed"
     }
   ]
 }
