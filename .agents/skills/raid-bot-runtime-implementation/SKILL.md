@@ -47,6 +47,16 @@ queue, and trace ownership, admission, execution, and outcome boundaries.
 Accept the refactor only when the effective decision graph or ownership
 overlap shrinks. Keep every C/C++ source and header below 1,000 lines.
 
+An unrelated rebuild that exposes an older failure usually changed timing; it
+does not make the newest patch the cause. Trace the first admitted owner and
+native outcome before inspecting the latest diff. Treat missing or default
+metadata conservatively: a null action, absent profile result, unregistered pack
+GUID, temporarily unavailable pet, or stale route target must not bypass a
+safety, identity, or cleanup invariant. Test the missing/default case and the
+nearby explicit valid case. Search for the same bypass shape at adjacent
+ownership boundaries, but report each additional finding as a separate bounded
+work unit instead of widening the current repair.
+
 Change the smallest shared transition, gate, owner token, or native-action
 edge that explains the evidence. Preserve ordinary player movement, corpse
 release, graveyard, entrance, resurrection, spell, threat, and encounter
