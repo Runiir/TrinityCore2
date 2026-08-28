@@ -1,69 +1,66 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "architecture:blackwing_descent:magmaw:same_level_movement_path_floor_false_negative",
-  "owner_skill": "raid-performance-loop",
-  "classification": "stopped_occurrence_limit_reached",
-  "observed_at_commit": "052081b472abcf1706d863b3c9220f9d99101f9a",
+  "epoch_id": "same_level_native_path_proof_v2_20260829",
+  "work_unit": "runtime:shared_movement:complete_native_path_floor_observation_split",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "ready_for_bounded_repair",
+  "observed_at_commit": "47d30e0937b9e93c10a265a174dd0cede13c79da",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary106_path_floor_architecture_stop_20260829.md",
     "sha256": "f9d24f6949e61ee897f42e660eeac814855e67aadd3dbdadbfd2e610804dc165"
   },
-  "first_broken_edge": "shared_same_floor_path_proof_rejects_valid_progressive_route_regroup",
+  "first_broken_edge": "complete_native_path_is_rejected_when_an_intermediate_height_probe_resolves_an_unrelated_floor",
   "causal_signature": "same_level_movement_path_floor_false_negative",
+  "hypothesis": "A complete normal native path with an endpoint matching the requested destination and a valid endpoint floor is sufficient movement proof; an intermediate sampled floor conflict is diagnostic evidence rather than a hard rejection.",
   "recurrence": {
     "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
-    "gate_bearing_occurrence_count": 10,
+    "prior_epoch_gate_bearing_occurrence_count": 10,
     "retained_archive_occurrence_count": 15,
     "stop_at": 10,
-    "required_action": "stop_and_summarize_last_ten_occurrences"
+    "prior_epoch_status": "closed_to_local_patching_after_architecture_review",
+    "history_carries_forward": true
   },
-  "canary106": {
-    "completion": "semantic_progress_plateau_watchdog",
-    "duration_seconds": 422,
-    "route_generation": 2,
-    "route_node_id": "bwd.magmaw.chainwielder",
-    "trash_kills": 1,
-    "future_pack_contamination": 0,
-    "blocked_bot_guid": 30006,
-    "blocked_bot_name": "Mgwdpsa",
-    "distance_to_terminal_endpoint": 43.6772,
-    "movement_owner": "route",
-    "movement_reject_reason": "route_destination_path_floor_gap",
-    "endpoint_z_delta": 0.0633392,
-    "report_sha256": "8165bf57470d0aac82b9881bd1e881448f8ad479c4ec224da95e5938f8f3b437",
-    "combat_analysis_sha256": "121baddfc2d6b75c3661a38c1fdfcd6db86a7a3e02d60fcc4c02da5c1d140944"
-  },
-  "open_dependent_signatures": {
-    "magmaw_parasite_control_allows_player_infection": {
-      "occurrence_count": 9,
-      "status": "not_exercised_by_canary106"
-    },
-    "chainwielder_future_drudge_contamination": {
-      "occurrence_count": 1,
-      "status": "absent_in_canary106_but_not_closed"
-    },
-    "same_level_encounter_hazard_path_rejection": {
-      "occurrence_count": 2,
-      "status": "subsumed_by_shared_path_floor_architecture_signature"
-    }
-  },
-  "repair_scope": {
-    "allowed_before_new_approval": [
-      "read_only_shared_planner_architecture_review",
-      "deterministic_last_ten_occurrence_summary",
-      "owner_independent_invariant_and_replay_test_design"
+  "scope_lock": {
+    "allowed_files": [
+      "src/server/game/Bots/BotWorldPopulationMgrMovementPlanner.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrNativePathValidation.h",
+      "tests/test_native_path_floor_diagnostic.py",
+      "tests/test_native_runback_floor_gate.py",
+      "tests/test_movement_planner_diagnostics.py",
+      "tests/test_incomplete_path_backoff.py"
     ],
+    "allowed_change": "Separate complete-native-path proof from intermediate floor observation, require endpoint match and endpoint floor validity, retain the first floor conflict for telemetry, and apply the same complete-path invariant independent of movement owner.",
     "forbidden": [
-      "another_magmaw_canary",
-      "another_owner_specific_path_exception",
-      "another_distance_threshold_exception",
-      "encounter_or_class_policy_tuning",
-      "weakening_future_pack_or_vertical_path_guards"
-    ]
+      "class_or_spec_policy_changes",
+      "encounter_or_route_specific_behavior",
+      "Drudge_strict_geometry_changes",
+      "owner_specific_or_distance_threshold_exceptions",
+      "weakening_incomplete_no_path_shortcut_off_mesh_cross_map_strict_descent_or_native_long_recovery_guards",
+      "database_DVC_build_server_or_live_run_actions",
+      "nested_agents",
+      "commits"
+    ],
+    "implementation_budget": "one implementation pass and one focused correction pass"
   },
-  "validation_clock": {
-    "policy": "completion_watchdog",
-    "fixed_success_timer_seconds": null
+  "required_static_proof": [
+    "Canary106 Route fixture at 43.6772 yards with endpoint Z delta 0.0633392 admits a complete normal endpoint-matching native path despite an intermediate SampleFloorGap observation",
+    "clean complete normal path remains accepted",
+    "endpoint mismatch incomplete no-path shortcut off-mesh unavailable endpoint floor and actor/reference floor mismatch remain rejected",
+    "Route CombatRange Hazard and Mechanic use the same complete-path admission invariant",
+    "strict descent and native long recovery remain fail-closed",
+    "only a verified native endpoint is submitted and no straight-line shortcut is introduced",
+    "all touched C++ files remain below 1000 physical lines"
+  ],
+  "focused_validation": {
+    "command": "pixi run python -m pytest -q tests/test_native_path_floor_diagnostic.py tests/test_native_runback_floor_gate.py tests/test_movement_planner_diagnostics.py tests/test_incomplete_path_backoff.py",
+    "live_canary_allowed_for_worker": false
   },
-  "next_action": "Complete the read-only architecture review and present the last-ten summary. A new bounded shared-planner implementation work unit requires explicit approval after that review."
+  "root_runtime_verification": {
+    "build": "exact committed source through queued_build.py with guarded 8 compiler jobs and same-commit configure lineage",
+    "canary_budget": 1,
+    "clock": "completion_watchdog",
+    "fixed_success_timer_seconds": null,
+    "promotion_gate": "two consecutive current-standard Magmaw route clears before closing the causal signature"
+  },
+  "next_action": "Delegate this exact scope lock to one Luna max runtime specialist, review its focused diff, then let the root agent build and run at most one matched canary."
 }
