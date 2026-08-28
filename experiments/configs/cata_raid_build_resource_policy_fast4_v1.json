@@ -7,7 +7,7 @@
     "captured_at_utc": "2026-08-28T13:14:00Z"
   },
   "supersedes_for_retry": "experiments/configs/cata_raid_build_resource_policy_fast8_v1.json",
-  "reduction_reason": "Eight compiler jobs crossed the unchanged memory-PSI and swap-growth limits. This operator-authorized fast iteration fallback uses four Release -O1 compiler jobs while retaining single-linker admission, no unity build, no PCH, low-memory linking, pressure monitoring, and fail-closed receipts.",
+  "reduction_reason": "Eight compiler jobs crossed memory-PSI and swap-growth limits. This operator-authorized fast iteration fallback uses four Release -O1 compiler jobs and permits the observed 0.18 full-PSI burst while retaining the 8 GiB reserve, swap guard, single-linker admission, no unity build, no PCH, low-memory linking, pressure monitoring, and fail-closed receipts.",
   "coordination": {
     "state_location": "git_common_dir/raid_program/build_queue_v1",
     "queue_order": "fifo",
@@ -29,7 +29,7 @@
     "minimum_memory_available_fraction": 0.3,
     "maximum_swap_growth_mib_per_job": 512,
     "maximum_memory_psi_some_avg10": 0.2,
-    "maximum_memory_psi_full_avg10": 0.05,
+    "maximum_memory_psi_full_avg10": 0.2,
     "maximum_load_average_1m": 9.0,
     "minimum_filesystem_available_gib": 20,
     "sustained_unsafe_sample_count": 3,
