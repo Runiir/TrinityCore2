@@ -2,7 +2,7 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "runtime:blackwing_descent:magmaw:partial_death_native_runback_stall",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "trace_backed_runtime_repair_ready",
+  "classification": "failed",
   "observed_at_commit": "e2219cb4fdc63aa26d25803334b4bcb0d8e587fe",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_31322fb541_canary98_partial_death_runback_handoff_20260828.md",
