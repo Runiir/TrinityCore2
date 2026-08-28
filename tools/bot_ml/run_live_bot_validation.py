@@ -2764,6 +2764,84 @@ def live_combat_progress_advanced(
     return False
 
 
+def terminal_catchup_progress_snapshot(report: dict[str, Any]) -> dict[str, Any]:
+    """Capture forward movement during an exact cleared-trash cohort catchup."""
+    status = report.get("status") if isinstance(report.get("status"), dict) else {}
+    route = status.get("validation_route") if isinstance(status.get("validation_route"), dict) else {}
+    node_id = str(route.get("node_id") or "")
+    generation = int(route.get("generation") or 0)
+    if not node_id or generation <= 0:
+        return {}
+
+    diagnosis = report.get("diagnosis") if isinstance(report.get("diagnosis"), dict) else {}
+    bots = diagnosis.get("bots") if isinstance(diagnosis.get("bots"), list) else []
+    distances: dict[str, float] = {}
+    for row in bots:
+        if not isinstance(row, dict):
+            continue
+        details = row.get("diagnosis") if isinstance(row.get("diagnosis"), dict) else {}
+        evidence_rows = details.get("evidence") if isinstance(details.get("evidence"), list) else []
+        evidence = {
+            str(item.get("name")): item.get("value")
+            for item in evidence_rows
+            if isinstance(item, dict) and item.get("name")
+        }
+        movement = nested_get(row, ["snapshot", "movement"], {})
+        movement = movement if isinstance(movement, dict) else {}
+        moving = bool(movement.get("is_moving")) or float(
+            movement.get("distance_moved_since_last_decision") or 0.0
+        ) > 0.0
+        if (
+            evidence.get("validation_route_advance_pending") is not True
+            or evidence.get("validation_route_advance_reason") != "trash_cluster_cleared"
+            or not moving
+        ):
+            continue
+        identity = row.get("identity") if isinstance(row.get("identity"), dict) else {}
+        bot_guid = int(identity.get("bot_guid") or identity.get("guid") or 0)
+        try:
+            distance = float(evidence.get("validation_route_distance"))
+        except (TypeError, ValueError):
+            continue
+        if bot_guid > 0 and distance >= 0.0:
+            distances[str(bot_guid)] = distance
+    return {
+        "route_node_id": node_id,
+        "route_generation": generation,
+        "distances": distances,
+    }
+
+
+def terminal_catchup_progress_advanced(
+    previous: dict[str, Any] | None,
+    current: dict[str, Any] | None,
+) -> bool:
+    """Return true only when the same catchup bot moves closer on the same route."""
+    if not isinstance(previous, dict) or not isinstance(current, dict):
+        return False
+    if (
+        previous.get("route_node_id") != current.get("route_node_id")
+        or int(previous.get("route_generation") or 0)
+        != int(current.get("route_generation") or 0)
+    ):
+        return False
+    previous_distances = previous.get("distances")
+    current_distances = current.get("distances")
+    if not isinstance(previous_distances, dict) or not isinstance(current_distances, dict):
+        return False
+    for bot_guid, distance in current_distances.items():
+        if bot_guid not in previous_distances:
+            continue
+        try:
+            current_distance = float(distance)
+            previous_distance = float(previous_distances[bot_guid])
+        except (TypeError, ValueError):
+            continue
+        if current_distance < previous_distance - 0.01:
+            return True
+    return False
+
+
 DEATH_LOOP_ACTIONS = {"repeated_death", "death_loop"}
 DEATH_LOOP_DURABLE_PROGRESS_ACTIONS = ROUTE_PROGRESS_ACTIONS | {
     "boss_add_killed",
@@ -4944,6 +5022,7 @@ def run_transport_completion_watchdog(
     last_progress_total = -1
     last_progress_at = time.monotonic()
     last_live_combat_progress: dict[str, Any] | None = None
+    last_terminal_catchup_progress: dict[str, Any] | None = None
     last_calibration_blocker = ""
     calibration_blocker_repeats = 0
 
@@ -5050,6 +5129,10 @@ def run_transport_completion_watchdog(
         if live_combat_progress_advanced(last_live_combat_progress, live_combat_progress):
             last_progress_at = time.monotonic()
         last_live_combat_progress = live_combat_progress if isinstance(live_combat_progress, dict) else None
+        terminal_catchup_progress = terminal_catchup_progress_snapshot(report)
+        if terminal_catchup_progress_advanced(last_terminal_catchup_progress, terminal_catchup_progress):
+            last_progress_at = time.monotonic()
+        last_terminal_catchup_progress = terminal_catchup_progress
         no_progress_expired = time.monotonic() - last_progress_at >= no_progress_window_sec
         semantic_progress_plateau = (
             last_progress_total >= 0
@@ -5117,6 +5200,7 @@ def run_worldserver_completion_watchdog(
     last_progress_total = -1
     last_progress_at = time.monotonic()
     last_live_combat_progress: dict[str, Any] | None = None
+    last_terminal_catchup_progress: dict[str, Any] | None = None
     last_calibration_blocker = ""
     calibration_blocker_repeats = 0
     process = subprocess.Popen(
@@ -5261,6 +5345,10 @@ def run_worldserver_completion_watchdog(
             if live_combat_progress_advanced(last_live_combat_progress, live_combat_progress):
                 last_progress_at = time.monotonic()
             last_live_combat_progress = live_combat_progress if isinstance(live_combat_progress, dict) else None
+            terminal_catchup_progress = terminal_catchup_progress_snapshot(report)
+            if terminal_catchup_progress_advanced(last_terminal_catchup_progress, terminal_catchup_progress):
+                last_progress_at = time.monotonic()
+            last_terminal_catchup_progress = terminal_catchup_progress
             no_progress_expired = time.monotonic() - last_progress_at >= no_progress_window_sec
             semantic_progress_plateau = (
                 last_progress_total >= 0

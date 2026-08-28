@@ -72,7 +72,7 @@ from tools.bot_ml.live_validation_session import (
     sha256_file,
     systemd_transient_command,
 )
-from tools.bot_ml.run_live_bot_validation import BoundedOutputParts, WatchdogOutputBuffer, apply_calibration_only_acceptance, attempt_evidence_envelope, boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, calibration_pre_scoring_blocker, command_script, heartbeat_commands_from_script, live_combat_progress_advanced, live_combat_progress_snapshot, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, preflight_calibration_reference_binding, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, split_sql_statements, strict_manifest_evidence, supersede_transient_route_failures, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, wait_for_heroic_admission_status, watchdog_state, write_validation_config
+from tools.bot_ml.run_live_bot_validation import BoundedOutputParts, WatchdogOutputBuffer, apply_calibration_only_acceptance, attempt_evidence_envelope, boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, calibration_pre_scoring_blocker, command_script, heartbeat_commands_from_script, live_combat_progress_advanced, live_combat_progress_snapshot, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, preflight_calibration_reference_binding, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, split_sql_statements, strict_manifest_evidence, supersede_transient_route_failures, terminal_catchup_progress_advanced, terminal_catchup_progress_snapshot, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, wait_for_heroic_admission_status, watchdog_state, write_validation_config
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -7700,6 +7700,60 @@ def test_live_combat_progress_uses_same_route_damage_and_ignores_dead_target():
     assert live_combat_progress_advanced(baseline, other_route) is False
     assert dead["health"] == []
     assert live_combat_progress_advanced(damage, dead) is False
+
+
+def terminal_catchup_report(distance, *, guid=30007, generation=3, moving=True):
+    return {
+        "status": {
+            "validation_route": {
+                "node_id": "bwd.magmaw.drudges",
+                "generation": generation,
+            }
+        },
+        "diagnosis": {
+            "bots": [
+                {
+                    "identity": {"bot_guid": guid},
+                    "diagnosis": {
+                        "evidence": [
+                            {"name": "validation_route_advance_pending", "value": True},
+                            {"name": "validation_route_advance_reason", "value": "trash_cluster_cleared"},
+                            {"name": "validation_route_distance", "value": distance},
+                        ]
+                    },
+                    "snapshot": {
+                        "movement": {
+                            "is_moving": moving,
+                            "distance_moved_since_last_decision": 6.5 if moving else 0.0,
+                        }
+                    },
+                }
+            ]
+        },
+    }
+
+
+def test_terminal_catchup_progress_requires_same_bot_route_distance_decrease():
+    baseline = terminal_catchup_progress_snapshot(terminal_catchup_report(128.0))
+    advanced = terminal_catchup_progress_snapshot(terminal_catchup_report(121.0))
+
+    assert terminal_catchup_progress_advanced(None, baseline) is False
+    assert terminal_catchup_progress_advanced(baseline, advanced) is True
+
+
+def test_terminal_catchup_progress_rejects_stall_regression_and_identity_change():
+    baseline = terminal_catchup_progress_snapshot(terminal_catchup_report(128.0))
+    unchanged = terminal_catchup_progress_snapshot(terminal_catchup_report(128.0))
+    farther = terminal_catchup_progress_snapshot(terminal_catchup_report(129.0))
+    other_bot = terminal_catchup_progress_snapshot(terminal_catchup_report(100.0, guid=30008))
+    other_route = terminal_catchup_progress_snapshot(terminal_catchup_report(100.0, generation=4))
+    stopped = terminal_catchup_progress_snapshot(terminal_catchup_report(100.0, moving=False))
+
+    assert terminal_catchup_progress_advanced(baseline, unchanged) is False
+    assert terminal_catchup_progress_advanced(baseline, farther) is False
+    assert terminal_catchup_progress_advanced(baseline, other_bot) is False
+    assert terminal_catchup_progress_advanced(baseline, other_route) is False
+    assert terminal_catchup_progress_advanced(baseline, stopped) is False
 
 
 def test_boss_health_progress_counts_party_shared_strict_minima_only():
