@@ -239,7 +239,7 @@ void BotWorldPopulationMgr::SubmitMagmawBloodlustCandidate(
     bloodlust.RetryBaseMs = 250;
     bloodlust.RetryMaxMs = 2000;
     bloodlust.EscalateAfter = 4;
-    bloodlust.Attempt = [&context, originalBot, raid, encounterSnapshot,
+    bloodlust.Attempt = [this, &context, originalBot, raid, encounterSnapshot,
         headGuid, ownerGuid = *owner, currentMagmawBloodlustContextReason,
         recordBloodlustEvent, findNativeRaidLockout]()
     {

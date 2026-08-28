@@ -139,6 +139,7 @@ def test_bloodlust_is_one_native_cast_with_normal_readiness_and_telemetry() -> N
     assert "magmaw_bloodlust_stale_context_snapshot" in body
     assert "currentMagmawBloodlustContextReason," in attempt
     assert "recordBloodlustEvent, findNativeRaidLockout" in attempt
+    assert "bloodlust.Attempt = [this, &context" in attempt
     assert "&currentMagmawBloodlustContextReason" not in attempt
     assert "&recordBloodlustEvent" not in attempt
     assert "&findNativeRaidLockout" not in attempt
