@@ -34,6 +34,12 @@ outside the owned files is allowed only to resolve the admitted edge.
   second optimization after the expected signal passes.
 - If the evidence disproves the hypothesis or identifies another owner, stop
   without a speculative patch.
+- Preserve cross-lane ownership for raid cooldowns. A role unit may tag and
+  submit a native cooldown candidate; shared runtime owns the default
+  trash/regroup/pre-pull reservation; an encounter unit may expose only the
+  reviewed boss phase that releases it; shard architecture validates the
+  resulting bag item, cast, aura, target, and timing receipts. Do not duplicate
+  the reservation or release policy in a class rotation or route fixture.
 
 ## Return a bounded handoff
 

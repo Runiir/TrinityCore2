@@ -146,6 +146,13 @@ Require one exact tuple across config, generated route, runtime status, capture,
   assignment actions before a post-pull/reseparation gate can return. Keep all
   regular offense and kill synchronization behind that geometry gate. Never
   force the native target to compensate for a prerequisite that ran too late.
+- Validate cooldown reservation as an outcome, not a fixture assumption. Trash
+  must show no offensive cooldown, offensive guardian, combat-potion, or
+  Bloodlust submission; boss release must show the ordinary native candidate
+  and, for consumables, a real bag-slot decrement plus aura. Preserve emergency
+  tank/healer survival use. If the semantic candidate is missing, return role
+  evidence; if reservation/release is wrong, return runtime or encounter
+  evidence instead of editing the shard.
 
 ## Arbitrate actions instead of accumulating gates
 

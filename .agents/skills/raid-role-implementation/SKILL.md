@@ -103,6 +103,14 @@ Change one trigger, typed gate, priority, resource claim, prerequisite,
 alternative, target selector, or observed-state transition. Preserve ordinary
 native spell legality and game outcomes.
 
+For long offensive cooldowns, guardians, combat potions, and Bloodlust, own
+only the class-correct native candidate, semantic category/tags, prerequisites,
+and alternatives. Do not encode trash-versus-boss route policy or an encounter
+release phase in a class rotation. Shared reservation belongs to
+`raid-bot-runtime-implementation`; boss-phase release belongs to
+`raid-encounter-implementation`. Emergency defensive and healing cooldowns are
+not withheld merely because the current route node is trash.
+
 Do not tune from final DPS alone. A diagnostic-only edit needs one observed
 first-broken edge and one metric expected to move; run one before/after check
 and stop. Permit at most one implementation plus one matched verification run

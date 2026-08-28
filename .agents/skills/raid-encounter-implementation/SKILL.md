@@ -87,6 +87,13 @@ Expose enough deterministic state for bot arbitration and evidence:
 
 The encounter script publishes facts. The priority queue remains responsible for candidate ranking and action choice.
 
+When the reviewed contract assigns Bloodlust, a combat potion, or another
+reserved offensive cooldown, publish the exact boss phase/window that releases
+the shared reservation. Do not select a class spell, synthesize an inventory
+item, or spend the cooldown from the boss script. Without a reviewed release
+claim, leave the shared reservation closed and hand timing research to
+`raid-encounter-research`.
+
 ### 4. Validate in increasing cost order
 
 Run the narrowest applicable static and unit checks, then native replay. If native code changed, request the required build only through:

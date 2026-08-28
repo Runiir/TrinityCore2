@@ -53,6 +53,14 @@ release, graveyard, entrance, resurrection, spell, threat, and encounter
 rules. Never teleport, manufacture a wipe, revive, force a target, or mutate a
 boss outcome.
 
+Shared raid cooldown reservation belongs here only when it is class-agnostic:
+reserve offensive cooldowns, offensive guardians, combat potions, and
+Bloodlust during trash, regroup, and boss staging, while leaving emergency
+tank/healer survival actions available. Consume semantic category/tags from
+the role candidate and an explicit release fact from the encounter contract;
+do not add class spell lists, choose the best boss phase, provision items, or
+run the shard in this work unit.
+
 Extract or reuse a deterministic C++ transition boundary when practical. Add
 focused tests for the recorded counterexample and nearby valid states. A
 source-shape test alone does not confirm native behavior.
