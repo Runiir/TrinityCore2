@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "policy_id": "cata_raid_build_resource_policy_fast4_v1",
+  "host_identity": {
+    "logical_cpu_count": 12,
+    "physical_memory_gib_approx": 31,
+    "captured_at_utc": "2026-08-28T13:14:00Z"
+  },
+  "supersedes_for_retry": "experiments/configs/cata_raid_build_resource_policy_fast8_v1.json",
+  "reduction_reason": "Eight compiler jobs crossed the unchanged memory-PSI and swap-growth limits. This operator-authorized fast iteration fallback uses four Release -O1 compiler jobs while retaining single-linker admission, no unity build, no PCH, low-memory linking, pressure monitoring, and fail-closed receipts.",
+  "coordination": {
+    "state_location": "git_common_dir/raid_program/build_queue_v1",
+    "queue_order": "fifo",
+    "maximum_active_heavyweight_leases": 1,
+    "heartbeat_interval_seconds": 1.0,
+    "stale_heartbeat_seconds": 15.0,
+    "termination_grace_seconds": 5.0,
+    "admission_poll_seconds": 0.25,
+    "default_admission_timeout_seconds": 21600
+  },
+  "parallelism": {
+    "maximum_compiler_jobs": 4,
+    "maximum_linker_jobs": 1,
+    "integration_owner_maximum_compiler_jobs": 4,
+    "compiler_ceiling_increase_requires_recorded_stress_gate": false
+  },
+  "admission_thresholds": {
+    "minimum_memory_available_gib": 8,
+    "minimum_memory_available_fraction": 0.3,
+    "maximum_swap_growth_mib_per_job": 512,
+    "maximum_memory_psi_some_avg10": 0.2,
+    "maximum_memory_psi_full_avg10": 0.05,
+    "maximum_load_average_1m": 9.0,
+    "minimum_filesystem_available_gib": 20,
+    "sustained_unsafe_sample_count": 3,
+    "sample_interval_seconds": 0.5
+  },
+  "resource_classes": {
+    "configure": "heavyweight",
+    "worldserver_build": "heavyweight",
+    "integration_build": "heavyweight",
+    "high_load_ctest": "heavyweight",
+    "synthetic": "test_only"
+  },
+  "live_validation_exclusion": {
+    "enabled": true,
+    "process_patterns": [
+      "worldserver",
+      "run_live_bot_validation.py",
+      "live_validation_session.py",
+      "run_phase9_serial_canaries.py",
+      "publish_live_validation",
+      "dvc push"
+    ]
+  },
+  "mechanical_controls": {
+    "cmake_build_type": "Release",
+    "cmake_executable": "/usr/bin/cmake",
+    "cmake_executable_sha256": "6e1dccda39845415d68eabb934c598998949c99ec4668625d571aee1827b05c7",
+    "cmake_generator": "Unix Makefiles",
+    "cmake_make_program": "/usr/bin/gmake",
+    "cmake_export_compile_commands": true,
+    "cmake_cxx_flags": "",
+    "cmake_release_cxx_flags": "-O1 -DNDEBUG",
+    "cmake_cxx_compiler": "/usr/bin/c++",
+    "cmake_cxx_compiler_launcher": "",
+    "with_coredebug": false,
+    "interprocedural_optimization": false,
+    "release_interprocedural_optimization": false,
+    "toolchain_sha256": {
+      "/usr/bin/gmake": "27c9f6d806aee15882b01c2c61848f7aa75caa14bc7b6f608ba422f9e46a7d49",
+      "/usr/bin/as": "4e5fcaa3cdc160173cb5fce7aa35dc39d7aa1f06ba8d75b8d923bbae5473991b",
+      "/usr/bin/ld": "97f48d93b8b076a92d2809ec29dcb17f0f37c8827358f832255e2ed22fef6075",
+      "/usr/bin/ar": "531473816bf553e863df5aab14c8177c72b732cf80c51dcf0fa990a50125041c",
+      "/usr/bin/ranlib": "369cf0d60a6167b11f39ed9b4bbb3d93903cc364975b244e1d084aaccf48dc92",
+      "/usr/bin/strip": "4d2ca6ba80677c3b2975e328306a779cd7bd6590a87948b5ebea9c1b41a049c8",
+      "/usr/libexec/gcc/x86_64-linux-gnu/15/cc1plus": "6f2b2c0e3fd32042eb2acace19a57fdb0b229d9c24cdd5e2cc100639c77e9ff0"
+    },
+    "cmake_build_parallel_level": 4,
+    "makeflags_jobs": 4,
+    "ninja_jobs": 4,
+    "cmake_compile_job_pool": 4,
+    "cmake_link_job_pool": 1,
+    "unity_builds": false,
+    "core_precompiled_headers": false,
+    "script_precompiled_headers": false,
+    "link_rule_flock": true,
+    "gnu_thin_intermediate_archives": true,
+    "gnu_reduce_memory_overheads_final_link": true,
+    "process_group_watchdog": true,
+    "receipt_verification_required": true,
+    "receipt_trust_model": "explicit_trusted_local_operator",
+    "trusted_local_operator_uid": 1000,
+    "trusted_local_operator_name": "runiir",
+    "trusted_local_operator_authorized_at_utc": "2026-08-12T13:09:00Z",
+    "trusted_local_operator_authority": "user_explicitly_authorized_same_uid_coordinator_receipts_as_gate_bearing",
+    "privileged_receipt_signature_required": false,
+    "privileged_build_service_config": "experiments/configs/cata_raid_privileged_build_service_v1.json",
+    "privileged_build_service_config_sha256": "7ac51ad683e10a556350a5d33f86b5db078412c6cfe3d8bb2602911ade6b65d2",
+    "privileged_build_service_id": "cata_raid_privileged_build_service",
+    "privileged_build_service_protocol": "ed25519_signed_coordinator_receipt_v1",
+    "privileged_build_key_id": null,
+    "privileged_build_public_key_sha256": null,
+    "privileged_build_submission_endpoint": null,
+    "privileged_ledger_key_id": null,
+    "privileged_ledger_public_key_sha256": null,
+    "privileged_ledger_verification_endpoint": null,
+    "privileged_ledger_maximum_checkpoint_age_seconds": 300,
+    "receipt_worldserver_sha256_required": true,
+    "test_mode_receipt_satisfies_production_gate": false,
+    "cgroup_scope": "use_when_available_and_validated",
+    "uncoordinated_success_satisfies_gate": false
+  },
+  "classification": {
+    "resource_pressure_termination": "build_resource_abort",
+    "resource_pressure_is_code_failure": false,
+    "resource_pressure_is_gameplay_failure": false
+  }
+}
