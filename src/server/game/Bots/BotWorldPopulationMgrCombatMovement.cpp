@@ -189,7 +189,7 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
 
     auto patrolCombatPointSafe = [&](float x, float y, float z)
     {
-        return !action || action->AutoAttackMode == "melee"
+        return (action && action->AutoAttackMode == "melee")
             || IsValidationRoutePatrolCombatPointSafe(reference, x, y, z);
     };
     auto moveToTerrainProjectedPoint = [&](float x, float y, float z)

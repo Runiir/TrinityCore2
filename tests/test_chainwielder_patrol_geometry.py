@@ -66,3 +66,27 @@ def test_chainwielder_patrol_geometry_uses_route_owned_native_movement():
         assert token in formation
     assert "IsValidationRoutePatrolCombatPointSafe" in movement
     assert "TryValidationRoutePatrolCombatAnchor" in active
+
+
+def test_chainwielder_profile_range_checks_null_action_destinations():
+    chain, drudges = _chain_and_drudges()
+    movement = (BOT_DIR / "BotWorldPopulationMgrCombatMovement.cpp").read_text(
+        encoding="utf-8"
+    )
+    unsafe_trace_point = (-310.569, -97.0254)
+    anchor = chain["patrol_combat_anchor"]
+    future_home_clearance = (
+        chain["cluster_radius_yards"]
+        + chain["patrol_future_guard_margin_yards"]
+    )
+
+    assert 'return !action || action->AutoAttackMode == "melee"' not in movement
+    assert 'action && action->AutoAttackMode == "melee"' in movement
+    assert min(
+        math.dist(unsafe_trace_point, (home["x"], home["y"]))
+        for home in drudges["split_source_home_anchors"]
+    ) < future_home_clearance
+    assert min(
+        math.dist((anchor["x"], anchor["y"]), (home["x"], home["y"]))
+        for home in drudges["split_source_home_anchors"]
+    ) > future_home_clearance
