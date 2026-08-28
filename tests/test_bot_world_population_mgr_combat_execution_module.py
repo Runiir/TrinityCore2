@@ -53,3 +53,33 @@ def test_combat_execution_preserves_position_reconciliation_and_backoff() -> Non
         "cast_succeeded",
     ):
         assert marker in module
+
+
+def test_failed_totem_and_offensive_cooldown_attempts_release_profile_fallback() -> None:
+    module = MODULE.read_text(encoding="utf-8")
+    totems = module.split(
+        "bool BotWorldPopulationMgr::TryEnsureCombatTotems", 1
+    )[1].split(
+        "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction", 1
+    )[0]
+    successful_totem_path = totems.split("if (bot->CastSpell", 1)[1].split(
+        "RecordCombatAttempt(state, bot, bot, \"totems\", &action, BotActionResult::CastFailed", 1
+    )[0]
+    failed_totem_path = totems.split(
+        "RecordCombatAttempt(state, bot, bot, \"totems\", &action, BotActionResult::CastFailed", 1
+    )[1]
+    assert "return true;" in successful_totem_path
+    assert "return false;" in failed_totem_path
+
+    execution = module.split(
+        "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*", 1
+    )[1]
+    fallback = execution.split("bool const failedOffensiveCooldown", 1)[1].split(
+        "std::string const castLifecycleKey", 1
+    )[0]
+    assert 'action.DebugName == "offensive_cooldown"' in fallback
+    assert "BotActionResult::NoAction" in fallback
+    assert "BotActionResult::CastFailed" in fallback
+    assert "ProfileCastSuppressedSpellId = action.SpellId" in fallback
+    assert "target->GetGUID() : action.TargetGuid" in fallback
+    assert "ProfileCastSuppressedUntilMs = nowMs + 3000" in fallback

@@ -64,7 +64,10 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
         state.ReadinessRetryUntilMs[key] = nowMs + 15000;
         ObserveBotCandidateFailure(state, bot,
             "world.setup." + key, key, 1000, 15000, 3, 15000);
-        return true;
+        // A missing setup spell is recorded for readiness diagnostics, but it
+        // does not own this combat tick.  The caller must still resolve the
+        // ordinary profile action.
+        return false;
     }
 
     uint32 const desiredFireTotemSpell = hostileCount >= 3 && bot->HasSpell(8190) ? 8190 : 3599;
@@ -117,7 +120,10 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
         std::string const blocker = "totem_cast_failed:" + std::to_string(spellId);
         ObserveBotCandidateFailure(state, bot,
             "world.setup." + attemptKey, blocker, 500, 5000, 3, 5000);
-        return true;
+        // A rejected native totem cast did not consume the setup lane.  Let
+        // the normal profile candidate run instead of reporting Casting and
+        // starving class damage on the next decision.
+        return false;
     }
 
     TryResolveBotBlocker(state, bot, "totems_ready");
@@ -284,6 +290,21 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
     BotActionResult result = executor.ExecuteCombat(bot, bot, action);
     if (state)
     {
+        bool const failedOffensiveCooldown = action.DebugName == "offensive_cooldown"
+            && (result == BotActionResult::NoAction
+                || result == BotActionResult::CastFailed);
+        if (failedOffensiveCooldown)
+        {
+            // Fire Elemental Totem is self-targeted, while suppression is
+            // scoped to the hostile combat target used by the resolver.  Keep
+            // the failed cooldown out of the next resolver window so a normal
+            // profile action can be selected without changing native gates.
+            state->ProfileCastSuppressedSpellId = action.SpellId;
+            state->ProfileCastSuppressedTargetGuid = target
+                && bot && action.TargetGuid == bot->GetGUID()
+                ? target->GetGUID() : action.TargetGuid;
+            state->ProfileCastSuppressedUntilMs = nowMs + 3000;
+        }
         std::string const castLifecycleKey = "world.profile_cast:"
             + std::to_string(action.SpellId) + ":"
             + std::to_string(action.TargetGuid.GetCounter());
