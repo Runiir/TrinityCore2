@@ -1,50 +1,50 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "integration:blackwing_descent:magmaw:10N:chainwielder_patrol_safety_replay",
+  "work_unit": "integration:blackwing_descent:magmaw:10N:sigbus_exact_replay",
   "owner_skill": "raid-shard-architecture",
-  "classification": "exact_build_pending_live_verification",
-  "observed_at_commit": "1f676f8d70f2e522d88267da66151537f5d59b67",
+  "classification": "infrastructure_noncompletion_exact_replay_authorized",
+  "observed_at_commit": "31322fb541e7f3125465a856905c7016d5723acd",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_841512d644_chainwielder_movement_handoff_20260828.md",
-    "sha256": "4712a4429f23e397c3023d572db84f3209683012ed4ef5fdb514ee84606990a8"
+    "path": "experiments/configs/cata_raid_magmaw_31322fb541_canary97_infrastructure_handoff_20260828.md",
+    "sha256": "babcc973d0b9f4f3e69f6de8e0e51289fd331ee539db9f5048bced53ec877d72"
   },
-  "first_broken_edge": "null_profile_action_bypassed_patrol_safety_for_a_combat_range_move_into_the_future_drudge_envelope",
+  "first_broken_edge": "worldserver_received_sigbus_during_live_magmaw_progress_after_the_patrol_safety_repair_cleared_all_prerequisite_trash",
   "decisive_evidence": {
     "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
-    "route_node_id": "bwd.magmaw.chainwielder",
+    "route_node_id": "bwd.magmaw.encounter",
     "chainwielder_cleared": true,
-    "drudges_cleared": false,
-    "magmaw_reached": false,
+    "drudges_cleared": true,
+    "magmaw_reached": true,
     "magmaw_killed": false,
-    "total_deaths": 10,
-    "active_combat_seconds": 73,
-    "originated_party_dps": 64895.836,
-    "party_hps": 14032.918,
-    "originated_affliction_dps": null,
-    "affliction_pet_damage": null,
-    "affliction_pet_damage_share": null,
-    "future_encounter_contamination_observed": true,
-    "contaminating_target_entry": 42362,
-    "attributable_actor_guid": 30010,
-    "attributable_movement_owner": "combat_range",
-    "attributable_unsafe_destination": [-310.569, -97.0254, 214.091],
-    "distance_to_future_drudge_yards": 7.788,
-    "terminal_failure_reason": "validation_route_future_encounter_contamination",
-    "later_terminal_edge": "native_runback_no_progress_after_full_wipe",
-    "report_sha256": "6a77f7686589f73e1b7df0802cfc0a82dc4b726ad655067d3fe3086e899461f1",
-    "heartbeat_stream_sha256": "0ac31afc6808fbc6914839e985bb0f742a8895ccf5cb45be9d02eeae3f2f7743",
+    "total_deaths": 1,
+    "active_combat_seconds": 105,
+    "originated_party_dps": 117262.514,
+    "party_hps": 15725.467,
+    "originated_affliction_dps": 20478.952,
+    "affliction_pet_damage": 588268,
+    "affliction_pet_damage_share": 0.274,
+    "future_encounter_contamination_observed": false,
+    "contaminating_target_entry": null,
+    "attributable_actor_guid": null,
+    "attributable_movement_owner": null,
+    "attributable_unsafe_destination": null,
+    "distance_to_future_drudge_yards": null,
+    "terminal_failure_reason": "worldserver_nonzero_return",
+    "later_terminal_edge": null,
+    "report_sha256": "e14f8ab5bd0b6e73a51324cb000a9e233c2b2ebfe7b26dbf601a61a2c8d2d4b5",
+    "heartbeat_stream_sha256": "7699e1ef53407eb26bc49c713bae331da356d671cfd0f127da784602d3ee1153",
     "forbidden_assistance_observed": false,
     "cleanup_passed": false,
-    "worldserver_exit_code": null
+    "cleanup_passed": false,
+    "worldserver_exit_code": -7
   },
   "repair_scope": {
-    "status": "trace_backed_patrol_safety_repair_ready_for_one_matched_replay",
+    "status": "patrol_safety_verified_live_and_one_exact_infrastructure_replay_authorized",
     "allowed": [
-      "apply_the_existing_patrol_safety_predicate_when_profile_action_metadata_is_missing",
-      "reject_the_recorded_combat_range_destination_inside_the_future_drudge_envelope",
-      "retain_the_existing_explicit_melee_behavior",
-      "preserve_ordinary_healing_offense_and_lethal_hazard_movement",
-      "evaluate_the_already_implemented_parasite_policy_if_magmaw_is_reached"
+      "freshly_provision_the_same_frozen_roster",
+      "reuse_the_exact_clean_commit_binary_and_route",
+      "run_one_completion_watchdog_replay",
+      "distinguish_repeated_sigbus_from_the_first_gameplay_edge"
     ],
     "forbidden_shortcuts": [
       "reduce_encounter_damage",
@@ -54,7 +54,8 @@
       "force_vehicle_occupancy_or_boss_state",
       "change_class_rotations_or_pet_policy",
       "tune_dps_from_a_movement_heavy_raid_run",
-      "retain_raw_heartbeat_snapshots"
+      "retain_raw_heartbeat_snapshots",
+      "change_gameplay_code_before_the_exact_replay"
     ]
   },
   "validation_clock": {
@@ -65,12 +66,14 @@
     "matched_live_verification_runs": 1
   },
   "implementation_checkpoint": {
-    "runtime_commit": "1f676f8d70f2e522d88267da66151537f5d59b67",
+    "runtime_commit": "31322fb541e7f3125465a856905c7016d5723acd",
     "focused_tests_passed": 20,
     "combat_movement_cpp_lines": 560,
     "input_canary_runtime_commit": "841512d64422e3ef310e3c4df3bfe7cfd30573eb",
     "input_canary_report_sha256": "6a77f7686589f73e1b7df0802cfc0a82dc4b726ad655067d3fe3086e899461f1",
-    "live_clear_claimed": false
+    "live_clear_claimed": false,
+    "chainwielder_patrol_safety_live_verified": true,
+    "canary97_exit_signal": 7
   },
   "implementation_constraints": {
     "maximum_c_or_cpp_lines": 999,
@@ -78,5 +81,5 @@
     "live_run_allowed": true,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "Commit this exact-build authorization, build the resulting exact commit with the guarded four-job policy, freshly provision, and run one matched completion-watchdog canary."
+  "next_action": "Commit this infrastructure replay authorization, freshly provision, and run the same exact binary once under the completion watchdog."
 }
