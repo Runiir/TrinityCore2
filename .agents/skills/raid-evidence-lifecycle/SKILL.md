@@ -64,6 +64,18 @@ These shutdown and persistence duties belong to the capture controller or coordi
   decisions, excessive death loops, infrastructure loss, contamination, or
   explicit interruption. An emergency wall-clock expiry is noncompletion.
 - Reconstruct milestones from ordered native observations rather than trusting aggregate completion flags.
+- Preserve both `first_broken_edge` and `terminal_edge` when they differ. A
+  later admission receipt, identity, recovery, or watchdog failure must not
+  overwrite the earlier gameplay action/outcome edge unless ordered evidence
+  proves causality. Bind each claimed edge to its first timestamp, route and
+  wipe generation, bot identity, native observation, and preceding submitted
+  action.
+- Treat a new loud failure after an unrelated change as an attribution audit,
+  not an automatic regression verdict. Record the exact changed ownership
+  lane, then classify every writer and observer of the failed value as
+  pre-admission setup, stable value-only observation, transient lifecycle, or
+  reporting. Duplicated observers and post-admission writers are evidence
+  defects even when the final receipt is correctly fail-closed.
 - In uncapped mode, use channel-freshness and monotonic semantic-progress clocks. Activity churn, casting toggles, or changing victim GUIDs are not progress.
 - Keep controller admission predicates byte-for-byte semantic peers of the
   runtime gate. In particular, post-wipe ready-check orchestration must accept

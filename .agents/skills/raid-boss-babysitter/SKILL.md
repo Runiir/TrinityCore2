@@ -31,6 +31,20 @@ entered from the aggregate alone.
 
 ## Identify termination evidence
 
+Keep the earliest causally linked gameplay failure separate from the final
+terminal reason. A loud receipt, identity, recovery, or watchdog failure that
+appears after an unrelated gameplay edit is not automatically the cause of the
+wipe. Report it as a later blocker until the ordered trace proves that it
+changed the earlier action or outcome. In particular, do not replace a missing
+mechanic candidate, failed native submission, death, or wipe with the receipt
+reason produced during corpse release, worldport, pet death, or shutdown.
+
+When a terminal signal looks unrelated, enumerate the value's writers and
+observers only far enough to classify it as stable identity, transient
+lifecycle, or reporting state. Return that classification to the coordinator;
+the read-only babysitter must not weaken the terminal or speculate that the
+most visible failure is the root cause.
+
 - Success: the shard's declared gate is independently observable.
 - Semantic stall: no monotonic route, kill, health-low-water, generation, or native milestone progress for the configured window.
 - Repeated-decision or death-loop failure: the configured typed watchdog is
