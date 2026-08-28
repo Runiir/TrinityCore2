@@ -2,7 +2,7 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "runtime:blackwing_descent:magmaw:same_level_hazard_path_admission",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "trace_backed_pending_implementation",
+  "classification": "pending_exact_build_and_live_verification",
   "observed_at_commit": "a1fff71538f463a3aa393da2507670a6279eff70",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_a1fff71538_canary104_same_level_hazard_path_handoff_20260829.md",
@@ -60,5 +60,11 @@
     "live_run_allowed": false,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "A Luna max runtime specialist implements one low-complexity shared planner predicate and focused counterexamples. Root reviews, commits, builds the exact commit, and runs the matched completion-watchdog canary."
+  "implementation_commit": "7354fb54060d57eda4e20c75caad58f2eb616038",
+  "implementation_validation": {
+    "focused_tests": "19 passed",
+    "movement_header_lines": 143,
+    "movement_planner_lines": 396
+  },
+  "next_action": "Root builds the exact implementation commit and runs the matched completion-watchdog canary. Trash must remain clean, and local same-level Magmaw hazard/mechanic moves must no longer fail solely on an unrelated lower-floor sample."
 }
