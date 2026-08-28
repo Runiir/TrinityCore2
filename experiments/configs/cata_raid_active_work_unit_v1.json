@@ -63,12 +63,14 @@
     "matched_live_verification_runs": 1
   },
   "implementation_checkpoint": {
-    "gameplay_commit": "7332197474191ac3968e79b7ce393cd8e2a961e7",
+    "gameplay_commit": "27e956156b2c4c3a91dfbe387cab9a6c67f31a43",
     "capture_commit": "3da4a42724",
     "status": "focused_tests_passed_exact_build_pending",
     "focused_tests_passed": 3,
-    "first_build_classification": "command_failed",
-    "first_build_failure": "distinct_world_object_and_unit_pointer_comparison",
+    "build_attempt_failures": [
+      "distinct_world_object_and_unit_pointer_comparison",
+      "incomplete_unit_type_prevented_base_pointer_conversion"
+    ],
     "new_spell_module_lines": 57,
     "loader_lines": 480,
     "canary92_runtime_commit": "5fb925eca7f4e49378edb6e70f7d81db951a7178",
@@ -87,5 +89,5 @@
     "live_run_allowed": false,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "Obtain a fresh exact configure and coordinator build containing gameplay commit 7332197474191ac3968e79b7ce393cd8e2a961e7, then update the checkpoint before Canary93 provisioning."
+  "next_action": "Obtain a fresh exact configure and coordinator build containing gameplay commit 27e956156b2c4c3a91dfbe387cab9a6c67f31a43, then update the checkpoint before Canary93 provisioning."
 }
