@@ -72,7 +72,7 @@ from tools.bot_ml.live_validation_session import (
     sha256_file,
     systemd_transient_command,
 )
-from tools.bot_ml.run_live_bot_validation import BoundedOutputParts, WatchdogOutputBuffer, apply_calibration_only_acceptance, attempt_evidence_envelope, boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, calibration_pre_scoring_blocker, command_script, heartbeat_commands_from_script, live_combat_progress_advanced, live_combat_progress_snapshot, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, preflight_calibration_reference_binding, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, split_sql_statements, strict_manifest_evidence, supersede_transient_route_failures, terminal_catchup_progress_advanced, terminal_catchup_progress_snapshot, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, wait_for_heroic_admission_status, watchdog_state, write_validation_config
+from tools.bot_ml.run_live_bot_validation import BoundedOutputParts, WatchdogOutputBuffer, apply_calibration_only_acceptance, attempt_evidence_envelope, boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, calibration_pre_scoring_blocker, command_script, heartbeat_commands_from_script, live_combat_progress_advanced, live_combat_progress_snapshot, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, preflight_calibration_reference_binding, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, should_defer_active_combat_bot_diagnosis, split_sql_statements, strict_manifest_evidence, supersede_transient_route_failures, terminal_catchup_progress_advanced, terminal_catchup_progress_snapshot, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, wait_for_heroic_admission_status, watchdog_state, write_validation_config
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -7668,6 +7668,62 @@ def diagnosis_health_row(health, *, guid=85, node="corborus", generation=2, kind
         "diagnosis": {"route_progress": route_progress},
         "snapshot": {"route_progress": route_progress},
     }
+
+
+def active_combat_bot_diagnosis_error_report(
+    *,
+    party_damage=99016,
+    route_node_id="bwd.magmaw.encounter",
+    route_generation=4,
+    attempt_epoch=0,
+    failure_labels=None,
+    completion_reason="machine_failure_predicate",
+):
+    return {
+        "completion_reason": completion_reason,
+        "failure_labels": (
+            ["bot_diagnosis_error"]
+            if failure_labels is None
+            else failure_labels
+        ),
+        "watchdog_state": {
+            "live_combat_progress": {
+                "damage": [
+                    {
+                        "route_node_id": route_node_id,
+                        "route_generation": route_generation,
+                        "attempt_epoch": attempt_epoch,
+                        "party_damage": party_damage,
+                    }
+                ]
+            }
+        },
+    }
+
+
+def test_should_defer_active_combat_bot_diagnosis_for_positive_route_damage():
+    report = active_combat_bot_diagnosis_error_report()
+
+    assert should_defer_active_combat_bot_diagnosis(report) is True
+    assert report["failure_labels"] == ["bot_diagnosis_error"]
+
+
+@pytest.mark.parametrize(
+    "report",
+    [
+        active_combat_bot_diagnosis_error_report(party_damage=0),
+        active_combat_bot_diagnosis_error_report(route_node_id=""),
+        active_combat_bot_diagnosis_error_report(route_generation=0),
+        active_combat_bot_diagnosis_error_report(
+            failure_labels=["bot_diagnosis_error", "worldserver_nonzero_return"]
+        ),
+        active_combat_bot_diagnosis_error_report(
+            completion_reason="worldserver_process_exit"
+        ),
+    ],
+)
+def test_should_not_defer_no_progress_or_infrastructure_failure(report):
+    assert should_defer_active_combat_bot_diagnosis(report) is False
 
 
 def test_live_combat_progress_resets_only_on_same_target_health_decrease():

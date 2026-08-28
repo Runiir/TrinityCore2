@@ -2764,6 +2764,54 @@ def live_combat_progress_advanced(
     return False
 
 
+def should_defer_active_combat_bot_diagnosis(
+    report: Mapping[str, Any],
+) -> bool:
+    """Keep a progressing combat heartbeat alive through transient bot errors.
+
+    A positive, route-scoped damage metric is enough to defer the machine
+    failure edge for this heartbeat.  The watchdog's existing semantic
+    progress/no-progress clock remains authoritative on later heartbeats.
+    """
+    if not isinstance(report, Mapping):
+        return False
+    if report.get("completion_reason") != "machine_failure_predicate":
+        return False
+    labels = report.get("failure_labels")
+    if not isinstance(labels, (list, tuple)) or not labels:
+        return False
+    if any(label != "bot_diagnosis_error" for label in labels):
+        return False
+
+    watchdog = report.get("watchdog_state")
+    if not isinstance(watchdog, Mapping):
+        return False
+    live_combat_progress = watchdog.get("live_combat_progress")
+    if not isinstance(live_combat_progress, Mapping):
+        return False
+    damage_rows = live_combat_progress.get("damage")
+    if not isinstance(damage_rows, list):
+        return False
+    for row in damage_rows:
+        if not isinstance(row, Mapping):
+            continue
+        route_node_id = str(row.get("route_node_id") or "")
+        try:
+            route_generation = int(row.get("route_generation") or 0)
+            attempt_epoch = int(row.get("attempt_epoch") or 0)
+            party_damage = int(row.get("party_damage") or 0)
+        except (TypeError, ValueError):
+            continue
+        if (
+            route_node_id
+            and route_generation > 0
+            and attempt_epoch >= 0
+            and party_damage > 0
+        ):
+            return True
+    return False
+
+
 def terminal_catchup_progress_snapshot(report: dict[str, Any]) -> dict[str, Any]:
     """Capture forward movement during an exact cleared-trash cohort catchup."""
     status = report.get("status") if isinstance(report.get("status"), dict) else {}
@@ -5152,7 +5200,16 @@ def run_transport_completion_watchdog(
         if blocker and calibration_blocker_repeats >= 3:
             finalize_calibration_pre_scoring_blocker(output_dir, report, blocker)
             return finish(0, False)
-        if report["acceptable_final_evidence"] or report["completion_reason"] in {"repeated_decision_watchdog", "death_loop_watchdog", "machine_failure_predicate"}:
+        if report["acceptable_final_evidence"] or (
+            report["completion_reason"] in {
+                "repeated_decision_watchdog",
+                "death_loop_watchdog",
+            }
+            or (
+                report["completion_reason"] == "machine_failure_predicate"
+                and not should_defer_active_combat_bot_diagnosis(report)
+            )
+        ):
             return finish(0, False)
         if validation_route_manifest and semantic_progress_plateau:
             report["completion_reason"] = "semantic_progress_plateau_watchdog"
@@ -5372,7 +5429,13 @@ def run_worldserver_completion_watchdog(
                 break
             if report["acceptable_final_evidence"]:
                 break
-            if report["completion_reason"] in {"repeated_decision_watchdog", "death_loop_watchdog", "machine_failure_predicate"}:
+            if report["completion_reason"] in {
+                "repeated_decision_watchdog",
+                "death_loop_watchdog",
+            } or (
+                report["completion_reason"] == "machine_failure_predicate"
+                and not should_defer_active_combat_bot_diagnosis(report)
+            ):
                 break
             blocker = calibration_pre_scoring_blocker(report)
             blocker_key = canonical_sha256(blocker) if blocker else ""
