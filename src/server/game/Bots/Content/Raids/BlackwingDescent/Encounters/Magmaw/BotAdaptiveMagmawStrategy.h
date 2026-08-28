@@ -65,14 +65,11 @@ public:
 
         plan.OwnsNode = true;
         PrepullDecision prepull = EvaluatePrepull(board, *observed.Boss);
-        if (prepull.Disposition == PrepullDisposition::HoldOffense)
-        {
-            plan.SuppressOffense = true;
-            return plan;
-        }
-
         if (IsPrepull(board, *observed.Boss))
         {
+            // Formation/catch-up must remain actionable before the health
+            // gate settles: an injured straggler cannot rejoin the support
+            // anchor while its cohort is held in place.
             std::optional<MagmawRangedAnchors> const anchors =
                 ResolveRangedAnchors(board, *observed.Boss);
             if (anchors && !RangedGroupStaged(board, *anchors))
@@ -83,6 +80,11 @@ public:
                         FormationAnchor(board, *anchors, botGuid),
                         "prepull_ranged_stage",
                         BotActionArbitration::Priority::Mechanic, 325.0f);
+                return plan;
+            }
+            if (prepull.Disposition == PrepullDisposition::HoldOffense)
+            {
+                plan.SuppressOffense = true;
                 return plan;
             }
             // Only the deterministic main tank may create Magmaw's first

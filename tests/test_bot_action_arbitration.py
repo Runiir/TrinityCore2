@@ -707,11 +707,13 @@ int main()
         { magmawBoss.Position.X - 5.0f, magmawBoss.Position.Y,
             magmawBoss.Position.Z + 1.0f } };
     magmawStage.Players[2].Position = magmawBoss.Position;
+    magmawStage.Players[2].HealthPct = 93.0f;
     auto rangedStagePlan = magmawStrategy.Propose(
         magmawStage, dps.Guid, "dps");
     auto tankStageWaitPlan = magmawStrategy.Propose(
         magmawStage, tankA.Guid, "tank");
     assert(rangedStagePlan.SuppressOffense);
+    assert(rangedStagePlan.DamageTarget.IsEmpty());
     assert(rangedStagePlan.Movement.has_value());
     assert(rangedStagePlan.Movement->Id.Mechanic
         == "prepull_ranged_stage");
@@ -747,12 +749,25 @@ int main()
     assert(rangedStageMove);
     magmawStage.Players[2].Position = {
         rangedStageMove->X, rangedStageMove->Y, rangedStageMove->Z };
-    auto stagedTankPullPlan = magmawStrategy.Propose(
-        magmawStage, tankA.Guid, "tank");
-    auto stagedOffTankWaitPlan = magmawStrategy.Propose(
-        magmawStage, tankB.Guid, "tank");
-    auto stagedDpsWaitPlan = magmawStrategy.Propose(
+    auto stagedInjuredDpsPlan = magmawStrategy.Propose(
         magmawStage, dps.Guid, "dps");
+    auto stagedInjuredTankPlan = magmawStrategy.Propose(
+        magmawStage, tankA.Guid, "tank");
+    assert(stagedInjuredDpsPlan.SuppressOffense);
+    assert(stagedInjuredDpsPlan.DamageTarget.IsEmpty());
+    assert(stagedInjuredTankPlan.SuppressOffense);
+    assert(stagedInjuredTankPlan.DamageTarget.IsEmpty());
+
+    // Once the same cohort is healthy and staged, only the designated tank
+    // owns the first pull; every other profile remains suppressed.
+    BotEncounter::Blackboard magmawHealthyStage = magmawStage;
+    magmawHealthyStage.Players[2].HealthPct = 100.0f;
+    auto stagedTankPullPlan = magmawStrategy.Propose(
+        magmawHealthyStage, tankA.Guid, "tank");
+    auto stagedOffTankWaitPlan = magmawStrategy.Propose(
+        magmawHealthyStage, tankB.Guid, "tank");
+    auto stagedDpsWaitPlan = magmawStrategy.Propose(
+        magmawHealthyStage, dps.Guid, "dps");
     assert(!stagedTankPullPlan.SuppressOffense);
     assert(stagedTankPullPlan.DamageTarget == magmawBoss.Guid);
     assert(stagedOffTankWaitPlan.SuppressOffense);
