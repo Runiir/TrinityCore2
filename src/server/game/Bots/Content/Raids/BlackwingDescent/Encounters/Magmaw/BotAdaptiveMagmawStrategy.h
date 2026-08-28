@@ -85,6 +85,14 @@ public:
                         BotActionArbitration::Priority::Mechanic, 325.0f);
                 return plan;
             }
+            // Only the deterministic main tank may create Magmaw's first
+            // offensive action. Other profiles stay suppressed until native
+            // combat state or a victim proves that the tank pull landed.
+            if (!IsDesignatedPullTank(board, botGuid, role))
+            {
+                plan.SuppressOffense = true;
+                return plan;
+            }
         }
 
         plan.DamageTarget = SelectDamageTarget(observed, role);
@@ -216,6 +224,20 @@ private:
                 && assignment.ExpiresAtMs > board.ObservedAtMs)
                 return true;
         return PillarBaiterRank(board, botGuid).has_value();
+    }
+
+    static bool IsDesignatedPullTank(Blackboard const& board,
+        ObjectGuid botGuid, std::string_view role)
+    {
+        if (role != "tank")
+            return false;
+        ObjectGuid pullTank;
+        for (ActorSnapshot const& member : board.Players)
+            if (member.Alive && member.Role == "tank"
+                && (pullTank.IsEmpty()
+                    || member.Guid.GetRawValue() < pullTank.GetRawValue()))
+                pullTank = member.Guid;
+        return !pullTank.IsEmpty() && pullTank == botGuid;
     }
 
     static bool IsPrepull(Blackboard const& board, ActorSnapshot const& boss)

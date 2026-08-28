@@ -573,6 +573,7 @@ int main()
     pillar.Position = dps.Position;
     magmaw.Hostiles = { magmawBoss, magmawHead };
     magmaw.Summons = { pillar };
+    magmaw.NativeBossState = "in_progress";
     BotEncounter::AdaptiveMagmawStrategy magmawStrategy;
     auto magmawPlan = magmawStrategy.Propose(magmaw, dps.Guid, "dps");
     assert(magmawPlan.OwnsNode);
@@ -655,6 +656,7 @@ int main()
     assert(magmawHazardDpsResolution.CommittedCandidates.size() == 2);
 
     BotEncounter::Blackboard magmawPrepull = magmaw;
+    magmawPrepull.NativeBossState.clear();
     magmawPrepull.Players.front().HealthPct = 93.0f;
     auto magmawPrepullPlan = magmawStrategy.Propose(
         magmawPrepull, dps.Guid, "dps");
@@ -665,6 +667,7 @@ int main()
     // Magmaw can be pulled by a full-health tank from range.  Melee closure
     // belongs to normal post-pull combat movement, not prepull readiness.
     BotEncounter::Blackboard magmawRangedTank = magmaw;
+    magmawRangedTank.NativeBossState.clear();
     magmawRangedTank.Summons.clear();
     magmawRangedTank.Hostiles = { magmawBoss };
     magmawRangedTank.Players.front().Position = { 0.0f, 0.0f, 213.87f };
@@ -746,8 +749,16 @@ int main()
         rangedStageMove->X, rangedStageMove->Y, rangedStageMove->Z };
     auto stagedTankPullPlan = magmawStrategy.Propose(
         magmawStage, tankA.Guid, "tank");
+    auto stagedOffTankWaitPlan = magmawStrategy.Propose(
+        magmawStage, tankB.Guid, "tank");
+    auto stagedDpsWaitPlan = magmawStrategy.Propose(
+        magmawStage, dps.Guid, "dps");
     assert(!stagedTankPullPlan.SuppressOffense);
     assert(stagedTankPullPlan.DamageTarget == magmawBoss.Guid);
+    assert(stagedOffTankWaitPlan.SuppressOffense);
+    assert(stagedOffTankWaitPlan.DamageTarget.IsEmpty());
+    assert(stagedDpsWaitPlan.SuppressOffense);
+    assert(stagedDpsWaitPlan.DamageTarget.IsEmpty());
 
     // A nearer immediate hazard cannot replace a pillar movement proposal,
     // while the fallback hazard candidate retains its source-relative identity.
