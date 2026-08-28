@@ -7832,6 +7832,139 @@ def test_live_combat_progress_uses_same_route_damage_and_ignores_dead_target():
     assert live_combat_progress_advanced(damage, dead) is False
 
 
+def test_live_combat_progress_ignores_stale_dead_health_and_damage_snapshots():
+    stale = diagnosis_health_row(0.341646)
+    stale["diagnosis"] = {
+        **stale["diagnosis"],
+        "diagnosis_code": "dead_recovery",
+        "evidence": [{"name": "alive", "value": False}],
+    }
+    metrics = {
+        "schema": "bot_combat_metrics_v2",
+        "available": True,
+        "route_node_id": "bwd.magmaw.chainwielder",
+        "route_generation": 2,
+        "party_damage": 3727191,
+    }
+    wiped_runtime = {
+        "expected_size": 10,
+        "alive_size": 0,
+        "wipe_state": "wiped",
+    }
+
+    snapshot = live_combat_progress_snapshot([stale], [], metrics)
+    legacy_snapshot = live_combat_progress_snapshot(
+        [diagnosis_health_row(0.341646)], [], metrics, runtime=wiped_runtime,
+    )
+
+    assert snapshot == {"health": [], "damage": []}
+    assert legacy_snapshot == {"health": [], "damage": []}
+
+
+def test_live_combat_progress_preserves_monotonic_progress_after_recovery():
+    runtime = {"expected_size": 10, "alive_size": 10, "wipe_state": "ready"}
+    metrics = {
+        "schema": "bot_combat_metrics_v2",
+        "available": True,
+        "route_node_id": "bwd.magmaw.chainwielder",
+        "route_generation": 2,
+        "party_damage": 0,
+    }
+    baseline = live_combat_progress_snapshot(
+        [diagnosis_health_row(1.0)], [], metrics, runtime=runtime,
+    )
+    advanced = live_combat_progress_snapshot(
+        [diagnosis_health_row(0.8)], [], {**metrics, "party_damage": 100},
+        runtime=runtime,
+    )
+
+    assert baseline["health"]
+    assert baseline["damage"]
+    assert live_combat_progress_advanced(baseline, advanced) is True
+
+
+def test_watchdog_all_dead_wiped_recovery_is_not_immediately_terminal():
+    state = watchdog_state(
+        {
+            "decisions": 1,
+            "moved_diagnoses": 4,
+            "validation_route_actions": 10,
+            "validation_route_manifest_complete": 1,
+            "cohort_all_dead_wiped": True,
+        },
+        [],
+        no_progress_window_sec=300,
+    )
+
+    assert state["all_dead_wiped"] is True
+    assert state["no_progress"] is False
+
+
+def test_watchdog_all_dead_wiped_closes_after_no_progress_label():
+    state = watchdog_state(
+        {
+            "decisions": 1447,
+            "moved_diagnoses": 4,
+            "validation_route_actions": 10,
+            "cohort_all_dead_wiped": True,
+        },
+        ["no_progress_observed"],
+        no_progress_window_sec=300,
+    )
+
+    assert state["all_dead_wiped"] is True
+    assert state["no_progress"] is True
+
+
+def test_live_validation_all_dead_wipe_drops_stale_combat_progress():
+    runtime = {
+        "expected_size": 10,
+        "alive_size": 0,
+        "wipe_state": "wiped",
+        "recovery_state": "release_resurrection_pending",
+    }
+    stale = diagnosis_health_row(0.341646)
+    stale["diagnosis"] = {
+        **stale["diagnosis"],
+        "diagnosis_code": "dead_recovery",
+        "evidence": [{"name": "alive", "value": False}],
+    }
+    metrics = {
+        "schema": "bot_combat_metrics_v2",
+        "available": True,
+        "route_node_id": "bwd.magmaw.chainwielder",
+        "route_generation": 2,
+        "party_damage": 3727191,
+    }
+    output = "\n".join(
+        [
+            "TC> " + json.dumps({
+                "action": "botauto_status",
+                "active": True,
+                "active_bots": 10,
+                "target_bots": 10,
+                "decisions": 1447,
+                "deaths": 10,
+                "raid_runtime": runtime,
+            }),
+            "TC> " + json.dumps({
+                "diagnosis_schema_version": 1,
+                "raid_runtime": runtime,
+                "combat_metrics": metrics,
+                "bots": [stale],
+            }),
+            'TC> {"duration_minutes":8,"decisions":1447,"total_kills":0}',
+        ]
+    )
+
+    report = live_validation_report(output)
+
+    assert report["evidence"]["cohort_all_dead_wiped"] is True
+    assert report["evidence"]["live_combat_progress"] == {"health": [], "damage": []}
+    assert report["watchdog_state"]["all_dead_wiped"] is True
+    assert report["watchdog_state"]["no_progress"] is True
+
+
 def terminal_catchup_report(distance, *, guid=30007, generation=3, moving=True):
     return {
         "status": {

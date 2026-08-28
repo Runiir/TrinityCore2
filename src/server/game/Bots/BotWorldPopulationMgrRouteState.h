@@ -218,6 +218,9 @@ namespace BotWorldPopulationMgrRouteState
         float PatrolAnchorToleranceYards = 0.0f;
         float PatrolEngageRadiusYards = 0.0f;
         float PatrolFutureGuardMarginYards = 0.0f;
+        ValidationRouteMemberAnchor PatrolCombatAnchor;
+        float PatrolCombatAnchorToleranceYards = 0.0f;
+        float PatrolCombatClearanceYards = 0.0f;
         uint32 PatrolPullOwnerRosterSlot = 0;
         uint32 ExpectedAliveCount = 0;
         uint32 ActivationAreaTriggerId = 0;

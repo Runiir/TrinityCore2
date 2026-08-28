@@ -2608,6 +2608,8 @@ def _route_health_signal_samples(
     entry: dict[str, Any], order: tuple[int, ...]
 ) -> list[dict[str, Any]]:
     """Extract attributable target or stable pack health from one payload row."""
+    if _entry_alive_state(entry) is False:
+        return []
     samples: list[dict[str, Any]] = []
     owners: list[dict[str, Any]] = [entry]
     for key in ("diagnosis", "snapshot"):
@@ -2675,10 +2677,86 @@ def _route_health_signal_samples(
     return samples
 
 
+def _entry_alive_state(entry: Mapping[str, Any]) -> bool | None:
+    """Return an explicit bot liveness observation, if one is present.
+
+    Diagnosis snapshots can retain the last combat route after a bot dies.
+    Only explicit native liveness markers suppress that stale route signal;
+    payloads from older producers without a marker remain usable.
+    """
+    states: list[bool] = []
+
+    def observe(owner: Mapping[str, Any]) -> None:
+        for key in ("alive", "is_alive", "bot_alive"):
+            value = owner.get(key)
+            if isinstance(value, bool):
+                states.append(value)
+        evidence = owner.get("evidence")
+        if isinstance(evidence, list):
+            for item in evidence:
+                if not isinstance(item, Mapping):
+                    continue
+                name = str(item.get("name") or "").strip().lower()
+                if name not in {"alive", "is_alive", "bot_alive"}:
+                    continue
+                value = item.get("value")
+                if isinstance(value, bool):
+                    states.append(value)
+        if str(owner.get("diagnosis_code") or "") == "dead_recovery":
+            states.append(False)
+
+    observe(entry)
+    for key in ("diagnosis", "snapshot"):
+        owner = entry.get(key)
+        if isinstance(owner, Mapping):
+            observe(owner)
+    if not states:
+        return None
+    # Conflicting liveness markers fail closed for the progress signal.  A
+    # later recovery heartbeat can restore the signal once it reports alive.
+    return all(states)
+
+
+def _diagnoses_all_dead(diagnoses: Sequence[Mapping[str, Any]]) -> bool:
+    """Return true only when every diagnosis row explicitly reports dead."""
+    states = [_entry_alive_state(row) for row in diagnoses]
+    return bool(states) and all(state is False for state in states)
+
+
+def _cohort_all_dead_wiped(runtime: Mapping[str, Any] | None) -> bool:
+    """Recognize the native all-dead/wiped edge for watchdog liveness.
+
+    The active lease count is intentionally not used here: the coordinator can
+    keep leases while the native raid cohort is wiped and awaiting recovery.
+    """
+    if not isinstance(runtime, Mapping):
+        return False
+    try:
+        expected_size = runtime.get("expected_size")
+        alive_size = runtime.get("alive_size")
+        if (
+            isinstance(expected_size, bool)
+            or isinstance(alive_size, bool)
+            or expected_size is None
+            or alive_size is None
+        ):
+            return False
+        expected_size = int(expected_size)
+        alive_size = int(alive_size)
+    except (TypeError, ValueError):
+        return False
+    return (
+        expected_size > 0
+        and alive_size == 0
+        and str(runtime.get("wipe_state") or "") == "wiped"
+    )
+
+
 def live_combat_progress_snapshot(
     diagnoses: list[dict[str, Any]],
     entries: list[dict[str, Any]],
     combat_metrics: dict[str, Any] | None = None,
+    runtime: Mapping[str, Any] | None = None,
 ) -> dict[str, list[dict[str, Any]]]:
     """Return current route-scoped combat samples for heartbeat comparisons.
 
@@ -2688,6 +2766,9 @@ def live_combat_progress_snapshot(
     cumulative originated damage strictly increases.  Route generation and
     target identity are part of every comparison key.
     """
+    if _cohort_all_dead_wiped(runtime) or _diagnoses_all_dead(diagnoses):
+        return {"health": [], "damage": []}
+
     reset_epochs: Counter[tuple[str, int]] = Counter()
     for entry in entries:
         if not boss_attempt_reset(entry):
@@ -3906,6 +3987,24 @@ def live_evidence(
     forbidden_assists = forbidden_completion_assists(entries)
     route_terminal_evidence = scoped_event_evidence(entries, {"validation_route_terminal"})
     status_route = status.get("validation_route") if isinstance(status.get("validation_route"), dict) else {}
+    contamination_evidence = scoped_event_evidence(
+        entries, {"validation_route_future_encounter_contamination"}
+    )
+    contamination_scopes = {
+        (row["route_node_id"], row["route_generation"])
+        for row in contamination_evidence
+    }
+    for row in status_route.get("contamination_evidence") or []:
+        if not isinstance(row, dict):
+            continue
+        scope = (str(row.get("route_node_id") or ""), int(row.get("route_generation") or 0))
+        if not scope[0] or scope[1] <= 0 or scope in contamination_scopes:
+            continue
+        contamination_scopes.add(scope)
+        contamination_evidence.append({
+            "route_node_id": scope[0],
+            "route_generation": scope[1],
+        })
     terminal_scopes = {(row["route_node_id"], row["route_generation"]) for row in route_terminal_evidence}
     for row in status_route.get("terminal_evidence") or []:
         if not isinstance(row, dict):
@@ -3996,10 +4095,16 @@ def live_evidence(
         count_route_progress(entry.get("route_progress") if isinstance(entry, dict) else None)
 
     route_combat_progress_diagnoses = boss_route_health_progress(entries)
+    runtime = status.get("raid_runtime") if isinstance(status.get("raid_runtime"), dict) else {}
+    cohort_all_dead_wiped = (
+        _cohort_all_dead_wiped(runtime)
+        or _diagnoses_all_dead(diagnoses)
+    )
     live_combat_progress = live_combat_progress_snapshot(
         diagnoses,
         entries,
         diagnosis.get("combat_metrics") if isinstance(diagnosis, dict) else None,
+        runtime=runtime,
     )
 
     action_text = " ".join(sorted(action_names)).lower()
@@ -4149,6 +4254,7 @@ def live_evidence(
         "boss_kill_evidence": boss_kill_evidence,
         "real_boss_kill_evidence": real_boss_kill_evidence,
         "route_terminal_evidence": route_terminal_evidence,
+        "contamination_evidence": contamination_evidence,
         "manifest_completion_evidence": manifest_completion_evidence,
         "post_failure_progress": post_failure_progress,
         "scripted_activation_wait_pending": scripted_activation_wait_pending(entries, int(time.time() * 1000)),
@@ -4180,6 +4286,7 @@ def live_evidence(
         "validation_route_no_progress_diagnoses": route_no_progress_diagnoses,
         "validation_route_combat_progress_diagnoses": route_combat_progress_diagnoses,
         "live_combat_progress": live_combat_progress,
+        "cohort_all_dead_wiped": cohort_all_dead_wiped,
         "unresolved_route_death_loop_events": unresolved_route_death_loop_count(entries),
         "boss_engagement_actions": boss_engagement_actions,
         "trash_route_actions": trash_route_actions,
@@ -4210,6 +4317,10 @@ def validation_failure_labels(
     max_death_loops: int = DEFAULT_MAX_DEATH_LOOPS,
 ) -> list[str]:
     labels: list[str] = []
+    if evidence.get("contamination_evidence"):
+        # Certification must quarantine this attempt, but the native runtime
+        # remains live because the C++ observer no longer owns a terminal hold.
+        labels.append("validation_route_future_encounter_contamination")
     if timed_out:
         labels.append("worldserver_timeout")
     if returncode != 0:
@@ -4344,6 +4455,7 @@ def progress_counters_from_evidence(evidence: dict[str, Any]) -> dict[str, int]:
         "gear_upgrades": int(evidence.get("gear_upgrades") or 0),
         "validation_route_actions": int(evidence.get("validation_route_actions") or 0),
         "validation_route_terminal_evidence": len(evidence.get("route_terminal_evidence") or []),
+        "validation_route_contamination_evidence": len(evidence.get("contamination_evidence") or []),
         "validation_route_manifest_complete": int(evidence.get("validation_route_manifest_complete") or 0),
         "validation_route_no_progress_diagnoses": int(evidence.get("validation_route_no_progress_diagnoses") or 0),
         "validation_route_combat_progress_diagnoses": int(evidence.get("validation_route_combat_progress_diagnoses") or 0),
@@ -4364,6 +4476,7 @@ def watchdog_state(
     max_death_loops: int = DEFAULT_MAX_DEATH_LOOPS,
 ) -> dict[str, Any]:
     counters = progress_counters_from_evidence(evidence)
+    all_dead_wiped = bool(evidence.get("cohort_all_dead_wiped"))
     # Starting/continuing a boss attempt is activity, but it is not durable
     # progress once the evidence classifies that attempt as having produced no
     # kill.  Counting those repeated actions here lets an endless pull/reset
@@ -4389,6 +4502,7 @@ def watchdog_state(
         counters["validation_route_actions"] > 0
         and counters["moved_diagnoses"] > 0
         and counters["boss_engagement_actions"] <= 0
+        and not all_dead_wiped
     )
     route_terminal_no_progress = counters["validation_route_no_progress_diagnoses"] > 0
     route_semantic_plateau = (
@@ -4416,6 +4530,7 @@ def watchdog_state(
         "semantic_progress_plateau": route_semantic_plateau,
         "repeated_decision_loop": repeated_loop,
         "death_loop": death_loop,
+        "all_dead_wiped": all_dead_wiped,
         "live_combat_progress": evidence.get("live_combat_progress", {}),
         "progress_counters": counters,
     }
@@ -4516,6 +4631,7 @@ def terminal_failure_labels(failure_labels: list[str], state: dict[str, Any]) ->
         "trash_route_no_engagement",
         "validation_route_activation_no_engagement",
         "validation_route_no_engagement",
+        "validation_route_future_encounter_contamination",
     }
     if route_motion_progress:
         nonterminal.add("validation_route_assist_focus_loop")

@@ -442,6 +442,10 @@ private:
         std::function<ObjectGuid::LowType()> const& currentValidationRouteTargetSpawnId,
         std::function<bool(Creature const*)> const& isValidationCohortCombatLinked,
         std::function<void(Creature const*, bool)> const& enrollValidationRoutePackMember);
+    bool TryValidationRoutePatrolCombatAnchor(WorldBotState& state,
+        Player* bot, Unit* target, ResolvedCombatAction const& profileAction);
+    bool IsValidationRoutePatrolCombatPointSafe(Unit const* target,
+        float x, float y, float z) const;
     bool TryValidationFeralRoarPickup(WorldBotState& state, Player* bot,
         BotRolePowerBreakdown const& power, BotProgressionStage stage,
         BotProgressionActivity activity, std::string& situation,

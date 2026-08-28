@@ -939,24 +939,112 @@ def test_canary53_safe_drudge_healers_keep_stationary_cast_time_heals():
     )
 
 
-def test_future_encounter_contamination_is_attempt_terminal_not_a_transient_hold():
+def test_future_encounter_contamination_is_evidence_not_an_attempt_terminal_hold():
     implementation = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
         encoding="utf-8"
     )
-    start = implementation.index("Creature* prematureNextEncounter = nullptr;")
-    end = implementation.index("ValidationRoutePackContext pack", start)
-    hold = implementation[start:end]
+    observation = (
+        ROOT
+        / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteContamination.cpp"
+    ).read_text(encoding="utf-8")
 
-    latch = hold.index(
-        'Cohort().ValidationAttemptFailureReason =\n'
-        '                "validation_route_future_encounter_contamination";'
-    )
-    event = hold.index(
+    event = implementation.index(
         'RecordEvent(state, bot, "validation_route_future_encounter_contamination"'
     )
-    assert latch < event < hold.index("return true;", event)
-    assert "ValidationAttemptFailureAttemptId = Cohort().AttemptId" in hold
-    assert "ValidationAttemptFailureRouteGeneration" in hold
+    assert "ObserveAndGuard" in implementation
+    assert "evidence.Records.push_back" in observation
+    assert "lowest raw GUID" in observation
+    assert "creature->GetGUID().GetRawValue()" in observation
+    assert "ValidationAttemptFailureReason" not in observation
+    assert "SetAllOffenseSuppressed" not in observation
+    assert "MarkBotBlocked" not in observation
+    assert "return true;" not in observation
+    assert "future_target_offense_guarded" in implementation[event:event + 250]
+    assert implementation.index("ValidationRoutePackContext pack", event) > event
+
+
+def test_future_encounter_contamination_keeps_target_and_splash_guards_local():
+    caller = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(
+        encoding="utf-8"
+    )
+    observation = (
+        ROOT
+        / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteContamination.cpp"
+    ).read_text(encoding="utf-8")
+
+    assert "IsImmediateNextEncounterMember" in observation
+    assert "IsProtectedEncounterTarget" in observation
+    assert "SpellHasHostileMultiTargetSemantics" in observation
+    assert "HasNearbyProtectedEncounterTarget" in observation
+    assert "SuppressPlayerMelee" in observation
+    assert "SubmitMeleeAutoAttackIntent" in caller
+    assert "future_encounter_target_forbidden" in caller
+    assert "pet->AttackStop();" in observation
+    assert "controlled->AttackStop();" in observation
+
+
+def test_future_encounter_contamination_does_not_feed_terminal_recovery_observers():
+    preparation = (
+        ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdateBotPreparation.cpp"
+    ).read_text(encoding="utf-8")
+    death = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdateDeath.cpp").read_text(
+        encoding="utf-8"
+    )
+
+    # Genuine terminal failures still own the hold, while contamination is
+    # intentionally absent from both observers so native corpse recovery and
+    # ordinary healing/defense decisions can run.
+    assert "HoldValidationAttemptFailure" in preparation
+    assert "HoldValidationAttemptFailure" in death
+    assert "ValidationAttemptFailureReason" in preparation
+    assert "ValidationAttemptFailureReason" in death
+    assert "ValidationRouteContaminationEvidence" not in preparation
+    assert "ValidationRouteContaminationEvidence" not in death
+
+
+def test_future_encounter_contamination_reaches_certification_without_runtime_hold():
+    from tools.bot_ml.run_live_bot_validation import (
+        live_evidence,
+        terminal_failure_labels,
+        validation_failure_labels,
+        watchdog_state,
+    )
+
+    validator = (ROOT / "tools/bot_ml/run_live_bot_validation.py").read_text(
+        encoding="utf-8"
+    )
+    assert 'status_route.get("contamination_evidence")' in validator
+    assert '"contamination_evidence": contamination_evidence' in validator
+    assert 'labels.append("validation_route_future_encounter_contamination")' in validator
+    nonterminal = validator[validator.index("nonterminal = {"):validator.index("if route_motion_progress", validator.index("nonterminal = {"))]
+    assert '"validation_route_future_encounter_contamination"' in nonterminal
+
+    status = {
+        "active_bots": 1,
+        "target_bots": 1,
+        "validation_route": {
+            "contamination_evidence": [
+                {"route_node_id": "chainwielder", "route_generation": 2}
+            ]
+        },
+    }
+    evidence = live_evidence(status, {}, {"entries": []}, {})
+    assert evidence["contamination_evidence"] == [
+        {"route_node_id": "chainwielder", "route_generation": 2}
+    ]
+    evidence.update(
+        {
+            "validation_route_actions": 1,
+            "kills": 1,
+            "kill_evidence": 1,
+            "trash_action_evidence": 1,
+            "trash_pulls": 1,
+        }
+    )
+    labels = validation_failure_labels(0, False, 1, 1, 1, 1, [], evidence)
+    assert "validation_route_future_encounter_contamination" in labels
+    state = watchdog_state(evidence, labels)
+    assert "validation_route_future_encounter_contamination" not in terminal_failure_labels(labels, state)
 
 
 def test_second_same_source_rush_retains_diagnostic_without_terminalizing_pull():

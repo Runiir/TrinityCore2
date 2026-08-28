@@ -154,6 +154,9 @@ struct BotWorldExperimentConfig
     float ValidationRoutePatrolAnchorToleranceYards = 0.0f;
     float ValidationRoutePatrolEngageRadiusYards = 0.0f;
     float ValidationRoutePatrolFutureGuardMarginYards = 0.0f;
+    ValidationRouteMemberAnchor ValidationRoutePatrolCombatAnchor;
+    float ValidationRoutePatrolCombatAnchorToleranceYards = 0.0f;
+    float ValidationRoutePatrolCombatClearanceYards = 0.0f;
     uint32 ValidationRoutePatrolPullOwnerRosterSlot = 0;
     uint32 ValidationRouteExpectedAliveCount = 0;
     uint32 ValidationRouteActivationAreaTriggerId = 0;

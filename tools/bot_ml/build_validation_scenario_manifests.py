@@ -984,6 +984,17 @@ def build_manifests(
                 contract = step.get(contract_name)
                 if contract:
                     route[contract_name] = contract
+            patrol_combat_anchor = step.get("patrol_combat_anchor")
+            if patrol_combat_anchor:
+                route["patrol_combat_anchor"] = {
+                    "x": float(patrol_combat_anchor.get("x") or 0.0),
+                    "y": float(patrol_combat_anchor.get("y") or 0.0),
+                    "z": float(patrol_combat_anchor.get("z") or 0.0),
+                }
+                route["patrol_combat_anchor_tolerance_yards"] = float(
+                    step.get("patrol_combat_anchor_tolerance_yards") or 0.0)
+                route["patrol_combat_clearance_yards"] = float(
+                    step.get("patrol_combat_clearance_yards") or 0.0)
             if node_kind != "discovery_leg":
                 route["expected_alive_count"] = expected_alive_count(step, cluster_entries)
             declared_node_id = str(step.get("node_id") or "")

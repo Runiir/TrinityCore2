@@ -8,6 +8,7 @@
 #include "Bots/BotWorldPopulationMgrValidationRouteTerminalArrival.h"
 #include "Bots/BotWorldPopulationMgrValidationRouteTargetEngagement.h"
 #include "Bots/BotWorldPopulationMgrValidationRouteTrashIntervention.h"
+#include "Bots/BotWorldPopulationMgrValidationRouteContamination.h"
 #include "Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilAddWaveOrchestration.h"
 #include "Bots/BotWorldPopulationMgrScopeGuard.h"
 #include "Bots/BotCalibrationFixtureContractGenerated.h"
@@ -25,7 +26,6 @@
 #include "Bots/BotEncounterMechanicCatalog.h"
 #include "Bots/BotMgr.h"
 #include "Bots/BotProgressionGoalPolicy.h"
-#include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/BotRaidHazardState.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeGeometryState.h"
 #include "Bots/BotWorldPopulationMgrValidationHazards.h"
@@ -145,11 +145,9 @@ using BotWorldPopulationMgrPolicyHelpers::WorldPolicyVersion;
 using BotWorldPopulationMgrSpellSemantics::BuildSpellTagJson;
 using BotWorldPopulationMgrSpellSemantics::EventLooksFailure;
 using BotWorldPopulationMgrSpellSemantics::EventLooksSuccessful;
-using BotWorldPopulationMgrSpellSemantics::HasNearbyProtectedEncounterTarget;
 using BotWorldPopulationMgrSpellSemantics::NowMs;
 using BotWorldPopulationMgrSpellSemantics::SemanticMechanicFamily;
 using BotWorldPopulationMgrSpellSemantics::SemanticMechanicKey;
-using BotWorldPopulationMgrSpellSemantics::SpellHasHostileMultiTargetSemantics;
 using BotWorldPopulationMgrSpellSemantics::SpellLooksDangerous;
 using BotWorldPopulationMgrSpellSemantics::SpellLooksLikeGroundDanger;
 using BotWorldPopulationMgrSpellSemantics::SpellLooksLikeHeal;
@@ -187,7 +185,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     if (!TryValidationRouteObjectiveGate(state, bot, power, stage,
             activity, situation, action, target, arrivalRoute))
         return false;
-    uint64 const raidAuthorityOwner = bot->GetGUID().GetRawValue();
     BotClassSpecActionProfile cadenceProfile =
         BotClassSpecActionProfileStore::Build(bot, GetDungeonRole(bot));
     bool discoveryLeg = Cohort().Config.ValidationRouteNodeKind == "discovery_leg";
@@ -264,78 +261,33 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             allowStationaryCastTime);
     };
 
-    // The current route node owns every offensive decision until its terminal
-    // evidence advances the manifest.  If native threat already includes the
-    // next encounter, fail closed immediately: do not compound the accidental
-    // pull with profile cleaves, multidots, auto-attacks, pets, or controlled
-    // units while waiting for the native encounter to evade/reset.
-    Creature* prematureNextEncounter = nullptr;
-    forEachActiveValidationCohortCombatCreature([&](Creature* creature)
+    BotWorldPopulationMgrValidationRoute::ContaminationEvidenceSink contaminationEvidence{
+        Party().ValidationRouteContaminationEvidence,
+        Cohort().Config.ValidationRouteNodeId,
+        Party().ValidationRouteGeneration,
+        Cohort().Config.ValidationRouteKind};
+    BotWorldPopulationMgrValidationRoute::ContaminationResult contamination =
+        BotWorldPopulationMgrValidationRoute::ObserveAndGuard(
+            state, bot, target, contaminationEvidence,
+            {forEachActiveValidationCohortCombatCreature,
+                isImmediateNextValidationRouteEncounterMember,
+                [this](WorldBotState& ownerState)
+                {
+                    SubmitMeleeAutoAttackIntent(ownerState,
+                        BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                        BotMeleeAutoAttack::Owner::Safety,
+                        BotActionArbitration::Priority::Mechanic,
+                        "future_encounter_target_forbidden");
+                }});
+    if (contamination.Observed)
     {
-        if (!prematureNextEncounter && creature && creature->IsAlive()
-            && creature->GetHealth()
-            && isImmediateNextValidationRouteEncounterMember(creature))
-            prematureNextEncounter = creature;
-    });
-    if (prematureNextEncounter)
-    {
-        // This route generation is contaminated even if the future encounter
-        // later evades. Persist the first edge at cohort scope so a later
-        // quiet snapshot cannot certify the current node as cleared.
-        if (Cohort().ValidationAttemptFailureReason.empty())
-        {
-            Cohort().ValidationAttemptFailureReason =
-                "validation_route_future_encounter_contamination";
-            Cohort().ValidationAttemptFailureAttemptId = Cohort().AttemptId;
-            Cohort().ValidationAttemptFailureRouteGeneration =
-                Party().ValidationRouteGeneration;
-        }
-        BotRaidAreaAuthority::SetAllOffenseSuppressed(raidAuthorityOwner, true);
-        BotRaidAreaAuthority::Set(raidAuthorityOwner, true);
-        for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
-            if (Spell* current = bot->GetCurrentSpell(spellType))
-            {
-                Unit* castTarget = current->m_targets.GetUnitTarget();
-                Creature const* castCreature = castTarget ? castTarget->ToCreature() : nullptr;
-                if ((castCreature && isImmediateNextValidationRouteEncounterMember(castCreature))
-                    || SpellHasHostileMultiTargetSemantics(current->GetSpellInfo()))
-                    bot->InterruptSpell(spellType, false);
-            }
-        if (bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
-            bot->InterruptSpell(CURRENT_AUTOREPEAT_SPELL, false);
-        SubmitMeleeAutoAttackIntent(state,
-            BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
-            BotMeleeAutoAttack::Owner::Safety,
-            BotActionArbitration::Priority::Terminal,
-            "future_encounter_contamination");
-        if (Pet* pet = bot->GetPet())
-            pet->AttackStop();
-        for (Unit* controlled : bot->m_Controlled)
-            if (controlled)
-            {
-                for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
-                    if (Spell* current = controlled->GetCurrentSpell(spellType))
-                    {
-                        Unit* castTarget = current->m_targets.GetUnitTarget();
-                        Creature const* castCreature = castTarget ? castTarget->ToCreature() : nullptr;
-                        if ((castCreature && isImmediateNextValidationRouteEncounterMember(castCreature))
-                            || SpellHasHostileMultiTargetSemantics(current->GetSpellInfo()))
-                            controlled->InterruptSpell(spellType, false);
-                }
-                controlled->AttackStop();
-            }
-
-        std::string raw = BuildRawJson(bot, prematureNextEncounter);
-        std::string semantic = BuildSemanticJson(bot, prematureNextEncounter,
+        std::string raw = BuildRawJson(bot, contamination.FutureTarget);
+        std::string semantic = BuildSemanticJson(bot, contamination.FutureTarget,
             "validation_route_future_encounter_contamination", &power, stage, activity);
         RecordEvent(state, bot, "validation_route_future_encounter_contamination",
-            prematureNextEncounter, "native_reset_required_hold", raw.c_str(), semantic.c_str(),
-            bot->GetExactDist(prematureNextEncounter), prematureNextEncounter->GetEntry());
-        MarkBotBlocked(state, bot, "future_encounter_premature_engagement");
-        target = prematureNextEncounter;
-        situation = "validation_route_future_encounter_contamination";
-        action = "hold_for_native_future_encounter_reset";
-        return true;
+            contamination.FutureTarget, "future_target_offense_guarded", raw.c_str(),
+            semantic.c_str(), bot->GetExactDist(contamination.FutureTarget),
+            contamination.FutureTarget->GetEntry());
     }
 
 

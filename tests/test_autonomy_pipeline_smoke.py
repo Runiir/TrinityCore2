@@ -2770,10 +2770,12 @@ def test_validation_route_status_persists_terminal_and_boss_death_evidence():
 
     assert "std::vector<ValidationRouteEvidence> ValidationRouteTerminalEvidence;" in header
     assert "std::vector<ValidationRouteEvidence> ValidationRouteBossDeathEvidence;" in header
+    assert "std::vector<ValidationRouteEvidence> ValidationRouteContaminationEvidence;" in header
     assert "Party().ValidationRouteBossDeathEvidence.push_back" in notify_death
     assert "Party().ValidationRouteTerminalEvidence.push_back" in advance
     assert '\\"terminal_evidence\\"' in mgr
     assert '\\"boss_death_evidence\\"' in mgr
+    assert '\\"contamination_evidence\\"' in mgr
 
 
 def test_validation_route_boss_terminal_requires_unit_kill_provenance():

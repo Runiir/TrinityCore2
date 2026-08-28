@@ -120,6 +120,12 @@
         std::string ValidationRouteManifestSha256;
         std::vector<ValidationRouteEvidence> ValidationRouteTerminalEvidence;
         std::vector<ValidationRouteEvidence> ValidationRouteBossDeathEvidence;
+        // Future-encounter contamination invalidates certification evidence,
+        // but it is not a cohort-wide gameplay terminal. Keep this receipt
+        // separate from ValidationAttemptFailureReason so healing, defense,
+        // current-pack offense, and native corpse recovery remain owned by
+        // their ordinary runtime paths.
+        std::vector<ValidationRouteEvidence> ValidationRouteContaminationEvidence;
         size_t ValidationRouteManifestIndex = 0;
         uint64 ValidationRouteGeneration = 0;
         ObjectGuid ValidationRouteEngagedBossGuid;

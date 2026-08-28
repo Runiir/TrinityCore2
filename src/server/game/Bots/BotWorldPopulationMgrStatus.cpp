@@ -159,6 +159,7 @@ std::string BotWorldPopulationMgr::GetStatusJson() const
          << ",\"manifest_complete\":" << (Party().ValidationRouteManifestComplete ? "true" : "false")
          << ",\"terminal_evidence\":" << BuildValidationRouteEvidenceJson(Party().ValidationRouteTerminalEvidence)
          << ",\"boss_death_evidence\":" << BuildValidationRouteEvidenceJson(Party().ValidationRouteBossDeathEvidence)
+         << ",\"contamination_evidence\":" << BuildValidationRouteEvidenceJson(Party().ValidationRouteContaminationEvidence)
          << ",\"manifest_load_error\":\"" << JsonEscape(Party().ValidationRouteManifestLoadError) << "\""
          << ",\"scenario_id\":\"" << JsonEscape(Cohort().Config.ValidationRouteScenarioId) << "\""
          << ",\"node_id\":\"" << JsonEscape(Cohort().Config.ValidationRouteNodeId) << "\""

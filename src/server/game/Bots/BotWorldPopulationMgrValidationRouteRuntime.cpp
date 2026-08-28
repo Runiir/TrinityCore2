@@ -151,6 +151,11 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     Cohort().Config.ValidationRoutePatrolAnchorToleranceYards = node.PatrolAnchorToleranceYards;
     Cohort().Config.ValidationRoutePatrolEngageRadiusYards = node.PatrolEngageRadiusYards;
     Cohort().Config.ValidationRoutePatrolFutureGuardMarginYards = node.PatrolFutureGuardMarginYards;
+    Cohort().Config.ValidationRoutePatrolCombatAnchor = node.PatrolCombatAnchor;
+    Cohort().Config.ValidationRoutePatrolCombatAnchorToleranceYards =
+        node.PatrolCombatAnchorToleranceYards;
+    Cohort().Config.ValidationRoutePatrolCombatClearanceYards =
+        node.PatrolCombatClearanceYards;
     Cohort().Config.ValidationRoutePatrolPullOwnerRosterSlot = node.PatrolPullOwnerRosterSlot;
     Cohort().Config.ValidationRouteExpectedAliveCount = node.ExpectedAliveCount;
     Party().ValidationRouteAddFocusGuid.Clear();

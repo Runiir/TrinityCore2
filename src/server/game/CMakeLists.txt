@@ -128,6 +128,7 @@ list(APPEND PRIVATE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationAuthority.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationGroupHeal.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationPatrolPull.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationPatrolFormation.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationFeralPickup.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationSwarmApproach.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationTerminal.cpp
@@ -163,6 +164,7 @@ list(APPEND PRIVATE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationRouteTankFocusAssist.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationRouteTankTrashRecovery.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationRouteTrashIntervention.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationRouteContamination.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationRouteTargetEngagement.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeEscape.cpp

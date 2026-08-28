@@ -295,6 +295,14 @@ bool ObjectiveContext::RunActiveCombat(
         uint32 spellId = profileAction.SpellId;
         float engageRange = profileAction.MaxRange > 0.0f ? profileAction.MaxRange : routeEngageRange(bot, target, spellId);
         bool botIsTank = std::string(GetDungeonRole(bot)) == "tank";
+        if (routeBossTarget && !botIsTank
+            && Manager.TryValidationRoutePatrolCombatAnchor(
+                state, bot, target, profileAction))
+        {
+            action = "move_to_validation_route_combat_anchor";
+            situation = "validation_route_regroup";
+            return true;
+        }
         bool routeTrashPackTarget = Cohort().Config.ValidationRouteKind != "boss"
             && creature && isEligibleTrashClusterMob(creature);
         if (routeTrashPackTarget && !botIsTank

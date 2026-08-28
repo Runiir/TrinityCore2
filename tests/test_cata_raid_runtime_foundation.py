@@ -2288,10 +2288,7 @@ def test_route_directed_boss_assist_cannot_bypass_the_typed_contract_authority()
 
 def test_trash_profile_damage_cannot_pull_or_compound_the_next_boss_encounter():
     route_runtime = (BOT_DIR / "BotWorldPopulationMgr.cpp").read_text(encoding="utf-8")
-    hold = route_runtime[
-        route_runtime.index("Creature* prematureNextEncounter = nullptr;"):
-        route_runtime.index("\n\n    ValidationRoutePackContext pack", route_runtime.index("Creature* prematureNextEncounter = nullptr;"))
-    ]
+    contamination = (BOT_DIR / "BotWorldPopulationMgrValidationRouteContamination.cpp").read_text(encoding="utf-8")
     resolver = (BOT_DIR / "BotWorldPopulationMgrCombatResolver.cpp").read_text(encoding="utf-8")
     executor = (BOT_DIR / "BotWorldPopulationMgrCombatExecution.cpp").read_text(encoding="utf-8")
     authority = VALIDATION_AUTHORITY
@@ -2312,21 +2309,22 @@ def test_trash_profile_damage_cannot_pull_or_compound_the_next_boss_encounter():
     assert "future_encounter_target_forbidden" in executor
     assert "TryEnsurePersistentCombatSetup" in executor
     assert executor.index("future_encounter_target_forbidden") < executor.index("TryEnsurePersistentCombatSetup")
-    assert "validation_route_future_encounter_contamination" in hold
-    assert "future_encounter_premature_engagement" in hold
-    assert "hold_for_native_future_encounter_reset" in hold
-    assert "InterruptSpell(CURRENT_AUTOREPEAT_SPELL" in hold
-    assert "SubmitMeleeAutoAttackIntent(state," in hold
-    assert "BotMeleeAutoAttack::Kind::Suppress" in hold
-    assert '"future_encounter_contamination"' in hold
-    assert "bot->AttackStop();" not in hold
-    assert "pet->AttackStop();" in hold
-    assert "controlled->AttackStop();" in hold
-    assert "SetAllOffenseSuppressed(raidAuthorityOwner, true)" in hold
-    assert "controlledCreature->SetReactState(REACT_PASSIVE);" not in hold
-    assert "charmInfo->SetIsCommandAttack(false);" not in hold
-    assert "ValidationAttemptFailureReason" in hold
-    assert '"validation_route_future_encounter_contamination"' in hold
+    assert "validation_route_future_encounter_contamination" in contamination
+    assert "evidence.Records.push_back" in contamination
+    assert "future_encounter_premature_engagement" not in contamination
+    assert "hold_for_native_future_encounter_reset" not in contamination
+    assert "InterruptSpell(CURRENT_AUTOREPEAT_SPELL" in contamination
+    assert "SuppressPlayerMelee" in contamination
+    assert "pet->AttackStop();" in contamination
+    assert "controlled->AttackStop();" in contamination
+    assert "future_encounter_target_forbidden" in route_runtime
+    assert "HasNearbyProtectedEncounterTarget" in contamination
+    assert "SetAllOffenseSuppressed(raidAuthorityOwner, true)" not in route_runtime
+    assert "controlledCreature->SetReactState(REACT_PASSIVE);" not in contamination
+    assert "charmInfo->SetIsCommandAttack(false);" not in contamination
+    assert "ValidationAttemptFailureReason" not in contamination
+    assert '"validation_route_future_encounter_contamination"' in contamination
+    assert "return true;" not in contamination
 
     future_guard = future_guard[
         future_guard.index("auto wouldPullProtectedFutureValidationRouteSource"):

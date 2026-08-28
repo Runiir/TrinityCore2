@@ -284,6 +284,7 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     Party().ValidationRouteManifest.clear();
     Party().ValidationRouteTerminalEvidence.clear();
     Party().ValidationRouteBossDeathEvidence.clear();
+    Party().ValidationRouteContaminationEvidence.clear();
     Party().ValidationRouteManifestIndex = 0;
     Party().ValidationRouteGeneration = Cohort().Config.ValidationRouteGeneration;
     Party().ValidationRouteManifestAdvancePending = false;

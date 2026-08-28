@@ -187,10 +187,18 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
     if (!bot || !reference)
         return false;
 
+    auto patrolCombatPointSafe = [&](float x, float y, float z)
+    {
+        return !action || action->AutoAttackMode == "melee"
+            || IsValidationRoutePatrolCombatPointSafe(reference, x, y, z);
+    };
     auto moveToTerrainProjectedPoint = [&](float x, float y, float z)
     {
         Map* map = bot->GetMap();
         if (!map)
+            return false;
+
+        if (!patrolCombatPointSafe(x, y, z))
             return false;
 
         float floorZ = map->GetHeight(bot->GetPhaseShift(), x, y, z + 2.0f, true, 64.0f);
@@ -339,6 +347,8 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
                         float const candidateRange = reference->GetExactDist(x, y, z);
                         if (candidateRange > desiredRange || candidateRange < 5.0f)
                             continue;
+                        if (!patrolCombatPointSafe(x, y, z))
+                            continue;
                         // Preserve its native path height: a terrain ray at
                         // the same X/Y can select the other side of the ledge.
                         if (MoveBotToPoint(state, bot, x, y, z, false,
@@ -379,6 +389,8 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
                     float const candidateRange = reference->GetExactDist(x, y, z);
                     if (candidateRange < 5.0f
                         || candidateRange > maxRange - maximumRangeSafetyMargin)
+                        continue;
+                    if (!patrolCombatPointSafe(x, y, z))
                         continue;
                     if (MoveBotToPoint(state, bot, x, y, z, false,
                             BotMovementArbitration::Owner::CombatRange,

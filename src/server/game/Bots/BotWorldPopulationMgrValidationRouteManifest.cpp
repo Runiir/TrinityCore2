@@ -860,6 +860,15 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         node.PatrolAnchorToleranceYards = readFloat(routeJson, "patrol_anchor_tolerance_yards");
         node.PatrolEngageRadiusYards = readFloat(routeJson, "patrol_engage_radius_yards");
         node.PatrolFutureGuardMarginYards = readFloat(routeJson, "patrol_future_guard_margin_yards");
+        std::string const patrolCombatAnchor = ExtractJsonObjectField(
+            routeJson, "patrol_combat_anchor");
+        node.PatrolCombatAnchor.X = readFloat(patrolCombatAnchor, "x");
+        node.PatrolCombatAnchor.Y = readFloat(patrolCombatAnchor, "y");
+        node.PatrolCombatAnchor.Z = readFloat(patrolCombatAnchor, "z");
+        node.PatrolCombatAnchorToleranceYards = readFloat(
+            routeJson, "patrol_combat_anchor_tolerance_yards");
+        node.PatrolCombatClearanceYards = readFloat(
+            routeJson, "patrol_combat_clearance_yards");
         node.PatrolPullOwnerRosterSlot = uint32(std::max(0, readInt(routeJson, "patrol_pull_owner_roster_slot")));
         node.ExpectedAliveCount = uint32(std::max(0, readInt(routeJson, "expected_alive_count")));
         node.ActivationAreaTriggerId = uint32(std::max(0, readInt(routeJson, "activation_area_trigger_id")));
