@@ -1,9 +1,8 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotCalibrationFixtureContractGenerated.h"
-#include "Bag.h"
+#include "Bots/BotWorldPopulationMgrConsumables.h"
 #include "GameTime.h"
 #include "Item.h"
-#include "ItemTemplate.h"
 
 #include "Creature.h"
 #include "Map.h"
@@ -49,53 +48,6 @@ uint64 CalibrationNowMs()
 {
     return uint64(std::chrono::duration_cast<std::chrono::milliseconds>(
         GameTime::GetGameTimeSystemPoint().time_since_epoch()).count());
-}
-
-Item* FindCalibrationConsumable(Player* bot, uint32 itemId, uint32 spellId)
-{
-    if (!bot || !itemId || !spellId)
-        return nullptr;
-
-    auto matches = [itemId, spellId](Item* item)
-    {
-        ItemTemplate const* itemTemplate = item ? item->GetTemplate() : nullptr;
-        if (!itemTemplate || item->GetEntry() != itemId || !item->GetCount())
-            return false;
-        for (ItemEffect const& effect : itemTemplate->Effects)
-            if (effect.SpellID == int32(spellId)
-                && effect.Trigger == ITEM_SPELLTRIGGER_ON_USE)
-                return true;
-        return false;
-    };
-
-    for (uint8 slot = INVENTORY_SLOT_ITEM_START; slot < INVENTORY_SLOT_ITEM_END; ++slot)
-        if (Item* item = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot); matches(item))
-            return item;
-    for (uint8 bagSlot = INVENTORY_SLOT_BAG_START; bagSlot < INVENTORY_SLOT_BAG_END; ++bagSlot)
-        if (Bag* bag = bot->GetBagByPos(bagSlot))
-            for (uint32 slot = 0; slot < bag->GetBagSize(); ++slot)
-                if (Item* item = bag->GetItemByPos(slot); matches(item))
-                    return item;
-    return nullptr;
-}
-
-uint32 CountCalibrationConsumable(Player* bot, uint32 itemId)
-{
-    if (!bot || !itemId)
-        return 0;
-    uint32 count = 0;
-    auto add = [&count, itemId](Item* item)
-    {
-        if (item && item->GetEntry() == itemId)
-            count += item->GetCount();
-    };
-    for (uint8 slot = INVENTORY_SLOT_ITEM_START; slot < INVENTORY_SLOT_ITEM_END; ++slot)
-        add(bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot));
-    for (uint8 bagSlot = INVENTORY_SLOT_BAG_START; bagSlot < INVENTORY_SLOT_BAG_END; ++bagSlot)
-        if (Bag* bag = bot->GetBagByPos(bagSlot))
-            for (uint32 slot = 0; slot < bag->GetBagSize(); ++slot)
-                add(bag->GetItemByPos(slot));
-    return count;
 }
 
 size_t CalibrationExecuteHealthWindowIndex(uint64 elapsedMs)
@@ -214,7 +166,7 @@ bool BotWorldPopulationMgr::EnsureCalibrationSelfProvidedConsumables(
         food.FinishedItemGuid.Clear();
         food.SubmittedAtMs = 0;
         food.FinishedAtMs = 0;
-        food.PostUseItemCount = CountCalibrationConsumable(bot, food.ItemId);
+        food.PostUseItemCount = BotWorldPopulationMgrConsumables::CountNativeConsumable(bot, food.ItemId);
         food.NextRetryAtMs = nowMs + 1000;
         return true;
     };
@@ -239,7 +191,7 @@ bool BotWorldPopulationMgr::EnsureCalibrationSelfProvidedConsumables(
         }
         if (receipt.NextRetryAtMs > nowMs)
             return false;
-        Item* item = FindCalibrationConsumable(bot, receipt.ItemId,
+        Item* item = BotWorldPopulationMgrConsumables::FindNativeConsumable(bot, receipt.ItemId,
             receipt.SpellId);
         SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(receipt.SpellId);
         if (!item || bot->HasUnitState(UNIT_STATE_CASTING)
@@ -256,7 +208,7 @@ bool BotWorldPopulationMgr::EnsureCalibrationSelfProvidedConsumables(
         receipt.SubmittedAtMs = nowMs;
         receipt.FinishedAtMs = 0;
         receipt.NativeUseFinishedSuccessfully = false;
-        receipt.PreUseItemCount = CountCalibrationConsumable(bot,
+        receipt.PreUseItemCount = BotWorldPopulationMgrConsumables::CountNativeConsumable(bot,
             receipt.ItemId);
         receipt.PostUseItemCount = receipt.PreUseItemCount;
         BotActionArbitration::Outcome const outcome = ExecuteNativeActionIntent(

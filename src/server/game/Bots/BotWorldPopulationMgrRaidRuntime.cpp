@@ -973,6 +973,8 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
              << ",\"active\":" << (slot.Active ? "true" : "false")
              << ",\"lease_owned\":" << (slot.LeaseOwned ? "true" : "false") << '}';
     }
-    json << "]}";
+    json << "]";
+    AppendRaidPrepullConsumablesJson(json);
+    json << "}";
     return json.str();
 }

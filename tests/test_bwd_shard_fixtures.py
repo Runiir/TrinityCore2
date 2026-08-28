@@ -226,6 +226,31 @@ def test_provisioning_entrypoint_loads_all_six_tracked_shard_pools():
     assert next(row for row in diagnostic if row["id"].endswith("magmaw_diagnostic"))["bots"][0]["legacy_names"] == ["Mgwtank1"]
 
 
+def test_diagnostic_rosters_receive_exact_canonical_spec_consumables():
+    merged = load_config_with_bwd_diagnostic_shards(CONFIG, FIXTURE)
+    magmaw = next(
+        row for row in merged["scenarios"]
+        if row["id"] == "blackwing_descent_10n_magmaw_diagnostic"
+    )
+    expected = {
+        "protection_paladin": [58088, 62670, 58146],
+        "blood_death_knight": [58088, 62670, 58146],
+        "restoration_druid": [58086, 62671, 58091],
+        "holy_paladin": [58086, 62671, 58091],
+        "discipline_priest": [58086, 62671, 58091],
+        "fire_mage": [58086, 62671, 58091],
+        "affliction_warlock": [58086, 62671, 58091],
+        "marksmanship_hunter": [58087, 62669, 58145],
+        "elemental_shaman": [58086, 62671, 58091],
+    }
+    for bot in magmaw["bots"]:
+        assert [row["item_id"] for row in bot["consumables"]] == expected[
+            bot["class_spec"]
+        ]
+        assert [row["slot"] for row in bot["consumables"]] == [40, 41, 42]
+        assert all(row["count"] == 20 for row in bot["consumables"])
+
+
 def test_live_preparation_materializes_all_110_accounts_and_characters(tmp_path, monkeypatch):
     monkeypatch.setattr(
         "tools.bot_ml.run_live_bot_validation.database_url_from_worldserver_conf",

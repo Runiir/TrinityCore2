@@ -203,11 +203,19 @@ def build_diagnostic_provisioning_config(config: dict[str, Any], fixture: dict[s
     merged = copy.deepcopy(config)
     if not any(str(row.get("id")) == CANONICAL_SCENARIO_ID for row in merged.get("scenarios", [])):
         raise ValueError("canonical_bwd_scenario_missing_from_provisioning_config")
+    canonical_slots = _slots(_canonical(config))
     talent_builds = merged.get("talent_builds_by_spec", {})
     for shard in fixture["shards"]:
         bots = copy.deepcopy(shard["bots"])
         for bot in bots:
             class_spec = str(bot.get("class_spec") or "")
+            source_slot = str(bot.get("roster_source_slot_id") or "")
+            source = canonical_slots.get(source_slot)
+            if not source or not source.get("consumables"):
+                raise ValueError(
+                    f"diagnostic_consumables_missing:{shard['boss_key']}:{source_slot}"
+                )
+            bot["consumables"] = copy.deepcopy(source["consumables"])
             build = talent_builds.get(class_spec, {})
             for key in ("primary_talent_tree_id", "talents", "primary_tree_spells"):
                 if key not in bot and key in build:

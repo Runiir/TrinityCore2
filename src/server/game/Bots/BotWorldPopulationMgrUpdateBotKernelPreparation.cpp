@@ -26,6 +26,7 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
 {
         context.DecisionNowMs = NowMs();
         context.State.DecisionKernel.Begin(context.DecisionNowMs);
+        SubmitRaidPrepullConsumableCandidate(context);
 
         if (std::optional<BotNativeAction::Candidate> combatRes =
                 BuildCombatResNativeActionCandidate(context.State, context.Bot,

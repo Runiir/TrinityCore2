@@ -51,6 +51,7 @@ std::optional<AdaptiveMagmawMovementLease> AdaptiveMagmawMovementLeaseFor(
 void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
     BotUpdateContext& context)
 {
+        SubmitMagmawBloodlustCandidate(context);
         bool const typedDrudgeValidationRoute =
             Cohort().Config.ValidationRouteMechanicProfile
                 == "trash_two_tank_charge_lanes";

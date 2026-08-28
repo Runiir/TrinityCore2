@@ -900,7 +900,6 @@ bool ObjectiveContext::RunTargetEngagement(
         action = "raid_target_not_declared_hold";
         return true;
     }
-
     target = routeTarget;
     state.ValidationRouteUnresolvedFocusHoldCount = 0;
     state.ValidationRouteTargetSearchMissCount = 0;
@@ -910,6 +909,8 @@ bool ObjectiveContext::RunTargetEngagement(
     rememberValidationRouteFocus(target);
     if (Cohort().Config.ValidationRouteKind == "boss")
     {
+        if (ApplyRaidPrepullBossPullGate(bot, target, situation, action))
+            return true;
         BossMechanicActionResult mechanic = TryBossMechanics(state, bot, power, stage, activity, target);
         if (mechanic.Handled)
         {

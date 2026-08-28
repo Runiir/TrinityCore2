@@ -187,6 +187,57 @@
         bool LeaseOwned = false;
     };
 
+    // Raid preparation receipts retain native item-use evidence per exact
+    // roster member.  A receipt is complete only after the session callback,
+    // inventory decrement, expected aura observation, and cooldown snapshot
+    // have all been observed by the runtime.
+    struct RaidPrepullConsumableReceipt
+    {
+        uint32 ItemId = 0;
+        uint32 SpellId = 0;
+        uint32 AuraSpellId = 0;
+        uint32 RequiredUses = 1;
+        uint32 SubmissionCount = 0;
+        uint32 SuccessfulUseCount = 0;
+        uint32 PreUseItemCount = 0;
+        uint32 PostUseItemCount = 0;
+        uint32 CooldownRemainingMs = 0;
+        uint32 GlobalCooldownRemainingMs = 0;
+        uint64 SubmittedAtMs = 0;
+        uint64 FinishedAtMs = 0;
+        uint64 NextRetryAtMs = 0;
+        uint64 AuraDeadlineAtMs = 0;
+        uint64 AuraObservedAtMs = 0;
+        uint64 AuraTimedOutAtMs = 0;
+        uint64 CooldownObservedAtMs = 0;
+        ObjectGuid SubmittedItemGuid;
+        ObjectGuid FinishedItemGuid;
+        bool NativeUseFinishedSuccessfully = false;
+        bool NativeUseAwaitingAura = false;
+        bool CooldownObserved = false;
+        std::string Phase;
+        std::string FailureReason;
+    };
+
+    struct RaidPrepullConsumableMember
+    {
+        uint64 AttemptId = 0;
+        uint64 WipeGeneration = 0;
+        uint64 RouteGeneration = 0;
+        std::string RosterSlotId;
+        std::string Role;
+        std::string ClassSpec;
+        bool AliveAndHealed = false;
+        bool Failed = false;
+        std::string FailureReason;
+        RaidPrepullConsumableReceipt Flask;
+        RaidPrepullConsumableReceipt Food;
+        RaidPrepullConsumableReceipt Prepot;
+        uint32 CombatPotionReservedCount = 0;
+        uint64 SetupReadyAtMs = 0;
+        uint64 PrepotEligibleAtMs = 0;
+    };
+
     struct RaidNativeSignalState
     {
         bool Initialized = false;
@@ -350,6 +401,27 @@
         std::vector<uint8> BossStates;
         std::map<uint32, RaidRosterSlot> RosterByGuid;
         std::map<uint32, RaidNativeSignalState> NativeSignalsByGuid;
+        bool PrepullConsumablesRequired = false;
+        bool PrepullConsumablesReady = false;
+        bool PrepullConsumablesFailed = false;
+        uint64 PrepullConsumablesAttemptId = 0;
+        uint64 PrepullConsumablesWipeGeneration = 0;
+        uint64 PrepullConsumablesRouteGeneration = 0;
+        uint64 PrepullConsumablesReadyAtMs = 0;
+        std::string PrepullConsumablesFailureReason;
+        std::map<uint32, RaidPrepullConsumableMember> PrepullConsumablesByGuid;
+        // One native Bloodlust trigger belongs to the exact Magmaw 10N raid
+        // scope.  These fields are a raid latch, not per-bot cooldown state:
+        // the native spell/GCD/readiness gates remain authoritative and the
+        // latch is committed only after CastSpell submission succeeds.
+        bool MagmawBloodlustSubmitted = false;
+        bool MagmawBloodlustAuraObserved = false;
+        uint64 MagmawBloodlustAttemptId = 0;
+        uint64 MagmawBloodlustWipeGeneration = 0;
+        uint64 MagmawBloodlustRouteGeneration = 0;
+        uint64 MagmawBloodlustSubmittedAtMs = 0;
+        ObjectGuid MagmawBloodlustOwnerGuid;
+        ObjectGuid MagmawBloodlustHeadGuid;
         std::map<uint32, std::string> AccountNameById;
         std::set<uint32> AccountNameLookupAttempted;
     };

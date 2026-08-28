@@ -960,6 +960,11 @@
           "race": 1,
           "class": 2,
           "level": 85,
+          "consumables": [
+            { "item_id": 58088, "slot": 40, "count": 20 },
+            { "item_id": 62670, "slot": 41, "count": 20 },
+            { "item_id": 58146, "slot": 42, "count": 20 }
+          ],
           "glyphs": [
             45742,
             41098,
@@ -983,6 +988,11 @@
           "race": 1,
           "class": 6,
           "level": 85,
+          "consumables": [
+            { "item_id": 58088, "slot": 40, "count": 20 },
+            { "item_id": 62670, "slot": 41, "count": 20 },
+            { "item_id": 58146, "slot": 42, "count": 20 }
+          ],
           "glyphs": [
             43533,
             43547,
@@ -1000,6 +1010,11 @@
           "race": 4,
           "class": 11,
           "level": 85,
+          "consumables": [
+            { "item_id": 58086, "slot": 40, "count": 20 },
+            { "item_id": 62671, "slot": 41, "count": 20 },
+            { "item_id": 58091, "slot": 42, "count": 20 }
+          ],
           "glyphs": [
             45623,
             40906,
@@ -1017,6 +1032,11 @@
           "race": 1,
           "class": 2,
           "level": 85,
+          "consumables": [
+            { "item_id": 58086, "slot": 40, "count": 20 },
+            { "item_id": 62671, "slot": 41, "count": 20 },
+            { "item_id": 58091, "slot": 42, "count": 20 }
+          ],
           "glyphs": [
             45741,
             41099,
@@ -1034,6 +1054,11 @@
           "race": 1,
           "class": 5,
           "level": 85,
+          "consumables": [
+            { "item_id": 58086, "slot": 40, "count": 20 },
+            { "item_id": 62671, "slot": 41, "count": 20 },
+            { "item_id": 58091, "slot": 42, "count": 20 }
+          ],
           "glyphs": [
             42409,
             42400,
@@ -1051,6 +1076,11 @@
           "race": 1,
           "class": 8,
           "level": 85,
+          "consumables": [
+            { "item_id": 58086, "slot": 40, "count": 20 },
+            { "item_id": 62671, "slot": 41, "count": 20 },
+            { "item_id": 58091, "slot": 42, "count": 20 }
+          ],
           "glyphs": [
             42739,
             42743,
@@ -1068,6 +1098,11 @@
           "race": 1,
           "class": 4,
           "level": 85,
+          "consumables": [
+            { "item_id": 58087, "slot": 40, "count": 20 },
+            { "item_id": 62669, "slot": 41, "count": 20 },
+            { "item_id": 58145, "slot": 42, "count": 20 }
+          ],
           "glyphs": [
             42954,
             42957,
@@ -1085,6 +1120,11 @@
           "race": 1,
           "class": 9,
           "level": 85,
+          "consumables": [
+            { "item_id": 58086, "slot": 40, "count": 20 },
+            { "item_id": 62671, "slot": 41, "count": 20 },
+            { "item_id": 58091, "slot": 42, "count": 20 }
+          ],
           "glyphs": [
             42456,
             42454,
@@ -1102,6 +1142,11 @@
           "race": 1,
           "class": 3,
           "level": 85,
+          "consumables": [
+            { "item_id": 58087, "slot": 40, "count": 20 },
+            { "item_id": 62669, "slot": 41, "count": 20 },
+            { "item_id": 58145, "slot": 42, "count": 20 }
+          ],
           "glyphs": [
             42909,
             42902,
@@ -1133,6 +1178,11 @@
           "race": 11,
           "class": 7,
           "level": 85,
+          "consumables": [
+            { "item_id": 58086, "slot": 40, "count": 20 },
+            { "item_id": 62671, "slot": 41, "count": 20 },
+            { "item_id": 58091, "slot": 42, "count": 20 }
+          ],
           "glyphs": [
             41524,
             41547,

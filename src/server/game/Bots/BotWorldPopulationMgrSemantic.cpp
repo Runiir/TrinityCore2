@@ -1,15 +1,14 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
 #include "Bots/BotClassSpecActionProfile.h"
+#include "Bots/BotWorldPopulationMgrConsumables.h"
 #include "Bots/BotProgressionGoalPolicy.h"
 #include "Bots/BotRoleSaturationPolicy.h"
 #include "BotDatasetEvent.h"
 #include "Config.h"
 #include "Creature.h"
 #include "DatabaseEnv.h"
-#include "Bag.h"
 #include "GameTime.h"
-#include "Item.h"
 #include "Log.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
@@ -47,25 +46,6 @@ std::string BoundedResultLabel(char const* result)
 std::string BoundedResultLabel(std::string const& result)
 {
     return BoundedResultLabel(result.c_str());
-}
-
-uint32 CountInventoryItem(Player* player, uint32 itemId)
-{
-    if (!player || !itemId)
-        return 0;
-    uint32 count = 0;
-    auto add = [&count, itemId](Item* item)
-    {
-        if (item && item->GetEntry() == itemId)
-            count += item->GetCount();
-    };
-    for (uint8 slot = INVENTORY_SLOT_ITEM_START; slot < INVENTORY_SLOT_ITEM_END; ++slot)
-        add(player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot));
-    for (uint8 bagSlot = INVENTORY_SLOT_BAG_START; bagSlot < INVENTORY_SLOT_BAG_END; ++bagSlot)
-        if (Bag* bag = player->GetBagByPos(bagSlot))
-            for (uint32 slot = 0; slot < bag->GetBagSize(); ++slot)
-                add(bag->GetItemByPos(slot));
-    return count;
 }
 
 uint32 SemanticMechanicKey(char const* eventType, char const* result)
@@ -226,6 +206,9 @@ void BotWorldPopulationMgr::NotifyBotItemSpellFinished(Player* caster,
     if (!caster || !spellId || !castItemGuid)
         return;
 
+    ReconcileRaidPrepullItemSpellFinished(caster, spellId, success,
+        castItemGuid, castItemEntry);
+
     bool expectedSelfConsumableReceipt = false;
     if (IsSelfProvidedCalibrationBaseline() && Cohort().CalibrationActive)
         if (auto metricsItr = Cohort().CalibrationMetricsByGuid.find(
@@ -247,7 +230,7 @@ void BotWorldPopulationMgr::NotifyBotItemSpellFinished(Player* caster,
                     expectedSelfConsumableReceipt = true;
                     receipt->FinishedAtMs = NowMs();
                     receipt->FinishedItemGuid = castItemGuid;
-                    receipt->PostUseItemCount = CountInventoryItem(caster,
+                    receipt->PostUseItemCount = BotWorldPopulationMgrConsumables::CountNativeConsumable(caster,
                         receipt->ItemId);
                     receipt->NativeUseAuraObservedAtMs = 0;
                     receipt->NativeUseAuraTimedOutAtMs = 0;

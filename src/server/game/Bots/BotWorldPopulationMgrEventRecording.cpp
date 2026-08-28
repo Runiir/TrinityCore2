@@ -124,7 +124,8 @@ void BotWorldPopulationMgr::RecordEvent(WorldBotState& state, Player* bot, char 
         || observedEvent == "native_runback_blocked"
         || observedEvent == "target_rejected"
         || observedEvent == "stuck_detected"
-        || observedEvent == "validation_route_drudge_lanes";
+        || observedEvent == "validation_route_drudge_lanes"
+        || observedEvent == "magmaw_bloodlust";
     uint32 suppressedRepeatableEvents = 0;
     bool suppressRepeatablePersistence = false;
     if (repeatableDiagnosticEvent)

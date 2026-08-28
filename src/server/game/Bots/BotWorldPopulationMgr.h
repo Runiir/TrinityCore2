@@ -261,6 +261,15 @@ private:
     void HoldValidationAttemptFailure(WorldBotState& state, Player* bot);
     bool PrepareBotUpdate(BotUpdateContext& context);
     void PrepareValidationKernel(BotUpdateContext& context);
+    void SubmitRaidPrepullConsumableCandidate(BotUpdateContext& context);
+    BotActionArbitration::Outcome TryRaidPrepullConsumables(
+        WorldBotState& state, Player* bot, Unit* target);
+    bool RaidPrepullConsumablesReadyForPull() const;
+    bool ApplyRaidPrepullBossPullGate(Player* bot, Unit* target,
+        std::string& situation, std::string& action) const;
+    void ReconcileRaidPrepullItemSpellFinished(Player* caster, uint32 spellId,
+        bool success, ObjectGuid castItemGuid, uint32 castItemEntry);
+    void SubmitMagmawBloodlustCandidate(BotUpdateContext& context);
     void SubmitAdaptiveKernelCandidates(BotUpdateContext& context);
     void SubmitAfflictionPetAttackCandidate(BotUpdateContext& context);
     void SubmitValidationKernelFallbackCandidates(BotUpdateContext& context);
@@ -566,6 +575,7 @@ private:
     RaidMechanicAdapter BuildRaidMechanicAdapter(Player* bot, Unit const* boss, RaidRoleAssignment const& assignment, BossMechanicFeatures const& features) const;
     RaidGearTargetPlan BuildRaidGearTargetPlan(Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage) const;
     HeroicRaidProgression BuildHeroicRaidProgression(WorldBotState const& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage) const;
+    void AppendRaidPrepullConsumablesJson(std::ostringstream& json) const;
     std::string BuildRaidRuntimeJson(bool compactTelemetry = false) const;
     std::string BuildRaidRoleAssignmentJson(RaidRoleAssignment const& assignment) const;
     std::string BuildRaidPositioningAnchorsJson(RaidPositioningAnchors const& anchors) const;
