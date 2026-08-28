@@ -97,7 +97,7 @@ public:
             }
         }
 
-        plan.DamageTarget = SelectDamageTarget(observed, role);
+        plan.DamageTarget = SelectDamageTarget(board, observed, botGuid, role);
         MagmawHookAssignment const hookAssignment = ResolveHookAssignment(
             board, *bot, botGuid);
         bool const pincerWarning = PincerWarningObserved(board);
@@ -294,7 +294,8 @@ private:
         return decision;
     }
 
-    static ObjectGuid SelectDamageTarget(MagmawActorObservation const& observed,
+    static ObjectGuid SelectDamageTarget(Blackboard const& board,
+        MagmawActorObservation const& observed, ObjectGuid botGuid,
         std::string_view role)
     {
         // The exposed head takes the encounter's native vulnerability bonus.
@@ -302,10 +303,12 @@ private:
         // the entire burn window for no threat benefit while Magmaw is pinned.
         if (observed.Head)
             return observed.Head->Guid;
-        // Parasites multiply when they touch a player, so ranged damage clears
-        // an actionable add before returning to Magmaw.  A remote add must
-        // not hold the profile on a target that native range/LOS gates reject.
-        if (role != "tank" && observed.NearestParasite
+        // Only the fixed mobile team owns parasites. Moving every ranged DPS
+        // and healer onto the add pack destroys boss uptime and drags the
+        // parasites through the support stack. A remote add must not hold a
+        // mobile profile on a target that native range/LOS gates reject.
+        if (role == "dps" && IsPillarBaiter(board, botGuid)
+            && observed.NearestParasite
             && observed.NearestParasiteDistance
                 <= RangedParasiteTargetDistance)
             return observed.NearestParasite->Guid;

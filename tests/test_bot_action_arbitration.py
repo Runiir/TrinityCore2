@@ -1018,6 +1018,27 @@ int main()
     assert(elementalBoss.Movement.has_value());
     assert(elementalBoss.Movement->Id.Mechanic == "pillar_evade");
 
+    BotEncounter::Blackboard mobileAddOwnership = mobileBaiters;
+    mobileAddOwnership.Hostiles = { magmawBoss, parasite };
+    mobileAddOwnership.Summons.clear();
+    parasite.Position = mobileAddOwnership.Players[2].Position;
+    mobileAddOwnership.Hostiles = { magmawBoss, parasite };
+    auto firstFireAdd = magmawStrategy.Propose(
+        mobileAddOwnership, dps.Guid, "dps");
+    auto marksAdd = magmawStrategy.Propose(
+        mobileAddOwnership, marks.Guid, "dps");
+    auto secondFireKeepsBoss = magmawStrategy.Propose(
+        mobileAddOwnership, secondFire.Guid, "dps");
+    auto afflictionKeepsBoss = magmawStrategy.Propose(
+        mobileAddOwnership, affliction.Guid, "dps");
+    auto elementalKeepsBoss = magmawStrategy.Propose(
+        mobileAddOwnership, elemental.Guid, "dps");
+    assert(firstFireAdd.DamageTarget == parasite.Guid);
+    assert(marksAdd.DamageTarget == parasite.Guid);
+    assert(secondFireKeepsBoss.DamageTarget == magmawBoss.Guid);
+    assert(afflictionKeepsBoss.DamageTarget == magmawBoss.Guid);
+    assert(elementalKeepsBoss.DamageTarget == magmawBoss.Guid);
+
     // Tank handling remains source-relative and does not inherit ranged
     // anchor switching. A tank placed inside Pillar still gets its existing
     // survival movement candidate.
