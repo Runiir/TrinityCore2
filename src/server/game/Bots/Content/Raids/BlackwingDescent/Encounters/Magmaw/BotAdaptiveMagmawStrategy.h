@@ -39,11 +39,15 @@ public:
     static constexpr float HookInteractionDistance = 5.0f;
     static constexpr float RangedStackDistance = 30.0f;
     static constexpr float SupportStackDistance = 22.0f;
-    static constexpr float RangedStackLateralOffset = 12.0f;
+    // The two bait endpoints must be outside the support stack while still
+    // leaving a full left/right lane for the mobile team to cross.
+    static constexpr float RangedStackLateralOffset = 24.0f;
     static constexpr float RangedStackTolerance = 4.0f;
     static constexpr float ParasiteKiteLeadDistance =
         MagmawParasitePolicy::KiteLeadDistance;
-    static constexpr float RangedParasiteTargetDistance = 35.0f;
+    static constexpr float RangedParasiteTargetDistance =
+        RangedStackDistance + RangedStackLateralOffset +
+        MagmawParasitePolicy::SafeClearance;
 
     AdaptiveMagmawPlan Propose(Blackboard const& board, ObjectGuid botGuid,
         std::string_view role,
@@ -277,8 +281,7 @@ private:
             return observed.Head->Guid;
         if (role == "dps" && IsPillarBaiter(board, botGuid)
             && observed.NearestParasite
-            && observed.NearestParasiteDistance
-                <= RangedParasiteTargetDistance)
+            && observed.NearestParasiteDistance <= RangedParasiteTargetDistance)
             return observed.NearestParasite->Guid;
         return observed.Boss->Guid;
     }
@@ -470,7 +473,8 @@ private:
 
     static std::optional<BotNativeAction::Candidate> BuildPillarBaitMove(
         Blackboard const& board, ActorSnapshot const& bot,
-        ActorSnapshot const& boss, ActorSnapshot const& pillar)
+        ActorSnapshot const& boss, ActorSnapshot const& pillar,
+        BotMovementArbitration::Lease const* movementLease)
     {
         if (!IsPillarBaiter(board, bot.Guid))
             return std::nullopt;
@@ -478,21 +482,39 @@ private:
             ResolveRangedAnchors(board, boss);
         if (!anchors)
             return std::nullopt;
-        Vector3 const& destination =
-            Distance2d(anchors->Left, pillar.Position)
-                >= Distance2d(anchors->Right, pillar.Position)
-            ? anchors->Left : anchors->Right;
-        if (Distance2d(bot.Position, destination) <= RangedStackTolerance)
+        std::optional<Vector3> destination =
+            MagmawParasitePolicy::RetainedLaneDestination(
+                board, *anchors, movementLease);
+        if (destination
+            && Distance2d(*destination, pillar.Position)
+                < MagmawParasitePolicy::SafeClearance)
+            destination.reset();
+        if (!destination)
+        {
+            Vector3 const preferred =
+                MagmawParasitePolicy::OppositeLaneEndpoint(
+                    board, bot, *anchors);
+            Vector3 const alternate = Distance2d(preferred, anchors->Left)
+                    <= Distance2d(preferred, anchors->Right)
+                ? anchors->Right : anchors->Left;
+            destination = Distance2d(preferred, pillar.Position)
+                    >= MagmawParasitePolicy::SafeClearance
+                ? std::optional<Vector3>(preferred)
+                : std::optional<Vector3>(alternate);
+        }
+        if (!destination
+            || Distance2d(bot.Position, *destination)
+                <= RangedStackTolerance)
             return std::nullopt;
         BotNativeAction::Candidate candidate = BuildPointMovement(
-            board, bot, destination, "pillar_bait_switch",
+            board, bot, *destination, "pillar_bait_switch",
             BotActionArbitration::Priority::Survival, 500.0f);
         candidate.Id.Actor = pillar.Guid;
         candidate.Id.EventGeneration = pillar.Guid.GetRawValue();
         if (BotNativeAction::Move* move =
                 std::get_if<BotNativeAction::Move>(&candidate.Action))
         {
-            move->Z = destination.Z;
+            move->Z = destination->Z;
             move->IntentReason = "pillar_bait_switch";
         }
         return candidate;
@@ -588,7 +610,8 @@ private:
             else
             {
                 if (std::optional<BotNativeAction::Candidate> const bait =
-                        BuildPillarBaitMove(board, bot, boss, *observed.Pillar))
+                        BuildPillarBaitMove(board, bot, boss, *observed.Pillar,
+                            movementLease))
                     return bait;
                 if (std::optional<BotNativeAction::Candidate> const pillar =
                         BuildPillarEvade(board, bot, *observed.Pillar))
@@ -606,6 +629,20 @@ private:
         }
 
         bool const pillarBaiter = IsPillarBaiter(board, bot.Guid);
+        if (pillarBaiter && observed.NearestImmediateHazard
+            && IsParasiteEntry(observed.NearestImmediateHazard->Entry))
+        {
+            std::optional<MagmawParasitePolicy::FormationAnchors> anchors;
+            if (std::optional<MagmawRangedAnchors> const rangedAnchors =
+                    ResolveRangedAnchors(board, boss))
+                anchors = *rangedAnchors;
+            if (anchors)
+                if (std::optional<BotNativeAction::Candidate> const lane =
+                        MagmawParasitePolicy::Propose(board, bot,
+                            *observed.NearestImmediateHazard, true, anchors,
+                            movementLease))
+                    return lane;
+        }
         float const immediateDistance = observed.NearestImmediateHazard
                 && IsParasiteEntry(observed.NearestImmediateHazard->Entry)
             ? MagmawParasitePolicy::ImmediateContactRange(pillarBaiter)

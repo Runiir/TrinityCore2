@@ -886,8 +886,8 @@ int main()
     magmawRangedPillar.Summons.front().Position =
         magmawRangedPillar.Players[2].Position;
 
-    // A scoped hazard lease retains one safe parasite destination while the
-    // pack moves; it is replaced only after that destination becomes unsafe.
+    // A scoped hazard lease retains one safe lane endpoint while the pack
+    // moves; it is replaced only after that endpoint becomes unsafe.
     BotEncounter::Blackboard parasiteLeaseBoard = magmawRangedPillar;
     parasiteLeaseBoard.Summons.clear();
     parasiteLeaseBoard.Players[2].Position = { 0.0f, 0.0f, 0.0f };
@@ -904,7 +904,7 @@ int main()
         parasiteLeaseBoard.CurrentScope.MapId,
         parasiteLeaseBoard.CurrentScope.InstanceId };
     parasiteLease.X = -10.0f;
-    parasiteLease.Y = 15.0f;
+    parasiteLease.Y = 24.0f;
     auto retainedParasitePlan = magmawStrategy.Propose(
         parasiteLeaseBoard, dps.Guid, "dps", &parasiteLease);
     auto const* retainedParasiteMove = retainedParasitePlan.Movement
@@ -934,8 +934,9 @@ int main()
     assert(unsafeParasiteMove->X != parasiteLease.X
         || unsafeParasiteMove->Y != parasiteLease.Y);
 
-    // A live parasite pack or an in-flight hazard path owns movement until
-    // clearance and native arrival; formation restore resumes afterwards.
+    // A live parasite pack starts the fixed baiter's lane transition before
+    // contact. An in-flight hazard path owns movement until arrival;
+    // formation restore resumes afterwards.
     BotEncounter::Blackboard parasiteRestore = parasiteLeaseBoard;
     parasiteRestore.Players[2].Position = magmawBoss.Position;
     BotEncounter::ActorSnapshot remoteParasite = leaseParasite;
@@ -943,7 +944,9 @@ int main()
     parasiteRestore.Hostiles = { magmawBoss, remoteParasite };
     auto parasiteRestorePlan = magmawStrategy.Propose(
         parasiteRestore, dps.Guid, "dps");
-    assert(!parasiteRestorePlan.Movement.has_value());
+    assert(parasiteRestorePlan.Movement.has_value());
+    assert(parasiteRestorePlan.Movement->Id.Mechanic
+        == "parasite_contact_evade");
     BotEncounter::Blackboard inFlightRestore = parasiteRestore;
     inFlightRestore.Hostiles = { magmawBoss };
     auto inFlightRestorePlan = magmawStrategy.Propose(
@@ -1025,11 +1028,25 @@ int main()
     assert(laterPillarMove->Z == rangedPillarMove->Z);
 
     // Once the ranged actor is already at the selected safe anchor, the
-    // observed Pillar must not churn a matching movement request.
+    // observed Pillar must not churn a matching movement request. Model the
+    // admitted native hazard lease so the endpoint remains persistent across
+    // observation ticks.
     magmawRangedPillar.Players[2].Position = {
         rangedPillarMove->X, rangedPillarMove->Y, rangedPillarMove->Z };
+    BotMovementArbitration::Lease pillarLease;
+    pillarLease.MovementOwner = BotMovementArbitration::Owner::Hazard;
+    pillarLease.MovementPriority = BotMovementArbitration::Priority::Hazard;
+    pillarLease.MovementScope = {
+        magmawRangedPillar.CurrentScope.AttemptId,
+        magmawRangedPillar.CurrentScope.WipeGeneration,
+        magmawRangedPillar.CurrentScope.RouteGeneration,
+        magmawRangedPillar.CurrentScope.MapId,
+        magmawRangedPillar.CurrentScope.InstanceId };
+    pillarLease.X = rangedPillarMove->X;
+    pillarLease.Y = rangedPillarMove->Y;
+    pillarLease.Z = rangedPillarMove->Z;
     auto rangedPillarStablePlan = magmawStrategy.Propose(
-        magmawRangedPillar, dps.Guid, "dps");
+        magmawRangedPillar, dps.Guid, "dps", &pillarLease);
     assert(!rangedPillarStablePlan.Movement.has_value());
 
     // Bait ownership is fixed from the full roster, so a dead baiter does not
@@ -2022,13 +2039,15 @@ def test_magmaw_pillar_bait_uses_summon_lease_and_bounded_replan() -> None:
     assert "candidate.Id.Actor = bot.Guid;" in parasite
     assert "candidate.Id.EventGeneration = bot.Guid.GetRawValue();" in parasite
     assert '"parasite_contact_evade"' in parasite
-    assert "RetainedDestination" in parasite
-    assert "BuildForwardDestination" in parasite
+    assert "RetainedLaneDestination" in parasite
+    assert "BuildLaneDestination" in parasite
+    assert "OppositeLaneEndpoint" in parasite_policy
     assert "if (!pillarBaiter)" in parasite
+    assert "pillarBaiter && observed.NearestImmediateHazard" in strategy
     assert '|| intent.Id.Mechanic == "parasite_contact_evade"' in candidates
 
 
-def test_magmaw_parasite_baiters_keep_forward_safe_point_paths(tmp_path: Path) -> None:
+def test_magmaw_parasite_baiters_keep_persistent_lane_paths(tmp_path: Path) -> None:
     source = tmp_path / "magmaw_parasite_replay.cpp"
     binary = tmp_path / "magmaw_parasite_replay"
     source.write_text(
@@ -2150,7 +2169,7 @@ int main()
     assert(hunterMove->Y == firstMove->Y);
 
     // A pack advance that remains outside the admitted path must not redirect
-    // the fixed baiter toward the support stack.
+    // the fixed baiter toward the support stack or another endpoint.
     BotMovementArbitration::Lease firstLease = LeaseFor(board, *firstMove);
     Blackboard advanced = board;
     advanced.Revision += 1;
@@ -2164,22 +2183,20 @@ int main()
     assert(advancedMove->Y == firstMove->Y);
     assert(advancedPlan.Movement->Id.Actor == mageGuid);
 
-    // If the pack reaches the old point, the only permitted replan is farther
-    // along the same outward lane. A new lower GUID cannot pull it backward.
+    // If the pack reaches the old point, switch to the opposite endpoint. A
+    // new lower GUID cannot pull the fixed team back into that pack.
     Blackboard packAdvanced = advanced;
-    packAdvanced.Hostiles[1].Position = { 20.0f, -35.0f, 210.0f };
+    packAdvanced.Hostiles[1].Position = {
+        firstMove->X, firstMove->Y, firstMove->Z };
     auto packAdvancedPlan = strategy.Propose(
         packAdvanced, mageGuid, "dps", &firstLease);
     auto const* packAdvancedMove = packAdvancedPlan.Movement
         ? std::get_if<Move>(&packAdvancedPlan.Movement->Action) : nullptr;
     assert(packAdvancedMove);
-    float const firstForward = std::hypot(
-        firstMove->X - 12.0f, firstMove->Y + 30.0f);
-    float const nextForward = std::hypot(
-        packAdvancedMove->X - 12.0f, packAdvancedMove->Y + 30.0f);
-    assert(nextForward >= firstForward);
     Vector3 const packAdvancedDestination{ packAdvancedMove->X,
         packAdvancedMove->Y, packAdvancedMove->Z };
+    assert(packAdvancedMove->X != firstMove->X
+        || packAdvancedMove->Y != firstMove->Y);
     assert(Distance(packAdvancedDestination, packAdvanced.Hostiles[1].Position)
         >= MagmawParasitePolicy::SafeClearance);
 
@@ -2197,6 +2214,31 @@ int main()
     assert(lowerGuidMove->X == stableReference.X);
     assert(lowerGuidMove->Y == stableReference.Y);
     assert(lowerGuidPlan.Movement->Id.Actor == mageGuid);
+
+    // A remote parasite release starts the lane transition before contact;
+    // the baiter does not wait until infection range.
+    Blackboard remoteRelease = board;
+    remoteRelease.Hostiles[1].Position = { 0.0f, -80.0f, 210.0f };
+    auto remoteReleasePlan = strategy.Propose(
+        remoteRelease, mageGuid, "dps");
+    auto const* remoteReleaseMove = remoteReleasePlan.Movement
+        ? std::get_if<Move>(&remoteReleasePlan.Movement->Action) : nullptr;
+    assert(remoteReleaseMove);
+    assert(remoteReleasePlan.DamageTarget == remoteRelease.Hostiles[1].Guid);
+    assert(Distance({ remoteReleaseMove->X, remoteReleaseMove->Y,
+        remoteReleaseMove->Z }, remoteRelease.Hostiles[1].Position)
+        >= MagmawParasitePolicy::SafeClearance);
+
+    // Once the endpoint is reached and remains safe, repeated observations
+    // do not reverse the lane merely because the parasite is still alive.
+    BotMovementArbitration::Lease remoteReleaseLease = LeaseFor(
+        remoteRelease, *remoteReleaseMove);
+    Blackboard remoteAtEndpoint = remoteRelease;
+    remoteAtEndpoint.Players[1].Position = {
+        remoteReleaseMove->X, remoteReleaseMove->Y, remoteReleaseMove->Z };
+    auto remoteAtEndpointPlan = strategy.Propose(
+        remoteAtEndpoint, mageGuid, "dps", &remoteReleaseLease);
+    assert(!remoteAtEndpointPlan.Movement.has_value());
 
     // Ordinary ranged DPS keeps only local contact escape; a remote parasite
     // does not opt it into the baiter's point path.

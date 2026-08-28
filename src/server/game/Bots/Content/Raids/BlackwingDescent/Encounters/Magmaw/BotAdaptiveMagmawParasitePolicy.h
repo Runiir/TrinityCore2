@@ -12,9 +12,9 @@
 
 namespace BotEncounter
 {
-// The parasite policy owns only the movement transition after a parasite has
-// reached a player.  Formation and pincer policy remain in the encounter
-// strategy; this small value type is the hand-off between those owners.
+// The parasite policy owns the fixed mobile-DPS lane transition. Formation
+// and pincer policy remain in the encounter strategy; this small value type is
+// the hand-off between those owners.
 class MagmawParasitePolicy
 {
 public:
@@ -34,6 +34,48 @@ public:
     static float ImmediateContactRange(bool pillarBaiter)
     {
         return pillarBaiter ? KiteLeadDistance : LocalContactRange;
+    }
+
+    // A lane transition always crosses the room-side line.  Choosing the
+    // endpoint opposite the bot's current side is deterministic and does not
+    // depend on which parasite GUID happened to be observed first.
+    static Vector3 OppositeLaneEndpoint(Blackboard const& board,
+        ActorSnapshot const& bot, FormationAnchors const& anchors)
+    {
+        float const leftDistance = Distance2d(bot.Position, anchors.Left);
+        float const rightDistance = Distance2d(bot.Position, anchors.Right);
+        if (leftDistance + DestinationTolerance < rightDistance)
+            return anchors.Right;
+        if (rightDistance + DestinationTolerance < leftDistance)
+            return anchors.Left;
+
+        // Match the deterministic prepull side: an odd attempt starts Left,
+        // so its first transition goes Right, and vice versa.
+        return board.CurrentScope.AttemptId % 2
+            ? anchors.Right : anchors.Left;
+    }
+
+    // MovementLease is the only already-available per-attempt persistence for
+    // point movement.  Retain only an admitted lane endpoint; old outward or
+    // radial hazard destinations must not become the new parasite route.
+    static std::optional<Vector3> RetainedLaneDestination(
+        Blackboard const& board, FormationAnchors const& anchors,
+        BotMovementArbitration::Lease const* movementLease)
+    {
+        if (!movementLease
+            || movementLease->MovementOwner
+                != BotMovementArbitration::Owner::Hazard
+            || movementLease->MovementPriority
+                != BotMovementArbitration::Priority::Hazard
+            || movementLease->DynamicTargetGuid
+            || !BotMovementArbitration::SameScope(
+                ToMovementScope(board), movementLease->MovementScope))
+            return std::nullopt;
+
+        Vector3 const destination{ movementLease->X, movementLease->Y,
+            movementLease->Z };
+        return LaneSafe(board, anchors, destination)
+            ? std::optional<Vector3>(destination) : std::nullopt;
     }
 
     static bool HasLivingParasite(Blackboard const& board)
@@ -76,13 +118,10 @@ public:
             return BuildMoveAway(board, bot, parasite,
                 "parasite_contact_evade", SafeClearance);
 
-        Vector3 const edge = BaitEdge(*anchors, bot);
-        Vector3 const direction = ForwardDirection(*anchors, edge);
-        std::optional<Vector3> destination = RetainedDestination(
-            board, bot, *anchors, edge, direction, movementLease);
+        std::optional<Vector3> destination = RetainedLaneDestination(
+            board, *anchors, movementLease);
         if (!destination)
-            destination = BuildForwardDestination(board, *anchors, edge,
-                direction);
+            destination = BuildLaneDestination(board, bot, *anchors);
         if (!destination
             || Distance2d(bot.Position, *destination)
                 <= DestinationTolerance)
@@ -122,58 +161,6 @@ private:
         return std::sqrt(dx * dx + dy * dy);
     }
 
-    static float Dot(Vector3 const& left, Vector3 const& right)
-    {
-        return left.X * right.X + left.Y * right.Y;
-    }
-
-    static Vector3 BaitEdge(FormationAnchors const& anchors,
-        ActorSnapshot const& bot)
-    {
-        float const leftDistance = Distance2d(bot.Position, anchors.Left);
-        float const rightDistance = Distance2d(bot.Position, anchors.Right);
-        return leftDistance <= rightDistance ? anchors.Left : anchors.Right;
-    }
-
-    static Vector3 ForwardDirection(FormationAnchors const& anchors,
-        Vector3 const& edge)
-    {
-        float dx = edge.X - anchors.Support.X;
-        float dy = edge.Y - anchors.Support.Y;
-        float length = std::sqrt(dx * dx + dy * dy);
-        if (length < 0.01f)
-        {
-            dx = edge.X;
-            dy = edge.Y;
-            length = std::sqrt(dx * dx + dy * dy);
-        }
-        if (length < 0.01f)
-            return { 0.0f, -1.0f, 0.0f };
-        return { dx / length, dy / length, 0.0f };
-    }
-
-    static float MaxPackForwardProjection(Blackboard const& board,
-        Vector3 const& edge, Vector3 const& direction)
-    {
-        float projection = 0.0f;
-        auto inspect = [&projection, &edge, &direction](
-            std::vector<ActorSnapshot> const& actors)
-        {
-            for (ActorSnapshot const& actor : actors)
-                if (actor.Alive && IsParasiteEntry(actor.Entry))
-                {
-                    Vector3 const relative{
-                        actor.Position.X - edge.X,
-                        actor.Position.Y - edge.Y, 0.0f };
-                    projection = std::max(projection, Dot(relative,
-                        direction));
-                }
-        };
-        inspect(board.Hostiles);
-        inspect(board.Summons);
-        return projection;
-    }
-
     static float ParasiteClearance(Blackboard const& board,
         Vector3 const& point)
     {
@@ -191,81 +178,34 @@ private:
         return clearance;
     }
 
-    static bool ForwardSafe(Blackboard const& board,
-        FormationAnchors const& anchors, Vector3 const& edge,
-        Vector3 const& direction, Vector3 const& destination)
+    static bool LaneEndpoint(FormationAnchors const& anchors,
+        Vector3 const& point)
     {
-        float const requiredForward = std::max(KiteLeadDistance,
-            MaxPackForwardProjection(board, edge, direction)
-                + SafeClearance);
-        return Dot({ destination.X - edge.X, destination.Y - edge.Y, 0.0f },
-                direction) >= requiredForward
+        return Distance2d(point, anchors.Left) <= DestinationTolerance
+            || Distance2d(point, anchors.Right) <= DestinationTolerance;
+    }
+
+    static bool LaneSafe(Blackboard const& board,
+        FormationAnchors const& anchors, Vector3 const& destination)
+    {
+        return LaneEndpoint(anchors, destination)
             && Distance2d(destination, anchors.Support) >= StackSeparation
             && ParasiteClearance(board, destination) >= SafeClearance;
     }
 
-    static std::optional<Vector3> RetainedDestination(Blackboard const& board,
-        ActorSnapshot const&, FormationAnchors const& anchors,
-        Vector3 const& edge, Vector3 const& direction,
-        BotMovementArbitration::Lease const* movementLease)
+    static std::optional<Vector3> BuildLaneDestination(
+        Blackboard const& board, ActorSnapshot const& bot,
+        FormationAnchors const& anchors)
     {
-        if (!movementLease
-            || movementLease->MovementOwner
-                != BotMovementArbitration::Owner::Hazard
-            || movementLease->MovementPriority
-                != BotMovementArbitration::Priority::Hazard
-            || movementLease->DynamicTargetGuid
-            || !BotMovementArbitration::SameScope(
-                ToMovementScope(board), movementLease->MovementScope))
-            return std::nullopt;
+        Vector3 const preferred = OppositeLaneEndpoint(board, bot, anchors);
+        if (LaneSafe(board, anchors, preferred))
+            return preferred;
 
-        Vector3 const destination{ movementLease->X, movementLease->Y,
-            movementLease->Z };
-        return ForwardSafe(board, anchors, edge, direction, destination)
-            ? std::optional<Vector3>(destination) : std::nullopt;
-    }
-
-    static std::optional<Vector3> BuildForwardDestination(
-        Blackboard const& board, FormationAnchors const& anchors,
-        Vector3 const& edge, Vector3 const& direction)
-    {
-        float const lead = std::max(KiteLeadDistance,
-            MaxPackForwardProjection(board, edge, direction)
-                + SafeClearance);
-        Vector3 destination{
-            edge.X + direction.X * lead,
-            edge.Y + direction.Y * lead,
-            edge.Z };
-
-        // Keep the destination outside the support stack even when a route
-        // supplies unusually close lateral anchors.  A bounded extension
-        // preserves a point path and cannot oscillate between stack anchors.
-        for (uint8 attempt = 0;
-             attempt < 4 && Distance2d(destination, anchors.Support)
-                    < StackSeparation;
-             ++attempt)
-        {
-            float const deficit = StackSeparation
-                - Distance2d(destination, anchors.Support);
-            destination.X += direction.X * (deficit + 1.0f);
-            destination.Y += direction.Y * (deficit + 1.0f);
-        }
-
-        // The projected lead handles a pack moving along the kite lane.  The
-        // bounded clearance extension covers a lateral member without ever
-        // selecting a destination back toward the raid stack.
-        for (uint8 attempt = 0;
-             attempt < 4 && ParasiteClearance(board, destination)
-                    < SafeClearance;
-             ++attempt)
-        {
-            float const deficit = SafeClearance
-                - ParasiteClearance(board, destination);
-            destination.X += direction.X * (deficit + 1.0f);
-            destination.Y += direction.Y * (deficit + 1.0f);
-        }
-        return ForwardSafe(board, anchors, edge, direction, destination)
-            ? std::optional<Vector3>(destination) : std::nullopt;
+        Vector3 const alternate = Distance2d(preferred, anchors.Left)
+                <= Distance2d(preferred, anchors.Right)
+            ? anchors.Right : anchors.Left;
+        return LaneSafe(board, anchors, alternate)
+            ? std::optional<Vector3>(alternate) : std::nullopt;
     }
 
     static BotNativeAction::Candidate BuildPointMovement(
