@@ -474,11 +474,35 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
         }
         else if constexpr (std::is_same_v<T, BotNativeAction::VehicleAction>)
         {
-            Unit* target = action.Target.IsEmpty() ? bot : ObjectAccessor::GetUnit(*bot, action.Target);
-            SpellCastResult result = bot->CastSpell(target ? target : bot, action.SpellId, false);
+            Unit* vehicle = bot->GetVehicleBase();
+            GameClient* client = bot->GetSession()->GetGameClient();
+            if (!vehicle || !vehicle->IsInWorld() || !vehicle->IsAlive()
+                || !vehicle->IsVehicle())
+                return BotActionArbitration::Outcome::Retryable(
+                    "native_vehicle_action_vehicle_unavailable");
+            if (!client || !client->IsAllowedToMove(vehicle))
+                return BotActionArbitration::Outcome::Unsafe(
+                    "native_vehicle_action_vehicle_not_controlled");
+            if (action.Target.IsEmpty())
+                return BotActionArbitration::Outcome::Retryable(
+                    "native_vehicle_action_target_missing");
+
+            Unit* target = ObjectAccessor::GetUnit(*bot, action.Target);
+            if (!target || !target->IsInWorld() || !target->IsAlive())
+                return BotActionArbitration::Outcome::Retryable(
+                    "native_vehicle_action_target_unavailable");
+
+            if (Creature* vehicleCreature = vehicle->ToCreature();
+                vehicleCreature && !vehicleCreature->HasSpell(action.SpellId))
+                return BotActionArbitration::Outcome::Retryable(
+                    "native_vehicle_action_spell_unavailable");
+
+            SpellCastResult result = vehicle->CastSpell(target, action.SpellId, false);
             return result == SPELL_CAST_OK
                 ? BotActionArbitration::Outcome::Submitted("native_vehicle_action_submitted")
-                : BotActionArbitration::Outcome::Retryable("native_vehicle_action_rejected");
+                : BotActionArbitration::Outcome::Retryable(
+                    std::string("native_vehicle_action_rejected_result_")
+                        + std::to_string(static_cast<unsigned>(result)));
         }
         else if constexpr (std::is_same_v<T, BotNativeAction::PetCommand>)
         {

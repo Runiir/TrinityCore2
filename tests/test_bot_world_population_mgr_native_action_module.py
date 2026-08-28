@@ -37,3 +37,35 @@ def test_native_action_keeps_typed_resurrection_and_session_boundaries():
         "native_gossip_select_submitted",
     ):
         assert marker in text
+
+
+def test_vehicle_action_uses_the_controlled_vehicle_and_live_declared_target():
+    text = MODULE.read_text()
+    start = text.index(
+        "else if constexpr (std::is_same_v<T, BotNativeAction::VehicleAction>)"
+    )
+    end = text.index(
+        "else if constexpr (std::is_same_v<T, BotNativeAction::PetCommand>)",
+        start,
+    )
+    action = text[start:end]
+
+    assert "bot->GetVehicleBase()" in action
+    assert "vehicle->IsInWorld()" in action
+    assert "vehicle->IsAlive()" in action
+    assert "vehicle->IsVehicle()" in action
+    assert "client->IsAllowedToMove(vehicle)" in action
+    assert "action.Target.IsEmpty()" in action
+    assert "target->IsInWorld()" in action
+    assert "target->IsAlive()" in action
+    assert "vehicleCreature->HasSpell(action.SpellId)" in action
+    assert "vehicle->CastSpell(target, action.SpellId, false)" in action
+    assert "bot->CastSpell(target, action.SpellId, false)" not in action
+    assert "native_vehicle_action_rejected_result_" in action
+
+    assert action.index("bot->GetVehicleBase()") < action.index(
+        "vehicle->CastSpell(target, action.SpellId, false)"
+    )
+    assert action.index("action.Target.IsEmpty()") < action.index(
+        "ObjectAccessor::GetUnit(*bot, action.Target)"
+    )
