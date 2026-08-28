@@ -3,7 +3,7 @@
   "work_unit": "runtime:blackwing_descent:magmaw:bloodlust_stale_cohort_candidate",
   "owner_skill": "raid-bot-runtime-implementation",
   "classification": "pending_live_verification",
-  "observed_at_commit": "d5458eb6ce0a9310415241998b7962e4416d025d",
+  "observed_at_commit": "b3150f52f3660f50e725c8189d35deda18a9b959",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_93fd8308b0_canary101_bloodlust_stale_cohort_handoff_20260829.md",
     "sha256": "35558e5b614917970720a2f5da19f2f9d5aa21becac32b70d9d536a2c1e8b901"
@@ -54,6 +54,6 @@
     "live_run_allowed": true,
     "commit_allowed_after_root_review": true
   },
-  "implementation_commit": "d5458eb6ce0a9310415241998b7962e4416d025d",
+  "implementation_commit": "b3150f52f3660f50e725c8189d35deda18a9b959",
   "next_action": "Root should build the exact implementation commit, then run one fresh clean completion-watchdog canary without a debugger."
 }
