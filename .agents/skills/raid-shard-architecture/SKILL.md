@@ -7,6 +7,13 @@ description: Design and coordinate isolated TrinityCore raid-boss experiments an
 
 Build every boss shard as an isolated, executable slice of the canonical raid. Treat identity mismatches as failures, not recoverable defaults.
 
+Before inspection or mutation, apply
+[the bounded work-unit contract](../raid-performance-loop/references/bounded-work-unit-contract.md).
+Lock one shard/provisioning/route hypothesis, exact owned configs and generated
+stage, excluded gameplay-policy files, and the assigned preparation or live-run
+budget. Do not repair class, runtime, or encounter behavior discovered by the
+shard; return its compact evidence to that owner.
+
 ## Bind the shard identity
 
 Require one exact tuple across config, generated route, runtime status, capture, and evidence:

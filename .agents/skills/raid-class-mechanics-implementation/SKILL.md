@@ -9,6 +9,12 @@ Own one trace-backed native outcome edge. Keep policy selection, simulator
 generation, live process ownership, and evidence publication outside this work
 unit.
 
+Before inspection or editing, apply
+[the bounded work-unit contract](../raid-performance-loop/references/bounded-work-unit-contract.md).
+Lock one native-outcome hypothesis, the exact owned mechanics files, excluded
+policy/encounter/shard lanes, and one focused validation. Do not turn a newly
+observed cadence or target problem into another mechanics edit.
+
 ## Admit only a mechanics failure
 
 Read [references/native-mechanics-contract.md](references/native-mechanics-contract.md).

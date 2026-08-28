@@ -18,6 +18,11 @@ Use this skill when acting as the prompt-driven orchestrator for bot autonomy or
    - Run workers sequentially by default. Parallel workers require an explicit user request and disjoint tasks; always collect and review every result before integration.
 6. Record worker complexity, model, reasoning effort, and evidence paths in progress summaries when the tier choice is relevant.
 7. Keep worker tasks scoped, review results before merging, and run repository validation when behavior changes.
+   Every worker must follow
+   [../raid-performance-loop/references/bounded-work-unit-contract.md](../raid-performance-loop/references/bounded-work-unit-contract.md).
+   Put its immutable input, one hypothesis, owned files, excluded lanes, one
+   focused validation command, and terminal handoff conditions in the prompt.
+   An adjacent finding is a new work unit, never an implicit scope expansion.
    Require one material-gate receipt within 60 seconds and every 60 seconds
    thereafter. Request status after the first missed receipt and interrupt
    after the second consecutive miss. After two failed command attempts on the

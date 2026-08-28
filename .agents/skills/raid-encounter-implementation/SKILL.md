@@ -7,6 +7,13 @@ description: Implement or repair one Cataclysm raid boss or instance-script slic
 
 Implement one bounded encounter work unit without inventing missing mechanics or hiding server-side assistance in bot behavior. The reviewed dossier and claim ledger define the intended encounter; native execution and telemetry prove it.
 
+Before inspection or editing, apply
+[the bounded work-unit contract](../raid-performance-loop/references/bounded-work-unit-contract.md).
+Lock one encounter-state hypothesis, owned boss/instance/binding files, excluded
+class/route/live-control lanes, and one focused validation. Unresolved research
+or a bot-policy defect is an immediate handoff, not permission to expand the
+encounter patch.
+
 ## Required inputs
 
 Before editing code:

@@ -100,6 +100,11 @@ actually unavailable.
 
 ## Route work to one specialist owner
 
+Before dispatch, create the worker's scope lock using
+[references/bounded-work-unit-contract.md](references/bounded-work-unit-contract.md).
+Include that lock verbatim in the worker prompt. Reject changed files, commands,
+or extra fixes outside it; useful adjacent findings become a new work unit.
+
 Use decision complexity as a routing signal when a trace shows ownership
 conflicts, oscillation, or opaque fallback behavior. The 2026-08-28 native bot
 baseline was average CCN 15.80, p95 73, 45 functions above 100, and maximum

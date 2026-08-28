@@ -8,6 +8,12 @@ description: Repair one trace-backed shared Trinity-Cata bot-runtime edge such a
 Own one shared policy-to-native-outcome edge. Do not own live shard control or
 broaden the repair into a class, boss, or route redesign.
 
+Before inspection or editing, apply
+[the bounded work-unit contract](../raid-performance-loop/references/bounded-work-unit-contract.md).
+Declare one runtime hypothesis, owned files, excluded class/encounter/shard
+lanes, and one focused validation. Stop and hand off immediately when the first
+broken edge belongs elsewhere.
+
 ## Admit one exact edge
 
 Start from `required_next_work_unit`:

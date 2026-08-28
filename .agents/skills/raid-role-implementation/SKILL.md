@@ -8,6 +8,12 @@ description: Implement and tune one Trinity-Cata DPS, tank, or healer behavior w
 Own one class family or one exact role failure. Do not own the simulator,
 encounter source, live server, or evidence publisher.
 
+Before inspection or editing, apply
+[the bounded work-unit contract](../raid-performance-loop/references/bounded-work-unit-contract.md).
+Lock one policy hypothesis, owned class/profile files, excluded native
+mechanics/encounter/shard lanes, and one focused validation. A useful adjacent
+fix is a new handoff, not part of this role patch.
+
 ## Admit the work unit
 
 Run:
