@@ -80,8 +80,9 @@ public:
         plan.DamageTarget = SelectDamageTarget(observed, role);
         MagmawHookAssignment const hookAssignment = ResolveHookAssignment(
             board, *bot, botGuid);
-        bool const pincerWindow = hookAssignment.Assigned
-            && observed.Boss->Interactable;
+        bool const pincerWarning = PincerWarningObserved(board);
+        bool const pincerWindow = PincerCommitmentActive(hookAssignment,
+            *observed.Boss, pincerWarning);
         plan.Interaction = ProposeHookInteraction(board, *bot, *observed.Boss,
             botGuid);
         plan.Movement = ProposeHazardMovement(board, *bot, *observed.Boss,
@@ -422,6 +423,26 @@ private:
         return false;
     }
 
+    static bool PincerCommitmentActive(
+        MagmawHookAssignment const& assignment, ActorSnapshot const& boss,
+        bool warningObserved)
+    {
+        return assignment.Assigned && (boss.Interactable || warningObserved);
+    }
+
+    static std::optional<BotNativeAction::Candidate>
+    ProposeImmediateCrashDuringPincer(Blackboard const& board,
+        ActorSnapshot const& bot, ActorSnapshot const& boss,
+        MagmawHazardObservation const& observed)
+    {
+        if (boss.Interactable || !observed.NearestImmediateHazard
+            || observed.NearestImmediateHazardDistance > 12.0f
+            || !IsCrashHazard(*observed.NearestImmediateHazard))
+            return std::nullopt;
+        return MoveAway(board, bot, *observed.NearestImmediateHazard,
+            "massive_crash_evade", 16.0f);
+    }
+
     static std::optional<BotNativeAction::Candidate> ProposeHazardMovement(
         Blackboard const& board, ActorSnapshot const& bot,
         ActorSnapshot const& boss, std::string_view role, bool pincerWindow)
@@ -438,28 +459,30 @@ private:
                 if (std::optional<BotNativeAction::Candidate> const pillar =
                         BuildPillarEvade(board, bot, *observed.Pillar))
                     return pillar;
-                return std::nullopt;
             }
-            if (role != "tank")
-                if (std::optional<MagmawRangedAnchors> const anchors =
-                        ResolveRangedAnchors(board, boss))
-                {
-                    Vector3 const& destination =
-                        Distance2d(anchors->Left, observed.Pillar->Position)
-                            >= Distance2d(anchors->Right,
-                                observed.Pillar->Position)
-                        ? anchors->Left : anchors->Right;
-                    if (Distance2d(bot.Position, destination)
-                        > RangedStackTolerance)
-                        return BuildPointMovement(board, bot, destination,
-                            "pillar_bait_switch",
-                            BotActionArbitration::Priority::Survival,
-                            500.0f);
-                return std::nullopt;
+            else
+            {
+                if (role != "tank")
+                    if (std::optional<MagmawRangedAnchors> const anchors =
+                            ResolveRangedAnchors(board, boss))
+                    {
+                        Vector3 const& destination =
+                            Distance2d(anchors->Left, observed.Pillar->Position)
+                                >= Distance2d(anchors->Right,
+                                    observed.Pillar->Position)
+                            ? anchors->Left : anchors->Right;
+                        if (Distance2d(bot.Position, destination)
+                            > RangedStackTolerance)
+                            return BuildPointMovement(board, bot, destination,
+                                "pillar_bait_switch",
+                                BotActionArbitration::Priority::Survival,
+                                500.0f);
+                        return std::nullopt;
+                    }
+                if (std::optional<BotNativeAction::Candidate> pillar =
+                        BuildPillarEvade(board, bot, *observed.Pillar))
+                    return pillar;
             }
-            if (std::optional<BotNativeAction::Candidate> pillar =
-                    BuildPillarEvade(board, bot, *observed.Pillar))
-                return pillar;
         }
 
         // Massive Crash, parasites, and formation restoration are lower
@@ -467,7 +490,16 @@ private:
         // assigned user is outside an immediate Pillar, let the pincer
         // approach/interaction remain stable until the window closes.
         if (pincerWindow)
+        {
+            // Crash is still lethal when it is already on top of the bot.
+            // Warning-time prepositioning only suppresses the lower-priority
+            // parasite contact escape.
+            if (std::optional<BotNativeAction::Candidate> const crash =
+                    ProposeImmediateCrashDuringPincer(board, bot, boss,
+                        observed))
+                return crash;
             return std::nullopt;
+        }
 
         if (observed.NearestImmediateHazard
             && observed.NearestImmediateHazardDistance <= 12.0f)

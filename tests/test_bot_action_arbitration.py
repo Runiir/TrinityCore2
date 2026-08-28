@@ -957,8 +957,17 @@ int main()
     magmawPincerPreposition.Players[2].Position = { -10.0f, 8.0f, 0.0f };
     magmawPincerPreposition.Players[2].Auras = {
         BotEncounter::AuraSnapshot{ 89773u, ObjectGuid{}, 1, 0 } };
+    BotEncounter::Blackboard magmawPincerWarningParasite =
+        magmawPincerPreposition;
+    BotEncounter::ActorSnapshot warningParasite = magmawBoss;
+    warningParasite.Guid = ObjectGuid(HighGuid::Unit, uint32(41806),
+        uint32(109));
+    warningParasite.Entry = BotEncounter::AdaptiveMagmawStrategy::ParasiteEntry;
+    warningParasite.Position = { magmawBoss.Position.X - 24.0f,
+        magmawBoss.Position.Y, magmawBoss.Position.Z };
+    magmawPincerWarningParasite.Hostiles.push_back(warningParasite);
     auto prepositionPlan = magmawStrategy.Propose(
-        magmawPincerPreposition, hookBot.Guid, "dps");
+        magmawPincerWarningParasite, hookBot.Guid, "dps");
     assert(prepositionPlan.Movement.has_value());
     assert(prepositionPlan.Movement->Id.Mechanic
         == "pincer_preposition");
