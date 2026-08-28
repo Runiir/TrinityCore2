@@ -10,12 +10,20 @@ from tools.raid_program.bwd_shard_fixtures import (
     CANONICAL_ROSTER_SLOT_IDS,
     CANONICAL_SCENARIO_ID,
     LIVE_IDENTITY_FIELDS,
+    NATIVE_BACKPACK_SLOT_END,
+    NATIVE_BACKPACK_SLOT_START,
+    VALIDATION_CONSUMABLE_SLOTS,
     build_diagnostic_provisioning_config,
     build_shard_fixture,
+    validate_native_consumable_slots,
     validate_readback,
     validate_shard_fixture,
 )
-from tools.bot_ml.build_validation_provisioning import build_account_insert_sql, load_config_with_bwd_diagnostic_shards
+from tools.bot_ml.build_validation_provisioning import (
+    build_account_insert_sql,
+    build_character_insert_sql,
+    load_config_with_bwd_diagnostic_shards,
+)
 from tools.bot_ml.run_live_bot_validation import prepare_validation_provisioning, split_sql_statements
 
 
@@ -247,8 +255,40 @@ def test_diagnostic_rosters_receive_exact_canonical_spec_consumables():
         assert [row["item_id"] for row in bot["consumables"]] == expected[
             bot["class_spec"]
         ]
-        assert [row["slot"] for row in bot["consumables"]] == [40, 41, 42]
+        assert [row["slot"] for row in bot["consumables"]] == list(VALIDATION_CONSUMABLE_SLOTS)
         assert all(row["count"] == 20 for row in bot["consumables"])
+
+
+def test_bwd_consumables_use_native_backpack_slots_and_sql_readback_contract():
+    config = _config()
+    assert validate_native_consumable_slots(config) == {
+        "all_passed": True,
+        "validated_rows": 60,
+        "native_backpack_slots": [NATIVE_BACKPACK_SLOT_START, NATIVE_BACKPACK_SLOT_END],
+        "preferred_slots": list(VALIDATION_CONSUMABLE_SLOTS),
+    }
+    fixture = build_shard_fixture(config)
+    assert all(
+        [row["slot"] for row in bot["consumables"]] == list(VALIDATION_CONSUMABLE_SLOTS)
+        for shard in fixture["shards"]
+        for bot in shard["bots"]
+    )
+    merged = build_diagnostic_provisioning_config(config, fixture)
+    sql = build_character_insert_sql(merged)
+    assert "SELECT c.`guid`, 0, 26, " in sql
+    assert "SELECT c.`guid`, 0, 27, " in sql
+    assert "SELECT c.`guid`, 0, 28, " in sql
+    assert "SELECT c.`guid`, 0, 40, " not in sql
+
+
+@pytest.mark.parametrize("invalid_slot", [22, 39, 40])
+def test_bwd_consumable_validation_rejects_slots_outside_native_backpack(
+    invalid_slot: int,
+):
+    config = _config()
+    config["scenarios"][2]["bots"][0]["consumables"][0]["slot"] = invalid_slot
+    with pytest.raises(ValueError, match="native_backpack_consumable_slots"):
+        build_shard_fixture(config)
 
 
 def test_live_preparation_materializes_all_110_accounts_and_characters(tmp_path, monkeypatch):

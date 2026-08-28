@@ -58,9 +58,9 @@ ROGUE_POISON_CONSUMABLES = (
     {"item_id": 43231, "slot": 24, "count": 20},
 )
 DEFAULT_PLAYER_CONSUMABLES = (
-    {"item_id": 58085, "slot": 40, "count": 20},
-    {"item_id": 58086, "slot": 41, "count": 20},
-    {"item_id": 58257, "slot": 42, "count": 20},
+    {"item_id": 58085, "slot": 26, "count": 20},
+    {"item_id": 58086, "slot": 27, "count": 20},
+    {"item_id": 58257, "slot": 28, "count": 20},
 )
 
 CLASS_META = {

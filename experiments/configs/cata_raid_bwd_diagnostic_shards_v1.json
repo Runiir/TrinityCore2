@@ -128,6 +128,23 @@
           "character_guid": 30001,
           "class": 2,
           "class_spec": "protection_paladin",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58088,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62670,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58146,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_tank_1",
           "expected_account_id": 20001,
           "expected_character_guid": 30001,
@@ -175,6 +192,23 @@
           "character_guid": 30002,
           "class": 6,
           "class_spec": "blood_death_knight",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58088,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62670,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58146,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_tank_2",
           "expected_account_id": 20002,
           "expected_character_guid": 30002,
@@ -216,6 +250,23 @@
           "character_guid": 30003,
           "class": 11,
           "class_spec": "restoration_druid",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_healer_1",
           "expected_account_id": 20003,
           "expected_character_guid": 30003,
@@ -257,6 +308,23 @@
           "character_guid": 30004,
           "class": 2,
           "class_spec": "holy_paladin",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_healer_2",
           "expected_account_id": 20004,
           "expected_character_guid": 30004,
@@ -298,6 +366,23 @@
           "character_guid": 30005,
           "class": 5,
           "class_spec": "discipline_priest",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_healer_3",
           "expected_account_id": 20005,
           "expected_character_guid": 30005,
@@ -339,6 +424,23 @@
           "character_guid": 30006,
           "class": 8,
           "class_spec": "fire_mage",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_dps_1",
           "expected_account_id": 20006,
           "expected_character_guid": 30006,
@@ -380,6 +482,23 @@
           "character_guid": 30007,
           "class": 8,
           "class_spec": "fire_mage",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_dps_2",
           "expected_account_id": 20007,
           "expected_character_guid": 30007,
@@ -421,6 +540,23 @@
           "character_guid": 30008,
           "class": 9,
           "class_spec": "affliction_warlock",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_dps_3",
           "expected_account_id": 20008,
           "expected_character_guid": 30008,
@@ -462,6 +598,23 @@
           "character_guid": 30009,
           "class": 3,
           "class_spec": "marksmanship_hunter",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58087,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62669,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58145,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_dps_4",
           "expected_account_id": 20009,
           "expected_character_guid": 30009,
@@ -518,6 +671,23 @@
           "character_guid": 30010,
           "class": 7,
           "class_spec": "elemental_shaman",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_dps_5",
           "expected_account_id": 20010,
           "expected_character_guid": 30010,
@@ -619,6 +789,23 @@
           "character_guid": 30101,
           "class": 2,
           "class_spec": "protection_paladin",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58088,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62670,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58146,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron/roster/raid_tank_1",
           "expected_account_id": 20101,
           "expected_character_guid": 30101,
@@ -666,6 +853,23 @@
           "character_guid": 30102,
           "class": 6,
           "class_spec": "blood_death_knight",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58088,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62670,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58146,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron/roster/raid_tank_2",
           "expected_account_id": 20102,
           "expected_character_guid": 30102,
@@ -707,6 +911,23 @@
           "character_guid": 30103,
           "class": 11,
           "class_spec": "restoration_druid",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron/roster/raid_healer_1",
           "expected_account_id": 20103,
           "expected_character_guid": 30103,
@@ -748,6 +969,23 @@
           "character_guid": 30104,
           "class": 2,
           "class_spec": "holy_paladin",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron/roster/raid_healer_2",
           "expected_account_id": 20104,
           "expected_character_guid": 30104,
@@ -789,6 +1027,23 @@
           "character_guid": 30105,
           "class": 5,
           "class_spec": "discipline_priest",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron/roster/raid_healer_3",
           "expected_account_id": 20105,
           "expected_character_guid": 30105,
@@ -830,6 +1085,23 @@
           "character_guid": 30106,
           "class": 8,
           "class_spec": "fire_mage",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron/roster/raid_dps_1",
           "expected_account_id": 20106,
           "expected_character_guid": 30106,
@@ -871,6 +1143,23 @@
           "character_guid": 30107,
           "class": 4,
           "class_spec": "assassination_rogue",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58087,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62669,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58145,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron/roster/raid_dps_2",
           "expected_account_id": 20107,
           "expected_character_guid": 30107,
@@ -912,6 +1201,23 @@
           "character_guid": 30108,
           "class": 9,
           "class_spec": "affliction_warlock",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron/roster/raid_dps_3",
           "expected_account_id": 20108,
           "expected_character_guid": 30108,
@@ -953,6 +1259,23 @@
           "character_guid": 30109,
           "class": 3,
           "class_spec": "marksmanship_hunter",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58087,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62669,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58145,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron/roster/raid_dps_4",
           "expected_account_id": 20109,
           "expected_character_guid": 30109,
@@ -1009,6 +1332,23 @@
           "character_guid": 30110,
           "class": 7,
           "class_spec": "elemental_shaman",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron/roster/raid_dps_5",
           "expected_account_id": 20110,
           "expected_character_guid": 30110,
@@ -1112,6 +1452,23 @@
           "character_guid": 30201,
           "class": 2,
           "class_spec": "protection_paladin",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58088,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62670,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58146,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak/roster/raid_tank_1",
           "expected_account_id": 20201,
           "expected_character_guid": 30201,
@@ -1159,6 +1516,23 @@
           "character_guid": 30202,
           "class": 6,
           "class_spec": "blood_death_knight",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58088,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62670,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58146,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak/roster/raid_tank_2",
           "expected_account_id": 20202,
           "expected_character_guid": 30202,
@@ -1200,6 +1574,23 @@
           "character_guid": 30203,
           "class": 11,
           "class_spec": "restoration_druid",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak/roster/raid_healer_1",
           "expected_account_id": 20203,
           "expected_character_guid": 30203,
@@ -1241,6 +1632,23 @@
           "character_guid": 30204,
           "class": 2,
           "class_spec": "holy_paladin",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak/roster/raid_healer_2",
           "expected_account_id": 20204,
           "expected_character_guid": 30204,
@@ -1282,6 +1690,23 @@
           "character_guid": 30205,
           "class": 5,
           "class_spec": "discipline_priest",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak/roster/raid_healer_3",
           "expected_account_id": 20205,
           "expected_character_guid": 30205,
@@ -1323,6 +1748,23 @@
           "character_guid": 30206,
           "class": 8,
           "class_spec": "fire_mage",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak/roster/raid_dps_1",
           "expected_account_id": 20206,
           "expected_character_guid": 30206,
@@ -1364,6 +1806,23 @@
           "character_guid": 30207,
           "class": 4,
           "class_spec": "assassination_rogue",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58087,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62669,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58145,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak/roster/raid_dps_2",
           "expected_account_id": 20207,
           "expected_character_guid": 30207,
@@ -1405,6 +1864,23 @@
           "character_guid": 30208,
           "class": 9,
           "class_spec": "affliction_warlock",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak/roster/raid_dps_3",
           "expected_account_id": 20208,
           "expected_character_guid": 30208,
@@ -1446,6 +1922,23 @@
           "character_guid": 30209,
           "class": 3,
           "class_spec": "marksmanship_hunter",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58087,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62669,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58145,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak/roster/raid_dps_4",
           "expected_account_id": 20209,
           "expected_character_guid": 30209,
@@ -1502,6 +1995,23 @@
           "character_guid": 30210,
           "class": 7,
           "class_spec": "elemental_shaman",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak/roster/raid_dps_5",
           "expected_account_id": 20210,
           "expected_character_guid": 30210,
@@ -1606,6 +2116,23 @@
           "character_guid": 30301,
           "class": 2,
           "class_spec": "protection_paladin",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58088,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62670,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58146,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes/roster/raid_tank_1",
           "expected_account_id": 20301,
           "expected_character_guid": 30301,
@@ -1653,6 +2180,23 @@
           "character_guid": 30302,
           "class": 6,
           "class_spec": "blood_death_knight",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58088,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62670,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58146,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes/roster/raid_tank_2",
           "expected_account_id": 20302,
           "expected_character_guid": 30302,
@@ -1694,6 +2238,23 @@
           "character_guid": 30303,
           "class": 11,
           "class_spec": "restoration_druid",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes/roster/raid_healer_1",
           "expected_account_id": 20303,
           "expected_character_guid": 30303,
@@ -1735,6 +2296,23 @@
           "character_guid": 30304,
           "class": 2,
           "class_spec": "holy_paladin",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes/roster/raid_healer_2",
           "expected_account_id": 20304,
           "expected_character_guid": 30304,
@@ -1776,6 +2354,23 @@
           "character_guid": 30305,
           "class": 5,
           "class_spec": "discipline_priest",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes/roster/raid_healer_3",
           "expected_account_id": 20305,
           "expected_character_guid": 30305,
@@ -1817,6 +2412,23 @@
           "character_guid": 30306,
           "class": 8,
           "class_spec": "fire_mage",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes/roster/raid_dps_1",
           "expected_account_id": 20306,
           "expected_character_guid": 30306,
@@ -1858,6 +2470,23 @@
           "character_guid": 30307,
           "class": 4,
           "class_spec": "assassination_rogue",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58087,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62669,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58145,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes/roster/raid_dps_2",
           "expected_account_id": 20307,
           "expected_character_guid": 30307,
@@ -1899,6 +2528,23 @@
           "character_guid": 30308,
           "class": 9,
           "class_spec": "affliction_warlock",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes/roster/raid_dps_3",
           "expected_account_id": 20308,
           "expected_character_guid": 30308,
@@ -1940,6 +2586,23 @@
           "character_guid": 30309,
           "class": 3,
           "class_spec": "marksmanship_hunter",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58087,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62669,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58145,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes/roster/raid_dps_4",
           "expected_account_id": 20309,
           "expected_character_guid": 30309,
@@ -1996,6 +2659,23 @@
           "character_guid": 30310,
           "class": 7,
           "class_spec": "elemental_shaman",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes/roster/raid_dps_5",
           "expected_account_id": 20310,
           "expected_character_guid": 30310,
@@ -2065,10 +2745,10 @@
       "shard_id": "bwd_atramedes_diagnostic_10n",
       "start_position": {
         "map_id": 669,
-        "o": 3.141593,
-        "x": 220.0347,
-        "y": -224.3125,
-        "z": 74.88777
+        "o": 0.0,
+        "x": 147.9184,
+        "y": -189.286,
+        "z": 74.9906
       }
     },
     {
@@ -2101,6 +2781,23 @@
           "character_guid": 30401,
           "class": 2,
           "class_spec": "protection_paladin",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58088,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62670,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58146,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron/roster/raid_tank_1",
           "expected_account_id": 20401,
           "expected_character_guid": 30401,
@@ -2148,6 +2845,23 @@
           "character_guid": 30402,
           "class": 6,
           "class_spec": "blood_death_knight",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58088,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62670,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58146,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron/roster/raid_tank_2",
           "expected_account_id": 20402,
           "expected_character_guid": 30402,
@@ -2189,6 +2903,23 @@
           "character_guid": 30403,
           "class": 11,
           "class_spec": "restoration_druid",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron/roster/raid_healer_1",
           "expected_account_id": 20403,
           "expected_character_guid": 30403,
@@ -2230,6 +2961,23 @@
           "character_guid": 30404,
           "class": 2,
           "class_spec": "holy_paladin",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron/roster/raid_healer_2",
           "expected_account_id": 20404,
           "expected_character_guid": 30404,
@@ -2271,6 +3019,23 @@
           "character_guid": 30405,
           "class": 5,
           "class_spec": "discipline_priest",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron/roster/raid_healer_3",
           "expected_account_id": 20405,
           "expected_character_guid": 30405,
@@ -2312,6 +3077,23 @@
           "character_guid": 30406,
           "class": 8,
           "class_spec": "fire_mage",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron/roster/raid_dps_1",
           "expected_account_id": 20406,
           "expected_character_guid": 30406,
@@ -2353,6 +3135,23 @@
           "character_guid": 30407,
           "class": 4,
           "class_spec": "assassination_rogue",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58087,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62669,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58145,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron/roster/raid_dps_2",
           "expected_account_id": 20407,
           "expected_character_guid": 30407,
@@ -2394,6 +3193,23 @@
           "character_guid": 30408,
           "class": 9,
           "class_spec": "affliction_warlock",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron/roster/raid_dps_3",
           "expected_account_id": 20408,
           "expected_character_guid": 30408,
@@ -2435,6 +3251,23 @@
           "character_guid": 30409,
           "class": 3,
           "class_spec": "marksmanship_hunter",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58087,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62669,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58145,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron/roster/raid_dps_4",
           "expected_account_id": 20409,
           "expected_character_guid": 30409,
@@ -2491,6 +3324,23 @@
           "character_guid": 30410,
           "class": 7,
           "class_spec": "elemental_shaman",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron/roster/raid_dps_5",
           "expected_account_id": 20410,
           "expected_character_guid": 30410,
@@ -2597,6 +3447,23 @@
           "character_guid": 30501,
           "class": 2,
           "class_spec": "protection_paladin",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58088,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62670,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58146,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian/roster/raid_tank_1",
           "expected_account_id": 20501,
           "expected_character_guid": 30501,
@@ -2644,6 +3511,23 @@
           "character_guid": 30502,
           "class": 6,
           "class_spec": "blood_death_knight",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58088,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62670,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58146,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian/roster/raid_tank_2",
           "expected_account_id": 20502,
           "expected_character_guid": 30502,
@@ -2685,6 +3569,23 @@
           "character_guid": 30503,
           "class": 11,
           "class_spec": "restoration_druid",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian/roster/raid_healer_1",
           "expected_account_id": 20503,
           "expected_character_guid": 30503,
@@ -2726,6 +3627,23 @@
           "character_guid": 30504,
           "class": 2,
           "class_spec": "holy_paladin",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian/roster/raid_healer_2",
           "expected_account_id": 20504,
           "expected_character_guid": 30504,
@@ -2767,6 +3685,23 @@
           "character_guid": 30505,
           "class": 5,
           "class_spec": "discipline_priest",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian/roster/raid_healer_3",
           "expected_account_id": 20505,
           "expected_character_guid": 30505,
@@ -2808,6 +3743,23 @@
           "character_guid": 30506,
           "class": 8,
           "class_spec": "fire_mage",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian/roster/raid_dps_1",
           "expected_account_id": 20506,
           "expected_character_guid": 30506,
@@ -2849,6 +3801,23 @@
           "character_guid": 30507,
           "class": 4,
           "class_spec": "assassination_rogue",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58087,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62669,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58145,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian/roster/raid_dps_2",
           "expected_account_id": 20507,
           "expected_character_guid": 30507,
@@ -2890,6 +3859,23 @@
           "character_guid": 30508,
           "class": 9,
           "class_spec": "affliction_warlock",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian/roster/raid_dps_3",
           "expected_account_id": 20508,
           "expected_character_guid": 30508,
@@ -2931,6 +3917,23 @@
           "character_guid": 30509,
           "class": 3,
           "class_spec": "marksmanship_hunter",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58087,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62669,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58145,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian/roster/raid_dps_4",
           "expected_account_id": 20509,
           "expected_character_guid": 30509,
@@ -2987,6 +3990,23 @@
           "character_guid": 30510,
           "class": 7,
           "class_spec": "elemental_shaman",
+          "consumables": [
+            {
+              "count": 20,
+              "item_id": 58086,
+              "slot": 26
+            },
+            {
+              "count": 20,
+              "item_id": 62671,
+              "slot": 27
+            },
+            {
+              "count": 20,
+              "item_id": 58091,
+              "slot": 28
+            }
+          ],
           "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian/roster/raid_dps_5",
           "expected_account_id": 20510,
           "expected_character_guid": 30510,
@@ -3058,10 +4078,10 @@
       "shard_id": "bwd_nefarian_diagnostic_10n",
       "start_position": {
         "map_id": 669,
-        "o": 3.14159,
-        "x": -107.204,
-        "y": -224.593,
-        "z": 6.57143
+        "o": 6.265733,
+        "x": -27.84375,
+        "y": -224.4774,
+        "z": 63.30268
       }
     }
   ],

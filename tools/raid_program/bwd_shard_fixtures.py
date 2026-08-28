@@ -15,6 +15,15 @@ SCENARIO_CONFIG_PATH = REPO_ROOT / "experiments/configs/validation_scenarios_cat
 RUNTIME_PROFILE_PATH = REPO_ROOT / "dataset/bot_runtime_profiles/profiles.json"
 DEFAULT_OUTPUT_PATH = REPO_ROOT / "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json"
 
+# Player::GetItemByPos(INVENTORY_SLOT_BAG_0, slot) and the native consumable
+# scanner cover the 16 base-backpack slots [23, 39).  The validation roster
+# keeps its three deterministic stacks in otherwise-unused slots 26-28.  Bank
+# slots 39+ are not a legal substitute: they can be written to
+# character_inventory but are invisible to the player-like use-item path.
+NATIVE_BACKPACK_SLOT_START = 23
+NATIVE_BACKPACK_SLOT_END = 39
+VALIDATION_CONSUMABLE_SLOTS = (26, 27, 28)
+
 CANONICAL_ROSTER_SLOT_IDS = (
     "raid_tank_1", "raid_tank_2", "raid_healer_1", "raid_healer_2", "raid_healer_3",
     "raid_dps_1", "raid_dps_2", "raid_dps_3", "raid_dps_4", "raid_dps_5",
@@ -90,6 +99,78 @@ def _namespace(boss: str) -> str:
     return f"cata_raid/bwd/diagnostic/{boss}"
 
 
+def _consumable_slot_failures(rows: Any, path: str) -> list[dict[str, Any]]:
+    if not isinstance(rows, list):
+        return [{"path": path, "reason": "must_be_list"}]
+    failures: list[dict[str, Any]] = []
+    seen_slots: set[int] = set()
+    for index, row in enumerate(rows):
+        row_path = f"{path}[{index}]"
+        if not isinstance(row, dict):
+            failures.append({"path": row_path, "reason": "must_be_object"})
+            continue
+        raw_slot = row.get("slot")
+        if isinstance(raw_slot, bool):
+            failures.append({"path": row_path, "reason": "slot_must_be_integer", "slot": raw_slot})
+            continue
+        try:
+            slot = int(raw_slot)
+        except (TypeError, ValueError):
+            failures.append({"path": row_path, "reason": "slot_must_be_integer", "slot": raw_slot})
+            continue
+        if slot < NATIVE_BACKPACK_SLOT_START or slot >= NATIVE_BACKPACK_SLOT_END:
+            failures.append({
+                "path": row_path,
+                "reason": "slot_outside_native_backpack",
+                "slot": slot,
+                "allowed": {
+                    "start_inclusive": NATIVE_BACKPACK_SLOT_START,
+                    "end_exclusive": NATIVE_BACKPACK_SLOT_END,
+                },
+            })
+        if slot in seen_slots:
+            failures.append({"path": row_path, "reason": "duplicate_slot", "slot": slot})
+        seen_slots.add(slot)
+    return failures
+
+
+def validate_native_consumable_slots(config: dict[str, Any]) -> dict[str, Any]:
+    """Reject validation items that native player inventory cannot discover."""
+    failures: list[dict[str, Any]] = []
+    validated_rows = 0
+    if "default_consumables" in config:
+        defaults = config.get("default_consumables")
+        default_failures = _consumable_slot_failures(defaults, "default_consumables")
+        failures.extend(default_failures)
+        if isinstance(defaults, list):
+            validated_rows += len(defaults)
+    for scenario_index, scenario in enumerate(config.get("scenarios", [])):
+        if not isinstance(scenario, dict):
+            continue
+        scenario_id = str(scenario.get("id") or scenario_index)
+        defaults = config.get("default_consumables", [])
+        for bot_index, bot in enumerate(scenario.get("bots", [])):
+            if not isinstance(bot, dict):
+                continue
+            rows = bot.get("consumables", defaults)
+            path = f"scenarios[{scenario_index}:{scenario_id}].bots[{bot_index}:{bot.get('name', bot_index)}].consumables"
+            row_failures = _consumable_slot_failures(rows, path)
+            failures.extend(row_failures)
+            if isinstance(rows, list):
+                validated_rows += len(rows)
+    if failures:
+        raise ValueError(json.dumps({
+            "check": "native_backpack_consumable_slots",
+            "failures": failures,
+        }, sort_keys=True))
+    return {
+        "all_passed": True,
+        "validated_rows": validated_rows,
+        "native_backpack_slots": [NATIVE_BACKPACK_SLOT_START, NATIVE_BACKPACK_SLOT_END],
+        "preferred_slots": list(VALIDATION_CONSUMABLE_SLOTS),
+    }
+
+
 def _live_requirements() -> dict[str, Any]:
     return {
         "fields": list(LIVE_IDENTITY_FIELDS),
@@ -103,6 +184,7 @@ def _live_requirements() -> dict[str, Any]:
 
 def build_shard_fixture(config: dict[str, Any]) -> dict[str, Any]:
     """Clone the canonical 2/3/5 roster into six disjoint 10-bot pools."""
+    validate_native_consumable_slots(config)
     scenario = _canonical(config)
     slots = _slots(scenario)
     starts = _starts()
@@ -198,6 +280,7 @@ def build_shard_fixture(config: dict[str, Any]) -> dict[str, Any]:
 
 def build_diagnostic_provisioning_config(config: dict[str, Any], fixture: dict[str, Any] | None = None) -> dict[str, Any]:
     """Append diagnostic scenarios to a copy; never mutate canonical input."""
+    validate_native_consumable_slots(config)
     fixture = fixture or build_shard_fixture(config)
     validate_shard_fixture(fixture, config)
     merged = copy.deepcopy(config)
@@ -244,6 +327,8 @@ def _duplicates(values: Iterable[Any]) -> list[Any]:
 
 def validate_shard_fixture(fixture: dict[str, Any], canonical_config: dict[str, Any] | None = None) -> dict[str, Any]:
     """Validate all immutable identities and the non-certifying prerequisite contract."""
+    if canonical_config is not None:
+        validate_native_consumable_slots(canonical_config)
     failures: list[dict[str, Any]] = []
     if fixture.get("schema") != "cata_raid_bwd_diagnostic_shard_fixture_v1":
         failures.append({"check": "schema"})
@@ -286,6 +371,13 @@ def validate_shard_fixture(fixture: dict[str, Any], canonical_config: dict[str, 
         if {str(bot.get("canonical_roster_slot_id")) for bot in bots} != set(CANONICAL_ROSTER_SLOT_IDS):
             failures.append({"check": "roster_slot_coverage", "boss_key": boss})
         for bot in bots:
+            consumables = bot.get("consumables")
+            if consumables is not None:
+                for failure in _consumable_slot_failures(
+                    consumables,
+                    f"shards[{boss}].bots[{bot.get('name', '')}].consumables",
+                ):
+                    failures.append({"check": "native_backpack_consumable_slots", **failure})
             for field in ("account_id", "character_guid"):
                 value = bot.get(field)
                 if isinstance(value, bool) or not isinstance(value, int) or value <= 0:

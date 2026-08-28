@@ -131,19 +131,19 @@
     "validation_default": [
       {
         "item_id": 58085,
-        "slot": 40,
+        "slot": 26,
         "count": 20,
         "role": "food_or_flask"
       },
       {
         "item_id": 58086,
-        "slot": 41,
+        "slot": 27,
         "count": 20,
         "role": "food_or_flask"
       },
       {
         "item_id": 58257,
-        "slot": 42,
+        "slot": 28,
         "count": 20,
         "role": "potion"
       }
