@@ -2,10 +2,12 @@
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 
 #include "Bots/BotRaidAreaAuthority.h"
+#include "CharmInfo.h"
 #include "Creature.h"
 #include "Map.h"
 #include "ObjectMgr.h"
 #include "PathGenerator.h"
+#include "Pet.h"
 #include "Player.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
@@ -20,6 +22,12 @@
 #include <vector>
 
 using BotWorldPopulationMgrNativeHelpers::Distance2d;
+
+namespace
+{
+constexpr uint32 HUNTER_MISDIRECTION_SPELL_ID = 34477;
+constexpr uint32 HUNTER_PET_GROWL_SPELL_ID = 2649;
+}
 
 bool BotWorldPopulationMgr::TryValidationRoutePatrolPull(
     WorldBotState& state, Player* bot,
@@ -169,12 +177,77 @@ bool BotWorldPopulationMgr::TryValidationRoutePatrolPull(
             return true;
         };
 
-        bool const sourceEngaged = isValidationCohortCombatLinked(source);
-
         for (WorldBotState const& cohortState : Party().Bots)
             if (Player* member = GetLoadedBot(cohortState))
                 BotRaidAreaAuthority::SetAllOffenseSuppressed(
                     member->GetGUID().GetRawValue(), true);
+
+        auto const roster = Cohort().Raid.RosterByGuid.find(
+            bot->GetGUID().GetCounter());
+        bool const pullOwner = roster != Cohort().Raid.RosterByGuid.end()
+            && roster->second.Active && roster->second.LeaseOwned
+            && roster->second.SlotIndex + 1
+                == Cohort().Config.ValidationRoutePatrolPullOwnerRosterSlot;
+        bool const hunterPullOwner = pullOwner
+            && bot->getClass() == CLASS_HUNTER;
+
+        // Keep the hunter's patrol pull unengaged until native Misdirection
+        // has been submitted. Disable only Growl on this pet; Bite and all
+        // other ordinary pet autocasts remain on their native cadence.
+        if (hunterPullOwner)
+        {
+            Pet* pet = bot->GetPet();
+            SpellInfo const* growlInfo = sSpellMgr->GetSpellInfo(
+                HUNTER_PET_GROWL_SPELL_ID);
+            bool growlAutocastEnabled = false;
+            if (pet && pet->IsAlive() && growlInfo
+                && growlInfo->IsAutocastable() && pet->HasSpell(
+                    HUNTER_PET_GROWL_SPELL_ID))
+            {
+                for (uint8 index = 0; index < pet->GetPetAutoSpellSize(); ++index)
+                    if (pet->GetPetAutoSpellOnPos(index)
+                        == HUNTER_PET_GROWL_SPELL_ID)
+                    {
+                        growlAutocastEnabled = true;
+                        break;
+                    }
+
+                if (growlAutocastEnabled)
+                {
+                    pet->ToggleAutocast(growlInfo, false);
+                    if (CharmInfo* charmInfo = pet->GetCharmInfo())
+                        charmInfo->SetSpellAutocast(growlInfo, false);
+
+                    std::string raw = BuildRawJson(bot, source);
+                    std::string semantic = BuildSemanticJson(bot, source,
+                        "validation_route_patrol_pull", &power, stage, activity);
+                    RecordEvent(state, bot, "validation_route_patrol_pull", source,
+                        "pet_growl_autocast_disabled", raw.c_str(),
+                        semantic.c_str(), bot->GetExactDist(source),
+                        source->GetEntry(), HUNTER_PET_GROWL_SPELL_ID);
+                }
+            }
+
+            // A pet can have opened the native combat reference before this
+            // route tick. Remove only that pet-to-current-source edge so the
+            // preparation branch gets a fresh, unengaged observation.
+            if (pet && pet->GetVictim() == source)
+                pet->AttackStop();
+            if (pet)
+            {
+                auto const& combatReferences =
+                    pet->GetCombatManager().GetPvECombatRefs();
+                auto referenceItr = combatReferences.find(source->GetGUID());
+                if (referenceItr != combatReferences.end()
+                    && referenceItr->second)
+                    referenceItr->second->EndCombat();
+            }
+        }
+
+        // Compute engagement only after the hunter pet's native pre-pull edge
+        // has been closed. Any other cohort member's engagement stays
+        // authoritative and is intentionally not rewritten.
+        bool const sourceEngaged = isValidationCohortCombatLinked(source);
 
         if (!sourceEngaged)
         {
@@ -212,12 +285,6 @@ bool BotWorldPopulationMgr::TryValidationRoutePatrolPull(
                 return hold("validation_route_patrol_chase_path_rejected", source);
             }
 
-            auto const roster = Cohort().Raid.RosterByGuid.find(
-                bot->GetGUID().GetCounter());
-            bool const pullOwner = roster != Cohort().Raid.RosterByGuid.end()
-                && roster->second.Active && roster->second.LeaseOwned
-                && roster->second.SlotIndex + 1
-                    == Cohort().Config.ValidationRoutePatrolPullOwnerRosterSlot;
             if (!pullOwner)
                 return hold("validation_route_patrol_wait_for_puller", source);
 
@@ -227,7 +294,14 @@ bool BotWorldPopulationMgr::TryValidationRoutePatrolPull(
                 Player* member = GetLoadedBot(cohortState);
                 auto const memberRoster = Cohort().Raid.RosterByGuid.find(
                     cohortState.Guid.GetCounter());
-                if (member && memberRoster != Cohort().Raid.RosterByGuid.end()
+                if (member && member->IsInWorld() && member->IsAlive()
+                    && member->GetHealth() && bot->GetGroup()
+                    && member->GetGroup() == bot->GetGroup()
+                    && member->GetMap() == bot->GetMap()
+                    && IsValidationCohortMemberInOriginalInstance(
+                        cohortState, member)
+                    && member != bot
+                    && memberRoster != Cohort().Raid.RosterByGuid.end()
                     && memberRoster->second.Active
                     && memberRoster->second.LeaseOwned
                     && memberRoster->second.Role == "tank"
@@ -239,16 +313,33 @@ bool BotWorldPopulationMgr::TryValidationRoutePatrolPull(
             if (!tank)
                 return hold("validation_route_patrol_puller_no_tank", source);
 
-            if (bot->getClass() == CLASS_HUNTER && bot->HasSpell(34477)
-                && !bot->HasAura(34477)
-                && TryCastFriendlySpell(bot, tank, 34477))
+            if (hunterPullOwner
+                && !bot->HasAura(HUNTER_MISDIRECTION_SPELL_ID))
             {
+                if (!bot->HasSpell(HUNTER_MISDIRECTION_SPELL_ID))
+                    return hold(
+                        "validation_route_patrol_misdirection_unavailable",
+                        source);
+
+                std::string failureReason;
+                if (!TryCastFriendlySpell(bot, tank,
+                        HUNTER_MISDIRECTION_SPELL_ID, &failureReason))
+                {
+                    state.LastNoProgressReason = failureReason.empty()
+                        ? "patrol_misdirection_failed"
+                        : "patrol_misdirection_failed:" + failureReason;
+                    return hold(
+                        "validation_route_patrol_wait_for_misdirection",
+                        source);
+                }
+
                 std::string raw = BuildRawJson(bot, source);
                 std::string semantic = BuildSemanticJson(bot, source,
                     "validation_route_patrol_pull", &power, stage, activity);
                 RecordEvent(state, bot, "validation_route_patrol_pull", source,
-                    "misdirection_to_anchor_tank", raw.c_str(), semantic.c_str(),
-                    bot->GetExactDist(source), source->GetEntry(), 34477);
+                    "misdirection_to_anchor_tank", raw.c_str(),
+                    semantic.c_str(), bot->GetExactDist(source),
+                    source->GetEntry(), HUNTER_MISDIRECTION_SPELL_ID);
                 target = source;
                 state.TargetGuid = source->GetGUID();
                 situation = "validation_route_patrol_pull";

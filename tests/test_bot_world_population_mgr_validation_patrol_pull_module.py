@@ -37,6 +37,73 @@ def test_validation_patrol_pull_keeps_native_pull_contract():
         assert marker in text
 
 
+def test_hunter_patrol_pull_resolves_a_live_same_group_tank():
+    text = MODULE.read_text()
+    tank_selection = text.index("Player* tank = nullptr;")
+    tank_selection_end = text.index("if (!tank)", tank_selection)
+    selector = text[tank_selection:tank_selection_end]
+
+    for marker in (
+        "member->IsInWorld()",
+        "member->IsAlive()",
+        "bot->GetGroup()",
+        "member->GetGroup() == bot->GetGroup()",
+        "member->GetMap() == bot->GetMap()",
+        "member != bot",
+        'memberRoster->second.Role == \"tank\"',
+    ):
+        assert marker in selector
+
+
+def test_hunter_patrol_preparation_orders_growl_misdirection_before_pull():
+    text = MODULE.read_text()
+    hunter_preparation = text.index("if (hunterPullOwner)")
+    growl_disable = text.index("pet->ToggleAutocast(growlInfo, false)",
+                               hunter_preparation)
+    engagement_observation = text.index(
+        "bool const sourceEngaged = isValidationCohortCombatLinked(source);",
+        hunter_preparation,
+    )
+    misdirection = text.index(
+        "TryCastFriendlySpell(bot, tank,", engagement_observation)
+    ranged_pull = text.index("ResolveProfileCombatAction(", misdirection)
+
+    assert growl_disable < engagement_observation
+    assert engagement_observation < misdirection < ranged_pull
+    assert text.index("validation_route_patrol_wait_for_misdirection",
+                      misdirection) < ranged_pull
+
+
+def test_hunter_patrol_disables_only_native_growl_autocast():
+    text = MODULE.read_text()
+    hunter_preparation = text.index("if (hunterPullOwner)")
+    misdirection = text.index("HUNTER_MISDIRECTION_SPELL_ID", hunter_preparation)
+    pet_setup = text[hunter_preparation:misdirection]
+
+    assert "HUNTER_PET_GROWL_SPELL_ID = 2649" in text
+    assert "growlInfo->IsAutocastable()" in pet_setup
+    assert "pet->HasSpell(\n                    HUNTER_PET_GROWL_SPELL_ID)" in pet_setup
+    assert "pet->ToggleAutocast(growlInfo, false)" in pet_setup
+    assert "charmInfo->SetSpellAutocast(growlInfo, false)" in pet_setup
+    assert '"pet_growl_autocast_disabled"' in pet_setup
+    assert "Bite and all" in text
+
+
+def test_hunter_pet_edge_is_closed_before_unengaged_gate():
+    text = MODULE.read_text()
+    hunter_preparation = text.index("if (hunterPullOwner)")
+    attack_stop = text.index("pet->AttackStop()", hunter_preparation)
+    end_pet_reference = text.index("referenceItr->second->EndCombat()",
+                                  attack_stop)
+    engagement_observation = text.index(
+        "bool const sourceEngaged = isValidationCohortCombatLinked(source);",
+        end_pet_reference,
+    )
+
+    assert attack_stop < end_pet_reference < engagement_observation
+    assert "pet->CombatStop" not in text[hunter_preparation:engagement_observation]
+
+
 def test_engaged_patrol_releases_this_bot_to_the_ordinary_action_queue():
     text = MODULE.read_text()
     engaged = text.index("if (!sourceEngaged)")
