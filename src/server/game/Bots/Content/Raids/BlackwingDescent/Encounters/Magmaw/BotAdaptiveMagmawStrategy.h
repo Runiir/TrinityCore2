@@ -402,8 +402,7 @@ private:
         bool const litCrash = actor.Entry == RoomStalkerEntry
             && HasAura(actor, 87949);
         bool const parasite = IsParasiteEntry(actor.Entry);
-        bool const crash = actor.Entry == CrashEntry;
-        return actor.Alive && (litCrash || parasite || crash);
+        return actor.Alive && (litCrash || parasite);
     }
 
     static MagmawHazardObservation ObserveHazards(Blackboard const& board,
@@ -652,7 +651,7 @@ private:
 
     static bool IsCrashHazard(ActorSnapshot const& actor)
     {
-        return actor.Entry == RoomStalkerEntry || actor.Entry == CrashEntry;
+        return actor.Entry == RoomStalkerEntry && HasAura(actor, 87949);
     }
 
     static bool HasMangleAura(ActorSnapshot const& actor)
@@ -662,8 +661,10 @@ private:
 
     static bool IsPincerWarningActor(ActorSnapshot const& actor)
     {
-        return actor.Alive && (actor.Entry == CrashEntry
-            || (actor.Entry == RoomStalkerEntry && HasAura(actor, 87949)));
+        // Persistent Massive Crash dummies are not a transient telegraph;
+        // only the lit Room Stalker carries that native warning state.
+        return actor.Alive && actor.Entry == RoomStalkerEntry
+            && HasAura(actor, 87949);
     }
 
     static bool PincerWarningObserved(Blackboard const& board)

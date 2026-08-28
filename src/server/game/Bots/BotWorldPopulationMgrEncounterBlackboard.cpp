@@ -25,8 +25,7 @@ bool IsMagmawPincerWarningCreature(BotEncounter::RouteView const& route,
 {
     if (route.NodeId != "bwd.magmaw.encounter" || !creature.IsAlive())
         return false;
-    return creature.GetEntry() == 47330
-        || (creature.GetEntry() == 47196 && creature.HasAura(87949));
+    return creature.GetEntry() == 47196 && creature.HasAura(87949);
 }
 }
 
@@ -239,8 +238,8 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
                 if (creature->IsSummon())
                     snapshot->Summons.push_back(std::move(actor));
                 else if (pincerWarning)
-                    // Native warning creatures are not attack targets, but
-                    // their visibility is the existing pincer warning fact.
+                    // The transient lit Room Stalker is not an attack target,
+                    // but its aura is the native pincer warning fact.
                     snapshot->Hostiles.push_back(std::move(actor));
                 else if (actor.Interactable || routeObserved)
                     snapshot->Interactables.push_back(std::move(actor));

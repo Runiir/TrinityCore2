@@ -799,8 +799,10 @@ int main()
     BotEncounter::Blackboard magmawCrash = magmaw;
     magmawCrash.Summons.clear();
     BotEncounter::ActorSnapshot crash = magmawBoss;
-    crash.Guid = ObjectGuid(HighGuid::Unit, uint32(47330), uint32(74));
-    crash.Entry = BotEncounter::AdaptiveMagmawStrategy::CrashEntry;
+    crash.Guid = ObjectGuid(HighGuid::Unit, uint32(47196), uint32(74));
+    crash.Entry = BotEncounter::AdaptiveMagmawStrategy::RoomStalkerEntry;
+    crash.Auras = {
+        BotEncounter::AuraSnapshot{ 87949u, ObjectGuid{}, 1, 0 } };
     crash.Position = { 2.0f, 0.0f, 0.0f };
     magmawCrash.Hostiles = { magmawBoss, magmawHead, crash };
     auto magmawCrashPlan = magmawStrategy.Propose(
@@ -1324,6 +1326,79 @@ int main()
                     == "pincer_preposition" ? 1 : 0);
     assert(pincerPrepositionCount == 2);
 
+    auto isPincerPreposition = [](BotEncounter::AdaptiveMagmawPlan const& plan)
+    {
+        return plan.Movement.has_value()
+            && plan.Movement->Id.Mechanic == "pincer_preposition";
+    };
+
+    // The persistent Massive Crash dummy is not an adaptive observation. It
+    // must leave all actors on normal formation from the start of the fight.
+    BotEncounter::Blackboard persistentCrash = magmawPincerPreposition;
+    persistentCrash.Players[2].Auras.clear();
+    persistentCrash.Players[0].Position = { 10.0f, 0.0f, 0.0f };
+    persistentCrash.Players[1].Position = { 10.0f, 0.0f, 0.0f };
+    BotEncounter::ActorSnapshot persistentCrashActor = magmawBoss;
+    persistentCrashActor.Guid = ObjectGuid(HighGuid::Unit, uint32(47330),
+        uint32(108));
+    persistentCrashActor.Entry = BotEncounter::AdaptiveMagmawStrategy::CrashEntry;
+    persistentCrashActor.Position = {
+        persistentCrash.Players[1].Position.X + 2.0f,
+        persistentCrash.Players[1].Position.Y, 0.0f };
+    persistentCrash.Hostiles.push_back(persistentCrashActor);
+    auto persistentCrashFirst = magmawStrategy.Propose(
+        persistentCrash, hookBot.Guid, "dps");
+    auto persistentCrashSecond = magmawStrategy.Propose(
+        persistentCrash, secondHookBot.Guid, "dps");
+    auto persistentCrashNonAssigned = magmawStrategy.Propose(
+        persistentCrash, nonHookBot.Guid, "healer");
+    assert(persistentCrashFirst.Movement.has_value());
+    assert(persistentCrashFirst.Movement->Id.Mechanic
+        == "ranged_formation_restore");
+    assert(persistentCrashSecond.Movement.has_value());
+    assert(persistentCrashSecond.Movement->Id.Mechanic
+        == "ranged_formation_restore");
+    assert(persistentCrashNonAssigned.Movement.has_value());
+    assert(persistentCrashNonAssigned.Movement->Id.Mechanic
+        == "ranged_formation_restore");
+    assert(!isPincerPreposition(persistentCrashFirst));
+    assert(!isPincerPreposition(persistentCrashSecond));
+    assert(!isPincerPreposition(persistentCrashNonAssigned));
+    int const persistentCrashPincerCount =
+        (isPincerPreposition(persistentCrashFirst) ? 1 : 0)
+        + (isPincerPreposition(persistentCrashSecond) ? 1 : 0)
+        + (isPincerPreposition(persistentCrashNonAssigned) ? 1 : 0);
+    assert(persistentCrashPincerCount == 0);
+
+    // The transient native Room Stalker light is the other warning source;
+    // it retains the same deterministic two-DPS assignment as player Mangle.
+    BotEncounter::Blackboard litRoomStalker = magmawPincerPreposition;
+    litRoomStalker.Players[2].Auras.clear();
+    BotEncounter::ActorSnapshot litRoomStalkerActor = persistentCrashActor;
+    litRoomStalkerActor.Guid = ObjectGuid(HighGuid::Unit, uint32(47196),
+        uint32(109));
+    litRoomStalkerActor.Entry =
+        BotEncounter::AdaptiveMagmawStrategy::RoomStalkerEntry;
+    litRoomStalkerActor.Auras = {
+        BotEncounter::AuraSnapshot{ 87949u, ObjectGuid{}, 1, 0 } };
+    litRoomStalkerActor.Position = {
+        magmawBoss.Position.X + 20.0f, magmawBoss.Position.Y, 0.0f };
+    litRoomStalker.Hostiles.push_back(litRoomStalkerActor);
+    auto litRoomStalkerFirst = magmawStrategy.Propose(
+        litRoomStalker, hookBot.Guid, "dps");
+    auto litRoomStalkerSecond = magmawStrategy.Propose(
+        litRoomStalker, secondHookBot.Guid, "dps");
+    auto litRoomStalkerNonAssigned = magmawStrategy.Propose(
+        litRoomStalker, nonHookBot.Guid, "healer");
+    assert(isPincerPreposition(litRoomStalkerFirst));
+    assert(isPincerPreposition(litRoomStalkerSecond));
+    assert(!isPincerPreposition(litRoomStalkerNonAssigned));
+    int const litRoomStalkerPincerCount =
+        (isPincerPreposition(litRoomStalkerFirst) ? 1 : 0)
+        + (isPincerPreposition(litRoomStalkerSecond) ? 1 : 0)
+        + (isPincerPreposition(litRoomStalkerNonAssigned) ? 1 : 0);
+    assert(litRoomStalkerPincerCount == 2);
+
     // Without a warning, the assigned user remains on normal ranged
     // formation logic. A warning-local Pillar retains survival ownership over
     // prepositioning and never turns into a mechanic-owned move.
@@ -1348,13 +1423,17 @@ int main()
         crashWarning, hookBot.Guid, "dps");
     assert(crashPrepositionPlan.Movement.has_value());
     assert(crashPrepositionPlan.Movement->Id.Mechanic
-        == "pincer_preposition");
+        == "ranged_formation_restore");
 
-    // A warning does not suppress immediate Crash survival. When the native
-    // telegraph is already within the existing 12-yard escape radius, that
-    // Survival candidate wins over mechanic prepositioning.
+    // A lit Room Stalker is both the native Crash telegraph and the pincer
+    // warning. When it is already within the existing 12-yard escape radius,
+    // the Survival candidate wins over mechanic prepositioning.
     BotEncounter::Blackboard immediateCrash = magmawPincerPreposition;
     BotEncounter::ActorSnapshot immediateCrashActor = crashWarningActor;
+    immediateCrashActor.Entry =
+        BotEncounter::AdaptiveMagmawStrategy::RoomStalkerEntry;
+    immediateCrashActor.Auras = {
+        BotEncounter::AuraSnapshot{ 87949u, ObjectGuid{}, 1, 0 } };
     immediateCrashActor.Position = {
         immediateCrash.Players[1].Position.X + 2.0f,
         immediateCrash.Players[1].Position.Y, 0.0f };

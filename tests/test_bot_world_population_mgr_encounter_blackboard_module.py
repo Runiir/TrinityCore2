@@ -52,8 +52,11 @@ def test_encounter_blackboard_retains_magmaw_native_pincer_warning():
     text = MODULE.read_text()
     assert "IsMagmawPincerWarningCreature" in text
     assert 'route.NodeId != "bwd.magmaw.encounter"' in text
-    assert "creature.GetEntry() == 47330" in text
-    assert "creature.GetEntry() == 47196 && creature.HasAura(87949)" in text
+    pincer_start = text.index("bool IsMagmawPincerWarningCreature")
+    pincer = text[pincer_start:text.index("\n}\n}", pincer_start)]
+    assert "creature.GetEntry() == 47330" not in pincer
+    assert "creature.GetEntry() == 47196 && creature.HasAura(87949)" in pincer
+    assert "creature.GetEntry() == 47330" not in text[pincer_start:]
     assert "else if (pincerWarning)" in text
     assert "snapshot->Hostiles.push_back(std::move(actor));" in text
 
