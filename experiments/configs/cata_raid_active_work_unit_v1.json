@@ -2,8 +2,8 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "runtime:blackwing_descent:magmaw:chainwielder_melee_future_pack_guard",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "implementation_required",
-  "observed_at_commit": "946f48e676d2db47469c96e72563e1baffea3ead",
+  "classification": "implementation_pending_live_verification",
+  "observed_at_commit": "5d4afeb9bb6399824bf6f156c292efae290b5953",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_946f48e676_chainwielder_melee_future_guard_handoff_20260828.md",
     "sha256": "4fce2d26f37ea7489228b4f165fc1fc9c0c84032a03e363af746a00ba44a949b"
@@ -52,5 +52,5 @@
     "live_run_allowed": false,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "A Luna max runtime specialist should close the proven explicit-melee future-pack movement bypass, add focused coverage, and return a source-only handoff for root review."
+  "next_action": "Root should build exact commit 5d4afeb9bb6399824bf6f156c292efae290b5953, provision a fresh Magmaw shard, and verify zero generation-2 Drudge damage before advancing through Drudges to Magmaw."
 }
