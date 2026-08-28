@@ -4275,6 +4275,80 @@ def test_live_bot_validation_suppresses_stale_error_during_mixed_kernel_trash_ha
     assert "bot_diagnosis_error" not in report["failure_labels"]
 
 
+@pytest.mark.parametrize(
+    ("in_combat", "candidate_source", "candidate_key", "candidate_reason", "action", "expected_transition_errors"),
+    [
+        (False, "adaptive_magmaw", "adaptive_magmaw:prepull_health_suppress:4", "", "prepull_health_recovery", 1),
+        (False, "adaptive_magmaw", "adaptive_magmaw:prepull_health_suppress:4", "", "trained_heal", 1),
+        (False, "validation_route_adapter", "world.validation_route_action", "adaptive_magmaw_owns_live_encounter", "cast_combat_spell", 1),
+        (True, "adaptive_magmaw", "adaptive_magmaw:prepull_health_suppress:4", "", "prepull_health_recovery", 0),
+        (False, "validation_route_adapter", "adaptive_magmaw:prepull_health_suppress:4", "", "prepull_health_recovery", 0),
+    ],
+)
+def test_live_bot_validation_only_defers_exact_magmaw_formation_error(
+    in_combat: bool,
+    candidate_source: str,
+    candidate_key: str,
+    candidate_reason: str,
+    action: str,
+    expected_transition_errors: int,
+):
+    diagnosis = {
+        "diagnosis_schema_version": 1,
+        "bots": [
+            {
+                "identity": {"bot_guid": 1},
+                "diagnosis": {
+                    "diagnosis_code": "blocked_no_fallback",
+                    "severity": "error",
+                    "evidence": [
+                        {"name": "in_combat", "value": in_combat},
+                        {"name": "validation_route_advance_mode", "value": "terminal"},
+                        {"name": "validation_route_advance_pending", "value": False},
+                        {"name": "validation_route_config_kind", "value": "boss"},
+                        {"name": "validation_route_pack_observed_engagement", "value": False},
+                    ],
+                    "decision_kernel": {
+                        "candidates": [
+                            {
+                                "key": candidate_key,
+                                "source": candidate_source,
+                                "status": "attempted",
+                                "reason": candidate_reason,
+                            },
+                            {
+                                "key": "world.profile_combat",
+                                "reason": "no_live_combat_target",
+                                "source": "db_class_spec_profile",
+                                "status": "attempted",
+                            },
+                        ]
+                    },
+                },
+                "snapshot": {
+                    "decision": {
+                        "action": action,
+                        "situation": "adaptive_magmaw" if action == "prepull_health_recovery" else "adaptive_raid_support",
+                    }
+                },
+            }
+        ],
+    }
+    output = "\n".join(
+        [
+            'TC> {"active_bots":1,"target_bots":1,"action":"botauto_status","decisions":20}',
+            "TC> " + json.dumps(diagnosis),
+            'TC> {"trace_schema_version":1,"entries":[{"action":"prepull_health_recovery"}]}',
+            'TC> {"duration_minutes":1,"decisions":20}',
+        ]
+    )
+
+    report = live_validation_report(output)
+
+    assert report["evidence"]["route_transition_error_diagnoses"] == expected_transition_errors
+    assert ("bot_diagnosis_error" in report["failure_labels"]) is (expected_transition_errors == 0)
+
+
 def test_live_bot_validation_keeps_active_combat_route_error_actionable():
     output = "\n".join(
         [

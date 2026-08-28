@@ -3116,31 +3116,53 @@ def is_route_transition_diagnosis(row: dict[str, Any]) -> bool:
         for item in evidence_rows
         if isinstance(item, dict) and item.get("name")
     }
-    if (
-        evidence.get("in_combat") not in (False, 0)
-        or evidence.get("validation_route_advance_mode") != "terminal"
-        or evidence.get("validation_route_advance_pending") is not True
-        or evidence.get("validation_route_advance_reason") != "trash_cluster_cleared"
-    ):
+    if evidence.get("in_combat") not in (False, 0):
         return False
 
     candidates = kernel.get("candidates")
     if not isinstance(candidates, list):
         return False
-    return any(
-        isinstance(candidate, dict)
-        and candidate.get("source") == "validation_route_adapter"
-        and candidate.get("key") in {
-            "world.validation_route_action",
-            "world.validation_route_movement",
-        }
-        and candidate.get("reason") == "trash_cluster_cleared"
-        and (candidate.get("phase"), candidate.get("status")) in {
-            ("terminal", "attempted"),
-            ("deferred", "backoff"),
-        }
-        for candidate in candidates
+    trash_handoff = (
+        evidence.get("validation_route_advance_mode") == "terminal"
+        and evidence.get("validation_route_advance_pending") is True
+        and evidence.get("validation_route_advance_reason") == "trash_cluster_cleared"
+        and any(
+            isinstance(candidate, dict)
+            and candidate.get("source") == "validation_route_adapter"
+            and candidate.get("key") in {
+                "world.validation_route_action",
+                "world.validation_route_movement",
+            }
+            and candidate.get("reason") == "trash_cluster_cleared"
+            and (candidate.get("phase"), candidate.get("status")) in {
+                ("terminal", "attempted"),
+                ("deferred", "backoff"),
+            }
+            for candidate in candidates
+        )
     )
+    boss_formation = (
+        evidence.get("validation_route_advance_mode") == "terminal"
+        and evidence.get("validation_route_advance_pending") is False
+        and evidence.get("validation_route_config_kind") == "boss"
+        and evidence.get("validation_route_pack_observed_engagement") is False
+        and any(
+            isinstance(candidate, dict)
+            and candidate.get("status") == "attempted"
+            and (
+                (
+                    candidate.get("source") == "adaptive_magmaw"
+                    and str(candidate.get("key") or "").startswith("adaptive_magmaw:prepull_")
+                )
+                or (
+                    candidate.get("source") == "validation_route_adapter"
+                    and candidate.get("reason") == "adaptive_magmaw_owns_live_encounter"
+                )
+            )
+            for candidate in candidates
+        )
+    )
+    return trash_handoff or boss_formation
 
 
 def scenario_bool(report: dict[str, Any], *keys: str) -> bool:
