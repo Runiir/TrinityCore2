@@ -51,6 +51,6 @@
     "live_run_allowed": false,
     "commit_allowed_after_root_review": true
   },
-  "implementation_commit": "f7ed2769d2161f92cdb34283057a04512536389d",
+  "implementation_commit": "f7ed2769d2b005f4b6f03624c5b7467ffa486996",
   "next_action": "Root builds the exact implementation commit under the guarded fast4 policy and runs one fresh completion-watchdog canary. Generation 2 must contain no entry-42362 damage, then both Drudges must clear and Magmaw must be reached."
 }
