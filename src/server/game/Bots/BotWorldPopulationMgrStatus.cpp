@@ -510,6 +510,7 @@ std::string BotWorldPopulationMgr::GetCombatLogJson() const
     json << std::fixed << std::setprecision(3)
          << "{\"ok\":true,\"action\":\"botauto_combatlog\",\"cohort_id\":\"" << JsonEscape(Cohort().Id)
          << "\",\"combat_log_schema_version\":2"
+         << ",\"damage_attribution_schema\":\"originated_amount_v1\""
          << ",\"experiment_id\":" << Cohort().ExperimentId
          << ",\"run_id\":" << Cohort().RunId
          << ",\"event_count\":" << Party().CombatLogEventCount
@@ -546,6 +547,8 @@ std::string BotWorldPopulationMgr::GetCombatLogJson() const
              << ",\"last_at_ms\":" << value.LastAtMs
              << ",\"event_count\":" << value.EventCount
              << ",\"amount\":" << value.Amount
+             << ",\"originated_amount\":" << value.OriginatedAmount
+             << ",\"shared_amount\":" << value.SharedAmount
              << ",\"raw_amount\":" << value.RawAmount
              << ",\"absorbed_amount\":" << value.AbsorbedAmount
              << ",\"moving_events\":" << value.MovingEvents
@@ -557,7 +560,7 @@ std::string BotWorldPopulationMgr::GetCombatLogJson() const
 
     json << "],\"second_buckets\":[";
     first = true;
-    for (auto const& [key, amount] : Party().CombatLogSecondBuckets)
+    for (auto const& [key, bucket] : Party().CombatLogSecondBuckets)
     {
         if (!first)
             json << ',';
@@ -567,7 +570,8 @@ std::string BotWorldPopulationMgr::GetCombatLogJson() const
              << ",\"actor_guid\":" << std::get<2>(key)
              << ",\"source_is_pet\":" << (std::get<3>(key) ? "true" : "false")
              << ",\"second\":" << std::get<4>(key)
-             << ",\"amount\":" << amount << '}';
+             << ",\"amount\":" << bucket.RawAmount
+             << ",\"originated_amount\":" << bucket.OriginatedAmount << '}';
     }
 
     json << "],\"recent_events\":[";
@@ -596,6 +600,7 @@ std::string BotWorldPopulationMgr::GetCombatLogJson() const
              << ",\"effect_type\":" << event.EffectType
              << ",\"school_mask\":" << event.SchoolMask
              << ",\"amount\":" << event.Amount
+             << ",\"originated_amount\":" << event.OriginatedAmount
              << ",\"raw_amount\":" << event.RawAmount
              << ",\"absorbed_amount\":" << event.AbsorbedAmount
              << ",\"source_x\":" << event.SourceX
@@ -606,7 +611,8 @@ std::string BotWorldPopulationMgr::GetCombatLogJson() const
              << ",\"target_z\":" << event.TargetZ
              << ",\"distance\":" << event.Distance
              << ",\"source_moving\":" << (event.SourceMoving ? "true" : "false")
-             << ",\"source_is_pet\":" << (event.SourceIsPet ? "true" : "false") << '}';
+             << ",\"source_is_pet\":" << (event.SourceIsPet ? "true" : "false")
+             << ",\"shared_damage\":" << (event.SharedDamage ? "true" : "false") << '}';
     }
     json << "],\"failure_reason\":null}";
     return json.str();

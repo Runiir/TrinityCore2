@@ -147,7 +147,7 @@
         uint64 NextHealCastId = 1;
         std::map<uint64, PendingHealCast> PendingHealCasts;
         std::map<CombatLogAbilityKey, CombatLogAbilityAggregate> CombatLogAbilities;
-        std::map<std::tuple<uint64, CombatLogPerspective, uint32, bool, uint64>, uint64> CombatLogSecondBuckets;
+        std::map<std::tuple<uint64, CombatLogPerspective, uint32, bool, uint64>, CombatLogSecondBucket> CombatLogSecondBuckets;
         std::deque<CombatLogEvent> CombatLogRecentEvents;
         uint64 CombatLogEventCount = 0;
         uint64 CombatLogRecentEventsDropped = 0;

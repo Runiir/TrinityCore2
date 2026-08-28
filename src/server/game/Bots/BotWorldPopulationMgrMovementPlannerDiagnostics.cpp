@@ -65,6 +65,7 @@ bool MatchesRequest(MovementPlannerObservation const& observation,
         && observation.RequestedY == intent.Y
         && observation.RequestedZ == intent.Z
         && observation.MovementOwner == intent.Owner
+        && observation.IntentReason == intent.IntentReason
         && observation.AllowProgressiveSegments
             == intent.AllowProgressiveSegments
         && observation.RequireCompletePath == intent.RequireCompletePath
@@ -94,6 +95,7 @@ void MovementPlannerDiagnosticSidecar::FinalizeExecutor(
     observation.RequestedY = intent.Y;
     observation.RequestedZ = intent.Z;
     observation.MovementOwner = intent.Owner;
+    observation.IntentReason = intent.IntentReason;
     observation.AllowProgressiveSegments = intent.AllowProgressiveSegments;
     observation.RequireCompletePath = intent.RequireCompletePath;
     observation.AllowNativeLongPath = intent.AllowNativeLongPath;
@@ -177,6 +179,7 @@ void RecordMovementPlannerOutcome(std::uint64_t botGuid,
     observation.RequestedY = intent.Y;
     observation.RequestedZ = intent.Z;
     observation.MovementOwner = intent.Owner;
+    observation.IntentReason = intent.IntentReason;
     observation.TargetFloorSampled = targetFloorSampled;
     observation.TargetFloorZ = targetFloorZ;
     observation.TargetFloorValid = targetFloorSampled && targetFloorValid;

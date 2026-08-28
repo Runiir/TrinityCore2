@@ -24,8 +24,12 @@ def test_diagnose_embeds_bounded_combat_metrics() -> None:
 def test_metrics_match_post_run_active_combat_denominator() -> None:
     source = METRICS.read_text(encoding="utf-8")
     for contract in (
-        "bot_combat_metrics_v1",
-        "active_party_damage_seconds",
+        "bot_combat_metrics_v2",
+        "originated_damage",
+        "raw_event_basis",
+        "originated_damage_seconds",
+        "raw_event_damage",
+        "raw_event_dps",
         "Party().ValidationRouteGeneration",
         "CombatLogPerspective::DamageDone",
         "CombatLogPerspective::HealingDone",
@@ -43,3 +47,21 @@ def test_metrics_module_stays_small_and_separate_from_diagnosis_policy() -> None
     source = METRICS.read_text(encoding="utf-8")
     assert len(source.splitlines()) < 200
     assert "BuildBotDiagnosis" not in source
+
+
+def test_combat_log_attribution_contract_is_explicit() -> None:
+    contracts = (
+        ROOT / "src/server/game/Bots/BotWorldPopulationMgrPlanningContracts.h",
+        ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp",
+        ROOT / "src/server/game/Bots/BotWorldPopulationMgrStatus.cpp",
+    )
+    source = "\n".join(path.read_text(encoding="utf-8") for path in contracts)
+    for marker in (
+        "OriginatedAmount",
+        "SharedAmount",
+        "CombatLogSecondBucket",
+        "IsSharedDamageCallback",
+        "SPELL_AURA_SHARE_DAMAGE_PCT",
+        "shared_damage",
+    ):
+        assert marker in source

@@ -222,7 +222,7 @@ Player* BotWorldPopulationMgr::FindCombatLogCohortPlayer(Unit* unit) const
 
 void BotWorldPopulationMgr::AddCombatLogAggregate(CombatLogPerspective perspective, Player* actor, Unit* source,
     Unit* target, uint32 spellId, uint32 effectType, uint32 amount, uint32 rawAmount, uint32 absorbedAmount,
-    uint64 timestampMs)
+    uint64 timestampMs, bool sharedDamage)
 {
     if (!actor || !source || !target)
         return;
@@ -257,6 +257,10 @@ void BotWorldPopulationMgr::AddCombatLogAggregate(CombatLogPerspective perspecti
     aggregate.LastAtMs = timestampMs;
     ++aggregate.EventCount;
     aggregate.Amount += amount;
+    if (sharedDamage)
+        aggregate.SharedAmount += amount;
+    else
+        aggregate.OriginatedAmount += amount;
     aggregate.RawAmount += rawAmount;
     aggregate.AbsorbedAmount += absorbedAmount;
     aggregate.MovingEvents += source->isMoving() ? 1 : 0;
@@ -264,13 +268,17 @@ void BotWorldPopulationMgr::AddCombatLogAggregate(CombatLogPerspective perspecti
     if (aggregate.MinDistance < 0.0f || distance < aggregate.MinDistance)
         aggregate.MinDistance = distance;
     aggregate.MaxDistance = std::max(aggregate.MaxDistance, distance);
-    Party().CombatLogSecondBuckets[std::make_tuple(Party().ValidationRouteGeneration, perspective,
-        actor->GetGUID().GetCounter(), sourceIsPet, timestampMs / 1000)] += amount;
+    CombatLogSecondBucket& bucket = Party().CombatLogSecondBuckets[std::make_tuple(
+        Party().ValidationRouteGeneration, perspective, actor->GetGUID().GetCounter(),
+        sourceIsPet, timestampMs / 1000)];
+    bucket.RawAmount += amount;
+    if (!sharedDamage)
+        bucket.OriginatedAmount += amount;
 }
 
 void BotWorldPopulationMgr::AddCombatLogEvent(char const* kind, Player* actor, Unit* source, Unit* target,
     uint32 spellId, uint32 effectType, uint32 schoolMask, uint32 amount, uint32 rawAmount,
-    uint32 absorbedAmount, uint64 timestampMs)
+    uint32 absorbedAmount, uint64 timestampMs, bool sharedDamage)
 {
     if (!actor || !source || !target)
         return;
@@ -295,6 +303,7 @@ void BotWorldPopulationMgr::AddCombatLogEvent(char const* kind, Player* actor, U
     event.EffectType = effectType;
     event.SchoolMask = schoolMask;
     event.Amount = amount;
+    event.OriginatedAmount = sharedDamage ? 0 : amount;
     event.RawAmount = rawAmount;
     event.AbsorbedAmount = absorbedAmount;
     event.SourceX = source->GetPositionX();
@@ -306,6 +315,7 @@ void BotWorldPopulationMgr::AddCombatLogEvent(char const* kind, Player* actor, U
     event.Distance = source->GetExactDist(target);
     event.SourceMoving = source->isMoving();
     event.SourceIsPet = source != actor && CombatOwnerPlayer(source) == actor;
+    event.SharedDamage = sharedDamage;
     Party().CombatLogRecentEvents.push_back(std::move(event));
     static constexpr size_t MaxRecentCombatEvents = 4096;
     if (Party().CombatLogRecentEvents.size() > MaxRecentCombatEvents)

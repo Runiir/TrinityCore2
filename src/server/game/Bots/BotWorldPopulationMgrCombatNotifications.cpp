@@ -24,6 +24,15 @@ namespace
 constexpr uint32 CalibrationSingleTargetDurationMs = 300000;
 constexpr uint32 ShadowBiteSpellId = 54049;
 
+bool IsSharedDamageCallback(uint32 spellId, uint32 damageType)
+{
+    if (damageType != uint32(NODAMAGE) || !spellId)
+        return false;
+
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+    return spellInfo && spellInfo->HasAura(SPELL_AURA_SHARE_DAMAGE_PCT);
+}
+
 struct PendingPeriodicOutcome
 {
     Unit* Attacker = nullptr;
@@ -223,7 +232,8 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
     if (!Cohort().Active || !attacker || !victim || (!damage && !unmitigatedDamage))
         return;
 
-    if (Cohort().CalibrationScoredStartedMs
+    bool const sharedDamage = IsSharedDamageCallback(spellId, damageType);
+    if (!sharedDamage && Cohort().CalibrationScoredStartedMs
         && !Cohort().CalibrationWindowComplete
         && attacker->GetGUID()
             == Cohort().CalibrationFixtureTargetGuid
@@ -245,6 +255,8 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
             bool const scored = Cohort().CalibrationScoredStartedMs && !Cohort().CalibrationWindowComplete
                 && nowMs >= Cohort().CalibrationScoredStartedMs
                 && windowElapsedMs < CalibrationSingleTargetDurationMs;
+            if (scored && sharedDamage)
+                return;
             if (scored)
                 ObserveWillOfUnbinding(calibration->second, owner, nowMs);
             if (!scored)
@@ -446,10 +458,10 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
     ++Party().CombatLogEventCount;
     if (sourceActor)
         AddCombatLogAggregate(CombatLogPerspective::DamageDone, sourceActor, attacker, victim, spellId,
-            damageType, damage, unmitigatedDamage, 0, nowMs);
+            damageType, damage, unmitigatedDamage, 0, nowMs, sharedDamage);
     if (targetActor)
         AddCombatLogAggregate(CombatLogPerspective::DamageTaken, targetActor, attacker, victim, spellId,
-            damageType, damage, unmitigatedDamage, 0, nowMs);
+            damageType, damage, unmitigatedDamage, 0, nowMs, sharedDamage);
     AddCombatLogEvent("damage", sourceActor ? sourceActor : targetActor, attacker, victim, spellId,
-        damageType, schoolMask, damage, unmitigatedDamage, 0, nowMs);
+        damageType, schoolMask, damage, unmitigatedDamage, 0, nowMs, sharedDamage);
 }

@@ -13,6 +13,9 @@ STATUS = BOT_DIR / "BotWorldPopulationMgrStatus.cpp"
 EXECUTOR = BOT_DIR / "BotWorldPopulationMgrMovementExecutor.cpp"
 RUNTIME = BOT_DIR / "BotWorldPopulationMgrValidationRouteRuntime.cpp"
 UPDATE = BOT_DIR / "BotWorldPopulationMgrUpdate.cpp"
+NATIVE_ACTION = BOT_DIR / "BotWorldPopulationMgrNativeAction.cpp"
+MOVEMENT = BOT_DIR / "BotWorldPopulationMgrMovement.cpp"
+KERNEL_CANDIDATES = BOT_DIR / "BotWorldPopulationMgrUpdateBotKernelCandidates.cpp"
 BOT_STATE = BOT_DIR / "BotWorldPopulationMgrBotState.h"
 MANAGER = BOT_DIR / "BotWorldPopulationMgr.h"
 CMAKE = ROOT / "src/server/game/CMakeLists.txt"
@@ -20,6 +23,7 @@ CMAKE = ROOT / "src/server/game/CMakeLists.txt"
 
 HARNESS = r"""
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
+#include "Bots/BotNativeActionIntent.h"
 
 #include <cassert>
 #include <cmath>
@@ -71,6 +75,12 @@ MovementPlannerObservation InvalidZ()
 
 int main()
 {
+    BotNativeAction::Intent annotated = BotNativeAction::WithMovementReason(
+        BotNativeAction::Move{1.0f, 2.0f, 3.0f}, "pincer_preposition");
+    auto const* annotatedMove = std::get_if<BotNativeAction::Move>(&annotated);
+    assert(annotatedMove);
+    assert(annotatedMove->IntentReason == "pincer_preposition");
+
     MovementPlannerDiagnosticSidecar sidecar;
     sidecar.Record(InvalidFloor());
     std::string invalidFloorJson = MovementPlannerObservationJson(
@@ -109,6 +119,21 @@ int main()
     assert(retained.Gate == "active_path");
     assert(retained.Result == "retained");
     assert(retained.Reason == "native_movement_retained");
+
+    MovementPlannerObservation reasonObservation = InvalidZ();
+    reasonObservation.IntentReason = "pincer_preposition";
+    sidecar.Record(reasonObservation);
+    Intent reasonRequest = invalidZRequest;
+    reasonRequest.IntentReason = "pincer_preposition";
+    sidecar.FinalizeExecutor(30002, 669, reasonRequest, "active_path",
+        "retained", "native_movement_retained");
+    MovementPlannerObservation retainedWithReason = sidecar.Latest(30002);
+    assert(retainedWithReason.IntentReason == "pincer_preposition");
+    std::string reasonJson = MovementPlannerObservationJson(
+        retainedWithReason);
+    assert(reasonJson.find(
+        "\"intent_reason\":\"pincer_preposition\"")
+        != std::string::npos);
 
     MovementPlannerObservation success = InvalidFloor();
     success.TargetFloorZ = 214.2f;
@@ -175,6 +200,8 @@ def test_sidecar_state_and_json_contract(tmp_path):
             "-I",
             str(ROOT / "src/server/game"),
             "-I",
+            str(ROOT / "src/server/game/Entities/Object"),
+            "-I",
             str(ROOT / "src/common"),
             str(harness),
             str(SOURCE),
@@ -193,6 +220,9 @@ def test_planner_trace_diagnosis_and_lifecycle_wiring():
     diagnosis = DIAGNOSIS.read_text(encoding="utf-8")
     status = STATUS.read_text(encoding="utf-8")
     executor = EXECUTOR.read_text(encoding="utf-8")
+    native_action = NATIVE_ACTION.read_text(encoding="utf-8")
+    movement = MOVEMENT.read_text(encoding="utf-8")
+    kernel_candidates = KERNEL_CANDIDATES.read_text(encoding="utf-8")
     runtime = RUNTIME.read_text(encoding="utf-8")
     update = UPDATE.read_text(encoding="utf-8")
 
@@ -214,6 +244,9 @@ def test_planner_trace_diagnosis_and_lifecycle_wiring():
     assert "MovementPlannerDiagnostics().ForTrace" in status
     assert '#include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"' in executor
     assert "RecordMovementPlannerExecutorOutcome" in executor
+    assert "action.IntentReason" in native_action
+    assert "intent.IntentReason = movementReason" in movement
+    assert kernel_candidates.count("WithMovementReason") >= 7
     for gate in (
         "cross_map_pending",
         "movement_lease",

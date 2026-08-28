@@ -134,6 +134,107 @@ def test_analyze_combat_log_reports_dps_rotation_and_positioning():
     }
 
 
+def test_shared_damage_copies_are_raw_but_not_originated_dps():
+    abilities = []
+    for index, originated_amount in enumerate((100, 0, 0)):
+        abilities.append(
+            {
+                "route_generation": 4,
+                "route_node_id": "magmaw",
+                "route_label": "Magmaw",
+                "perspective": "damage_done",
+                "actor_guid": 10,
+                "actor_name": "Felmake",
+                "actor_role": "dps",
+                "actor_class_id": 9,
+                "source_entry": 416,
+                "source_name": "Felhunter",
+                "source_is_pet": True,
+                "spell_id": 12345,
+                "spell_name": "Shadow Bite",
+                "target_entry": 41570,
+                "target_name": "Magmaw",
+                "first_at_ms": 1000,
+                "last_at_ms": 1000,
+                "event_count": 1,
+                "amount": 100,
+                "originated_amount": originated_amount,
+                "shared_damage": index > 0,
+            }
+        )
+    abilities.append(
+        {
+            "route_generation": 4,
+            "route_node_id": "magmaw",
+            "route_label": "Magmaw",
+            "perspective": "healing_done",
+            "actor_guid": 10,
+            "actor_name": "Felmake",
+            "actor_role": "dps",
+            "actor_class_id": 9,
+            "source_entry": 10,
+            "source_name": "Felmake",
+            "source_is_pet": False,
+            "spell_id": 999,
+            "spell_name": "A Test Heal",
+            "target_entry": 10,
+            "target_name": "Felmake",
+            "first_at_ms": 1000,
+            "last_at_ms": 1000,
+            "event_count": 1,
+            "amount": 50,
+            "originated_amount": 50,
+        }
+    )
+    report = analyze_combat_log(
+        {
+            "combat_log_schema_version": 2,
+            "event_count": 4,
+            "abilities": abilities,
+            "second_buckets": [
+                {
+                    "route_generation": 4,
+                    "perspective": "damage_done",
+                    "actor_guid": 10,
+                    "source_is_pet": True,
+                    "second": 1,
+                    "amount": 300,
+                    "originated_amount": 100,
+                },
+                {
+                    "route_generation": 4,
+                    "perspective": "healing_done",
+                    "actor_guid": 10,
+                    "source_is_pet": False,
+                    "second": 1,
+                    "amount": 50,
+                    "originated_amount": 50,
+                },
+            ],
+        }
+    )
+
+    encounter = report["encounters"][0]
+    assert encounter["party_damage"] == 100
+    assert encounter["party_dps"] == 100
+    assert encounter["raw_event_damage"] == 300
+    assert encounter["raw_event_dps"] == 300
+    assert encounter["party_healing"] == 50
+    assert encounter["party_hps"] == 50
+    actor = encounter["actors"][0]
+    assert actor["damage"] == 100
+    assert actor["raw_event_damage"] == 300
+    assert actor["dps"] == 100
+    assert actor["raw_event_dps"] == 300
+    assert actor["pet_damage"] == 100
+    assert actor["raw_event_pet_damage"] == 300
+    assert actor["pet_damage_share"] == 1.0
+    assert actor["raw_event_pet_damage_share"] == 1.0
+    assert actor["abilities"][0]["damage"] == 100
+    assert actor["abilities"][0]["raw_event_damage"] == 300
+    assert actor["abilities"][0]["originated_damage"] == 100
+
+
 def test_live_validation_attaches_combat_analysis_and_logs_only_at_cleanup():
     combat_log = combat_log_fixture()
     output = "\n".join(

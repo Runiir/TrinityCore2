@@ -126,7 +126,8 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
         if constexpr (std::is_same_v<T, BotNativeAction::Move>)
         {
             bool moved = MoveBotToPoint(state, bot, action.X, action.Y, action.Z,
-                false, movementOwner, movementPriority);
+                false, movementOwner, movementPriority, nullptr, 0.0f,
+                action.IntentReason);
             return moved
                 ? BotActionArbitration::Outcome::Submitted("native_move_submitted")
                 : BotActionArbitration::Outcome::Retryable("native_move_retryable");

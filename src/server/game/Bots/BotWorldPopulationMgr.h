@@ -31,6 +31,7 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -294,13 +295,15 @@ private:
         bool terminalOnFailure = false,
         BotMovementArbitration::Owner movementOwner = BotMovementArbitration::Owner::None,
         BotMovementArbitration::Priority movementPriority = BotMovementArbitration::Priority::Idle,
-        Unit* dynamicTarget = nullptr, float dynamicTargetRange = 0.0f);
+        Unit* dynamicTarget = nullptr, float dynamicTargetRange = 0.0f,
+        std::string_view movementReason = {});
     bool MoveBotToPointWithReferenceFloor(
         WorldBotState& state, Player* bot, float x, float y, float z,
         std::optional<float> referenceFloorZ, bool terminalOnFailure,
         BotMovementArbitration::Owner movementOwner,
         BotMovementArbitration::Priority movementPriority,
-        Unit* dynamicTarget = nullptr, float dynamicTargetRange = 0.0f);
+        Unit* dynamicTarget = nullptr, float dynamicTargetRange = 0.0f,
+        std::string_view movementReason = {});
     bool ExecuteMovementIntent(WorldBotState& state, Player* bot,
         BotWorldMovement::Intent const& intent);
     BotMovementArbitration::Request BuildMovementRequest(
@@ -708,9 +711,11 @@ private:
     void ResetCombatLog();
     Player* FindCombatLogCohortPlayer(Unit* unit) const;
     void AddCombatLogAggregate(CombatLogPerspective perspective, Player* actor, Unit* source, Unit* target,
-        uint32 spellId, uint32 effectType, uint32 amount, uint32 rawAmount, uint32 absorbedAmount, uint64 timestampMs);
+        uint32 spellId, uint32 effectType, uint32 amount, uint32 rawAmount, uint32 absorbedAmount,
+        uint64 timestampMs, bool sharedDamage = false);
     void AddCombatLogEvent(char const* kind, Player* actor, Unit* source, Unit* target, uint32 spellId,
-        uint32 effectType, uint32 schoolMask, uint32 amount, uint32 rawAmount, uint32 absorbedAmount, uint64 timestampMs);
+        uint32 effectType, uint32 schoolMask, uint32 amount, uint32 rawAmount, uint32 absorbedAmount,
+        uint64 timestampMs, bool sharedDamage = false);
 
 #include "Bots/BotWorldPopulationMgrCalibrationMetrics.h"
     static void ObserveCalibrationEffectiveStats(Unit* unit,

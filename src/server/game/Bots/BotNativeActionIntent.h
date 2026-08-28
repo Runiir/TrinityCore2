@@ -4,13 +4,28 @@
 #include "Bots/BotActionArbiter.h"
 #include "ObjectGuid.h"
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <variant>
 
 namespace BotNativeAction
 {
 struct CastSpell { ObjectGuid Target; uint32 SpellId = 0; };
-struct Move { float X = 0.0f; float Y = 0.0f; float Z = 0.0f; };
+struct Move
+{
+    float X = 0.0f;
+    float Y = 0.0f;
+    float Z = 0.0f;
+    // Preserve the candidate identity that admitted this movement. The
+    // top-level decision label may be replaced by a simultaneous combat
+    // candidate later in the same tick.
+    std::string IntentReason;
+
+    Move() = default;
+    Move(float x, float y, float z) : X(x), Y(y), Z(z) { }
+    Move(float x, float y, float z, std::string_view reason)
+        : X(x), Y(y), Z(z), IntentReason(reason) { }
+};
 // Combat resurrection uses dedicated intents because its reservation identity
 // must survive selection and be revalidated at the native submission edge.
 // Generic Move/CastSpell cannot express that owner/target/spell contract.
@@ -72,6 +87,17 @@ using Intent = std::variant<CastSpell, Move, CombatResApproach,
     CombatResCast, CombatResAccept, NativeDescent,
     GossipOpen, GossipSelect, SpellClick, GameObjectUse, AreaTrigger, VehicleEnter, VehicleAction,
     VehicleExit, PetCommand, UseItem, ReleaseSpirit, ReclaimCorpse>;
+
+inline Intent WithMovementReason(Intent intent, std::string_view reason)
+{
+    std::visit([reason](auto& action)
+    {
+        using T = std::decay_t<decltype(action)>;
+        if constexpr (std::is_same_v<T, Move>)
+            action.IntentReason = std::string(reason);
+    }, intent);
+    return intent;
+}
 
 inline BotActionArbitration::ResourceMask RequiredResources(Intent const& intent)
 {

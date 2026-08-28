@@ -69,7 +69,9 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             movement.UtilityScore = context.AdaptiveDrudgeMovement->Utility;
             movement.RequiredResources = context.AdaptiveDrudgeMovement->Resources();
             movement.ExpiresAtMs = context.AdaptiveDrudgeMovement->ExpiresAtMs;
-            movement.Attempt = [&, intent = context.AdaptiveDrudgeMovement->Action]()
+            movement.Attempt = [&, intent = BotNativeAction::WithMovementReason(
+                context.AdaptiveDrudgeMovement->Action,
+                context.AdaptiveDrudgeMovement->Id.Mechanic)]()
             {
                 BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
                     context.State, context.Bot, intent, BotMovementArbitration::Owner::Mechanic,
@@ -101,7 +103,9 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                 movement.UtilityScore = intent.Utility;
                 movement.RequiredResources = intent.Resources();
                 movement.ExpiresAtMs = intent.ExpiresAtMs;
-                movement.Attempt = [&, nativeIntent = intent.Action,
+                movement.Attempt = [&, nativeIntent =
+                    BotNativeAction::WithMovementReason(intent.Action,
+                        intent.Id.Mechanic),
                     lease = *movementLease, mechanic = intent.Id.Mechanic]()
                 {
                     BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
@@ -129,7 +133,9 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             mechanic.UtilityScore = context.AdaptiveMagmawInteraction->Utility;
             mechanic.RequiredResources = context.AdaptiveMagmawInteraction->Resources();
             mechanic.ExpiresAtMs = context.AdaptiveMagmawInteraction->ExpiresAtMs;
-            mechanic.Attempt = [&, intent = context.AdaptiveMagmawInteraction->Action]()
+            mechanic.Attempt = [&, intent = BotNativeAction::WithMovementReason(
+                context.AdaptiveMagmawInteraction->Action,
+                context.AdaptiveMagmawInteraction->Id.Mechanic)]()
             {
                 BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
                     context.State, context.Bot, intent, BotMovementArbitration::Owner::Mechanic,
@@ -192,7 +198,9 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             movement.UtilityScore = context.AdaptiveOmnotronMovement->Utility;
             movement.RequiredResources = context.AdaptiveOmnotronMovement->Resources();
             movement.ExpiresAtMs = context.AdaptiveOmnotronMovement->ExpiresAtMs;
-            movement.Attempt = [&, intent = context.AdaptiveOmnotronMovement->Action]()
+            movement.Attempt = [&, intent = BotNativeAction::WithMovementReason(
+                context.AdaptiveOmnotronMovement->Action,
+                context.AdaptiveOmnotronMovement->Id.Mechanic)]()
             {
                 BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
                     context.State, context.Bot, intent, BotMovementArbitration::Owner::Hazard,
@@ -295,7 +303,9 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             movement.UtilityScore = context.AdaptiveMaloriakMovement->Utility;
             movement.RequiredResources = context.AdaptiveMaloriakMovement->Resources();
             movement.ExpiresAtMs = context.AdaptiveMaloriakMovement->ExpiresAtMs;
-            movement.Attempt = [&, intent = context.AdaptiveMaloriakMovement->Action]()
+            movement.Attempt = [&, intent = BotNativeAction::WithMovementReason(
+                context.AdaptiveMaloriakMovement->Action,
+                context.AdaptiveMaloriakMovement->Id.Mechanic)]()
             {
                 BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
                     context.State, context.Bot, intent, BotMovementArbitration::Owner::Hazard,
@@ -400,7 +410,9 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             movement.UtilityScore = context.AdaptiveChimaeronMovement->Utility;
             movement.RequiredResources = context.AdaptiveChimaeronMovement->Resources();
             movement.ExpiresAtMs = context.AdaptiveChimaeronMovement->ExpiresAtMs;
-            movement.Attempt = [&, intent = context.AdaptiveChimaeronMovement->Action]()
+            movement.Attempt = [&, intent = BotNativeAction::WithMovementReason(
+                context.AdaptiveChimaeronMovement->Action,
+                context.AdaptiveChimaeronMovement->Id.Mechanic)]()
             {
                 BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
                     context.State, context.Bot, intent, BotMovementArbitration::Owner::Mechanic,
@@ -429,7 +441,9 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             candidate.UtilityScore = intent.Utility;
             candidate.RequiredResources = intent.Resources();
             candidate.ExpiresAtMs = intent.ExpiresAtMs;
-            candidate.Attempt = [&, nativeIntent = intent.Action, actionName,
+            candidate.Attempt = [&, nativeIntent =
+                BotNativeAction::WithMovementReason(intent.Action,
+                    intent.Id.Mechanic), actionName,
                 movementOwner, movementPriority]()
             {
                 BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
@@ -465,7 +479,9 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             movement.UtilityScore = context.AdaptiveNefarianMovement->Utility;
             movement.RequiredResources = context.AdaptiveNefarianMovement->Resources();
             movement.ExpiresAtMs = context.AdaptiveNefarianMovement->ExpiresAtMs;
-            movement.Attempt = [&, intent = context.AdaptiveNefarianMovement->Action]()
+            movement.Attempt = [&, intent = BotNativeAction::WithMovementReason(
+                context.AdaptiveNefarianMovement->Action,
+                context.AdaptiveNefarianMovement->Id.Mechanic)]()
             {
                 BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
                     context.State, context.Bot, intent, BotMovementArbitration::Owner::Hazard,

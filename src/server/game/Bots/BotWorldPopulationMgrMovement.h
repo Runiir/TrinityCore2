@@ -79,6 +79,7 @@ struct Intent
     bool AllowRecentFailureRetry = false;
     bool AllowNativeLongPath = false;
     bool NativeRecoveryCrossMapPending = false;
+    std::string IntentReason;
 };
 
 struct PathPlan

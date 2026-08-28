@@ -368,7 +368,11 @@
         uint64 FirstAtMs = 0;
         uint64 LastAtMs = 0;
         uint64 EventCount = 0;
+        // Amount retains every landed damage callback for forensic totals.
+        // OriginatedAmount excludes engine-generated share-damage callbacks.
         uint64 Amount = 0;
+        uint64 OriginatedAmount = 0;
+        uint64 SharedAmount = 0;
         uint64 RawAmount = 0;
         uint64 AbsorbedAmount = 0;
         uint64 MovingEvents = 0;
@@ -376,6 +380,14 @@
         float MinDistance = -1.0f;
         float MaxDistance = 0.0f;
         bool SourceIsPet = false;
+    };
+
+    struct CombatLogSecondBucket
+    {
+        // RawAmount is every landed damage event in this second.
+        // OriginatedAmount is the subset attributable to the original source.
+        uint64 RawAmount = 0;
+        uint64 OriginatedAmount = 0;
     };
 
     struct CombatLogEvent
@@ -399,6 +411,7 @@
         uint32 EffectType = 0;
         uint32 SchoolMask = 0;
         uint32 Amount = 0;
+        uint32 OriginatedAmount = 0;
         uint32 RawAmount = 0;
         uint32 AbsorbedAmount = 0;
         float SourceX = 0.0f;
@@ -410,6 +423,7 @@
         float Distance = 0.0f;
         bool SourceMoving = false;
         bool SourceIsPet = false;
+        bool SharedDamage = false;
     };
 
     struct SemanticOutcomeStats
@@ -504,4 +518,3 @@
     };
 
 #endif
-
