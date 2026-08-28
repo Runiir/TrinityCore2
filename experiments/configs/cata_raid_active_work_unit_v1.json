@@ -1,14 +1,14 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:blackwing_descent:magmaw:10N:pincer_preposition_replay",
+  "work_unit": "runtime:blackwing_descent:magmaw:10N:pincer_warning_observation_fix",
   "owner_skill": "raid-bot-runtime-implementation",
   "classification": "implementation_pending_live_verification",
-  "observed_at_commit": "8f7a40d015368abcc55070c0a4a3a679011d46f4",
+  "observed_at_commit": "5815d48fa454b8783e053c08291d7878cabb2055",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_canary94_preposition_handoff_20260828.md",
-    "sha256": "4dbfeea37750f605411b79bbe079645268595d3f6c9f3ff14c5ad2033ca8085a"
+    "path": "experiments/configs/cata_raid_magmaw_c4dff8b7_pincer_warning_handoff_20260828.md",
+    "sha256": "f8b8cc2ce41504d62e229f2219d945637af46e251930ae2aab07053d52e9631f"
   },
-  "first_broken_edge": "assigned_hook_users_begin_native_pincer_approach_too_far_away_after_the_short_interaction_window_opens",
+  "first_broken_edge": "native_mangle_and_massive_crash_warning_was_not_retained_at_the_typed_pincer_preposition_boundary",
   "decisive_evidence": {
     "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
     "route_node_id": "bwd.magmaw.encounter",
@@ -16,25 +16,22 @@
     "drudges_cleared": true,
     "magmaw_reached": true,
     "magmaw_killed": false,
-    "first_dead_guid": 30009,
-    "first_death_last_spell_id": 77971,
-    "first_death_mangle_ticks": 0,
-    "second_dead_guid": 30001,
-    "second_death_last_spell_id": 89773,
-    "second_death_mangle_ticks": null,
+    "total_deaths": 11,
+    "mangle_89773_events": 4,
+    "massive_crash_88287_events": 1,
+    "pincer_preposition_observed": 0,
+    "pincer_approach_observed": 0,
     "native_pincer_mounts_observed": 0,
     "native_hook_launches_observed": 0,
-    "later_pillar_death_guid": 30009,
-    "later_pillar_hits_across_seconds": 6,
     "terminal_failure_reason": "semantic_progress_plateau",
-    "reported_party_dps_invalid_shared_health_callbacks": 218398.818,
-    "party_hps": 22043.215,
-    "reported_affliction_dps_invalid_shared_health_callbacks": 43687.606,
-    "affliction_pet_damage_raw_event": 3715156,
-    "affliction_pet_damage_share_raw_event": 0.281587,
-    "dps_accounting_repair_commit": "c93529f796d4cc08d5b6c263a7239cef167f78ac",
-    "magma_spit_max_retained_unique_victims_per_volley": 3,
-    "magma_spit_prior_first_volley_landed_hits": 24,
+    "originated_party_dps": 91967.717,
+    "party_hps": 13124.949,
+    "originated_affliction_dps": 20330.406,
+    "affliction_pet_damage": 770427,
+    "affliction_pet_damage_share": 0.275,
+    "report_sha256": "68bfac9ed9eab275bb88f6bc9179e53ac929f3254c46727336415268a24517fb",
+    "heartbeat_sha256": "160405b02e9d97e7ad2061c0304df01da6da66b7fdc9c0994a96d9950041e1dc",
+    "map_at_crash_recurred": false,
     "diagnose_includes_dps_hps": true,
     "forbidden_assistance_observed": false,
     "cleanup_passed": true,
@@ -43,12 +40,11 @@
   "repair_scope": {
     "status": "trace_backed_repair_authorized",
     "allowed": [
-      "retain_pincer_approach_for_assigned_hook_users_during_native_interaction_window",
-      "preposition_only_two_deterministic_living_dps_hook_assignees_during_native_mangle_or_crash_warning",
+      "retain_native_nonattackable_magmaw_warning_actors_in_the_encounter_blackboard",
+      "preposition_only_two_deterministic_living_dps_during_native_mangle_or_crash_warning",
       "preserve_immediate_local_pillar_escape",
       "preserve_massive_crash_survival_priority",
-      "carry_movement_mechanic_identity_into_planner_diagnostics",
-      "exclude_generic_shared_health_copies_from_originated_dps_while_preserving_raw_event_damage"
+      "carry_movement_mechanic_identity_into_planner_diagnostics"
     ],
     "forbidden_shortcuts": [
       "remove_or_reduce_mangle",
@@ -69,22 +65,16 @@
     "matched_live_verification_runs": 1
   },
   "implementation_checkpoint": {
-    "gameplay_commit": "6226d3c024fbb23d08b09ddf82d8d8c37fb20866",
+    "gameplay_commit": "5815d48fa454b8783e053c08291d7878cabb2055",
     "diagnostic_commit": "c93529f796d4cc08d5b6c263a7239cef167f78ac",
     "status": "focused_tests_passed_exact_build_authorized",
-    "focused_tests_passed": 34,
-    "strategy_header_lines": 705,
-    "strategy_average_ccn": 4.5,
-    "strategy_maximum_ccn": 15,
-    "canary94_runtime_commit": "8f7a40d015368abcc55070c0a4a3a679011d46f4",
-    "canary94_report_sha256": "91a107b64c0ece5a15e6a03ecab39adfe898200a123f5ccd88b0029507438297",
-    "canary94_raw_sha256": "750236acf28417ab01f30a2a4cd19fd1190c1acb60b02586d21ff72004d56609",
-    "canary94_log_sha256": "a8f3d5d49642e6d43151b645574a18f68b22ade63c2598f8ccf8532b38327f97",
-    "canary94_combat_log_chunks": 319,
-    "canary94_evidence_demux_passed": true,
-    "canary94_combat_log_transport_passed": true,
-    "magma_spit_behaviorally_accepted": true,
-    "magma_spit_exact_cast_receipt_pending": true,
+    "focused_tests_passed": 18,
+    "strategy_header_lines": 994,
+    "blackboard_cpp_lines": 294,
+    "publish_encounter_blackboard_ccn_before": 63,
+    "publish_encounter_blackboard_ccn_after": 65,
+    "input_canary_runtime_commit": "c4dff8b71aa4fe3a818195e774f7e2d4ad79789a",
+    "input_canary_report_sha256": "68bfac9ed9eab275bb88f6bc9179e53ac929f3254c46727336415268a24517fb",
     "live_clear_claimed": false
   },
   "implementation_constraints": {
@@ -94,5 +84,5 @@
     "live_run_allowed": true,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "Commit this exact-build authorization, obtain a coordinator receipt for the resulting commit, then freshly provision and run Canary95 with the completion watchdog."
+  "next_action": "Commit this exact-build authorization, build with the guarded eight-job policy, then freshly provision and run one matched completion-watchdog canary."
 }
