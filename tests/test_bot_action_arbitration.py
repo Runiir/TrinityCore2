@@ -1815,7 +1815,8 @@ def test_raid_healing_is_independent_and_does_not_cancel_hazard_movement() -> No
     assert "activeNativeMovementPath" in support_capture
     assert "&activeNativeMovementPath" not in support_capture
     assert "bool const instantHealRequired =" in support
-    assert "adaptiveHazardMovementProposed\n                        || activeNativeMovementPath()" in support
+    assert "bool const instantHealRequired = activeNativeMovementPath();" in support
+    assert "adaptiveHazardMovementProposed" not in support
     assert "SelectHealSpell(\n                        context.Bot, healTarget, instantHealRequired)" in support
     assert support.index("activeNativeMovementPath()") < support.index("SelectHealSpell(")
     assert '"adaptive_heal_resolve"' in support

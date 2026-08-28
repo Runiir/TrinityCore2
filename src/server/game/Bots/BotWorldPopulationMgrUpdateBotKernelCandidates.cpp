@@ -597,7 +597,6 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             context.State.DecisionKernel.Submit(std::move(ownership));
         }
 
-        bool adaptiveHazardMovementProposed = false;
         if (Cohort().EncounterSnapshot)
         {
             BotEncounter::AdaptiveRaidTrashStrategy adaptiveTrash;
@@ -618,7 +617,6 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             }
             if (hazard && hazard->ExpiresAtMs > context.DecisionNowMs)
             {
-                adaptiveHazardMovementProposed = true;
                 BotActionArbitration::Candidate candidate;
                 candidate.Key = hazard->Id.Key();
                 candidate.Source = hazard->Id.Strategy;
@@ -679,7 +677,9 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
         // cast cannot cancel the player's dodge spline. Re-evaluate the
         // native path inside the attempt because the route adapter runs as a
         // higher-priority candidate and may have submitted movement this
-        // tick after these candidates were assembled.
+        // tick after these candidates were assembled. A merely proposed
+        // hazard is not enough: failed or losing movement candidates must
+        // leave hard-cast healing available to the native resolver.
         if (Cohort().EncounterSnapshot && std::string(GetDungeonRole(context.Bot)) == "healer"
             && !context.AdaptiveChimaeronHealingDisabled)
         {
@@ -710,17 +710,14 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                 support.RequiredResources = BotActionArbitration::Uses(
                     BotActionArbitration::Resource::GlobalCooldown,
                     BotActionArbitration::Resource::Cast);
-                support.Attempt = [&, healTargetGuid, adaptiveHazardMovementProposed,
-                    activeNativeMovementPath]()
+                support.Attempt = [&, healTargetGuid, activeNativeMovementPath]()
                 {
                     Unit* healTarget = ObjectAccessor::GetUnit(*context.Bot, healTargetGuid);
                     if (!healTarget || !healTarget->IsAlive()
                         || !context.Bot->IsValidAssistTarget(healTarget))
                         return BotActionArbitration::Outcome::Retryable(
                             "heal_target_stale");
-                    bool const instantHealRequired =
-                        adaptiveHazardMovementProposed
-                        || activeNativeMovementPath();
+                    bool const instantHealRequired = activeNativeMovementPath();
                     uint32 const healSpell = SelectHealSpell(
                         context.Bot, healTarget, instantHealRequired);
                     ResolvedCombatAction healAction;
