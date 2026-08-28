@@ -2397,6 +2397,278 @@ def boss_route_health_progress(entries: list[dict[str, Any]]) -> int:
     return route_health_progress(entries)
 
 
+def _route_progress_metadata(
+    entry: dict[str, Any], route: dict[str, Any]
+) -> tuple[str, int, str]:
+    """Resolve route identity for a nested progress sample."""
+    node_id = str(route.get("node_id") or route.get("route_node_id") or "")
+    generation = int(route.get("generation") or route.get("route_generation") or 0)
+    route_kind = str(route.get("kind") or route.get("route_kind") or "").lower()
+    if node_id and generation > 0 and route_kind:
+        return node_id, generation, route_kind
+
+    fallback_node, fallback_generation = route_scope(entry)
+    if not node_id:
+        node_id = fallback_node
+    if generation <= 0:
+        generation = fallback_generation
+    if not route_kind:
+        route_kind = str(entry.get("route_kind") or "").lower()
+    validation_route = entry.get("validation_route")
+    if isinstance(validation_route, dict):
+        if not node_id:
+            node_id = str(validation_route.get("node_id") or validation_route.get("route_node_id") or "")
+        if generation <= 0:
+            generation = int(validation_route.get("generation") or validation_route.get("route_generation") or 0)
+        if not route_kind:
+            route_kind = str(validation_route.get("kind") or validation_route.get("route_kind") or "").lower()
+    return node_id, generation, route_kind
+
+
+def _route_progress_health(
+    candidate: dict[str, Any],
+) -> float | None:
+    for key in ("hp_pct", "health_pct", "aggregate_hp_pct", "aggregate_health_pct"):
+        if key not in candidate:
+            continue
+        try:
+            health = float(candidate.get(key))
+        except (TypeError, ValueError):
+            return None
+        if math.isfinite(health) and 0.0 < health <= 1.0:
+            return health
+    return None
+
+
+def _route_health_signal_samples(
+    entry: dict[str, Any], order: tuple[int, ...]
+) -> list[dict[str, Any]]:
+    """Extract attributable target or stable pack health from one payload row."""
+    samples: list[dict[str, Any]] = []
+    owners: list[dict[str, Any]] = [entry]
+    for key in ("diagnosis", "snapshot"):
+        owner = entry.get(key)
+        if isinstance(owner, dict):
+            owners.append(owner)
+    for owner in owners:
+        route_progress = owner.get("route_progress")
+        if not isinstance(route_progress, dict):
+            continue
+        route = route_progress.get("route")
+        route = route if isinstance(route, dict) else {}
+        node_id, generation, route_kind = _route_progress_metadata(entry, route)
+        if (
+            route_kind not in ROUTE_HEALTH_PROGRESS_KINDS
+            or not node_id
+            or generation <= 0
+        ):
+            continue
+
+        candidates: list[tuple[str, dict[str, Any]]] = []
+        target = route_progress.get("target")
+        if isinstance(target, dict):
+            candidates.append(("target", target))
+        for pack_key in ("engaged_pack", "pack"):
+            pack = route_progress.get(pack_key)
+            if isinstance(pack, dict):
+                candidates.append(("pack", pack))
+        targets = route_progress.get("targets")
+        if isinstance(targets, list):
+            candidates.extend(
+                ("target", target)
+                for target in targets
+                if isinstance(target, dict)
+            )
+
+        for identity_kind, candidate in candidates:
+            health = _route_progress_health(candidate)
+            if health is None:
+                continue
+            target_guid = int(
+                candidate.get("guid")
+                or candidate.get("target_guid")
+                or candidate.get("id")
+                or 0
+            )
+            target_entry = int(
+                candidate.get("entry")
+                or candidate.get("target_entry")
+                or 0
+            )
+            if target_guid <= 0 or target_entry <= 0:
+                continue
+            samples.append(
+                {
+                    "kind": identity_kind,
+                    "route_node_id": node_id,
+                    "route_generation": generation,
+                    "target_guid": target_guid,
+                    "target_entry": target_entry,
+                    "hp_pct": health,
+                    "order": order,
+                }
+            )
+    return samples
+
+
+def live_combat_progress_snapshot(
+    diagnoses: list[dict[str, Any]],
+    entries: list[dict[str, Any]],
+    combat_metrics: dict[str, Any] | None = None,
+) -> dict[str, list[dict[str, Any]]]:
+    """Return current route-scoped combat samples for heartbeat comparisons.
+
+    The snapshot is intentionally separate from durable evidence counters.  A
+    watchdog heartbeat may reset its semantic plateau clock only when a target
+    or stable pack has strictly less health, or when the same route's
+    cumulative originated damage strictly increases.  Route generation and
+    target identity are part of every comparison key.
+    """
+    reset_epochs: Counter[tuple[str, int]] = Counter()
+    for entry in entries:
+        if not boss_attempt_reset(entry):
+            continue
+        scope = route_scope(entry)
+        if scope == ("", 0):
+            route_progress = entry.get("route_progress")
+            route_progress = route_progress if isinstance(route_progress, dict) else {}
+            route = route_progress.get("route")
+            route = route if isinstance(route, dict) else {}
+            node_id, generation, _kind = _route_progress_metadata(entry, route)
+            scope = (node_id, generation)
+        if scope != ("", 0):
+            reset_epochs[scope] += 1
+
+    health_by_key: dict[tuple[Any, ...], dict[str, Any]] = {}
+    for index, entry in enumerate(entries):
+        for sample in _route_health_signal_samples(entry, (0, index)):
+            scope = (sample["route_node_id"], sample["route_generation"])
+            sample["attempt_epoch"] = reset_epochs[scope]
+            key = (
+                sample["kind"],
+                sample["route_node_id"],
+                sample["route_generation"],
+                sample["target_guid"],
+                sample["target_entry"],
+                sample["attempt_epoch"],
+            )
+            previous = health_by_key.get(key)
+            if previous is None or sample["hp_pct"] <= previous["hp_pct"]:
+                health_by_key[key] = sample
+    for index, diagnosis in enumerate(diagnoses):
+        for sample in _route_health_signal_samples(diagnosis, (1, index)):
+            scope = (sample["route_node_id"], sample["route_generation"])
+            sample["attempt_epoch"] = reset_epochs[scope]
+            key = (
+                sample["kind"],
+                sample["route_node_id"],
+                sample["route_generation"],
+                sample["target_guid"],
+                sample["target_entry"],
+                sample["attempt_epoch"],
+            )
+            previous = health_by_key.get(key)
+            if previous is None or sample["hp_pct"] <= previous["hp_pct"]:
+                health_by_key[key] = sample
+
+    metrics_rows: list[dict[str, Any]] = []
+    if isinstance(combat_metrics, dict):
+        try:
+            generation = int(combat_metrics.get("route_generation") or 0)
+            party_damage = int(combat_metrics.get("party_damage") or 0)
+        except (TypeError, ValueError):
+            generation = 0
+            party_damage = 0
+        node_id = str(combat_metrics.get("route_node_id") or "")
+        if (
+            combat_metrics.get("schema") == "bot_combat_metrics_v2"
+            and combat_metrics.get("available") is True
+            and node_id
+            and generation > 0
+            and party_damage >= 0
+        ):
+            metrics_rows.append(
+                {
+                    "route_node_id": node_id,
+                    "route_generation": generation,
+                    "attempt_epoch": reset_epochs[(node_id, generation)],
+                    "party_damage": party_damage,
+                }
+            )
+
+    def clean(row: dict[str, Any]) -> dict[str, Any]:
+        return {key: value for key, value in row.items() if key != "order"}
+
+    return {
+        "health": [clean(health_by_key[key]) for key in sorted(health_by_key, key=str)],
+        "damage": sorted(metrics_rows, key=lambda row: (row["route_node_id"], row["route_generation"])),
+    }
+
+
+def live_combat_progress_advanced(
+    previous: dict[str, Any] | None,
+    current: dict[str, Any] | None,
+) -> bool:
+    """Return true only for strict same-scope live combat advancement."""
+    if not isinstance(previous, dict) or not isinstance(current, dict):
+        return False
+
+    previous_health = {
+        (
+            row.get("kind"),
+            row.get("route_node_id"),
+            int(row.get("route_generation") or 0),
+            int(row.get("target_guid") or 0),
+            int(row.get("target_entry") or 0),
+            int(row.get("attempt_epoch") or 0),
+        ): float(row.get("hp_pct"))
+        for row in previous.get("health") or []
+        if isinstance(row, dict)
+    }
+    for row in current.get("health") or []:
+        if not isinstance(row, dict):
+            continue
+        key = (
+            row.get("kind"),
+            row.get("route_node_id"),
+            int(row.get("route_generation") or 0),
+            int(row.get("target_guid") or 0),
+            int(row.get("target_entry") or 0),
+            int(row.get("attempt_epoch") or 0),
+        )
+        try:
+            health = float(row.get("hp_pct"))
+        except (TypeError, ValueError):
+            continue
+        if key in previous_health and health < previous_health[key] - BOSS_HEALTH_PROGRESS_EPSILON:
+            return True
+
+    previous_damage = {
+        (
+            row.get("route_node_id"),
+            int(row.get("route_generation") or 0),
+            int(row.get("attempt_epoch") or 0),
+        ): int(row.get("party_damage") or 0)
+        for row in previous.get("damage") or []
+        if isinstance(row, dict)
+    }
+    for row in current.get("damage") or []:
+        if not isinstance(row, dict):
+            continue
+        key = (
+            row.get("route_node_id"),
+            int(row.get("route_generation") or 0),
+            int(row.get("attempt_epoch") or 0),
+        )
+        try:
+            damage = int(row.get("party_damage") or 0)
+        except (TypeError, ValueError):
+            continue
+        if key in previous_damage and damage > previous_damage[key]:
+            return True
+    return False
+
+
 DEATH_LOOP_ACTIONS = {"repeated_death", "death_loop"}
 DEATH_LOOP_DURABLE_PROGRESS_ACTIONS = ROUTE_PROGRESS_ACTIONS | {
     "boss_add_killed",
@@ -3352,6 +3624,11 @@ def live_evidence(
         count_route_progress(entry.get("route_progress") if isinstance(entry, dict) else None)
 
     route_combat_progress_diagnoses = boss_route_health_progress(entries)
+    live_combat_progress = live_combat_progress_snapshot(
+        diagnoses,
+        entries,
+        diagnosis.get("combat_metrics") if isinstance(diagnosis, dict) else None,
+    )
 
     action_text = " ".join(sorted(action_names)).lower()
     quest_progress = max(int(status.get("quest_objective_progress") or 0), int(summary.get("quest_objective_progress") or 0))
@@ -3528,6 +3805,7 @@ def live_evidence(
         "validation_route_manifest_complete": action_counts.get("validation_route_manifest_complete", 0),
         "validation_route_no_progress_diagnoses": route_no_progress_diagnoses,
         "validation_route_combat_progress_diagnoses": route_combat_progress_diagnoses,
+        "live_combat_progress": live_combat_progress,
         "unresolved_route_death_loop_events": unresolved_route_death_loop_count(entries),
         "boss_engagement_actions": boss_engagement_actions,
         "trash_route_actions": trash_route_actions,
@@ -3758,6 +4036,7 @@ def watchdog_state(
         "semantic_progress_plateau": route_semantic_plateau,
         "repeated_decision_loop": repeated_loop,
         "death_loop": death_loop,
+        "live_combat_progress": evidence.get("live_combat_progress", {}),
         "progress_counters": counters,
     }
 
@@ -4501,6 +4780,7 @@ def run_transport_completion_watchdog(
     heartbeat_index = 0
     last_progress_total = -1
     last_progress_at = time.monotonic()
+    last_live_combat_progress: dict[str, Any] | None = None
     last_calibration_blocker = ""
     calibration_blocker_repeats = 0
 
@@ -4595,6 +4875,10 @@ def run_transport_completion_watchdog(
         if progress_total > last_progress_total:
             last_progress_total = progress_total
             last_progress_at = time.monotonic()
+        live_combat_progress = report.get("watchdog_state", {}).get("live_combat_progress")
+        if live_combat_progress_advanced(last_live_combat_progress, live_combat_progress):
+            last_progress_at = time.monotonic()
+        last_live_combat_progress = live_combat_progress if isinstance(live_combat_progress, dict) else None
         no_progress_expired = time.monotonic() - last_progress_at >= no_progress_window_sec
         semantic_progress_plateau = (
             last_progress_total >= 0
@@ -4661,6 +4945,7 @@ def run_worldserver_completion_watchdog(
     heartbeat_index = 0
     last_progress_total = -1
     last_progress_at = time.monotonic()
+    last_live_combat_progress: dict[str, Any] | None = None
     last_calibration_blocker = ""
     calibration_blocker_repeats = 0
     process = subprocess.Popen(
@@ -4780,6 +5065,10 @@ def run_worldserver_completion_watchdog(
             if progress_total > last_progress_total:
                 last_progress_total = progress_total
                 last_progress_at = time.monotonic()
+            live_combat_progress = report.get("watchdog_state", {}).get("live_combat_progress")
+            if live_combat_progress_advanced(last_live_combat_progress, live_combat_progress):
+                last_progress_at = time.monotonic()
+            last_live_combat_progress = live_combat_progress if isinstance(live_combat_progress, dict) else None
             no_progress_expired = time.monotonic() - last_progress_at >= no_progress_window_sec
             semantic_progress_plateau = (
                 last_progress_total >= 0

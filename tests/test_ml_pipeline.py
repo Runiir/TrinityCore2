@@ -72,7 +72,7 @@ from tools.bot_ml.live_validation_session import (
     sha256_file,
     systemd_transient_command,
 )
-from tools.bot_ml.run_live_bot_validation import BoundedOutputParts, apply_calibration_only_acceptance, attempt_evidence_envelope, boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, calibration_pre_scoring_blocker, command_script, heartbeat_commands_from_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, preflight_calibration_reference_binding, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, split_sql_statements, strict_manifest_evidence, supersede_transient_route_failures, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, wait_for_heroic_admission_status, watchdog_state, write_validation_config
+from tools.bot_ml.run_live_bot_validation import BoundedOutputParts, apply_calibration_only_acceptance, attempt_evidence_envelope, boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, calibration_pre_scoring_blocker, command_script, heartbeat_commands_from_script, live_combat_progress_advanced, live_combat_progress_snapshot, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, preflight_calibration_reference_binding, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, split_sql_statements, strict_manifest_evidence, supersede_transient_route_failures, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, wait_for_heroic_admission_status, watchdog_state, write_validation_config
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -7550,6 +7550,50 @@ def trash_health_entry(sequence, health, *, timestamp_ms=None, action="validatio
         action=action,
         **kwargs,
     )
+
+
+def diagnosis_health_row(health, *, guid=85, node="corborus", generation=2, kind="boss", target_entry=43438):
+    route_progress = {
+        "route": {"kind": kind, "node_id": node, "generation": generation},
+        "target": {"entry": target_entry, "guid": guid, "hp_pct": health},
+    }
+    return {
+        "identity": {"bot_guid": 1},
+        "diagnosis": {"route_progress": route_progress},
+        "snapshot": {"route_progress": route_progress},
+    }
+
+
+def test_live_combat_progress_resets_only_on_same_target_health_decrease():
+    baseline = live_combat_progress_snapshot([diagnosis_health_row(1.0)], [], None)
+    decreased = live_combat_progress_snapshot([diagnosis_health_row(0.8)], [], None)
+    unchanged = live_combat_progress_snapshot([diagnosis_health_row(1.0)], [], None)
+
+    assert live_combat_progress_advanced(None, baseline) is False
+    assert live_combat_progress_advanced(baseline, decreased) is True
+    assert live_combat_progress_advanced(baseline, unchanged) is False
+
+
+def test_live_combat_progress_does_not_fabricate_target_or_route_generation_changes():
+    baseline = live_combat_progress_snapshot([diagnosis_health_row(0.8)], [], None)
+    changed_target = live_combat_progress_snapshot([diagnosis_health_row(0.2, guid=86)], [], None)
+    changed_route = live_combat_progress_snapshot([diagnosis_health_row(0.2, generation=3)], [], None)
+
+    assert live_combat_progress_advanced(baseline, changed_target) is False
+    assert live_combat_progress_advanced(baseline, changed_route) is False
+
+
+def test_live_combat_progress_uses_same_route_damage_and_ignores_dead_target():
+    metrics = {"schema": "bot_combat_metrics_v2", "available": True, "route_node_id": "corborus", "route_generation": 2, "party_damage": 0}
+    baseline = live_combat_progress_snapshot([], [], metrics)
+    damage = live_combat_progress_snapshot([], [], {**metrics, "party_damage": 100})
+    other_route = live_combat_progress_snapshot([], [], {**metrics, "route_generation": 3, "party_damage": 200})
+    dead = live_combat_progress_snapshot([diagnosis_health_row(0.0)], [], None)
+
+    assert live_combat_progress_advanced(baseline, damage) is True
+    assert live_combat_progress_advanced(baseline, other_route) is False
+    assert dead["health"] == []
+    assert live_combat_progress_advanced(damage, dead) is False
 
 
 def test_boss_health_progress_counts_party_shared_strict_minima_only():
