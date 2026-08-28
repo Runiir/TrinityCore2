@@ -1,47 +1,59 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:blackwing_descent:magmaw:same_level_hazard_path_admission",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "pending_exact_build_and_live_verification",
-  "observed_at_commit": "a1fff71538f463a3aa393da2507670a6279eff70",
+  "work_unit": "role:blackwing_descent:magmaw:persistent_mobile_parasite_lane",
+  "owner_skill": "raid-role-implementation",
+  "classification": "failed",
+  "observed_at_commit": "902ff5545e4a3fc37966c3ae7c37ca1a02eebd8e",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_a1fff71538_canary104_same_level_hazard_path_handoff_20260829.md",
-    "sha256": "099f4d44a4ba1814bfaf3705f3040d48d28abdddc97b4443933f872a7374c65a"
+    "path": "experiments/configs/cata_raid_magmaw_902ff5545e_canary105_parasite_recurrence_handoff_20260829.md",
+    "sha256": "62c6ffc12f0169737af9067309aca6c701f2d45e21eb7051dbb6aa522900dad5"
   },
   "prior_work_unit_result": {
-    "work_unit": "runtime:blackwing_descent:magmaw:chainwielder_central_future_pack_movement_guard",
-    "classification": "passed_observed_canary",
-    "proof": "Canary104 cleared Chainwielder and both Drudges with three kills, zero trash deaths, and zero future-pack contamination."
+    "work_unit": "runtime:blackwing_descent:magmaw:same_level_hazard_path_admission",
+    "classification": "provisional_absent_on_matched_canary",
+    "proof": "Canary105 exercised Magmaw movement without the Canary104 unrelated-lower-floor rejection, but did not clear the route."
   },
-  "first_broken_edge": "same_level_encounter_hazard_move_rejected_after_map_height_resolves_unrelated_lower_floor",
+  "first_broken_edge": "fixed_mobile_bait_team_reactively_reenters_parasites_and_allows_player_infection",
+  "causal_signature": "magmaw_parasite_control_allows_player_infection",
+  "recurrence": {
+    "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+    "occurrence_count": 9,
+    "stop_at": 10,
+    "next_occurrence_action": "stop_and_summarize_last_ten_occurrences"
+  },
   "decisive_evidence": {
     "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
     "route_generation": 4,
     "current_node": "bwd.magmaw.encounter",
     "trash_kills": 3,
-    "trash_deaths": 0,
+    "trash_deaths": 2,
     "future_pack_contamination": 0,
-    "magmaw_party_damage": 26155575,
-    "magmaw_active_dps": 92750.266,
-    "magmaw_active_hps": 10770.05,
-    "bot_deaths": 9,
-    "same_level_wrong_floor_examples": 5,
-    "report_sha256": "36ddd947f603c8623cad0bc51b9d2201ee4d310d8185cc51b033d902bf4d478d",
-    "combat_analysis_sha256": "c6067ab9a47d2ac1ebeb184cc8b433e7ba6686b5d432f051d05db619fceae432",
-    "combat_log_sha256": "7361701e58e83dc77afaea8b0887f5ccd7b0c4cf03baa2e149951c315bdbd9fd"
+    "magmaw_party_damage": 14762649,
+    "magmaw_active_dps": 79798.103,
+    "magmaw_active_hps": 11841.059,
+    "bot_deaths": 12,
+    "infected_player_count": 9,
+    "infection_and_vomit_damage": 772449,
+    "first_infection_timestamp_ms": 1787957617758,
+    "report_sha256": "a0bd929d3ef033b5acb4d1c914a6f83816533612fa27d17ae79c42b416ad3b7d",
+    "combat_analysis_sha256": "19d51d6fdca6fe3874b5a91c40692bd092e34939395628044a474123f4bc15ad",
+    "combat_log_sha256": "29eaf8b57a8f6cfb1e50cc1ea9f900dbc363b13b15b7c8d1c0c1128db5f98963"
   },
   "repair_scope": {
     "allowed": [
-      "repair_shared_same_level_local_hazard_or_mechanic_path_admission",
-      "preserve_native_endpoint_and_declared_floor_consistency",
-      "add_recorded_magmaw_and_genuine_vertical_transition_counterexamples"
+      "assign_hunter_and_one_fire_mage_as_fixed_mobile_bait_team",
+      "persist_left_or_right_lane_endpoint_for_the_encounter_attempt",
+      "commit_lane_transition_until_safe_destination_completion",
+      "retain_mobile_parasite_targeting_during_lane_transition",
+      "add_recorded_lane_transition_and_non_baiter_counterexamples"
     ],
     "forbidden_shortcuts": [
-      "bypass_future_pack_destination_guard",
-      "admit_long_route_or_vertical_transition_by_declared_z_alone",
-      "change_class_rotation_healing_or_encounter_mechanics",
-      "add_magmaw_specific_movement_planner_branches",
-      "weaken_watchdog_or_acceptance",
+      "move_all_ranged_or_healers_into_the_bait_lane",
+      "add_another_recomputed_distance_only_escape",
+      "change_native_magmaw_spells_damage_or_targeting",
+      "weaken_shared_path_or_future_pack_guards",
+      "change_class_rotation_or_pet_autocast",
+      "special_case_bot_guid_or_recorded_spawn_guid",
       "run_a_live_shard_inside_the_specialist_work_unit"
     ]
   },
@@ -60,11 +72,5 @@
     "live_run_allowed": false,
     "commit_allowed_after_root_review": true
   },
-  "implementation_commit": "7354fb54060d57eda4e20c75caad58f2eb616038",
-  "implementation_validation": {
-    "focused_tests": "19 passed",
-    "movement_header_lines": 143,
-    "movement_planner_lines": 396
-  },
-  "next_action": "Root builds the exact implementation commit and runs the matched completion-watchdog canary. Trash must remain clean, and local same-level Magmaw hazard/mechanic moves must no longer fail solely on an unrelated lower-floor sample."
+  "next_action": "Implement and focus-test one persistent two-endpoint mobile-DPS lane. Root then builds exact source and runs one autonomous completion-watchdog canary. Any player infection is occurrence 10 and stops the lane for architecture review."
 }
