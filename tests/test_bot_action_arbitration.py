@@ -1312,6 +1312,17 @@ int main()
     assert(!nonAssignedWarningPlan.Movement.has_value()
         || nonAssignedWarningPlan.Movement->Id.Mechanic
             != "pincer_preposition");
+    int const pincerPrepositionCount =
+        (prepositionPlan.Movement
+                && prepositionPlan.Movement->Id.Mechanic
+                    == "pincer_preposition" ? 1 : 0)
+        + (alternatePrepositionPlan.Movement
+                && alternatePrepositionPlan.Movement->Id.Mechanic
+                    == "pincer_preposition" ? 1 : 0)
+        + (nonAssignedWarningPlan.Movement
+                && nonAssignedWarningPlan.Movement->Id.Mechanic
+                    == "pincer_preposition" ? 1 : 0);
+    assert(pincerPrepositionCount == 2);
 
     // Without a warning, the assigned user remains on normal ranged
     // formation logic. A warning-local Pillar retains survival ownership over

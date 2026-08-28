@@ -17,6 +17,19 @@
 #include <set>
 #include <utility>
 #include <vector>
+
+namespace
+{
+bool IsMagmawPincerWarningCreature(BotEncounter::RouteView const& route,
+    Creature const& creature)
+{
+    if (route.NodeId != "bwd.magmaw.encounter" || !creature.IsAlive())
+        return false;
+    return creature.GetEntry() == 47330
+        || (creature.GetEntry() == 47196 && creature.HasAura(87949));
+}
+}
+
 void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
 {
     // The encounter view is a cohort observation, not per-bot perception.
@@ -214,14 +227,21 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
                     || (creature->HasReactState(REACT_PASSIVE)
                         && std::binary_search(snapshot->Route.AllowedEntries.begin(),
                             snapshot->Route.AllowedEntries.end(), creature->GetEntry()));
+                bool const pincerWarning = IsMagmawPincerWarningCreature(
+                    snapshot->Route, *creature);
                 BotEncounter::ActorSnapshot actor = buildUnit(creature,
                     creature->IsSummon() ? BotEncounter::ActorKind::Summon
+                        : pincerWarning ? BotEncounter::ActorKind::Hostile
                         : BotEncounter::ActorKind::Interactable);
                 actor.Attackable = false;
                 actor.Interactable = creature->GetUInt32Value(UNIT_NPC_FLAGS) != 0
                     || creature->HasFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_SPELLCLICK);
                 if (creature->IsSummon())
                     snapshot->Summons.push_back(std::move(actor));
+                else if (pincerWarning)
+                    // Native warning creatures are not attack targets, but
+                    // their visibility is the existing pincer warning fact.
+                    snapshot->Hostiles.push_back(std::move(actor));
                 else if (actor.Interactable || routeObserved)
                     snapshot->Interactables.push_back(std::move(actor));
                 continue;

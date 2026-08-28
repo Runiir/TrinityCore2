@@ -48,6 +48,16 @@ def test_encounter_blackboard_retains_only_route_declared_passive_mechanics():
     assert "observer->IsValidAttackTarget(unit)" in text
 
 
+def test_encounter_blackboard_retains_magmaw_native_pincer_warning():
+    text = MODULE.read_text()
+    assert "IsMagmawPincerWarningCreature" in text
+    assert 'route.NodeId != "bwd.magmaw.encounter"' in text
+    assert "creature.GetEntry() == 47330" in text
+    assert "creature.GetEntry() == 47196 && creature.HasAura(87949)" in text
+    assert "else if (pincerWarning)" in text
+    assert "snapshot->Hostiles.push_back(std::move(actor));" in text
+
+
 def test_magmaw_routes_declare_passive_hook_spike():
     config = json.loads(SCENARIO_CONFIG.read_text(encoding="utf-8"))
     wanted = {
