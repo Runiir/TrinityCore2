@@ -888,6 +888,32 @@ int main()
             - magmawRangedPillar.Summons.front().Position.X,
         rangedPillarMove->Y
             - magmawRangedPillar.Summons.front().Position.Y) > 12.0f);
+    // A bait spline keeps the route-proven destination Z even while the bot
+    // is descending along native terrain. Reusing the current Z would change
+    // the movement identity every tick and restart the path before arrival.
+    assert(rangedPillarMove->Z
+        == magmawRangedPillar.Route.NavigationHints.front().Z);
+    BotEncounter::Blackboard rangedPillarAltitude = magmawRangedPillar;
+    rangedPillarAltitude.Players[2].Position.Z -= 1.5f;
+    auto rangedPillarAltitudePlan = magmawStrategy.Propose(
+        rangedPillarAltitude, dps.Guid, "dps");
+    assert(rangedPillarAltitudePlan.Movement.has_value());
+    auto const* rangedPillarAltitudeMove = std::get_if<Move>(
+        &rangedPillarAltitudePlan.Movement->Action);
+    assert(rangedPillarAltitudeMove);
+    assert(rangedPillarAltitudePlan.Movement->Id.ScopeKey
+        == rangedPillarPlan.Movement->Id.ScopeKey);
+    assert(rangedPillarAltitudePlan.Movement->Id.Strategy
+        == rangedPillarPlan.Movement->Id.Strategy);
+    assert(rangedPillarAltitudePlan.Movement->Id.Mechanic
+        == rangedPillarPlan.Movement->Id.Mechanic);
+    assert(rangedPillarAltitudePlan.Movement->Id.Actor
+        == rangedPillarPlan.Movement->Id.Actor);
+    assert(rangedPillarAltitudePlan.Movement->Id.EventGeneration
+        == rangedPillarPlan.Movement->Id.EventGeneration);
+    assert(rangedPillarAltitudeMove->X == rangedPillarMove->X);
+    assert(rangedPillarAltitudeMove->Y == rangedPillarMove->Y);
+    assert(rangedPillarAltitudeMove->Z == rangedPillarMove->Z);
 
     // Once the ranged actor is already at the selected safe anchor, the
     // observed Pillar must not churn a matching movement request.

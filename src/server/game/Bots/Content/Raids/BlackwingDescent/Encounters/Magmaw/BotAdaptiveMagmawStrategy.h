@@ -491,9 +491,22 @@ private:
             ? anchors->Left : anchors->Right;
         if (Distance2d(bot.Position, destination) <= RangedStackTolerance)
             return std::nullopt;
-        return BuildPointMovement(board, bot, destination,
-            "pillar_bait_switch", BotActionArbitration::Priority::Survival,
-            500.0f);
+        BotNativeAction::Candidate candidate = BuildPointMovement(
+            board, bot, destination, "pillar_bait_switch",
+            BotActionArbitration::Priority::Survival, 500.0f);
+        // A Pillar bait path is a fixed native point movement.  Do not use
+        // the bot's changing current Z as the request's destination: while
+        // the spline is in flight that made every tick look like a new path
+        // and allowed the impact to land before the baiter reached safety.
+        // Keep the route-proven anchor Z stable so the movement lease can be
+        // refreshed until native arrival or a bounded planner retry.
+        if (BotNativeAction::Move* move =
+                std::get_if<BotNativeAction::Move>(&candidate.Action))
+        {
+            move->Z = destination.Z;
+            move->IntentReason = "pillar_bait_switch";
+        }
+        return candidate;
     }
 
     static bool HasActivePillar(Blackboard const& board)
