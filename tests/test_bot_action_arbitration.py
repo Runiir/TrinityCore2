@@ -712,8 +712,33 @@ int main()
     assert(rangedStagePlan.Movement.has_value());
     assert(rangedStagePlan.Movement->Id.Mechanic
         == "prepull_ranged_stage");
+    auto const* baitStageMove = std::get_if<Move>(
+        &rangedStagePlan.Movement->Action);
+    assert(baitStageMove);
+    assert(std::hypot(baitStageMove->X - magmawBoss.Position.X,
+        baitStageMove->Y - magmawBoss.Position.Y) > 30.0f);
     assert(tankStageWaitPlan.SuppressOffense);
     assert(!tankStageWaitPlan.Movement.has_value());
+
+    // Healers use a separate support stack inside Magmaw's configured
+    // combat-reach + 15-yard Pillar preference. Only the fixed mobile-DPS
+    // bait team is staged outside that boundary.
+    BotEncounter::Blackboard magmawSupportStage = magmawStage;
+    BotEncounter::ActorSnapshot supportHealer = dps;
+    supportHealer.Guid = ObjectGuid(HighGuid::Player, uint32(104));
+    supportHealer.Role = "healer";
+    supportHealer.Position = magmawBoss.Position;
+    magmawSupportStage.Players.push_back(supportHealer);
+    auto supportStagePlan = magmawStrategy.Propose(
+        magmawSupportStage, supportHealer.Guid, "healer");
+    assert(supportStagePlan.SuppressOffense);
+    assert(supportStagePlan.Movement.has_value());
+    auto const* supportStageMove = std::get_if<Move>(
+        &supportStagePlan.Movement->Action);
+    assert(supportStageMove);
+    assert(std::hypot(supportStageMove->X - magmawBoss.Position.X,
+        supportStageMove->Y - magmawBoss.Position.Y)
+        == BotEncounter::AdaptiveMagmawStrategy::SupportStackDistance);
     auto const* rangedStageMove = std::get_if<Move>(
         &rangedStagePlan.Movement->Action);
     assert(rangedStageMove);

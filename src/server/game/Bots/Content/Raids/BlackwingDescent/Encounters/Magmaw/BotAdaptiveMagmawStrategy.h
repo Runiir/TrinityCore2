@@ -35,8 +35,13 @@ public:
     static constexpr uint32 PincerRightEntry = 41789;
     static constexpr uint32 SpikeEntry = 41767;
     static constexpr float HookInteractionDistance = 5.0f;
+    // Magmaw prefers Pillar targets at least combat-reach + 15 yards away.
+    // Its configured combat reach is 15 yards, so only the fixed mobile-DPS
+    // bait team belongs outside 30 yards.  Healers and ordinary ranged DPS
+    // use the support stack inside that preference boundary.
     static constexpr float RangedStackDistance = 30.0f;
-    static constexpr float RangedStackLateralOffset = 8.0f;
+    static constexpr float SupportStackDistance = 22.0f;
+    static constexpr float RangedStackLateralOffset = 12.0f;
     static constexpr float RangedStackTolerance = 4.0f;
     // Keep a remote parasite from replacing the encounter target.  The
     // native spell/range/LOS gates remain authoritative; this is only the
@@ -75,7 +80,7 @@ public:
                 plan.SuppressOffense = true;
                 if (role != "tank")
                     plan.Movement = BuildPointMovement(board, *bot,
-                        PrepullAnchor(board, *anchors),
+                        FormationAnchor(board, *anchors, botGuid),
                         "prepull_ranged_stage",
                         BotActionArbitration::Priority::Mechanic, 325.0f);
                 return plan;
@@ -141,7 +146,7 @@ private:
 
     struct MagmawRangedAnchors
     {
-        Vector3 Center;
+        Vector3 Support;
         Vector3 Left;
         Vector3 Right;
     };
@@ -284,10 +289,12 @@ private:
         dy /= length;
         float const centerX = boss.Position.X + dx * RangedStackDistance;
         float const centerY = boss.Position.Y + dy * RangedStackDistance;
+        float const supportX = boss.Position.X + dx * SupportStackDistance;
+        float const supportY = boss.Position.Y + dy * SupportStackDistance;
         float const lateralX = -dy * RangedStackLateralOffset;
         float const lateralY = dx * RangedStackLateralOffset;
         return MagmawRangedAnchors{
-            { centerX, centerY, roomSide.Z },
+            { supportX, supportY, roomSide.Z },
             { centerX + lateralX, centerY + lateralY, roomSide.Z },
             { centerX - lateralX, centerY - lateralY, roomSide.Z } };
     }
@@ -298,13 +305,21 @@ private:
         return board.CurrentScope.AttemptId % 2 ? anchors.Left : anchors.Right;
     }
 
+    static Vector3 const& FormationAnchor(Blackboard const& board,
+        MagmawRangedAnchors const& anchors, ObjectGuid const& botGuid)
+    {
+        return IsPillarBaiter(board, botGuid)
+            ? PrepullAnchor(board, anchors) : anchors.Support;
+    }
+
     static bool RangedGroupStaged(Blackboard const& board,
         MagmawRangedAnchors const& anchors)
     {
-        Vector3 const& anchor = PrepullAnchor(board, anchors);
         return std::all_of(board.Players.begin(), board.Players.end(),
-            [&anchor](ActorSnapshot const& member)
+            [&board, &anchors](ActorSnapshot const& member)
             {
+                Vector3 const& anchor = FormationAnchor(board, anchors,
+                    member.Guid);
                 return !member.Alive || member.Role == "tank"
                     || Distance2d(member.Position, anchor)
                         <= RangedStackTolerance;
@@ -494,7 +509,7 @@ private:
                 "parasite_contact_evade", 16.0f);
 
         std::vector<Vector3 const*> destinations = {
-            &anchors->Center, &anchors->Left, &anchors->Right };
+            &anchors->Support, &anchors->Left, &anchors->Right };
         auto closest = std::min_element(destinations.begin(),
             destinations.end(), [&bot](Vector3 const* left,
                 Vector3 const* right)
@@ -630,7 +645,7 @@ private:
                             >= Distance2d(anchors->Right,
                                 observed.NearestImmediateHazard->Position)
                         ? anchors->Left : anchors->Right)
-                    : anchors->Center;
+                    : anchors->Support;
                 if (Distance2d(bot.Position, destination)
                     > RangedStackTolerance)
                     return BuildPointMovement(board, bot, destination,
@@ -653,10 +668,8 @@ private:
             ResolveRangedAnchors(board, boss);
         if (!anchors)
             return std::nullopt;
-        Vector3 const& destination =
-            Distance2d(bot.Position, anchors->Left)
-                <= Distance2d(bot.Position, anchors->Right)
-            ? anchors->Left : anchors->Right;
+        Vector3 const& destination = FormationAnchor(board, *anchors,
+            bot.Guid);
         if (Distance2d(bot.Position, destination) <= RangedStackTolerance)
             return std::nullopt;
         return BuildPointMovement(board, bot, destination,
