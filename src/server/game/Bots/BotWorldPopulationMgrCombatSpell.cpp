@@ -2,6 +2,7 @@
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotProgressionGoalPolicy.h"
 #include "Bots/BotRaidAreaAuthority.h"
+#include "Bots/BotWorldPopulationMgrRaidCooldownReservation.h"
 
 #include "CellImpl.h"
 #include "Creature.h"
@@ -107,6 +108,14 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
     RoleSaturationState saturation = BuildRoleSaturationState(bot, target, role.c_str());
     std::string roleGoal = BotProgressionGoalPolicy::RoleGoal(role);
     std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile);
+    BotRaidCooldownReservation::RouteContext const cooldownRoute{
+        Cohort().Config.ValidationRouteEnable,
+        Cohort().Raid.RaidInstance,
+        Cohort().Raid.EncounterInProgress,
+        false,
+        Cohort().Config.ValidationRouteKind,
+        Cohort().Config.ValidationRouteNodeKind,
+        Cohort().Raid.EncounterPhase};
     auto engagedWithBotParty = [bot](Unit* unit) -> bool
     {
         auto belongsToBotParty = [bot](Unit* participant) -> bool
@@ -163,6 +172,12 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
         }
         if (!candidate.RejectReason.empty())
             continue;
+        if (char const* reservationReason = BotRaidCooldownReservation::ReservationReason(
+                cooldownRoute, { candidate.Category, candidate.Profile.MechanicTags }))
+        {
+            candidate.RejectReason = reservationReason;
+            continue;
+        }
         if (candidate.Category == BotCombatActionCategory::Taunt
             && (!target->GetVictim() || target->GetVictim() == bot))
         {

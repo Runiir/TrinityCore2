@@ -6,6 +6,7 @@
 #include "Bots/BotRoleSaturationPolicy.h"
 #include "Bots/BotWorldPopulationMgrCombatRange.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
+#include "Bots/BotWorldPopulationMgrRaidCooldownReservation.h"
 #include "CellImpl.h"
 #include "Creature.h"
 #include "GridNotifiersImpl.h"
@@ -122,6 +123,14 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     RoleSaturationState saturation = BuildRoleSaturationState(bot, target, role.c_str());
     std::string roleGoal = BotProgressionGoalPolicy::RoleGoal(role);
     std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile);
+    BotRaidCooldownReservation::RouteContext const cooldownRoute{
+        Cohort().Config.ValidationRouteEnable,
+        Cohort().Raid.RaidInstance,
+        Cohort().Raid.EncounterInProgress,
+        false,
+        Cohort().Config.ValidationRouteKind,
+        Cohort().Config.ValidationRouteNodeKind,
+        Cohort().Raid.EncounterPhase};
     auto engagedWithBotParty = [bot](Unit* unit) -> bool
     {
         auto belongsToBotParty = [bot](Unit* participant) -> bool
@@ -315,6 +324,13 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             candidate.RejectReason = "reference_prepull_action_excluded";
             continue;
         }
+        if (candidate.RejectReason.empty())
+            if (char const* reservationReason = BotRaidCooldownReservation::ReservationReason(
+                    cooldownRoute, { candidate.Category, candidate.Profile.MechanicTags }))
+            {
+                candidate.RejectReason = reservationReason;
+                continue;
+            }
         if (areaOnly && candidate.Category != BotCombatActionCategory::Aoe
             && candidate.Category != BotCombatActionCategory::Cleave)
         {
