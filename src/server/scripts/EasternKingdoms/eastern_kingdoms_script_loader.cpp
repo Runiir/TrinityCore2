@@ -75,6 +75,7 @@ void AddSC_boss_nefarian();
 void AddSC_instance_blackwing_lair();
 void AddSC_instance_blackwing_descent();     //Blackwing Descent
 void AddSC_boss_magmaw();
+void AddSC_boss_magmaw_spells();
 void AddSC_boss_omnotron_defense_system();
 void AddSC_boss_atramedes();
 void AddSC_boss_chimaeron();
@@ -307,6 +308,7 @@ void AddEasternKingdomsScripts()
     AddSC_instance_blackwing_lair();
     AddSC_instance_blackwing_descent();     //Blackwing Descent
     AddSC_boss_magmaw();
+    AddSC_boss_magmaw_spells();
     AddSC_boss_omnotron_defense_system();
     AddSC_boss_atramedes();
     AddSC_boss_chimaeron();
