@@ -1,38 +1,39 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:blackwing_descent:magmaw:chainwielder_melee_future_pack_guard",
+  "work_unit": "runtime:blackwing_descent:magmaw:worldserver_crash_stack",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "implementation_pending_live_verification",
-  "observed_at_commit": "5d4afeb9bb6399824bf6f156c292efae290b5953",
+  "classification": "diagnostic_required",
+  "observed_at_commit": "93fd8308b0043a730086a856a898a97a135d57d7",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_946f48e676_chainwielder_melee_future_guard_handoff_20260828.md",
-    "sha256": "4fce2d26f37ea7489228b4f165fc1fc9c0c84032a03e363af746a00ba44a949b"
+    "path": "experiments/configs/cata_raid_magmaw_93fd8308b0_canary100_crash_stack_handoff_20260828.md",
+    "sha256": "e1aa99016d9e22ebf7c054a72bdbde8156438bcf8c9afb04772301b46606ebee"
   },
-  "first_broken_edge": "explicit_melee_combat_range_bypass_entered_future_drudge_pack_during_chainwielder",
+  "first_broken_edge": "worldserver_nonzero_exit_during_magmaw_without_retained_crash_stack",
   "decisive_evidence": {
     "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
-    "route_generation": 2,
-    "current_node": "bwd.magmaw.chainwielder",
-    "future_entry": 42362,
-    "future_source_guid": 60,
-    "first_future_damage_timestamp_ms": 1787949231950,
-    "first_future_damage_target_guid": 30001,
-    "first_future_damage_target_position": [-308.208, -64.122, 212.863],
+    "route_generation": 4,
+    "current_node": "bwd.magmaw.encounter",
     "chainwielder_killed": true,
-    "bot_deaths": 4,
-    "report_sha256": "9e7c8cc1600d031e967ea7a398668f3c19c4ea806108ef58e60e749d9f6f7d81",
-    "combat_log_sha256": "3be2217cbd9506bdabd69e65c69c0a255cb9fa9c4e5be84043fe039b753908ea"
+    "drudges_killed": true,
+    "generation_2_drudge_contamination": 0,
+    "magmaw_engaged": true,
+    "bot_deaths": 1,
+    "alive_at_exit": 9,
+    "party_damage": 14938582,
+    "controller_returncode": -11,
+    "report_sha256": "f4ad2a970957db7f134aa1f84c4869fce393e4123a3a2bfb0243071d4c10ed5a",
+    "worldserver_log_sha256": "e67faaaf06db9cad55c0a5f3838662c785ba8708dba4fa4207ce1f70b3274355"
   },
   "repair_scope": {
     "allowed": [
-      "repair_patrol_movement_admission_for_explicit_melee_range",
-      "preserve_melee_closing_inside_the_current_pack_safe_region",
-      "add_recorded_future_destination_and_safe_current_pack_counterexamples"
+      "capture_exact_throw_or_fatal_signal_stack_under_debugger",
+      "repair_only_the_proven_crashing_source_edge",
+      "add_one_focused_missing_key_or_invalid_state_counterexample"
     ],
     "forbidden_shortcuts": [
       "change_class_rotation_or_damage",
-      "change_encounter_mechanics_or_route_coordinates",
-      "change_hazard_escape_policy",
+      "change_encounter_mechanics_route_coordinates_or_movement_policy",
+      "guess_at_an_unproven_map_lookup",
       "weaken_watchdog_or_acceptance",
       "run_a_live_shard_inside_the_specialist_work_unit"
     ]
@@ -49,8 +50,8 @@
   "implementation_constraints": {
     "maximum_c_or_cpp_lines": 999,
     "heavy_build_allowed": false,
-    "live_run_allowed": false,
+    "live_run_allowed": true,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "Root should build exact commit 5d4afeb9bb6399824bf6f156c292efae290b5953, provision a fresh Magmaw shard, and verify zero generation-2 Drudge damage before advancing through Drudges to Magmaw."
+  "next_action": "Root should run one fresh non-certifying debugger replay and retain the exact throw or fatal-signal stack before authorizing any source repair."
 }
