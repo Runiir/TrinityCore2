@@ -45,6 +45,12 @@ lifecycle, or reporting state. Return that classification to the coordinator;
 the read-only babysitter must not weaken the terminal or speculate that the
 most visible failure is the root cause.
 
+Also distinguish `observed`, `unsafe action blocked`, `gameplay stopped`, and
+`evidence rejected`. If a diagnostic observer globally suppresses valid
+healing, defense, owned-target damage, or native recovery, report that
+authority escalation as a separate causal edge. Do not describe the resulting
+wipe as proof that the originally observed condition was lethal.
+
 - Success: the shard's declared gate is independently observable.
 - Semantic stall: no monotonic route, kill, health-low-water, generation, or native milestone progress for the configured window.
 - Repeated-decision or death-loop failure: the configured typed watchdog is

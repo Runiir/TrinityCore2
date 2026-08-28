@@ -76,6 +76,12 @@ These shutdown and persistence duties belong to the capture controller or coordi
   pre-admission setup, stable value-only observation, transient lifecycle, or
   reporting. Duplicated observers and post-admission writers are evidence
   defects even when the final receipt is correctly fail-closed.
+- Keep evidence invalidation separate from gameplay termination. A
+  contamination, drift, or forbidden-target receipt may reject or quarantine
+  the run without granting the observer authority to suppress unrelated
+  healing, defense, current-pack offense, or native recovery. Report when the
+  detector itself caused the later wipe, and retain both the observed edge and
+  the detector-induced terminal edge.
 - In uncapped mode, use channel-freshness and monotonic semantic-progress clocks. Activity churn, casting toggles, or changing victim GUIDs are not progress.
 - Keep controller admission predicates byte-for-byte semantic peers of the
   runtime gate. In particular, post-wipe ready-check orchestration must accept

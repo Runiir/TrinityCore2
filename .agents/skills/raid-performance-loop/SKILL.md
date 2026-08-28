@@ -127,6 +127,14 @@ observer for each receipt identity instead of accepting copied validators that
 can disagree. Do not weaken the receipt or tune the encounter around its most
 visible terminal reason.
 
+Apply the same audit to non-identity detectors. Separate the component that
+observes an invalidating event from the component that blocks the unsafe
+native action, the component that owns continued gameplay, and the component
+that rejects or quarantines certification. If one observation such as future
+encounter contact, a rejected path, or a missing transient pet immediately
+closes every action lane, route it as a shared-runtime ownership defect. Do not
+let a useful high-signal diagnostic become the cause of the wipe it reports.
+
 | Work unit | Required specialist skill | Owner output |
 | --- | --- | --- |
 | Exact simulator input or DPS denominator | `raid-wowsims-reference` | current promoted value plus reconstruction receipt |

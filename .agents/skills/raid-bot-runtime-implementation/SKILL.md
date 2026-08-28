@@ -88,6 +88,18 @@ six validation/calibration translation units. A bounded repair should reuse one
 shared value-only observer when that duplication touches the admitted edge;
 do not broaden an unrelated repair into a repository-wide cleanup.
 
+Keep observation, immediate safety mitigation, gameplay authority, and
+certification verdict as four distinct owners. A detector may record or
+quarantine future-encounter contamination, identity drift, path rejection, or
+another invalidating condition. It must not also suppress unrelated healing,
+defense, current-target offense, or native corpse recovery unless ordered
+evidence proves those actions are unsafe. In particular, do not turn a
+protected-target observation into a cohort-wide terminal hold while the owned
+trash target is still alive. Block the forbidden target or splash at native
+submission, retain the first evidence edge for certification, and allow the
+ordinary runtime to survive, reset, or recover. Audit every call to a shared
+terminal latch as an ownership boundary, not merely as a reason-code branch.
+
 Do not make an immutable identity observer also require transient liveness.
 For ordinary pets, reconcile the stable owner/pet row/entry/persisted
 spellbook separately from alive, summoned, in-world, target, and combat state.
