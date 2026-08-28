@@ -73,6 +73,15 @@ admission is observation-only for those identities. Move required setup before
 receipt commit and preserve the drift failure; do not weaken, refresh, or
 rewrite the receipt after actions start.
 
+Enforce one setup owner before admission and zero gameplay writers afterward
+for every receipt field. Search all writers, not only the function named by the
+terminal reason. A route, encounter, class, movement, recovery, or pet helper
+that changes a receipt field after admission is a cross-domain ownership bug,
+even when its local intent is harmless. Add a focused counterexample proving
+the unrelated action leaves the frozen field unchanged. Keep the terminal
+receipt check as evidence, but diagnose the illegal writer as the first broken
+edge.
+
 Search for duplicate identity observers before adding another local check.
 The 2026-08-28 audit found `ObserveActiveOrdinaryHunterPet` duplicated across
 six validation/calibration translation units. A bounded repair should reuse one
@@ -85,6 +94,15 @@ spellbook separately from alive, summoned, in-world, target, and combat state.
 The latter belongs to a typed native pet lifecycle/recovery edge. Use distinct
 reason codes so a dead or temporarily unsummoned pet cannot masquerade as
 spellbook identity drift and permanently close an otherwise recoverable raid.
+Apply the same split to group membership versus corpse worldports, roster
+identity versus active participation, and initial map/instance identity versus
+typed native recovery transit.
+
+Persistent setup may run after admission only for a typed native lifecycle
+transition that restores the same admitted identity. It must not choose a new
+pet row, spellbook/autocast state, gear item, talent, or glyph. Report spec,
+talent, glyph, and role-composition failures with separate reason codes so a
+frozen-identity mismatch cannot be misrouted as ordinary roster composition.
 
 For set-and-forget native movement, distinguish the short arbitration lease
 from the native generator it admitted. A lease may expire exactly at the next

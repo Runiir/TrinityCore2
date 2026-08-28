@@ -118,6 +118,13 @@ rank pet actions but must not toggle receipt-bound autocast or rewrite the pet
 spellbook. Return late setup to `raid-bot-runtime-implementation` with the
 identity-drift reason rather than suppressing the receipt check.
 
+If a role change triggers a terminal receipt failure, inspect whether the role
+candidate wrote frozen setup state before changing priorities or the
+validator. A high-signal identity terminal can be the consequence of an
+unrelated class action. The role repair is complete only when its candidate
+uses normal combat or lifecycle state and leaves gear, talents/glyphs, group,
+map/instance, roster lease, and persistent-pet identity untouched.
+
 Do not tune from final DPS alone. A diagnostic-only edit needs one observed
 first-broken edge and one metric expected to move; run one before/after check
 and stop. Permit at most one implementation plus one matched verification run

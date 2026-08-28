@@ -116,6 +116,17 @@ resource claims, stable movement intents, and observable outcomes. Require
 before/after CCN for touched high-risk functions and the repository's
 sub-1,000-line C/C++ limit.
 
+Treat a loud admission-identity failure after an unrelated gameplay change as
+an ownership alarm, not automatically as the gameplay root cause. Before
+dispatching a fix, list every writer and observer for the failed receipt field
+and classify each as pre-admission setup, immutable identity observation, or
+transient lifecycle. Route post-admission writers to the owning runtime layer;
+route observers that mix identity with death, summon, worldport, target, or
+combat state to a lifecycle repair. Require one authoritative value-only
+observer for each receipt identity instead of accepting copied validators that
+can disagree. Do not weaken the receipt or tune the encounter around its most
+visible terminal reason.
+
 | Work unit | Required specialist skill | Owner output |
 | --- | --- | --- |
 | Exact simulator input or DPS denominator | `raid-wowsims-reference` | current promoted value plus reconstruction receipt |

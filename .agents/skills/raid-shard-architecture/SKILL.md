@@ -26,6 +26,19 @@ roster leases, and initial map/instance. Once bot actions are enabled, verify
 these fields by observation only. A post-admission mutation is a terminal shard
 identity failure even if the gameplay intent was otherwise valid.
 
+Keep stable receipt identity separate from transient lifecycle in the shard
+contract. Pet death/unsummon, corpse worldport, temporary group participation,
+and typed instance runback are lifecycle observations; they must not be folded
+into an identity hash or reported as identity drift. When an unrelated route or
+class edit causes a receipt terminal, return the exact changed field plus all
+observed writers to `raid-bot-runtime-implementation`. Do not repair the shard
+by refreshing the receipt or making the validator less strict.
+
+Verify that the receipt schema actually stores and rechecks every identity the
+shard claims to freeze. In particular, a live glyph list in roster telemetry is
+not glyph-parity enforcement unless the admission receipt contains the same
+canonical glyph identity and compares it after actions start.
+
 - Give each boss a distinct scenario, runtime profile, pool tag, ten-character roster, evidence namespace, and route.
 - Require the selected profile to own the selected route manifest. Reject empty, foreign, or substituted manifests.
 - Never inherit Stonecore, canonical BWD, or another boss profile as a fallback.
