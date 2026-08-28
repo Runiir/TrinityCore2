@@ -23,11 +23,13 @@ Use this skill when acting as the prompt-driven orchestrator for bot autonomy or
    Put its immutable input, one hypothesis, owned files, excluded lanes, one
    focused validation command, and terminal handoff conditions in the prompt.
    An adjacent finding is a new work unit, never an implicit scope expansion.
-   Require one material-gate receipt within 60 seconds and every 60 seconds
-   thereafter. Request status after the first missed receipt and interrupt
-   after the second consecutive miss. After two failed command attempts on the
-   same edge, require a compact failed handoff instead of more retries or
-   broader optimization.
+   Do not stop a bounded worker because it is quiet for an arbitrary interval.
+   Observe worker state, owned-file diffs, process identity, and test/build
+   evidence. Send non-blocking steering only when new decisive context would
+   shorten the task. Interrupt only for scope expansion, an unbounded
+   optimization loop, a lost required process, or two failed command attempts
+   on the same edge. Then require a compact failed handoff instead of more
+   retries or broader optimization.
 8. Commit experiment code/configs to git, checkpoint generated data/artifacts with DVC, then run `dvc status` and `dvc push` after future experiments that produce artifacts.
 9. For every new or existing worktree used for experiments, verify DVC remote credentials before `dvc pull`, `dvc repro`, or `dvc push`: compare `pixi run dvc config --list` against the main repository worktree with secrets redacted, and copy/recreate `.dvc/config.local` from the main worktree when the worktree is missing the local remote credentials. Never commit `.dvc/config.local`.
 10. Before exiting every pass, update the current run status/progress artifacts with what changed, evidence paths, validation outcomes, blockers, and the exact next handoff prompt for the next fresh agent.

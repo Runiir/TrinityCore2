@@ -145,13 +145,17 @@ Use `trinity-orchestrator` for model selection and worker limits. Give each
 worker exactly one specialist skill and one work-unit JSON. Require the worker
 to work directly without launching nested agents.
 
-Require a compact material-gate receipt within 60 seconds of dispatch and at
-least every 60 seconds while work continues: current gate, command or process
-identity, decisive evidence path, and next expected edge. A worker may make at
-most two failed command attempts on the same edge before returning a failed
-handoff. After the first missed receipt, request status without interrupting.
-After the second consecutive miss, interrupt and request the bounded handoff;
-do not let silence expand into repository discovery or an optimization loop.
+Do not impose an arbitrary prose-receipt deadline on a bounded worker. Quiet
+inspection, compilation, and focused tests are normal. Track progress through
+the worker state, owned-file diff, process identity, and requested evidence;
+send a non-blocking steering message only when new decisive context would
+shorten the task. Interrupt only when the worker crosses the scope lock, repeats
+the same failed command twice, enters an unbounded optimization loop, or loses
+its required process. Silence alone is never a terminal condition.
+
+Require the final handoff to name the current gate, commands/processes,
+decisive evidence paths, and next edge. A worker may make at most two failed
+command attempts on the same edge before returning a failed handoff.
 
 Treat an empty final message as a missed receipt: verify what actually landed
 with `git status`/`git diff` and your own test run before accepting or
