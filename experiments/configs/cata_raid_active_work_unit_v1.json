@@ -1,61 +1,58 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "integration:blackwing_descent:magmaw:10N:sigbus_exact_replay",
-  "owner_skill": "raid-shard-architecture",
-  "classification": "infrastructure_noncompletion_exact_replay_authorized",
-  "observed_at_commit": "31322fb541e7f3125465a856905c7016d5723acd",
+  "work_unit": "runtime:blackwing_descent:magmaw:partial_death_native_runback_stall",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "trace_backed_runtime_repair_ready",
+  "observed_at_commit": "e2219cb4fd4f3d319ae82c50c6fe51d054810d68",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_31322fb541_canary97_infrastructure_handoff_20260828.md",
-    "sha256": "babcc973d0b9f4f3e69f6de8e0e51289fd331ee539db9f5048bced53ec877d72"
+    "path": "experiments/configs/cata_raid_magmaw_31322fb541_canary98_partial_death_runback_handoff_20260828.md",
+    "sha256": "e909f9988026aace78d3d1e4b83b0ef010b8261f5207e09586699f9acea9bbbc"
   },
-  "first_broken_edge": "worldserver_received_sigbus_during_live_magmaw_progress_after_the_patrol_safety_repair_cleared_all_prerequisite_trash",
+  "first_broken_edge": "partial_death_ghost_retained_an_accepted_native_long_path_for_296_seconds_without_position_progress_repath_or_typed_recovery_terminal",
   "decisive_evidence": {
     "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
-    "route_node_id": "bwd.magmaw.encounter",
+    "route_node_id": "bwd.magmaw.drudges",
+    "route_generation": 3,
     "chainwielder_cleared": true,
     "drudges_cleared": true,
-    "magmaw_reached": true,
+    "magmaw_reached": false,
     "magmaw_killed": false,
     "total_deaths": 1,
-    "active_combat_seconds": 105,
-    "originated_party_dps": 117262.514,
-    "party_hps": 15725.467,
-    "originated_affliction_dps": 20478.952,
-    "affliction_pet_damage": 588268,
-    "affliction_pet_damage_share": 0.274,
-    "future_encounter_contamination_observed": false,
-    "contaminating_target_entry": null,
-    "attributable_actor_guid": null,
-    "attributable_movement_owner": null,
-    "attributable_unsafe_destination": null,
-    "distance_to_future_drudge_yards": null,
-    "terminal_failure_reason": "worldserver_nonzero_return",
-    "later_terminal_edge": null,
-    "report_sha256": "e14f8ab5bd0b6e73a51324cb000a9e233c2b2ebfe7b26dbf601a61a2c8d2d4b5",
-    "heartbeat_stream_sha256": "7699e1ef53407eb26bc49c713bae331da356d671cfd0f127da784602d3ee1153",
+    "dead_bot_guid": 30001,
+    "dead_bot_class_spec": "protection_paladin",
+    "ghost_map_id": 0,
+    "ghost_position": [-7482.93, -1383.73, 416.785],
+    "native_recovery_destination": [-7542.91, -1184.93, 482.0],
+    "native_current_motion_type": 0,
+    "native_active_motion_type": 19,
+    "time_since_last_progress_ms": 296092,
+    "time_since_last_path_change_ms": 234557,
+    "last_no_progress_reason": "native_runback_no_progress",
+    "terminal_failure_reason": "semantic_progress_plateau",
+    "completion_reason": "semantic_progress_plateau_watchdog",
+    "report_sha256": "17661f65af347440390f5201d2c934bd5a5c4348d42c9989b5a798bfeb4887ec",
+    "heartbeat_stream_sha256": "45ffaece88e45688542f4a42061cc78b61249af749a8ec8216e81f16535c3b3c",
     "forbidden_assistance_observed": false,
-    "cleanup_passed": false,
-    "cleanup_passed": false,
-    "worldserver_exit_code": -7
+    "worldserver_exit_code": 0
   },
   "repair_scope": {
-    "status": "patrol_safety_verified_live_and_one_exact_infrastructure_replay_authorized",
+    "status": "one_trace_backed_native_recovery_repair_authorized",
     "allowed": [
-      "freshly_provision_the_same_frozen_roster",
-      "reuse_the_exact_clean_commit_binary_and_route",
-      "run_one_completion_watchdog_replay",
-      "distinguish_repeated_sigbus_from_the_first_gameplay_edge"
+      "trace_the_partial_death_native_recovery_episode_and_stalled_generator_ownership",
+      "make_the_existing_30_second_stall_policy_submit_exactly_one_typed_repath",
+      "resume_measurable_native_position_progress_or_emit_the_typed_native_runback_terminal",
+      "preserve_the_existing_movement_executor_as_the_only_motionmaster_owner",
+      "add_one_recorded_counterexample_and_nearby_progressing_case"
     ],
     "forbidden_shortcuts": [
-      "reduce_encounter_damage",
-      "manufacture_healing_or_damage",
-      "extend_native_pincer_window",
-      "teleport_players",
-      "force_vehicle_occupancy_or_boss_state",
-      "change_class_rotations_or_pet_policy",
-      "tune_dps_from_a_movement_heavy_raid_run",
-      "retain_raw_heartbeat_snapshots",
-      "change_gameplay_code_before_the_exact_replay"
+      "teleport_or_near_teleport",
+      "direct_resurrection",
+      "manufacture_route_or_position_progress",
+      "change_ghost_speed_or_flight_eligibility",
+      "change_drudge_damage_or_route_geometry",
+      "change_class_encounter_or_shard_policy",
+      "weaken_the_completion_watchdog",
+      "run_a_live_shard_inside_the_specialist_work_unit"
     ]
   },
   "validation_clock": {
@@ -63,23 +60,15 @@
     "fixed_success_timer_seconds": null
   },
   "implementation_budget": {
-    "matched_live_verification_runs": 1
-  },
-  "implementation_checkpoint": {
-    "runtime_commit": "31322fb541e7f3125465a856905c7016d5723acd",
-    "focused_tests_passed": 20,
-    "combat_movement_cpp_lines": 560,
-    "input_canary_runtime_commit": "841512d64422e3ef310e3c4df3bfe7cfd30573eb",
-    "input_canary_report_sha256": "6a77f7686589f73e1b7df0802cfc0a82dc4b726ad655067d3fe3086e899461f1",
-    "live_clear_claimed": false,
-    "chainwielder_patrol_safety_live_verified": true,
-    "canary97_exit_signal": 7
+    "hypotheses": 1,
+    "focused_test_runs": 2,
+    "matched_live_verification_runs": 0
   },
   "implementation_constraints": {
     "maximum_c_or_cpp_lines": 999,
-    "heavy_build_allowed": true,
-    "live_run_allowed": true,
+    "heavy_build_allowed": false,
+    "live_run_allowed": false,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "Commit this infrastructure replay authorization, freshly provision, and run the same exact binary once under the completion watchdog."
+  "next_action": "Assign one Luna max runtime specialist to repair the exact partial-death native-runback stall, run focused tests, and return a matched live-verification plan."
 }
