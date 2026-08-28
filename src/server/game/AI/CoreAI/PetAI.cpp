@@ -35,6 +35,8 @@
 
 namespace
 {
+constexpr uint32 PET_AUTOCAST_TRACE_INTERVAL = 1 * IN_MILLISECONDS;
+
 bool SpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth = 0)
 {
     if (!spellInfo || depth > 4)
@@ -86,7 +88,7 @@ int32 PetAI::Permissible(Creature const* creature)
     return PERMIT_BASE_NO;
 }
 
-PetAI::PetAI(Creature* c) : CreatureAI(c), i_tracker(TIME_INTERVAL_LOOK)
+PetAI::PetAI(Creature* c) : CreatureAI(c), i_tracker(TIME_INTERVAL_LOOK), m_autocastTraceTimer(0)
 {
     if (!me->GetCharmInfo())
         throw InvalidAIException("Creature doesn't have a valid charm info");
@@ -134,6 +136,8 @@ void PetAI::UpdateAI(uint32 diff)
 {
     if (!me->IsAlive() || !me->GetCharmInfo())
         return;
+
+    m_autocastTraceTimer.Update(diff);
 
     Unit* owner = me->GetCharmerOrOwner();
 
@@ -300,11 +304,30 @@ void PetAI::UpdateAI(uint32 diff)
         // found units to cast on to
         if (!targetSpellStore.empty())
         {
+            uint32 const candidateCount = uint32(targetSpellStore.size());
             TargetSpellList::iterator it = targetSpellStore.begin();
             std::advance(it, urand(0, targetSpellStore.size() - 1));
 
             Spell* spell  = (*it).second;
             Unit*  target = (*it).first;
+
+            if (m_autocastTraceTimer.Passed())
+            {
+                m_autocastTraceTimer.Reset(PET_AUTOCAST_TRACE_INTERVAL);
+                SpellInfo const* selectedSpellInfo = spell->GetSpellInfo();
+                TC_LOG_TRACE("entities.pet.autocast",
+                    "PetAI selected autocast pet=%s entry=%u owner=%s spell=%u "
+                    "name=\"%s\" target=%s positive=%u target_has_aura=%u candidates=%u",
+                    me->GetGUID().ToString().c_str(), me->GetEntry(),
+                    owner ? owner->GetGUID().ToString().c_str() : "none",
+                    selectedSpellInfo ? selectedSpellInfo->Id : 0,
+                    selectedSpellInfo && selectedSpellInfo->SpellName ? selectedSpellInfo->SpellName : "Unknown",
+                    target->GetGUID().ToString().c_str(),
+                    selectedSpellInfo && selectedSpellInfo->IsPositive() ? 1 : 0,
+                    selectedSpellInfo && selectedSpellInfo->IsPositive()
+                        && target->HasAura(selectedSpellInfo->Id) ? 1 : 0,
+                    candidateCount);
+            }
 
             targetSpellStore.erase(it);
 

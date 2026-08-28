@@ -48,6 +48,15 @@ Record the first broken edge, not a vague symptom:
 
 ### 2. Implement production behavior
 
+Keep each encounter mechanic as a bounded policy owner. The 2026-08-28 native
+bot audit found a heavy high-CCN tail in central boss-mechanic decisions. A
+split is useful only when it removes overlapping ownership or branches from
+the effective decision graph. Do not hide the same complexity behind helpers
+that are all invoked on every tick. Submit typed mechanic candidates with
+explicit priority, resources, stable movement destinations, and reason codes;
+let the arbiter choose. Measure touched high-CCN functions before and after,
+and keep every C/C++ source and header below 1,000 lines.
+
 Cover only the mechanics needed by the reviewed contract:
 
 - reset, engage, wipe, evade, death, and credit paths;

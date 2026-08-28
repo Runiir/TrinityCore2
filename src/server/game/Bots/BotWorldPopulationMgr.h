@@ -262,6 +262,7 @@ private:
     bool PrepareBotUpdate(BotUpdateContext& context);
     void PrepareValidationKernel(BotUpdateContext& context);
     void SubmitAdaptiveKernelCandidates(BotUpdateContext& context);
+    void SubmitAfflictionPetAttackCandidate(BotUpdateContext& context);
     void SubmitValidationKernelFallbackCandidates(BotUpdateContext& context);
     bool RunLegacyBotDecision(BotUpdateContext& context);
     bool RunBotDecisionKernel(BotUpdateContext& context);

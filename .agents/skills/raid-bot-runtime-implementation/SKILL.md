@@ -30,6 +30,17 @@ Return the work when the trace instead identifies:
 
 ## Repair and verify
 
+Treat decision complexity as a runtime risk, not as a diagnosis by itself. The
+2026-08-28 native bot audit found a heavy tail: 45 functions above CCN 100 and
+a maximum of 464. When the broken edge is inside a high-CCN function, measure
+it before and after. Extract one independent policy owner that submits a typed
+candidate with explicit resource claims and a reason. Do not move the same
+branch tree into helpers that are all still called unconditionally. Preserve
+movement as a set-and-forget intent, keep action selection in the priority
+queue, and trace ownership, admission, execution, and outcome boundaries.
+Accept the refactor only when the effective decision graph or ownership
+overlap shrinks. Keep every C/C++ source and header below 1,000 lines.
+
 Change the smallest shared transition, gate, owner token, or native-action
 edge that explains the evidence. Preserve ordinary player movement, corpse
 release, graveyard, entrance, resurrection, spell, threat, and encounter

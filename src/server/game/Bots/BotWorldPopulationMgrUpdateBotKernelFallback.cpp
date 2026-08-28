@@ -90,6 +90,9 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                 || action.find("side_hazard") != std::string::npos
                 || action.find("reseparate") != std::string::npos
                 || action.find("blocked") != std::string::npos
+                || action.find("rejected") != std::string::npos
+                || action == "drudge_entrance_native_path_no_progress"
+                || action == "drudge_entrance_native_path_retained"
                 || action.find("pending") != std::string::npos
                 || action.find("retry") != std::string::npos
                 || action.find("failed") != std::string::npos;
@@ -142,6 +145,15 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             routeAttempt->MovementSubmitted =
                 context.State.LastPathChangeMs > previousPathChangeMs
                 && context.State.ActivePathValid;
+            // MotionMaster paths are set-and-forget. A matching native path
+            // can be retained without changing LastPathChangeMs; preserve
+            // its movement lane so the route candidate cannot claim cast
+            // resources or let combat-range movement replace the path.
+            if (!routeAttempt->MovementSubmitted
+                && context.State.ActivePathValid
+                && context.State.IsMoving
+                && routeActionIsMovementOnly(context.Action))
+                routeAttempt->MovementSubmitted = true;
             routeAttempt->CombatAttempted =
                 context.State.LastCombatAttempt.RecordedAtMs
                     > previousCombatAttemptMs;
@@ -194,6 +206,10 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                 routeAttempt->RouteOutcome =
                     BotActionArbitration::Outcome::Started(
                         "route_action_submitted");
+            else if (routeActionIsMovementOnly(context.Action))
+                routeAttempt->RouteOutcome =
+                    BotActionArbitration::Outcome::Retryable(
+                        "route_movement_not_submitted");
             else
             {
                 bool const routeYield = context.Action.find("hold")
@@ -567,6 +583,8 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                     : "profile_combat_range_reconciled");
         };
         context.State.DecisionKernel.Submit(std::move(combatRange));
+
+        SubmitAfflictionPetAttackCandidate(context);
 
         BotActionArbitration::Candidate combat;
         combat.Key = "world.profile_combat";

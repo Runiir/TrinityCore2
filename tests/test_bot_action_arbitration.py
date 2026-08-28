@@ -600,8 +600,8 @@ int main()
     assert(magmawPillarMove->Y == 0.0f);
     assert(magmawPillarMove->Z == dps.Position.Z);
 
-    // An actor inside Pillar keeps the survival escape candidate while the
-    // ordinary target channel still selects the nearest parasite add.
+    // An actor inside Pillar keeps the survival escape candidate. The exposed
+    // head remains absolute damage priority even when a parasite is nearby.
     BotEncounter::Blackboard magmawPillarAdd = magmaw;
     BotEncounter::ActorSnapshot pillarAdd = pillar;
     BotEncounter::ActorSnapshot parasiteAtPillar = magmawBoss;
@@ -612,7 +612,7 @@ int main()
     magmawPillarAdd.Summons = { pillarAdd };
     auto magmawPillarAddPlan = magmawStrategy.Propose(
         magmawPillarAdd, dps.Guid, "dps");
-    assert(magmawPillarAddPlan.DamageTarget == parasiteAtPillar.Guid);
+    assert(magmawPillarAddPlan.DamageTarget == magmawHead.Guid);
     assert(magmawPillarAddPlan.Movement.has_value());
     assert(magmawPillarAddPlan.Movement->Id.Mechanic == "pillar_evade");
     assert(magmawPillarAddPlan.Movement->ActionPriority
@@ -796,18 +796,24 @@ int main()
     assert(magmawParasiteMove->Y == 0.0f);
     assert(magmawParasiteMove->Z == dps.Position.Z);
 
-    // Every observed parasite outranks the boss for ranged damage even beyond
-    // the old 30-yard cutoff. During the exposed-head window tanks also use
-    // the vulnerable head instead of continuing on Magmaw's armored body.
+    // No parasite may replace the exposed head. Outside that burn window, the
+    // ranged envelope still prevents a remote add from suppressing boss DPS.
     BotEncounter::Blackboard magmawDistantParasite = magmaw;
     magmawDistantParasite.Summons.clear();
+    parasite.Position = {
+        dps.Position.X + BotEncounter::AdaptiveMagmawStrategy::RangedParasiteTargetDistance,
+        dps.Position.Y, dps.Position.Z };
+    magmawDistantParasite.Hostiles = { magmawBoss, magmawHead, parasite };
+    auto boundaryParasitePlan = magmawStrategy.Propose(
+        magmawDistantParasite, dps.Guid, "dps");
+    assert(boundaryParasitePlan.DamageTarget == magmawHead.Guid);
     parasite.Position = { 80.0f, 0.0f, 0.0f };
     magmawDistantParasite.Hostiles = { magmawBoss, magmawHead, parasite };
     auto distantParasitePlan = magmawStrategy.Propose(
         magmawDistantParasite, dps.Guid, "dps");
     auto exposedHeadTankPlan = magmawStrategy.Propose(
         magmawDistantParasite, tankA.Guid, "tank");
-    assert(distantParasitePlan.DamageTarget == parasite.Guid);
+    assert(distantParasitePlan.DamageTarget == magmawHead.Guid);
     assert(exposedHeadTankPlan.DamageTarget == magmawHead.Guid);
 
     // Ranged players switch to the back-room stack farthest from Pillar, then
@@ -840,6 +846,30 @@ int main()
         magmawRangedPillar, dps.Guid, "dps");
     assert(!rangedPillarStablePlan.Movement.has_value());
 
+    // Bait ownership is fixed from the full roster, so a dead baiter does not
+    // promote another DPS and healers never join the bait team.
+    BotEncounter::Blackboard fixedBaiters = magmawRangedPillar;
+    BotEncounter::ActorSnapshot secondDps = dps;
+    secondDps.Guid = ObjectGuid(HighGuid::Player, uint32(104));
+    secondDps.Position = fixedBaiters.Players[2].Position;
+    BotEncounter::ActorSnapshot thirdDps = secondDps;
+    thirdDps.Guid = ObjectGuid(HighGuid::Player, uint32(105));
+    BotEncounter::ActorSnapshot healer = secondDps;
+    healer.Guid = ObjectGuid(HighGuid::Player, uint32(106));
+    healer.Role = "healer";
+    fixedBaiters.Players.push_back(secondDps);
+    fixedBaiters.Players.push_back(thirdDps);
+    fixedBaiters.Players.push_back(healer);
+    fixedBaiters.Players[2].Alive = false;
+    auto thirdDpsPlan = magmawStrategy.Propose(
+        fixedBaiters, thirdDps.Guid, "dps");
+    auto healerPillarPlan = magmawStrategy.Propose(
+        fixedBaiters, healer.Guid, "healer");
+    assert(!thirdDpsPlan.Movement.has_value()
+        || thirdDpsPlan.Movement->Id.Mechanic != "pillar_bait_switch");
+    assert(!healerPillarPlan.Movement.has_value()
+        || healerPillarPlan.Movement->Id.Mechanic != "pillar_bait_switch");
+
     // Tank handling remains source-relative and does not inherit ranged
     // anchor switching. A tank placed inside Pillar still gets its existing
     // survival movement candidate.
@@ -852,6 +882,27 @@ int main()
     assert(tankPillarPlan.Movement->Id.Mechanic == "pillar_evade");
     assert(tankPillarPlan.Movement->ActionPriority
         == BotActionArbitration::Priority::Survival);
+
+    // Mangle warning stages every movable actor, including the off tank, at
+    // the midpoint before the side telegraph. The tank already in Mangle does
+    // not receive an impossible movement request.
+    BotEncounter::Blackboard mangleSafety = magmawStage;
+    mangleSafety.NativeBossState = "in_progress";
+    mangleSafety.Hostiles.front().InCombat = true;
+    mangleSafety.Hostiles.front().VictimGuid = tankA.Guid;
+    mangleSafety.Summons.clear();
+    mangleSafety.Players[0].Auras = {
+        BotEncounter::AuraSnapshot{ 89773u, magmawBoss.Guid, 1, 0 } };
+    auto offTankManglePlan = magmawStrategy.Propose(
+        mangleSafety, tankB.Guid, "tank");
+    auto mangledTankPlan = magmawStrategy.Propose(
+        mangleSafety, tankA.Guid, "tank");
+    assert(offTankManglePlan.Movement.has_value());
+    assert(offTankManglePlan.Movement->Id.Mechanic
+        == "mangle_midpoint_stage");
+    assert(offTankManglePlan.Movement->ActionPriority
+        == BotActionArbitration::Priority::Survival);
+    assert(!mangledTankPlan.Movement.has_value());
 
     BotEncounter::Blackboard magmawFormationRestore = magmawRangedPillar;
     magmawFormationRestore.Summons.clear();

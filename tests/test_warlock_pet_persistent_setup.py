@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
+CALIBRATION_METRICS = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h"
 BOT_STATE_HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrBotState.h"
 CATALOG_BUILDER = ROOT / "tools/bot_ml/build_all_spec_phase1_catalogs.py"
 AFFLICTION = ROOT / "src/server/game/Bots/BotWorldPopulationMgrAffliction.cpp"
@@ -295,7 +296,7 @@ def test_previous_window_exposes_complete_live_pet_identity() -> None:
 
 def test_scored_window_observes_required_pet_uptime_without_repair() -> None:
     source = CALIBRATION_BOT.read_text()
-    header = HEADER.read_text()
+    header = _source(HEADER, CALIBRATION_METRICS)
     calibration = _function_body(
         source, "void BotWorldPopulationMgr::UpdateCalibrationBot"
     )
@@ -316,7 +317,7 @@ def test_affliction_pet_diagnostic_separates_execution_state_and_damage_events()
         CALIBRATION_ROWS,
         CALIBRATION_BOT_JSON,
     )
-    header = HEADER.read_text()
+    header = _source(HEADER, CALIBRATION_METRICS)
 
     # Pet health alone cannot explain a lower pet numerator. The scored
     # timeline must retain the native victim/command/current-spell state, while

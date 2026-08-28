@@ -82,6 +82,16 @@ inside the class rotation.
 
 ## Implement the smallest policy change
 
+If the policy lives in a high-CCN decision function, reduce the decision graph
+as part of the bounded repair. The 2026-08-28 native bot audit found 45
+functions above CCN 100, with a maximum of 464. Do not merely move branches
+into helpers and call every helper from the same monolithic decision. Give an
+extracted class/spec or pet concern one typed candidate, explicit gates,
+resource claims, stable reason text, and an observable outcome. Preserve the
+shared priority queue and keep movement ownership separate from the DPS,
+healer, or tank decision. Measure the touched function before and after and
+keep every C/C++ source and header below 1,000 lines.
+
 Follow [references/priority-action-contract.md](references/priority-action-contract.md).
 Change one trigger, typed gate, priority, resource claim, prerequisite,
 alternative, target selector, or observed-state transition. Preserve ordinary

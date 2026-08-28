@@ -321,12 +321,13 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
         // Command the player's primary pet through the same validated handler
         // used by CMSG_PET_ACTION. Guardians and totems retain their native AI;
         // autonomous runtime never writes their victim/react/movement state.
-        if (Unit* controlled = bot->GetFirstControlled(); controlled
-            && controlled->IsAlive() && controlled->GetCharmInfo()
-            && controlled->IsValidAttackTarget(target)
+        if (Pet* pet = bot->GetPet(); pet && pet->IsAlive()
+            && pet->GetCharmerOrOwnerPlayerOrPlayerItself() == bot
+            && pet->GetCharmInfo() && pet->IsValidAttackTarget(target)
+            && (pet->GetVictim() != target || !pet->GetCharmInfo()->IsCommandAttack())
             && bot->GetSession())
-            bot->GetSession()->HandlePetActionHelper(controlled,
-                controlled->GetGUID(), COMMAND_ATTACK, ACT_COMMAND,
+            bot->GetSession()->HandlePetActionHelper(pet, pet->GetGUID(),
+                COMMAND_ATTACK, ACT_COMMAND,
                 target->GetGUID(), target->GetPositionX(),
                 target->GetPositionY(), target->GetPositionZ());
 

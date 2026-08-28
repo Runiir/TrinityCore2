@@ -154,6 +154,18 @@ result.
 
 ## Trace a decision end to end
 
+Include decision complexity when traces show conflicting owners, oscillation,
+repeated decisions, or opaque fallback behavior. The 2026-08-28 native audit
+measured average CCN 15.80, p95 73, 45 functions above 100, and a maximum of
+464. These values are a baseline, not proof of a bug: remeasure the current
+tree and identify the first broken edge. Recommend a split only when it removes
+overlapping ownership or branches from the effective decision graph. Moving
+branches into helpers while calling all of them preserves the same complexity.
+Prefer independent typed candidates, explicit resource claims, stable intent
+reasons, and traces for admission, rejection, execution, and outcome. Keep the
+priority queue as the decision boundary and movement as a separate
+set-and-forget execution concern.
+
 For each suspicious spell or mechanic, reconstruct this chain:
 
 ```text

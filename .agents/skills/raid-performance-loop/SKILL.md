@@ -100,6 +100,17 @@ actually unavailable.
 
 ## Route work to one specialist owner
 
+Use decision complexity as a routing signal when a trace shows ownership
+conflicts, oscillation, or opaque fallback behavior. The 2026-08-28 native bot
+baseline was average CCN 15.80, p95 73, 45 functions above 100, and maximum
+464. Re-measure before acting because the tree changes. Route one bounded
+policy extraction to the specialist that owns the first broken edge. Do not
+assign a generic cleanup or accept a refactor that only moves branches into
+helpers. The handoff must preserve typed priority-queue candidates, explicit
+resource claims, stable movement intents, and observable outcomes. Require
+before/after CCN for touched high-risk functions and the repository's
+sub-1,000-line C/C++ limit.
+
 | Work unit | Required specialist skill | Owner output |
 | --- | --- | --- |
 | Exact simulator input or DPS denominator | `raid-wowsims-reference` | current promoted value plus reconstruction receipt |

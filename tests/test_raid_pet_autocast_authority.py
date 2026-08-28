@@ -5,8 +5,15 @@ ROOT = Path(__file__).resolve().parents[1]
 AUTHORITY = (ROOT / "src/server/game/Bots/BotRaidAreaAuthority.h").read_text(encoding="utf-8")
 PET_AI = (ROOT / "src/server/game/AI/CoreAI/PetAI.cpp").read_text(encoding="utf-8")
 EXECUTOR = (ROOT / "src/server/game/Bots/BotActionExecutor.cpp").read_text(encoding="utf-8")
-RUNTIME = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(encoding="utf-8")
-BOT_MGR = (ROOT / "src/server/game/Bots/BotMgr.cpp").read_text(encoding="utf-8")
+RUNTIME = "\n".join(
+    path.read_text(encoding="utf-8")
+    for path in (
+        ROOT / "src/server/game/Bots/BotWorldPopulationMgrBossMechanics.cpp",
+        ROOT / "src/server/game/Bots/BotWorldPopulationMgrLifecycle.cpp",
+        ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationAdmission.cpp",
+    )
+)
+BOT_MGR = (ROOT / "src/server/game/Bots/BotMgrCleanup.cpp").read_text(encoding="utf-8")
 
 
 def test_raid_area_authority_is_transient_and_pet_ai_enforced():
@@ -22,7 +29,7 @@ def test_raid_area_authority_is_transient_and_pet_ai_enforced():
 def test_controlled_aoe_authority_stays_closed_until_live_release_gate():
     initial_gate = RUNTIME.index("bool const suppressAreaDamage = !raidAdapter.AllowAreaDamage")
     target_scan = RUNTIME.index("bool const controlledAoeReleased = raidAdapter.ContractResolved")
-    release = RUNTIME.index("reconcileRaidAreaAutocasts(!controlledAoeReleased);")
+    release = RUNTIME.index("ReconcileRaidAreaAutocasts(bot, !controlledAoeReleased);")
     assert initial_gate < target_scan < release
     assert 'raidAdapter.TargetControl == "controlled_aoe";' in RUNTIME[
         initial_gate:target_scan

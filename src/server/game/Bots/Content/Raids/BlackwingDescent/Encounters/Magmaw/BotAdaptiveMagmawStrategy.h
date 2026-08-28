@@ -38,6 +38,11 @@ public:
     static constexpr float RangedStackDistance = 30.0f;
     static constexpr float RangedStackLateralOffset = 8.0f;
     static constexpr float RangedStackTolerance = 4.0f;
+    // Keep a remote parasite from replacing the encounter target.  The
+    // native spell/range/LOS gates remain authoritative; this is only the
+    // strategy's actionable ranged envelope so a failed add cannot suppress
+    // ordinary damage indefinitely.
+    static constexpr float RangedParasiteTargetDistance = 35.0f;
 
     AdaptiveMagmawPlan Propose(Blackboard const& board, ObjectGuid botGuid,
         std::string_view role) const
@@ -86,14 +91,15 @@ public:
         plan.Interaction = ProposeHookInteraction(board, *bot, *observed.Boss,
             botGuid);
         plan.Movement = ProposeHazardMovement(board, *bot, *observed.Boss,
-            role, pincerWindow);
+            pincerWindow, pincerWarning);
         if (!plan.Movement)
             plan.Movement = ProposeHookPreposition(board, *bot,
                 *observed.Boss, botGuid);
         if (!plan.Movement)
             plan.Movement = ProposeHookApproach(board, *bot, *observed.Boss,
                 botGuid);
-        if (!plan.Movement && !pincerWindow)
+        if (!plan.Movement && !pincerWindow
+            && !(IsPillarBaiter(board, botGuid) && HasActivePillar(board)))
             plan.Movement = ProposeRangedFormationRestore(board, *bot,
                 *observed.Boss, role);
         return plan;
@@ -135,6 +141,7 @@ private:
 
     struct MagmawRangedAnchors
     {
+        Vector3 Center;
         Vector3 Left;
         Vector3 Right;
     };
@@ -175,6 +182,37 @@ private:
         return observed;
     }
 
+    static std::optional<size_t> PillarBaiterRank(
+        Blackboard const& board, ObjectGuid botGuid)
+    {
+        std::vector<ObjectGuid> dps;
+        for (ActorSnapshot const& member : board.Players)
+            if (member.Role == "dps")
+                dps.push_back(member.Guid);
+        std::sort(dps.begin(), dps.end(), [](ObjectGuid left, ObjectGuid right)
+        {
+            return left.GetRawValue() < right.GetRawValue();
+        });
+        auto const baiter = std::find(dps.begin(), dps.end(), botGuid);
+        constexpr size_t BaiterCount = 2;
+        if (baiter == dps.end())
+            return std::nullopt;
+        size_t const rank = size_t(std::distance(dps.begin(), baiter));
+        if (rank >= std::min(BaiterCount, dps.size()))
+            return std::nullopt;
+        return rank;
+    }
+
+    static bool IsPillarBaiter(Blackboard const& board, ObjectGuid botGuid)
+    {
+        for (AssignmentLease const& assignment : board.Assignments)
+            if (assignment.Kind == AssignmentKind::Kite
+                && assignment.AssigneeGuid == botGuid
+                && assignment.ExpiresAtMs > board.ObservedAtMs)
+                return true;
+        return PillarBaiterRank(board, botGuid).has_value();
+    }
+
     static bool IsPrepull(Blackboard const& board, ActorSnapshot const& boss)
     {
         bool const bossEngaged = boss.InCombat || !boss.VictimGuid.IsEmpty();
@@ -207,15 +245,18 @@ private:
     static ObjectGuid SelectDamageTarget(MagmawActorObservation const& observed,
         std::string_view role)
     {
-        // Parasites multiply when they touch a player, so the ranged damage
-        // group clears every observed parasite before returning to Magmaw.
-        if (role != "tank" && observed.NearestParasite)
-            return observed.NearestParasite->Guid;
         // The exposed head takes the encounter's native vulnerability bonus.
         // Tanks can attack it too; keeping them on the armored body discards
         // the entire burn window for no threat benefit while Magmaw is pinned.
         if (observed.Head)
             return observed.Head->Guid;
+        // Parasites multiply when they touch a player, so ranged damage clears
+        // an actionable add before returning to Magmaw.  A remote add must
+        // not hold the profile on a target that native range/LOS gates reject.
+        if (role != "tank" && observed.NearestParasite
+            && observed.NearestParasiteDistance
+                <= RangedParasiteTargetDistance)
+            return observed.NearestParasite->Guid;
         return observed.Boss->Guid;
     }
 
@@ -246,6 +287,7 @@ private:
         float const lateralX = -dy * RangedStackLateralOffset;
         float const lateralY = dx * RangedStackLateralOffset;
         return MagmawRangedAnchors{
+            { centerX, centerY, roomSide.Z },
             { centerX + lateralX, centerY + lateralY, roomSide.Z },
             { centerX - lateralX, centerY - lateralY, roomSide.Z } };
     }
@@ -394,6 +436,92 @@ private:
         return std::nullopt;
     }
 
+    static std::optional<BotNativeAction::Candidate> BuildPillarBaitMove(
+        Blackboard const& board, ActorSnapshot const& bot,
+        ActorSnapshot const& boss, ActorSnapshot const& pillar)
+    {
+        if (!IsPillarBaiter(board, bot.Guid))
+            return std::nullopt;
+        std::optional<MagmawRangedAnchors> const anchors =
+            ResolveRangedAnchors(board, boss);
+        if (!anchors)
+            return std::nullopt;
+        Vector3 const& destination =
+            Distance2d(anchors->Left, pillar.Position)
+                >= Distance2d(anchors->Right, pillar.Position)
+            ? anchors->Left : anchors->Right;
+        if (Distance2d(bot.Position, destination) <= RangedStackTolerance)
+            return std::nullopt;
+        return BuildPointMovement(board, bot, destination,
+            "pillar_bait_switch", BotActionArbitration::Priority::Survival,
+            500.0f);
+    }
+
+    static bool HasActivePillar(Blackboard const& board)
+    {
+        return std::any_of(board.Summons.begin(), board.Summons.end(),
+            [](ActorSnapshot const& actor)
+            {
+                return actor.Alive && actor.Entry == PillarEntry;
+            });
+    }
+
+    static float ParasiteClearance(Blackboard const& board,
+        Vector3 const& point)
+    {
+        float clearance = 1000.0f;
+        auto inspect = [&clearance, &point](ActorSnapshot const& actor)
+        {
+            if (actor.Alive && IsParasiteEntry(actor.Entry))
+                clearance = std::min(clearance,
+                    Distance2d(point, actor.Position));
+        };
+        for (ActorSnapshot const& actor : board.Hostiles)
+            inspect(actor);
+        for (ActorSnapshot const& actor : board.Summons)
+            inspect(actor);
+        return clearance;
+    }
+
+    static std::optional<BotNativeAction::Candidate> BuildParasiteEscape(
+        Blackboard const& board, ActorSnapshot const& bot,
+        ActorSnapshot const& boss, ActorSnapshot const& parasite)
+    {
+        std::optional<MagmawRangedAnchors> const anchors =
+            ResolveRangedAnchors(board, boss);
+        if (!anchors)
+            return MoveAway(board, bot, parasite,
+                "parasite_contact_evade", 16.0f);
+
+        std::vector<Vector3 const*> destinations = {
+            &anchors->Center, &anchors->Left, &anchors->Right };
+        auto closest = std::min_element(destinations.begin(),
+            destinations.end(), [&bot](Vector3 const* left,
+                Vector3 const* right)
+            {
+                return Distance2d(bot.Position, *left)
+                    < Distance2d(bot.Position, *right);
+            });
+        Vector3 const* destination = *closest;
+        constexpr float SafeClearance = 16.0f;
+        if (ParasiteClearance(board, *destination) < SafeClearance)
+            destination = *std::max_element(destinations.begin(),
+                destinations.end(), [&board](Vector3 const* left,
+                    Vector3 const* right)
+                {
+                    return ParasiteClearance(board, *left)
+                        < ParasiteClearance(board, *right);
+                });
+
+        if (Distance2d(bot.Position, *destination) <= RangedStackTolerance)
+            return std::nullopt;
+        BotNativeAction::Candidate candidate = BuildPointMovement(board, bot,
+            *destination, "parasite_contact_evade",
+            BotActionArbitration::Priority::Survival, 450.0f);
+        candidate.Id.Actor = parasite.Guid;
+        return candidate;
+    }
+
     static bool IsCrashHazard(ActorSnapshot const& actor)
     {
         return actor.Entry == RoomStalkerEntry || actor.Entry == CrashEntry;
@@ -445,15 +573,13 @@ private:
 
     static std::optional<BotNativeAction::Candidate> ProposeHazardMovement(
         Blackboard const& board, ActorSnapshot const& bot,
-        ActorSnapshot const& boss, std::string_view role, bool pincerWindow)
+        ActorSnapshot const& boss, bool pincerWindow, bool pincerWarning)
     {
         MagmawHazardObservation const observed = ObserveHazards(board, bot);
         if (observed.Pillar)
         {
-            // A live Pillar can still be an immediate survival obligation for
-            // an assigned hook user.  Ordinary hazards must not pull that
-            // user away from the native pincer window, but an actor standing
-            // in the Pillar keeps the existing escape action.
+            // An assigned hook user keeps the native pincer window unless the
+            // user is already standing in the pillar.
             if (pincerWindow)
             {
                 if (std::optional<BotNativeAction::Candidate> const pillar =
@@ -462,38 +588,19 @@ private:
             }
             else
             {
-                if (role != "tank")
-                    if (std::optional<MagmawRangedAnchors> const anchors =
-                            ResolveRangedAnchors(board, boss))
-                    {
-                        Vector3 const& destination =
-                            Distance2d(anchors->Left, observed.Pillar->Position)
-                                >= Distance2d(anchors->Right,
-                                    observed.Pillar->Position)
-                            ? anchors->Left : anchors->Right;
-                        if (Distance2d(bot.Position, destination)
-                            > RangedStackTolerance)
-                            return BuildPointMovement(board, bot, destination,
-                                "pillar_bait_switch",
-                                BotActionArbitration::Priority::Survival,
-                                500.0f);
-                        return std::nullopt;
-                    }
-                if (std::optional<BotNativeAction::Candidate> pillar =
+                if (std::optional<BotNativeAction::Candidate> const bait =
+                        BuildPillarBaitMove(board, bot, boss, *observed.Pillar))
+                    return bait;
+                if (std::optional<BotNativeAction::Candidate> const pillar =
                         BuildPillarEvade(board, bot, *observed.Pillar))
                     return pillar;
             }
         }
 
-        // Massive Crash, parasites, and formation restoration are lower
-        // value than completing an already-open native pincer.  Once the
-        // assigned user is outside an immediate Pillar, let the pincer
-        // approach/interaction remain stable until the window closes.
+        // Massive Crash and parasites are lower value than completing an
+        // already-open native pincer, except for an immediate Crash escape.
         if (pincerWindow)
         {
-            // Crash is still lethal when it is already on top of the bot.
-            // Warning-time prepositioning only suppresses the lower-priority
-            // parasite contact escape.
             if (std::optional<BotNativeAction::Candidate> const crash =
                     ProposeImmediateCrashDuringPincer(board, bot, boss,
                         observed))
@@ -503,10 +610,35 @@ private:
 
         if (observed.NearestImmediateHazard
             && observed.NearestImmediateHazardDistance <= 12.0f)
-            return MoveAway(board, bot, *observed.NearestImmediateHazard,
-                IsCrashHazard(*observed.NearestImmediateHazard)
-                    ? "massive_crash_evade" : "parasite_contact_evade",
-                16.0f);
+        {
+            if (IsCrashHazard(*observed.NearestImmediateHazard))
+                return MoveAway(board, bot,
+                    *observed.NearestImmediateHazard,
+                    "massive_crash_evade", 16.0f);
+            return BuildParasiteEscape(board, bot, boss,
+                *observed.NearestImmediateHazard);
+        }
+
+        if (pincerWarning && !HasMangleAura(bot))
+            if (std::optional<MagmawRangedAnchors> const anchors =
+                    ResolveRangedAnchors(board, boss))
+            {
+                Vector3 const& destination = observed.NearestImmediateHazard
+                        && IsCrashHazard(*observed.NearestImmediateHazard)
+                    ? (Distance2d(anchors->Left,
+                            observed.NearestImmediateHazard->Position)
+                            >= Distance2d(anchors->Right,
+                                observed.NearestImmediateHazard->Position)
+                        ? anchors->Left : anchors->Right)
+                    : anchors->Center;
+                if (Distance2d(bot.Position, destination)
+                    > RangedStackTolerance)
+                    return BuildPointMovement(board, bot, destination,
+                        observed.NearestImmediateHazard
+                            && IsCrashHazard(*observed.NearestImmediateHazard)
+                            ? "mangle_safe_side" : "mangle_midpoint_stage",
+                        BotActionArbitration::Priority::Survival, 490.0f);
+            }
         return std::nullopt;
     }
 

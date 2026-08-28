@@ -62,6 +62,7 @@ class TC_GAME_API PetAI : public CreatureAI
         void UpdateAllies();
 
         TimeTracker i_tracker;
+        TimeTracker m_autocastTraceTimer;
         GuidSet m_AllySet;
         uint32 m_updateAlliesTimer;
 
