@@ -598,13 +598,18 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
                 memberObservation.Valid = loadedBot->IsInWorld()
                     && IsValidationCohortMemberInOriginalInstance(
                         state, loadedBot);
+                bool const outOfCombat = !loadedBot->IsInCombat()
+                    && !loadedBot->GetVictim()
+                    && loadedBot->getAttackers().empty();
                 memberObservation.AtEndpoint = memberObservation.Living
                     && memberObservation.Valid
-                    && loadedBot->GetExactDist(
-                        Cohort().Config.ValidationRouteX,
-                        Cohort().Config.ValidationRouteY,
-                        Cohort().Config.ValidationRouteZ)
-                        <= terminalCohortRadius;
+                    && (loadedBot->GetExactDist(
+                            Cohort().Config.ValidationRouteX,
+                            Cohort().Config.ValidationRouteY,
+                            Cohort().Config.ValidationRouteZ)
+                            <= terminalCohortRadius
+                        || (HasCompletedValidationRouteDrudgeEntrancePull(
+                                loadedBot) && outOfCombat));
             }
             cohortObservation.ObserveMember(memberObservation);
         }

@@ -1,5 +1,4 @@
 #include "Bots/BotWorldPopulationMgrValidationRouteTargetEngagement.h"
-
 #include "Bots/BotActionArbiter.h"
 #include "Bots/BotMeleeAutoAttackIntent.h"
 #include "Bots/BotWorldPopulationMgr.h"
@@ -649,12 +648,15 @@ bool ObjectiveContext::RunTargetEngagement(
                         memberObservation.Valid = member->IsInWorld()
                             && IsValidationCohortMemberInOriginalInstance(
                                 cohortState, member);
+                        bool const outOfCombat = !member->IsInCombat()
+                            && !member->GetVictim() && member->getAttackers().empty();
                         memberObservation.AtEndpoint = memberObservation.Valid
-                            && member->GetExactDist(
-                                Cohort().Config.ValidationRouteX,
-                                Cohort().Config.ValidationRouteY,
-                                Cohort().Config.ValidationRouteZ)
-                                <= routeArrivalRadius;
+                            && (member->GetExactDist(
+                                    Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY,
+                                    Cohort().Config.ValidationRouteZ)
+                                    <= routeArrivalRadius
+                                || (Manager.HasCompletedValidationRouteDrudgeEntrancePull(
+                                        member) && outOfCombat));
                     }
                     else
                     {
@@ -665,16 +667,13 @@ bool ObjectiveContext::RunTargetEngagement(
                         recovery.ReleaseRequested =
                             cohortState.NativeReleaseRequested;
                         recovery.NativeCorpseAuthority =
-                            Manager.HasNativeRaidCorpseAuthority(
-                                cohortState, member);
+                            Manager.HasNativeRaidCorpseAuthority(cohortState, member);
                         recovery.EpisodeStartedMs =
                             cohortState.NativeRecoveryEpisodeStartedMs;
                         recovery.EpisodeAttemptId =
                             cohortState.NativeRecoveryEpisodeAttemptId;
-                        recovery.EpisodeRouteGeneration =
-                            cohortState.NativeRecoveryEpisodeRouteGeneration;
-                        recovery.EpisodeWipeGeneration =
-                            cohortState.NativeRecoveryEpisodeWipeGeneration;
+                        recovery.EpisodeRouteGeneration = cohortState.NativeRecoveryEpisodeRouteGeneration;
+                        recovery.EpisodeWipeGeneration = cohortState.NativeRecoveryEpisodeWipeGeneration;
                         recovery.EpisodeDeathOrdinal =
                             cohortState.NativeRecoveryEpisodeDeathOrdinal;
                         recovery.EpisodePhase =

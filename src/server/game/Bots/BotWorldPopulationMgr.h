@@ -616,6 +616,8 @@ private:
     void LoadValidationRouteManifest();
     bool ApplyValidationRouteManifestNode(size_t index, char const* reason);
     bool MaybeAdvanceValidationRouteManifest();
+    bool HasCompletedValidationRouteDrudgeEntrancePull(
+        Player const* member) const;
     void ResetValidationRouteBossAddEscapeState();
     void ResetValidationRouteBossAddDensityState();
     void ResetValidationRouteRuntimeState(char const* reason);
