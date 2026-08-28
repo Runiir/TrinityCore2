@@ -35,11 +35,13 @@ bool ResolveExpectedBotGearIdentity(std::string const& classSpec,
 std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) const
 {
     RaidRuntime const& raid = Cohort().Raid;
+    // Observe one receipt generation so diagnostic reporting cannot terminate gameplay.
+    auto const admissionReceiptSnapshot = raid.AdmissionReceiptByGuid;
     std::map<uint32, std::string> currentGearManifestSha256ByGuid;
     std::map<uint32, bool> currentGearMatchesAdmissionByGuid;
-    bool allCurrentGearMatchesAdmission = !raid.AdmissionReceiptByGuid.empty()
-        && raid.AdmissionReceiptByGuid.size() == raid.ExpectedSize;
-    for (auto const& [guid, receipt] : raid.AdmissionReceiptByGuid)
+    bool allCurrentGearMatchesAdmission = !admissionReceiptSnapshot.empty()
+        && admissionReceiptSnapshot.size() == raid.ExpectedSize;
+    for (auto const& [guid, receipt] : admissionReceiptSnapshot)
     {
         WorldBotState const* state = nullptr;
         for (WorldBotState const& candidate : Party().Bots)
@@ -125,8 +127,16 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
          << (allCurrentGearMatchesAdmission ? "true" : "false")
          << ",\"members\":[";
     bool firstAdmissionMember = true;
-    for (auto const& [guid, member] : raid.AdmissionReceiptByGuid)
+    for (auto const& [guid, member] : admissionReceiptSnapshot)
     {
+        auto const currentGearManifestItr = currentGearManifestSha256ByGuid.find(guid);
+        auto const currentGearMatchesAdmissionItr = currentGearMatchesAdmissionByGuid.find(guid);
+        std::string const currentGearManifestSha256 =
+            currentGearManifestItr != currentGearManifestSha256ByGuid.end()
+                ? currentGearManifestItr->second : std::string();
+        bool const currentGearMatchesAdmission =
+            currentGearMatchesAdmissionItr != currentGearMatchesAdmissionByGuid.end()
+                && currentGearMatchesAdmissionItr->second;
         if (!firstAdmissionMember)
             json << ',';
         firstAdmissionMember = false;
@@ -196,9 +206,9 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
              << ",\"gear_manifest_sha256\":\""
              << JsonEscape(member.GearManifestSha256) << "\""
              << ",\"current_gear_manifest_sha256\":\""
-             << JsonEscape(currentGearManifestSha256ByGuid.at(guid)) << "\""
+             << JsonEscape(currentGearManifestSha256) << "\""
              << ",\"gear_identity_current_matches_admission\":"
-             << (currentGearMatchesAdmissionByGuid.at(guid) ? "true" : "false")
+             << (currentGearMatchesAdmission ? "true" : "false")
              << ",\"map_id\":" << member.MapId
              << ",\"instance_id\":" << member.InstanceId
              << ",\"expected_difficulty\":" << uint32(member.ExpectedDifficulty)

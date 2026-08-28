@@ -35,6 +35,17 @@ def test_raid_runtime_preserves_admission_and_gear_identity_contracts() -> None:
         assert marker in module
 
 
+def test_raid_runtime_observer_cannot_throw_on_receipt_generation_change() -> None:
+    module = MODULE.read_text(encoding="utf-8")
+    assert "auto const admissionReceiptSnapshot = raid.AdmissionReceiptByGuid;" in module
+    assert "for (auto const& [guid, receipt] : admissionReceiptSnapshot)" in module
+    assert "for (auto const& [guid, member] : admissionReceiptSnapshot)" in module
+    assert "currentGearManifestSha256ByGuid.at(guid)" not in module
+    assert "currentGearMatchesAdmissionByGuid.at(guid)" not in module
+    assert "currentGearManifestSha256ByGuid.find(guid)" in module
+    assert "currentGearMatchesAdmissionByGuid.find(guid)" in module
+
+
 def test_raid_runtime_preserves_compact_route_and_recovery_evidence() -> None:
     module = MODULE.read_text(encoding="utf-8")
     for marker in (
