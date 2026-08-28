@@ -410,6 +410,11 @@ def test_chainwielder_wait_anchor_and_pull_guard_are_outside_future_drudge_pack(
             if row.get("mechanic_profile") == "trash_two_tank_charge_lanes"
         )
         guard = float(chain["cluster_radius_yards"])
+        # Stage the roster at the central entrance recovery anchor.  The prior
+        # x=-345.872 endpoint put the pull behind the west-side LOS pillars.
+        assert (chain["x"], chain["y"], chain["z"]) == (
+            -333.0, -99.0, 214.154,
+        )
         assert chain["patrol_pull_policy"] == "ranged_patrol_to_anchor"
         assert chain["patrol_pull_owner_roster_slot"] == 9
         assert chain["patrol_wait_anchor"] == {
@@ -423,6 +428,13 @@ def test_chainwielder_wait_anchor_and_pull_guard_are_outside_future_drudge_pack(
             > guard
             for source in drudges["split_source_home_anchors"]
         )
+        magmaw = next(row for row in scenario["route"] if row.get("source_entry") == 41570)
+        pull_radius = float(chain["patrol_engage_radius_yards"])
+        assert math.hypot(chain["x"] - magmaw["x"], chain["y"] - magmaw["y"]) > pull_radius
+        assert math.hypot(
+            chain["patrol_wait_anchor"]["x"] - magmaw["x"],
+            chain["patrol_wait_anchor"]["y"] - magmaw["y"],
+        ) > pull_radius
 
         unsafe_wait = deepcopy(chain)
         unsafe_wait["patrol_wait_anchor"] = {

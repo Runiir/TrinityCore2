@@ -183,11 +183,11 @@ def test_recorded_drudge_returns_match_native_navmesh(tmp_path):
     }
     assert payload["validated_returns"]["chainwielder_patrol_pull"] == {
         "start": [-346.5827, -83.71657, 213.9893],
-        "terminal": [-345.872, -110.0, 213.964],
-        "polygons": 10,
-        "smooth_points": 8,
+        "terminal": [-333.0, -99.0, 214.154],
+        "polygons": 5,
+        "smooth_points": 7,
         "future_source_minimum_distances": {
-            "250140": 58.2531,
+            "250140": 57.8703,
             "250141": 51.5885,
         },
         "required_future_guard_distance": 50.0,

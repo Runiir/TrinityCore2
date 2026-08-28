@@ -222,7 +222,7 @@ int main()
         {"tank2_combat_anchor", -322.858002f, -48.286201f, 211.999359f,
             -322.858f, -48.2862f, 212.2623f},
         {"chainwielder_patrol_pull", -346.5827f, -83.71657f, 213.9893f,
-            -345.872f, -110.0f, 213.964f}
+            -333.0f, -99.0f, 214.154f}
     };
     for (TestPoint const& test : tests)
     {

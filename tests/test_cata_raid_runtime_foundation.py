@@ -720,6 +720,12 @@ def test_bwd_magmaw_trash_splits_chainwielder_hazard_from_drudge_charge_contract
     assert chainwielder["pack_target_entries"] == [42649]
     assert (chainwielder["hazard_source_entry"], chainwielder["hazard_damage_spell_id"]) == (42690, 79580)
     assert (chainwielder["hazard_shape"], chainwielder["hazard_radius_yards"]) == ("radial", 20.0)
+    # The old west-side endpoint is behind the entrance LOS pillars.  This
+    # central endpoint is the path-proven recovery anchor and keeps the native
+    # Chainwielder pull away from the future Drudge pack.
+    assert (chainwielder["x"], chainwielder["y"], chainwielder["z"]) == (
+        -333.0, -99.0, 214.154,
+    )
     assert chainwielder["patrol_pull_policy"] == "ranged_patrol_to_anchor"
     assert chainwielder["patrol_wait_anchor"] == {
         "x": -346.5827, "y": -83.71657, "z": 213.9893,
