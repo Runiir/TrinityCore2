@@ -630,6 +630,7 @@
           "level": 85,
           "name": "Mgwdpsd",
           "pet": {
+            "actionbar": "7 2 7 1 7 4 129 2649 1 0 1 0 1 0 6 3 6 1 6 0",
             "active": 1,
             "created_by_spell": 0,
             "entry": 8959,
@@ -639,7 +640,10 @@
             "name": "mgwwolfi",
             "slot": 0,
             "spells": [
-              2649,
+              {
+                "active": 129,
+                "id": 2649
+              },
               17253
             ]
           },
@@ -1291,6 +1295,7 @@
           "level": 85,
           "name": "Omndpsd",
           "pet": {
+            "actionbar": "7 2 7 1 7 4 129 2649 1 0 1 0 1 0 6 3 6 1 6 0",
             "active": 1,
             "created_by_spell": 0,
             "entry": 8959,
@@ -1300,7 +1305,10 @@
             "name": "omnwolfi",
             "slot": 0,
             "spells": [
-              2649,
+              {
+                "active": 129,
+                "id": 2649
+              },
               17253
             ]
           },
@@ -1954,6 +1962,7 @@
           "level": 85,
           "name": "Maldpsd",
           "pet": {
+            "actionbar": "7 2 7 1 7 4 129 2649 1 0 1 0 1 0 6 3 6 1 6 0",
             "active": 1,
             "created_by_spell": 0,
             "entry": 8959,
@@ -1963,7 +1972,10 @@
             "name": "malwolfi",
             "slot": 0,
             "spells": [
-              2649,
+              {
+                "active": 129,
+                "id": 2649
+              },
               17253
             ]
           },
@@ -2618,6 +2630,7 @@
           "level": 85,
           "name": "Atrdpsd",
           "pet": {
+            "actionbar": "7 2 7 1 7 4 129 2649 1 0 1 0 1 0 6 3 6 1 6 0",
             "active": 1,
             "created_by_spell": 0,
             "entry": 8959,
@@ -2627,7 +2640,10 @@
             "name": "atrwolfi",
             "slot": 0,
             "spells": [
-              2649,
+              {
+                "active": 129,
+                "id": 2649
+              },
               17253
             ]
           },
@@ -3283,6 +3299,7 @@
           "level": 85,
           "name": "Chidpsd",
           "pet": {
+            "actionbar": "7 2 7 1 7 4 129 2649 1 0 1 0 1 0 6 3 6 1 6 0",
             "active": 1,
             "created_by_spell": 0,
             "entry": 8959,
@@ -3292,7 +3309,10 @@
             "name": "chiwolfi",
             "slot": 0,
             "spells": [
-              2649,
+              {
+                "active": 129,
+                "id": 2649
+              },
               17253
             ]
           },
@@ -3949,6 +3969,7 @@
           "level": 85,
           "name": "Nefdpsd",
           "pet": {
+            "actionbar": "7 2 7 1 7 4 129 2649 1 0 1 0 1 0 6 3 6 1 6 0",
             "active": 1,
             "created_by_spell": 0,
             "entry": 8959,
@@ -3958,7 +3979,10 @@
             "name": "nefwolfi",
             "slot": 0,
             "spells": [
-              2649,
+              {
+                "active": 129,
+                "id": 2649
+              },
               17253
             ]
           },

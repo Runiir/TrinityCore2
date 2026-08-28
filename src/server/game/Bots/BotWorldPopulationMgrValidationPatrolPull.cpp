@@ -2,7 +2,6 @@
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 
 #include "Bots/BotRaidAreaAuthority.h"
-#include "CharmInfo.h"
 #include "Creature.h"
 #include "Map.h"
 #include "ObjectMgr.h"
@@ -192,61 +191,39 @@ bool BotWorldPopulationMgr::TryValidationRoutePatrolPull(
             && bot->getClass() == CLASS_HUNTER;
 
         // Keep the hunter's patrol pull unengaged until native Misdirection
-        // has been submitted. Disable only Growl on this pet; Bite and all
-        // other ordinary pet autocasts remain on their native cadence.
+        // has been submitted. Provisioning persists Growl disabled before
+        // admission; patrol only observes that state. Bite and all other
+        // ordinary pet autocasts remain on their native cadence.
         if (hunterPullOwner)
         {
             Pet* pet = bot->GetPet();
             SpellInfo const* growlInfo = sSpellMgr->GetSpellInfo(
                 HUNTER_PET_GROWL_SPELL_ID);
-            bool growlAutocastEnabled = false;
-            if (pet && pet->IsAlive() && growlInfo
+            bool growlAutocastOff = pet && pet->IsAlive() && growlInfo
                 && growlInfo->IsAutocastable() && pet->HasSpell(
-                    HUNTER_PET_GROWL_SPELL_ID))
+                    HUNTER_PET_GROWL_SPELL_ID);
+            if (growlAutocastOff)
             {
                 for (uint8 index = 0; index < pet->GetPetAutoSpellSize(); ++index)
                     if (pet->GetPetAutoSpellOnPos(index)
                         == HUNTER_PET_GROWL_SPELL_ID)
                     {
-                        growlAutocastEnabled = true;
+                        growlAutocastOff = false;
                         break;
                     }
-
-                if (growlAutocastEnabled)
-                {
-                    pet->ToggleAutocast(growlInfo, false);
-                    if (CharmInfo* charmInfo = pet->GetCharmInfo())
-                        charmInfo->SetSpellAutocast(growlInfo, false);
-
-                    std::string raw = BuildRawJson(bot, source);
-                    std::string semantic = BuildSemanticJson(bot, source,
-                        "validation_route_patrol_pull", &power, stage, activity);
-                    RecordEvent(state, bot, "validation_route_patrol_pull", source,
-                        "pet_growl_autocast_disabled", raw.c_str(),
-                        semantic.c_str(), bot->GetExactDist(source),
-                        source->GetEntry(), HUNTER_PET_GROWL_SPELL_ID);
-                }
             }
 
-            // A pet can have opened the native combat reference before this
-            // route tick. Remove only that pet-to-current-source edge so the
-            // preparation branch gets a fresh, unengaged observation.
-            if (pet && pet->GetVictim() == source)
-                pet->AttackStop();
-            if (pet)
+            if (!growlAutocastOff)
             {
-                auto const& combatReferences =
-                    pet->GetCombatManager().GetPvECombatRefs();
-                auto referenceItr = combatReferences.find(source->GetGUID());
-                if (referenceItr != combatReferences.end()
-                    && referenceItr->second)
-                    referenceItr->second->EndCombat();
+                state.LastNoProgressReason =
+                    "patrol_pull_growl_autocast_not_off";
+                return hold("validation_route_patrol_wait_for_growl_off",
+                    source);
             }
         }
 
-        // Compute engagement only after the hunter pet's native pre-pull edge
-        // has been closed. Any other cohort member's engagement stays
-        // authoritative and is intentionally not rewritten.
+        // Any cohort member's engagement stays authoritative and is
+        // intentionally not rewritten by the patrol pull policy.
         bool const sourceEngaged = isValidationCohortCombatLinked(source);
 
         if (!sourceEngaged)

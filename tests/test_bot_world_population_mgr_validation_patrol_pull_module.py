@@ -1,4 +1,7 @@
+import json
 from pathlib import Path
+
+from tools.bot_ml.build_validation_provisioning import build_character_insert_sql
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -6,6 +9,7 @@ SOURCE = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 MODULE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationPatrolPull.cpp"
 HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
 CMAKE = ROOT / "src/server/game/CMakeLists.txt"
+PROVISIONING = ROOT / "experiments/configs/validation_provisioning_cata_001.json"
 
 
 def test_validation_patrol_pull_module_is_bounded_and_registered():
@@ -55,11 +59,11 @@ def test_hunter_patrol_pull_resolves_a_live_same_group_tank():
         assert marker in selector
 
 
-def test_hunter_patrol_preparation_orders_growl_misdirection_before_pull():
+def test_hunter_patrol_observes_growl_off_before_misdirection_and_pull():
     text = MODULE.read_text()
     hunter_preparation = text.index("if (hunterPullOwner)")
-    growl_disable = text.index("pet->ToggleAutocast(growlInfo, false)",
-                               hunter_preparation)
+    growl_observation = text.index("bool growlAutocastOff", hunter_preparation)
+    growl_gate = text.index("if (!growlAutocastOff)", growl_observation)
     engagement_observation = text.index(
         "bool const sourceEngaged = isValidationCohortCombatLinked(source);",
         hunter_preparation,
@@ -68,13 +72,14 @@ def test_hunter_patrol_preparation_orders_growl_misdirection_before_pull():
         "TryCastFriendlySpell(bot, tank,", engagement_observation)
     ranged_pull = text.index("ResolveProfileCombatAction(", misdirection)
 
-    assert growl_disable < engagement_observation
+    assert growl_observation < growl_gate < engagement_observation
     assert engagement_observation < misdirection < ranged_pull
+    assert "validation_route_patrol_wait_for_growl_off" in text[growl_gate:engagement_observation]
     assert text.index("validation_route_patrol_wait_for_misdirection",
                       misdirection) < ranged_pull
 
 
-def test_hunter_patrol_disables_only_native_growl_autocast():
+def test_hunter_patrol_never_mutates_admitted_pet_autocast_identity():
     text = MODULE.read_text()
     hunter_preparation = text.index("if (hunterPullOwner)")
     misdirection = text.index("HUNTER_MISDIRECTION_SPELL_ID", hunter_preparation)
@@ -83,25 +88,50 @@ def test_hunter_patrol_disables_only_native_growl_autocast():
     assert "HUNTER_PET_GROWL_SPELL_ID = 2649" in text
     assert "growlInfo->IsAutocastable()" in pet_setup
     assert "pet->HasSpell(\n                    HUNTER_PET_GROWL_SPELL_ID)" in pet_setup
-    assert "pet->ToggleAutocast(growlInfo, false)" in pet_setup
-    assert "charmInfo->SetSpellAutocast(growlInfo, false)" in pet_setup
-    assert '"pet_growl_autocast_disabled"' in pet_setup
+    assert "GetPetAutoSpellOnPos(index)" in pet_setup
+    assert "patrol_pull_growl_autocast_not_off" in pet_setup
+    assert "pet->ToggleAutocast" not in pet_setup
+    assert "SetSpellAutocast" not in pet_setup
     assert "Bite and all" in text
 
 
-def test_hunter_pet_edge_is_closed_before_unengaged_gate():
+def test_hunter_patrol_leaves_native_pet_attack_edges_untouched():
     text = MODULE.read_text()
-    hunter_preparation = text.index("if (hunterPullOwner)")
-    attack_stop = text.index("pet->AttackStop()", hunter_preparation)
-    end_pet_reference = text.index("referenceItr->second->EndCombat()",
-                                  attack_stop)
-    engagement_observation = text.index(
-        "bool const sourceEngaged = isValidationCohortCombatLinked(source);",
-        end_pet_reference,
-    )
+    assert "pet->AttackStop()" not in text
+    assert "referenceItr->second->EndCombat()" not in text
 
-    assert attack_stop < end_pet_reference < engagement_observation
-    assert "pet->CombatStop" not in text[hunter_preparation:engagement_observation]
+
+def test_hunter_provisioning_persists_growl_disabled_before_admission():
+    config = json.loads(PROVISIONING.read_text(encoding="utf-8"))
+    bwd = next(row for row in config["scenarios"]
+               if row["id"] == "blackwing_descent_10n")
+    hunter = next(bot for bot in bwd["bots"]
+                  if bot.get("class_spec") == "marksmanship_hunter")
+    pet = hunter["pet"]
+    growl = next(spell for spell in pet["spells"]
+                 if isinstance(spell, dict) and spell["id"] == 2649)
+    assert growl["active"] == 129
+    assert pet["actionbar"].split()[6:8] == ["129", "2649"]
+
+    sql = build_character_insert_sql({
+        "pet_guid_base": 8700000,
+        "scenarios": [{
+            "id": "bwd_test",
+            "start_position": {"map_id": 669, "x": 0, "y": 0, "z": 0},
+            "bots": [{
+                "account": "A",
+                "name": "Hunter",
+                "role": "dps",
+                "class_spec": "marksmanship_hunter",
+                "race": 1,
+                "class": 3,
+                "level": 85,
+                "pet": pet,
+            }],
+        }],
+    })
+    assert "VALUES (8700002, 2649, 129)" in sql
+    assert "129 2649 1 0 1 0" in sql
 
 
 def test_engaged_patrol_releases_this_bot_to_the_ordinary_action_queue():
