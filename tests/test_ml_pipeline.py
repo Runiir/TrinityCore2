@@ -4218,7 +4218,7 @@ TC> {"duration_minutes":1.0,"decisions":20,"total_kills":0,"quests_completed":0}
     assert report["completion_reason"] == "no_progress_observed"
 
 
-def test_live_bot_validation_suppresses_stale_error_during_route_trash_handoff():
+def test_live_bot_validation_suppresses_stale_error_during_mixed_kernel_trash_handoff():
     output = "\n".join(
         [
             'TC> {"active_bots":1,"target_bots":1,"action":"botauto_status","decisions":20}',
@@ -4231,17 +4231,29 @@ def test_live_bot_validation_suppresses_stale_error_during_route_trash_handoff()
                             "diagnosis": {
                                 "diagnosis_code": "blocked_no_fallback",
                                 "severity": "error",
-                                "evidence": [{"name": "in_combat", "value": False}],
+                                "evidence": [
+                                    {"name": "in_combat", "value": False},
+                                    {"name": "validation_route_advance_mode", "value": "terminal"},
+                                    {"name": "validation_route_advance_pending", "value": True},
+                                    {"name": "validation_route_advance_reason", "value": "trash_cluster_cleared"},
+                                ],
                                 "decision_kernel": {
-                                    "terminal": True,
+                                    "terminal": False,
                                     "candidates": [
                                         {
                                             "key": "world.validation_route_action",
-                                            "phase": "terminal",
+                                            "phase": "deferred",
                                             "reason": "trash_cluster_cleared",
                                             "source": "validation_route_adapter",
+                                            "status": "backoff",
+                                        },
+                                        {
+                                            "key": "world.profile_combat",
+                                            "phase": "deferred",
+                                            "reason": "no_live_combat_target",
+                                            "source": "db_class_spec_profile",
                                             "status": "attempted",
-                                        }
+                                        },
                                     ],
                                 },
                             },
@@ -4276,7 +4288,12 @@ def test_live_bot_validation_keeps_active_combat_route_error_actionable():
                             "diagnosis": {
                                 "diagnosis_code": "blocked_no_fallback",
                                 "severity": "error",
-                                "evidence": [{"name": "in_combat", "value": True}],
+                                "evidence": [
+                                    {"name": "in_combat", "value": True},
+                                    {"name": "validation_route_advance_mode", "value": "terminal"},
+                                    {"name": "validation_route_advance_pending", "value": True},
+                                    {"name": "validation_route_advance_reason", "value": "trash_cluster_cleared"},
+                                ],
                                 "decision_kernel": {
                                     "terminal": True,
                                     "candidates": [
