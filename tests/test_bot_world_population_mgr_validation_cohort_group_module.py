@@ -55,14 +55,18 @@ def test_validation_cohort_group_reconciles_hunter_pet_against_frozen_receipt():
     for marker in (
         "frozenPet.PetId == observedPet.PetId",
         "frozenPet.PetEntry == observedPet.PetEntry",
+        "frozenPet.PetOwnerGuid == observedPet.PetOwnerGuid",
         "frozenPet.PetSpellCount == observedPet.Spellbook.size()",
         "frozenPet.PetSpellbook == observedPet.Spellbook",
         "frozenPet.PetSpellbookSha256 == observedPet.SpellbookSha256",
+        "frozenPet.PetAutocastSpellIds == observedPet.AutocastSpellIds",
         '"validation_active_hunter_pet_admission_identity_drift"',
     ):
         assert marker in module
     assert "ResolveExpectedHunterPetIdentity" not in module
     assert '"validation_active_hunter_pet_canonical_identity_drift"' not in module
+    assert "BotWorldPopulationMgrCalibrationIdentity.h" in module
+    assert "HunterPetObservationStatus::LifecycleUnavailable" in module
 
 
 def test_validation_cohort_group_reconciles_gear_against_frozen_receipt():

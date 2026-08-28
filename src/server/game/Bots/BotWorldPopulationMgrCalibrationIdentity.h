@@ -15,10 +15,19 @@ class Player;
 
 namespace BotWorldPopulationMgrCalibrationIdentity
 {
+enum class HunterPetObservationStatus : uint8
+{
+    NotHunter = 0,
+    LifecycleUnavailable,
+    IdentityInvalid,
+    IdentityObserved
+};
+
 struct HunterPetIdentitySnapshot
 {
     uint32 PetId = 0;
     uint32 PetEntry = 0;
+    ObjectGuid PetOwnerGuid;
     std::vector<std::pair<uint32, uint8>> Spellbook;
     std::string SpellbookSha256;
     std::vector<uint32> AutocastSpellIds;
@@ -57,6 +66,9 @@ OrdinaryPetSetupSnapshot ObserveOrdinaryPetSetup(Player const* bot);
 bool OrdinaryPersistentPetMatches(OrdinaryPetSetupSnapshot const& snapshot,
     uint32 expectedEntry, uint32 expectedFamilyId, uint32 expectedPetType,
     uint32 expectedPowerType, uint32 expectedCreatedBySpellId);
+HunterPetObservationStatus ObserveActiveOrdinaryHunterPetStatus(
+    Player const* bot,
+    HunterPetIdentitySnapshot& snapshot);
 bool ObserveActiveOrdinaryHunterPet(Player const* bot,
     HunterPetIdentitySnapshot& snapshot);
 }

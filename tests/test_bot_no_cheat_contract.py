@@ -68,7 +68,7 @@ WORLD_FUNCTION_OWNER_OVERRIDES = {
     "bool SubmitNativeQuestAccept": "BotWorldPopulationMgrQuestActions.cpp",
     "bool SubmitNativeQuestReward": "BotWorldPopulationMgrQuestActions.cpp",
     "bool IsNativeCombatResSpell": "BotWorldPopulationMgrCombatRes.cpp",
-    "bool ObserveActiveOrdinaryHunterPet": "BotWorldPopulationMgrValidationCohortGroup.cpp",
+    "bool ObserveActiveOrdinaryHunterPet": "BotWorldPopulationMgrCalibrationIdentity.cpp",
     "bool LoadedBotMatchesPinnedHunterPet": "BotWorldPopulationMgrValidationCohortGroup.cpp",
 }
 
@@ -304,7 +304,9 @@ def test_login_does_not_promote_stabled_pets_or_restore_resources() -> None:
 def test_hunter_admission_observes_exact_ordinary_pet_without_manufacturing_state() -> None:
     source = WORLD.read_text(encoding="utf-8")
     header = WORLD_HEADER.read_text(encoding="utf-8")
-    observer = function_body(source, "bool ObserveActiveOrdinaryHunterPet")
+    observer = function_body(
+        source, "HunterPetObservationStatus ObserveActiveOrdinaryHunterPetStatus"
+    )
     declared_spec = function_body(source, "bool LoadedBotMatchesDeclaredSpec")
     pinned_pet = function_body(source, "bool LoadedBotMatchesPinnedHunterPet")
     admission = function_body(
@@ -315,13 +317,14 @@ def test_hunter_admission_observes_exact_ordinary_pet_without_manufacturing_stat
     )
 
     for token in (
-        "stored->Type != HUNTER_PET",
-        "pet->getPetType() != HUNTER_PET",
+        "stored->Type == HUNTER_PET",
+        "pet->getPetType() == HUNTER_PET",
         "pet->IsPermanentPetFor",
-        "GetPetNumber() != stored->PetId",
-        "pet->GetEntry() != stored->CreatureId",
+        "snapshot.PetId == stored->PetId",
+        "snapshot.PetEntry == stored->CreatureId",
         "petSpell.state != PETSPELL_REMOVED",
         "petSpell.type != PETSPELL_FAMILY",
+        "PetOwnerGuid",
     ):
         assert token in observer or token in pinned_pet
     # Shard rosters own disjoint pet rows, so the pinned identity is the
@@ -330,8 +333,10 @@ def test_hunter_admission_observes_exact_ordinary_pet_without_manufacturing_stat
     for token in (
         "frozenPet.PetId == observedPet.PetId",
         "frozenPet.PetEntry == observedPet.PetEntry",
+        "frozenPet.PetOwnerGuid == observedPet.PetOwnerGuid",
         "frozenPet.PetSpellbook == observedPet.Spellbook",
         "frozenPet.PetSpellbookSha256 == observedPet.SpellbookSha256",
+        "frozenPet.PetAutocastSpellIds == observedPet.AutocastSpellIds",
     ):
         assert token in admission
     assert "!activeObservationOnly" in admission
@@ -345,6 +350,8 @@ def test_hunter_admission_observes_exact_ordinary_pet_without_manufacturing_stat
         "PetEntry",
         "PetSpellbook",
         "PetSpellbookSha256",
+        "PetOwnerGuid",
+        "PetAutocastSpellIds",
     ):
         assert field in header
     for receipt_key in (
@@ -384,14 +391,16 @@ def test_active_hunter_pet_identity_is_reconciled_against_frozen_receipt() -> No
 
     for token in (
         "admission.AdmissionReceiptByGuid.find",
-        "ObserveActiveOrdinaryHunterPet(bot, observedPet)",
+        "ObserveActiveOrdinaryHunterPetStatus(bot, observedPet)",
         "frozenPet.PetId == observedPet.PetId",
         "frozenPet.PetEntry == observedPet.PetEntry",
+        "frozenPet.PetOwnerGuid == observedPet.PetOwnerGuid",
         "frozenPet.PetSpellCount == observedPet.Spellbook.size()",
         "frozenPet.PetSpellbook == observedPet.Spellbook",
         "frozenPet.PetSpellbookSha256 == observedPet.SpellbookSha256",
+        "frozenPet.PetAutocastSpellIds == observedPet.AutocastSpellIds",
         '"validation_active_hunter_pet_receipt_missing"',
-        '"validation_active_hunter_pet_missing"',
+        '"validation_active_hunter_pet_lifecycle_unavailable"',
         '"validation_active_hunter_pet_admission_identity_drift"',
         "MarkValidationCohortViolation(*invalidState, invalidBot, invalidReason)",
     ):
@@ -440,13 +449,50 @@ def test_dead_hunter_skips_active_pet_reconciliation_but_living_hunter_requires_
     for token in (
         "admission.AdmissionReceiptByGuid.find",
         "!admittedPet->second.PetIdentityPresent",
-        "ObserveActiveOrdinaryHunterPet(bot, observedPet)",
+        "ObserveActiveOrdinaryHunterPetStatus(bot, observedPet)",
         "frozenPet.PetId == observedPet.PetId",
         "frozenPet.PetEntry == observedPet.PetEntry",
+        "frozenPet.PetOwnerGuid == observedPet.PetOwnerGuid",
         "frozenPet.PetSpellbook == observedPet.Spellbook",
         "frozenPet.PetSpellbookSha256 == observedPet.SpellbookSha256",
+        "frozenPet.PetAutocastSpellIds == observedPet.AutocastSpellIds",
     ):
         assert token in hunter_reconciliation
+
+
+def test_active_hunter_pet_lifecycle_is_typed_and_not_admission_drift() -> None:
+    source = WORLD.read_text(encoding="utf-8")
+    identity = function_body(
+        source, "HunterPetObservationStatus ObserveActiveOrdinaryHunterPetStatus"
+    )
+    admission = function_body(
+        source, "void BotWorldPopulationMgr::EnsureValidationCohortGroup"
+    )
+    active = admission[
+        admission.index("if (activeObservationOnly)") : admission.index(
+            "if (members.empty())"
+        )
+    ]
+
+    for token in (
+        "HunterPetObservationStatus::LifecycleUnavailable",
+        "HunterPetObservationStatus::IdentityInvalid",
+        "HunterPetObservationStatus::IdentityObserved",
+        "!bot->IsInWorld()",
+        "!pet->IsInWorld()",
+        "!pet->IsAlive()",
+    ):
+        assert token in identity
+    assert (
+        '"validation_active_hunter_pet_lifecycle_unavailable"'
+        in active
+    )
+    assert "MarkValidationCohortViolation" not in active[
+        active.index('"validation_active_hunter_pet_lifecycle_unavailable"') :
+        active.index('"validation_active_hunter_pet_lifecycle_unavailable"') + 220
+    ]
+    assert "PetOwnerGuid" in active
+    assert "PetAutocastSpellIds" in active
 
 
 def test_certifying_routes_use_server_owned_manifest_entrance_placement() -> None:

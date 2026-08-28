@@ -275,9 +275,11 @@
         bool PetIdentityPresent = false;
         uint32 PetId = 0;
         uint32 PetEntry = 0;
+        ObjectGuid PetOwnerGuid;
         uint32 PetSpellCount = 0;
         std::vector<std::pair<uint32, uint8>> PetSpellbook;
         std::string PetSpellbookSha256;
+        std::vector<uint32> PetAutocastSpellIds;
         std::string GearProfileId;
         uint32 GearItemCount = 0;
         std::vector<RaidRosterItemIdentity> GearManifest;

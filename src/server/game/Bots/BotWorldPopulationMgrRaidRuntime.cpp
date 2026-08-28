@@ -151,6 +151,7 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
              << ",\"pet_identity_present\":" << (member.PetIdentityPresent ? "true" : "false")
              << ",\"pet_id\":" << member.PetId
              << ",\"pet_entry\":" << member.PetEntry
+             << ",\"pet_owner_guid\":" << member.PetOwnerGuid.GetRawValue()
              << ",\"pet_spell_count\":" << member.PetSpellCount
              << ",\"pet_spellbook\":[";
         for (size_t index = 0; index < member.PetSpellbook.size(); ++index)
@@ -162,6 +163,14 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
         }
         json << ']'
              << ",\"pet_spellbook_sha256\":\"" << JsonEscape(member.PetSpellbookSha256) << "\""
+             << ",\"pet_autocast_spell_ids\":[";
+        for (size_t index = 0; index < member.PetAutocastSpellIds.size(); ++index)
+        {
+            if (index)
+                json << ',';
+            json << member.PetAutocastSpellIds[index];
+        }
+        json << ']'
              << ",\"gear_profile_id\":\"" << JsonEscape(member.GearProfileId) << "\""
              << ",\"gear_item_count\":" << member.GearItemCount
              << ",\"gear_manifest\":[";

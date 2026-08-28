@@ -1,9 +1,8 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotAdmissionIdentityGenerated.h"
+#include "Bots/BotWorldPopulationMgrCalibrationIdentity.h"
 #include "Bots/BotMgr.h"
 
-#include "CharmInfo.h"
-#include "Cryptography/CryptoHash.h"
 #include "DataStores/DBCStores.h"
 #include "GameTime.h"
 #include "Group.h"
@@ -14,7 +13,6 @@
 #include "Map.h"
 #include "MapManager.h"
 #include "ObjectAccessor.h"
-#include "Pet.h"
 #include "Player.h"
 #include "WorldSession.h"
 #include "WorldPacket.h"
@@ -33,14 +31,10 @@
 
 namespace
 {
-struct HunterPetIdentitySnapshot
-{
-    uint32 PetId = 0;
-    uint32 PetEntry = 0;
-    std::vector<std::pair<uint32, uint8>> Spellbook;
-    std::string SpellbookSha256;
-    std::vector<uint32> AutocastSpellIds;
-};
+using BotWorldPopulationMgrCalibrationIdentity::HunterPetIdentitySnapshot;
+using BotWorldPopulationMgrCalibrationIdentity::HunterPetObservationStatus;
+using BotWorldPopulationMgrCalibrationIdentity::ObserveActiveOrdinaryHunterPet;
+using BotWorldPopulationMgrCalibrationIdentity::ObserveActiveOrdinaryHunterPetStatus;
 
 float Distance2d(float ax, float ay, float bx, float by)
 {
@@ -65,69 +59,14 @@ BotAdmissionIdentityGenerated::Identity const* FindExpectedBotAdmissionIdentity(
     return nullptr;
 }
 
-std::string HunterPetSpellbookSha256(
-    std::vector<std::pair<uint32, uint8>> const& spellbook)
-{
-    std::ostringstream canonical;
-    for (size_t index = 0; index < spellbook.size(); ++index)
-    {
-        if (index)
-            canonical << ';';
-        canonical << spellbook[index].first << ':'
-                  << uint32(spellbook[index].second);
-    }
-    std::string digest = ByteArrayToHexStr(
-        Trinity::Crypto::SHA256::GetDigestOf(canonical.str()));
-    std::transform(digest.begin(), digest.end(), digest.begin(),
-        [](unsigned char c) { return char(std::tolower(c)); });
-    return digest;
-}
-
-bool ObserveActiveOrdinaryHunterPet(Player const* bot,
-    HunterPetIdentitySnapshot& snapshot)
-{
-    if (!bot || bot->getClass() != CLASS_HUNTER)
-        return false;
-    Pet* pet = bot->GetPet();
-    PlayerPetData const* stored =
-        const_cast<Player*>(bot)->GetPlayerPetDataCurrent();
-    if (!pet || !stored || !stored->Active || stored->Type != HUNTER_PET
-        || pet->getPetType() != HUNTER_PET || !pet->IsInWorld()
-        || !pet->IsAlive()
-        || !pet->IsPermanentPetFor(const_cast<Player*>(bot))
-        || pet->GetOwner() != bot || !pet->GetCharmInfo()
-        || !stored->PetId || !stored->CreatureId
-        || pet->GetCharmInfo()->GetPetNumber() != stored->PetId
-        || pet->GetEntry() != stored->CreatureId)
-        return false;
-    snapshot.PetId = stored->PetId;
-    snapshot.PetEntry = stored->CreatureId;
-    for (auto const& [spellId, petSpell] : pet->m_spells)
-        if (petSpell.state != PETSPELL_REMOVED
-            && petSpell.type != PETSPELL_FAMILY)
-            snapshot.Spellbook.emplace_back(spellId, uint8(petSpell.active));
-    std::sort(snapshot.Spellbook.begin(), snapshot.Spellbook.end());
-    snapshot.SpellbookSha256 = HunterPetSpellbookSha256(snapshot.Spellbook);
-    snapshot.AutocastSpellIds.assign(
-        pet->m_autospells.begin(), pet->m_autospells.end());
-    std::sort(snapshot.AutocastSpellIds.begin(),
-        snapshot.AutocastSpellIds.end());
-    snapshot.AutocastSpellIds.erase(std::unique(
-        snapshot.AutocastSpellIds.begin(), snapshot.AutocastSpellIds.end()),
-        snapshot.AutocastSpellIds.end());
-    return true;
-}
-
 bool LoadedBotMatchesPinnedHunterPet(Player const* bot,
     std::string const& /*classSpec*/)
 {
     if (!bot || bot->getClass() != CLASS_HUNTER)
         return true;
-    // The compile-time catalog pins one reference-world pet row number and
-    // spellbook. Diagnostic shards own disjoint pet rows by construction, so
-    // roster composition pins the cohort's own active ordinary pet here; its
-    // exact identity is frozen into the admission receipt and every later
-    // pass reconciles against that frozen copy.
+    // Diagnostic shards own disjoint pet rows by construction. The shared
+    // observer only proves that this cohort has a valid ordinary pet; the
+    // active receipt freezes and later compares the cohort's own identity.
     HunterPetIdentitySnapshot observed;
     return ObserveActiveOrdinaryHunterPet(bot, observed);
 }
@@ -272,10 +211,21 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
                 }
 
                 HunterPetIdentitySnapshot observedPet;
-                if (!ObserveActiveOrdinaryHunterPet(bot, observedPet))
+                HunterPetObservationStatus const petStatus =
+                    ObserveActiveOrdinaryHunterPetStatus(bot, observedPet);
+                if (petStatus == HunterPetObservationStatus::LifecycleUnavailable)
+                {
+                    // Pet death, dismissal, and native world removal are
+                    // lifecycle transitions. Keep the frozen identity intact
+                    // and let the ordinary pet recovery path handle them.
+                    state.LastPetReadinessAction =
+                        "validation_active_hunter_pet_lifecycle_unavailable";
+                    continue;
+                }
+                if (petStatus != HunterPetObservationStatus::IdentityObserved)
                 {
                     invalidate(state, bot,
-                        "validation_active_hunter_pet_missing");
+                        "validation_active_hunter_pet_admission_identity_drift");
                     continue;
                 }
 
@@ -286,9 +236,11 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
                 CohortAdmissionMemberReceipt const& frozenPet = admittedPet->second;
                 bool const frozenPetMatches = frozenPet.PetId == observedPet.PetId
                     && frozenPet.PetEntry == observedPet.PetEntry
+                    && frozenPet.PetOwnerGuid == observedPet.PetOwnerGuid
                     && frozenPet.PetSpellCount == observedPet.Spellbook.size()
                     && frozenPet.PetSpellbook == observedPet.Spellbook
-                    && frozenPet.PetSpellbookSha256 == observedPet.SpellbookSha256;
+                    && frozenPet.PetSpellbookSha256 == observedPet.SpellbookSha256
+                    && frozenPet.PetAutocastSpellIds == observedPet.AutocastSpellIds;
                 if (!frozenPetMatches)
                     invalidate(state, bot,
                         "validation_active_hunter_pet_admission_identity_drift");
@@ -693,7 +645,8 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
                 {
                     HunterPetIdentitySnapshot petIdentity;
                     if (!LoadedBotMatchesPinnedHunterPet(member, row.ClassSpec)
-                        || !ObserveActiveOrdinaryHunterPet(member, petIdentity))
+                        || ObserveActiveOrdinaryHunterPetStatus(member, petIdentity)
+                        != HunterPetObservationStatus::IdentityObserved)
                     {
                         receipt.clear();
                         raid.ServerProvisioningComplete = false;
@@ -702,9 +655,12 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
                     row.PetIdentityPresent = true;
                     row.PetId = petIdentity.PetId;
                     row.PetEntry = petIdentity.PetEntry;
+                    row.PetOwnerGuid = petIdentity.PetOwnerGuid;
                     row.PetSpellCount = uint32(petIdentity.Spellbook.size());
                     row.PetSpellbook = std::move(petIdentity.Spellbook);
                     row.PetSpellbookSha256 = std::move(petIdentity.SpellbookSha256);
+                    row.PetAutocastSpellIds = std::move(
+                        petIdentity.AutocastSpellIds);
                 }
                 row.MapId = member->GetMapId();
                 row.InstanceId = member->GetInstanceId();
