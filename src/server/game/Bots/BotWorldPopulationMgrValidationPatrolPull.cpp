@@ -398,10 +398,10 @@ bool BotWorldPopulationMgr::TryValidationRoutePatrolPull(
                 != Cohort().Raid.RosterByGuid.end()
             && Cohort().Raid.RosterByGuid.at(
                 source->GetVictim()->GetGUID().GetCounter()).Role == "tank";
-        auto const roster = Cohort().Raid.RosterByGuid.find(
+        auto const botRoster = Cohort().Raid.RosterByGuid.find(
             bot->GetGUID().GetCounter());
-        bool const botIsTank = roster != Cohort().Raid.RosterByGuid.end()
-            && roster->second.Role == "tank";
+        bool const botIsTank = botRoster != Cohort().Raid.RosterByGuid.end()
+            && botRoster->second.Role == "tank";
         if (!botIsTank && !tankOwned)
             return hold("validation_route_patrol_wait_for_tank_threat", source);
 
