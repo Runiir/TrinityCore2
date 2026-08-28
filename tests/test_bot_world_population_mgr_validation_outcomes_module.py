@@ -47,3 +47,21 @@ def test_validation_outcomes_preserve_terminal_and_focus_state():
         "ValidationRouteUnresolvedFocusHoldCount",
     ):
         assert marker in text
+
+
+def test_dead_engaged_pack_reconciliation_precedes_route_movement():
+    text = SOURCE.read_text()
+    reconciliation = text.index("if (recordDefeatedValidationRoutePackMembers())")
+    first_movement = text.index(
+        "if (TryValidationRouteMovementCheck(state, bot, power, stage, activity,")
+    stale_target = text.index(
+        'recordDefeatedValidationRouteTarget(target, "stale_target_seen_dead")'
+    )
+
+    assert reconciliation < first_movement
+    assert first_movement < stale_target
+    recovery_block = text[reconciliation:stale_target]
+    assert 'situation = "validation_route_recovery";' in recovery_block
+    assert 'action = "validation_route_recovery";' in recovery_block
+    assert "target = nullptr;" in recovery_block
+    assert "state.TargetGuid.Clear();" in recovery_block

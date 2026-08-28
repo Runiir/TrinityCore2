@@ -644,6 +644,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         routeDistance, std::move(terminalArrivalCallbacks));
     if (terminalArrivalContext.Run())
         return true;
+    if (recordDefeatedValidationRoutePackMembers())
+    {
+        situation = "validation_route_recovery";
+        action = "validation_route_recovery";
+        target = nullptr;
+        state.TargetGuid.Clear();
+        return true;
+    }
     if (Cohort().Config.ValidationRouteKind != "boss"
         && std::string(GetDungeonRole(bot)) != "tank"
         && routeDistance > routeArrivalRadius
@@ -716,8 +724,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     if (terminalArrivalContext.RunTrashThreatControl(trashThreatControl,
             trashThreatControlCallbacks))
         return true;
-    if (recordDefeatedValidationRoutePackMembers()
-        || recordDefeatedValidationRouteTarget(target, "stale_target_seen_dead")
+    if (recordDefeatedValidationRouteTarget(target, "stale_target_seen_dead")
         || recordDefeatedValidationRouteTarget(bot->GetVictim(), "stale_victim_seen_dead"))
     {
         situation = "validation_route_recovery";
