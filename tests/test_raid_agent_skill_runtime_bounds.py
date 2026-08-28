@@ -32,3 +32,5 @@ def test_runtime_skills_keep_receipt_bound_state_pre_admission() -> None:
     assert "After commit, decision and route code may observe them" in contract
     assert "preserve the drift failure" in runtime
     assert "ObserveActiveOrdinaryHunterPet" in runtime
+    assert "Separate stable identity from native lifecycle state" in contract
+    assert "Do not make an immutable identity observer also require transient liveness" in runtime

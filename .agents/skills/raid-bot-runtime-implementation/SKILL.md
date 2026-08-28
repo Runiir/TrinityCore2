@@ -79,6 +79,13 @@ six validation/calibration translation units. A bounded repair should reuse one
 shared value-only observer when that duplication touches the admitted edge;
 do not broaden an unrelated repair into a repository-wide cleanup.
 
+Do not make an immutable identity observer also require transient liveness.
+For ordinary pets, reconcile the stable owner/pet row/entry/persisted
+spellbook separately from alive, summoned, in-world, target, and combat state.
+The latter belongs to a typed native pet lifecycle/recovery edge. Use distinct
+reason codes so a dead or temporarily unsummoned pet cannot masquerade as
+spellbook identity drift and permanently close an otherwise recoverable raid.
+
 For set-and-forget native movement, distinguish the short arbitration lease
 from the native generator it admitted. A lease may expire exactly at the next
 decision cadence while the receipt-bound `MotionMaster` path is still active.

@@ -51,6 +51,11 @@ outside the owned files is allowed only to resolve the admitted edge.
   owner. Do not copy pet, gear, roster, or instance identity logic into
   calibration, route, and runtime functions. If multiple consumers need it,
   extract a value-only helper and test all consumers against the same result.
+- Separate stable identity from native lifecycle state. A pet row, owner,
+  entry, and persisted spellbook/autocast are identity; alive, summoned,
+  in-world, current victim, and combat references are lifecycle. Death,
+  dismissal, revive, summon, release, and worldport need typed recovery facts,
+  not a rewritten receipt or a misleading identity-drift reason.
 
 ## Return a bounded handoff
 
