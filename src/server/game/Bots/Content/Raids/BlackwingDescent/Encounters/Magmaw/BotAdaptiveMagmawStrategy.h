@@ -87,6 +87,9 @@ public:
         plan.Movement = ProposeHazardMovement(board, *bot, *observed.Boss,
             role, pincerWindow);
         if (!plan.Movement)
+            plan.Movement = ProposeHookPreposition(board, *bot,
+                *observed.Boss, botGuid);
+        if (!plan.Movement)
             plan.Movement = ProposeHookApproach(board, *bot, *observed.Boss,
                 botGuid);
         if (!plan.Movement && !pincerWindow)
@@ -265,6 +268,27 @@ private:
             });
     }
 
+    static std::optional<Vector3> ResolveHookApproachDestination(
+        Blackboard const& board, ActorSnapshot const& bot,
+        ActorSnapshot const& boss)
+    {
+        std::optional<MagmawRangedAnchors> const anchors =
+            ResolveRangedAnchors(board, boss);
+        if (!anchors)
+            return std::nullopt;
+        float dx = anchors->Left.X + anchors->Right.X
+            - 2.0f * boss.Position.X;
+        float dy = anchors->Left.Y + anchors->Right.Y
+            - 2.0f * boss.Position.Y;
+        float const length = std::sqrt(dx * dx + dy * dy);
+        if (length < 0.01f)
+            return std::nullopt;
+        return Vector3{
+            boss.Position.X + dx / length * 4.0f,
+            boss.Position.Y + dy / length * 4.0f,
+            bot.Position.Z };
+    }
+
     static BotNativeAction::Candidate BuildPointMovement(
         Blackboard const& board, ActorSnapshot const& bot,
         Vector3 const& point, std::string mechanic,
@@ -372,6 +396,30 @@ private:
     static bool IsCrashHazard(ActorSnapshot const& actor)
     {
         return actor.Entry == RoomStalkerEntry || actor.Entry == CrashEntry;
+    }
+
+    static bool HasMangleAura(ActorSnapshot const& actor)
+    {
+        return HasAura(actor, 89773) || HasAura(actor, 78412);
+    }
+
+    static bool IsPincerWarningActor(ActorSnapshot const& actor)
+    {
+        return actor.Alive && (actor.Entry == CrashEntry
+            || (actor.Entry == RoomStalkerEntry && HasAura(actor, 87949)));
+    }
+
+    static bool PincerWarningObserved(Blackboard const& board)
+    {
+        for (ActorSnapshot const& member : board.Players)
+            if (member.Alive && HasMangleAura(member))
+                return true;
+        for (std::vector<ActorSnapshot> const* actors : {
+                 &board.Hostiles, &board.Summons })
+            for (ActorSnapshot const& actor : *actors)
+                if (IsPincerWarningActor(actor))
+                    return true;
+        return false;
     }
 
     static std::optional<BotNativeAction::Candidate> ProposeHazardMovement(
@@ -549,6 +597,27 @@ private:
         return std::nullopt;
     }
 
+    static std::optional<BotNativeAction::Candidate> ProposeHookPreposition(
+        Blackboard const& board, ActorSnapshot const& bot,
+        ActorSnapshot const& boss, ObjectGuid botGuid)
+    {
+        MagmawHookAssignment const assignment = ResolveHookAssignment(board,
+            bot, botGuid);
+        if (!assignment.Assigned || assignment.Vehicle || boss.Interactable
+            || !PincerWarningObserved(board)
+            || Distance2d(bot.Position, boss.Position)
+                <= HookInteractionDistance)
+            return std::nullopt;
+
+        std::optional<Vector3> const destination =
+            ResolveHookApproachDestination(board, bot, boss);
+        if (!destination)
+            return std::nullopt;
+        return BuildPointMovement(board, bot, *destination,
+            "pincer_preposition", BotActionArbitration::Priority::Mechanic,
+            365.0f);
+    }
+
     static std::optional<BotNativeAction::Candidate> ProposeHookApproach(
         Blackboard const& board, ActorSnapshot const& bot,
         ActorSnapshot const& boss, ObjectGuid botGuid)
@@ -560,22 +629,11 @@ private:
                 <= HookInteractionDistance)
             return std::nullopt;
 
-        std::optional<MagmawRangedAnchors> const anchors =
-            ResolveRangedAnchors(board, boss);
-        if (!anchors)
+        std::optional<Vector3> const destination =
+            ResolveHookApproachDestination(board, bot, boss);
+        if (!destination)
             return std::nullopt;
-        float dx = anchors->Left.X + anchors->Right.X
-            - 2.0f * boss.Position.X;
-        float dy = anchors->Left.Y + anchors->Right.Y
-            - 2.0f * boss.Position.Y;
-        float const length = std::sqrt(dx * dx + dy * dy);
-        if (length < 0.01f)
-            return std::nullopt;
-        Vector3 const destination{
-            boss.Position.X + dx / length * 4.0f,
-            boss.Position.Y + dy / length * 4.0f,
-            bot.Position.Z };
-        return BuildPointMovement(board, bot, destination,
+        return BuildPointMovement(board, bot, *destination,
             "pincer_approach", BotActionArbitration::Priority::Mechanic,
             375.0f);
     }

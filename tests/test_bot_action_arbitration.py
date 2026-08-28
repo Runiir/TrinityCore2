@@ -944,6 +944,105 @@ int main()
         hookApproachMove->Y - magmawBoss.Position.Y)
         < BotEncounter::AdaptiveMagmawStrategy::HookInteractionDistance);
 
+    // The native Mangle warning gives only the deterministic hook pair time
+    // to stage at the ordinary spell-click distance.  The warning is observed
+    // from native player aura state, while the open interaction window below
+    // still owns the existing approach and mount path.
+    BotEncounter::Blackboard magmawPincerPreposition = magmawHookApproach;
+    magmawPincerPreposition.Hostiles.front().Interactable = false;
+    magmawPincerPreposition.Players[0].Position = {
+        magmawBoss.Position.X - 20.0f, magmawBoss.Position.Y, 0.0f };
+    magmawPincerPreposition.Players[1].Position = {
+        magmawBoss.Position.X - 25.0f, magmawBoss.Position.Y, 0.0f };
+    magmawPincerPreposition.Players[2].Position = { -10.0f, 8.0f, 0.0f };
+    magmawPincerPreposition.Players[2].Auras = {
+        BotEncounter::AuraSnapshot{ 89773u, ObjectGuid{}, 1, 0 } };
+    auto prepositionPlan = magmawStrategy.Propose(
+        magmawPincerPreposition, hookBot.Guid, "dps");
+    assert(prepositionPlan.Movement.has_value());
+    assert(prepositionPlan.Movement->Id.Mechanic
+        == "pincer_preposition");
+    assert(prepositionPlan.Movement->ActionPriority
+        == BotActionArbitration::Priority::Mechanic);
+    auto const* prepositionMove = std::get_if<Move>(
+        &prepositionPlan.Movement->Action);
+    assert(prepositionMove);
+    assert(std::hypot(prepositionMove->X - magmawBoss.Position.X,
+        prepositionMove->Y - magmawBoss.Position.Y)
+        <= BotEncounter::AdaptiveMagmawStrategy::HookInteractionDistance);
+
+    // The alternate native Mangle aura is equivalent, and a non-assigned
+    // ranged player keeps ordinary formation behavior instead of staging.
+    BotEncounter::Blackboard alternateMangle = magmawPincerPreposition;
+    alternateMangle.Players[2].Auras.front().SpellId = 78412u;
+    auto alternatePrepositionPlan = magmawStrategy.Propose(
+        alternateMangle, secondHookBot.Guid, "dps");
+    assert(alternatePrepositionPlan.Movement.has_value());
+    assert(alternatePrepositionPlan.Movement->Id.Mechanic
+        == "pincer_preposition");
+    auto nonAssignedWarningPlan = magmawStrategy.Propose(
+        alternateMangle, nonHookBot.Guid, "healer");
+    assert(!nonAssignedWarningPlan.Movement.has_value()
+        || nonAssignedWarningPlan.Movement->Id.Mechanic
+            != "pincer_preposition");
+
+    // Without a warning, the assigned user remains on normal ranged
+    // formation logic. A warning-local Pillar retains survival ownership over
+    // prepositioning and never turns into a mechanic-owned move.
+    BotEncounter::Blackboard noPincerWarning = magmawPincerPreposition;
+    noPincerWarning.Players[2].Auras.clear();
+    auto noWarningPlan = magmawStrategy.Propose(
+        noPincerWarning, hookBot.Guid, "dps");
+    assert(noWarningPlan.Movement.has_value());
+    assert(noWarningPlan.Movement->Id.Mechanic
+        == "ranged_formation_restore");
+
+    BotEncounter::Blackboard crashWarning = noPincerWarning;
+    BotEncounter::ActorSnapshot crashWarningActor = magmawBoss;
+    crashWarningActor.Guid = ObjectGuid(HighGuid::Unit, uint32(47330),
+        uint32(108));
+    crashWarningActor.Entry = BotEncounter::AdaptiveMagmawStrategy::CrashEntry;
+    crashWarningActor.Position = {
+        magmawBoss.Position.X + 20.0f, magmawBoss.Position.Y, 0.0f };
+    crashWarning.Hostiles.push_back(crashWarningActor);
+    auto crashPrepositionPlan = magmawStrategy.Propose(
+        crashWarning, hookBot.Guid, "dps");
+    assert(crashPrepositionPlan.Movement.has_value());
+    assert(crashPrepositionPlan.Movement->Id.Mechanic
+        == "pincer_preposition");
+
+    // A warning does not suppress immediate Crash survival. When the native
+    // telegraph is already within the existing 12-yard escape radius, that
+    // Survival candidate wins over mechanic prepositioning.
+    BotEncounter::Blackboard immediateCrash = magmawPincerPreposition;
+    BotEncounter::ActorSnapshot immediateCrashActor = crashWarningActor;
+    immediateCrashActor.Position = {
+        immediateCrash.Players[1].Position.X + 2.0f,
+        immediateCrash.Players[1].Position.Y, 0.0f };
+    immediateCrash.Hostiles.push_back(immediateCrashActor);
+    auto immediateCrashPlan = magmawStrategy.Propose(
+        immediateCrash, hookBot.Guid, "dps");
+    assert(immediateCrashPlan.Movement.has_value());
+    assert(immediateCrashPlan.Movement->Id.Mechanic
+        == "massive_crash_evade");
+    assert(immediateCrashPlan.Movement->ActionPriority
+        == BotActionArbitration::Priority::Survival);
+
+    BotEncounter::Blackboard warningPillar = magmawPincerPreposition;
+    BotEncounter::ActorSnapshot warningPillarActor = magmawBoss;
+    warningPillarActor.Guid = ObjectGuid(HighGuid::Unit, uint32(41843),
+        uint32(107));
+    warningPillarActor.Entry = BotEncounter::AdaptiveMagmawStrategy::PillarEntry;
+    warningPillarActor.Position = warningPillar.Players[1].Position;
+    warningPillar.Summons = { warningPillarActor };
+    auto warningPillarPlan = magmawStrategy.Propose(
+        warningPillar, hookBot.Guid, "dps");
+    assert(warningPillarPlan.Movement.has_value());
+    assert(warningPillarPlan.Movement->ActionPriority
+        == BotActionArbitration::Priority::Survival);
+    assert(warningPillarPlan.Movement->Id.Mechanic
+        != "pincer_preposition");
+
     // An open pincer remains the movement owner when Crash and a parasite
     // compete for the same assigned ranged user.  A local Pillar still
     // preempts that ownership, even when an older/farther Pillar is listed
@@ -1366,6 +1465,7 @@ def test_magmaw_movement_adapter_maps_typed_leases_and_fails_closed() -> None:
     for mechanic_name in (
         "prepull_ranged_stage",
         "ranged_formation_restore",
+        "pincer_preposition",
         "pincer_approach",
     ):
         assert f'"{mechanic_name}"' in mechanic

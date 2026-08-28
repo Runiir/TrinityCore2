@@ -32,6 +32,7 @@ std::optional<AdaptiveMagmawMovementLease> AdaptiveMagmawMovementLeaseFor(
 {
     if (mechanic == "prepull_ranged_stage"
         || mechanic == "ranged_formation_restore"
+        || mechanic == "pincer_preposition"
         || mechanic == "pincer_approach")
         return AdaptiveMagmawMovementLease{
             BotMovementArbitration::Owner::Mechanic,
