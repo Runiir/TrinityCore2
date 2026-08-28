@@ -21,7 +21,7 @@ def test_missile_filter_keeps_only_the_explicit_unit_and_does_not_reimplement_da
 
     assert len(source.splitlines()) < 1000
     assert "SPELL_MAGMA_SPIT_MISSILE = 78359" in source
-    assert "Unit* explicitTarget = GetExplTargetUnit();" in source
+    assert "WorldObject* explicitTarget = GetExplTargetUnit();" in source
     assert "if (!explicitTarget)" in source
     assert "targets.clear();" in source
     assert "targets.remove_if([explicitTarget](WorldObject* target)" in source

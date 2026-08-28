@@ -29,7 +29,7 @@ class spell_magmaw_magma_spit_missile : public SpellScript
 {
     void FilterTargets(std::list<WorldObject*>& targets)
     {
-        Unit* explicitTarget = GetExplTargetUnit();
+        WorldObject* explicitTarget = GetExplTargetUnit();
         if (!explicitTarget)
         {
             targets.clear();
