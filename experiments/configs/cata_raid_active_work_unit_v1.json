@@ -2,8 +2,8 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "runtime:blackwing_descent:magmaw:partial_death_native_runback_stall",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
-  "observed_at_commit": "e2219cb4fdc63aa26d25803334b4bcb0d8e587fe",
+  "classification": "implementation_pending_live_verification",
+  "observed_at_commit": "c6ebf4c38b3c4c4df2a78193514a9866eb413cfa",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_31322fb541_canary98_partial_death_runback_handoff_20260828.md",
     "sha256": "f8910cc6f34ee5530bdd93094d6fe939d35982c422708db5f496faa400405508"
@@ -36,7 +36,7 @@
     "worldserver_exit_code": 0
   },
   "repair_scope": {
-    "status": "one_trace_backed_native_recovery_repair_authorized",
+    "status": "native_ghost_position_witness_implemented_pending_live_verification",
     "allowed": [
       "trace_the_partial_death_native_recovery_episode_and_stalled_generator_ownership",
       "make_the_existing_30_second_stall_policy_submit_exactly_one_typed_repath",
@@ -62,13 +62,21 @@
   "implementation_budget": {
     "hypotheses": 1,
     "focused_test_runs": 2,
-    "matched_live_verification_runs": 0
+    "matched_live_verification_runs": 1
+  },
+  "implementation_checkpoint": {
+    "runtime_commit": "c6ebf4c38b3c4c4df2a78193514a9866eb413cfa",
+    "focused_tests_passed": 29,
+    "focused_tests_deselected": 71,
+    "recovery_cpp_lines": 700,
+    "update_death_cpp_lines": 388,
+    "live_runtime_verdict": "inconclusive_pending_matched_capture"
   },
   "implementation_constraints": {
     "maximum_c_or_cpp_lines": 999,
-    "heavy_build_allowed": false,
-    "live_run_allowed": false,
+    "heavy_build_allowed": true,
+    "live_run_allowed": true,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "Assign one Luna max runtime specialist to repair the exact partial-death native-runback stall, run focused tests, and return a matched live-verification plan."
+  "next_action": "Commit the live-verification authorization, build the exact clean commit with the guarded four-job policy, freshly provision, and run one matched completion-watchdog canary."
 }
