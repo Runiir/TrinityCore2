@@ -1,58 +1,48 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "integration:blackwing_descent:magmaw:10N:healer_and_transient_warning_replay",
+  "work_unit": "integration:blackwing_descent:magmaw:10N:chainwielder_contamination_replay",
   "owner_skill": "raid-shard-architecture",
   "classification": "exact_build_pending_live_verification",
-  "observed_at_commit": "4df5fef310c2352466bb38a5b25a08ca16fa1e56",
+  "observed_at_commit": "dfe6da6e9741ea6c10fc861bd83bf436756aba0b",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_202994c78e_healer_warning_handoff_20260828.md",
-    "sha256": "1683ddd6925938e23e06f24493c3e2f2b054f677d6d3fd190cbb3e49b07762f9"
+    "path": "experiments/configs/cata_raid_magmaw_02e3ba1ba8_contamination_handoff_20260828.md",
+    "sha256": "27f716faaff9607ad611f9756eaf09f8ecf89bf620f72b698e54eb695f796e71"
   },
-  "first_broken_edge": "a_rejected_or_losing_hazard_proposal_forced_stationary_holy_and_discipline_healers_into_instant_only_healing",
+  "first_broken_edge": "future_drudge_contact_was_followed_by_an_observer_owned_cohort_terminal_that_stopped_healing_current_pack_offense_and_recovery",
   "decisive_evidence": {
     "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
-    "route_node_id": "bwd.magmaw.encounter",
-    "chainwielder_cleared": true,
-    "drudges_cleared": true,
-    "magmaw_reached": true,
+    "route_node_id": "bwd.magmaw.chainwielder",
+    "chainwielder_cleared": false,
+    "drudges_cleared": false,
+    "magmaw_reached": false,
     "magmaw_killed": false,
-    "total_deaths": 11,
-    "magmaw_combat_seconds": 97,
-    "originated_party_dps": 104293.021,
-    "party_hps": 11961.258,
-    "restoration_druid_hps": 8402.443,
-    "holy_paladin_hps": 1886.423,
-    "discipline_priest_hps": 385.155,
-    "originated_affliction_dps": 15076.732,
-    "affliction_pet_damage": 382539,
-    "affliction_pet_damage_share": 0.261575,
-    "lava_spew_damage": 1135420,
-    "infectious_vomit_damage": 551985,
-    "pillar_of_flame_hits": 3,
-    "mangle_89773_events": 2,
-    "massive_crash_88287_events": 1,
-    "pull_time_pincer_preposition_actors": [30006, 30007],
-    "pincer_approach_observed": 0,
-    "native_pincer_mounts_observed": 0,
-    "native_hook_launches_observed": 0,
+    "total_deaths": 10,
+    "active_combat_seconds": 84,
+    "originated_party_dps": 44371.321,
+    "party_hps": 3070.631,
+    "originated_affliction_dps": 12449.274,
+    "affliction_pet_damage": 196023,
+    "affliction_pet_damage_share": 0.187,
+    "future_drudge_contamination_observed": true,
+    "post_contamination_effective_healing": 0,
     "terminal_failure_reason": "semantic_progress_plateau",
-    "later_terminal_edge": "validation_active_hunter_pet_admission_identity_drift_during_recovery",
-    "report_sha256": "4f04acad08988554d3889bfba5bacb3e2489fc2200fa65386b4a8721966737cc",
-    "combat_log_sha256": "05ecb406b4eeda97eac4df1bb8bd652a2e1f5392f8e375a1bdaae475da6e5170",
-    "combat_analysis_sha256": "1a708447c5091602a54253ae93ea3fcbcbfeb5a7cc648cc215fcb010411ecc0c",
-    "heartbeat_sha256": "8949ca316545cd0e6a348d8e43c125f51c97b0c295b2a7fd40e436969b1232b7",
+    "later_terminal_edge": "validation_route_future_encounter_contamination_global_hold",
+    "report_sha256": "de221bc91d1da4b94629490cd70f76bbd0f9afecaab65133e211c75abe577ea1",
+    "combat_log_sha256": "106f4fd0a200800c159dc42c23ac0613d69e72f439293df6e9e5815b9dcf369f",
+    "combat_analysis_sha256": "ce0a60c7a2b7bd5d4707a2e492df3f47ab64fb8115bb853d688706225308d9fd",
+    "heartbeat_sha256": "e367ffefadf54a187e0a70809ca2239779374918b5e4f609ae3d1eef02654f6d",
     "forbidden_assistance_observed": false,
     "cleanup_passed": true,
     "worldserver_exit_code": 0
   },
   "repair_scope": {
-    "status": "two_disjoint_trace_backed_repairs_ready_for_one_integration_replay",
+    "status": "trace_backed_geometry_and_authority_repairs_ready_for_one_integration_replay",
     "allowed": [
-      "allow_stationary_healer_hard_casts_after_rejected_or_losing_hazard_proposals",
-      "require_an_admitted_active_native_path_before_instant_only_healing",
-      "exclude_dormant_crash_dummy_47330_from_magmaw_warning_and_hazard_observation",
-      "use_lit_room_stalker_47196_aura_87949_or_player_mangle_as_the_transient_warning",
-      "retain_compact_typed_movement_receipts_across_heartbeats"
+      "keep_chainwielder_ranged_and_healers_at_the_declared_safe_combat_anchor",
+      "reject_ranged_candidates_inside_the_declared_future_drudge_clearance",
+      "record_future_encounter_contamination_without_stopping_unrelated_gameplay",
+      "reject_contaminated_evidence_at_certification",
+      "ignore_stale_combat_progress_while_the_exact_cohort_is_wiped"
     ],
     "forbidden_shortcuts": [
       "reduce_encounter_damage",
@@ -60,7 +50,7 @@
       "extend_native_pincer_window",
       "teleport_players",
       "force_vehicle_occupancy_or_boss_state",
-      "watchdog_suppression",
+      "global_gameplay_suppression_from_a_contamination_observer",
       "retain_raw_heartbeat_snapshots"
     ]
   },
@@ -72,17 +62,13 @@
     "matched_live_verification_runs": 1
   },
   "implementation_checkpoint": {
-    "healer_gameplay_commit": "a5126f82fabb33e40b04da817dae557acfb57f89",
-    "warning_gameplay_commit": "62f6d27f91bb4f231b6b3e996c94ca1df8560d0a",
-    "evidence_commit": "4df5fef310c2352466bb38a5b25a08ca16fa1e56",
-    "focused_healer_tests_passed": 4,
-    "focused_warning_tests_passed": 18,
-    "focused_evidence_tests_passed": 17,
-    "strategy_header_lines": 995,
-    "blackboard_cpp_lines": 293,
-    "kernel_candidates_cpp_lines": 782,
-    "input_canary_runtime_commit": "202994c78eac89f2653e132b3fb37527f74719d1",
-    "input_canary_report_sha256": "4f04acad08988554d3889bfba5bacb3e2489fc2200fa65386b4a8721966737cc",
+    "runtime_commit": "dfe6da6e9741ea6c10fc861bd83bf436756aba0b",
+    "focused_tests_passed": 106,
+    "manager_cpp_lines": 885,
+    "contamination_cpp_lines": 160,
+    "patrol_formation_cpp_lines": 124,
+    "input_canary_runtime_commit": "02e3ba1ba81e2135d09cf18f0c8431be4bf314f3",
+    "input_canary_report_sha256": "de221bc91d1da4b94629490cd70f76bbd0f9afecaab65133e211c75abe577ea1",
     "live_clear_claimed": false
   },
   "implementation_constraints": {
@@ -91,5 +77,5 @@
     "live_run_allowed": true,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "Commit this exact-build authorization, build source 4df5fef310 with the guarded eight-job policy, freshly provision, and run one matched completion-watchdog canary."
+  "next_action": "Commit this exact-build authorization, build source dfe6da6e97 with the guarded eight-job policy, freshly provision, and run one matched completion-watchdog canary."
 }
