@@ -254,17 +254,17 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
 
     if (directive == "melee" || (minRange <= 0.0f && maxRange <= 5.0f))
     {
-        Map* map = bot->GetMap();
-        if (!map)
-            return false;
+        // A live melee target owns the native chase destination.  Do not
+        // project its actor elevation through the static floor gate first: large
+        // bosses and vehicle-like actors can report a model origin outside
+        // the walkable floor even while their same-map collision body is
+        // attackable.  The dynamic-target planner deliberately bypasses
+        // static floor admission and MotionMaster performs the ordinary
+        // player chase without inventing a point or teleporting.
         float const targetX = reference->GetPositionX();
         float const targetY = reference->GetPositionY();
-        float const targetZ = reference->GetPositionZ();
-        float floorZ = map->GetHeight(bot->GetPhaseShift(), targetX, targetY,
-            targetZ + 2.0f, true, 64.0f);
-        if (floorZ == INVALID_HEIGHT)
-            return false;
-        return MoveBotToPoint(state, bot, targetX, targetY, floorZ, false,
+        return MoveBotToPoint(state, bot, targetX, targetY,
+            bot->GetPositionZ(), false,
             BotMovementArbitration::Owner::CombatRange,
             BotMovementArbitration::Priority::Combat, reference);
     }

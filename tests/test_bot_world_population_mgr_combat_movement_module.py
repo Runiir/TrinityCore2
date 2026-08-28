@@ -45,3 +45,22 @@ def test_combat_movement_preserves_profile_range_and_path_guards() -> None:
     assert "PathGenerator approachPath" in module
     assert "MoveBotToPoint" in module
     assert "preciseMaximumRangeApproach" in module
+
+
+def test_melee_range_uses_live_target_chase_without_target_z_floor_gate() -> None:
+    module = MODULE.read_text(encoding="utf-8")
+    start = module.index(
+        'if (directive == "melee" || (minRange <= 0.0f && maxRange <= 5.0f))'
+    )
+    end = module.index("    // A small center-to-center offset", start)
+    melee = module[start:end]
+
+    # A Magmaw-like actor can expose a model origin far below the navigable
+    # floor. The live target must reach ExecuteMovementIntent as a dynamic
+    # chase instead of being rejected by the target-elevation floor probe.
+    assert "reference->GetPositionX()" in melee
+    assert "reference->GetPositionY()" in melee
+    assert "bot->GetPositionZ()" in melee
+    assert "reference);" in melee
+    assert "GetHeight" not in melee
+    assert "targetZ" not in melee
