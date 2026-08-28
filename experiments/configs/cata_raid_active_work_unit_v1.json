@@ -1,37 +1,46 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:blackwing_descent:magmaw:chainwielder_central_future_pack_movement_guard",
+  "work_unit": "runtime:blackwing_descent:magmaw:same_level_hazard_path_admission",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "pending_live_verification",
-  "observed_at_commit": "e06bccb086c9808669f753e25e84ca0c91cfc3d0",
+  "classification": "trace_backed_pending_implementation",
+  "observed_at_commit": "a1fff71538f463a3aa393da2507670a6279eff70",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_e06bccb086_canary102_central_movement_guard_handoff_20260829.md",
-    "sha256": "8e3d564ee449842316b3fe9cfcfdd849c21440b148ebf4e99332e2a6093634fb"
+    "path": "experiments/configs/cata_raid_magmaw_a1fff71538_canary104_same_level_hazard_path_handoff_20260829.md",
+    "sha256": "099f4d44a4ba1814bfaf3705f3040d48d28abdddc97b4443933f872a7374c65a"
   },
-  "first_broken_edge": "shared_movement_executor_admits_chainwielder_destination_inside_future_drudge_envelope",
+  "prior_work_unit_result": {
+    "work_unit": "runtime:blackwing_descent:magmaw:chainwielder_central_future_pack_movement_guard",
+    "classification": "passed_observed_canary",
+    "proof": "Canary104 cleared Chainwielder and both Drudges with three kills, zero trash deaths, and zero future-pack contamination."
+  },
+  "first_broken_edge": "same_level_encounter_hazard_move_rejected_after_map_height_resolves_unrelated_lower_floor",
   "decisive_evidence": {
     "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
-    "route_generation": 2,
-    "current_node": "bwd.magmaw.chainwielder",
-    "chainwielder_alive_when_contaminated": true,
-    "first_drudge_melee_timestamp_ms": 1787952753550,
-    "tank_position": [-334.058, -65.336, 212.502],
-    "drudge_position": [-327.242, -62.874, 212.253],
-    "distance_yards": 7.251,
-    "bot_deaths": 10,
-    "report_sha256": "6b3a7e0aa8d8a3369e7dfd3bfc73ebf4a913f483d36e2749c0515a1541fd6fde",
-    "combat_log_sha256": "fdbc7a09c842fa750e592ab24c6fac257512d6ea13416a7032dfa0ac29f17856"
+    "route_generation": 4,
+    "current_node": "bwd.magmaw.encounter",
+    "trash_kills": 3,
+    "trash_deaths": 0,
+    "future_pack_contamination": 0,
+    "magmaw_party_damage": 26155575,
+    "magmaw_active_dps": 92750.266,
+    "magmaw_active_hps": 10770.05,
+    "bot_deaths": 9,
+    "same_level_wrong_floor_examples": 5,
+    "report_sha256": "36ddd947f603c8623cad0bc51b9d2201ee4d310d8185cc51b033d902bf4d478d",
+    "combat_analysis_sha256": "c6067ab9a47d2ac1ebeb184cc8b433e7ba6686b5d432f051d05db619fceae432",
+    "combat_log_sha256": "7361701e58e83dc77afaea8b0887f5ccd7b0c4cf03baa2e149951c315bdbd9fd"
   },
   "repair_scope": {
     "allowed": [
-      "centralize_existing_future_trash_destination_admission_at_shared_movement_executor",
-      "preserve_safe_chainwielder_destinations",
-      "add_focused_unsafe_and_safe_destination_counterexamples"
+      "repair_shared_same_level_local_hazard_or_mechanic_path_admission",
+      "preserve_native_endpoint_and_declared_floor_consistency",
+      "add_recorded_magmaw_and_genuine_vertical_transition_counterexamples"
     ],
     "forbidden_shortcuts": [
-      "change_route_coordinates_or_creature_aggro",
-      "change_class_rotation_damage_or_encounter_mechanics",
-      "add_more_caller_specific_movement_branches",
+      "bypass_future_pack_destination_guard",
+      "admit_long_route_or_vertical_transition_by_declared_z_alone",
+      "change_class_rotation_healing_or_encounter_mechanics",
+      "add_magmaw_specific_movement_planner_branches",
       "weaken_watchdog_or_acceptance",
       "run_a_live_shard_inside_the_specialist_work_unit"
     ]
@@ -51,6 +60,5 @@
     "live_run_allowed": false,
     "commit_allowed_after_root_review": true
   },
-  "implementation_commit": "6479a14ddf425b5f70dd843c313d9d4cb360ff30",
-  "next_action": "Root builds the exact implementation commit under the guarded fast4 policy and runs one fresh completion-watchdog canary. Generation 2 must contain no entry-42362 damage, then both Drudges must clear and Magmaw must be reached."
+  "next_action": "A Luna max runtime specialist implements one low-complexity shared planner predicate and focused counterexamples. Root reviews, commits, builds the exact commit, and runs the matched completion-watchdog canary."
 }
