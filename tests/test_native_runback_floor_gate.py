@@ -65,7 +65,7 @@ def test_floor_gate_defers_to_the_existing_validated_local_step() -> None:
         "if (!targetFloorValid && (!progressiveStaticRoute || strictNativeDescent))"
     )
     local_fallback = planner.index(
-        "if (!segmentSelected && progressiveStaticRoute && !strictNativeDescent)"
+        "if (!segmentSelected && progressivePathAdmission && !strictNativeDescent)"
     )
     final_floor_rejection = planner.index(
         "if (!targetFloorValid)", local_fallback

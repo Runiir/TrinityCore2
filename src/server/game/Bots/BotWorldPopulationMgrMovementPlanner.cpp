@@ -125,6 +125,12 @@ bool BotWorldPopulationMgr::PlanMovementPath(
             "target_z_transition");
     float const currentGoalDistance = bot->GetExactDist(intent.X, intent.Y,
         intent.Z);
+    bool const sameLevelLocalMechanicProgress =
+        BotWorldMovement::AllowsSameLevelLocalMechanicProgress(intent.Owner,
+            sameLevelDeclaredFloorFallback, currentGoalDistance,
+            strictNativeDescent, intent.AllowNativeLongPath);
+    bool const progressivePathAdmission = progressiveStaticRoute
+        || sameLevelLocalMechanicProgress;
 
     auto distanceToGoal = [intent](float candidateX, float candidateY,
         float candidateZ)
@@ -135,8 +141,12 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         return std::sqrt(dx * dx + dy * dy + dz * dz);
     };
 
-    auto nativePointFloorValid = [bot](G3D::Vector3 const& point)
+    auto nativePointFloorValid = [bot, &pathReferenceFloorZ](
+        G3D::Vector3 const& point)
     {
+        if (pathReferenceFloorZ)
+            return BotWorldMovement::NativePathPointFloorValid(bot, point,
+                *pathReferenceFloorZ, true);
         return BotWorldMovement::NativePathPointFloorValid(bot, point);
     };
 
@@ -239,14 +249,14 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         && nativeEndpointFloorValid(path)
         && nativePathFloorsValid(path))
         segmentSelected = true;
-    else if (!strictNativeDescent && progressiveStaticRoute
+    else if (!strictNativeDescent && progressivePathAdmission
         && pathOk && (pathType & PATHFIND_INCOMPLETE))
         selectProgressEndpoint(path, "native_partial_path_backoff", 3.0f);
 
     // An incomplete route may still make deterministic local progress.  The
     // chosen endpoint is always mmap-validated and must reduce goal distance;
     // a straight-line shortcut is never submitted.
-    if (!segmentSelected && progressiveStaticRoute && !strictNativeDescent)
+    if (!segmentSelected && progressivePathAdmission && !strictNativeDescent)
     {
         float const baseAngle = bot->GetAngle(intent.X, intent.Y);
         std::array<float, 7> const angleOffsets{

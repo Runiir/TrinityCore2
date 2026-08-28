@@ -77,6 +77,21 @@ constexpr bool AppliesValidationRoutePatrolFutureDestinationGuard(
     return owner != BotMovementArbitration::Owner::Recovery;
 }
 
+// A short lethal-mechanic move may need to use the planner's existing
+// incomplete-path backoff when a multi-level map resolves an unrelated lower
+// floor. This only widens local progress admission after actor and destination
+// Z have already established the same-level declared-floor fallback.
+constexpr bool AllowsSameLevelLocalMechanicProgress(
+    BotMovementArbitration::Owner owner, bool sameLevelDeclaredFloorFallback,
+    float distance, bool requireCompletePath, bool allowNativeLongPath)
+{
+    return sameLevelDeclaredFloorFallback
+        && distance >= 0.0f && distance <= 20.0f
+        && !requireCompletePath && !allowNativeLongPath
+        && (owner == BotMovementArbitration::Owner::Mechanic
+            || owner == BotMovementArbitration::Owner::Hazard);
+}
+
 struct Intent
 {
     float X = 0.0f;
