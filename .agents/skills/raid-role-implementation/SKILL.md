@@ -133,6 +133,13 @@ hand it back to its owning layer rather than entering an optimization loop.
 Never manufacture a proc, aura, resource, threat state, target, cast success,
 heal demand, or boss outcome.
 
+Before calling a previously observed role blocker fixed, consult the active
+route recurrence ledger. A clean intervening canary does not reset an
+intermittent candidate, pet, target, or movement-authority failure. Reappearance
+uses the existing causal signature and increments it once for that run. At ten
+occurrences, return the accumulated evidence for architecture review instead of
+adding another class-policy branch.
+
 ## Validate by role
 
 Run focused unit/replay checks first. Use `queued_build.py` for every native

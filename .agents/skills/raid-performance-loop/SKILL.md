@@ -173,6 +173,37 @@ non-applicable predicates instead of skipping them. When one worker proves a
 fix requires native changes or a new capture, stop that lane; do not redispatch
 the same tools-side unit against the same edge.
 
+## Preserve recurring blockers across runs
+
+Maintain one causal-blocker recurrence ledger for the active route. Key a
+blocker by the earliest causal edge, affected route stage, and owning layer;
+never key it by a later watchdog, receipt, recovery, or shutdown symptom. Count
+at most one occurrence of a signature per run after deduplicating repeated
+trace snapshots.
+
+An intervening successful action or run does not reset the count. Record one of
+`occurred`, `absent`, or `not_exercised` for every known signature in each
+closed canary. `absent` is closure evidence only when the relevant route was
+fully exercised. A partial run, infrastructure exit, or missing observation is
+`not_exercised`, not a pass. Evaluate the ledger with:
+
+```bash
+pixi run python -m tools.raid_program.blocker_recurrence_ledger \
+  --ledger <route-blocker-ledger.json> --output <recurrence-decision.json>
+```
+
+Reappearance reopens the same blocker even after clean intervening runs. At ten
+occurrences of one signature in the active investigation epoch, including
+interleaved occurrences, stop implementation and new canaries. Return the ten
+run identities, earliest causal receipts, attempted fixes, regressions, and
+unchanged invariant to an architecture review before beginning a new explicit
+epoch. Do not evade this gate by renaming the signature or counting a terminal
+symptom instead.
+
+Route acceptance requires two consecutive completed clears in which every
+known signature is explicitly `absent`. Passing a focused test or one clean
+canary makes a repair provisional; it does not erase its recurrence history.
+
 ## Parallelize only disjoint lanes
 
 Parallel work is useful across these boundaries:

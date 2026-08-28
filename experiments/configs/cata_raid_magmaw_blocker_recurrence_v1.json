@@ -1,0 +1,121 @@
+{
+  "schema": "trinity_raid_blocker_recurrence_v1",
+  "route": "blackwing_descent_10n_magmaw_diagnostic",
+  "investigation_epoch": "magmaw_current_standard_20260829",
+  "occurrence_limit": 10,
+  "clear_streak_required": 2,
+  "causal_signatures": {
+    "magmaw_parasite_control_allows_player_infection": {
+      "owner": "encounter_policy_and_movement_intent",
+      "invariant": "the fixed mobile bait team must traverse a stable room lane without player Parasitic Infection or parasite re-entry"
+    },
+    "chainwielder_future_drudge_contamination": {
+      "owner": "shared_route_movement_authority",
+      "invariant": "generation-3 Drudges cannot contact the generation-2 Chainwielder pull"
+    },
+    "same_level_encounter_hazard_path_rejection": {
+      "owner": "shared_movement_planner",
+      "invariant": "short same-floor hazard movement cannot sample an unrelated lower map floor"
+    }
+  },
+  "runs": [
+    {
+      "run_id": "magmaw-canary91-af1ff054dc",
+      "route_completed": false,
+      "blockers": {
+        "magmaw_parasite_control_allows_player_infection": "occurred"
+      },
+      "evidence": "experiments/configs/cata_raid_magmaw_canary91_pillar_death_handoff_20260828.md"
+    },
+    {
+      "run_id": "trinity-magmaw-821a455-widewatch.IAOFuG",
+      "route_completed": false,
+      "blockers": {
+        "magmaw_parasite_control_allows_player_infection": "occurred"
+      },
+      "combat_analysis_sha256": "4f2c4068a6cc8636805715d2b91076ea506dfa1afa0c0ca144e8bd57b6ff0187"
+    },
+    {
+      "run_id": "trinity-magmaw-7d9e313-autonomous.3h53mE",
+      "route_completed": false,
+      "blockers": {
+        "magmaw_parasite_control_allows_player_infection": "occurred"
+      },
+      "combat_analysis_sha256": "15a88c8197b844ebab7e7b3d7a00d69276869b3f70cdee2f715cdce6a14b0a4e"
+    },
+    {
+      "run_id": "trinity-magmaw-e290121-autonomous.yRarrl",
+      "route_completed": false,
+      "blockers": {
+        "magmaw_parasite_control_allows_player_infection": "occurred"
+      },
+      "combat_analysis_sha256": "4c22d8d9128133efbfc280c97b2a187dc1a2f7560ceda330a84cc1ac10f608b4"
+    },
+    {
+      "run_id": "trinity-magmaw-c4dff8b7-autonomous.KYV6xM",
+      "route_completed": false,
+      "blockers": {
+        "magmaw_parasite_control_allows_player_infection": "occurred"
+      },
+      "combat_analysis_sha256": "e3246d5d55613c7d68d3d7f3f4848088b7d80c08c9c2b91e7b305359bdc3cc8f"
+    },
+    {
+      "run_id": "trinity-magmaw-202994c78e-autonomous.bo3kSY",
+      "route_completed": false,
+      "blockers": {
+        "magmaw_parasite_control_allows_player_infection": "occurred"
+      },
+      "combat_analysis_sha256": "1a708447c5091602a54253ae93ea3fcbcbfeb5a7cc648cc215fcb010411ecc0c"
+    },
+    {
+      "run_id": "trinity-magmaw-5b67a352ec-canary95.ExM0XG",
+      "route_completed": false,
+      "blockers": {
+        "magmaw_parasite_control_allows_player_infection": "occurred"
+      },
+      "combat_analysis_sha256": "88f3dadd1f08f7968505a31498430bfb810f90f86a7777f1c6e7850c69d864c0",
+      "evidence": "experiments/configs/cata_raid_magmaw_5b67a352ec_parasite_handoff_20260828.md"
+    },
+    {
+      "run_id": "trinity-magmaw-e06bccb086-canary102.XMMon8",
+      "route_completed": false,
+      "blockers": {
+        "magmaw_parasite_control_allows_player_infection": "not_exercised",
+        "chainwielder_future_drudge_contamination": "occurred"
+      },
+      "evidence": "experiments/configs/cata_raid_magmaw_e06bccb086_canary102_central_movement_guard_handoff_20260829.md"
+    },
+    {
+      "run_id": "trinity-magmaw-a1fff71538-canary103.ovpi2p",
+      "route_completed": false,
+      "blockers": {
+        "magmaw_parasite_control_allows_player_infection": "not_exercised",
+        "chainwielder_future_drudge_contamination": "absent",
+        "same_level_encounter_hazard_path_rejection": "not_exercised"
+      },
+      "note": "external or infrastructure termination during Chainwielder"
+    },
+    {
+      "run_id": "trinity-magmaw-a1fff71538-canary104.G772RN",
+      "route_completed": false,
+      "blockers": {
+        "magmaw_parasite_control_allows_player_infection": "occurred",
+        "chainwielder_future_drudge_contamination": "absent",
+        "same_level_encounter_hazard_path_rejection": "occurred"
+      },
+      "combat_analysis_sha256": "c6067ab9a47d2ac1ebeb184cc8b433e7ba6686b5d432f051d05db619fceae432",
+      "evidence": "experiments/configs/cata_raid_magmaw_a1fff71538_canary104_same_level_hazard_path_handoff_20260829.md"
+    },
+    {
+      "run_id": "trinity-magmaw-902ff5545e-canary105.N6HWpF",
+      "route_completed": false,
+      "blockers": {
+        "magmaw_parasite_control_allows_player_infection": "occurred",
+        "chainwielder_future_drudge_contamination": "absent",
+        "same_level_encounter_hazard_path_rejection": "absent"
+      },
+      "combat_analysis_sha256": "19d51d6fdca6fe3874b5a91c40692bd092e34939395628044a474123f4bc15ad",
+      "note": "nine of ten players took Parasitic Infection or Infectious Vomit; Magmaw not killed"
+    }
+  ]
+}

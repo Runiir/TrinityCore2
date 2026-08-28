@@ -65,6 +65,13 @@ noncompletion evidence, not success.
 
 Tell the coordinator whether evidence is sufficient to stop. Do not stop the run yourself.
 
+If the handoff includes a causal-blocker recurrence ledger, classify each known
+signature as `occurred`, `absent`, or `not_exercised` for this run. Use the
+earliest causal edge and route stage, not the terminal symptom. Deduplicate
+repeated snapshots so one blocker counts at most once per run. A prior clean
+run does not make a reappearing blocker new, and an incomplete route cannot
+prove absence.
+
 Once the owned worldserver is absent and its final `report.json` exists, the
 observation job is complete. Read the terminal classification and final forced
 diagnose/trace evidence, return the compact handoff immediately, and do not
