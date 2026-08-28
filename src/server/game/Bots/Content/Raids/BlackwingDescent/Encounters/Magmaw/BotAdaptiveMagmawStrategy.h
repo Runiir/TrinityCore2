@@ -4,6 +4,7 @@
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotMovementArbiter.h"
 #include "Bots/BotNativeActionIntent.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawParasitePolicy.h"
 #include <algorithm>
 #include <cmath>
 #include <optional>
@@ -40,7 +41,8 @@ public:
     static constexpr float SupportStackDistance = 22.0f;
     static constexpr float RangedStackLateralOffset = 12.0f;
     static constexpr float RangedStackTolerance = 4.0f;
-    static constexpr float ParasiteKiteLeadDistance = 22.0f;
+    static constexpr float ParasiteKiteLeadDistance =
+        MagmawParasitePolicy::KiteLeadDistance;
     static constexpr float RangedParasiteTargetDistance = 35.0f;
 
     AdaptiveMagmawPlan Propose(Blackboard const& board, ObjectGuid botGuid,
@@ -147,12 +149,7 @@ private:
         ActorSnapshot const* Spike = nullptr;
     };
 
-    struct MagmawRangedAnchors
-    {
-        Vector3 Support;
-        Vector3 Left;
-        Vector3 Right;
-    };
+    using MagmawRangedAnchors = MagmawParasitePolicy::FormationAnchors;
 
     static bool IsParasiteEntry(uint32 entry)
     {
@@ -510,143 +507,17 @@ private:
             });
     }
 
-    static ObjectGuid ParasitePackIdentity(Blackboard const& board)
-    {
-        ObjectGuid identity;
-        auto inspect = [&identity](ActorSnapshot const& actor)
-        {
-            if (actor.Alive && IsParasiteEntry(actor.Entry)
-                && (identity.IsEmpty()
-                    || actor.Guid.GetRawValue() < identity.GetRawValue()))
-                identity = actor.Guid;
-        };
-        for (ActorSnapshot const& actor : board.Hostiles)
-            inspect(actor);
-        for (ActorSnapshot const& actor : board.Summons)
-            inspect(actor);
-        return identity;
-    }
-
-    static float ParasiteClearance(Blackboard const& board,
-        Vector3 const& point)
-    {
-        float clearance = 1000.0f;
-        auto inspect = [&clearance, &point](ActorSnapshot const& actor)
-        {
-            if (actor.Alive && IsParasiteEntry(actor.Entry))
-                clearance = std::min(clearance,
-                    Distance2d(point, actor.Position));
-        };
-        for (ActorSnapshot const& actor : board.Hostiles)
-            inspect(actor);
-        for (ActorSnapshot const& actor : board.Summons)
-            inspect(actor);
-        return clearance;
-    }
-
-    static bool SameMovementScope(Blackboard const& board,
-        BotMovementArbitration::Lease const& lease)
-    {
-        auto const& scope = lease.MovementScope;
-        auto const& current = board.CurrentScope;
-        return scope.AttemptId == current.AttemptId
-            && scope.WipeGeneration == current.WipeGeneration
-            && scope.RouteGeneration == current.RouteGeneration
-            && scope.MapId == current.MapId
-            && scope.InstanceId == current.InstanceId;
-    }
-
-    static std::optional<Vector3> RetainedParasiteDestination(
-        Blackboard const& board,
-        BotMovementArbitration::Lease const* movementLease)
-    {
-        if (!movementLease
-            || movementLease->MovementOwner
-                != BotMovementArbitration::Owner::Hazard
-            || movementLease->MovementPriority
-                != BotMovementArbitration::Priority::Hazard
-            || movementLease->DynamicTargetGuid
-            || !SameMovementScope(board, *movementLease))
-            return std::nullopt;
-        Vector3 const destination{ movementLease->X, movementLease->Y,
-            movementLease->Z };
-        constexpr float SafeClearance = 16.0f;
-        if (!Finite(destination)
-            || ParasiteClearance(board, destination) < SafeClearance)
-            return std::nullopt;
-        return destination;
-    }
-
     static bool HasLivingParasite(Blackboard const& board)
     {
-        return !ParasitePackIdentity(board).IsEmpty();
+        return MagmawParasitePolicy::HasLivingParasite(board);
     }
 
     static bool HasActiveHazardPath(Blackboard const& board,
         BotMovementArbitration::Lease const* movementLease,
         bool activePathValid, bool moving)
     {
-        return activePathValid && moving && movementLease
-            && movementLease->MovementOwner
-                == BotMovementArbitration::Owner::Hazard
-            && movementLease->MovementPriority
-                == BotMovementArbitration::Priority::Hazard
-            && SameMovementScope(board, *movementLease);
-    }
-
-    static std::optional<BotNativeAction::Candidate> BuildParasiteEscape(
-        Blackboard const& board, ActorSnapshot const& bot,
-        ActorSnapshot const& boss, ActorSnapshot const& parasite,
-        BotMovementArbitration::Lease const* movementLease)
-    {
-        std::optional<MagmawRangedAnchors> const anchors =
-            ResolveRangedAnchors(board, boss);
-        std::optional<Vector3> destination = RetainedParasiteDestination(
-            board, movementLease);
-        if (!destination && !anchors)
-            return MoveAway(board, bot, parasite,
-                "parasite_contact_evade", 16.0f);
-
-        if (!destination)
-        {
-            std::vector<Vector3 const*> destinations = {
-                &anchors->Support, &anchors->Left, &anchors->Right };
-            auto closest = std::min_element(destinations.begin(),
-                destinations.end(), [&bot](Vector3 const* left,
-                    Vector3 const* right)
-                {
-                    return Distance2d(bot.Position, *left)
-                        < Distance2d(bot.Position, *right);
-                });
-            Vector3 const* selected = *closest;
-            constexpr float SafeClearance = 16.0f;
-            if (ParasiteClearance(board, *selected) < SafeClearance)
-                selected = *std::max_element(destinations.begin(),
-                    destinations.end(), [&board](Vector3 const* left,
-                        Vector3 const* right)
-                    {
-                        return ParasiteClearance(board, *left)
-                            < ParasiteClearance(board, *right);
-                    });
-            destination = *selected;
-        }
-
-        if (Distance2d(bot.Position, *destination) <= RangedStackTolerance)
-            return std::nullopt;
-        BotNativeAction::Candidate candidate = BuildPointMovement(board, bot,
-            *destination, "parasite_contact_evade",
-            BotActionArbitration::Priority::Survival, 450.0f);
-        candidate.Id.Actor = ParasitePackIdentity(board);
-        if (candidate.Id.Actor.IsEmpty())
-            candidate.Id.Actor = parasite.Guid;
-        candidate.Id.EventGeneration = candidate.Id.Actor.GetRawValue();
-        if (BotNativeAction::Move* move =
-                std::get_if<BotNativeAction::Move>(&candidate.Action))
-        {
-            move->Z = destination->Z;
-            move->IntentReason = "parasite_contact_evade";
-        }
-        return candidate;
+        return MagmawParasitePolicy::HasActiveHazardPath(board,
+            movementLease, activePathValid, moving);
     }
 
     static bool IsCrashHazard(ActorSnapshot const& actor)
@@ -734,10 +605,11 @@ private:
             return std::nullopt;
         }
 
+        bool const pillarBaiter = IsPillarBaiter(board, bot.Guid);
         float const immediateDistance = observed.NearestImmediateHazard
                 && IsParasiteEntry(observed.NearestImmediateHazard->Entry)
-                && IsPillarBaiter(board, bot.Guid)
-            ? ParasiteKiteLeadDistance : 12.0f;
+            ? MagmawParasitePolicy::ImmediateContactRange(pillarBaiter)
+            : 12.0f;
         if (observed.NearestImmediateHazard
             && observed.NearestImmediateHazardDistance <= immediateDistance)
         {
@@ -745,8 +617,14 @@ private:
                 return MoveAway(board, bot,
                     *observed.NearestImmediateHazard,
                     "massive_crash_evade", 16.0f);
-            return BuildParasiteEscape(board, bot, boss,
-                *observed.NearestImmediateHazard, movementLease);
+            std::optional<MagmawParasitePolicy::FormationAnchors> anchors;
+            if (pillarBaiter)
+                if (std::optional<MagmawRangedAnchors> const rangedAnchors =
+                        ResolveRangedAnchors(board, boss))
+                    anchors = *rangedAnchors;
+            return MagmawParasitePolicy::Propose(board, bot,
+                *observed.NearestImmediateHazard, pillarBaiter, anchors,
+                movementLease);
         }
 
         if (pincerWarning && !HasMangleAura(bot))

@@ -1982,6 +1982,10 @@ def test_magmaw_pillar_bait_uses_summon_lease_and_bounded_replan() -> None:
         "Content/Raids/BlackwingDescent/Encounters/Magmaw/"
         "BotAdaptiveMagmawStrategy.h"
     )
+    parasite_policy = bot_source(
+        "Content/Raids/BlackwingDescent/Encounters/Magmaw/"
+        "BotAdaptiveMagmawParasitePolicy.h"
+    )
     bait_start = strategy.index(
         "static std::optional<BotNativeAction::Candidate> BuildPillarBaitMove("
     )
@@ -2009,16 +2013,258 @@ def test_magmaw_pillar_bait_uses_summon_lease_and_bounded_replan() -> None:
     assert "movement.EscalateAfter = 4;" in retry
     assert "movement receipts" in retry
 
-    assert "ParasiteKiteLeadDistance = 22.0f" in strategy
-    parasite_start = strategy.index(
-        "static std::optional<BotNativeAction::Candidate> BuildParasiteEscape("
+    assert "KiteLeadDistance = 22.0f" in parasite_policy
+    parasite_start = parasite_policy.index(
+        "static std::optional<BotNativeAction::Candidate> Propose("
     )
-    parasite_end = strategy.index("static bool IsCrashHazard", parasite_start)
-    parasite = strategy[parasite_start:parasite_end]
-    assert "candidate.Id.Actor = ParasitePackIdentity(board);" in parasite
-    assert "candidate.Id.EventGeneration = candidate.Id.Actor.GetRawValue();" in parasite
-    assert 'move->IntentReason = "parasite_contact_evade";' in parasite
+    parasite_end = parasite_policy.index("private:", parasite_start)
+    parasite = parasite_policy[parasite_start:parasite_end]
+    assert "candidate.Id.Actor = bot.Guid;" in parasite
+    assert "candidate.Id.EventGeneration = bot.Guid.GetRawValue();" in parasite
+    assert '"parasite_contact_evade"' in parasite
+    assert "RetainedDestination" in parasite
+    assert "BuildForwardDestination" in parasite
+    assert "if (!pillarBaiter)" in parasite
     assert '|| intent.Id.Mechanic == "parasite_contact_evade"' in candidates
+
+
+def test_magmaw_parasite_baiters_keep_forward_safe_point_paths(tmp_path: Path) -> None:
+    source = tmp_path / "magmaw_parasite_replay.cpp"
+    binary = tmp_path / "magmaw_parasite_replay"
+    source.write_text(
+        r'''
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h"
+#include <cassert>
+#include <cmath>
+
+using namespace BotEncounter;
+using BotNativeAction::Move;
+
+static ActorSnapshot Player(uint32 guid, char const* role,
+    char const* spec, Vector3 position)
+{
+    ActorSnapshot player;
+    player.Guid = ObjectGuid(HighGuid::Player, guid);
+    player.Alive = true;
+    player.Role = role;
+    player.ClassSpec = spec;
+    player.HealthPct = 100.0f;
+    player.Position = position;
+    return player;
+}
+
+static Blackboard BuildBoard()
+{
+    Blackboard board;
+    board.CurrentScope = Scope{
+        "canary95", 7, 0, 4, "bwd.magmaw.encounter", 669, 1, "magmaw" };
+    board.Revision = 21;
+    board.ObservedAtMs = 1787940572135;
+    board.NativeBossState = "in_progress";
+    board.Route.NodeId = "bwd.magmaw.encounter";
+    board.Route.NavigationHints = { { 0.0f, -1.0f, 210.0f } };
+
+    ActorSnapshot tank = Player(30001, "tank", "protection_paladin",
+        { 0.0f, 0.0f, 210.0f });
+    ActorSnapshot mage = Player(30006, "dps", "fire_mage",
+        { 12.0f, -30.0f, 210.0f });
+    ActorSnapshot hunter = Player(30009, "dps", "marksmanship_hunter",
+        { 12.0f, -30.0f, 210.0f });
+    ActorSnapshot ordinary = Player(30008, "dps", "affliction_warlock",
+        { 0.0f, -22.0f, 210.0f });
+    board.Players = { tank, mage, hunter, ordinary };
+
+    ActorSnapshot boss;
+    boss.Guid = ObjectGuid(HighGuid::Unit, uint32(41570), uint32(39));
+    boss.Entry = AdaptiveMagmawStrategy::BossEntry;
+    boss.Alive = true;
+    boss.Attackable = true;
+    boss.Selectable = true;
+    boss.InCombat = true;
+    boss.VictimGuid = tank.Guid;
+    boss.Position = { 0.0f, 0.0f, 210.0f };
+    board.Hostiles.push_back(boss);
+
+    ActorSnapshot parasite;
+    parasite.Guid = ObjectGuid(HighGuid::Unit,
+        AdaptiveMagmawStrategy::ParasiteEntry, uint32(500));
+    parasite.Entry = AdaptiveMagmawStrategy::ParasiteEntry;
+    parasite.Alive = true;
+    parasite.Position = { 12.0f, -26.0f, 210.0f };
+    board.Hostiles.push_back(parasite);
+    return board;
+}
+
+static BotMovementArbitration::Lease LeaseFor(Blackboard const& board,
+    BotNativeAction::Move const& move)
+{
+    BotMovementArbitration::Lease lease;
+    lease.MovementOwner = BotMovementArbitration::Owner::Hazard;
+    lease.MovementPriority = BotMovementArbitration::Priority::Hazard;
+    lease.ExpiresAtMs = 0;
+    lease.MovementScope = {
+        board.CurrentScope.AttemptId,
+        board.CurrentScope.WipeGeneration,
+        board.CurrentScope.RouteGeneration,
+        board.CurrentScope.MapId,
+        board.CurrentScope.InstanceId };
+    lease.X = move.X;
+    lease.Y = move.Y;
+    lease.Z = move.Z;
+    return lease;
+}
+
+static float Distance(Vector3 const& left, Vector3 const& right)
+{
+    return std::hypot(left.X - right.X, left.Y - right.Y);
+}
+
+int main()
+{
+    AdaptiveMagmawStrategy strategy;
+    Blackboard board = BuildBoard();
+    ObjectGuid const mageGuid = board.Players[1].Guid;
+    ObjectGuid const hunterGuid = board.Players[2].Guid;
+    ObjectGuid const ordinaryGuid = board.Players[3].Guid;
+
+    auto magePlan = strategy.Propose(board, mageGuid, "dps");
+    assert(magePlan.Movement.has_value());
+    auto const* firstMove = std::get_if<Move>(&magePlan.Movement->Action);
+    assert(firstMove);
+    assert(magePlan.Movement->Id.Actor == mageGuid);
+    assert(magePlan.Movement->Id.EventGeneration == mageGuid.GetRawValue());
+    assert(firstMove->IntentReason == "parasite_contact_evade");
+    Vector3 const firstDestination{ firstMove->X, firstMove->Y, firstMove->Z };
+    Vector3 const support{ 0.0f, -22.0f, 210.0f };
+    assert(Distance(firstDestination, support)
+        >= MagmawParasitePolicy::StackSeparation);
+    assert(Distance(firstDestination, board.Hostiles[1].Position)
+        >= MagmawParasitePolicy::SafeClearance);
+
+    auto hunterPlan = strategy.Propose(board, hunterGuid, "dps");
+    assert(hunterPlan.Movement.has_value());
+    auto const* hunterMove = std::get_if<Move>(&hunterPlan.Movement->Action);
+    assert(hunterMove);
+    assert(hunterPlan.Movement->Id.Actor == hunterGuid);
+    assert(hunterMove->X == firstMove->X);
+    assert(hunterMove->Y == firstMove->Y);
+
+    // A pack advance that remains outside the admitted path must not redirect
+    // the fixed baiter toward the support stack.
+    BotMovementArbitration::Lease firstLease = LeaseFor(board, *firstMove);
+    Blackboard advanced = board;
+    advanced.Revision += 1;
+    advanced.Hostiles[1].Position = { 13.0f, -27.0f, 210.0f };
+    auto advancedPlan = strategy.Propose(
+        advanced, mageGuid, "dps", &firstLease);
+    auto const* advancedMove = advancedPlan.Movement
+        ? std::get_if<Move>(&advancedPlan.Movement->Action) : nullptr;
+    assert(advancedMove);
+    assert(advancedMove->X == firstMove->X);
+    assert(advancedMove->Y == firstMove->Y);
+    assert(advancedPlan.Movement->Id.Actor == mageGuid);
+
+    // If the pack reaches the old point, the only permitted replan is farther
+    // along the same outward lane. A new lower GUID cannot pull it backward.
+    Blackboard packAdvanced = advanced;
+    packAdvanced.Hostiles[1].Position = { 20.0f, -35.0f, 210.0f };
+    auto packAdvancedPlan = strategy.Propose(
+        packAdvanced, mageGuid, "dps", &firstLease);
+    auto const* packAdvancedMove = packAdvancedPlan.Movement
+        ? std::get_if<Move>(&packAdvancedPlan.Movement->Action) : nullptr;
+    assert(packAdvancedMove);
+    float const firstForward = std::hypot(
+        firstMove->X - 12.0f, firstMove->Y + 30.0f);
+    float const nextForward = std::hypot(
+        packAdvancedMove->X - 12.0f, packAdvancedMove->Y + 30.0f);
+    assert(nextForward >= firstForward);
+    Vector3 const packAdvancedDestination{ packAdvancedMove->X,
+        packAdvancedMove->Y, packAdvancedMove->Z };
+    assert(Distance(packAdvancedDestination, packAdvanced.Hostiles[1].Position)
+        >= MagmawParasitePolicy::SafeClearance);
+
+    Blackboard lowerGuid = packAdvanced;
+    lowerGuid.Hostiles[1].Guid = ObjectGuid(HighGuid::Unit,
+        AdaptiveMagmawStrategy::ParasiteEntry, uint32(1));
+    BotNativeAction::Move const& stableReference = *packAdvancedMove;
+    BotMovementArbitration::Lease advancedLease = LeaseFor(
+        packAdvanced, stableReference);
+    auto lowerGuidPlan = strategy.Propose(
+        lowerGuid, mageGuid, "dps", &advancedLease);
+    auto const* lowerGuidMove = lowerGuidPlan.Movement
+        ? std::get_if<Move>(&lowerGuidPlan.Movement->Action) : nullptr;
+    assert(lowerGuidMove);
+    assert(lowerGuidMove->X == stableReference.X);
+    assert(lowerGuidMove->Y == stableReference.Y);
+    assert(lowerGuidPlan.Movement->Id.Actor == mageGuid);
+
+    // Ordinary ranged DPS keeps only local contact escape; a remote parasite
+    // does not opt it into the baiter's point path.
+    Blackboard ordinaryRemote = board;
+    ordinaryRemote.Hostiles[1].Position = { 40.0f, 0.0f, 210.0f };
+    auto ordinaryRemotePlan = strategy.Propose(
+        ordinaryRemote, ordinaryGuid, "dps");
+    assert(!ordinaryRemotePlan.Movement.has_value());
+    Blackboard ordinaryContact = board;
+    ordinaryContact.Hostiles[1].Position = ordinaryContact.Players[3].Position;
+    auto ordinaryContactPlan = strategy.Propose(
+        ordinaryContact, ordinaryGuid, "dps");
+    assert(ordinaryContactPlan.Movement.has_value());
+    assert(ordinaryContactPlan.Movement->Id.Mechanic
+        == "parasite_contact_evade");
+    auto const* ordinaryMove = std::get_if<Move>(
+        &ordinaryContactPlan.Movement->Action);
+    assert(ordinaryMove);
+    assert(ordinaryMove->X == 16.0f);
+    assert(ordinaryMove->Y == -22.0f);
+
+    // An active pincer window still owns movement before parasite escape.
+    Blackboard pincer = board;
+    pincer.Hostiles.front().Interactable = true;
+    ActorSnapshot pincerVehicle = pincer.Hostiles.front();
+    pincerVehicle.Guid = ObjectGuid(HighGuid::Unit,
+        AdaptiveMagmawStrategy::PincerLeftEntry, uint32(700));
+    pincerVehicle.Entry = AdaptiveMagmawStrategy::PincerLeftEntry;
+    ActorSnapshot spike = pincer.Hostiles.front();
+    spike.Guid = ObjectGuid(HighGuid::Unit,
+        AdaptiveMagmawStrategy::SpikeEntry, uint32(701));
+    spike.Entry = AdaptiveMagmawStrategy::SpikeEntry;
+    pincer.Summons = { pincerVehicle, spike };
+    auto pincerPlan = strategy.Propose(pincer, mageGuid, "dps");
+    assert(pincerPlan.Movement.has_value());
+    assert(pincerPlan.Movement->Id.Mechanic == "pincer_approach");
+    assert(pincerPlan.Movement->Id.Mechanic != "parasite_contact_evade");
+}
+''',
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [
+            "g++",
+            "-std=c++17",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-I",
+            str(ROOT / "src/server/game"),
+            "-I",
+            str(ROOT / "src/server/game/Entities/Object"),
+            "-I",
+            str(ROOT / "src/common"),
+            "-I",
+            str(ROOT / "src/common/Utilities"),
+            "-I",
+            str(ROOT / "src/common/Logging"),
+            "-I",
+            str(ROOT / "src/common/Debugging"),
+            str(source),
+            "-o",
+            str(binary),
+        ],
+        check=True,
+        cwd=ROOT,
+    )
+    subprocess.run([str(binary)], check=True, cwd=ROOT)
 
 
 def test_native_route_interactions_use_player_handlers_and_observed_postconditions() -> None:
