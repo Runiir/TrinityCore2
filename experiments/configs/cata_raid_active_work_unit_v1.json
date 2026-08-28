@@ -2,7 +2,7 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "role:blackwing_descent:magmaw:persistent_mobile_parasite_lane",
   "owner_skill": "raid-role-implementation",
-  "classification": "failed",
+  "classification": "implementation_pending_matched_live_verification",
   "observed_at_commit": "902ff5545e4a3fc37966c3ae7c37ca1a02eebd8e",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_902ff5545e_canary105_parasite_recurrence_handoff_20260829.md",
@@ -20,6 +20,12 @@
     "occurrence_count": 9,
     "stop_at": 10,
     "next_occurrence_action": "stop_and_summarize_last_ten_occurrences"
+  },
+  "implementation": {
+    "commit": "81ab0b47e8",
+    "summary": "The fixed hunter and first fire mage now begin a persistent left-to-right or right-to-left lane transition when parasites appear. The hazard lease retains the selected endpoint until arrival, and ordinary ranged players and healers remain outside the lane policy.",
+    "focused_tests": "2 passed, 11 deselected",
+    "diff_check": "passed"
   },
   "decisive_evidence": {
     "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
@@ -74,5 +80,5 @@
     "live_run_allowed": false,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "Implement and focus-test one persistent two-endpoint mobile-DPS lane. Root then builds exact source and runs one autonomous completion-watchdog canary. Any player infection is occurrence 10 and stops the lane for architecture review."
+  "next_action": "Build exact commit 81ab0b47e8 and run one autonomous completion-watchdog canary. Any player infection is occurrence 10 and stops the lane for architecture review."
 }
