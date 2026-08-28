@@ -207,7 +207,10 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
                     continue;
                 bool const routeObserved = creature->GetEntry()
                         == snapshot->Route.InteractionEntry
-                    || creature->GetEntry() == snapshot->Route.CompletionEntry;
+                    || creature->GetEntry() == snapshot->Route.CompletionEntry
+                    || (creature->HasReactState(REACT_PASSIVE)
+                        && std::binary_search(snapshot->Route.AllowedEntries.begin(),
+                            snapshot->Route.AllowedEntries.end(), creature->GetEntry()));
                 BotEncounter::ActorSnapshot actor = buildUnit(creature,
                     creature->IsSummon() ? BotEncounter::ActorKind::Summon
                         : BotEncounter::ActorKind::Interactable);
