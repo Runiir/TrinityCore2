@@ -78,14 +78,18 @@ public:
         }
 
         plan.DamageTarget = SelectDamageTarget(observed, role);
+        MagmawHookAssignment const hookAssignment = ResolveHookAssignment(
+            board, *bot, botGuid);
+        bool const pincerWindow = hookAssignment.Assigned
+            && observed.Boss->Interactable;
         plan.Interaction = ProposeHookInteraction(board, *bot, *observed.Boss,
             botGuid);
         plan.Movement = ProposeHazardMovement(board, *bot, *observed.Boss,
-            role);
+            role, pincerWindow);
         if (!plan.Movement)
             plan.Movement = ProposeHookApproach(board, *bot, *observed.Boss,
                 botGuid);
-        if (!plan.Movement)
+        if (!plan.Movement && !pincerWindow)
             plan.Movement = ProposeRangedFormationRestore(board, *bot,
                 *observed.Boss, role);
         return plan;
@@ -303,7 +307,12 @@ private:
         ActorSnapshot const& bot)
     {
         MagmawHazardObservation observed;
-        observed.Pillar = FindFirstAliveActorByEntry(board.Summons, PillarEntry);
+        for (ActorSnapshot const& actor : board.Summons)
+            if (actor.Alive && actor.Entry == PillarEntry
+                && (!observed.Pillar
+                    || Distance2d(bot.Position, actor.Position)
+                        < Distance2d(bot.Position, observed.Pillar->Position)))
+                observed.Pillar = &actor;
         auto inspectHazard = [&observed, &bot](ActorSnapshot const& actor)
         {
             if (!IsImmediateHazard(actor))
@@ -367,11 +376,22 @@ private:
 
     static std::optional<BotNativeAction::Candidate> ProposeHazardMovement(
         Blackboard const& board, ActorSnapshot const& bot,
-        ActorSnapshot const& boss, std::string_view role)
+        ActorSnapshot const& boss, std::string_view role, bool pincerWindow)
     {
         MagmawHazardObservation const observed = ObserveHazards(board, bot);
         if (observed.Pillar)
         {
+            // A live Pillar can still be an immediate survival obligation for
+            // an assigned hook user.  Ordinary hazards must not pull that
+            // user away from the native pincer window, but an actor standing
+            // in the Pillar keeps the existing escape action.
+            if (pincerWindow)
+            {
+                if (std::optional<BotNativeAction::Candidate> const pillar =
+                        BuildPillarEvade(board, bot, *observed.Pillar))
+                    return pillar;
+                return std::nullopt;
+            }
             if (role != "tank")
                 if (std::optional<MagmawRangedAnchors> const anchors =
                         ResolveRangedAnchors(board, boss))
@@ -387,12 +407,19 @@ private:
                             "pillar_bait_switch",
                             BotActionArbitration::Priority::Survival,
                             500.0f);
-                    return std::nullopt;
-                }
+                return std::nullopt;
+            }
             if (std::optional<BotNativeAction::Candidate> pillar =
                     BuildPillarEvade(board, bot, *observed.Pillar))
                 return pillar;
         }
+
+        // Massive Crash, parasites, and formation restoration are lower
+        // value than completing an already-open native pincer.  Once the
+        // assigned user is outside an immediate Pillar, let the pincer
+        // approach/interaction remain stable until the window closes.
+        if (pincerWindow)
+            return std::nullopt;
 
         if (observed.NearestImmediateHazard
             && observed.NearestImmediateHazardDistance <= 12.0f)

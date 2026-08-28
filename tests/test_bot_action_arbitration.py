@@ -944,6 +944,43 @@ int main()
         hookApproachMove->Y - magmawBoss.Position.Y)
         < BotEncounter::AdaptiveMagmawStrategy::HookInteractionDistance);
 
+    // An open pincer remains the movement owner when Crash and a parasite
+    // compete for the same assigned ranged user.  A local Pillar still
+    // preempts that ownership, even when an older/farther Pillar is listed
+    // first in the observed summons.
+    BotEncounter::Blackboard magmawPincerHazards = magmawHookApproach;
+    BotEncounter::ActorSnapshot competingCrash = magmawBoss;
+    competingCrash.Guid = ObjectGuid(HighGuid::Unit, uint32(47330), uint32(103));
+    competingCrash.Entry = BotEncounter::AdaptiveMagmawStrategy::CrashEntry;
+    competingCrash.Position = { -8.0f, 0.0f, magmawBoss.Position.Z };
+    BotEncounter::ActorSnapshot competingParasite = magmawBoss;
+    competingParasite.Guid = ObjectGuid(HighGuid::Unit, uint32(41806), uint32(104));
+    competingParasite.Entry = BotEncounter::AdaptiveMagmawStrategy::ParasiteEntry;
+    competingParasite.Position = { -6.0f, 0.0f, magmawBoss.Position.Z };
+    magmawPincerHazards.Hostiles.push_back(competingCrash);
+    magmawPincerHazards.Hostiles.push_back(competingParasite);
+    auto competingHazardsPlan = magmawStrategy.Propose(
+        magmawPincerHazards, hookBot.Guid, "dps");
+    assert(competingHazardsPlan.Movement.has_value());
+    assert(competingHazardsPlan.Movement->Id.Mechanic == "pincer_approach");
+
+    BotEncounter::Blackboard magmawPincerPillar = magmawPincerHazards;
+    BotEncounter::ActorSnapshot distantPillar = magmawBoss;
+    distantPillar.Guid = ObjectGuid(HighGuid::Unit, uint32(41843), uint32(105));
+    distantPillar.Entry = BotEncounter::AdaptiveMagmawStrategy::PillarEntry;
+    distantPillar.Position = { 40.0f, 0.0f, magmawBoss.Position.Z };
+    BotEncounter::ActorSnapshot localPillar = distantPillar;
+    localPillar.Guid = ObjectGuid(HighGuid::Unit, uint32(41843), uint32(106));
+    localPillar.Position = magmawPincerPillar.Players[1].Position;
+    magmawPincerPillar.Summons = { distantPillar, localPillar };
+    auto competingPillarPlan = magmawStrategy.Propose(
+        magmawPincerPillar, hookBot.Guid, "dps");
+    assert(competingPillarPlan.Movement.has_value());
+    assert(competingPillarPlan.Movement->Id.Mechanic == "pillar_evade");
+    assert(competingPillarPlan.Movement->Id.Actor == localPillar.Guid);
+    assert(competingPillarPlan.Movement->ActionPriority
+        == BotActionArbitration::Priority::Survival);
+
     BotEncounter::Blackboard magmawMount = magmawHook;
     magmawMount.Summons.clear();
     magmawMount.Hostiles.front().Interactable = true;
