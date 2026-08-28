@@ -65,7 +65,7 @@
   "implementation_checkpoint": {
     "gameplay_commit": "27e956156b2c4c3a91dfbe387cab9a6c67f31a43",
     "capture_commit": "3da4a42724",
-    "status": "focused_tests_passed_exact_build_pending",
+    "status": "compile_verified_final_receipt_bound_build_pending",
     "focused_tests_passed": 3,
     "build_attempt_failures": [
       "distinct_world_object_and_unit_pointer_comparison",
@@ -73,6 +73,16 @@
     ],
     "new_spell_module_lines": 57,
     "loader_lines": 480,
+    "compile_verification_commit": "389c55a94352d50663fbea9794afba30210bb5ca",
+    "compile_verification_receipt_path": "/tmp/trinity-magmaw-cb03-canary93-build.8zwyJK/worldserver-build-389c55-v8-receipt.json",
+    "compile_verification_receipt_sha256": "5c3b8b7c48800b88c8c11e598d8846291738c20f53a4ec0f1089f29cc4a38c1f",
+    "compile_verification_receipt_semantic_sha256": "c091534e02c1b0b01419ad3ea7229d895b5b9672d97b34beeaa4400ab574e650",
+    "compile_verification_binary_sha256": "d62466e971bb9db2699f8216c9eee939df51931b4354779712cd6ed6ad907adf",
+    "world_database_binding": {
+      "spell_id": 78359,
+      "script_name": "spell_magmaw_magma_spit_missile",
+      "readback_verified": true
+    },
     "canary92_runtime_commit": "5fb925eca7f4e49378edb6e70f7d81db951a7178",
     "canary92_report_sha256": "a2c7dd5d92c5713fb179b34d9946d96bec5e1117b7469e992977446afa7963ad",
     "canary92_raw_sha256": "31156b85b928361d2493e2025492cad43cd6b6fa1e5db6630cad02a34d9ce7bc",
@@ -86,8 +96,8 @@
     "maximum_c_or_cpp_lines": 999,
     "new_or_changed_helper_maximum_ccn": 15,
     "heavy_build_allowed": true,
-    "live_run_allowed": false,
+    "live_run_allowed": true,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "Obtain a fresh exact configure and coordinator build containing gameplay commit 27e956156b2c4c3a91dfbe387cab9a6c67f31a43, then update the checkpoint before Canary93 provisioning."
+  "next_action": "Commit this live authorization, obtain the final exact receipt-bound worldserver, freshly provision Canary93, and verify exactly three Magma Spit landed outcomes in a 10-player volley before classifying any later edge."
 }
