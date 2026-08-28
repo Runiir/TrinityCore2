@@ -210,7 +210,7 @@ stages:
       size: 1445
     - path: dataset/validation_gear_profiles
       hash: md5
-      md5: 27a40e6785a4345df2bd382539c6b010.dir
+      md5: c85ab7ac1682ee0fea0a0ec75dd0f131.dir
       size: 840048
       nfiles: 3
     - path: experiments/configs/all_spec_targets_cata_p4_v1.json
@@ -223,20 +223,20 @@ stages:
       size: 20388
     - path: experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json
       hash: md5
-      md5: fa7a4bc40595cf9004da82b182b9d5b6
-      size: 130711
+      md5: 41e9d3b40a603121e5f71517c0aeddc7
+      size: 131575
     - path: experiments/configs/validation_provisioning_cata_001.json
       hash: md5
-      md5: 497ba9b444c0d182f2636389e0d87f38
-      size: 26629
+      md5: 7a54cb79de9ac38c1e99dcbd6089a8d5
+      size: 26727
     - path: experiments/configs/wowsims_cata_p4_gear_profiles.json
       hash: md5
       md5: accd6e1b1fcd5fb4cf629e8b93a5f9f7
       size: 53521
     - path: tools/bot_ml/build_validation_provisioning.py
       hash: md5
-      md5: 839afb3d05c3b8673075ea68bf4a5205
-      size: 65370
+      md5: 77a81d339720dc6bfcd9848cd612f4f9
+      size: 65705
     - path: tools/bot_ml/validation_profile_manifests.py
       hash: md5
       md5: b6ff6de9234f3be1e6347021d0ff677a
@@ -248,8 +248,8 @@ stages:
     outs:
     - path: dataset/validation_provisioning
       hash: md5
-      md5: 172c5d3219819295031a0b22a71e4c36.dir
-      size: 3563573
+      md5: 18e16742a7cdd3d3a27ddecf1ae0424f.dir
+      size: 3564243
       nfiles: 5
   validation_gear:
     cmd: python -m tools.bot_ml.build_validation_gear_profiles --config 
@@ -286,16 +286,16 @@ stages:
       size: 3975
     - path: experiments/configs/validation_provisioning_cata_001.json
       hash: md5
-      md5: 497ba9b444c0d182f2636389e0d87f38
-      size: 26629
+      md5: 7a54cb79de9ac38c1e99dcbd6089a8d5
+      size: 26727
     - path: tools/bot_ml/build_validation_gear_profiles.py
       hash: md5
       md5: 8734398417596c5130300d38c79d89bc
       size: 40667
     - path: tools/bot_ml/build_validation_provisioning.py
       hash: md5
-      md5: 839afb3d05c3b8673075ea68bf4a5205
-      size: 65370
+      md5: 77a81d339720dc6bfcd9848cd612f4f9
+      size: 65705
     - path: tools/bot_ml/extract_world_knowledge.py
       hash: md5
       md5: 9f9d6ddb0fcae27397951db8b02c3d68
@@ -307,7 +307,7 @@ stages:
     outs:
     - path: dataset/validation_gear_profiles
       hash: md5
-      md5: 27a40e6785a4345df2bd382539c6b010.dir
+      md5: c85ab7ac1682ee0fea0a0ec75dd0f131.dir
       size: 840048
       nfiles: 3
   validation_provisioning_verify:
@@ -340,13 +340,13 @@ stages:
       size: 337263
     - path: dataset/validation_gear_profiles
       hash: md5
-      md5: 27a40e6785a4345df2bd382539c6b010.dir
+      md5: c85ab7ac1682ee0fea0a0ec75dd0f131.dir
       size: 840048
       nfiles: 3
     - path: dataset/validation_provisioning
       hash: md5
-      md5: 172c5d3219819295031a0b22a71e4c36.dir
-      size: 3563573
+      md5: 18e16742a7cdd3d3a27ddecf1ae0424f.dir
+      size: 3564243
       nfiles: 5
     - path: experiments/configs/all_spec_targets_cata_p4_v1.json
       hash: md5
@@ -362,12 +362,12 @@ stages:
       size: 3975
     - path: experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json
       hash: md5
-      md5: fa7a4bc40595cf9004da82b182b9d5b6
-      size: 130711
+      md5: 41e9d3b40a603121e5f71517c0aeddc7
+      size: 131575
     - path: experiments/configs/validation_provisioning_cata_001.json
       hash: md5
-      md5: 497ba9b444c0d182f2636389e0d87f38
-      size: 26629
+      md5: 7a54cb79de9ac38c1e99dcbd6089a8d5
+      size: 26727
     - path: experiments/configs/wowsims_cata_p4_gear_profiles.json
       hash: md5
       md5: accd6e1b1fcd5fb4cf629e8b93a5f9f7
@@ -378,8 +378,8 @@ stages:
       size: 40667
     - path: tools/bot_ml/build_validation_provisioning.py
       hash: md5
-      md5: 839afb3d05c3b8673075ea68bf4a5205
-      size: 65370
+      md5: 77a81d339720dc6bfcd9848cd612f4f9
+      size: 65705
     - path: tools/bot_ml/extract_world_knowledge.py
       hash: md5
       md5: 9f9d6ddb0fcae27397951db8b02c3d68
@@ -399,7 +399,7 @@ stages:
     outs:
     - path: dataset/validation_provisioning_verification/report.json
       hash: md5
-      md5: 6382095dfcf5e6505f34ad682d9f202e
+      md5: 6bc9ad3004a648d5875a1e95857a1dda
       size: 1651
   validation_scenarios:
     cmd: python -m tools.bot_ml.build_validation_scenario_manifests --config 
@@ -417,12 +417,12 @@ stages:
       size: 20094
     - path: dataset/validation_provisioning_verification/report.json
       hash: md5
-      md5: 6382095dfcf5e6505f34ad682d9f202e
+      md5: 6bc9ad3004a648d5875a1e95857a1dda
       size: 1651
     - path: experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json
       hash: md5
-      md5: fa7a4bc40595cf9004da82b182b9d5b6
-      size: 130711
+      md5: 41e9d3b40a603121e5f71517c0aeddc7
+      size: 131575
     - path: experiments/configs/validation_scenarios_cata_001.json
       hash: md5
       md5: 06f049cd44c9469b2c5243b52be90095
