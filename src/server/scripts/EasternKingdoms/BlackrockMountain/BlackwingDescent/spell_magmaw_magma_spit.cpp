@@ -17,6 +17,7 @@
 
 #include "ScriptMgr.h"
 #include "SpellScript.h"
+#include "Unit.h"
 
 namespace BlackwingDescent::Magmaw
 {
