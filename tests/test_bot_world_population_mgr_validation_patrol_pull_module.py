@@ -31,7 +31,38 @@ def test_validation_patrol_pull_keeps_native_pull_contract():
         "sourcePathKeepsFutureEncountersSafe",
         "ValidationRoutePatrolPullOwnerRosterSlot",
         "ordinary_ranged_pull_submitted",
-        "validation_route_patrol_tank_action",
+        "validation_route_patrol_wait_for_tank_threat",
         "SetAllOffenseSuppressed",
     ):
         assert marker in text
+
+
+def test_engaged_patrol_releases_this_bot_to_the_ordinary_action_queue():
+    text = MODULE.read_text()
+    engaged = text.index("if (!sourceEngaged)")
+    handoff = text.index("enrollValidationRoutePackMember(source, true);")
+    tank_gate = text.index("if (!botIsTank && !tankOwned)")
+    release = text.index("SetAllOffenseSuppressed(", tank_gate)
+
+    # Anchor staging and the pre-pull path guard are strictly unengaged work.
+    assert engaged < text.index("float const anchorDistance", engaged)
+    assert text.index("MoveBotToPoint(state, bot", engaged) < handoff
+
+    # The engaged handoff may chase to the declared radius and wait for tank
+    # threat, but it must not submit a healer/profile action itself.
+    assert handoff < text.index("float const sourceAnchorDistance", handoff)
+    assert text.index("sourceAnchorDistance", handoff) < tank_gate < release
+    assert "tryRouteGroupHeal" not in text[handoff:]
+    assert "ExecuteProfileCombatAction" not in text[handoff:]
+    assert text[release:].strip().endswith("return false;\n}")
+
+
+def test_engaged_patrol_does_not_reanchor_after_source_engagement():
+    text = MODULE.read_text()
+    engaged = text.index("if (!sourceEngaged)")
+    anchor_move = text.index("validation_route_patrol_anchor_move")
+    chase = text.index("validation_route_patrol_chase_to_anchor")
+
+    assert anchor_move > engaged
+    assert anchor_move < chase
+    assert "validation_route_patrol_anchor_move" not in text[chase:]

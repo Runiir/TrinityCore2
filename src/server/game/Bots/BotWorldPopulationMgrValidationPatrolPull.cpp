@@ -20,14 +20,12 @@
 #include <vector>
 
 using BotWorldPopulationMgrNativeHelpers::Distance2d;
-using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
 
 bool BotWorldPopulationMgr::TryValidationRoutePatrolPull(
     WorldBotState& state, Player* bot,
     BotRolePowerBreakdown const& power, BotProgressionStage stage,
     BotProgressionActivity activity, std::string& situation,
     std::string& action, Unit*& target,
-    std::function<bool(Player*, Unit*, bool, bool)> const& tryRouteGroupHeal,
     std::function<ObjectGuid::LowType()> const& currentValidationRouteTargetSpawnId,
     std::function<bool(Creature const*)> const& isValidationCohortCombatLinked,
     std::function<void(Creature const*, bool)> const& enrollValidationRoutePackMember)
@@ -172,38 +170,37 @@ bool BotWorldPopulationMgr::TryValidationRoutePatrolPull(
         };
 
         bool const sourceEngaged = isValidationCohortCombatLinked(source);
-        bool const atWait = source->GetExactDist(
-            Cohort().Config.ValidationRoutePatrolWaitX,
-            Cohort().Config.ValidationRoutePatrolWaitY,
-            Cohort().Config.ValidationRoutePatrolWaitZ)
-            <= Cohort().Config.ValidationRoutePatrolWaitToleranceYards;
-        bool const rosterStaged = exactRosterAtAnchor();
 
         for (WorldBotState const& cohortState : Party().Bots)
             if (Player* member = GetLoadedBot(cohortState))
                 BotRaidAreaAuthority::SetAllOffenseSuppressed(
                     member->GetGUID().GetRawValue(), true);
 
-        float const anchorDistance = bot->GetExactDist(
-            Cohort().Config.ValidationRouteX,
-            Cohort().Config.ValidationRouteY,
-            Cohort().Config.ValidationRouteZ);
-        if (anchorDistance
-            > Cohort().Config.ValidationRoutePatrolAnchorToleranceYards)
-        {
-            bool const moved = MoveBotToPoint(state, bot,
-                Cohort().Config.ValidationRouteX,
-                Cohort().Config.ValidationRouteY,
-                Cohort().Config.ValidationRouteZ, true,
-                BotMovementArbitration::Owner::Route,
-                BotMovementArbitration::Priority::Route);
-            return hold(moved ? "validation_route_patrol_anchor_move"
-                              : "validation_route_patrol_anchor_path_rejected",
-                source);
-        }
-
         if (!sourceEngaged)
         {
+            bool const atWait = source->GetExactDist(
+                Cohort().Config.ValidationRoutePatrolWaitX,
+                Cohort().Config.ValidationRoutePatrolWaitY,
+                Cohort().Config.ValidationRoutePatrolWaitZ)
+                <= Cohort().Config.ValidationRoutePatrolWaitToleranceYards;
+            bool const rosterStaged = exactRosterAtAnchor();
+            float const anchorDistance = bot->GetExactDist(
+                Cohort().Config.ValidationRouteX,
+                Cohort().Config.ValidationRouteY,
+                Cohort().Config.ValidationRouteZ);
+            if (anchorDistance
+                > Cohort().Config.ValidationRoutePatrolAnchorToleranceYards)
+            {
+                bool const moved = MoveBotToPoint(state, bot,
+                    Cohort().Config.ValidationRouteX,
+                    Cohort().Config.ValidationRouteY,
+                    Cohort().Config.ValidationRouteZ, true,
+                    BotMovementArbitration::Owner::Route,
+                    BotMovementArbitration::Priority::Route);
+                return hold(moved ? "validation_route_patrol_anchor_move"
+                                  : "validation_route_patrol_anchor_path_rejected",
+                    source);
+            }
             if (!rosterStaged)
                 return hold("validation_route_patrol_roster_stage", source);
             if (!atWait)
@@ -317,42 +314,11 @@ bool BotWorldPopulationMgr::TryValidationRoutePatrolPull(
         if (!botIsTank && !tankOwned)
             return hold("validation_route_patrol_wait_for_tank_threat", source);
 
+        // The patrol contract ends once the source is engaged, inside its
+        // declared chase radius, and tank-owned (or this bot is the tank).
+        // Release only this bot's route offense gate and let the ordinary
+        // priority queue own movement, healing, pet, and class actions.
         BotRaidAreaAuthority::SetAllOffenseSuppressed(
             bot->GetGUID().GetRawValue(), false);
-        BotRaidAreaAuthority::Set(bot->GetGUID().GetRawValue(), true);
-        if (roster != Cohort().Raid.RosterByGuid.end()
-            && roster->second.Role == "healer"
-            && tryRouteGroupHeal(bot, source, false, false))
-            return true;
-
-        ResolvedCombatAction profileAction = ResolveProfileCombatAction(
-            bot, source, 1, false, 0, false, false, true, false, true);
-        float const sourceDistance = bot->GetExactDist(source);
-        bool const actionReady = profileAction.Valid
-            && profileAction.TargetGuid == source->GetGUID()
-            && bot->IsWithinLOSInMap(source)
-            && sourceDistance <= std::max(5.0f, profileAction.MaxRange)
-            && sourceDistance >= profileAction.MinRange;
-        if (!actionReady)
-            return hold("validation_route_patrol_hold_profile_range", source);
-        BotActionResult const result = ExecuteProfileCombatAction(
-            &state, bot, source, &profileAction,
-            1, false, 0, false, false, true, false, true);
-        float const healthPct = UnitHealthPct(source);
-        RecordRouteProgress(state, bot, source,
-            "route_target_combat_progress", healthPct, healthPct, 0, 20);
-        std::string raw = BuildRawJson(bot, source);
-        std::string semantic = BuildSemanticJson(bot, source,
-            "validation_route_patrol_pull", &power, stage, activity);
-        RecordEvent(state, bot, "trash_action", source, ToString(result),
-            raw.c_str(), semantic.c_str(), sourceDistance,
-            Cohort().Config.ValidationRouteTargetEntry,
-            result == BotActionResult::Ok ? profileAction.SpellId : 0);
-        target = source;
-        state.TargetGuid = source->GetGUID();
-        state.WasInCombat = true;
-        situation = "validation_route_patrol_pull";
-        action = botIsTank ? "validation_route_patrol_tank_action"
-                           : "validation_route_patrol_anchor_action";
-        return true;
+        return false;
 }

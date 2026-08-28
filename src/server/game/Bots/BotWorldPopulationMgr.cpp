@@ -574,7 +574,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     auto tryValidationRoutePatrolPull = [&]() -> bool
     {
         return TryValidationRoutePatrolPull(state, bot, power, stage, activity,
-            situation, action, target, tryRouteGroupHeal,
+            situation, action, target,
             currentValidationRouteTargetSpawnId, isValidationCohortCombatLinked,
             enrollValidationRoutePackMember);
     };
