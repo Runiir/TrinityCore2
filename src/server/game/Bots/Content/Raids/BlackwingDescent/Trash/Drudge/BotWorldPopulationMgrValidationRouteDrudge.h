@@ -182,6 +182,7 @@ struct DrudgeLaneContext
     bool RecoveryTankAnchorPending(uint32 slot) const;
     PhaseResult BuildContract();
     PhaseResult ResolveSources();
+    PhaseResult EnforceFutureBossBoundary();
     PhaseResult BuildAnchorPolicies();
     PhaseResult RunEntrancePullActions();
     PhaseResult RunEntranceMovement(MemberAnchor const* anchor,

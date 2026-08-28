@@ -592,6 +592,10 @@ bool DrudgeLaneContext::Run()
     if (result == PhaseResult::Handled)
         return true;
 
+    result = EnforceFutureBossBoundary();
+    if (result == PhaseResult::Handled)
+        return true;
+
     result = BuildAnchorPolicies();
     if (result == PhaseResult::Abort)
         return false;
