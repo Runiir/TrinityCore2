@@ -1,46 +1,38 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:blackwing_descent:magmaw:telemetry_map_at_abort",
+  "work_unit": "runtime:blackwing_descent:magmaw:chainwielder_melee_future_pack_guard",
   "owner_skill": "raid-bot-runtime-implementation",
   "classification": "implementation_required",
   "observed_at_commit": "946f48e676d2db47469c96e72563e1baffea3ead",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_946f48e676_canary99_map_at_abort_handoff_20260828.md",
-    "sha256": "589b257e7c719f930365df100c2ecfcc58539e81cebb2410759b10ec53780ef5"
+    "path": "experiments/configs/cata_raid_magmaw_946f48e676_chainwielder_melee_future_guard_handoff_20260828.md",
+    "sha256": "4fce2d26f37ea7489228b4f165fc1fc9c0c84032a03e363af746a00ba44a949b"
   },
-  "first_broken_edge": "uncaught_std_out_of_range_map_at_terminated_worldserver_during_magmaw_evidence_capture",
+  "first_broken_edge": "explicit_melee_combat_range_bypass_entered_future_drudge_pack_during_chainwielder",
   "decisive_evidence": {
     "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
-    "chainwielder_cleared": true,
-    "drudges_cleared": true,
-    "magmaw_reached": true,
-    "magmaw_engaged": true,
-    "magmaw_killed": false,
-    "party_damage": 11846800,
-    "party_dps": 112826.667,
-    "party_healing": 1910473,
-    "party_hps": 18194.981,
-    "affliction_dps": 24505.752,
-    "affliction_pet_damage_share": 0.288,
-    "worldserver_log_exception": "std::out_of_range: map::at",
-    "worldserver_log_signal": 6,
-    "controller_returncode": -11,
-    "report_sha256": "40987f795f4bb0c868557cdd0234f5ba1c39b30ba83fa7674ddce252263ed190",
-    "heartbeat_stream_sha256": "547d37e4013905d248911d9534f5d77053865bf1db969f790c2a3f4d7708ba71",
-    "worldserver_log_sha256": "dde7a4e823028de1b9b96e4be9251090cdf54de845feac40695508847c3ed035"
+    "route_generation": 2,
+    "current_node": "bwd.magmaw.chainwielder",
+    "future_entry": 42362,
+    "future_source_guid": 60,
+    "first_future_damage_timestamp_ms": 1787949231950,
+    "first_future_damage_target_guid": 30001,
+    "first_future_damage_target_position": [-308.208, -64.122, 212.863],
+    "chainwielder_killed": true,
+    "bot_deaths": 4,
+    "report_sha256": "9e7c8cc1600d031e967ea7a398668f3c19c4ea806108ef58e60e749d9f6f7d81",
+    "combat_log_sha256": "3be2217cbd9506bdabd69e65c69c0a255cb9fa9c4e5be84043fe039b753908ea"
   },
   "repair_scope": {
     "allowed": [
-      "trace_direct_map_at_callers_reachable_from_live_evidence_commands",
-      "replace_only_the_proven_unsafe_lookup_with_total_typed_handling",
-      "preserve_complete_valid_metrics_when_keys_are_present",
-      "add_one_missing_key_or_missing_cohort_counterexample"
+      "repair_patrol_movement_admission_for_explicit_melee_range",
+      "preserve_melee_closing_inside_the_current_pack_safe_region",
+      "add_recorded_future_destination_and_safe_current_pack_counterexamples"
     ],
     "forbidden_shortcuts": [
       "change_class_rotation_or_damage",
-      "change_encounter_or_route_policy",
-      "disable_status_diagnosis_trace_combatlog_or_summary_collection",
-      "catch_and_discard_all_exceptions",
+      "change_encounter_mechanics_or_route_coordinates",
+      "change_hazard_escape_policy",
       "weaken_watchdog_or_acceptance",
       "run_a_live_shard_inside_the_specialist_work_unit"
     ]
@@ -60,5 +52,5 @@
     "live_run_allowed": false,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "A Luna max runtime specialist should identify and repair the one proven unsafe map lookup, add focused coverage, and return a source-only handoff for root review."
+  "next_action": "A Luna max runtime specialist should close the proven explicit-melee future-pack movement bypass, add focused coverage, and return a source-only handoff for root review."
 }
