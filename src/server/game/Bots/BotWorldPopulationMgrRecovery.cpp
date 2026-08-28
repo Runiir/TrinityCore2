@@ -244,10 +244,11 @@ bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot
         if (!matchingNativeRecoveryPath())
             return false;
 
-        // PrepareBotUpdate is the authoritative position sampler. Its
-        // LastMovementProgressMs timestamp is episode-safe because a new
-        // episode starts by setting its own witness to nowMs above; only a
-        // later movement sample can refresh this matching native path.
+        // The dead update path samples the native ghost position before
+        // recovery is evaluated; its LastMovementProgressMs timestamp is
+        // episode-safe because a new episode starts by setting its own
+        // witness to nowMs above. Only a later movement sample can refresh
+        // this matching native path.
         if (!state.LastMovementProgressMs
             || state.LastMovementProgressMs
                 <= state.NativeRecoveryEpisodeLastProgressMs)

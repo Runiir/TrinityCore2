@@ -15,10 +15,49 @@
 
 using BotWorldPopulationMgrSpellSemantics::NowMs;
 
+namespace
+{
+constexpr float NativeRecoveryDeadPositionProgressYards = 0.2f;
+
+bool ObserveNativeRecoveryDeadPosition(
+    BotWorldPopulationMgrBotState::WorldBotState& state, Player* bot,
+    uint64 nowMs)
+{
+    if (!bot || !bot->IsInWorld())
+        return false;
+
+    float const currentX = bot->GetPositionX();
+    float const currentY = bot->GetPositionY();
+    float const currentZ = bot->GetPositionZ();
+    float const moved = bot->GetExactDist(state.LastX, state.LastY, state.LastZ);
+    bool const nativeRecoveryPath = state.NativeRecoveryEpisodeStartedMs
+        && state.NativeRecoveryEpisodePhase == "moving_to_entrance"
+        && state.NativeRecoveryEntranceRequired
+        && state.ActivePathValid
+        && state.ActivePathTraversalMode == "native_long_path"
+        && state.ActivePathTargetGuid.IsEmpty()
+        && state.MovementLease.MovementOwner
+            == BotMovementArbitration::Owner::Recovery;
+    bool const progressObserved = nativeRecoveryPath
+        && moved >= NativeRecoveryDeadPositionProgressYards;
+    if (progressObserved)
+        state.LastMovementProgressMs = nowMs;
+
+    // Dead bots return before PrepareBotUpdate's generic sampler. Keep only
+    // this position baseline here; do not update IsMoving, stuck state, or
+    // any ordinary alive-bot recovery counters from a ghost tick.
+    state.LastX = currentX;
+    state.LastY = currentY;
+    state.LastZ = currentZ;
+    return progressObserved;
+}
+}
+
 void BotWorldPopulationMgr::HandleBotDeath(WorldBotState& state, Player* bot, uint32 diff)
 {
     if (!bot->IsAlive())
     {
+        ObserveNativeRecoveryDeadPosition(state, bot, NowMs());
         state.DeadTimer += diff;
         if (!state.DeathEpisodeRecorded)
         {

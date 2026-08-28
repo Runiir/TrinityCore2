@@ -9,12 +9,18 @@ EXECUTOR = ROOT / "src/server/game/Bots/BotWorldPopulationMgrMovementExecutor.cp
 RECOVERY = ROOT / "src/server/game/Bots/BotWorldPopulationMgrRecovery.cpp"
 NATIVE_ACTION = ROOT / "src/server/game/Bots/BotWorldPopulationMgrNativeAction.cpp"
 PREPARATION = ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdateBotPreparation.cpp"
+DEATH_UPDATE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdateDeath.cpp"
 
 
 def _recovery_witness(last_progress_ms: int, native_progress_ms: int,
                       matching: bool) -> int:
     """Model the bounded native-position witness from the update timestamp."""
     return native_progress_ms if matching and native_progress_ms > last_progress_ms else last_progress_ms
+
+
+def _dead_position_witness(last_progress_ms: int, now_ms: int,
+                           moved_yards: float, matching: bool) -> int:
+    return now_ms if matching and moved_yards >= 0.2 else last_progress_ms
 
 
 def _stalled_native_path(now_ms: int, last_progress_ms: int,
@@ -236,6 +242,30 @@ def test_non_monotonic_native_position_refreshes_episode_witness() -> None:
     assert trigger_distances[1] > trigger_distances[0]
     assert _recovery_witness(1_000, 2_000, True) == 2_000
     assert _recovery_witness(1_000, 2_000, False) == 1_000
+
+
+def test_dead_ghost_samples_stalled_and_progressing_native_positions() -> None:
+    recovery = RECOVERY.read_text(encoding="utf-8")
+    death_update = DEATH_UPDATE.read_text(encoding="utf-8")
+    assert "ObserveNativeRecoveryDeadPosition(state, bot, NowMs());" in death_update
+    assert death_update.index(
+        "ObserveNativeRecoveryDeadPosition(state, bot, NowMs());"
+    ) < death_update.index("state.DeadTimer += diff;")
+    assert "state.LastMovementProgressMs = nowMs;" in death_update
+    assert "state.ActivePathTraversalMode == \"native_long_path\"" in death_update
+    assert "BotMovementArbitration::Owner::Recovery" in death_update
+    assert "state.IsMoving" not in death_update[
+        death_update.index("bool ObserveNativeRecoveryDeadPosition"):
+        death_update.index("void BotWorldPopulationMgr::HandleBotDeath")
+    ]
+    assert "The dead update path samples the native ghost position" in recovery
+
+    # A stationary accepted generator keeps the original witness and reaches
+    # the existing 30-second repath decision; actual native position change
+    # refreshes it and preserves the path.
+    assert _dead_position_witness(1_000, 31_000, 0.0, True) == 1_000
+    assert _dead_position_witness(1_000, 31_000, 0.25, True) == 31_000
+    assert _dead_position_witness(1_000, 31_000, 5.0, False) == 1_000
 
 
 def test_stalled_native_generator_gets_one_repath_then_terminal_bound() -> None:
