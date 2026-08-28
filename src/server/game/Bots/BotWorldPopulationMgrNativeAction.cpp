@@ -17,6 +17,7 @@
 #include "SpellAuraEffects.h"
 #include "SpellAuras.h"
 #include "SpellInfo.h"
+#include "SpellHistory.h"
 #include "SpellMgr.h"
 #include "Unit.h"
 #include "WorldPacket.h"
@@ -500,9 +501,20 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
             SpellCastResult result = vehicle->CastSpell(target, action.SpellId, false);
             return result == SPELL_CAST_OK
                 ? BotActionArbitration::Outcome::Submitted("native_vehicle_action_submitted")
-                : BotActionArbitration::Outcome::Retryable(
-                    std::string("native_vehicle_action_rejected_result_")
-                        + std::to_string(static_cast<unsigned>(result)));
+                : [&]()
+                {
+                    std::string reason = "native_vehicle_action_rejected_result_"
+                        + std::to_string(static_cast<unsigned>(result));
+                    if (result == SPELL_FAILED_NOT_READY)
+                        if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(action.SpellId))
+                        {
+                            reason += "_cooldown_ms_"
+                                + std::to_string(vehicle->GetSpellHistory()->GetRemainingCooldown(spellInfo))
+                                + "_gcd_ms_"
+                                + std::to_string(vehicle->GetSpellHistory()->GetRemainingGlobalCooldown(spellInfo));
+                        }
+                    return BotActionArbitration::Outcome::Retryable(reason);
+                }();
         }
         else if constexpr (std::is_same_v<T, BotNativeAction::PetCommand>)
         {

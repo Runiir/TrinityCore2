@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from tools.bot_ml.build_validation_provisioning import load_wdbc_values
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
@@ -62,6 +64,11 @@ def test_vehicle_action_uses_the_controlled_vehicle_and_live_declared_target():
     assert "vehicle->CastSpell(target, action.SpellId, false)" in action
     assert "bot->CastSpell(target, action.SpellId, false)" not in action
     assert "native_vehicle_action_rejected_result_" in action
+    assert "SPELL_FAILED_NOT_READY" in action
+    assert "GetRemainingCooldown(spellInfo)" in action
+    assert "GetRemainingGlobalCooldown(spellInfo)" in action
+    assert '"_cooldown_ms_"' in action
+    assert '"_gcd_ms_"' in action
 
     assert action.index("bot->GetVehicleBase()") < action.index(
         "vehicle->CastSpell(target, action.SpellId, false)"
@@ -69,3 +76,23 @@ def test_vehicle_action_uses_the_controlled_vehicle_and_live_declared_target():
     assert action.index("action.Target.IsEmpty()") < action.index(
         "ObjectAccessor::GetUnit(*bot, action.Target)"
     )
+
+
+def test_magmaw_hook_vehicle_spells_use_cooldown_without_a_global_cooldown():
+    dbc = ROOT / "data/dbc/enUS"
+    spell_rows = {
+        int(row[0]): row
+        for row in load_wdbc_values(
+            dbc / "Spell.dbc",
+            "niiiiiiiiiiiiiiifiiiissxxiixxifiiiiiiixiiiiiiiii",
+        )
+    }
+    cooldown_rows = {
+        int(row[0]): row
+        for row in load_wdbc_values(dbc / "SpellCooldowns.dbc", "diii")
+    }
+
+    for spell_id in (77917, 77941):
+        spell = spell_rows[spell_id]
+        cooldown = cooldown_rows[int(spell[37])]
+        assert cooldown[1:] == [0, 6000, 0]

@@ -934,7 +934,14 @@ int main()
         magmawBoss.Position.Z };
     auto hookApproachPlan = magmawStrategy.Propose(
         magmawHookApproach, hookBot.Guid, "dps");
-    assert(!hookApproachPlan.Interaction.has_value());
+    // Always offer the native click while Magmaw is interactable. The native
+    // executor owns effective range validation, so a distant click retries
+    // without displacing the simultaneous approach movement.
+    assert(hookApproachPlan.Interaction.has_value());
+    assert(hookApproachPlan.Interaction->Id.Mechanic
+        == "mount_free_pincer");
+    assert(std::holds_alternative<SpellClick>(
+        hookApproachPlan.Interaction->Action));
     assert(hookApproachPlan.Movement.has_value());
     assert(hookApproachPlan.Movement->Id.Mechanic == "pincer_approach");
     auto const* hookApproachMove = std::get_if<Move>(
@@ -1093,7 +1100,11 @@ int main()
     magmawMount.Summons.clear();
     magmawMount.Hostiles.front().Interactable = true;
     magmawMount.Players[1].VehicleGuid = ObjectGuid{};
-    magmawMount.Players[1].Position = { 24.0f, 0.0f, magmawBoss.Position.Z };
+    // This is outside the strategy's old five-yard center gate but inside
+    // the native spell-click envelope supplied by Magmaw's combat reach.
+    magmawMount.Players[1].Position = {
+        magmawBoss.Position.X + 6.7f, magmawBoss.Position.Y,
+        magmawBoss.Position.Z };
     auto mountPlan = magmawStrategy.Propose(
         magmawMount, hookBot.Guid, "dps");
     assert(mountPlan.Interaction.has_value());

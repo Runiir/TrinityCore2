@@ -622,9 +622,12 @@ private:
             && IsPincerVehicle(*assignment.Vehicle))
             return BuildHookCandidate(board, *assignment.Vehicle,
                 *assignment.Spike);
-        if (boss.Interactable && bot.VehicleGuid.IsEmpty()
-            && Distance2d(bot.Position, boss.Position)
-                <= HookInteractionDistance)
+        // Let the native spell-click handler own the effective interaction
+        // range. Magmaw's combat reach makes a player-like click valid beyond
+        // the strategy's center-distance approach threshold; an out-of-range
+        // click remains a retryable native result while the approach candidate
+        // is still proposed below.
+        if (boss.Interactable && bot.VehicleGuid.IsEmpty())
             return BuildMountCandidate(board, boss);
         return std::nullopt;
     }
