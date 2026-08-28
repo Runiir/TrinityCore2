@@ -3197,7 +3197,7 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     )
     assert_ordered(
         route_objective,
-        "routeDistance <= routeArrivalRadius && std::string(GetDungeonRole(bot)) == \"tank\"",
+        "routeDistance <= routeArrivalRadius || Manager.HasCompletedValidationRouteDrudgeEntrancePull(bot)",
         "++state.ValidationRouteTargetSearchMissCount >= 2",
         "ValidationCohortReadinessObservation cohortObservation;",
         "ClassifyValidationCohortReadiness(cohortObservation);",
@@ -3299,7 +3299,7 @@ def test_trash_terminal_uses_current_generation_truth_after_metric_restart():
     target_engagement = read(TARGET_ENGAGEMENT)
     route_objective = read(BOT_MGR_CORE) + target_engagement
     terminal_block = target_engagement.split(
-        'if (!routeTarget && Cohort().Config.ValidationRouteKind != "boss" && routeDistance <= routeArrivalRadius', 1
+        'if (!routeTarget && Cohort().Config.ValidationRouteKind != "boss" && std::string(GetDungeonRole(bot)) == "tank" && (routeDistance <= routeArrivalRadius', 1
     )[1].split('if (!routeTarget && Cohort().Config.ValidationRouteKind == "boss")', 1)[0]
     direct_scan = target_engagement.split("if (Cohort().Config.ValidationRouteTargetEntry && !routeTarget)", 1)[1].split(
         'if (!routeTarget\n        && seenRouteTarget', 1

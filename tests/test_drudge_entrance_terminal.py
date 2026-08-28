@@ -49,6 +49,38 @@ def test_drudge_terminal_contract_is_shared_by_clear_and_advance_gates() -> None
         assert "FullRosterAtEndpoint" in text
 
 
+def _drudge_terminal_search_admitted(
+    route_distance: float,
+    arrival_radius: float,
+    role: str,
+    exact_pull_complete: bool,
+) -> bool:
+    return role == "tank" and (
+        route_distance <= arrival_radius or exact_pull_complete
+    )
+
+
+def test_drudge_terminal_search_reconciles_exact_pull_beyond_route_radius() -> None:
+    text = TARGET_ENGAGEMENT.read_text(encoding="utf-8")
+    guard_start = text.index(
+        'if (!routeTarget && Cohort().Config.ValidationRouteKind != "boss"'
+    )
+    guard_end = text.index("\n    {", guard_start)
+    guard = text[guard_start:guard_end]
+
+    assert "routeDistance <= routeArrivalRadius" in guard
+    assert "Manager.HasCompletedValidationRouteDrudgeEntrancePull(bot)" in guard
+    assert "&& outOfCombat" in text[guard_end:]
+
+    # Canary geometry: tanks are near the exact dead sources but outside the
+    # canonical route radius. The exact completion contract admits that case;
+    # an unproven pack or a non-tank must remain outside this branch.
+    assert _drudge_terminal_search_admitted(68.0, 18.0, "tank", True)
+    assert not _drudge_terminal_search_admitted(68.0, 18.0, "tank", False)
+    assert _drudge_terminal_search_admitted(12.0, 18.0, "tank", False)
+    assert not _drudge_terminal_search_admitted(68.0, 18.0, "healer", True)
+
+
 def test_drudge_terminal_contract_is_a_small_build_unit() -> None:
     assert len(TERMINAL.read_text(encoding="utf-8").splitlines()) < 100
     assert TERMINAL.name in CMAKE.read_text(encoding="utf-8")

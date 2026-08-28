@@ -608,7 +608,7 @@ bool ObjectiveContext::RunTargetEngagement(
         action = "validation_route_target_blocked";
         return true;
     }
-    if (!routeTarget && Cohort().Config.ValidationRouteKind != "boss" && routeDistance <= routeArrivalRadius && std::string(GetDungeonRole(bot)) == "tank")
+    if (!routeTarget && Cohort().Config.ValidationRouteKind != "boss" && std::string(GetDungeonRole(bot)) == "tank" && (routeDistance <= routeArrivalRadius || Manager.HasCompletedValidationRouteDrudgeEntrancePull(bot)))
     {
         Unit* anchorTarget = findTrashClusterThreatTarget();
         if (!anchorTarget)
