@@ -1311,7 +1311,12 @@ def finalize_heartbeat(output_dir: Path, heartbeat: Mapping[str, Any]) -> dict[s
     return manifest
 
 
-def append_heartbeat(output_dir: Path, heartbeat: Mapping[str, Any]) -> None:
+def append_heartbeat(
+    output_dir: Path,
+    heartbeat: Mapping[str, Any],
+    *,
+    decision_receipts: Sequence[Mapping[str, Any]] = (),
+) -> None:
     """Keep one latest heartbeat plus one compact append-only stream."""
     latest = dict(heartbeat)
     stream = output_dir / "heartbeat_events.jsonl"
@@ -1324,6 +1329,8 @@ def append_heartbeat(output_dir: Path, heartbeat: Mapping[str, Any]) -> None:
         "progress_counters": dict(latest.get("progress_counters") or {}),
         "acceptance_result_sha256": str(((latest.get("acceptance_verification") or {}).get("result_sha256") or "")),
     }
+    if decision_receipts:
+        compact["decision_receipts"] = [dict(row) for row in decision_receipts[:64]]
     with stream.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(compact, sort_keys=True) + "\n")
     finalize_heartbeat(output_dir, latest)

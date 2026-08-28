@@ -680,6 +680,7 @@ def compact_published_report(report: Mapping[str, Any]) -> dict[str, Any]:
         "evidence_envelope",
         "session",
         "validation_context",
+        "decision_receipts",
         "validation_route_manifest",
         "requested_calibration",
         "calibration_acceptance",
@@ -2288,6 +2289,74 @@ def trace_entries(trace: dict[str, Any]) -> list[dict[str, Any]]:
                 rows.extend(entry for entry in bot.get("entries") or [] if isinstance(entry, dict))
         return rows
     return []
+
+
+DECISION_RECEIPT_LIMIT = 64
+DECISION_RECEIPT_TEXT_LIMIT = 96
+
+
+def compact_decision_receipts(report: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Keep only typed movement-intent outcomes, never raw heartbeat snapshots."""
+    trace = report.get("trace")
+    rows = trace_entries(trace) if isinstance(trace, dict) else []
+    receipts: dict[tuple[Any, ...], dict[str, Any]] = {}
+    for row in rows:
+        movement = row.get("movement_planner")
+        intent = movement.get("intent_reason") if isinstance(movement, dict) else ""
+        if not isinstance(intent, str) or not intent.strip():
+            continue
+        try:
+            actor = int(row.get("bot_guid") or movement.get("bot_guid") or 0)
+            timestamp = int(row.get("timestamp_ms") or 0)
+            generation = int(row.get("route_generation") or 0)
+        except (TypeError, ValueError):
+            continue
+        if actor <= 0:
+            continue
+        intent = intent.strip()[:DECISION_RECEIPT_TEXT_LIMIT]
+        node_id = str(row.get("route_node_id") or "")[:DECISION_RECEIPT_TEXT_LIMIT]
+        result = str(movement.get("result") or "").strip()[:DECISION_RECEIPT_TEXT_LIMIT]
+        gate = str(movement.get("gate") or "").strip()[:DECISION_RECEIPT_TEXT_LIMIT]
+        outcome = str(movement.get("reason") or "").strip()[:DECISION_RECEIPT_TEXT_LIMIT]
+        key = ("movement_intent", intent, actor, result, gate, generation, node_id, outcome)
+        receipt = receipts.get(key)
+        if receipt is None:
+            if len(receipts) >= DECISION_RECEIPT_LIMIT:
+                continue
+            receipts[key] = {
+                "reason_type": "movement_intent", "reason": intent, "outcome_reason": outcome,
+                "actor_guid": actor, "result": result, "gate": gate,
+                "route_generation": generation, "route_node_id": node_id,
+                "first_timestamp_ms": timestamp, "last_timestamp_ms": timestamp, "count": 1,
+            }
+            continue
+        receipt["count"] += 1
+        if timestamp and (not receipt["first_timestamp_ms"] or timestamp < receipt["first_timestamp_ms"]):
+            receipt["first_timestamp_ms"] = timestamp
+        receipt["last_timestamp_ms"] = max(receipt["last_timestamp_ms"], timestamp)
+    return list(receipts.values())
+
+
+def merge_decision_receipts(
+    existing: Sequence[Mapping[str, Any]],
+    incoming: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Merge bounded receipt deltas by typed movement outcome."""
+    fields = ("reason_type", "reason", "actor_guid", "result", "gate", "route_generation", "route_node_id", "outcome_reason")
+    merged: dict[tuple[Any, ...], dict[str, Any]] = {}
+    for row in [*existing, *incoming]:
+        if not isinstance(row, dict):
+            continue
+        key = tuple(row.get(field) for field in fields)
+        if key not in merged and len(merged) < DECISION_RECEIPT_LIMIT:
+            merged[key] = dict(row)
+        elif key in merged:
+            current = merged[key]
+            current["count"] = int(current.get("count") or 0) + int(row.get("count") or 1)
+            times = [int(row.get(name) or 0) for name in ("first_timestamp_ms", "last_timestamp_ms")]
+            current["first_timestamp_ms"] = min(current["first_timestamp_ms"], *[t for t in times if t])
+            current["last_timestamp_ms"] = max(current["last_timestamp_ms"], *times)
+    return list(merged.values())
 
 
 def route_scope(entry: dict[str, Any]) -> tuple[str, int]:
@@ -5035,7 +5104,23 @@ def rolling_heartbeat_report(
         report["completion_reason"] = completion_reason_override
     report["heartbeat_index"] = heartbeat_index
     report["heartbeat_generated_at_unix"] = int(time.time())
-    append_heartbeat(output_dir, report)
+    decision_receipts = compact_decision_receipts(report)
+    previous_decision_receipts: list[Mapping[str, Any]] = []
+    latest_path = output_dir / "latest.json"
+    if latest_path.is_file():
+        try:
+            previous_payload = json.loads(latest_path.read_text(encoding="utf-8"))
+            previous = previous_payload.get("decision_receipts")
+            if isinstance(previous, list):
+                previous_decision_receipts = previous
+        except (OSError, json.JSONDecodeError):
+            pass
+    retained_decision_receipts = merge_decision_receipts(
+        previous_decision_receipts, decision_receipts
+    )
+    if retained_decision_receipts:
+        report["decision_receipts"] = retained_decision_receipts
+    append_heartbeat(output_dir, report, decision_receipts=decision_receipts)
     write_json(output_dir / "report.json", report)
     return report
 
