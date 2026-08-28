@@ -909,7 +909,7 @@ bool ObjectiveContext::RunTargetEngagement(
     rememberValidationRouteFocus(target);
     if (Cohort().Config.ValidationRouteKind == "boss")
     {
-        if (ApplyRaidPrepullBossPullGate(bot, target, situation, action))
+        if (Manager.ApplyRaidPrepullBossPullGate(bot, target, situation, action))
             return true;
         BossMechanicActionResult mechanic = TryBossMechanics(state, bot, power, stage, activity, target);
         if (mechanic.Handled)
