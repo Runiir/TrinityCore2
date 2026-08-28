@@ -1,49 +1,50 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "integration:blackwing_descent:magmaw:10N:parasite_kite_replay",
+  "work_unit": "integration:blackwing_descent:magmaw:10N:chainwielder_patrol_safety_replay",
   "owner_skill": "raid-shard-architecture",
   "classification": "exact_build_pending_live_verification",
-  "observed_at_commit": "7a57fa8df2f4d1f17891576f828600c9ead687c5",
+  "observed_at_commit": "1f676f8d70f2e522d88267da66151537f5d59b67",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_5b67a352ec_parasite_handoff_20260828.md",
-    "sha256": "28a2ec4ce046bcfc93c4919c0b8aa1af6787e8a033c08403d0ffa1a9931b2a64"
+    "path": "experiments/configs/cata_raid_magmaw_841512d644_chainwielder_movement_handoff_20260828.md",
+    "sha256": "4712a4429f23e397c3023d572db84f3209683012ed4ef5fdb514ee84606990a8"
   },
-  "first_broken_edge": "fixed_baiters_recomputed_pack_owned_parasite_escape_paths_and_reentered_the_ranged_healer_stack",
+  "first_broken_edge": "null_profile_action_bypassed_patrol_safety_for_a_combat_range_move_into_the_future_drudge_envelope",
   "decisive_evidence": {
     "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
-    "route_node_id": "bwd.magmaw.encounter",
+    "route_node_id": "bwd.magmaw.chainwielder",
     "chainwielder_cleared": true,
-    "drudges_cleared": true,
-    "magmaw_reached": true,
+    "drudges_cleared": false,
+    "magmaw_reached": false,
     "magmaw_killed": false,
-    "total_deaths": 9,
-    "active_combat_seconds": 135,
-    "originated_party_dps": 95574.9,
-    "party_hps": 15019.2,
-    "originated_affliction_dps": 19009.8,
-    "affliction_pet_damage": 821222,
-    "affliction_pet_damage_share": 0.32,
-    "first_pillar_timestamp_ms": 1787940561513,
-    "first_parasite_infection_timestamp_ms": 1787940572135,
-    "first_raid_vomit_timestamp_ms": 1787940580139,
-    "future_encounter_contamination_observed": false,
-    "terminal_failure_reason": "semantic_progress_plateau",
-    "later_terminal_edge": "partial_deaths_left_one_survivor_outside_full_wipe_recovery",
-    "report_sha256": "8b64a08ea40adb303a5d8f1c0d90a491a72feb97d41f18e5151cb0e8f0d40a7b",
-    "combat_log_sha256": "fbc537d52861e6178cc9b25da680426b00f2293aa3e831aac735afcaf14d7243",
-    "combat_analysis_sha256": "88f3dadd1f08f7968505a31498430bfb810f90f86a7777f1c6e7850c69d864c0",
+    "total_deaths": 10,
+    "active_combat_seconds": 73,
+    "originated_party_dps": 64895.836,
+    "party_hps": 14032.918,
+    "originated_affliction_dps": null,
+    "affliction_pet_damage": null,
+    "affliction_pet_damage_share": null,
+    "future_encounter_contamination_observed": true,
+    "contaminating_target_entry": 42362,
+    "attributable_actor_guid": 30010,
+    "attributable_movement_owner": "combat_range",
+    "attributable_unsafe_destination": [-310.569, -97.0254, 214.091],
+    "distance_to_future_drudge_yards": 7.788,
+    "terminal_failure_reason": "validation_route_future_encounter_contamination",
+    "later_terminal_edge": "native_runback_no_progress_after_full_wipe",
+    "report_sha256": "6a77f7686589f73e1b7df0802cfc0a82dc4b726ad655067d3fe3086e899461f1",
+    "heartbeat_stream_sha256": "0ac31afc6808fbc6914839e985bb0f742a8895ccf5cb45be9d02eeae3f2f7743",
     "forbidden_assistance_observed": false,
-    "cleanup_passed": true,
-    "worldserver_exit_code": 0
+    "cleanup_passed": false,
+    "worldserver_exit_code": null
   },
   "repair_scope": {
-    "status": "trace_backed_parasite_policy_ready_for_one_matched_replay",
+    "status": "trace_backed_patrol_safety_repair_ready_for_one_matched_replay",
     "allowed": [
-      "give_fixed_mage_and_hunter_baiters_stable_point_owned_parasite_paths",
-      "keep_bait_destinations_forward_safe_and_separate_from_the_support_stack",
-      "extend_the_same_outward_lane_when_the_pack_invalidates_the_old_destination",
-      "limit_non_baiters_to_immediate_local_contact_escape",
-      "preserve_pincer_movement_precedence"
+      "apply_the_existing_patrol_safety_predicate_when_profile_action_metadata_is_missing",
+      "reject_the_recorded_combat_range_destination_inside_the_future_drudge_envelope",
+      "retain_the_existing_explicit_melee_behavior",
+      "preserve_ordinary_healing_offense_and_lethal_hazard_movement",
+      "evaluate_the_already_implemented_parasite_policy_if_magmaw_is_reached"
     ],
     "forbidden_shortcuts": [
       "reduce_encounter_damage",
@@ -64,12 +65,11 @@
     "matched_live_verification_runs": 1
   },
   "implementation_checkpoint": {
-    "runtime_commit": "7a57fa8df2f4d1f17891576f828600c9ead687c5",
-    "focused_tests_passed": 4,
-    "strategy_header_lines": 873,
-    "parasite_policy_header_lines": 319,
-    "input_canary_runtime_commit": "5b67a352ec50112cddf0fe342d4b629253a44f36",
-    "input_canary_report_sha256": "8b64a08ea40adb303a5d8f1c0d90a491a72feb97d41f18e5151cb0e8f0d40a7b",
+    "runtime_commit": "1f676f8d70f2e522d88267da66151537f5d59b67",
+    "focused_tests_passed": 20,
+    "combat_movement_cpp_lines": 560,
+    "input_canary_runtime_commit": "841512d64422e3ef310e3c4df3bfe7cfd30573eb",
+    "input_canary_report_sha256": "6a77f7686589f73e1b7df0802cfc0a82dc4b726ad655067d3fe3086e899461f1",
     "live_clear_claimed": false
   },
   "implementation_constraints": {
@@ -78,5 +78,5 @@
     "live_run_allowed": true,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "Commit this exact-build authorization, build source 7a57fa8df2 with the guarded four-job policy, freshly provision, and run one matched completion-watchdog canary."
+  "next_action": "Commit this exact-build authorization, build the resulting exact commit with the guarded four-job policy, freshly provision, and run one matched completion-watchdog canary."
 }
