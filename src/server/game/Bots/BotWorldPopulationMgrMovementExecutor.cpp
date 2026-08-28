@@ -82,6 +82,14 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
         return false;
     }
 
+    // A player immediately cancels a hard cast when reacting to a lethal
+    // ground mechanic. The encounter brain expresses that decision through
+    // the Hazard owner/priority pair; the movement service performs only the
+    // native interruption required to make the admitted path start now.
+    if (BotWorldMovement::InterruptsActiveCast(intent.Owner, intent.Priority)
+        && bot->HasUnitState(UNIT_STATE_CASTING))
+        bot->InterruptNonMeleeSpells(false);
+
     BotWorldMovement::ActivePathObservation const active =
         ObserveActiveMovement(state, bot, intent, request);
     if (state.ActivePathValid

@@ -122,6 +122,20 @@ def test_point_hazard_submission_keeps_same_tick_damage_movement_compatible():
     assert "HasMovementCompatibleLease(state, bot, nowMs);" in combat[callsite:]
 
 
+def test_hazard_movement_interrupts_active_cast_before_path_reconciliation() -> None:
+    header = HELPER_HEADER.read_text(encoding="utf-8")
+    executor = EXECUTOR.read_text(encoding="utf-8")
+    assert "constexpr bool InterruptsActiveCast" in header
+    assert "owner == BotMovementArbitration::Owner::Hazard" in header
+    assert "priority == BotMovementArbitration::Priority::Hazard" in header
+
+    interrupt = executor.index("BotWorldMovement::InterruptsActiveCast")
+    active_path = executor.index("ObserveActiveMovement", interrupt)
+    submission = executor.index("bot->GetMotionMaster()->Clear", active_path)
+    assert interrupt < active_path < submission
+    assert "bot->InterruptNonMeleeSpells(false);" in executor[interrupt:active_path]
+
+
 def test_route_and_recovery_progressive_admission_is_bounded() -> None:
     header = HELPER_HEADER.read_text(encoding="utf-8")
     adapter = MODULE.read_text(encoding="utf-8")

@@ -15,6 +15,17 @@ class Unit;
 // requirements.
 namespace BotWorldMovement
 {
+// Hazard movement models a player's decision to abandon a hard cast for an
+// imminent lethal mechanic. Other movement owners remain compatible with an
+// already-running cast and must not cancel it implicitly.
+constexpr bool InterruptsActiveCast(
+    BotMovementArbitration::Owner owner,
+    BotMovementArbitration::Priority priority)
+{
+    return owner == BotMovementArbitration::Owner::Hazard
+        && priority == BotMovementArbitration::Priority::Hazard;
+}
+
 constexpr bool AllowsProgressiveSegments(
     BotMovementArbitration::Owner owner, bool nativeRecoveryEntrance)
 {

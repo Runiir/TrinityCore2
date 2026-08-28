@@ -884,6 +884,13 @@ int main()
     auto const* rangedPillarMove = std::get_if<Move>(
         &rangedPillarPlan.Movement->Action);
     assert(rangedPillarMove);
+    // The summon identity, not the observation revision, owns this survival
+    // lease. A later observation must refresh the same candidate so a native
+    // path rejection receives bounded kernel retry instead of profile churn.
+    assert(rangedPillarPlan.Movement->Id.Actor
+        == magmawRangedPillar.Summons.front().Guid);
+    assert(rangedPillarPlan.Movement->Id.EventGeneration
+        == magmawRangedPillar.Summons.front().Guid.GetRawValue());
     assert(std::hypot(rangedPillarMove->X
             - magmawRangedPillar.Summons.front().Position.X,
         rangedPillarMove->Y
@@ -914,6 +921,29 @@ int main()
     assert(rangedPillarAltitudeMove->X == rangedPillarMove->X);
     assert(rangedPillarAltitudeMove->Y == rangedPillarMove->Y);
     assert(rangedPillarAltitudeMove->Z == rangedPillarMove->Z);
+
+    BotEncounter::Blackboard laterPillarObservation = magmawRangedPillar;
+    laterPillarObservation.Revision += 100;
+    laterPillarObservation.ObservedAtMs += 250;
+    auto laterPillarPlan = magmawStrategy.Propose(
+        laterPillarObservation, dps.Guid, "dps");
+    assert(laterPillarPlan.Movement.has_value());
+    assert(laterPillarPlan.Movement->Id.ScopeKey
+        == rangedPillarPlan.Movement->Id.ScopeKey);
+    assert(laterPillarPlan.Movement->Id.Strategy
+        == rangedPillarPlan.Movement->Id.Strategy);
+    assert(laterPillarPlan.Movement->Id.Mechanic
+        == rangedPillarPlan.Movement->Id.Mechanic);
+    assert(laterPillarPlan.Movement->Id.Actor
+        == rangedPillarPlan.Movement->Id.Actor);
+    assert(laterPillarPlan.Movement->Id.EventGeneration
+        == rangedPillarPlan.Movement->Id.EventGeneration);
+    auto const* laterPillarMove = std::get_if<Move>(
+        &laterPillarPlan.Movement->Action);
+    assert(laterPillarMove);
+    assert(laterPillarMove->X == rangedPillarMove->X);
+    assert(laterPillarMove->Y == rangedPillarMove->Y);
+    assert(laterPillarMove->Z == rangedPillarMove->Z);
 
     // Once the ranged actor is already at the selected safe anchor, the
     // observed Pillar must not churn a matching movement request.
@@ -1663,6 +1693,39 @@ def test_magmaw_movement_adapter_maps_typed_leases_and_fails_closed() -> None:
     assert movement.index("if (movementLease)") < movement.index(
         "context.State.DecisionKernel.Submit(std::move(movement));"
     )
+
+
+def test_magmaw_pillar_bait_uses_summon_lease_and_bounded_replan() -> None:
+    strategy = bot_source(
+        "Content/Raids/BlackwingDescent/Encounters/Magmaw/"
+        "BotAdaptiveMagmawStrategy.h"
+    )
+    bait_start = strategy.index(
+        "static std::optional<BotNativeAction::Candidate> BuildPillarBaitMove("
+    )
+    bait_end = strategy.index("static bool HasActivePillar", bait_start)
+    bait = strategy[bait_start:bait_end]
+    assert "candidate.Id.Actor = pillar.Guid;" in bait
+    assert "candidate.Id.EventGeneration = pillar.Guid.GetRawValue();" in bait
+    assert "candidate.Id.EventGeneration = board.Revision;" not in bait
+    assert "BuildPointMovement(" in bait
+
+    candidates = bot_source("BotWorldPopulationMgrUpdateBotKernelCandidates.cpp")
+    movement_start = candidates.index(
+        "if (context.AdaptiveMagmawMovement"
+    )
+    movement_end = candidates.index(
+        "if (context.AdaptiveMagmawInteraction", movement_start
+    )
+    movement = candidates[movement_start:movement_end]
+    retry_start = movement.index(
+        'if (intent.Id.Mechanic == "pillar_bait_switch")'
+    )
+    retry = movement[retry_start:movement.index("movement.Attempt", retry_start)]
+    assert "movement.RetryBaseMs = 250;" in retry
+    assert "movement.RetryMaxMs = 2000;" in retry
+    assert "movement.EscalateAfter = 4;" in retry
+    assert "native movement" in retry
 
 
 def test_native_route_interactions_use_player_handlers_and_observed_postconditions() -> None:

@@ -494,6 +494,14 @@ private:
         BotNativeAction::Candidate candidate = BuildPointMovement(
             board, bot, destination, "pillar_bait_switch",
             BotActionArbitration::Priority::Survival, 500.0f);
+        // Keep one survival action identity for the complete native Pillar
+        // movement.  A board revision is an observation, not a new Pillar;
+        // using it here discarded the kernel retry state and allowed a
+        // rejected/stale path to fall back to profile movement on the next
+        // tick.  The summon GUID is stable for this warning and changes when
+        // the next Pillar is selected.
+        candidate.Id.Actor = pillar.Guid;
+        candidate.Id.EventGeneration = pillar.Guid.GetRawValue();
         // A Pillar bait path is a fixed native point movement.  Do not use
         // the bot's changing current Z as the request's destination: while
         // the spline is in flight that made every tick look like a new path
