@@ -24,6 +24,8 @@
     "allowed_files": [
       "src/server/game/Bots/BotWorldPopulationMgrMovementPlanner.cpp",
       "src/server/game/Bots/BotWorldPopulationMgrNativePathValidation.h",
+      "src/server/game/Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h",
+      "src/server/game/Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.cpp",
       "tests/test_native_path_floor_diagnostic.py",
       "tests/test_native_runback_floor_gate.py",
       "tests/test_movement_planner_diagnostics.py",
