@@ -4218,6 +4218,95 @@ TC> {"duration_minutes":1.0,"decisions":20,"total_kills":0,"quests_completed":0}
     assert report["completion_reason"] == "no_progress_observed"
 
 
+def test_live_bot_validation_suppresses_stale_error_during_route_trash_handoff():
+    output = "\n".join(
+        [
+            'TC> {"active_bots":1,"target_bots":1,"action":"botauto_status","decisions":20}',
+            "TC> " + json.dumps(
+                {
+                    "diagnosis_schema_version": 1,
+                    "bots": [
+                        {
+                            "identity": {"bot_guid": 1},
+                            "diagnosis": {
+                                "diagnosis_code": "blocked_no_fallback",
+                                "severity": "error",
+                                "evidence": [{"name": "in_combat", "value": False}],
+                                "decision_kernel": {
+                                    "terminal": True,
+                                    "candidates": [
+                                        {
+                                            "key": "world.validation_route_action",
+                                            "phase": "terminal",
+                                            "reason": "trash_cluster_cleared",
+                                            "source": "validation_route_adapter",
+                                            "status": "attempted",
+                                        }
+                                    ],
+                                },
+                            },
+                            "snapshot": {"decision": {"action": "wait_for_candidate_backoff"}},
+                        }
+                    ],
+                }
+            ),
+            'TC> {"trace_schema_version":1,"entries":[{"action":"wait_for_candidate_backoff"}]}',
+            'TC> {"duration_minutes":1,"decisions":20}',
+        ]
+    )
+
+    report = live_validation_report(output)
+
+    assert report["evidence"]["error_diagnoses"] == 1
+    assert report["evidence"]["route_transition_error_diagnoses"] == 1
+    assert report["evidence"]["actionable_error_diagnoses"] == 0
+    assert "bot_diagnosis_error" not in report["failure_labels"]
+
+
+def test_live_bot_validation_keeps_active_combat_route_error_actionable():
+    output = "\n".join(
+        [
+            'TC> {"active_bots":1,"target_bots":1,"action":"botauto_status","decisions":20}',
+            "TC> " + json.dumps(
+                {
+                    "diagnosis_schema_version": 1,
+                    "bots": [
+                        {
+                            "identity": {"bot_guid": 1},
+                            "diagnosis": {
+                                "diagnosis_code": "blocked_no_fallback",
+                                "severity": "error",
+                                "evidence": [{"name": "in_combat", "value": True}],
+                                "decision_kernel": {
+                                    "terminal": True,
+                                    "candidates": [
+                                        {
+                                            "key": "world.validation_route_action",
+                                            "phase": "terminal",
+                                            "reason": "trash_cluster_cleared",
+                                            "source": "validation_route_adapter",
+                                            "status": "attempted",
+                                        }
+                                    ],
+                                },
+                            },
+                            "snapshot": {"decision": {"action": "wait_for_candidate_backoff"}},
+                        }
+                    ],
+                }
+            ),
+            'TC> {"trace_schema_version":1,"entries":[{"action":"wait_for_candidate_backoff"}]}',
+            'TC> {"duration_minutes":1,"decisions":20}',
+        ]
+    )
+
+    report = live_validation_report(output)
+
+    assert report["evidence"]["route_transition_error_diagnoses"] == 0
+    assert report["evidence"]["actionable_error_diagnoses"] == 1
+    assert "bot_diagnosis_error" in report["failure_labels"]
+
+
 def test_live_bot_validation_counts_trace_mob_killed_as_kill_evidence():
     output = """
 TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":12,"kills":0,"quests_accepted":0,"quest_objective_progress":0}

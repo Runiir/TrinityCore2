@@ -2967,6 +2967,53 @@ def nested_get(row: dict[str, Any], path: list[str], default: Any = None) -> Any
     return default if value is None else value
 
 
+def is_route_transition_diagnosis(row: dict[str, Any]) -> bool:
+    """Identify a stale error while the native route is handing off a pack.
+
+    A terminal route candidate deliberately has no ordinary profile fallback.
+    That is a valid, short-lived state while the coordinator advances to the
+    next node, but the generic blocked-no-fallback diagnosis is still emitted
+    for the current bot.  Require the exact adapter candidate, reason, terminal
+    kernel, and an out-of-combat snapshot so real combat errors remain visible.
+    The completion watchdog still owns an advance that never changes state.
+    """
+    diagnosis = row.get("diagnosis") if isinstance(row.get("diagnosis"), dict) else {}
+    if str(diagnosis.get("severity") or row.get("severity") or "") != "error":
+        return False
+    kernel = diagnosis.get("decision_kernel") if isinstance(diagnosis.get("decision_kernel"), dict) else {}
+    if kernel.get("terminal") is not True:
+        return False
+
+    evidence_rows = diagnosis.get("evidence")
+    if not isinstance(evidence_rows, list):
+        return False
+    evidence = {
+        str(item.get("name")): item.get("value")
+        for item in evidence_rows
+        if isinstance(item, dict) and item.get("name")
+    }
+    if evidence.get("in_combat") not in (False, 0):
+        return False
+
+    candidates = kernel.get("candidates")
+    if not isinstance(candidates, list):
+        return False
+    return any(
+        isinstance(candidate, dict)
+        and candidate.get("source") == "validation_route_adapter"
+        and candidate.get("key") in {
+            "world.validation_route_action",
+            "world.validation_route_movement",
+        }
+        and candidate.get("reason") == "trash_cluster_cleared"
+        and (
+            candidate.get("phase") in {"terminal", "deferred", "backoff"}
+            or candidate.get("status") in {"terminal", "deferred", "backoff"}
+        )
+        for candidate in candidates
+    )
+
+
 def scenario_bool(report: dict[str, Any], *keys: str) -> bool:
     return any(bool(report.get(key)) for key in keys)
 
@@ -3592,6 +3639,16 @@ def live_evidence(
         for row in diagnoses
         if nested_get(row, ["diagnosis", "severity"], nested_get(row, ["severity"], ""))
     )
+    route_transition_error_diagnoses = sum(
+        1
+        for row in diagnoses
+        if str(nested_get(row, ["diagnosis", "severity"], nested_get(row, ["severity"], ""))) == "error"
+        and is_route_transition_diagnosis(row)
+    )
+    actionable_error_diagnoses = max(
+        0,
+        diagnosis_severities.get("error", 0) - route_transition_error_diagnoses,
+    )
     action_names = {
         str(entry.get("action") or entry.get("situation") or "")
         for entry in entries
@@ -3858,6 +3915,8 @@ def live_evidence(
         "diagnosis_severities": dict(sorted(diagnosis_severities.items())),
         "bot_not_loaded_diagnoses": diagnosis_codes.get("bot_not_loaded", 0),
         "error_diagnoses": diagnosis_severities.get("error", 0),
+        "route_transition_error_diagnoses": route_transition_error_diagnoses,
+        "actionable_error_diagnoses": actionable_error_diagnoses,
         "non_spawn_trace_entries": non_spawn_trace_entries,
         "quest_objective_progress": quest_progress,
         "quests_accepted": quests_accepted,
@@ -3961,7 +4020,13 @@ def validation_failure_labels(
     result_counts = evidence.get("result_counts") if isinstance(evidence.get("result_counts"), dict) else {}
     unresolved_death_loop_events = int(evidence.get("unresolved_route_death_loop_events") or 0)
     bot_not_loaded_diagnoses = int(evidence.get("bot_not_loaded_diagnoses") or 0)
-    error_diagnoses = int(evidence.get("error_diagnoses") or 0)
+    error_diagnoses = int(
+        evidence.get(
+            "actionable_error_diagnoses",
+            evidence.get("error_diagnoses") or 0,
+        )
+        or 0
+    )
     post_failure_progress = bool(evidence.get("post_failure_progress"))
     recovered_route_stuck = (
         action_counts.get("validation_route_recovery", 0) > 0
