@@ -64,6 +64,11 @@ DEFAULT_MAX_REPEATED_DECISIONS = 20
 DEFAULT_MAX_DEATH_LOOPS = 3
 DEFAULT_MAX_WORLDSERVER_OUTPUT_BYTES = 64 * 1024 * 1024
 MAX_WORLDSERVER_DRAIN_BYTES_PER_WAKE = 64 * 1024
+# A completion-watchdog run repeats the same four command families on every
+# heartbeat.  Keep the single output budget hard, but give cleanup its own
+# section so a full combat-log export cannot be evicted by old heartbeats.
+WATCHDOG_PREFIX_OUTPUT_BYTES = 8 * 1024 * 1024
+WATCHDOG_CLEANUP_OUTPUT_BYTES = 16 * 1024 * 1024
 PRE_MARKER_PROMPT_GRACE_SEC = 1.0
 WORLDSERVER_OUTPUT_TRUNCATED_MARKER = "\n[worldserver_output_truncated]\n"
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -121,6 +126,96 @@ class BoundedOutputParts(list[str]):
     def extend(self, values: tuple[str, ...] | list[str]) -> None:
         for value in values:
             self.append(value)
+
+
+class WatchdogOutputBuffer:
+    """Bound watchdog output without discarding its terminal protocol.
+
+    Status, diagnosis, trace, and summary are repeated snapshots.  Keeping
+    every copy made a long route fill the global buffer before the cleanup
+    combat-log command ran.  The watchdog only needs the newest snapshot of
+    each repeated command for its current report; compact heartbeat reports
+    already provide the historical progress stream.  Startup/unsolicited
+    output and cleanup output use separate bounded sections, so cleanup is
+    still retained after heartbeat compaction or a failed run.
+    """
+
+    def __init__(
+        self,
+        *,
+        max_bytes: int = DEFAULT_MAX_WORLDSERVER_OUTPUT_BYTES,
+        heartbeat_commands: tuple[str, ...] | list[str] = (),
+    ) -> None:
+        if max_bytes <= 0:
+            raise ValueError("max_bytes must be positive")
+        self.max_bytes = max_bytes
+        prefix_bytes = min(WATCHDOG_PREFIX_OUTPUT_BYTES, max(1, max_bytes // 4))
+        cleanup_bytes = min(
+            WATCHDOG_CLEANUP_OUTPUT_BYTES,
+            max(1, max_bytes // 4),
+        )
+        if prefix_bytes + cleanup_bytes >= max_bytes:
+            cleanup_bytes = max(0, max_bytes - prefix_bytes - 1)
+        heartbeat_bytes = max(0, max_bytes - prefix_bytes - cleanup_bytes)
+        keys = tuple(dict.fromkeys(str(command) for command in heartbeat_commands))
+        self._heartbeat_section_bytes = (
+            heartbeat_bytes // max(1, len(keys)) if heartbeat_bytes else 0
+        )
+        self._prefix = BoundedOutputParts(max_bytes=prefix_bytes)
+        self._cleanup = BoundedOutputParts(max_bytes=cleanup_bytes)
+        self._heartbeat: dict[str, BoundedOutputParts] = {}
+        self._known_heartbeat_commands = set(keys)
+        self._compacted = False
+
+    def append(self, value: str) -> None:
+        """Retain startup or unsolicited output in the prefix section."""
+        self._prefix.append(value)
+
+    def extend(self, values: tuple[str, ...] | list[str]) -> None:
+        for value in values:
+            self.append(value)
+
+    def append_heartbeat(self, command: str, value: str) -> None:
+        """Replace the prior response for one repeated heartbeat command."""
+        key = str(command)
+        if key in self._heartbeat:
+            self._compacted = True
+        # A new key is allowed for custom scripts, but never gets an
+        # unbounded allocation.  Known keys share the heartbeat budget;
+        # unknown keys use the smallest known section budget.
+        section_bytes = self._heartbeat_section_bytes
+        if key not in self._known_heartbeat_commands and not section_bytes:
+            section_bytes = 1
+        section = BoundedOutputParts(max_bytes=section_bytes)
+        section.append(value)
+        self._heartbeat[key] = section
+
+    def append_cleanup(self, value: str) -> None:
+        """Retain final export/stop/shutdown output independently."""
+        self._cleanup.append(value)
+
+    def render(self) -> str:
+        return "".join(
+            [
+                *self._prefix,
+                *(value for part in self._heartbeat.values() for value in part),
+                *self._cleanup,
+            ]
+        )
+
+    @property
+    def compacted(self) -> bool:
+        return self._compacted
+
+    @property
+    def truncated(self) -> bool:
+        return self._prefix.truncated or any(
+            part.truncated for part in self._heartbeat.values()
+        ) or self._cleanup.truncated
+
+    @property
+    def written_bytes(self) -> int:
+        return len(self.render().encode("utf-8"))
 
 
 CommandTransport = Callable[[str, int], tuple[str, int, bool]]
@@ -4776,7 +4871,7 @@ def run_transport_completion_watchdog(
         None if timeout_sec is None else time.monotonic() + timeout_sec
     )
     startup_commands, heartbeat_commands, cleanup_commands = heartbeat_commands_from_script(script)
-    output_parts = BoundedOutputParts()
+    output_parts = WatchdogOutputBuffer(heartbeat_commands=heartbeat_commands)
     heartbeat_index = 0
     last_progress_total = -1
     last_progress_at = time.monotonic()
@@ -4796,7 +4891,7 @@ def run_transport_completion_watchdog(
         timed_out = False
         for attempt in range(1, attempts + 1):
             output, returncode, timed_out = execute_command(command_text, remaining)
-            output_parts.append(f"$ {command_text}\n")
+            command_output = f"$ {command_text}\n"
             if (
                 returncode != 0
                 or timed_out
@@ -4804,9 +4899,17 @@ def run_transport_completion_watchdog(
                 or combat_log_export_complete(output)
                 or attempt == attempts
             ):
-                output_parts.append(output)
+                command_output += output
+                if command_text in cleanup_commands:
+                    output_parts.append_cleanup(command_output)
+                elif command_text in heartbeat_commands:
+                    output_parts.append_heartbeat(command_text, command_output)
+                else:
+                    output_parts.append(command_output)
                 break
-            output_parts.append(combat_log_retry_receipt(output, attempt))
+            output_parts.append_cleanup(
+                command_output + combat_log_retry_receipt(output, attempt)
+            )
         if returncode == 0 and is_calibration_start_command(command_text):
             rejected = any(
                 row.get("action") == "botauto_calibrate_start"
@@ -4822,8 +4925,8 @@ def run_transport_completion_watchdog(
             for command_text in cleanup_commands:
                 cleanup_returncode, cleanup_timed_out = send(command_text)
                 if cleanup_returncode != 0 or cleanup_timed_out:
-                    return "".join(output_parts), cleanup_returncode, cleanup_timed_out, command
-        return "".join(output_parts), returncode, timed_out, command
+                    return output_parts.render(), cleanup_returncode, cleanup_timed_out, command
+        return output_parts.render(), returncode, timed_out, command
 
     for command_text in startup_commands:
         returncode, timed_out = send(command_text)
@@ -4866,7 +4969,7 @@ def run_transport_completion_watchdog(
             if returncode != 0 or timed_out:
                 return finish(returncode, timed_out)
         report = rolling_heartbeat_report(
-            output_dir, heartbeat_index, "".join(output_parts), 0, False, command,
+            output_dir, heartbeat_index, output_parts.render(), 0, False, command,
             scenario_reports, validation_context, duration_policy, heartbeat_sec,
             no_progress_window_sec, max_repeated_decisions, max_death_loops,
             validation_route_manifest,
@@ -4941,7 +5044,7 @@ def run_worldserver_completion_watchdog(
     command = [str(binary), "--config", str(config)]
     deadline = time.monotonic() + timeout_sec
     startup_commands, heartbeat_commands, cleanup_commands = heartbeat_commands_from_script(script)
-    output_parts = BoundedOutputParts()
+    output_parts = WatchdogOutputBuffer(heartbeat_commands=heartbeat_commands)
     heartbeat_index = 0
     last_progress_total = -1
     last_progress_at = time.monotonic()
@@ -4958,7 +5061,20 @@ def run_worldserver_completion_watchdog(
     assert process.stdin is not None
 
     def joined_output() -> str:
-        return "".join(output_parts)
+        return output_parts.render()
+
+    def record_command_output(
+        command_text: str,
+        value: str,
+        *,
+        cleanup: bool = False,
+    ) -> None:
+        if cleanup or command_text in cleanup_commands:
+            output_parts.append_cleanup(value)
+        elif command_text in heartbeat_commands:
+            output_parts.append_heartbeat(command_text, value)
+        else:
+            output_parts.append(value)
 
     def send_command(command_text: str, *, cleanup: bool = False) -> None:
         assert process.stdin is not None
@@ -4970,7 +5086,7 @@ def run_worldserver_completion_watchdog(
         for attempt in range(1, attempts + 1):
             process.stdin.write(command_text + "\n")
             process.stdin.flush()
-            output_parts.append(f"$ {command_text}\n")
+            command_output_prefix = f"$ {command_text}\n"
             command_deadline = (
                 time.monotonic() + max(120, heartbeat_sec)
                 if cleanup
@@ -4987,11 +5103,19 @@ def run_worldserver_completion_watchdog(
                 or combat_log_export_complete(command_output)
                 or attempt == attempts
             ):
-                output_parts.append(command_output)
+                record_command_output(
+                    command_text,
+                    command_output_prefix + command_output,
+                    cleanup=cleanup,
+                )
                 break
-            output_parts.append(combat_log_retry_receipt(
-                command_output, attempt
-            ))
+            record_command_output(
+                command_text,
+                command_output_prefix + combat_log_retry_receipt(
+                    command_output, attempt
+                ),
+                cleanup=cleanup,
+            )
 
     try:
         output_parts.append(read_until_console_prompt(process, deadline))
@@ -5129,7 +5253,7 @@ def run_worldserver_completion_watchdog(
                 send_command(command_text, cleanup=True)
         if process.poll() is None and process.stdin and not process.stdin.closed:
             try:
-                send_command("server shutdown force 0")
+                send_command("server shutdown force 0", cleanup=True)
             except BrokenPipeError:
                 pass
         if process.stdin and not process.stdin.closed:
@@ -5152,7 +5276,7 @@ def run_worldserver_completion_watchdog(
             process.kill()
             timed_out = True
         if process.stdout:
-            output_parts.append(process.stdout.read())
+            output_parts.append_cleanup(process.stdout.read())
         returncode = process.returncode if process.returncode is not None else (124 if timed_out else 0)
         return joined_output(), returncode, timed_out, command
     except (BrokenPipeError, subprocess.TimeoutExpired) as exc:
@@ -5160,7 +5284,7 @@ def run_worldserver_completion_watchdog(
         output = (exc.stdout or "") if isinstance(exc, subprocess.TimeoutExpired) else ""
         if not output and process.stdout:
             output = process.stdout.read()
-        output_parts.append(output)
+        output_parts.append_cleanup(output)
         return joined_output(), 124, True, command
 
 

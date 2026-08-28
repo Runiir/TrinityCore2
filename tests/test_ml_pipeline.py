@@ -72,7 +72,7 @@ from tools.bot_ml.live_validation_session import (
     sha256_file,
     systemd_transient_command,
 )
-from tools.bot_ml.run_live_bot_validation import BoundedOutputParts, apply_calibration_only_acceptance, attempt_evidence_envelope, boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, calibration_pre_scoring_blocker, command_script, heartbeat_commands_from_script, live_combat_progress_advanced, live_combat_progress_snapshot, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, preflight_calibration_reference_binding, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, split_sql_statements, strict_manifest_evidence, supersede_transient_route_failures, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, wait_for_heroic_admission_status, watchdog_state, write_validation_config
+from tools.bot_ml.run_live_bot_validation import BoundedOutputParts, WatchdogOutputBuffer, apply_calibration_only_acceptance, attempt_evidence_envelope, boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, calibration_pre_scoring_blocker, command_script, heartbeat_commands_from_script, live_combat_progress_advanced, live_combat_progress_snapshot, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, preflight_calibration_reference_binding, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, split_sql_statements, strict_manifest_evidence, supersede_transient_route_failures, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, wait_for_heroic_admission_status, watchdog_state, write_validation_config
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -12451,6 +12451,36 @@ def test_phase3_worldserver_output_is_bounded_and_fails_closed():
     assert rendered.endswith("\n[worldserver_output_truncated]\n")
     assert "worldserver_output_truncated" in report["failure_labels"]
     assert report["acceptable_final_evidence"] is False
+
+
+def test_watchdog_output_buffer_compacts_heartbeats_and_retains_cleanup():
+    buffer = WatchdogOutputBuffer(
+        max_bytes=4096,
+        heartbeat_commands=(".botauto status", ".botauto diagnose all"),
+    )
+    buffer.append("startup\n")
+    for index in range(40):
+        buffer.append_heartbeat(
+            ".botauto status",
+            f"$ .botauto status\nstatus-heartbeat-{index}\n",
+        )
+        buffer.append_heartbeat(
+            ".botauto diagnose all",
+            f"$ .botauto diagnose all\ndiagnosis-heartbeat-{index}\n",
+        )
+    buffer.append_cleanup(
+        '$ .botauto combatlog\n{"action":"botauto_combatlog_complete"}\n'
+    )
+
+    rendered = buffer.render()
+    assert len(rendered.encode("utf-8")) <= buffer.max_bytes
+    assert "startup\n" in rendered
+    assert "status-heartbeat-0" not in rendered
+    assert "status-heartbeat-39" in rendered
+    assert "diagnosis-heartbeat-39" in rendered
+    assert '"action":"botauto_combatlog_complete"' in rendered
+    assert buffer.compacted is True
+    assert buffer.truncated is False
 
 
 def test_phase4_rotation_static_contract_and_manifest_are_deterministic(tmp_path):
