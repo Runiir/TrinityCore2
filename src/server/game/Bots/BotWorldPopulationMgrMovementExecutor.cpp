@@ -59,6 +59,22 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
         return false;
     }
 
+    // Every ordinary movement producer converges here before lease retention,
+    // path planning, or MotionMaster submission.  Keep the future-pack mask
+    // out of caller-specific route/formation/combat/hazard branches.  Native
+    // corpse recovery remains the sole typed exception.
+    if (BotWorldMovement::AppliesValidationRoutePatrolFutureDestinationGuard(
+            intent.Owner)
+        && !IsValidationRoutePatrolCombatPointSafe(bot, intent.X, intent.Y,
+            intent.Z))
+    {
+        RecordMovementPlannerExecutorOutcome(MovementExecutorBotGuid(bot),
+            MovementExecutorMapId(bot), intent, "future_pack_destination",
+            "rejected", "route_destination_future_pack_unsafe");
+        return RejectMovementPath(state, bot, intent,
+            "route_destination_future_pack_unsafe");
+    }
+
     uint64 const nowMs = MovementExecutorNowMs();
     BotMovementArbitration::Request const request = BuildMovementRequest(
         bot, intent, nowMs);

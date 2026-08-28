@@ -67,6 +67,16 @@ constexpr bool BlocksNonRecoveryCrossMapMovement(
         && owner != BotMovementArbitration::Owner::Recovery;
 }
 
+// The future-pack mask belongs to ordinary movement admission, not to the
+// route, formation, combat, or hazard caller that happened to produce an
+// intent.  Native recovery movement is the only exception: it must be
+// allowed to return through the declared entrance corridor.
+constexpr bool AppliesValidationRoutePatrolFutureDestinationGuard(
+    BotMovementArbitration::Owner owner)
+{
+    return owner != BotMovementArbitration::Owner::Recovery;
+}
+
 struct Intent
 {
     float X = 0.0f;

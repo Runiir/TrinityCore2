@@ -446,6 +446,10 @@ private:
         Player* bot, Unit* target, ResolvedCombatAction const& profileAction);
     bool IsValidationRoutePatrolCombatPointSafe(Unit const* target,
         float x, float y, float z) const;
+    bool IsValidationRoutePatrolCombatPointSafe(Player const* bot,
+        float x, float y, float z) const;
+    bool IsValidationRoutePatrolCombatPointSafe(Map* map, uint32 mapId,
+        float x, float y, float z) const;
     bool TryValidationFeralRoarPickup(WorldBotState& state, Player* bot,
         BotRolePowerBreakdown const& power, BotProgressionStage stage,
         BotProgressionActivity activity, std::string& situation,

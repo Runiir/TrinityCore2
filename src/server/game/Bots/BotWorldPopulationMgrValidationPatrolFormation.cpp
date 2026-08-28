@@ -39,6 +39,35 @@ bool BotWorldPopulationMgr::IsValidationRoutePatrolCombatPointSafe(
         || target->GetEntry() != Cohort().Config.ValidationRouteTargetEntry)
         return true;
 
+    return IsValidationRoutePatrolCombatPointSafe(target->GetMap(),
+        target->GetMapId(), x, y, 0.0f);
+}
+
+bool BotWorldPopulationMgr::IsValidationRoutePatrolCombatPointSafe(
+    Player const* bot, float x, float y, float z) const
+{
+    return bot && IsValidationRoutePatrolCombatPointSafe(bot->GetMap(),
+        bot->GetMapId(), x, y, z);
+}
+
+bool BotWorldPopulationMgr::IsValidationRoutePatrolCombatPointSafe(
+    Map* map, uint32 mapId, float x, float y, float /*z*/) const
+{
+    if (!map || Cohort().Config.ValidationRouteKind == "boss"
+        || Cohort().Config.ValidationRoutePatrolPullPolicy
+            != "ranged_patrol_to_anchor"
+        || !Cohort().Config.ValidationRoutePatrolCombatAnchor.X
+        || !Cohort().Config.ValidationRoutePatrolCombatAnchorToleranceYards
+        || !Cohort().Config.ValidationRoutePatrolCombatClearanceYards
+        || Party().ValidationRouteManifestIndex
+            >= Party().ValidationRouteManifest.size())
+        return true;
+    ValidationRouteManifestNode const& node = Party().ValidationRouteManifest[
+        Party().ValidationRouteManifestIndex];
+    if (node.Kind != "trash"
+        || node.TargetEntry != Cohort().Config.ValidationRouteTargetEntry)
+        return true;
+
     float const liveClearance =
         Cohort().Config.ValidationRoutePatrolCombatClearanceYards;
     float const homeClearance = std::max(liveClearance,
@@ -67,12 +96,12 @@ bool BotWorldPopulationMgr::IsValidationRoutePatrolCombatPointSafe(
         for (ObjectGuid::LowType sourceId : sourceIds)
         {
             CreatureData const* data = sObjectMgr->GetCreatureData(sourceId);
-            if (data && data->mapId == target->GetMapId()
+            if (data && data->mapId == mapId
                 && Distance2d(x, y, data->spawnPoint.GetPositionX(),
                     data->spawnPoint.GetPositionY()) <= homeClearance)
                 return false;
 
-            Creature* source = target->GetMap()->GetCreatureBySpawnId(sourceId);
+            Creature* source = map->GetCreatureBySpawnId(sourceId);
             if (source && source->IsAlive()
                 && Distance2d(x, y, source->GetPositionX(),
                     source->GetPositionY()) <= liveClearance)
