@@ -3,10 +3,10 @@
   "work_unit": "runtime:blackwing_descent:magmaw:partial_death_native_runback_stall",
   "owner_skill": "raid-bot-runtime-implementation",
   "classification": "trace_backed_runtime_repair_ready",
-  "observed_at_commit": "e2219cb4fd4f3d319ae82c50c6fe51d054810d68",
+  "observed_at_commit": "e2219cb4fdc63aa26d25803334b4bcb0d8e587fe",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_31322fb541_canary98_partial_death_runback_handoff_20260828.md",
-    "sha256": "e909f9988026aace78d3d1e4b83b0ef010b8261f5207e09586699f9acea9bbbc"
+    "sha256": "f8910cc6f34ee5530bdd93094d6fe939d35982c422708db5f496faa400405508"
   },
   "first_broken_edge": "partial_death_ghost_retained_an_accepted_native_long_path_for_296_seconds_without_position_progress_repath_or_typed_recovery_terminal",
   "decisive_evidence": {

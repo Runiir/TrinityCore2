@@ -1,7 +1,7 @@
 # Magmaw canary 98 partial-death runback handoff
 
 - Runtime source commit: `31322fb541e7f3125465a856905c7016d5723acd`
-- Coordinator commit: `e2219cb4fd4f3d319ae82c50c6fe51d054810d68`
+- Coordinator commit: `e2219cb4fdc63aa26d25803334b4bcb0d8e587fe`
 - Scenario: `blackwing_descent_10n_magmaw_diagnostic`
 - Binary SHA-256: `6e27dd39b3437e06153510748d44bad84f0c547418c13cfb8cf4f58a62815ca8`
 - Report: `/tmp/trinity-magmaw-31322fb541-canary98.z80pE4/run/report.json`
