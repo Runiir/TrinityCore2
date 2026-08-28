@@ -67,6 +67,12 @@
     "matched_live_verification_runs": 1
   },
   "implementation_checkpoint": {
+    "gameplay_commit": "6cd66c8fc87bc3a277976b161250da908bfe9fdb",
+    "status": "focused_tests_passed_exact_build_authorized",
+    "focused_tests_passed": 10,
+    "strategy_header_lines": 647,
+    "strategy_average_ccn": 4.5,
+    "strategy_maximum_ccn": 14,
     "canary93_runtime_commit": "4c061723ec2d88ca56dfcc250eaab5fde1bcb1d2",
     "canary93_report_sha256": "f2340b48e46b84acc07b46440c5d734f84687349037fa444db2ec43dccd7de44",
     "canary93_raw_sha256": "378fd3d45b16127d12f3e5bc080cfa3cc85df724501b4431031067e05522654b",
@@ -85,5 +91,5 @@
     "live_run_allowed": true,
     "commit_allowed_after_root_review": true
   },
-  "next_action": "Implement the stable native pincer movement ownership seam, run focused tests, commit the bounded patch and handoff, obtain an exact coordinator build receipt, then freshly provision and run Canary94."
+  "next_action": "Commit this exact-build authorization, obtain a coordinator receipt for the resulting commit, then freshly provision and run Canary94 with the completion watchdog."
 }
