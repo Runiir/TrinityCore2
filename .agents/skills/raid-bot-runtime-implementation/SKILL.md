@@ -63,6 +63,14 @@ release, graveyard, entrance, resurrection, spell, threat, and encounter
 rules. Never teleport, manufacture a wipe, revive, force a target, or mutate a
 boss outcome.
 
+For shared movement admission, do not repair one owner or distance band at a
+time when route, combat-range, hazard, and mechanic receipts fail at the same
+native path or floor-proof gate. Define the invariant once below the owners,
+preserve strict vertical/future-pack guards, and test the recorded owners
+against the same deterministic proof. If the parent causal signature reaches
+the route recurrence limit, return an architecture review with no edit and no
+live rerun.
+
 Shared raid cooldown reservation belongs here only when it is class-agnostic:
 reserve offensive cooldowns, offensive guardians, combat potions, and
 Bloodlust during trash, regroup, and boss staging, while leaving emergency

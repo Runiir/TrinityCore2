@@ -16,6 +16,15 @@
     "same_level_encounter_hazard_path_rejection": {
       "owner": "shared_movement_planner",
       "invariant": "short same-floor hazard movement cannot sample an unrelated lower map floor"
+    },
+    "same_level_movement_path_floor_false_negative": {
+      "owner": "shared_movement_planner",
+      "invariant": "a valid same-floor native movement must use one owner-independent floor proof and bounded progressive segmentation instead of rejecting the request from an unrelated sampled floor",
+      "subsumes": [
+        "same_level_encounter_hazard_path_rejection"
+      ],
+      "historical_unique_run_count": 15,
+      "counting_note": "The ledger records the last ten gate-bearing occurrences. Five older retained reports establish that the full archive count is fifteen."
     }
   },
   "runs": [
@@ -101,7 +110,8 @@
       "blockers": {
         "magmaw_parasite_control_allows_player_infection": "occurred",
         "chainwielder_future_drudge_contamination": "absent",
-        "same_level_encounter_hazard_path_rejection": "occurred"
+        "same_level_encounter_hazard_path_rejection": "occurred",
+        "same_level_movement_path_floor_false_negative": "occurred"
       },
       "combat_analysis_sha256": "c6067ab9a47d2ac1ebeb184cc8b433e7ba6686b5d432f051d05db619fceae432",
       "evidence": "experiments/configs/cata_raid_magmaw_a1fff71538_canary104_same_level_hazard_path_handoff_20260829.md"
@@ -112,10 +122,80 @@
       "blockers": {
         "magmaw_parasite_control_allows_player_infection": "occurred",
         "chainwielder_future_drudge_contamination": "absent",
-        "same_level_encounter_hazard_path_rejection": "occurred"
+        "same_level_encounter_hazard_path_rejection": "occurred",
+        "same_level_movement_path_floor_false_negative": "occurred"
       },
       "combat_analysis_sha256": "19d51d6fdca6fe3874b5a91c40692bd092e34939395628044a474123f4bc15ad",
       "note": "nine of ten players took Parasitic Infection or Infectious Vomit; 63 partial-path and 29 floor-gap mechanic moves were rejected; Magmaw not killed"
+    },
+    {
+      "run_id": "trinity-magmaw-c1dafd4-autonomous.k0L7LY",
+      "route_completed": false,
+      "blockers": {
+        "same_level_movement_path_floor_false_negative": "occurred"
+      },
+      "report_sha256": "19d1c4858377d054574fbb21242520826adc4b7d09783954bd38663639570b7d"
+    },
+    {
+      "run_id": "trinity-magmaw-a66175a-autonomous.PJpg8H",
+      "route_completed": false,
+      "blockers": {
+        "same_level_movement_path_floor_false_negative": "occurred"
+      },
+      "report_sha256": "572ed6bc33cf282722fe196cef3cddbade8e1f4bf0a70e97ac7001d4aa765389"
+    },
+    {
+      "run_id": "trinity-magmaw-5fed4889c4-autonomous.ZuqIk7",
+      "route_completed": false,
+      "blockers": {
+        "same_level_movement_path_floor_false_negative": "occurred"
+      },
+      "report_sha256": "a534eabca7435ab1be939a9ecebc1254c77b99e17d71a7d4cffc6b3d540f805a"
+    },
+    {
+      "run_id": "trinity-magmaw-31322fb541-canary97.boy3E8",
+      "route_completed": false,
+      "blockers": {
+        "same_level_movement_path_floor_false_negative": "occurred"
+      },
+      "report_sha256": "e14f8ab5bd0b6e73a51324cb000a9e233c2b2ebfe7b26dbf601a61a2c8d2d4b5"
+    },
+    {
+      "run_id": "trinity-magmaw-946f48e676-canary99.ADPeoJ",
+      "route_completed": false,
+      "blockers": {
+        "same_level_movement_path_floor_false_negative": "occurred"
+      },
+      "report_sha256": "40987f795f4bb0c868557cdd0234f5ba1c39b30ba83fa7674ddce252263ed190"
+    },
+    {
+      "run_id": "trinity-magmaw-93fd8308b0-canary100.cIXN4o",
+      "route_completed": false,
+      "blockers": {
+        "same_level_movement_path_floor_false_negative": "occurred"
+      },
+      "report_sha256": "f4ad2a970957db7f134aa1f84c4869fce393e4123a3a2bfb0243071d4c10ed5a"
+    },
+    {
+      "run_id": "trinity-magmaw-gdb-canary101.5RrSiZ",
+      "route_completed": false,
+      "blockers": {
+        "same_level_movement_path_floor_false_negative": "occurred"
+      },
+      "report_sha256": "339b9fc5d13d00078a4185d81e7b86b4d193530fceee0762fcff4a88b4a7a26f"
+    },
+    {
+      "run_id": "trinity-magmaw-052081b472-canary106.UHeDPn",
+      "route_completed": false,
+      "blockers": {
+        "magmaw_parasite_control_allows_player_infection": "not_exercised",
+        "chainwielder_future_drudge_contamination": "absent",
+        "same_level_encounter_hazard_path_rejection": "not_exercised",
+        "same_level_movement_path_floor_false_negative": "occurred"
+      },
+      "report_sha256": "8165bf57470d0aac82b9881bd1e881448f8ad479c4ec224da95e5938f8f3b437",
+      "combat_analysis_sha256": "121baddfc2d6b75c3661a38c1fdfcd6db86a7a3e02d60fcc4c02da5c1d140944",
+      "evidence": "experiments/configs/cata_raid_magmaw_canary106_path_floor_architecture_stop_20260829.md"
     }
   ]
 }

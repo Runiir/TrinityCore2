@@ -200,6 +200,14 @@ unchanged invariant to an architecture review before beginning a new explicit
 epoch. Do not evade this gate by renaming the signature or counting a terminal
 symptom instead.
 
+When a later trace proves that a narrow signature is one instance of a shared
+mechanism, create a parent signature and carry every attributable historical
+occurrence into it. Changing the action owner, intent label, encounter phase,
+or distance band does not create a fresh blocker when the same admission gate
+and failure invariant are unchanged. Record the narrow signatures as
+subsumed, retain their counts, and apply the occurrence limit to the parent
+before authorizing another patch or canary.
+
 Route acceptance requires two consecutive completed clears in which every
 known signature is explicitly `absent`. Passing a focused test or one clean
 canary makes a repair provisional; it does not erase its recurrence history.

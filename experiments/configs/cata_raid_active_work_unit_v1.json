@@ -1,84 +1,69 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "role:blackwing_descent:magmaw:persistent_mobile_parasite_lane",
-  "owner_skill": "raid-role-implementation",
-  "classification": "implementation_pending_matched_live_verification",
-  "observed_at_commit": "902ff5545e4a3fc37966c3ae7c37ca1a02eebd8e",
+  "work_unit": "architecture:blackwing_descent:magmaw:same_level_movement_path_floor_false_negative",
+  "owner_skill": "raid-performance-loop",
+  "classification": "stopped_occurrence_limit_reached",
+  "observed_at_commit": "052081b472abcf1706d863b3c9220f9d99101f9a",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_902ff5545e_canary105_parasite_recurrence_handoff_20260829.md",
-    "sha256": "c1eacf2bc922750c65070266796183faeebd853f549083e6f60e97d1c9d3dfbe"
+    "path": "experiments/configs/cata_raid_magmaw_canary106_path_floor_architecture_stop_20260829.md",
+    "sha256": "f9d24f6949e61ee897f42e660eeac814855e67aadd3dbdadbfd2e610804dc165"
   },
-  "prior_work_unit_result": {
-    "work_unit": "runtime:blackwing_descent:magmaw:same_level_hazard_path_admission",
-    "classification": "failed_matched_canary_recurred",
-    "proof": "Canary105 final traces contain 63 partial-path and 29 floor-gap rejected mechanic moves. The blocker remains open at occurrence 2."
-  },
-  "first_broken_edge": "fixed_mobile_bait_team_reactively_reenters_parasites_and_allows_player_infection",
-  "causal_signature": "magmaw_parasite_control_allows_player_infection",
+  "first_broken_edge": "shared_same_floor_path_proof_rejects_valid_progressive_route_regroup",
+  "causal_signature": "same_level_movement_path_floor_false_negative",
   "recurrence": {
     "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
-    "occurrence_count": 9,
+    "gate_bearing_occurrence_count": 10,
+    "retained_archive_occurrence_count": 15,
     "stop_at": 10,
-    "next_occurrence_action": "stop_and_summarize_last_ten_occurrences"
+    "required_action": "stop_and_summarize_last_ten_occurrences"
   },
-  "implementation": {
-    "commit": "81ab0b47e8",
-    "summary": "The fixed hunter and first fire mage now begin a persistent left-to-right or right-to-left lane transition when parasites appear. The hazard lease retains the selected endpoint until arrival, and ordinary ranged players and healers remain outside the lane policy.",
-    "focused_tests": "2 passed, 11 deselected",
-    "diff_check": "passed"
-  },
-  "decisive_evidence": {
-    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
-    "route_generation": 4,
-    "current_node": "bwd.magmaw.encounter",
-    "trash_kills": 3,
-    "trash_deaths": 2,
+  "canary106": {
+    "completion": "semantic_progress_plateau_watchdog",
+    "duration_seconds": 422,
+    "route_generation": 2,
+    "route_node_id": "bwd.magmaw.chainwielder",
+    "trash_kills": 1,
     "future_pack_contamination": 0,
-    "magmaw_party_damage": 14762649,
-    "magmaw_active_dps": 79798.103,
-    "magmaw_active_hps": 11841.059,
-    "bot_deaths": 12,
-    "infected_player_count": 9,
-    "infection_and_vomit_damage": 567653,
-    "rejected_mechanic_partial_paths": 63,
-    "rejected_mechanic_floor_gaps": 29,
-    "first_infection_timestamp_ms": 1787957617758,
-    "report_sha256": "a0bd929d3ef033b5acb4d1c914a6f83816533612fa27d17ae79c42b416ad3b7d",
-    "combat_analysis_sha256": "19d51d6fdca6fe3874b5a91c40692bd092e34939395628044a474123f4bc15ad",
-    "combat_log_sha256": "29eaf8b57a8f6cfb1e50cc1ea9f900dbc363b13b15b7c8d1c0c1128db5f98963"
+    "blocked_bot_guid": 30006,
+    "blocked_bot_name": "Mgwdpsa",
+    "distance_to_terminal_endpoint": 43.6772,
+    "movement_owner": "route",
+    "movement_reject_reason": "route_destination_path_floor_gap",
+    "endpoint_z_delta": 0.0633392,
+    "report_sha256": "8165bf57470d0aac82b9881bd1e881448f8ad479c4ec224da95e5938f8f3b437",
+    "combat_analysis_sha256": "121baddfc2d6b75c3661a38c1fdfcd6db86a7a3e02d60fcc4c02da5c1d140944"
+  },
+  "open_dependent_signatures": {
+    "magmaw_parasite_control_allows_player_infection": {
+      "occurrence_count": 9,
+      "status": "not_exercised_by_canary106"
+    },
+    "chainwielder_future_drudge_contamination": {
+      "occurrence_count": 1,
+      "status": "absent_in_canary106_but_not_closed"
+    },
+    "same_level_encounter_hazard_path_rejection": {
+      "occurrence_count": 2,
+      "status": "subsumed_by_shared_path_floor_architecture_signature"
+    }
   },
   "repair_scope": {
-    "allowed": [
-      "assign_hunter_and_one_fire_mage_as_fixed_mobile_bait_team",
-      "persist_left_or_right_lane_endpoint_for_the_encounter_attempt",
-      "commit_lane_transition_until_safe_destination_completion",
-      "retain_mobile_parasite_targeting_during_lane_transition",
-      "add_recorded_lane_transition_and_non_baiter_counterexamples"
+    "allowed_before_new_approval": [
+      "read_only_shared_planner_architecture_review",
+      "deterministic_last_ten_occurrence_summary",
+      "owner_independent_invariant_and_replay_test_design"
     ],
-    "forbidden_shortcuts": [
-      "move_all_ranged_or_healers_into_the_bait_lane",
-      "add_another_recomputed_distance_only_escape",
-      "change_native_magmaw_spells_damage_or_targeting",
-      "weaken_shared_path_or_future_pack_guards",
-      "change_class_rotation_or_pet_autocast",
-      "special_case_bot_guid_or_recorded_spawn_guid",
-      "run_a_live_shard_inside_the_specialist_work_unit"
+    "forbidden": [
+      "another_magmaw_canary",
+      "another_owner_specific_path_exception",
+      "another_distance_threshold_exception",
+      "encounter_or_class_policy_tuning",
+      "weakening_future_pack_or_vertical_path_guards"
     ]
   },
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "implementation_budget": {
-    "hypotheses": 1,
-    "focused_test_runs": 2,
-    "matched_live_verification_runs": 1
-  },
-  "implementation_constraints": {
-    "maximum_c_or_cpp_lines": 999,
-    "heavy_build_allowed": false,
-    "live_run_allowed": false,
-    "commit_allowed_after_root_review": true
-  },
-  "next_action": "Build exact commit 81ab0b47e8 and run one autonomous completion-watchdog canary. Any player infection is occurrence 10 and stops the lane for architecture review."
+  "next_action": "Complete the read-only architecture review and present the last-ten summary. A new bounded shared-planner implementation work unit requires explicit approval after that review."
 }
