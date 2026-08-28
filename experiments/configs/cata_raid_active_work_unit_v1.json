@@ -23,6 +23,7 @@
   "scope_lock": {
     "allowed_files": [
       "src/server/game/Bots/BotWorldPopulationMgrMovementPlanner.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrNativeFloor.h",
       "src/server/game/Bots/BotWorldPopulationMgrNativePathValidation.h",
       "src/server/game/Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h",
       "src/server/game/Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.cpp",
