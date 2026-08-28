@@ -3,6 +3,7 @@ import json
 
 from tools.bot_ml.analyze_combat_log import analyze_combat_log
 from tools.bot_ml.run_live_bot_validation import (
+    combat_log_transport_status,
     heartbeat_commands_from_script,
     live_validation_report,
     parse_json_objects,
@@ -292,6 +293,82 @@ def test_live_validation_reassembles_bounded_combat_log_chunks():
     stripped = strip_combat_log_chunks("prefix\n" + output + "\nsuffix\n")
     assert "botauto_combatlog_chunk" not in stripped
     assert stripped == "prefix\nsuffix\n"
+
+
+def test_live_validation_reports_missing_combat_log_sequence_fail_closed():
+    raw = json.dumps(combat_log_fixture(), separators=(",", ":")).encode()
+    parts = [raw[index : index + 97] for index in range(0, len(raw), 97)]
+    missing_sequence = 1
+    rows = [
+        {
+            "action": "botauto_combatlog_chunk",
+            "combat_log_chunk_schema_version": 1,
+            "sequence": sequence,
+            "chunk_count": len(parts),
+            "encoding": "base64",
+            "data": base64.b64encode(part).decode(),
+        }
+        for sequence, part in enumerate(parts)
+        if sequence != missing_sequence
+    ]
+    rows.append(
+        {
+            "action": "botauto_combatlog_complete",
+            "combat_log_chunk_schema_version": 1,
+            "chunk_count": len(parts),
+            "total_bytes": len(raw),
+        }
+    )
+    output = "\n".join(json.dumps(row) for row in rows)
+
+    status = combat_log_transport_status(parse_json_objects(output))
+    report = live_validation_report(output)
+
+    assert status["reassembled"] is False
+    assert status["missing_sequences"] == [missing_sequence]
+    assert status["reason"] == "missing_sequences"
+    assert report["combat_log"] == {}
+    assert report["combat_analysis"] == {}
+    assert "combat_log_transport_incomplete" in report["failure_labels"]
+    assert "failure_labels_present" in report["final_evidence_rejections"]
+
+
+def test_live_validation_uses_latest_complete_combat_log_retry():
+    raw = json.dumps(combat_log_fixture(), separators=(",", ":")).encode()
+    parts = [raw[index : index + 97] for index in range(0, len(raw), 97)]
+
+    def transfer(skip: int | None) -> list[dict]:
+        rows = [
+            {
+                "action": "botauto_combatlog_chunk",
+                "combat_log_chunk_schema_version": 1,
+                "sequence": sequence,
+                "chunk_count": len(parts),
+                "encoding": "base64",
+                "data": base64.b64encode(part).decode(),
+            }
+            for sequence, part in enumerate(parts)
+            if sequence != skip
+        ]
+        rows.append(
+            {
+                "action": "botauto_combatlog_complete",
+                "combat_log_chunk_schema_version": 1,
+                "chunk_count": len(parts),
+                "total_bytes": len(raw),
+            }
+        )
+        return rows
+
+    output = "\n".join(
+        json.dumps(row) for row in [*transfer(1), *transfer(None)]
+    )
+    report = live_validation_report(output)
+
+    assert report["combat_log_transport"]["attempt_count"] == 2
+    assert report["combat_log_transport"]["reassembled"] is True
+    assert report["combat_log"]["event_count"] == 42
+    assert "combat_log_transport_incomplete" not in report["failure_labels"]
 
 
 def test_live_validation_reassembles_bounded_calibration_status_chunks():

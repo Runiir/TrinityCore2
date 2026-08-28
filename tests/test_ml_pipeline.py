@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import subprocess
@@ -3478,9 +3479,95 @@ def test_rejected_calibration_start_returns_promptly_and_runs_cleanup(tmp_path):
     assert commands == [
         ".botauto calibrate calibration-rejected start single_target_300 fire_mage 1",
         ".botauto combatlog calibration-rejected",
+        ".botauto combatlog calibration-rejected",
         ".botauto calibrate calibration-rejected stop",
         ".botauto stop calibration-rejected",
     ]
+
+
+def test_transport_watchdog_retries_one_incomplete_combat_log_export(tmp_path):
+    commands: list[str] = []
+    payload = json.dumps(
+        {
+            "action": "botauto_combatlog",
+            "combat_log_schema_version": 1,
+            "event_count": 0,
+            "abilities": [],
+            "seconds": [],
+            "recent_events": [],
+        },
+        separators=(",", ":"),
+    ).encode()
+    parts = [payload[: len(payload) // 2], payload[len(payload) // 2 :]]
+
+    def export(skip: int | None) -> str:
+        rows = [
+            {
+                "action": "botauto_combatlog_chunk",
+                "combat_log_chunk_schema_version": 1,
+                "sequence": sequence,
+                "chunk_count": len(parts),
+                "encoding": "base64",
+                "data": base64.b64encode(part).decode(),
+            }
+            for sequence, part in enumerate(parts)
+            if sequence != skip
+        ]
+        rows.append(
+            {
+                "action": "botauto_combatlog_complete",
+                "combat_log_chunk_schema_version": 1,
+                "chunk_count": len(parts),
+                "total_bytes": len(payload),
+            }
+        )
+        return "\n".join(json.dumps(row) for row in rows)
+
+    combatlog_attempt = 0
+
+    def execute(command: str, _timeout: int):
+        nonlocal combatlog_attempt
+        commands.append(command)
+        if command.startswith(".botauto calibrate") and " start " in command:
+            return (
+                '{"ok":false,"action":"botauto_calibrate_start",'
+                '"failure_reason":"fixture_rejected"}',
+                0,
+                False,
+            )
+        if command.startswith(".botauto combatlog"):
+            combatlog_attempt += 1
+            return export(1 if combatlog_attempt == 1 else None), 0, False
+        return "{}", 0, False
+
+    output, returncode, timed_out, _command = run_transport_completion_watchdog(
+        execute,
+        ["session"],
+        30,
+        command_script(
+            start=False,
+            stop=True,
+            exit_server=False,
+            combat_calibration=True,
+            calibration_only=True,
+            cohort_id="retry-combatlog",
+            calibration_target_spec="fire_mage",
+        ),
+        tmp_path,
+        {},
+        {},
+        heartbeat_sec=10,
+        sleep=lambda _seconds: None,
+    )
+    report = live_validation_report(output)
+
+    assert returncode == 1
+    assert timed_out is False
+    assert commands.count(".botauto combatlog retry-combatlog") == 2
+    assert '"action":"botauto_combatlog_retry"' in output
+    assert report["combat_log_transport"]["attempt_count"] == 2
+    assert report["combat_log_transport"]["reassembled"] is True
+    assert "combat_log_transport_incomplete" not in report["failure_labels"]
 
 
 def test_calibration_pre_scoring_blocker_requires_zero_action_persistent_setup() -> None:

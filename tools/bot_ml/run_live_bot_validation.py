@@ -1781,25 +1781,110 @@ def attach_phase8_role_calibration(
     return report
 
 
-def combat_log_transport_status(payloads: list[dict[str, Any]]) -> dict[str, Any]:
-    chunks = [row for row in payloads if row.get("action") == "botauto_combatlog_chunk"]
-    completion = next(
-        (row for row in reversed(payloads) if row.get("action") == "botauto_combatlog_complete"),
-        {},
+def combat_log_transport_attempts(
+    payloads: list[dict[str, Any]],
+) -> list[tuple[list[dict[str, Any]], dict[str, Any]]]:
+    """Split repeated combat-log exports at their completion markers."""
+    attempts: list[tuple[list[dict[str, Any]], dict[str, Any]]] = []
+    chunks: list[dict[str, Any]] = []
+    for row in payloads:
+        action = row.get("action")
+        if action == "botauto_combatlog_chunk":
+            chunks.append(row)
+        elif action == "botauto_combatlog_complete":
+            attempts.append((chunks, row))
+            chunks = []
+    if chunks:
+        attempts.append((chunks, {}))
+    return attempts
+
+
+def combat_log_attempt_status(
+    chunks: list[dict[str, Any]], completion: dict[str, Any]
+) -> dict[str, Any]:
+    expected = int(
+        completion.get("chunk_count")
+        or (chunks[-1].get("chunk_count") if chunks else 0)
+        or 0
     )
-    expected = int(completion.get("chunk_count") or (chunks[-1].get("chunk_count") if chunks else 0) or 0)
-    sequences = {
-        int(row.get("sequence") or 0)
-        for row in chunks
-        if int(row.get("chunk_count") or 0) == expected
-    }
+    cohort_id = str(completion.get("cohort_id") or "")
+    valid_sequences: list[int] = []
+    invalid_sequences: list[int] = []
+    for row in chunks:
+        try:
+            sequence = int(row.get("sequence"))
+            chunk_count = int(row.get("chunk_count"))
+        except (TypeError, ValueError):
+            invalid_sequences.append(-1)
+            continue
+        valid = (
+            expected > 0
+            and 0 <= sequence < expected
+            and chunk_count == expected
+            and str(row.get("cohort_id") or "") == cohort_id
+            and int(row.get("combat_log_chunk_schema_version") or 0) == 1
+            and row.get("encoding") == "base64"
+        )
+        (valid_sequences if valid else invalid_sequences).append(sequence)
+    unique_sequences = set(valid_sequences)
+    missing_sequences = sorted(set(range(expected)) - unique_sequences)
+    duplicate_sequences = sorted(
+        sequence
+        for sequence in unique_sequences
+        if valid_sequences.count(sequence) > 1
+    )
+    complete_marker = bool(completion)
+    reassembled = bool(
+        complete_marker
+        and expected > 0
+        and not missing_sequences
+        and not duplicate_sequences
+        and not invalid_sequences
+    )
+    if reassembled:
+        reason = "complete"
+    elif not complete_marker:
+        reason = "completion_marker_missing"
+    elif missing_sequences:
+        reason = "missing_sequences"
+    elif duplicate_sequences:
+        reason = "duplicate_sequences"
+    else:
+        reason = "invalid_chunks"
     return {
-        "complete_marker": bool(completion),
+        "complete_marker": complete_marker,
         "expected_chunks": expected,
-        "received_chunks": len(sequences),
+        "received_chunks": len(unique_sequences),
+        "missing_sequences": missing_sequences,
+        "duplicate_sequences": duplicate_sequences,
+        "invalid_sequences": sorted(set(invalid_sequences)),
         "total_bytes": int(completion.get("total_bytes") or 0),
-        "reassembled": bool(expected and len(sequences) == expected and sequences == set(range(expected))),
+        "reason": reason,
+        "reassembled": reassembled,
     }
+
+
+def combat_log_transport_status(payloads: list[dict[str, Any]]) -> dict[str, Any]:
+    attempts = combat_log_transport_attempts(payloads)
+    if not attempts:
+        return combat_log_attempt_status([], {})
+    statuses = [combat_log_attempt_status(chunks, completion)
+        for chunks, completion in attempts]
+    selected = next(
+        (status for status in reversed(statuses) if status["reassembled"]),
+        statuses[-1],
+    )
+    selected = dict(selected)
+    retry_attempts = [
+        int(row.get("attempt") or 0)
+        for row in payloads
+        if row.get("action") == "botauto_combatlog_retry"
+    ]
+    selected["attempt_count"] = max(
+        len(attempts),
+        (max(retry_attempts) + 1) if retry_attempts else 0,
+    )
+    return selected
 
 
 def combined_combat_log(payloads: list[dict[str, Any]]) -> dict[str, Any]:
@@ -1814,28 +1899,26 @@ def combined_combat_log(payloads: list[dict[str, Any]]) -> dict[str, Any]:
     if direct:
         return direct
 
-    chunks = [
-        row
-        for row in payloads
-        if row.get("action") == "botauto_combatlog_chunk"
-        or (row.get("combat_log_chunk_schema_version") and "sequence" in row)
-    ]
-    if not chunks:
-        return {}
-    expected = int(chunks[-1].get("chunk_count") or 0)
-    by_sequence = {
-        int(row.get("sequence") or 0): row
-        for row in chunks
-        if int(row.get("chunk_count") or 0) == expected
-    }
-    if expected <= 0 or len(by_sequence) != expected or set(by_sequence) != set(range(expected)):
-        return {}
-    try:
-        raw = b"".join(base64.b64decode(by_sequence[index]["data"], validate=True) for index in range(expected))
-        decoded = json.loads(raw)
-    except (KeyError, TypeError, ValueError, json.JSONDecodeError):
-        return {}
-    return decoded if isinstance(decoded, dict) else {}
+    for chunks, completion in reversed(combat_log_transport_attempts(payloads)):
+        status = combat_log_attempt_status(chunks, completion)
+        if not status["reassembled"]:
+            continue
+        expected = int(status["expected_chunks"])
+        by_sequence = {int(row["sequence"]): row for row in chunks}
+        try:
+            raw = b"".join(
+                base64.b64decode(by_sequence[index]["data"], validate=True)
+                for index in range(expected)
+            )
+            decoded = json.loads(raw)
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+            continue
+        if (
+            len(raw) == int(completion.get("total_bytes") or 0)
+            and isinstance(decoded, dict)
+        ):
+            return decoded
+    return {}
 
 
 def combined_trace_payload(payloads: list[dict[str, Any]]) -> dict[str, Any]:
@@ -3972,6 +4055,11 @@ def live_validation_report(
         evidence,
         max_death_loops,
     )
+    if (
+        combat_log_transport.get("complete_marker")
+        and not combat_log_transport.get("reassembled")
+    ):
+        failure_labels.append("combat_log_transport_incomplete")
     if WORLDSERVER_OUTPUT_TRUNCATED_MARKER.strip() in output:
         failure_labels.append("worldserver_output_truncated")
     scenario_reports = scenario_reports or {}
@@ -4362,6 +4450,26 @@ def rolling_heartbeat_report(
     return report
 
 
+def combat_log_export_complete(output: str) -> bool:
+    status = combat_log_transport_status(parse_json_objects(output))
+    return bool(status.get("reassembled"))
+
+
+def combat_log_retry_receipt(output: str, attempt: int) -> str:
+    status = combat_log_transport_status(parse_json_objects(output))
+    return json.dumps(
+        {
+            "action": "botauto_combatlog_retry",
+            "attempt": attempt,
+            "expected_chunks": int(status.get("expected_chunks") or 0),
+            "received_chunks": int(status.get("received_chunks") or 0),
+            "missing_sequences": status.get("missing_sequences") or [],
+            "reason": str(status.get("reason") or "incomplete"),
+        },
+        separators=(",", ":"),
+    ) + "\n"
+
+
 def run_transport_completion_watchdog(
     execute_command: Callable[[str, int], tuple[str, int, bool]],
     command: list[str],
@@ -4402,8 +4510,23 @@ def run_transport_completion_watchdog(
             if deadline is None
             else max(1, int(deadline - time.monotonic()))
         )
-        output, returncode, timed_out = execute_command(command_text, remaining)
-        output_parts.extend((f"$ {command_text}\n", output))
+        attempts = 2 if command_text.startswith(".botauto combatlog") else 1
+        output = ""
+        returncode = 0
+        timed_out = False
+        for attempt in range(1, attempts + 1):
+            output, returncode, timed_out = execute_command(command_text, remaining)
+            output_parts.append(f"$ {command_text}\n")
+            if (
+                returncode != 0
+                or timed_out
+                or attempts == 1
+                or combat_log_export_complete(output)
+                or attempt == attempts
+            ):
+                output_parts.append(output)
+                break
+            output_parts.append(combat_log_retry_receipt(output, attempt))
         if returncode == 0 and is_calibration_start_command(command_text):
             rejected = any(
                 row.get("action") == "botauto_calibrate_start"
@@ -4554,22 +4677,36 @@ def run_worldserver_completion_watchdog(
 
     def send_command(command_text: str, *, cleanup: bool = False) -> None:
         assert process.stdin is not None
-        process.stdin.write(command_text + "\n")
-        process.stdin.flush()
-        output_parts.append(f"$ {command_text}\n")
-        command_deadline = (
-            time.monotonic() + max(120, heartbeat_sec)
-            if cleanup
-            else bounded_console_deadline(deadline, max(5, heartbeat_sec))
+        attempts = (
+            2
+            if cleanup and command_text.startswith(".botauto combatlog")
+            else 1
         )
-        output_parts.append(
-            read_until_console_prompt(
+        for attempt in range(1, attempts + 1):
+            process.stdin.write(command_text + "\n")
+            process.stdin.flush()
+            output_parts.append(f"$ {command_text}\n")
+            command_deadline = (
+                time.monotonic() + max(120, heartbeat_sec)
+                if cleanup
+                else bounded_console_deadline(deadline, max(5, heartbeat_sec))
+            )
+            command_output = read_until_console_prompt(
                 process,
                 command_deadline,
                 expected_command_output_marker(command_text),
                 command_output_marker_is_terminal(command_text),
             )
-        )
+            if (
+                attempts == 1
+                or combat_log_export_complete(command_output)
+                or attempt == attempts
+            ):
+                output_parts.append(command_output)
+                break
+            output_parts.append(combat_log_retry_receipt(
+                command_output, attempt
+            ))
 
     try:
         output_parts.append(read_until_console_prompt(process, deadline))
@@ -6301,10 +6438,21 @@ def main() -> int:
         else:
             output, returncode, timed_out, command = run_worldserver(args.worldserver, effective_config, args.timeout_sec, script, args.observe_sec)
 
-    # Keep calibration chunks as raw transport evidence. The decoded status is
-    # retained in report.json, but malformed/incomplete chunks must remain
-    # diagnosable. Combat-log chunks have their own decoded artifact.
-    retained_console_output = strip_combat_log_chunks(output)
+    # Keep an incomplete combat-log transfer intact so a missing or malformed
+    # sequence remains diagnosable. A successfully decoded export has its own
+    # compact artifacts and may discard the transport-only base64 frames.
+    parsed_output_payloads = parse_json_objects(output)
+    output_combat_transport = combat_log_transport_status(
+        parsed_output_payloads
+    )
+    incomplete_combat_transport = bool(
+        output_combat_transport.get("attempt_count")
+        and not output_combat_transport.get("reassembled")
+    )
+    retained_console_output = (
+        output if incomplete_combat_transport
+        else strip_combat_log_chunks(output)
+    )
     (args.output_dir / "worldserver_output.log").write_text(
         retained_console_output,
         encoding="utf-8",
@@ -6314,17 +6462,32 @@ def main() -> int:
         report["returncode"] = returncode
         report["timed_out"] = timed_out
         report["command"] = command
-        final_payloads = classify_payloads(parse_json_objects(output))
+        final_payloads = classify_payloads(parsed_output_payloads)
+        report["json_payloads"] = len(parsed_output_payloads)
         report["combat_log_transport"] = final_payloads["combat_log_transport"]
         report["combat_calibration_transport"] = final_payloads[
             "combat_calibration_transport"
         ]
         if final_payloads.get("combat_log"):
             report["combat_log"] = final_payloads["combat_log"]
+            report["combat_analysis"] = analyze_combat_log(
+                final_payloads["combat_log"]
+            )
         if final_payloads.get("combat_calibration"):
             report["combat_calibration"] = enrich_combat_calibration_reference(
                 final_payloads["combat_calibration"]
             )
+        if incomplete_combat_transport:
+            label = "combat_log_transport_incomplete"
+            labels = report.setdefault("failure_labels", [])
+            if label not in labels:
+                labels.append(label)
+            report["failure_reason"] = labels[0]
+            report["all_passed"] = False
+            report["acceptable_final_evidence"] = False
+            rejections = report.setdefault("final_evidence_rejections", [])
+            if "failure_labels_present" not in rejections:
+                rejections.append("failure_labels_present")
     else:
         report = live_validation_report(
             output,
